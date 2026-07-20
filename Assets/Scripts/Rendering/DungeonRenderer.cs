@@ -9,10 +9,22 @@ namespace DM.Rendering
     {
       Debug.Log("DungeonRenderer started.");
 
-      GameObject cube =
-          GameObject.CreatePrimitive(PrimitiveType.Cube);
+      for (int y = 0; y < map.Height; y++)
+      {
+        for (int x = 0; x < map.Width; x++)
+        {
+          GameObject cube =
+              GameObject.CreatePrimitive(PrimitiveType.Cube);
 
-      cube.transform.position = Vector3.zero;
+          cube.transform.position = new Vector3(
+              x * 1.2f,
+              y * 1.2f,
+              0f
+          );
+
+          cube.transform.SetParent(transform);
+        }
+      }
     }
   }
 }
