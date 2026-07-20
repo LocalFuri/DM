@@ -13,16 +13,28 @@ namespace DM.Rendering
       {
         for (int x = 0; x < map.Width; x++)
         {
-          GameObject cube =
-              GameObject.CreatePrimitive(PrimitiveType.Cube);
+          DungeonTile tile = map.GetTile(x, y);
 
-          cube.transform.position = new Vector3(
+          GameObject quad =
+              GameObject.CreatePrimitive(PrimitiveType.Quad);
+
+          quad.name = $"Tile_{x}_{y}";
+
+          quad.transform.position = new Vector3(
               x * 1.2f,
               y * 1.2f,
               0f
           );
 
-          cube.transform.SetParent(transform);
+          quad.transform.SetParent(transform);
+
+          Renderer quadRenderer =
+              quad.GetComponent<Renderer>();
+
+          quadRenderer.material.color =
+              tile.Type == DungeonTileType.Wall
+                  ? Color.gray
+                  : Color.black;
         }
       }
     }
