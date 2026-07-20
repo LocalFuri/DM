@@ -22,6 +22,25 @@ namespace DM.Dungeon
       return _tiles[x, y];
     }
 
+    public string BuildDebugMap()
+    {
+      string result = "";
+
+      for (int y = Height - 1; y >= 0; y--)
+      {
+        for (int x = 0; x < Width; x++)
+        {
+          result += _tiles[x, y].Type == DungeonTileType.Wall
+              ? "#"
+              : ".";
+        }
+
+        result += "\n";
+      }
+
+      return result;
+    }
+
     private void CreateTestDungeon()
     {
       for (int y = 0; y < Height; y++)

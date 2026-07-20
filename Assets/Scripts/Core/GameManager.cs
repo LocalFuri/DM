@@ -12,7 +12,7 @@ namespace DM.Core
       _dungeonMap = new DungeonMap(10, 6);
 
       Debug.Log($"Dungeon created: {_dungeonMap.Width} x {_dungeonMap.Height}");
-      
+      Debug.Log(_dungeonMap.BuildDebugMap());
     }
   }
 }
