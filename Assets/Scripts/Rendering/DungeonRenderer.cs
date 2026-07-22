@@ -27,7 +27,8 @@ namespace DM.Rendering
     {
       CreateFrameBuffer();
 
-      // Temporary first frame until movement/map code calls Render().
+      // Temporary first render until the map/player system
+      // calls Render(...) itself.
       Render(null);
     }
 
@@ -111,8 +112,10 @@ namespace DM.Rendering
         return;
       }
 
-      int ceilingX = (ViewWidth - ceilingTexture.width) / 2;
-      int ceilingY = ViewHeight - ceilingTexture.height;
+      int ceilingX =
+          (ViewWidth - ceilingTexture.width) / 2;
+
+      int ceilingY = 150;
 
       Blit(
           ceilingTexture,
@@ -128,7 +131,9 @@ namespace DM.Rendering
         return;
       }
 
-      int floorX = (ViewWidth - floorTexture.width) / 2;
+      int floorX =
+          (ViewWidth - floorTexture.width) / 2;
+
       int floorY = 0;
 
       Blit(
@@ -145,8 +150,10 @@ namespace DM.Rendering
         return;
       }
 
-      int wallX = (ViewWidth - frontWallF0.width) / 2;
-      int wallY = (ViewHeight - frontWallF0.height) / 2;
+      int wallX =
+          (ViewWidth - frontWallF0.width) / 2;
+
+      int wallY = 45;
 
       Blit(
           frontWallF0,
@@ -168,36 +175,54 @@ namespace DM.Rendering
         int destinationX,
         int destinationY)
     {
-      Color32[] sourcePixels = source.GetPixels32();
+      Color32[] sourcePixels =
+          source.GetPixels32();
 
-      for (int sourceY = 0; sourceY < source.height; sourceY++)
+      for (
+          int sourceY = 0;
+          sourceY < source.height;
+          sourceY++)
       {
-        int targetY = destinationY + sourceY;
+        int targetY =
+            destinationY + sourceY;
 
-        if (targetY < 0 || targetY >= ViewHeight)
+        if (
+            targetY < 0 ||
+            targetY >= ViewHeight)
         {
           continue;
         }
 
-        for (int sourceX = 0; sourceX < source.width; sourceX++)
+        for (
+            int sourceX = 0;
+            sourceX < source.width;
+            sourceX++)
         {
-          int targetX = destinationX + sourceX;
+          int targetX =
+              destinationX + sourceX;
 
-          if (targetX < 0 || targetX >= ViewWidth)
+          if (
+              targetX < 0 ||
+              targetX >= ViewWidth)
           {
             continue;
           }
 
           Color32 sourceColour =
-              sourcePixels[sourceY * source.width + sourceX];
+              sourcePixels[
+                  sourceY * source.width +
+                  sourceX
+              ];
 
           if (sourceColour.a == 0)
           {
             continue;
           }
 
-          framePixels[targetY * ViewWidth + targetX] =
-              sourceColour;
+          framePixels[
+              targetY * ViewWidth +
+              targetX
+          ] = sourceColour;
         }
       }
     }
