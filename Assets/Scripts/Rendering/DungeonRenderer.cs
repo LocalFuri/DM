@@ -23,9 +23,11 @@ namespace DM.Rendering
     private DungeonMap currentMap;
     private bool frameDirty = true;
 
-    private void Awake()
+    private void Start()
     {
       CreateFrameBuffer();
+
+      Render(null);
     }
 
     private void OnEnable()
