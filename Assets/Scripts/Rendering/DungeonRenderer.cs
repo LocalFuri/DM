@@ -27,6 +27,7 @@ namespace DM.Rendering
     {
       CreateFrameBuffer();
 
+      // Temporary startup render.
       Render(null);
     }
 
@@ -48,9 +49,6 @@ namespace DM.Rendering
       }
     }
 
-    /// <summary>
-    /// Stores the dungeon map and requests a new rendered frame.
-    /// </summary>
     public void Render(DungeonMap map)
     {
       currentMap = map;
@@ -64,7 +62,7 @@ namespace DM.Rendering
         return;
       }
 
-      if (targetTexture == null)
+      if (targetTexture == null || frameBuffer == null)
       {
         return;
       }
@@ -98,7 +96,6 @@ namespace DM.Rendering
     {
       Clear(new Color32(0, 0, 0, 255));
 
-      // Top half of the 320×200 viewport.
       if (ceilingTexture != null)
       {
         BlitScaled(
@@ -110,7 +107,6 @@ namespace DM.Rendering
         );
       }
 
-      // Bottom half of the 320×200 viewport.
       if (floorTexture != null)
       {
         BlitScaled(
@@ -122,13 +118,17 @@ namespace DM.Rendering
         );
       }
 
-      // First test wall, centred in the viewport.
+      // Draw the wall at its original size, centered.
       if (frontWallF0 != null)
       {
         int wallX = (ViewWidth - frontWallF0.width) / 2;
         int wallY = (ViewHeight - frontWallF0.height) / 2;
 
-        Blit(frontWallF0, wallX, wallY);
+        Blit(
+            frontWallF0,
+            wallX,
+            wallY
+        );
       }
 
       frameBuffer.SetPixels32(framePixels);
@@ -143,7 +143,10 @@ namespace DM.Rendering
       }
     }
 
-    private void Blit(Texture2D source, int destinationX, int destinationY)
+    private void Blit(
+        Texture2D source,
+        int destinationX,
+        int destinationY)
     {
       Color32[] sourcePixels = source.GetPixels32();
 
@@ -212,8 +215,16 @@ namespace DM.Rendering
           int sourceX =
               targetX * source.width / destinationWidth;
 
-          framePixels[screenY * ViewWidth + screenX] =
+          Color32 sourceColour =
               sourcePixels[sourceY * source.width + sourceX];
+
+          if (sourceColour.a == 0)
+          {
+            continue;
+          }
+
+          framePixels[screenY * ViewWidth + screenX] =
+              sourceColour;
         }
       }
     }
