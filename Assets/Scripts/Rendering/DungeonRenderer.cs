@@ -27,7 +27,7 @@ namespace DM.Rendering
     {
       CreateFrameBuffer();
 
-      // Temporary startup render.
+      // Temporary first frame until movement/map code calls Render().
       Render(null);
     }
 
@@ -96,43 +96,63 @@ namespace DM.Rendering
     {
       Clear(new Color32(0, 0, 0, 255));
 
-      if (ceilingTexture != null)
-      {
-        BlitScaled(
-            ceilingTexture,
-            0,
-            ViewHeight / 2,
-            ViewWidth,
-            ViewHeight / 2
-        );
-      }
-
-      if (floorTexture != null)
-      {
-        BlitScaled(
-            floorTexture,
-            0,
-            0,
-            ViewWidth,
-            ViewHeight / 2
-        );
-      }
-
-      // Draw the wall at its original size, centered.
-      if (frontWallF0 != null)
-      {
-        int wallX = (ViewWidth - frontWallF0.width) / 2;
-        int wallY = (ViewHeight - frontWallF0.height) / 2;
-
-        Blit(
-            frontWallF0,
-            wallX,
-            wallY
-        );
-      }
+      DrawCeiling();
+      DrawFloor();
+      DrawFrontWall();
 
       frameBuffer.SetPixels32(framePixels);
       frameBuffer.Apply(false);
+    }
+
+    private void DrawCeiling()
+    {
+      if (ceilingTexture == null)
+      {
+        return;
+      }
+
+      int ceilingX = (ViewWidth - ceilingTexture.width) / 2;
+      int ceilingY = ViewHeight - ceilingTexture.height;
+
+      Blit(
+          ceilingTexture,
+          ceilingX,
+          ceilingY
+      );
+    }
+
+    private void DrawFloor()
+    {
+      if (floorTexture == null)
+      {
+        return;
+      }
+
+      int floorX = (ViewWidth - floorTexture.width) / 2;
+      int floorY = 0;
+
+      Blit(
+          floorTexture,
+          floorX,
+          floorY
+      );
+    }
+
+    private void DrawFrontWall()
+    {
+      if (frontWallF0 == null)
+      {
+        return;
+      }
+
+      int wallX = (ViewWidth - frontWallF0.width) / 2;
+      int wallY = (ViewHeight - frontWallF0.height) / 2;
+
+      Blit(
+          frontWallF0,
+          wallX,
+          wallY
+      );
     }
 
     private void Clear(Color32 colour)
@@ -177,53 +197,6 @@ namespace DM.Rendering
           }
 
           framePixels[targetY * ViewWidth + targetX] =
-              sourceColour;
-        }
-      }
-    }
-
-    private void BlitScaled(
-        Texture2D source,
-        int destinationX,
-        int destinationY,
-        int destinationWidth,
-        int destinationHeight)
-    {
-      Color32[] sourcePixels = source.GetPixels32();
-
-      for (int targetY = 0; targetY < destinationHeight; targetY++)
-      {
-        int screenY = destinationY + targetY;
-
-        if (screenY < 0 || screenY >= ViewHeight)
-        {
-          continue;
-        }
-
-        int sourceY =
-            targetY * source.height / destinationHeight;
-
-        for (int targetX = 0; targetX < destinationWidth; targetX++)
-        {
-          int screenX = destinationX + targetX;
-
-          if (screenX < 0 || screenX >= ViewWidth)
-          {
-            continue;
-          }
-
-          int sourceX =
-              targetX * source.width / destinationWidth;
-
-          Color32 sourceColour =
-              sourcePixels[sourceY * source.width + sourceX];
-
-          if (sourceColour.a == 0)
-          {
-            continue;
-          }
-
-          framePixels[screenY * ViewWidth + screenX] =
               sourceColour;
         }
       }
