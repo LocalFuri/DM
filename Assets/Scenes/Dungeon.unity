@@ -469,7 +469,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DM.Rendering.DungeonRenderer
   dungeonCamera: {fileID: 721665985}
   targetTexture: {fileID: 8400000, guid: 45d017801685b8b4a8e712182372c569, type: 2}
-  ceilingTexture: {fileID: 0}
+  ceilingTexture: {fileID: 2800000, guid: df14770169d01164bb4a328deadf997b, type: 3}
   floorTexture: {fileID: 0}
   frontWallF0: {fileID: 2800000, guid: 5927c68013a488649b39a4bdcd680ad1, type: 3}
 --- !u!4 &586494317
