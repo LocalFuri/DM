@@ -467,6 +467,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e3a03e9e4893804aa6223691dabffaf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DM.Rendering.DungeonRenderer
+  dungeonCamera: {fileID: 721665985}
+  targetTexture: {fileID: 0}
+  ceilingTexture: {fileID: 0}
+  floorTexture: {fileID: 0}
+  frontWallF0: {fileID: 0}
 --- !u!4 &586494317
 Transform:
   m_ObjectHideFlags: 0
