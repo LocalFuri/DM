@@ -99,7 +99,6 @@ namespace DM.Rendering
       {
         DrawCeiling();
         DrawFloor();
-        DrawFrontWall();
       }
 
       frameBuffer.SetPixels32(framePixels);
@@ -145,27 +144,6 @@ namespace DM.Rendering
           texture,
           floorX,
           floorY
-      );
-    }
-
-    private void DrawFrontWall()
-    {
-      Texture2D texture = graphics.FrontWallF0;
-
-      if (texture == null)
-      {
-        return;
-      }
-
-      int wallX =
-          (ViewWidth - texture.width) / 2;
-
-      int wallY = 45;
-
-      Blit(
-          texture,
-          wallX,
-          wallY
       );
     }
 

@@ -11,27 +11,49 @@ namespace DM.Rendering
     public Texture2D Ceiling;
     public Texture2D Floor;
 
-    [Header("Front Walls")]
-    public Texture2D FrontWallF0;
-    public Texture2D FrontWallF1;
-    public Texture2D FrontWallF2;
-    public Texture2D FrontWallF3;
+    [Header("Wall Graphics - F0")]
+    public Texture2D WallF0L;
+    public Texture2D WallF0R;
 
-    [Header("Left Walls")]
-    public Texture2D LeftWallF0;
-    public Texture2D LeftWallF1;
-    public Texture2D LeftWallF2;
-    public Texture2D LeftWallF3;
+    [Header("Wall Graphics - F1")]
+    public Texture2D WallF1L;
+    public Texture2D WallF1R;
 
-    [Header("Right Walls")]
-    public Texture2D RightWallF0;
-    public Texture2D RightWallF1;
-    public Texture2D RightWallF2;
-    public Texture2D RightWallF3;
+    [Header("Wall Graphics - F2")]
+    public Texture2D WallF2L;
+    public Texture2D WallF2R;
 
-    [Header("Side Wall Strips")]
-    public Texture2D SideWallLeft;
-    public Texture2D SideWallRight;
+    [Header("Wall Graphics - F3")]
+    public Texture2D WallF3L;
+    public Texture2D WallF3R;
+
+    [Header("Side Wall Graphics")]
+    public Texture2D WallS2L;
+    public Texture2D WallS2R;
+    public Texture2D WallS3L;
+    public Texture2D WallS3R;
+
+    [Header("Wall Masks - F0")]
+    public Texture2D MaskWallF0L;
+    public Texture2D MaskWallF0R;
+
+    [Header("Wall Masks - F1")]
+    public Texture2D MaskWallF1L;
+    public Texture2D MaskWallF1R;
+
+    [Header("Wall Masks - F2")]
+    public Texture2D MaskWallF2L;
+    public Texture2D MaskWallF2R;
+
+    [Header("Wall Masks - F3")]
+    public Texture2D MaskWallF3L;
+    public Texture2D MaskWallF3R;
+
+    [Header("Side Wall Masks")]
+    public Texture2D MaskWallS2L;
+    public Texture2D MaskWallS2R;
+    public Texture2D MaskWallS3L;
+    public Texture2D MaskWallS3R;
 
     [Header("Doors")]
     public Texture2D DoorClosed;
@@ -39,17 +61,12 @@ namespace DM.Rendering
     public Texture2D DoorFrameLeft;
     public Texture2D DoorFrameRight;
     public Texture2D DoorFrameTop;
+    public Texture2D DoorMask;
 
-    [Header("Wall Decorations")]
+    [Header("Wall Features")]
     public Texture2D Alcove;
     public Texture2D WallSwitch;
     public Texture2D TorchHolder;
     public Texture2D WallOrnament;
-
-    [Header("Masks")]
-    public Texture2D FrontWallMask;
-    public Texture2D LeftWallMask;
-    public Texture2D RightWallMask;
-    public Texture2D DoorMask;
   }
 }
