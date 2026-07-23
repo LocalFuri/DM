@@ -12,10 +12,8 @@ namespace DM.Rendering
     [SerializeField] private Camera dungeonCamera;
     [SerializeField] private RenderTexture targetTexture;
 
-    [Header("Dungeon Master Graphics")]
-    [SerializeField] private Texture2D ceilingTexture;
-    [SerializeField] private Texture2D floorTexture;
-    [SerializeField] private Texture2D frontWallF0;
+    [Header("Graphics Database")]
+    [SerializeField] private DungeonGraphics graphics;
 
     private Texture2D frameBuffer;
     private Color32[] framePixels;
@@ -27,7 +25,7 @@ namespace DM.Rendering
     {
       CreateFrameBuffer();
 
-      // Temporary first render until the map/player system
+      // Temporary first render until the map and player system
       // calls Render(...) itself.
       Render(null);
     }
@@ -97,9 +95,12 @@ namespace DM.Rendering
     {
       Clear(new Color32(0, 0, 0, 255));
 
-      DrawCeiling();
-      DrawFloor();
-      DrawFrontWall();
+      if (graphics != null)
+      {
+        DrawCeiling();
+        DrawFloor();
+        DrawFrontWall();
+      }
 
       frameBuffer.SetPixels32(framePixels);
       frameBuffer.Apply(false);
@@ -107,18 +108,20 @@ namespace DM.Rendering
 
     private void DrawCeiling()
     {
-      if (ceilingTexture == null)
+      Texture2D texture = graphics.Ceiling;
+
+      if (texture == null)
       {
         return;
       }
 
       int ceilingX =
-          (ViewWidth - ceilingTexture.width) / 2;
+          (ViewWidth - texture.width) / 2;
 
-      int ceilingY = 150;
+      int ceilingY = 140;
 
       Blit(
-          ceilingTexture,
+          texture,
           ceilingX,
           ceilingY
       );
@@ -126,18 +129,20 @@ namespace DM.Rendering
 
     private void DrawFloor()
     {
-      if (floorTexture == null)
+      Texture2D texture = graphics.Floor;
+
+      if (texture == null)
       {
         return;
       }
 
       int floorX =
-          (ViewWidth - floorTexture.width) / 2;
+          (ViewWidth - texture.width) / 2;
 
       int floorY = 0;
 
       Blit(
-          floorTexture,
+          texture,
           floorX,
           floorY
       );
@@ -145,18 +150,20 @@ namespace DM.Rendering
 
     private void DrawFrontWall()
     {
-      if (frontWallF0 == null)
+      Texture2D texture = graphics.FrontWallF0;
+
+      if (texture == null)
       {
         return;
       }
 
       int wallX =
-          (ViewWidth - frontWallF0.width) / 2;
+          (ViewWidth - texture.width) / 2;
 
       int wallY = 45;
 
       Blit(
-          frontWallF0,
+          texture,
           wallX,
           wallY
       );
