@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f57affd3ff7667040bf4852ddf258d13, type: 3}
+  m_Name: ViewportLayout
+  m_EditorClassIdentifier: Assembly-CSharp::DM.Rendering.ViewportLayout
+  Width: 320
+  Height: 200
+  Ceiling:
+    X: 0
+    Y: 0
+  Floor:
+    X: 0
+    Y: 0
+  WallF3L:
+    X: 0
+    Y: 0
+  WallF3R:
+    X: 0
+    Y: 0
+  WallF2L:
+    X: 0
+    Y: 0
+  WallF2R:
+    X: 0
+    Y: 0
+  WallF1L:
+    X: 0
+    Y: 0
+  WallF1R:
+    X: 0
+    Y: 0
+  WallF0L:
+    X: 0
+    Y: 0
+  WallF0R:
+    X: 0
+    Y: 0
+  WallS3L:
+    X: 0
+    Y: 0
+  WallS3R:
+    X: 0
+    Y: 0
+  WallS2L:
+    X: 0
+    Y: 0
+  WallS2R:
+    X: 0
+    Y: 0
