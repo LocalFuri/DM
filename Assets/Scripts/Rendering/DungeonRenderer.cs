@@ -15,6 +15,9 @@ namespace DM.Rendering
     [Header("Graphics Database")]
     [SerializeField] private DungeonGraphics graphics;
 
+    [Header("Viewport Layout")]
+    [SerializeField] private ViewportLayout layout;
+
     private Texture2D frameBuffer;
     private Color32[] framePixels;
 
@@ -95,56 +98,55 @@ namespace DM.Rendering
     {
       Clear(new Color32(0, 0, 0, 255));
 
-      if (graphics != null)
+      if (graphics == null || layout == null)
       {
-        DrawCeiling();
-        DrawFloor();
+        ApplyFrameBuffer();
+        return;
       }
 
+      DrawPiece(
+          graphics.Floor,
+          layout.Floor
+      );
+
+      DrawPiece(
+          graphics.Ceiling,
+          layout.Ceiling
+      );
+
+      DrawPiece(
+          graphics.WallF3L,
+          layout.WallF3L
+      );
+
+      DrawPiece(
+          graphics.WallF3R,
+          layout.WallF3R
+      );
+
+      ApplyFrameBuffer();
+    }
+
+    private void DrawPiece(
+        Texture2D texture,
+        ViewportPiece piece)
+    {
+      if (texture == null || piece == null)
+      {
+        return;
+      }
+
+      Blit(
+          texture,
+          piece.X,
+          piece.Y
+      );
+    }
+
+    private void ApplyFrameBuffer()
+    {
       frameBuffer.SetPixels32(framePixels);
       frameBuffer.Apply(false);
-    }
-
-    private void DrawCeiling()
-    {
-      Texture2D texture = graphics.Ceiling;
-
-      if (texture == null)
-      {
-        return;
-      }
-
-      int ceilingX =
-          (ViewWidth - texture.width) / 2;
-
-      int ceilingY = 140;
-
-      Blit(
-          texture,
-          ceilingX,
-          ceilingY
-      );
-    }
-
-    private void DrawFloor()
-    {
-      Texture2D texture = graphics.Floor;
-
-      if (texture == null)
-      {
-        return;
-      }
-
-      int floorX =
-          (ViewWidth - texture.width) / 2;
-
-      int floorY = 0;
-
-      Blit(
-          texture,
-          floorX,
-          floorY
-      );
     }
 
     private void Clear(Color32 colour)

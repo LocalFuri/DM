@@ -16,16 +16,16 @@ MonoBehaviour:
   Height: 200
   Ceiling:
     X: 0
-    Y: 0
+    Y: 140
   Floor:
     X: 0
     Y: 0
   WallF3L:
-    X: 0
-    Y: 0
+    X: 120
+    Y: 85
   WallF3R:
-    X: 0
-    Y: 0
+    X: 160
+    Y: 85
   WallF2L:
     X: 0
     Y: 0
