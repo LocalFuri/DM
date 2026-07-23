@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DM.Rendering
@@ -12,35 +13,20 @@ namespace DM.Rendering
     public int Width = 320;
     public int Height = 200;
 
-    [Header("Environment")]
-    public ViewportPiece Ceiling;
-    public ViewportPiece Floor;
-
-    [Header("Front Walls")]
-    public ViewportPiece WallF3L;
-    public ViewportPiece WallF3R;
-
-    public ViewportPiece WallF2L;
-    public ViewportPiece WallF2R;
-
-    public ViewportPiece WallF1L;
-    public ViewportPiece WallF1R;
-
-    public ViewportPiece WallF0L;
-    public ViewportPiece WallF0R;
-
-    [Header("Side Walls")]
-    public ViewportPiece WallS3L;
-    public ViewportPiece WallS3R;
-
-    public ViewportPiece WallS2L;
-    public ViewportPiece WallS2R;
+    [Header("Render Order")]
+    public List<ViewportPiece> Pieces = new();
   }
 
   [Serializable]
   public class ViewportPiece
   {
+    public string Name;
+
+    public Texture2D Texture;
+
     public int X;
     public int Y;
+
+    public bool Enabled = true;
   }
 }

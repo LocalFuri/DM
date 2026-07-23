@@ -14,45 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DM.Rendering.ViewportLayout
   Width: 320
   Height: 200
-  Ceiling:
-    X: 0
-    Y: 140
-  Floor:
-    X: 0
-    Y: 0
-  WallF3L:
-    X: 120
-    Y: 85
-  WallF3R:
-    X: 160
-    Y: 85
-  WallF2L:
+  Pieces:
+  - Name: Floor
+    Texture: {fileID: 2800000, guid: a8ce8a040b25b3b449d21762886ae1d1, type: 3}
     X: 0
     Y: 0
-  WallF2R:
+    Enabled: 1
+  - Name: 
+    Texture: {fileID: 0}
     X: 0
     Y: 0
-  WallF1L:
+    Enabled: 0
+  - Name: 
+    Texture: {fileID: 0}
     X: 0
     Y: 0
-  WallF1R:
+    Enabled: 0
+  - Name: 
+    Texture: {fileID: 0}
     X: 0
     Y: 0
-  WallF0L:
-    X: 0
-    Y: 0
-  WallF0R:
-    X: 0
-    Y: 0
-  WallS3L:
-    X: 0
-    Y: 0
-  WallS3R:
-    X: 0
-    Y: 0
-  WallS2L:
-    X: 0
-    Y: 0
-  WallS2R:
-    X: 0
-    Y: 0
+    Enabled: 0

@@ -5,21 +5,21 @@ namespace DM.Rendering
 {
   public class DungeonRenderer : MonoBehaviour
   {
-    private const int ViewWidth = 320;
-    private const int ViewHeight = 200;
+    private const int DefaultViewWidth = 320;
+    private const int DefaultViewHeight = 200;
 
     [Header("Rendering")]
     [SerializeField] private Camera dungeonCamera;
     [SerializeField] private RenderTexture targetTexture;
-
-    [Header("Graphics Database")]
-    [SerializeField] private DungeonGraphics graphics;
 
     [Header("Viewport Layout")]
     [SerializeField] private ViewportLayout layout;
 
     private Texture2D frameBuffer;
     private Color32[] framePixels;
+
+    private int viewWidth;
+    private int viewHeight;
 
     private DungeonMap currentMap;
     private bool frameDirty = true;
@@ -80,9 +80,19 @@ namespace DM.Rendering
 
     private void CreateFrameBuffer()
     {
+      viewWidth =
+          layout != null && layout.Width > 0
+              ? layout.Width
+              : DefaultViewWidth;
+
+      viewHeight =
+          layout != null && layout.Height > 0
+              ? layout.Height
+              : DefaultViewHeight;
+
       frameBuffer = new Texture2D(
-          ViewWidth,
-          ViewHeight,
+          viewWidth,
+          viewHeight,
           TextureFormat.RGBA32,
           false
       );
@@ -91,53 +101,46 @@ namespace DM.Rendering
       frameBuffer.filterMode = FilterMode.Point;
       frameBuffer.wrapMode = TextureWrapMode.Clamp;
 
-      framePixels = new Color32[ViewWidth * ViewHeight];
+      framePixels = new Color32[viewWidth * viewHeight];
     }
 
     private void DrawDungeonFrame()
     {
       Clear(new Color32(0, 0, 0, 255));
 
-      if (graphics == null || layout == null)
+      if (layout == null)
       {
         ApplyFrameBuffer();
         return;
       }
 
-      DrawPiece(
-          graphics.Floor,
-          layout.Floor
-      );
-
-      DrawPiece(
-          graphics.Ceiling,
-          layout.Ceiling
-      );
-
-      DrawPiece(
-          graphics.WallF3L,
-          layout.WallF3L
-      );
-
-      DrawPiece(
-          graphics.WallF3R,
-          layout.WallF3R
-      );
+      foreach (ViewportPiece piece in layout.Pieces)
+      {
+        DrawPiece(piece);
+      }
 
       ApplyFrameBuffer();
     }
 
-    private void DrawPiece(
-        Texture2D texture,
-        ViewportPiece piece)
+    private void DrawPiece(ViewportPiece piece)
     {
-      if (texture == null || piece == null)
+      if (piece == null)
+      {
+        return;
+      }
+
+      if (!piece.Enabled)
+      {
+        return;
+      }
+
+      if (piece.Texture == null)
       {
         return;
       }
 
       Blit(
-          texture,
+          piece.Texture,
           piece.X,
           piece.Y
       );
@@ -175,7 +178,7 @@ namespace DM.Rendering
 
         if (
             targetY < 0 ||
-            targetY >= ViewHeight)
+            targetY >= viewHeight)
         {
           continue;
         }
@@ -190,7 +193,7 @@ namespace DM.Rendering
 
           if (
               targetX < 0 ||
-              targetX >= ViewWidth)
+              targetX >= viewWidth)
           {
             continue;
           }
@@ -207,7 +210,7 @@ namespace DM.Rendering
           }
 
           framePixels[
-              targetY * ViewWidth +
+              targetY * viewWidth +
               targetX
           ] = sourceColour;
         }
