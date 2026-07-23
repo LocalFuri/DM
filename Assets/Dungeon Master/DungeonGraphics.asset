@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b83340e0735ed540b593f5f35d0d58c, type: 3}
+  m_Name: DungeonGraphics
+  m_EditorClassIdentifier: Assembly-CSharp::DM.Rendering.DungeonGraphics
+  Ceiling: {fileID: 0}
+  Floor: {fileID: 0}
+  FrontWallF0: {fileID: 0}
+  FrontWallF1: {fileID: 0}
+  FrontWallF2: {fileID: 0}
+  FrontWallF3: {fileID: 0}
+  LeftWallF0: {fileID: 0}
+  LeftWallF1: {fileID: 0}
+  LeftWallF2: {fileID: 0}
+  LeftWallF3: {fileID: 0}
+  RightWallF0: {fileID: 0}
+  RightWallF1: {fileID: 0}
+  RightWallF2: {fileID: 0}
+  RightWallF3: {fileID: 0}
+  SideWallLeft: {fileID: 0}
+  SideWallRight: {fileID: 0}
+  DoorClosed: {fileID: 0}
+  DoorOpen: {fileID: 0}
+  DoorFrameLeft: {fileID: 0}
+  DoorFrameRight: {fileID: 0}
+  DoorFrameTop: {fileID: 0}
+  Alcove: {fileID: 0}
+  WallSwitch: {fileID: 0}
+  TorchHolder: {fileID: 0}
+  WallOrnament: {fileID: 0}
+  FrontWallMask: {fileID: 0}
+  LeftWallMask: {fileID: 0}
+  RightWallMask: {fileID: 0}
+  DoorMask: {fileID: 0}
