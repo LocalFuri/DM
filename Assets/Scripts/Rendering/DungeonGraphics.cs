@@ -68,5 +68,54 @@ namespace DM.Rendering
     public Texture2D WallSwitch;
     public Texture2D TorchHolder;
     public Texture2D WallOrnament;
+
+    public Texture2D GetTexture(DungeonGraphicType graphic)
+    {
+      switch (graphic)
+      {
+        case DungeonGraphicType.Ceiling:
+          return Ceiling;
+        case DungeonGraphicType.Floor:
+          return Floor;
+        case DungeonGraphicType.WallF0L:
+          return WallF0L;
+        case DungeonGraphicType.WallF0R:
+          return WallF0R;
+        case DungeonGraphicType.WallF1L:
+          return WallF1L;
+        case DungeonGraphicType.WallF1R:
+          return WallF1R;
+        case DungeonGraphicType.WallF2L:
+          return WallF2L;
+        case DungeonGraphicType.WallF2R:
+          return WallF2R;
+        case DungeonGraphicType.WallF3L:
+          return WallF3L;
+        case DungeonGraphicType.WallF3R:
+          return WallF3R;
+        case DungeonGraphicType.WallS2L:
+          return WallS2L;
+        case DungeonGraphicType.WallS2R:
+          return WallS2R;
+        case DungeonGraphicType.WallS3L:
+          return WallS3L;
+        case DungeonGraphicType.WallS3R:
+          return WallS3R;
+        case DungeonGraphicType.DoorClosed:
+          return DoorClosed;
+        case DungeonGraphicType.DoorOpen:
+          return DoorOpen;
+        case DungeonGraphicType.Alcove:
+          return Alcove;
+        case DungeonGraphicType.WallSwitch:
+          return WallSwitch;
+        case DungeonGraphicType.TorchHolder:
+          return TorchHolder;
+        case DungeonGraphicType.WallOrnament:
+          return WallOrnament;
+        default:
+          return null;
+      }
+    }
   }
 }

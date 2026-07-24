@@ -15,6 +15,9 @@ namespace DM.Rendering
     [Header("Viewport Layout")]
     [SerializeField] private ViewportLayout layout;
 
+    [Header("Graphics Database")]
+    [SerializeField] private DungeonGraphics graphics;
+
     private Texture2D frameBuffer;
     private Color32[] framePixels;
 
@@ -108,7 +111,7 @@ namespace DM.Rendering
     {
       Clear(new Color32(0, 0, 0, 255));
 
-      if (layout == null)
+      if (layout == null || graphics == null)
       {
         ApplyFrameBuffer();
         return;
@@ -134,13 +137,15 @@ namespace DM.Rendering
         return;
       }
 
-      if (piece.Texture == null)
+      Texture2D texture = graphics.GetTexture(piece.Graphic);
+
+      if (texture == null)
       {
         return;
       }
 
       Blit(
-          piece.Texture,
+          texture,
           piece.X,
           piece.Y
       );
