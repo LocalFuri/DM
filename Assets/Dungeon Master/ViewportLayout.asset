@@ -20,11 +20,11 @@ MonoBehaviour:
     X: 0
     Y: 0
     Enabled: 1
-  - Name: 
+  - Name: Ceiling
     Texture: {fileID: 0}
     X: 0
-    Y: 0
-    Enabled: 0
+    Y: 140
+    Enabled: 1
   - Name: 
     Texture: {fileID: 0}
     X: 0
