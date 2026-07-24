@@ -22,7 +22,7 @@ namespace DM.Rendering
   {
     public string Name;
 
-    public Texture2D Texture;
+    public DungeonGraphicType Graphic;
 
     public int X;
     public int Y;
