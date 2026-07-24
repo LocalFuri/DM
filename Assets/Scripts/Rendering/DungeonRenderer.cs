@@ -25,25 +25,17 @@ namespace DM.Rendering
     private int viewHeight;
 
     private DungeonMap currentMap;
-    private bool frameDirty = true;
+
+    private void Awake()
+    {
+      Debug.Log("DungeonRenderer Awake.");
+
+      CreateFrameBuffer();
+    }
 
     private void Start()
     {
-      CreateFrameBuffer();
-
-      // Temporary first render until the map and player system
-      // calls Render(...) itself.
-      Render(null);
-    }
-
-    private void OnEnable()
-    {
-      Camera.onPostRender += HandleCameraPostRender;
-    }
-
-    private void OnDisable()
-    {
-      Camera.onPostRender -= HandleCameraPostRender;
+      Debug.Log("DungeonRenderer Start.");
     }
 
     private void OnDestroy()
@@ -56,29 +48,18 @@ namespace DM.Rendering
 
     public void Render(DungeonMap map)
     {
+      Debug.Log("DungeonRenderer Render called.");
+
       currentMap = map;
-      frameDirty = true;
-    }
 
-    private void HandleCameraPostRender(Camera renderedCamera)
-    {
-      if (renderedCamera != dungeonCamera)
-      {
-        return;
-      }
+      DrawDungeonFrame();
 
-      if (targetTexture == null || frameBuffer == null)
-      {
-        return;
-      }
+      Graphics.Blit(
+          frameBuffer,
+          targetTexture
+      );
 
-      if (frameDirty)
-      {
-        DrawDungeonFrame();
-        frameDirty = false;
-      }
-
-      Graphics.Blit(frameBuffer, targetTexture);
+      Debug.Log("DungeonRenderer frame blitted.");
     }
 
     private void CreateFrameBuffer()
@@ -104,18 +85,45 @@ namespace DM.Rendering
       frameBuffer.filterMode = FilterMode.Point;
       frameBuffer.wrapMode = TextureWrapMode.Clamp;
 
-      framePixels = new Color32[viewWidth * viewHeight];
+      framePixels =
+          new Color32[viewWidth * viewHeight];
     }
 
     private void DrawDungeonFrame()
     {
-      Clear(new Color32(0, 0, 0, 255));
+      Clear(
+          new Color32(
+              0,
+              0,
+              0,
+              255
+          )
+      );
 
-      if (layout == null || graphics == null)
+      if (layout == null)
       {
+        Debug.LogWarning(
+            "DungeonRenderer: ViewportLayout is missing."
+        );
+
         ApplyFrameBuffer();
         return;
       }
+
+      if (graphics == null)
+      {
+        Debug.LogWarning(
+            "DungeonRenderer: DungeonGraphics is missing."
+        );
+
+        ApplyFrameBuffer();
+        return;
+      }
+
+      Debug.Log(
+          "DungeonRenderer pieces: " +
+          layout.Pieces.Count
+      );
 
       foreach (ViewportPiece piece in layout.Pieces)
       {
@@ -129,6 +137,10 @@ namespace DM.Rendering
     {
       if (piece == null)
       {
+        Debug.LogWarning(
+            "DungeonRenderer: Null viewport piece."
+        );
+
         return;
       }
 
@@ -137,10 +149,16 @@ namespace DM.Rendering
         return;
       }
 
-      Texture2D texture = graphics.GetTexture(piece.Graphic);
+      Texture2D texture =
+          graphics.GetTexture(piece.Graphic);
 
       if (texture == null)
       {
+        Debug.LogWarning(
+            "DungeonRenderer: Missing texture for " +
+            piece.Graphic
+        );
+
         return;
       }
 
@@ -197,8 +215,8 @@ namespace DM.Rendering
               destinationX + sourceX;
 
           if (
-              targetX < 0 ||
-              targetX >= viewWidth)
+            targetX < 0 ||
+            targetX >= viewWidth)
           {
             continue;
           }
