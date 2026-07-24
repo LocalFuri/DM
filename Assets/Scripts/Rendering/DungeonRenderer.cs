@@ -149,6 +149,11 @@ namespace DM.Rendering
         return;
       }
 
+      if (piece.Graphic == DungeonGraphicType.None)
+      {
+        return;
+      }
+
       Texture2D texture =
           graphics.GetTexture(piece.Graphic);
 
