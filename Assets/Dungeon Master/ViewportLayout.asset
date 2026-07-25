@@ -26,10 +26,10 @@ MonoBehaviour:
     Y: 140
     Enabled: 1
   - Name: Wall F3L
-    Graphic: 0
+    Graphic: 9
     X: 120
     Y: 85
-    Enabled: 0
+    Enabled: 1
   - Name: 
     Graphic: 0
     X: 0
