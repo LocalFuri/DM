@@ -1,15 +1,15 @@
 fileFormatVersion: 2
-guid: fffb47473a725ac49a1a7f81162d16af
+guid: dd6a4dc82dc18a948b41a4aaec1ce3fc
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 8262639601199797708
-    second: DungeonMaster_CorridorReference_0
+      213: -284301418908363883
+    second: DungeonMaster_ViewportReference_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
     mipMapMode: 0
-    enableMipMap: 1
+    enableMipMap: 0
     sRGBTexture: 1
     linearTexture: 0
     fadeOut: 0
@@ -37,7 +37,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 0
+    filterMode: 1
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -55,9 +55,9 @@ TextureImporter:
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
-  alphaIsTransparency: 0
+  alphaIsTransparency: 1
   spriteTessellationDetail: -1
-  textureType: 0
+  textureType: 8
   textureShape: 1
   singleChannelComponent: 0
   flipbookRows: 1
@@ -75,7 +75,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 0
+    textureCompression: 1
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: DungeonMaster_CorridorReference_0
+      name: DungeonMaster_ViewportReference_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 640
-        height: 339
+        width: 448
+        height: 272
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: cc5d690a0facaa270800000000000000
-      internalID: 8262639601199797708
+      spriteID: 593d3d4ad55fd0cf0800000000000000
+      internalID: -284301418908363883
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      DungeonMaster_CorridorReference_0: 8262639601199797708
+      DungeonMaster_ViewportReference_0: -284301418908363883
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
