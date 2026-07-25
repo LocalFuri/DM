@@ -29,7 +29,7 @@ MonoBehaviour:
     Texture: {fileID: 2800000, guid: 575bb58bb53bb1e4698f3563d4379793, type: 3}
     X: 120
     Y: 85
-    Enabled: 1
+    Enabled: 0
   - Name: 
     Texture: {fileID: 0}
     X: 0
