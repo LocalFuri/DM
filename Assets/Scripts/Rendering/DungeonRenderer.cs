@@ -65,6 +65,11 @@ namespace DM.Rendering
       frameDirty = true;
     }
 
+    public void RequestRedraw()
+    {
+      frameDirty = true;
+    }
+
     private void HandleCameraPostRender(Camera renderedCamera)
     {
       if (renderedCamera != dungeonCamera)

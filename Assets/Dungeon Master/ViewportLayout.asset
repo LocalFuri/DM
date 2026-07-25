@@ -27,7 +27,7 @@ MonoBehaviour:
     Enabled: 1
   - Name: Wall F3L
     Graphic: 9
-    X: 60
+    X: 57
     Y: 85
     Enabled: 1
   - Name: Wall F3R

@@ -60,7 +60,22 @@ public class ViewportLayoutEditor : EditorWindow
     {
       EditorUtility.SetDirty(layout);
       AssetDatabase.SaveAssets();
+      RefreshDungeonRenderer();
     }
+  }
+
+  private static void RefreshDungeonRenderer()
+  {
+    if (!Application.isPlaying)
+      return;
+
+    DungeonRenderer renderer =
+        Object.FindAnyObjectByType<DungeonRenderer>();
+
+    if (renderer == null)
+      return;
+
+    renderer.RequestRedraw();
   }
 
   private static bool DrawIntStepper(string label, ref int value)
