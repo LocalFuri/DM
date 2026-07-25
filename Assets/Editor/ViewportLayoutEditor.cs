@@ -11,13 +11,18 @@ public class ViewportLayoutEditor : EditorWindow
   private const string PrefsLayoutGuidKey = "ViewportLayoutEditor.LayoutGuid";
   private const string PrefsReferenceTextureGuidKey =
       "ViewportLayoutEditor.ReferenceTextureGuid";
+  private const float ApproximatePieceCardHeight = 185f;
 
   [System.NonSerialized]
   private ViewportLayout layout;
   private Vector2 scroll;
   private bool[] rememberedEnabledStates;
   private int snap = 1;
+
+  // Single source of truth for selection.
   private int selectedPieceIndex;
+  private bool pendingScrollToSelected;
+  private bool selectionChangedThisFrame;
 
   private Texture2D referenceTexture;
   private bool showOverlay;
@@ -62,6 +67,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnGUI()
   {
+    selectionChangedThisFrame = false;
+
     DrawOverlayControls();
 
     EditorGUI.BeginChangeCheck();
@@ -75,6 +82,7 @@ public class ViewportLayoutEditor : EditorWindow
       layout = newLayout;
       rememberedEnabledStates = null;
       selectedPieceIndex = 0;
+      pendingScrollToSelected = true;
       SaveAssetGuid(PrefsLayoutGuidKey, layout);
     }
 
@@ -112,98 +120,138 @@ public class ViewportLayoutEditor : EditorWindow
     {
       ViewportPiece piece = layout.Pieces[i];
       bool isSelected = i == selectedPieceIndex;
-
-      Color previousBg = GUI.backgroundColor;
-      if (isSelected)
-        GUI.backgroundColor = new Color(0.45f, 0.7f, 1f);
-
-      EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-      GUI.backgroundColor = previousBg;
-
-      EditorGUILayout.BeginHorizontal();
-      EditorGUILayout.LabelField(
-          isSelected ? $"▶ {piece.Name}" : piece.Name,
-          EditorStyles.boldLabel);
-      if (GUILayout.Button("Select", GUILayout.Width(60)))
-        selectedPieceIndex = i;
-      EditorGUILayout.EndHorizontal();
-
-      EditorGUI.BeginChangeCheck();
-      piece.Name = EditorGUILayout.TextField("Name", piece.Name);
-      piece.Enabled = EditorGUILayout.Toggle("Enabled", piece.Enabled);
-      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup("Graphic", piece.Graphic);
-      if (EditorGUI.EndChangeCheck())
-      {
-        selectedPieceIndex = i;
-        changed = true;
-      }
-
-      if (DrawIntStepper("X", ref piece.X, snap))
-      {
-        selectedPieceIndex = i;
-        changed = true;
-      }
-
-      if (DrawIntStepper("Y", ref piece.Y, snap))
-      {
-        selectedPieceIndex = i;
-        changed = true;
-      }
-
-      EditorGUILayout.BeginHorizontal();
-
-      using (new EditorGUI.DisabledScope(i <= 0))
-      {
-        if (GUILayout.Button("Move Up"))
-        {
-          SwapPieces(i, i - 1);
-          if (selectedPieceIndex == i)
-            selectedPieceIndex = i - 1;
-          else if (selectedPieceIndex == i - 1)
-            selectedPieceIndex = i;
-          changed = true;
-        }
-      }
-
-      using (new EditorGUI.DisabledScope(i >= layout.Pieces.Count - 1))
-      {
-        if (GUILayout.Button("Move Down"))
-        {
-          SwapPieces(i, i + 1);
-          if (selectedPieceIndex == i)
-            selectedPieceIndex = i + 1;
-          else if (selectedPieceIndex == i + 1)
-            selectedPieceIndex = i;
-          changed = true;
-        }
-      }
-
-      if (GUILayout.Button("Solo"))
-      {
-        selectedPieceIndex = i;
-        SoloPiece(i);
-        PersistChanges();
-      }
-
-      EditorGUILayout.EndHorizontal();
-
-      EditorGUILayout.EndVertical();
-
-      if (Event.current.type == EventType.MouseDown)
-      {
-        Rect cardRect = GUILayoutUtility.GetLastRect();
-        if (cardRect.Contains(Event.current.mousePosition))
-        {
-          selectedPieceIndex = i;
-          Repaint();
-        }
-      }
+      DrawPieceCard(i, piece, isSelected, ref changed);
     }
 
     EditorGUILayout.EndScrollView();
 
+    // Never change scroll while the scroll view group is open.
+    if (pendingScrollToSelected)
+    {
+      ScrollToSelectedPiece();
+      pendingScrollToSelected = false;
+    }
+
     if (EditorGUI.EndChangeCheck() || changed)
       PersistChanges();
+
+    if (selectionChangedThisFrame)
+      Repaint();
+  }
+
+  private void DrawPieceCard(
+      int index,
+      ViewportPiece piece,
+      bool isSelected,
+      ref bool changed)
+  {
+    Color previousBg = GUI.backgroundColor;
+    if (isSelected)
+      GUI.backgroundColor = new Color(0.2f, 0.55f, 1f, 1f);
+
+    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+    GUI.backgroundColor = previousBg;
+
+    EditorGUILayout.BeginHorizontal();
+    EditorGUILayout.LabelField(
+        isSelected ? $"▶ {piece.Name}" : piece.Name,
+        EditorStyles.boldLabel);
+    if (GUILayout.Button("Select", GUILayout.Width(60)))
+      SelectPiece(index);
+    EditorGUILayout.EndHorizontal();
+
+    EditorGUI.BeginChangeCheck();
+    piece.Name = EditorGUILayout.TextField("Name", piece.Name);
+    piece.Enabled = EditorGUILayout.Toggle("Enabled", piece.Enabled);
+    piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup("Graphic", piece.Graphic);
+    if (EditorGUI.EndChangeCheck())
+    {
+      SelectPiece(index);
+      changed = true;
+    }
+
+    if (DrawIntStepper("X", ref piece.X, snap))
+    {
+      SelectPiece(index);
+      changed = true;
+    }
+
+    if (DrawIntStepper("Y", ref piece.Y, snap))
+    {
+      SelectPiece(index);
+      changed = true;
+    }
+
+    EditorGUILayout.BeginHorizontal();
+
+    using (new EditorGUI.DisabledScope(index <= 0))
+    {
+      if (GUILayout.Button("Move Up"))
+      {
+        SwapPieces(index, index - 1);
+        if (selectedPieceIndex == index)
+          SelectPiece(index - 1);
+        else if (selectedPieceIndex == index - 1)
+          SelectPiece(index);
+        changed = true;
+      }
+    }
+
+    using (new EditorGUI.DisabledScope(index >= layout.Pieces.Count - 1))
+    {
+      if (GUILayout.Button("Move Down"))
+      {
+        SwapPieces(index, index + 1);
+        if (selectedPieceIndex == index)
+          SelectPiece(index + 1);
+        else if (selectedPieceIndex == index + 1)
+          SelectPiece(index);
+        changed = true;
+      }
+    }
+
+    if (GUILayout.Button("Solo"))
+    {
+      SelectPiece(index);
+      SoloPiece(index);
+      changed = true;
+    }
+
+    EditorGUILayout.EndHorizontal();
+    EditorGUILayout.EndVertical();
+  }
+
+  private void SelectPiece(int index)
+  {
+    if (layout == null || layout.Pieces.Count == 0)
+    {
+      selectedPieceIndex = 0;
+      pendingScrollToSelected = true;
+      selectionChangedThisFrame = true;
+      GUI.FocusControl(null);
+      return;
+    }
+
+    int clamped = Mathf.Clamp(index, 0, layout.Pieces.Count - 1);
+    if (clamped != selectedPieceIndex)
+      selectionChangedThisFrame = true;
+
+    selectedPieceIndex = clamped;
+    pendingScrollToSelected = true;
+    GUI.FocusControl(null);
+  }
+
+  private void ScrollToSelectedPiece()
+  {
+    if (layout == null || layout.Pieces.Count == 0)
+    {
+      scroll.y = 0f;
+      return;
+    }
+
+    scroll.y = Mathf.Max(
+        0f,
+        selectedPieceIndex * ApproximatePieceCardHeight - 20f);
   }
 
   private void DrawSelectedPieceHeader()
@@ -217,18 +265,18 @@ public class ViewportLayoutEditor : EditorWindow
     {
       if (GUILayout.Button("Previous Piece"))
       {
-        selectedPieceIndex--;
-        ClampSelectedPieceIndex();
-        GUI.FocusControl(null);
-        Repaint();
+        SelectPiece(
+            selectedPieceIndex <= 0
+                ? layout.Pieces.Count - 1
+                : selectedPieceIndex - 1);
       }
 
       if (GUILayout.Button("Next Piece"))
       {
-        selectedPieceIndex++;
-        ClampSelectedPieceIndex();
-        GUI.FocusControl(null);
-        Repaint();
+        SelectPiece(
+            selectedPieceIndex >= layout.Pieces.Count - 1
+                ? 0
+                : selectedPieceIndex + 1);
       }
     }
 
@@ -241,6 +289,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
+    ClampSelectedPieceIndex();
     ViewportPiece selected = layout.Pieces[selectedPieceIndex];
     string pieceLabel = string.IsNullOrEmpty(selected.Name)
         ? "(unnamed)"
@@ -307,7 +356,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     current.Use();
     PersistChanges();
-    Repaint();
   }
 
   private void ClampSelectedPieceIndex()
@@ -318,10 +366,10 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    if (selectedPieceIndex < 0)
-      selectedPieceIndex = layout.Pieces.Count - 1;
-    else if (selectedPieceIndex >= layout.Pieces.Count)
-      selectedPieceIndex = 0;
+    selectedPieceIndex = Mathf.Clamp(
+        selectedPieceIndex,
+        0,
+        layout.Pieces.Count - 1);
   }
 
   private void DrawOverlayControls()

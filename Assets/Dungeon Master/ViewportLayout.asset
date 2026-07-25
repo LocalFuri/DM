@@ -25,6 +25,11 @@ MonoBehaviour:
     X: 0
     Y: 0
     Enabled: 1
+  - Name: Wall F1L
+    Graphic: 5
+    X: 0
+    Y: 0
+    Enabled: 1
   - Name: Wall F3L
     Graphic: 9
     X: 0
@@ -45,11 +50,6 @@ MonoBehaviour:
     X: 0
     Y: 0
     Enabled: 0
-  - Name: Wall F1L
-    Graphic: 5
-    X: 0
-    Y: 0
-    Enabled: 1
   - Name: Wall F1R
     Graphic: 6
     X: 0
