@@ -15,20 +15,20 @@ MonoBehaviour:
   Width: 320
   Height: 200
   Pieces:
-  - Name: Floor
-    Graphic: 2
-    X: 0
-    Y: -1
-    Enabled: 1
-  - Name: Wall F3L
-    Graphic: 9
-    X: 56
-    Y: 85
-    Enabled: 0
   - Name: Ceiling
     Graphic: 1
     X: 0
-    Y: 140
+    Y: 164
+    Enabled: 1
+  - Name: Floor
+    Graphic: 2
+    X: 0
+    Y: 0
+    Enabled: 1
+  - Name: Wall F3L
+    Graphic: 9
+    X: 40
+    Y: 85
     Enabled: 1
   - Name: Wall F3R
     Graphic: 10
@@ -39,7 +39,7 @@ MonoBehaviour:
     Graphic: 7
     X: -3
     Y: 55
-    Enabled: 1
+    Enabled: 0
   - Name: Wall F1L
     Graphic: 5
     X: 0
