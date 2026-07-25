@@ -39,7 +39,7 @@ MonoBehaviour:
     Graphic: 7
     X: 0
     Y: 55
-    Enabled: 1
+    Enabled: 0
   - Name: Wall F2R
     Graphic: 8
     X: 0
@@ -49,7 +49,7 @@ MonoBehaviour:
     Graphic: 5
     X: 0
     Y: 0
-    Enabled: 0
+    Enabled: 1
   - Name: Wall F1R
     Graphic: 6
     X: 0
