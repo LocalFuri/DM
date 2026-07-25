@@ -138,9 +138,9 @@ namespace DM.Rendering
     {
       Clear(
           new Color32(
+              255,
               0,
-              0,
-              0,
+              255,
               255
           )
       );
