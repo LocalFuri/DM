@@ -15,6 +15,7 @@ public class ViewportLayoutEditor : EditorWindow
   private const string PrefsReferenceTextureGuidKey =
       "ViewportLayoutEditor.ReferenceTextureGuid";
 
+  [System.NonSerialized]
   private ViewportLayout layout;
   private Vector2 scroll;
   private bool[] rememberedEnabledStates;
@@ -57,6 +58,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnDisable()
   {
+    SaveAssetGuid(PrefsLayoutGuidKey, layout);
     SaveAssetGuid(PrefsReferenceTextureGuidKey, referenceTexture);
 
     EditorApplication.update -= MaintainOverlayVisual;
@@ -84,26 +86,25 @@ public class ViewportLayoutEditor : EditorWindow
     DrawTemporaryOverlayDiagnostics();
 
     EditorGUI.BeginChangeCheck();
-
-    ViewportLayout previousLayout = layout;
-    layout = (ViewportLayout)EditorGUILayout.ObjectField(
+    ViewportLayout newLayout = (ViewportLayout)EditorGUILayout.ObjectField(
         "Viewport Layout",
         layout,
         typeof(ViewportLayout),
         false);
-
-    if (layout != previousLayout)
+    if (EditorGUI.EndChangeCheck())
     {
+      layout = newLayout;
       rememberedEnabledStates = null;
       SaveAssetGuid(PrefsLayoutGuidKey, layout);
     }
 
     if (layout == null)
     {
-      EditorGUI.EndChangeCheck();
       EditorGUILayout.HelpBox("Select a ViewportLayout asset.", MessageType.Info);
       return;
     }
+
+    EditorGUI.BeginChangeCheck();
 
     DrawSnapToolbar();
 
@@ -209,14 +210,23 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void RestorePersistedAssets()
   {
-    layout = LoadAssetByGuid<ViewportLayout>(
-        EditorPrefs.GetString(PrefsLayoutGuidKey, string.Empty));
+    string savedLayoutGuid =
+        EditorPrefs.GetString(PrefsLayoutGuidKey, string.Empty);
+
+    layout = LoadViewportLayoutByGuid(savedLayoutGuid);
+
+    // Only auto-pick when nothing was saved / restored.
+    if (layout == null && string.IsNullOrEmpty(savedLayoutGuid))
+      layout = FindSingleViewportLayoutAsset();
+
+    if (layout != null)
+      SaveAssetGuid(PrefsLayoutGuidKey, layout);
 
     referenceTexture = LoadTextureByGuid(
         EditorPrefs.GetString(PrefsReferenceTextureGuidKey, string.Empty));
   }
 
-  private static T LoadAssetByGuid<T>(string guid) where T : Object
+  private static ViewportLayout LoadViewportLayoutByGuid(string guid)
   {
     if (string.IsNullOrEmpty(guid))
       return null;
@@ -225,7 +235,32 @@ public class ViewportLayoutEditor : EditorWindow
     if (string.IsNullOrEmpty(path))
       return null;
 
-    return AssetDatabase.LoadAssetAtPath<T>(path);
+    ViewportLayout loaded =
+        AssetDatabase.LoadAssetAtPath<ViewportLayout>(path);
+    if (loaded != null)
+      return loaded;
+
+    Object[] assets = AssetDatabase.LoadAllAssetsAtPath(path);
+    for (int i = 0; i < assets.Length; i++)
+    {
+      if (assets[i] is ViewportLayout viewportLayout)
+        return viewportLayout;
+    }
+
+    return null;
+  }
+
+  private static ViewportLayout FindSingleViewportLayoutAsset()
+  {
+    string[] guids = AssetDatabase.FindAssets("t:ViewportLayout");
+    if (guids == null || guids.Length != 1)
+      return null;
+
+    string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+    if (string.IsNullOrEmpty(path))
+      return null;
+
+    return AssetDatabase.LoadAssetAtPath<ViewportLayout>(path);
   }
 
   private static Texture2D LoadTextureByGuid(string guid)
