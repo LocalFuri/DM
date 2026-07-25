@@ -30,8 +30,8 @@ MonoBehaviour:
     X: 120
     Y: 85
     Enabled: 1
-  - Name: 
-    Graphic: 0
-    X: 0
-    Y: 0
-    Enabled: 0
+  - Name: Wall F3R
+    Graphic: 10
+    X: 40
+    Y: 85
+    Enabled: 1
