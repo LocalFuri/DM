@@ -3,13 +3,17 @@ using DM.Rendering;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.UIElements;
 
 public class ViewportLayoutEditor : EditorWindow
 {
   private static readonly int[] SnapValues = { 1, 2, 4, 8 };
   private static readonly BindingFlags InstanceFlags =
       BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+  private const string OverlayObjectName = "___DM_ViewportReferenceOverlay";
+  private const string PrefsLayoutGuidKey = "ViewportLayoutEditor.LayoutGuid";
+  private const string PrefsReferenceTextureGuidKey =
+      "ViewportLayoutEditor.ReferenceTextureGuid";
 
   private ViewportLayout layout;
   private Vector2 scroll;
@@ -21,14 +25,14 @@ public class ViewportLayoutEditor : EditorWindow
   private float overlayOpacity = 0.5f;
   private RawImage cachedViewportImage;
 
-  private EditorWindow hookedGameView;
-  private IMGUIContainer hookedContainer;
+  private GameObject overlayObject;
+  private RawImage overlayImage;
 
   // --- TEMPORARY OVERLAY DIAGNOSTICS (do not ship) ---
   private const float TestOverlayDurationSeconds = 5f;
   private int diagCallbackCount;
   private double diagLastCallbackTime;
-  private string diagLastFailureReason = "No callback yet.";
+  private string diagLastFailureReason = "No overlay update yet.";
   private bool diagGameViewFound;
   private bool diagRawImageFound;
   private bool diagRawImageActiveEnabled;
@@ -46,15 +50,18 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnEnable()
   {
-    EditorApplication.update += MaintainGameViewHook;
+    RestorePersistedAssets();
+    EditorApplication.update += MaintainOverlayVisual;
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
   }
 
   private void OnDisable()
   {
-    EditorApplication.update -= MaintainGameViewHook;
+    SaveAssetGuid(PrefsReferenceTextureGuidKey, referenceTexture);
+
+    EditorApplication.update -= MaintainOverlayVisual;
     EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
-    UnhookGameView();
+    DestroyOverlayObject();
     RepaintGameViews();
   }
 
@@ -65,12 +72,10 @@ public class ViewportLayoutEditor : EditorWindow
     diagLastCallbackTime = 0;
     diagLastFailureReason = "Play mode state changed.";
     testOverlayUntil = 0;
+    DestroyOverlayObject();
 
     if (state == PlayModeStateChange.ExitingPlayMode)
-    {
-      UnhookGameView();
       RepaintGameViews();
-    }
   }
 
   private void OnGUI()
@@ -88,7 +93,10 @@ public class ViewportLayoutEditor : EditorWindow
         false);
 
     if (layout != previousLayout)
+    {
       rememberedEnabledStates = null;
+      SaveAssetGuid(PrefsLayoutGuidKey, layout);
+    }
 
     if (layout == null)
     {
@@ -172,12 +180,15 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.LabelField("Reference Overlay", EditorStyles.boldLabel);
 
     EditorGUI.BeginChangeCheck();
-
     referenceTexture = (Texture2D)EditorGUILayout.ObjectField(
         "Reference Texture",
         referenceTexture,
         typeof(Texture2D),
         false);
+    if (EditorGUI.EndChangeCheck())
+      SaveAssetGuid(PrefsReferenceTextureGuidKey, referenceTexture);
+
+    EditorGUI.BeginChangeCheck();
 
     showOverlay = EditorGUILayout.Toggle("Show Overlay", showOverlay);
 
@@ -188,9 +199,79 @@ public class ViewportLayoutEditor : EditorWindow
         1f);
 
     if (EditorGUI.EndChangeCheck())
+    {
+      MaintainOverlayVisual();
       RepaintGameViews();
+    }
 
     EditorGUILayout.Space();
+  }
+
+  private void RestorePersistedAssets()
+  {
+    layout = LoadAssetByGuid<ViewportLayout>(
+        EditorPrefs.GetString(PrefsLayoutGuidKey, string.Empty));
+
+    referenceTexture = LoadTextureByGuid(
+        EditorPrefs.GetString(PrefsReferenceTextureGuidKey, string.Empty));
+  }
+
+  private static T LoadAssetByGuid<T>(string guid) where T : Object
+  {
+    if (string.IsNullOrEmpty(guid))
+      return null;
+
+    string path = AssetDatabase.GUIDToAssetPath(guid);
+    if (string.IsNullOrEmpty(path))
+      return null;
+
+    return AssetDatabase.LoadAssetAtPath<T>(path);
+  }
+
+  private static Texture2D LoadTextureByGuid(string guid)
+  {
+    if (string.IsNullOrEmpty(guid))
+      return null;
+
+    string path = AssetDatabase.GUIDToAssetPath(guid);
+    if (string.IsNullOrEmpty(path))
+      return null;
+
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    if (texture != null)
+      return texture;
+
+    Object[] assets = AssetDatabase.LoadAllAssetsAtPath(path);
+    for (int i = 0; i < assets.Length; i++)
+    {
+      if (assets[i] is Texture2D texture2D)
+        return texture2D;
+    }
+
+    Object main = AssetDatabase.LoadMainAssetAtPath(path);
+    if (main is Sprite sprite && sprite.texture != null)
+      return sprite.texture;
+
+    return null;
+  }
+
+  private static void SaveAssetGuid(string prefsKey, Object asset)
+  {
+    if (asset == null)
+    {
+      EditorPrefs.SetString(prefsKey, string.Empty);
+      return;
+    }
+
+    string path = AssetDatabase.GetAssetPath(asset);
+    if (string.IsNullOrEmpty(path))
+    {
+      EditorPrefs.SetString(prefsKey, string.Empty);
+      return;
+    }
+
+    string guid = AssetDatabase.AssetPathToGUID(path);
+    EditorPrefs.SetString(prefsKey, guid ?? string.Empty);
   }
 
   // --- TEMPORARY OVERLAY DIAGNOSTICS (do not ship) ---
@@ -201,7 +282,9 @@ public class ViewportLayoutEditor : EditorWindow
         "TEMPORARY Overlay Diagnostics",
         EditorStyles.boldLabel);
     EditorGUILayout.HelpBox(
-        "Temporary diagnostics only. Remove after the overlay failure is confirmed.",
+        "Temporary diagnostics only. Remove after the overlay failure is confirmed.\n" +
+        "Overlay now uses a temporary editor-only Canvas RawImage sibling " +
+        "(not Game View IMGUI).",
         MessageType.Warning);
 
     RefreshDiagnosticSnapshot();
@@ -234,8 +317,11 @@ public class ViewportLayoutEditor : EditorWindow
             ? diagLastCallbackTime.ToString("0.000")
             : "never");
     EditorGUILayout.LabelField("Last failure reason", diagLastFailureReason);
+    EditorGUILayout.LabelField(
+        "Temp overlay object exists",
+        overlayObject != null ? "yes" : "no");
 
-    bool testActive = EditorApplication.timeSinceStartup < testOverlayUntil;
+    bool testActive = IsTestOverlayActive();
     EditorGUILayout.LabelField(
         "Test Overlay active",
         testActive
@@ -249,7 +335,7 @@ public class ViewportLayoutEditor : EditorWindow
         testOverlayUntil =
             EditorApplication.timeSinceStartup + TestOverlayDurationSeconds;
         diagLastFailureReason = "Test Overlay started.";
-        MaintainGameViewHook();
+        MaintainOverlayVisual();
         RepaintGameViews();
         Repaint();
       }
@@ -263,7 +349,6 @@ public class ViewportLayoutEditor : EditorWindow
     EditorWindow gameView = FindGameView();
     diagGameViewFound = gameView != null;
 
-    cachedViewportImage = null;
     RawImage rawImage = FindViewportRawImage();
     cachedViewportImage = rawImage;
     diagRawImageFound = rawImage != null;
@@ -277,39 +362,18 @@ public class ViewportLayoutEditor : EditorWindow
     diagGameViewRect = default;
     diagOverlayRect = default;
 
-    if (gameView == null)
-    {
-      if (diagLastFailureReason == "No callback yet."
-          || string.IsNullOrEmpty(diagLastFailureReason))
-      {
-        diagLastFailureReason = "Game View not found.";
-      }
+    if (rawImage != null && TryGetRawImageScreenRect(rawImage, out Rect screenRect))
+      diagOverlayRect = screenRect;
 
-      return;
-    }
-
-    if (rawImage == null)
-      return;
-
-    if (!TryGetRawImageScreenRect(rawImage, out Rect screenRect))
-      return;
-
-    if (!TryGetGameViewImageRects(
+    if (gameView != null
+        && TryGetGameViewImageRects(
             gameView,
-            out Rect groupRect,
+            out _,
             out Rect targetInView,
-            out Vector2 renderSize))
+            out _))
     {
-      return;
+      diagGameViewRect = targetInView;
     }
-
-    diagGameViewRect = targetInView;
-    diagOverlayRect = MapGamePixelsToGameViewGui(
-        screenRect,
-        targetInView,
-        Mathf.Max(1, Mathf.RoundToInt(renderSize.x)),
-        Mathf.Max(1, Mathf.RoundToInt(renderSize.y)));
-    _ = groupRect;
   }
 
   private static string FormatRect(Rect rect)
@@ -354,207 +418,148 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.EndHorizontal();
   }
 
-  private void MaintainGameViewHook()
+  private void MaintainOverlayVisual()
   {
-    // TEMPORARY: always keep the Game View hook in Play Mode so diagnostics
-    // and Test Overlay can observe callback invocations.
     if (!Application.isPlaying)
     {
-      if (hookedContainer != null)
-        UnhookGameView();
+      DestroyOverlayObject();
       return;
     }
-
-    EditorWindow gameView = FindGameView();
-    diagGameViewFound = gameView != null;
-    if (gameView == null)
-    {
-      UnhookGameView();
-      diagLastFailureReason = "Game View not found.";
-      Repaint();
-      return;
-    }
-
-    if (hookedGameView != gameView || hookedContainer == null)
-    {
-      UnhookGameView();
-      if (!HookGameView(gameView))
-      {
-        diagLastFailureReason =
-            "Game View found, but IMGUIContainer hook failed.";
-        Repaint();
-        return;
-      }
-    }
-
-    if (IsTestOverlayActive())
-    {
-      RepaintGameViews();
-      Repaint();
-    }
-    else
-    {
-      // Keep diagnostics labels live while playing.
-      Repaint();
-    }
-  }
-
-  private bool HookGameView(EditorWindow gameView)
-  {
-    IMGUIContainer container =
-        gameView.rootVisualElement?.Q<IMGUIContainer>();
-
-    if (container == null)
-      return false;
-
-    container.onGUIHandler += DrawGameViewOverlay;
-    hookedContainer = container;
-    hookedGameView = gameView;
-    return true;
-  }
-
-  private void UnhookGameView()
-  {
-    if (hookedContainer != null)
-      hookedContainer.onGUIHandler -= DrawGameViewOverlay;
-
-    hookedContainer = null;
-    hookedGameView = null;
-  }
-
-  private void DrawGameViewOverlay()
-  {
-    if (Event.current.type != EventType.Repaint)
-      return;
 
     diagCallbackCount++;
     diagLastCallbackTime = EditorApplication.timeSinceStartup;
 
     bool testActive = IsTestOverlayActive();
-    bool wantReference =
-        showOverlay && referenceTexture != null && Application.isPlaying;
+    bool wantReference = showOverlay && referenceTexture != null;
 
-    if (!Application.isPlaying)
+    if (!testActive && !wantReference)
     {
-      diagLastFailureReason = "Not in Play Mode.";
-      return;
-    }
-
-    if (!wantReference && !testActive)
-    {
+      DestroyOverlayObject();
       diagLastFailureReason =
-          "Callback ran, but Show Overlay is off and Test Overlay is inactive.";
+          "Overlay idle (Show Overlay off / no texture, Test Overlay inactive).";
+      Repaint();
       return;
     }
 
-    EditorWindow gameView = hookedGameView;
-    if (gameView == null)
+    if (!TryGetViewportRawImage(out RawImage dungeonImage))
     {
-      diagLastFailureReason = "Callback ran, but hooked Game View is null.";
-      return;
-    }
-
-    if (!TryGetViewportRawImage(out RawImage viewportImage))
-    {
+      DestroyOverlayObject();
       diagLastFailureReason = "Dungeon RawImage not found.";
+      Repaint();
       return;
     }
 
-    if (!viewportImage.isActiveAndEnabled)
+    if (!dungeonImage.isActiveAndEnabled)
     {
+      DestroyOverlayObject();
       diagLastFailureReason = "RawImage found but not active/enabled.";
+      Repaint();
       return;
     }
 
-    if (!TryGetRawImageScreenRect(viewportImage, out Rect screenRect))
+    if (!EnsureOverlayObject(dungeonImage))
     {
-      diagLastFailureReason = "RawImage screen rectangle is invalid.";
+      diagLastFailureReason = "Failed to create temporary overlay RawImage.";
+      Repaint();
       return;
     }
 
-    if (!TryGetGameViewImageRects(
-            gameView,
-            out Rect groupRect,
-            out Rect targetInView,
-            out Vector2 renderSize))
-    {
-      diagLastFailureReason =
-          "Failed to read Game View zoom/target rectangles via reflection.";
-      return;
-    }
+    SyncOverlayTransform(dungeonImage);
+    ApplyOverlayAppearance(dungeonImage, testActive, wantReference);
 
-    Rect drawRect = MapGamePixelsToGameViewGui(
-        screenRect,
-        targetInView,
-        Mathf.Max(1, Mathf.RoundToInt(renderSize.x)),
-        Mathf.Max(1, Mathf.RoundToInt(renderSize.y)));
-
-    diagGameViewRect = targetInView;
-    diagOverlayRect = drawRect;
-
-    if (drawRect.width < 1f || drawRect.height < 1f)
-    {
-      diagLastFailureReason =
-          $"Overlay rectangle invalid: {FormatRect(drawRect)}";
-      return;
-    }
-
-    Color previousColor = GUI.color;
-    GUI.BeginGroup(groupRect);
+    if (TryGetRawImageScreenRect(dungeonImage, out Rect screenRect))
+      diagOverlayRect = screenRect;
 
     if (testActive)
+      diagLastFailureReason =
+          "Test Overlay draw issued (temporary Canvas RawImage).";
+    else
+      diagLastFailureReason =
+          "Reference overlay draw issued (temporary Canvas RawImage).";
+
+    Repaint();
+  }
+
+  private bool EnsureOverlayObject(RawImage dungeonImage)
+  {
+    if (overlayObject == null)
     {
-      // TEMPORARY: unmistakable solid red translucent probe.
-      EditorGUI.DrawRect(drawRect, new Color(1f, 0f, 0f, 0.45f));
-      diagLastFailureReason = "Test Overlay draw issued.";
+      overlayObject = GameObject.Find(OverlayObjectName);
+      if (overlayObject != null)
+        overlayImage = overlayObject.GetComponent<RawImage>();
+    }
+
+    if (overlayObject == null)
+    {
+      overlayObject = new GameObject(OverlayObjectName);
+      overlayObject.hideFlags = HideFlags.DontSave;
+      overlayImage = overlayObject.AddComponent<RawImage>();
+    }
+
+    if (overlayImage == null)
+    {
+      DestroyOverlayObject();
+      return false;
+    }
+
+    overlayImage.raycastTarget = false;
+
+    Transform parent = dungeonImage.transform.parent;
+    if (overlayObject.transform.parent != parent)
+      overlayObject.transform.SetParent(parent, false);
+
+    overlayObject.transform.SetAsLastSibling();
+    return true;
+  }
+
+  private void SyncOverlayTransform(RawImage dungeonImage)
+  {
+    RectTransform source = dungeonImage.rectTransform;
+    RectTransform dest = overlayImage.rectTransform;
+
+    dest.localScale = source.localScale;
+    dest.anchorMin = source.anchorMin;
+    dest.anchorMax = source.anchorMax;
+    dest.pivot = source.pivot;
+    dest.anchoredPosition = source.anchoredPosition;
+    dest.sizeDelta = source.sizeDelta;
+    dest.offsetMin = source.offsetMin;
+    dest.offsetMax = source.offsetMax;
+  }
+
+  private void ApplyOverlayAppearance(
+      RawImage dungeonImage,
+      bool testActive,
+      bool wantReference)
+  {
+    if (testActive)
+    {
+      overlayImage.texture = null;
+      overlayImage.uvRect = new Rect(0f, 0f, 1f, 1f);
+      overlayImage.color = new Color(1f, 0f, 0f, 0.45f);
+      return;
     }
 
     if (wantReference)
     {
-      GUI.color = new Color(1f, 1f, 1f, overlayOpacity);
-      GUI.DrawTextureWithTexCoords(
-          drawRect,
-          referenceTexture,
-          ToTexCoords(viewportImage.uvRect),
-          true);
-      GUI.color = previousColor;
-
-      if (!testActive)
-        diagLastFailureReason = "Reference overlay draw issued.";
+      overlayImage.texture = referenceTexture;
+      overlayImage.uvRect = dungeonImage.uvRect;
+      overlayImage.color = new Color(1f, 1f, 1f, overlayOpacity);
     }
-    else
+  }
+
+  private void DestroyOverlayObject()
+  {
+    if (overlayObject != null)
     {
-      GUI.color = previousColor;
+      if (Application.isPlaying)
+        Object.Destroy(overlayObject);
+      else
+        Object.DestroyImmediate(overlayObject);
     }
 
-    GUI.EndGroup();
-  }
-
-  private static Rect ToTexCoords(Rect uvRect)
-  {
-    return new Rect(uvRect.x, uvRect.y, uvRect.width, uvRect.height);
-  }
-
-  private static Rect MapGamePixelsToGameViewGui(
-      Rect gamePixelRect,
-      Rect targetInView,
-      int gameWidth,
-      int gameHeight)
-  {
-    if (gameWidth <= 0 || gameHeight <= 0)
-      return default;
-
-    float xMin = gamePixelRect.xMin / gameWidth;
-    float xMax = gamePixelRect.xMax / gameWidth;
-    float yMin = gamePixelRect.yMin / gameHeight;
-    float yMax = gamePixelRect.yMax / gameHeight;
-
-    // Game pixels: origin bottom-left. GameView GUI: origin top-left within targetInView.
-    return new Rect(
-        targetInView.x + xMin * targetInView.width,
-        targetInView.y + (1f - yMax) * targetInView.height,
-        (xMax - xMin) * targetInView.width,
-        (yMax - yMin) * targetInView.height);
+    overlayObject = null;
+    overlayImage = null;
   }
 
   private static bool TryGetGameViewImageRects(
@@ -651,7 +656,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     foreach (RawImage image in images)
     {
-      if (image != null && image.texture is RenderTexture)
+      if (image == null || image.gameObject.name == OverlayObjectName)
+        continue;
+
+      if (image.texture is RenderTexture)
         return image;
     }
 
