@@ -37,9 +37,9 @@ MonoBehaviour:
     Enabled: 1
   - Name: Wall F2L
     Graphic: 7
-    X: 0
-    Y: 0
-    Enabled: 0
+    X: 80
+    Y: 70
+    Enabled: 1
   - Name: Wall F1L
     Graphic: 5
     X: 0
