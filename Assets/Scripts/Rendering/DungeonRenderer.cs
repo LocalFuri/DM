@@ -25,6 +25,7 @@ namespace DM.Rendering
     private int viewHeight;
 
     private DungeonMap currentMap;
+    private bool frameDirty = true;
 
     private void Awake()
     {
@@ -36,6 +37,16 @@ namespace DM.Rendering
     private void Start()
     {
       Debug.Log("DungeonRenderer Start.");
+    }
+
+    private void OnEnable()
+    {
+      Camera.onPostRender += HandleCameraPostRender;
+    }
+
+    private void OnDisable()
+    {
+      Camera.onPostRender -= HandleCameraPostRender;
     }
 
     private void OnDestroy()
@@ -51,15 +62,44 @@ namespace DM.Rendering
       Debug.Log("DungeonRenderer Render called.");
 
       currentMap = map;
+      frameDirty = true;
+    }
 
-      DrawDungeonFrame();
+    private void HandleCameraPostRender(Camera renderedCamera)
+    {
+      if (renderedCamera != dungeonCamera)
+      {
+        return;
+      }
+
+      if (targetTexture == null)
+      {
+        Debug.LogWarning(
+            "DungeonRenderer: Target Texture is missing."
+        );
+
+        return;
+      }
+
+      if (frameBuffer == null)
+      {
+        Debug.LogWarning(
+            "DungeonRenderer: Framebuffer is missing."
+        );
+
+        return;
+      }
+
+      if (frameDirty)
+      {
+        DrawDungeonFrame();
+        frameDirty = false;
+      }
 
       Graphics.Blit(
           frameBuffer,
           targetTexture
       );
-
-      Debug.Log("DungeonRenderer frame blitted.");
     }
 
     private void CreateFrameBuffer()
@@ -220,8 +260,8 @@ namespace DM.Rendering
               destinationX + sourceX;
 
           if (
-            targetX < 0 ||
-            targetX >= viewWidth)
+              targetX < 0 ||
+              targetX >= viewWidth)
           {
             continue;
           }
