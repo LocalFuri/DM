@@ -1,6 +1,8 @@
 using DM.Rendering;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.UI;
 
 public class ViewportLayoutEditor : EditorWindow
 {
@@ -11,14 +13,42 @@ public class ViewportLayoutEditor : EditorWindow
   private bool[] rememberedEnabledStates;
   private int snap = 1;
 
+  private Texture2D referenceTexture;
+  private bool showOverlay;
+  private float overlayOpacity = 0.5f;
+  private RawImage cachedViewportImage;
+
   [MenuItem("Tools/Dungeon Master/Viewport Layout Editor")]
   public static void Open()
   {
     GetWindow<ViewportLayoutEditor>("Viewport Layout");
   }
 
+  private void OnEnable()
+  {
+    RenderPipelineManager.endCameraRendering += HandleEndCameraRendering;
+    EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
+  }
+
+  private void OnDisable()
+  {
+    RenderPipelineManager.endCameraRendering -= HandleEndCameraRendering;
+    EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+    RepaintGameViews();
+  }
+
+  private void HandlePlayModeStateChanged(PlayModeStateChange state)
+  {
+    cachedViewportImage = null;
+
+    if (state == PlayModeStateChange.ExitingPlayMode)
+      RepaintGameViews();
+  }
+
   private void OnGUI()
   {
+    DrawOverlayControls();
+
     EditorGUI.BeginChangeCheck();
 
     ViewportLayout previousLayout = layout;
@@ -108,6 +138,32 @@ public class ViewportLayoutEditor : EditorWindow
       PersistChanges();
   }
 
+  private void DrawOverlayControls()
+  {
+    EditorGUILayout.LabelField("Reference Overlay", EditorStyles.boldLabel);
+
+    referenceTexture = (Texture2D)EditorGUILayout.ObjectField(
+        "Reference Texture",
+        referenceTexture,
+        typeof(Texture2D),
+        false);
+
+    EditorGUI.BeginChangeCheck();
+    showOverlay = EditorGUILayout.Toggle("Show Overlay", showOverlay);
+    bool overlayToggled = EditorGUI.EndChangeCheck();
+
+    overlayOpacity = EditorGUILayout.Slider(
+        "Overlay Opacity",
+        overlayOpacity,
+        0f,
+        1f);
+
+    if (overlayToggled)
+      RepaintGameViews();
+
+    EditorGUILayout.Space();
+  }
+
   private void DrawSnapToolbar()
   {
     EditorGUILayout.BeginHorizontal();
@@ -134,6 +190,126 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     EditorGUILayout.EndHorizontal();
+  }
+
+  private void HandleEndCameraRendering(
+      ScriptableRenderContext context,
+      Camera camera)
+  {
+    if (!showOverlay || referenceTexture == null || !Application.isPlaying)
+      return;
+
+    if (camera == null || camera.cameraType != CameraType.Game)
+      return;
+
+    if (camera.targetTexture != null)
+      return;
+
+    if (!TryGetViewportScreenRect(out Rect viewportRect))
+      return;
+
+    float aspect =
+        (float)referenceTexture.width / referenceTexture.height;
+    Rect drawRect = FitAspect(viewportRect, aspect);
+
+    DrawOverlayTexture(camera, drawRect, referenceTexture, overlayOpacity);
+  }
+
+  private bool TryGetViewportScreenRect(out Rect rect)
+  {
+    rect = default;
+
+    if (cachedViewportImage == null)
+      cachedViewportImage = FindViewportRawImage();
+
+    if (cachedViewportImage == null)
+      return false;
+
+    RectTransform transform = cachedViewportImage.rectTransform;
+    Vector3[] corners = new Vector3[4];
+    transform.GetWorldCorners(corners);
+
+    float xMin = Mathf.Min(corners[0].x, corners[2].x);
+    float xMax = Mathf.Max(corners[0].x, corners[2].x);
+    float yMin = Mathf.Min(corners[0].y, corners[2].y);
+    float yMax = Mathf.Max(corners[0].y, corners[2].y);
+
+    rect = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+    return rect.width > 1f && rect.height > 1f;
+  }
+
+  private static RawImage FindViewportRawImage()
+  {
+    RawImage[] images = Object.FindObjectsByType<RawImage>(
+        FindObjectsInactive.Exclude);
+
+    foreach (RawImage image in images)
+    {
+      if (image != null && image.texture is RenderTexture)
+        return image;
+    }
+
+    return null;
+  }
+
+  private static Rect FitAspect(Rect container, float aspect)
+  {
+    float containerAspect = container.width / container.height;
+
+    if (containerAspect > aspect)
+    {
+      float width = container.height * aspect;
+      return new Rect(
+          container.x + (container.width - width) * 0.5f,
+          container.y,
+          width,
+          container.height);
+    }
+
+    float height = container.width / aspect;
+    return new Rect(
+        container.x,
+        container.y + (container.height - height) * 0.5f,
+        container.width,
+        height);
+  }
+
+  private static void DrawOverlayTexture(
+      Camera camera,
+      Rect screenRect,
+      Texture texture,
+      float opacity)
+  {
+    GL.PushMatrix();
+    GL.LoadPixelMatrix(
+        0f,
+        camera.pixelWidth,
+        0f,
+        camera.pixelHeight);
+
+    Graphics.DrawTexture(
+        screenRect,
+        texture,
+        new Rect(0f, 0f, 1f, 1f),
+        0,
+        0,
+        0,
+        0,
+        new Color(1f, 1f, 1f, opacity));
+
+    GL.PopMatrix();
+  }
+
+  private static void RepaintGameViews()
+  {
+    EditorWindow[] windows =
+        Resources.FindObjectsOfTypeAll<EditorWindow>();
+
+    foreach (EditorWindow window in windows)
+    {
+      if (window != null && window.GetType().Name == "GameView")
+        window.Repaint();
+    }
   }
 
   private void SoloPiece(int soloIndex)
