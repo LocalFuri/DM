@@ -10,7 +10,7 @@ public static class DungeonMasterBmpConverter
   private const byte TransparentGreen = 145;
   private const byte TransparentBlue = 109;
 
-  [MenuItem("Tools/Dungeon Master/Convert BMP Folder to Transparent PNG")]
+  [MenuItem("Tools/Convert BMP Folder to Transparent PNG")]
   private static void ConvertFolder()
   {
     string sourceFolder = EditorUtility.OpenFolderPanel(

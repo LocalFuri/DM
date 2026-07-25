@@ -18,7 +18,7 @@ MonoBehaviour:
   - Name: Floor
     Graphic: 2
     X: 0
-    Y: 0
+    Y: -1
     Enabled: 1
   - Name: Wall F3L
     Graphic: 9
