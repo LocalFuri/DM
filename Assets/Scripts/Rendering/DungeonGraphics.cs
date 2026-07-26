@@ -11,6 +11,10 @@ namespace DM.Rendering
     public Texture2D Ceiling;
     public Texture2D Floor;
 
+    [Header("Ceiling Strips")]
+    public Texture2D CeilingStrip84;
+    public Texture2D CeilingStrip85;
+
     [Header("Wall Graphics - F0")]
     public Texture2D WallF0L;
     public Texture2D WallF0R;
@@ -77,6 +81,10 @@ namespace DM.Rendering
           return Ceiling;
         case DungeonGraphicType.Floor:
           return Floor;
+        case DungeonGraphicType.CeilingStrip84:
+          return CeilingStrip84;
+        case DungeonGraphicType.CeilingStrip85:
+          return CeilingStrip85;
         case DungeonGraphicType.WallF0L:
           return WallF0L;
         case DungeonGraphicType.WallF0R:

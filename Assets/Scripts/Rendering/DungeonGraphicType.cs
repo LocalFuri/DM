@@ -31,6 +31,9 @@ namespace DM.Rendering
     Alcove,
     WallSwitch,
     TorchHolder,
-    WallOrnament
+    WallOrnament,
+
+    CeilingStrip84,
+    CeilingStrip85
   }
 }
