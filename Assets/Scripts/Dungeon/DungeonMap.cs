@@ -6,7 +6,7 @@ namespace DM.Dungeon
 {
   public class DungeonMap
   {
-    // Hall of Champions play-start (screenshot / test framing).
+    // Fallback start when playerStart is missing or invalid in map JSON.
     private const int HallOfChampionsStartX = 4;
     private const int HallOfChampionsStartY = 3;
     private static readonly DungeonFacing HallOfChampionsStartFacing =
@@ -79,11 +79,7 @@ namespace DM.Dungeon
       );
 
       map.LoadTiles(json);
-      map.SetPlayerStart(
-          HallOfChampionsStartX,
-          HallOfChampionsStartY,
-          HallOfChampionsStartFacing
-      );
+      map.ApplyPlayerStartFromHeader(header);
 
       return map;
     }
@@ -289,6 +285,86 @@ namespace DM.Dungeon
       }
     }
 
+    private void ApplyPlayerStartFromHeader(MapHeader header)
+    {
+      if (TryParsePlayerStart(
+              header,
+              out int startX,
+              out int startY,
+              out DungeonFacing startFacing))
+      {
+        SetPlayerStart(startX, startY, startFacing);
+        return;
+      }
+
+      Debug.LogWarning(
+          "DungeonMap: playerStart missing or invalid in map JSON; " +
+          $"falling back to ({HallOfChampionsStartX}," +
+          $"{HallOfChampionsStartY}) facing " +
+          $"{HallOfChampionsStartFacing}."
+      );
+
+      SetPlayerStart(
+          HallOfChampionsStartX,
+          HallOfChampionsStartY,
+          HallOfChampionsStartFacing
+      );
+    }
+
+    private bool TryParsePlayerStart(
+        MapHeader header,
+        out int startX,
+        out int startY,
+        out DungeonFacing startFacing)
+    {
+      startX = 0;
+      startY = 0;
+      startFacing = HallOfChampionsStartFacing;
+
+      if (header == null || header.playerStart == null)
+        return false;
+
+      PlayerStartData start = header.playerStart;
+      if (!TryParseFacing(start.facing, out startFacing))
+        return false;
+
+      startX = start.x;
+      startY = start.y;
+
+      if (!CanEnter(startX, startY))
+        return false;
+
+      return true;
+    }
+
+    private static bool TryParseFacing(
+        string facingName,
+        out DungeonFacing facing)
+    {
+      facing = HallOfChampionsStartFacing;
+
+      if (string.IsNullOrEmpty(facingName))
+        return false;
+
+      switch (facingName)
+      {
+        case "North":
+          facing = DungeonFacing.North;
+          return true;
+        case "East":
+          facing = DungeonFacing.East;
+          return true;
+        case "South":
+          facing = DungeonFacing.South;
+          return true;
+        case "West":
+          facing = DungeonFacing.West;
+          return true;
+        default:
+          return false;
+      }
+    }
+
     private void SetPlayerStart(
         int x,
         int y,
@@ -334,6 +410,15 @@ namespace DM.Dungeon
       public string name;
       public int width;
       public int height;
+      public PlayerStartData playerStart;
+    }
+
+    [Serializable]
+    private class PlayerStartData
+    {
+      public int x;
+      public int y;
+      public string facing;
     }
   }
 }
