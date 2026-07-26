@@ -5,6 +5,8 @@ using UnityEngine;
 public class DungeonDebugWindow : EditorWindow
 {
   private const float CellSize = 12f;
+  private const float MiniMapLabelLeftMargin = 20f;
+  private const float MiniMapLabelTopMargin = 16f;
 
   private static readonly Color WallColor = new Color(0.22f, 0.22f, 0.22f);
   private static readonly Color FloorColor = new Color(0.78f, 0.78f, 0.78f);
@@ -120,19 +122,30 @@ public class DungeonDebugWindow : EditorWindow
 
     float mapPixelWidth = map.Width * CellSize;
     float mapPixelHeight = map.Height * CellSize;
-    float scrollHeight = Mathf.Min(mapPixelHeight + 4f, 320f);
+    float contentWidth = MiniMapLabelLeftMargin + mapPixelWidth;
+    float contentHeight = MiniMapLabelTopMargin + mapPixelHeight;
+    float scrollHeight = Mathf.Min(contentHeight + 4f, 340f);
 
     miniMapScroll = EditorGUILayout.BeginScrollView(
         miniMapScroll,
         GUILayout.Height(scrollHeight)
     );
 
-    Rect mapRect = GUILayoutUtility.GetRect(
-        mapPixelWidth,
-        mapPixelHeight,
+    Rect contentRect = GUILayoutUtility.GetRect(
+        contentWidth,
+        contentHeight,
         GUILayout.ExpandWidth(false),
         GUILayout.ExpandHeight(false)
     );
+
+    Rect mapRect = new Rect(
+        contentRect.x + MiniMapLabelLeftMargin,
+        contentRect.y + MiniMapLabelTopMargin,
+        mapPixelWidth,
+        mapPixelHeight
+    );
+
+    DrawMiniMapAxisLabels(map, mapRect);
 
     for (int y = 0; y < map.Height; y++)
     {
@@ -157,6 +170,52 @@ public class DungeonDebugWindow : EditorWindow
     }
 
     EditorGUILayout.EndScrollView();
+  }
+
+  private static void DrawMiniMapAxisLabels(
+      DungeonMap map,
+      Rect mapRect)
+  {
+    GUIStyle labelStyle = new GUIStyle(EditorStyles.miniLabel)
+    {
+      alignment = TextAnchor.MiddleCenter,
+      fontSize = 9,
+      clipping = TextClipping.Overflow
+    };
+
+    GUIStyle yLabelStyle = new GUIStyle(labelStyle)
+    {
+      alignment = TextAnchor.MiddleRight
+    };
+
+    const float xLabelWidth = 16f;
+
+    for (int x = 0; x < map.Width; x++)
+    {
+      float columnCenterX =
+          mapRect.x + x * CellSize + CellSize * 0.5f;
+
+      Rect xLabelRect = new Rect(
+          columnCenterX - xLabelWidth * 0.5f,
+          mapRect.y - MiniMapLabelTopMargin,
+          xLabelWidth,
+          MiniMapLabelTopMargin
+      );
+
+      GUI.Label(xLabelRect, x.ToString(), labelStyle);
+    }
+
+    for (int y = 0; y < map.Height; y++)
+    {
+      Rect yLabelRect = new Rect(
+          mapRect.x - MiniMapLabelLeftMargin,
+          mapRect.y + y * CellSize,
+          MiniMapLabelLeftMargin - 2f,
+          CellSize
+      );
+
+      GUI.Label(yLabelRect, y.ToString(), yLabelStyle);
+    }
   }
 
   private static void DrawCell(
