@@ -18,7 +18,7 @@ MonoBehaviour:
   - Name: Ceiling
     Graphic: 1
     X: 0
-    Y: 161
+    Y: 97
     Enabled: 1
   - Name: Floor
     Graphic: 2
@@ -27,41 +27,41 @@ MonoBehaviour:
     Enabled: 1
   - Name: Wall F3L
     Graphic: 9
-    X: 6
+    X: 7
     Y: 61
-    Enabled: 0
+    Enabled: 1
   - Name: Wall F3R
     Graphic: 10
-    X: 150
-    Y: 76
-    Enabled: 0
+    X: 135
+    Y: 61
+    Enabled: 1
   - Name: Wall F2L
     Graphic: 7
     X: 0
     Y: 42
-    Enabled: 0
+    Enabled: 1
   - Name: Wall F2R
     Graphic: 8
-    X: 173
-    Y: 17
-    Enabled: 0
+    X: 147
+    Y: 42
+    Enabled: 1
   - Name: Wall F1L
     Graphic: 5
     X: 0
     Y: 16
-    Enabled: 0
+    Enabled: 1
   - Name: Wall F1R
     Graphic: 6
-    X: 170
-    Y: -2
-    Enabled: 0
-  - Name: Wall F0R
-    Graphic: 4
-    X: 191
-    Y: 0
+    X: 165
+    Y: 16
     Enabled: 1
   - Name: Wall F0L
     Graphic: 3
     X: 0
+    Y: 0
+    Enabled: 1
+  - Name: Wall F0R
+    Graphic: 4
+    X: 191
     Y: 0
     Enabled: 1
