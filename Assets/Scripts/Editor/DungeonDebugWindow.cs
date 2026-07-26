@@ -75,28 +75,47 @@ public class DungeonDebugWindow : EditorWindow
       return;
     }
 
+    DungeonFacing facing = map.PlayerFacing;
+
     EditorGUILayout.Space();
     EditorGUILayout.LabelField("Player", EditorStyles.boldLabel);
     EditorGUILayout.LabelField("X", map.PlayerX.ToString());
     EditorGUILayout.LabelField("Y", map.PlayerY.ToString());
-    EditorGUILayout.LabelField("Facing", map.PlayerFacing.ToString());
-    EditorGUILayout.LabelField("Ahead", GetAheadTileLabel(map));
+    EditorGUILayout.LabelField("Facing", facing.ToString());
+    EditorGUILayout.LabelField(
+        "Ahead",
+        GetAdjacentTileLabel(map, facing)
+    );
+    EditorGUILayout.LabelField(
+        "Left",
+        GetAdjacentTileLabel(map, TurnLeft(facing))
+    );
+    EditorGUILayout.LabelField(
+        "Right",
+        GetAdjacentTileLabel(map, TurnRight(facing))
+    );
+    EditorGUILayout.LabelField(
+        "Behind",
+        GetAdjacentTileLabel(map, TurnAround(facing))
+    );
   }
 
-  private static string GetAheadTileLabel(DungeonMap map)
+  private static string GetAdjacentTileLabel(
+      DungeonMap map,
+      DungeonFacing direction)
   {
-    GetAheadOffset(map.PlayerFacing, out int dx, out int dy);
+    GetCardinalOffset(direction, out int dx, out int dy);
 
-    int aheadX = map.PlayerX + dx;
-    int aheadY = map.PlayerY + dy;
+    int x = map.PlayerX + dx;
+    int y = map.PlayerY + dy;
 
-    if (!map.IsInside(aheadX, aheadY))
+    if (!map.IsInside(x, y))
       return "Outside Map";
 
-    return map.GetTile(aheadX, aheadY).Type.ToString();
+    return map.GetTile(x, y).Type.ToString();
   }
 
-  private static void GetAheadOffset(
+  private static void GetCardinalOffset(
       DungeonFacing facing,
       out int dx,
       out int dy)
@@ -124,5 +143,34 @@ public class DungeonDebugWindow : EditorWindow
         dy = 0;
         break;
     }
+  }
+
+  private static DungeonFacing TurnLeft(DungeonFacing facing)
+  {
+    return facing switch
+    {
+      DungeonFacing.North => DungeonFacing.West,
+      DungeonFacing.West => DungeonFacing.South,
+      DungeonFacing.South => DungeonFacing.East,
+      DungeonFacing.East => DungeonFacing.North,
+      _ => facing
+    };
+  }
+
+  private static DungeonFacing TurnRight(DungeonFacing facing)
+  {
+    return facing switch
+    {
+      DungeonFacing.North => DungeonFacing.East,
+      DungeonFacing.East => DungeonFacing.South,
+      DungeonFacing.South => DungeonFacing.West,
+      DungeonFacing.West => DungeonFacing.North,
+      _ => facing
+    };
+  }
+
+  private static DungeonFacing TurnAround(DungeonFacing facing)
+  {
+    return TurnLeft(TurnLeft(facing));
   }
 }
