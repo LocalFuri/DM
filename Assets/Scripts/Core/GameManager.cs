@@ -1,28 +1,16 @@
-using DM.Dungeon;
-using DM.Rendering;
 using UnityEngine;
 
 namespace DM.Core
 {
+  // Map loading and play bootstrap live on GameBootstrap.
+  // This component is kept for compatibility but does not create a dungeon.
   public class GameManager : MonoBehaviour
   {
-    private DungeonMap _dungeonMap;
-    private DungeonRenderer _dungeonRenderer;
-
     private void Awake()
     {
-      _dungeonMap = DungeonMap.CreateMinimalTestDungeon();
-
-      _dungeonRenderer = gameObject.AddComponent<DungeonRenderer>();
-
-      _dungeonRenderer.Render(_dungeonMap);
-
-      Debug.Log($"Dungeon created: {_dungeonMap.Width} x {_dungeonMap.Height}");
       Debug.Log(
-          $"Player ({_dungeonMap.PlayerX},{_dungeonMap.PlayerY}) " +
-          $"facing {_dungeonMap.PlayerFacing}."
+          "GameManager: inactive. Use GameBootstrap with a map TextAsset."
       );
-      Debug.Log(_dungeonMap.BuildDebugMap());
     }
   }
 }

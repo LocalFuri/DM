@@ -1,27 +1,27 @@
+using System;
+using System.Text.RegularExpressions;
+using UnityEngine;
+
 namespace DM.Dungeon
 {
   public class DungeonMap
   {
-    // Top row is north (y = Height - 1).
-    // Columns 0–4 preserve the original 5x5 chamber.
-    // Columns 5–8 add an east wing; at (5,3) facing East:
-    //   depth 1 = floor, depth 2 = floor, depth 3 = wall (FrontWallF3).
-    private static readonly string[] MinimalTestRows =
-    {
-      "#########",
-      "#.......#",
-      "#.#.#.#.#",
-      "#...#...#",
-      "#########"
-    };
+    // Hall of Champions entrance: stairs at (3,15). Start on the open
+    // floor just east of the stairs, facing north into the hall.
+    private const int HallOfChampionsStartX = 4;
+    private const int HallOfChampionsStartY = 15;
+    private static readonly DungeonFacing HallOfChampionsStartFacing =
+        DungeonFacing.North;
 
-    // Stand here facing East to view FrontWallF3 only.
-    public const int FrontWallF3TestPlayerX = 5;
-    public const int FrontWallF3TestPlayerY = 3;
-    public const DungeonFacing FrontWallF3TestFacing =
-        DungeonFacing.East;
+    private static readonly Regex TileRegex = new Regex(
+        "\\{\\s*\"x\"\\s*:\\s*(?<x>\\d+)\\s*,\\s*\"y\"\\s*:\\s*(?<y>\\d+)\\s*," +
+        "\\s*\"raw\"\\s*:\\s*(?<raw>\\d+)\\s*,\\s*\"hex\"\\s*:\\s*\"[^\"]*\"\\s*," +
+        "\\s*\"type\"\\s*:\\s*\"(?<type>[^\"]+)\"",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private readonly DungeonTile[,] _tiles;
+
+    public string Name { get; private set; }
 
     public int Width { get; }
     public int Height { get; }
@@ -30,21 +30,63 @@ namespace DM.Dungeon
     public int PlayerY { get; private set; }
     public DungeonFacing PlayerFacing { get; private set; }
 
-    public DungeonMap(int width, int height)
+    private DungeonMap(string name, int width, int height)
     {
+      Name = name;
       Width = width;
       Height = height;
-
       _tiles = new DungeonTile[width, height];
-
-      CreateTestDungeon();
     }
 
-    public static DungeonMap CreateMinimalTestDungeon()
+    public static DungeonMap LoadFromJson(TextAsset mapJson)
     {
-      int width = MinimalTestRows[0].Length;
-      int height = MinimalTestRows.Length;
-      return new DungeonMap(width, height);
+      if (mapJson == null)
+      {
+        throw new ArgumentNullException(nameof(mapJson));
+      }
+
+      return LoadFromJsonText(mapJson.text);
+    }
+
+    public static DungeonMap LoadFromJsonText(string json)
+    {
+      if (string.IsNullOrEmpty(json))
+      {
+        throw new ArgumentException(
+            "Map JSON text is empty.",
+            nameof(json)
+        );
+      }
+
+      MapHeader header = JsonUtility.FromJson<MapHeader>(json);
+
+      if (header == null
+          || header.width <= 0
+          || header.height <= 0)
+      {
+        throw new InvalidOperationException(
+            "Map JSON is missing a valid width/height."
+        );
+      }
+
+      string mapName = string.IsNullOrEmpty(header.name)
+          ? "(unnamed)"
+          : header.name;
+
+      DungeonMap map = new DungeonMap(
+          mapName,
+          header.width,
+          header.height
+      );
+
+      map.LoadTiles(json);
+      map.SetPlayerStart(
+          HallOfChampionsStartX,
+          HallOfChampionsStartY,
+          HallOfChampionsStartFacing
+      );
+
+      return map;
     }
 
     public DungeonTile GetTile(int x, int y)
@@ -117,6 +159,7 @@ namespace DM.Dungeon
       worldDy = forwardY * localY + rightY * localX;
     }
 
+    // JSON maps use top-left origin with Y increasing downward.
     public static void GetForwardOffset(
         DungeonFacing facing,
         out int dx,
@@ -126,7 +169,7 @@ namespace DM.Dungeon
       {
         case DungeonFacing.North:
           dx = 0;
-          dy = 1;
+          dy = -1;
           break;
         case DungeonFacing.East:
           dx = 1;
@@ -134,7 +177,7 @@ namespace DM.Dungeon
           break;
         case DungeonFacing.South:
           dx = 0;
-          dy = -1;
+          dy = 1;
           break;
         case DungeonFacing.West:
           dx = -1;
@@ -160,7 +203,7 @@ namespace DM.Dungeon
           break;
         case DungeonFacing.East:
           dx = 0;
-          dy = -1;
+          dy = 1;
           break;
         case DungeonFacing.South:
           dx = -1;
@@ -168,7 +211,7 @@ namespace DM.Dungeon
           break;
         case DungeonFacing.West:
           dx = 0;
-          dy = 1;
+          dy = -1;
           break;
         default:
           dx = 0;
@@ -181,7 +224,8 @@ namespace DM.Dungeon
     {
       string result = "";
 
-      for (int y = Height - 1; y >= 0; y--)
+      // Print top row (y = 0) first to match JSON top-left origin.
+      for (int y = 0; y < Height; y++)
       {
         for (int x = 0; x < Width; x++)
         {
@@ -196,71 +240,101 @@ namespace DM.Dungeon
       return result;
     }
 
-    private void CreateTestDungeon()
-    {
-      if (Width == MinimalTestRows[0].Length
-          && Height == MinimalTestRows.Length)
-      {
-        CreateMinimalTestLayout();
-        return;
-      }
-
-      CreateBorderTestLayout();
-    }
-
-    private void CreateMinimalTestLayout()
-    {
-      for (int y = 0; y < Height; y++)
-      {
-        string row = MinimalTestRows[Height - 1 - y];
-
-        for (int x = 0; x < Width; x++)
-        {
-          _tiles[x, y] = new DungeonTile
-          {
-            Type = row[x] == '#'
-                ? DungeonTileType.Wall
-                : DungeonTileType.Floor
-          };
-        }
-      }
-
-      // Default start: original west chamber (existing F1/F2 tests).
-      PlayerX = 2;
-      PlayerY = 3;
-      PlayerFacing = DungeonFacing.North;
-
-      UnityEngine.Debug.Log(
-          "FrontWallF3 test start: " +
-          $"({FrontWallF3TestPlayerX},{FrontWallF3TestPlayerY}) " +
-          $"facing {FrontWallF3TestFacing}."
-      );
-    }
-
-    private void CreateBorderTestLayout()
+    private void LoadTiles(string json)
     {
       for (int y = 0; y < Height; y++)
       {
         for (int x = 0; x < Width; x++)
         {
-          bool isBorder =
-              x == 0 ||
-              y == 0 ||
-              x == Width - 1 ||
-              y == Height - 1;
-
           _tiles[x, y] = new DungeonTile
           {
-            Type = isBorder
-                ? DungeonTileType.Wall
-                : DungeonTileType.Floor
+            Type = DungeonTileType.Wall,
+            Raw = 0
           };
         }
       }
 
-      PlayerX = 1;
-      PlayerY = 1;
-      PlayerFacing = DungeonFacing.North;
+      MatchCollection matches = TileRegex.Matches(json);
+      int loaded = 0;
+
+      foreach (Match match in matches)
+      {
+        int x = int.Parse(match.Groups["x"].Value);
+        int y = int.Parse(match.Groups["y"].Value);
+        int raw = int.Parse(match.Groups["raw"].Value);
+        string typeName = match.Groups["type"].Value;
+
+        if (!IsInside(x, y))
+        {
+          Debug.LogWarning(
+              $"DungeonMap: Tile ({x},{y}) is outside " +
+              $"{Width}x{Height}; skipped."
+          );
+          continue;
+        }
+
+        _tiles[x, y] = new DungeonTile
+        {
+          Type = ConvertTileType(typeName),
+          Raw = raw
+        };
+        loaded++;
+      }
+
+      int expected = Width * Height;
+      if (loaded != expected)
+      {
+        Debug.LogWarning(
+            $"DungeonMap: Loaded {loaded} tiles; expected {expected}."
+        );
+      }
+    }
+
+    private void SetPlayerStart(
+        int x,
+        int y,
+        DungeonFacing facing)
+    {
+      if (!CanEnter(x, y))
+      {
+        throw new InvalidOperationException(
+            $"DungeonMap: Start tile ({x},{y}) is not enterable."
+        );
+      }
+
+      PlayerX = x;
+      PlayerY = y;
+      PlayerFacing = facing;
+    }
+
+    private static DungeonTileType ConvertTileType(string typeName)
+    {
+      switch (typeName)
+      {
+        case "Wall":
+        case "FalseWall":
+        case "Special":
+        case "Unknown":
+          return DungeonTileType.Wall;
+
+        case "Floor":
+        case "Door":
+        case "Teleporter":
+        case "Stairs":
+        case "Pit":
+          return DungeonTileType.Floor;
+
+        default:
+          return DungeonTileType.Wall;
+      }
+    }
+
+    [Serializable]
+    private class MapHeader
+    {
+      public string name;
+      public int width;
+      public int height;
     }
   }
 }

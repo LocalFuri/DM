@@ -10,15 +10,28 @@ public class GameBootstrap : MonoBehaviour
   [SerializeField]
   private DungeonKeyboardInput keyboardInput;
 
+  [SerializeField]
+  private TextAsset mapJson;
+
   private void Start()
   {
     Debug.Log("GameBootstrap started.");
 
-    DungeonMap map = DungeonMap.CreateMinimalTestDungeon();
+    if (mapJson == null)
+    {
+      Debug.LogError(
+          "GameBootstrap: Map JSON TextAsset is not assigned."
+      );
+      return;
+    }
 
+    DungeonMap map = DungeonMap.LoadFromJson(mapJson);
+
+    Debug.Log($"Loaded map: {map.Name}");
+    Debug.Log($"Map size: {map.Width} x {map.Height}");
     Debug.Log(
-        $"Minimal test dungeon {map.Width}x{map.Height}. " +
-        $"Player ({map.PlayerX},{map.PlayerY}) facing {map.PlayerFacing}."
+        $"Player ({map.PlayerX},{map.PlayerY}) " +
+        $"facing {map.PlayerFacing}."
     );
     Debug.Log(map.BuildDebugMap());
 

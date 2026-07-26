@@ -732,6 +732,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameBootstrap
   dungeonRenderer: {fileID: 586494316}
   keyboardInput: {fileID: 1066702583}
+  mapJson: {fileID: 4900000, guid: 91133471eeba26743919ec0bbc3676db, type: 3}
 --- !u!4 &1066702582
 Transform:
   m_ObjectHideFlags: 0
