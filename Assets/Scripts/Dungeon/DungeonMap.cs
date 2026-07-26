@@ -3,14 +3,23 @@ namespace DM.Dungeon
   public class DungeonMap
   {
     // Top row is north (y = Height - 1).
+    // Columns 0–4 preserve the original 5x5 chamber.
+    // Columns 5–8 add an east wing; at (5,3) facing East:
+    //   depth 1 = floor, depth 2 = floor, depth 3 = wall (FrontWallF3).
     private static readonly string[] MinimalTestRows =
     {
-      "#####",
-      "#...#",
-      "#.#.#",
-      "#...#",
-      "#####"
+      "#########",
+      "#.......#",
+      "#.#.#.#.#",
+      "#...#...#",
+      "#########"
     };
+
+    // Stand here facing East to view FrontWallF3 only.
+    public const int FrontWallF3TestPlayerX = 5;
+    public const int FrontWallF3TestPlayerY = 3;
+    public const DungeonFacing FrontWallF3TestFacing =
+        DungeonFacing.East;
 
     private readonly DungeonTile[,] _tiles;
 
@@ -33,7 +42,9 @@ namespace DM.Dungeon
 
     public static DungeonMap CreateMinimalTestDungeon()
     {
-      return new DungeonMap(5, 5);
+      int width = MinimalTestRows[0].Length;
+      int height = MinimalTestRows.Length;
+      return new DungeonMap(width, height);
     }
 
     public DungeonTile GetTile(int x, int y)
@@ -187,7 +198,8 @@ namespace DM.Dungeon
 
     private void CreateTestDungeon()
     {
-      if (Width == 5 && Height == 5)
+      if (Width == MinimalTestRows[0].Length
+          && Height == MinimalTestRows.Length)
       {
         CreateMinimalTestLayout();
         return;
@@ -213,9 +225,16 @@ namespace DM.Dungeon
         }
       }
 
+      // Default start: original west chamber (existing F1/F2 tests).
       PlayerX = 2;
       PlayerY = 3;
       PlayerFacing = DungeonFacing.North;
+
+      UnityEngine.Debug.Log(
+          "FrontWallF3 test start: " +
+          $"({FrontWallF3TestPlayerX},{FrontWallF3TestPlayerY}) " +
+          $"facing {FrontWallF3TestFacing}."
+      );
     }
 
     private void CreateBorderTestLayout()
