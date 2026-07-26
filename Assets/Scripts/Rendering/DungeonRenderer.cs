@@ -467,10 +467,15 @@ namespace DM.Rendering
         return;
       }
 
+      Texture2D mask =
+          graphics.GetMask(piece.Graphic, out bool flipMaskX);
+
       Blit(
           texture,
           piece.X,
-          piece.Y
+          piece.Y,
+          mask,
+          flipMaskX
       );
     }
 
@@ -491,10 +496,23 @@ namespace DM.Rendering
     private void Blit(
         Texture2D source,
         int destinationX,
-        int destinationY)
+        int destinationY,
+        Texture2D mask = null,
+        bool flipMaskHorizontal = false)
     {
       Color32[] sourcePixels =
           source.GetPixels32();
+
+      Color32[] maskPixels = null;
+      bool useMask = false;
+
+      if (mask != null
+          && mask.width == source.width
+          && mask.height == source.height)
+      {
+        maskPixels = mask.GetPixels32();
+        useMask = true;
+      }
 
       for (
           int sourceY = 0;
@@ -524,6 +542,28 @@ namespace DM.Rendering
               targetX >= viewWidth)
           {
             continue;
+          }
+
+          if (useMask)
+          {
+            int maskX = flipMaskHorizontal
+                ? mask.width - 1 - sourceX
+                : sourceX;
+
+            Color32 maskColour =
+                maskPixels[
+                    sourceY * mask.width +
+                    maskX
+                ];
+
+            // White (or bright) mask pixels are drawable;
+            // black pixels clip.
+            if (maskColour.r < 128
+                && maskColour.g < 128
+                && maskColour.b < 128)
+            {
+              continue;
+            }
           }
 
           Color32 sourceColour =
