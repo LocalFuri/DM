@@ -9,6 +9,8 @@ namespace DM.Dungeon
     private DungeonMap map;
     private DungeonRenderer dungeonRenderer;
 
+    public DungeonMap Map => map;
+
     public void Initialize(DungeonMap dungeonMap, DungeonRenderer renderer)
     {
       map = dungeonMap;
