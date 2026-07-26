@@ -6,12 +6,11 @@ namespace DM.Dungeon
 {
   public class DungeonMap
   {
-    // Hall of Champions entrance: stairs at (3,15). Start on the open
-    // floor just east of the stairs, facing north into the hall.
+    // Hall of Champions play-start (screenshot / test framing).
     private const int HallOfChampionsStartX = 4;
-    private const int HallOfChampionsStartY = 15;
+    private const int HallOfChampionsStartY = 3;
     private static readonly DungeonFacing HallOfChampionsStartFacing =
-        DungeonFacing.North;
+        DungeonFacing.South;
 
     private static readonly Regex TileRegex = new Regex(
         "\\{\\s*\"x\"\\s*:\\s*(?<x>\\d+)\\s*,\\s*\"y\"\\s*:\\s*(?<y>\\d+)\\s*," +
