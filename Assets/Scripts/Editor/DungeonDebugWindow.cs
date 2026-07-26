@@ -80,5 +80,49 @@ public class DungeonDebugWindow : EditorWindow
     EditorGUILayout.LabelField("X", map.PlayerX.ToString());
     EditorGUILayout.LabelField("Y", map.PlayerY.ToString());
     EditorGUILayout.LabelField("Facing", map.PlayerFacing.ToString());
+    EditorGUILayout.LabelField("Ahead", GetAheadTileLabel(map));
+  }
+
+  private static string GetAheadTileLabel(DungeonMap map)
+  {
+    GetAheadOffset(map.PlayerFacing, out int dx, out int dy);
+
+    int aheadX = map.PlayerX + dx;
+    int aheadY = map.PlayerY + dy;
+
+    if (!map.IsInside(aheadX, aheadY))
+      return "Outside Map";
+
+    return map.GetTile(aheadX, aheadY).Type.ToString();
+  }
+
+  private static void GetAheadOffset(
+      DungeonFacing facing,
+      out int dx,
+      out int dy)
+  {
+    switch (facing)
+    {
+      case DungeonFacing.North:
+        dx = 0;
+        dy = -1;
+        break;
+      case DungeonFacing.East:
+        dx = 1;
+        dy = 0;
+        break;
+      case DungeonFacing.South:
+        dx = 0;
+        dy = 1;
+        break;
+      case DungeonFacing.West:
+        dx = -1;
+        dy = 0;
+        break;
+      default:
+        dx = 0;
+        dy = 0;
+        break;
+    }
   }
 }
