@@ -4,6 +4,17 @@ using UnityEngine;
 
 public class DungeonDebugWindow : EditorWindow
 {
+  private const float CellSize = 12f;
+
+  private static readonly Color WallColor = new Color(0.22f, 0.22f, 0.22f);
+  private static readonly Color FloorColor = new Color(0.78f, 0.78f, 0.78f);
+  private static readonly Color OtherTileColor = new Color(0.5f, 0.5f, 0.5f);
+  private static readonly Color CellBorderColor = new Color(0.08f, 0.08f, 0.08f);
+  private static readonly Color PlayerColor = new Color(0.95f, 0.7f, 0.1f);
+  private static readonly Color FacingMarkerColor = new Color(0.15f, 0.1f, 0.02f);
+
+  private Vector2 miniMapScroll;
+
   [MenuItem("Tools/Dungeon Master/Dungeon Debug")]
   public static void Open()
   {
@@ -98,6 +109,129 @@ public class DungeonDebugWindow : EditorWindow
         "Behind",
         GetAdjacentTileLabel(map, TurnAround(facing))
     );
+
+    DrawMiniMap(map);
+  }
+
+  private void DrawMiniMap(DungeonMap map)
+  {
+    EditorGUILayout.Space();
+    EditorGUILayout.LabelField("Mini-map", EditorStyles.boldLabel);
+
+    float mapPixelWidth = map.Width * CellSize;
+    float mapPixelHeight = map.Height * CellSize;
+    float scrollHeight = Mathf.Min(mapPixelHeight + 4f, 320f);
+
+    miniMapScroll = EditorGUILayout.BeginScrollView(
+        miniMapScroll,
+        GUILayout.Height(scrollHeight)
+    );
+
+    Rect mapRect = GUILayoutUtility.GetRect(
+        mapPixelWidth,
+        mapPixelHeight,
+        GUILayout.ExpandWidth(false),
+        GUILayout.ExpandHeight(false)
+    );
+
+    for (int y = 0; y < map.Height; y++)
+    {
+      for (int x = 0; x < map.Width; x++)
+      {
+        Rect cellRect = new Rect(
+            mapRect.x + x * CellSize,
+            mapRect.y + y * CellSize,
+            CellSize,
+            CellSize
+        );
+
+        bool isPlayer =
+            x == map.PlayerX &&
+            y == map.PlayerY;
+
+        DrawCell(cellRect, map.GetTile(x, y).Type, isPlayer);
+
+        if (isPlayer)
+          DrawFacingMarker(cellRect, map.PlayerFacing);
+      }
+    }
+
+    EditorGUILayout.EndScrollView();
+  }
+
+  private static void DrawCell(
+      Rect cellRect,
+      DungeonTileType type,
+      bool isPlayer)
+  {
+    EditorGUI.DrawRect(cellRect, CellBorderColor);
+
+    Rect fillRect = new Rect(
+        cellRect.x + 1f,
+        cellRect.y + 1f,
+        cellRect.width - 2f,
+        cellRect.height - 2f
+    );
+
+    Color fillColor;
+    if (isPlayer)
+      fillColor = PlayerColor;
+    else if (type == DungeonTileType.Wall)
+      fillColor = WallColor;
+    else if (type == DungeonTileType.Floor)
+      fillColor = FloorColor;
+    else
+      fillColor = OtherTileColor;
+
+    EditorGUI.DrawRect(fillRect, fillColor);
+  }
+
+  private static void DrawFacingMarker(
+      Rect cellRect,
+      DungeonFacing facing)
+  {
+    Vector2 center = cellRect.center;
+    float tip = CellSize * 0.38f;
+    float baseHalf = CellSize * 0.22f;
+
+    Vector2 tipPoint;
+    Vector2 leftPoint;
+    Vector2 rightPoint;
+
+    switch (facing)
+    {
+      case DungeonFacing.North:
+        tipPoint = center + new Vector2(0f, -tip);
+        leftPoint = center + new Vector2(-baseHalf, tip * 0.35f);
+        rightPoint = center + new Vector2(baseHalf, tip * 0.35f);
+        break;
+      case DungeonFacing.East:
+        tipPoint = center + new Vector2(tip, 0f);
+        leftPoint = center + new Vector2(-tip * 0.35f, -baseHalf);
+        rightPoint = center + new Vector2(-tip * 0.35f, baseHalf);
+        break;
+      case DungeonFacing.South:
+        tipPoint = center + new Vector2(0f, tip);
+        leftPoint = center + new Vector2(baseHalf, -tip * 0.35f);
+        rightPoint = center + new Vector2(-baseHalf, -tip * 0.35f);
+        break;
+      case DungeonFacing.West:
+        tipPoint = center + new Vector2(-tip, 0f);
+        leftPoint = center + new Vector2(tip * 0.35f, baseHalf);
+        rightPoint = center + new Vector2(tip * 0.35f, -baseHalf);
+        break;
+      default:
+        return;
+    }
+
+    Handles.BeginGUI();
+    Handles.color = FacingMarkerColor;
+    Handles.DrawAAConvexPolygon(
+        tipPoint,
+        leftPoint,
+        rightPoint
+    );
+    Handles.EndGUI();
   }
 
   private static string GetAdjacentTileLabel(
