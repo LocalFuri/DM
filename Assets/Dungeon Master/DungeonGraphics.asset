@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DM.Rendering.DungeonGraphics
   Ceiling: {fileID: 2800000, guid: df14770169d01164bb4a328deadf997b, type: 3}
   Floor: {fileID: 2800000, guid: a8ce8a040b25b3b449d21762886ae1d1, type: 3}
-  WallF0L: {fileID: 0}
-  WallF0R: {fileID: 0}
+  WallF0L: {fileID: 2800000, guid: 2d866205a209ae049969d0fba028dc5e, type: 3}
+  WallF0R: {fileID: 2800000, guid: 0bda3523760088c45807942dbaa1dd62, type: 3}
   WallF1L: {fileID: 2800000, guid: c0a03cc9eae1760458580c68550a06c6, type: 3}
   WallF1R: {fileID: 2800000, guid: 46a8e0e4ae4f9ea43baae9904e62710f, type: 3}
   WallF2L: {fileID: 2800000, guid: 8620b0ff917ff2541b088195623f5952, type: 3}
