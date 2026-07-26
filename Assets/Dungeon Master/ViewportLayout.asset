@@ -65,6 +65,16 @@ MonoBehaviour:
     X: 147
     Y: 42
     Enabled: 1
+  - Name: Wall S2L
+    Graphic: 11
+    X: 51
+    Y: 42
+    Enabled: 0
+  - Name: Wall S2R
+    Graphic: 12
+    X: 157
+    Y: 42
+    Enabled: 0
   - Name: Front Wall F1
     Graphic: 23
     X: 32
