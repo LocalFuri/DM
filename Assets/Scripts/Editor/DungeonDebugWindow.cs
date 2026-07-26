@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using DM.Dungeon;
+using DM.Rendering;
 using UnityEditor;
 using UnityEngine;
 
@@ -14,6 +16,21 @@ public class DungeonDebugWindow : EditorWindow
   private static readonly Color CellBorderColor = new Color(0.08f, 0.08f, 0.08f);
   private static readonly Color PlayerColor = new Color(0.95f, 0.7f, 0.1f);
   private static readonly Color FacingMarkerColor = new Color(0.15f, 0.1f, 0.02f);
+
+  private static readonly string[] TrackedWallPieces =
+  {
+    "WallF0L",
+    "WallF0R",
+    "WallF1L",
+    "WallF1R",
+    "WallF2L",
+    "WallF2R",
+    "WallF3L",
+    "WallF3R",
+    "FrontWallF1",
+    "FrontWallF2",
+    "FrontWallF3"
+  };
 
   private Vector2 miniMapScroll;
 
@@ -112,7 +129,54 @@ public class DungeonDebugWindow : EditorWindow
         GetAdjacentTileLabel(map, TurnAround(facing))
     );
 
+    DrawRendererSection();
     DrawMiniMap(map);
+  }
+
+  private void DrawRendererSection()
+  {
+    EditorGUILayout.Space();
+    EditorGUILayout.LabelField("Renderer", EditorStyles.boldLabel);
+
+    DungeonRenderer renderer =
+        Object.FindAnyObjectByType<DungeonRenderer>();
+
+    if (renderer == null)
+    {
+      EditorGUILayout.HelpBox(
+          "DungeonRenderer not found.",
+          MessageType.Warning
+      );
+      return;
+    }
+
+    IReadOnlyList<string> visible = renderer.VisibleWallPieces;
+
+    for (int i = 0; i < TrackedWallPieces.Length; i++)
+    {
+      string pieceName = TrackedWallPieces[i];
+      bool isOn = ContainsPiece(visible, pieceName);
+      EditorGUILayout.LabelField(
+          pieceName,
+          isOn ? "ON" : "OFF"
+      );
+    }
+  }
+
+  private static bool ContainsPiece(
+      IReadOnlyList<string> visible,
+      string pieceName)
+  {
+    if (visible == null)
+      return false;
+
+    for (int i = 0; i < visible.Count; i++)
+    {
+      if (visible[i] == pieceName)
+        return true;
+    }
+
+    return false;
   }
 
   private void DrawMiniMap(DungeonMap map)

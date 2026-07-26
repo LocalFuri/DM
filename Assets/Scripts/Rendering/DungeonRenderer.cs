@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using DM.Dungeon;
 using UnityEngine;
 
@@ -26,6 +27,11 @@ namespace DM.Rendering
 
     private DungeonMap currentMap;
     private bool frameDirty = true;
+
+    private readonly List<string> visibleWallPieces = new();
+
+    // Final wall pieces drawn in the most recent frame.
+    public IReadOnlyList<string> VisibleWallPieces => visibleWallPieces;
 
     private void Awake()
     {
@@ -147,6 +153,7 @@ namespace DM.Rendering
 
       if (layout == null)
       {
+        visibleWallPieces.Clear();
         Debug.LogWarning(
             "DungeonRenderer: ViewportLayout is missing."
         );
@@ -157,6 +164,7 @@ namespace DM.Rendering
 
       if (graphics == null)
       {
+        visibleWallPieces.Clear();
         Debug.LogWarning(
             "DungeonRenderer: DungeonGraphics is missing."
         );
@@ -170,6 +178,8 @@ namespace DM.Rendering
       System.Text.StringBuilder drawnSideWalls =
           new System.Text.StringBuilder();
 
+      visibleWallPieces.Clear();
+
       foreach (ViewportPiece piece in layout.Pieces)
       {
         if (!ShouldDrawPiece(piece))
@@ -181,6 +191,7 @@ namespace DM.Rendering
             drawnFrontWalls.Append(", ");
 
           drawnFrontWalls.Append(piece.Graphic);
+          visibleWallPieces.Add(piece.Graphic.ToString());
         }
         else if (TryGetSideWallDepthAndSide(piece.Graphic, out _, out _))
         {
@@ -188,6 +199,7 @@ namespace DM.Rendering
             drawnSideWalls.Append(", ");
 
           drawnSideWalls.Append(piece.Graphic);
+          visibleWallPieces.Add(piece.Graphic.ToString());
         }
 
         DrawPiece(piece);
