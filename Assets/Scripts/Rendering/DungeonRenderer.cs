@@ -165,7 +165,9 @@ namespace DM.Rendering
         return;
       }
 
-      System.Text.StringBuilder drawnWalls =
+      System.Text.StringBuilder drawnFrontWalls =
+          new System.Text.StringBuilder();
+      System.Text.StringBuilder drawnSideWalls =
           new System.Text.StringBuilder();
 
       foreach (ViewportPiece piece in layout.Pieces)
@@ -173,35 +175,47 @@ namespace DM.Rendering
         if (!ShouldDrawPiece(piece))
           continue;
 
-        if (IsDepthWallGraphic(piece.Graphic))
+        if (TryGetCenterFrontWallDepth(piece.Graphic, out _))
         {
-          if (drawnWalls.Length > 0)
-            drawnWalls.Append(", ");
+          if (drawnFrontWalls.Length > 0)
+            drawnFrontWalls.Append(", ");
 
-          drawnWalls.Append(piece.Graphic);
+          drawnFrontWalls.Append(piece.Graphic);
+        }
+        else if (TryGetSideWallDepthAndSide(piece.Graphic, out _, out _))
+        {
+          if (drawnSideWalls.Length > 0)
+            drawnSideWalls.Append(", ");
+
+          drawnSideWalls.Append(piece.Graphic);
         }
 
         DrawPiece(piece);
       }
 
+      string frontList =
+          drawnFrontWalls.Length > 0
+              ? drawnFrontWalls.ToString()
+              : "(none)";
+      string sideList =
+          drawnSideWalls.Length > 0
+              ? drawnSideWalls.ToString()
+              : "(none)";
+
       if (currentMap != null)
       {
         Debug.Log(
-            "DungeonRenderer walls drawn at " +
+            "DungeonRenderer walls at " +
             $"({currentMap.PlayerX},{currentMap.PlayerY}) " +
             $"facing {currentMap.PlayerFacing}: " +
-            (drawnWalls.Length > 0
-                ? drawnWalls.ToString()
-                : "(none)")
+            $"front=[{frontList}] sides=[{sideList}]"
         );
       }
       else
       {
         Debug.Log(
-            "DungeonRenderer walls drawn: " +
-            (drawnWalls.Length > 0
-                ? drawnWalls.ToString()
-                : "(none)")
+            "DungeonRenderer walls: " +
+            $"front=[{frontList}] sides=[{sideList}]"
         );
       }
 
@@ -352,8 +366,16 @@ namespace DM.Rendering
 
     private bool IsSideWallVisible(int depth, bool isLeft)
     {
-      if (IsFrontDepthOccluded(depth))
-        return false;
+      // F0 sides stay independent of center front walls.
+      if (depth > 0)
+      {
+        if (IsFrontDepthOccluded(depth))
+          return false;
+
+        // A center front wall at this depth replaces the side pieces.
+        if (IsCenterFrontWallVisible(depth))
+          return false;
+      }
 
       DungeonMap.GetForwardOffset(
           currentMap.PlayerFacing,
