@@ -12,10 +12,6 @@ public class ViewportLayoutEditor : EditorWindow
   private const string PrefsReferenceTextureGuidKey =
       "ViewportLayoutEditor.ReferenceTextureGuid";
 
-  private const int FrameWidth = 320;
-  private const int FrameHeight = 200;
-  private const int DungeonViewBoundaryX = 224;
-
   [System.NonSerialized]
   private ViewportLayout layout;
   private Vector2 scroll;
@@ -96,7 +92,6 @@ public class ViewportLayoutEditor : EditorWindow
     ClampSelectedPieceIndex();
     HandlePieceKeyboardNudge();
     DrawSelectedPieceHeader();
-    DrawDungeonViewBoundaryGuide();
 
     EditorGUI.BeginChangeCheck();
 
@@ -291,51 +286,6 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.miniLabel);
 
     EditorGUILayout.EndVertical();
-    EditorGUILayout.Space();
-  }
-
-  private void DrawDungeonViewBoundaryGuide()
-  {
-    EditorGUILayout.LabelField("Dungeon View Boundary", EditorStyles.boldLabel);
-    EditorGUILayout.LabelField(
-        $"Framebuffer {FrameWidth}×{FrameHeight}  ·  Guide at X = {DungeonViewBoundaryX}",
-        EditorStyles.miniLabel);
-
-    Rect area = GUILayoutUtility.GetRect(
-        FrameWidth,
-        FrameHeight,
-        GUILayout.Width(FrameWidth),
-        GUILayout.Height(FrameHeight));
-
-    EditorGUI.DrawRect(area, new Color(0.12f, 0.12f, 0.12f, 1f));
-
-    Rect dungeonRect = new Rect(
-        area.x,
-        area.y,
-        DungeonViewBoundaryX,
-        area.height);
-    EditorGUI.DrawRect(dungeonRect, new Color(0.16f, 0.28f, 0.22f, 1f));
-
-    Rect interfaceRect = new Rect(
-        area.x + DungeonViewBoundaryX,
-        area.y,
-        FrameWidth - DungeonViewBoundaryX,
-        area.height);
-    EditorGUI.DrawRect(interfaceRect, new Color(0.28f, 0.16f, 0.16f, 1f));
-
-    EditorGUI.DrawRect(
-        new Rect(area.x + DungeonViewBoundaryX, area.y, 2f, area.height),
-        new Color(1f, 0.9f, 0.2f, 1f));
-
-    GUIStyle labelStyle = new GUIStyle(EditorStyles.boldLabel)
-    {
-      alignment = TextAnchor.MiddleCenter,
-      normal = { textColor = Color.white }
-    };
-
-    GUI.Label(dungeonRect, "Dungeon View", labelStyle);
-    GUI.Label(interfaceRect, "Interface Area", labelStyle);
-
     EditorGUILayout.Space();
   }
 

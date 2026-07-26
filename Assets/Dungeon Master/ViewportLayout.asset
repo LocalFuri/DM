@@ -34,7 +34,7 @@ MonoBehaviour:
     Graphic: 4
     X: 287
     Y: 0
-    Enabled: 0
+    Enabled: 1
   - Name: Wall F1L
     Graphic: 5
     X: 64
