@@ -18,7 +18,7 @@ MonoBehaviour:
   - Name: Ceiling
     Graphic: 1
     X: 0
-    Y: 164
+    Y: 161
     Enabled: 1
   - Name: Floor
     Graphic: 2
@@ -34,12 +34,12 @@ MonoBehaviour:
     Graphic: 4
     X: 287
     Y: 0
-    Enabled: 1
+    Enabled: 0
   - Name: Wall F1L
     Graphic: 5
-    X: 0
-    Y: 8
-    Enabled: 0
+    X: 64
+    Y: 0
+    Enabled: 1
   - Name: Wall F3L
     Graphic: 9
     X: -1
