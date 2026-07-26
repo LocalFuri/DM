@@ -708,6 +708,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1066702582}
   - component: {fileID: 1066702581}
+  - component: {fileID: 1066702583}
   m_Layer: 0
   m_Name: GameBootstrap
   m_TagString: Untagged
@@ -728,6 +729,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameBootstrap
   dungeonRenderer: {fileID: 586494316}
+  keyboardInput: {fileID: 1066702583}
+--- !u!114 &1066702583
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1066702580}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c4e9a2b1f8d4e6a9b0c3d5e7f1a2b3c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DM.Dungeon.DungeonKeyboardInput
 --- !u!4 &1066702582
 Transform:
   m_ObjectHideFlags: 0
@@ -806,7 +820,7 @@ MonoBehaviour:
     x: 0
     y: 0
     width: 0.7
-    height: 1
+    height: 0.68
 --- !u!222 &1207986965
 CanvasRenderer:
   m_ObjectHideFlags: 0
