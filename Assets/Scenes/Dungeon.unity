@@ -773,7 +773,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DM.Core.GameQuitHandler
   quitSound: {fileID: 8300000, guid: a8c3e1f05b7249d6a2e4c7b913d50f8e, type: 3}
   audioSource: {fileID: 1066702585}
-  quitSoundVolume: 1
+  quitSoundVolume: 0.437
 --- !u!82 &1066702585
 AudioSource:
   m_ObjectHideFlags: 0

@@ -35,6 +35,11 @@ MonoBehaviour:
     X: 0
     Y: 0
     Enabled: 1
+  - Name: Front Wall F3
+    Graphic: 25
+    X: 77
+    Y: 61
+    Enabled: 1
   - Name: Wall F3L
     Graphic: 9
     X: 7
@@ -45,6 +50,11 @@ MonoBehaviour:
     X: 135
     Y: 61
     Enabled: 1
+  - Name: Front Wall F2
+    Graphic: 24
+    X: 59
+    Y: 42
+    Enabled: 1
   - Name: Wall F2L
     Graphic: 7
     X: 0
@@ -54,6 +64,11 @@ MonoBehaviour:
     Graphic: 8
     X: 147
     Y: 42
+    Enabled: 1
+  - Name: Front Wall F1
+    Graphic: 23
+    X: 32
+    Y: 16
     Enabled: 1
   - Name: Wall F1L
     Graphic: 5

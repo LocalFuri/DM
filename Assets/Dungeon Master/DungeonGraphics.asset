@@ -24,6 +24,9 @@ MonoBehaviour:
   WallF2R: {fileID: 2800000, guid: 0d648ceb1cb33544c853cc447f27906e, type: 3}
   WallF3L: {fileID: 2800000, guid: 575bb58bb53bb1e4698f3563d4379793, type: 3}
   WallF3R: {fileID: 2800000, guid: 4e9355110e3c3ca439294cc30c9fddc6, type: 3}
+  FrontWallF1: {fileID: 2800000, guid: 5927c68013a488649b39a4bdcd680ad1, type: 3}
+  FrontWallF2: {fileID: 2800000, guid: 0c9f02142ff275b4fbedc19f619637b4, type: 3}
+  FrontWallF3: {fileID: 2800000, guid: f9a6197fa76905147b2659ed5ecc756d, type: 3}
   WallS2L: {fileID: 2800000, guid: 54414bd0c1a2e564f8763e06618ee076, type: 3}
   WallS2R: {fileID: 2800000, guid: 37e11366a50391f4ca543a51dc7c4176, type: 3}
   WallS3L: {fileID: 2800000, guid: b3b33277fa2a2734aae2128a532acde1, type: 3}

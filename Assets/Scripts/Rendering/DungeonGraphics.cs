@@ -31,6 +31,11 @@ namespace DM.Rendering
     public Texture2D WallF3L;
     public Texture2D WallF3R;
 
+    [Header("Front Walls")]
+    public Texture2D FrontWallF1;
+    public Texture2D FrontWallF2;
+    public Texture2D FrontWallF3;
+
     [Header("Side Wall Graphics")]
     public Texture2D WallS2L;
     public Texture2D WallS2R;
@@ -101,6 +106,12 @@ namespace DM.Rendering
           return WallF3L;
         case DungeonGraphicType.WallF3R:
           return WallF3R;
+        case DungeonGraphicType.FrontWallF1:
+          return FrontWallF1;
+        case DungeonGraphicType.FrontWallF2:
+          return FrontWallF2;
+        case DungeonGraphicType.FrontWallF3:
+          return FrontWallF3;
         case DungeonGraphicType.WallS2L:
           return WallS2L;
         case DungeonGraphicType.WallS2R:

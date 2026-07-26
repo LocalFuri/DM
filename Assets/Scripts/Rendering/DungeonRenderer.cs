@@ -173,7 +173,7 @@ namespace DM.Rendering
         if (!ShouldDrawPiece(piece))
           continue;
 
-        if (IsFrontWallGraphic(piece.Graphic))
+        if (IsDepthWallGraphic(piece.Graphic))
         {
           if (drawnWalls.Length > 0)
             drawnWalls.Append(", ");
@@ -216,18 +216,18 @@ namespace DM.Rendering
       if (piece.Graphic == DungeonGraphicType.None)
         return false;
 
-      if (IsFrontWallGraphic(piece.Graphic))
+      if (IsDepthWallGraphic(piece.Graphic))
       {
         if (currentMap == null)
           return piece.Enabled;
 
-        return IsFrontWallVisible(piece.Graphic);
+        return IsDepthWallVisible(piece.Graphic);
       }
 
       return piece.Enabled;
     }
 
-    private static bool IsFrontWallGraphic(DungeonGraphicType graphic)
+    private static bool IsDepthWallGraphic(DungeonGraphicType graphic)
     {
       switch (graphic)
       {
@@ -239,13 +239,37 @@ namespace DM.Rendering
         case DungeonGraphicType.WallF2R:
         case DungeonGraphicType.WallF3L:
         case DungeonGraphicType.WallF3R:
+        case DungeonGraphicType.FrontWallF1:
+        case DungeonGraphicType.FrontWallF2:
+        case DungeonGraphicType.FrontWallF3:
           return true;
         default:
           return false;
       }
     }
 
-    private static bool TryGetFrontWallDepthAndSide(
+    private static bool TryGetCenterFrontWallDepth(
+        DungeonGraphicType graphic,
+        out int depth)
+    {
+      switch (graphic)
+      {
+        case DungeonGraphicType.FrontWallF1:
+          depth = 1;
+          return true;
+        case DungeonGraphicType.FrontWallF2:
+          depth = 2;
+          return true;
+        case DungeonGraphicType.FrontWallF3:
+          depth = 3;
+          return true;
+        default:
+          depth = 0;
+          return false;
+      }
+    }
+
+    private static bool TryGetSideWallDepthAndSide(
         DungeonGraphicType graphic,
         out int depth,
         out bool isLeft)
@@ -291,16 +315,43 @@ namespace DM.Rendering
       }
     }
 
-    private bool IsFrontWallVisible(DungeonGraphicType graphic)
+    private bool IsDepthWallVisible(DungeonGraphicType graphic)
     {
-      if (!TryGetFrontWallDepthAndSide(
+      if (TryGetCenterFrontWallDepth(graphic, out int centerDepth))
+        return IsCenterFrontWallVisible(centerDepth);
+
+      if (TryGetSideWallDepthAndSide(
               graphic,
-              out int depth,
+              out int sideDepth,
               out bool isLeft))
       {
-        return false;
+        return IsSideWallVisible(sideDepth, isLeft);
       }
 
+      return false;
+    }
+
+    private bool IsCenterFrontWallVisible(int depth)
+    {
+      if (depth < 1)
+        return false;
+
+      if (IsFrontDepthOccluded(depth))
+        return false;
+
+      DungeonMap.GetForwardOffset(
+          currentMap.PlayerFacing,
+          out int forwardX,
+          out int forwardY);
+
+      int tileX = currentMap.PlayerX + forwardX * depth;
+      int tileY = currentMap.PlayerY + forwardY * depth;
+
+      return IsWallTile(tileX, tileY);
+    }
+
+    private bool IsSideWallVisible(int depth, bool isLeft)
+    {
       if (IsFrontDepthOccluded(depth))
         return false;
 
@@ -330,8 +381,8 @@ namespace DM.Rendering
       return IsWallTile(tileX, tileY);
     }
 
-    // A solid tile in the center column at a nearer depth
-    // hides all wall pieces farther away.
+    // A solid center tile at a nearer depth hides farther
+    // center and side wall pieces (F1 hides depth 2-3, F2 hides depth 3).
     private bool IsFrontDepthOccluded(int depth)
     {
       if (depth <= 0)

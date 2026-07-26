@@ -34,6 +34,10 @@ namespace DM.Rendering
     WallOrnament,
 
     CeilingStrip84,
-    CeilingStrip85
+    CeilingStrip85,
+
+    FrontWallF1,
+    FrontWallF2,
+    FrontWallF3
   }
 }
