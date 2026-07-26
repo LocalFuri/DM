@@ -732,6 +732,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameBootstrap
   dungeonRenderer: {fileID: 586494316}
   keyboardInput: {fileID: 1066702583}
+--- !u!4 &1066702582
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1066702580}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1066702583
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -758,6 +773,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DM.Core.GameQuitHandler
   quitSound: {fileID: 8300000, guid: a8c3e1f05b7249d6a2e4c7b913d50f8e, type: 3}
   audioSource: {fileID: 1066702585}
+  quitSoundVolume: 1
 --- !u!82 &1066702585
 AudioSource:
   m_ObjectHideFlags: 0
@@ -855,21 +871,6 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
---- !u!4 &1066702582
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1066702580}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1207986962
 GameObject:
   m_ObjectHideFlags: 0

@@ -16,6 +16,10 @@ namespace DM.Core
     [SerializeField]
     private AudioSource audioSource;
 
+    [Range(0f, 1f)]
+    [SerializeField]
+    private float quitSoundVolume = 1f;
+
     private bool quitting;
 
     private void Awake()
@@ -92,7 +96,7 @@ namespace DM.Core
       if (quitSound == null || audioSource == null)
         return 0f;
 
-      audioSource.PlayOneShot(quitSound);
+      audioSource.PlayOneShot(quitSound, quitSoundVolume);
       return quitSound.length;
     }
 
