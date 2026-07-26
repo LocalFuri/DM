@@ -165,17 +165,204 @@ namespace DM.Rendering
         return;
       }
 
-      Debug.Log(
-          "DungeonRenderer pieces: " +
-          layout.Pieces.Count
-      );
+      System.Text.StringBuilder drawnWalls =
+          new System.Text.StringBuilder();
 
       foreach (ViewportPiece piece in layout.Pieces)
       {
+        if (!ShouldDrawPiece(piece))
+          continue;
+
+        if (IsFrontWallGraphic(piece.Graphic))
+        {
+          if (drawnWalls.Length > 0)
+            drawnWalls.Append(", ");
+
+          drawnWalls.Append(piece.Graphic);
+        }
+
         DrawPiece(piece);
       }
 
+      if (currentMap != null)
+      {
+        Debug.Log(
+            "DungeonRenderer walls drawn at " +
+            $"({currentMap.PlayerX},{currentMap.PlayerY}) " +
+            $"facing {currentMap.PlayerFacing}: " +
+            (drawnWalls.Length > 0
+                ? drawnWalls.ToString()
+                : "(none)")
+        );
+      }
+      else
+      {
+        Debug.Log(
+            "DungeonRenderer walls drawn: " +
+            (drawnWalls.Length > 0
+                ? drawnWalls.ToString()
+                : "(none)")
+        );
+      }
+
       ApplyFrameBuffer();
+    }
+
+    private bool ShouldDrawPiece(ViewportPiece piece)
+    {
+      if (piece == null)
+        return false;
+
+      if (piece.Graphic == DungeonGraphicType.None)
+        return false;
+
+      if (IsFrontWallGraphic(piece.Graphic))
+      {
+        if (currentMap == null)
+          return piece.Enabled;
+
+        return IsFrontWallVisible(piece.Graphic);
+      }
+
+      return piece.Enabled;
+    }
+
+    private static bool IsFrontWallGraphic(DungeonGraphicType graphic)
+    {
+      switch (graphic)
+      {
+        case DungeonGraphicType.WallF0L:
+        case DungeonGraphicType.WallF0R:
+        case DungeonGraphicType.WallF1L:
+        case DungeonGraphicType.WallF1R:
+        case DungeonGraphicType.WallF2L:
+        case DungeonGraphicType.WallF2R:
+        case DungeonGraphicType.WallF3L:
+        case DungeonGraphicType.WallF3R:
+          return true;
+        default:
+          return false;
+      }
+    }
+
+    private static bool TryGetFrontWallDepthAndSide(
+        DungeonGraphicType graphic,
+        out int depth,
+        out bool isLeft)
+    {
+      switch (graphic)
+      {
+        case DungeonGraphicType.WallF0L:
+          depth = 0;
+          isLeft = true;
+          return true;
+        case DungeonGraphicType.WallF0R:
+          depth = 0;
+          isLeft = false;
+          return true;
+        case DungeonGraphicType.WallF1L:
+          depth = 1;
+          isLeft = true;
+          return true;
+        case DungeonGraphicType.WallF1R:
+          depth = 1;
+          isLeft = false;
+          return true;
+        case DungeonGraphicType.WallF2L:
+          depth = 2;
+          isLeft = true;
+          return true;
+        case DungeonGraphicType.WallF2R:
+          depth = 2;
+          isLeft = false;
+          return true;
+        case DungeonGraphicType.WallF3L:
+          depth = 3;
+          isLeft = true;
+          return true;
+        case DungeonGraphicType.WallF3R:
+          depth = 3;
+          isLeft = false;
+          return true;
+        default:
+          depth = 0;
+          isLeft = false;
+          return false;
+      }
+    }
+
+    private bool IsFrontWallVisible(DungeonGraphicType graphic)
+    {
+      if (!TryGetFrontWallDepthAndSide(
+              graphic,
+              out int depth,
+              out bool isLeft))
+      {
+        return false;
+      }
+
+      if (IsFrontDepthOccluded(depth))
+        return false;
+
+      DungeonMap.GetForwardOffset(
+          currentMap.PlayerFacing,
+          out int forwardX,
+          out int forwardY);
+
+      DungeonMap.GetRightOffset(
+          currentMap.PlayerFacing,
+          out int rightX,
+          out int rightY);
+
+      int sideX = isLeft ? -rightX : rightX;
+      int sideY = isLeft ? -rightY : rightY;
+
+      int tileX =
+          currentMap.PlayerX +
+          forwardX * depth +
+          sideX;
+
+      int tileY =
+          currentMap.PlayerY +
+          forwardY * depth +
+          sideY;
+
+      return IsWallTile(tileX, tileY);
+    }
+
+    // A solid tile in the center column at a nearer depth
+    // hides all wall pieces farther away.
+    private bool IsFrontDepthOccluded(int depth)
+    {
+      if (depth <= 0)
+        return false;
+
+      DungeonMap.GetForwardOffset(
+          currentMap.PlayerFacing,
+          out int forwardX,
+          out int forwardY);
+
+      for (int nearer = 1; nearer < depth; nearer++)
+      {
+        int tileX =
+            currentMap.PlayerX + forwardX * nearer;
+        int tileY =
+            currentMap.PlayerY + forwardY * nearer;
+
+        if (IsWallTile(tileX, tileY))
+          return true;
+      }
+
+      return false;
+    }
+
+    private bool IsWallTile(int x, int y)
+    {
+      if (!currentMap.IsInside(x, y))
+        return true;
+
+      return currentMap.GetTile(x, y).Type ==
+          DungeonTileType.Wall;
     }
 
     private void DrawPiece(ViewportPiece piece)
@@ -186,11 +373,6 @@ namespace DM.Rendering
             "DungeonRenderer: Null viewport piece."
         );
 
-        return;
-      }
-
-      if (!piece.Enabled)
-      {
         return;
       }
 
