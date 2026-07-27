@@ -487,7 +487,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24a3f23427a812544b43a4ab85ef1718, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DM.UI.HeroRecruitmentPanel
-  panelRoot: {fileID: 0}
+  panelRoot: {fileID: 568736487}
 --- !u!1 &586494315
 GameObject:
   m_ObjectHideFlags: 0
@@ -782,6 +782,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameBootstrap
   dungeonRenderer: {fileID: 586494316}
   keyboardInput: {fileID: 1066702583}
+  heroRecruitmentPanel: {fileID: 568736489}
   mapJson: {fileID: 4900000, guid: 91133471eeba26743919ec0bbc3676db, type: 3}
 --- !u!4 &1066702582
 Transform:

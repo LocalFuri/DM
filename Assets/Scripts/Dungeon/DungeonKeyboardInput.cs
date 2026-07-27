@@ -1,5 +1,6 @@
 using DM.Heroes;
 using DM.Rendering;
+using DM.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -9,15 +10,18 @@ namespace DM.Dungeon
   {
     private DungeonMap map;
     private DungeonRenderer dungeonRenderer;
+    private HeroRecruitmentPanel heroRecruitmentPanel;
 
     public DungeonMap Map => map;
 
     public void Initialize(
         DungeonMap dungeonMap,
-        DungeonRenderer renderer)
+        DungeonRenderer renderer,
+        HeroRecruitmentPanel recruitmentPanel)
     {
       map = dungeonMap;
       dungeonRenderer = renderer;
+      heroRecruitmentPanel = recruitmentPanel;
 
       DetectChampionInFront();
     }
@@ -128,7 +132,12 @@ namespace DM.Dungeon
       );
 
       if (hero == null)
+      {
+        if (heroRecruitmentPanel != null)
+          heroRecruitmentPanel.Hide();
+
         return;
+      }
 
       string displayName = string.IsNullOrEmpty(hero.Title)
           ? hero.Name
@@ -140,6 +149,9 @@ namespace DM.Dungeon
           $"on the {wallDirection} wall. " +
           $"Player is at ({map.PlayerX},{map.PlayerY})."
       );
+
+      if (heroRecruitmentPanel != null)
+        heroRecruitmentPanel.ShowHero(hero);
     }
 
     private void GetHeroPlacementLookup(

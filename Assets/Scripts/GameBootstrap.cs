@@ -1,5 +1,6 @@
 using DM.Dungeon;
 using DM.Rendering;
+using DM.UI;
 using UnityEngine;
 
 public class GameBootstrap : MonoBehaviour
@@ -9,6 +10,9 @@ public class GameBootstrap : MonoBehaviour
 
   [SerializeField]
   private DungeonKeyboardInput keyboardInput;
+
+  [SerializeField]
+  private HeroRecruitmentPanel heroRecruitmentPanel;
 
   [SerializeField]
   private TextAsset mapJson;
@@ -42,7 +46,11 @@ public class GameBootstrap : MonoBehaviour
 
     if (keyboardInput != null)
     {
-      keyboardInput.Initialize(map, dungeonRenderer);
+      keyboardInput.Initialize(
+          map,
+          dungeonRenderer,
+          heroRecruitmentPanel
+      );
     }
     else
     {
