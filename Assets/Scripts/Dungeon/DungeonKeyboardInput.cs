@@ -113,13 +113,17 @@ namespace DM.Dungeon
 
     private void DetectChampionInFront()
     {
-      HeroWallDirection wallDirection =
-          ConvertToHeroWallDirection(map.PlayerFacing);
+      GetHeroPlacementLookup(
+          map.PlayerFacing,
+          out int heroX,
+          out int heroY,
+          out HeroWallDirection wallDirection
+      );
 
       HeroDefinition hero = HeroDatabase.GetByPlacement(
           0,
-          map.PlayerX,
-          map.PlayerY,
+          heroX,
+          heroY,
           wallDirection
       );
 
@@ -132,30 +136,46 @@ namespace DM.Dungeon
 
       Debug.Log(
           $"Champion in front: {displayName} " +
-          $"at ({map.PlayerX},{map.PlayerY}) " +
-          $"on the {wallDirection} wall."
+          $"using placement ({heroX},{heroY}) " +
+          $"on the {wallDirection} wall. " +
+          $"Player is at ({map.PlayerX},{map.PlayerY})."
       );
     }
 
-    private static HeroWallDirection ConvertToHeroWallDirection(
-        DungeonFacing facing)
+    private void GetHeroPlacementLookup(
+        DungeonFacing facing,
+        out int heroX,
+        out int heroY,
+        out HeroWallDirection wallDirection)
     {
+      heroX = map.PlayerX;
+      heroY = map.PlayerY;
+
       switch (facing)
       {
         case DungeonFacing.North:
-          return HeroWallDirection.North;
+          // Verified with DAROOU:
+          // Player (6,12), facing North
+          // Hero placement (6,13), North
+          heroY += 1;
+          wallDirection = HeroWallDirection.North;
+          break;
 
         case DungeonFacing.East:
-          return HeroWallDirection.East;
+          wallDirection = HeroWallDirection.East;
+          break;
 
         case DungeonFacing.South:
-          return HeroWallDirection.South;
+          wallDirection = HeroWallDirection.South;
+          break;
 
         case DungeonFacing.West:
-          return HeroWallDirection.West;
+          wallDirection = HeroWallDirection.West;
+          break;
 
         default:
-          return HeroWallDirection.North;
+          wallDirection = HeroWallDirection.North;
+          break;
       }
     }
   }
