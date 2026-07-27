@@ -36,10 +36,28 @@ public class GameBootstrap : MonoBehaviour
     Debug.Log(map.BuildDebugMap());
 
     if (keyboardInput == null)
+    {
       keyboardInput = GetComponent<DungeonKeyboardInput>();
+    }
 
     if (keyboardInput != null)
+    {
       keyboardInput.Initialize(map, dungeonRenderer);
+    }
+    else
+    {
+      Debug.LogWarning(
+          "GameBootstrap: DungeonKeyboardInput was not found."
+      );
+    }
+
+    if (dungeonRenderer == null)
+    {
+      Debug.LogError(
+          "GameBootstrap: DungeonRenderer is not assigned."
+      );
+      return;
+    }
 
     dungeonRenderer.Render(map);
   }
