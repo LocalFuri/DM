@@ -61,7 +61,7 @@ public class GameBootstrap : MonoBehaviour
 
     Debug.Log(
         $"Hero database test: {hero.Name}, " +
-        $"{hero.Title}, Health {hero.Health}, " +
+        $"{hero.Title}, Health {hero.Resources.Health}, " +
         $"Starting items {hero.StartingItems.Count}."
     );
   }
