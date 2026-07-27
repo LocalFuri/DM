@@ -1,4 +1,5 @@
 using DM.Dungeon;
+using DM.Heroes;
 using DM.Rendering;
 using UnityEngine;
 
@@ -16,6 +17,8 @@ public class GameBootstrap : MonoBehaviour
   private void Start()
   {
     Debug.Log("GameBootstrap started.");
+
+    TestHeroDatabase();
 
     if (mapJson == null)
     {
@@ -42,5 +45,24 @@ public class GameBootstrap : MonoBehaviour
       keyboardInput.Initialize(map, dungeonRenderer);
 
     dungeonRenderer.Render(map);
+  }
+
+  private void TestHeroDatabase()
+  {
+    HeroDefinition hero = HeroDatabase.GetById(1);
+
+    if (hero == null)
+    {
+      Debug.LogError(
+          "Hero database test failed: Hero ID 1 was not found."
+      );
+      return;
+    }
+
+    Debug.Log(
+        $"Hero database test: {hero.Name}, " +
+        $"{hero.Title}, Health {hero.Health}, " +
+        $"Starting items {hero.StartingItems.Count}."
+    );
   }
 }
