@@ -1066,5 +1066,25 @@ namespace DM.Heroes
 
       return null;
     }
+
+    public static HeroDefinition GetByPlacement(
+        int level,
+        int x,
+        int y,
+        HeroWallDirection wallDirection)
+    {
+      foreach (HeroDefinition hero in Heroes)
+      {
+        if (hero.Placement.Level == level &&
+            hero.Placement.X == x &&
+            hero.Placement.Y == y &&
+            hero.Placement.WallDirection == wallDirection)
+        {
+          return hero;
+        }
+      }
+
+      return null;
+    }
   }
 }
