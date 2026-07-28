@@ -19,6 +19,9 @@ namespace DM.Rendering
     [Header("Graphics Database")]
     [SerializeField] private DungeonGraphics graphics;
 
+    [Header("Entrance")]
+    [SerializeField] private bool showEntranceScreen = true;
+
     private Texture2D frameBuffer;
     private Color32[] framePixels;
 
@@ -142,6 +145,40 @@ namespace DM.Rendering
 
     private void DrawDungeonFrame()
     {
+      if (showEntranceScreen)
+      {
+        visibleWallPieces.Clear();
+
+        Clear(
+            new Color32(
+                0,
+                0,
+                0,
+                255
+            )
+        );
+
+        Texture2D entrance =
+            graphics != null
+                ? graphics.EntranceDoorClosedOutside
+                : null;
+
+        if (entrance == null)
+        {
+          Debug.LogWarning(
+              "DungeonRenderer: EntranceDoorClosedOutside " +
+              "texture is missing; showing black entrance screen."
+          );
+        }
+        else
+        {
+          Blit(entrance, 0, 0);
+        }
+
+        ApplyFrameBuffer();
+        return;
+      }
+
       Clear(
           new Color32(
               255,

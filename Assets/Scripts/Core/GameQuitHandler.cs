@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -74,30 +73,24 @@ namespace DM.Core
         return;
 
       quitting = true;
-      StartCoroutine(QuitAfterSound());
-    }
 
-    private IEnumerator QuitAfterSound()
-    {
-      float waitSeconds = PlayQuitSoundRuntime();
-
-      if (waitSeconds > 0f)
-        yield return new WaitForSecondsRealtime(waitSeconds);
+      PlayQuitSoundRuntime();
 
 #if UNITY_EDITOR
+      Debug.Log("GameQuitHandler: Escape pressed — leaving Play Mode.");
       EditorApplication.isPlaying = false;
 #else
+      Debug.Log("GameQuitHandler: Escape pressed — quitting.");
       Application.Quit();
 #endif
     }
 
-    private float PlayQuitSoundRuntime()
+    private void PlayQuitSoundRuntime()
     {
       if (quitSound == null || audioSource == null)
-        return 0f;
+        return;
 
       audioSource.PlayOneShot(quitSound, quitSoundVolume);
-      return quitSound.length;
     }
 
 #if UNITY_EDITOR
