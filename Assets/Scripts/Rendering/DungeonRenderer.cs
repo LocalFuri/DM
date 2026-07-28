@@ -21,6 +21,10 @@ namespace DM.Rendering
 
     [Header("Entrance")]
     [SerializeField] private bool showEntranceScreen = true;
+    [SerializeField] private int entranceDoorLeftX = 0;
+    [SerializeField] private int entranceDoorLeftY = 0;
+    [SerializeField] private int entranceDoorRightX = 0;
+    [SerializeField] private int entranceDoorRightY = 0;
 
     private Texture2D frameBuffer;
     private Color32[] framePixels;
@@ -173,6 +177,48 @@ namespace DM.Rendering
         else
         {
           Blit(entrance, 0, 0);
+        }
+
+        Texture2D entranceDoorLeft =
+            graphics != null
+                ? graphics.EntranceDoorClosedLeft
+                : null;
+
+        if (entranceDoorLeft == null)
+        {
+          Debug.LogWarning(
+              "DungeonRenderer: EntranceDoorClosedLeft " +
+              "texture is missing."
+          );
+        }
+        else
+        {
+          Blit(
+              entranceDoorLeft,
+              entranceDoorLeftX,
+              entranceDoorLeftY
+          );
+        }
+
+        Texture2D entranceDoorRight =
+            graphics != null
+                ? graphics.EntranceDoorClosedRight
+                : null;
+
+        if (entranceDoorRight == null)
+        {
+          Debug.LogWarning(
+              "DungeonRenderer: EntranceDoorClosedRight " +
+              "texture is missing."
+          );
+        }
+        else
+        {
+          Blit(
+              entranceDoorRight,
+              entranceDoorRightX,
+              entranceDoorRightY
+          );
         }
 
         ApplyFrameBuffer();
