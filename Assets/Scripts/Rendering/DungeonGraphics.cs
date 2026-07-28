@@ -15,6 +15,9 @@ namespace DM.Rendering
     public Texture2D CeilingStrip84;
     public Texture2D CeilingStrip85;
 
+    [Header("Entrance")]
+    public Texture2D EntranceDoorClosedOutside;
+
     [Header("Wall Graphics - F0")]
     public Texture2D WallF0L;
     public Texture2D WallF0R;
@@ -149,49 +152,61 @@ namespace DM.Rendering
       {
         case DungeonGraphicType.WallF0L:
           return MaskWallF0L;
+
         case DungeonGraphicType.WallF0R:
           if (MaskWallF0R != null)
             return MaskWallF0R;
+
           flipHorizontal = true;
           return MaskWallF0L;
 
         case DungeonGraphicType.WallF1L:
           return MaskWallF1L;
+
         case DungeonGraphicType.WallF1R:
           if (MaskWallF1R != null)
             return MaskWallF1R;
+
           flipHorizontal = true;
           return MaskWallF1L;
 
         case DungeonGraphicType.WallF2L:
           return MaskWallF2L;
+
         case DungeonGraphicType.WallF2R:
           if (MaskWallF2R != null)
             return MaskWallF2R;
+
           flipHorizontal = true;
           return MaskWallF2L;
 
         case DungeonGraphicType.WallF3L:
           return MaskWallF3L;
+
         case DungeonGraphicType.WallF3R:
           if (MaskWallF3R != null)
             return MaskWallF3R;
+
           flipHorizontal = true;
           return MaskWallF3L;
 
         case DungeonGraphicType.WallS2L:
           return MaskWallS2L;
+
         case DungeonGraphicType.WallS2R:
           if (MaskWallS2R != null)
             return MaskWallS2R;
+
           flipHorizontal = true;
           return MaskWallS2L;
 
         case DungeonGraphicType.WallS3L:
           return MaskWallS3L;
+
         case DungeonGraphicType.WallS3R:
           if (MaskWallS3R != null)
             return MaskWallS3R;
+
           flipHorizontal = true;
           return MaskWallS3L;
 
