@@ -521,6 +521,7 @@ MonoBehaviour:
   targetTexture: {fileID: 8400000, guid: 45d017801685b8b4a8e712182372c569, type: 2}
   layout: {fileID: 11400000, guid: 295945db28b589549b5f91d66d60e369, type: 2}
   graphics: {fileID: 11400000, guid: 1270decf606b78745ab27b60f480f75a, type: 2}
+  showEntranceScreen: 1
 --- !u!4 &586494317
 Transform:
   m_ObjectHideFlags: 0
@@ -985,8 +986,8 @@ MonoBehaviour:
     serializedVersion: 2
     x: 0
     y: 0
-    width: 0.7
-    height: 0.68
+    width: 1
+    height: 1
 --- !u!222 &1207986965
 CanvasRenderer:
   m_ObjectHideFlags: 0

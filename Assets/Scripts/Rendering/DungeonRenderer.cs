@@ -547,7 +547,8 @@ namespace DM.Rendering
         int destinationX,
         int destinationY,
         Texture2D mask = null,
-        bool flipMaskHorizontal = false)
+        bool flipMaskHorizontal = false,
+        bool flipVertical = false)
     {
       Color32[] sourcePixels =
           source.GetPixels32();
@@ -568,6 +569,10 @@ namespace DM.Rendering
           sourceY < source.height;
           sourceY++)
       {
+        int sampleY = flipVertical
+            ? source.height - 1 - sourceY
+            : sourceY;
+
         int targetY =
             destinationY + sourceY;
 
@@ -601,7 +606,7 @@ namespace DM.Rendering
 
             Color32 maskColour =
                 maskPixels[
-                    sourceY * mask.width +
+                    sampleY * mask.width +
                     maskX
                 ];
 
@@ -617,7 +622,7 @@ namespace DM.Rendering
 
           Color32 sourceColour =
               sourcePixels[
-                  sourceY * source.width +
+                  sampleY * source.width +
                   sourceX
               ];
 
