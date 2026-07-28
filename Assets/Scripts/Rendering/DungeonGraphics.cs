@@ -17,6 +17,8 @@ namespace DM.Rendering
 
     [Header("Entrance")]
     public Texture2D EntranceDoorClosedOutside;
+    public Texture2D EntranceDoorClosedLeft;
+    public Texture2D EntranceDoorClosedRight;
 
     [Header("Wall Graphics - F0")]
     public Texture2D WallF0L;
