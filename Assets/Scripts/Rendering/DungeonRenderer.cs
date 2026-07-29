@@ -41,6 +41,7 @@ namespace DM.Rendering
     private const int EntranceDoorOpenEndLeftX = -105;
     private const int EntranceDoorOpenEndRightX = 320;
     private const int EntranceDoorOpenY = 16;
+    private const int EntranceDungeonOffsetY = 31;
 
     private Texture2D frameBuffer;
     private Color32[] framePixels;
@@ -56,6 +57,7 @@ namespace DM.Rendering
     private float entranceDoorOpenElapsed;
     private int animatedEntranceDoorLeftX;
     private int animatedEntranceDoorRightX;
+    private int dungeonDrawOffsetY;
 
     private readonly List<string> visibleWallPieces = new();
 
@@ -283,6 +285,9 @@ namespace DM.Rendering
 
     private void DrawDungeonFrame()
     {
+      dungeonDrawOffsetY =
+          showEntranceScreen ? EntranceDungeonOffsetY : 0;
+
       Clear(
           new Color32(
               0,
@@ -691,7 +696,7 @@ namespace DM.Rendering
       Blit(
           texture,
           piece.X,
-          piece.Y,
+          piece.Y + dungeonDrawOffsetY,
           mask,
           flipMaskX
       );
