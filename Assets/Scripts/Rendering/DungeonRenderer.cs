@@ -26,6 +26,9 @@ namespace DM.Rendering
     [SerializeField] private int entranceDoorLeftY = 0;
     [SerializeField] private int entranceDoorRightX = 0;
     [SerializeField] private int entranceDoorRightY = 0;
+    [SerializeField]
+    [Min(0.1f)]
+    private float entranceDoorOpenDuration = 3.0f;
 
     [Header("Entrance Door Audio")]
     [SerializeField] private AudioSource entranceDoorAudioSource;
@@ -33,7 +36,6 @@ namespace DM.Rendering
     [Range(0f, 1f)]
     [SerializeField] private float entranceDoorSoundVolume = 1.0f;
 
-    private const float EntranceDoorOpenDuration = 1.2f;
     private const int EntranceDoorOpenStartLeftX = 0;
     private const int EntranceDoorOpenStartRightX = 105;
     private const int EntranceDoorOpenEndLeftX = -105;
@@ -87,7 +89,7 @@ namespace DM.Rendering
 
       entranceDoorOpenElapsed += Time.unscaledDeltaTime;
       float t = Mathf.Clamp01(
-          entranceDoorOpenElapsed / EntranceDoorOpenDuration
+          entranceDoorOpenElapsed / entranceDoorOpenDuration
       );
 
       animatedEntranceDoorLeftX = Mathf.RoundToInt(
@@ -113,6 +115,7 @@ namespace DM.Rendering
         entranceDoorOpened = true;
         animatedEntranceDoorLeftX = EntranceDoorOpenEndLeftX;
         animatedEntranceDoorRightX = EntranceDoorOpenEndRightX;
+        StopEntranceDoorSound();
       }
     }
 
@@ -130,13 +133,22 @@ namespace DM.Rendering
       if (entranceDoorAudioSource != null
           && entranceDoorOpenSound != null)
       {
-        entranceDoorAudioSource.PlayOneShot(
-            entranceDoorOpenSound,
-            entranceDoorSoundVolume
-        );
+        entranceDoorAudioSource.clip = entranceDoorOpenSound;
+        entranceDoorAudioSource.loop = true;
+        entranceDoorAudioSource.volume = entranceDoorSoundVolume;
+        entranceDoorAudioSource.Play();
       }
 
       RequestRedraw();
+    }
+
+    private void StopEntranceDoorSound()
+    {
+      if (entranceDoorAudioSource == null)
+        return;
+
+      entranceDoorAudioSource.Stop();
+      entranceDoorAudioSource.loop = false;
     }
 
     private void OnEnable()
@@ -147,6 +159,9 @@ namespace DM.Rendering
     private void OnDisable()
     {
       Camera.onPostRender -= HandleCameraPostRender;
+
+      if (entranceDoorOpening)
+        StopEntranceDoorSound();
     }
 
     private void OnDestroy()
