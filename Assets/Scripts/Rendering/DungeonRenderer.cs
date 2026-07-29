@@ -30,7 +30,7 @@ namespace DM.Rendering
     private const int EntranceDoorOpenStartLeftX = 0;
     private const int EntranceDoorOpenStartRightX = 105;
     private const int EntranceDoorOpenEndLeftX = -105;
-    private const int EntranceDoorOpenEndRightX = 233;
+    private const int EntranceDoorOpenEndRightX = 320;
     private const int EntranceDoorOpenY = 16;
 
     private Texture2D frameBuffer;
@@ -103,10 +103,11 @@ namespace DM.Rendering
 
     public void OpenEntranceDoor()
     {
-      if (entranceDoorOpening || entranceDoorOpened)
+      if (entranceDoorOpening)
         return;
 
       entranceDoorOpening = true;
+      entranceDoorOpened = false;
       entranceDoorOpenElapsed = 0f;
       animatedEntranceDoorLeftX = EntranceDoorOpenStartLeftX;
       animatedEntranceDoorRightX = EntranceDoorOpenStartRightX;
