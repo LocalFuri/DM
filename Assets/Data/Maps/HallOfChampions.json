@@ -9,9 +9,9 @@
     "yDirection": "down"
   },
   "playerStart": {
-    "x": 6,
-    "y": 12,
-    "facing": "North"
+    "x": 1,
+    "y": 3,
+    "facing": "South"
   },
   "legend": {
     "#": "Wall",
