@@ -35,6 +35,13 @@ namespace DM.Dungeon
       if (keyboard == null)
         return;
 
+      // TEMPORARY TEST: Space opens the entrance doors.
+      if (keyboard.spaceKey.wasPressedThisFrame)
+        dungeonRenderer.OpenEntranceDoor();
+
+      if (dungeonRenderer.IsEntranceBlockingInput)
+        return;
+
       if (keyboard.upArrowKey.wasPressedThisFrame)
         TryMoveRelative(0, 1);
 
@@ -52,10 +59,6 @@ namespace DM.Dungeon
 
       if (keyboard.pageDownKey.wasPressedThisFrame)
         TurnRight();
-
-      // TEMPORARY TEST: Space opens the entrance doors.
-      if (keyboard.spaceKey.wasPressedThisFrame)
-        dungeonRenderer.OpenEntranceDoor();
     }
 
     // localX/localY are in facing-local space:

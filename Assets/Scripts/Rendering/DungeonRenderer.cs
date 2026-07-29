@@ -64,6 +64,9 @@ namespace DM.Rendering
     // Final wall pieces drawn in the most recent frame.
     public IReadOnlyList<string> VisibleWallPieces => visibleWallPieces;
 
+    public bool IsEntranceBlockingInput =>
+        showEntranceScreen && !entranceDoorOpened;
+
     private void Awake()
     {
       Debug.Log("DungeonRenderer Awake.");
@@ -118,6 +121,8 @@ namespace DM.Rendering
         animatedEntranceDoorLeftX = EntranceDoorOpenEndLeftX;
         animatedEntranceDoorRightX = EntranceDoorOpenEndRightX;
         StopEntranceDoorSound();
+        showEntranceScreen = false;
+        RequestRedraw();
       }
     }
 
