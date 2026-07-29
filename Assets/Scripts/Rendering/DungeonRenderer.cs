@@ -283,87 +283,11 @@ namespace DM.Rendering
 
     private void DrawDungeonFrame()
     {
-      if (showEntranceScreen)
-      {
-        visibleWallPieces.Clear();
-
-        Clear(
-            new Color32(
-                0,
-                0,
-                0,
-                255
-            )
-        );
-
-        Texture2D entrance =
-            graphics != null
-                ? graphics.EntranceDoorClosedOutside
-                : null;
-
-        if (entrance == null)
-        {
-          Debug.LogWarning(
-              "DungeonRenderer: EntranceDoorClosedOutside " +
-              "texture is missing; showing black entrance screen."
-          );
-        }
-        else
-        {
-          Blit(entrance, 0, 0);
-        }
-
-        Texture2D entranceDoorLeft =
-            graphics != null
-                ? graphics.EntranceDoorClosedLeft
-                : null;
-
-        if (entranceDoorLeft == null)
-        {
-          Debug.LogWarning(
-              "DungeonRenderer: EntranceDoorClosedLeft " +
-              "texture is missing."
-          );
-        }
-        else
-        {
-          Blit(
-              entranceDoorLeft,
-              GetEntranceDoorLeftDrawX(),
-              GetEntranceDoorLeftDrawY()
-          );
-        }
-
-        Texture2D entranceDoorRight =
-            graphics != null
-                ? graphics.EntranceDoorClosedRight
-                : null;
-
-        if (entranceDoorRight == null)
-        {
-          Debug.LogWarning(
-              "DungeonRenderer: EntranceDoorClosedRight " +
-              "texture is missing."
-          );
-        }
-        else
-        {
-          Blit(
-              entranceDoorRight,
-              GetEntranceDoorRightDrawX(),
-              GetEntranceDoorRightDrawY()
-          );
-        }
-
-        ApplyFrameBuffer();
-        return;
-      }
-
       Clear(
           new Color32(
-              255,
               0,
-              255,
+              0,
+              0,
               255
           )
       );
@@ -448,7 +372,72 @@ namespace DM.Rendering
         );
       }
 
+      if (showEntranceScreen)
+        DrawEntranceOverlay();
+
       ApplyFrameBuffer();
+    }
+
+    private void DrawEntranceOverlay()
+    {
+      Texture2D entrance =
+          graphics != null
+              ? graphics.EntranceDoorClosedOutside
+              : null;
+
+      if (entrance == null)
+      {
+        Debug.LogWarning(
+            "DungeonRenderer: EntranceDoorClosedOutside " +
+            "texture is missing."
+        );
+      }
+      else
+      {
+        Blit(entrance, 0, 0);
+      }
+
+      Texture2D entranceDoorLeft =
+          graphics != null
+              ? graphics.EntranceDoorClosedLeft
+              : null;
+
+      if (entranceDoorLeft == null)
+      {
+        Debug.LogWarning(
+            "DungeonRenderer: EntranceDoorClosedLeft " +
+            "texture is missing."
+        );
+      }
+      else
+      {
+        Blit(
+            entranceDoorLeft,
+            GetEntranceDoorLeftDrawX(),
+            GetEntranceDoorLeftDrawY()
+        );
+      }
+
+      Texture2D entranceDoorRight =
+          graphics != null
+              ? graphics.EntranceDoorClosedRight
+              : null;
+
+      if (entranceDoorRight == null)
+      {
+        Debug.LogWarning(
+            "DungeonRenderer: EntranceDoorClosedRight " +
+            "texture is missing."
+        );
+      }
+      else
+      {
+        Blit(
+            entranceDoorRight,
+            GetEntranceDoorRightDrawX(),
+            GetEntranceDoorRightDrawY()
+        );
+      }
     }
 
     private bool ShouldDrawPiece(ViewportPiece piece)
