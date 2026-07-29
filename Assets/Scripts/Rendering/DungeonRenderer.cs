@@ -46,6 +46,16 @@ namespace DM.Rendering
     [Range(0f, 1f)]
     [SerializeField] private float entranceDoorLastMoveVolume = 1.0f;
 
+    [Header("Startup Viewport Debug")]
+    [SerializeField] private bool debugStartupViewportFrames = true;
+    [SerializeField]
+    [Min(0.05f)]
+    private float debugStartupFrameHoldSeconds = 2f;
+    [SerializeField] private bool debugShowViewportChangeWarning = true;
+    [SerializeField]
+    [Min(0.05f)]
+    private float debugViewportWarningDuration = 0.25f;
+
     private static readonly Rect EntranceUvRect = new Rect(0f, 0f, 1f, 1f);
     private static readonly Rect DungeonUvRect = new Rect(
         0f,
@@ -78,13 +88,31 @@ namespace DM.Rendering
     private int animatedEntranceDoorRightX;
     private int dungeonDrawOffsetY;
 
+    private bool debugStartupActive;
+    private int debugStartupFrame;
+    private bool debugAwaitingSample;
+    private bool debugHoldingFrame;
+    private float debugHoldEndRealtime = -1f;
+    private bool debugHasPreviousSnapshot;
+    private ViewportDebugSnapshot debugPreviousSnapshot;
+    private GameObject debugWarningRoot;
+    private Text debugWarningText;
+    private float debugWarningHideRealtime = -1f;
+    private GameObject debugStatusRoot;
+    private Text debugStatusText;
+    private bool debugEditorUpdateSubscribed;
+
     private readonly List<string> visibleWallPieces = new();
+
+    private const float DebugViewportCompareTolerance = 0.001f;
+    private const int DebugStartupFrameCount = 10;
 
     // Final wall pieces drawn in the most recent frame.
     public IReadOnlyList<string> VisibleWallPieces => visibleWallPieces;
 
     public bool IsEntranceBlockingInput =>
-        showEntranceScreen && !entranceDoorOpened;
+        debugStartupActive
+        || (showEntranceScreen && !entranceDoorOpened);
 
     private void Awake()
     {
@@ -97,9 +125,11 @@ namespace DM.Rendering
         dungeonViewport = FindDungeonViewport();
 
       CreateFrameBuffer();
+
+      // Entrance RectTransform stays exactly as serialized in the scene.
+      // Only ensure UV; never rewrite anchors/size (avoids canvas dirties).
       ApplyViewportPresentation();
-      Canvas.ForceUpdateCanvases();
-      ApplyViewportPresentation();
+      BeginStartupViewportDebug();
     }
 
     private void Reset()
@@ -112,8 +142,17 @@ namespace DM.Rendering
       Debug.Log("DungeonRenderer Start.");
     }
 
+    private void LateUpdate()
+    {
+      UpdateStartupViewportDebug();
+    }
+
     private void Update()
     {
+      // Hold entrance simulation while the frame-step diagnostic is active.
+      if (debugStartupActive)
+        return;
+
       if (!entranceDoorOpening)
         return;
 
@@ -139,12 +178,17 @@ namespace DM.Rendering
 
         showEntranceScreen = false;
         ApplyViewportPresentation();
+        Canvas.ForceUpdateCanvases();
+        ApplyViewportPresentation();
         RequestRedraw();
       }
     }
 
     public void OpenEntranceDoor()
     {
+      if (debugStartupActive)
+        return;
+
       if (entranceDoorOpening || entranceDoorOpened)
         return;
 
@@ -176,17 +220,28 @@ namespace DM.Rendering
       entranceDoorAudioSource.loop = false;
     }
 
-    private float GetEntranceDoorPhase2StartTime()
+    private bool TryGetEntranceDoorFinalMoveTiming(
+        out float finalMoveStartTime,
+        out float finalMoveDuration)
     {
-      if (entranceDoorLastMoveSound == null)
+      if (entranceDoorLastMoveSound == null
+          || entranceDoorLastMoveSound.length <= 0f)
       {
-        return entranceDoorOpenDuration * entranceDoorFinalMoveStart;
+        finalMoveDuration =
+            entranceDoorOpenDuration
+            * (1f - entranceDoorFinalMoveStart);
+        finalMoveStartTime =
+            entranceDoorOpenDuration - finalMoveDuration;
+        return false;
       }
 
-      float phase2StartTime =
-          entranceDoorOpenDuration - entranceDoorLastMoveSound.length;
-
-      return Mathf.Max(0f, phase2StartTime);
+      finalMoveDuration = Mathf.Min(
+          entranceDoorLastMoveSound.length,
+          entranceDoorOpenDuration
+      );
+      finalMoveStartTime =
+          entranceDoorOpenDuration - finalMoveDuration;
+      return true;
     }
 
     private int GetEntranceDoorPhase1EndLeftX()
@@ -213,17 +268,18 @@ namespace DM.Rendering
 
     private void UpdateEntranceDoorPositions()
     {
-      float phase2StartTime = GetEntranceDoorPhase2StartTime();
-      float phase2Duration =
-          entranceDoorOpenDuration - phase2StartTime;
+      bool hasFinalMoveSound = TryGetEntranceDoorFinalMoveTiming(
+          out float finalMoveStartTime,
+          out float finalMoveDuration
+      );
 
       int phase1EndLeftX = GetEntranceDoorPhase1EndLeftX();
       int phase1EndRightX = GetEntranceDoorPhase1EndRightX();
 
-      if (entranceDoorOpenElapsed < phase2StartTime
-          || phase2Duration <= 0f)
+      if (entranceDoorOpenElapsed < finalMoveStartTime
+          || finalMoveDuration <= 0f)
       {
-        float phase1Duration = phase2StartTime;
+        float phase1Duration = finalMoveStartTime;
         float phase1Progress = phase1Duration > 0f
             ? Mathf.Clamp01(
                 entranceDoorOpenElapsed / phase1Duration
@@ -247,25 +303,27 @@ namespace DM.Rendering
         return;
       }
 
-      TryPlayEntranceDoorLastMoveSound();
+      if (hasFinalMoveSound)
+        TryPlayEntranceDoorLastMoveSound();
 
-      float phase2Progress = Mathf.Clamp01(
-          (entranceDoorOpenElapsed - phase2StartTime)
-          / phase2Duration
+      float finalProgress = Mathf.Clamp01(
+          (entranceDoorOpenElapsed - finalMoveStartTime)
+          / finalMoveDuration
       );
+      float acceleratedProgress = finalProgress * finalProgress;
 
       animatedEntranceDoorLeftX = Mathf.RoundToInt(
           Mathf.Lerp(
               phase1EndLeftX,
               EntranceDoorOpenEndLeftX,
-              phase2Progress
+              acceleratedProgress
           )
       );
       animatedEntranceDoorRightX = Mathf.RoundToInt(
           Mathf.Lerp(
               phase1EndRightX,
               EntranceDoorOpenEndRightX,
-              phase2Progress
+              acceleratedProgress
           )
       );
     }
@@ -275,8 +333,11 @@ namespace DM.Rendering
       if (entranceDoorLastMovePlayed)
         return;
 
-      if (entranceDoorLastMoveSound == null)
+      if (entranceDoorLastMoveSound == null
+          || entranceDoorLastMoveSound.length <= 0f)
+      {
         return;
+      }
 
       StopEntranceDoorSound();
 
@@ -315,14 +376,10 @@ namespace DM.Rendering
 
       if (showEntranceScreen)
       {
+        // Serialized full-screen RectTransform is the source of truth.
+        // Do not rewrite anchors, offsets, or size while the entrance shows —
+        // that dirties the canvas and fights CanvasScaler / pixel snapping.
         dungeonViewport.uvRect = EntranceUvRect;
-        rectTransform.anchorMin = Vector2.zero;
-        rectTransform.anchorMax = Vector2.one;
-        rectTransform.pivot = new Vector2(0.5f, 0.5f);
-        rectTransform.anchoredPosition = Vector2.zero;
-        rectTransform.sizeDelta = Vector2.zero;
-        rectTransform.offsetMin = Vector2.zero;
-        rectTransform.offsetMax = Vector2.zero;
         return;
       }
 
@@ -359,12 +416,6 @@ namespace DM.Rendering
     private void OnEnable()
     {
       Camera.onPostRender += HandleCameraPostRender;
-
-      if (dungeonViewport == null)
-        dungeonViewport = FindDungeonViewport();
-
-      ApplyViewportPresentation();
-      Canvas.ForceUpdateCanvases();
     }
 
     private void OnDisable()
@@ -373,14 +424,650 @@ namespace DM.Rendering
 
       if (entranceDoorOpening)
         StopEntranceDoorSound();
+
+      CleanupStartupViewportDebug();
     }
 
     private void OnDestroy()
     {
+      CleanupStartupViewportDebug();
+
       if (frameBuffer != null)
       {
         Destroy(frameBuffer);
       }
+    }
+
+    private struct ViewportDebugSnapshot
+    {
+      public float CanvasScaleFactor;
+      public Rect ViewportRect;
+      public Vector2 AnchoredPosition;
+      public Vector2 SizeDelta;
+      public Vector2 OffsetMin;
+      public Vector2 OffsetMax;
+      public Vector3 LocalScale;
+      public Rect UvRect;
+      public Rect ParentRect;
+    }
+
+    private void BeginStartupViewportDebug()
+    {
+      if (!debugStartupViewportFrames)
+        return;
+
+      // Never touch Time.timeScale — one-frame stepping uses Editor pause
+      // (or a realtime hold outside the Editor).
+      if (Time.timeScale != 1f)
+        Time.timeScale = 1f;
+
+      debugStartupActive = true;
+      debugStartupFrame = 0;
+      debugAwaitingSample = true;
+      debugHoldingFrame = false;
+      debugHoldEndRealtime = -1f;
+      debugHasPreviousSnapshot = false;
+      debugWarningHideRealtime = -1f;
+
+      EnsureStartupDebugStatusLabel();
+      SubscribeStartupDebugEditorUpdate();
+      UpdateStartupDebugStatusLabel();
+    }
+
+    private void UpdateStartupViewportDebug()
+    {
+      if (!debugStartupActive)
+        return;
+
+      // Outside the Editor there is no player-loop pause, so the hold
+      // timer is polled here with realtimeSinceStartup.
+#if !UNITY_EDITOR
+      TickStartupViewportFrameHold();
+#endif
+
+      UpdateStartupDebugWarningVisibility();
+      UpdateStartupDebugStatusLabel();
+
+      // Only sample on the single advanced frame; holds happen after.
+      if (!debugAwaitingSample)
+        return;
+
+      debugAwaitingSample = false;
+      ProcessStartupViewportDebugFrame();
+    }
+
+    private void ProcessStartupViewportDebugFrame()
+    {
+      if (debugStartupFrame > DebugStartupFrameCount)
+      {
+        CleanupStartupViewportDebug();
+        return;
+      }
+
+      if (!TryCaptureViewportDebugSnapshot(out ViewportDebugSnapshot snapshot))
+      {
+        BeginStartupViewportFrameHold();
+        return;
+      }
+
+      Debug.Log(
+          "[EntranceViewport] " +
+          $"frame={debugStartupFrame} " +
+          $"scaleFactor={snapshot.CanvasScaleFactor:F6} " +
+          $"rect={snapshot.ViewportRect} " +
+          $"anchoredPosition={snapshot.AnchoredPosition} " +
+          $"sizeDelta={snapshot.SizeDelta} " +
+          $"offsetMin={snapshot.OffsetMin} " +
+          $"offsetMax={snapshot.OffsetMax} " +
+          $"localScale={snapshot.LocalScale} " +
+          $"uvRect={snapshot.UvRect} " +
+          $"parentRect={snapshot.ParentRect}"
+      );
+
+      if (debugHasPreviousSnapshot)
+      {
+        List<string> changed = CompareViewportDebugSnapshots(
+            debugPreviousSnapshot,
+            snapshot
+        );
+
+        if (changed.Count > 0)
+        {
+          LogEntranceViewportChanged(
+              debugStartupFrame,
+              debugPreviousSnapshot,
+              snapshot,
+              changed
+          );
+
+          if (debugShowViewportChangeWarning)
+          {
+            ShowViewportChangeWarning(
+                debugStartupFrame,
+                changed
+            );
+          }
+        }
+      }
+
+      debugPreviousSnapshot = snapshot;
+      debugHasPreviousSnapshot = true;
+      BeginStartupViewportFrameHold();
+    }
+
+    private void BeginStartupViewportFrameHold()
+    {
+      debugHoldingFrame = true;
+      debugHoldEndRealtime =
+          Time.realtimeSinceStartup + debugStartupFrameHoldSeconds;
+      UpdateStartupDebugStatusLabel();
+      SetStartupDebugEditorPaused(true);
+    }
+
+    private void TickStartupViewportFrameHold()
+    {
+      if (!debugStartupActive || !debugHoldingFrame)
+        return;
+
+      UpdateStartupDebugWarningVisibility();
+      UpdateStartupDebugStatusLabel();
+
+      if (Time.realtimeSinceStartup < debugHoldEndRealtime)
+        return;
+
+      debugHoldingFrame = false;
+
+      if (debugStartupFrame >= DebugStartupFrameCount)
+      {
+        CleanupStartupViewportDebug();
+        return;
+      }
+
+      debugStartupFrame++;
+      debugAwaitingSample = true;
+      SetStartupDebugEditorPaused(false);
+    }
+
+    private void SubscribeStartupDebugEditorUpdate()
+    {
+#if UNITY_EDITOR
+      if (debugEditorUpdateSubscribed)
+        return;
+
+      UnityEditor.EditorApplication.update +=
+          HandleStartupDebugEditorUpdate;
+      debugEditorUpdateSubscribed = true;
+#endif
+    }
+
+    private void UnsubscribeStartupDebugEditorUpdate()
+    {
+#if UNITY_EDITOR
+      if (!debugEditorUpdateSubscribed)
+        return;
+
+      UnityEditor.EditorApplication.update -=
+          HandleStartupDebugEditorUpdate;
+      debugEditorUpdateSubscribed = false;
+#endif
+    }
+
+    private void HandleStartupDebugEditorUpdate()
+    {
+      TickStartupViewportFrameHold();
+    }
+
+    private void SetStartupDebugEditorPaused(bool paused)
+    {
+#if UNITY_EDITOR
+      if (UnityEditor.EditorApplication.isPlaying)
+        UnityEditor.EditorApplication.isPaused = paused;
+#else
+      // Player builds cannot pause the player loop; Tick is driven from
+      // LateUpdate while holding (see UpdateStartupViewportDebug).
+      _ = paused;
+#endif
+    }
+
+    private bool TryCaptureViewportDebugSnapshot(
+        out ViewportDebugSnapshot snapshot)
+    {
+      snapshot = default;
+
+      if (dungeonViewport == null)
+        return false;
+
+      RectTransform rectTransform = dungeonViewport.rectTransform;
+      Canvas canvas = dungeonViewport.canvas;
+      RectTransform parent =
+          rectTransform.parent as RectTransform;
+
+      snapshot = new ViewportDebugSnapshot
+      {
+        CanvasScaleFactor =
+            canvas != null ? canvas.scaleFactor : 0f,
+        ViewportRect = rectTransform.rect,
+        AnchoredPosition = rectTransform.anchoredPosition,
+        SizeDelta = rectTransform.sizeDelta,
+        OffsetMin = rectTransform.offsetMin,
+        OffsetMax = rectTransform.offsetMax,
+        LocalScale = rectTransform.localScale,
+        UvRect = dungeonViewport.uvRect,
+        ParentRect =
+            parent != null ? parent.rect : Rect.zero
+      };
+
+      return true;
+    }
+
+    private static List<string> CompareViewportDebugSnapshots(
+        ViewportDebugSnapshot previous,
+        ViewportDebugSnapshot current)
+    {
+      List<string> changed = new();
+
+      if (!Approximately(
+              previous.CanvasScaleFactor,
+              current.CanvasScaleFactor))
+      {
+        changed.Add("Canvas.scaleFactor");
+      }
+
+      if (!Approximately(previous.ViewportRect, current.ViewportRect))
+        changed.Add("RectTransform.rect");
+
+      if (!Approximately(
+              previous.AnchoredPosition,
+              current.AnchoredPosition))
+      {
+        changed.Add("anchoredPosition");
+      }
+
+      if (!Approximately(previous.SizeDelta, current.SizeDelta))
+        changed.Add("sizeDelta");
+
+      if (!Approximately(previous.OffsetMin, current.OffsetMin))
+        changed.Add("offsetMin");
+
+      if (!Approximately(previous.OffsetMax, current.OffsetMax))
+        changed.Add("offsetMax");
+
+      if (!Approximately(previous.LocalScale, current.LocalScale))
+        changed.Add("localScale");
+
+      if (!Approximately(previous.UvRect, current.UvRect))
+        changed.Add("RawImage.uvRect");
+
+      if (!Approximately(previous.ParentRect, current.ParentRect))
+        changed.Add("parent.rect");
+
+      return changed;
+    }
+
+    private static bool Approximately(float a, float b)
+    {
+      return Mathf.Abs(a - b) <= DebugViewportCompareTolerance;
+    }
+
+    private static bool Approximately(Vector2 a, Vector2 b)
+    {
+      return Approximately(a.x, b.x) && Approximately(a.y, b.y);
+    }
+
+    private static bool Approximately(Vector3 a, Vector3 b)
+    {
+      return Approximately(a.x, b.x)
+          && Approximately(a.y, b.y)
+          && Approximately(a.z, b.z);
+    }
+
+    private static bool Approximately(Rect a, Rect b)
+    {
+      return Approximately(a.x, b.x)
+          && Approximately(a.y, b.y)
+          && Approximately(a.width, b.width)
+          && Approximately(a.height, b.height);
+    }
+
+    private static void LogEntranceViewportChanged(
+        int frame,
+        ViewportDebugSnapshot previous,
+        ViewportDebugSnapshot current,
+        List<string> changed)
+    {
+      System.Text.StringBuilder builder = new();
+      builder.AppendLine("[EntranceViewportChanged]");
+      builder.AppendLine($"frame={frame}");
+      builder.AppendLine(
+          "changed=" + string.Join(", ", changed)
+      );
+
+      AppendChangedProperty(
+          builder,
+          "Canvas.scaleFactor",
+          changed,
+          previous.CanvasScaleFactor.ToString("F6"),
+          current.CanvasScaleFactor.ToString("F6")
+      );
+      AppendChangedProperty(
+          builder,
+          "RectTransform.rect",
+          changed,
+          previous.ViewportRect.ToString(),
+          current.ViewportRect.ToString()
+      );
+      AppendChangedProperty(
+          builder,
+          "anchoredPosition",
+          changed,
+          previous.AnchoredPosition.ToString(),
+          current.AnchoredPosition.ToString()
+      );
+      AppendChangedProperty(
+          builder,
+          "sizeDelta",
+          changed,
+          previous.SizeDelta.ToString(),
+          current.SizeDelta.ToString()
+      );
+      AppendChangedProperty(
+          builder,
+          "offsetMin",
+          changed,
+          previous.OffsetMin.ToString(),
+          current.OffsetMin.ToString()
+      );
+      AppendChangedProperty(
+          builder,
+          "offsetMax",
+          changed,
+          previous.OffsetMax.ToString(),
+          current.OffsetMax.ToString()
+      );
+      AppendChangedProperty(
+          builder,
+          "localScale",
+          changed,
+          previous.LocalScale.ToString(),
+          current.LocalScale.ToString()
+      );
+      AppendChangedProperty(
+          builder,
+          "RawImage.uvRect",
+          changed,
+          previous.UvRect.ToString(),
+          current.UvRect.ToString()
+      );
+      AppendChangedProperty(
+          builder,
+          "parent.rect",
+          changed,
+          previous.ParentRect.ToString(),
+          current.ParentRect.ToString()
+      );
+
+      Debug.LogWarning(builder.ToString());
+    }
+
+    private static void AppendChangedProperty(
+        System.Text.StringBuilder builder,
+        string propertyName,
+        List<string> changed,
+        string previousValue,
+        string currentValue)
+    {
+      if (!changed.Contains(propertyName))
+        return;
+
+      builder.AppendLine(
+          $"{propertyName}: {previousValue} -> {currentValue}"
+      );
+    }
+
+    private void ShowViewportChangeWarning(
+        int frame,
+        List<string> changed)
+    {
+      EnsureViewportChangeWarningOverlay();
+
+      if (debugWarningRoot == null)
+        return;
+
+      debugWarningRoot.SetActive(true);
+      debugWarningRoot.transform.SetAsLastSibling();
+      if (debugStatusRoot != null)
+        debugStatusRoot.transform.SetAsLastSibling();
+
+      if (debugWarningText != null)
+      {
+        debugWarningText.text =
+            "VIEWPORT CHANGED\n" +
+            $"Frame: {frame}\n" +
+            "Changed: " + string.Join(", ", changed);
+      }
+
+      debugWarningHideRealtime =
+          Time.realtimeSinceStartup + debugViewportWarningDuration;
+    }
+
+    private void UpdateStartupDebugWarningVisibility()
+    {
+      if (debugWarningRoot == null || !debugWarningRoot.activeSelf)
+        return;
+
+      if (debugWarningHideRealtime < 0f)
+        return;
+
+      if (Time.realtimeSinceStartup < debugWarningHideRealtime)
+        return;
+
+      debugWarningRoot.SetActive(false);
+      debugWarningHideRealtime = -1f;
+    }
+
+    private void EnsureStartupDebugStatusLabel()
+    {
+      if (debugStatusRoot != null)
+        return;
+
+      if (dungeonViewport == null)
+        return;
+
+      Transform parent = dungeonViewport.transform.parent;
+      if (parent == null)
+        return;
+
+      debugStatusRoot = new GameObject(
+          "StartupViewportDebugStatus",
+          typeof(RectTransform),
+          typeof(CanvasRenderer),
+          typeof(Image)
+      );
+      debugStatusRoot.transform.SetParent(parent, false);
+
+      RectTransform statusRect =
+          debugStatusRoot.GetComponent<RectTransform>();
+      statusRect.anchorMin = new Vector2(0f, 1f);
+      statusRect.anchorMax = new Vector2(0f, 1f);
+      statusRect.pivot = new Vector2(0f, 1f);
+      statusRect.anchoredPosition = new Vector2(12f, -12f);
+      statusRect.sizeDelta = new Vector2(420f, 70f);
+
+      Image statusBackground =
+          debugStatusRoot.GetComponent<Image>();
+      Texture2D whiteTexture = Texture2D.whiteTexture;
+      statusBackground.sprite = Sprite.Create(
+          whiteTexture,
+          new Rect(0f, 0f, whiteTexture.width, whiteTexture.height),
+          new Vector2(0.5f, 0.5f),
+          100f
+      );
+      statusBackground.color = new Color(0f, 0f, 0f, 0.65f);
+      statusBackground.raycastTarget = false;
+
+      GameObject textObject = new GameObject(
+          "StatusText",
+          typeof(RectTransform),
+          typeof(CanvasRenderer),
+          typeof(Text)
+      );
+      textObject.transform.SetParent(debugStatusRoot.transform, false);
+
+      RectTransform textRect =
+          textObject.GetComponent<RectTransform>();
+      textRect.anchorMin = Vector2.zero;
+      textRect.anchorMax = Vector2.one;
+      textRect.offsetMin = new Vector2(8f, 4f);
+      textRect.offsetMax = new Vector2(-8f, -4f);
+
+      debugStatusText = textObject.GetComponent<Text>();
+      debugStatusText.alignment = TextAnchor.UpperLeft;
+      debugStatusText.color = Color.white;
+      debugStatusText.fontSize = 18;
+      debugStatusText.horizontalOverflow = HorizontalWrapMode.Wrap;
+      debugStatusText.verticalOverflow = VerticalWrapMode.Overflow;
+      debugStatusText.raycastTarget = false;
+      debugStatusText.font = Resources.GetBuiltinResource<Font>(
+          "LegacyRuntime.ttf"
+      );
+
+      if (debugStatusText.font == null)
+      {
+        debugStatusText.font =
+            Resources.GetBuiltinResource<Font>("Arial.ttf");
+      }
+    }
+
+    private void UpdateStartupDebugStatusLabel()
+    {
+      if (!debugStartupActive || debugStatusText == null)
+        return;
+
+      float remaining = 0f;
+      if (debugHoldingFrame)
+      {
+        remaining = Mathf.Max(
+            0f,
+            debugHoldEndRealtime - Time.realtimeSinceStartup
+        );
+      }
+
+      debugStatusText.text =
+          $"Diagnostic frame: {debugStartupFrame}\n" +
+          $"Hold remaining: {remaining:F2}s";
+    }
+
+    private void EnsureViewportChangeWarningOverlay()
+    {
+      if (debugWarningRoot != null)
+        return;
+
+      if (dungeonViewport == null)
+        return;
+
+      Transform parent = dungeonViewport.transform.parent;
+      if (parent == null)
+        return;
+
+      debugWarningRoot = new GameObject(
+          "StartupViewportDebugWarning",
+          typeof(RectTransform),
+          typeof(CanvasRenderer),
+          typeof(Image)
+      );
+      debugWarningRoot.transform.SetParent(parent, false);
+
+      RectTransform overlayRect =
+          debugWarningRoot.GetComponent<RectTransform>();
+      overlayRect.anchorMin = Vector2.zero;
+      overlayRect.anchorMax = Vector2.one;
+      overlayRect.pivot = new Vector2(0.5f, 0.5f);
+      overlayRect.anchoredPosition = Vector2.zero;
+      overlayRect.sizeDelta = Vector2.zero;
+      overlayRect.offsetMin = Vector2.zero;
+      overlayRect.offsetMax = Vector2.zero;
+
+      Image overlayImage = debugWarningRoot.GetComponent<Image>();
+      Texture2D whiteTexture = Texture2D.whiteTexture;
+      overlayImage.sprite = Sprite.Create(
+          whiteTexture,
+          new Rect(0f, 0f, whiteTexture.width, whiteTexture.height),
+          new Vector2(0.5f, 0.5f),
+          100f
+      );
+      overlayImage.type = Image.Type.Simple;
+      overlayImage.color = new Color(1f, 0f, 0f, 0.65f);
+      overlayImage.raycastTarget = false;
+
+      GameObject textObject = new GameObject(
+          "WarningText",
+          typeof(RectTransform),
+          typeof(CanvasRenderer),
+          typeof(Text)
+      );
+      textObject.transform.SetParent(
+          debugWarningRoot.transform,
+          false
+      );
+
+      RectTransform textRect =
+          textObject.GetComponent<RectTransform>();
+      textRect.anchorMin = Vector2.zero;
+      textRect.anchorMax = Vector2.one;
+      textRect.offsetMin = Vector2.zero;
+      textRect.offsetMax = Vector2.zero;
+
+      debugWarningText = textObject.GetComponent<Text>();
+      debugWarningText.alignment = TextAnchor.MiddleCenter;
+      debugWarningText.color = Color.white;
+      debugWarningText.fontSize = 36;
+      debugWarningText.horizontalOverflow =
+          HorizontalWrapMode.Wrap;
+      debugWarningText.verticalOverflow =
+          VerticalWrapMode.Overflow;
+      debugWarningText.raycastTarget = false;
+      debugWarningText.font = Resources.GetBuiltinResource<Font>(
+          "LegacyRuntime.ttf"
+      );
+
+      if (debugWarningText.font == null)
+      {
+        debugWarningText.font =
+            Resources.GetBuiltinResource<Font>("Arial.ttf");
+      }
+
+      debugWarningRoot.SetActive(false);
+    }
+
+    private void CleanupStartupViewportDebug()
+    {
+      UnsubscribeStartupDebugEditorUpdate();
+      SetStartupDebugEditorPaused(false);
+
+      if (debugWarningRoot != null)
+      {
+        Destroy(debugWarningRoot);
+        debugWarningRoot = null;
+        debugWarningText = null;
+      }
+
+      if (debugStatusRoot != null)
+      {
+        Destroy(debugStatusRoot);
+        debugStatusRoot = null;
+        debugStatusText = null;
+      }
+
+      debugWarningHideRealtime = -1f;
+      debugHasPreviousSnapshot = false;
+      debugAwaitingSample = false;
+      debugHoldingFrame = false;
+      debugHoldEndRealtime = -1f;
+
+      if (Time.timeScale != 1f)
+        Time.timeScale = 1f;
+
+      debugStartupActive = false;
     }
 
     public void Render(DungeonMap map)
