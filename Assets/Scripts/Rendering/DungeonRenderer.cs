@@ -33,12 +33,18 @@ namespace DM.Rendering
     [SerializeField]
     [Min(0.1f)]
     private float entranceDoorOpenDuration = 3.0f;
+    [SerializeField]
+    [Range(0.5f, 0.95f)]
+    private float entranceDoorFinalMoveStart = 0.8f;
 
     [Header("Entrance Door Audio")]
     [SerializeField] private AudioSource entranceDoorAudioSource;
     [SerializeField] private AudioClip entranceDoorOpenSound;
     [Range(0f, 1f)]
     [SerializeField] private float entranceDoorSoundVolume = 1.0f;
+    [SerializeField] private AudioClip entranceDoorLastMoveSound;
+    [Range(0f, 1f)]
+    [SerializeField] private float entranceDoorLastMoveVolume = 1.0f;
 
     private static readonly Rect EntranceUvRect = new Rect(0f, 0f, 1f, 1f);
     private static readonly Rect DungeonUvRect = new Rect(
@@ -66,6 +72,7 @@ namespace DM.Rendering
 
     private bool entranceDoorOpening;
     private bool entranceDoorOpened;
+    private bool entranceDoorLastMovePlayed;
     private float entranceDoorOpenElapsed;
     private int animatedEntranceDoorLeftX;
     private int animatedEntranceDoorRightX;
@@ -111,26 +118,12 @@ namespace DM.Rendering
         return;
 
       entranceDoorOpenElapsed += Time.unscaledDeltaTime;
+      UpdateEntranceDoorPositions();
+      RequestRedraw();
+
       float t = Mathf.Clamp01(
           entranceDoorOpenElapsed / entranceDoorOpenDuration
       );
-
-      animatedEntranceDoorLeftX = Mathf.RoundToInt(
-          Mathf.Lerp(
-              EntranceDoorOpenStartLeftX,
-              EntranceDoorOpenEndLeftX,
-              t
-          )
-      );
-      animatedEntranceDoorRightX = Mathf.RoundToInt(
-          Mathf.Lerp(
-              EntranceDoorOpenStartRightX,
-              EntranceDoorOpenEndRightX,
-              t
-          )
-      );
-
-      RequestRedraw();
 
       if (t >= 1f)
       {
@@ -138,7 +131,12 @@ namespace DM.Rendering
         entranceDoorOpened = true;
         animatedEntranceDoorLeftX = EntranceDoorOpenEndLeftX;
         animatedEntranceDoorRightX = EntranceDoorOpenEndRightX;
-        StopEntranceDoorSound();
+
+        // DoorLastMove is already playing via PlayOneShot; do not
+        // Stop() or it would cut that final sound off.
+        if (!entranceDoorLastMovePlayed)
+          StopEntranceDoorSound();
+
         showEntranceScreen = false;
         ApplyViewportPresentation();
         RequestRedraw();
@@ -152,6 +150,7 @@ namespace DM.Rendering
 
       entranceDoorOpening = true;
       entranceDoorOpened = false;
+      entranceDoorLastMovePlayed = false;
       entranceDoorOpenElapsed = 0f;
       animatedEntranceDoorLeftX = EntranceDoorOpenStartLeftX;
       animatedEntranceDoorRightX = EntranceDoorOpenStartRightX;
@@ -175,6 +174,121 @@ namespace DM.Rendering
 
       entranceDoorAudioSource.Stop();
       entranceDoorAudioSource.loop = false;
+    }
+
+    private float GetEntranceDoorPhase2StartTime()
+    {
+      if (entranceDoorLastMoveSound == null)
+      {
+        return entranceDoorOpenDuration * entranceDoorFinalMoveStart;
+      }
+
+      float phase2StartTime =
+          entranceDoorOpenDuration - entranceDoorLastMoveSound.length;
+
+      return Mathf.Max(0f, phase2StartTime);
+    }
+
+    private int GetEntranceDoorPhase1EndLeftX()
+    {
+      return Mathf.RoundToInt(
+          Mathf.Lerp(
+              EntranceDoorOpenStartLeftX,
+              EntranceDoorOpenEndLeftX,
+              entranceDoorFinalMoveStart
+          )
+      );
+    }
+
+    private int GetEntranceDoorPhase1EndRightX()
+    {
+      return Mathf.RoundToInt(
+          Mathf.Lerp(
+              EntranceDoorOpenStartRightX,
+              EntranceDoorOpenEndRightX,
+              entranceDoorFinalMoveStart
+          )
+      );
+    }
+
+    private void UpdateEntranceDoorPositions()
+    {
+      float phase2StartTime = GetEntranceDoorPhase2StartTime();
+      float phase2Duration =
+          entranceDoorOpenDuration - phase2StartTime;
+
+      int phase1EndLeftX = GetEntranceDoorPhase1EndLeftX();
+      int phase1EndRightX = GetEntranceDoorPhase1EndRightX();
+
+      if (entranceDoorOpenElapsed < phase2StartTime
+          || phase2Duration <= 0f)
+      {
+        float phase1Duration = phase2StartTime;
+        float phase1Progress = phase1Duration > 0f
+            ? Mathf.Clamp01(
+                entranceDoorOpenElapsed / phase1Duration
+            )
+            : 1f;
+
+        animatedEntranceDoorLeftX = Mathf.RoundToInt(
+            Mathf.Lerp(
+                EntranceDoorOpenStartLeftX,
+                phase1EndLeftX,
+                phase1Progress
+            )
+        );
+        animatedEntranceDoorRightX = Mathf.RoundToInt(
+            Mathf.Lerp(
+                EntranceDoorOpenStartRightX,
+                phase1EndRightX,
+                phase1Progress
+            )
+        );
+        return;
+      }
+
+      TryPlayEntranceDoorLastMoveSound();
+
+      float phase2Progress = Mathf.Clamp01(
+          (entranceDoorOpenElapsed - phase2StartTime)
+          / phase2Duration
+      );
+
+      animatedEntranceDoorLeftX = Mathf.RoundToInt(
+          Mathf.Lerp(
+              phase1EndLeftX,
+              EntranceDoorOpenEndLeftX,
+              phase2Progress
+          )
+      );
+      animatedEntranceDoorRightX = Mathf.RoundToInt(
+          Mathf.Lerp(
+              phase1EndRightX,
+              EntranceDoorOpenEndRightX,
+              phase2Progress
+          )
+      );
+    }
+
+    private void TryPlayEntranceDoorLastMoveSound()
+    {
+      if (entranceDoorLastMovePlayed)
+        return;
+
+      if (entranceDoorLastMoveSound == null)
+        return;
+
+      StopEntranceDoorSound();
+
+      if (entranceDoorAudioSource != null)
+      {
+        entranceDoorAudioSource.PlayOneShot(
+            entranceDoorLastMoveSound,
+            entranceDoorLastMoveVolume
+        );
+      }
+
+      entranceDoorLastMovePlayed = true;
     }
 
     private static RawImage FindDungeonViewport()
