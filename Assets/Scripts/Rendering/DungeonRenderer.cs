@@ -26,6 +26,13 @@ namespace DM.Rendering
     [SerializeField] private int entranceDoorRightX = 0;
     [SerializeField] private int entranceDoorRightY = 0;
 
+    private const float EntranceDoorOpenDuration = 1.2f;
+    private const int EntranceDoorOpenStartLeftX = 0;
+    private const int EntranceDoorOpenStartRightX = 105;
+    private const int EntranceDoorOpenEndLeftX = -105;
+    private const int EntranceDoorOpenEndRightX = 233;
+    private const int EntranceDoorOpenY = 16;
+
     private Texture2D frameBuffer;
     private Color32[] framePixels;
 
@@ -34,6 +41,12 @@ namespace DM.Rendering
 
     private DungeonMap currentMap;
     private bool frameDirty = true;
+
+    private bool entranceDoorOpening;
+    private bool entranceDoorOpened;
+    private float entranceDoorOpenElapsed;
+    private int animatedEntranceDoorLeftX;
+    private int animatedEntranceDoorRightX;
 
     private readonly List<string> visibleWallPieces = new();
 
@@ -50,6 +63,54 @@ namespace DM.Rendering
     private void Start()
     {
       Debug.Log("DungeonRenderer Start.");
+    }
+
+    private void Update()
+    {
+      if (!entranceDoorOpening)
+        return;
+
+      entranceDoorOpenElapsed += Time.unscaledDeltaTime;
+      float t = Mathf.Clamp01(
+          entranceDoorOpenElapsed / EntranceDoorOpenDuration
+      );
+
+      animatedEntranceDoorLeftX = Mathf.RoundToInt(
+          Mathf.Lerp(
+              EntranceDoorOpenStartLeftX,
+              EntranceDoorOpenEndLeftX,
+              t
+          )
+      );
+      animatedEntranceDoorRightX = Mathf.RoundToInt(
+          Mathf.Lerp(
+              EntranceDoorOpenStartRightX,
+              EntranceDoorOpenEndRightX,
+              t
+          )
+      );
+
+      RequestRedraw();
+
+      if (t >= 1f)
+      {
+        entranceDoorOpening = false;
+        entranceDoorOpened = true;
+        animatedEntranceDoorLeftX = EntranceDoorOpenEndLeftX;
+        animatedEntranceDoorRightX = EntranceDoorOpenEndRightX;
+      }
+    }
+
+    public void OpenEntranceDoor()
+    {
+      if (entranceDoorOpening || entranceDoorOpened)
+        return;
+
+      entranceDoorOpening = true;
+      entranceDoorOpenElapsed = 0f;
+      animatedEntranceDoorLeftX = EntranceDoorOpenStartLeftX;
+      animatedEntranceDoorRightX = EntranceDoorOpenStartRightX;
+      RequestRedraw();
     }
 
     private void OnEnable()
@@ -147,6 +208,38 @@ namespace DM.Rendering
           new Color32[viewWidth * viewHeight];
     }
 
+    private int GetEntranceDoorLeftDrawX()
+    {
+      if (entranceDoorOpening || entranceDoorOpened)
+        return animatedEntranceDoorLeftX;
+
+      return entranceDoorLeftX;
+    }
+
+    private int GetEntranceDoorRightDrawX()
+    {
+      if (entranceDoorOpening || entranceDoorOpened)
+        return animatedEntranceDoorRightX;
+
+      return entranceDoorRightX;
+    }
+
+    private int GetEntranceDoorLeftDrawY()
+    {
+      if (entranceDoorOpening || entranceDoorOpened)
+        return EntranceDoorOpenY;
+
+      return entranceDoorLeftY;
+    }
+
+    private int GetEntranceDoorRightDrawY()
+    {
+      if (entranceDoorOpening || entranceDoorOpened)
+        return EntranceDoorOpenY;
+
+      return entranceDoorRightY;
+    }
+
     private void DrawDungeonFrame()
     {
       if (showEntranceScreen)
@@ -195,8 +288,8 @@ namespace DM.Rendering
         {
           Blit(
               entranceDoorLeft,
-              entranceDoorLeftX,
-              entranceDoorLeftY
+              GetEntranceDoorLeftDrawX(),
+              GetEntranceDoorLeftDrawY()
           );
         }
 
@@ -216,8 +309,8 @@ namespace DM.Rendering
         {
           Blit(
               entranceDoorRight,
-              entranceDoorRightX,
-              entranceDoorRightY
+              GetEntranceDoorRightDrawX(),
+              GetEntranceDoorRightDrawY()
           );
         }
 
