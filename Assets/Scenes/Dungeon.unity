@@ -527,9 +527,10 @@ MonoBehaviour:
   entranceDoorLeftY: 16
   entranceDoorRightX: 105
   entranceDoorRightY: 16
+  entranceDoorOpenDuration: 3
   entranceDoorAudioSource: {fileID: 0}
-  entranceDoorOpenSound: {fileID: 0}
-  entranceDoorSoundVolume: 1
+  entranceDoorOpenSound: {fileID: 8300000, guid: 928d68ed3e8f11544965b5e9a8afee22, type: 3}
+  entranceDoorSoundVolume: 0.423
 --- !u!4 &586494317
 Transform:
   m_ObjectHideFlags: 0
