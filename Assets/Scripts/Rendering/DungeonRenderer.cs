@@ -91,6 +91,8 @@ namespace DM.Rendering
 
       CreateFrameBuffer();
       ApplyViewportPresentation();
+      Canvas.ForceUpdateCanvases();
+      ApplyViewportPresentation();
     }
 
     private void Reset()
@@ -205,6 +207,8 @@ namespace DM.Rendering
         rectTransform.pivot = new Vector2(0.5f, 0.5f);
         rectTransform.anchoredPosition = Vector2.zero;
         rectTransform.sizeDelta = Vector2.zero;
+        rectTransform.offsetMin = Vector2.zero;
+        rectTransform.offsetMax = Vector2.zero;
         return;
       }
 
@@ -228,6 +232,9 @@ namespace DM.Rendering
         fitWidth = fitHeight * aspect;
       }
 
+      fitWidth = Mathf.Round(fitWidth);
+      fitHeight = Mathf.Round(fitHeight);
+
       rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
       rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
       rectTransform.pivot = new Vector2(0.5f, 0.5f);
@@ -238,6 +245,12 @@ namespace DM.Rendering
     private void OnEnable()
     {
       Camera.onPostRender += HandleCameraPostRender;
+
+      if (dungeonViewport == null)
+        dungeonViewport = FindDungeonViewport();
+
+      ApplyViewportPresentation();
+      Canvas.ForceUpdateCanvases();
     }
 
     private void OnDisable()
