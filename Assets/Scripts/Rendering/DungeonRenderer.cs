@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using DM.Dungeon;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace DM.Rendering
 {
@@ -9,10 +10,13 @@ namespace DM.Rendering
   {
     private const int DefaultViewWidth = 320;
     private const int DefaultViewHeight = 200;
+    private const int DungeonViewWidth = 224;
+    private const int DungeonViewHeight = 136;
 
     [Header("Rendering")]
     [SerializeField] private Camera dungeonCamera;
     [SerializeField] private RenderTexture targetTexture;
+    [SerializeField] private RawImage dungeonViewport;
 
     [Header("Viewport Layout")]
     [SerializeField] private ViewportLayout layout;
@@ -35,6 +39,14 @@ namespace DM.Rendering
     [SerializeField] private AudioClip entranceDoorOpenSound;
     [Range(0f, 1f)]
     [SerializeField] private float entranceDoorSoundVolume = 1.0f;
+
+    private static readonly Rect EntranceUvRect = new Rect(0f, 0f, 1f, 1f);
+    private static readonly Rect DungeonUvRect = new Rect(
+        0f,
+        0f,
+        DungeonViewWidth / (float)DefaultViewWidth,
+        DungeonViewHeight / (float)DefaultViewHeight
+    );
 
     private const int EntranceDoorOpenStartLeftX = 0;
     private const int EntranceDoorOpenStartRightX = 105;
@@ -74,7 +86,11 @@ namespace DM.Rendering
       if (entranceDoorAudioSource == null)
         entranceDoorAudioSource = GetComponent<AudioSource>();
 
+      if (dungeonViewport == null)
+        dungeonViewport = FindDungeonViewport();
+
       CreateFrameBuffer();
+      ApplyViewportPresentation();
     }
 
     private void Reset()
@@ -122,13 +138,14 @@ namespace DM.Rendering
         animatedEntranceDoorRightX = EntranceDoorOpenEndRightX;
         StopEntranceDoorSound();
         showEntranceScreen = false;
+        ApplyViewportPresentation();
         RequestRedraw();
       }
     }
 
     public void OpenEntranceDoor()
     {
-      if (entranceDoorOpening)
+      if (entranceDoorOpening || entranceDoorOpened)
         return;
 
       entranceDoorOpening = true;
@@ -156,6 +173,66 @@ namespace DM.Rendering
 
       entranceDoorAudioSource.Stop();
       entranceDoorAudioSource.loop = false;
+    }
+
+    private static RawImage FindDungeonViewport()
+    {
+      RawImage[] images = Object.FindObjectsByType<RawImage>(
+          FindObjectsInactive.Exclude
+      );
+
+      foreach (RawImage image in images)
+      {
+        if (image != null && image.gameObject.name == "DungeonViewport")
+          return image;
+      }
+
+      return null;
+    }
+
+    private void ApplyViewportPresentation()
+    {
+      if (dungeonViewport == null)
+        return;
+
+      RectTransform rectTransform = dungeonViewport.rectTransform;
+
+      if (showEntranceScreen)
+      {
+        dungeonViewport.uvRect = EntranceUvRect;
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        rectTransform.anchoredPosition = Vector2.zero;
+        rectTransform.sizeDelta = Vector2.zero;
+        return;
+      }
+
+      dungeonViewport.uvRect = DungeonUvRect;
+
+      RectTransform parent =
+          rectTransform.parent as RectTransform;
+      float parentWidth =
+          parent != null ? parent.rect.width : DefaultViewWidth;
+      float parentHeight =
+          parent != null ? parent.rect.height : DefaultViewHeight;
+
+      float aspect =
+          DungeonViewWidth / (float)DungeonViewHeight;
+      float fitWidth = parentWidth;
+      float fitHeight = fitWidth / aspect;
+
+      if (fitHeight > parentHeight)
+      {
+        fitHeight = parentHeight;
+        fitWidth = fitHeight * aspect;
+      }
+
+      rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+      rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+      rectTransform.pivot = new Vector2(0.5f, 0.5f);
+      rectTransform.anchoredPosition = Vector2.zero;
+      rectTransform.sizeDelta = new Vector2(fitWidth, fitHeight);
     }
 
     private void OnEnable()
