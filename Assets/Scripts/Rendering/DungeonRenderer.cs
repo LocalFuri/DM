@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace DM.Rendering
 {
+  [RequireComponent(typeof(AudioSource))]
   public class DungeonRenderer : MonoBehaviour
   {
     private const int DefaultViewWidth = 320;
@@ -25,6 +26,12 @@ namespace DM.Rendering
     [SerializeField] private int entranceDoorLeftY = 0;
     [SerializeField] private int entranceDoorRightX = 0;
     [SerializeField] private int entranceDoorRightY = 0;
+
+    [Header("Entrance Door Audio")]
+    [SerializeField] private AudioSource entranceDoorAudioSource;
+    [SerializeField] private AudioClip entranceDoorOpenSound;
+    [Range(0f, 1f)]
+    [SerializeField] private float entranceDoorSoundVolume = 1.0f;
 
     private const float EntranceDoorOpenDuration = 1.2f;
     private const int EntranceDoorOpenStartLeftX = 0;
@@ -57,7 +64,15 @@ namespace DM.Rendering
     {
       Debug.Log("DungeonRenderer Awake.");
 
+      if (entranceDoorAudioSource == null)
+        entranceDoorAudioSource = GetComponent<AudioSource>();
+
       CreateFrameBuffer();
+    }
+
+    private void Reset()
+    {
+      entranceDoorAudioSource = GetComponent<AudioSource>();
     }
 
     private void Start()
@@ -111,6 +126,16 @@ namespace DM.Rendering
       entranceDoorOpenElapsed = 0f;
       animatedEntranceDoorLeftX = EntranceDoorOpenStartLeftX;
       animatedEntranceDoorRightX = EntranceDoorOpenStartRightX;
+
+      if (entranceDoorAudioSource != null
+          && entranceDoorOpenSound != null)
+      {
+        entranceDoorAudioSource.PlayOneShot(
+            entranceDoorOpenSound,
+            entranceDoorSoundVolume
+        );
+      }
+
       RequestRedraw();
     }
 
