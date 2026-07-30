@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using DM.Dungeon;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.UI;
 
 namespace DM.Rendering
@@ -428,12 +429,14 @@ namespace DM.Rendering
 
     private void OnEnable()
     {
-      Camera.onPostRender += HandleCameraPostRender;
+      RenderPipelineManager.endCameraRendering +=
+          HandleEndCameraRendering;
     }
 
     private void OnDisable()
     {
-      Camera.onPostRender -= HandleCameraPostRender;
+      RenderPipelineManager.endCameraRendering -=
+          HandleEndCameraRendering;
 
       if (entranceDoorOpening)
         StopEntranceDoorSound();
@@ -1255,19 +1258,18 @@ namespace DM.Rendering
       frameDirty = true;
     }
 
-    private void HandleCameraPostRender(Camera renderedCamera)
+    private void HandleEndCameraRendering(
+        ScriptableRenderContext context,
+        Camera renderedCamera)
     {
       if (renderedCamera != dungeonCamera)
-      {
         return;
-      }
 
       if (targetTexture == null)
       {
         Debug.LogWarning(
             "DungeonRenderer: Target Texture is missing."
         );
-
         return;
       }
 
@@ -1276,7 +1278,6 @@ namespace DM.Rendering
         Debug.LogWarning(
             "DungeonRenderer: Framebuffer is missing."
         );
-
         return;
       }
 
@@ -1286,10 +1287,24 @@ namespace DM.Rendering
         frameDirty = false;
       }
 
-      Graphics.Blit(
-          frameBuffer,
-          targetTexture
-      );
+      PresentFrameBufferToTarget();
+    }
+
+    private void PresentFrameBufferToTarget()
+    {
+      // Keep Point sampling on both sides of the 1:1 copy.
+      frameBuffer.filterMode = FilterMode.Point;
+      targetTexture.filterMode = FilterMode.Point;
+
+      RenderTexture previousActive = RenderTexture.active;
+
+      RenderTexture.active = targetTexture;
+      GL.Viewport(new Rect(0, 0, viewWidth, viewHeight));
+
+      // Exact texel copy — no scale, no stretch, no filter resample.
+      Graphics.CopyTexture(frameBuffer, targetTexture);
+
+      RenderTexture.active = previousActive;
     }
 
     private void CreateFrameBuffer()
@@ -1314,6 +1329,9 @@ namespace DM.Rendering
       frameBuffer.name = "Dungeon Frame Buffer";
       frameBuffer.filterMode = FilterMode.Point;
       frameBuffer.wrapMode = TextureWrapMode.Clamp;
+
+      if (targetTexture != null)
+        targetTexture.filterMode = FilterMode.Point;
 
       framePixels =
           new Color32[viewWidth * viewHeight];
