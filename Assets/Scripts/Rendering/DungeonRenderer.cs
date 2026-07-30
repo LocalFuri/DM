@@ -73,9 +73,13 @@ namespace DM.Rendering
     private bool entranceDoorOpening;
     private bool entranceDoorOpened;
     private bool entranceDoorLastMovePlayed;
+    private bool entranceDoorFinalMoveActive;
     private float entranceDoorOpenElapsed;
+    private float entranceDoorFinalMoveDuration;
     private int animatedEntranceDoorLeftX;
     private int animatedEntranceDoorRightX;
+    private int entranceDoorFinalMoveFromLeftX;
+    private int entranceDoorFinalMoveFromRightX;
     private int dungeonDrawOffsetY;
 
     private readonly List<string> visibleWallPieces = new();
@@ -123,9 +127,10 @@ namespace DM.Rendering
       TryPlayEntranceDoorLastMoveSound();
       RequestRedraw();
 
-      float t = Mathf.Clamp01(
-          entranceDoorOpenElapsed / entranceDoorOpenDuration
-      );
+      float totalDuration = GetEntranceDoorOpenTotalDuration();
+      float t = totalDuration > 0f
+          ? Mathf.Clamp01(entranceDoorOpenElapsed / totalDuration)
+          : 1f;
 
       if (t >= 1f)
       {
@@ -155,7 +160,9 @@ namespace DM.Rendering
       entranceDoorOpening = true;
       entranceDoorOpened = false;
       entranceDoorLastMovePlayed = false;
+      entranceDoorFinalMoveActive = false;
       entranceDoorOpenElapsed = 0f;
+      entranceDoorFinalMoveDuration = 0f;
       animatedEntranceDoorLeftX = EntranceDoorOpenStartLeftX;
       animatedEntranceDoorRightX = EntranceDoorOpenStartRightX;
 
@@ -184,24 +191,31 @@ namespace DM.Rendering
         out float finalMoveStartTime,
         out float finalMoveDuration)
     {
+      // Earlier door steps always use the configured first fraction of
+      // entranceDoorOpenDuration. Sound length must not change them.
+      finalMoveStartTime =
+          entranceDoorOpenDuration * entranceDoorFinalMoveStart;
+
       if (entranceDoorLastMoveSound == null
           || entranceDoorLastMoveSound.length <= 0f)
       {
         finalMoveDuration =
-            entranceDoorOpenDuration
-            * (1f - entranceDoorFinalMoveStart);
-        finalMoveStartTime =
-            entranceDoorOpenDuration - finalMoveDuration;
+            entranceDoorOpenDuration - finalMoveStartTime;
         return false;
       }
 
-      finalMoveDuration = Mathf.Min(
-          entranceDoorLastMoveSound.length,
-          entranceDoorOpenDuration
-      );
-      finalMoveStartTime =
-          entranceDoorOpenDuration - finalMoveDuration;
+      // Final segment lasts exactly as long as DoorLastMove.
+      finalMoveDuration = entranceDoorLastMoveSound.length;
       return true;
+    }
+
+    private float GetEntranceDoorOpenTotalDuration()
+    {
+      TryGetEntranceDoorFinalMoveTiming(
+          out float finalMoveStartTime,
+          out float finalMoveDuration
+      );
+      return finalMoveStartTime + finalMoveDuration;
     }
 
     private int GetEntranceDoorPhase1EndLeftX()
@@ -239,6 +253,8 @@ namespace DM.Rendering
       if (entranceDoorOpenElapsed < finalMoveStartTime
           || finalMoveDuration <= 0f)
       {
+        entranceDoorFinalMoveActive = false;
+
         float phase1Duration = finalMoveStartTime;
         float phase1Progress = phase1Duration > 0f
             ? Mathf.Clamp01(
@@ -263,26 +279,50 @@ namespace DM.Rendering
         return;
       }
 
+      BeginEntranceDoorFinalMoveIfNeeded(
+          phase1EndLeftX,
+          phase1EndRightX,
+          finalMoveDuration
+      );
+
+      // speed = remainingDistance / DoorLastMove.length
       float finalProgress = Mathf.Clamp01(
           (entranceDoorOpenElapsed - finalMoveStartTime)
-          / finalMoveDuration
+          / entranceDoorFinalMoveDuration
       );
-      float acceleratedProgress = finalProgress * finalProgress;
 
       animatedEntranceDoorLeftX = Mathf.RoundToInt(
           Mathf.Lerp(
-              phase1EndLeftX,
+              entranceDoorFinalMoveFromLeftX,
               EntranceDoorOpenEndLeftX,
-              acceleratedProgress
+              finalProgress
           )
       );
       animatedEntranceDoorRightX = Mathf.RoundToInt(
           Mathf.Lerp(
-              phase1EndRightX,
+              entranceDoorFinalMoveFromRightX,
               EntranceDoorOpenEndRightX,
-              acceleratedProgress
+              finalProgress
           )
       );
+    }
+
+    private void BeginEntranceDoorFinalMoveIfNeeded(
+        int phase1EndLeftX,
+        int phase1EndRightX,
+        float finalMoveDuration)
+    {
+      if (entranceDoorFinalMoveActive)
+        return;
+
+      entranceDoorFinalMoveActive = true;
+      entranceDoorFinalMoveDuration = finalMoveDuration;
+
+      // Remaining distance is measured from where the early animation left off.
+      entranceDoorFinalMoveFromLeftX = phase1EndLeftX;
+      entranceDoorFinalMoveFromRightX = phase1EndRightX;
+      animatedEntranceDoorLeftX = phase1EndLeftX;
+      animatedEntranceDoorRightX = phase1EndRightX;
     }
 
     private void TryPlayEntranceDoorLastMoveSound()
