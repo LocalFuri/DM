@@ -124,6 +124,15 @@ namespace DM.Dungeon
 
     private void DetectChampionInFront()
     {
+      if (dungeonRenderer != null
+          && dungeonRenderer.IsEntranceBlockingInput)
+      {
+        if (heroRecruitmentPanel != null)
+          heroRecruitmentPanel.Hide();
+
+        return;
+      }
+
       GetHeroPlacementLookup(
           map.PlayerFacing,
           out int heroX,

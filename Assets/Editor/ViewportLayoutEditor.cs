@@ -509,7 +509,9 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void MaintainOverlayVisual()
   {
-    if (!Application.isPlaying)
+    // Never draw the reference overlay during Play Mode — it is a
+    // duplicate RawImage on the Canvas and shows up over gameplay.
+    if (Application.isPlaying)
     {
       DestroyOverlayObject();
       return;
