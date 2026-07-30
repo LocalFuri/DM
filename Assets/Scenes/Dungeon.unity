@@ -573,8 +573,6 @@ MonoBehaviour:
   entranceDoorAudioSource: {fileID: 586494318}
   entranceDoorOpenSound: {fileID: 8300000, guid: 928d68ed3e8f11544965b5e9a8afee22, type: 3}
   entranceDoorSoundVolume: 0.423
-  entranceDoorLastMoveSound: {fileID: 8300000, guid: 91697f6a6d768d54db8b3d1dfa4539e7, type: 3}
-  entranceDoorLastMoveVolume: 1
 --- !u!4 &586494317
 Transform:
   m_ObjectHideFlags: 0

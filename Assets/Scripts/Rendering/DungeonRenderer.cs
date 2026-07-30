@@ -42,9 +42,6 @@ namespace DM.Rendering
     [SerializeField] private AudioClip entranceDoorOpenSound;
     [Range(0f, 1f)]
     [SerializeField] private float entranceDoorSoundVolume = 1.0f;
-    [SerializeField] private AudioClip entranceDoorLastMoveSound;
-    [Range(0f, 1f)]
-    [SerializeField] private float entranceDoorLastMoveVolume = 1.0f;
 
     private static readonly Rect EntranceUvRect = new Rect(0f, 0f, 1f, 1f);
     private static readonly Rect DungeonUvRect = new Rect(
@@ -72,10 +69,12 @@ namespace DM.Rendering
 
     private bool entranceDoorOpening;
     private bool entranceDoorOpened;
-    private bool entranceDoorLastMovePlayed;
+    private bool entranceDoorFinalPhaseActive;
     private bool entranceDoorFinalMoveActive;
     private float entranceDoorOpenElapsed;
+    private float entranceDoorFinalMoveStartElapsed;
     private float entranceDoorFinalMoveDuration;
+    private float entranceDoorNextRattleElapsed;
     private int animatedEntranceDoorLeftX;
     private int animatedEntranceDoorRightX;
     private int entranceDoorFinalMoveFromLeftX;
@@ -88,7 +87,7 @@ namespace DM.Rendering
     public IReadOnlyList<string> VisibleWallPieces => visibleWallPieces;
 
     public bool IsEntranceBlockingInput =>
-        showEntranceScreen && !entranceDoorOpened;
+        !entranceDoorOpened && (showEntranceScreen || entranceDoorOpening);
 
     private void Awake()
     {
@@ -123,33 +122,17 @@ namespace DM.Rendering
         return;
 
       entranceDoorOpenElapsed += Time.unscaledDeltaTime;
-      UpdateEntranceDoorPositions();
-      TryPlayEntranceDoorLastMoveSound();
-      RequestRedraw();
+      EnsureEntranceDoorFinalPhaseStarted();
 
-      float totalDuration = GetEntranceDoorOpenTotalDuration();
-      float t = totalDuration > 0f
-          ? Mathf.Clamp01(entranceDoorOpenElapsed / totalDuration)
-          : 1f;
-
-      if (t >= 1f)
+      if (HasEntranceDoorFinalMoveFinished())
       {
-        entranceDoorOpening = false;
-        entranceDoorOpened = true;
-        animatedEntranceDoorLeftX = EntranceDoorOpenEndLeftX;
-        animatedEntranceDoorRightX = EntranceDoorOpenEndRightX;
-
-        // DoorLastMove is already playing via PlayOneShot; do not
-        // Stop() or it would cut that final sound off.
-        if (!entranceDoorLastMovePlayed)
-          StopEntranceDoorSound();
-
-        showEntranceScreen = false;
-        ApplyViewportPresentation();
-        Canvas.ForceUpdateCanvases();
-        ApplyViewportPresentation();
-        RequestRedraw();
+        CompleteEntranceTransition();
+        return;
       }
+
+      UpdateEntranceDoorChainedRattle();
+      UpdateEntranceDoorPositions();
+      RequestRedraw();
     }
 
     public void OpenEntranceDoor()
@@ -159,10 +142,12 @@ namespace DM.Rendering
 
       entranceDoorOpening = true;
       entranceDoorOpened = false;
-      entranceDoorLastMovePlayed = false;
+      entranceDoorFinalPhaseActive = false;
       entranceDoorFinalMoveActive = false;
       entranceDoorOpenElapsed = 0f;
+      entranceDoorFinalMoveStartElapsed = -1f;
       entranceDoorFinalMoveDuration = 0f;
+      entranceDoorNextRattleElapsed = -1f;
       animatedEntranceDoorLeftX = EntranceDoorOpenStartLeftX;
       animatedEntranceDoorRightX = EntranceDoorOpenStartRightX;
 
@@ -187,35 +172,110 @@ namespace DM.Rendering
       entranceDoorAudioSource.loop = false;
     }
 
-    private bool TryGetEntranceDoorFinalMoveTiming(
-        out float finalMoveStartTime,
-        out float finalMoveDuration)
+    private float GetEntranceDoorFinalMoveStartTime()
     {
-      // Earlier door steps always use the configured first fraction of
-      // entranceDoorOpenDuration. Sound length must not change them.
-      finalMoveStartTime =
-          entranceDoorOpenDuration * entranceDoorFinalMoveStart;
+      return entranceDoorOpenDuration * entranceDoorFinalMoveStart;
+    }
 
-      if (entranceDoorLastMoveSound == null
-          || entranceDoorLastMoveSound.length <= 0f)
+    private float GetEntranceDoorFinalMoveDuration()
+    {
+      return entranceDoorOpenDuration
+          * (1f - entranceDoorFinalMoveStart);
+    }
+
+    private float GetEntranceDoorRattleDuration()
+    {
+      if (entranceDoorOpenSound == null
+          || entranceDoorOpenSound.length <= 0f)
       {
-        finalMoveDuration =
-            entranceDoorOpenDuration - finalMoveStartTime;
+        return 0f;
+      }
+
+      return entranceDoorOpenSound.length;
+    }
+
+    private void EnsureEntranceDoorFinalPhaseStarted()
+    {
+      float finalMoveStartTime = GetEntranceDoorFinalMoveStartTime();
+      if (entranceDoorFinalPhaseActive
+          || entranceDoorOpenElapsed < finalMoveStartTime)
+      {
+        return;
+      }
+
+      // Leave early looping rattle; chain one-shots for the final move.
+      StopEntranceDoorSound();
+      entranceDoorFinalPhaseActive = true;
+      entranceDoorFinalMoveStartElapsed = entranceDoorOpenElapsed;
+      entranceDoorFinalMoveDuration = GetEntranceDoorFinalMoveDuration();
+      entranceDoorNextRattleElapsed = entranceDoorOpenElapsed;
+    }
+
+    private void UpdateEntranceDoorChainedRattle()
+    {
+      if (!entranceDoorFinalPhaseActive)
+        return;
+
+      float rattleDuration = GetEntranceDoorRattleDuration();
+      if (rattleDuration <= 0f
+          || entranceDoorAudioSource == null
+          || entranceDoorOpenSound == null)
+      {
+        return;
+      }
+
+      // Chain Door_Rattle clips with no overlap until doors finish.
+      if (entranceDoorOpenElapsed < entranceDoorNextRattleElapsed)
+        return;
+
+      entranceDoorAudioSource.PlayOneShot(
+          entranceDoorOpenSound,
+          entranceDoorSoundVolume
+      );
+      entranceDoorNextRattleElapsed += rattleDuration;
+
+      // Skip any missed slots after a hitch instead of stacking plays.
+      while (entranceDoorNextRattleElapsed
+          < entranceDoorOpenElapsed)
+      {
+        entranceDoorNextRattleElapsed += rattleDuration;
+      }
+    }
+
+    private bool HasEntranceDoorFinalMoveFinished()
+    {
+      if (!entranceDoorFinalPhaseActive
+          || entranceDoorFinalMoveStartElapsed < 0f
+          || entranceDoorFinalMoveDuration <= 0f)
+      {
         return false;
       }
 
-      // Final segment lasts exactly as long as DoorLastMove.
-      finalMoveDuration = entranceDoorLastMoveSound.length;
-      return true;
+      return entranceDoorOpenElapsed
+          >= entranceDoorFinalMoveStartElapsed
+          + entranceDoorFinalMoveDuration;
     }
 
-    private float GetEntranceDoorOpenTotalDuration()
+    private void CompleteEntranceTransition()
     {
-      TryGetEntranceDoorFinalMoveTiming(
-          out float finalMoveStartTime,
-          out float finalMoveDuration
-      );
-      return finalMoveStartTime + finalMoveDuration;
+      // Same frame: doors fully open, stop rattle, gameplay viewport,
+      // entrance ends, input enabled.
+      StopEntranceDoorSound();
+
+      entranceDoorOpening = false;
+      entranceDoorOpened = true;
+      animatedEntranceDoorLeftX = EntranceDoorOpenEndLeftX;
+      animatedEntranceDoorRightX = EntranceDoorOpenEndRightX;
+      showEntranceScreen = false;
+
+      DrawDungeonFrame();
+      frameDirty = false;
+      if (frameBuffer != null && targetTexture != null)
+        Graphics.Blit(frameBuffer, targetTexture);
+
+      ApplyViewportPresentation();
+      Canvas.ForceUpdateCanvases();
+      ApplyViewportPresentation();
     }
 
     private int GetEntranceDoorPhase1EndLeftX()
@@ -242,10 +302,8 @@ namespace DM.Rendering
 
     private void UpdateEntranceDoorPositions()
     {
-      TryGetEntranceDoorFinalMoveTiming(
-          out float finalMoveStartTime,
-          out float finalMoveDuration
-      );
+      float finalMoveStartTime = GetEntranceDoorFinalMoveStartTime();
+      float finalMoveDuration = GetEntranceDoorFinalMoveDuration();
 
       int phase1EndLeftX = GetEntranceDoorPhase1EndLeftX();
       int phase1EndRightX = GetEntranceDoorPhase1EndRightX();
@@ -285,10 +343,15 @@ namespace DM.Rendering
           finalMoveDuration
       );
 
-      // speed = remainingDistance / DoorLastMove.length
-      float finalProgress = Mathf.Clamp01(
-          (entranceDoorOpenElapsed - finalMoveStartTime)
-          / entranceDoorFinalMoveDuration
+      float finalMoveElapsed =
+          entranceDoorOpenElapsed - entranceDoorFinalMoveStartElapsed;
+      if (entranceDoorFinalMoveStartElapsed < 0f)
+        finalMoveElapsed = entranceDoorOpenElapsed - finalMoveStartTime;
+
+      float finalProgress = Mathf.Clamp(
+          finalMoveElapsed / entranceDoorFinalMoveDuration,
+          0f,
+          0.999f
       );
 
       animatedEntranceDoorLeftX = Mathf.RoundToInt(
@@ -316,46 +379,15 @@ namespace DM.Rendering
         return;
 
       entranceDoorFinalMoveActive = true;
-      entranceDoorFinalMoveDuration = finalMoveDuration;
+      if (entranceDoorFinalMoveDuration <= 0f)
+        entranceDoorFinalMoveDuration = finalMoveDuration;
+      if (entranceDoorFinalMoveStartElapsed < 0f)
+        entranceDoorFinalMoveStartElapsed = entranceDoorOpenElapsed;
 
-      // Remaining distance is measured from where the early animation left off.
       entranceDoorFinalMoveFromLeftX = phase1EndLeftX;
       entranceDoorFinalMoveFromRightX = phase1EndRightX;
       animatedEntranceDoorLeftX = phase1EndLeftX;
       animatedEntranceDoorRightX = phase1EndRightX;
-    }
-
-    private void TryPlayEntranceDoorLastMoveSound()
-    {
-      if (entranceDoorLastMovePlayed)
-        return;
-
-      if (entranceDoorLastMoveSound == null
-          || entranceDoorLastMoveSound.length <= 0f)
-      {
-        return;
-      }
-
-      TryGetEntranceDoorFinalMoveTiming(
-          out float finalMoveStartTime,
-          out _
-      );
-
-      // Play exactly when the final door-movement segment begins.
-      if (entranceDoorOpenElapsed < finalMoveStartTime)
-        return;
-
-      StopEntranceDoorSound();
-
-      if (entranceDoorAudioSource != null)
-      {
-        entranceDoorAudioSource.PlayOneShot(
-            entranceDoorLastMoveSound,
-            entranceDoorLastMoveVolume
-        );
-      }
-
-      entranceDoorLastMovePlayed = true;
     }
 
     private static RawImage FindDungeonViewport()
