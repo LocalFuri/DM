@@ -1,10 +1,6 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using DM.Dungeon;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.UI;
 
 namespace DM.Rendering
@@ -50,21 +46,6 @@ namespace DM.Rendering
     [Range(0f, 1f)]
     [SerializeField] private float entranceDoorLastMoveVolume = 1.0f;
 
-    [Header("Startup Viewport Debug")]
-    [SerializeField] private bool debugStartupViewportFrames = true;
-    [SerializeField]
-    [Min(0.05f)]
-    private float debugStartupFrameHoldSeconds = 2f;
-    [SerializeField] private bool debugShowViewportChangeWarning = true;
-    [SerializeField]
-    [Range(0, 16)]
-    private int debugPixelDifferenceTolerance = 0;
-    [SerializeField]
-    [Min(1)]
-    private int debugChangedPixelThreshold = 1;
-    [SerializeField]
-    private bool debugCompareEntranceViewportOnly = true;
-
     private static readonly Rect EntranceUvRect = new Rect(0f, 0f, 1f, 1f);
     private static readonly Rect DungeonUvRect = new Rect(
         0f,
@@ -97,35 +78,13 @@ namespace DM.Rendering
     private int animatedEntranceDoorRightX;
     private int dungeonDrawOffsetY;
 
-    private bool debugStartupActive;
-    private int debugStartupFrame;
-    private bool debugHoldingFrame;
-    private bool debugHoldGateOpen;
-    private float debugHoldEndRealtime = -1f;
-    private Texture2D debugReferenceTexture;
-    private Texture2D debugDifferenceTexture;
-    private Coroutine debugStartupCoroutine;
-    private GameObject debugWarningRoot;
-    private Text debugWarningText;
-    private Image debugWarningImage;
-    private GameObject debugStatusRoot;
-    private Text debugStatusText;
-    private GameObject debugDifferenceRoot;
-    private RawImage debugDifferenceImage;
-    private bool debugEditorUpdateSubscribed;
-
     private readonly List<string> visibleWallPieces = new();
-
-    private const int DebugStartupFrameCount = 10;
-    private const string DebugCaptureDirectory =
-        "C:/download/EntranceViewportDebug";
 
     // Final wall pieces drawn in the most recent frame.
     public IReadOnlyList<string> VisibleWallPieces => visibleWallPieces;
 
     public bool IsEntranceBlockingInput =>
-        debugStartupActive
-        || (showEntranceScreen && !entranceDoorOpened);
+        showEntranceScreen && !entranceDoorOpened;
 
     private void Awake()
     {
@@ -142,7 +101,6 @@ namespace DM.Rendering
       // Entrance RectTransform stays exactly as serialized in the scene.
       // Only ensure UV; never rewrite anchors/size (avoids canvas dirties).
       ApplyViewportPresentation();
-      BeginStartupViewportDebug();
     }
 
     private void Reset()
@@ -155,18 +113,8 @@ namespace DM.Rendering
       Debug.Log("DungeonRenderer Start.");
     }
 
-    private void LateUpdate()
-    {
-      if (debugStartupActive)
-        UpdateStartupDebugStatusLabel();
-    }
-
     private void Update()
     {
-      // Hold entrance simulation while the frame-step diagnostic is active.
-      if (debugStartupActive)
-        return;
-
       if (!entranceDoorOpening)
         return;
 
@@ -200,9 +148,6 @@ namespace DM.Rendering
 
     public void OpenEntranceDoor()
     {
-      if (debugStartupActive)
-        return;
-
       if (entranceDoorOpening || entranceDoorOpened)
         return;
 
@@ -429,820 +374,23 @@ namespace DM.Rendering
 
     private void OnEnable()
     {
-      RenderPipelineManager.endCameraRendering +=
-          HandleEndCameraRendering;
+      Camera.onPostRender += HandleCameraPostRender;
     }
 
     private void OnDisable()
     {
-      RenderPipelineManager.endCameraRendering -=
-          HandleEndCameraRendering;
+      Camera.onPostRender -= HandleCameraPostRender;
 
       if (entranceDoorOpening)
         StopEntranceDoorSound();
-
-      CleanupStartupViewportDebug();
     }
 
     private void OnDestroy()
     {
-      CleanupStartupViewportDebug();
-
       if (frameBuffer != null)
       {
         Destroy(frameBuffer);
       }
-    }
-
-    private void BeginStartupViewportDebug()
-    {
-      if (!debugStartupViewportFrames)
-        return;
-
-      if (Time.timeScale != 1f)
-        Time.timeScale = 1f;
-
-      debugStartupActive = true;
-      debugStartupFrame = 0;
-      debugHoldingFrame = false;
-      debugHoldGateOpen = false;
-      debugHoldEndRealtime = -1f;
-
-      EnsureStartupDebugStatusLabel();
-      SubscribeStartupDebugEditorUpdate();
-      UpdateStartupDebugStatusLabel();
-
-      if (debugStartupCoroutine != null)
-        StopCoroutine(debugStartupCoroutine);
-
-      debugStartupCoroutine =
-          StartCoroutine(StartupViewportPixelDebugRoutine());
-    }
-
-    private IEnumerator StartupViewportPixelDebugRoutine()
-    {
-      // Frame 0: hide diagnostic UI, wait until the first frame has fully
-      // rendered, then capture the immutable clean reference.
-      yield return CaptureEntrancePixelsWithoutDiagnosticUi(
-          0,
-          texture =>
-          {
-            DestroyDebugTexture(ref debugReferenceTexture);
-            debugReferenceTexture = texture;
-          }
-      );
-      if (!debugStartupActive)
-        yield break;
-
-      if (debugReferenceTexture == null)
-      {
-        Debug.LogWarning(
-            "[EntrancePixelsChanged] Failed to capture reference frame."
-        );
-        CleanupStartupViewportDebug();
-        yield break;
-      }
-
-      debugStartupFrame = 0;
-      SaveDebugCapturePng(
-          debugReferenceTexture,
-          "EntranceReference.png"
-      );
-      Debug.Log(
-          "[EntranceViewport] Diagnostic Frame 0 / Reference " +
-          $"{debugReferenceTexture.width}x{debugReferenceTexture.height}"
-      );
-      UpdateStartupDebugStatusLabel();
-      yield return HoldDiagnosticFrameRealtime();
-
-      for (int frame = 1; frame <= DebugStartupFrameCount; frame++)
-      {
-        if (!debugStartupActive)
-          yield break;
-
-        debugStartupFrame = frame;
-        UpdateStartupDebugStatusLabel();
-
-        Texture2D current = null;
-        yield return CaptureEntrancePixelsWithoutDiagnosticUi(
-            frame,
-            texture => current = texture
-        );
-        if (!debugStartupActive)
-          yield break;
-
-        if (current == null)
-        {
-          Debug.LogWarning(
-              "[EntrancePixelsChanged] Failed to capture frame " +
-              frame
-          );
-          yield return HoldDiagnosticFrameRealtime();
-          continue;
-        }
-
-        SaveDebugCapturePng(
-            current,
-            $"EntranceFrame_{frame:00}.png"
-        );
-
-        PixelCompareResult compare = CompareCapturedPixels(
-            debugReferenceTexture,
-            current
-        );
-
-        Destroy(current);
-
-        if (compare.ChangedCount >= debugChangedPixelThreshold)
-        {
-          LogEntrancePixelsChanged(frame, compare);
-          DestroyDebugTexture(ref debugDifferenceTexture);
-          debugDifferenceTexture = compare.DifferenceTexture;
-          compare.DifferenceTexture = null;
-
-          SaveDebugCapturePng(
-              debugDifferenceTexture,
-              $"EntranceDifference_{frame:00}.png"
-          );
-
-          if (debugShowViewportChangeWarning)
-          {
-            ShowPixelChangeWarning(frame, compare);
-            ShowDifferenceOverlay(debugDifferenceTexture);
-          }
-        }
-        else if (compare.DifferenceTexture != null)
-        {
-          Destroy(compare.DifferenceTexture);
-        }
-
-        yield return HoldDiagnosticFrameRealtime();
-        HidePixelChangeWarning();
-        HideDifferenceOverlay();
-      }
-
-      CleanupStartupViewportDebug();
-    }
-
-    private IEnumerator CaptureEntrancePixelsWithoutDiagnosticUi(
-        int captureFrame,
-        Action<Texture2D> onCaptured)
-    {
-      HideDiagnosticUiForCapture();
-
-      // One fully rendered frame with diagnostic UI disabled.
-      yield return new WaitForEndOfFrame();
-      if (!debugStartupActive)
-      {
-        RestoreDiagnosticStatusAfterCapture();
-        onCaptured?.Invoke(null);
-        yield break;
-      }
-
-      Debug.Log(
-          "[EntrancePixelCapture] " +
-          "diagnosticUiHidden=true " +
-          $"captureFrame={captureFrame}"
-      );
-
-      Texture2D texture = CaptureScreenTexture();
-      RestoreDiagnosticStatusAfterCapture();
-      onCaptured?.Invoke(texture);
-    }
-
-    private void HideDiagnosticUiForCapture()
-    {
-      if (debugStatusRoot != null)
-        debugStatusRoot.SetActive(false);
-
-      if (debugWarningRoot != null)
-        debugWarningRoot.SetActive(false);
-
-      if (debugDifferenceRoot != null)
-        debugDifferenceRoot.SetActive(false);
-    }
-
-    private void RestoreDiagnosticStatusAfterCapture()
-    {
-      // Only the status label returns for the hold display.
-      // Warning / difference overlays are shown explicitly after compare.
-      if (debugStatusRoot != null)
-        debugStatusRoot.SetActive(true);
-
-      UpdateStartupDebugStatusLabel();
-    }
-
-    private IEnumerator HoldDiagnosticFrameRealtime()
-    {
-      debugHoldingFrame = true;
-      debugHoldGateOpen = false;
-      debugHoldEndRealtime =
-          Time.realtimeSinceStartup + debugStartupFrameHoldSeconds;
-      UpdateStartupDebugStatusLabel();
-      SetStartupDebugEditorPaused(true);
-
-      while (debugStartupActive && !debugHoldGateOpen)
-      {
-#if !UNITY_EDITOR
-        if (Time.realtimeSinceStartup >= debugHoldEndRealtime)
-          debugHoldGateOpen = true;
-#endif
-        UpdateStartupDebugStatusLabel();
-        yield return null;
-      }
-
-      debugHoldingFrame = false;
-      SetStartupDebugEditorPaused(false);
-      UpdateStartupDebugStatusLabel();
-    }
-
-    private struct PixelCompareResult
-    {
-      public int ChangedCount;
-      public int MinX;
-      public int MinY;
-      public int MaxX;
-      public int MaxY;
-      public int MaxChannelDiff;
-      public Texture2D DifferenceTexture;
-    }
-
-    private Texture2D CaptureScreenTexture()
-    {
-      int width = Screen.width;
-      int height = Screen.height;
-      if (width <= 0 || height <= 0)
-        return null;
-
-      Texture2D texture = new Texture2D(
-          width,
-          height,
-          TextureFormat.RGB24,
-          false
-      );
-      texture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-      texture.Apply(false, false);
-      return texture;
-    }
-
-    private RectInt GetPixelCompareArea(
-        int textureWidth,
-        int textureHeight)
-    {
-      if (!debugCompareEntranceViewportOnly
-          || dungeonViewport == null)
-      {
-        return new RectInt(0, 0, textureWidth, textureHeight);
-      }
-
-      Vector3[] corners = new Vector3[4];
-      dungeonViewport.rectTransform.GetWorldCorners(corners);
-
-      int xMin = Mathf.FloorToInt(
-          Mathf.Min(corners[0].x, corners[2].x)
-      );
-      int yMin = Mathf.FloorToInt(
-          Mathf.Min(corners[0].y, corners[2].y)
-      );
-      int xMax = Mathf.CeilToInt(
-          Mathf.Max(corners[0].x, corners[2].x)
-      );
-      int yMax = Mathf.CeilToInt(
-          Mathf.Max(corners[0].y, corners[2].y)
-      );
-
-      xMin = Mathf.Clamp(xMin, 0, textureWidth);
-      yMin = Mathf.Clamp(yMin, 0, textureHeight);
-      xMax = Mathf.Clamp(xMax, 0, textureWidth);
-      yMax = Mathf.Clamp(yMax, 0, textureHeight);
-
-      int width = Mathf.Max(0, xMax - xMin);
-      int height = Mathf.Max(0, yMax - yMin);
-      return new RectInt(xMin, yMin, width, height);
-    }
-
-    private PixelCompareResult CompareCapturedPixels(
-        Texture2D reference,
-        Texture2D current)
-    {
-      PixelCompareResult result = new PixelCompareResult
-      {
-        MinX = int.MaxValue,
-        MinY = int.MaxValue,
-        MaxX = int.MinValue,
-        MaxY = int.MinValue
-      };
-
-      int width = Mathf.Min(reference.width, current.width);
-      int height = Mathf.Min(reference.height, current.height);
-      RectInt area = GetPixelCompareArea(width, height);
-      if (area.width <= 0 || area.height <= 0)
-        return result;
-
-      Color32[] referencePixels = reference.GetPixels32();
-      Color32[] currentPixels = current.GetPixels32();
-      Color32[] differencePixels =
-          new Color32[area.width * area.height];
-
-      for (int y = 0; y < area.height; y++)
-      {
-        int screenY = area.y + y;
-        for (int x = 0; x < area.width; x++)
-        {
-          int screenX = area.x + x;
-          int referenceIndex =
-              screenY * reference.width + screenX;
-          int currentIndex =
-              screenY * current.width + screenX;
-          int differenceIndex = y * area.width + x;
-
-          Color32 referenceColour = referencePixels[referenceIndex];
-          Color32 currentColour = currentPixels[currentIndex];
-
-          int diffR = Mathf.Abs(
-              referenceColour.r - currentColour.r
-          );
-          int diffG = Mathf.Abs(
-              referenceColour.g - currentColour.g
-          );
-          int diffB = Mathf.Abs(
-              referenceColour.b - currentColour.b
-          );
-          int maxChannel = Mathf.Max(diffR, Mathf.Max(diffG, diffB));
-
-          if (maxChannel > debugPixelDifferenceTolerance)
-          {
-            differencePixels[differenceIndex] =
-                new Color32(255, 0, 0, 255);
-            result.ChangedCount++;
-            result.MaxChannelDiff =
-                Mathf.Max(result.MaxChannelDiff, maxChannel);
-            result.MinX = Mathf.Min(result.MinX, screenX);
-            result.MinY = Mathf.Min(result.MinY, screenY);
-            result.MaxX = Mathf.Max(result.MaxX, screenX);
-            result.MaxY = Mathf.Max(result.MaxY, screenY);
-          }
-          else
-          {
-            differencePixels[differenceIndex] =
-                new Color32(0, 0, 0, 0);
-          }
-        }
-      }
-
-      Texture2D difference = new Texture2D(
-          area.width,
-          area.height,
-          TextureFormat.RGBA32,
-          false
-      );
-      difference.SetPixels32(differencePixels);
-      difference.Apply(false, false);
-      result.DifferenceTexture = difference;
-
-      if (result.ChangedCount == 0)
-      {
-        result.MinX = 0;
-        result.MinY = 0;
-        result.MaxX = 0;
-        result.MaxY = 0;
-      }
-
-      return result;
-    }
-
-    private void SaveDebugCapturePng(
-        Texture2D texture,
-        string fileName)
-    {
-      if (texture == null)
-        return;
-
-      try
-      {
-        Directory.CreateDirectory(DebugCaptureDirectory);
-        string path = Path.Combine(DebugCaptureDirectory, fileName);
-        File.WriteAllBytes(path, texture.EncodeToPNG());
-        Debug.Log($"[EntranceViewport] Saved {path}");
-      }
-      catch (Exception exception)
-      {
-        Debug.LogWarning(
-            "[EntrancePixelsChanged] Failed to save " +
-            $"{fileName}: {exception.Message}"
-        );
-      }
-    }
-
-    private static void DestroyDebugTexture(ref Texture2D texture)
-    {
-      if (texture == null)
-        return;
-
-      Destroy(texture);
-      texture = null;
-    }
-
-    private void LogEntrancePixelsChanged(
-        int frame,
-        PixelCompareResult compare)
-    {
-      Debug.LogWarning(
-          "[EntrancePixelsChanged]\n" +
-          $"frame={frame}\n" +
-          $"changedPixels={compare.ChangedCount}\n" +
-          $"bounds=X {compare.MinX}-{compare.MaxX}, " +
-          $"Y {compare.MinY}-{compare.MaxY}\n" +
-          $"maxChannelDiff={compare.MaxChannelDiff}"
-      );
-    }
-
-    private void ShowPixelChangeWarning(
-        int frame,
-        PixelCompareResult compare)
-    {
-      EnsureViewportChangeWarningOverlay();
-
-      if (debugWarningRoot == null)
-        return;
-
-      debugWarningRoot.SetActive(true);
-      debugWarningRoot.transform.SetAsLastSibling();
-      if (debugDifferenceRoot != null)
-        debugDifferenceRoot.transform.SetAsLastSibling();
-      if (debugStatusRoot != null)
-        debugStatusRoot.transform.SetAsLastSibling();
-
-      if (debugWarningImage != null)
-        debugWarningImage.color = new Color(1f, 0f, 0f, 0.35f);
-
-      if (debugWarningText != null)
-      {
-        debugWarningText.text =
-            "PIXELS CHANGED\n" +
-            $"Diagnostic frame: {frame}\n" +
-            $"Changed pixels: {compare.ChangedCount}\n" +
-            $"Bounds: X {compare.MinX}-{compare.MaxX}, " +
-            $"Y {compare.MinY}-{compare.MaxY}\n" +
-            $"Maximum colour difference: {compare.MaxChannelDiff}";
-      }
-    }
-
-    private void HidePixelChangeWarning()
-    {
-      if (debugWarningRoot != null)
-        debugWarningRoot.SetActive(false);
-
-      if (debugWarningImage != null)
-        debugWarningImage.color = new Color(1f, 0f, 0f, 0.65f);
-    }
-
-    private void ShowDifferenceOverlay(Texture2D difference)
-    {
-      if (difference == null || dungeonViewport == null)
-        return;
-
-      EnsureDifferenceOverlay();
-      if (debugDifferenceRoot == null || debugDifferenceImage == null)
-        return;
-
-      debugDifferenceImage.texture = difference;
-      debugDifferenceRoot.SetActive(true);
-      debugDifferenceRoot.transform.SetAsLastSibling();
-      if (debugWarningRoot != null && debugWarningRoot.activeSelf)
-        debugWarningRoot.transform.SetAsLastSibling();
-      if (debugStatusRoot != null)
-        debugStatusRoot.transform.SetAsLastSibling();
-    }
-
-    private void HideDifferenceOverlay()
-    {
-      if (debugDifferenceRoot != null)
-        debugDifferenceRoot.SetActive(false);
-    }
-
-    private void EnsureDifferenceOverlay()
-    {
-      if (debugDifferenceRoot != null)
-        return;
-
-      if (dungeonViewport == null)
-        return;
-
-      Transform parent = dungeonViewport.transform.parent;
-      if (parent == null)
-        return;
-
-      debugDifferenceRoot = new GameObject(
-          "StartupViewportDebugDifference",
-          typeof(RectTransform),
-          typeof(CanvasRenderer),
-          typeof(RawImage)
-      );
-      debugDifferenceRoot.transform.SetParent(parent, false);
-
-      RectTransform rect =
-          debugDifferenceRoot.GetComponent<RectTransform>();
-      if (debugCompareEntranceViewportOnly)
-      {
-        rect.anchorMin = dungeonViewport.rectTransform.anchorMin;
-        rect.anchorMax = dungeonViewport.rectTransform.anchorMax;
-        rect.pivot = dungeonViewport.rectTransform.pivot;
-        rect.anchoredPosition =
-            dungeonViewport.rectTransform.anchoredPosition;
-        rect.sizeDelta = dungeonViewport.rectTransform.sizeDelta;
-        rect.offsetMin = dungeonViewport.rectTransform.offsetMin;
-        rect.offsetMax = dungeonViewport.rectTransform.offsetMax;
-      }
-      else
-      {
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = Vector2.one;
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
-      }
-
-      debugDifferenceImage =
-          debugDifferenceRoot.GetComponent<RawImage>();
-      debugDifferenceImage.color = Color.white;
-      debugDifferenceImage.raycastTarget = false;
-      debugDifferenceRoot.SetActive(false);
-    }
-
-    private void SubscribeStartupDebugEditorUpdate()
-    {
-#if UNITY_EDITOR
-      if (debugEditorUpdateSubscribed)
-        return;
-
-      UnityEditor.EditorApplication.update +=
-          HandleStartupDebugEditorUpdate;
-      debugEditorUpdateSubscribed = true;
-#endif
-    }
-
-    private void UnsubscribeStartupDebugEditorUpdate()
-    {
-#if UNITY_EDITOR
-      if (!debugEditorUpdateSubscribed)
-        return;
-
-      UnityEditor.EditorApplication.update -=
-          HandleStartupDebugEditorUpdate;
-      debugEditorUpdateSubscribed = false;
-#endif
-    }
-
-    private void HandleStartupDebugEditorUpdate()
-    {
-      if (!debugStartupActive)
-        return;
-
-      UpdateStartupDebugStatusLabel();
-
-      if (debugHoldingFrame
-          && !debugHoldGateOpen
-          && Time.realtimeSinceStartup >= debugHoldEndRealtime)
-      {
-        debugHoldGateOpen = true;
-        SetStartupDebugEditorPaused(false);
-      }
-    }
-
-    private void SetStartupDebugEditorPaused(bool paused)
-    {
-#if UNITY_EDITOR
-      if (UnityEditor.EditorApplication.isPlaying)
-        UnityEditor.EditorApplication.isPaused = paused;
-#else
-      _ = paused;
-#endif
-    }
-
-    private void EnsureStartupDebugStatusLabel()
-    {
-      if (debugStatusRoot != null)
-        return;
-
-      if (dungeonViewport == null)
-        return;
-
-      Transform parent = dungeonViewport.transform.parent;
-      if (parent == null)
-        return;
-
-      debugStatusRoot = new GameObject(
-          "StartupViewportDebugStatus",
-          typeof(RectTransform),
-          typeof(CanvasRenderer),
-          typeof(Image)
-      );
-      debugStatusRoot.transform.SetParent(parent, false);
-
-      RectTransform statusRect =
-          debugStatusRoot.GetComponent<RectTransform>();
-      statusRect.anchorMin = new Vector2(0f, 1f);
-      statusRect.anchorMax = new Vector2(0f, 1f);
-      statusRect.pivot = new Vector2(0f, 1f);
-      statusRect.anchoredPosition = new Vector2(12f, -12f);
-      statusRect.sizeDelta = new Vector2(460f, 70f);
-
-      Image statusBackground =
-          debugStatusRoot.GetComponent<Image>();
-      Texture2D whiteTexture = Texture2D.whiteTexture;
-      statusBackground.sprite = Sprite.Create(
-          whiteTexture,
-          new Rect(0f, 0f, whiteTexture.width, whiteTexture.height),
-          new Vector2(0.5f, 0.5f),
-          100f
-      );
-      statusBackground.color = new Color(0f, 0f, 0f, 0.65f);
-      statusBackground.raycastTarget = false;
-
-      GameObject textObject = new GameObject(
-          "StatusText",
-          typeof(RectTransform),
-          typeof(CanvasRenderer),
-          typeof(Text)
-      );
-      textObject.transform.SetParent(debugStatusRoot.transform, false);
-
-      RectTransform textRect =
-          textObject.GetComponent<RectTransform>();
-      textRect.anchorMin = Vector2.zero;
-      textRect.anchorMax = Vector2.one;
-      textRect.offsetMin = new Vector2(8f, 4f);
-      textRect.offsetMax = new Vector2(-8f, -4f);
-
-      debugStatusText = textObject.GetComponent<Text>();
-      debugStatusText.alignment = TextAnchor.UpperLeft;
-      debugStatusText.color = Color.white;
-      debugStatusText.fontSize = 18;
-      debugStatusText.horizontalOverflow = HorizontalWrapMode.Wrap;
-      debugStatusText.verticalOverflow = VerticalWrapMode.Overflow;
-      debugStatusText.raycastTarget = false;
-      debugStatusText.font = Resources.GetBuiltinResource<Font>(
-          "LegacyRuntime.ttf"
-      );
-
-      if (debugStatusText.font == null)
-      {
-        debugStatusText.font =
-            Resources.GetBuiltinResource<Font>("Arial.ttf");
-      }
-    }
-
-    private float GetStartupDebugHoldRemainingSeconds()
-    {
-      if (!debugHoldingFrame)
-        return 0f;
-
-      return Mathf.Max(
-          0f,
-          debugHoldEndRealtime - Time.realtimeSinceStartup
-      );
-    }
-
-    private void UpdateStartupDebugStatusLabel()
-    {
-      if (!debugStartupActive || debugStatusText == null)
-        return;
-
-      string frameLabel = debugStartupFrame == 0
-          ? "0 / Reference"
-          : debugStartupFrame.ToString();
-
-      debugStatusText.text =
-          $"Diagnostic frame: {frameLabel}\n" +
-          $"Hold remaining: {GetStartupDebugHoldRemainingSeconds():F2}s";
-    }
-
-    private void EnsureViewportChangeWarningOverlay()
-    {
-      if (debugWarningRoot != null)
-        return;
-
-      if (dungeonViewport == null)
-        return;
-
-      Transform parent = dungeonViewport.transform.parent;
-      if (parent == null)
-        return;
-
-      debugWarningRoot = new GameObject(
-          "StartupViewportDebugWarning",
-          typeof(RectTransform),
-          typeof(CanvasRenderer),
-          typeof(Image)
-      );
-      debugWarningRoot.transform.SetParent(parent, false);
-
-      RectTransform overlayRect =
-          debugWarningRoot.GetComponent<RectTransform>();
-      overlayRect.anchorMin = Vector2.zero;
-      overlayRect.anchorMax = Vector2.one;
-      overlayRect.pivot = new Vector2(0.5f, 0.5f);
-      overlayRect.anchoredPosition = Vector2.zero;
-      overlayRect.sizeDelta = Vector2.zero;
-      overlayRect.offsetMin = Vector2.zero;
-      overlayRect.offsetMax = Vector2.zero;
-
-      debugWarningImage = debugWarningRoot.GetComponent<Image>();
-      Texture2D whiteTexture = Texture2D.whiteTexture;
-      debugWarningImage.sprite = Sprite.Create(
-          whiteTexture,
-          new Rect(0f, 0f, whiteTexture.width, whiteTexture.height),
-          new Vector2(0.5f, 0.5f),
-          100f
-      );
-      debugWarningImage.type = Image.Type.Simple;
-      debugWarningImage.color = new Color(1f, 0f, 0f, 0.65f);
-      debugWarningImage.raycastTarget = false;
-
-      GameObject textObject = new GameObject(
-          "WarningText",
-          typeof(RectTransform),
-          typeof(CanvasRenderer),
-          typeof(Text)
-      );
-      textObject.transform.SetParent(
-          debugWarningRoot.transform,
-          false
-      );
-
-      RectTransform textRect =
-          textObject.GetComponent<RectTransform>();
-      textRect.anchorMin = Vector2.zero;
-      textRect.anchorMax = Vector2.one;
-      textRect.offsetMin = Vector2.zero;
-      textRect.offsetMax = Vector2.zero;
-
-      debugWarningText = textObject.GetComponent<Text>();
-      debugWarningText.alignment = TextAnchor.MiddleCenter;
-      debugWarningText.color = Color.white;
-      debugWarningText.fontSize = 32;
-      debugWarningText.horizontalOverflow =
-          HorizontalWrapMode.Wrap;
-      debugWarningText.verticalOverflow =
-          VerticalWrapMode.Overflow;
-      debugWarningText.raycastTarget = false;
-      debugWarningText.font = Resources.GetBuiltinResource<Font>(
-          "LegacyRuntime.ttf"
-      );
-
-      if (debugWarningText.font == null)
-      {
-        debugWarningText.font =
-            Resources.GetBuiltinResource<Font>("Arial.ttf");
-      }
-
-      debugWarningRoot.SetActive(false);
-    }
-
-    private void CleanupStartupViewportDebug()
-    {
-      if (debugStartupCoroutine != null)
-      {
-        StopCoroutine(debugStartupCoroutine);
-        debugStartupCoroutine = null;
-      }
-
-      UnsubscribeStartupDebugEditorUpdate();
-      SetStartupDebugEditorPaused(false);
-
-      if (debugWarningRoot != null)
-      {
-        Destroy(debugWarningRoot);
-        debugWarningRoot = null;
-        debugWarningText = null;
-        debugWarningImage = null;
-      }
-
-      if (debugStatusRoot != null)
-      {
-        Destroy(debugStatusRoot);
-        debugStatusRoot = null;
-        debugStatusText = null;
-      }
-
-      if (debugDifferenceRoot != null)
-      {
-        Destroy(debugDifferenceRoot);
-        debugDifferenceRoot = null;
-        debugDifferenceImage = null;
-      }
-
-      DestroyDebugTexture(ref debugReferenceTexture);
-      DestroyDebugTexture(ref debugDifferenceTexture);
-
-      debugHoldGateOpen = false;
-      debugHoldingFrame = false;
-      debugHoldEndRealtime = -1f;
-
-      if (Time.timeScale != 1f)
-        Time.timeScale = 1f;
-
-      debugStartupActive = false;
     }
 
     public void Render(DungeonMap map)
@@ -1258,11 +406,9 @@ namespace DM.Rendering
       frameDirty = true;
     }
 
-    private void HandleEndCameraRendering(
-        ScriptableRenderContext context,
-        Camera renderedCamera)
+    private void HandleCameraPostRender(Camera camera)
     {
-      if (renderedCamera != dungeonCamera)
+      if (camera != dungeonCamera)
         return;
 
       if (targetTexture == null)
@@ -1287,24 +433,7 @@ namespace DM.Rendering
         frameDirty = false;
       }
 
-      PresentFrameBufferToTarget();
-    }
-
-    private void PresentFrameBufferToTarget()
-    {
-      // Keep Point sampling on both sides of the 1:1 copy.
-      frameBuffer.filterMode = FilterMode.Point;
-      targetTexture.filterMode = FilterMode.Point;
-
-      RenderTexture previousActive = RenderTexture.active;
-
-      RenderTexture.active = targetTexture;
-      GL.Viewport(new Rect(0, 0, viewWidth, viewHeight));
-
-      // Exact texel copy — no scale, no stretch, no filter resample.
-      Graphics.CopyTexture(frameBuffer, targetTexture);
-
-      RenderTexture.active = previousActive;
+      Graphics.Blit(frameBuffer, targetTexture);
     }
 
     private void CreateFrameBuffer()
@@ -1329,9 +458,6 @@ namespace DM.Rendering
       frameBuffer.name = "Dungeon Frame Buffer";
       frameBuffer.filterMode = FilterMode.Point;
       frameBuffer.wrapMode = TextureWrapMode.Clamp;
-
-      if (targetTexture != null)
-        targetTexture.filterMode = FilterMode.Point;
 
       framePixels =
           new Color32[viewWidth * viewHeight];
