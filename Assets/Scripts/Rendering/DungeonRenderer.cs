@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using DM.Dungeon;
 using UnityEngine;
@@ -84,13 +85,19 @@ namespace DM.Rendering
     private int entranceDoorFinalMoveFromRightX;
     private int dungeonDrawOffsetY;
 
+    private bool entranceViewportReady;
+    private Coroutine entranceViewportPrepareCoroutine;
+    private int entranceLayoutStabilizeFrames;
+
     private readonly List<string> visibleWallPieces = new();
 
     // Final wall pieces drawn in the most recent frame.
     public IReadOnlyList<string> VisibleWallPieces => visibleWallPieces;
 
     public bool IsEntranceBlockingInput =>
-        !entranceDoorOpened && (showEntranceScreen || entranceDoorOpening);
+        !entranceViewportReady
+        || (!entranceDoorOpened
+            && (showEntranceScreen || entranceDoorOpening));
 
     private void Awake()
     {
@@ -103,6 +110,11 @@ namespace DM.Rendering
         dungeonViewport = FindDungeonViewport();
 
       CreateFrameBuffer();
+
+      // Hide until CanvasScaler / viewport rect have settled so the first
+      // visible entrance frame is not drawn at the pre-scaler scale.
+      SetEntranceViewportVisible(false);
+      entranceViewportReady = false;
 
       // Entrance RectTransform stays exactly as serialized in the scene.
       // Only ensure UV; never rewrite anchors/size (avoids canvas dirties).
@@ -117,11 +129,121 @@ namespace DM.Rendering
     private void Start()
     {
       Debug.Log("DungeonRenderer Start.");
+
+      if (entranceViewportPrepareCoroutine != null)
+        StopCoroutine(entranceViewportPrepareCoroutine);
+
+      entranceViewportPrepareCoroutine =
+          StartCoroutine(PrepareEntranceViewportAfterLayoutSettles());
+    }
+
+    private IEnumerator PrepareEntranceViewportAfterLayoutSettles()
+    {
+      const float tolerance = 0.0001f;
+      const int requiredStableSamples = 2;
+      const int maxFrames = 60;
+
+      Canvas canvas =
+          dungeonViewport != null ? dungeonViewport.canvas : null;
+
+      float previousScaleFactor = float.NaN;
+      Rect previousRect = new Rect(
+          float.NaN,
+          float.NaN,
+          float.NaN,
+          float.NaN
+      );
+      int stableSamples = 0;
+      int framesWaited = 0;
+
+      while (framesWaited < maxFrames)
+      {
+        Canvas.ForceUpdateCanvases();
+        framesWaited++;
+
+        float scaleFactor =
+            canvas != null ? canvas.scaleFactor : 0f;
+        Rect viewportRect =
+            dungeonViewport != null
+                ? dungeonViewport.rectTransform.rect
+                : Rect.zero;
+
+        bool scaleReady = scaleFactor > 0f;
+        bool scaleStable =
+            !float.IsNaN(previousScaleFactor)
+            && Mathf.Abs(scaleFactor - previousScaleFactor)
+                <= tolerance;
+        bool rectStable =
+            !float.IsNaN(previousRect.x)
+            && Mathf.Abs(viewportRect.x - previousRect.x) <= tolerance
+            && Mathf.Abs(viewportRect.y - previousRect.y) <= tolerance
+            && Mathf.Abs(viewportRect.width - previousRect.width)
+                <= tolerance
+            && Mathf.Abs(viewportRect.height - previousRect.height)
+                <= tolerance;
+
+        if (scaleReady && scaleStable && rectStable)
+        {
+          stableSamples++;
+          if (stableSamples >= requiredStableSamples)
+            break;
+        }
+        else
+        {
+          stableSamples = 0;
+        }
+
+        previousScaleFactor = scaleFactor;
+        previousRect = viewportRect;
+        yield return null;
+      }
+
+      // Ensure the map has been submitted so the first shown frame is valid.
+      int mapWaitFrames = 0;
+      while (currentMap == null && mapWaitFrames < maxFrames)
+      {
+        mapWaitFrames++;
+        framesWaited++;
+        yield return null;
+      }
+
+      ApplyViewportPresentation();
+      frameDirty = true;
+
+      // Draw into the RT while still hidden, then reveal.
+      yield return new WaitForEndOfFrame();
+      framesWaited++;
+
+      entranceLayoutStabilizeFrames = framesWaited;
+      entranceViewportReady = true;
+      SetEntranceViewportVisible(true);
+      entranceViewportPrepareCoroutine = null;
+
+      string viewportRectText =
+          dungeonViewport != null
+              ? dungeonViewport.rectTransform.rect.ToString()
+              : "n/a";
+
+      Debug.Log(
+          "DungeonRenderer: Entrance layout stable after " +
+          $"{entranceLayoutStabilizeFrames} frame(s) " +
+          $"(scaleFactor=" +
+          $"{(canvas != null ? canvas.scaleFactor : 0f):0.####}, " +
+          $"viewportRect={viewportRectText})."
+      );
+    }
+
+    private void SetEntranceViewportVisible(bool visible)
+    {
+      if (dungeonViewport == null)
+        return;
+
+      dungeonViewport.enabled = visible;
     }
 
     private void Update()
     {
-      if (!entranceDoorOpening)
+      if (!entranceViewportReady || !entranceDoorOpening)
         return;
 
       entranceDoorOpenElapsed += Time.unscaledDeltaTime;
@@ -141,6 +263,9 @@ namespace DM.Rendering
 
     public void OpenEntranceDoor()
     {
+      if (!entranceViewportReady)
+        return;
+
       if (entranceDoorOpening || entranceDoorOpened)
         return;
 
@@ -517,6 +642,12 @@ namespace DM.Rendering
     private void OnDisable()
     {
       Camera.onPostRender -= HandleCameraPostRender;
+
+      if (entranceViewportPrepareCoroutine != null)
+      {
+        StopCoroutine(entranceViewportPrepareCoroutine);
+        entranceViewportPrepareCoroutine = null;
+      }
 
       if (entranceDoorOpening)
         StopEntranceDoorSound();
