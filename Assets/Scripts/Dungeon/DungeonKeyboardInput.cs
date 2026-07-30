@@ -12,6 +12,9 @@ namespace DM.Dungeon
     private DungeonRenderer dungeonRenderer;
     private HeroRecruitmentPanel heroRecruitmentPanel;
 
+    // TEMPORARY: first Up after entrance teleports to Iaido test pose.
+    private bool iaidoTestTeleportPending = true;
+
     public DungeonMap Map => map;
 
     public void Initialize(
@@ -43,7 +46,12 @@ namespace DM.Dungeon
         return;
 
       if (keyboard.upArrowKey.wasPressedThisFrame)
+      {
+        if (TryConsumeIaidoTestTeleport())
+          return;
+
         TryMoveRelative(0, 1);
+      }
 
       if (keyboard.downArrowKey.wasPressedThisFrame)
         TryMoveRelative(0, -1);
@@ -59,6 +67,23 @@ namespace DM.Dungeon
 
       if (keyboard.pageDownKey.wasPressedThisFrame)
         TurnRight();
+    }
+
+    private bool TryConsumeIaidoTestTeleport()
+    {
+      if (!iaidoTestTeleportPending)
+        return false;
+
+      iaidoTestTeleportPending = false;
+      map.SetPlayerPose(10, 4, DungeonFacing.North);
+      dungeonRenderer.RequestRedraw();
+      DetectChampionInFront();
+
+      Debug.Log(
+          "TEMPORARY: Iaido test teleport to (10,4) facing North."
+      );
+
+      return true;
     }
 
     // localX/localY are in facing-local space:

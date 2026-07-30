@@ -382,6 +382,14 @@ namespace DM.Dungeon
       PlayerFacing = facing;
     }
 
+    public void SetPlayerPose(
+        int x,
+        int y,
+        DungeonFacing facing)
+    {
+      SetPlayerStart(x, y, facing);
+    }
+
     private static DungeonTileType ConvertTileType(string typeName)
     {
       switch (typeName)

@@ -389,7 +389,7 @@ namespace DM.Heroes
                     {
                         Level = 0,
                         X = 10,
-                        Y = 4,
+                        Y = 5,
                         WallDirection = HeroWallDirection.North
                     }
                 },
@@ -432,7 +432,7 @@ namespace DM.Heroes
                     {
                         Level = 0,
                         X = 10,
-                        Y = 5,
+                        Y = 4,
                         WallDirection = HeroWallDirection.North
                     }
                 },
