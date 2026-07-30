@@ -120,6 +120,7 @@ namespace DM.Rendering
 
       entranceDoorOpenElapsed += Time.unscaledDeltaTime;
       UpdateEntranceDoorPositions();
+      TryPlayEntranceDoorLastMoveSound();
       RequestRedraw();
 
       float t = Mathf.Clamp01(
@@ -227,7 +228,7 @@ namespace DM.Rendering
 
     private void UpdateEntranceDoorPositions()
     {
-      bool hasFinalMoveSound = TryGetEntranceDoorFinalMoveTiming(
+      TryGetEntranceDoorFinalMoveTiming(
           out float finalMoveStartTime,
           out float finalMoveDuration
       );
@@ -262,9 +263,6 @@ namespace DM.Rendering
         return;
       }
 
-      if (hasFinalMoveSound)
-        TryPlayEntranceDoorLastMoveSound();
-
       float finalProgress = Mathf.Clamp01(
           (entranceDoorOpenElapsed - finalMoveStartTime)
           / finalMoveDuration
@@ -297,6 +295,15 @@ namespace DM.Rendering
       {
         return;
       }
+
+      TryGetEntranceDoorFinalMoveTiming(
+          out float finalMoveStartTime,
+          out _
+      );
+
+      // Play exactly when the final door-movement segment begins.
+      if (entranceDoorOpenElapsed < finalMoveStartTime)
+        return;
 
       StopEntranceDoorSound();
 
