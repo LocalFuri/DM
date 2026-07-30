@@ -126,15 +126,16 @@ namespace DM.Rendering
 
       entranceDoorOpenElapsed += Time.unscaledDeltaTime;
       EnsureEntranceDoorFinalPhaseStarted();
+      UpdateEntranceDoorPositions();
 
-      if (HasEntranceDoorFinalMoveFinished())
+      // DoorLastMove + viewport only when both doors are fully open.
+      if (AreEntranceDoorsFullyOpen())
       {
         CompleteEntranceTransition();
         return;
       }
 
       UpdateEntranceDoorChainedRattle();
-      UpdateEntranceDoorPositions();
       RequestRedraw();
     }
 
@@ -264,11 +265,16 @@ namespace DM.Rendering
           + entranceDoorFinalMoveDuration;
     }
 
+    private bool AreEntranceDoorsFullyOpen()
+    {
+      return animatedEntranceDoorLeftX == EntranceDoorOpenEndLeftX
+          && animatedEntranceDoorRightX == EntranceDoorOpenEndRightX;
+    }
+
     private void CompleteEntranceTransition()
     {
-      // Same frame: doors fully open, stop rattles, play DoorLastMove once,
+      // Same frame: both doors fully open, stop rattles, play DoorLastMove,
       // switch gameplay viewport, end entrance, enable input.
-      // DoorLastMove must not delay the viewport switch or block input.
       StopAllEntranceDoorSounds();
       PlayEntranceDoorLastMoveSound();
 
@@ -357,6 +363,7 @@ namespace DM.Rendering
             )
             : 1f;
 
+        // Shared progress for both leaves.
         animatedEntranceDoorLeftX = Mathf.RoundToInt(
             Mathf.Lerp(
                 EntranceDoorOpenStartLeftX,
@@ -385,11 +392,19 @@ namespace DM.Rendering
       if (entranceDoorFinalMoveStartElapsed < 0f)
         finalMoveElapsed = entranceDoorOpenElapsed - finalMoveStartTime;
 
-      float finalProgress = Mathf.Clamp(
-          finalMoveElapsed / entranceDoorFinalMoveDuration,
-          0f,
-          0.999f
+      // One shared normalized progress for left and right.
+      float finalProgress = Mathf.Clamp01(
+          finalMoveElapsed / entranceDoorFinalMoveDuration
       );
+
+      // Snap both ends only when progress reaches 1 so unequal travel
+      // distances cannot RoundToInt one leaf to "fully open" early.
+      if (finalProgress >= 1f || HasEntranceDoorFinalMoveFinished())
+      {
+        animatedEntranceDoorLeftX = EntranceDoorOpenEndLeftX;
+        animatedEntranceDoorRightX = EntranceDoorOpenEndRightX;
+        return;
+      }
 
       animatedEntranceDoorLeftX = Mathf.RoundToInt(
           Mathf.Lerp(
@@ -405,6 +420,12 @@ namespace DM.Rendering
               finalProgress
           )
       );
+
+      // Keep either leaf from appearing fully open before the shared end.
+      if (animatedEntranceDoorLeftX == EntranceDoorOpenEndLeftX)
+        animatedEntranceDoorLeftX = EntranceDoorOpenEndLeftX + 1;
+      if (animatedEntranceDoorRightX == EntranceDoorOpenEndRightX)
+        animatedEntranceDoorRightX = EntranceDoorOpenEndRightX - 1;
     }
 
     private void BeginEntranceDoorFinalMoveIfNeeded(
