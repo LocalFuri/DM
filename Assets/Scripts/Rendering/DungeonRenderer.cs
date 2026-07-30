@@ -12,12 +12,29 @@ namespace DM.Rendering
     private const int DefaultViewWidth = 320;
     private const int DefaultViewHeight = 200;
     private const int DungeonViewWidth = 224;
-    private const int DungeonViewHeight = 136;
+    private const int DungeonViewHeight = 164;
+    // Authored dungeon-view pixels in the 320×200 buffer (excludes ceiling strips).
+    private const int DungeonUvHeight = 136;
+
+    private const int PartyAreaHeight = 36;
+    private const int RightInterfaceWidth = 96;
+    private const int RightInterfaceHeight = 164;
+    private const int GameplayViewportX = 0;
+    private const int GameplayViewportYFromTop = 36;
+    private const int RightInterfaceX = 224;
+    private const int RightInterfaceYFromTop = 36;
+
+    private const float MovementArrowsWidth = 87f;
+    private const float MovementArrowsHeight = 45f;
+    private const float MovementArrowsBottomMargin = 4f;
 
     [Header("Rendering")]
     [SerializeField] private Camera dungeonCamera;
     [SerializeField] private RenderTexture targetTexture;
     [SerializeField] private RawImage dungeonViewport;
+
+    [Header("UI")]
+    [SerializeField] private Image movementArrows;
 
     [Header("Viewport Layout")]
     [SerializeField] private ViewportLayout layout;
@@ -52,7 +69,7 @@ namespace DM.Rendering
         0f,
         0f,
         DungeonViewWidth / (float)DefaultViewWidth,
-        DungeonViewHeight / (float)DefaultViewHeight
+        DungeonUvHeight / (float)DefaultViewHeight
     );
 
     private const int EntranceDoorOpenStartLeftX = 0;
@@ -89,6 +106,10 @@ namespace DM.Rendering
     private Coroutine entranceViewportPrepareCoroutine;
     private int entranceLayoutStabilizeFrames;
 
+    private RectTransform gameplayRoot;
+    private RectTransform partyArea;
+    private RectTransform rightInterfaceArea;
+
     private readonly List<string> visibleWallPieces = new();
 
     // Final wall pieces drawn in the most recent frame.
@@ -109,12 +130,19 @@ namespace DM.Rendering
       if (dungeonViewport == null)
         dungeonViewport = FindDungeonViewport();
 
+      if (movementArrows == null)
+        movementArrows = FindMovementArrows();
+
       CreateFrameBuffer();
 
       // Hide until CanvasScaler / viewport rect have settled so the first
       // visible entrance frame is not drawn at the pre-scaler scale.
       SetEntranceViewportVisible(false);
       entranceViewportReady = false;
+
+      // Hidden for the whole entrance + door sequence; shown only when
+      // the normal dungeon viewport becomes active.
+      SetMovementArrowsVisible(false);
 
       // Entrance RectTransform stays exactly as serialized in the scene.
       // Only ensure UV; never rewrite anchors/size (avoids canvas dirties).
@@ -588,12 +616,194 @@ namespace DM.Rendering
       return null;
     }
 
-    private void ApplyViewportPresentation()
+    private static Image FindMovementArrows()
+    {
+      Image[] images = UnityEngine.Object.FindObjectsByType<Image>(
+          FindObjectsInactive.Include
+      );
+
+      foreach (Image image in images)
+      {
+        if (image != null && image.gameObject.name == "MovementArrows")
+          return image;
+      }
+
+      return null;
+    }
+
+    private void SetMovementArrowsVisible(bool visible)
+    {
+      if (movementArrows == null)
+        return;
+
+      movementArrows.gameObject.SetActive(visible);
+    }
+
+    private void EnsureGameplayLayoutHierarchy()
     {
       if (dungeonViewport == null)
         return;
 
-      RectTransform rectTransform = dungeonViewport.rectTransform;
+      RectTransform canvasRect =
+          dungeonViewport.canvas != null
+              ? dungeonViewport.canvas.transform as RectTransform
+              : dungeonViewport.rectTransform.parent as RectTransform;
+
+      if (canvasRect == null)
+        return;
+
+      if (gameplayRoot == null)
+      {
+        GameObject rootObject = new GameObject(
+            "GameplayRoot",
+            typeof(RectTransform)
+        );
+        rootObject.layer = canvasRect.gameObject.layer;
+        gameplayRoot = rootObject.GetComponent<RectTransform>();
+        gameplayRoot.SetParent(canvasRect, false);
+      }
+
+      if (partyArea == null)
+      {
+        GameObject partyObject = new GameObject(
+            "PartyArea",
+            typeof(RectTransform)
+        );
+        partyObject.layer = gameplayRoot.gameObject.layer;
+        partyArea = partyObject.GetComponent<RectTransform>();
+        partyArea.SetParent(gameplayRoot, false);
+      }
+
+      if (rightInterfaceArea == null)
+      {
+        GameObject rightObject = new GameObject(
+            "RightInterfaceArea",
+            typeof(RectTransform)
+        );
+        rightObject.layer = gameplayRoot.gameObject.layer;
+        rightInterfaceArea = rightObject.GetComponent<RectTransform>();
+        rightInterfaceArea.SetParent(gameplayRoot, false);
+      }
+
+      dungeonViewport.rectTransform.SetParent(gameplayRoot, false);
+      if (movementArrows != null)
+        movementArrows.rectTransform.SetParent(rightInterfaceArea, false);
+
+      // Draw order: party, viewport, right interface (arrows on top).
+      partyArea.SetSiblingIndex(0);
+      dungeonViewport.rectTransform.SetSiblingIndex(1);
+      rightInterfaceArea.SetSiblingIndex(2);
+      gameplayRoot.SetAsLastSibling();
+    }
+
+    private void ApplyGameplayUiLayout()
+    {
+      EnsureGameplayLayoutHierarchy();
+      if (gameplayRoot == null)
+        return;
+
+      RectTransform canvasRect = gameplayRoot.parent as RectTransform;
+      float parentWidth =
+          canvasRect != null ? canvasRect.rect.width : DefaultViewWidth;
+      float parentHeight =
+          canvasRect != null ? canvasRect.rect.height : DefaultViewHeight;
+
+      float fitScale = Mathf.Min(
+          parentWidth / DefaultViewWidth,
+          parentHeight / DefaultViewHeight
+      );
+
+      gameplayRoot.anchorMin = new Vector2(0.5f, 0.5f);
+      gameplayRoot.anchorMax = new Vector2(0.5f, 0.5f);
+      gameplayRoot.pivot = new Vector2(0.5f, 0.5f);
+      gameplayRoot.anchoredPosition = Vector2.zero;
+      gameplayRoot.sizeDelta = new Vector2(
+          DefaultViewWidth,
+          DefaultViewHeight
+      );
+      gameplayRoot.localScale = new Vector3(fitScale, fitScale, 1f);
+      gameplayRoot.localRotation = Quaternion.identity;
+
+      // Logical DM top-left (0,36) → Unity bottom-left y = 200 - 36 - 164 = 0.
+      if (partyArea != null)
+      {
+        partyArea.anchorMin = new Vector2(0f, 1f);
+        partyArea.anchorMax = new Vector2(0f, 1f);
+        partyArea.pivot = new Vector2(0f, 1f);
+        partyArea.anchoredPosition = Vector2.zero;
+        partyArea.sizeDelta = new Vector2(
+            DefaultViewWidth,
+            PartyAreaHeight
+        );
+        partyArea.localScale = Vector3.one;
+        partyArea.localRotation = Quaternion.identity;
+      }
+
+      RectTransform viewportRect = dungeonViewport.rectTransform;
+      viewportRect.anchorMin = new Vector2(0f, 0f);
+      viewportRect.anchorMax = new Vector2(0f, 0f);
+      viewportRect.pivot = new Vector2(0f, 0f);
+      viewportRect.anchoredPosition = new Vector2(
+          GameplayViewportX,
+          DefaultViewHeight
+              - GameplayViewportYFromTop
+              - DungeonViewHeight
+      );
+      viewportRect.sizeDelta = new Vector2(
+          DungeonViewWidth,
+          DungeonViewHeight
+      );
+      viewportRect.localScale = Vector3.one;
+      viewportRect.localRotation = Quaternion.identity;
+
+      // Authored 224×136 view only — excludes Ceiling Strip 84/85 (Y 139 / 148).
+      dungeonViewport.uvRect = DungeonUvRect;
+
+      if (rightInterfaceArea != null)
+      {
+        rightInterfaceArea.anchorMin = new Vector2(0f, 0f);
+        rightInterfaceArea.anchorMax = new Vector2(0f, 0f);
+        rightInterfaceArea.pivot = new Vector2(0f, 0f);
+        rightInterfaceArea.anchoredPosition = new Vector2(
+            RightInterfaceX,
+            DefaultViewHeight
+                - RightInterfaceYFromTop
+                - RightInterfaceHeight
+        );
+        rightInterfaceArea.sizeDelta = new Vector2(
+            RightInterfaceWidth,
+            RightInterfaceHeight
+        );
+        rightInterfaceArea.localScale = Vector3.one;
+        rightInterfaceArea.localRotation = Quaternion.identity;
+      }
+
+      if (movementArrows != null)
+      {
+        RectTransform arrowsRect = movementArrows.rectTransform;
+        arrowsRect.anchorMin = new Vector2(0.5f, 0f);
+        arrowsRect.anchorMax = new Vector2(0.5f, 0f);
+        arrowsRect.pivot = new Vector2(0.5f, 0f);
+        arrowsRect.sizeDelta = new Vector2(
+            MovementArrowsWidth,
+            MovementArrowsHeight
+        );
+        arrowsRect.anchoredPosition = new Vector2(
+            0f,
+            MovementArrowsBottomMargin
+        );
+        arrowsRect.localScale = Vector3.one;
+        arrowsRect.localRotation = Quaternion.identity;
+        movementArrows.preserveAspect = true;
+      }
+
+      SetMovementArrowsVisible(true);
+    }
+
+    private void ApplyViewportPresentation()
+    {
+      if (dungeonViewport == null)
+        return;
 
       if (showEntranceScreen)
       {
@@ -604,34 +814,7 @@ namespace DM.Rendering
         return;
       }
 
-      dungeonViewport.uvRect = DungeonUvRect;
-
-      RectTransform parent =
-          rectTransform.parent as RectTransform;
-      float parentWidth =
-          parent != null ? parent.rect.width : DefaultViewWidth;
-      float parentHeight =
-          parent != null ? parent.rect.height : DefaultViewHeight;
-
-      float aspect =
-          DungeonViewWidth / (float)DungeonViewHeight;
-      float fitWidth = parentWidth;
-      float fitHeight = fitWidth / aspect;
-
-      if (fitHeight > parentHeight)
-      {
-        fitHeight = parentHeight;
-        fitWidth = fitHeight * aspect;
-      }
-
-      fitWidth = Mathf.Round(fitWidth);
-      fitHeight = Mathf.Round(fitHeight);
-
-      rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
-      rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-      rectTransform.pivot = new Vector2(0.5f, 0.5f);
-      rectTransform.anchoredPosition = Vector2.zero;
-      rectTransform.sizeDelta = new Vector2(fitWidth, fitHeight);
+      ApplyGameplayUiLayout();
     }
 
     private void OnEnable()
