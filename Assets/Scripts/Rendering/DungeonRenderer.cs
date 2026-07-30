@@ -42,6 +42,9 @@ namespace DM.Rendering
     [SerializeField] private AudioClip entranceDoorOpenSound;
     [Range(0f, 1f)]
     [SerializeField] private float entranceDoorSoundVolume = 1.0f;
+    [SerializeField] private AudioClip entranceDoorLastMoveSound;
+    [Range(0f, 1f)]
+    [SerializeField] private float entranceDoorLastMoveVolume = 1.0f;
 
     private static readonly Rect EntranceUvRect = new Rect(0f, 0f, 1f, 1f);
     private static readonly Rect DungeonUvRect = new Rect(
@@ -213,8 +216,13 @@ namespace DM.Rendering
 
     private void UpdateEntranceDoorChainedRattle()
     {
-      if (!entranceDoorFinalPhaseActive)
+      // Never start another Door_Rattle after the entrance has finished.
+      if (!entranceDoorOpening
+          || entranceDoorOpened
+          || !entranceDoorFinalPhaseActive)
+      {
         return;
+      }
 
       float rattleDuration = GetEntranceDoorRattleDuration();
       if (rattleDuration <= 0f
@@ -258,12 +266,16 @@ namespace DM.Rendering
 
     private void CompleteEntranceTransition()
     {
-      // Same frame: doors fully open, stop rattle, gameplay viewport,
-      // entrance ends, input enabled.
-      StopEntranceDoorSound();
+      // Same frame: doors fully open, stop rattles, play DoorLastMove once,
+      // switch gameplay viewport, end entrance, enable input.
+      // DoorLastMove must not delay the viewport switch or block input.
+      StopAllEntranceDoorSounds();
+      PlayEntranceDoorLastMoveSound();
 
       entranceDoorOpening = false;
       entranceDoorOpened = true;
+      entranceDoorFinalPhaseActive = false;
+      entranceDoorNextRattleElapsed = float.PositiveInfinity;
       animatedEntranceDoorLeftX = EntranceDoorOpenEndLeftX;
       animatedEntranceDoorRightX = EntranceDoorOpenEndRightX;
       showEntranceScreen = false;
@@ -276,6 +288,31 @@ namespace DM.Rendering
       ApplyViewportPresentation();
       Canvas.ForceUpdateCanvases();
       ApplyViewportPresentation();
+    }
+
+    private void StopAllEntranceDoorSounds()
+    {
+      if (entranceDoorAudioSource == null)
+        return;
+
+      entranceDoorAudioSource.Stop();
+      entranceDoorAudioSource.loop = false;
+      entranceDoorAudioSource.clip = null;
+    }
+
+    private void PlayEntranceDoorLastMoveSound()
+    {
+      if (entranceDoorAudioSource == null
+          || entranceDoorLastMoveSound == null
+          || entranceDoorLastMoveSound.length <= 0f)
+      {
+        return;
+      }
+
+      entranceDoorAudioSource.PlayOneShot(
+          entranceDoorLastMoveSound,
+          entranceDoorLastMoveVolume
+      );
     }
 
     private int GetEntranceDoorPhase1EndLeftX()
