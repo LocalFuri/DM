@@ -1192,15 +1192,19 @@ namespace DM.Rendering
       if (piece.Graphic == DungeonGraphicType.None)
         return false;
 
+      // Viewport Layout Editor Solo / Enabled must gate every piece.
+      if (!piece.Enabled)
+        return false;
+
       if (IsDepthWallGraphic(piece.Graphic))
       {
         if (currentMap == null)
-          return piece.Enabled;
+          return true;
 
         return IsDepthWallVisible(piece.Graphic);
       }
 
-      return piece.Enabled;
+      return true;
     }
 
     private static bool IsDepthWallGraphic(DungeonGraphicType graphic)
@@ -1328,11 +1332,15 @@ namespace DM.Rendering
 
     private bool IsSideWallVisible(int depth, bool isLeft)
     {
-      // F0 sides ignore nearer front occlusion.
-      // At depth >= 1, WallFnL/R stay visible when the side neighbour is
-      // a wall. DrawPiece decides whether to blit the full corner sprite
-      // (centre open) or only the flat front-face strip (centre wall).
+      // F0 sides stay independent of nearer front occlusion.
       if (depth > 0 && IsFrontDepthOccluded(depth))
+        return false;
+
+      // F1 only (proven by Viewport Layout Editor): when the centre F1
+      // cell is a wall, draw FrontWallF1 alone — never WallF1L/WallF1R,
+      // even if those side cells are also walls. No crop/shift needed.
+      // F2/F3 side rules are unchanged.
+      if (depth == 1 && IsCenterFrontWallVisible(1))
         return false;
 
       DungeonMap.GetForwardOffset(
@@ -1359,67 +1367,6 @@ namespace DM.Rendering
           sideY;
 
       return IsWallTile(tileX, tileY);
-    }
-
-    private static bool TryGetCenterFrontWallGraphic(
-        int depth,
-        out DungeonGraphicType graphic)
-    {
-      switch (depth)
-      {
-        case 1:
-          graphic = DungeonGraphicType.FrontWallF1;
-          return true;
-        case 2:
-          graphic = DungeonGraphicType.FrontWallF2;
-          return true;
-        case 3:
-          graphic = DungeonGraphicType.FrontWallF3;
-          return true;
-        default:
-          graphic = DungeonGraphicType.None;
-          return false;
-      }
-    }
-
-    // FrontWallFn left/right edges in layout space (exclusive right).
-    private bool TryGetFrontWallBounds(
-        int depth,
-        out int frontLeft,
-        out int frontRight)
-    {
-      frontLeft = 0;
-      frontRight = 0;
-
-      if (!TryGetCenterFrontWallGraphic(
-              depth,
-              out DungeonGraphicType graphic))
-      {
-        return false;
-      }
-
-      ViewportPiece frontPiece = null;
-
-      foreach (ViewportPiece piece in layout.Pieces)
-      {
-        if (piece != null && piece.Graphic == graphic)
-        {
-          frontPiece = piece;
-          break;
-        }
-      }
-
-      if (frontPiece == null)
-        return false;
-
-      Texture2D frontTexture = graphics.GetTexture(graphic);
-
-      if (frontTexture == null)
-        return false;
-
-      frontLeft = frontPiece.X;
-      frontRight = frontPiece.X + frontTexture.width;
-      return true;
     }
 
     // A solid center tile at a nearer depth hides farther
@@ -1489,56 +1436,13 @@ namespace DM.Rendering
       Texture2D mask =
           graphics.GetMask(piece.Graphic, out bool flipMaskX);
 
-      int destinationX = piece.X;
-      int destinationY = piece.Y + dungeonDrawOffsetY;
-      int sourceX = 0;
-      int sourceWidth = texture.width;
-
-      // WallFnL/R are corner sprites (flat front face + inward side).
-      // When FrontWallFn is also present, only blit the flat strip that
-      // sits outside FrontWallFn — never the inward corner columns.
-      if (TryGetSideWallDepthAndSide(
-              piece.Graphic,
-              out int sideDepth,
-              out bool isLeft)
-          && sideDepth > 0
-          && IsCenterFrontWallVisible(sideDepth)
-          && TryGetFrontWallBounds(
-              sideDepth,
-              out int frontLeft,
-              out int frontRight))
-      {
-        if (isLeft)
-        {
-          sourceWidth = frontLeft - piece.X;
-
-          if (sourceWidth <= 0)
-            return;
-        }
-        else
-        {
-          sourceX = frontRight - piece.X;
-
-          if (sourceX < 0 || sourceX >= texture.width)
-            return;
-
-          sourceWidth = texture.width - sourceX;
-          destinationX = frontRight;
-
-          if (sourceWidth <= 0)
-            return;
-        }
-      }
-
+      // Full authored sprite at layout X/Y — no crop, shift, or stretch.
       Blit(
           texture,
-          destinationX,
-          destinationY,
+          piece.X,
+          piece.Y + dungeonDrawOffsetY,
           mask,
-          flipMaskX,
-          false,
-          sourceX,
-          sourceWidth
+          flipMaskX
       );
     }
 
