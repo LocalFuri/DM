@@ -8,12 +8,13 @@ namespace DM.Dungeon
 {
   public class DungeonKeyboardInput : MonoBehaviour
   {
+    [Header("Temporary Test")]
+    [SerializeField]
+    private bool teleportToIaidoOnForward;
+
     private DungeonMap map;
     private DungeonRenderer dungeonRenderer;
     private HeroRecruitmentPanel heroRecruitmentPanel;
-
-    // TEMPORARY: first Up after entrance teleports to Iaido test pose.
-    private bool iaidoTestTeleportPending = true;
 
     public DungeonMap Map => map;
 
@@ -47,8 +48,11 @@ namespace DM.Dungeon
 
       if (keyboard.upArrowKey.wasPressedThisFrame)
       {
-        if (TryConsumeIaidoTestTeleport())
+        if (teleportToIaidoOnForward)
+        {
+          TeleportToIaidoTestPose();
           return;
+        }
 
         TryMoveRelative(0, 1);
       }
@@ -69,12 +73,8 @@ namespace DM.Dungeon
         TurnRight();
     }
 
-    private bool TryConsumeIaidoTestTeleport()
+    private void TeleportToIaidoTestPose()
     {
-      if (!iaidoTestTeleportPending)
-        return false;
-
-      iaidoTestTeleportPending = false;
       map.SetPlayerPose(10, 4, DungeonFacing.North);
       dungeonRenderer.RequestRedraw();
       DetectChampionInFront();
@@ -82,8 +82,6 @@ namespace DM.Dungeon
       Debug.Log(
           "TEMPORARY: Iaido test teleport to (10,4) facing North."
       );
-
-      return true;
     }
 
     // localX/localY are in facing-local space:
