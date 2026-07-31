@@ -57,6 +57,7 @@ namespace DM.Rendering
 
     [Header("Entrance Door Audio")]
     [SerializeField] private AudioSource entranceDoorAudioSource;
+    [SerializeField] private AudioSource entranceDoorOneShotAudioSource;
     [SerializeField] private AudioClip entranceDoorOpenSound;
     [Range(0f, 1f)]
     [SerializeField] private float entranceDoorSoundVolume = 1.0f;
@@ -127,6 +128,8 @@ namespace DM.Rendering
       if (entranceDoorAudioSource == null)
         entranceDoorAudioSource = GetComponent<AudioSource>();
 
+      EnsureEntranceDoorOneShotAudioSource();
+
       if (dungeonViewport == null)
         dungeonViewport = FindDungeonViewport();
 
@@ -152,6 +155,32 @@ namespace DM.Rendering
     private void Reset()
     {
       entranceDoorAudioSource = GetComponent<AudioSource>();
+      EnsureEntranceDoorOneShotAudioSource();
+    }
+
+    private void EnsureEntranceDoorOneShotAudioSource()
+    {
+      if (entranceDoorOneShotAudioSource == null)
+      {
+        AudioSource[] sources = GetComponents<AudioSource>();
+        for (int i = 0; i < sources.Length; i++)
+        {
+          if (sources[i] != null
+              && sources[i] != entranceDoorAudioSource)
+          {
+            entranceDoorOneShotAudioSource = sources[i];
+            break;
+          }
+        }
+      }
+
+      if (entranceDoorOneShotAudioSource == null)
+        entranceDoorOneShotAudioSource =
+            gameObject.AddComponent<AudioSource>();
+
+      entranceDoorOneShotAudioSource.playOnAwake = false;
+      entranceDoorOneShotAudioSource.loop = false;
+      entranceDoorOneShotAudioSource.volume = 1f;
     }
 
     private void Start()
@@ -351,6 +380,39 @@ namespace DM.Rendering
       return entranceDoorOpenSound.length;
     }
 
+    private float GetEntranceDoorRattlePlaybackDuration()
+    {
+      float clipLength = GetEntranceDoorRattleDuration();
+      if (clipLength <= 0f)
+        return 0f;
+
+      float pitch = 1f;
+      if (entranceDoorOneShotAudioSource != null)
+        pitch = entranceDoorOneShotAudioSource.pitch;
+      if (pitch <= 0.0001f)
+        pitch = 1f;
+
+      return clipLength / pitch;
+    }
+
+    private float GetRemainingEntranceDoorAnimationTime()
+    {
+      float animationEndElapsed = entranceDoorOpenDuration;
+      if (entranceDoorFinalPhaseActive
+          && entranceDoorFinalMoveStartElapsed >= 0f
+          && entranceDoorFinalMoveDuration > 0f)
+      {
+        animationEndElapsed =
+            entranceDoorFinalMoveStartElapsed
+            + entranceDoorFinalMoveDuration;
+      }
+
+      return Mathf.Max(
+          0f,
+          animationEndElapsed - entranceDoorOpenElapsed
+      );
+    }
+
     private void EnsureEntranceDoorFinalPhaseStarted()
     {
       float finalMoveStartTime = GetEntranceDoorFinalMoveStartTime();
@@ -378,9 +440,13 @@ namespace DM.Rendering
         return;
       }
 
-      float rattleDuration = GetEntranceDoorRattleDuration();
+      // No more rattles fit before DoorLastMove; stay silent.
+      if (float.IsPositiveInfinity(entranceDoorNextRattleElapsed))
+        return;
+
+      float rattleDuration = GetEntranceDoorRattlePlaybackDuration();
       if (rattleDuration <= 0f
-          || entranceDoorAudioSource == null
+          || entranceDoorOneShotAudioSource == null
           || entranceDoorOpenSound == null)
       {
         return;
@@ -390,7 +456,14 @@ namespace DM.Rendering
       if (entranceDoorOpenElapsed < entranceDoorNextRattleElapsed)
         return;
 
-      entranceDoorAudioSource.PlayOneShot(
+      // Skip any last rattle that would be cut off by CompleteEntranceTransition.
+      if (GetRemainingEntranceDoorAnimationTime() < rattleDuration)
+      {
+        entranceDoorNextRattleElapsed = float.PositiveInfinity;
+        return;
+      }
+
+      entranceDoorOneShotAudioSource.PlayOneShot(
           entranceDoorOpenSound,
           entranceDoorSoundVolume
       );
@@ -451,24 +524,27 @@ namespace DM.Rendering
 
     private void StopAllEntranceDoorSounds()
     {
-      if (entranceDoorAudioSource == null)
-        return;
+      if (entranceDoorAudioSource != null)
+      {
+        entranceDoorAudioSource.Stop();
+        entranceDoorAudioSource.loop = false;
+        entranceDoorAudioSource.clip = null;
+      }
 
-      entranceDoorAudioSource.Stop();
-      entranceDoorAudioSource.loop = false;
-      entranceDoorAudioSource.clip = null;
+      if (entranceDoorOneShotAudioSource != null)
+        entranceDoorOneShotAudioSource.Stop();
     }
 
     private void PlayEntranceDoorLastMoveSound()
     {
-      if (entranceDoorAudioSource == null
+      if (entranceDoorOneShotAudioSource == null
           || entranceDoorLastMoveSound == null
           || entranceDoorLastMoveSound.length <= 0f)
       {
         return;
       }
 
-      entranceDoorAudioSource.PlayOneShot(
+      entranceDoorOneShotAudioSource.PlayOneShot(
           entranceDoorLastMoveSound,
           entranceDoorLastMoveVolume
       );
