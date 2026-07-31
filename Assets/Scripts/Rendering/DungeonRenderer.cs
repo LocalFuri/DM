@@ -1328,16 +1328,12 @@ namespace DM.Rendering
 
     private bool IsSideWallVisible(int depth, bool isLeft)
     {
-      // F0 sides stay independent of center front walls.
-      if (depth > 0)
-      {
-        if (IsFrontDepthOccluded(depth))
-          return false;
-
-        // A center front wall at this depth replaces the side pieces.
-        if (IsCenterFrontWallVisible(depth))
-          return false;
-      }
+      // F0 sides ignore nearer front occlusion.
+      // At depth >= 1, WallFnL/R stay visible when the side neighbour is
+      // a wall. DrawPiece decides whether to blit the full corner sprite
+      // (centre open) or only the flat front-face strip (centre wall).
+      if (depth > 0 && IsFrontDepthOccluded(depth))
+        return false;
 
       DungeonMap.GetForwardOffset(
           currentMap.PlayerFacing,
@@ -1363,6 +1359,67 @@ namespace DM.Rendering
           sideY;
 
       return IsWallTile(tileX, tileY);
+    }
+
+    private static bool TryGetCenterFrontWallGraphic(
+        int depth,
+        out DungeonGraphicType graphic)
+    {
+      switch (depth)
+      {
+        case 1:
+          graphic = DungeonGraphicType.FrontWallF1;
+          return true;
+        case 2:
+          graphic = DungeonGraphicType.FrontWallF2;
+          return true;
+        case 3:
+          graphic = DungeonGraphicType.FrontWallF3;
+          return true;
+        default:
+          graphic = DungeonGraphicType.None;
+          return false;
+      }
+    }
+
+    // FrontWallFn left/right edges in layout space (exclusive right).
+    private bool TryGetFrontWallBounds(
+        int depth,
+        out int frontLeft,
+        out int frontRight)
+    {
+      frontLeft = 0;
+      frontRight = 0;
+
+      if (!TryGetCenterFrontWallGraphic(
+              depth,
+              out DungeonGraphicType graphic))
+      {
+        return false;
+      }
+
+      ViewportPiece frontPiece = null;
+
+      foreach (ViewportPiece piece in layout.Pieces)
+      {
+        if (piece != null && piece.Graphic == graphic)
+        {
+          frontPiece = piece;
+          break;
+        }
+      }
+
+      if (frontPiece == null)
+        return false;
+
+      Texture2D frontTexture = graphics.GetTexture(graphic);
+
+      if (frontTexture == null)
+        return false;
+
+      frontLeft = frontPiece.X;
+      frontRight = frontPiece.X + frontTexture.width;
+      return true;
     }
 
     // A solid center tile at a nearer depth hides farther
@@ -1432,12 +1489,56 @@ namespace DM.Rendering
       Texture2D mask =
           graphics.GetMask(piece.Graphic, out bool flipMaskX);
 
+      int destinationX = piece.X;
+      int destinationY = piece.Y + dungeonDrawOffsetY;
+      int sourceX = 0;
+      int sourceWidth = texture.width;
+
+      // WallFnL/R are corner sprites (flat front face + inward side).
+      // When FrontWallFn is also present, only blit the flat strip that
+      // sits outside FrontWallFn — never the inward corner columns.
+      if (TryGetSideWallDepthAndSide(
+              piece.Graphic,
+              out int sideDepth,
+              out bool isLeft)
+          && sideDepth > 0
+          && IsCenterFrontWallVisible(sideDepth)
+          && TryGetFrontWallBounds(
+              sideDepth,
+              out int frontLeft,
+              out int frontRight))
+      {
+        if (isLeft)
+        {
+          sourceWidth = frontLeft - piece.X;
+
+          if (sourceWidth <= 0)
+            return;
+        }
+        else
+        {
+          sourceX = frontRight - piece.X;
+
+          if (sourceX < 0 || sourceX >= texture.width)
+            return;
+
+          sourceWidth = texture.width - sourceX;
+          destinationX = frontRight;
+
+          if (sourceWidth <= 0)
+            return;
+        }
+      }
+
       Blit(
           texture,
-          piece.X,
-          piece.Y + dungeonDrawOffsetY,
+          destinationX,
+          destinationY,
           mask,
-          flipMaskX
+          flipMaskX,
+          false,
+          sourceX,
+          sourceWidth
       );
     }
 
@@ -1461,7 +1562,9 @@ namespace DM.Rendering
         int destinationY,
         Texture2D mask = null,
         bool flipMaskHorizontal = false,
-        bool flipVertical = false)
+        bool flipVertical = false,
+        int sourceXOffset = 0,
+        int sourceWidth = -1)
     {
       Color32[] sourcePixels =
           source.GetPixels32();
@@ -1476,6 +1579,18 @@ namespace DM.Rendering
         maskPixels = mask.GetPixels32();
         useMask = true;
       }
+
+      if (sourceWidth < 0)
+        sourceWidth = source.width;
+
+      if (sourceXOffset < 0)
+        sourceXOffset = 0;
+
+      if (sourceXOffset + sourceWidth > source.width)
+        sourceWidth = source.width - sourceXOffset;
+
+      if (sourceWidth <= 0)
+        return;
 
       for (
           int sourceY = 0;
@@ -1497,12 +1612,12 @@ namespace DM.Rendering
         }
 
         for (
-            int sourceX = 0;
-            sourceX < source.width;
-            sourceX++)
+            int column = 0;
+            column < sourceWidth;
+            column++)
         {
-          int targetX =
-              destinationX + sourceX;
+          int sourceX = sourceXOffset + column;
+          int targetX = destinationX + column;
 
           if (
               targetX < 0 ||
