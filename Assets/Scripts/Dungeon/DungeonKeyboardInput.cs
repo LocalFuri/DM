@@ -8,13 +8,10 @@ namespace DM.Dungeon
 {
   public class DungeonKeyboardInput : MonoBehaviour
   {
-    [Header("Temporary Test")]
-    [SerializeField]
-    private bool teleportToIaidoOnForward;
-
     private DungeonMap map;
     private DungeonRenderer dungeonRenderer;
     private HeroRecruitmentPanel heroRecruitmentPanel;
+    private bool entranceStartTeleportPending = true;
 
     public DungeonMap Map => map;
 
@@ -26,6 +23,7 @@ namespace DM.Dungeon
       map = dungeonMap;
       dungeonRenderer = renderer;
       heroRecruitmentPanel = recruitmentPanel;
+      entranceStartTeleportPending = true;
 
       DetectChampionInFront();
     }
@@ -48,9 +46,9 @@ namespace DM.Dungeon
 
       if (keyboard.upArrowKey.wasPressedThisFrame)
       {
-        if (teleportToIaidoOnForward)
+        if (entranceStartTeleportPending)
         {
-          TeleportToIaidoTestPose();
+          PerformEntranceStartTeleport();
           return;
         }
 
@@ -73,14 +71,15 @@ namespace DM.Dungeon
         TurnRight();
     }
 
-    private void TeleportToIaidoTestPose()
+    private void PerformEntranceStartTeleport()
     {
       map.SetPlayerPose(10, 4, DungeonFacing.North);
+      entranceStartTeleportPending = false;
       dungeonRenderer.RequestRedraw();
       DetectChampionInFront();
 
       Debug.Log(
-          "TEMPORARY: Iaido test teleport to (10,4) facing North."
+          "Entrance start teleport to (10,4) facing North."
       );
     }
 

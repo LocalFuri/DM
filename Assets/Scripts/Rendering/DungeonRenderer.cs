@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using DM.Dungeon;
+using DM.Heroes;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -64,6 +65,18 @@ namespace DM.Rendering
     [SerializeField] private AudioClip entranceDoorLastMoveSound;
     [Range(0f, 1f)]
     [SerializeField] private float entranceDoorLastMoveVolume = 1.0f;
+
+    [Header("Hero Portraits")]
+    [SerializeField] private int heroPortraitX = 96;
+    // Framebuffer Y (bottom-up). Screenshot top-down Y=36 for Iaido.png:
+    // 136 - 36 - 29 = 71.
+    [SerializeField] private int heroPortraitY = 71;
+    [SerializeField] private Texture2D[] heroPortraitTextures;
+
+    [Header("TEMP Reference Wall Test — disable or delete after comparison")]
+    [SerializeField] private bool showOriginalWallReferenceTest = true;
+    [SerializeField]
+    private Texture2D originalWallReference_10_4_North;
 
     private static readonly Rect EntranceUvRect = new Rect(0f, 0f, 1f, 1f);
     private static readonly Rect DungeonUvRect = new Rect(
@@ -931,6 +944,18 @@ namespace DM.Rendering
     public void RequestRedraw()
     {
       frameDirty = true;
+
+      // Play Mode: draw and present immediately so teleports / tests do not
+      // depend on Camera.onPostRender ordering (same path as entrance end).
+      if (!Application.isPlaying)
+        return;
+
+      if (frameBuffer == null || targetTexture == null)
+        return;
+
+      DrawDungeonFrame();
+      frameDirty = false;
+      Graphics.Blit(frameBuffer, targetTexture);
     }
 
     private void HandleCameraPostRender(Camera camera)
@@ -1058,6 +1083,17 @@ namespace DM.Rendering
         return;
       }
 
+      // TEMP: at (10,4) North, blit the original 224×136 reference wall
+      // instead of composing tiles. Toggle showOriginalWallReferenceTest off
+      // (or clear the texture) to restore normal rendering.
+      if (TryDrawOriginalWallReferenceTest())
+      {
+        visibleWallPieces.Clear();
+        visibleWallPieces.Add("OriginalWallReference");
+        ApplyFrameBuffer();
+        return;
+      }
+
       System.Text.StringBuilder drawnFrontWalls =
           new System.Text.StringBuilder();
       System.Text.StringBuilder drawnSideWalls =
@@ -1065,28 +1101,35 @@ namespace DM.Rendering
 
       visibleWallPieces.Clear();
 
+      bool f1WallGroupDrawn = false;
+
       foreach (ViewportPiece piece in layout.Pieces)
       {
+        // F1 solid-row fix: force WallF1L → WallF1R → FrontWallF1
+        // so the front covers side inward overlap. Skip individual F1
+        // wall entries here; they are flushed as one group.
+        if (IsF1WallGraphic(piece.Graphic))
+        {
+          if (!f1WallGroupDrawn)
+          {
+            DrawF1WallGroup(
+                drawnFrontWalls,
+                drawnSideWalls
+            );
+            f1WallGroupDrawn = true;
+          }
+
+          continue;
+        }
+
         if (!ShouldDrawPiece(piece))
           continue;
 
-        if (TryGetCenterFrontWallDepth(piece.Graphic, out _))
-        {
-          if (drawnFrontWalls.Length > 0)
-            drawnFrontWalls.Append(", ");
-
-          drawnFrontWalls.Append(piece.Graphic);
-          visibleWallPieces.Add(piece.Graphic.ToString());
-        }
-        else if (TryGetSideWallDepthAndSide(piece.Graphic, out _, out _))
-        {
-          if (drawnSideWalls.Length > 0)
-            drawnSideWalls.Append(", ");
-
-          drawnSideWalls.Append(piece.Graphic);
-          visibleWallPieces.Add(piece.Graphic.ToString());
-        }
-
+        RecordDrawnWallPiece(
+            piece.Graphic,
+            drawnFrontWalls,
+            drawnSideWalls
+        );
         DrawPiece(piece);
       }
 
@@ -1116,10 +1159,184 @@ namespace DM.Rendering
         );
       }
 
+      if (!showEntranceScreen)
+        TryDrawHeroPortraitOverlay();
+
       if (showEntranceScreen)
         DrawEntranceOverlay();
 
       ApplyFrameBuffer();
+    }
+
+    private void TryDrawHeroPortraitOverlay()
+    {
+      if (currentMap == null)
+        return;
+
+      if (!IsDepthWallVisible(DungeonGraphicType.FrontWallF1))
+        return;
+
+      if (!TryGetHeroOnVisibleFrontWall(out HeroDefinition hero))
+        return;
+
+      Texture2D portrait = FindHeroPortraitTexture(hero.PortraitName);
+      if (portrait == null)
+        return;
+
+      DrawHeroPortrait(
+          portrait,
+          heroPortraitX,
+          heroPortraitY + dungeonDrawOffsetY
+      );
+    }
+
+    // TEMP reference test — remove with the serialized fields above.
+    private bool TryDrawOriginalWallReferenceTest()
+    {
+      if (!showOriginalWallReferenceTest)
+        return false;
+
+      Texture2D reference = ResolveOriginalWallReferenceTexture();
+      if (reference == null)
+      {
+        Debug.LogWarning(
+            "DungeonRenderer: Original wall reference test is ON but " +
+            "originalWallReference_10_4_North is null."
+        );
+        return false;
+      }
+
+      if (currentMap == null)
+        return false;
+
+      if (currentMap.PlayerX != 10
+          || currentMap.PlayerY != 4
+          || currentMap.PlayerFacing != DungeonFacing.North)
+      {
+        return false;
+      }
+
+      Debug.Log(
+          "DungeonRenderer: TEMP original wall reference blit at " +
+          $"({currentMap.PlayerX},{currentMap.PlayerY}) " +
+          $"facing {currentMap.PlayerFacing} " +
+          $"tex={reference.width}x{reference.height}."
+      );
+
+      Blit(
+          reference,
+          0,
+          dungeonDrawOffsetY
+      );
+
+      return true;
+    }
+
+    private Texture2D ResolveOriginalWallReferenceTexture()
+    {
+      if (originalWallReference_10_4_North != null)
+        return originalWallReference_10_4_North;
+
+#if UNITY_EDITOR
+      originalWallReference_10_4_North =
+          UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+              "Assets/Art/Reference/OriginalWall_10_4_North.png"
+          );
+#endif
+
+      return originalWallReference_10_4_North;
+    }
+
+    private bool TryGetHeroOnVisibleFrontWall(out HeroDefinition hero)
+    {
+      hero = null;
+
+      GetHeroPlacementLookup(
+          currentMap.PlayerFacing,
+          out int heroX,
+          out int heroY,
+          out HeroWallDirection wallDirection
+      );
+
+      hero = HeroDatabase.GetByPlacement(
+          0,
+          heroX,
+          heroY,
+          wallDirection
+      );
+
+      return hero != null;
+    }
+
+    private void GetHeroPlacementLookup(
+        DungeonFacing facing,
+        out int heroX,
+        out int heroY,
+        out HeroWallDirection wallDirection)
+    {
+      heroX = currentMap.PlayerX;
+      heroY = currentMap.PlayerY;
+
+      switch (facing)
+      {
+        case DungeonFacing.North:
+          heroY += 1;
+          wallDirection = HeroWallDirection.North;
+          break;
+
+        case DungeonFacing.East:
+          wallDirection = HeroWallDirection.East;
+          break;
+
+        case DungeonFacing.South:
+          wallDirection = HeroWallDirection.South;
+          break;
+
+        case DungeonFacing.West:
+          wallDirection = HeroWallDirection.West;
+          break;
+
+        default:
+          wallDirection = HeroWallDirection.North;
+          break;
+      }
+    }
+
+    private Texture2D FindHeroPortraitTexture(string portraitName)
+    {
+      if (heroPortraitTextures == null
+          || string.IsNullOrEmpty(portraitName))
+      {
+        return null;
+      }
+
+      for (int i = 0; i < heroPortraitTextures.Length; i++)
+      {
+        Texture2D texture = heroPortraitTextures[i];
+        if (texture == null)
+          continue;
+
+        if (string.Equals(
+                texture.name,
+                portraitName,
+                System.StringComparison.OrdinalIgnoreCase))
+        {
+          return texture;
+        }
+      }
+
+      return null;
+    }
+
+    private void DrawHeroPortrait(
+        Texture2D portraitTexture,
+        int x,
+        int y)
+    {
+      if (portraitTexture == null)
+        return;
+
+      Blit(portraitTexture, x, y);
     }
 
     private void DrawEntranceOverlay()
@@ -1205,6 +1422,195 @@ namespace DM.Rendering
       }
 
       return true;
+    }
+
+    private static bool IsF1WallGraphic(DungeonGraphicType graphic)
+    {
+      return graphic == DungeonGraphicType.WallF1L
+          || graphic == DungeonGraphicType.WallF1R
+          || graphic == DungeonGraphicType.FrontWallF1;
+    }
+
+    // Always WallF1L → WallF1R → FrontWallF1 (authored positions).
+    // Join fix vs DM reference when sides sit under the front:
+    // - omit FrontWallF1 src 0 so dest 32 keeps WallF1L src 32 (single dark edge)
+    // - omit WallF1R src 27; draw src 28..59 at dest 192..223 (drop duplicate border)
+    private void DrawF1WallGroup(
+        System.Text.StringBuilder drawnFrontWalls,
+        System.Text.StringBuilder drawnSideWalls)
+    {
+      ViewportPiece leftPiece =
+          FindLayoutPiece(DungeonGraphicType.WallF1L);
+      ViewportPiece rightPiece =
+          FindLayoutPiece(DungeonGraphicType.WallF1R);
+      ViewportPiece frontPiece =
+          FindLayoutPiece(DungeonGraphicType.FrontWallF1);
+
+      bool drawLeft = ShouldDrawPiece(leftPiece);
+      bool drawRight = ShouldDrawPiece(rightPiece);
+      bool drawFront = ShouldDrawPiece(frontPiece);
+
+      if (drawLeft)
+      {
+        RecordDrawnWallPiece(
+            DungeonGraphicType.WallF1L,
+            drawnFrontWalls,
+            drawnSideWalls
+        );
+        DrawPiece(leftPiece);
+      }
+
+      if (drawRight)
+      {
+        RecordDrawnWallPiece(
+            DungeonGraphicType.WallF1R,
+            drawnFrontWalls,
+            drawnSideWalls
+        );
+        DrawF1RightPiece(rightPiece, drawFront);
+      }
+
+      if (drawFront)
+      {
+        RecordDrawnWallPiece(
+            DungeonGraphicType.FrontWallF1,
+            drawnFrontWalls,
+            drawnSideWalls
+        );
+        DrawF1FrontPiece(frontPiece, drawLeft);
+      }
+    }
+
+    private void DrawF1RightPiece(
+        ViewportPiece piece,
+        bool frontAlsoDrawn)
+    {
+      Texture2D texture =
+          graphics.GetTexture(piece.Graphic);
+
+      if (texture == null)
+      {
+        Debug.LogWarning(
+            "DungeonRenderer: Missing texture for " +
+            piece.Graphic
+        );
+        return;
+      }
+
+      Texture2D mask =
+          graphics.GetMask(piece.Graphic, out bool flipMaskX);
+
+      if (frontAlsoDrawn)
+      {
+        // Hide WallF1R src 27 (duplicate border at dest 192).
+        // Src 28..end stays at dest 192.. to preserve full width.
+        const int hideSrcColumn = 27;
+        int sourceX = hideSrcColumn + 1;
+        int destX = piece.X + sourceX;
+        int sourceWidth = texture.width - sourceX;
+
+        Blit(
+            texture,
+            destX,
+            piece.Y + dungeonDrawOffsetY,
+            mask,
+            flipMaskX,
+            false,
+            sourceX,
+            sourceWidth
+        );
+        return;
+      }
+
+      Blit(
+          texture,
+          piece.X,
+          piece.Y + dungeonDrawOffsetY,
+          mask,
+          flipMaskX
+      );
+    }
+
+    private void DrawF1FrontPiece(
+        ViewportPiece piece,
+        bool leftAlsoDrawn)
+    {
+      Texture2D texture =
+          graphics.GetTexture(piece.Graphic);
+
+      if (texture == null)
+      {
+        Debug.LogWarning(
+            "DungeonRenderer: Missing texture for " +
+            piece.Graphic
+        );
+        return;
+      }
+
+      Texture2D mask =
+          graphics.GetMask(piece.Graphic, out bool flipMaskX);
+
+      if (leftAlsoDrawn)
+      {
+        // Hide FrontWallF1 src 0 only. Front[1..] stay at dest 33..191
+        // (no shift of interior staggered mortar). Dest 32 keeps F1L src 32.
+        Blit(
+            texture,
+            piece.X + 1,
+            piece.Y + dungeonDrawOffsetY,
+            mask,
+            flipMaskX,
+            false,
+            1,
+            texture.width - 1
+        );
+        return;
+      }
+
+      Blit(
+          texture,
+          piece.X,
+          piece.Y + dungeonDrawOffsetY,
+          mask,
+          flipMaskX
+      );
+    }
+
+    private ViewportPiece FindLayoutPiece(DungeonGraphicType graphic)
+    {
+      if (layout == null)
+        return null;
+
+      foreach (ViewportPiece piece in layout.Pieces)
+      {
+        if (piece != null && piece.Graphic == graphic)
+          return piece;
+      }
+
+      return null;
+    }
+
+    private void RecordDrawnWallPiece(
+        DungeonGraphicType graphic,
+        System.Text.StringBuilder drawnFrontWalls,
+        System.Text.StringBuilder drawnSideWalls)
+    {
+      if (TryGetCenterFrontWallDepth(graphic, out _))
+      {
+        if (drawnFrontWalls.Length > 0)
+          drawnFrontWalls.Append(", ");
+
+        drawnFrontWalls.Append(graphic);
+        visibleWallPieces.Add(graphic.ToString());
+      }
+      else if (TryGetSideWallDepthAndSide(graphic, out _, out _))
+      {
+        if (drawnSideWalls.Length > 0)
+          drawnSideWalls.Append(", ");
+
+        drawnSideWalls.Append(graphic);
+        visibleWallPieces.Add(graphic.ToString());
+      }
     }
 
     private static bool IsDepthWallGraphic(DungeonGraphicType graphic)
@@ -1336,11 +1742,10 @@ namespace DM.Rendering
       if (depth > 0 && IsFrontDepthOccluded(depth))
         return false;
 
-      // F1 only (proven by Viewport Layout Editor): when the centre F1
-      // cell is a wall, draw FrontWallF1 alone — never WallF1L/WallF1R,
-      // even if those side cells are also walls. No crop/shift needed.
-      // F2/F3 side rules are unchanged.
-      if (depth == 1 && IsCenterFrontWallVisible(1))
+      // F1 sides stay visible when the centre F1 cell is a wall so they
+      // can draw under FrontWallF1 (forced draw order). No crop.
+      // F2 only: centre wall draws FrontWallF2 alone; suppress F2L/R.
+      if (depth == 2 && IsCenterFrontWallVisible(2))
         return false;
 
       DungeonMap.GetForwardOffset(

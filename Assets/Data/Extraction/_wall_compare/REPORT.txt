@@ -1,0 +1,37 @@
+F1 wall pixel comparison (analysis only — no layout/code edits applied)
+======================================================================
+Crops (native 224×136):
+  CSB:   screenshot origin (4,58) → Assets/Data/Extraction/_wall_compare/csb_224x136_f1aligned.png
+  Unity: scale recovery attempted; 1:1 Game View stretch prevents perfect FB recovery
+  Diffs: diff_csb_vs_unity.png, side_by_side.png, csb_front_vs_asset_aligned.png
+
+Band legend (wall Y=16..126):
+  L     x0..31    WallF1L only
+  Lov   x32..59   overlap WallF1L ∩ FrontWallF1
+  C     x60..163  FrontWallF1 only
+  Rov   x164..191 overlap FrontWallF1 ∩ WallF1R
+  R     x192..223 WallF1R only
+
+CSB region vs extracted assets (thr≥25, portrait excluded on front):
+  CSB[0:32]   vs F1L[0:32]     29.0%
+  CSB[32:60]  vs F1L[32:60]    70.1%  ← NOT F1L
+  CSB[32:60]  vs F1[0:28]      26.5%  ← IS FrontWall
+  CSB[60:164] vs F1[28:132]    44.6%  ← brick pattern mismatch (exclusive front)
+  CSB[164:192] vs F1[132:160]  28.1%  ← IS FrontWall
+  CSB[164:192] vs F1R[0:28]    69.6%  ← NOT F1R
+  CSB[192:224] vs F1R[28:60]   27.8%
+
+Asset self-check:
+  F1L[32:60] vs F1[0:28]       72.3% different (overlap art intentionally differs)
+  Mortar rows F1/F1L/F1R asset: y = 27, 54, 82
+  Mortar rows CSB front band:   y ≈ 22, 57, 87  (does not match by small shift)
+
+Composition ranking vs CSB (excl portrait): sides-then-front @ X=164 best among tested;
+masks and join_fix column hacks do not fix the center brick mismatch.
+
+Verdict:
+  PRIMARY: source extraction — FrontWallF1 PNG brick layout ≠ CSBwin wall
+  SECONDARY (Unity seam only): DrawF1WallGroup join_fix (omit front src0 / F1R src27)
+  Draw order in CSB: L → R → Front (front owns Lov/Rov)
+  Masks: not the brick-pattern cause
+  WallF1R dest for full blit: X=164 (src0→dest164, src28→dest192)
