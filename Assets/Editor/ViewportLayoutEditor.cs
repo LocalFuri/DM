@@ -33,6 +33,7 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private DungeonGraphics graphics;
   private Vector2 editorScroll;
+  private string pieceSearchFilter = string.Empty;
   private bool[] rememberedEnabledStates;
   private int snap = 1;
 
@@ -256,12 +257,18 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.Space();
     EditorGUILayout.LabelField("Pieces (render order)", EditorStyles.boldLabel);
+    pieceSearchFilter = EditorGUILayout.TextField(
+        "Search Pieces",
+        pieceSearchFilter);
 
     bool changed = false;
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece piece = layout.Pieces[i];
+      if (!PieceMatchesSearchFilter(piece))
+        continue;
+
       bool isSelected = i == selectedPieceIndex;
       DrawPieceCard(i, piece, isSelected, ref changed);
     }
@@ -276,6 +283,21 @@ public class ViewportLayoutEditor : EditorWindow
       RefreshEditModePreview();
       Repaint();
     }
+  }
+
+  private bool PieceMatchesSearchFilter(ViewportPiece piece)
+  {
+    if (string.IsNullOrWhiteSpace(pieceSearchFilter))
+      return true;
+
+    if (piece == null)
+      return false;
+
+    string name = piece.Name ?? string.Empty;
+    return name.IndexOf(
+               pieceSearchFilter.Trim(),
+               System.StringComparison.OrdinalIgnoreCase)
+           >= 0;
   }
 
   private void DrawPieceCard(
@@ -1243,9 +1265,12 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      // UI chrome keeps its own Enabled; map pose only drives walls.
-      if (piece.Graphic == DungeonGraphicType.MovementArrows)
+      // UI / chrome keeps its own Enabled; map pose only drives walls.
+      if (piece.Graphic == DungeonGraphicType.MovementArrows
+          || piece.Graphic == DungeonGraphicType.ChampionStatusBackground)
+      {
         continue;
+      }
 
       if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
       {

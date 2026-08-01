@@ -43,6 +43,8 @@ namespace DM.Rendering
     MovementArrows,
 
     FrontWallF1_A,
-    FrontWallF1_B
+    FrontWallF1_B,
+
+    ChampionStatusBackground
   }
 }

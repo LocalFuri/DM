@@ -83,6 +83,9 @@ namespace DM.Rendering
     public Texture2D TorchHolder;
     public Texture2D WallOrnament;
 
+    [Header("Interface")]
+    public Texture2D ChampionStatusBackground;
+
     public Texture2D GetTexture(DungeonGraphicType graphic)
     {
       switch (graphic)
@@ -139,6 +142,8 @@ namespace DM.Rendering
           return TorchHolder;
         case DungeonGraphicType.WallOrnament:
           return WallOrnament;
+        case DungeonGraphicType.ChampionStatusBackground:
+          return ChampionStatusBackground;
         default:
           return null;
       }

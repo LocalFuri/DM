@@ -56,3 +56,4 @@ MonoBehaviour:
   WallSwitch: {fileID: 0}
   TorchHolder: {fileID: 0}
   WallOrnament: {fileID: 0}
+  ChampionStatusBackground: {fileID: 2800000, guid: 78f30a29e4120d04a8260c9809072b00, type: 3}

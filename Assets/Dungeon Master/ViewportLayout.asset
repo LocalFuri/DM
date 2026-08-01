@@ -18,7 +18,7 @@ MonoBehaviour:
   - Name: Ceiling
     Graphic: 1
     X: 0
-    Y: 129
+    Y: 132
     Enabled: 1
     MirrorHorizontally: 0
   - Name: Ceiling Strip 84
@@ -127,5 +127,11 @@ MonoBehaviour:
     Graphic: 26
     X: 228
     Y: 0
+    Enabled: 1
+    MirrorHorizontally: 0
+  - Name: Champion Status Slot 1
+    Graphic: 29
+    X: 0
+    Y: 171
     Enabled: 1
     MirrorHorizontally: 0
