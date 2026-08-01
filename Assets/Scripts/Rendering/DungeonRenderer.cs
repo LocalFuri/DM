@@ -1304,7 +1304,7 @@ namespace DM.Rendering
       if (currentMap == null)
         return;
 
-      if (!IsDepthWallVisible(DungeonGraphicType.FrontWallF1))
+      if (!IsCenterFrontWallVisible(1))
         return;
 
       if (!TryGetHeroOnVisibleFrontWall(out HeroDefinition hero))
@@ -1557,12 +1557,10 @@ namespace DM.Rendering
 
     private static bool IsF1WallGraphic(DungeonGraphicType graphic)
     {
-      return graphic == DungeonGraphicType.WallF1L
-          || graphic == DungeonGraphicType.WallF1R
-          || graphic == DungeonGraphicType.FrontWallF1;
+      return StraightF1WallLogic.IsF1WallGroupGraphic(graphic);
     }
 
-    // Straight FrontWallF1: D_TILETYPE_WALL_F1 wrap only (skip F1L/F1R).
+    // Straight FrontWallF1 A/B: D_TILETYPE_WALL_F1 wrap only (skip F1L/F1R).
     // Side-only F1L/F1R when the centre cell is open.
     private void DrawF1WallGroup(
         System.Text.StringBuilder drawnFrontWalls,
@@ -1572,15 +1570,25 @@ namespace DM.Rendering
           FindLayoutPiece(DungeonGraphicType.WallF1L);
       ViewportPiece rightPiece =
           FindLayoutPiece(DungeonGraphicType.WallF1R);
-      ViewportPiece frontPiece =
+      ViewportPiece frontA =
+          FindLayoutPiece(DungeonGraphicType.FrontWallF1_A);
+      ViewportPiece frontB =
+          FindLayoutPiece(DungeonGraphicType.FrontWallF1_B);
+      ViewportPiece frontLegacy =
           FindLayoutPiece(DungeonGraphicType.FrontWallF1);
 
-      bool drawFront = ShouldDrawPiece(frontPiece);
+      ViewportPiece frontPiece = null;
+      if (ShouldDrawPiece(frontA))
+        frontPiece = frontA;
+      else if (ShouldDrawPiece(frontB))
+        frontPiece = frontB;
+      else if (ShouldDrawPiece(frontLegacy))
+        frontPiece = frontLegacy;
 
-      if (drawFront)
+      if (frontPiece != null)
       {
         RecordDrawnWallPiece(
-            DungeonGraphicType.FrontWallF1,
+            frontPiece.Graphic,
             drawnFrontWalls,
             drawnSideWalls
         );
@@ -1609,25 +1617,24 @@ namespace DM.Rendering
       }
     }
 
-    // D_TILETYPE_WALL_F1 wrap to 224px (join-safe; see StraightF1SourceX):
-    //   dest 0..30   → src 128..158
-    //   dest 31..190 → src 0..159
-    //   dest 191..223 → src 1..33
+    // D_TILETYPE_WALL_F1 wrap to 224px (join-safe; see StraightF1WallLogic.SourceX).
+    // MirrorHorizontally flips the full 224px composite, not only the 160px tile.
     private void DrawStraightF1FrontWall(ViewportPiece frontPiece)
     {
       Texture2D texture =
-          graphics.GetTexture(DungeonGraphicType.FrontWallF1);
+          graphics.GetTexture(frontPiece.Graphic);
 
       if (texture == null)
       {
         Debug.LogWarning(
             "DungeonRenderer: Missing texture for " +
-            DungeonGraphicType.FrontWallF1
+            frontPiece.Graphic
         );
         return;
       }
 
-      if (texture.width < 160 || texture.height <= 0)
+      if (texture.width < StraightF1WallLogic.SourceTileWidth
+          || texture.height <= 0)
       {
         Debug.LogWarning(
             "DungeonRenderer: FrontWallF1 texture size " +
@@ -1637,19 +1644,24 @@ namespace DM.Rendering
       }
 
       int destY = frontPiece.Y + dungeonDrawOffsetY;
-      BlitStraightF1Wrap(texture, destY);
+      BlitStraightF1Wrap(
+          texture,
+          destY,
+          frontPiece.MirrorHorizontally);
     }
 
     // Opaque column fill — every dungeon X 0..223 written exactly once.
     // src 0 ≈ src 159 (duplicate dark mortar); never place them adjacent.
-    private void BlitStraightF1Wrap(Texture2D source, int destinationY)
+    private void BlitStraightF1Wrap(
+        Texture2D source,
+        int destinationY,
+        bool mirrorHorizontally)
     {
+      // TEMP diagnostic: dest X → write count for this straight F1 pass.
+      int[] columnWrites = new int[DungeonViewWidth];
       Color32[] sourcePixels = source.GetPixels32();
       int sourceWidth = source.width;
       int sourceHeight = source.height;
-
-      // TEMP diagnostic: dest X → write count for this straight F1 pass.
-      int[] columnWrites = new int[DungeonViewWidth];
 
       for (int row = 0; row < sourceHeight; row++)
       {
@@ -1657,38 +1669,25 @@ namespace DM.Rendering
         if (targetY < 0 || targetY >= viewHeight)
           continue;
 
-        // Unity GetPixels32: row 0 = texture bottom; layout Y is bottom-up.
         int sampleY = row;
         int sourceRow = sampleY * sourceWidth;
         int destRow = targetY * viewWidth;
 
         for (int destX = 0; destX < DungeonViewWidth; destX++)
         {
-          int srcX = StraightF1SourceX(destX);
+          int srcX = StraightF1WallLogic.SourceX(destX);
+          int writeX = StraightF1WallLogic.WriteDestX(
+              destX,
+              mirrorHorizontally);
 
           Color32 colour = sourcePixels[sourceRow + srcX];
           colour.a = 255;
-          framePixels[destRow + destX] = colour;
-          columnWrites[destX]++;
+          framePixels[destRow + writeX] = colour;
+          columnWrites[writeX]++;
         }
       }
 
       VerifyStraightF1ColumnWrites(columnWrites, sourceHeight, destinationY);
-    }
-
-    // Join-safe wrap (fills dest 0..223, no adjacent src 159|0):
-    //   dest 0..30   → src 128..158
-    //   dest 31..190 → src 0..159
-    //   dest 191..223 → src 1..33
-    private static int StraightF1SourceX(int destX)
-    {
-      if (destX < 31)
-        return 128 + destX;
-
-      if (destX <= 190)
-        return destX - 31;
-
-      return destX - 190;
     }
 
     private bool straightF1ColumnDiagLogged;
@@ -1795,6 +1794,8 @@ namespace DM.Rendering
         case DungeonGraphicType.WallF3L:
         case DungeonGraphicType.WallF3R:
         case DungeonGraphicType.FrontWallF1:
+        case DungeonGraphicType.FrontWallF1_A:
+        case DungeonGraphicType.FrontWallF1_B:
         case DungeonGraphicType.FrontWallF2:
         case DungeonGraphicType.FrontWallF3:
           return true;
@@ -1810,6 +1811,8 @@ namespace DM.Rendering
       switch (graphic)
       {
         case DungeonGraphicType.FrontWallF1:
+        case DungeonGraphicType.FrontWallF1_A:
+        case DungeonGraphicType.FrontWallF1_B:
           depth = 1;
           return true;
         case DungeonGraphicType.FrontWallF2:
@@ -1873,7 +1876,33 @@ namespace DM.Rendering
     private bool IsDepthWallVisible(DungeonGraphicType graphic)
     {
       if (TryGetCenterFrontWallDepth(graphic, out int centerDepth))
-        return IsCenterFrontWallVisible(centerDepth);
+      {
+        if (!IsCenterFrontWallVisible(centerDepth))
+          return false;
+
+        if (!StraightF1WallLogic.IsStraightF1FrontGraphic(graphic)
+            || centerDepth != 1)
+        {
+          return true;
+        }
+
+        // A/B parity on the depth-1 wall cell ahead of the player.
+        DungeonMap.GetForwardOffset(
+            currentMap.PlayerFacing,
+            out int forwardX,
+            out int forwardY);
+
+        int wallX = currentMap.PlayerX + forwardX;
+        int wallY = currentMap.PlayerY + forwardY;
+
+        return StraightF1WallLogic.IsVariantVisibleForWall(
+            graphic,
+            currentMap.PlayerFacing,
+            wallX,
+            wallY,
+            centerWallPresent: true
+        );
+      }
 
       if (TryGetSideWallDepthAndSide(
               graphic,
@@ -1911,8 +1940,11 @@ namespace DM.Rendering
       if (depth > 0 && IsFrontDepthOccluded(depth))
         return false;
 
-      // Straight FrontWallF1 skips F1L/F1R in DrawF1WallGroup.
+      // Straight FrontWallF1 A/B: centre wall draws wrap alone; suppress F1L/R.
       // F2: centre wall draws FrontWallF2 alone; suppress F2L/R.
+      if (depth == 1 && IsCenterFrontWallVisible(1))
+        return false;
+
       if (depth == 2 && IsCenterFrontWallVisible(2))
         return false;
 
@@ -2015,7 +2047,11 @@ namespace DM.Rendering
           piece.X,
           piece.Y + dungeonDrawOffsetY,
           mask,
-          flipMaskX
+          flipMaskX,
+          flipVertical: false,
+          sourceXOffset: 0,
+          sourceWidth: -1,
+          flipSourceHorizontal: piece.MirrorHorizontally
       );
     }
 
@@ -2041,7 +2077,8 @@ namespace DM.Rendering
         bool flipMaskHorizontal = false,
         bool flipVertical = false,
         int sourceXOffset = 0,
-        int sourceWidth = -1)
+        int sourceWidth = -1,
+        bool flipSourceHorizontal = false)
     {
       Color32[] sourcePixels =
           source.GetPixels32();
@@ -2093,7 +2130,9 @@ namespace DM.Rendering
             column < sourceWidth;
             column++)
         {
-          int sourceX = sourceXOffset + column;
+          int sourceX = flipSourceHorizontal
+              ? sourceXOffset + (sourceWidth - 1 - column)
+              : sourceXOffset + column;
           int targetX = destinationX + column;
 
           if (

@@ -299,6 +299,9 @@ public class ViewportLayoutEditor : EditorWindow
     piece.Name = EditorGUILayout.TextField("Name", piece.Name);
     piece.Enabled = EditorGUILayout.Toggle("Enabled", piece.Enabled);
     piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup("Graphic", piece.Graphic);
+    piece.MirrorHorizontally = EditorGUILayout.Toggle(
+        "Mirror Horizontally",
+        piece.MirrorHorizontally);
     if (EditorGUI.EndChangeCheck())
     {
       SelectPiece(index);
@@ -1001,10 +1004,21 @@ public class ViewportLayoutEditor : EditorWindow
 
     rememberedEnabledStates = null;
 
-    bool frontWallF1Visible =
-        IsDepthWallVisibleAtPose(
-            map,
-            DungeonGraphicType.FrontWallF1);
+    bool centerF1Visible = IsCenterFrontWallVisible(map, 1);
+    bool wantF1B = false;
+    if (centerF1Visible)
+    {
+      DungeonMap.GetForwardOffset(
+          map.PlayerFacing,
+          out int forwardX,
+          out int forwardY);
+      int wallX = map.PlayerX + forwardX;
+      int wallY = map.PlayerY + forwardY;
+      wantF1B = StraightF1WallLogic.PreferVariantB(
+          map.PlayerFacing,
+          wallX,
+          wallY);
+    }
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -1020,6 +1034,36 @@ public class ViewportLayoutEditor : EditorWindow
       if (piece.Graphic == DungeonGraphicType.MovementArrows)
         continue;
 
+      if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
+      {
+        if (!centerF1Visible)
+        {
+          piece.Enabled = false;
+          continue;
+        }
+
+        if (piece.Graphic == DungeonGraphicType.FrontWallF1)
+        {
+          piece.Enabled = true;
+          continue;
+        }
+
+        piece.Enabled =
+            piece.Graphic == DungeonGraphicType.FrontWallF1_B
+                ? wantF1B
+                : !wantF1B;
+        continue;
+      }
+
+      // Flat continuous F1: suppress perspective wedges.
+      if (centerF1Visible
+          && (piece.Graphic == DungeonGraphicType.WallF1L
+              || piece.Graphic == DungeonGraphicType.WallF1R))
+      {
+        piece.Enabled = false;
+        continue;
+      }
+
       if (!IsDepthWallGraphic(piece.Graphic))
       {
         // S2/S3 and ornaments have no map visibility rule yet.
@@ -1027,18 +1071,8 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      bool visible =
+      piece.Enabled =
           IsDepthWallVisibleAtPose(map, piece.Graphic);
-
-      // Match DrawF1WallGroup: straight F1 skips F1L/F1R.
-      if (frontWallF1Visible
-          && (piece.Graphic == DungeonGraphicType.WallF1L
-              || piece.Graphic == DungeonGraphicType.WallF1R))
-      {
-        visible = false;
-      }
-
-      piece.Enabled = visible;
     }
 
     PersistChanges();
@@ -1071,6 +1105,8 @@ public class ViewportLayoutEditor : EditorWindow
       case DungeonGraphicType.WallF3L:
       case DungeonGraphicType.WallF3R:
       case DungeonGraphicType.FrontWallF1:
+      case DungeonGraphicType.FrontWallF1_A:
+      case DungeonGraphicType.FrontWallF1_B:
       case DungeonGraphicType.FrontWallF2:
       case DungeonGraphicType.FrontWallF3:
         return true;
@@ -1086,6 +1122,8 @@ public class ViewportLayoutEditor : EditorWindow
     switch (graphic)
     {
       case DungeonGraphicType.FrontWallF1:
+      case DungeonGraphicType.FrontWallF1_A:
+      case DungeonGraphicType.FrontWallF1_B:
         depth = 1;
         return true;
       case DungeonGraphicType.FrontWallF2:
@@ -1151,7 +1189,32 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonGraphicType graphic)
   {
     if (TryGetCenterFrontWallDepth(graphic, out int centerDepth))
-      return IsCenterFrontWallVisible(map, centerDepth);
+    {
+      if (!IsCenterFrontWallVisible(map, centerDepth))
+        return false;
+
+      if (!StraightF1WallLogic.IsStraightF1FrontGraphic(graphic)
+          || centerDepth != 1)
+      {
+        return true;
+      }
+
+      DungeonMap.GetForwardOffset(
+          map.PlayerFacing,
+          out int forwardX,
+          out int forwardY);
+
+      int wallX = map.PlayerX + forwardX;
+      int wallY = map.PlayerY + forwardY;
+
+      return StraightF1WallLogic.IsVariantVisibleForWall(
+          graphic,
+          map.PlayerFacing,
+          wallX,
+          wallY,
+          centerWallPresent: true
+      );
+    }
 
     if (TryGetSideWallDepthAndSide(
             graphic,
@@ -1195,6 +1258,10 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
 
     // F2: centre wall draws FrontWallF2 alone; suppress F2L/R.
+    // Straight F1 A/B: centre wrap alone; suppress F1L/R.
+    if (depth == 1 && IsCenterFrontWallVisible(map, 1))
+      return false;
+
     if (depth == 2 && IsCenterFrontWallVisible(map, 2))
       return false;
 
@@ -1668,6 +1735,18 @@ public class ViewportLayoutEditor : EditorWindow
         if (texture == null)
           continue;
 
+        if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
+        {
+          StraightF1WallLogic.BlitWrapToBuffer(
+              texture,
+              pixels,
+              PreviewWidth,
+              PreviewHeight,
+              piece.Y,
+              piece.MirrorHorizontally);
+          continue;
+        }
+
         Texture2D mask =
             graphics.GetMask(piece.Graphic, out bool flipMaskX);
         BlitPieceIntoPreview(
@@ -1676,7 +1755,8 @@ public class ViewportLayoutEditor : EditorWindow
             mask,
             flipMaskX,
             piece.X,
-            piece.Y);
+            piece.Y,
+            piece.MirrorHorizontally);
       }
     }
 
@@ -1690,7 +1770,8 @@ public class ViewportLayoutEditor : EditorWindow
       Texture2D mask,
       bool flipMaskHorizontal,
       int destinationX,
-      int destinationY)
+      int destinationY,
+      bool mirrorHorizontally = false)
   {
     if (!source.isReadable)
       return;
@@ -1714,9 +1795,12 @@ public class ViewportLayoutEditor : EditorWindow
       if (targetY < 0 || targetY >= PreviewHeight)
         continue;
 
-      for (int sourceX = 0; sourceX < source.width; sourceX++)
+      for (int column = 0; column < source.width; column++)
       {
-        int targetX = destinationX + sourceX;
+        int sourceX = mirrorHorizontally
+            ? source.width - 1 - column
+            : column;
+        int targetX = destinationX + column;
         if (targetX < 0 || targetX >= PreviewWidth)
           continue;
 

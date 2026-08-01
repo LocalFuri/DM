@@ -112,6 +112,8 @@ namespace DM.Rendering
         case DungeonGraphicType.WallF3R:
           return WallF3R;
         case DungeonGraphicType.FrontWallF1:
+        case DungeonGraphicType.FrontWallF1_A:
+        case DungeonGraphicType.FrontWallF1_B:
           return FrontWallF1;
         case DungeonGraphicType.FrontWallF2:
           return FrontWallF2;

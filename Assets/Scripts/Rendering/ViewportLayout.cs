@@ -28,5 +28,10 @@ namespace DM.Rendering
     public int Y;
 
     public bool Enabled = true;
+
+    [Tooltip(
+        "When true, the piece's drawn pixels are mirrored horizontally. "
+            + "For straight F1, mirrors the full 224px composite.")]
+    public bool MirrorHorizontally;
   }
 }

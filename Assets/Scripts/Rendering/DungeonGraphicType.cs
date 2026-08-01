@@ -40,6 +40,9 @@ namespace DM.Rendering
     FrontWallF2,
     FrontWallF3,
 
-    MovementArrows
+    MovementArrows,
+
+    FrontWallF1_A,
+    FrontWallF1_B
   }
 }
