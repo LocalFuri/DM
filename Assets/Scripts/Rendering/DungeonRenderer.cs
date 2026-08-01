@@ -1644,10 +1644,8 @@ namespace DM.Rendering
       }
 
       int destY = frontPiece.Y + dungeonDrawOffsetY;
-      BlitStraightF1Wrap(
-          texture,
-          destY,
-          frontPiece.MirrorHorizontally);
+      bool mirror = GetEffectiveEnvironmentMirror(frontPiece);
+      BlitStraightF1Wrap(texture, destY, mirror);
     }
 
     // Opaque column fill — every dungeon X 0..223 written exactly once.
@@ -2038,6 +2036,24 @@ namespace DM.Rendering
         return;
       }
 
+      bool mirror = GetEffectiveEnvironmentMirror(piece);
+      int destY = piece.Y + dungeonDrawOffsetY;
+
+      // Floor/Ceiling: mirror across the 224px dungeon viewport only.
+      if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
+      {
+        StraightF1WallLogic.BlitViewportComponentToBuffer(
+            texture,
+            framePixels,
+            viewWidth,
+            viewHeight,
+            piece.X,
+            destY,
+            mirror
+        );
+        return;
+      }
+
       Texture2D mask =
           graphics.GetMask(piece.Graphic, out bool flipMaskX);
 
@@ -2045,13 +2061,35 @@ namespace DM.Rendering
       Blit(
           texture,
           piece.X,
-          piece.Y + dungeonDrawOffsetY,
+          destY,
           mask,
           flipMaskX,
           flipVertical: false,
           sourceXOffset: 0,
           sourceWidth: -1,
-          flipSourceHorizontal: piece.MirrorHorizontally
+          flipSourceHorizontal: mirror
+      );
+    }
+
+    /// <summary>
+    /// With a live map, Floor/Ceiling/F1 share one environment phase.
+    /// Without a map (layout testing), use the piece's Mirror Horizontally flag.
+    /// </summary>
+    private bool GetEffectiveEnvironmentMirror(ViewportPiece piece)
+    {
+      if (piece == null)
+        return false;
+
+      if (currentMap == null
+          || !StraightF1WallLogic.IsEnvironmentPhaseGraphic(piece.Graphic))
+      {
+        return piece.MirrorHorizontally;
+      }
+
+      return StraightF1WallLogic.IsEnvironmentPhaseB(
+          currentMap.PlayerFacing,
+          currentMap.PlayerX,
+          currentMap.PlayerY
       );
     }
 

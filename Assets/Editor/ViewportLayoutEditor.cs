@@ -302,6 +302,15 @@ public class ViewportLayoutEditor : EditorWindow
     piece.MirrorHorizontally = EditorGUILayout.Toggle(
         "Mirror Horizontally",
         piece.MirrorHorizontally);
+
+    if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
+    {
+      EditorGUILayout.HelpBox(
+          "Refresh From Map sets Ceiling/Floor mirror from the shared "
+              + "environment phase (same parity as F1 A/B).",
+          MessageType.None);
+    }
+
     if (EditorGUI.EndChangeCheck())
     {
       SelectPiece(index);
@@ -896,7 +905,67 @@ public class ViewportLayoutEditor : EditorWindow
     if (GUILayout.Button("Refresh From Map"))
       RefreshEnabledPiecesFromMapPose();
 
+    DrawEnvironmentPhaseStatus();
     DrawPreviewMiniMap();
+  }
+
+  private void DrawEnvironmentPhaseStatus()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return;
+
+    bool phaseB = StraightF1WallLogic.IsEnvironmentPhaseB(
+        previewFacing,
+        previewX,
+        previewY);
+
+    string phaseLabel = phaseB
+        ? "B (mirrored)"
+        : "A (normal)";
+
+    EditorGUILayout.Space();
+    EditorGUILayout.LabelField(
+        "Environment Phase",
+        EditorStyles.boldLabel);
+    EditorGUILayout.LabelField("Active phase", phaseLabel);
+    EditorGUILayout.LabelField(
+        "Ceiling / Floor / F1 share this phase across the 224×136 view.",
+        EditorStyles.miniLabel);
+    EditorGUILayout.LabelField(
+        "Phase mirror (Ceiling & Floor)",
+        phaseB ? "ON" : "OFF");
+
+    ViewportPiece ceiling = FindPieceByGraphic(DungeonGraphicType.Ceiling);
+    ViewportPiece floor = FindPieceByGraphic(DungeonGraphicType.Floor);
+    if (ceiling != null)
+    {
+      EditorGUILayout.LabelField(
+          "Ceiling Mirror Horizontally (stored)",
+          ceiling.MirrorHorizontally ? "ON" : "OFF");
+    }
+
+    if (floor != null)
+    {
+      EditorGUILayout.LabelField(
+          "Floor Mirror Horizontally (stored)",
+          floor.MirrorHorizontally ? "ON" : "OFF");
+    }
+  }
+
+  private ViewportPiece FindPieceByGraphic(DungeonGraphicType graphic)
+  {
+    if (layout == null || layout.Pieces == null)
+      return null;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece != null && piece.Graphic == graphic)
+        return piece;
+    }
+
+    return null;
   }
 
   private void DrawPreviewMiniMap()
@@ -1005,24 +1074,21 @@ public class ViewportLayoutEditor : EditorWindow
     rememberedEnabledStates = null;
 
     bool centerF1Visible = IsCenterFrontWallVisible(map, 1);
-    bool wantF1B = false;
-    if (centerF1Visible)
-    {
-      DungeonMap.GetForwardOffset(
-          map.PlayerFacing,
-          out int forwardX,
-          out int forwardY);
-      int wallX = map.PlayerX + forwardX;
-      int wallY = map.PlayerY + forwardY;
-      wantF1B = StraightF1WallLogic.PreferVariantB(
-          map.PlayerFacing,
-          wallX,
-          wallY);
-    }
+    bool phaseB = StraightF1WallLogic.IsEnvironmentPhaseB(
+        map.PlayerFacing,
+        map.PlayerX,
+        map.PlayerY);
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece piece = layout.Pieces[i];
+
+      if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
+      {
+        piece.Enabled = true;
+        piece.MirrorHorizontally = phaseB;
+        continue;
+      }
 
       if (IsAlwaysDrawnBackgroundPiece(piece))
       {
@@ -1045,13 +1111,14 @@ public class ViewportLayoutEditor : EditorWindow
         if (piece.Graphic == DungeonGraphicType.FrontWallF1)
         {
           piece.Enabled = true;
+          piece.MirrorHorizontally = phaseB;
           continue;
         }
 
-        piece.Enabled =
-            piece.Graphic == DungeonGraphicType.FrontWallF1_B
-                ? wantF1B
-                : !wantF1B;
+        bool isB = piece.Graphic == DungeonGraphicType.FrontWallF1_B;
+        piece.Enabled = isB ? phaseB : !phaseB;
+        // A = normal, B = mirrored (also driven by phase at runtime).
+        piece.MirrorHorizontally = isB;
         continue;
       }
 
@@ -1742,6 +1809,19 @@ public class ViewportLayoutEditor : EditorWindow
               pixels,
               PreviewWidth,
               PreviewHeight,
+              piece.Y,
+              piece.MirrorHorizontally);
+          continue;
+        }
+
+        if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
+        {
+          StraightF1WallLogic.BlitViewportComponentToBuffer(
+              texture,
+              pixels,
+              PreviewWidth,
+              PreviewHeight,
+              piece.X,
               piece.Y,
               piece.MirrorHorizontally);
           continue;
