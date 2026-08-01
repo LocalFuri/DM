@@ -140,10 +140,12 @@ public class ViewportLayoutEditor : EditorWindow
   {
     wantsMouseMove = true;
     RestorePersistedAssets();
+    ReloadLayoutFromDisk();
     RestoreSessionPrefs();
     EditorApplication.update += MaintainOverlayVisual;
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
-    // Compose from asset Enabled/X/Y/order — do not re-run map enable logic.
+    // Force a fresh compose from the loaded asset Enabled flags.
+    DestroyEditModePreviewTextureOnly();
     RefreshEditModePreview();
   }
 
@@ -563,6 +565,39 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (graphics != null)
       SaveAssetGuid(PrefsGraphicsGuidKey, graphics);
+  }
+
+  /// <summary>
+  /// Re-load ViewportLayout from disk so Edit Mode preview matches the .asset
+  /// Enabled flags (avoids stale in-memory ScriptableObject state).
+  /// </summary>
+  private void ReloadLayoutFromDisk()
+  {
+    if (layout == null)
+      return;
+
+    string path = AssetDatabase.GetAssetPath(layout);
+    if (string.IsNullOrEmpty(path))
+      return;
+
+    AssetDatabase.ImportAsset(
+        path,
+        ImportAssetOptions.ForceUpdate
+            | ImportAssetOptions.ForceSynchronousImport);
+
+    ViewportLayout reloaded =
+        AssetDatabase.LoadAssetAtPath<ViewportLayout>(path);
+    if (reloaded != null)
+      layout = reloaded;
+  }
+
+  private void DestroyEditModePreviewTextureOnly()
+  {
+    if (editModePreviewTexture == null)
+      return;
+
+    Object.DestroyImmediate(editModePreviewTexture);
+    editModePreviewTexture = null;
   }
 
   private void RestoreSessionPrefs()
@@ -1090,6 +1125,13 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
+      // Keep authored Enabled; do not auto-enable investigation strips.
+      if (piece.Graphic == DungeonGraphicType.CeilingStrip84
+          || piece.Graphic == DungeonGraphicType.CeilingStrip85)
+      {
+        continue;
+      }
+
       if (IsAlwaysDrawnBackgroundPiece(piece))
       {
         piece.Enabled = true;
@@ -1151,8 +1193,6 @@ public class ViewportLayoutEditor : EditorWindow
   {
     return piece.Graphic == DungeonGraphicType.Floor
         || piece.Graphic == DungeonGraphicType.Ceiling
-        || piece.Graphic == DungeonGraphicType.CeilingStrip84
-        || piece.Graphic == DungeonGraphicType.CeilingStrip85
         || piece.Name == "Floor"
         || piece.Name == "Ceiling";
   }

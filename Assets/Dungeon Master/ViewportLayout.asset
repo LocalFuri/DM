@@ -25,13 +25,13 @@ MonoBehaviour:
     Graphic: 21
     X: 65
     Y: 139
-    Enabled: 1
+    Enabled: 0
     MirrorHorizontally: 0
   - Name: Ceiling Strip 85
     Graphic: 22
     X: 73
     Y: 148
-    Enabled: 1
+    Enabled: 0
     MirrorHorizontally: 0
   - Name: Floor
     Graphic: 2
