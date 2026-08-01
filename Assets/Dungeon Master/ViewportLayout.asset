@@ -18,7 +18,7 @@ MonoBehaviour:
   - Name: Ceiling
     Graphic: 1
     X: 0
-    Y: 97
+    Y: 129
     Enabled: 1
     MirrorHorizontally: 0
   - Name: Ceiling Strip 84

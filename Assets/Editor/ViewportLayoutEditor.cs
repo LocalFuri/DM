@@ -236,6 +236,7 @@ public class ViewportLayoutEditor : EditorWindow
     ClampSelectedPieceIndex();
     HandlePieceKeyboardNudge();
     HandlePreviewFacingKeyboard();
+    HandlePreviewStrafeKeyboard();
     DrawSelectedPieceHeader();
 
     DrawMapPosePreviewControls();
@@ -444,7 +445,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.LabelField($"X: {selected.X}    Y: {selected.Y}", positionStyle);
     EditorGUILayout.LabelField(
-        "Arrows nudge 1px. Hold Shift for 10px.",
+        "Up/Down nudge piece 1px. Hold Shift for 10px. "
+            + "Left/Right strafe preview. Delete/PageDown turn.",
         EditorStyles.miniLabel);
 
     EditorGUILayout.EndVertical();
@@ -470,14 +472,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     switch (current.keyCode)
     {
-      case KeyCode.LeftArrow:
-        piece.X -= step;
-        moved = true;
-        break;
-      case KeyCode.RightArrow:
-        piece.X += step;
-        moved = true;
-        break;
       case KeyCode.UpArrow:
         piece.Y += step;
         moved = true;
@@ -528,6 +522,55 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Preserve Preview X / Preview Y; only facing changes.
     previewFacing = nextFacing;
+    SaveSessionPrefs();
+    RefreshEnabledPiecesFromMapPose();
+  }
+
+  private void HandlePreviewStrafeKeyboard()
+  {
+    Event current = Event.current;
+    if (current.type != EventType.KeyDown)
+      return;
+
+    if (focusedWindow != this)
+      return;
+
+    if (EditorGUIUtility.editingTextField)
+      return;
+
+    int strafeSign;
+    switch (current.keyCode)
+    {
+      case KeyCode.LeftArrow:
+        strafeSign = -1; // left relative to facing
+        break;
+      case KeyCode.RightArrow:
+        strafeSign = 1; // right relative to facing
+        break;
+      default:
+        return;
+    }
+
+    current.Use();
+
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return;
+
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int nextX = previewX + rightX * strafeSign;
+    int nextY = previewY + rightY * strafeSign;
+
+    if (!previewMiniMap.CanEnter(nextX, nextY))
+      return;
+
+    // Keep Preview Facing unchanged.
+    previewX = nextX;
+    previewY = nextY;
     SaveSessionPrefs();
     RefreshEnabledPiecesFromMapPose();
   }
