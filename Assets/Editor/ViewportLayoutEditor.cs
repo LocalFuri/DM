@@ -32,7 +32,7 @@ public class ViewportLayoutEditor : EditorWindow
   private ViewportLayout layout;
   [System.NonSerialized]
   private DungeonGraphics graphics;
-  private Vector2 scroll;
+  private Vector2 editorScroll;
   private bool[] rememberedEnabledStates;
   private int snap = 1;
 
@@ -56,6 +56,9 @@ public class ViewportLayoutEditor : EditorWindow
   private int previewX = 1;
   private int previewY = 3;
   private DungeonFacing previewFacing = DungeonFacing.South;
+  private DungeonMap previewMiniMap;
+  private string previewMiniMapLoadError;
+  private Vector2 previewMiniMapScroll;
 
   // Temporary 320×200 presentation (restored on close / Play Mode).
   private bool presentationOverrideActive;
@@ -124,6 +127,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnEnable()
   {
+    wantsMouseMove = true;
     RestorePersistedAssets();
     RestoreSessionPrefs();
     EditorApplication.update += MaintainOverlayVisual;
@@ -169,6 +173,8 @@ public class ViewportLayoutEditor : EditorWindow
   {
     selectionChangedThisFrame = false;
 
+    editorScroll = EditorGUILayout.BeginScrollView(editorScroll);
+
     DrawOverlayControls();
 
     EditorGUI.BeginChangeCheck();
@@ -203,6 +209,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (layout == null)
     {
       EditorGUILayout.HelpBox("Select a ViewportLayout asset.", MessageType.Info);
+      EditorGUILayout.EndScrollView();
       return;
     }
 
@@ -234,8 +241,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.Space();
     EditorGUILayout.LabelField("Pieces (render order)", EditorStyles.boldLabel);
-
-    scroll = EditorGUILayout.BeginScrollView(scroll);
 
     bool changed = false;
 
@@ -866,10 +871,89 @@ public class ViewportLayoutEditor : EditorWindow
         "Preview Facing",
         previewFacing);
     if (EditorGUI.EndChangeCheck())
+    {
       SaveSessionPrefs();
+      Repaint();
+    }
 
     if (GUILayout.Button("Refresh From Map"))
       RefreshEnabledPiecesFromMapPose();
+
+    DrawPreviewMiniMap();
+  }
+
+  private void DrawPreviewMiniMap()
+  {
+    EditorGUILayout.Space();
+    EditorGUILayout.LabelField("Mini-map", EditorStyles.boldLabel);
+
+    EnsurePreviewMiniMapLoaded();
+
+    if (previewMiniMap == null)
+    {
+      EditorGUILayout.HelpBox(
+          string.IsNullOrEmpty(previewMiniMapLoadError)
+              ? "Could not load Hall of Champions map."
+              : previewMiniMapLoadError,
+          MessageType.Warning);
+      return;
+    }
+
+    previewMiniMapScroll = DungeonMiniMapGui.Draw(
+        previewMiniMap,
+        previewX,
+        previewY,
+        previewFacing,
+        previewMiniMapScroll,
+        interactive: true,
+        out DungeonMiniMapGui.InteractionResult interaction
+    );
+
+    if (interaction.HasHover
+        && Event.current.type == EventType.MouseMove)
+    {
+      Repaint();
+    }
+
+    if (interaction.ClickedOpenTile)
+      ApplyPreviewPoseFromMiniMapClick(
+          interaction.ClickX,
+          interaction.ClickY);
+  }
+
+  private void ApplyPreviewPoseFromMiniMapClick(int x, int y)
+  {
+    previewX = x;
+    previewY = y;
+    // Preview Facing is unchanged.
+    SaveSessionPrefs();
+    RefreshEnabledPiecesFromMapPose();
+    Repaint();
+  }
+
+  private void EnsurePreviewMiniMapLoaded()
+  {
+    if (previewMiniMap != null)
+      return;
+
+    if (!File.Exists(HallOfChampionsMapPath))
+    {
+      previewMiniMapLoadError =
+          "Map not found at " + HallOfChampionsMapPath;
+      return;
+    }
+
+    try
+    {
+      string json = File.ReadAllText(HallOfChampionsMapPath);
+      previewMiniMap = DungeonMap.LoadFromJsonText(json);
+      previewMiniMapLoadError = null;
+    }
+    catch (System.Exception ex)
+    {
+      previewMiniMap = null;
+      previewMiniMapLoadError = ex.Message;
+    }
   }
 
   private void RefreshEnabledPiecesFromMapPose()

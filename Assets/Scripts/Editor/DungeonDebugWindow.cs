@@ -6,17 +6,6 @@ using UnityEngine;
 
 public class DungeonDebugWindow : EditorWindow
 {
-  private const float CellSize = 12f;
-  private const float MiniMapLabelLeftMargin = 20f;
-  private const float MiniMapLabelTopMargin = 16f;
-
-  private static readonly Color WallColor = new Color(0.22f, 0.22f, 0.22f);
-  private static readonly Color FloorColor = new Color(0.78f, 0.78f, 0.78f);
-  private static readonly Color OtherTileColor = new Color(0.5f, 0.5f, 0.5f);
-  private static readonly Color CellBorderColor = new Color(0.08f, 0.08f, 0.08f);
-  private static readonly Color PlayerColor = new Color(0.95f, 0.7f, 0.1f);
-  private static readonly Color FacingMarkerColor = new Color(0.15f, 0.1f, 0.02f);
-
   private static readonly string[] TrackedWallPieces =
   {
     "WallF0L",
@@ -184,177 +173,13 @@ public class DungeonDebugWindow : EditorWindow
     EditorGUILayout.Space();
     EditorGUILayout.LabelField("Mini-map", EditorStyles.boldLabel);
 
-    float mapPixelWidth = map.Width * CellSize;
-    float mapPixelHeight = map.Height * CellSize;
-    float contentWidth = MiniMapLabelLeftMargin + mapPixelWidth;
-    float contentHeight = MiniMapLabelTopMargin + mapPixelHeight;
-    float scrollHeight = Mathf.Min(contentHeight + 4f, 340f);
-
-    miniMapScroll = EditorGUILayout.BeginScrollView(
-        miniMapScroll,
-        GUILayout.Height(scrollHeight)
+    miniMapScroll = DungeonMiniMapGui.Draw(
+        map,
+        map.PlayerX,
+        map.PlayerY,
+        map.PlayerFacing,
+        miniMapScroll
     );
-
-    Rect contentRect = GUILayoutUtility.GetRect(
-        contentWidth,
-        contentHeight,
-        GUILayout.ExpandWidth(false),
-        GUILayout.ExpandHeight(false)
-    );
-
-    Rect mapRect = new Rect(
-        contentRect.x + MiniMapLabelLeftMargin,
-        contentRect.y + MiniMapLabelTopMargin,
-        mapPixelWidth,
-        mapPixelHeight
-    );
-
-    DrawMiniMapAxisLabels(map, mapRect);
-
-    for (int y = 0; y < map.Height; y++)
-    {
-      for (int x = 0; x < map.Width; x++)
-      {
-        Rect cellRect = new Rect(
-            mapRect.x + x * CellSize,
-            mapRect.y + y * CellSize,
-            CellSize,
-            CellSize
-        );
-
-        bool isPlayer =
-            x == map.PlayerX &&
-            y == map.PlayerY;
-
-        DrawCell(cellRect, map.GetTile(x, y).Type, isPlayer);
-
-        if (isPlayer)
-          DrawFacingMarker(cellRect, map.PlayerFacing);
-      }
-    }
-
-    EditorGUILayout.EndScrollView();
-  }
-
-  private static void DrawMiniMapAxisLabels(
-      DungeonMap map,
-      Rect mapRect)
-  {
-    GUIStyle labelStyle = new GUIStyle(EditorStyles.miniLabel)
-    {
-      alignment = TextAnchor.MiddleCenter,
-      fontSize = 9,
-      clipping = TextClipping.Overflow
-    };
-
-    GUIStyle yLabelStyle = new GUIStyle(labelStyle)
-    {
-      alignment = TextAnchor.MiddleRight
-    };
-
-    const float xLabelWidth = 16f;
-
-    for (int x = 0; x < map.Width; x++)
-    {
-      float columnCenterX =
-          mapRect.x + x * CellSize + CellSize * 0.5f;
-
-      Rect xLabelRect = new Rect(
-          columnCenterX - xLabelWidth * 0.5f,
-          mapRect.y - MiniMapLabelTopMargin,
-          xLabelWidth,
-          MiniMapLabelTopMargin
-      );
-
-      GUI.Label(xLabelRect, x.ToString(), labelStyle);
-    }
-
-    for (int y = 0; y < map.Height; y++)
-    {
-      Rect yLabelRect = new Rect(
-          mapRect.x - MiniMapLabelLeftMargin,
-          mapRect.y + y * CellSize,
-          MiniMapLabelLeftMargin - 2f,
-          CellSize
-      );
-
-      GUI.Label(yLabelRect, y.ToString(), yLabelStyle);
-    }
-  }
-
-  private static void DrawCell(
-      Rect cellRect,
-      DungeonTileType type,
-      bool isPlayer)
-  {
-    EditorGUI.DrawRect(cellRect, CellBorderColor);
-
-    Rect fillRect = new Rect(
-        cellRect.x + 1f,
-        cellRect.y + 1f,
-        cellRect.width - 2f,
-        cellRect.height - 2f
-    );
-
-    Color fillColor;
-    if (isPlayer)
-      fillColor = PlayerColor;
-    else if (type == DungeonTileType.Wall)
-      fillColor = WallColor;
-    else if (type == DungeonTileType.Floor)
-      fillColor = FloorColor;
-    else
-      fillColor = OtherTileColor;
-
-    EditorGUI.DrawRect(fillRect, fillColor);
-  }
-
-  private static void DrawFacingMarker(
-      Rect cellRect,
-      DungeonFacing facing)
-  {
-    Vector2 center = cellRect.center;
-    float tip = CellSize * 0.38f;
-    float baseHalf = CellSize * 0.22f;
-
-    Vector2 tipPoint;
-    Vector2 leftPoint;
-    Vector2 rightPoint;
-
-    switch (facing)
-    {
-      case DungeonFacing.North:
-        tipPoint = center + new Vector2(0f, -tip);
-        leftPoint = center + new Vector2(-baseHalf, tip * 0.35f);
-        rightPoint = center + new Vector2(baseHalf, tip * 0.35f);
-        break;
-      case DungeonFacing.East:
-        tipPoint = center + new Vector2(tip, 0f);
-        leftPoint = center + new Vector2(-tip * 0.35f, -baseHalf);
-        rightPoint = center + new Vector2(-tip * 0.35f, baseHalf);
-        break;
-      case DungeonFacing.South:
-        tipPoint = center + new Vector2(0f, tip);
-        leftPoint = center + new Vector2(baseHalf, -tip * 0.35f);
-        rightPoint = center + new Vector2(-baseHalf, -tip * 0.35f);
-        break;
-      case DungeonFacing.West:
-        tipPoint = center + new Vector2(-tip, 0f);
-        leftPoint = center + new Vector2(tip * 0.35f, baseHalf);
-        rightPoint = center + new Vector2(tip * 0.35f, -baseHalf);
-        break;
-      default:
-        return;
-    }
-
-    Handles.BeginGUI();
-    Handles.color = FacingMarkerColor;
-    Handles.DrawAAConvexPolygon(
-        tipPoint,
-        leftPoint,
-        rightPoint
-    );
-    Handles.EndGUI();
   }
 
   private static string GetAdjacentTileLabel(

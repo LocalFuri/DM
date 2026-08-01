@@ -24,12 +24,12 @@ MonoBehaviour:
     Graphic: 21
     X: 65
     Y: 139
-    Enabled: 0
+    Enabled: 1
   - Name: Ceiling Strip 85
     Graphic: 22
     X: 73
     Y: 148
-    Enabled: 0
+    Enabled: 1
   - Name: Floor
     Graphic: 2
     X: 0
@@ -44,7 +44,7 @@ MonoBehaviour:
     Graphic: 9
     X: 8
     Y: 61
-    Enabled: 0
+    Enabled: 1
   - Name: Wall F3R
     Graphic: 10
     X: 134
@@ -59,12 +59,12 @@ MonoBehaviour:
     Graphic: 7
     X: 1
     Y: 42
-    Enabled: 0
+    Enabled: 1
   - Name: Wall F2R
     Graphic: 8
     X: 147
     Y: 42
-    Enabled: 0
+    Enabled: 1
   - Name: Wall S2L
     Graphic: 11
     X: 51
@@ -79,24 +79,24 @@ MonoBehaviour:
     Graphic: 23
     X: 32
     Y: 16
-    Enabled: 1
+    Enabled: 0
   - Name: Wall F1L
     Graphic: 5
     X: 0
     Y: 16
-    Enabled: 0
+    Enabled: 1
   - Name: Wall F1R
     Graphic: 6
     X: 165
     Y: 16
-    Enabled: 0
+    Enabled: 1
   - Name: Wall F0L
     Graphic: 3
     X: 0
     Y: 0
-    Enabled: 0
+    Enabled: 1
   - Name: Wall F0R
     Graphic: 4
     X: 191
     Y: 0
-    Enabled: 0
+    Enabled: 1
