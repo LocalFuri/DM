@@ -100,3 +100,8 @@ MonoBehaviour:
     X: 191
     Y: 0
     Enabled: 0
+  - Name: Movement Arrows
+    Graphic: 26
+    X: 228
+    Y: 0
+    Enabled: 1

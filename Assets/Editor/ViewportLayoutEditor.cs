@@ -73,6 +73,17 @@ public class ViewportLayoutEditor : EditorWindow
   private RectTransformSnapshot savedGameplayRootRect;
   private RectTransform cachedGameplayRoot;
 
+  private Image cachedMovementArrows;
+  private bool movementArrowsStateSaved;
+  private bool savedMovementArrowsActive;
+  private Transform savedMovementArrowsParent;
+  private int savedMovementArrowsSiblingIndex;
+  private RectTransformSnapshot savedMovementArrowsRect;
+  private bool savedMovementArrowsPreserveAspect;
+  private FilterMode savedMovementArrowsFilterMode;
+  private bool movementArrowsFilterSaved;
+  private Texture savedMovementArrowsFilterTexture;
+
   private struct RectTransformSnapshot
   {
     public Vector2 AnchorMin;
@@ -509,6 +520,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (EditorGUI.EndChangeCheck())
     {
       MaintainOverlayVisual();
+      MaintainMovementArrowsPreview();
       RepaintGameViews();
     }
 
@@ -736,6 +748,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     SyncOverlayTransform(dungeonImage);
     ApplyOverlayAppearance(dungeonImage);
+    MaintainMovementArrowsPreview();
   }
 
   private bool EnsureOverlayObject(RawImage dungeonImage)
@@ -762,7 +775,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     overlayImage.raycastTarget = false;
 
-    Transform parent = dungeonImage.transform.parent;
+    Transform parent = dungeonImage.transform;
     if (overlayObject.transform.parent != parent)
       overlayObject.transform.SetParent(parent, false);
 
@@ -772,17 +785,18 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void SyncOverlayTransform(RawImage dungeonImage)
   {
-    RectTransform source = dungeonImage.rectTransform;
     RectTransform dest = overlayImage.rectTransform;
 
-    dest.localScale = source.localScale;
-    dest.anchorMin = source.anchorMin;
-    dest.anchorMax = source.anchorMax;
-    dest.pivot = source.pivot;
-    dest.anchoredPosition = source.anchoredPosition;
-    dest.sizeDelta = source.sizeDelta;
-    dest.offsetMin = source.offsetMin;
-    dest.offsetMax = source.offsetMax;
+    // Fill the 320×200 preview RawImage so piece UI (arrows) can draw above.
+    dest.anchorMin = Vector2.zero;
+    dest.anchorMax = Vector2.one;
+    dest.pivot = new Vector2(0.5f, 0.5f);
+    dest.anchoredPosition = Vector2.zero;
+    dest.sizeDelta = Vector2.zero;
+    dest.offsetMin = Vector2.zero;
+    dest.offsetMax = Vector2.zero;
+    dest.localScale = Vector3.one;
+    dest.localRotation = Quaternion.identity;
   }
 
   private void ApplyOverlayAppearance(RawImage dungeonImage)
@@ -1001,6 +1015,10 @@ public class ViewportLayoutEditor : EditorWindow
         piece.Enabled = true;
         continue;
       }
+
+      // UI chrome keeps its own Enabled; map pose only drives walls.
+      if (piece.Graphic == DungeonGraphicType.MovementArrows)
+        continue;
 
       if (!IsDepthWallGraphic(piece.Graphic))
       {
@@ -1242,7 +1260,8 @@ public class ViewportLayoutEditor : EditorWindow
     {
       ViewportPiece piece = layout.Pieces[i];
       piece.Enabled =
-          i == soloIndex || IsFloorOrCeiling(piece);
+          i == soloIndex || IsFloorOrCeiling(piece)
+          || piece.Graphic == DungeonGraphicType.MovementArrows;
     }
   }
 
@@ -1304,6 +1323,7 @@ public class ViewportLayoutEditor : EditorWindow
     dungeonImage.texture = editModePreviewTexture;
     dungeonImage.uvRect = new Rect(0f, 0f, 1f, 1f);
     MaintainOverlayVisual();
+    MaintainMovementArrowsPreview();
     RepaintGameViews();
   }
 
@@ -1337,6 +1357,161 @@ public class ViewportLayoutEditor : EditorWindow
 
     ApplyCentered320x200Rect(viewportRect);
     presentationOverrideActive = true;
+  }
+
+  private void MaintainMovementArrowsPreview()
+  {
+    if (Application.isPlaying)
+    {
+      RestoreMovementArrowsOverride();
+      return;
+    }
+
+    if (layout == null
+        || graphics == null
+        || !presentationOverrideActive)
+    {
+      RestoreMovementArrowsOverride();
+      return;
+    }
+
+    if (!TryGetViewportRawImage(out RawImage dungeonImage))
+    {
+      RestoreMovementArrowsOverride();
+      return;
+    }
+
+    ViewportPiece arrowsPiece = FindMovementArrowsPiece();
+    if (arrowsPiece == null)
+    {
+      RestoreMovementArrowsOverride();
+      return;
+    }
+
+    Image arrows = FindMovementArrowsImage();
+    if (arrows == null)
+      return;
+
+    CaptureMovementArrowsStateIfNeeded(arrows);
+
+    RectTransform arrowsRect = arrows.rectTransform;
+    if (arrowsRect.parent != dungeonImage.rectTransform)
+      arrowsRect.SetParent(dungeonImage.rectTransform, false);
+
+    MovementArrowsLayout.Apply(
+        arrows,
+        arrowsPiece.X,
+        arrowsPiece.Y,
+        arrowsPiece.Enabled);
+
+    arrowsRect.SetAsLastSibling();
+  }
+
+  private ViewportPiece FindMovementArrowsPiece()
+  {
+    if (layout == null || layout.Pieces == null)
+      return null;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece != null
+          && piece.Graphic == DungeonGraphicType.MovementArrows)
+      {
+        return piece;
+      }
+    }
+
+    return null;
+  }
+
+  private static Image FindMovementArrowsImage()
+  {
+    Image[] images = Object.FindObjectsByType<Image>(
+        FindObjectsInactive.Include);
+
+    for (int i = 0; i < images.Length; i++)
+    {
+      Image image = images[i];
+      if (image != null && image.gameObject.name == "MovementArrows")
+        return image;
+    }
+
+    return null;
+  }
+
+  private void CaptureMovementArrowsStateIfNeeded(Image arrows)
+  {
+    if (movementArrowsStateSaved || arrows == null)
+      return;
+
+    RectTransform rect = arrows.rectTransform;
+    savedMovementArrowsActive = arrows.gameObject.activeSelf;
+    savedMovementArrowsParent = rect.parent;
+    savedMovementArrowsSiblingIndex = rect.GetSiblingIndex();
+    savedMovementArrowsRect = RectTransformSnapshot.Capture(rect);
+    savedMovementArrowsPreserveAspect = arrows.preserveAspect;
+
+    Texture texture = arrows.mainTexture;
+    if (texture != null)
+    {
+      savedMovementArrowsFilterTexture = texture;
+      savedMovementArrowsFilterMode = texture.filterMode;
+      movementArrowsFilterSaved = true;
+    }
+
+    cachedMovementArrows = arrows;
+    movementArrowsStateSaved = true;
+  }
+
+  private void RestoreMovementArrowsOverride()
+  {
+    if (!movementArrowsStateSaved)
+      return;
+
+    Image arrows = cachedMovementArrows;
+    if (arrows == null)
+      arrows = FindMovementArrowsImage();
+
+    if (arrows != null)
+    {
+      RectTransform arrowsRect = arrows.rectTransform;
+
+      if (savedMovementArrowsParent != null)
+        arrowsRect.SetParent(savedMovementArrowsParent, false);
+      else if (arrowsRect.parent != null)
+        arrowsRect.SetParent(null, false);
+
+      savedMovementArrowsRect.Apply(arrowsRect);
+
+      int siblingCount = arrowsRect.parent != null
+          ? arrowsRect.parent.childCount
+          : 0;
+      if (siblingCount > 0)
+      {
+        arrowsRect.SetSiblingIndex(
+            Mathf.Clamp(
+                savedMovementArrowsSiblingIndex,
+                0,
+                siblingCount - 1));
+      }
+
+      arrows.preserveAspect = savedMovementArrowsPreserveAspect;
+      arrows.gameObject.SetActive(savedMovementArrowsActive);
+    }
+
+    if (movementArrowsFilterSaved
+        && savedMovementArrowsFilterTexture != null)
+    {
+      savedMovementArrowsFilterTexture.filterMode =
+          savedMovementArrowsFilterMode;
+    }
+
+    movementArrowsStateSaved = false;
+    movementArrowsFilterSaved = false;
+    savedMovementArrowsFilterTexture = null;
+    savedMovementArrowsParent = null;
+    cachedMovementArrows = null;
   }
 
   private void ApplyConstantPixelCanvasScaler(RawImage dungeonImage)
@@ -1396,6 +1571,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void RestoreEditModePresentationOverrides()
   {
+    RestoreMovementArrowsOverride();
+
     if (!presentationOverrideActive
         && !canvasScalerStateSaved
         && !viewportRectSaved
@@ -1482,6 +1659,9 @@ public class ViewportLayoutEditor : EditorWindow
       {
         ViewportPiece piece = layout.Pieces[i];
         if (piece == null || !piece.Enabled)
+          continue;
+
+        if (piece.Graphic == DungeonGraphicType.MovementArrows)
           continue;
 
         Texture2D texture = graphics.GetTexture(piece.Graphic);

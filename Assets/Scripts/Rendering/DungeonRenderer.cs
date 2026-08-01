@@ -25,10 +25,6 @@ namespace DM.Rendering
     private const int RightInterfaceX = 224;
     private const int RightInterfaceYFromTop = 36;
 
-    private const float MovementArrowsWidth = 87f;
-    private const float MovementArrowsHeight = 45f;
-    private const float MovementArrowsBottomMargin = 4f;
-
     [Header("Rendering")]
     [SerializeField] private Camera dungeonCamera;
     [SerializeField] private RenderTexture targetTexture;
@@ -792,12 +788,14 @@ namespace DM.Rendering
 
       dungeonViewport.rectTransform.SetParent(gameplayRoot, false);
       if (movementArrows != null)
-        movementArrows.rectTransform.SetParent(rightInterfaceArea, false);
+        movementArrows.rectTransform.SetParent(gameplayRoot, false);
 
-      // Draw order: party, viewport, right interface (arrows on top).
+      // Draw order: party, viewport, right interface, arrows on top.
       partyArea.SetSiblingIndex(0);
       dungeonViewport.rectTransform.SetSiblingIndex(1);
       rightInterfaceArea.SetSiblingIndex(2);
+      if (movementArrows != null)
+        movementArrows.rectTransform.SetSiblingIndex(3);
       gameplayRoot.SetAsLastSibling();
     }
 
@@ -906,24 +904,23 @@ namespace DM.Rendering
 
       if (movementArrows != null)
       {
-        RectTransform arrowsRect = movementArrows.rectTransform;
-        arrowsRect.anchorMin = new Vector2(0.5f, 0f);
-        arrowsRect.anchorMax = new Vector2(0.5f, 0f);
-        arrowsRect.pivot = new Vector2(0.5f, 0f);
-        arrowsRect.sizeDelta = new Vector2(
-            MovementArrowsWidth,
-            MovementArrowsHeight
-        );
-        arrowsRect.anchoredPosition = new Vector2(
-            0f,
-            MovementArrowsBottomMargin
-        );
-        arrowsRect.localScale = Vector3.one;
-        arrowsRect.localRotation = Quaternion.identity;
-        movementArrows.preserveAspect = true;
-      }
+        ViewportPiece arrowsPiece =
+            FindLayoutPiece(DungeonGraphicType.MovementArrows);
 
-      SetMovementArrowsVisible(true);
+        if (arrowsPiece != null)
+        {
+          MovementArrowsLayout.Apply(
+              movementArrows,
+              arrowsPiece.X,
+              arrowsPiece.Y,
+              arrowsPiece.Enabled
+          );
+        }
+        else
+        {
+          SetMovementArrowsVisible(false);
+        }
+      }
 
       if (frameBuffer != null)
         frameBuffer.filterMode = FilterMode.Point;
@@ -1247,6 +1244,10 @@ namespace DM.Rendering
 
           continue;
         }
+
+        // Live UI chrome — positioned from layout, never blitted.
+        if (piece.Graphic == DungeonGraphicType.MovementArrows)
+          continue;
 
         if (!ShouldDrawPiece(piece))
           continue;
