@@ -67,6 +67,7 @@ namespace DM.Rendering
     [SerializeField] private float entranceDoorLastMoveVolume = 1.0f;
 
     [Header("Hero Portraits")]
+    [SerializeField] private bool drawHeroPortraits = false;
     [SerializeField] private int heroPortraitX = 96;
     // Framebuffer Y (bottom-up). Screenshot top-down Y=36 for Iaido.png:
     // 136 - 36 - 29 = 71.
@@ -1169,6 +1170,10 @@ namespace DM.Rendering
 
     private void TryDrawHeroPortraitOverlay()
     {
+      // TEMP: drawHeroPortraits off until F1 wall seams are fixed.
+      if (!drawHeroPortraits)
+        return;
+
       if (currentMap == null)
         return;
 
@@ -1477,10 +1482,11 @@ namespace DM.Rendering
       }
     }
 
-    // D_TILETYPE_WALL_F1 wrap to 224px:
+    // D_TILETYPE_WALL_F1 wrap to 224px (same mapping as three ranges):
     //   src 128..159 → dest 0..31
     //   src 0..159   → dest 32..191
     //   src 0..31    → dest 192..223
+    //   ≡ srcX = (destX - 32) mod 160 for destX in 0..223
     private void DrawStraightF1FrontWall(ViewportPiece frontPiece)
     {
       Texture2D texture =
@@ -1495,16 +1501,113 @@ namespace DM.Rendering
         return;
       }
 
-      int destY = frontPiece.Y + dungeonDrawOffsetY;
-      Texture2D mask =
-          graphics.GetMask(
-              DungeonGraphicType.FrontWallF1,
-              out bool flipMaskX
-          );
+      if (texture.width < 160 || texture.height <= 0)
+      {
+        Debug.LogWarning(
+            "DungeonRenderer: FrontWallF1 texture size " +
+            $"{texture.width}x{texture.height} is too small for wrap."
+        );
+        return;
+      }
 
-      Blit(texture, 0, destY, mask, flipMaskX, false, 128, 32);
-      Blit(texture, 32, destY, mask, flipMaskX, false, 0, 160);
-      Blit(texture, 192, destY, mask, flipMaskX, false, 0, 32);
+      int destY = frontPiece.Y + dungeonDrawOffsetY;
+      BlitStraightF1Wrap(texture, destY);
+    }
+
+    // Opaque column fill — does not use generic Blit alpha/mask skips, so
+    // every dungeon X 0..223 is written exactly once for this wall.
+    private void BlitStraightF1Wrap(Texture2D source, int destinationY)
+    {
+      Color32[] sourcePixels = source.GetPixels32();
+      int sourceWidth = source.width;
+      int sourceHeight = source.height;
+
+      // TEMP diagnostic: dest X → write count for this straight F1 pass.
+      int[] columnWrites = new int[DungeonViewWidth];
+
+      for (int row = 0; row < sourceHeight; row++)
+      {
+        int targetY = destinationY + row;
+        if (targetY < 0 || targetY >= viewHeight)
+          continue;
+
+        // Unity GetPixels32: row 0 = texture bottom; layout Y is bottom-up.
+        int sampleY = row;
+        int sourceRow = sampleY * sourceWidth;
+        int destRow = targetY * viewWidth;
+
+        for (int destX = 0; destX < DungeonViewWidth; destX++)
+        {
+          int srcX = destX - 32;
+          if (srcX < 0)
+            srcX += 160;
+          else if (srcX >= 160)
+            srcX -= 160;
+
+          // Force opaque replace. Generic Blit skips a==0 and would leave
+          // Clear() black in any skipped column (visible vertical seams).
+          Color32 colour = sourcePixels[sourceRow + srcX];
+          colour.a = 255;
+          framePixels[destRow + destX] = colour;
+          columnWrites[destX]++;
+        }
+      }
+
+      VerifyStraightF1ColumnWrites(columnWrites, sourceHeight, destinationY);
+    }
+
+    private bool straightF1ColumnDiagLogged;
+
+    // TEMP: log if any dest X 0..223 was not written exactly once per wall row.
+    private void VerifyStraightF1ColumnWrites(
+        int[] columnWrites,
+        int sourceHeight,
+        int destinationY)
+    {
+      int rowsWritten = 0;
+      for (int row = 0; row < sourceHeight; row++)
+      {
+        int targetY = destinationY + row;
+        if (targetY >= 0 && targetY < viewHeight)
+          rowsWritten++;
+      }
+
+      int expected = rowsWritten;
+      int notOnce = 0;
+      System.Text.StringBuilder bad =
+          new System.Text.StringBuilder();
+
+      for (int x = 0; x < DungeonViewWidth; x++)
+      {
+        if (columnWrites[x] == expected)
+          continue;
+
+        notOnce++;
+        if (bad.Length > 0)
+          bad.Append(", ");
+        if (bad.Length < 120)
+          bad.Append($"x{x}={columnWrites[x]}");
+      }
+
+      if (notOnce == 0)
+      {
+        if (!straightF1ColumnDiagLogged)
+        {
+          straightF1ColumnDiagLogged = true;
+          Debug.Log(
+              "StraightF1: dest X 0..223 each written exactly " +
+              $"{expected} time(s) (once per visible wall row)."
+          );
+        }
+
+        return;
+      }
+
+      Debug.LogWarning(
+          "StraightF1: " + notOnce +
+          " dest column(s) not written exactly once per row. " +
+          $"expected={expected} samples=[{bad}]"
+      );
     }
 
     private ViewportPiece FindLayoutPiece(DungeonGraphicType graphic)
