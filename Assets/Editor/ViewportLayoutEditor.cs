@@ -235,6 +235,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     ClampSelectedPieceIndex();
     HandlePieceKeyboardNudge();
+    HandlePreviewFacingKeyboard();
     DrawSelectedPieceHeader();
 
     DrawMapPosePreviewControls();
@@ -492,6 +493,67 @@ public class ViewportLayoutEditor : EditorWindow
 
     current.Use();
     PersistChanges();
+  }
+
+  private void HandlePreviewFacingKeyboard()
+  {
+    Event current = Event.current;
+    if (current.type != EventType.KeyDown)
+      return;
+
+    // Only while this editor window has keyboard focus.
+    if (focusedWindow != this)
+      return;
+
+    if (EditorGUIUtility.editingTextField)
+      return;
+
+    DungeonFacing nextFacing;
+    switch (current.keyCode)
+    {
+      case KeyCode.Delete:
+        nextFacing = TurnPreviewFacingLeft(previewFacing);
+        break;
+      case KeyCode.PageDown:
+        nextFacing = TurnPreviewFacingRight(previewFacing);
+        break;
+      default:
+        return;
+    }
+
+    current.Use();
+
+    if (nextFacing == previewFacing)
+      return;
+
+    // Preserve Preview X / Preview Y; only facing changes.
+    previewFacing = nextFacing;
+    SaveSessionPrefs();
+    RefreshEnabledPiecesFromMapPose();
+  }
+
+  private static DungeonFacing TurnPreviewFacingLeft(DungeonFacing facing)
+  {
+    return facing switch
+    {
+      DungeonFacing.North => DungeonFacing.West,
+      DungeonFacing.West => DungeonFacing.South,
+      DungeonFacing.South => DungeonFacing.East,
+      DungeonFacing.East => DungeonFacing.North,
+      _ => facing
+    };
+  }
+
+  private static DungeonFacing TurnPreviewFacingRight(DungeonFacing facing)
+  {
+    return facing switch
+    {
+      DungeonFacing.North => DungeonFacing.East,
+      DungeonFacing.East => DungeonFacing.South,
+      DungeonFacing.South => DungeonFacing.West,
+      DungeonFacing.West => DungeonFacing.North,
+      _ => facing
+    };
   }
 
   private void ClampSelectedPieceIndex()
