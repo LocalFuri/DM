@@ -425,7 +425,11 @@ public static class DungeonMasterBmpConverter
       }
 
       importer.textureType = TextureImporterType.Sprite;
+      
       importer.spriteImportMode = SpriteImportMode.Single;
+      importer.spritePixelsPerUnit = 1f;
+      
+
       importer.filterMode = FilterMode.Point;
       importer.textureCompression =
           TextureImporterCompression.Uncompressed;
