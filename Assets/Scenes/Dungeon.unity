@@ -658,8 +658,8 @@ MonoBehaviour:
   heroPortraitY: 71
   heroPortraitTextures:
   - {fileID: 2800000, guid: 1b1394cb4d9709145aa73558a9a017dd, type: 3}
-  showOriginalWallReferenceTest: 1
-  originalWallReference_10_4_North: {fileID: 2800000, guid: a7c3e91f4b2d4e6a8c0f1d2e3a4b5c6d, type: 3}
+  showOriginalWallReferenceTest: 0
+  originalWallReference_10_4_North: {fileID: 0}
 --- !u!4 &586494317
 Transform:
   m_ObjectHideFlags: 0
