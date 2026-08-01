@@ -616,6 +616,7 @@ GameObject:
   - component: {fileID: 586494316}
   - component: {fileID: 586494318}
   - component: {fileID: 586494319}
+  - component: {fileID: 586494320}
   m_Layer: 0
   m_Name: DungeonRenderer
   m_TagString: Untagged
@@ -871,6 +872,19 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &586494320
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 586494315}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c91117f5156db9048ad2cdc759ea0156, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DM.Rendering.DungeonBitmapFont
+  alphabetGrid: {fileID: 2800000, guid: cfec4701a28e29f4e9624c2bd12a24ee, type: 3}
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0
