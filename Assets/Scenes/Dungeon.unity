@@ -654,12 +654,14 @@ MonoBehaviour:
   entranceDoorSoundVolume: 0.423
   entranceDoorLastMoveSound: {fileID: 8300000, guid: 91697f6a6d768d54db8b3d1dfa4539e7, type: 3}
   entranceDoorLastMoveVolume: 1
+  drawHeroPortraits: 0
   heroPortraitX: 96
   heroPortraitY: 71
   heroPortraitTextures:
   - {fileID: 2800000, guid: 1b1394cb4d9709145aa73558a9a017dd, type: 3}
   showOriginalWallReferenceTest: 0
   originalWallReference_10_4_North: {fileID: 0}
+  exact320x200ComparisonMode: 1
 --- !u!4 &586494317
 Transform:
   m_ObjectHideFlags: 0
