@@ -90,15 +90,15 @@ MonoBehaviour:
   - Name: Front Wall F1 A
     Graphic: 27
     X: 32
-    Y: 22
-    Enabled: 0
-    MirrorHorizontally: 0
+    Y: 21
+    Enabled: 1
+    MirrorHorizontally: 1
   - Name: Front Wall F1 B
     Graphic: 28
     X: 32
-    Y: 16
-    Enabled: 0
-    MirrorHorizontally: 1
+    Y: 21
+    Enabled: 1
+    MirrorHorizontally: 0
   - Name: Wall F1L
     Graphic: 5
     X: 0

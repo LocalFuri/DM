@@ -256,10 +256,12 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     EditorGUILayout.Space();
-    EditorGUILayout.LabelField("Pieces (render order)", EditorStyles.boldLabel);
     pieceSearchFilter = EditorGUILayout.TextField(
         "Search Pieces",
         pieceSearchFilter);
+    HandlePieceSearchKeyboard();
+
+    EditorGUILayout.LabelField("Pieces (render order)", EditorStyles.boldLabel);
 
     bool changed = false;
 
@@ -298,6 +300,27 @@ public class ViewportLayoutEditor : EditorWindow
                pieceSearchFilter.Trim(),
                System.StringComparison.OrdinalIgnoreCase)
            >= 0;
+  }
+
+  private void HandlePieceSearchKeyboard()
+  {
+    Event current = Event.current;
+    if (current.type != EventType.KeyDown)
+      return;
+
+    if (focusedWindow != this)
+      return;
+
+    if (current.keyCode != KeyCode.Escape)
+      return;
+
+    if (string.IsNullOrEmpty(pieceSearchFilter))
+      return;
+
+    pieceSearchFilter = string.Empty;
+    current.Use();
+    GUI.FocusControl(null);
+    Repaint();
   }
 
   private void DrawPieceCard(
