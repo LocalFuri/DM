@@ -79,6 +79,14 @@ namespace DM.Rendering
     [SerializeField]
     private Texture2D originalWallReference_10_4_North;
 
+    [Header("TEMP Exact Comparison")]
+    [SerializeField]
+    [Tooltip(
+        "Show the full 320×200 framebuffer at 1:1 screen pixels, " +
+        "centered, with no CanvasScaler enlargement or fitScale."
+    )]
+    private bool exact320x200ComparisonMode = false;
+
     private static readonly Rect EntranceUvRect = new Rect(0f, 0f, 1f, 1f);
     private static readonly Rect DungeonUvRect = new Rect(
         0f,
@@ -124,6 +132,13 @@ namespace DM.Rendering
     private RectTransform gameplayRoot;
     private RectTransform partyArea;
     private RectTransform rightInterfaceArea;
+
+    private bool canvasScalerStateSaved;
+    private CanvasScaler.ScaleMode savedScalerMode;
+    private float savedScalerScaleFactor;
+    private Vector2 savedScalerReferenceResolution;
+    private float savedScalerMatchWidthOrHeight;
+    private bool previousExact320x200ComparisonMode;
 
     private readonly List<string> visibleWallPieces = new();
 
@@ -788,20 +803,41 @@ namespace DM.Rendering
 
     private void ApplyGameplayUiLayout()
     {
+      float fitScale = 1f;
+
+      if (!exact320x200ComparisonMode)
+      {
+        RectTransform canvasRect =
+            dungeonViewport != null
+            && dungeonViewport.canvas != null
+                ? dungeonViewport.canvas.transform as RectTransform
+                : null;
+        float parentWidth =
+            canvasRect != null ? canvasRect.rect.width : DefaultViewWidth;
+        float parentHeight =
+            canvasRect != null ? canvasRect.rect.height : DefaultViewHeight;
+
+        fitScale = Mathf.Min(
+            parentWidth / DefaultViewWidth,
+            parentHeight / DefaultViewHeight
+        );
+      }
+
+      ApplyGameplayUiLayout(fitScale);
+    }
+
+    private void ApplyGameplayUiLayout(float fitScale)
+    {
+      // Re-show party / right chrome and place the cropped dungeon viewport.
+      if (partyArea != null)
+        partyArea.gameObject.SetActive(true);
+
+      if (rightInterfaceArea != null)
+        rightInterfaceArea.gameObject.SetActive(true);
+
       EnsureGameplayLayoutHierarchy();
       if (gameplayRoot == null)
         return;
-
-      RectTransform canvasRect = gameplayRoot.parent as RectTransform;
-      float parentWidth =
-          canvasRect != null ? canvasRect.rect.width : DefaultViewWidth;
-      float parentHeight =
-          canvasRect != null ? canvasRect.rect.height : DefaultViewHeight;
-
-      float fitScale = Mathf.Min(
-          parentWidth / DefaultViewWidth,
-          parentHeight / DefaultViewHeight
-      );
 
       gameplayRoot.anchorMin = new Vector2(0.5f, 0.5f);
       gameplayRoot.anchorMax = new Vector2(0.5f, 0.5f);
@@ -888,12 +924,34 @@ namespace DM.Rendering
       }
 
       SetMovementArrowsVisible(true);
+
+      if (frameBuffer != null)
+        frameBuffer.filterMode = FilterMode.Point;
+
+      if (targetTexture != null)
+        targetTexture.filterMode = FilterMode.Point;
+
+      if (dungeonViewport.texture != null)
+        dungeonViewport.texture.filterMode = FilterMode.Point;
     }
 
     private void ApplyViewportPresentation()
     {
       if (dungeonViewport == null)
         return;
+
+      if (exact320x200ComparisonMode)
+      {
+        ApplyExact320x200ComparisonPresentation();
+        previousExact320x200ComparisonMode = true;
+        return;
+      }
+
+      if (previousExact320x200ComparisonMode)
+      {
+        RestoreCanvasScalerAfterExactComparison();
+        previousExact320x200ComparisonMode = false;
+      }
 
       if (showEntranceScreen)
       {
@@ -905,6 +963,74 @@ namespace DM.Rendering
       }
 
       ApplyGameplayUiLayout();
+    }
+
+    private void ApplyExact320x200ComparisonPresentation()
+    {
+      ApplyConstantPixelCanvasScaler();
+      // Same child layout as gameplay, but 1:1 pixels (no fitScale).
+      ApplyGameplayUiLayout(1f);
+      SetEntranceViewportVisible(true);
+    }
+
+    private void ApplyConstantPixelCanvasScaler()
+    {
+      if (dungeonViewport == null || dungeonViewport.canvas == null)
+        return;
+
+      CanvasScaler scaler =
+          dungeonViewport.canvas.GetComponent<CanvasScaler>();
+      if (scaler == null)
+        return;
+
+      if (!canvasScalerStateSaved)
+      {
+        savedScalerMode = scaler.uiScaleMode;
+        savedScalerScaleFactor = scaler.scaleFactor;
+        savedScalerReferenceResolution = scaler.referenceResolution;
+        savedScalerMatchWidthOrHeight = scaler.matchWidthOrHeight;
+        canvasScalerStateSaved = true;
+      }
+
+      scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+      scaler.scaleFactor = 1f;
+    }
+
+    private void RestoreCanvasScalerAfterExactComparison()
+    {
+      if (partyArea != null)
+        partyArea.gameObject.SetActive(true);
+
+      if (rightInterfaceArea != null)
+        rightInterfaceArea.gameObject.SetActive(true);
+
+      if (!canvasScalerStateSaved
+          || dungeonViewport == null
+          || dungeonViewport.canvas == null)
+      {
+        return;
+      }
+
+      CanvasScaler scaler =
+          dungeonViewport.canvas.GetComponent<CanvasScaler>();
+      if (scaler == null)
+        return;
+
+      scaler.uiScaleMode = savedScalerMode;
+      scaler.scaleFactor = savedScalerScaleFactor;
+      scaler.referenceResolution = savedScalerReferenceResolution;
+      scaler.matchWidthOrHeight = savedScalerMatchWidthOrHeight;
+    }
+
+    private void OnValidate()
+    {
+      if (!Application.isPlaying)
+        return;
+
+      if (dungeonViewport == null)
+        return;
+
+      ApplyViewportPresentation();
     }
 
     private void OnEnable()
@@ -1482,11 +1608,10 @@ namespace DM.Rendering
       }
     }
 
-    // D_TILETYPE_WALL_F1 wrap to 224px (same mapping as three ranges):
-    //   src 128..159 → dest 0..31
-    //   src 0..159   → dest 32..191
-    //   src 0..31    → dest 192..223
-    //   ≡ srcX = (destX - 32) mod 160 for destX in 0..223
+    // D_TILETYPE_WALL_F1 wrap to 224px (join-safe; see StraightF1SourceX):
+    //   dest 0..30   → src 128..158
+    //   dest 31..190 → src 0..159
+    //   dest 191..223 → src 1..33
     private void DrawStraightF1FrontWall(ViewportPiece frontPiece)
     {
       Texture2D texture =
@@ -1514,8 +1639,8 @@ namespace DM.Rendering
       BlitStraightF1Wrap(texture, destY);
     }
 
-    // Opaque column fill — does not use generic Blit alpha/mask skips, so
-    // every dungeon X 0..223 is written exactly once for this wall.
+    // Opaque column fill — every dungeon X 0..223 written exactly once.
+    // src 0 ≈ src 159 (duplicate dark mortar); never place them adjacent.
     private void BlitStraightF1Wrap(Texture2D source, int destinationY)
     {
       Color32[] sourcePixels = source.GetPixels32();
@@ -1538,14 +1663,8 @@ namespace DM.Rendering
 
         for (int destX = 0; destX < DungeonViewWidth; destX++)
         {
-          int srcX = destX - 32;
-          if (srcX < 0)
-            srcX += 160;
-          else if (srcX >= 160)
-            srcX -= 160;
+          int srcX = StraightF1SourceX(destX);
 
-          // Force opaque replace. Generic Blit skips a==0 and would leave
-          // Clear() black in any skipped column (visible vertical seams).
           Color32 colour = sourcePixels[sourceRow + srcX];
           colour.a = 255;
           framePixels[destRow + destX] = colour;
@@ -1554,6 +1673,21 @@ namespace DM.Rendering
       }
 
       VerifyStraightF1ColumnWrites(columnWrites, sourceHeight, destinationY);
+    }
+
+    // Join-safe wrap (fills dest 0..223, no adjacent src 159|0):
+    //   dest 0..30   → src 128..158
+    //   dest 31..190 → src 0..159
+    //   dest 191..223 → src 1..33
+    private static int StraightF1SourceX(int destX)
+    {
+      if (destX < 31)
+        return 128 + destX;
+
+      if (destX <= 190)
+        return destX - 31;
+
+      return destX - 190;
     }
 
     private bool straightF1ColumnDiagLogged;

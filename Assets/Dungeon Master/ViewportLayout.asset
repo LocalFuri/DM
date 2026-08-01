@@ -94,9 +94,9 @@ MonoBehaviour:
     Graphic: 3
     X: 0
     Y: 0
-    Enabled: 1
+    Enabled: 0
   - Name: Wall F0R
     Graphic: 4
     X: 191
     Y: 0
-    Enabled: 1
+    Enabled: 0
