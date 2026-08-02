@@ -18,7 +18,7 @@ MonoBehaviour:
   - Name: Ceiling
     Graphic: 1
     X: 0
-    Y: 132
+    Y: 97
     Enabled: 1
     MirrorHorizontally: 0
   - Name: Ceiling Strip 84
@@ -38,7 +38,7 @@ MonoBehaviour:
     X: 0
     Y: 0
     Enabled: 1
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
   - Name: Front Wall F3
     Graphic: 25
     X: 77
@@ -49,14 +49,14 @@ MonoBehaviour:
     Graphic: 9
     X: 8
     Y: 61
-    Enabled: 0
+    Enabled: 1
     MirrorHorizontally: 0
   - Name: Wall F3R
     Graphic: 10
-    X: 134
+    X: 135
     Y: 61
-    Enabled: 0
-    MirrorHorizontally: 1
+    Enabled: 1
+    MirrorHorizontally: 0
   - Name: Front Wall F2
     Graphic: 24
     X: 59
@@ -65,9 +65,9 @@ MonoBehaviour:
     MirrorHorizontally: 0
   - Name: Wall F2L
     Graphic: 7
-    X: 1
+    X: 0
     Y: 42
-    Enabled: 0
+    Enabled: 1
     MirrorHorizontally: 0
   - Name: Wall F2R
     Graphic: 8
@@ -91,7 +91,7 @@ MonoBehaviour:
     Graphic: 27
     X: 32
     Y: 43
-    Enabled: 1
+    Enabled: 0
     MirrorHorizontally: 0
   - Name: Front Wall F1 B
     Graphic: 28
@@ -103,25 +103,25 @@ MonoBehaviour:
     Graphic: 5
     X: 0
     Y: 16
-    Enabled: 0
+    Enabled: 1
     MirrorHorizontally: 0
   - Name: Wall F1R
     Graphic: 6
     X: 165
     Y: 16
-    Enabled: 0
+    Enabled: 1
     MirrorHorizontally: 0
   - Name: Wall F0L
     Graphic: 3
     X: 0
     Y: 0
-    Enabled: 0
+    Enabled: 1
     MirrorHorizontally: 0
   - Name: Wall F0R
     Graphic: 4
-    X: 191
+    X: 192
     Y: 0
-    Enabled: 0
+    Enabled: 1
     MirrorHorizontally: 0
   - Name: Movement Arrows
     Graphic: 26
