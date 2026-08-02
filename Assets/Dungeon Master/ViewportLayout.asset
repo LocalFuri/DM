@@ -108,7 +108,7 @@ MonoBehaviour:
   - Name: Wall F1R
     Graphic: 6
     X: 165
-    Y: 16
+    Y: 15
     Enabled: 1
     MirrorHorizontally: 0
   - Name: Wall F0L
