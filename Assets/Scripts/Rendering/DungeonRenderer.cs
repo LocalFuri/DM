@@ -1306,14 +1306,34 @@ namespace DM.Rendering
 
     private void DrawChampionNameTest()
     {
-      if (bitmapFont == null || frameBuffer == null)
+      if (bitmapFont == null || framePixels == null)
         return;
 
+      // First hero-name frame: 43×7 inside Champion Status Slot 1
+      // (layout X=0,Y=171). Lighter band is texture top → FB Y 193..199.
+      const int frameX = 0;
+      const int frameY = 193;
+      const int frameWidth = 43;
+      const int frameHeight = 7;
+      const int localX = -1;
+      const int localY = 0;
+      const int championNameAdvance = 6;
+
+      Color32 halkGold = new Color32(255, 182, 0, 255);
+
       bitmapFont.DrawText(
-          frameBuffer,
-          "IAIDO",
-          2,
-          190
+          framePixels,
+          320,
+          200,
+          "HALK",
+          frameX + localX,
+          frameY + localY,
+          halkGold,
+          frameX,
+          frameY,
+          frameWidth,
+          frameHeight,
+          championNameAdvance
       );
     }
 

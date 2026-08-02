@@ -27,6 +27,168 @@ namespace DM.Rendering
       if (string.IsNullOrEmpty(text))
         return;
 
+      Color32[] pixels = destination.GetPixels32();
+      DrawText(
+          pixels,
+          destination.width,
+          destination.height,
+          text,
+          destinationX,
+          destinationY
+      );
+      destination.SetPixels32(pixels);
+      destination.Apply(false);
+    }
+
+    public void DrawText(
+        Color32[] destination,
+        int destinationWidth,
+        int destinationHeight,
+        string text,
+        int destinationX,
+        int destinationY)
+    {
+      DrawText(
+          destination,
+          destinationWidth,
+          destinationHeight,
+          text,
+          destinationX,
+          destinationY,
+          colour: default,
+          useColour: false,
+          clipX: 0,
+          clipY: 0,
+          clipWidth: destinationWidth,
+          clipHeight: destinationHeight
+      );
+    }
+
+    public void DrawText(
+        Color32[] destination,
+        int destinationWidth,
+        int destinationHeight,
+        string text,
+        int destinationX,
+        int destinationY,
+        Color32 colour,
+        int clipX,
+        int clipY,
+        int clipWidth,
+        int clipHeight)
+    {
+      DrawText(
+          destination,
+          destinationWidth,
+          destinationHeight,
+          text,
+          destinationX,
+          destinationY,
+          colour,
+          useColour: true,
+          clipX,
+          clipY,
+          clipWidth,
+          clipHeight,
+          GlyphAdvance
+      );
+    }
+
+    public void DrawText(
+        Color32[] destination,
+        int destinationWidth,
+        int destinationHeight,
+        string text,
+        int destinationX,
+        int destinationY,
+        Color32 colour,
+        int clipX,
+        int clipY,
+        int clipWidth,
+        int clipHeight,
+        int characterAdvance)
+    {
+      DrawText(
+          destination,
+          destinationWidth,
+          destinationHeight,
+          text,
+          destinationX,
+          destinationY,
+          colour,
+          useColour: true,
+          clipX,
+          clipY,
+          clipWidth,
+          clipHeight,
+          characterAdvance
+      );
+    }
+
+    private void DrawText(
+        Color32[] destination,
+        int destinationWidth,
+        int destinationHeight,
+        string text,
+        int destinationX,
+        int destinationY,
+        Color32 colour,
+        bool useColour,
+        int clipX,
+        int clipY,
+        int clipWidth,
+        int clipHeight)
+    {
+      DrawText(
+          destination,
+          destinationWidth,
+          destinationHeight,
+          text,
+          destinationX,
+          destinationY,
+          colour,
+          useColour,
+          clipX,
+          clipY,
+          clipWidth,
+          clipHeight,
+          GlyphAdvance
+      );
+    }
+
+    private void DrawText(
+        Color32[] destination,
+        int destinationWidth,
+        int destinationHeight,
+        string text,
+        int destinationX,
+        int destinationY,
+        Color32 colour,
+        bool useColour,
+        int clipX,
+        int clipY,
+        int clipWidth,
+        int clipHeight,
+        int characterAdvance)
+    {
+      if (destination == null || alphabetGrid == null)
+        return;
+
+      if (string.IsNullOrEmpty(text))
+        return;
+
+      if (destinationWidth <= 0 || destinationHeight <= 0)
+        return;
+
+      if (destination.Length < destinationWidth * destinationHeight)
+        return;
+
+      if (clipWidth <= 0 || clipHeight <= 0)
+        return;
+
+      if (characterAdvance <= 0)
+        characterAdvance = GlyphAdvance;
+
       string upperText = text.ToUpperInvariant();
       int drawX = destinationX;
 
@@ -34,7 +196,7 @@ namespace DM.Rendering
       {
         if (character == ' ')
         {
-          drawX += GlyphAdvance;
+          drawX += characterAdvance;
           continue;
         }
 
@@ -43,22 +205,36 @@ namespace DM.Rendering
 
         DrawCharacter(
             destination,
+            destinationWidth,
+            destinationHeight,
             character,
             drawX,
-            destinationY
+            destinationY,
+            colour,
+            useColour,
+            clipX,
+            clipY,
+            clipWidth,
+            clipHeight
         );
 
-        drawX += GlyphAdvance;
+        drawX += characterAdvance;
       }
-
-      destination.Apply(false);
     }
 
     private void DrawCharacter(
-        Texture2D destination,
+        Color32[] destination,
+        int destinationWidth,
+        int destinationHeight,
         char character,
         int destinationX,
-        int destinationY)
+        int destinationY,
+        Color32 colour,
+        bool useColour,
+        int clipX,
+        int clipY,
+        int clipWidth,
+        int clipHeight)
     {
       GetCharacterCell(
           character,
@@ -80,6 +256,9 @@ namespace DM.Rendering
               sourceY
           );
 
+      int clipMaxX = clipX + clipWidth;
+      int clipMaxY = clipY + clipHeight;
+
       for (int y = 0; y < GlyphSize; y++)
       {
         for (int x = 0; x < GlyphSize; x++)
@@ -90,8 +269,18 @@ namespace DM.Rendering
           if (
               targetX < 0 ||
               targetY < 0 ||
-              targetX >= destination.width ||
-              targetY >= destination.height
+              targetX >= destinationWidth ||
+              targetY >= destinationHeight
+          )
+          {
+            continue;
+          }
+
+          if (
+              targetX < clipX ||
+              targetY < clipY ||
+              targetX >= clipMaxX ||
+              targetY >= clipMaxY
           )
           {
             continue;
@@ -106,11 +295,8 @@ namespace DM.Rendering
           if (IsBackground(pixel, background))
             continue;
 
-          destination.SetPixel(
-              targetX,
-              targetY,
-              pixel
-          );
+          destination[targetY * destinationWidth + targetX] =
+              useColour ? colour : pixel;
         }
       }
     }

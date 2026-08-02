@@ -2074,6 +2074,38 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
+    DungeonBitmapFont bitmapFont =
+        Object.FindFirstObjectByType<DungeonBitmapFont>();
+    if (bitmapFont != null)
+    {
+      // First hero-name frame: 43×7 inside Champion Status Slot 1
+      // (layout X=0,Y=171). Lighter band is texture top → FB Y 193..199.
+      const int frameX = 0;
+      const int frameY = 193;
+      const int frameWidth = 43;
+      const int frameHeight = 7;
+      const int localX = -1;
+      const int localY = 0;
+      const int championNameAdvance = 6;
+
+      Color32 halkGold = new Color32(255, 182, 0, 255);
+
+      bitmapFont.DrawText(
+          pixels,
+          PreviewWidth,
+          PreviewHeight,
+          "HALK",
+          frameX + localX,
+          frameY + localY,
+          halkGold,
+          frameX,
+          frameY,
+          frameWidth,
+          frameHeight,
+          championNameAdvance
+      );
+    }
+
     editModePreviewTexture.SetPixels32(pixels);
     editModePreviewTexture.Apply(false);
   }

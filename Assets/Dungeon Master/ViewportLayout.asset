@@ -92,7 +92,7 @@ MonoBehaviour:
     X: 32
     Y: 43
     Enabled: 1
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
   - Name: Front Wall F1 B
     Graphic: 28
     X: 32
@@ -125,7 +125,7 @@ MonoBehaviour:
     MirrorHorizontally: 0
   - Name: Movement Arrows
     Graphic: 26
-    X: 228
+    X: 233
     Y: 0
     Enabled: 1
     MirrorHorizontally: 0
