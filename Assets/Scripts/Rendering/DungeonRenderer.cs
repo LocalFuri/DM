@@ -70,6 +70,9 @@ namespace DM.Rendering
     [SerializeField] private int heroPortraitY = 71;
     [SerializeField] private Texture2D[] heroPortraitTextures;
 
+    [Header("Bitmap Font")]
+    [SerializeField] private DungeonBitmapFont bitmapFont;
+
     [Header("TEMP Reference Wall Test — disable or delete after comparison")]
     [SerializeField] private bool showOriginalWallReferenceTest = true;
     [SerializeField]
@@ -160,6 +163,9 @@ namespace DM.Rendering
 
       if (movementArrows == null)
         movementArrows = FindMovementArrows();
+
+      if (bitmapFont == null)
+        bitmapFont = GetComponent<DungeonBitmapFont>();
 
       CreateFrameBuffer();
 
@@ -1292,7 +1298,23 @@ namespace DM.Rendering
       if (showEntranceScreen)
         DrawEntranceOverlay();
 
+      if (!showEntranceScreen)
+        DrawChampionNameTest();
+
       ApplyFrameBuffer();
+    }
+
+    private void DrawChampionNameTest()
+    {
+      if (bitmapFont == null || frameBuffer == null)
+        return;
+
+      bitmapFont.DrawText(
+          frameBuffer,
+          "IAIDO",
+          2,
+          190
+      );
     }
 
     private void TryDrawHeroPortraitOverlay()

@@ -238,6 +238,7 @@ public class ViewportLayoutEditor : EditorWindow
     HandlePieceKeyboardNudge();
     HandlePreviewFacingKeyboard();
     HandlePreviewStrafeKeyboard();
+    HandlePreviewMoveKeyboard();
     DrawSelectedPieceHeader();
 
     DrawMapPosePreviewControls();
@@ -490,8 +491,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.LabelField($"X: {selected.X}    Y: {selected.Y}", positionStyle);
     EditorGUILayout.LabelField(
-        "Up/Down nudge piece 1px. Hold Shift for 10px. "
-            + "Left/Right strafe preview. Delete/PageDown turn.",
+        "Up/Down move preview. Left/Right strafe preview. Delete/PageDown turn.",
         EditorStyles.miniLabel);
 
     EditorGUILayout.EndVertical();
@@ -517,14 +517,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     switch (current.keyCode)
     {
-      case KeyCode.UpArrow:
-        piece.Y += step;
-        moved = true;
-        break;
-      case KeyCode.DownArrow:
-        piece.Y -= step;
-        moved = true;
-        break;
     }
 
     if (!moved)
@@ -609,6 +601,55 @@ public class ViewportLayoutEditor : EditorWindow
 
     int nextX = previewX + rightX * strafeSign;
     int nextY = previewY + rightY * strafeSign;
+
+    if (!previewMiniMap.CanEnter(nextX, nextY))
+      return;
+
+    // Keep Preview Facing unchanged.
+    previewX = nextX;
+    previewY = nextY;
+    SaveSessionPrefs();
+    RefreshEnabledPiecesFromMapPose();
+  }
+
+  private void HandlePreviewMoveKeyboard()
+  {
+    Event current = Event.current;
+    if (current.type != EventType.KeyDown)
+      return;
+
+    if (focusedWindow != this)
+      return;
+
+    if (EditorGUIUtility.editingTextField)
+      return;
+
+    int moveSign;
+    switch (current.keyCode)
+    {
+      case KeyCode.UpArrow:
+        moveSign = 1; // forward relative to facing
+        break;
+      case KeyCode.DownArrow:
+        moveSign = -1; // backward relative to facing
+        break;
+      default:
+        return;
+    }
+
+    current.Use();
+
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int nextX = previewX + forwardX * moveSign;
+    int nextY = previewY + forwardY * moveSign;
 
     if (!previewMiniMap.CanEnter(nextX, nextY))
       return;
