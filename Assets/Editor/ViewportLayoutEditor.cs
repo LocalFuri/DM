@@ -234,6 +234,15 @@ public class ViewportLayoutEditor : EditorWindow
           MessageType.Warning);
     }
 
+    bool layoutEditable = !Application.isPlaying;
+    if (!layoutEditable)
+    {
+      EditorGUILayout.HelpBox(
+          "ViewportLayout.asset is read-only in Play Mode. "
+              + "Stop Play to edit and save layout coordinates/visibility.",
+          MessageType.Warning);
+    }
+
     ClampSelectedPieceIndex();
     HandlePieceKeyboardNudge();
     HandlePreviewFacingKeyboard();
@@ -243,43 +252,49 @@ public class ViewportLayoutEditor : EditorWindow
 
     DrawMapPosePreviewControls();
 
-    EditorGUI.BeginChangeCheck();
-
-    DrawSnapToolbar();
-
-    using (new EditorGUI.DisabledScope(rememberedEnabledStates == null))
+    using (new EditorGUI.DisabledScope(!layoutEditable))
     {
-      if (GUILayout.Button("Restore Enabled States"))
+      EditorGUI.BeginChangeCheck();
+
+      if (layoutEditable)
+        Undo.RecordObject(layout, "Viewport Layout Change");
+
+      DrawSnapToolbar();
+
+      using (new EditorGUI.DisabledScope(rememberedEnabledStates == null))
       {
-        RestoreEnabledStates();
-        PersistChanges();
+        if (GUILayout.Button("Restore Enabled States"))
+        {
+          RestoreEnabledStates();
+          PersistChanges();
+        }
       }
-    }
 
-    EditorGUILayout.Space();
-    pieceSearchFilter = EditorGUILayout.TextField(
-        "Search Pieces",
-        pieceSearchFilter);
-    HandlePieceSearchKeyboard();
+      EditorGUILayout.Space();
+      pieceSearchFilter = EditorGUILayout.TextField(
+          "Search Pieces",
+          pieceSearchFilter);
+      HandlePieceSearchKeyboard();
 
-    EditorGUILayout.LabelField("Pieces (render order)", EditorStyles.boldLabel);
+      EditorGUILayout.LabelField("Pieces (render order)", EditorStyles.boldLabel);
 
-    bool changed = false;
+      bool changed = false;
 
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (!PieceMatchesSearchFilter(piece))
-        continue;
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (!PieceMatchesSearchFilter(piece))
+          continue;
 
-      bool isSelected = i == selectedPieceIndex;
-      DrawPieceCard(i, piece, isSelected, ref changed);
+        bool isSelected = i == selectedPieceIndex;
+        DrawPieceCard(i, piece, isSelected, ref changed);
+      }
+
+      if (EditorGUI.EndChangeCheck() || changed)
+        PersistChanges();
     }
 
     EditorGUILayout.EndScrollView();
-
-    if (EditorGUI.EndChangeCheck() || changed)
-      PersistChanges();
 
     if (selectionChangedThisFrame)
     {
@@ -1128,8 +1143,11 @@ public class ViewportLayoutEditor : EditorWindow
       Repaint();
     }
 
-    if (GUILayout.Button("Refresh From Map"))
-      RefreshEnabledPiecesFromMapPose();
+    using (new EditorGUI.DisabledScope(Application.isPlaying))
+    {
+      if (GUILayout.Button("Refresh From Map"))
+        RefreshEnabledPiecesFromMapPose();
+    }
 
     DrawEnvironmentPhaseStatus();
     DrawPreviewMiniMap();
@@ -1273,6 +1291,10 @@ public class ViewportLayoutEditor : EditorWindow
     if (layout == null)
       return;
 
+    // Play Mode must only read ViewportLayout.asset — never mutate it.
+    if (Application.isPlaying)
+      return;
+
     if (!File.Exists(HallOfChampionsMapPath))
     {
       Debug.LogError(
@@ -1298,6 +1320,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     rememberedEnabledStates = null;
+
+    Undo.RecordObject(layout, "Viewport Layout Refresh From Map");
 
     bool centerF1Visible = IsCenterFrontWallVisible(map, 1);
     bool phaseB = StraightF1WallLogic.IsEnvironmentPhaseB(
@@ -1619,6 +1643,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void SoloPiece(int soloIndex)
   {
+    Undo.RecordObject(layout, "Viewport Layout Solo Piece");
+
     rememberedEnabledStates = new bool[layout.Pieces.Count];
 
     for (int i = 0; i < layout.Pieces.Count; i++)
@@ -1638,6 +1664,8 @@ public class ViewportLayoutEditor : EditorWindow
     if (rememberedEnabledStates == null)
       return;
 
+    Undo.RecordObject(layout, "Viewport Layout Restore Enabled");
+
     int count = Mathf.Min(
         rememberedEnabledStates.Length,
         layout.Pieces.Count);
@@ -1656,6 +1684,9 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void PersistChanges()
   {
+    if (Application.isPlaying || layout == null)
+      return;
+
     EditorUtility.SetDirty(layout);
     AssetDatabase.SaveAssets();
     RefreshDungeonRenderer();
@@ -1664,6 +1695,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void SwapPieces(int indexA, int indexB)
   {
+    Undo.RecordObject(layout, "Viewport Layout Reorder");
+
     ViewportPiece temp = layout.Pieces[indexA];
     layout.Pieces[indexA] = layout.Pieces[indexB];
     layout.Pieces[indexB] = temp;
