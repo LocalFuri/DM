@@ -55,7 +55,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Edit Mode map-pose preview (Hall of Champions).
   private int previewX = 1;
-  private int previewY = 3;
+  private int previewY = 2;
   private DungeonFacing previewFacing = DungeonFacing.South;
   private DungeonMap previewMiniMap;
   private string previewMiniMapLoadError;
@@ -187,6 +187,12 @@ public class ViewportLayoutEditor : EditorWindow
   {
     selectionChangedThisFrame = false;
 
+    // Arrow Up/Down must be handled before BeginScrollView — otherwise the
+    // scroll view consumes them for scrolling and HandlePreviewMoveKeyboard
+    // never sees a usable KeyDown (Left/Right strafe is unaffected).
+    if (layout != null)
+      HandlePreviewMoveKeyboard();
+
     editorScroll = EditorGUILayout.BeginScrollView(editorScroll);
 
     DrawOverlayControls();
@@ -246,7 +252,6 @@ public class ViewportLayoutEditor : EditorWindow
     ClampSelectedPieceIndex();
     HandlePreviewFacingKeyboard();
     HandlePreviewStrafeKeyboard();
-    HandlePreviewMoveKeyboard();
     DrawSelectedPieceHeader();
 
     DrawMapPosePreviewControls();
@@ -648,7 +653,12 @@ public class ViewportLayoutEditor : EditorWindow
     previewX = nextX;
     previewY = nextY;
     SaveSessionPrefs();
-    // Rebuild the RawImage preview for the new tile, then repaint this window.
+
+    // Recompose from the new pose first — RefreshEditModePreview can return
+    // early if the RawImage isn't found yet, skipping ComposeEditModePreview.
+    cachedViewportImage = null;
+    EnsureEditModePreviewTexture();
+    ComposeEditModePreview();
     RefreshEditModePreview();
     Repaint();
   }
@@ -785,16 +795,10 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void RestoreSessionPrefs()
   {
-    previewX = EditorPrefs.GetInt(PrefsPreviewXKey, 1);
-    previewY = EditorPrefs.GetInt(PrefsPreviewYKey, 3);
-
-    int facingValue = EditorPrefs.GetInt(
-        PrefsPreviewFacingKey,
-        (int)DungeonFacing.South);
-    if (System.Enum.IsDefined(typeof(DungeonFacing), facingValue))
-      previewFacing = (DungeonFacing)facingValue;
-    else
-      previewFacing = DungeonFacing.South;
+    // Always open at the fixed startup pose — do not restore last preview pose.
+    previewX = 1;
+    previewY = 2;
+    previewFacing = DungeonFacing.South;
 
     selectedPieceIndex = EditorPrefs.GetInt(PrefsSelectedPieceIndexKey, 0);
     ClampSelectedPieceIndex();
@@ -1699,8 +1703,17 @@ public class ViewportLayoutEditor : EditorWindow
     ComposeEditModePreview();
     StealViewportTextureIfNeeded(dungeonImage);
     ApplyExact320x200EditModePresentation(dungeonImage);
+
+    // Compose updates pixels in-place on the same Texture2D instance. Re-assigning
+    // the identical reference is a no-op for RawImage, so the Game View keeps
+    // showing the previous frame until we clear, rebind, and dirty the graphic.
+    dungeonImage.texture = null;
     dungeonImage.texture = editModePreviewTexture;
     dungeonImage.uvRect = new Rect(0f, 0f, 1f, 1f);
+    dungeonImage.SetAllDirty();
+    if (dungeonImage.canvas != null)
+      Canvas.ForceUpdateCanvases();
+
     MaintainOverlayVisual();
     MaintainMovementArrowsPreview();
     RepaintGameViews();
@@ -2128,7 +2141,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// Preview-only visibility. Does not write piece.Enabled / Mirror / X / Y.
-  /// Depth walls follow the current preview map pose; other pieces use authored Enabled.
+  /// Authored Enabled is authoritative — map pose must not override it.
   /// </summary>
   private bool ShouldDrawPieceAtPreviewPose(
       ViewportPiece piece,
@@ -2139,17 +2152,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (piece.Graphic == DungeonGraphicType.None)
       return false;
-
-    if (rememberedEnabledStates != null)
-      return piece.Enabled;
-
-    if (IsDepthWallGraphic(piece.Graphic))
-    {
-      if (poseMap == null)
-        return piece.Enabled;
-
-      return IsDepthWallVisibleAtPose(poseMap, piece.Graphic);
-    }
 
     return piece.Enabled;
   }
