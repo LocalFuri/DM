@@ -650,17 +650,186 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Keep Preview Facing unchanged.
     // Pose movement must not mutate ViewportLayout.asset Enabled/Mirror.
+    int oldX = previewX;
+    int oldY = previewY;
     previewX = nextX;
     previewY = nextY;
+    Debug.Log(
+        $"Viewport move: ({oldX},{oldY}) → ({previewX},{previewY}), "
+            + $"Facing={previewFacing}");
     SaveSessionPrefs();
 
-    // Recompose from the new pose first — RefreshEditModePreview can return
-    // early if the RawImage isn't found yet, skipping ComposeEditModePreview.
-    cachedViewportImage = null;
-    EnsureEditModePreviewTexture();
-    ComposeEditModePreview();
-    RefreshEditModePreview();
+    PresentEditModePreviewToGameView();
     Repaint();
+  }
+
+  /// <summary>
+  /// Recompose for the current pose and push that Texture2D onto the live
+  /// Game View dungeon RawImage. Always re-finds the RawImage (no cache).
+  /// </summary>
+  private void PresentEditModePreviewToGameView()
+  {
+    if (Application.isPlaying || layout == null || graphics == null)
+      return;
+
+    LogAllSceneRawImages("PresentEditModePreviewToGameView BEFORE assign");
+
+    RawImage dungeonImage = FindLiveDungeonViewportRawImage();
+    if (dungeonImage == null)
+    {
+      Debug.LogWarning(
+          "PresentEditModePreviewToGameView: DungeonViewport RawImage not found.");
+      return;
+    }
+
+    cachedViewportImage = dungeonImage;
+
+    EnsureEditModePreviewTexture();
+    if (editModePreviewTexture == null)
+      return;
+
+    ComposeEditModePreview();
+    if (editModePreviewTexture == null)
+      return;
+
+    editModePreviewTexture.Apply(false);
+
+    StealViewportTextureIfNeeded(dungeonImage);
+    ApplyExact320x200EditModePresentation(dungeonImage);
+
+    // Presentation may rebuild hierarchy — resolve the live RawImage again.
+    dungeonImage = FindLiveDungeonViewportRawImage();
+    if (dungeonImage == null)
+      return;
+
+    cachedViewportImage = dungeonImage;
+
+    // Force a reference change so RawImage/Canvas pick up in-place pixel updates.
+    // Avoid uvRect / SetAllDirty here — those hit NRE when canvas is unset.
+    dungeonImage.texture = Texture2D.whiteTexture;
+    dungeonImage.texture = editModePreviewTexture;
+
+    LogAssignedRawImage(dungeonImage);
+
+    if (dungeonImage.canvas != null)
+      Canvas.ForceUpdateCanvases();
+
+    MaintainOverlayVisual();
+    MaintainMovementArrowsPreview();
+    LogAllSceneRawImages("PresentEditModePreviewToGameView AFTER assign");
+    RepaintGameViews();
+  }
+
+  private static void LogAllSceneRawImages(string phase)
+  {
+    RawImage[] images = Object.FindObjectsByType<RawImage>(
+        FindObjectsInactive.Include);
+    Debug.Log(
+        $"[RawImage inventory] {phase}: count={images.Length}");
+
+    for (int i = 0; i < images.Length; i++)
+    {
+      RawImage image = images[i];
+      if (image == null)
+      {
+        Debug.Log($"[RawImage inventory] [{i}] <null>");
+        continue;
+      }
+
+      Texture tex = image.texture;
+      string texName = tex != null ? tex.name : "<null>";
+      int texId = tex != null ? tex.GetInstanceID() : 0;
+      Debug.Log(
+          $"[RawImage inventory] [{i}] name={image.gameObject.name} "
+          + $"path={GetGameObjectHierarchyPath(image.gameObject)} "
+          + $"enabled={image.enabled} "
+          + $"activeSelf={image.gameObject.activeSelf} "
+          + $"activeInHierarchy={image.gameObject.activeInHierarchy} "
+          + $"texture={texName} textureInstanceID={texId}");
+    }
+  }
+
+  private void LogAssignedRawImage(RawImage dungeonImage)
+  {
+    if (dungeonImage == null)
+    {
+      Debug.LogWarning(
+          "[PresentEditModePreviewToGameView] assigned RawImage: <null>");
+      return;
+    }
+
+    Texture tex = dungeonImage.texture;
+    string texName = tex != null ? tex.name : "<null>";
+    int texId = tex != null ? tex.GetInstanceID() : 0;
+    int previewId = editModePreviewTexture != null
+        ? editModePreviewTexture.GetInstanceID()
+        : 0;
+    Debug.Log(
+        "[PresentEditModePreviewToGameView] ASSIGNED RawImage "
+        + $"name={dungeonImage.gameObject.name} "
+        + $"path={GetGameObjectHierarchyPath(dungeonImage.gameObject)} "
+        + $"enabled={dungeonImage.enabled} "
+        + $"texture={texName} textureInstanceID={texId} "
+        + $"editModePreviewTextureInstanceID={previewId}");
+  }
+
+  private static string GetGameObjectHierarchyPath(GameObject go)
+  {
+    if (go == null)
+      return "<null>";
+
+    System.Text.StringBuilder sb = new System.Text.StringBuilder(go.name);
+    Transform parent = go.transform.parent;
+    while (parent != null)
+    {
+      sb.Insert(0, parent.name + "/");
+      parent = parent.parent;
+    }
+
+    return sb.ToString();
+  }
+
+  /// <summary>
+  /// Fresh lookup of the RawImage actually shown in Game View (by name).
+  /// Does not use cachedViewportImage.
+  /// </summary>
+  private RawImage FindLiveDungeonViewportRawImage()
+  {
+    RawImage[] images = Object.FindObjectsByType<RawImage>(
+        FindObjectsInactive.Exclude);
+
+    foreach (RawImage image in images)
+    {
+      if (image == null || image.gameObject.name == OverlayObjectName)
+        continue;
+
+      if (image.gameObject.name == "DungeonViewport")
+        return image;
+    }
+
+    // Prefer the RawImage currently displaying our preview texture.
+    foreach (RawImage image in images)
+    {
+      if (image == null || image.gameObject.name == OverlayObjectName)
+        continue;
+
+      if (editModePreviewTexture != null
+          && image.texture == editModePreviewTexture)
+      {
+        return image;
+      }
+    }
+
+    foreach (RawImage image in images)
+    {
+      if (image == null || image.gameObject.name == OverlayObjectName)
+        continue;
+
+      if (image.texture is RenderTexture)
+        return image;
+    }
+
+    return null;
   }
 
   private static DungeonFacing TurnPreviewFacingLeft(DungeonFacing facing)
@@ -1059,11 +1228,18 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedViewportImage == null)
       cachedViewportImage = FindViewportRawImage();
 
+    // Unity fake-null: drop a destroyed cached reference.
+    if (cachedViewportImage == null)
+    {
+      viewportImage = null;
+      return false;
+    }
+
     viewportImage = cachedViewportImage;
-    return viewportImage != null;
+    return true;
   }
 
-  private static RawImage FindViewportRawImage()
+  private RawImage FindViewportRawImage()
   {
     RawImage[] images = Object.FindObjectsByType<RawImage>(
         FindObjectsInactive.Exclude);
@@ -1084,6 +1260,14 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (image.texture is RenderTexture)
         return image;
+
+      // After the first steal, the dungeon RawImage holds our preview Texture2D
+      // (not a RenderTexture) — still treat it as the viewport target.
+      if (editModePreviewTexture != null
+          && image.texture == editModePreviewTexture)
+      {
+        return image;
+      }
     }
 
     return null;
@@ -1705,12 +1889,12 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyExact320x200EditModePresentation(dungeonImage);
 
     // Compose updates pixels in-place on the same Texture2D instance. Re-assigning
-    // the identical reference is a no-op for RawImage, so the Game View keeps
-    // showing the previous frame until we clear, rebind, and dirty the graphic.
-    dungeonImage.texture = null;
+    // the identical reference is a no-op for RawImage, so force a reference change.
+    if (editModePreviewTexture == null)
+      return;
+
+    dungeonImage.texture = Texture2D.whiteTexture;
     dungeonImage.texture = editModePreviewTexture;
-    dungeonImage.uvRect = new Rect(0f, 0f, 1f, 1f);
-    dungeonImage.SetAllDirty();
     if (dungeonImage.canvas != null)
       Canvas.ForceUpdateCanvases();
 
@@ -2141,7 +2325,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// Preview-only visibility. Does not write piece.Enabled / Mirror / X / Y.
-  /// Authored Enabled is authoritative — map pose must not override it.
+  /// Disabled pieces never draw. Enabled non-walls always draw. Enabled walls
+  /// draw only when visible at the temporary preview pose (poseMap).
   /// </summary>
   private bool ShouldDrawPieceAtPreviewPose(
       ViewportPiece piece,
@@ -2153,7 +2338,16 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece.Graphic == DungeonGraphicType.None)
       return false;
 
-    return piece.Enabled;
+    if (!piece.Enabled)
+      return false;
+
+    if (!IsDepthWallGraphic(piece.Graphic))
+      return true;
+
+    if (poseMap == null)
+      return false;
+
+    return IsDepthWallVisibleAtPose(poseMap, piece.Graphic);
   }
 
   /// <summary>
