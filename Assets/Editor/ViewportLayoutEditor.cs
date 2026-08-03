@@ -244,7 +244,6 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     ClampSelectedPieceIndex();
-    HandlePieceKeyboardNudge();
     HandlePreviewFacingKeyboard();
     HandlePreviewStrafeKeyboard();
     HandlePreviewMoveKeyboard();
@@ -513,34 +512,6 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.Space();
   }
 
-  private void HandlePieceKeyboardNudge()
-  {
-    Event current = Event.current;
-    if (current.type != EventType.KeyDown)
-      return;
-
-    if (EditorGUIUtility.editingTextField)
-      return;
-
-    if (layout.Pieces.Count == 0)
-      return;
-
-    ClampSelectedPieceIndex();
-    ViewportPiece piece = layout.Pieces[selectedPieceIndex];
-    int step = current.shift ? 10 : 1;
-    bool moved = false;
-
-    switch (current.keyCode)
-    {
-    }
-
-    if (!moved)
-      return;
-
-    current.Use();
-    PersistChanges();
-  }
-
   private void HandlePreviewFacingKeyboard()
   {
     Event current = Event.current;
@@ -573,9 +544,11 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     // Preserve Preview X / Preview Y; only facing changes.
+    // Do not rewrite layout Enabled/Mirror — that permanently alters the asset
+    // and makes returning to a pose differ from the initial authored view.
     previewFacing = nextFacing;
     SaveSessionPrefs();
-    RefreshEnabledPiecesFromMapPose();
+    RefreshEditModePreview();
   }
 
   private void HandlePreviewStrafeKeyboard()
@@ -621,10 +594,11 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     // Keep Preview Facing unchanged.
+    // Pose movement must not mutate ViewportLayout.asset Enabled/Mirror.
     previewX = nextX;
     previewY = nextY;
     SaveSessionPrefs();
-    RefreshEnabledPiecesFromMapPose();
+    RefreshEditModePreview();
   }
 
   private void HandlePreviewMoveKeyboard()
@@ -670,10 +644,13 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     // Keep Preview Facing unchanged.
+    // Pose movement must not mutate ViewportLayout.asset Enabled/Mirror.
     previewX = nextX;
     previewY = nextY;
     SaveSessionPrefs();
-    RefreshEnabledPiecesFromMapPose();
+    // Rebuild the RawImage preview for the new tile, then repaint this window.
+    RefreshEditModePreview();
+    Repaint();
   }
 
   private static DungeonFacing TurnPreviewFacingLeft(DungeonFacing facing)
@@ -1256,8 +1233,9 @@ public class ViewportLayoutEditor : EditorWindow
     previewX = x;
     previewY = y;
     // Preview Facing is unchanged.
+    // Pose movement must not mutate ViewportLayout.asset Enabled/Mirror.
     SaveSessionPrefs();
-    RefreshEnabledPiecesFromMapPose();
+    RefreshEditModePreview();
     Repaint();
   }
 
@@ -2054,12 +2032,15 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < pixels.Length; i++)
       pixels[i] = magenta;
 
+    // Temporary pose for visibility/mirror only — never write the layout asset.
+    DungeonMap poseMap = TryGetPreviewPoseMap();
+
     if (layout != null && layout.Pieces != null)
     {
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
         ViewportPiece piece = layout.Pieces[i];
-        if (piece == null || !piece.Enabled)
+        if (!ShouldDrawPieceAtPreviewPose(piece, poseMap))
           continue;
 
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
@@ -2069,6 +2050,8 @@ public class ViewportLayoutEditor : EditorWindow
         if (texture == null)
           continue;
 
+        bool mirror = GetPreviewMirror(piece, poseMap);
+
         if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
         {
           StraightF1WallLogic.BlitWrapToBuffer(
@@ -2077,7 +2060,7 @@ public class ViewportLayoutEditor : EditorWindow
               PreviewWidth,
               PreviewHeight,
               piece.Y,
-              piece.MirrorHorizontally);
+              mirror);
           continue;
         }
 
@@ -2090,7 +2073,7 @@ public class ViewportLayoutEditor : EditorWindow
               PreviewHeight,
               piece.X,
               piece.Y,
-              piece.MirrorHorizontally);
+              mirror);
           continue;
         }
 
@@ -2103,12 +2086,12 @@ public class ViewportLayoutEditor : EditorWindow
             flipMaskX,
             piece.X,
             piece.Y,
-            piece.MirrorHorizontally);
+            mirror);
       }
     }
 
     DungeonBitmapFont bitmapFont =
-        Object.FindFirstObjectByType<DungeonBitmapFont>();
+        Object.FindAnyObjectByType<DungeonBitmapFont>();
     if (bitmapFont != null)
     {
       // First hero-name frame: 43×7 inside Champion Status Slot 1
@@ -2141,6 +2124,64 @@ public class ViewportLayoutEditor : EditorWindow
 
     editModePreviewTexture.SetPixels32(pixels);
     editModePreviewTexture.Apply(false);
+  }
+
+  /// <summary>
+  /// Preview-only visibility. Does not write piece.Enabled / Mirror / X / Y.
+  /// Depth walls follow the current preview map pose; other pieces use authored Enabled.
+  /// </summary>
+  private bool ShouldDrawPieceAtPreviewPose(
+      ViewportPiece piece,
+      DungeonMap poseMap)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Graphic == DungeonGraphicType.None)
+      return false;
+
+    if (rememberedEnabledStates != null)
+      return piece.Enabled;
+
+    if (IsDepthWallGraphic(piece.Graphic))
+    {
+      if (poseMap == null)
+        return piece.Enabled;
+
+      return IsDepthWallVisibleAtPose(poseMap, piece.Graphic);
+    }
+
+    return piece.Enabled;
+  }
+
+  /// <summary>
+  /// Preview-only environment mirror. Does not write piece.MirrorHorizontally.
+  /// </summary>
+  private static bool GetPreviewMirror(ViewportPiece piece, DungeonMap poseMap)
+  {
+    if (piece == null)
+      return false;
+
+    if (poseMap == null
+        || !StraightF1WallLogic.IsEnvironmentPhaseGraphic(piece.Graphic))
+    {
+      return piece.MirrorHorizontally;
+    }
+
+    return StraightF1WallLogic.IsEnvironmentPhaseB(
+        poseMap.PlayerFacing,
+        poseMap.PlayerX,
+        poseMap.PlayerY);
+  }
+
+  private DungeonMap TryGetPreviewPoseMap()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return null;
+
+    previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
+    return previewMiniMap;
   }
 
   private static void BlitPieceIntoPreview(
