@@ -42,8 +42,6 @@ namespace DM.Rendering
     public Texture2D FrontWallF3;
 
     [Header("Side Wall Graphics")]
-    public Texture2D WallS2L;
-    public Texture2D WallS2R;
     public Texture2D WallS3L;
     public Texture2D WallS3R;
 
@@ -64,8 +62,6 @@ namespace DM.Rendering
     public Texture2D MaskWallF3R;
 
     [Header("Side Wall Masks")]
-    public Texture2D MaskWallS2L;
-    public Texture2D MaskWallS2R;
     public Texture2D MaskWallS3L;
     public Texture2D MaskWallS3R;
 
@@ -122,10 +118,6 @@ namespace DM.Rendering
           return FrontWallF2;
         case DungeonGraphicType.FrontWallF3:
           return FrontWallF3;
-        case DungeonGraphicType.WallS2L:
-          return WallS2L;
-        case DungeonGraphicType.WallS2R:
-          return WallS2R;
         case DungeonGraphicType.WallS3L:
           return WallS3L;
         case DungeonGraphicType.WallS3R:
@@ -198,16 +190,6 @@ namespace DM.Rendering
 
           flipHorizontal = true;
           return MaskWallF3L;
-
-        case DungeonGraphicType.WallS2L:
-          return MaskWallS2L;
-
-        case DungeonGraphicType.WallS2R:
-          if (MaskWallS2R != null)
-            return MaskWallS2R;
-
-          flipHorizontal = true;
-          return MaskWallS2L;
 
         case DungeonGraphicType.WallS3L:
           return MaskWallS3L;

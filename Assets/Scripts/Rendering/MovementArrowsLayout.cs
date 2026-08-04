@@ -30,7 +30,8 @@ namespace DM.Rendering
       arrowsRect.localScale = Vector3.one;
       arrowsRect.localRotation = Quaternion.identity;
 
-      arrows.preserveAspect = true;
+      // Display the arrows at their authored 87×45 size.
+      arrows.preserveAspect = false;
 
       if (arrows.mainTexture != null)
         arrows.mainTexture.filterMode = FilterMode.Point;

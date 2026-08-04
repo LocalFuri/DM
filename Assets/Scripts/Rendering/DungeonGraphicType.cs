@@ -19,11 +19,9 @@ namespace DM.Rendering
     WallF3L,
     WallF3R,
 
-    WallS2L,
-    WallS2R,
-
-    WallS3L,
-    WallS3R,
+    // 11 / 12 were WallS2L / WallS2R — keep numeric IDs stable for serialization.
+    WallS3L = 13,
+    WallS3R = 14,
 
     DoorClosed,
     DoorOpen,

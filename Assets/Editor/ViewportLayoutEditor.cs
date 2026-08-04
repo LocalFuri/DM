@@ -2351,23 +2351,15 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Preview-only environment mirror. Does not write piece.MirrorHorizontally.
+  /// Preview-only mirror from the piece's authored MirrorHorizontally flag.
+  /// Does not write the layout asset or apply pose phase overrides.
   /// </summary>
   private static bool GetPreviewMirror(ViewportPiece piece, DungeonMap poseMap)
   {
     if (piece == null)
       return false;
 
-    if (poseMap == null
-        || !StraightF1WallLogic.IsEnvironmentPhaseGraphic(piece.Graphic))
-    {
-      return piece.MirrorHorizontally;
-    }
-
-    return StraightF1WallLogic.IsEnvironmentPhaseB(
-        poseMap.PlayerFacing,
-        poseMap.PlayerX,
-        poseMap.PlayerY);
+    return piece.MirrorHorizontally;
   }
 
   private DungeonMap TryGetPreviewPoseMap()
