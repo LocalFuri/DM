@@ -47,14 +47,14 @@ MonoBehaviour:
     MirrorHorizontally: 0
   - Name: Wall F3Left
     Graphic: 9
-    X: 7
+    X: 6
     Y: 61
     Enabled: 1
     MirrorHorizontally: 0
   - Name: Wall F3Right
     Graphic: 10
-    X: 128
-    Y: 42
+    X: 135
+    Y: 59
     Enabled: 1
     MirrorHorizontally: 0
   - Name: Front Wall F2
