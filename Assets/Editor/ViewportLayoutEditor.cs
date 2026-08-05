@@ -21,8 +21,6 @@ public class ViewportLayoutEditor : EditorWindow
       "ViewportLayoutEditor.PreviewFacing";
   private const string PrefsSelectedPieceIndexKey =
       "ViewportLayoutEditor.SelectedPieceIndex";
-  private const string PrefsUseMapPoseVisibilityKey =
-      "ViewportLayoutEditor.UseMapPoseVisibility";
 
   private const string HallOfChampionsMapPath =
       "Assets/Data/Maps/HallOfChampions.json";
@@ -66,8 +64,6 @@ public class ViewportLayoutEditor : EditorWindow
   private DungeonMap previewMiniMap;
   private string previewMiniMapLoadError;
   private Vector2 previewMiniMapScroll;
-  // When true, enabled walls also require map-pose visibility (preview only).
-  private bool useMapPoseVisibility = true;
 
   // Temporary 320×200 presentation (restored on close / Play Mode).
   private bool presentationOverrideActive;
@@ -976,8 +972,6 @@ public class ViewportLayoutEditor : EditorWindow
     previewX = 1;
     previewY = 2;
     previewFacing = DungeonFacing.South;
-    useMapPoseVisibility =
-        EditorPrefs.GetBool(PrefsUseMapPoseVisibilityKey, true);
 
     selectedPieceIndex = EditorPrefs.GetInt(PrefsSelectedPieceIndexKey, 0);
     ClampSelectedPieceIndex();
@@ -989,7 +983,6 @@ public class ViewportLayoutEditor : EditorWindow
     EditorPrefs.SetInt(PrefsPreviewYKey, previewY);
     EditorPrefs.SetInt(PrefsPreviewFacingKey, (int)previewFacing);
     EditorPrefs.SetInt(PrefsSelectedPieceIndexKey, selectedPieceIndex);
-    EditorPrefs.SetBool(PrefsUseMapPoseVisibilityKey, useMapPoseVisibility);
   }
 
   private static ViewportLayout LoadViewportLayoutByGuid(string guid)
@@ -1313,17 +1306,6 @@ public class ViewportLayoutEditor : EditorWindow
     previewFacing = (DungeonFacing)EditorGUILayout.EnumPopup(
         "Preview Facing",
         previewFacing);
-    if (EditorGUI.EndChangeCheck())
-    {
-      SaveSessionPrefs();
-      RefreshEditModePreview();
-      Repaint();
-    }
-
-    EditorGUI.BeginChangeCheck();
-    useMapPoseVisibility = EditorGUILayout.Toggle(
-        "Use Map Pose Visibility",
-        useMapPoseVisibility);
     if (EditorGUI.EndChangeCheck())
     {
       SaveSessionPrefs();
@@ -2455,8 +2437,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// Preview-only visibility. Does not write piece.Enabled / Mirror / X / Y.
-  /// Enabled is always required. When useMapPoseVisibility is on, enabled walls
-  /// also need map-pose visibility at previewX/Y/facing.
+  /// Authored Enabled alone decides whether a piece draws — map pose must not
+  /// hide walls in the layout preview.
   /// </summary>
   private bool ShouldDrawPieceAtPreviewPose(
       ViewportPiece piece,
@@ -2468,19 +2450,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece.Graphic == DungeonGraphicType.None)
       return false;
 
-    if (!piece.Enabled)
-      return false;
-
-    if (!useMapPoseVisibility)
-      return true;
-
-    if (!IsDepthWallGraphic(piece.Graphic))
-      return true;
-
-    if (poseMap == null)
-      return false;
-
-    return IsDepthWallVisibleAtPose(poseMap, piece.Graphic);
+    return piece.Enabled;
   }
 
   /// <summary>
