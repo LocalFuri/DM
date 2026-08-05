@@ -31,16 +31,11 @@ public class ViewportLayoutEditor : EditorWindow
   private const int DungeonCaptureWidth = 224;
   private const int DungeonCaptureHeight = 136;
   private const string NativeCaptureFolderRelative = "Captures/Dungeon";
-  private const string PoseLayoutsAssetPath =
-      "Assets/EditorData/ViewportPoseLayouts.asset";
-  private const string DefaultPoseMapId = "HallOfChampions";
 
   [System.NonSerialized]
   private ViewportLayout layout;
   [System.NonSerialized]
   private DungeonGraphics graphics;
-  [System.NonSerialized]
-  private ViewportPoseLayouts poseLayouts;
   private Vector2 editorScroll;
   private string pieceSearchFilter = string.Empty;
   private bool[] rememberedEnabledStates;
@@ -152,8 +147,6 @@ public class ViewportLayoutEditor : EditorWindow
     RestorePersistedAssets();
     ReloadLayoutFromDisk();
     RestoreSessionPrefs();
-    EnsurePoseLayoutsAsset();
-    LoadOrCreatePoseLayout();
     EditorApplication.update += MaintainOverlayVisual;
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
     // Force a fresh compose from the loaded asset Enabled flags.
@@ -163,7 +156,6 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnDisable()
   {
-    SaveCurrentPoseLayout();
     SaveAssetGuid(PrefsLayoutGuidKey, layout);
     SaveAssetGuid(PrefsReferenceTextureGuidKey, referenceTexture);
     SaveAssetGuid(PrefsGraphicsGuidKey, graphics);
@@ -1300,8 +1292,8 @@ public class ViewportLayoutEditor : EditorWindow
         "Map Pose Preview",
         EditorStyles.boldLabel);
     EditorGUILayout.HelpBox(
-        "Each Preview X / Y / Facing has its own saved wall arrangement "
-            + "(Assets/EditorData/ViewportPoseLayouts.asset).",
+        "Preview X / Y / Facing move the map pose. Layout pieces come from "
+            + "ViewportLayout.asset (Enabled decides draw).",
         MessageType.None);
 
     int editX = previewX;
@@ -1543,150 +1535,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (newX == previewX && newY == previewY && newFacing == previewFacing)
       return;
 
-    SaveCurrentPoseLayout();
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
-    LoadOrCreatePoseLayout();
     SaveSessionPrefs();
-    ClampSelectedPieceIndex();
-    rememberedEnabledStates = null;
+
+    if (previewMiniMap != null)
+      previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
+
     RefreshEditModePreview();
+    GUI.changed = true;
     Repaint();
-  }
-
-  private void EnsurePoseLayoutsAsset()
-  {
-    poseLayouts = AssetDatabase.LoadAssetAtPath<ViewportPoseLayouts>(
-        PoseLayoutsAssetPath);
-    if (poseLayouts != null)
-      return;
-
-    if (!AssetDatabase.IsValidFolder("Assets/EditorData"))
-      AssetDatabase.CreateFolder("Assets", "EditorData");
-
-    if (AssetDatabase.LoadMainAssetAtPath(PoseLayoutsAssetPath) != null
-        || System.IO.File.Exists(
-            Path.Combine(
-                Application.dataPath,
-                "EditorData",
-                "ViewportPoseLayouts.asset")))
-    {
-      AssetDatabase.DeleteAsset(PoseLayoutsAssetPath);
-    }
-
-    poseLayouts = ScriptableObject.CreateInstance<ViewportPoseLayouts>();
-    AssetDatabase.CreateAsset(poseLayouts, PoseLayoutsAssetPath);
-    AssetDatabase.SaveAssets();
-  }
-
-  private static string GetPoseMapId()
-  {
-    return DefaultPoseMapId;
-  }
-
-  private ViewportPoseLayoutEntry FindPoseEntry(
-      string mapId,
-      int x,
-      int y,
-      DungeonFacing facing)
-  {
-    if (poseLayouts == null || poseLayouts.Entries == null)
-      return null;
-
-    for (int i = 0; i < poseLayouts.Entries.Count; i++)
-    {
-      ViewportPoseLayoutEntry entry = poseLayouts.Entries[i];
-      if (entry == null)
-        continue;
-
-      if (entry.MapId == mapId
-          && entry.X == x
-          && entry.Y == y
-          && entry.Facing == facing)
-      {
-        return entry;
-      }
-    }
-
-    return null;
-  }
-
-  private void SaveCurrentPoseLayout()
-  {
-    if (Application.isPlaying || layout == null || layout.Pieces == null)
-      return;
-
-    EnsurePoseLayoutsAsset();
-    if (poseLayouts == null)
-      return;
-
-    string mapId = GetPoseMapId();
-    ViewportPoseLayoutEntry entry = FindPoseEntry(
-        mapId,
-        previewX,
-        previewY,
-        previewFacing);
-
-    if (entry == null)
-    {
-      entry = new ViewportPoseLayoutEntry
-      {
-        MapId = mapId,
-        X = previewX,
-        Y = previewY,
-        Facing = previewFacing,
-        Pieces = new System.Collections.Generic.List<ViewportPieceSnapshot>()
-      };
-      poseLayouts.Entries.Add(entry);
-    }
-
-    entry.Pieces.Clear();
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPieceSnapshot snap =
-          ViewportPieceSnapshot.FromPiece(layout.Pieces[i]);
-      if (snap != null)
-        entry.Pieces.Add(snap);
-    }
-
-    EditorUtility.SetDirty(poseLayouts);
-  }
-
-  private void LoadOrCreatePoseLayout()
-  {
-    if (Application.isPlaying || layout == null || layout.Pieces == null)
-      return;
-
-    EnsurePoseLayoutsAsset();
-    if (poseLayouts == null)
-      return;
-
-    string mapId = GetPoseMapId();
-    ViewportPoseLayoutEntry entry = FindPoseEntry(
-        mapId,
-        previewX,
-        previewY,
-        previewFacing);
-
-    if (entry == null || entry.Pieces == null || entry.Pieces.Count == 0)
-    {
-      // New pose: snapshot current arrangement as its starting layout.
-      SaveCurrentPoseLayout();
-      return;
-    }
-
-    Undo.RecordObject(layout, "Load Viewport Pose Layout");
-    layout.Pieces.Clear();
-    for (int i = 0; i < entry.Pieces.Count; i++)
-    {
-      ViewportPieceSnapshot snap = entry.Pieces[i];
-      if (snap == null)
-        continue;
-      layout.Pieces.Add(snap.ToPiece());
-    }
-
-    EditorUtility.SetDirty(layout);
   }
 
   private void EnsurePreviewMiniMapLoaded()
@@ -2116,7 +1975,6 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     EditorUtility.SetDirty(layout);
-    SaveCurrentPoseLayout();
     AssetDatabase.SaveAssets();
     RefreshDungeonRenderer();
     RefreshEditModePreview();

@@ -1,0 +1,143 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f57affd3ff7667040bf4852ddf258d13, type: 3}
+  m_Name: ViewportLayout
+  m_EditorClassIdentifier: Assembly-CSharp::DM.Rendering.ViewportLayout
+  Width: 320
+  Height: 200
+  Pieces:
+  - Name: Ceiling
+    Graphic: 1
+    X: 0
+    Y: 97
+    Enabled: 1
+    MirrorHorizontally: 1
+  - Name: Ceiling Strip 84
+    Graphic: 21
+    X: 65
+    Y: 139
+    Enabled: 0
+    MirrorHorizontally: 0
+  - Name: Ceiling Strip 85
+    Graphic: 22
+    X: 73
+    Y: 148
+    Enabled: 0
+    MirrorHorizontally: 0
+  - Name: Floor
+    Graphic: 2
+    X: 0
+    Y: 0
+    Enabled: 1
+    MirrorHorizontally: 0
+  - Name: Front Wall F3
+    Graphic: 25
+    X: 77
+    Y: 61
+    Enabled: 0
+    MirrorHorizontally: 0
+  - Name: Wall F3Left
+    Graphic: 9
+    X: 6
+    Y: 61
+    Enabled: 1
+    MirrorHorizontally: 0
+  - Name: Wall F3Right
+    Graphic: 10
+    X: 135
+    Y: 62
+    Enabled: 1
+    MirrorHorizontally: 0
+  - Name: Front Wall F2
+    Graphic: 24
+    X: 59
+    Y: 42
+    Enabled: 0
+    MirrorHorizontally: 0
+  - Name: Wall F2Left
+    Graphic: 7
+    X: 0
+    Y: 42
+    Enabled: 1
+    MirrorHorizontally: 0
+  - Name: Wall F2Right
+    Graphic: 8
+    X: 147
+    Y: 42
+    Enabled: 0
+    MirrorHorizontally: 0
+  - Name: Front Wall F1 A
+    Graphic: 27
+    X: 32
+    Y: 43
+    Enabled: 0
+    MirrorHorizontally: 0
+  - Name: Front Wall F1 B
+    Graphic: 28
+    X: 32
+    Y: 43
+    Enabled: 0
+    MirrorHorizontally: 1
+  - Name: Wall F1Left
+    Graphic: 5
+    X: 0
+    Y: 16
+    Enabled: 1
+    MirrorHorizontally: 0
+  - Name: Wall F1Right
+    Graphic: 6
+    X: 165
+    Y: 15
+    Enabled: 1
+    MirrorHorizontally: 0
+  - Name: Wall F0Left
+    Graphic: 3
+    X: 0
+    Y: 0
+    Enabled: 1
+    MirrorHorizontally: 0
+  - Name: Wall F0Right
+    Graphic: 4
+    X: 192
+    Y: 0
+    Enabled: 1
+    MirrorHorizontally: 0
+  - Name: Movement Arrows
+    Graphic: 26
+    X: 232
+    Y: 0
+    Enabled: 1
+    MirrorHorizontally: 0
+  - Name: Champion Status Slot 1
+    Graphic: 29
+    X: 0
+    Y: 171
+    Enabled: 1
+    MirrorHorizontally: 0
+  - Name: Champion Status Slot 2
+    Graphic: 29
+    X: 69
+    Y: 171
+    Enabled: 1
+    MirrorHorizontally: 0
+  - Name: Champion Status Slot 3
+    Graphic: 29
+    X: 138
+    Y: 171
+    Enabled: 1
+    MirrorHorizontally: 0
+  - Name: Champion Status Slot 4
+    Graphic: 29
+    X: 207
+    Y: 171
+    Enabled: 1
+    MirrorHorizontally: 0
