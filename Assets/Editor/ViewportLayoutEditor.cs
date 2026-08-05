@@ -746,14 +746,14 @@ public class ViewportLayoutEditor : EditorWindow
 
       Texture tex = image.texture;
       string texName = tex != null ? tex.name : "<null>";
-      int texId = tex != null ? tex.GetInstanceID() : 0;
+      string texId = tex != null ? tex.GetEntityId().ToString() : "0";
       Debug.Log(
           $"[RawImage inventory] [{i}] name={image.gameObject.name} "
           + $"path={GetGameObjectHierarchyPath(image.gameObject)} "
           + $"enabled={image.enabled} "
           + $"activeSelf={image.gameObject.activeSelf} "
           + $"activeInHierarchy={image.gameObject.activeInHierarchy} "
-          + $"texture={texName} textureInstanceID={texId}");
+          + $"texture={texName} textureEntityId={texId}");
     }
   }
 
@@ -768,17 +768,17 @@ public class ViewportLayoutEditor : EditorWindow
 
     Texture tex = dungeonImage.texture;
     string texName = tex != null ? tex.name : "<null>";
-    int texId = tex != null ? tex.GetInstanceID() : 0;
-    int previewId = editModePreviewTexture != null
-        ? editModePreviewTexture.GetInstanceID()
-        : 0;
+    string texId = tex != null ? tex.GetEntityId().ToString() : "0";
+    string previewId = editModePreviewTexture != null
+        ? editModePreviewTexture.GetEntityId().ToString()
+        : "0";
     Debug.Log(
         "[PresentEditModePreviewToGameView] ASSIGNED RawImage "
         + $"name={dungeonImage.gameObject.name} "
         + $"path={GetGameObjectHierarchyPath(dungeonImage.gameObject)} "
         + $"enabled={dungeonImage.enabled} "
-        + $"texture={texName} textureInstanceID={texId} "
-        + $"editModePreviewTextureInstanceID={previewId}");
+        + $"texture={texName} textureEntityId={texId} "
+        + $"editModePreviewTextureEntityId={previewId}");
   }
 
   private static string GetGameObjectHierarchyPath(GameObject go)

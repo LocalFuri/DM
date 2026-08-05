@@ -53,8 +53,8 @@ MonoBehaviour:
     MirrorHorizontally: 0
   - Name: Wall F3Right
     Graphic: 10
-    X: 135
-    Y: 59
+    X: 17
+    Y: 0
     Enabled: 1
     MirrorHorizontally: 0
   - Name: Front Wall F2
@@ -73,7 +73,7 @@ MonoBehaviour:
     Graphic: 8
     X: 147
     Y: 42
-    Enabled: 0
+    Enabled: 1
     MirrorHorizontally: 0
   - Name: Front Wall F1 A
     Graphic: 27
