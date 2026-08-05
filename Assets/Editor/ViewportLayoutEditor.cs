@@ -1,5 +1,4 @@
 using System.IO;
-using System.Reflection;
 using DM.Dungeon;
 using DM.Rendering;
 using UnityEditor;
@@ -95,9 +94,6 @@ public class ViewportLayoutEditor : EditorWindow
   private bool movementArrowsFilterSaved;
   private Texture savedMovementArrowsFilterTexture;
 
-  // Internal EditorApplication.globalEventHandler via reflection (not public API).
-  private EditorApplication.CallbackFunction globalPreviewKeyboardHandler;
-
   private struct RectTransformSnapshot
   {
     public Vector2 AnchorMin;
@@ -160,7 +156,6 @@ public class ViewportLayoutEditor : EditorWindow
     LoadOrCreatePoseLayout();
     EditorApplication.update += MaintainOverlayVisual;
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
-    RegisterGlobalPreviewKeyboard();
     // Force a fresh compose from the loaded asset Enabled flags.
     DestroyEditModePreviewTextureOnly();
     RefreshEditModePreview();
@@ -176,7 +171,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorApplication.update -= MaintainOverlayVisual;
     EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
-    UnregisterGlobalPreviewKeyboard();
     DestroyOverlayObject();
     RestoreViewportTextureAndDestroyPreview();
     RepaintGameViews();
@@ -204,6 +198,12 @@ public class ViewportLayoutEditor : EditorWindow
   private void OnGUI()
   {
     selectionChangedThisFrame = false;
+
+    // Arrow Up/Down must be handled before BeginScrollView — otherwise the
+    // scroll view consumes them for scrolling and HandlePreviewMoveKeyboard
+    // never sees a usable KeyDown (Left/Right strafe is unaffected).
+    if (layout != null)
+      HandlePreviewMoveKeyboard();
 
     editorScroll = EditorGUILayout.BeginScrollView(editorScroll);
 
@@ -262,6 +262,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     ClampSelectedPieceIndex();
+    HandlePreviewFacingKeyboard();
+    HandlePreviewStrafeKeyboard();
     DrawSelectedPieceHeader();
 
     DrawMapPosePreviewControls();
@@ -527,85 +529,13 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.Space();
   }
 
-  /// <summary>
-  /// Edit Mode preview navigation while this window is open, even without
-  /// focusing it. Unregistered in OnDisable.
-  /// </summary>
-  private void HandleGlobalPreviewKeyboard()
-  {
-    if (Application.isPlaying)
-      return;
-
-    if (EditorGUIUtility.editingTextField)
-      return;
-
-    if (layout == null)
-      return;
-
-    Event current = Event.current;
-    if (current == null || current.type != EventType.KeyDown)
-      return;
-
-    switch (current.keyCode)
-    {
-      case KeyCode.UpArrow:
-      case KeyCode.DownArrow:
-        HandlePreviewMoveKeyboard();
-        break;
-      case KeyCode.LeftArrow:
-      case KeyCode.RightArrow:
-        HandlePreviewStrafeKeyboard();
-        break;
-      case KeyCode.Delete:
-      case KeyCode.PageDown:
-        HandlePreviewFacingKeyboard();
-        break;
-    }
-  }
-
-  private static FieldInfo GetGlobalEventHandlerField()
-  {
-    return typeof(EditorApplication).GetField(
-        "globalEventHandler",
-        BindingFlags.Static | BindingFlags.NonPublic);
-  }
-
-  private void RegisterGlobalPreviewKeyboard()
-  {
-    FieldInfo field = GetGlobalEventHandlerField();
-    if (field == null)
-    {
-      Debug.LogWarning(
-          "ViewportLayoutEditor: EditorApplication.globalEventHandler "
-              + "not found; arrow-key pose navigation needs window focus.");
-      return;
-    }
-
-    globalPreviewKeyboardHandler ??= HandleGlobalPreviewKeyboard;
-    var current = (EditorApplication.CallbackFunction)field.GetValue(null);
-    current -= globalPreviewKeyboardHandler;
-    current += globalPreviewKeyboardHandler;
-    field.SetValue(null, current);
-  }
-
-  private void UnregisterGlobalPreviewKeyboard()
-  {
-    if (globalPreviewKeyboardHandler == null)
-      return;
-
-    FieldInfo field = GetGlobalEventHandlerField();
-    if (field == null)
-      return;
-
-    var current = (EditorApplication.CallbackFunction)field.GetValue(null);
-    current -= globalPreviewKeyboardHandler;
-    field.SetValue(null, current);
-  }
-
   private void HandlePreviewFacingKeyboard()
   {
     Event current = Event.current;
     if (current.type != EventType.KeyDown)
+      return;
+
+    if (focusedWindow != this)
       return;
 
     if (EditorGUIUtility.editingTextField)
@@ -631,12 +561,16 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Preserve Preview X / Preview Y; only facing changes.
     SwitchPreviewPose(previewX, previewY, nextFacing);
+    TryRefocusPreviewWindow();
   }
 
   private void HandlePreviewStrafeKeyboard()
   {
     Event current = Event.current;
     if (current.type != EventType.KeyDown)
+      return;
+
+    if (focusedWindow != this)
       return;
 
     if (EditorGUIUtility.editingTextField)
@@ -674,12 +608,16 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Keep Preview Facing unchanged.
     SwitchPreviewPose(nextX, nextY, previewFacing);
+    TryRefocusPreviewWindow();
   }
 
   private void HandlePreviewMoveKeyboard()
   {
     Event current = Event.current;
     if (current.type != EventType.KeyDown)
+      return;
+
+    if (focusedWindow != this)
       return;
 
     if (EditorGUIUtility.editingTextField)
@@ -722,6 +660,15 @@ public class ViewportLayoutEditor : EditorWindow
     Debug.Log(
         $"Viewport move: ({oldX},{oldY}) → ({previewX},{previewY}), "
             + $"Facing={previewFacing}");
+    TryRefocusPreviewWindow();
+  }
+
+  private void TryRefocusPreviewWindow()
+  {
+    if (EditorGUIUtility.editingTextField)
+      return;
+
+    Focus();
   }
 
   /// <summary>
@@ -1588,6 +1535,7 @@ public class ViewportLayoutEditor : EditorWindow
   {
     // Preview Facing is unchanged.
     SwitchPreviewPose(x, y, previewFacing);
+    TryRefocusPreviewWindow();
   }
 
   private void SwitchPreviewPose(int newX, int newY, DungeonFacing newFacing)
