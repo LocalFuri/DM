@@ -1,4 +1,5 @@
 using System.IO;
+using System.Reflection;
 using DM.Dungeon;
 using DM.Rendering;
 using UnityEditor;
@@ -31,11 +32,16 @@ public class ViewportLayoutEditor : EditorWindow
   private const int DungeonCaptureWidth = 224;
   private const int DungeonCaptureHeight = 136;
   private const string NativeCaptureFolderRelative = "Captures/Dungeon";
+  private const string PoseLayoutsAssetPath =
+      "Assets/EditorData/ViewportPoseLayouts.asset";
+  private const string DefaultPoseMapId = "HallOfChampions";
 
   [System.NonSerialized]
   private ViewportLayout layout;
   [System.NonSerialized]
   private DungeonGraphics graphics;
+  [System.NonSerialized]
+  private ViewportPoseLayouts poseLayouts;
   private Vector2 editorScroll;
   private string pieceSearchFilter = string.Empty;
   private bool[] rememberedEnabledStates;
@@ -88,6 +94,9 @@ public class ViewportLayoutEditor : EditorWindow
   private FilterMode savedMovementArrowsFilterMode;
   private bool movementArrowsFilterSaved;
   private Texture savedMovementArrowsFilterTexture;
+
+  // Internal EditorApplication.globalEventHandler via reflection (not public API).
+  private EditorApplication.CallbackFunction globalPreviewKeyboardHandler;
 
   private struct RectTransformSnapshot
   {
@@ -147,8 +156,11 @@ public class ViewportLayoutEditor : EditorWindow
     RestorePersistedAssets();
     ReloadLayoutFromDisk();
     RestoreSessionPrefs();
+    EnsurePoseLayoutsAsset();
+    LoadOrCreatePoseLayout();
     EditorApplication.update += MaintainOverlayVisual;
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
+    RegisterGlobalPreviewKeyboard();
     // Force a fresh compose from the loaded asset Enabled flags.
     DestroyEditModePreviewTextureOnly();
     RefreshEditModePreview();
@@ -156,6 +168,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnDisable()
   {
+    SaveCurrentPoseLayout();
     SaveAssetGuid(PrefsLayoutGuidKey, layout);
     SaveAssetGuid(PrefsReferenceTextureGuidKey, referenceTexture);
     SaveAssetGuid(PrefsGraphicsGuidKey, graphics);
@@ -163,6 +176,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorApplication.update -= MaintainOverlayVisual;
     EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+    UnregisterGlobalPreviewKeyboard();
     DestroyOverlayObject();
     RestoreViewportTextureAndDestroyPreview();
     RepaintGameViews();
@@ -190,12 +204,6 @@ public class ViewportLayoutEditor : EditorWindow
   private void OnGUI()
   {
     selectionChangedThisFrame = false;
-
-    // Arrow Up/Down must be handled before BeginScrollView — otherwise the
-    // scroll view consumes them for scrolling and HandlePreviewMoveKeyboard
-    // never sees a usable KeyDown (Left/Right strafe is unaffected).
-    if (layout != null)
-      HandlePreviewMoveKeyboard();
 
     editorScroll = EditorGUILayout.BeginScrollView(editorScroll);
 
@@ -254,8 +262,6 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     ClampSelectedPieceIndex();
-    HandlePreviewFacingKeyboard();
-    HandlePreviewStrafeKeyboard();
     DrawSelectedPieceHeader();
 
     DrawMapPosePreviewControls();
@@ -521,14 +527,85 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.Space();
   }
 
+  /// <summary>
+  /// Edit Mode preview navigation while this window is open, even without
+  /// focusing it. Unregistered in OnDisable.
+  /// </summary>
+  private void HandleGlobalPreviewKeyboard()
+  {
+    if (Application.isPlaying)
+      return;
+
+    if (EditorGUIUtility.editingTextField)
+      return;
+
+    if (layout == null)
+      return;
+
+    Event current = Event.current;
+    if (current == null || current.type != EventType.KeyDown)
+      return;
+
+    switch (current.keyCode)
+    {
+      case KeyCode.UpArrow:
+      case KeyCode.DownArrow:
+        HandlePreviewMoveKeyboard();
+        break;
+      case KeyCode.LeftArrow:
+      case KeyCode.RightArrow:
+        HandlePreviewStrafeKeyboard();
+        break;
+      case KeyCode.Delete:
+      case KeyCode.PageDown:
+        HandlePreviewFacingKeyboard();
+        break;
+    }
+  }
+
+  private static FieldInfo GetGlobalEventHandlerField()
+  {
+    return typeof(EditorApplication).GetField(
+        "globalEventHandler",
+        BindingFlags.Static | BindingFlags.NonPublic);
+  }
+
+  private void RegisterGlobalPreviewKeyboard()
+  {
+    FieldInfo field = GetGlobalEventHandlerField();
+    if (field == null)
+    {
+      Debug.LogWarning(
+          "ViewportLayoutEditor: EditorApplication.globalEventHandler "
+              + "not found; arrow-key pose navigation needs window focus.");
+      return;
+    }
+
+    globalPreviewKeyboardHandler ??= HandleGlobalPreviewKeyboard;
+    var current = (EditorApplication.CallbackFunction)field.GetValue(null);
+    current -= globalPreviewKeyboardHandler;
+    current += globalPreviewKeyboardHandler;
+    field.SetValue(null, current);
+  }
+
+  private void UnregisterGlobalPreviewKeyboard()
+  {
+    if (globalPreviewKeyboardHandler == null)
+      return;
+
+    FieldInfo field = GetGlobalEventHandlerField();
+    if (field == null)
+      return;
+
+    var current = (EditorApplication.CallbackFunction)field.GetValue(null);
+    current -= globalPreviewKeyboardHandler;
+    field.SetValue(null, current);
+  }
+
   private void HandlePreviewFacingKeyboard()
   {
     Event current = Event.current;
     if (current.type != EventType.KeyDown)
-      return;
-
-    // Only while this editor window has keyboard focus.
-    if (focusedWindow != this)
       return;
 
     if (EditorGUIUtility.editingTextField)
@@ -553,20 +630,13 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     // Preserve Preview X / Preview Y; only facing changes.
-    // Do not rewrite layout Enabled/Mirror — that permanently alters the asset
-    // and makes returning to a pose differ from the initial authored view.
-    previewFacing = nextFacing;
-    SaveSessionPrefs();
-    RefreshEditModePreview();
+    SwitchPreviewPose(previewX, previewY, nextFacing);
   }
 
   private void HandlePreviewStrafeKeyboard()
   {
     Event current = Event.current;
     if (current.type != EventType.KeyDown)
-      return;
-
-    if (focusedWindow != this)
       return;
 
     if (EditorGUIUtility.editingTextField)
@@ -603,20 +673,13 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     // Keep Preview Facing unchanged.
-    // Pose movement must not mutate ViewportLayout.asset Enabled/Mirror.
-    previewX = nextX;
-    previewY = nextY;
-    SaveSessionPrefs();
-    RefreshEditModePreview();
+    SwitchPreviewPose(nextX, nextY, previewFacing);
   }
 
   private void HandlePreviewMoveKeyboard()
   {
     Event current = Event.current;
     if (current.type != EventType.KeyDown)
-      return;
-
-    if (focusedWindow != this)
       return;
 
     if (EditorGUIUtility.editingTextField)
@@ -653,18 +716,12 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     // Keep Preview Facing unchanged.
-    // Pose movement must not mutate ViewportLayout.asset Enabled/Mirror.
     int oldX = previewX;
     int oldY = previewY;
-    previewX = nextX;
-    previewY = nextY;
+    SwitchPreviewPose(nextX, nextY, previewFacing);
     Debug.Log(
         $"Viewport move: ({oldX},{oldY}) → ({previewX},{previewY}), "
             + $"Facing={previewFacing}");
-    SaveSessionPrefs();
-
-    PresentEditModePreviewToGameView();
-    Repaint();
   }
 
   /// <summary>
@@ -1296,22 +1353,21 @@ public class ViewportLayoutEditor : EditorWindow
         "Map Pose Preview",
         EditorStyles.boldLabel);
     EditorGUILayout.HelpBox(
-        "Hall of Champions — enables wall pieces for the pose "
-            + "(same visibility rules as runtime).",
+        "Each Preview X / Y / Facing has its own saved wall arrangement "
+            + "(Assets/EditorData/ViewportPoseLayouts.asset).",
         MessageType.None);
 
+    int editX = previewX;
+    int editY = previewY;
+    DungeonFacing editFacing = previewFacing;
     EditorGUI.BeginChangeCheck();
-    previewX = EditorGUILayout.IntField("Preview X", previewX);
-    previewY = EditorGUILayout.IntField("Preview Y", previewY);
-    previewFacing = (DungeonFacing)EditorGUILayout.EnumPopup(
+    editX = EditorGUILayout.IntField("Preview X", editX);
+    editY = EditorGUILayout.IntField("Preview Y", editY);
+    editFacing = (DungeonFacing)EditorGUILayout.EnumPopup(
         "Preview Facing",
-        previewFacing);
+        editFacing);
     if (EditorGUI.EndChangeCheck())
-    {
-      SaveSessionPrefs();
-      RefreshEditModePreview();
-      Repaint();
-    }
+      SwitchPreviewPose(editX, editY, editFacing);
 
     using (new EditorGUI.DisabledScope(Application.isPlaying))
     {
@@ -1530,13 +1586,159 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void ApplyPreviewPoseFromMiniMapClick(int x, int y)
   {
-    previewX = x;
-    previewY = y;
     // Preview Facing is unchanged.
-    // Pose movement must not mutate ViewportLayout.asset Enabled/Mirror.
+    SwitchPreviewPose(x, y, previewFacing);
+  }
+
+  private void SwitchPreviewPose(int newX, int newY, DungeonFacing newFacing)
+  {
+    if (newX == previewX && newY == previewY && newFacing == previewFacing)
+      return;
+
+    SaveCurrentPoseLayout();
+    previewX = newX;
+    previewY = newY;
+    previewFacing = newFacing;
+    LoadOrCreatePoseLayout();
     SaveSessionPrefs();
+    ClampSelectedPieceIndex();
+    rememberedEnabledStates = null;
     RefreshEditModePreview();
     Repaint();
+  }
+
+  private void EnsurePoseLayoutsAsset()
+  {
+    poseLayouts = AssetDatabase.LoadAssetAtPath<ViewportPoseLayouts>(
+        PoseLayoutsAssetPath);
+    if (poseLayouts != null)
+      return;
+
+    if (!AssetDatabase.IsValidFolder("Assets/EditorData"))
+      AssetDatabase.CreateFolder("Assets", "EditorData");
+
+    if (AssetDatabase.LoadMainAssetAtPath(PoseLayoutsAssetPath) != null
+        || System.IO.File.Exists(
+            Path.Combine(
+                Application.dataPath,
+                "EditorData",
+                "ViewportPoseLayouts.asset")))
+    {
+      AssetDatabase.DeleteAsset(PoseLayoutsAssetPath);
+    }
+
+    poseLayouts = ScriptableObject.CreateInstance<ViewportPoseLayouts>();
+    AssetDatabase.CreateAsset(poseLayouts, PoseLayoutsAssetPath);
+    AssetDatabase.SaveAssets();
+  }
+
+  private static string GetPoseMapId()
+  {
+    return DefaultPoseMapId;
+  }
+
+  private ViewportPoseLayoutEntry FindPoseEntry(
+      string mapId,
+      int x,
+      int y,
+      DungeonFacing facing)
+  {
+    if (poseLayouts == null || poseLayouts.Entries == null)
+      return null;
+
+    for (int i = 0; i < poseLayouts.Entries.Count; i++)
+    {
+      ViewportPoseLayoutEntry entry = poseLayouts.Entries[i];
+      if (entry == null)
+        continue;
+
+      if (entry.MapId == mapId
+          && entry.X == x
+          && entry.Y == y
+          && entry.Facing == facing)
+      {
+        return entry;
+      }
+    }
+
+    return null;
+  }
+
+  private void SaveCurrentPoseLayout()
+  {
+    if (Application.isPlaying || layout == null || layout.Pieces == null)
+      return;
+
+    EnsurePoseLayoutsAsset();
+    if (poseLayouts == null)
+      return;
+
+    string mapId = GetPoseMapId();
+    ViewportPoseLayoutEntry entry = FindPoseEntry(
+        mapId,
+        previewX,
+        previewY,
+        previewFacing);
+
+    if (entry == null)
+    {
+      entry = new ViewportPoseLayoutEntry
+      {
+        MapId = mapId,
+        X = previewX,
+        Y = previewY,
+        Facing = previewFacing,
+        Pieces = new System.Collections.Generic.List<ViewportPieceSnapshot>()
+      };
+      poseLayouts.Entries.Add(entry);
+    }
+
+    entry.Pieces.Clear();
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPieceSnapshot snap =
+          ViewportPieceSnapshot.FromPiece(layout.Pieces[i]);
+      if (snap != null)
+        entry.Pieces.Add(snap);
+    }
+
+    EditorUtility.SetDirty(poseLayouts);
+  }
+
+  private void LoadOrCreatePoseLayout()
+  {
+    if (Application.isPlaying || layout == null || layout.Pieces == null)
+      return;
+
+    EnsurePoseLayoutsAsset();
+    if (poseLayouts == null)
+      return;
+
+    string mapId = GetPoseMapId();
+    ViewportPoseLayoutEntry entry = FindPoseEntry(
+        mapId,
+        previewX,
+        previewY,
+        previewFacing);
+
+    if (entry == null || entry.Pieces == null || entry.Pieces.Count == 0)
+    {
+      // New pose: snapshot current arrangement as its starting layout.
+      SaveCurrentPoseLayout();
+      return;
+    }
+
+    Undo.RecordObject(layout, "Load Viewport Pose Layout");
+    layout.Pieces.Clear();
+    for (int i = 0; i < entry.Pieces.Count; i++)
+    {
+      ViewportPieceSnapshot snap = entry.Pieces[i];
+      if (snap == null)
+        continue;
+      layout.Pieces.Add(snap.ToPiece());
+    }
+
+    EditorUtility.SetDirty(layout);
   }
 
   private void EnsurePreviewMiniMapLoaded()
@@ -1966,6 +2168,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     EditorUtility.SetDirty(layout);
+    SaveCurrentPoseLayout();
     AssetDatabase.SaveAssets();
     RefreshDungeonRenderer();
     RefreshEditModePreview();
