@@ -25,8 +25,19 @@ public class ViewportLayoutEditor : EditorWindow
   private const string HallOfChampionsMapPath =
       "Assets/Data/Maps/HallOfChampions.json";
 
+  private const string CommittedSouthLayoutPath =
+      "Assets/Dungeon Master/ViewportLayout.asset";
+  private const string WorkingWestLayoutPath =
+      "Assets/Dungeon Master/ViewportLayout_1_2_West_WORKING.asset";
+
   private const int PreviewWidth = 320;
   private const int PreviewHeight = 200;
+
+  private enum LayoutEditTarget
+  {
+    CommittedSouth = 0,
+    WorkingWest = 1
+  }
   // Matches DungeonRenderer dungeon UV crop (bottom-left of 320×200).
   private const int DungeonCaptureWidth = 224;
   private const int DungeonCaptureHeight = 136;
@@ -147,6 +158,7 @@ public class ViewportLayoutEditor : EditorWindow
     RestorePersistedAssets();
     ReloadLayoutFromDisk();
     RestoreSessionPrefs();
+    ApplyPoseForSelectedLayoutAsset();
     EditorApplication.update += MaintainOverlayVisual;
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
     // Force a fresh compose from the loaded asset Enabled flags.
@@ -200,6 +212,7 @@ public class ViewportLayoutEditor : EditorWindow
     editorScroll = EditorGUILayout.BeginScrollView(editorScroll);
 
     DrawOverlayControls();
+    DrawLayoutEditTargetControls();
 
     EditorGUI.BeginChangeCheck();
     ViewportLayout newLayout = (ViewportLayout)EditorGUILayout.ObjectField(
@@ -209,12 +222,7 @@ public class ViewportLayoutEditor : EditorWindow
         false);
     if (EditorGUI.EndChangeCheck())
     {
-      layout = newLayout;
-      rememberedEnabledStates = null;
-      selectedPieceIndex = 0;
-      SaveAssetGuid(PrefsLayoutGuidKey, layout);
-      SaveSessionPrefs();
-      RefreshEditModePreview();
+      SelectLayoutAsset(newLayout);
     }
 
     EditorGUI.BeginChangeCheck();
@@ -903,6 +911,97 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.Space();
   }
 
+  private void DrawLayoutEditTargetControls()
+  {
+    EditorGUILayout.LabelField(
+        "Layout Edit Target",
+        EditorStyles.boldLabel);
+    EditorGUILayout.HelpBox(
+        "Committed South stays in ViewportLayout.asset. "
+            + "West authoring uses ViewportLayout_1_2_West_WORKING.asset only.",
+        MessageType.Info);
+
+    LayoutEditTarget current = GetLayoutEditTarget(layout);
+    EditorGUI.BeginChangeCheck();
+    LayoutEditTarget next = (LayoutEditTarget)EditorGUILayout.EnumPopup(
+        "Edit Target",
+        current);
+    if (EditorGUI.EndChangeCheck() && next != current)
+      SelectLayoutEditTarget(next);
+
+    EditorGUILayout.Space();
+  }
+
+  private static LayoutEditTarget GetLayoutEditTarget(ViewportLayout asset)
+  {
+    if (asset == null)
+      return LayoutEditTarget.CommittedSouth;
+
+    string path = AssetDatabase.GetAssetPath(asset);
+    if (path == WorkingWestLayoutPath)
+      return LayoutEditTarget.WorkingWest;
+
+    return LayoutEditTarget.CommittedSouth;
+  }
+
+  private void SelectLayoutEditTarget(LayoutEditTarget target)
+  {
+    string path = target == LayoutEditTarget.WorkingWest
+        ? WorkingWestLayoutPath
+        : CommittedSouthLayoutPath;
+
+    ViewportLayout loaded =
+        AssetDatabase.LoadAssetAtPath<ViewportLayout>(path);
+    if (loaded == null)
+    {
+      Debug.LogError(
+          "ViewportLayoutEditor: missing layout asset at " + path);
+      return;
+    }
+
+    SelectLayoutAsset(loaded);
+  }
+
+  private void SelectLayoutAsset(ViewportLayout newLayout)
+  {
+    if (newLayout == layout)
+    {
+      ApplyPoseForSelectedLayoutAsset();
+      RefreshEditModePreview();
+      return;
+    }
+
+    if (layout != null && !Application.isPlaying)
+      AssetDatabase.SaveAssetIfDirty(layout);
+
+    layout = newLayout;
+    rememberedEnabledStates = null;
+    selectedPieceIndex = 0;
+    ClampSelectedPieceIndex();
+    SaveAssetGuid(PrefsLayoutGuidKey, layout);
+    ApplyPoseForSelectedLayoutAsset();
+    SaveSessionPrefs();
+    ReloadLayoutFromDisk();
+    RefreshEditModePreview();
+    Repaint();
+  }
+
+  private void ApplyPoseForSelectedLayoutAsset()
+  {
+    previewX = 1;
+    previewY = 2;
+
+    if (GetLayoutEditTarget(layout) == LayoutEditTarget.WorkingWest)
+      previewFacing = DungeonFacing.West;
+    else
+      previewFacing = DungeonFacing.South;
+
+    if (previewMiniMap != null)
+      previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
+
+    SaveSessionPrefs();
+  }
+
   private void RestorePersistedAssets()
   {
     string savedLayoutGuid =
@@ -910,7 +1009,13 @@ public class ViewportLayoutEditor : EditorWindow
 
     layout = LoadViewportLayoutByGuid(savedLayoutGuid);
 
-    if (layout == null && string.IsNullOrEmpty(savedLayoutGuid))
+    if (layout == null)
+    {
+      layout = AssetDatabase.LoadAssetAtPath<ViewportLayout>(
+          CommittedSouthLayoutPath);
+    }
+
+    if (layout == null)
       layout = FindSingleViewportLayoutAsset();
 
     if (layout != null)
@@ -1292,8 +1397,9 @@ public class ViewportLayoutEditor : EditorWindow
         "Map Pose Preview",
         EditorStyles.boldLabel);
     EditorGUILayout.HelpBox(
-        "Preview X / Y / Facing move the map pose. Layout pieces come from "
-            + "ViewportLayout.asset (Enabled decides draw).",
+        "Preview pose follows the selected layout target "
+            + "(South → 1,2 South; West working → 1,2 West). "
+            + "Wall pieces are edited on the selected asset only.",
         MessageType.None);
 
     int editX = previewX;
@@ -2445,21 +2551,31 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Preview-only visibility. Does not write piece.Enabled / Mirror / X / Y.
-  /// Authored Enabled alone decides whether a piece draws — map pose must not
-  /// hide walls in the layout preview.
+  /// Preview draw gate via shared ViewportPatternCatalog.
+  /// Does not write piece.Enabled / Mirror / X / Y.
   /// </summary>
   private bool ShouldDrawPieceAtPreviewPose(
       ViewportPiece piece,
       DungeonMap poseMap)
   {
-    if (piece == null)
-      return false;
+    if (poseMap == null)
+    {
+      if (piece == null)
+        return false;
 
-    if (piece.Graphic == DungeonGraphicType.None)
-      return false;
+      if (piece.Graphic == DungeonGraphicType.None)
+        return false;
 
-    return piece.Enabled;
+      return piece.Enabled;
+    }
+
+    return ViewportPatternCatalog.ShouldDrawPiece(
+        piece,
+        poseMap,
+        previewX,
+        previewY,
+        previewFacing,
+        warnUnknownKeyInEditor: true);
   }
 
   /// <summary>

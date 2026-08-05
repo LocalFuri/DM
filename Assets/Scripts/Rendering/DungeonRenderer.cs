@@ -1579,22 +1579,21 @@ namespace DM.Rendering
       if (piece == null)
         return false;
 
-      if (piece.Graphic == DungeonGraphicType.None)
-        return false;
-
-      // Viewport Layout Editor Solo / Enabled must gate every piece.
-      if (!piece.Enabled)
-        return false;
-
-      if (IsDepthWallGraphic(piece.Graphic))
+      if (currentMap == null)
       {
-        if (currentMap == null)
-          return true;
+        if (piece.Graphic == DungeonGraphicType.None)
+          return false;
 
-        return IsDepthWallVisible(piece.Graphic);
+        return piece.Enabled;
       }
 
-      return true;
+      return ViewportPatternCatalog.ShouldDrawPiece(
+          piece,
+          currentMap,
+          currentMap.PlayerX,
+          currentMap.PlayerY,
+          currentMap.PlayerFacing,
+          warnUnknownKeyInEditor: false);
     }
 
     private static bool IsF1WallGraphic(DungeonGraphicType graphic)
