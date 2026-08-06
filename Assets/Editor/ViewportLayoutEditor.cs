@@ -9,10 +9,7 @@ public class ViewportLayoutEditor : EditorWindow
 {
   private static readonly int[] SnapValues = { 1, 2, 4, 8 };
 
-  private const string OverlayObjectName = "___DM_ViewportReferenceOverlay";
   private const string PrefsLayoutGuidKey = "ViewportLayoutEditor.LayoutGuid";
-  private const string PrefsReferenceTextureGuidKey =
-      "ViewportLayoutEditor.ReferenceTextureGuid";
   private const string PrefsGraphicsGuidKey =
       "ViewportLayoutEditor.GraphicsGuid";
   private const string PrefsPreviewXKey = "ViewportLayoutEditor.PreviewX";
@@ -56,13 +53,7 @@ public class ViewportLayoutEditor : EditorWindow
   private int selectedPieceIndex;
   private bool selectionChangedThisFrame;
 
-  private Texture2D referenceTexture;
-  private bool showOverlay;
-  private float overlayOpacity = 0.5f;
   private RawImage cachedViewportImage;
-
-  private GameObject overlayObject;
-  private RawImage overlayImage;
 
   private Texture2D editModePreviewTexture;
   private Texture savedViewportTexture;
@@ -159,7 +150,6 @@ public class ViewportLayoutEditor : EditorWindow
     ReloadLayoutFromDisk();
     RestoreSessionPrefs();
     ApplyPoseForSelectedLayoutAsset();
-    EditorApplication.update += MaintainOverlayVisual;
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
     // Force a fresh compose from the loaded asset Enabled flags.
     DestroyEditModePreviewTextureOnly();
@@ -169,13 +159,10 @@ public class ViewportLayoutEditor : EditorWindow
   private void OnDisable()
   {
     SaveAssetGuid(PrefsLayoutGuidKey, layout);
-    SaveAssetGuid(PrefsReferenceTextureGuidKey, referenceTexture);
     SaveAssetGuid(PrefsGraphicsGuidKey, graphics);
     SaveSessionPrefs();
 
-    EditorApplication.update -= MaintainOverlayVisual;
     EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
-    DestroyOverlayObject();
     RestoreViewportTextureAndDestroyPreview();
     RepaintGameViews();
   }
@@ -183,7 +170,6 @@ public class ViewportLayoutEditor : EditorWindow
   private void HandlePlayModeStateChanged(PlayModeStateChange state)
   {
     cachedViewportImage = null;
-    DestroyOverlayObject();
 
     if (state == PlayModeStateChange.ExitingEditMode
         || state == PlayModeStateChange.EnteredPlayMode)
@@ -211,7 +197,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     editorScroll = EditorGUILayout.BeginScrollView(editorScroll);
 
-    DrawOverlayControls();
     DrawLayoutEditTargetControls();
 
     EditorGUI.BeginChangeCheck();
@@ -722,7 +707,6 @@ public class ViewportLayoutEditor : EditorWindow
     if (dungeonImage.canvas != null)
       Canvas.ForceUpdateCanvases();
 
-    MaintainOverlayVisual();
     MaintainMovementArrowsPreview();
     LogAllSceneRawImages("PresentEditModePreviewToGameView AFTER assign");
     RepaintGameViews();
@@ -808,7 +792,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     foreach (RawImage image in images)
     {
-      if (image == null || image.gameObject.name == OverlayObjectName)
+      if (image == null)
         continue;
 
       if (image.gameObject.name == "DungeonViewport")
@@ -818,7 +802,7 @@ public class ViewportLayoutEditor : EditorWindow
     // Prefer the RawImage currently displaying our preview texture.
     foreach (RawImage image in images)
     {
-      if (image == null || image.gameObject.name == OverlayObjectName)
+      if (image == null)
         continue;
 
       if (editModePreviewTexture != null
@@ -830,7 +814,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     foreach (RawImage image in images)
     {
-      if (image == null || image.gameObject.name == OverlayObjectName)
+      if (image == null)
         continue;
 
       if (image.texture is RenderTexture)
@@ -876,39 +860,6 @@ public class ViewportLayoutEditor : EditorWindow
         selectedPieceIndex,
         0,
         layout.Pieces.Count - 1);
-  }
-
-  private void DrawOverlayControls()
-  {
-    EditorGUILayout.LabelField("Reference Overlay", EditorStyles.boldLabel);
-
-    EditorGUI.BeginChangeCheck();
-    referenceTexture = (Texture2D)EditorGUILayout.ObjectField(
-        "Reference Texture",
-        referenceTexture,
-        typeof(Texture2D),
-        false);
-    if (EditorGUI.EndChangeCheck())
-      SaveAssetGuid(PrefsReferenceTextureGuidKey, referenceTexture);
-
-    EditorGUI.BeginChangeCheck();
-
-    showOverlay = EditorGUILayout.Toggle("Show Overlay", showOverlay);
-
-    overlayOpacity = EditorGUILayout.Slider(
-        "Overlay Opacity",
-        overlayOpacity,
-        0f,
-        1f);
-
-    if (EditorGUI.EndChangeCheck())
-    {
-      MaintainOverlayVisual();
-      MaintainMovementArrowsPreview();
-      RepaintGameViews();
-    }
-
-    EditorGUILayout.Space();
   }
 
   private void DrawLayoutEditTargetControls()
@@ -1020,9 +971,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (layout != null)
       SaveAssetGuid(PrefsLayoutGuidKey, layout);
-
-    referenceTexture = LoadTextureByGuid(
-        EditorPrefs.GetString(PrefsReferenceTextureGuidKey, string.Empty));
 
     graphics = LoadDungeonGraphicsByGuid(
         EditorPrefs.GetString(PrefsGraphicsGuidKey, string.Empty));
@@ -1148,33 +1096,6 @@ public class ViewportLayoutEditor : EditorWindow
     return AssetDatabase.LoadAssetAtPath<DungeonGraphics>(path);
   }
 
-  private static Texture2D LoadTextureByGuid(string guid)
-  {
-    if (string.IsNullOrEmpty(guid))
-      return null;
-
-    string path = AssetDatabase.GUIDToAssetPath(guid);
-    if (string.IsNullOrEmpty(path))
-      return null;
-
-    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-    if (texture != null)
-      return texture;
-
-    Object[] assets = AssetDatabase.LoadAllAssetsAtPath(path);
-    for (int i = 0; i < assets.Length; i++)
-    {
-      if (assets[i] is Texture2D texture2D)
-        return texture2D;
-    }
-
-    Object main = AssetDatabase.LoadMainAssetAtPath(path);
-    if (main is Sprite sprite && sprite.texture != null)
-      return sprite.texture;
-
-    return null;
-  }
-
   private static void SaveAssetGuid(string prefsKey, Object asset)
   {
     if (asset == null)
@@ -1222,112 +1143,6 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.EndHorizontal();
   }
 
-  private void MaintainOverlayVisual()
-  {
-    // Never draw the reference overlay during Play Mode — it is a
-    // duplicate RawImage on the Canvas and shows up over gameplay.
-    if (Application.isPlaying)
-    {
-      DestroyOverlayObject();
-      return;
-    }
-
-    bool wantReference = showOverlay && referenceTexture != null;
-    if (!wantReference)
-    {
-      DestroyOverlayObject();
-      return;
-    }
-
-    if (!TryGetViewportRawImage(out RawImage dungeonImage))
-    {
-      DestroyOverlayObject();
-      return;
-    }
-
-    if (!dungeonImage.isActiveAndEnabled)
-    {
-      DestroyOverlayObject();
-      return;
-    }
-
-    if (!EnsureOverlayObject(dungeonImage))
-      return;
-
-    SyncOverlayTransform(dungeonImage);
-    ApplyOverlayAppearance(dungeonImage);
-    MaintainMovementArrowsPreview();
-  }
-
-  private bool EnsureOverlayObject(RawImage dungeonImage)
-  {
-    if (overlayObject == null)
-    {
-      overlayObject = GameObject.Find(OverlayObjectName);
-      if (overlayObject != null)
-        overlayImage = overlayObject.GetComponent<RawImage>();
-    }
-
-    if (overlayObject == null)
-    {
-      overlayObject = new GameObject(OverlayObjectName);
-      overlayObject.hideFlags = HideFlags.DontSave;
-      overlayImage = overlayObject.AddComponent<RawImage>();
-    }
-
-    if (overlayImage == null)
-    {
-      DestroyOverlayObject();
-      return false;
-    }
-
-    overlayImage.raycastTarget = false;
-
-    Transform parent = dungeonImage.transform;
-    if (overlayObject.transform.parent != parent)
-      overlayObject.transform.SetParent(parent, false);
-
-    overlayObject.transform.SetAsLastSibling();
-    return true;
-  }
-
-  private void SyncOverlayTransform(RawImage dungeonImage)
-  {
-    RectTransform dest = overlayImage.rectTransform;
-
-    // Fill the 320×200 preview RawImage so piece UI (arrows) can draw above.
-    dest.anchorMin = Vector2.zero;
-    dest.anchorMax = Vector2.one;
-    dest.pivot = new Vector2(0.5f, 0.5f);
-    dest.anchoredPosition = Vector2.zero;
-    dest.sizeDelta = Vector2.zero;
-    dest.offsetMin = Vector2.zero;
-    dest.offsetMax = Vector2.zero;
-    dest.localScale = Vector3.one;
-    dest.localRotation = Quaternion.identity;
-  }
-
-  private void ApplyOverlayAppearance(RawImage dungeonImage)
-  {
-    overlayImage.texture = referenceTexture;
-    overlayImage.uvRect = dungeonImage.uvRect;
-    overlayImage.color = new Color(1f, 1f, 1f, overlayOpacity);
-  }
-
-  private void DestroyOverlayObject()
-  {
-    if (overlayObject != null)
-    {
-      if (Application.isPlaying)
-        Object.Destroy(overlayObject);
-      else
-        Object.DestroyImmediate(overlayObject);
-    }
-
-    overlayObject = null;
-    overlayImage = null;
-  }
-
   private bool TryGetViewportRawImage(out RawImage viewportImage)
   {
     if (cachedViewportImage == null)
@@ -1351,7 +1166,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     foreach (RawImage image in images)
     {
-      if (image == null || image.gameObject.name == OverlayObjectName)
+      if (image == null)
         continue;
 
       if (image.gameObject.name == "DungeonViewport")
@@ -1360,7 +1175,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     foreach (RawImage image in images)
     {
-      if (image == null || image.gameObject.name == OverlayObjectName)
+      if (image == null)
         continue;
 
       if (image.texture is RenderTexture)
@@ -2125,7 +1940,6 @@ public class ViewportLayoutEditor : EditorWindow
     if (dungeonImage.canvas != null)
       Canvas.ForceUpdateCanvases();
 
-    MaintainOverlayVisual();
     MaintainMovementArrowsPreview();
     RepaintGameViews();
   }
