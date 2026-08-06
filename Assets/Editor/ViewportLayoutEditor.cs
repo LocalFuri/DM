@@ -27,10 +27,6 @@ public class ViewportLayoutEditor : EditorWindow
 
   private const int PreviewWidth = 320;
   private const int PreviewHeight = 200;
-  // Matches DungeonRenderer dungeon UV crop (bottom-left of 320×200).
-  private const int DungeonCaptureWidth = 224;
-  private const int DungeonCaptureHeight = 136;
-  private const string NativeCaptureFolderRelative = "Captures/Dungeon";
 
   [System.NonSerialized]
   private ViewportLayout layout;
@@ -1070,115 +1066,8 @@ public class ViewportLayoutEditor : EditorWindow
     if (EditorGUI.EndChangeCheck())
       SwitchPreviewPose(editX, editY, editFacing);
 
-    EditorGUILayout.Space();
-    EditorGUILayout.LabelField(
-        "Native Pixel Capture",
-        EditorStyles.boldLabel);
-    EditorGUILayout.HelpBox(
-        "Writes PNG from the composed Texture2D at native size "
-            + "(no Game View / Canvas scaling).",
-        MessageType.None);
-
-    using (new EditorGUI.DisabledScope(Application.isPlaying))
-    {
-      if (GUILayout.Button("Capture 224×136 Dungeon PNG"))
-        CaptureNativePreviewPng(DungeonCaptureWidth, DungeonCaptureHeight);
-
-      if (GUILayout.Button("Capture 320×200 Framebuffer PNG"))
-        CaptureNativePreviewPng(PreviewWidth, PreviewHeight);
-    }
-
     DrawEnvironmentPhaseStatus();
     DrawPreviewMiniMap();
-  }
-
-  /// <summary>
-  /// Saves the composed Edit Mode preview Texture2D via GetPixels32 at the
-  /// requested native size. No resize, filter, or Game View involvement.
-  /// </summary>
-  private void CaptureNativePreviewPng(int width, int height)
-  {
-    if (Application.isPlaying)
-    {
-      Debug.LogWarning(
-          "Native PNG capture is Edit Mode only (composed preview buffer).");
-      return;
-    }
-
-    if (layout == null || graphics == null)
-    {
-      Debug.LogWarning(
-          "Native PNG capture: assign ViewportLayout and DungeonGraphics first.");
-      return;
-    }
-
-    if (width <= 0
-        || height <= 0
-        || width > PreviewWidth
-        || height > PreviewHeight)
-    {
-      Debug.LogError(
-          $"Native PNG capture: invalid size {width}×{height} "
-              + $"(max {PreviewWidth}×{PreviewHeight}).");
-      return;
-    }
-
-    EnsureEditModePreviewTexture();
-    ComposeEditModePreview();
-    if (editModePreviewTexture == null)
-    {
-      Debug.LogError("Native PNG capture: preview texture missing after compose.");
-      return;
-    }
-
-    editModePreviewTexture.Apply(false);
-
-    Color32[] full = editModePreviewTexture.GetPixels32();
-    Color32[] region = new Color32[width * height];
-
-    // Texture2D origin is bottom-left — same as the dungeon UV crop.
-    for (int y = 0; y < height; y++)
-    {
-      int srcRow = y * PreviewWidth;
-      int dstRow = y * width;
-      for (int x = 0; x < width; x++)
-        region[dstRow + x] = full[srcRow + x];
-    }
-
-    Texture2D capture = new Texture2D(
-        width,
-        height,
-        TextureFormat.RGBA32,
-        false)
-    {
-      name = "NativeDungeonCapture",
-      filterMode = FilterMode.Point,
-      wrapMode = TextureWrapMode.Clamp,
-      hideFlags = HideFlags.HideAndDontSave
-    };
-    capture.SetPixels32(region);
-    capture.Apply(false);
-
-    byte[] png = capture.EncodeToPNG();
-    Object.DestroyImmediate(capture);
-
-    if (png == null || png.Length == 0)
-    {
-      Debug.LogError("Native PNG capture: EncodeToPNG failed.");
-      return;
-    }
-
-    string folder = Path.GetFullPath(
-        Path.Combine(Application.dataPath, "..", NativeCaptureFolderRelative));
-    Directory.CreateDirectory(folder);
-
-    string fileName =
-        $"dungeon_x{previewX}_y{previewY}_{previewFacing}_{width}x{height}.png";
-    string path = Path.Combine(folder, fileName);
-    File.WriteAllBytes(path, png);
-
-    Debug.Log(
-        $"Native PNG capture written ({width}×{height}, no resampling): {path}");
   }
 
   private void DrawEnvironmentPhaseStatus()
