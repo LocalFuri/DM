@@ -1066,67 +1066,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (EditorGUI.EndChangeCheck())
       SwitchPreviewPose(editX, editY, editFacing);
 
-    DrawEnvironmentPhaseStatus();
     DrawPreviewMiniMap();
-  }
-
-  private void DrawEnvironmentPhaseStatus()
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null)
-      return;
-
-    bool phaseB = StraightF1WallLogic.IsEnvironmentPhaseB(
-        previewFacing,
-        previewX,
-        previewY);
-
-    string phaseLabel = phaseB
-        ? "B (mirrored)"
-        : "A (normal)";
-
-    EditorGUILayout.Space();
-    EditorGUILayout.LabelField(
-        "Environment Phase",
-        EditorStyles.boldLabel);
-    EditorGUILayout.LabelField("Active phase", phaseLabel);
-    EditorGUILayout.LabelField(
-        "Ceiling / Floor / F1 share this phase across the 224×136 view.",
-        EditorStyles.miniLabel);
-    EditorGUILayout.LabelField(
-        "Phase mirror (Ceiling & Floor)",
-        phaseB ? "ON" : "OFF");
-
-    ViewportPiece ceiling = FindPieceByGraphic(DungeonGraphicType.Ceiling);
-    ViewportPiece floor = FindPieceByGraphic(DungeonGraphicType.Floor);
-    if (ceiling != null)
-    {
-      EditorGUILayout.LabelField(
-          "Ceiling Mirror Horizontally (stored)",
-          ceiling.MirrorHorizontally ? "ON" : "OFF");
-    }
-
-    if (floor != null)
-    {
-      EditorGUILayout.LabelField(
-          "Floor Mirror Horizontally (stored)",
-          floor.MirrorHorizontally ? "ON" : "OFF");
-    }
-  }
-
-  private ViewportPiece FindPieceByGraphic(DungeonGraphicType graphic)
-  {
-    if (layout == null || layout.Pieces == null)
-      return null;
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece != null && piece.Graphic == graphic)
-        return piece;
-    }
-
-    return null;
   }
 
   private void DrawPreviewMiniMap()
