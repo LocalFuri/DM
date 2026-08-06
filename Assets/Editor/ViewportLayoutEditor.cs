@@ -22,19 +22,11 @@ public class ViewportLayoutEditor : EditorWindow
   private const string HallOfChampionsMapPath =
       "Assets/Data/Maps/HallOfChampions.json";
 
-  private const string CommittedSouthLayoutPath =
+  private const string DefaultViewportLayoutPath =
       "Assets/Dungeon Master/ViewportLayout.asset";
-  private const string WorkingWestLayoutPath =
-      "Assets/Dungeon Master/ViewportLayout_1_2_West_WORKING.asset";
 
   private const int PreviewWidth = 320;
   private const int PreviewHeight = 200;
-
-  private enum LayoutEditTarget
-  {
-    CommittedSouth = 0,
-    WorkingWest = 1
-  }
   // Matches DungeonRenderer dungeon UV crop (bottom-left of 320×200).
   private const int DungeonCaptureWidth = 224;
   private const int DungeonCaptureHeight = 136;
@@ -149,7 +141,6 @@ public class ViewportLayoutEditor : EditorWindow
     RestorePersistedAssets();
     ReloadLayoutFromDisk();
     RestoreSessionPrefs();
-    ApplyPoseForSelectedLayoutAsset();
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
     // Force a fresh compose from the loaded asset Enabled flags.
     DestroyEditModePreviewTextureOnly();
@@ -197,8 +188,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     editorScroll = EditorGUILayout.BeginScrollView(editorScroll);
 
-    DrawLayoutEditTargetControls();
-
     EditorGUI.BeginChangeCheck();
     ViewportLayout newLayout = (ViewportLayout)EditorGUILayout.ObjectField(
         "Viewport Layout",
@@ -207,7 +196,12 @@ public class ViewportLayoutEditor : EditorWindow
         false);
     if (EditorGUI.EndChangeCheck())
     {
-      SelectLayoutAsset(newLayout);
+      layout = newLayout;
+      rememberedEnabledStates = null;
+      selectedPieceIndex = 0;
+      SaveAssetGuid(PrefsLayoutGuidKey, layout);
+      SaveSessionPrefs();
+      RefreshEditModePreview();
     }
 
     EditorGUI.BeginChangeCheck();
@@ -862,97 +856,6 @@ public class ViewportLayoutEditor : EditorWindow
         layout.Pieces.Count - 1);
   }
 
-  private void DrawLayoutEditTargetControls()
-  {
-    EditorGUILayout.LabelField(
-        "Layout Edit Target",
-        EditorStyles.boldLabel);
-    EditorGUILayout.HelpBox(
-        "Committed South stays in ViewportLayout.asset. "
-            + "West authoring uses ViewportLayout_1_2_West_WORKING.asset only.",
-        MessageType.Info);
-
-    LayoutEditTarget current = GetLayoutEditTarget(layout);
-    EditorGUI.BeginChangeCheck();
-    LayoutEditTarget next = (LayoutEditTarget)EditorGUILayout.EnumPopup(
-        "Edit Target",
-        current);
-    if (EditorGUI.EndChangeCheck() && next != current)
-      SelectLayoutEditTarget(next);
-
-    EditorGUILayout.Space();
-  }
-
-  private static LayoutEditTarget GetLayoutEditTarget(ViewportLayout asset)
-  {
-    if (asset == null)
-      return LayoutEditTarget.CommittedSouth;
-
-    string path = AssetDatabase.GetAssetPath(asset);
-    if (path == WorkingWestLayoutPath)
-      return LayoutEditTarget.WorkingWest;
-
-    return LayoutEditTarget.CommittedSouth;
-  }
-
-  private void SelectLayoutEditTarget(LayoutEditTarget target)
-  {
-    string path = target == LayoutEditTarget.WorkingWest
-        ? WorkingWestLayoutPath
-        : CommittedSouthLayoutPath;
-
-    ViewportLayout loaded =
-        AssetDatabase.LoadAssetAtPath<ViewportLayout>(path);
-    if (loaded == null)
-    {
-      Debug.LogError(
-          "ViewportLayoutEditor: missing layout asset at " + path);
-      return;
-    }
-
-    SelectLayoutAsset(loaded);
-  }
-
-  private void SelectLayoutAsset(ViewportLayout newLayout)
-  {
-    if (newLayout == layout)
-    {
-      ApplyPoseForSelectedLayoutAsset();
-      RefreshEditModePreview();
-      return;
-    }
-
-    if (layout != null && !Application.isPlaying)
-      AssetDatabase.SaveAssetIfDirty(layout);
-
-    layout = newLayout;
-    rememberedEnabledStates = null;
-    selectedPieceIndex = 0;
-    ClampSelectedPieceIndex();
-    SaveAssetGuid(PrefsLayoutGuidKey, layout);
-    ApplyPoseForSelectedLayoutAsset();
-    SaveSessionPrefs();
-    ReloadLayoutFromDisk();
-    RefreshEditModePreview();
-    Repaint();
-  }
-
-  private void ApplyPoseForSelectedLayoutAsset()
-  {
-    previewX = 1;
-    previewY = 2;
-
-    if (GetLayoutEditTarget(layout) == LayoutEditTarget.WorkingWest)
-      previewFacing = DungeonFacing.West;
-    else
-      previewFacing = DungeonFacing.South;
-
-    if (previewMiniMap != null)
-      previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
-
-    SaveSessionPrefs();
-  }
-
   private void RestorePersistedAssets()
   {
     string savedLayoutGuid =
@@ -963,7 +866,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (layout == null)
     {
       layout = AssetDatabase.LoadAssetAtPath<ViewportLayout>(
-          CommittedSouthLayoutPath);
+          DefaultViewportLayoutPath);
     }
 
     if (layout == null)
@@ -1212,9 +1115,8 @@ public class ViewportLayoutEditor : EditorWindow
         "Map Pose Preview",
         EditorStyles.boldLabel);
     EditorGUILayout.HelpBox(
-        "Preview pose follows the selected layout target "
-            + "(South → 1,2 South; West working → 1,2 West). "
-            + "Wall pieces are edited on the selected asset only.",
+        "Preview X / Y / Facing move the map pose. "
+            + "Layout pieces come from the selected ViewportLayout asset.",
         MessageType.None);
 
     int editX = previewX;
