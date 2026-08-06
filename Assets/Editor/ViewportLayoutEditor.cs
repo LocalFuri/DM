@@ -453,29 +453,6 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.Space();
     EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-    EditorGUILayout.BeginHorizontal();
-
-    using (new EditorGUI.DisabledScope(layout.Pieces.Count == 0))
-    {
-      if (GUILayout.Button("Previous Piece"))
-      {
-        SelectPiece(
-            selectedPieceIndex <= 0
-                ? layout.Pieces.Count - 1
-                : selectedPieceIndex - 1);
-      }
-
-      if (GUILayout.Button("Next Piece"))
-      {
-        SelectPiece(
-            selectedPieceIndex >= layout.Pieces.Count - 1
-                ? 0
-                : selectedPieceIndex + 1);
-      }
-    }
-
-    EditorGUILayout.EndHorizontal();
-
     if (layout.Pieces.Count == 0)
     {
       EditorGUILayout.LabelField("No viewport pieces.", EditorStyles.boldLabel);
