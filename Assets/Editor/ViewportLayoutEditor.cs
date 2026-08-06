@@ -243,7 +243,6 @@ public class ViewportLayoutEditor : EditorWindow
     ClampSelectedPieceIndex();
     HandlePreviewFacingKeyboard();
     HandlePreviewStrafeKeyboard();
-    DrawSelectedPieceHeader();
 
     DrawMapPosePreviewControls();
 
@@ -446,43 +445,6 @@ public class ViewportLayoutEditor : EditorWindow
     selectedPieceIndex = clamped;
     SaveSessionPrefs();
     GUI.FocusControl(null);
-  }
-
-  private void DrawSelectedPieceHeader()
-  {
-    EditorGUILayout.Space();
-    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-
-    if (layout.Pieces.Count == 0)
-    {
-      EditorGUILayout.LabelField("No viewport pieces.", EditorStyles.boldLabel);
-      EditorGUILayout.EndVertical();
-      return;
-    }
-
-    ClampSelectedPieceIndex();
-    ViewportPiece selected = layout.Pieces[selectedPieceIndex];
-    string pieceLabel = string.IsNullOrEmpty(selected.Name)
-        ? "(unnamed)"
-        : selected.Name;
-
-    EditorGUILayout.LabelField(
-        $"Selected: {pieceLabel}  ({selectedPieceIndex + 1}/{layout.Pieces.Count})",
-        EditorStyles.boldLabel);
-
-    GUIStyle positionStyle = new GUIStyle(EditorStyles.boldLabel)
-    {
-      fontSize = 18,
-      alignment = TextAnchor.MiddleLeft
-    };
-
-    EditorGUILayout.LabelField($"X: {selected.X}    Y: {selected.Y}", positionStyle);
-    EditorGUILayout.LabelField(
-        "Up/Down move preview. Left/Right strafe preview. Delete/PageDown turn.",
-        EditorStyles.miniLabel);
-
-    EditorGUILayout.EndVertical();
-    EditorGUILayout.Space();
   }
 
   private void HandlePreviewFacingKeyboard()
