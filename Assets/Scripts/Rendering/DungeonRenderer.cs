@@ -1714,7 +1714,12 @@ namespace DM.Rendering
 
         for (int destX = 0; destX < DungeonViewWidth; destX++)
         {
-          int srcX = StraightF1WallLogic.SourceX(destX);
+          int srcX = sourceWidth >= DungeonViewWidth
+              ? destX
+              : StraightF1WallLogic.SourceX(destX);
+          if (srcX < 0 || srcX >= sourceWidth)
+            continue;
+
           int writeX = StraightF1WallLogic.WriteDestX(
               destX,
               mirrorHorizontally);

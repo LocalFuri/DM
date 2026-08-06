@@ -144,6 +144,7 @@ namespace DM.Rendering
       Color32[] sourcePixels = source.GetPixels32();
       int sourceWidth = source.width;
       int sourceHeight = source.height;
+      bool alreadyExpanded = sourceWidth >= CompositeWidth;
 
       for (int row = 0; row < sourceHeight; row++)
       {
@@ -156,7 +157,10 @@ namespace DM.Rendering
 
         for (int destX = 0; destX < CompositeWidth; destX++)
         {
-          int srcX = SourceX(destX);
+          int srcX = alreadyExpanded ? destX : SourceX(destX);
+          if (srcX < 0 || srcX >= sourceWidth)
+            continue;
+
           int writeX = WriteDestX(destX, mirrorHorizontally);
           if (writeX < 0 || writeX >= bufferWidth)
             continue;
