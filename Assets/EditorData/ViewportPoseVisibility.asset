@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b727bd93fea95248b0dc7617cddfdeb, type: 3}
+  m_Name: ViewportPoseVisibility
+  m_EditorClassIdentifier: Assembly-CSharp-Editor::ViewportPoseVisibilityStore
+  MapId: HallOfChampions
+  Entries:
+  - X: 1
+    Y: 2
+    Facing: 2
+    PieceNames:
+    - Ceiling
+    - Ceiling Strip 84
+    - Ceiling Strip 85
+    - Floor
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1 A
+    - Front Wall F1 B
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
+    - Movement Arrows
+    - Champion Status Slot 1
+    - Champion Status Slot 2
+    - Champion Status Slot 3
+    - Champion Status Slot 4
+    EnabledFlags: 010000010001010001000000010101010101010101

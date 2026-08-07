@@ -28,10 +28,41 @@ public class ViewportLayoutEditor : EditorWindow
   private const int PreviewWidth = 320;
   private const int PreviewHeight = 200;
 
+  /// <summary>
+  /// Locked (1,2) South kit Enabled baseline for ViewportLayout.asset disk writes.
+  /// Source: LockedBackup/ViewportLayout_1_2_South.asset + walls.txt.
+  /// </summary>
+  private static readonly (string Name, bool Enabled)[] KitBaselineEnabled =
+  {
+    ("Ceiling", true),
+    ("Ceiling Strip 84", false),
+    ("Ceiling Strip 85", false),
+    ("Floor", true),
+    ("Front Wall F3", false),
+    ("Wall F3Left", true),
+    ("Wall F3Right", true),
+    ("Front Wall F2", false),
+    ("Wall F2Left", true),
+    ("Wall F2Right", false),
+    ("Front Wall F1 A", false),
+    ("Front Wall F1 B", false),
+    ("Wall F1Left", true),
+    ("Wall F1Right", true),
+    ("Wall F0Left", true),
+    ("Wall F0Right", true),
+    ("Movement Arrows", true),
+    ("Champion Status Slot 1", true),
+    ("Champion Status Slot 2", true),
+    ("Champion Status Slot 3", true),
+    ("Champion Status Slot 4", true),
+  };
+
   [System.NonSerialized]
   private ViewportLayout layout;
   [System.NonSerialized]
   private DungeonGraphics graphics;
+  [System.NonSerialized]
+  private ViewportPoseVisibilityStore poseVisibilityStore;
   private Vector2 editorScroll;
   private string pieceSearchFilter = string.Empty;
   private bool[] rememberedEnabledStates;
@@ -137,14 +168,18 @@ public class ViewportLayoutEditor : EditorWindow
     RestorePersistedAssets();
     ReloadLayoutFromDisk();
     RestoreSessionPrefs();
+    EnsurePoseVisibilityStore();
+    ApplyCurrentPoseVisibilityToLayout();
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
-    // Force a fresh compose from the loaded asset Enabled flags.
+    // Force a fresh compose from the current pose's Enabled flags.
     DestroyEditModePreviewTextureOnly();
     RefreshEditModePreview();
   }
 
   private void OnDisable()
   {
+    CaptureCurrentPoseVisibilityToStore();
+    PersistPoseVisibilityStore();
     SaveAssetGuid(PrefsLayoutGuidKey, layout);
     SaveAssetGuid(PrefsGraphicsGuidKey, graphics);
     SaveSessionPrefs();
@@ -197,6 +232,8 @@ public class ViewportLayoutEditor : EditorWindow
       selectedPieceIndex = 0;
       SaveAssetGuid(PrefsLayoutGuidKey, layout);
       SaveSessionPrefs();
+      EnsurePoseVisibilityStore();
+      ApplyCurrentPoseVisibilityToLayout();
       RefreshEditModePreview();
     }
 
@@ -1050,8 +1087,9 @@ public class ViewportLayoutEditor : EditorWindow
         "Map Pose Preview",
         EditorStyles.boldLabel);
     EditorGUILayout.HelpBox(
-        "Preview X / Y / Facing move the map pose. "
-            + "Layout pieces come from the selected ViewportLayout asset.",
+        "Preview X / Y / Facing select an independent pose. "
+            + "Enabled flags are stored per X+Y+Facing; "
+            + "Graphic / X / Y / Mirror / order stay on ViewportLayout.",
         MessageType.None);
 
     int editX = previewX;
@@ -1065,6 +1103,15 @@ public class ViewportLayoutEditor : EditorWindow
         editFacing);
     if (EditorGUI.EndChangeCheck())
       SwitchPreviewPose(editX, editY, editFacing);
+
+    using (new EditorGUI.DisabledScope(Application.isPlaying))
+    {
+      if (GUILayout.Button("Disable Walls"))
+      {
+        DisableWallsKeepChrome();
+        PersistChanges();
+      }
+    }
 
     DrawPreviewMiniMap();
   }
@@ -1120,6 +1167,9 @@ public class ViewportLayoutEditor : EditorWindow
     if (newX == previewX && newY == previewY && newFacing == previewFacing)
       return;
 
+    CaptureCurrentPoseVisibilityToStore();
+    PersistPoseVisibilityStore();
+
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
@@ -1128,6 +1178,8 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap != null)
       previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
 
+    ApplyCurrentPoseVisibilityToLayout();
+    PersistPoseVisibilityStore();
     RefreshEditModePreview();
     GUI.changed = true;
     Repaint();
@@ -1176,6 +1228,44 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  /// <summary>
+  /// Snapshots Enabled into rememberedEnabledStates (Solo/Restore), then
+  /// disables every piece except Floor, Ceiling, Movement Arrows, and
+  /// Champion Status Slot 1–4 (matched by ViewportPiece.Name).
+  /// </summary>
+  private void DisableWallsKeepChrome()
+  {
+    if (layout == null || Application.isPlaying)
+      return;
+
+    Undo.RecordObject(layout, "Viewport Layout Disable Walls");
+
+    rememberedEnabledStates = new bool[layout.Pieces.Count];
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+      rememberedEnabledStates[i] = layout.Pieces[i].Enabled;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      piece.Enabled = IsDisableWallsKeeper(piece);
+    }
+  }
+
+  private static bool IsDisableWallsKeeper(ViewportPiece piece)
+  {
+    if (piece == null || piece.Name == null)
+      return false;
+
+    return piece.Name == "Floor"
+        || piece.Name == "Ceiling"
+        || piece.Name == "Movement Arrows"
+        || piece.Name == "Champion Status Slot 1"
+        || piece.Name == "Champion Status Slot 2"
+        || piece.Name == "Champion Status Slot 3"
+        || piece.Name == "Champion Status Slot 4";
+  }
+
   private void RestoreEnabledStates()
   {
     if (rememberedEnabledStates == null)
@@ -1204,10 +1294,190 @@ public class ViewportLayoutEditor : EditorWindow
     if (Application.isPlaying || layout == null)
       return;
 
+    CaptureCurrentPoseVisibilityToStore();
+    PersistPoseVisibilityStore();
+
+    // Keep ViewportLayout.asset Enabled as the locked kit baseline so pose
+    // visibility never pollutes permanent layout properties on disk.
+    bool[] workingEnabled = CaptureWorkingEnabledFlags();
+    ApplyKitBaselineEnabledToLayout();
     EditorUtility.SetDirty(layout);
     AssetDatabase.SaveAssets();
+    ApplyWorkingEnabledFlags(workingEnabled);
+
     RefreshDungeonRenderer();
     RefreshEditModePreview();
+  }
+
+  private void EnsurePoseVisibilityStore()
+  {
+    if (poseVisibilityStore != null)
+      return;
+
+    poseVisibilityStore =
+        AssetDatabase.LoadAssetAtPath<ViewportPoseVisibilityStore>(
+            ViewportPoseVisibilityStore.DefaultAssetPath);
+
+    if (poseVisibilityStore == null)
+    {
+      poseVisibilityStore =
+          ScriptableObject.CreateInstance<ViewportPoseVisibilityStore>();
+      poseVisibilityStore.MapId = "HallOfChampions";
+
+      string folder = Path.GetDirectoryName(
+          ViewportPoseVisibilityStore.DefaultAssetPath);
+      if (!string.IsNullOrEmpty(folder) && !AssetDatabase.IsValidFolder(folder))
+      {
+        // Assets/EditorData already exists in this project.
+        Directory.CreateDirectory(folder.Replace('\\', '/'));
+        AssetDatabase.Refresh();
+      }
+
+      AssetDatabase.CreateAsset(
+          poseVisibilityStore,
+          ViewportPoseVisibilityStore.DefaultAssetPath);
+    }
+
+    SeedLocked12SouthPoseIfMissing();
+  }
+
+  /// <summary>
+  /// Seeds (1,2) South from LockedBackup when the store has no entry yet.
+  /// </summary>
+  private void SeedLocked12SouthPoseIfMissing()
+  {
+    if (poseVisibilityStore == null || layout == null)
+      return;
+
+    if (poseVisibilityStore.TryFindEntry(
+            1,
+            2,
+            DungeonFacing.South,
+            out _))
+    {
+      return;
+    }
+
+    ViewportPoseVisibilityEntry south =
+        poseVisibilityStore.GetOrCreateEntry(1, 2, DungeonFacing.South);
+
+    south.PieceNames.Clear();
+    south.EnabledFlags.Clear();
+    for (int i = 0; i < KitBaselineEnabled.Length; i++)
+    {
+      south.PieceNames.Add(KitBaselineEnabled[i].Name);
+      south.EnabledFlags.Add(KitBaselineEnabled[i].Enabled);
+    }
+
+    EditorUtility.SetDirty(poseVisibilityStore);
+    AssetDatabase.SaveAssets();
+  }
+
+  private void CaptureCurrentPoseVisibilityToStore()
+  {
+    if (Application.isPlaying || layout == null)
+      return;
+
+    EnsurePoseVisibilityStore();
+    if (poseVisibilityStore == null)
+      return;
+
+    ViewportPoseVisibilityEntry entry =
+        poseVisibilityStore.GetOrCreateEntry(
+            previewX,
+            previewY,
+            previewFacing);
+    poseVisibilityStore.CaptureFromLayout(entry, layout);
+    EditorUtility.SetDirty(poseVisibilityStore);
+  }
+
+  private void ApplyCurrentPoseVisibilityToLayout()
+  {
+    if (layout == null)
+      return;
+
+    EnsurePoseVisibilityStore();
+    if (poseVisibilityStore == null)
+      return;
+
+    if (!poseVisibilityStore.TryFindEntry(
+            previewX,
+            previewY,
+            previewFacing,
+            out ViewportPoseVisibilityEntry entry))
+    {
+      // First visit to this pose: start from kit baseline, then capture.
+      ApplyKitBaselineEnabledToLayout();
+      entry = poseVisibilityStore.GetOrCreateEntry(
+          previewX,
+          previewY,
+          previewFacing);
+      poseVisibilityStore.CaptureFromLayout(entry, layout);
+      EditorUtility.SetDirty(poseVisibilityStore);
+      return;
+    }
+
+    poseVisibilityStore.ApplyToLayout(entry, layout);
+  }
+
+  private void PersistPoseVisibilityStore()
+  {
+    if (Application.isPlaying || poseVisibilityStore == null)
+      return;
+
+    EditorUtility.SetDirty(poseVisibilityStore);
+    AssetDatabase.SaveAssets();
+  }
+
+  private bool[] CaptureWorkingEnabledFlags()
+  {
+    if (layout == null || layout.Pieces == null)
+      return System.Array.Empty<bool>();
+
+    bool[] flags = new bool[layout.Pieces.Count];
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      flags[i] = piece != null && piece.Enabled;
+    }
+
+    return flags;
+  }
+
+  private void ApplyWorkingEnabledFlags(bool[] flags)
+  {
+    if (layout == null || layout.Pieces == null || flags == null)
+      return;
+
+    int count = Mathf.Min(flags.Length, layout.Pieces.Count);
+    for (int i = 0; i < count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece != null)
+        piece.Enabled = flags[i];
+    }
+  }
+
+  private void ApplyKitBaselineEnabledToLayout()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      for (int b = 0; b < KitBaselineEnabled.Length; b++)
+      {
+        if (KitBaselineEnabled[b].Name == piece.Name)
+        {
+          piece.Enabled = KitBaselineEnabled[b].Enabled;
+          break;
+        }
+      }
+    }
   }
 
   private void SwapPieces(int indexA, int indexB)
@@ -1587,7 +1857,7 @@ public class ViewportLayoutEditor : EditorWindow
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
         ViewportPiece piece = layout.Pieces[i];
-        if (!ShouldDrawPieceAtPreviewPose(piece, poseMap))
+        if (!ShouldDrawPieceAtPreviewPose(piece))
           continue;
 
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
@@ -1674,31 +1944,18 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Preview draw gate via shared ViewportPatternCatalog.
-  /// Does not write piece.Enabled / Mirror / X / Y.
+  /// Edit Mode draw gate: authored Enabled for the current X/Y/Facing pose only.
+  /// Does not derive visibility from map geometry or the pattern catalog.
   /// </summary>
-  private bool ShouldDrawPieceAtPreviewPose(
-      ViewportPiece piece,
-      DungeonMap poseMap)
+  private static bool ShouldDrawPieceAtPreviewPose(ViewportPiece piece)
   {
-    if (poseMap == null)
-    {
-      if (piece == null)
-        return false;
+    if (piece == null)
+      return false;
 
-      if (piece.Graphic == DungeonGraphicType.None)
-        return false;
+    if (piece.Graphic == DungeonGraphicType.None)
+      return false;
 
-      return piece.Enabled;
-    }
-
-    return ViewportPatternCatalog.ShouldDrawPiece(
-        piece,
-        poseMap,
-        previewX,
-        previewY,
-        previewFacing,
-        warnUnknownKeyInEditor: true);
+    return piece.Enabled;
   }
 
   /// <summary>
