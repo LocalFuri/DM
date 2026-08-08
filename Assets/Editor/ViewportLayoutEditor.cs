@@ -383,8 +383,6 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.LabelField(
         isSelected ? $"▶ {piece.Name}" : piece.Name,
         EditorStyles.boldLabel);
-    if (GUILayout.Button("Select", GUILayout.Width(60)))
-      SelectPiece(index);
     EditorGUILayout.EndHorizontal();
 
     EditorGUI.BeginChangeCheck();
