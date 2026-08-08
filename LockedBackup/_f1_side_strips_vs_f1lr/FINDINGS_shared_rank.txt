@@ -1,0 +1,9 @@
+SHARED 5-CLASS (nearest to REF palette) FOLLOW-UP
+PAL=[73, 109, 146, 182, 255]
+F1L/F1R extra gray 163 px: F1L=535 F1R=536
+LEFT best shared: {'asset': 'F1R', 'ox': 28, 'x_range': [28, 59], 'mir': True, 'mism': 0, 'pct': 100.0, 'n': 3552}
+RIGHT best shared: {'asset': 'F1L', 'ox': 0, 'x_range': [0, 31], 'mir': True, 'mism': 0, 'pct': 100.0, 'n': 3552}
+LEFT best F1: {'asset': 'F1R', 'ox': 28, 'x_range': [28, 59], 'mir': True, 'mism': 0, 'pct': 100.0, 'n': 3552}
+RIGHT best F1: {'asset': 'F1L', 'ox': 0, 'x_range': [0, 31], 'mir': True, 'mism': 0, 'pct': 100.0, 'n': 3552}
+LEFT F1-only 2p: {'split': 1, 'mism': 0, 'L': {'asset': 'F1R', 'ox': 28, 'mir': True, 'cost': 0}, 'R': {'asset': 'F1R', 'ox': 28, 'mir': True, 'cost': 0}}
+RIGHT F1-only 2p: {'split': 1, 'mism': 0, 'L': {'asset': 'F1L', 'ox': 0, 'mir': True, 'cost': 0}, 'R': {'asset': 'F1L', 'ox': 0, 'mir': True, 'cost': 0}}

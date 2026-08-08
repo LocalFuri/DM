@@ -1,0 +1,51 @@
+F1 SIDE STRIPS vs F1L/F1R — FINAL FINDINGS
+============================================
+Pixels/strip: 3552 (32x111). Compare = palette LIGHTNESS RANK.
+Center sanity: REF[x=32..191] == hflip(SRC160) exact (0/17760) under shared ranks.
+
+PALETTES
+- SRC unique grays: [72, 109, 145, 182, 255] (5)
+- REF unique grays: [73, 109, 146, 182, 255] (5)
+- F1L/F1R unique:   [72, 109, 145, 163, 182, 255] (6)  — extra 163 (~535 px each)
+- Critical: naive per-image independent ranks on F1 (0..5) are NOT comparable to REF (0..4).
+- Correct cross-image method: map each pixel gray to nearest of REF's 5 levels, then rank 0..4.
+  (gt0 and gt127 mask thresholds identical: 6124/6660 opaque; alpha always 255.)
+
+EXACT RECIPES (shared 5-class rank) — mism=0/3552 both sides
+- LEFT  REF[:,0..31]  = horizontal_mirror( F1R[:, 28..59] )   # ox=28, mirrored=True
+- RIGHT REF[:,192..223] = horizontal_mirror( F1L[:, 0..31] )  # ox=0,  mirrored=True
+- One mapping works all 111 rows (all brick bands 0). Mask NOT required.
+- Naive independent-rank on same crops: LEFT mism~2878, RIGHT mism~2881 (false negative from 6th gray).
+
+MASK
+- Not needed for exact side reconstruction.
+- D_MASK_WALL_F1L is a right-edge luminance taper (cols 0..31 fully opaque; 32..59 fade).
+- gt0 == gt127 for this asset.
+
+LEFT vs RIGHT SYMMETRY
+- RIGHT is NOT hflip(LEFT): shared-rank mism=560/3552 (84.23% match).
+- F1R is NOT hflip(F1L): shared-rank mism=1384/6660.
+- Construction IS mirrored/paired:
+    LEFT  <- hflip(rightmost 32 of F1R)
+    RIGHT <- hflip(leftmost  32 of F1L)
+  i.e. opposite assets, opposite x-ends, same final hflip.
+
+vs SRC160 (completeness)
+- Best LEFT contiguous:  SRC[2..33]           mism=656/3552 (81.53%)  [= SRC_hflip[126..157] mirrored]
+- Best RIGHT contiguous: SRC[80..111]         mism=671/3552 (81.11%)  [= SRC_hflip[48..79] mirrored]
+- Per-col SRC lower bound still mism LEFT=253 RIGHT=267 — sides are NOT from SRC; they are from F1L/F1R.
+
+RAW RGB
+- LEFT/RIGHT recipes are NOT raw-RGB identical to REF strips (palette encoding differs; REF uses 73/146 vs asset 72/145).
+- After snap-to-REF-gray: exact 0/3552 both sides (same as rank exact).
+
+BANDS / MULTI-SPAN / MASKED
+- Unnecessary: single full-height crop+mirror already exact under shared ranks.
+- 2-piece / per-band searches also find the same zero-mismatch recipe.
+
+REPRODUCIBLE RECIPE
+1. Load D_TILETYPE_WALL_F1L.png and D_TILETYPE_WALL_F1R.png (60x111).
+2. Map colors to REF lightness ranks via nearest of {73,109,146,182,255}.
+3. LEFT  = mirror_x(F1R[:, 28:60])
+4. RIGHT = mirror_x(F1L[:, 0:32])
+5. Place at REF x=0..31 and x=192..223.

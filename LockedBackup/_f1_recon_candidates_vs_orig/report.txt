@@ -1,0 +1,45 @@
+REF: C:\Users\Localghost\AppData\Roaming\Cursor\User\workspaceStorage\empty-window\images\Map 1,2 West 224 x 111 px Orig-0219c790-db6d-458e-83cc-2124ccb3d1af.png
+SRC: C:\Unity\DM\Assets\Art\Walls\D_TILETYPE_WALL_F1.png
+OUT: C:\Unity\DM\LockedBackup\_f1_recon_candidates_vs_orig
+TOTAL: 24864
+
+1. E_A_hflip
+  match=19416 differ=5448 pct_match=78.088803%
+  mismatch% x0-31=22.128378% x32-191=21.604730% x192-223=23.226351%
+  mismatch% bands rows0-27=20.184949% 28-54=26.256614% 55-82=22.050383% 83-110=19.308036%
+
+2. A_current_mapping
+  match=19126 differ=5738 pct_match=76.922458%
+  mismatch% x0-31=22.128378% x32-191=23.327703% x192-223=22.775901%
+  mismatch% bands rows0-27=20.934311% 28-54=28.141534% 55-82=22.496811% 83-110=20.918367%
+
+3. E_C_hflip
+  match=18814 differ=6050 pct_match=75.667632%
+  mismatch% x0-31=22.860360% x32-191=25.000000% x192-223=22.466216%
+  mismatch% bands rows0-27=21.173469% 28-54=30.505952% 55-82=22.895408% 83-110=22.975128%
+
+4. E_D_hflip
+  match=18750 differ=6114 pct_match=75.410232%
+  mismatch% x0-31=22.775901% x32-191=25.101351% x192-223=23.845721%
+  mismatch% bands rows0-27=21.875000% 28-54=30.241402% 55-82=23.517219% 83-110=22.927296%
+
+5. C_5to7_dup
+  match=18645 differ=6219 pct_match=74.987934%
+  mismatch% x0-31=21.903153% x32-191=26.036036% x192-223=23.001126%
+  mismatch% bands rows0-27=22.369260% 28-54=30.373677% 55-82=24.410077% 83-110=23.086735%
+
+6. D_nearest
+  match=18618 differ=6246 pct_match=74.879344%
+  mismatch% x0-31=23.057432% x32-191=25.917793% x192-223=23.198198%
+  mismatch% bands rows0-27=22.672194% 28-54=30.224868% 55-82=24.665179% 83-110=23.102679%
+
+7. B_old_brick_band
+  match=18312 differ=6552 pct_match=73.648649%
+  mismatch% x0-31=22.691441% x32-191=27.477477% x192-223=24.380631%
+  mismatch% bands rows0-27=24.505740% 28-54=30.720899% 55-82=26.020408% 83-110=24.314413%
+
+8. E_B_hflip
+  match=18303 differ=6561 pct_match=73.612452%
+  mismatch% x0-31=23.423423% x32-191=27.539414% x192-223=23.592342%
+  mismatch% bands rows0-27=24.936224% 28-54=30.952381% 55-82=25.781250% 83-110=24.043367%
+

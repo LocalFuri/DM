@@ -1104,10 +1104,21 @@ public class ViewportLayoutEditor : EditorWindow
 
     using (new EditorGUI.DisabledScope(Application.isPlaying))
     {
+      EditorGUILayout.BeginHorizontal();
       if (GUILayout.Button("Disable Walls"))
       {
         DisableWallsKeepChrome();
         PersistChanges();
+      }
+
+      if (GUILayout.Button("Reload Pose Visibility"))
+        ReloadPoseVisibilityFromDisk();
+      EditorGUILayout.EndHorizontal();
+
+      using (new EditorGUI.DisabledScope(!IsPreviewPose12West()))
+      {
+        if (GUILayout.Button("Set West F1B Only"))
+          SetWestF1BOnlyDiagnostic();
       }
     }
 
@@ -1305,6 +1316,90 @@ public class ViewportLayoutEditor : EditorWindow
 
     RefreshDungeonRenderer();
     RefreshEditModePreview();
+  }
+
+  /// <summary>
+  /// TEMP diagnostic: force live wall Enabled to Front Wall F1 B only at
+  /// (1,2) West, capture into that pose entry, persist, refresh preview.
+  /// </summary>
+  private void SetWestF1BOnlyDiagnostic()
+  {
+    if (Application.isPlaying || layout == null || layout.Pieces == null)
+      return;
+
+    if (!IsPreviewPose12West())
+      return;
+
+    Undo.RecordObject(layout, "Set West F1B Only");
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null || string.IsNullOrEmpty(piece.Name))
+        continue;
+
+      switch (piece.Name)
+      {
+        case "Front Wall F1 B":
+          piece.Enabled = true;
+          break;
+        case "Front Wall F1 A":
+        case "Front Wall F2":
+        case "Front Wall F3":
+        case "Wall F0Left":
+        case "Wall F0Right":
+        case "Wall F1Left":
+        case "Wall F1Right":
+        case "Wall F2Left":
+        case "Wall F2Right":
+        case "Wall F3Left":
+        case "Wall F3Right":
+          piece.Enabled = false;
+          break;
+      }
+    }
+
+    // Capture + persist current pose (1,2 West) via existing workflow.
+    PersistChanges();
+  }
+
+  private bool IsPreviewPose12West()
+  {
+    return previewX == 1
+        && previewY == 2
+        && previewFacing == DungeonFacing.West;
+  }
+
+  /// <summary>
+  /// Discard the cached pose store, reimport from disk, apply current
+  /// preview pose, and refresh. Does not capture or save live Enabled.
+  /// </summary>
+  private void ReloadPoseVisibilityFromDisk()
+  {
+    if (Application.isPlaying)
+      return;
+
+    poseVisibilityStore = null;
+
+    string path = ViewportPoseVisibilityStore.DefaultAssetPath;
+    AssetDatabase.ImportAsset(
+        path,
+        ImportAssetOptions.ForceUpdate
+            | ImportAssetOptions.ForceSynchronousImport);
+
+    poseVisibilityStore =
+        AssetDatabase.LoadAssetAtPath<ViewportPoseVisibilityStore>(path);
+
+    if (poseVisibilityStore == null)
+    {
+      Debug.LogWarning(
+          "Reload Pose Visibility: could not load " + path);
+      return;
+    }
+
+    ApplyCurrentPoseVisibilityToLayout();
+    RefreshEditModePreview();
+    Repaint();
   }
 
   private void EnsurePoseVisibilityStore()
@@ -1869,7 +1964,7 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
         {
-          StraightF1WallLogic.BlitWrapToBuffer(
+          StraightF1WallLogic.BlitCompositeToBuffer(
               texture,
               pixels,
               PreviewWidth,

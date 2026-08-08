@@ -4,13 +4,13 @@ using UnityEngine;
 namespace DM.Rendering
 {
   /// <summary>
-  /// Straight F1 wrap + shared dungeon environment A/B phase (floor, ceiling, F1).
-  /// Shared by runtime DungeonRenderer and Viewport Layout Editor.
+  /// Front Wall F1 1:1 blit helpers + Floor/Ceiling environment phase.
+  /// Front F1 texture is the cached 224×111 composite from ExpandedF1WallTexture.
   /// </summary>
   public static class StraightF1WallLogic
   {
     public const int CompositeWidth = 224;
-    public const int SourceTileWidth = 160;
+    public const int CompositeHeight = 111;
 
     public static bool IsStraightF1FrontGraphic(DungeonGraphicType graphic)
     {
@@ -26,11 +26,13 @@ namespace DM.Rendering
           || IsStraightF1FrontGraphic(graphic);
     }
 
+    /// <summary>
+    /// Floor/Ceiling only — Front F1 uses authored MirrorHorizontally.
+    /// </summary>
     public static bool IsEnvironmentPhaseGraphic(DungeonGraphicType graphic)
     {
       return graphic == DungeonGraphicType.Floor
-          || graphic == DungeonGraphicType.Ceiling
-          || IsStraightF1FrontGraphic(graphic);
+          || graphic == DungeonGraphicType.Ceiling;
     }
 
     public static bool IsFloorOrCeilingGraphic(DungeonGraphicType graphic)
@@ -58,7 +60,7 @@ namespace DM.Rendering
     }
 
     /// <summary>
-    /// Environment phase for Floor, Ceiling, and F1 together.
+    /// Environment phase for Floor and Ceiling.
     /// Uses the depth-1 cell ahead of the player (same axis as PreferVariantB).
     /// </summary>
     public static bool IsEnvironmentPhaseB(
@@ -83,7 +85,6 @@ namespace DM.Rendering
       if (!centerWallPresent)
         return false;
 
-      // Legacy single FrontWallF1: any straight centre wall.
       if (graphic == DungeonGraphicType.FrontWallF1)
         return true;
 
@@ -98,21 +99,6 @@ namespace DM.Rendering
       return false;
     }
 
-    // Join-safe wrap (fills dest 0..223, no adjacent src 159|0):
-    //   dest 0..30   → src 128..158
-    //   dest 31..190 → src 0..159
-    //   dest 191..223 → src 1..33
-    public static int SourceX(int destX)
-    {
-      if (destX < 31)
-        return 128 + destX;
-
-      if (destX <= 190)
-        return destX - 31;
-
-      return destX - 190;
-    }
-
     /// <summary>
     /// Mirror across the 224px dungeon viewport by reversing write columns.
     /// </summary>
@@ -124,7 +110,11 @@ namespace DM.Rendering
       return CompositeWidth - 1 - destX;
     }
 
-    public static void BlitWrapToBuffer(
+    /// <summary>
+    /// Copy a 224-wide Front Wall F1 composite 1:1 into the buffer at destinationY.
+    /// Optional horizontal mirror is authored only (layout MirrorHorizontally).
+    /// </summary>
+    public static void BlitCompositeToBuffer(
         Texture2D source,
         Color32[] destPixels,
         int bufferWidth,
@@ -138,13 +128,12 @@ namespace DM.Rendering
       if (!source.isReadable)
         return;
 
-      if (source.width < SourceTileWidth || source.height <= 0)
+      if (source.width < CompositeWidth || source.height <= 0)
         return;
 
       Color32[] sourcePixels = source.GetPixels32();
       int sourceWidth = source.width;
       int sourceHeight = source.height;
-      bool alreadyExpanded = sourceWidth >= CompositeWidth;
 
       for (int row = 0; row < sourceHeight; row++)
       {
@@ -157,15 +146,11 @@ namespace DM.Rendering
 
         for (int destX = 0; destX < CompositeWidth; destX++)
         {
-          int srcX = alreadyExpanded ? destX : SourceX(destX);
-          if (srcX < 0 || srcX >= sourceWidth)
-            continue;
-
           int writeX = WriteDestX(destX, mirrorHorizontally);
           if (writeX < 0 || writeX >= bufferWidth)
             continue;
 
-          Color32 colour = sourcePixels[sourceRow + srcX];
+          Color32 colour = sourcePixels[sourceRow + destX];
           colour.a = 255;
           destPixels[destRow + writeX] = colour;
         }

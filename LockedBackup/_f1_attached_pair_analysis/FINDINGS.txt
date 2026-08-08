@@ -1,0 +1,28 @@
+F1 ATTACHED PAIR ANALYSIS (inspection only)
+SRC: 160x111 unique_RGB=5
+REF: 224x111 unique_RGB=5
+SRC: C:\Users\Localghost\AppData\Roaming\Cursor\User\workspaceStorage\empty-window\images\Wall 1 Original 160 x 111 px-9f16d0c5-ed42-4ec1-b49a-58b4d7e372ed.png
+REF: C:\Users\Localghost\AppData\Roaming\Cursor\User\workspaceStorage\empty-window\images\Map 1,2 West 224 x 111 px Orig-3c54cb56-3047-44e9-9867-65e43a23121a.png
+
+RANKED (best->worst by exact match):
+ 1. F_center160_at_32_tile_mirror: match=21443 differ=3421 (86.241%) | mm% L=22.10 M=10.20 R=23.23 | 0-27=12.09% 28-54=17.84% 55-82=13.90% 83-110=11.35%
+ 2. F_center160_at_32_wrap_ends_mirror: match=21442 differ=3422 (86.237%) | mm% L=22.13 M=10.20 R=23.23 | 0-27=12.09% 28-54=17.82% 55-82=13.90% 83-110=11.38%
+ 3. C_5to7_mirror: match=20215 differ=4649 (81.302%) | mm% L=23.42 M=16.77 R=23.59 | 0-27=16.76% 28-54=23.88% 55-82=17.41% 83-110=16.93%
+ 4. A_wrap_mirror: match=19416 differ=5448 (78.089%) | mm% L=22.13 M=21.60 R=23.23 | 0-27=20.18% 28-54=26.26% 55-82=22.05% 83-110=19.31%
+ 5. F_center160_at_32_tile: match=19296 differ=5568 (77.606%) | mm% L=22.18 M=22.36 R=22.75 | 0-27=20.93% 28-54=26.70% 55-82=22.67% 83-110=19.42%
+ 6. F_center160_at_32_wrap_ends: match=19295 differ=5569 (77.602%) | mm% L=22.18 M=22.36 R=22.78 | 0-27=20.81% 28-54=26.74% 55-82=22.56% 83-110=19.64%
+ 7. A_wrap: match=19126 differ=5738 (76.922%) | mm% L=22.13 M=23.33 R=22.78 | 0-27=20.93% 28-54=28.14% 55-82=22.50% 83-110=20.92%
+ 8. C_5to7: match=18837 differ=6027 (75.760%) | mm% L=22.69 M=24.52 R=24.38 | 0-27=22.15% 28-54=29.28% 55-82=23.36% 83-110=22.35%
+ 9. D_nearest_mirror: match=18750 differ=6114 (75.410%) | mm% L=22.78 M=25.10 R=23.85 | 0-27=21.88% 28-54=30.24% 55-82=23.52% 83-110=22.93%
+10. D_nearest: match=18618 differ=6246 (74.879%) | mm% L=23.06 M=25.92 R=23.20 | 0-27=22.67% 28-54=30.22% 55-82=24.67% 83-110=23.10%
+11. B_brick: match=18299 differ=6565 (73.596%) | mm% L=22.69 M=27.55 R=24.38 | 0-27=24.51% 28-54=30.92% 55-82=26.02% 83-110=24.33%
+12. B_brick_mirror: match=18293 differ=6571 (73.572%) | mm% L=23.42 M=27.60 R=23.59 | 0-27=24.94% 28-54=31.02% 55-82=25.78% 83-110=24.14%
+13. F_center160_at_32_unfilled_mirror: match=15949 differ=8915 (64.145%) | mm% L=100.00 M=10.20 R=100.00 | 0-27=34.04% 28-54=39.43% 55-82=34.96% 83-110=35.11%
+14. G_center160_at_31_mirror: match=13927 differ=10937 (56.013%) | mm% L=100.00 M=21.89 R=98.45 | 0-27=42.14% 28-54=47.80% 55-82=43.11% 83-110=43.03%
+15. F_center160_at_32_unfilled: match=13788 differ=11076 (55.454%) | mm% L=100.00 M=22.36 R=100.00 | 0-27=42.86% 28-54=48.41% 55-82=43.69% 83-110=43.37%
+16. G_center160_at_31: match=13619 differ=11245 (54.774%) | mm% L=98.45 M=23.63 R=100.00 | 0-27=43.00% 28-54=49.79% 55-82=43.64% 83-110=44.64%
+
+Same-row palette misses: 2547/24864
+id sx=dx-31 mid: 1/160; sx=dx-32: 0/160
+Left votes: sx1:6, sx3:5, sx20:4, sx6:3, sx14:1, sx13:1, sx12:1, sx11:1, sx10:1, sx9:1, sx8:1, sx7:1
+Right votes: sx1:9, sx127:4, sx6:3, sx79:2, sx20:1, sx158:1, sx157:1, sx156:1, sx155:1, sx154:1, sx153:1, sx152:1

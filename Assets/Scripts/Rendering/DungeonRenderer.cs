@@ -1601,7 +1601,7 @@ namespace DM.Rendering
       return StraightF1WallLogic.IsF1WallGroupGraphic(graphic);
     }
 
-    // Straight FrontWallF1 A/B: D_TILETYPE_WALL_F1 wrap only (skip F1L/F1R).
+    // Straight FrontWallF1 A/B: 224×111 composite 1:1 (skip F1L/F1R).
     // Side-only F1L/F1R when the centre cell is open.
     private void DrawF1WallGroup(
         System.Text.StringBuilder drawnFrontWalls,
@@ -1658,8 +1658,7 @@ namespace DM.Rendering
       }
     }
 
-    // D_TILETYPE_WALL_F1 wrap to 224px (join-safe; see StraightF1WallLogic.SourceX).
-    // MirrorHorizontally flips the full 224px composite, not only the 160px tile.
+    // 224×111 composite copied 1:1. Authored MirrorHorizontally only.
     private void DrawStraightF1FrontWall(ViewportPiece frontPiece)
     {
       Texture2D texture =
@@ -1674,30 +1673,28 @@ namespace DM.Rendering
         return;
       }
 
-      if (texture.width < StraightF1WallLogic.SourceTileWidth
+      if (texture.width < StraightF1WallLogic.CompositeWidth
           || texture.height <= 0)
       {
         Debug.LogWarning(
             "DungeonRenderer: FrontWallF1 texture size " +
-            $"{texture.width}x{texture.height} is too small for wrap."
+            $"{texture.width}x{texture.height} is not a 224-wide composite."
         );
         return;
       }
 
       int destY = frontPiece.Y + dungeonDrawOffsetY;
-      bool mirror = GetEffectiveEnvironmentMirror(frontPiece);
-      BlitStraightF1Wrap(texture, destY, mirror);
+      BlitStraightF1Composite(
+          texture,
+          destY,
+          frontPiece.MirrorHorizontally);
     }
 
-    // Opaque column fill — every dungeon X 0..223 written exactly once.
-    // src 0 ≈ src 159 (duplicate dark mortar); never place them adjacent.
-    private void BlitStraightF1Wrap(
+    private void BlitStraightF1Composite(
         Texture2D source,
         int destinationY,
         bool mirrorHorizontally)
     {
-      // TEMP diagnostic: dest X → write count for this straight F1 pass.
-      int[] columnWrites = new int[DungeonViewWidth];
       Color32[] sourcePixels = source.GetPixels32();
       int sourceWidth = source.width;
       int sourceHeight = source.height;
@@ -1708,84 +1705,20 @@ namespace DM.Rendering
         if (targetY < 0 || targetY >= viewHeight)
           continue;
 
-        int sampleY = row;
-        int sourceRow = sampleY * sourceWidth;
+        int sourceRow = row * sourceWidth;
         int destRow = targetY * viewWidth;
 
         for (int destX = 0; destX < DungeonViewWidth; destX++)
         {
-          int srcX = sourceWidth >= DungeonViewWidth
-              ? destX
-              : StraightF1WallLogic.SourceX(destX);
-          if (srcX < 0 || srcX >= sourceWidth)
-            continue;
-
           int writeX = StraightF1WallLogic.WriteDestX(
               destX,
               mirrorHorizontally);
 
-          Color32 colour = sourcePixels[sourceRow + srcX];
+          Color32 colour = sourcePixels[sourceRow + destX];
           colour.a = 255;
           framePixels[destRow + writeX] = colour;
-          columnWrites[writeX]++;
         }
       }
-
-      VerifyStraightF1ColumnWrites(columnWrites, sourceHeight, destinationY);
-    }
-
-    private bool straightF1ColumnDiagLogged;
-
-    // TEMP: log if any dest X 0..223 was not written exactly once per wall row.
-    private void VerifyStraightF1ColumnWrites(
-        int[] columnWrites,
-        int sourceHeight,
-        int destinationY)
-    {
-      int rowsWritten = 0;
-      for (int row = 0; row < sourceHeight; row++)
-      {
-        int targetY = destinationY + row;
-        if (targetY >= 0 && targetY < viewHeight)
-          rowsWritten++;
-      }
-
-      int expected = rowsWritten;
-      int notOnce = 0;
-      System.Text.StringBuilder bad =
-          new System.Text.StringBuilder();
-
-      for (int x = 0; x < DungeonViewWidth; x++)
-      {
-        if (columnWrites[x] == expected)
-          continue;
-
-        notOnce++;
-        if (bad.Length > 0)
-          bad.Append(", ");
-        if (bad.Length < 120)
-          bad.Append($"x{x}={columnWrites[x]}");
-      }
-
-      if (notOnce == 0)
-      {
-        if (!straightF1ColumnDiagLogged)
-        {
-          straightF1ColumnDiagLogged = true;
-          Debug.Log(
-              "StraightF1: dest X 0..223 each written exactly " +
-              $"{expected} time(s) (once per visible wall row)."
-          );
-        }
-
-        return;
-      }
-
-      Debug.LogWarning(
-          "StraightF1: " + notOnce +
-          " dest column(s) not written exactly once per row. " +
-          $"expected={expected} samples=[{bad}]"
-      );
     }
 
     private ViewportPiece FindLayoutPiece(DungeonGraphicType graphic)
@@ -2118,8 +2051,9 @@ namespace DM.Rendering
     }
 
     /// <summary>
-    /// With a live map, Floor/Ceiling/F1 share one environment phase.
+    /// With a live map, Floor/Ceiling share one environment phase.
     /// Without a map (layout testing), use the piece's Mirror Horizontally flag.
+    /// Front Wall F1 does not use this path (authored MirrorHorizontally only).
     /// </summary>
     private bool GetEffectiveEnvironmentMirror(ViewportPiece piece)
     {

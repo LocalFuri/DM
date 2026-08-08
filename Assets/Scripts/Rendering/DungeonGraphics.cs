@@ -113,7 +113,10 @@ namespace DM.Rendering
         case DungeonGraphicType.FrontWallF1:
         case DungeonGraphicType.FrontWallF1_A:
         case DungeonGraphicType.FrontWallF1_B:
-          return ExpandedF1WallTexture.BuildExpandedF1Wall(FrontWallF1);
+          return ExpandedF1WallTexture.BuildExpandedF1Wall(
+              FrontWallF1,
+              WallF1L,
+              WallF1R);
         case DungeonGraphicType.FrontWallF2:
           return FrontWallF2;
         case DungeonGraphicType.FrontWallF3:

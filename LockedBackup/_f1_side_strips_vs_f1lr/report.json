@@ -1,0 +1,928 @@
+{
+  "dims": {
+    "strip": [
+      32,
+      111
+    ],
+    "total_px": 3552
+  },
+  "palette_grays": {
+    "SRC": [
+      72,
+      109,
+      145,
+      182,
+      255
+    ],
+    "REF": [
+      73,
+      109,
+      146,
+      182,
+      255
+    ],
+    "F1L": [
+      72,
+      109,
+      145,
+      163,
+      182,
+      255
+    ],
+    "F1R": [
+      72,
+      109,
+      145,
+      163,
+      182,
+      255
+    ]
+  },
+  "center_sanity_mism": 0,
+  "symmetry": {
+    "right_vs_hflip_left_mism": 560,
+    "f1r_vs_hflip_f1l_mism": 1384
+  },
+  "left_best_full": [
+    {
+      "kind": "src_flip_span",
+      "asset": "SRC160_hflip",
+      "ox": 126,
+      "x_range": [
+        126,
+        157
+      ],
+      "mirrored": true,
+      "mask": null,
+      "mask_mode": null,
+      "fill": null,
+      "match_pct": 81.53153153153153,
+      "mismatch": 656,
+      "compared": 3552
+    },
+    {
+      "kind": "src_span",
+      "asset": "SRC160",
+      "ox": 2,
+      "x_range": [
+        2,
+        33
+      ],
+      "mirrored": false,
+      "mask": null,
+      "mask_mode": null,
+      "fill": null,
+      "match_pct": 81.53153153153153,
+      "mismatch": 656,
+      "compared": 3552
+    },
+    {
+      "kind": "src_flip_span",
+      "asset": "SRC160_hflip",
+      "ox": 124,
+      "x_range": [
+        124,
+        155
+      ],
+      "mirrored": true,
+      "mask": null,
+      "mask_mode": null,
+      "fill": null,
+      "match_pct": 81.50337837837837,
+      "mismatch": 657,
+      "compared": 3552
+    },
+    {
+      "kind": "src_span",
+      "asset": "SRC160",
+      "ox": 4,
+      "x_range": [
+        4,
+        35
+      ],
+      "mirrored": false,
+      "mask": null,
+      "mask_mode": null,
+      "fill": null,
+      "match_pct": 81.50337837837837,
+      "mismatch": 657,
+      "compared": 3552
+    },
+    {
+      "kind": "src_flip_span",
+      "asset": "SRC160_hflip",
+      "ox": 125,
+      "x_range": [
+        125,
+        156
+      ],
+      "mirrored": true,
+      "mask": null,
+      "mask_mode": null,
+      "fill": null,
+      "match_pct": 81.47522522522523,
+      "mismatch": 658,
+      "compared": 3552
+    }
+  ],
+  "right_best_full": [
+    {
+      "kind": "src_flip_span",
+      "asset": "SRC160_hflip",
+      "ox": 48,
+      "x_range": [
+        48,
+        79
+      ],
+      "mirrored": true,
+      "mask": null,
+      "mask_mode": null,
+      "fill": null,
+      "match_pct": 81.10923423423424,
+      "mismatch": 671,
+      "compared": 3552
+    },
+    {
+      "kind": "src_span",
+      "asset": "SRC160",
+      "ox": 80,
+      "x_range": [
+        80,
+        111
+      ],
+      "mirrored": false,
+      "mask": null,
+      "mask_mode": null,
+      "fill": null,
+      "match_pct": 81.10923423423424,
+      "mismatch": 671,
+      "compared": 3552
+    },
+    {
+      "kind": "src_flip_span",
+      "asset": "SRC160_hflip",
+      "ox": 124,
+      "x_range": [
+        124,
+        155
+      ],
+      "mirrored": true,
+      "mask": null,
+      "mask_mode": null,
+      "fill": null,
+      "match_pct": 80.37725225225225,
+      "mismatch": 697,
+      "compared": 3552
+    },
+    {
+      "kind": "src_span",
+      "asset": "SRC160",
+      "ox": 4,
+      "x_range": [
+        4,
+        35
+      ],
+      "mirrored": false,
+      "mask": null,
+      "mask_mode": null,
+      "fill": null,
+      "match_pct": 80.37725225225225,
+      "mismatch": 697,
+      "compared": 3552
+    },
+    {
+      "kind": "src_flip_span",
+      "asset": "SRC160_hflip",
+      "ox": 5,
+      "x_range": [
+        5,
+        36
+      ],
+      "mirrored": false,
+      "mask": null,
+      "mask_mode": null,
+      "fill": null,
+      "match_pct": 80.26463963963964,
+      "mismatch": 701,
+      "compared": 3552
+    }
+  ],
+  "left_2piece": {
+    "split": 16,
+    "mismatch": 595,
+    "match_pct": 83.24887387387388,
+    "left_piece": {
+      "asset": "SRC160_hflip",
+      "ox": 122,
+      "mirrored": true,
+      "cols": [
+        0,
+        15
+      ],
+      "cost": 253
+    },
+    "right_piece": {
+      "asset": "SRC160_hflip",
+      "ox": 48,
+      "mirrored": false,
+      "cols": [
+        16,
+        31
+      ],
+      "cost": 342
+    }
+  },
+  "right_2piece": {
+    "split": 20,
+    "mismatch": 610,
+    "match_pct": 82.82657657657657,
+    "left_piece": {
+      "asset": "SRC160_hflip",
+      "ox": 48,
+      "mirrored": true,
+      "cols": [
+        0,
+        19
+      ],
+      "cost": 415
+    },
+    "right_piece": {
+      "asset": "SRC160_hflip",
+      "ox": 9,
+      "mirrored": true,
+      "cols": [
+        20,
+        31
+      ],
+      "cost": 195
+    }
+  },
+  "bands": {
+    "LEFT": {
+      "0-27": [
+        {
+          "asset": "SRC160_hflip",
+          "ox": 20,
+          "x_range": [
+            20,
+            51
+          ],
+          "mirrored": true,
+          "match_pct": 80.24553571428571,
+          "mismatch": 177,
+          "compared": 896,
+          "band": [
+            0,
+            27
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 108,
+          "x_range": [
+            108,
+            139
+          ],
+          "mirrored": false,
+          "match_pct": 80.24553571428571,
+          "mismatch": 177,
+          "compared": 896,
+          "band": [
+            0,
+            27
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 22,
+          "x_range": [
+            22,
+            53
+          ],
+          "mirrored": false,
+          "match_pct": 79.35267857142857,
+          "mismatch": 185,
+          "compared": 896,
+          "band": [
+            0,
+            27
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 106,
+          "x_range": [
+            106,
+            137
+          ],
+          "mirrored": true,
+          "match_pct": 79.35267857142857,
+          "mismatch": 185,
+          "compared": 896,
+          "band": [
+            0,
+            27
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 13,
+          "x_range": [
+            13,
+            44
+          ],
+          "mirrored": false,
+          "match_pct": 79.24107142857143,
+          "mismatch": 186,
+          "compared": 896,
+          "band": [
+            0,
+            27
+          ]
+        }
+      ],
+      "28-54": [
+        {
+          "asset": "SRC160_hflip",
+          "ox": 63,
+          "x_range": [
+            63,
+            94
+          ],
+          "mirrored": true,
+          "match_pct": 86.11111111111111,
+          "mismatch": 120,
+          "compared": 864,
+          "band": [
+            28,
+            54
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 65,
+          "x_range": [
+            65,
+            96
+          ],
+          "mirrored": false,
+          "match_pct": 86.11111111111111,
+          "mismatch": 120,
+          "compared": 864,
+          "band": [
+            28,
+            54
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 55,
+          "x_range": [
+            55,
+            86
+          ],
+          "mirrored": false,
+          "match_pct": 85.87962962962963,
+          "mismatch": 122,
+          "compared": 864,
+          "band": [
+            28,
+            54
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 58,
+          "x_range": [
+            58,
+            89
+          ],
+          "mirrored": false,
+          "match_pct": 85.87962962962963,
+          "mismatch": 122,
+          "compared": 864,
+          "band": [
+            28,
+            54
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 70,
+          "x_range": [
+            70,
+            101
+          ],
+          "mirrored": true,
+          "match_pct": 85.87962962962963,
+          "mismatch": 122,
+          "compared": 864,
+          "band": [
+            28,
+            54
+          ]
+        }
+      ],
+      "55-82": [
+        {
+          "asset": "SRC160_hflip",
+          "ox": 99,
+          "x_range": [
+            99,
+            130
+          ],
+          "mirrored": false,
+          "match_pct": 82.47767857142857,
+          "mismatch": 157,
+          "compared": 896,
+          "band": [
+            55,
+            82
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 29,
+          "x_range": [
+            29,
+            60
+          ],
+          "mirrored": true,
+          "match_pct": 82.47767857142857,
+          "mismatch": 157,
+          "compared": 896,
+          "band": [
+            55,
+            82
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 97,
+          "x_range": [
+            97,
+            128
+          ],
+          "mirrored": false,
+          "match_pct": 82.14285714285714,
+          "mismatch": 160,
+          "compared": 896,
+          "band": [
+            55,
+            82
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 31,
+          "x_range": [
+            31,
+            62
+          ],
+          "mirrored": true,
+          "match_pct": 82.14285714285714,
+          "mismatch": 160,
+          "compared": 896,
+          "band": [
+            55,
+            82
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 98,
+          "x_range": [
+            98,
+            129
+          ],
+          "mirrored": false,
+          "match_pct": 82.03125,
+          "mismatch": 161,
+          "compared": 896,
+          "band": [
+            55,
+            82
+          ]
+        }
+      ],
+      "83-110": [
+        {
+          "asset": "SRC160_hflip",
+          "ox": 67,
+          "x_range": [
+            67,
+            98
+          ],
+          "mirrored": false,
+          "match_pct": 88.16964285714286,
+          "mismatch": 106,
+          "compared": 896,
+          "band": [
+            83,
+            110
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 61,
+          "x_range": [
+            61,
+            92
+          ],
+          "mirrored": true,
+          "match_pct": 88.16964285714286,
+          "mismatch": 106,
+          "compared": 896,
+          "band": [
+            83,
+            110
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 59,
+          "x_range": [
+            59,
+            90
+          ],
+          "mirrored": true,
+          "match_pct": 87.83482142857143,
+          "mismatch": 109,
+          "compared": 896,
+          "band": [
+            83,
+            110
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 69,
+          "x_range": [
+            69,
+            100
+          ],
+          "mirrored": false,
+          "match_pct": 87.83482142857143,
+          "mismatch": 109,
+          "compared": 896,
+          "band": [
+            83,
+            110
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 66,
+          "x_range": [
+            66,
+            97
+          ],
+          "mirrored": false,
+          "match_pct": 87.38839285714286,
+          "mismatch": 113,
+          "compared": 896,
+          "band": [
+            83,
+            110
+          ]
+        }
+      ]
+    },
+    "RIGHT": {
+      "0-27": [
+        {
+          "asset": "SRC160_hflip",
+          "ox": 113,
+          "x_range": [
+            113,
+            144
+          ],
+          "mirrored": true,
+          "match_pct": 82.03125,
+          "mismatch": 161,
+          "compared": 896,
+          "band": [
+            0,
+            27
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 15,
+          "x_range": [
+            15,
+            46
+          ],
+          "mirrored": false,
+          "match_pct": 82.03125,
+          "mismatch": 161,
+          "compared": 896,
+          "band": [
+            0,
+            27
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 9,
+          "x_range": [
+            9,
+            40
+          ],
+          "mirrored": false,
+          "match_pct": 81.91964285714286,
+          "mismatch": 162,
+          "compared": 896,
+          "band": [
+            0,
+            27
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 119,
+          "x_range": [
+            119,
+            150
+          ],
+          "mirrored": true,
+          "match_pct": 81.91964285714286,
+          "mismatch": 162,
+          "compared": 896,
+          "band": [
+            0,
+            27
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 90,
+          "x_range": [
+            90,
+            121
+          ],
+          "mirrored": true,
+          "match_pct": 81.80803571428571,
+          "mismatch": 163,
+          "compared": 896,
+          "band": [
+            0,
+            27
+          ]
+        }
+      ],
+      "28-54": [
+        {
+          "asset": "SRC160_hflip",
+          "ox": 52,
+          "x_range": [
+            52,
+            83
+          ],
+          "mirrored": true,
+          "match_pct": 84.72222222222223,
+          "mismatch": 132,
+          "compared": 864,
+          "band": [
+            28,
+            54
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 76,
+          "x_range": [
+            76,
+            107
+          ],
+          "mirrored": false,
+          "match_pct": 84.72222222222223,
+          "mismatch": 132,
+          "compared": 864,
+          "band": [
+            28,
+            54
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 67,
+          "x_range": [
+            67,
+            98
+          ],
+          "mirrored": false,
+          "match_pct": 83.44907407407408,
+          "mismatch": 143,
+          "compared": 864,
+          "band": [
+            28,
+            54
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 61,
+          "x_range": [
+            61,
+            92
+          ],
+          "mirrored": true,
+          "match_pct": 83.44907407407408,
+          "mismatch": 143,
+          "compared": 864,
+          "band": [
+            28,
+            54
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 53,
+          "x_range": [
+            53,
+            84
+          ],
+          "mirrored": true,
+          "match_pct": 83.2175925925926,
+          "mismatch": 145,
+          "compared": 864,
+          "band": [
+            28,
+            54
+          ]
+        }
+      ],
+      "55-82": [
+        {
+          "asset": "SRC160_hflip",
+          "ox": 96,
+          "x_range": [
+            96,
+            127
+          ],
+          "mirrored": false,
+          "match_pct": 81.13839285714286,
+          "mismatch": 169,
+          "compared": 896,
+          "band": [
+            55,
+            82
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 97,
+          "x_range": [
+            97,
+            128
+          ],
+          "mirrored": false,
+          "match_pct": 81.13839285714286,
+          "mismatch": 169,
+          "compared": 896,
+          "band": [
+            55,
+            82
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 31,
+          "x_range": [
+            31,
+            62
+          ],
+          "mirrored": true,
+          "match_pct": 81.13839285714286,
+          "mismatch": 169,
+          "compared": 896,
+          "band": [
+            55,
+            82
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 32,
+          "x_range": [
+            32,
+            63
+          ],
+          "mirrored": true,
+          "match_pct": 81.13839285714286,
+          "mismatch": 169,
+          "compared": 896,
+          "band": [
+            55,
+            82
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 95,
+          "x_range": [
+            95,
+            126
+          ],
+          "mirrored": false,
+          "match_pct": 80.80357142857143,
+          "mismatch": 172,
+          "compared": 896,
+          "band": [
+            55,
+            82
+          ]
+        }
+      ],
+      "83-110": [
+        {
+          "asset": "SRC160_hflip",
+          "ox": 69,
+          "x_range": [
+            69,
+            100
+          ],
+          "mirrored": false,
+          "match_pct": 85.04464285714286,
+          "mismatch": 134,
+          "compared": 896,
+          "band": [
+            83,
+            110
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 73,
+          "x_range": [
+            73,
+            104
+          ],
+          "mirrored": true,
+          "match_pct": 85.04464285714286,
+          "mismatch": 134,
+          "compared": 896,
+          "band": [
+            83,
+            110
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 55,
+          "x_range": [
+            55,
+            86
+          ],
+          "mirrored": false,
+          "match_pct": 85.04464285714286,
+          "mismatch": 134,
+          "compared": 896,
+          "band": [
+            83,
+            110
+          ]
+        },
+        {
+          "asset": "SRC160",
+          "ox": 59,
+          "x_range": [
+            59,
+            90
+          ],
+          "mirrored": true,
+          "match_pct": 85.04464285714286,
+          "mismatch": 134,
+          "compared": 896,
+          "band": [
+            83,
+            110
+          ]
+        },
+        {
+          "asset": "SRC160_hflip",
+          "ox": 68,
+          "x_range": [
+            68,
+            99
+          ],
+          "mirrored": false,
+          "match_pct": 84.48660714285714,
+          "mismatch": 139,
+          "compared": 896,
+          "band": [
+            83,
+            110
+          ]
+        }
+      ]
+    }
+  },
+  "mask_opaque_counts": {
+    "gt0": 6124,
+    "gt127": 6124,
+    "a_gt0": 6660,
+    "a_gt127": 6660
+  }
+}
