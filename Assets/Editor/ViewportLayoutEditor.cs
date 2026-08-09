@@ -603,12 +603,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     // Keep Preview Facing unchanged.
-    int oldX = previewX;
-    int oldY = previewY;
     SwitchPreviewPose(nextX, nextY, previewFacing);
-    Debug.Log(
-        $"Viewport move: ({oldX},{oldY}) → ({previewX},{previewY}), "
-            + $"Facing={previewFacing}");
     TryRefocusPreviewWindow();
   }
 
@@ -628,8 +623,6 @@ public class ViewportLayoutEditor : EditorWindow
   {
     if (Application.isPlaying || layout == null || graphics == null)
       return;
-
-    LogAllSceneRawImages("PresentEditModePreviewToGameView BEFORE assign");
 
     RawImage dungeonImage = FindLiveDungeonViewportRawImage();
     if (dungeonImage == null)
@@ -666,83 +659,11 @@ public class ViewportLayoutEditor : EditorWindow
     dungeonImage.texture = Texture2D.whiteTexture;
     dungeonImage.texture = editModePreviewTexture;
 
-    LogAssignedRawImage(dungeonImage);
-
     if (dungeonImage.canvas != null)
       Canvas.ForceUpdateCanvases();
 
     MaintainMovementArrowsPreview();
-    LogAllSceneRawImages("PresentEditModePreviewToGameView AFTER assign");
     RepaintGameViews();
-  }
-
-  private static void LogAllSceneRawImages(string phase)
-  {
-    RawImage[] images = Object.FindObjectsByType<RawImage>(
-        FindObjectsInactive.Include);
-    Debug.Log(
-        $"[RawImage inventory] {phase}: count={images.Length}");
-
-    for (int i = 0; i < images.Length; i++)
-    {
-      RawImage image = images[i];
-      if (image == null)
-      {
-        Debug.Log($"[RawImage inventory] [{i}] <null>");
-        continue;
-      }
-
-      Texture tex = image.texture;
-      string texName = tex != null ? tex.name : "<null>";
-      string texId = tex != null ? tex.GetEntityId().ToString() : "0";
-      Debug.Log(
-          $"[RawImage inventory] [{i}] name={image.gameObject.name} "
-          + $"path={GetGameObjectHierarchyPath(image.gameObject)} "
-          + $"enabled={image.enabled} "
-          + $"activeSelf={image.gameObject.activeSelf} "
-          + $"activeInHierarchy={image.gameObject.activeInHierarchy} "
-          + $"texture={texName} textureEntityId={texId}");
-    }
-  }
-
-  private void LogAssignedRawImage(RawImage dungeonImage)
-  {
-    if (dungeonImage == null)
-    {
-      Debug.LogWarning(
-          "[PresentEditModePreviewToGameView] assigned RawImage: <null>");
-      return;
-    }
-
-    Texture tex = dungeonImage.texture;
-    string texName = tex != null ? tex.name : "<null>";
-    string texId = tex != null ? tex.GetEntityId().ToString() : "0";
-    string previewId = editModePreviewTexture != null
-        ? editModePreviewTexture.GetEntityId().ToString()
-        : "0";
-    Debug.Log(
-        "[PresentEditModePreviewToGameView] ASSIGNED RawImage "
-        + $"name={dungeonImage.gameObject.name} "
-        + $"path={GetGameObjectHierarchyPath(dungeonImage.gameObject)} "
-        + $"enabled={dungeonImage.enabled} "
-        + $"texture={texName} textureEntityId={texId} "
-        + $"editModePreviewTextureEntityId={previewId}");
-  }
-
-  private static string GetGameObjectHierarchyPath(GameObject go)
-  {
-    if (go == null)
-      return "<null>";
-
-    System.Text.StringBuilder sb = new System.Text.StringBuilder(go.name);
-    Transform parent = go.transform.parent;
-    while (parent != null)
-    {
-      sb.Insert(0, parent.name + "/");
-      parent = parent.parent;
-    }
-
-    return sb.ToString();
   }
 
   /// <summary>
@@ -2049,8 +1970,7 @@ public class ViewportLayoutEditor : EditorWindow
   {
     DungeonBitmapFont[] fonts =
         Object.FindObjectsByType<DungeonBitmapFont>(
-            FindObjectsInactive.Include,
-            FindObjectsSortMode.None);
+            FindObjectsInactive.Include);
 
     for (int i = 0; i < fonts.Length; i++)
     {

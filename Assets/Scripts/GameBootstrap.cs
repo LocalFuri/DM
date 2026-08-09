@@ -25,8 +25,6 @@ public class GameBootstrap : MonoBehaviour
 
   private void Start()
   {
-    Debug.Log("GameBootstrap started.");
-
     HideLeftoverGameplayUi();
 
     if (mapJson == null)
@@ -38,14 +36,6 @@ public class GameBootstrap : MonoBehaviour
     }
 
     DungeonMap map = DungeonMap.LoadFromJson(mapJson);
-
-    Debug.Log($"Loaded map: {map.Name}");
-    Debug.Log($"Map size: {map.Width} x {map.Height}");
-    Debug.Log(
-        $"Player ({map.PlayerX},{map.PlayerY}) " +
-        $"facing {map.PlayerFacing}."
-    );
-    Debug.Log(map.BuildDebugMap());
 
     if (keyboardInput == null)
       keyboardInput = GetComponent<DungeonKeyboardInput>();

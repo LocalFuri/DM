@@ -145,6 +145,8 @@ namespace DM.Rendering
     // Final wall pieces drawn in the most recent frame.
     public IReadOnlyList<string> VisibleWallPieces => visibleWallPieces;
 
+    private string lastViewportStateLogMessage;
+
     public bool IsEntranceBlockingInput =>
         !entranceViewportReady
         || (!entranceDoorOpened
@@ -152,8 +154,6 @@ namespace DM.Rendering
 
     private void Awake()
     {
-      Debug.Log("DungeonRenderer Awake.");
-
       if (entranceDoorAudioSource == null)
         entranceDoorAudioSource = GetComponent<AudioSource>();
 
@@ -179,9 +179,8 @@ namespace DM.Rendering
       // the normal dungeon viewport becomes active.
       SetMovementArrowsVisible(false);
 
-      // Entrance RectTransform stays exactly as serialized in the scene.
-      // Only ensure UV; never rewrite anchors/size (avoids canvas dirties).
-      ApplyViewportPresentation();
+      // Do not reparent UI in Awake — SetParent triggers SendMessage warnings.
+      // Start / entrance settle coroutine apply presentation afterward.
     }
 
     private void Reset()
@@ -217,7 +216,8 @@ namespace DM.Rendering
 
     private void Start()
     {
-      Debug.Log("DungeonRenderer Start.");
+      // Safe to mutate RectTransform hierarchy after Awake.
+      ApplyViewportPresentation();
 
       if (entranceViewportPrepareCoroutine != null)
         StopCoroutine(entranceViewportPrepareCoroutine);
@@ -307,19 +307,6 @@ namespace DM.Rendering
       entranceViewportReady = true;
       SetEntranceViewportVisible(true);
       entranceViewportPrepareCoroutine = null;
-
-      string viewportRectText =
-          dungeonViewport != null
-              ? dungeonViewport.rectTransform.rect.ToString()
-              : "n/a";
-
-      Debug.Log(
-          "DungeonRenderer: Entrance layout stable after " +
-          $"{entranceLayoutStabilizeFrames} frame(s) " +
-          $"(scaleFactor=" +
-          $"{(canvas != null ? canvas.scaleFactor : 0f):0.####}, " +
-          $"viewportRect={viewportRectText})."
-      );
     }
 
     private void SetEntranceViewportVisible(bool visible)
@@ -770,6 +757,10 @@ namespace DM.Rendering
         gameplayRoot = rootObject.GetComponent<RectTransform>();
         gameplayRoot.SetParent(canvasRect, false);
       }
+      else if (gameplayRoot.parent != canvasRect)
+      {
+        gameplayRoot.SetParent(canvasRect, false);
+      }
 
       if (partyArea == null)
       {
@@ -779,6 +770,10 @@ namespace DM.Rendering
         );
         partyObject.layer = gameplayRoot.gameObject.layer;
         partyArea = partyObject.GetComponent<RectTransform>();
+        partyArea.SetParent(gameplayRoot, false);
+      }
+      else if (partyArea.parent != gameplayRoot)
+      {
         partyArea.SetParent(gameplayRoot, false);
       }
 
@@ -792,10 +787,19 @@ namespace DM.Rendering
         rightInterfaceArea = rightObject.GetComponent<RectTransform>();
         rightInterfaceArea.SetParent(gameplayRoot, false);
       }
+      else if (rightInterfaceArea.parent != gameplayRoot)
+      {
+        rightInterfaceArea.SetParent(gameplayRoot, false);
+      }
 
-      dungeonViewport.rectTransform.SetParent(gameplayRoot, false);
-      if (movementArrows != null)
+      if (dungeonViewport.rectTransform.parent != gameplayRoot)
+        dungeonViewport.rectTransform.SetParent(gameplayRoot, false);
+
+      if (movementArrows != null
+          && movementArrows.rectTransform.parent != gameplayRoot)
+      {
         movementArrows.rectTransform.SetParent(gameplayRoot, false);
+      }
 
       // Draw order: party, viewport, right interface, arrows on top.
       partyArea.SetSiblingIndex(0);
@@ -1099,8 +1103,33 @@ namespace DM.Rendering
       if (dungeonViewport == null)
         return;
 
+      // Defer hierarchy/layout work — SetParent during OnValidate spams
+      // "SendMessage cannot be called during Awake/OnValidate".
+#if UNITY_EDITOR
+      UnityEditor.EditorApplication.delayCall -=
+          ApplyViewportPresentationFromValidate;
+      UnityEditor.EditorApplication.delayCall +=
+          ApplyViewportPresentationFromValidate;
+#else
+      ApplyViewportPresentation();
+#endif
+    }
+
+#if UNITY_EDITOR
+    private void ApplyViewportPresentationFromValidate()
+    {
+      UnityEditor.EditorApplication.delayCall -=
+          ApplyViewportPresentationFromValidate;
+
+      if (this == null || !Application.isPlaying)
+        return;
+
+      if (dungeonViewport == null)
+        return;
+
       ApplyViewportPresentation();
     }
+#endif
 
     private void OnEnable()
     {
@@ -1131,8 +1160,6 @@ namespace DM.Rendering
 
     public void Render(DungeonMap map)
     {
-      Debug.Log("DungeonRenderer Render called.");
-
       currentMap = map;
       frameDirty = true;
     }
@@ -1329,31 +1356,8 @@ namespace DM.Rendering
         DrawPiece(piece);
       }
 
-      string frontList =
-          drawnFrontWalls.Length > 0
-              ? drawnFrontWalls.ToString()
-              : "(none)";
-      string sideList =
-          drawnSideWalls.Length > 0
-              ? drawnSideWalls.ToString()
-              : "(none)";
-
-      if (currentMap != null)
-      {
-        Debug.Log(
-            "DungeonRenderer walls at " +
-            $"({currentMap.PlayerX},{currentMap.PlayerY}) " +
-            $"facing {currentMap.PlayerFacing}: " +
-            $"front=[{frontList}] sides=[{sideList}]"
-        );
-      }
-      else
-      {
-        Debug.Log(
-            "DungeonRenderer walls: " +
-            $"front=[{frontList}] sides=[{sideList}]"
-        );
-      }
+      // Pose + drawn walls: one Console line, only when state changes.
+      LogViewportStateIfChanged();
 
       if (!showEntranceScreen)
         TryDrawHeroPortraitOverlay();
@@ -1377,6 +1381,7 @@ namespace DM.Rendering
       if (bitmapFont == null || framePixels == null || currentMap == null)
         return;
 
+      // On-screen: pose line only (no wall list on the framebuffer).
       bitmapFont.DrawPoseDebugText(
           framePixels,
           viewWidth,
@@ -1385,6 +1390,103 @@ namespace DM.Rendering
           currentMap.PlayerY,
           currentMap.PlayerFacing
       );
+    }
+
+    private void LogViewportStateIfChanged()
+    {
+      if (currentMap == null)
+        return;
+
+      List<ViewportWallDebugEntry> walls =
+          new List<ViewportWallDebugEntry>(12);
+      CollectActuallyDrawnWallDebugEntries(walls);
+
+      string message = ViewportWallDebugText.FormatConsoleLine(
+          currentMap.PlayerX,
+          currentMap.PlayerY,
+          currentMap.PlayerFacing,
+          walls
+      );
+
+      if (message == lastViewportStateLogMessage)
+        return;
+
+      lastViewportStateLogMessage = message;
+      Debug.Log(message);
+    }
+
+    /// <summary>
+    /// Walls DungeonRenderer would draw for the current pose (ShouldDrawPiece
+    /// + F1 group exclusivity), in F0→F3 order. Mirror from layout pieces.
+    /// </summary>
+    private void CollectActuallyDrawnWallDebugEntries(
+        List<ViewportWallDebugEntry> results)
+    {
+      results.Clear();
+      if (layout == null || layout.Pieces == null)
+        return;
+
+      ViewportPiece frontA =
+          FindLayoutPiece(DungeonGraphicType.FrontWallF1_A);
+      ViewportPiece frontB =
+          FindLayoutPiece(DungeonGraphicType.FrontWallF1_B);
+      ViewportPiece frontLegacy =
+          FindLayoutPiece(DungeonGraphicType.FrontWallF1);
+
+      ViewportPiece selectedF1Front = null;
+      if (ShouldDrawPiece(frontA))
+        selectedF1Front = frontA;
+      else if (ShouldDrawPiece(frontB))
+        selectedF1Front = frontB;
+      else if (ShouldDrawPiece(frontLegacy))
+        selectedF1Front = frontLegacy;
+
+      for (int i = 0;
+          i < ViewportWallDebugText.OrderedWallNames.Length;
+          i++)
+      {
+        string name = ViewportWallDebugText.OrderedWallNames[i];
+        ViewportPiece piece =
+            ViewportWallDebugText.FindPieceByName(layout, name);
+        if (piece == null)
+          continue;
+
+        if (!IsWallDebugPieceActuallyDrawn(piece, selectedF1Front))
+          continue;
+
+        results.Add(
+            new ViewportWallDebugEntry(
+                piece.Name,
+                piece.MirrorHorizontally
+            )
+        );
+      }
+    }
+
+    private bool IsWallDebugPieceActuallyDrawn(
+        ViewportPiece piece,
+        ViewportPiece selectedF1Front)
+    {
+      if (piece == null)
+        return false;
+
+      if (StraightF1WallLogic.IsF1WallGroupGraphic(piece.Graphic))
+      {
+        if (piece.Graphic == DungeonGraphicType.FrontWallF1_A
+            || piece.Graphic == DungeonGraphicType.FrontWallF1_B
+            || piece.Graphic == DungeonGraphicType.FrontWallF1)
+        {
+          return selectedF1Front == piece;
+        }
+
+        // F1L / F1R only when no centre F1 front is drawn.
+        if (selectedF1Front != null)
+          return false;
+
+        return ShouldDrawPiece(piece);
+      }
+
+      return ShouldDrawPiece(piece);
     }
 
     private void DrawChampionNameTest()

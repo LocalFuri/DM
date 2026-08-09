@@ -79,11 +79,6 @@ namespace DM.Dungeon
 
       if (moved)
       {
-        Debug.Log(
-            $"Moved to ({map.PlayerX},{map.PlayerY}) " +
-            $"facing {map.PlayerFacing}."
-        );
-
         dungeonRenderer.RequestRedraw();
         DetectChampionInFront();
       }
@@ -100,11 +95,6 @@ namespace DM.Dungeon
     {
       map.TurnLeft();
 
-      Debug.Log(
-          $"Turned left. Now at ({map.PlayerX},{map.PlayerY}) " +
-          $"facing {map.PlayerFacing}."
-      );
-
       dungeonRenderer.RequestRedraw();
       DetectChampionInFront();
     }
@@ -112,11 +102,6 @@ namespace DM.Dungeon
     private void TurnRight()
     {
       map.TurnRight();
-
-      Debug.Log(
-          $"Turned right. Now at ({map.PlayerX},{map.PlayerY}) " +
-          $"facing {map.PlayerFacing}."
-      );
 
       dungeonRenderer.RequestRedraw();
       DetectChampionInFront();

@@ -6,11 +6,5 @@ namespace DM.Core
   // This component is kept for compatibility but does not create a dungeon.
   public class GameManager : MonoBehaviour
   {
-    private void Awake()
-    {
-      Debug.Log(
-          "GameManager: inactive. Use GameBootstrap with a map TextAsset."
-      );
-    }
   }
 }
