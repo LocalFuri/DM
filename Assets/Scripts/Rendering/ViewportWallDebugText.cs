@@ -55,11 +55,10 @@ namespace DM.Rendering
         IReadOnlyList<ViewportWallDebugEntry> walls)
     {
       StringBuilder builder = new StringBuilder(128);
-      builder.Append("POS (");
       builder.Append(posX);
       builder.Append(',');
       builder.Append(posY);
-      builder.Append(") ");
+      builder.Append(' ');
       builder.Append(facing.ToString().ToUpperInvariant());
 
       if (walls != null)

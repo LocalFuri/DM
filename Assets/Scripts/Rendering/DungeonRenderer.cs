@@ -154,6 +154,9 @@ namespace DM.Rendering
     public IReadOnlyList<string> VisibleWallPieces => visibleWallPieces;
 
     private string lastViewportStateLogMessage;
+    private int lastLoggedPoseX = int.MinValue;
+    private int lastLoggedPoseY = int.MinValue;
+    private DungeonFacing lastLoggedPoseFacing = (DungeonFacing)(-1);
     private string lastMissingPoseVisibilityWarned;
 
     public bool IsEntranceBlockingInput =>
@@ -1368,9 +1371,6 @@ namespace DM.Rendering
         DrawPiece(piece);
       }
 
-      // Pose + drawn walls: one Console line, only when state changes.
-      LogViewportStateIfChanged();
-
       if (!showEntranceScreen)
         TryDrawHeroPortraitOverlay();
 
@@ -1381,6 +1381,9 @@ namespace DM.Rendering
         DrawChampionNameTest();
 
       DrawComparisonModeDebugInfo();
+
+      // After ApplyRuntimePoseVisibility + compose — Console line (deduped).
+      LogViewportStateIfChanged();
 
       ApplyFrameBuffer();
     }
@@ -1413,16 +1416,30 @@ namespace DM.Rendering
           new List<ViewportWallDebugEntry>(12);
       CollectActuallyDrawnWallDebugEntries(walls);
 
+      int posX = currentMap.PlayerX;
+      int posY = currentMap.PlayerY;
+      DungeonFacing facing = currentMap.PlayerFacing;
+
       string message = ViewportWallDebugText.FormatConsoleLine(
-          currentMap.PlayerX,
-          currentMap.PlayerY,
-          currentMap.PlayerFacing,
+          posX,
+          posY,
+          facing,
           walls
       );
 
-      if (message == lastViewportStateLogMessage)
+      bool poseChanged =
+          posX != lastLoggedPoseX
+          || posY != lastLoggedPoseY
+          || facing != lastLoggedPoseFacing;
+
+      // Pose key (X/Y/Facing) always refreshes the Console line, even when
+      // wall/mirror lists are identical across facings (e.g. (1,3) East/West).
+      if (!poseChanged && message == lastViewportStateLogMessage)
         return;
 
+      lastLoggedPoseX = posX;
+      lastLoggedPoseY = posY;
+      lastLoggedPoseFacing = facing;
       lastViewportStateLogMessage = message;
       Debug.Log(message);
     }

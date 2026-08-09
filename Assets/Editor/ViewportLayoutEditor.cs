@@ -80,12 +80,15 @@ public class ViewportLayoutEditor : EditorWindow
   private bool viewportTextureStolen;
 
   // Edit Mode map-pose preview (Hall of Champions).
+  // previewFacing is the single source of truth for viewport compose, minimap
+  // arrow, and Console — keep all three on this field only.
   private int previewX = 1;
   private int previewY = 2;
   private DungeonFacing previewFacing = DungeonFacing.South;
   private DungeonMap previewMiniMap;
   private string previewMiniMapLoadError;
   private Vector2 previewMiniMapScroll;
+  private bool previewPoseChangedByKeyboardThisFrame;
 
   // Temporary 320×200 presentation (restored on close / Play Mode).
   private bool presentationOverrideActive;
@@ -202,7 +205,11 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     if (state == PlayModeStateChange.EnteredEditMode)
+    {
+      // Re-apply preview pose after Play mutated live layout Enabled flags.
+      ApplyCurrentPoseVisibilityToLayout();
       RefreshEditModePreview();
+    }
 
     if (state == PlayModeStateChange.ExitingPlayMode)
       RepaintGameViews();
@@ -211,12 +218,18 @@ public class ViewportLayoutEditor : EditorWindow
   private void OnGUI()
   {
     selectionChangedThisFrame = false;
+    previewPoseChangedByKeyboardThisFrame = false;
 
     // Arrow Up/Down must be handled before BeginScrollView — otherwise the
     // scroll view consumes them for scrolling and HandlePreviewMoveKeyboard
     // never sees a usable KeyDown (Left/Right strafe is unaffected).
-    if (layout != null)
+    // Facing keys run here too so EnumPopup cannot override the same KeyDown.
+    if (layout != null && !Application.isPlaying)
+    {
       HandlePreviewMoveKeyboard();
+      HandlePreviewFacingKeyboard();
+      HandlePreviewStrafeKeyboard();
+    }
 
     editorScroll = EditorGUILayout.BeginScrollView(editorScroll);
 
@@ -275,8 +288,6 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     ClampSelectedPieceIndex();
-    HandlePreviewFacingKeyboard();
-    HandlePreviewStrafeKeyboard();
 
     DrawMapPosePreviewControls();
 
@@ -525,6 +536,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     // Preserve Preview X / Preview Y; only facing changes.
+    previewPoseChangedByKeyboardThisFrame = true;
     SwitchPreviewPose(previewX, previewY, nextFacing);
     TryRefocusPreviewWindow();
   }
@@ -572,6 +584,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     // Keep Preview Facing unchanged.
+    previewPoseChangedByKeyboardThisFrame = true;
     SwitchPreviewPose(nextX, nextY, previewFacing);
     TryRefocusPreviewWindow();
   }
@@ -618,7 +631,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (!previewMiniMap.CanEnter(nextX, nextY))
       return;
 
-    // Keep Preview Facing unchanged.
+    previewPoseChangedByKeyboardThisFrame = true;
     SwitchPreviewPose(nextX, nextY, previewFacing);
     TryRefocusPreviewWindow();
   }
@@ -1030,14 +1043,19 @@ public class ViewportLayoutEditor : EditorWindow
     int editX = previewX;
     int editY = previewY;
     DungeonFacing editFacing = previewFacing;
-    EditorGUI.BeginChangeCheck();
-    editX = EditorGUILayout.IntField("Preview X", editX);
-    editY = EditorGUILayout.IntField("Preview Y", editY);
-    editFacing = (DungeonFacing)EditorGUILayout.EnumPopup(
-        "Preview Facing",
-        editFacing);
-    if (EditorGUI.EndChangeCheck())
-      SwitchPreviewPose(editX, editY, editFacing);
+    using (new EditorGUI.DisabledScope(Application.isPlaying))
+    {
+      EditorGUI.BeginChangeCheck();
+      editX = EditorGUILayout.IntField("Preview X", editX);
+      editY = EditorGUILayout.IntField("Preview Y", editY);
+      editFacing = (DungeonFacing)EditorGUILayout.EnumPopup(
+          "Preview Facing",
+          editFacing);
+      // Keyboard Delete/PageDown already applied this frame — do not let the
+      // EnumPopup re-apply a stale facing from the same KeyDown.
+      if (EditorGUI.EndChangeCheck() && !previewPoseChangedByKeyboardThisFrame)
+        SwitchPreviewPose(editX, editY, editFacing);
+    }
 
     using (new EditorGUI.DisabledScope(Application.isPlaying))
     {
@@ -1079,6 +1097,9 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
+    // Keep minimap arrow on the same previewFacing as viewport + Console.
+    previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
+
     previewMiniMapScroll = DungeonMiniMapGui.Draw(
         previewMiniMap,
         previewX,
@@ -1110,6 +1131,11 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void SwitchPreviewPose(int newX, int newY, DungeonFacing newFacing)
   {
+    // During Play the Game View is owned by DungeonRenderer — do not let the
+    // editor previewFacing / minimap drift away from a skipped Refresh/log.
+    if (Application.isPlaying)
+      return;
+
     if (newX == previewX && newY == previewY && newFacing == previewFacing)
       return;
 
@@ -1126,6 +1152,9 @@ public class ViewportLayoutEditor : EditorWindow
 
     ApplyCurrentPoseVisibilityToLayout();
     PersistPoseVisibilityStore();
+
+    // Full cache reset so Console must emit the new previewFacing.
+    ResetEditModeViewportLogCache();
     RefreshEditModePreview();
     GUI.changed = true;
     Repaint();
@@ -1524,36 +1553,45 @@ public class ViewportLayoutEditor : EditorWindow
     if (Application.isPlaying)
       return;
 
-    if (layout == null || graphics == null)
+    if (layout == null)
     {
       RestoreViewportTextureAndDestroyPreview();
       RepaintGameViews();
       return;
     }
 
-    // Pose + Enabled walls are available — Console line (deduped).
+    if (graphics == null)
+    {
+      RestoreViewportTextureAndDestroyPreview();
+      RepaintGameViews();
+      // Still emit Console from previewFacing so it cannot lag the minimap.
+      LogCurrentViewportStateToConsole();
+      return;
+    }
+
+    if (TryGetViewportRawImage(out RawImage dungeonImage))
+    {
+      EnsureEditModePreviewTexture();
+      ComposeEditModePreview();
+      StealViewportTextureIfNeeded(dungeonImage);
+      ApplyExact320x200EditModePresentation(dungeonImage);
+
+      // Compose updates pixels in-place on the same Texture2D instance. Re-assigning
+      // the identical reference is a no-op for RawImage, so force a reference change.
+      if (editModePreviewTexture != null)
+      {
+        dungeonImage.texture = Texture2D.whiteTexture;
+        dungeonImage.texture = editModePreviewTexture;
+        if (dungeonImage.canvas != null)
+          Canvas.ForceUpdateCanvases();
+      }
+
+      MaintainMovementArrowsPreview();
+      RepaintGameViews();
+    }
+
+    // After pose visibility/mirror apply (+ compose when Game View is available).
     LogCurrentViewportStateToConsole();
-
-    if (!TryGetViewportRawImage(out RawImage dungeonImage))
-      return;
-
-    EnsureEditModePreviewTexture();
-    ComposeEditModePreview();
-    StealViewportTextureIfNeeded(dungeonImage);
-    ApplyExact320x200EditModePresentation(dungeonImage);
-
-    // Compose updates pixels in-place on the same Texture2D instance. Re-assigning
-    // the identical reference is a no-op for RawImage, so force a reference change.
-    if (editModePreviewTexture == null)
-      return;
-
-    dungeonImage.texture = Texture2D.whiteTexture;
-    dungeonImage.texture = editModePreviewTexture;
-    if (dungeonImage.canvas != null)
-      Canvas.ForceUpdateCanvases();
-
-    MaintainMovementArrowsPreview();
-    RepaintGameViews();
   }
 
   private void ApplyExact320x200EditModePresentation(RawImage dungeonImage)
@@ -1986,6 +2024,10 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   private static string lastEditModeViewportLogMessage;
+  private static int lastEditLoggedPoseX = int.MinValue;
+  private static int lastEditLoggedPoseY = int.MinValue;
+  private static DungeonFacing lastEditLoggedPoseFacing =
+      (DungeonFacing)(-1);
 
   /// <summary>
   /// Allow the current Edit Mode POS/wall line to log again after an
@@ -1994,11 +2036,15 @@ public class ViewportLayoutEditor : EditorWindow
   public static void ResetEditModeViewportLogCache()
   {
     lastEditModeViewportLogMessage = null;
+    lastEditLoggedPoseX = int.MinValue;
+    lastEditLoggedPoseY = int.MinValue;
+    lastEditLoggedPoseFacing = (DungeonFacing)(-1);
   }
 
   /// <summary>
   /// Console POS/wall line for Edit Mode (same FormatConsoleLine as Play).
   /// Uses live preview pose and Enabled layout pieces. Deduped until cache reset.
+  /// Pose key (X/Y/Facing) always refreshes even when wall lists match.
   /// </summary>
   internal void LogCurrentViewportStateToConsole()
   {
@@ -2016,9 +2062,17 @@ public class ViewportLayoutEditor : EditorWindow
         walls
     );
 
-    if (message == lastEditModeViewportLogMessage)
+    bool poseChanged =
+        previewX != lastEditLoggedPoseX
+        || previewY != lastEditLoggedPoseY
+        || previewFacing != lastEditLoggedPoseFacing;
+
+    if (!poseChanged && message == lastEditModeViewportLogMessage)
       return;
 
+    lastEditLoggedPoseX = previewX;
+    lastEditLoggedPoseY = previewY;
+    lastEditLoggedPoseFacing = previewFacing;
     lastEditModeViewportLogMessage = message;
     Debug.Log(message);
   }
