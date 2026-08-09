@@ -5,8 +5,8 @@ using DM.Rendering;
 using UnityEngine;
 
 /// <summary>
-/// Per-pose wall visibility (Enabled flags only). Keyed by exact X + Y + Facing.
-/// Shared by Edit Mode and Play/Build. Does not store Graphic / X / Y / Mirror / order.
+/// Per-pose Enabled + MirrorHorizontally flags. Keyed by exact X + Y + Facing.
+/// Shared by Edit Mode and Play/Build. Does not store Graphic / X / Y / order.
 /// </summary>
 [CreateAssetMenu(
     fileName = "ViewportPoseVisibility",
@@ -77,6 +77,7 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
 
     entry.PieceNames.Clear();
     entry.EnabledFlags.Clear();
+    entry.MirrorHorizontallyFlags.Clear();
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -86,6 +87,7 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
 
       entry.PieceNames.Add(piece.Name ?? string.Empty);
       entry.EnabledFlags.Add(piece.Enabled);
+      entry.MirrorHorizontallyFlags.Add(piece.MirrorHorizontally);
     }
   }
 
@@ -104,6 +106,9 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
 
       if (TryGetEnabledByName(entry, piece.Name, out bool enabled))
         piece.Enabled = enabled;
+
+      if (TryGetMirrorByName(entry, piece.Name, out bool mirror))
+        piece.MirrorHorizontally = mirror;
     }
   }
 
@@ -129,6 +134,36 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
 
     return false;
   }
+
+  private static bool TryGetMirrorByName(
+      ViewportPoseVisibilityEntry entry,
+      string pieceName,
+      out bool mirror)
+  {
+    mirror = false;
+    if (entry == null
+        || entry.PieceNames == null
+        || entry.MirrorHorizontallyFlags == null
+        || entry.MirrorHorizontallyFlags.Count == 0)
+    {
+      return false;
+    }
+
+    string key = pieceName ?? string.Empty;
+    int count = Math.Min(
+        entry.PieceNames.Count,
+        entry.MirrorHorizontallyFlags.Count);
+    for (int i = 0; i < count; i++)
+    {
+      if (entry.PieceNames[i] == key)
+      {
+        mirror = entry.MirrorHorizontallyFlags[i];
+        return true;
+      }
+    }
+
+    return false;
+  }
 }
 
 [Serializable]
@@ -140,4 +175,5 @@ public sealed class ViewportPoseVisibilityEntry
 
   public List<string> PieceNames = new();
   public List<bool> EnabledFlags = new();
+  public List<bool> MirrorHorizontallyFlags = new();
 }
