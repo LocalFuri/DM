@@ -1364,7 +1364,27 @@ namespace DM.Rendering
       if (!showEntranceScreen)
         DrawChampionNameTest();
 
+      DrawComparisonModeDebugInfo();
+
       ApplyFrameBuffer();
+    }
+
+    private void DrawComparisonModeDebugInfo()
+    {
+      if (!exact320x200ComparisonMode)
+        return;
+
+      if (bitmapFont == null || framePixels == null || currentMap == null)
+        return;
+
+      bitmapFont.DrawPoseDebugText(
+          framePixels,
+          viewWidth,
+          viewHeight,
+          currentMap.PlayerX,
+          currentMap.PlayerY,
+          currentMap.PlayerFacing
+      );
     }
 
     private void DrawChampionNameTest()

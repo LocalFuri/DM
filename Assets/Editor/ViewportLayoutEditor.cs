@@ -2000,8 +2000,7 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    DungeonBitmapFont bitmapFont =
-        Object.FindAnyObjectByType<DungeonBitmapFont>();
+    DungeonBitmapFont bitmapFont = FindEditModeBitmapFont();
     if (bitmapFont != null)
     {
       // First hero-name frame: 43×7 inside Champion Status Slot 1
@@ -2030,10 +2029,36 @@ public class ViewportLayoutEditor : EditorWindow
           frameHeight,
           championNameAdvance
       );
+
+      // Same DrawPoseDebugText path as Play/Build comparison mode.
+      bitmapFont.DrawPoseDebugText(
+          pixels,
+          PreviewWidth,
+          PreviewHeight,
+          previewX,
+          previewY,
+          previewFacing
+      );
     }
 
     editModePreviewTexture.SetPixels32(pixels);
     editModePreviewTexture.Apply(false);
+  }
+
+  private static DungeonBitmapFont FindEditModeBitmapFont()
+  {
+    DungeonBitmapFont[] fonts =
+        Object.FindObjectsByType<DungeonBitmapFont>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+    for (int i = 0; i < fonts.Length; i++)
+    {
+      if (fonts[i] != null && fonts[i].AlphabetGrid != null)
+        return fonts[i];
+    }
+
+    return null;
   }
 
   /// <summary>
