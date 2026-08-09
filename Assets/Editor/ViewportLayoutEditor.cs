@@ -397,8 +397,8 @@ public class ViewportLayoutEditor : EditorWindow
     if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
     {
       EditorGUILayout.HelpBox(
-          "Ceiling/Floor Mirror follows the shared environment phase "
-              + "(same parity as F1 A/B) at runtime.",
+          "Ceiling/Floor Mirror is the per-pose Mirror Horizontally flag "
+              + "(Edit Mode and Play/Build).",
           MessageType.None);
     }
 

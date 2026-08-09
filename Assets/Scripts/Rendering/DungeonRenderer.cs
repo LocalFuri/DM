@@ -2287,26 +2287,16 @@ namespace DM.Rendering
     }
 
     /// <summary>
-    /// With a live map, Floor/Ceiling share one environment phase.
-    /// Without a map (layout testing), use the piece's Mirror Horizontally flag.
-    /// Front Wall F1 does not use this path (authored MirrorHorizontally only).
+    /// Floor/Ceiling (and all other pieces on this path) use the layout /
+    /// per-pose MirrorHorizontally flag — same as Edit Mode preview.
+    /// Do not substitute environment phase parity here.
     /// </summary>
     private bool GetEffectiveEnvironmentMirror(ViewportPiece piece)
     {
       if (piece == null)
         return false;
 
-      if (currentMap == null
-          || !StraightF1WallLogic.IsEnvironmentPhaseGraphic(piece.Graphic))
-      {
-        return piece.MirrorHorizontally;
-      }
-
-      return StraightF1WallLogic.IsEnvironmentPhaseB(
-          currentMap.PlayerFacing,
-          currentMap.PlayerX,
-          currentMap.PlayerY
-      );
+      return piece.MirrorHorizontally;
     }
 
     private void ApplyFrameBuffer()
