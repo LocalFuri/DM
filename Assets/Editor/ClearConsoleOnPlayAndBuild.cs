@@ -6,7 +6,9 @@ using UnityEditor.Build.Reporting;
 
 /// <summary>
 /// Editor-only: clear the Unity Console once when entering Play Mode,
-/// and once when a player build starts. Does not clear on stop or mid-session.
+/// once when returning to Edit Mode, and once when a player build starts.
+/// Does not clear mid-session on move/turn/redraw.
+/// Edit Mode POS/wall restore is owned by ViewportLayoutEditor.
 /// </summary>
 [InitializeOnLoad]
 internal static class ClearConsoleOnPlayAndBuild
@@ -20,11 +22,19 @@ internal static class ClearConsoleOnPlayAndBuild
   private static void OnPlayModeStateChanged(PlayModeStateChange state)
   {
     // Clear once just before Play begins so Awake/Start / POS logs remain.
-    // Do not clear on EnteredPlayMode (too late) or when stopping Play.
-    if (state != PlayModeStateChange.ExitingEditMode)
+    if (state == PlayModeStateChange.ExitingEditMode)
+    {
+      ClearConsole();
       return;
+    }
 
-    ClearConsole();
+    // Clear once when returning to Edit Mode — drop the previous Play session.
+    // Reset Edit Mode log cache so the next preview refresh re-logs POS/walls.
+    if (state == PlayModeStateChange.EnteredEditMode)
+    {
+      ClearConsole();
+      ViewportLayoutEditor.ResetEditModeViewportLogCache();
+    }
   }
 
   internal static void ClearConsole()

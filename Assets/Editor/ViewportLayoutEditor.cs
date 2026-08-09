@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using DM.Dungeon;
 using DM.Rendering;
@@ -1515,6 +1516,9 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
+    // Pose + Enabled walls are available — Console line (deduped).
+    LogCurrentViewportStateToConsole();
+
     if (!TryGetViewportRawImage(out RawImage dungeonImage))
       return;
 
@@ -1964,6 +1968,44 @@ public class ViewportLayoutEditor : EditorWindow
 
     editModePreviewTexture.SetPixels32(pixels);
     editModePreviewTexture.Apply(false);
+  }
+
+  private static string lastEditModeViewportLogMessage;
+
+  /// <summary>
+  /// Allow the current Edit Mode POS/wall line to log again after an
+  /// external Console clear (e.g. returning from Play Mode).
+  /// </summary>
+  public static void ResetEditModeViewportLogCache()
+  {
+    lastEditModeViewportLogMessage = null;
+  }
+
+  /// <summary>
+  /// Console POS/wall line for Edit Mode (same FormatConsoleLine as Play).
+  /// Uses live preview pose and Enabled layout pieces. Deduped until cache reset.
+  /// </summary>
+  internal void LogCurrentViewportStateToConsole()
+  {
+    if (layout == null)
+      return;
+
+    List<ViewportWallDebugEntry> walls =
+        new List<ViewportWallDebugEntry>(12);
+    ViewportWallDebugText.CollectEnabledFromLayout(layout, walls);
+
+    string message = ViewportWallDebugText.FormatConsoleLine(
+        previewX,
+        previewY,
+        previewFacing,
+        walls
+    );
+
+    if (message == lastEditModeViewportLogMessage)
+      return;
+
+    lastEditModeViewportLogMessage = message;
+    Debug.Log(message);
   }
 
   private static DungeonBitmapFont FindEditModeBitmapFont()
