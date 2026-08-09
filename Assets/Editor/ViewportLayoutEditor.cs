@@ -416,6 +416,15 @@ public class ViewportLayoutEditor : EditorWindow
     piece.Name = EditorGUILayout.TextField("Name", piece.Name);
     piece.Enabled = EditorGUILayout.Toggle("Enabled", piece.Enabled);
     piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup("Graphic", piece.Graphic);
+    if (EditorGUI.EndChangeCheck())
+    {
+      SelectPiece(index);
+      changed = true;
+    }
+
+    // Mirror is outside the Name/Enabled/Graphic change-check so SelectPiece →
+    // FocusControl(null) cannot swallow the Toggle or skip the live refresh.
+    bool mirrorBefore = piece.MirrorHorizontally;
     piece.MirrorHorizontally = EditorGUILayout.Toggle(
         "Mirror Horizontally",
         piece.MirrorHorizontally);
@@ -428,10 +437,10 @@ public class ViewportLayoutEditor : EditorWindow
           MessageType.None);
     }
 
-    if (EditorGUI.EndChangeCheck())
+    if (piece.MirrorHorizontally != mirrorBefore)
     {
-      SelectPiece(index);
       changed = true;
+      ApplyMirrorHorizontallyChangeForCurrentPose();
     }
 
     if (DrawIntStepper("X", ref piece.X, snap))
@@ -1282,6 +1291,27 @@ public class ViewportLayoutEditor : EditorWindow
 
     RefreshDungeonRenderer();
     RefreshEditModePreview();
+  }
+
+  /// <summary>
+  /// Mirror Horizontally toggled: capture per-pose flag, then force an immediate
+  /// Edit Mode viewport + Console refresh (including (M) markers).
+  /// </summary>
+  private void ApplyMirrorHorizontallyChangeForCurrentPose()
+  {
+    if (Application.isPlaying || layout == null)
+      return;
+
+    CaptureCurrentPoseVisibilityToStore();
+    PersistPoseVisibilityStore();
+    EditorUtility.SetDirty(layout);
+
+    // Same pose X/Y/Facing — clear dedupe so Console re-emits with new (M).
+    ResetEditModeViewportLogCache();
+    DestroyEditModePreviewTextureOnly();
+    RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
   }
 
   /// <summary>
