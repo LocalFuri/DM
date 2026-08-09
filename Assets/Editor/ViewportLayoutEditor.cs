@@ -311,6 +311,9 @@ public class ViewportLayoutEditor : EditorWindow
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
         ViewportPiece piece = layout.Pieces[i];
+        if (IsHiddenFromEditorPieceList(piece))
+          continue;
+
         if (!PieceMatchesSearchFilter(piece))
           continue;
 
@@ -329,6 +332,18 @@ public class ViewportLayoutEditor : EditorWindow
       RefreshEditModePreview();
       Repaint();
     }
+  }
+
+  /// <summary>
+  /// Muted investigation pieces stay in the layout asset but are not listed.
+  /// </summary>
+  private static bool IsHiddenFromEditorPieceList(ViewportPiece piece)
+  {
+    if (piece == null || piece.Name == null)
+      return false;
+
+    return piece.Name == "Ceiling Strip 84"
+        || piece.Name == "Ceiling Strip 85";
   }
 
   private bool PieceMatchesSearchFilter(ViewportPiece piece)

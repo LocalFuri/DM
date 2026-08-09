@@ -86,7 +86,9 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
         continue;
 
       entry.PieceNames.Add(piece.Name ?? string.Empty);
-      entry.EnabledFlags.Add(piece.Enabled);
+      // Ceiling Strip 84/85 stay muted until we decide their role.
+      entry.EnabledFlags.Add(
+          IsTemporarilyMutedPiece(piece.Name) ? false : piece.Enabled);
       entry.MirrorHorizontallyFlags.Add(piece.MirrorHorizontally);
     }
   }
@@ -109,7 +111,20 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
 
       if (TryGetMirrorByName(entry, piece.Name, out bool mirror))
         piece.MirrorHorizontally = mirror;
+
+      // Ceiling Strip 84/85 stay muted until we decide their role.
+      if (IsTemporarilyMutedPiece(piece.Name))
+        piece.Enabled = false;
     }
+  }
+
+  /// <summary>
+  /// Investigation pieces kept non-drawing without deleting layout entries.
+  /// </summary>
+  private static bool IsTemporarilyMutedPiece(string pieceName)
+  {
+    return pieceName == "Ceiling Strip 84"
+        || pieceName == "Ceiling Strip 85";
   }
 
   private static bool TryGetEnabledByName(
