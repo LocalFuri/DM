@@ -20,7 +20,7 @@ MonoBehaviour:
     X: 0
     Y: 128
     Enabled: 1
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
   - Name: Ceiling Strip 84
     Graphic: 21
     X: 65
@@ -38,7 +38,7 @@ MonoBehaviour:
     X: 0
     Y: 31
     Enabled: 1
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
   - Name: Front Wall F3
     Graphic: 25
     X: 77
@@ -80,7 +80,7 @@ MonoBehaviour:
     X: 40
     Y: 47
     Enabled: 0
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
   - Name: Front Wall F1 B
     Graphic: 28
     X: 40
