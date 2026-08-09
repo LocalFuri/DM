@@ -11,7 +11,6 @@ namespace DM.Dungeon
     private DungeonMap map;
     private DungeonRenderer dungeonRenderer;
     private HeroRecruitmentPanel heroRecruitmentPanel;
-    private bool entranceStartTeleportPending = true;
 
     public DungeonMap Map => map;
 
@@ -23,7 +22,6 @@ namespace DM.Dungeon
       map = dungeonMap;
       dungeonRenderer = renderer;
       heroRecruitmentPanel = recruitmentPanel;
-      entranceStartTeleportPending = true;
 
       DetectChampionInFront();
     }
@@ -45,15 +43,7 @@ namespace DM.Dungeon
         return;
 
       if (keyboard.upArrowKey.wasPressedThisFrame)
-      {
-        if (entranceStartTeleportPending)
-        {
-          PerformEntranceStartTeleport();
-          return;
-        }
-
         TryMoveRelative(0, 1);
-      }
 
       if (keyboard.downArrowKey.wasPressedThisFrame)
         TryMoveRelative(0, -1);
@@ -69,18 +59,6 @@ namespace DM.Dungeon
 
       if (keyboard.pageDownKey.wasPressedThisFrame)
         TurnRight();
-    }
-
-    private void PerformEntranceStartTeleport()
-    {
-      map.SetPlayerPose(10, 4, DungeonFacing.North);
-      entranceStartTeleportPending = false;
-      dungeonRenderer.RequestRedraw();
-      DetectChampionInFront();
-
-      Debug.Log(
-          "Entrance start teleport to (10,4) facing North."
-      );
     }
 
     // localX/localY are in facing-local space:
