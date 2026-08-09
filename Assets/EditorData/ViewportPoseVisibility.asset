@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b727bd93fea95248b0dc7617cddfdeb, type: 3}
   m_Name: ViewportPoseVisibility
-  m_EditorClassIdentifier: Assembly-CSharp-Editor::ViewportPoseVisibilityStore
+  m_EditorClassIdentifier: Assembly-CSharp::ViewportPoseVisibilityStore
   MapId: HallOfChampions
   Entries:
   - X: 1

@@ -5,8 +5,8 @@ using DM.Rendering;
 using UnityEngine;
 
 /// <summary>
-/// Editor-only per-pose wall visibility. Keyed by exact X + Y + Facing.
-/// Does not store Graphic / X / Y / Mirror / order — those stay on ViewportLayout.
+/// Per-pose wall visibility (Enabled flags only). Keyed by exact X + Y + Facing.
+/// Shared by Edit Mode and Play/Build. Does not store Graphic / X / Y / Mirror / order.
 /// </summary>
 [CreateAssetMenu(
     fileName = "ViewportPoseVisibility",

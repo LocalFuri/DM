@@ -36,6 +36,14 @@ namespace DM.Rendering
     [Header("Viewport Layout")]
     [SerializeField] private ViewportLayout layout;
 
+    [Header("Pose Visibility")]
+    [SerializeField]
+    [Tooltip(
+        "Per-pose Enabled flags (same asset as Viewport Layout Editor). " +
+        "Applied before each dungeon frame from PlayerX/Y/Facing."
+    )]
+    private ViewportPoseVisibilityStore poseVisibility;
+
     [Header("Graphics Database")]
     [SerializeField] private DungeonGraphics graphics;
 
@@ -146,6 +154,7 @@ namespace DM.Rendering
     public IReadOnlyList<string> VisibleWallPieces => visibleWallPieces;
 
     private string lastViewportStateLogMessage;
+    private string lastMissingPoseVisibilityWarned;
 
     public bool IsEntranceBlockingInput =>
         !entranceViewportReady
@@ -1303,6 +1312,9 @@ namespace DM.Rendering
         return;
       }
 
+      // Same saved per-pose Enabled flags as Viewport Layout Editor.
+      ApplyRuntimePoseVisibility();
+
       // TEMP: at (10,4) North, blit the original 224×136 reference wall
       // instead of composing tiles. Toggle showOriginalWallReferenceTest off
       // (or clear the texture) to restore normal rendering.
@@ -1759,26 +1771,65 @@ namespace DM.Rendering
       }
     }
 
+    /// <summary>
+    /// Loads saved Enabled flags for PlayerX/Y/Facing onto the live layout
+    /// (equivalent to Edit Mode ApplyCurrentPoseVisibilityToLayout / ApplyToLayout).
+    /// </summary>
+    private void ApplyRuntimePoseVisibility()
+    {
+      if (currentMap == null || layout == null)
+        return;
+
+      if (poseVisibility == null)
+      {
+        Debug.LogWarning(
+            "DungeonRenderer: ViewportPoseVisibilityStore is not assigned."
+        );
+        return;
+      }
+
+      int x = currentMap.PlayerX;
+      int y = currentMap.PlayerY;
+      DungeonFacing facing = currentMap.PlayerFacing;
+
+      if (!poseVisibility.TryFindEntry(
+              x,
+              y,
+              facing,
+              out ViewportPoseVisibilityEntry entry))
+      {
+        string warnId = ViewportPoseVisibilityStore.FormatPoseKey(x, y, facing);
+        if (warnId != lastMissingPoseVisibilityWarned)
+        {
+          lastMissingPoseVisibilityWarned = warnId;
+          Debug.LogWarning(
+              "DungeonRenderer: No ViewportPoseVisibility entry for ("
+                  + x
+                  + ","
+                  + y
+                  + ") facing "
+                  + facing
+                  + ". Wall Enabled flags were not changed."
+          );
+        }
+
+        return;
+      }
+
+      poseVisibility.ApplyToLayout(entry, layout);
+    }
+
     private bool ShouldDrawPiece(ViewportPiece piece)
     {
       if (piece == null)
         return false;
 
-      if (currentMap == null)
-      {
-        if (piece.Graphic == DungeonGraphicType.None)
-          return false;
+      if (piece.Graphic == DungeonGraphicType.None)
+        return false;
 
-        return piece.Enabled;
-      }
-
-      return ViewportPatternCatalog.ShouldDrawPiece(
-          piece,
-          currentMap,
-          currentMap.PlayerX,
-          currentMap.PlayerY,
-          currentMap.PlayerFacing,
-          warnUnknownKeyInEditor: false);
+      // After ApplyRuntimePoseVisibility, Enabled matches the saved pose
+      // (same gate as Edit Mode ShouldDrawPieceAtPreviewPose).
+      return piece.Enabled;
     }
 
     private static bool IsF1WallGraphic(DungeonGraphicType graphic)

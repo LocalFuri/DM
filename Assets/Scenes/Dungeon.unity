@@ -641,6 +641,7 @@ MonoBehaviour:
   dungeonViewport: {fileID: 1207986964}
   movementArrows: {fileID: 575248671}
   layout: {fileID: 11400000, guid: 295945db28b589549b5f91d66d60e369, type: 2}
+  poseVisibility: {fileID: 11400000, guid: bb59bd23efae01842b65ab44b9427f9c, type: 2}
   graphics: {fileID: 11400000, guid: 1270decf606b78745ab27b60f480f75a, type: 2}
   showEntranceScreen: 1
   entranceDoorLeftX: 0
