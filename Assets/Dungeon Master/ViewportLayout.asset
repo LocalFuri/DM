@@ -53,7 +53,7 @@ MonoBehaviour:
     MirrorHorizontally: 0
   - Name: Wall F3Right
     Graphic: 10
-    X: 135
+    X: 134
     Y: 91
     Enabled: 1
     MirrorHorizontally: 0
