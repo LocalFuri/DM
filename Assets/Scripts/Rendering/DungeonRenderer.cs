@@ -93,6 +93,7 @@ namespace DM.Rendering
         DungeonViewWidth / (float)DefaultViewWidth,
         DungeonUvHeight / (float)DefaultViewHeight
     );
+    private static readonly Rect FullFrameUvRect = new Rect(0f, 0f, 1f, 1f);
 
     private const int EntranceDoorOpenStartLeftX = 0;
     private const int EntranceDoorOpenStartRightX = 105;
@@ -971,8 +972,73 @@ namespace DM.Rendering
     private void ApplyExact320x200ComparisonPresentation()
     {
       ApplyConstantPixelCanvasScaler();
-      // Same child layout as gameplay, but 1:1 pixels (no fitScale).
-      ApplyGameplayUiLayout(1f);
+      EnsureGameplayLayoutHierarchy();
+      if (gameplayRoot == null || dungeonViewport == null)
+        return;
+
+      // Match Edit Mode: one full 320×200 framebuffer, no dungeon UV crop.
+      if (partyArea != null)
+        partyArea.gameObject.SetActive(false);
+
+      if (rightInterfaceArea != null)
+        rightInterfaceArea.gameObject.SetActive(false);
+
+      gameplayRoot.anchorMin = new Vector2(0.5f, 0.5f);
+      gameplayRoot.anchorMax = new Vector2(0.5f, 0.5f);
+      gameplayRoot.pivot = new Vector2(0.5f, 0.5f);
+      gameplayRoot.anchoredPosition = Vector2.zero;
+      gameplayRoot.sizeDelta = new Vector2(
+          DefaultViewWidth,
+          DefaultViewHeight
+      );
+      gameplayRoot.localScale = Vector3.one;
+      gameplayRoot.localRotation = Quaternion.identity;
+
+      RectTransform viewportRect = dungeonViewport.rectTransform;
+      viewportRect.anchorMin = new Vector2(0.5f, 0.5f);
+      viewportRect.anchorMax = new Vector2(0.5f, 0.5f);
+      viewportRect.pivot = new Vector2(0.5f, 0.5f);
+      viewportRect.anchoredPosition = Vector2.zero;
+      viewportRect.sizeDelta = new Vector2(
+          DefaultViewWidth,
+          DefaultViewHeight
+      );
+      viewportRect.localScale = Vector3.one;
+      viewportRect.localRotation = Quaternion.identity;
+      dungeonViewport.uvRect = FullFrameUvRect;
+
+      if (movementArrows != null)
+      {
+        ViewportPiece arrowsPiece =
+            FindLayoutPiece(DungeonGraphicType.MovementArrows);
+
+        if (arrowsPiece != null)
+        {
+          if (movementArrows.rectTransform.parent != gameplayRoot)
+            movementArrows.rectTransform.SetParent(gameplayRoot, false);
+
+          MovementArrowsLayout.Apply(
+              movementArrows,
+              arrowsPiece.X,
+              arrowsPiece.Y,
+              arrowsPiece.Enabled
+          );
+        }
+        else
+        {
+          SetMovementArrowsVisible(false);
+        }
+      }
+
+      if (frameBuffer != null)
+        frameBuffer.filterMode = FilterMode.Point;
+
+      if (targetTexture != null)
+        targetTexture.filterMode = FilterMode.Point;
+
+      if (dungeonViewport.texture != null)
+        dungeonViewport.texture.filterMode = FilterMode.Point;
+
       SetEntranceViewportVisible(true);
     }
 
@@ -1182,14 +1248,11 @@ namespace DM.Rendering
       dungeonDrawOffsetY =
           showEntranceScreen ? EntranceDungeonOffsetY : 0;
 
-      Clear(
-          new Color32(
-              0,
-              0,
-              0,
-              255
-          )
-      );
+      Color32 clearColour = exact320x200ComparisonMode
+          ? new Color32(255, 0, 255, 255)
+          : new Color32(0, 0, 0, 255);
+
+      Clear(clearColour);
 
       if (layout == null)
       {
