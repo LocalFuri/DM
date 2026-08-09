@@ -195,7 +195,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    EnabledFlags: 010000010000000000000001000000000101010101
+    EnabledFlags: 010000010000000000000100000000000101010101
   - X: 1
     Y: 2
     Facing: 1
@@ -875,6 +875,32 @@ MonoBehaviour:
   - X: 1
     Y: 4
     Facing: 0
+    PieceNames:
+    - Ceiling
+    - Ceiling Strip 84
+    - Ceiling Strip 85
+    - Floor
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1 A
+    - Front Wall F1 B
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
+    - Movement Arrows
+    - Champion Status Slot 1
+    - Champion Status Slot 2
+    - Champion Status Slot 3
+    - Champion Status Slot 4
+    EnabledFlags: 010000010001010001000000010101010101010101
+  - X: 15
+    Y: 9
+    Facing: 2
     PieceNames:
     - Ceiling
     - Ceiling Strip 84

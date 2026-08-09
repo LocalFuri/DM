@@ -413,7 +413,7 @@ public class ViewportLayoutEditor : EditorWindow
       changed = true;
     }
 
-    if (DrawIntStepper("Y", ref piece.Y, snap))
+    if (DrawTopDownYStepper(piece, snap))
     {
       SelectPiece(index);
       changed = true;
@@ -2203,5 +2203,61 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.EndHorizontal();
     return changed;
+  }
+
+  /// <summary>
+  /// Editor-only Y: show/edit top-down (GIMP) coords. Storage stays Unity
+  /// bottom-up framebuffer Y used by blit. displayY = 200 - unityY - h.
+  /// </summary>
+  private bool DrawTopDownYStepper(ViewportPiece piece, int step)
+  {
+    if (piece == null)
+      return false;
+
+    int pieceHeight = GetPieceHeightForEditorY(piece);
+    int oldUnityY = piece.Y;
+    int displayY = UnityYToDisplayY(oldUnityY, pieceHeight);
+
+    EditorGUI.BeginChangeCheck();
+    EditorGUILayout.BeginHorizontal();
+    displayY = EditorGUILayout.IntField("Y", displayY);
+
+    if (GUILayout.Button($"-{step}", GUILayout.Width(36)))
+      displayY -= step;
+
+    if (GUILayout.Button($"+{step}", GUILayout.Width(36)))
+      displayY += step;
+
+    EditorGUILayout.EndHorizontal();
+
+    int maxDisplayY = Mathf.Max(0, PreviewHeight - pieceHeight);
+    displayY = Mathf.Clamp(displayY, 0, maxDisplayY);
+    piece.Y = DisplayYToUnityY(displayY, pieceHeight);
+
+    return EditorGUI.EndChangeCheck() || piece.Y != oldUnityY;
+  }
+
+  private int GetPieceHeightForEditorY(ViewportPiece piece)
+  {
+    if (piece == null || graphics == null)
+      return 1;
+
+    Texture2D texture = graphics.GetTexture(piece.Graphic);
+    if (texture == null || texture.height <= 0)
+      return 1;
+
+    return texture.height;
+  }
+
+  private static int UnityYToDisplayY(int storedUnityY, int pieceHeight)
+  {
+    int height = Mathf.Max(1, pieceHeight);
+    return PreviewHeight - storedUnityY - height;
+  }
+
+  private static int DisplayYToUnityY(int displayY, int pieceHeight)
+  {
+    int height = Mathf.Max(1, pieceHeight);
+    return PreviewHeight - displayY - height;
   }
 }
