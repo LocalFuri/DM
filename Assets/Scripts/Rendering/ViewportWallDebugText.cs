@@ -21,12 +21,12 @@ namespace DM.Rendering
       if (!MirrorHorizontally)
         return Name;
 
-      return Name + " MIRRORED";
+      return Name + " (M)";
     }
   }
 
   /// <summary>
-  /// Wall debug listing helpers (F0→F3). Console formatting for Play/Build.
+  /// Console listing helpers. Order: F0→F1→F2→F3 walls, then Ceiling, Floor.
   /// </summary>
   public static class ViewportWallDebugText
   {
@@ -43,7 +43,9 @@ namespace DM.Rendering
       "Wall F2Right",
       "Wall F3Left",
       "Front Wall F3",
-      "Wall F3Right"
+      "Wall F3Right",
+      "Ceiling",
+      "Floor"
     };
 
     public static string FormatConsoleLine(
