@@ -1109,6 +1109,9 @@ public class ViewportLayoutEditor : EditorWindow
     // Keep minimap arrow on the same previewFacing as viewport + Console.
     previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
 
+    EditorGUILayout.BeginHorizontal();
+
+    EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(false));
     previewMiniMapScroll = DungeonMiniMapGui.Draw(
         previewMiniMap,
         previewX,
@@ -1118,6 +1121,16 @@ public class ViewportLayoutEditor : EditorWindow
         interactive: true,
         out DungeonMiniMapGui.InteractionResult interaction
     );
+    EditorGUILayout.EndVertical();
+
+    GUILayout.Space(6f);
+
+    // Compact 3×2 pad immediately to the right, top-aligned with the map.
+    EditorGUILayout.BeginVertical(GUILayout.Width(96f));
+    DrawPreviewNavigationPad();
+    EditorGUILayout.EndVertical();
+
+    EditorGUILayout.EndHorizontal();
 
     if (interaction.HasHover
         && Event.current.type == EventType.MouseMove)
@@ -1129,6 +1142,72 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyPreviewPoseFromMiniMapClick(
           interaction.ClickX,
           interaction.ClickY);
+  }
+
+  /// <summary>
+  /// Compact 3×2 navigation pad (editor-only). Uses NavigatePreviewPoseOnly.
+  /// </summary>
+  private void DrawPreviewNavigationPad()
+  {
+    using (new EditorGUI.DisabledScope(Application.isPlaying || layout == null))
+    {
+      const float buttonWidth = 28f;
+      const float buttonHeight = 22f;
+
+      EditorGUILayout.BeginHorizontal();
+      if (GUILayout.Button(
+              "↶",
+              GUILayout.Width(buttonWidth),
+              GUILayout.Height(buttonHeight)))
+      {
+        PreviewNavigateTurnLeft();
+      }
+
+      if (GUILayout.Button(
+              "↑",
+              GUILayout.Width(buttonWidth),
+              GUILayout.Height(buttonHeight)))
+      {
+        PreviewNavigateMoveForward();
+      }
+
+      if (GUILayout.Button(
+              "↷",
+              GUILayout.Width(buttonWidth),
+              GUILayout.Height(buttonHeight)))
+      {
+        PreviewNavigateTurnRight();
+      }
+
+      EditorGUILayout.EndHorizontal();
+
+      EditorGUILayout.BeginHorizontal();
+      if (GUILayout.Button(
+              "←",
+              GUILayout.Width(buttonWidth),
+              GUILayout.Height(buttonHeight)))
+      {
+        PreviewNavigateStrafeLeft();
+      }
+
+      if (GUILayout.Button(
+              "↓",
+              GUILayout.Width(buttonWidth),
+              GUILayout.Height(buttonHeight)))
+      {
+        PreviewNavigateMoveBackward();
+      }
+
+      if (GUILayout.Button(
+              "→",
+              GUILayout.Width(buttonWidth),
+              GUILayout.Height(buttonHeight)))
+      {
+        PreviewNavigateStrafeRight();
+      }
+
+      EditorGUILayout.EndHorizontal();
+    }
   }
 
   private void ApplyPreviewPoseFromMiniMapClick(int x, int y)
@@ -1167,6 +1246,125 @@ public class ViewportLayoutEditor : EditorWindow
     RefreshEditModePreview();
     GUI.changed = true;
     Repaint();
+  }
+
+  /// <summary>
+  /// Preview navigation only (editor 3×2 pad). Updates X/Y/Facing, applies the
+  /// destination pose for display, refreshes preview/minimap. Does not capture
+  /// or save pose visibility / layout assets.
+  /// </summary>
+  private void NavigatePreviewPoseOnly(int newX, int newY, DungeonFacing newFacing)
+  {
+    if (Application.isPlaying)
+      return;
+
+    if (newX == previewX && newY == previewY && newFacing == previewFacing)
+      return;
+
+    previewX = newX;
+    previewY = newY;
+    previewFacing = newFacing;
+    SaveSessionPrefs();
+
+    if (previewMiniMap != null)
+      previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
+
+    ApplyPoseVisibilityForNavigationOnly();
+
+    ResetEditModeViewportLogCache();
+    RefreshEditModePreview();
+    GUI.changed = true;
+    Repaint();
+  }
+
+  /// <summary>
+  /// Load saved Enabled/Mirror for the current preview pose without creating
+  /// or capturing entries (no SetDirty / SaveAssets).
+  /// </summary>
+  private void ApplyPoseVisibilityForNavigationOnly()
+  {
+    if (layout == null)
+      return;
+
+    EnsurePoseVisibilityStore();
+    if (poseVisibilityStore == null)
+      return;
+
+    if (poseVisibilityStore.TryFindEntry(
+            previewX,
+            previewY,
+            previewFacing,
+            out ViewportPoseVisibilityEntry entry))
+    {
+      poseVisibilityStore.ApplyToLayout(entry, layout);
+      return;
+    }
+
+    // Unknown pose: kit baseline on the live layout only — do not write store.
+    ApplyKitBaselineEnabledToLayout();
+  }
+
+  private void PreviewNavigateTurnLeft()
+  {
+    NavigatePreviewPoseOnly(
+        previewX,
+        previewY,
+        TurnPreviewFacingLeft(previewFacing));
+  }
+
+  private void PreviewNavigateTurnRight()
+  {
+    NavigatePreviewPoseOnly(
+        previewX,
+        previewY,
+        TurnPreviewFacingRight(previewFacing));
+  }
+
+  private void PreviewNavigateMoveForward()
+  {
+    TryPreviewNavigateRelative(0, 1);
+  }
+
+  private void PreviewNavigateMoveBackward()
+  {
+    TryPreviewNavigateRelative(0, -1);
+  }
+
+  private void PreviewNavigateStrafeLeft()
+  {
+    TryPreviewNavigateRelative(-1, 0);
+  }
+
+  private void PreviewNavigateStrafeRight()
+  {
+    TryPreviewNavigateRelative(1, 0);
+  }
+
+  /// <summary>
+  /// Facing-local move: +Y forward, -Y back, -X strafe left, +X strafe right.
+  /// </summary>
+  private void TryPreviewNavigateRelative(int localX, int localY)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int nextX = previewX + forwardX * localY + rightX * localX;
+    int nextY = previewY + forwardY * localY + rightY * localX;
+
+    if (!previewMiniMap.CanEnter(nextX, nextY))
+      return;
+
+    NavigatePreviewPoseOnly(nextX, nextY, previewFacing);
   }
 
   private void EnsurePreviewMiniMapLoaded()
