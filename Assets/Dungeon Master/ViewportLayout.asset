@@ -143,19 +143,19 @@ MonoBehaviour:
     MirrorHorizontally: 0
   - Name: Black Door
     Graphic: 30
-    X: 62
-    Y: 59
+    X: 60
+    Y: 65
     Enabled: 1
     MirrorHorizontally: 0
   - Name: Black Door Frame Left
     Graphic: 31
     X: 44
-    Y: 54
+    Y: 59
     Enabled: 1
     MirrorHorizontally: 0
   - Name: Black Door Frame Right
     Graphic: 31
     X: 152
-    Y: 58
+    Y: 59
     Enabled: 1
     MirrorHorizontally: 1
