@@ -1844,14 +1844,17 @@ namespace DM.Rendering
       if (piece.Graphic == DungeonGraphicType.None)
         return false;
 
-      // Hall of Champions entrance overlays — fixed pose gate,
+      if (!piece.Enabled)
+        return false;
+
+      // Hall of Champions entrance overlays — Enabled plus fixed pose gate,
       // not authored via ViewportPoseVisibility.
       if (IsHallOfChampionsEntranceOverlayPiece(piece))
         return ShouldDrawHallOfChampionsEntranceOverlayRuntime();
 
       // After ApplyRuntimePoseVisibility, Enabled matches the saved pose
       // (same gate as Edit Mode ShouldDrawPieceAtPreviewPose).
-      return piece.Enabled;
+      return true;
     }
 
     private static bool IsHallOfChampionsEntranceOverlayPiece(

@@ -2332,7 +2332,7 @@ public class ViewportLayoutEditor : EditorWindow
   /// <summary>
   /// Edit Mode draw gate: authored Enabled for the current X/Y/Facing pose only.
   /// Does not derive visibility from map geometry or the pattern catalog.
-  /// HoC Black Door / frames are a fixed (1,2) North exception.
+  /// HoC Black Door / frames require Enabled AND (1,2) North.
   /// </summary>
   private static bool ShouldDrawPieceAtPreviewPose(
       ViewportPiece piece,
@@ -2346,6 +2346,9 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece.Graphic == DungeonGraphicType.None)
       return false;
 
+    if (!piece.Enabled)
+      return false;
+
     if (IsHallOfChampionsEntranceOverlayPiece(piece))
     {
       // Editor preview always uses Hall of Champions.
@@ -2354,7 +2357,7 @@ public class ViewportLayoutEditor : EditorWindow
           && poseFacing == DungeonFacing.North;
     }
 
-    return piece.Enabled;
+    return true;
   }
 
   private static bool IsHallOfChampionsEntranceOverlayPiece(
