@@ -85,8 +85,8 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
       if (piece == null)
         continue;
 
-      // Fixed HoC entrance overlay — not authored per pose.
-      if (IsBlackDoorPiece(piece))
+      // Fixed HoC entrance overlays — not authored per pose.
+      if (IsHallOfChampionsEntranceOverlayPiece(piece))
         continue;
 
       entry.PieceNames.Add(piece.Name ?? string.Empty);
@@ -131,13 +131,22 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
         || pieceName == "Ceiling Strip 85";
   }
 
-  private static bool IsBlackDoorPiece(ViewportPiece piece)
+  private static bool IsHallOfChampionsEntranceOverlayPiece(
+      ViewportPiece piece)
   {
     if (piece == null)
       return false;
 
-    return piece.Graphic == DungeonGraphicType.BlackDoor
-        || piece.Name == "Black Door";
+    if (piece.Graphic == DungeonGraphicType.BlackDoor
+        || piece.Graphic == DungeonGraphicType.BlackDoorFrameLeft)
+    {
+      return true;
+    }
+
+    string name = piece.Name ?? string.Empty;
+    return name == "Black Door"
+        || name == "Black Door Frame Left"
+        || name == "Black Door Frame Right";
   }
 
   private static bool TryGetEnabledByName(

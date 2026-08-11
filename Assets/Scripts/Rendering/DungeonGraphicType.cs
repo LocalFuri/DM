@@ -48,6 +48,11 @@ namespace DM.Rendering
     /// <summary>
     /// Hall of Champions entrance front-wall overlay (1,2 North only).
     /// </summary>
-    BlackDoor
+    BlackDoor,
+
+    /// <summary>
+    /// Hall of Champions entrance door side frame (shared L/R via mirror).
+    /// </summary>
+    BlackDoorFrameLeft
   }
 }

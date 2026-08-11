@@ -84,6 +84,7 @@ namespace DM.Rendering
 
     [Header("Hall of Champions")]
     public Texture2D BlackDoor;
+    public Texture2D BlackDoorFrameLeft;
 
     public Texture2D GetTexture(DungeonGraphicType graphic)
     {
@@ -144,6 +145,8 @@ namespace DM.Rendering
           return ChampionStatusBackground;
         case DungeonGraphicType.BlackDoor:
           return BlackDoor;
+        case DungeonGraphicType.BlackDoorFrameLeft:
+          return BlackDoorFrameLeft;
         default:
           return null;
       }

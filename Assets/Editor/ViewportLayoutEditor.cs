@@ -2323,7 +2323,7 @@ public class ViewportLayoutEditor : EditorWindow
   /// <summary>
   /// Edit Mode draw gate: authored Enabled for the current X/Y/Facing pose only.
   /// Does not derive visibility from map geometry or the pattern catalog.
-  /// Black Door is a fixed Hall of Champions (1,2) North exception.
+  /// HoC Black Door / frames are a fixed (1,2) North exception.
   /// </summary>
   private static bool ShouldDrawPieceAtPreviewPose(
       ViewportPiece piece,
@@ -2337,7 +2337,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece.Graphic == DungeonGraphicType.None)
       return false;
 
-    if (IsBlackDoorPiece(piece))
+    if (IsHallOfChampionsEntranceOverlayPiece(piece))
     {
       // Editor preview always uses Hall of Champions.
       return poseX == 1
@@ -2348,13 +2348,22 @@ public class ViewportLayoutEditor : EditorWindow
     return piece.Enabled;
   }
 
-  private static bool IsBlackDoorPiece(ViewportPiece piece)
+  private static bool IsHallOfChampionsEntranceOverlayPiece(
+      ViewportPiece piece)
   {
     if (piece == null)
       return false;
 
-    return piece.Graphic == DungeonGraphicType.BlackDoor
-        || piece.Name == "Black Door";
+    if (piece.Graphic == DungeonGraphicType.BlackDoor
+        || piece.Graphic == DungeonGraphicType.BlackDoorFrameLeft)
+    {
+      return true;
+    }
+
+    string name = piece.Name ?? string.Empty;
+    return name == "Black Door"
+        || name == "Black Door Frame Left"
+        || name == "Black Door Frame Right";
   }
 
   /// <summary>
