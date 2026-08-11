@@ -141,3 +141,9 @@ MonoBehaviour:
     Y: 171
     Enabled: 1
     MirrorHorizontally: 0
+  - Name: Black Door
+    Graphic: 30
+    X: 62
+    Y: 59
+    Enabled: 1
+    MirrorHorizontally: 0

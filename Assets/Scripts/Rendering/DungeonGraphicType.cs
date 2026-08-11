@@ -43,6 +43,11 @@ namespace DM.Rendering
     FrontWallF1_A,
     FrontWallF1_B,
 
-    ChampionStatusBackground
+    ChampionStatusBackground,
+
+    /// <summary>
+    /// Hall of Champions entrance front-wall overlay (1,2 North only).
+    /// </summary>
+    BlackDoor
   }
 }

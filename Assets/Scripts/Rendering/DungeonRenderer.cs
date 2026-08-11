@@ -1844,9 +1844,42 @@ namespace DM.Rendering
       if (piece.Graphic == DungeonGraphicType.None)
         return false;
 
+      // Hall of Champions entrance front-wall overlay — fixed pose gate,
+      // not authored via ViewportPoseVisibility.
+      if (IsBlackDoorPiece(piece))
+        return ShouldDrawHallOfChampionsBlackDoorRuntime();
+
       // After ApplyRuntimePoseVisibility, Enabled matches the saved pose
       // (same gate as Edit Mode ShouldDrawPieceAtPreviewPose).
       return piece.Enabled;
+    }
+
+    private static bool IsBlackDoorPiece(ViewportPiece piece)
+    {
+      if (piece == null)
+        return false;
+
+      return piece.Graphic == DungeonGraphicType.BlackDoor
+          || piece.Name == "Black Door";
+    }
+
+    /// <summary>
+    /// Hall of Champions only: (1,2) North after entrance transition.
+    /// </summary>
+    private bool ShouldDrawHallOfChampionsBlackDoorRuntime()
+    {
+      if (showEntranceScreen)
+        return false;
+
+      if (currentMap == null)
+        return false;
+
+      if (currentMap.Name != "Hall of Champions")
+        return false;
+
+      return currentMap.PlayerX == 1
+          && currentMap.PlayerY == 2
+          && currentMap.PlayerFacing == DungeonFacing.North;
     }
 
     private static bool IsF1WallGraphic(DungeonGraphicType graphic)

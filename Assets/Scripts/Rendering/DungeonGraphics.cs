@@ -82,6 +82,9 @@ namespace DM.Rendering
     [Header("Interface")]
     public Texture2D ChampionStatusBackground;
 
+    [Header("Hall of Champions")]
+    public Texture2D BlackDoor;
+
     public Texture2D GetTexture(DungeonGraphicType graphic)
     {
       switch (graphic)
@@ -139,6 +142,8 @@ namespace DM.Rendering
           return WallOrnament;
         case DungeonGraphicType.ChampionStatusBackground:
           return ChampionStatusBackground;
+        case DungeonGraphicType.BlackDoor:
+          return BlackDoor;
         default:
           return null;
       }

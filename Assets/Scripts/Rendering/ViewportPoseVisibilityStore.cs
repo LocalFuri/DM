@@ -85,6 +85,10 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
       if (piece == null)
         continue;
 
+      // Fixed HoC entrance overlay — not authored per pose.
+      if (IsBlackDoorPiece(piece))
+        continue;
+
       entry.PieceNames.Add(piece.Name ?? string.Empty);
       // Ceiling Strip 84/85 stay muted until we decide their role.
       entry.EnabledFlags.Add(
@@ -125,6 +129,15 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
   {
     return pieceName == "Ceiling Strip 84"
         || pieceName == "Ceiling Strip 85";
+  }
+
+  private static bool IsBlackDoorPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    return piece.Graphic == DungeonGraphicType.BlackDoor
+        || piece.Name == "Black Door";
   }
 
   private static bool TryGetEnabledByName(
