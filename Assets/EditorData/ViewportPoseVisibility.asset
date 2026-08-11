@@ -147,8 +147,8 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    EnabledFlags: 010000010001010001000000010101010101010101
-    MirrorHorizontallyFlags: 010000000000000000000000000000000000000000
+    EnabledFlags: 010000010001010001010000010101010101010101
+    MirrorHorizontallyFlags: 000000010000000000000000000000000000000000
   - X: 1
     Y: 2
     Facing: 0
@@ -174,7 +174,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    EnabledFlags: 010000010001010001000000010101010101010101
+    EnabledFlags: 010000010001010001010000010101010101010101
     MirrorHorizontallyFlags: 010000000000000000000000000000000000000000
   - X: 1
     Y: 2
@@ -930,7 +930,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    EnabledFlags: 010000010001010001000000010101010101010101
+    EnabledFlags: 010000010001010001010000010101010101010101
     MirrorHorizontallyFlags: 010000000000000000000000000000000000000000
   - X: 15
     Y: 9
