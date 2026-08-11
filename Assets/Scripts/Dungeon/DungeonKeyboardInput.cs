@@ -82,12 +82,9 @@ namespace DM.Dungeon
         dungeonRenderer.RequestRedraw();
         DetectChampionInFront();
       }
-      else
+      else if (localX == 0 && localY == 1)
       {
-        Debug.Log(
-            $"Movement blocked at ({map.PlayerX},{map.PlayerY}) " +
-            $"facing {map.PlayerFacing}."
-        );
+        PlayerWallBumpFeedback.HandlePlayerHitWall();
       }
     }
 

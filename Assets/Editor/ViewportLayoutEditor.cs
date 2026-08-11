@@ -638,7 +638,12 @@ public class ViewportLayoutEditor : EditorWindow
     int nextY = previewY + forwardY * moveSign;
 
     if (!previewMiniMap.CanEnter(nextX, nextY))
+    {
+      // Forward bump only (Up). Backward blocked stays silent.
+      if (moveSign == 1)
+        PlayerWallBumpFeedback.HandlePlayerHitWall();
       return;
+    }
 
     previewPoseChangedByKeyboardThisFrame = true;
     SwitchPreviewPose(nextX, nextY, previewFacing);
@@ -1362,7 +1367,11 @@ public class ViewportLayoutEditor : EditorWindow
     int nextY = previewY + forwardY * localY + rightY * localX;
 
     if (!previewMiniMap.CanEnter(nextX, nextY))
+    {
+      if (localX == 0 && localY == 1)
+        PlayerWallBumpFeedback.HandlePlayerHitWall();
       return;
+    }
 
     NavigatePreviewPoseOnly(nextX, nextY, previewFacing);
   }

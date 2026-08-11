@@ -145,7 +145,7 @@ MonoBehaviour:
     Graphic: 30
     X: 62
     Y: 59
-    Enabled: 1
+    Enabled: 0
     MirrorHorizontally: 0
   - Name: Black Door Frame Left
     Graphic: 31
