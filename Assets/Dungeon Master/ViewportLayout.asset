@@ -41,7 +41,7 @@ MonoBehaviour:
     MirrorHorizontally: 0
   - Name: Front Wall F3
     Graphic: 25
-    X: 76
+    X: 60
     Y: 93
     Enabled: 0
     MirrorHorizontally: 0
@@ -145,17 +145,17 @@ MonoBehaviour:
     Graphic: 31
     X: 44
     Y: 60
-    Enabled: 1
+    Enabled: 0
     MirrorHorizontally: 0
   - Name: Black Door Frame Right
     Graphic: 31
     X: 153
     Y: 60
-    Enabled: 1
+    Enabled: 0
     MirrorHorizontally: 1
   - Name: Black Door
     Graphic: 30
     X: 63
     Y: 65
-    Enabled: 1
+    Enabled: 0
     MirrorHorizontally: 0

@@ -149,6 +149,8 @@ namespace DM.Rendering
     private bool previousExact320x200ComparisonMode;
 
     private readonly List<string> visibleWallPieces = new();
+    // TEMP F3 diagnostics — remove after verification.
+    private static string lastLoggedFrontWallF3RuntimeDrawKey;
 
     // Final wall pieces drawn in the most recent frame.
     public IReadOnlyList<string> VisibleWallPieces => visibleWallPieces;
@@ -2311,6 +2313,57 @@ namespace DM.Rendering
         );
 
         return;
+      }
+
+      if (piece.Graphic == DungeonGraphicType.FrontWallF3)
+      {
+        Texture2D built = ExpandedF3WallTexture.BuildExpandedF3Wall(
+            graphics.FrontWallF3,
+            graphics.WallF3L,
+            graphics.WallF3R);
+        bool sameAsHelper = ReferenceEquals(texture, built)
+            || ReferenceEquals(
+                texture,
+                ExpandedF3WallTexture.LastReturnedTexture);
+        string key =
+            (piece.Name ?? "")
+            + "|"
+            + texture.name
+            + "|"
+            + texture.width
+            + "x"
+            + texture.height
+            + "|"
+            + piece.X
+            + ","
+            + (piece.Y + dungeonDrawOffsetY)
+            + "|"
+            + sameAsHelper
+            + "|Play";
+        if (key != lastLoggedFrontWallF3RuntimeDrawKey)
+        {
+          lastLoggedFrontWallF3RuntimeDrawKey = key;
+          Debug.Log(
+              "F3 DRAW: "
+                  + piece.Name
+                  + " / Graphic="
+                  + (int)piece.Graphic
+                  + " ("
+                  + piece.Graphic
+                  + ") / Texture="
+                  + texture.name
+                  + " / Size="
+                  + texture.width
+                  + "x"
+                  + texture.height
+                  + " / X="
+                  + piece.X
+                  + " / Y="
+                  + (piece.Y + dungeonDrawOffsetY)
+                  + " / GetTexture==BuildExpandedF3Wall="
+                  + sameAsHelper
+                  + " (Play/Build)");
+        }
       }
 
       bool mirror = GetEffectiveEnvironmentMirror(piece);
