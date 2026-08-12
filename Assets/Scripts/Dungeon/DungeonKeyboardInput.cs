@@ -82,9 +82,9 @@ namespace DM.Dungeon
         dungeonRenderer.RequestRedraw();
         DetectChampionInFront();
       }
-      else if (localX == 0 && localY == 1)
+      else
       {
-        PlayerWallBumpFeedback.HandlePlayerHitWall();
+        PlayerWallBumpFeedback.ReportIfBlockedMove(localX, localY);
       }
     }
 
