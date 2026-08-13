@@ -19,7 +19,7 @@ MonoBehaviour:
   EntranceDoorClosedOutside: {fileID: 2800000, guid: 7f1298e3c4390b84db6d6a77702ab6d4, type: 3}
   EntranceDoorClosedLeft: {fileID: 2800000, guid: 542e9f5507a782f4a8fbbaf242f404c8, type: 3}
   EntranceDoorClosedRight: {fileID: 2800000, guid: d5d50c754972dca41aedccd63e1fffb7, type: 3}
-  WallF0L: {fileID: 2800000, guid: 2d866205a209ae049969d0fba028dc5e, type: 3}
+  WallF0L: {fileID: 2800000, guid: 46a8e0e4ae4f9ea43baae9904e62710f, type: 3}
   WallF0R: {fileID: 2800000, guid: 0bda3523760088c45807942dbaa1dd62, type: 3}
   WallF1L: {fileID: 2800000, guid: c0a03cc9eae1760458580c68550a06c6, type: 3}
   WallF1R: {fileID: 2800000, guid: 46a8e0e4ae4f9ea43baae9904e62710f, type: 3}

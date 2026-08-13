@@ -4,7 +4,7 @@ TextureImporter:
   internalIDToNameTable:
   - first:
       213: 3451999579190970458
-    second: D_MASK_WALL_F0L_0
+    second: Wall_F0Left
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
