@@ -435,23 +435,37 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Mirror is outside the Name/Enabled/Graphic change-check so SelectPiece →
     // FocusControl(null) cannot swallow the Toggle or skip the live refresh.
-    bool mirrorBefore = piece.MirrorHorizontally;
-    piece.MirrorHorizontally = EditorGUILayout.Toggle(
-        "Mirror Horizontally",
-        piece.MirrorHorizontally);
+    // Side wall pieces never expose Mirror Horizontally in the editor UI.
+    bool hideMirrorControl =
+        piece.Name == "Wall F0Left"
+        || piece.Name == "Wall F0Right"
+        || piece.Name == "Wall F1Left"
+        || piece.Name == "Wall F1Right"
+        || piece.Name == "Wall F2Left"
+        || piece.Name == "Wall F2Right"
+        || piece.Name == "Wall F3Left"
+        || piece.Name == "Wall F3Right";
 
-    if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
+    if (!hideMirrorControl)
     {
-      EditorGUILayout.HelpBox(
-          "Ceiling/Floor Mirror is the per-pose Mirror Horizontally flag "
-              + "(Edit Mode and Play/Build).",
-          MessageType.None);
-    }
+      bool mirrorBefore = piece.MirrorHorizontally;
+      piece.MirrorHorizontally = EditorGUILayout.Toggle(
+          "Mirror Horizontally",
+          piece.MirrorHorizontally);
 
-    if (piece.MirrorHorizontally != mirrorBefore)
-    {
-      changed = true;
-      ApplyMirrorHorizontallyChangeForCurrentPose();
+      if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
+      {
+        EditorGUILayout.HelpBox(
+            "Ceiling/Floor Mirror is the per-pose Mirror Horizontally flag "
+                + "(Edit Mode and Play/Build).",
+            MessageType.None);
+      }
+
+      if (piece.MirrorHorizontally != mirrorBefore)
+      {
+        changed = true;
+        ApplyMirrorHorizontallyChangeForCurrentPose();
+      }
     }
 
     if (DrawIntStepper("X", ref piece.X, snap))
