@@ -1,0 +1,31 @@
+---
+description: Never modify Dungeon Master map/tile data files; only read, report, or suggest manual/Unity edits
+alwaysApply: true
+---
+
+# Map Files
+
+Never modify any Dungeon Master map file.
+
+This includes all map JSON files (for example `Assets/Data/Maps/**`) and any other files containing dungeon/map tile data.
+
+## Allowed
+
+- Read/inspect map files
+- Search map files
+- Report map coordinates, tile types, or problems
+- Suggest exactly what the user should change manually
+- Modify Unity editor/tools that help edit maps through Unity, if the user explicitly requests it
+
+## Not allowed
+
+- Edit map files directly
+- Rewrite map JSON
+- Change tile coordinates
+- Change tile types/content
+- Automatically fix map data
+- Generate and overwrite corrected map files
+
+All map-data changes must be performed by the user manually or through Unity.
+
+Viewport/editor assets such as `ViewportLayout.asset` and `ViewportPoseVisibility.asset` are not map files and are not covered by this restriction.

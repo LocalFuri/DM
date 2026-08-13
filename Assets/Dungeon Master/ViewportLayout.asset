@@ -20,7 +20,7 @@ MonoBehaviour:
     X: 0
     Y: 128
     Enabled: 1
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
   - Name: Ceiling Strip 84
     Graphic: 21
     X: 65
@@ -152,7 +152,7 @@ MonoBehaviour:
     X: 153
     Y: 60
     Enabled: 0
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
   - Name: Black Door
     Graphic: 30
     X: 63

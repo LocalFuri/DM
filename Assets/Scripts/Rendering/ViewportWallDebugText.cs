@@ -26,10 +26,15 @@ namespace DM.Rendering
   }
 
   /// <summary>
-  /// Console listing helpers. Order: F0→F1→F2→F3 walls, then Ceiling, Floor.
+  /// Console listing helpers. Lists every Enabled pose-controlled layout piece
+  /// in layout order (not a walls-only subset).
   /// </summary>
   public static class ViewportWallDebugText
   {
+    /// <summary>
+    /// Preferred ordering when present; remaining Enabled pieces follow in
+    /// layout order after these.
+    /// </summary>
     public static readonly string[] OrderedWallNames =
     {
       "Wall F0Left",
@@ -45,7 +50,10 @@ namespace DM.Rendering
       "Front Wall F3",
       "Wall F3Right",
       "Ceiling",
-      "Floor"
+      "Floor",
+      "Black Door Frame Left",
+      "Black Door Frame Right",
+      "Black Door"
     };
 
     public static string FormatConsoleLine(
@@ -81,6 +89,8 @@ namespace DM.Rendering
       if (layout == null || layout.Pieces == null)
         return;
 
+      HashSet<string> added = new HashSet<string>();
+
       for (int i = 0; i < OrderedWallNames.Length; i++)
       {
         string name = OrderedWallNames[i];
@@ -94,6 +104,31 @@ namespace DM.Rendering
                 piece.MirrorHorizontally
             )
         );
+        added.Add(piece.Name ?? string.Empty);
+      }
+
+      // Any other Enabled pose-controlled pieces (not in the preferred list).
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (piece == null || !piece.Enabled)
+          continue;
+
+        string name = piece.Name ?? string.Empty;
+        if (added.Contains(name))
+          continue;
+
+        // Live UI chrome is positioned, not a viewport blit piece.
+        if (piece.Graphic == DungeonGraphicType.MovementArrows)
+          continue;
+
+        results.Add(
+            new ViewportWallDebugEntry(
+                name,
+                piece.MirrorHorizontally
+            )
+        );
+        added.Add(name);
       }
     }
 

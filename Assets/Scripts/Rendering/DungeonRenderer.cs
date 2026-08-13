@@ -1492,6 +1492,37 @@ namespace DM.Rendering
             )
         );
       }
+
+      // Remaining Enabled pose-controlled pieces not in the preferred list.
+      System.Collections.Generic.HashSet<string> added =
+          new System.Collections.Generic.HashSet<string>();
+      for (int i = 0; i < results.Count; i++)
+        added.Add(results[i].Name ?? string.Empty);
+
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (piece == null)
+          continue;
+
+        string name = piece.Name ?? string.Empty;
+        if (added.Contains(name))
+          continue;
+
+        if (piece.Graphic == DungeonGraphicType.MovementArrows)
+          continue;
+
+        if (!IsWallDebugPieceActuallyDrawn(piece, selectedF1Front))
+          continue;
+
+        results.Add(
+            new ViewportWallDebugEntry(
+                name,
+                piece.MirrorHorizontally
+            )
+        );
+        added.Add(name);
+      }
     }
 
     private bool IsWallDebugPieceActuallyDrawn(
@@ -1846,54 +1877,9 @@ namespace DM.Rendering
       if (piece.Graphic == DungeonGraphicType.None)
         return false;
 
-      if (!piece.Enabled)
-        return false;
-
-      // Hall of Champions entrance overlays — Enabled plus fixed pose gate,
-      // not authored via ViewportPoseVisibility.
-      if (IsHallOfChampionsEntranceOverlayPiece(piece))
-        return ShouldDrawHallOfChampionsEntranceOverlayRuntime();
-
       // After ApplyRuntimePoseVisibility, Enabled matches the saved pose
       // (same gate as Edit Mode ShouldDrawPieceAtPreviewPose).
-      return true;
-    }
-
-    private static bool IsHallOfChampionsEntranceOverlayPiece(
-        ViewportPiece piece)
-    {
-      if (piece == null)
-        return false;
-
-      if (piece.Graphic == DungeonGraphicType.BlackDoor
-          || piece.Graphic == DungeonGraphicType.BlackDoorFrameLeft)
-      {
-        return true;
-      }
-
-      string name = piece.Name ?? string.Empty;
-      return name == "Black Door"
-          || name == "Black Door Frame Left"
-          || name == "Black Door Frame Right";
-    }
-
-    /// <summary>
-    /// Hall of Champions only: (1,2) North after entrance transition.
-    /// </summary>
-    private bool ShouldDrawHallOfChampionsEntranceOverlayRuntime()
-    {
-      if (showEntranceScreen)
-        return false;
-
-      if (currentMap == null)
-        return false;
-
-      if (currentMap.Name != "Hall of Champions")
-        return false;
-
-      return currentMap.PlayerX == 1
-          && currentMap.PlayerY == 2
-          && currentMap.PlayerFacing == DungeonFacing.North;
+      return piece.Enabled;
     }
 
     private static bool IsF1WallGraphic(DungeonGraphicType graphic)

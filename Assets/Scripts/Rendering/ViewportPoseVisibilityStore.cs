@@ -7,6 +7,7 @@ using UnityEngine;
 /// <summary>
 /// Per-pose Enabled + MirrorHorizontally flags. Keyed by exact X + Y + Facing.
 /// Shared by Edit Mode and Play/Build. Does not store Graphic / X / Y / order.
+/// Captures and applies every layout piece — no name/type exclusions.
 /// </summary>
 [CreateAssetMenu(
     fileName = "ViewportPoseVisibility",
@@ -68,6 +69,9 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
     return created;
   }
 
+  /// <summary>
+  /// Stores Enabled + MirrorHorizontally for every non-null layout piece.
+  /// </summary>
   public void CaptureFromLayout(
       ViewportPoseVisibilityEntry entry,
       ViewportLayout layout)
@@ -85,18 +89,17 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
       if (piece == null)
         continue;
 
-      // Fixed HoC entrance overlays — not authored per pose.
-      if (IsHallOfChampionsEntranceOverlayPiece(piece))
-        continue;
-
       entry.PieceNames.Add(piece.Name ?? string.Empty);
-      // Ceiling Strip 84/85 stay muted until we decide their role.
-      entry.EnabledFlags.Add(
-          IsTemporarilyMutedPiece(piece.Name) ? false : piece.Enabled);
+      entry.EnabledFlags.Add(piece.Enabled);
       entry.MirrorHorizontallyFlags.Add(piece.MirrorHorizontally);
     }
   }
 
+  /// <summary>
+  /// Applies stored Enabled + MirrorHorizontally to every layout piece.
+  /// Pieces missing from the entry get safe defaults (Enabled=false,
+  /// MirrorHorizontally=false) so prior-pose state cannot leak.
+  /// </summary>
   public void ApplyToLayout(
       ViewportPoseVisibilityEntry entry,
       ViewportLayout layout)
@@ -112,41 +115,14 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
 
       if (TryGetEnabledByName(entry, piece.Name, out bool enabled))
         piece.Enabled = enabled;
+      else
+        piece.Enabled = false;
 
       if (TryGetMirrorByName(entry, piece.Name, out bool mirror))
         piece.MirrorHorizontally = mirror;
-
-      // Ceiling Strip 84/85 stay muted until we decide their role.
-      if (IsTemporarilyMutedPiece(piece.Name))
-        piece.Enabled = false;
+      else
+        piece.MirrorHorizontally = false;
     }
-  }
-
-  /// <summary>
-  /// Investigation pieces kept non-drawing without deleting layout entries.
-  /// </summary>
-  private static bool IsTemporarilyMutedPiece(string pieceName)
-  {
-    return pieceName == "Ceiling Strip 84"
-        || pieceName == "Ceiling Strip 85";
-  }
-
-  private static bool IsHallOfChampionsEntranceOverlayPiece(
-      ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    if (piece.Graphic == DungeonGraphicType.BlackDoor
-        || piece.Graphic == DungeonGraphicType.BlackDoorFrameLeft)
-    {
-      return true;
-    }
-
-    string name = piece.Name ?? string.Empty;
-    return name == "Black Door"
-        || name == "Black Door Frame Left"
-        || name == "Black Door Frame Right";
   }
 
   private static bool TryGetEnabledByName(

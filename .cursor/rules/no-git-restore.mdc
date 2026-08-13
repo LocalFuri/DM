@@ -1,0 +1,12 @@
+---
+description: Never restore, checkout, reset, revert, or recover anything from Git/GitHub
+alwaysApply: true
+---
+
+# No Git/GitHub Restore
+
+Never restore, checkout, reset, revert, or otherwise recover anything from Git/GitHub.
+
+Only the user may perform Git/GitHub restore or rollback operations.
+
+You may inspect and report Git status/history if requested, but must never change repository history or restore files from source control.
