@@ -101,7 +101,7 @@ MonoBehaviour:
     MirrorHorizontally: 0
   - Name: Wall F0Left
     Graphic: 3
-    X: 0
+    X: 48
     Y: 31
     Enabled: 1
     MirrorHorizontally: 0
