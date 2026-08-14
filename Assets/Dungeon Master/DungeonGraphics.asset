@@ -34,8 +34,8 @@ MonoBehaviour:
   WallS3R: {fileID: 2800000, guid: b622d6e6d1b9fb44586ed594681b98c7, type: 3}
   MaskWallF0L: {fileID: 2800000, guid: 700eb082ead3264418a60a742f7d2559, type: 3}
   MaskWallF0R: {fileID: 0}
-  MaskWallF1L: {fileID: 2800000, guid: c0a03cc9eae1760458580c68550a06c6, type: 3}
-  MaskWallF1R: {fileID: 2800000, guid: a79f107845adb7c428833b44b14ae94e, type: 3}
+  MaskWallF1L: {fileID: 0}
+  MaskWallF1R: {fileID: 0}
   MaskWallF2L: {fileID: 2800000, guid: bf952708d0c5e1841a101b8c49e5ebd4, type: 3}
   MaskWallF2R: {fileID: 2800000, guid: 8938e1ce58df78e48ae4a848aa9bec52, type: 3}
   MaskWallF3L: {fileID: 2800000, guid: df723f45bca8bb749b1605215d88fb3f, type: 3}
