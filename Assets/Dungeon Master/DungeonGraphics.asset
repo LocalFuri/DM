@@ -19,14 +19,14 @@ MonoBehaviour:
   EntranceDoorClosedOutside: {fileID: 2800000, guid: 7f1298e3c4390b84db6d6a77702ab6d4, type: 3}
   EntranceDoorClosedLeft: {fileID: 2800000, guid: 542e9f5507a782f4a8fbbaf242f404c8, type: 3}
   EntranceDoorClosedRight: {fileID: 2800000, guid: d5d50c754972dca41aedccd63e1fffb7, type: 3}
-  WallF0L: {fileID: 2800000, guid: 46a8e0e4ae4f9ea43baae9904e62710f, type: 3}
-  WallF0R: {fileID: 2800000, guid: 0bda3523760088c45807942dbaa1dd62, type: 3}
+  WallF0L: {fileID: 2800000, guid: 2d866205a209ae049969d0fba028dc5e, type: 3}
+  WallF0R: {fileID: 2800000, guid: 1786a10c5e7cbb64ca6f6a1fe735258d, type: 3}
   WallF1L: {fileID: 2800000, guid: c0a03cc9eae1760458580c68550a06c6, type: 3}
   WallF1R: {fileID: 2800000, guid: 46a8e0e4ae4f9ea43baae9904e62710f, type: 3}
-  WallF2L: {fileID: 2800000, guid: 8620b0ff917ff2541b088195623f5952, type: 3}
-  WallF2R: {fileID: 2800000, guid: 0d648ceb1cb33544c853cc447f27906e, type: 3}
-  WallF3L: {fileID: 2800000, guid: 575bb58bb53bb1e4698f3563d4379793, type: 3}
-  WallF3R: {fileID: 2800000, guid: 4e9355110e3c3ca439294cc30c9fddc6, type: 3}
+  WallF2L: {fileID: 2800000, guid: bf952708d0c5e1841a101b8c49e5ebd4, type: 3}
+  WallF2R: {fileID: 2800000, guid: 8938e1ce58df78e48ae4a848aa9bec52, type: 3}
+  WallF3L: {fileID: 2800000, guid: df723f45bca8bb749b1605215d88fb3f, type: 3}
+  WallF3R: {fileID: 2800000, guid: 4a54077accf95c44f9c17ff6106231e6, type: 3}
   FrontWallF1: {fileID: 2800000, guid: 5927c68013a488649b39a4bdcd680ad1, type: 3}
   FrontWallF2: {fileID: 2800000, guid: 0c9f02142ff275b4fbedc19f619637b4, type: 3}
   FrontWallF3: {fileID: 2800000, guid: f9a6197fa76905147b2659ed5ecc756d, type: 3}

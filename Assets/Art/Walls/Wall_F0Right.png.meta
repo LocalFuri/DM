@@ -1,10 +1,7 @@
 fileFormatVersion: 2
-guid: 0bda3523760088c45807942dbaa1dd62
+guid: 1786a10c5e7cbb64ca6f6a1fe735258d
 TextureImporter:
-  internalIDToNameTable:
-  - first:
-      213: 6830022394012864266
-    second: D_TILETYPE_WALL_F0R_0
+  internalIDToNameTable: []
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -51,9 +48,9 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 1
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
-  spriteGenerateFallbackPhysicsShape: 1
+  spriteGenerateFallbackPhysicsShape: 0
   alphaUsage: 1
   alphaIsTransparency: 1
   spriteTessellationDetail: -1
@@ -75,7 +72,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -100,13 +97,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: D_TILETYPE_WALL_F0R_0
+      name: EntranceDoor_Closed_Outside_320x200_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 33
-        height: 136
+        width: 320
+        height: 200
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +112,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a0f891b2e2d19ce50800000000000000
-      internalID: 6830022394012864266
+      spriteID: ba6fd327eacedf4b0800000000000000
+      internalID: -5404903743789599061
       vertices: []
       indices: 
       edges: []
@@ -135,7 +132,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      D_TILETYPE_WALL_F0R_0: 6830022394012864266
+      EntranceDoor_Closed_Outside_320x200_0: -5404903743789599061
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
