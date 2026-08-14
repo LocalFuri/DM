@@ -88,7 +88,7 @@ MonoBehaviour:
     Enabled: 0
     MirrorHorizontally: 0
   - Name: Wall F1Left
-    Graphic: 6
+    Graphic: 5
     X: 0
     Y: 47
     Enabled: 1
