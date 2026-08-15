@@ -250,7 +250,6 @@ namespace DM.Dungeon
       }
 
       MatchCollection matches = TileRegex.Matches(json);
-      int loaded = 0;
 
       foreach (Match match in matches)
       {
@@ -273,15 +272,6 @@ namespace DM.Dungeon
           Type = ConvertTileType(typeName),
           Raw = raw
         };
-        loaded++;
-      }
-
-      int expected = Width * Height;
-      if (loaded != expected)
-      {
-        Debug.LogWarning(
-            $"DungeonMap: Loaded {loaded} tiles; expected {expected}."
-        );
       }
     }
 
