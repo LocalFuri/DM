@@ -99,7 +99,6 @@ public class ViewportLayoutEditor : EditorWindow
   private bool previewPoseChangedByKeyboardThisFrame;
   // TEMP F3 diagnostics — remove after verification.
   private static string lastLoggedFrontWallF3EditDrawKey;
-  private static string lastLoggedFrontWallF3PreviewCoverageKey;
 
   // Temporary 320×200 presentation (restored on close / Play Mode).
   private bool presentationOverrideActive;
@@ -879,7 +878,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Allow F3 diagnostics to re-emit after a forced preview rebuild.
     lastLoggedFrontWallF3EditDrawKey = null;
-    lastLoggedFrontWallF3PreviewCoverageKey = null;
   }
 
   private void RestoreSessionPrefs()
@@ -2325,12 +2323,6 @@ public class ViewportLayoutEditor : EditorWindow
     // Temporary pose for visibility/mirror only — never write the layout asset.
     DungeonMap poseMap = TryGetPreviewPoseMap();
 
-    int f3DrawX = -1;
-    int f3DrawY = -1;
-    int f3DrawW = 0;
-    int f3DrawH = 0;
-    Texture2D f3Texture = null;
-
     if (layout != null && layout.Pieces != null)
     {
       for (int i = 0; i < layout.Pieces.Count; i++)
@@ -2427,12 +2419,6 @@ public class ViewportLayoutEditor : EditorWindow
                     + sameAsHelper
                     + " (Edit Mode)");
           }
-
-          f3DrawX = piece.X;
-          f3DrawY = piece.Y;
-          f3DrawW = texture.width;
-          f3DrawH = texture.height;
-          f3Texture = texture;
         }
 
         bool mirror = GetPreviewMirror(piece, poseMap);
@@ -2530,117 +2516,8 @@ public class ViewportLayoutEditor : EditorWindow
       );
     }
 
-    LogFrontWallF3PreviewCoverage(
-        pixels,
-        f3Texture,
-        f3DrawX,
-        f3DrawY,
-        f3DrawW,
-        f3DrawH);
-
     editModePreviewTexture.SetPixels32(pixels);
     editModePreviewTexture.Apply(false);
-  }
-
-  /// <summary>
-  /// TEMP: after full compose, report how much of the 90-wide F3 blit still
-  /// matches the composite (later pieces may overwrite the expansion band).
-  /// </summary>
-  private static void LogFrontWallF3PreviewCoverage(
-      Color32[] pixels,
-      Texture2D f3Texture,
-      int drawX,
-      int drawY,
-      int drawW,
-      int drawH)
-  {
-    if (pixels == null || f3Texture == null || drawW <= 0 || drawH <= 0)
-      return;
-
-    if (!f3Texture.isReadable)
-    {
-      Debug.Log(
-          "F3 PREVIEW: composite texture not readable — blit skipped?");
-      return;
-    }
-
-    Color32[] src = f3Texture.GetPixels32();
-    int match = 0;
-    int total = 0;
-    int expansionMatch = 0;
-    int expansionTotal = 0;
-    const int oldWidth = 70;
-
-    for (int row = 0; row < drawH; row++)
-    {
-      int ty = drawY + row;
-      if (ty < 0 || ty >= PreviewHeight)
-        continue;
-
-      for (int col = 0; col < drawW; col++)
-      {
-        int tx = drawX + col;
-        if (tx < 0 || tx >= PreviewWidth)
-          continue;
-
-        Color32 s = src[row * drawW + col];
-        if (s.a == 0)
-          continue;
-
-        Color32 d = pixels[ty * PreviewWidth + tx];
-        bool same = d.r == s.r && d.g == s.g && d.b == s.b;
-        total++;
-        if (same)
-          match++;
-
-        if (col >= oldWidth)
-        {
-          expansionTotal++;
-          if (same)
-            expansionMatch++;
-        }
-      }
-    }
-
-    string coverageKey =
-        drawW
-        + "x"
-        + drawH
-        + "@"
-        + drawX
-        + ","
-        + drawY
-        + "|"
-        + match
-        + "/"
-        + total
-        + "|"
-        + expansionMatch
-        + "/"
-        + expansionTotal;
-    if (coverageKey == lastLoggedFrontWallF3PreviewCoverageKey)
-      return;
-
-    lastLoggedFrontWallF3PreviewCoverageKey = coverageKey;
-    Debug.Log(
-        "F3 PREVIEW: blit Size="
-            + drawW
-            + "x"
-            + drawH
-            + " at X="
-            + drawX
-            + " Y="
-            + drawY
-            + " / final-buffer match "
-            + match
-            + "/"
-            + total
-            + " / expansion-cols(70..89) still visible "
-            + expansionMatch
-            + "/"
-            + expansionTotal
-            + " / previewTex="
-            + (drawW == 90 ? "90x49 OK" : "NOT 90"));
   }
 
   private static string lastEditModeViewportLogMessage;
