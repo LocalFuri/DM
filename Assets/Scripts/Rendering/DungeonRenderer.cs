@@ -1512,6 +1512,9 @@ namespace DM.Rendering
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
           continue;
 
+        if (ViewportWallDebugText.IsChampionStatusSlotName(name))
+          continue;
+
         if (!IsWallDebugPieceActuallyDrawn(piece, selectedF1Front))
           continue;
 

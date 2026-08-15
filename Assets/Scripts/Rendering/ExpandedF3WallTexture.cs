@@ -41,7 +41,6 @@ namespace DM.Rendering
     private static Texture2D cachedLeft;
     private static Texture2D cachedRight;
     private static Texture2D cachedExpanded;
-    private static bool loggedCacheReturnOnce;
 
     /// <summary>
     /// Last texture returned by <see cref="BuildExpandedF3Wall"/> (for draw diagnostics).
@@ -66,8 +65,6 @@ namespace DM.Rendering
     {
       if (front == null)
       {
-        Debug.Log(
-            "F3 BUILD: fallback — front is null");
         LastReturnedTexture = null;
         return null;
       }
@@ -77,80 +74,36 @@ namespace DM.Rendering
           && cachedLeft == wallF3L
           && cachedRight == wallF3R)
       {
-        if (!loggedCacheReturnOnce)
-        {
-          loggedCacheReturnOnce = true;
-          Debug.Log(
-              "F3 BUILD: return cached 90x49 '"
-                  + cachedExpanded.name
-                  + "'");
-        }
-
         LastReturnedTexture = cachedExpanded;
         return cachedExpanded;
       }
 
       if (!front.isReadable)
       {
-        Debug.Log(
-            "F3 BUILD: fallback to original 70x49 '"
-                + front.name
-                + "' — front.isReadable=false");
         LastReturnedTexture = front;
         return front;
       }
 
       if (wallF3L == null)
       {
-        Debug.Log(
-            "F3 BUILD: fallback to original 70x49 '"
-                + front.name
-                + "' — wallF3L is null");
         LastReturnedTexture = front;
         return front;
       }
 
       if (!wallF3L.isReadable)
       {
-        Debug.Log(
-            "F3 BUILD: fallback to original 70x49 '"
-                + front.name
-                + "' — wallF3L.isReadable=false");
         LastReturnedTexture = front;
         return front;
       }
 
       if (front.width < MinFrontWidth || front.height < SourceHeight)
       {
-        Debug.Log(
-            "F3 BUILD: fallback to original '"
-                + front.name
-                + "' "
-                + front.width
-                + "x"
-                + front.height
-                + " — front smaller than "
-                + MinFrontWidth
-                + "x"
-                + SourceHeight);
         LastReturnedTexture = front;
         return front;
       }
 
       if (wallF3L.width < MinLeftWidth || wallF3L.height < SourceHeight)
       {
-        Debug.Log(
-            "F3 BUILD: fallback to original 70x49 '"
-                + front.name
-                + "' — wallF3L size "
-                + wallF3L.width
-                + "x"
-                + wallF3L.height
-                + " (need >= "
-                + MinLeftWidth
-                + "x"
-                + SourceHeight
-                + ")");
         LastReturnedTexture = front;
         return front;
       }
@@ -208,17 +161,6 @@ namespace DM.Rendering
       cachedRight = wallF3R;
       cachedExpanded = expanded;
       LastReturnedTexture = expanded;
-
-      Debug.Log(
-          "F3 BUILD: built new 90x49 '"
-              + expanded.name
-              + "' from source '"
-              + front.name
-              + "' "
-              + front.width
-              + "x"
-              + front.height
-              + " (L[53..69]+Front[0..68]+TEMP edge col68)");
 
       return cachedExpanded;
     }

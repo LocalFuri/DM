@@ -122,6 +122,9 @@ namespace DM.Rendering
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
           continue;
 
+        if (IsChampionStatusSlotName(name))
+          continue;
+
         results.Add(
             new ViewportWallDebugEntry(
                 name,
@@ -130,6 +133,14 @@ namespace DM.Rendering
         );
         added.Add(name);
       }
+    }
+
+    public static bool IsChampionStatusSlotName(string name)
+    {
+      return name == "Champion Status Slot 1"
+          || name == "Champion Status Slot 2"
+          || name == "Champion Status Slot 3"
+          || name == "Champion Status Slot 4";
     }
 
     public static ViewportPiece FindPieceByName(

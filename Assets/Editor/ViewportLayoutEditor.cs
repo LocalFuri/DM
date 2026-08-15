@@ -1329,22 +1329,7 @@ public class ViewportLayoutEditor : EditorWindow
             previewFacing,
             out ViewportPoseVisibilityEntry entry))
     {
-      if (previewX == 1
-          && previewY == 2
-          && previewFacing == DungeonFacing.North)
-      {
-        LogDoorTrace("stored before ApplyToLayout (nav)", entry);
-      }
-
       poseVisibilityStore.ApplyToLayout(entry, layout);
-
-      if (previewX == 1
-          && previewY == 2
-          && previewFacing == DungeonFacing.North)
-      {
-        LogDoorTrace("live after ApplyToLayout (nav)", entry);
-      }
-
       return;
     }
 
@@ -1728,17 +1713,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Never capture while PersistChanges has kit-baseline Enabled on layout.
     if (suppressPoseCaptureFromLayout)
-    {
-      Debug.Log(
-          "DOOR TRACE: CaptureCurrentPoseVisibilityToStore SKIPPED "
-              + "(kit baseline temporarily on live layout) @ "
-              + previewX
-              + ","
-              + previewY
-              + " "
-              + previewFacing);
       return;
-    }
 
     EnsurePoseVisibilityStore();
     if (poseVisibilityStore == null)
@@ -1751,13 +1726,6 @@ public class ViewportLayoutEditor : EditorWindow
             previewFacing);
     poseVisibilityStore.CaptureFromLayout(entry, layout);
     EditorUtility.SetDirty(poseVisibilityStore);
-
-    if (previewX == 1
-        && previewY == 2
-        && previewFacing == DungeonFacing.North)
-    {
-      LogDoorTrace("after CaptureCurrentPoseVisibilityToStore", entry);
-    }
   }
 
   private void ApplyCurrentPoseVisibilityToLayout()
@@ -1783,31 +1751,10 @@ public class ViewportLayoutEditor : EditorWindow
           previewFacing);
       poseVisibilityStore.CaptureFromLayout(entry, layout);
       EditorUtility.SetDirty(poseVisibilityStore);
-      if (previewX == 1
-          && previewY == 2
-          && previewFacing == DungeonFacing.North)
-      {
-        LogDoorTrace("after first-visit Capture (unknown pose)", entry);
-      }
-
       return;
     }
 
-    if (previewX == 1
-        && previewY == 2
-        && previewFacing == DungeonFacing.North)
-    {
-      LogDoorTrace("stored before ApplyToLayout", entry);
-    }
-
     poseVisibilityStore.ApplyToLayout(entry, layout);
-
-    if (previewX == 1
-        && previewY == 2
-        && previewFacing == DungeonFacing.North)
-    {
-      LogDoorTrace("live after ApplyToLayout", entry);
-    }
   }
 
   private void PersistPoseVisibilityStore()
@@ -1873,13 +1820,6 @@ public class ViewportLayoutEditor : EditorWindow
       // Unknown kit pieces must not keep a prior pose's Enabled.
       if (!found)
         piece.Enabled = false;
-    }
-
-    if (previewX == 1
-        && previewY == 2
-        && previewFacing == DungeonFacing.North)
-    {
-      LogDoorTrace("live after ApplyKitBaselineEnabledToLayout", null);
     }
   }
 
@@ -2308,13 +2248,6 @@ public class ViewportLayoutEditor : EditorWindow
     if (editModePreviewTexture == null)
       return;
 
-    if (previewX == 1
-        && previewY == 2
-        && previewFacing == DungeonFacing.North)
-    {
-      LogDoorTrace("immediately before ComposeEditModePreview loop", null);
-    }
-
     Color32 magenta = new Color32(255, 0, 255, 255);
     Color32[] pixels = new Color32[PreviewWidth * PreviewHeight];
     for (int i = 0; i < pixels.Length; i++)
@@ -2328,26 +2261,7 @@ public class ViewportLayoutEditor : EditorWindow
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
         ViewportPiece piece = layout.Pieces[i];
-        bool isDoor = IsDoorTracePiece(piece);
         bool shouldDraw = ShouldDrawPieceAtPreviewPose(piece);
-
-        if (isDoor
-            && previewX == 1
-            && previewY == 2
-            && previewFacing == DungeonFacing.North)
-        {
-          Debug.Log(
-              "DOOR TRACE: compose piece="
-                  + piece.Name
-                  + " liveEnabled="
-                  + piece.Enabled
-                  + " ShouldDrawPieceAtPreviewPose="
-                  + shouldDraw
-                  + " X="
-                  + piece.X
-                  + " Y="
-                  + piece.Y);
-        }
 
         if (!shouldDraw)
           continue;
@@ -2357,18 +2271,7 @@ public class ViewportLayoutEditor : EditorWindow
 
         Texture2D texture = graphics.GetTexture(piece.Graphic);
         if (texture == null)
-        {
-          if (isDoor
-              && previewX == 1
-              && previewY == 2
-              && previewFacing == DungeonFacing.North)
-          {
-            Debug.Log(
-                "DOOR TRACE: REJECT GetTexture=null for " + piece.Name);
-          }
-
           continue;
-        }
 
         if (piece.Graphic == DungeonGraphicType.FrontWallF3)
         {
@@ -2454,24 +2357,6 @@ public class ViewportLayoutEditor : EditorWindow
             piece.X,
             piece.Y,
             mirror);
-
-        if (isDoor
-            && previewX == 1
-            && previewY == 2
-            && previewFacing == DungeonFacing.North)
-        {
-          Debug.Log(
-              "DOOR TRACE: BLIT called for "
-                  + piece.Name
-                  + " liveEnabled="
-                  + piece.Enabled
-                  + " tex="
-                  + texture.name
-                  + " "
-                  + texture.width
-                  + "x"
-                  + texture.height);
-        }
       }
     }
 
@@ -2603,90 +2488,6 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
 
     return piece.Enabled;
-  }
-
-  private static bool IsDoorTracePiece(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    string name = piece.Name ?? string.Empty;
-    return name == "Black Door"
-        || name == "Black Door Frame Left"
-        || name == "Black Door Frame Right";
-  }
-
-  private void LogDoorTrace(string stage, ViewportPoseVisibilityEntry entry)
-  {
-    string leftStored = "n/a";
-    string rightStored = "n/a";
-    string doorStored = "n/a";
-    if (entry != null)
-    {
-      leftStored = FormatStoredEnabled(entry, "Black Door Frame Left");
-      rightStored = FormatStoredEnabled(entry, "Black Door Frame Right");
-      doorStored = FormatStoredEnabled(entry, "Black Door");
-    }
-
-    string leftLive = FormatLiveEnabled("Black Door Frame Left");
-    string rightLive = FormatLiveEnabled("Black Door Frame Right");
-    string doorLive = FormatLiveEnabled("Black Door");
-
-    Debug.Log(
-        "DOOR TRACE ["
-            + stage
-            + "] @ "
-            + previewX
-            + ","
-            + previewY
-            + " "
-            + previewFacing
-            + " | FrameL stored="
-            + leftStored
-            + " live="
-            + leftLive
-            + " | FrameR stored="
-            + rightStored
-            + " live="
-            + rightLive
-            + " | Door stored="
-            + doorStored
-            + " live="
-            + doorLive
-            + " | suppressCapture="
-            + suppressPoseCaptureFromLayout);
-  }
-
-  private static string FormatStoredEnabled(
-      ViewportPoseVisibilityEntry entry,
-      string pieceName)
-  {
-    if (entry?.PieceNames == null || entry.EnabledFlags == null)
-      return "missing";
-
-    int count = Mathf.Min(entry.PieceNames.Count, entry.EnabledFlags.Count);
-    for (int i = 0; i < count; i++)
-    {
-      if (entry.PieceNames[i] == pieceName)
-        return entry.EnabledFlags[i] ? "true" : "false";
-    }
-
-    return "missing";
-  }
-
-  private string FormatLiveEnabled(string pieceName)
-  {
-    if (layout?.Pieces == null)
-      return "n/a";
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece != null && piece.Name == pieceName)
-        return piece.Enabled ? "true" : "false";
-    }
-
-    return "missing";
   }
 
   /// <summary>
