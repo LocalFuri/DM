@@ -32,16 +32,6 @@ MonoBehaviour:
   FrontWallF3: {fileID: 2800000, guid: b8dbeeac61e52e641841ff24f6061ee4, type: 3}
   WallS3L: {fileID: 2800000, guid: b3b33277fa2a2734aae2128a532acde1, type: 3}
   WallS3R: {fileID: 2800000, guid: b622d6e6d1b9fb44586ed594681b98c7, type: 3}
-  MaskWallF0L: {fileID: 2800000, guid: caba525cd44eb93408a17d7409b395b8, type: 3}
-  MaskWallF0R: {fileID: 0}
-  MaskWallF1L: {fileID: 0}
-  MaskWallF1R: {fileID: 0}
-  MaskWallF2L: {fileID: 2800000, guid: bf952708d0c5e1841a101b8c49e5ebd4, type: 3}
-  MaskWallF2R: {fileID: 2800000, guid: 8938e1ce58df78e48ae4a848aa9bec52, type: 3}
-  MaskWallF3L: {fileID: 2800000, guid: df723f45bca8bb749b1605215d88fb3f, type: 3}
-  MaskWallF3R: {fileID: 2800000, guid: 4a54077accf95c44f9c17ff6106231e6, type: 3}
-  MaskWallS3L: {fileID: 2800000, guid: d96153ea508071e4ba8b95632c8b66dc, type: 3}
-  MaskWallS3R: {fileID: 0}
   DoorClosed: {fileID: 0}
   DoorOpen: {fileID: 0}
   DoorFrameLeft: {fileID: 0}

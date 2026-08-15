@@ -2462,13 +2462,9 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        Texture2D mask =
-            graphics.GetMask(piece.Graphic, out bool flipMaskX);
         BlitPieceIntoPreview(
             pixels,
             texture,
-            mask,
-            flipMaskX,
             piece.X,
             piece.Y,
             mirror);
@@ -2841,8 +2837,6 @@ public class ViewportLayoutEditor : EditorWindow
   private static void BlitPieceIntoPreview(
       Color32[] dest,
       Texture2D source,
-      Texture2D mask,
-      bool flipMaskHorizontal,
       int destinationX,
       int destinationY,
       bool mirrorHorizontally = false)
@@ -2851,17 +2845,6 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     Color32[] sourcePixels = source.GetPixels32();
-    Color32[] maskPixels = null;
-    bool useMask = false;
-
-    if (mask != null
-        && mask.isReadable
-        && mask.width == source.width
-        && mask.height == source.height)
-    {
-      maskPixels = mask.GetPixels32();
-      useMask = true;
-    }
 
     for (int sourceY = 0; sourceY < source.height; sourceY++)
     {
@@ -2877,21 +2860,6 @@ public class ViewportLayoutEditor : EditorWindow
         int targetX = destinationX + column;
         if (targetX < 0 || targetX >= PreviewWidth)
           continue;
-
-        if (useMask)
-        {
-          int maskX = flipMaskHorizontal
-              ? mask.width - 1 - sourceX
-              : sourceX;
-          Color32 maskColour =
-              maskPixels[sourceY * mask.width + maskX];
-          if (maskColour.r < 128
-              && maskColour.g < 128
-              && maskColour.b < 128)
-          {
-            continue;
-          }
-        }
 
         Color32 sourceColour =
             sourcePixels[sourceY * source.width + sourceX];

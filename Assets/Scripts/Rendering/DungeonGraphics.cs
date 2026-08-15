@@ -45,26 +45,6 @@ namespace DM.Rendering
     public Texture2D WallS3L;
     public Texture2D WallS3R;
 
-    [Header("Wall Masks - F0")]
-    public Texture2D MaskWallF0L;
-    public Texture2D MaskWallF0R;
-
-    [Header("Wall Masks - F1")]
-    public Texture2D MaskWallF1L;
-    public Texture2D MaskWallF1R;
-
-    [Header("Wall Masks - F2")]
-    public Texture2D MaskWallF2L;
-    public Texture2D MaskWallF2R;
-
-    [Header("Wall Masks - F3")]
-    public Texture2D MaskWallF3L;
-    public Texture2D MaskWallF3R;
-
-    [Header("Side Wall Masks")]
-    public Texture2D MaskWallS3L;
-    public Texture2D MaskWallS3R;
-
     [Header("Doors")]
     public Texture2D DoorClosed;
     public Texture2D DoorOpen;
@@ -150,71 +130,6 @@ namespace DM.Rendering
           return BlackDoor;
         case DungeonGraphicType.BlackDoorFrameLeft:
           return BlackDoorFrameLeft;
-        default:
-          return null;
-      }
-    }
-
-    // Returns the mask for a side-wall graphic. Right-side pieces use the
-    // matching left mask flipped horizontally when no explicit R mask is set.
-    public Texture2D GetMask(
-        DungeonGraphicType graphic,
-        out bool flipHorizontal)
-    {
-      flipHorizontal = false;
-
-      switch (graphic)
-      {
-        case DungeonGraphicType.WallF0L:
-          return MaskWallF0L;
-
-        case DungeonGraphicType.WallF0R:
-          if (MaskWallF0R != null)
-            return MaskWallF0R;
-
-          flipHorizontal = true;
-          return MaskWallF0L;
-
-        case DungeonGraphicType.WallF1L:
-          return MaskWallF1L;
-
-        case DungeonGraphicType.WallF1R:
-          if (MaskWallF1R != null)
-            return MaskWallF1R;
-
-          flipHorizontal = true;
-          return MaskWallF1L;
-
-        case DungeonGraphicType.WallF2L:
-          return MaskWallF2L;
-
-        case DungeonGraphicType.WallF2R:
-          if (MaskWallF2R != null)
-            return MaskWallF2R;
-
-          flipHorizontal = true;
-          return MaskWallF2L;
-
-        case DungeonGraphicType.WallF3L:
-          return MaskWallF3L;
-
-        case DungeonGraphicType.WallF3R:
-          if (MaskWallF3R != null)
-            return MaskWallF3R;
-
-          flipHorizontal = true;
-          return MaskWallF3L;
-
-        case DungeonGraphicType.WallS3L:
-          return MaskWallS3L;
-
-        case DungeonGraphicType.WallS3R:
-          if (MaskWallS3R != null)
-            return MaskWallS3R;
-
-          flipHorizontal = true;
-          return MaskWallS3L;
-
         default:
           return null;
       }

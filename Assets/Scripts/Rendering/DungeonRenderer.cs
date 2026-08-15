@@ -2370,16 +2370,11 @@ namespace DM.Rendering
         return;
       }
 
-      Texture2D mask =
-          graphics.GetMask(piece.Graphic, out bool flipMaskX);
-
       // Full authored sprite at layout X/Y — no crop, shift, or stretch.
       Blit(
           texture,
           piece.X,
           destY,
-          mask,
-          flipMaskX,
           flipVertical: false,
           sourceXOffset: 0,
           sourceWidth: -1,
@@ -2418,8 +2413,6 @@ namespace DM.Rendering
         Texture2D source,
         int destinationX,
         int destinationY,
-        Texture2D mask = null,
-        bool flipMaskHorizontal = false,
         bool flipVertical = false,
         int sourceXOffset = 0,
         int sourceWidth = -1,
@@ -2427,17 +2420,6 @@ namespace DM.Rendering
     {
       Color32[] sourcePixels =
           source.GetPixels32();
-
-      Color32[] maskPixels = null;
-      bool useMask = false;
-
-      if (mask != null
-          && mask.width == source.width
-          && mask.height == source.height)
-      {
-        maskPixels = mask.GetPixels32();
-        useMask = true;
-      }
 
       if (sourceWidth < 0)
         sourceWidth = source.width;
@@ -2485,28 +2467,6 @@ namespace DM.Rendering
               targetX >= viewWidth)
           {
             continue;
-          }
-
-          if (useMask)
-          {
-            int maskX = flipMaskHorizontal
-                ? mask.width - 1 - sourceX
-                : sourceX;
-
-            Color32 maskColour =
-                maskPixels[
-                    sampleY * mask.width +
-                    maskX
-                ];
-
-            // White (or bright) mask pixels are drawable;
-            // black pixels clip.
-            if (maskColour.r < 128
-                && maskColour.g < 128
-                && maskColour.b < 128)
-            {
-              continue;
-            }
           }
 
           Color32 sourceColour =
