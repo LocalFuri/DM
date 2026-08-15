@@ -1267,6 +1267,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewY = newY;
     previewFacing = newFacing;
     SaveSessionPrefs();
+    PlayerWallBumpFeedback.ResetWallHitLog();
 
     if (previewMiniMap != null)
       previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
@@ -1298,6 +1299,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewY = newY;
     previewFacing = newFacing;
     SaveSessionPrefs();
+    PlayerWallBumpFeedback.ResetWallHitLog();
 
     if (previewMiniMap != null)
       previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
