@@ -182,6 +182,8 @@ public class ViewportLayoutEditor : EditorWindow
     ReloadLayoutFromDisk();
     RestoreSessionPrefs();
     EnsurePoseVisibilityStore();
+    StripObsoleteFrontWallF1ABPieces();
+    MigrateObsoleteFrontWallF1ABPoseStore();
     ApplyCurrentPoseVisibilityToLayout();
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
     // Force a fresh compose from the current pose's Enabled flags.
@@ -191,6 +193,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnDisable()
   {
+    StripObsoleteFrontWallF1ABPieces();
     CaptureCurrentPoseVisibilityToStore();
     PersistPoseVisibilityStore();
     SaveAssetGuid(PrefsLayoutGuidKey, layout);
@@ -216,6 +219,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (state == PlayModeStateChange.EnteredEditMode)
     {
       // Re-apply preview pose after Play mutated live layout Enabled flags.
+      StripObsoleteFrontWallF1ABPieces();
       ApplyCurrentPoseVisibilityToLayout();
       RefreshEditModePreview();
     }
@@ -256,6 +260,8 @@ public class ViewportLayoutEditor : EditorWindow
       SaveAssetGuid(PrefsLayoutGuidKey, layout);
       SaveSessionPrefs();
       EnsurePoseVisibilityStore();
+      StripObsoleteFrontWallF1ABPieces();
+      MigrateObsoleteFrontWallF1ABPoseStore();
       ApplyCurrentPoseVisibilityToLayout();
       RefreshEditModePreview();
     }
@@ -326,6 +332,9 @@ public class ViewportLayoutEditor : EditorWindow
 
       EditorGUILayout.LabelField("Pieces (render order)", EditorStyles.boldLabel);
 
+      if (layoutEditable)
+        StripObsoleteFrontWallF1ABPieces();
+
       bool changed = false;
 
       for (int i = 0; i < layout.Pieces.Count; i++)
@@ -364,6 +373,90 @@ public class ViewportLayoutEditor : EditorWindow
 
     return piece.Name == "Ceiling Strip 84"
         || piece.Name == "Ceiling Strip 85";
+  }
+
+  /// <summary>
+  /// Live editor cards come from layout.Pieces. Obsolete A/B pieces must be
+  /// removed here so Unity in-memory state cannot write them back to disk.
+  /// </summary>
+  private void StripObsoleteFrontWallF1ABPieces()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    bool hasFrontWallF1 = false;
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (piece.Name == "Front Wall F1"
+          || piece.Graphic == DungeonGraphicType.FrontWallF1)
+      {
+        hasFrontWallF1 = true;
+        break;
+      }
+    }
+
+    int insertAt = -1;
+    int keepX = 40;
+    int keepY = 47;
+    bool removed = false;
+
+    for (int i = layout.Pieces.Count - 1; i >= 0; i--)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (piece.Name != "Front Wall F1 A"
+          && piece.Name != "Front Wall F1 B")
+      {
+        continue;
+      }
+
+      keepX = piece.X;
+      keepY = piece.Y;
+      insertAt = i;
+      layout.Pieces.RemoveAt(i);
+      removed = true;
+    }
+
+    if (!hasFrontWallF1)
+    {
+      if (insertAt < 0)
+        insertAt = layout.Pieces.Count;
+
+      layout.Pieces.Insert(
+          insertAt,
+          new ViewportPiece
+          {
+            Name = "Front Wall F1",
+            Graphic = DungeonGraphicType.FrontWallF1,
+            X = keepX,
+            Y = keepY,
+            Enabled = false,
+            MirrorHorizontally = false
+          });
+      removed = true;
+    }
+
+    if (!removed)
+      return;
+
+    EditorUtility.SetDirty(layout);
+    ClampSelectedPieceIndex();
+  }
+
+  private void MigrateObsoleteFrontWallF1ABPoseStore()
+  {
+    EnsurePoseVisibilityStore();
+    if (poseVisibilityStore == null)
+      return;
+
+    if (poseVisibilityStore.MigrateObsoleteFrontWallF1ABEntries())
+      EditorUtility.SetDirty(poseVisibilityStore);
   }
 
   private bool PieceMatchesSearchFilter(ViewportPiece piece)
@@ -1512,6 +1605,8 @@ public class ViewportLayoutEditor : EditorWindow
   {
     if (Application.isPlaying || layout == null)
       return;
+
+    StripObsoleteFrontWallF1ABPieces();
 
     // Capture pose from the real live Enabled flags first.
     CaptureCurrentPoseVisibilityToStore();

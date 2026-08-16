@@ -70,6 +70,140 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
   }
 
   /// <summary>
+  /// Replaces obsolete per-pose "Front Wall F1 A/B" names with "Front Wall F1".
+  /// Keeps existing Front Wall F1 flags when already present.
+  /// </summary>
+  public bool MigrateObsoleteFrontWallF1ABEntries()
+  {
+    bool changed = false;
+    if (Entries == null)
+      return false;
+
+    for (int i = 0; i < Entries.Count; i++)
+    {
+      if (MigrateObsoleteFrontWallF1ABEntry(Entries[i]))
+        changed = true;
+    }
+
+    return changed;
+  }
+
+  private static bool MigrateObsoleteFrontWallF1ABEntry(
+      ViewportPoseVisibilityEntry entry)
+  {
+    if (entry == null || entry.PieceNames == null)
+      return false;
+
+    int indexA = IndexOfName(entry.PieceNames, "Front Wall F1 A");
+    int indexB = IndexOfName(entry.PieceNames, "Front Wall F1 B");
+    if (indexA < 0 && indexB < 0)
+      return false;
+
+    int indexF1 = IndexOfName(entry.PieceNames, "Front Wall F1");
+    if (indexF1 < 0)
+    {
+      bool enabledA = GetFlag(entry.EnabledFlags, indexA);
+      bool enabledB = GetFlag(entry.EnabledFlags, indexB);
+      bool mirrorA = GetFlag(entry.MirrorHorizontallyFlags, indexA);
+      bool mirrorB = GetFlag(entry.MirrorHorizontallyFlags, indexB);
+
+      bool enabled = enabledA || enabledB;
+      bool mirror = false;
+      if (enabledA)
+        mirror = mirrorA;
+      else if (enabledB)
+        mirror = mirrorB;
+
+      int insertAt = indexA >= 0 ? indexA : indexB;
+      InsertFlag(entry.EnabledFlags, insertAt, enabled);
+      InsertFlag(entry.MirrorHorizontallyFlags, insertAt, mirror);
+      entry.PieceNames.Insert(insertAt, "Front Wall F1");
+
+      if (indexA >= 0 && indexA >= insertAt)
+        indexA++;
+      if (indexB >= 0 && indexB >= insertAt)
+        indexB++;
+    }
+
+    if (indexA >= 0 && indexB >= 0)
+    {
+      int first = Math.Min(indexA, indexB);
+      int second = Math.Max(indexA, indexB);
+      RemoveAt(entry, second);
+      RemoveAt(entry, first);
+    }
+    else if (indexA >= 0)
+    {
+      RemoveAt(entry, indexA);
+    }
+    else
+    {
+      RemoveAt(entry, indexB);
+    }
+
+    return true;
+  }
+
+  private static int IndexOfName(List<string> names, string name)
+  {
+    if (names == null)
+      return -1;
+
+    for (int i = 0; i < names.Count; i++)
+    {
+      if (names[i] == name)
+        return i;
+    }
+
+    return -1;
+  }
+
+  private static bool GetFlag(List<bool> flags, int index)
+  {
+    if (flags == null || index < 0 || index >= flags.Count)
+      return false;
+
+    return flags[index];
+  }
+
+  private static void InsertFlag(List<bool> flags, int index, bool value)
+  {
+    if (flags == null)
+      return;
+
+    if (index < 0)
+      index = 0;
+    if (index > flags.Count)
+      index = flags.Count;
+
+    flags.Insert(index, value);
+  }
+
+  private static void RemoveAt(ViewportPoseVisibilityEntry entry, int index)
+  {
+    if (entry.PieceNames != null
+        && index >= 0
+        && index < entry.PieceNames.Count)
+    {
+      entry.PieceNames.RemoveAt(index);
+    }
+
+    if (entry.EnabledFlags != null
+        && index >= 0
+        && index < entry.EnabledFlags.Count)
+    {
+      entry.EnabledFlags.RemoveAt(index);
+    }
+
+    if (entry.MirrorHorizontallyFlags != null
+        && index >= 0
+        && index < entry.MirrorHorizontallyFlags.Count)
+    {
+      entry.MirrorHorizontallyFlags.RemoveAt(index);
+    }
+  }
+
+  /// <summary>
   /// Stores Enabled + MirrorHorizontally for every non-null layout piece.
   /// </summary>
   public void CaptureFromLayout(
