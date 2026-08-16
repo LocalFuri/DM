@@ -51,6 +51,26 @@ namespace DM.Rendering
     }
 
     /// <summary>
+    /// F0/F2/F3 Left/Right are separate authored images and must never be
+    /// mirrored. F1 Left/Right keep authored MirrorHorizontally.
+    /// </summary>
+    public static bool IsAuthoredSideWallGraphic(DungeonGraphicType graphic)
+    {
+      switch (graphic)
+      {
+        case DungeonGraphicType.WallF0L:
+        case DungeonGraphicType.WallF0R:
+        case DungeonGraphicType.WallF2L:
+        case DungeonGraphicType.WallF2R:
+        case DungeonGraphicType.WallF3L:
+        case DungeonGraphicType.WallF3R:
+          return true;
+        default:
+          return false;
+      }
+    }
+
+    /// <summary>
     /// Floor/Ceiling only — Front F1 uses authored MirrorHorizontally.
     /// </summary>
     public static bool IsEnvironmentPhaseGraphic(DungeonGraphicType graphic)

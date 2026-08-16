@@ -2350,6 +2350,9 @@ namespace DM.Rendering
       if (piece == null)
         return false;
 
+      if (StraightF1WallLogic.IsAuthoredSideWallGraphic(piece.Graphic))
+        return false;
+
       return piece.MirrorHorizontally;
     }
 

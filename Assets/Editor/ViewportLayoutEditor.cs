@@ -525,14 +525,11 @@ public class ViewportLayoutEditor : EditorWindow
       changed = true;
     }
 
-    // Mirror is outside the Name/Enabled/Graphic change-check so SelectPiece →
-    // FocusControl(null) cannot swallow the Toggle or skip the live refresh.
-    // Side wall pieces never expose Mirror Horizontally in the editor UI.
+    // F0/F2/F3 side walls never expose Mirror Horizontally.
+    // F1 Left/Right keep the control and honor MirrorHorizontally.
     bool hideMirrorControl =
         piece.Name == "Wall F0Left"
         || piece.Name == "Wall F0Right"
-        || piece.Name == "Wall F1Left"
-        || piece.Name == "Wall F1Right"
         || piece.Name == "Wall F2Left"
         || piece.Name == "Wall F2Right"
         || piece.Name == "Wall F3Left"
@@ -2659,6 +2656,9 @@ public class ViewportLayoutEditor : EditorWindow
   private static bool GetPreviewMirror(ViewportPiece piece, DungeonMap poseMap)
   {
     if (piece == null)
+      return false;
+
+    if (StraightF1WallLogic.IsAuthoredSideWallGraphic(piece.Graphic))
       return false;
 
     return piece.MirrorHorizontally;
