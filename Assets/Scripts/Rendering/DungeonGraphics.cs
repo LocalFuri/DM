@@ -43,7 +43,10 @@ namespace DM.Rendering
 
     [Header("Side Wall Graphics")]
     public Texture2D WallS3L;
+    //public Texture2D WallD3L2;
+
     public Texture2D WallS3R;
+
 
     [Header("Doors")]
     public Texture2D DoorClosed;

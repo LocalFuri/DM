@@ -30,7 +30,7 @@ MonoBehaviour:
   FrontWallF1: {fileID: 2800000, guid: 999d8929794367043a5dd2a5f385938f, type: 3}
   FrontWallF2: {fileID: 2800000, guid: 1ebc81cfd5dd09342a6b1b1a3abd596c, type: 3}
   FrontWallF3: {fileID: 2800000, guid: b8dbeeac61e52e641841ff24f6061ee4, type: 3}
-  WallS3L: {fileID: 2800000, guid: b3b33277fa2a2734aae2128a532acde1, type: 3}
+  WallS3L: {fileID: 2800000, guid: bae9c7216e2bcdf43904fed8536e871d, type: 3}
   WallS3R: {fileID: 2800000, guid: b622d6e6d1b9fb44586ed594681b98c7, type: 3}
   DoorClosed: {fileID: 0}
   DoorOpen: {fileID: 0}

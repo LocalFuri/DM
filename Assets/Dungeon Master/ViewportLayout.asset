@@ -167,7 +167,7 @@ MonoBehaviour:
     X: 153
     Y: 60
     Enabled: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
   - Name: Black Door
     Graphic: 30
