@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace DM.Rendering
 {
@@ -42,11 +43,11 @@ namespace DM.Rendering
     public Texture2D FrontWallF3;
 
     [Header("Side Wall Graphics")]
-    public Texture2D WallS3L;
-    //public Texture2D WallD3L2;
+    [FormerlySerializedAs("WallS3L")]
+    public Texture2D WallD3L2;
 
-    public Texture2D WallS3R;
-
+    [FormerlySerializedAs("WallS3R")]
+    public Texture2D WallD3R2;
 
     [Header("Doors")]
     public Texture2D DoorClosed;
@@ -109,10 +110,10 @@ namespace DM.Rendering
               FrontWallF3,
               WallF3L,
               WallF3R);
-        case DungeonGraphicType.WallS3L:
-          return WallS3L;
-        case DungeonGraphicType.WallS3R:
-          return WallS3R;
+        case DungeonGraphicType.WallD3L2:
+          return WallD3L2;
+        case DungeonGraphicType.WallD3R2:
+          return WallD3R2;
         case DungeonGraphicType.DoorClosed:
           return DoorClosed;
         case DungeonGraphicType.DoorOpen:

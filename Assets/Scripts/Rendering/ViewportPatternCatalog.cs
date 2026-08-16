@@ -127,8 +127,6 @@ namespace DM.Rendering
         case DungeonGraphicType.FrontWallF2:
         case DungeonGraphicType.FrontWallF3:
 
-        //case DungeonGraphicType.WallS3L:
-        //case DungeonGraphicType.WallS3R:
         case DungeonGraphicType.WallD3L2:
         case DungeonGraphicType.WallD3R2:
 
