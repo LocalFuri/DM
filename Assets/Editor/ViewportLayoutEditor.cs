@@ -1689,8 +1689,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null)
       return false;
 
-    return piece.Name == "Front Wall F1"
-        || piece.Graphic == DungeonGraphicType.FrontWallF1;
+    return piece.Name == "Front Wall F1";
   }
 
   /// <summary>
