@@ -27,13 +27,10 @@ namespace DM.Rendering
     public static int FrontWallF1DestX(int width, int authoredX)
     {
       int normalized = NormalizeFrontWallF1Width(width);
-      if (normalized == CompositeWidth160)
-        return authoredX;
+      if (normalized == CompositeWidth)
+        return 0;
 
-      if (normalized == CompositeWidth191)
-        return CompositeDestX191;
-
-      return 0;
+      return authoredX;
     }
 
     public static bool IsStraightF1FrontGraphic(DungeonGraphicType graphic)
@@ -157,8 +154,9 @@ namespace DM.Rendering
     /// <summary>
     /// Copy a Front Wall F1 texture into the buffer.
     /// 224-wide: 1:1 into columns 0..223.
-    /// 191-wide: 191 source columns at CompositeDestX191.
-    /// 160-wide: 160 source columns at destinationX (authored piece X).
+    /// 191-wide: 191 source columns at authored piece X.
+    /// 160-wide: 160 source columns at authored piece X.
+    /// Writes are clipped to dungeon viewport columns 0..223.
     /// Optional horizontal mirror is authored only (layout MirrorHorizontally).
     /// </summary>
     public static void BlitCompositeToBuffer(
@@ -203,8 +201,11 @@ namespace DM.Rendering
         for (int i = 0; i < copyWidth; i++)
         {
           int destX = destinationX + i;
+          if (destX < 0 || destX >= CompositeWidth)
+            continue;
+
           int writeX = WriteDestX(destX, mirrorHorizontally);
-          if (writeX < 0 || writeX >= bufferWidth)
+          if (writeX < 0 || writeX >= CompositeWidth)
             continue;
 
           Color32 colour = sourcePixels[sourceRow + i];
