@@ -94,6 +94,14 @@ namespace DM.Rendering
     )]
     private bool exact320x200ComparisonMode = false;
 
+    [Header("TEMP F3Right 31px strip — disable or delete after comparison")]
+    [SerializeField]
+    [Tooltip(
+        "Blit Wall F3Right source X 0..30 (31px, left edge, full height) " +
+        "1:1 at the authored piece X. Does not modify the source PNG."
+    )]
+    private bool showF3RightNarrowStripTest = true;
+
     private static readonly Rect EntranceUvRect = new Rect(0f, 0f, 1f, 1f);
     private static readonly Rect DungeonUvRect = new Rect(
         0f,
@@ -1338,6 +1346,8 @@ namespace DM.Rendering
 
       visibleWallPieces.Clear();
 
+      F3RightNarrowStripTest.Enabled = showF3RightNarrowStripTest;
+
       bool f1WallGroupDrawn = false;
 
       foreach (ViewportPiece piece in layout.Pieces)
@@ -2312,6 +2322,18 @@ namespace DM.Rendering
 
       bool mirror = GetEffectiveEnvironmentMirror(piece);
       int destY = piece.Y + dungeonDrawOffsetY;
+
+      if (F3RightNarrowStripTest.ShouldReplace(piece.Graphic))
+      {
+        F3RightNarrowStripTest.BlitToBuffer(
+            texture,
+            framePixels,
+            viewWidth,
+            viewHeight,
+            piece.X,
+            destY);
+        return;
+      }
 
       // Floor/Ceiling: mirror across the 224px dungeon viewport only.
       if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
