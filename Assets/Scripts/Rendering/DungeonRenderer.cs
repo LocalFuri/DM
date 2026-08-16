@@ -1925,11 +1925,12 @@ namespace DM.Rendering
       }
     }
 
-    // 224×111: 1:1. TEMP 191×111: 191 columns at dest X=1. Authored MirrorHorizontally only.
+    // Front Wall F1: 160 / 191 / 224 from the current pose. Authored Y + Mirror.
     private void DrawStraightF1FrontWall(ViewportPiece frontPiece)
     {
-      Texture2D texture =
-          graphics.GetTexture(frontPiece.Graphic);
+      int width = StraightF1WallLogic.NormalizeFrontWallF1Width(
+          frontPiece.FrontWallF1Width);
+      Texture2D texture = graphics.GetFrontWallF1Texture(width);
 
       if (texture == null)
       {
@@ -1940,38 +1941,28 @@ namespace DM.Rendering
         return;
       }
 
-      bool is191 =
-          texture.width == StraightF1WallLogic.CompositeWidth191;
-      bool is224 =
-          texture.width >= StraightF1WallLogic.CompositeWidth;
-      if (texture.height <= 0 || (!is191 && !is224))
+      if (texture.height <= 0
+          || (texture.width != StraightF1WallLogic.CompositeWidth160
+              && texture.width != StraightF1WallLogic.CompositeWidth191
+              && texture.width != StraightF1WallLogic.CompositeWidth))
       {
         Debug.LogWarning(
             "DungeonRenderer: FrontWallF1 texture size " +
-            $"{texture.width}x{texture.height} is not a 191- or 224-wide composite."
+            $"{texture.width}x{texture.height} is not a 160, 191, or 224-wide F1."
         );
         return;
       }
 
+      int destX = StraightF1WallLogic.FrontWallF1DestX(width, frontPiece.X);
       int destY = frontPiece.Y + dungeonDrawOffsetY;
-      BlitStraightF1Composite(
-          texture,
-          destY,
-          frontPiece.MirrorHorizontally);
-    }
-
-    private void BlitStraightF1Composite(
-        Texture2D source,
-        int destinationY,
-        bool mirrorHorizontally)
-    {
       StraightF1WallLogic.BlitCompositeToBuffer(
-          source,
+          texture,
           framePixels,
           viewWidth,
           viewHeight,
-          destinationY,
-          mirrorHorizontally);
+          destX,
+          destY,
+          frontPiece.MirrorHorizontally);
     }
 
     private ViewportPiece FindLayoutPiece(DungeonGraphicType graphic)

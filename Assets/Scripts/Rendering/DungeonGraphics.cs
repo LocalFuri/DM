@@ -97,10 +97,8 @@ namespace DM.Rendering
         case DungeonGraphicType.FrontWallF1:
         case DungeonGraphicType.FrontWallF1_A:
         case DungeonGraphicType.FrontWallF1_B:
-          // TEMP: visual test of 191×111 F1 composite (blit dest X=1).
-          return ExpandedF1WallTexture.BuildExpandedF1Wall191(
-              FrontWallF1,
-              WallF1R);
+          return GetFrontWallF1Texture(
+              StraightF1WallLogic.DefaultFrontWallF1Width);
         case DungeonGraphicType.FrontWallF2:
           return FrontWallF2;
         case DungeonGraphicType.FrontWallF3:
@@ -132,6 +130,24 @@ namespace DM.Rendering
           return BlackDoorFrameLeft;
         default:
           return null;
+      }
+    }
+
+    public Texture2D GetFrontWallF1Texture(int width)
+    {
+      switch (StraightF1WallLogic.NormalizeFrontWallF1Width(width))
+      {
+        case StraightF1WallLogic.CompositeWidth160:
+          return FrontWallF1;
+        case StraightF1WallLogic.CompositeWidth:
+          return ExpandedF1WallTexture.BuildExpandedF1Wall(
+              FrontWallF1,
+              WallF1L,
+              WallF1R);
+        default:
+          return ExpandedF1WallTexture.BuildExpandedF1Wall191(
+              FrontWallF1,
+              WallF1R);
       }
     }
   }

@@ -43,6 +43,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100010100010000010101010101010101000000
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000000100
+    FrontWallF1Width: 191
   - X: 1
     Y: 3
     Facing: 2
@@ -72,6 +73,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000100010100010001010101010101000000
     MirrorHorizontallyFlags: 0000000100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 3
     Facing: 1
@@ -101,6 +103,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000000000001000000000101010101000000
     MirrorHorizontallyFlags: 0000000100000000000001000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 3
     Facing: 3
@@ -130,6 +133,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000000010001000000000101010101000000
     MirrorHorizontallyFlags: 0100000000000000000001000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 3
     Facing: 0
@@ -159,6 +163,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100010100010100010101010101010101000000
     MirrorHorizontallyFlags: 0000000100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 2
     Facing: 0
@@ -188,6 +193,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100010100010000010101010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000000100
+    FrontWallF1Width: 191
   - X: 1
     Y: 2
     Facing: 3
@@ -217,6 +223,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000000000001000000000101010101000000
     MirrorHorizontallyFlags: 0000000100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 2
     Facing: 1
@@ -243,6 +250,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100000000000001000000000101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 2
     Y: 7
     Facing: 3
@@ -269,6 +277,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 2
     Y: 7
     Facing: 2
@@ -295,6 +304,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 4
     Facing: 2
@@ -321,6 +331,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000101000000000100010101000101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 5
     Facing: 2
@@ -347,6 +358,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 4
     Facing: 3
@@ -376,6 +388,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000001000000000100000101010101000000
     MirrorHorizontallyFlags: 0000000100000001000000010100000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 6
     Facing: 2
@@ -402,6 +415,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 7
     Facing: 2
@@ -428,6 +442,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 4
     Facing: 1
@@ -457,6 +472,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000000000001000000000101010101000000
     MirrorHorizontallyFlags: 0100000000000001000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 5
     Facing: 1
@@ -486,6 +502,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000000000001000000000101010101000000
     MirrorHorizontallyFlags: 0000000100000000000001000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 6
     Facing: 1
@@ -515,6 +532,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100010100010000010101010101010101000000
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 7
     Facing: 1
@@ -544,6 +562,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100010100010000010101010101010101000000
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 2
     Y: 7
     Facing: 1
@@ -570,6 +589,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 3
     Y: 7
     Facing: 1
@@ -596,6 +616,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 4
     Y: 7
     Facing: 1
@@ -622,6 +643,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 4
     Y: 7
     Facing: 0
@@ -648,6 +670,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 4
     Y: 6
     Facing: 0
@@ -674,6 +697,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 4
     Y: 5
     Facing: 0
@@ -700,6 +724,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 4
     Y: 4
     Facing: 0
@@ -726,6 +751,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 4
     Y: 3
     Facing: 0
@@ -752,6 +778,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 4
     Y: 2
     Facing: 0
@@ -778,6 +805,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 4
     Y: 2
     Facing: 3
@@ -804,6 +832,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 4
     Y: 2
     Facing: 2
@@ -830,6 +859,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 7
     Facing: 0
@@ -856,6 +886,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 6
     Facing: 0
@@ -882,6 +913,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 5
     Facing: 0
@@ -908,6 +940,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 4
     Facing: 0
@@ -934,6 +967,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010100010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 15
     Y: 9
     Facing: 2
@@ -960,6 +994,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 10
     Y: 4
     Facing: 3
@@ -986,6 +1021,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 8
     Y: 3
     Facing: 2
@@ -1012,6 +1048,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 0
     Y: 5
     Facing: 2
@@ -1038,6 +1075,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 0
     Y: 5
     Facing: 1
@@ -1064,6 +1102,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 0
     Y: 5
     Facing: 0
@@ -1090,6 +1129,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 9
     Y: 1
     Facing: 2
@@ -1116,6 +1156,7 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 1
     Y: 5
     Facing: 3
@@ -1145,6 +1186,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000001000000000000000101010101000000
     MirrorHorizontallyFlags: 0000000000000000000000000000000000000000000000
+    FrontWallF1Width: 191
   - X: 0
     Y: 5
     Facing: 3
@@ -1174,3 +1216,4 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100010100010000010101010101010101000000
     MirrorHorizontallyFlags: 0000000000000000000000000000000000000000000000
+    FrontWallF1Width: 191

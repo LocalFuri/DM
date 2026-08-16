@@ -11,8 +11,30 @@ namespace DM.Rendering
   {
     public const int CompositeWidth = 224;
     public const int CompositeWidth191 = 191;
+    public const int CompositeWidth160 = 160;
     public const int CompositeDestX191 = 0;
+    public const int DefaultFrontWallF1Width = 191;
     public const int CompositeHeight = 111;
+
+    public static int NormalizeFrontWallF1Width(int width)
+    {
+      if (width == CompositeWidth160 || width == CompositeWidth)
+        return width;
+
+      return DefaultFrontWallF1Width;
+    }
+
+    public static int FrontWallF1DestX(int width, int authoredX)
+    {
+      int normalized = NormalizeFrontWallF1Width(width);
+      if (normalized == CompositeWidth160)
+        return authoredX;
+
+      if (normalized == CompositeWidth191)
+        return CompositeDestX191;
+
+      return 0;
+    }
 
     public static bool IsStraightF1FrontGraphic(DungeonGraphicType graphic)
     {
@@ -113,9 +135,10 @@ namespace DM.Rendering
     }
 
     /// <summary>
-    /// Copy a Front Wall F1 composite into the buffer at destinationY.
+    /// Copy a Front Wall F1 texture into the buffer.
     /// 224-wide: 1:1 into columns 0..223.
-    /// TEMP 191-wide: 191 source columns into viewport X 1..191.
+    /// 191-wide: 191 source columns at CompositeDestX191.
+    /// 160-wide: 160 source columns at destinationX (authored piece X).
     /// Optional horizontal mirror is authored only (layout MirrorHorizontally).
     /// </summary>
     public static void BlitCompositeToBuffer(
@@ -123,6 +146,7 @@ namespace DM.Rendering
         Color32[] destPixels,
         int bufferWidth,
         int bufferHeight,
+        int destinationX,
         int destinationY,
         bool mirrorHorizontally)
     {
@@ -135,12 +159,13 @@ namespace DM.Rendering
       if (source.height <= 0)
         return;
 
-      bool is191 = source.width == CompositeWidth191;
-      if (!is191 && source.width < CompositeWidth)
+      int copyWidth = source.width;
+      if (copyWidth != CompositeWidth160
+          && copyWidth != CompositeWidth191
+          && copyWidth != CompositeWidth)
+      {
         return;
-
-      int copyWidth = is191 ? CompositeWidth191 : CompositeWidth;
-      int destOriginX = is191 ? CompositeDestX191 : 0;
+      }
 
       Color32[] sourcePixels = source.GetPixels32();
       int sourceWidth = source.width;
@@ -157,7 +182,7 @@ namespace DM.Rendering
 
         for (int i = 0; i < copyWidth; i++)
         {
-          int destX = destOriginX + i;
+          int destX = destinationX + i;
           int writeX = WriteDestX(destX, mirrorHorizontally);
           if (writeX < 0 || writeX >= bufferWidth)
             continue;

@@ -437,7 +437,8 @@ public class ViewportLayoutEditor : EditorWindow
             X = keepX,
             Y = keepY,
             Enabled = false,
-            MirrorHorizontally = false
+            MirrorHorizontally = false,
+            FrontWallF1Width = StraightF1WallLogic.DefaultFrontWallF1Width
           });
       removed = true;
     }
@@ -556,6 +557,31 @@ public class ViewportLayoutEditor : EditorWindow
       {
         changed = true;
         ApplyMirrorHorizontallyChangeForCurrentPose();
+      }
+    }
+
+    if (IsFrontWallF1Card(piece))
+    {
+      int widthBefore =
+          StraightF1WallLogic.NormalizeFrontWallF1Width(
+              piece.FrontWallF1Width);
+      int widthSelected = EditorGUILayout.IntPopup(
+          "F1 Width",
+          widthBefore,
+          new[] { "160", "191", "224" },
+          new[]
+          {
+            StraightF1WallLogic.CompositeWidth160,
+            StraightF1WallLogic.CompositeWidth191,
+            StraightF1WallLogic.CompositeWidth
+          });
+      piece.FrontWallF1Width =
+          StraightF1WallLogic.NormalizeFrontWallF1Width(widthSelected);
+
+      if (piece.FrontWallF1Width != widthBefore)
+      {
+        changed = true;
+        ApplyFrontWallF1WidthChangeForCurrentPose();
       }
     }
 
@@ -1658,6 +1684,34 @@ public class ViewportLayoutEditor : EditorWindow
     Repaint();
   }
 
+  private static bool IsFrontWallF1Card(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    return piece.Name == "Front Wall F1"
+        || piece.Graphic == DungeonGraphicType.FrontWallF1;
+  }
+
+  /// <summary>
+  /// F1 Width toggled: capture per-pose width, then refresh Edit Mode preview.
+  /// </summary>
+  private void ApplyFrontWallF1WidthChangeForCurrentPose()
+  {
+    if (Application.isPlaying || layout == null)
+      return;
+
+    CaptureCurrentPoseVisibilityToStore();
+    PersistPoseVisibilityStore();
+    EditorUtility.SetDirty(layout);
+
+    ResetEditModeViewportLogCache();
+    DestroyEditModePreviewTextureOnly();
+    RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
+  }
+
   /// <summary>
   /// TEMP diagnostic: force live wall Enabled to Front Wall F1 only at
   /// (1,2) West, capture into that pose entry, persist, refresh preview.
@@ -1932,8 +1986,15 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece piece = layout.Pieces[i];
-      if (piece != null)
-        piece.MirrorHorizontally = false;
+      if (piece == null)
+        continue;
+
+      piece.MirrorHorizontally = false;
+      if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
+      {
+        piece.FrontWallF1Width =
+            StraightF1WallLogic.DefaultFrontWallF1Width;
+      }
     }
   }
 
@@ -2364,6 +2425,27 @@ public class ViewportLayoutEditor : EditorWindow
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
           continue;
 
+        bool mirror = GetPreviewMirror(piece, poseMap);
+
+        if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
+        {
+          int width = StraightF1WallLogic.NormalizeFrontWallF1Width(
+              piece.FrontWallF1Width);
+          Texture2D f1Texture = graphics.GetFrontWallF1Texture(width);
+          if (f1Texture == null)
+            continue;
+
+          StraightF1WallLogic.BlitCompositeToBuffer(
+              f1Texture,
+              pixels,
+              PreviewWidth,
+              PreviewHeight,
+              StraightF1WallLogic.FrontWallF1DestX(width, piece.X),
+              piece.Y,
+              mirror);
+          continue;
+        }
+
         Texture2D texture = graphics.GetTexture(piece.Graphic);
         if (texture == null)
           continue;
@@ -2417,20 +2499,6 @@ public class ViewportLayoutEditor : EditorWindow
                     + sameAsHelper
                     + " (Edit Mode)");
           }
-        }
-
-        bool mirror = GetPreviewMirror(piece, poseMap);
-
-        if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
-        {
-          StraightF1WallLogic.BlitCompositeToBuffer(
-              texture,
-              pixels,
-              PreviewWidth,
-              PreviewHeight,
-              piece.Y,
-              mirror);
-          continue;
         }
 
         if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))

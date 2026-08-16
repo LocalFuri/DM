@@ -33,5 +33,8 @@ namespace DM.Rendering
         "When true, the piece's drawn pixels are mirrored horizontally. "
             + "For straight F1, mirrors the full 224px composite.")]
     public bool MirrorHorizontally;
+
+    [Tooltip("Per-pose Front Wall F1 blit width: 160, 191, or 224.")]
+    public int FrontWallF1Width = 191;
   }
 }
