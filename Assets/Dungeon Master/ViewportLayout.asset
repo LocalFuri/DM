@@ -80,7 +80,7 @@ MonoBehaviour:
     X: 40
     Y: 47
     Enabled: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
   - Name: Front Wall F1 B
     Graphic: 28
     X: 40
@@ -152,7 +152,7 @@ MonoBehaviour:
     X: 153
     Y: 60
     Enabled: 0
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
   - Name: Black Door
     Graphic: 30
     X: 63
