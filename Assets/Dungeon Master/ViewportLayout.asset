@@ -91,7 +91,7 @@ MonoBehaviour:
     Y: 47
     Enabled: 0
     MirrorHorizontally: 0
-    FrontWallF1Width: 191
+    FrontWallF1Width: 224
   - Name: Wall F1Left
     Graphic: 5
     X: 0

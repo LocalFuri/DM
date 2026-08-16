@@ -131,9 +131,9 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 0100000100000000010001000000000101010101000000
+    EnabledFlags: 0100000100000000000001000000000101010101000000
     MirrorHorizontallyFlags: 0100000000000000000001000000000000000000000000
-    FrontWallF1Width: 191
+    FrontWallF1Width: 160
   - X: 1
     Y: 3
     Facing: 0
@@ -223,7 +223,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000000000001000000000101010101000000
     MirrorHorizontallyFlags: 0000000100000000000000000000000000000000000000
-    FrontWallF1Width: 191
+    FrontWallF1Width: 224
   - X: 1
     Y: 2
     Facing: 1
