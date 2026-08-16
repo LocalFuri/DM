@@ -103,7 +103,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000000000001000000000101010101000000
     MirrorHorizontallyFlags: 0000000100000000000001000000000000000000000000
-    FrontWallF1Width: 191
+    FrontWallF1Width: 224
   - X: 1
     Y: 3
     Facing: 3
@@ -248,9 +248,12 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    EnabledFlags: 0100000100000000000001000000000101010101
-    MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
-    FrontWallF1Width: 191
+    - Black Door Frame Left
+    - Black Door Frame Right
+    - Black Door
+    EnabledFlags: 0100000100000000000001000000000101010101000000
+    MirrorHorizontallyFlags: 0100000000000000000000000000000000000000000000
+    FrontWallF1Width: 224
   - X: 2
     Y: 7
     Facing: 3
@@ -474,8 +477,8 @@ MonoBehaviour:
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 0100000100000000000001000000000101010101000000
-    MirrorHorizontallyFlags: 0100000000000001000000000000000000000000000000
-    FrontWallF1Width: 191
+    MirrorHorizontallyFlags: 0100000000000000000000000000000000000000000000
+    FrontWallF1Width: 224
   - X: 1
     Y: 5
     Facing: 1
@@ -505,7 +508,7 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000000000001000000000101010101000000
     MirrorHorizontallyFlags: 0000000100000000000001000000000000000000000000
-    FrontWallF1Width: 191
+    FrontWallF1Width: 224
   - X: 1
     Y: 6
     Facing: 1
@@ -533,7 +536,7 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 0100000100010100010000010101010101010101000000
+    EnabledFlags: 0100000100000100000001000000000101010101000000
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000000000
     FrontWallF1Width: 191
   - X: 1
@@ -1249,4 +1252,34 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000000000001000001010101010101000000
     MirrorHorizontallyFlags: 0100000000000000000001000000000000000000000000
+    FrontWallF1Width: 191
+  - X: 0
+    Y: 4
+    Facing: 0
+    PieceNames:
+    - Ceiling
+    - Ceiling Strip 84
+    - Ceiling Strip 85
+    - Floor
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
+    - Movement Arrows
+    - Champion Status Slot 1
+    - Champion Status Slot 2
+    - Champion Status Slot 3
+    - Champion Status Slot 4
+    - Black Door Frame Left
+    - Black Door Frame Right
+    - Black Door
+    EnabledFlags: 0100000100000000000000000001000101010101000000
+    MirrorHorizontallyFlags: 0000000000000000000000000000000000000000000000
     FrontWallF1Width: 191

@@ -525,36 +525,25 @@ public class ViewportLayoutEditor : EditorWindow
       changed = true;
     }
 
-    // F0/F2/F3 side walls never expose Mirror Horizontally.
-    // F1 Left/Right keep the control and honor MirrorHorizontally.
-    bool hideMirrorControl =
-        piece.Name == "Wall F0Left"
-        || piece.Name == "Wall F0Right"
-        || piece.Name == "Wall F2Left"
-        || piece.Name == "Wall F2Right"
-        || piece.Name == "Wall F3Left"
-        || piece.Name == "Wall F3Right";
+    // Mirror is outside the Name/Enabled/Graphic change-check so SelectPiece →
+    // FocusControl(null) cannot swallow the Toggle or skip the live refresh.
+    bool mirrorBefore = piece.MirrorHorizontally;
+    piece.MirrorHorizontally = EditorGUILayout.Toggle(
+        "Mirror Horizontally",
+        piece.MirrorHorizontally);
 
-    if (!hideMirrorControl)
+    if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
     {
-      bool mirrorBefore = piece.MirrorHorizontally;
-      piece.MirrorHorizontally = EditorGUILayout.Toggle(
-          "Mirror Horizontally",
-          piece.MirrorHorizontally);
+      EditorGUILayout.HelpBox(
+          "Ceiling/Floor Mirror is the per-pose Mirror Horizontally flag "
+              + "(Edit Mode and Play/Build).",
+          MessageType.None);
+    }
 
-      if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
-      {
-        EditorGUILayout.HelpBox(
-            "Ceiling/Floor Mirror is the per-pose Mirror Horizontally flag "
-                + "(Edit Mode and Play/Build).",
-            MessageType.None);
-      }
-
-      if (piece.MirrorHorizontally != mirrorBefore)
-      {
-        changed = true;
-        ApplyMirrorHorizontallyChangeForCurrentPose();
-      }
+    if (piece.MirrorHorizontally != mirrorBefore)
+    {
+      changed = true;
+      ApplyMirrorHorizontallyChangeForCurrentPose();
     }
 
     if (IsFrontWallF1Card(piece))
@@ -2656,9 +2645,6 @@ public class ViewportLayoutEditor : EditorWindow
   private static bool GetPreviewMirror(ViewportPiece piece, DungeonMap poseMap)
   {
     if (piece == null)
-      return false;
-
-    if (StraightF1WallLogic.IsAuthoredSideWallGraphic(piece.Graphic))
       return false;
 
     return piece.MirrorHorizontally;

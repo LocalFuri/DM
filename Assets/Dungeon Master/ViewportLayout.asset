@@ -59,7 +59,7 @@ MonoBehaviour:
     FrontWallF1Width: 191
   - Name: Wall F3Right
     Graphic: 10
-    X: 133
+    X: 195
     Y: 92
     Enabled: 1
     MirrorHorizontally: 0
@@ -80,7 +80,7 @@ MonoBehaviour:
     FrontWallF1Width: 191
   - Name: Wall F2Right
     Graphic: 8
-    X: 146
+    X: 203
     Y: 74
     Enabled: 0
     MirrorHorizontally: 0
@@ -90,7 +90,7 @@ MonoBehaviour:
     X: 1
     Y: 47
     Enabled: 0
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
     FrontWallF1Width: 191
   - Name: Wall F1Left
     Graphic: 5

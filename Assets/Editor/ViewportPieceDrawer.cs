@@ -11,9 +11,7 @@ public sealed class ViewportPieceDrawer : PropertyDrawer
       SerializedProperty property,
       GUIContent label)
   {
-    int lines = 5;
-    if (!IsAuthoredSideWall(property))
-      lines++;
+    int lines = 6;
     if (IsFrontWallF1(property))
       lines++;
 
@@ -35,9 +33,7 @@ public sealed class ViewportPieceDrawer : PropertyDrawer
     y = DrawLine(position, y, line, gap, property, "Name");
     y = DrawLine(position, y, line, gap, property, "Enabled");
     y = DrawLine(position, y, line, gap, property, "Graphic");
-
-    if (!IsAuthoredSideWall(property))
-      y = DrawLine(position, y, line, gap, property, "MirrorHorizontally");
+    y = DrawLine(position, y, line, gap, property, "MirrorHorizontally");
 
     if (IsFrontWallF1(property))
       y = DrawLine(position, y, line, gap, property, "FrontWallF1Width");
@@ -52,31 +48,6 @@ public sealed class ViewportPieceDrawer : PropertyDrawer
   {
     SerializedProperty nameProp = property.FindPropertyRelative("Name");
     return nameProp != null && nameProp.stringValue == FrontWallF1Name;
-  }
-
-  private static bool IsAuthoredSideWall(SerializedProperty property)
-  {
-    SerializedProperty nameProp = property.FindPropertyRelative("Name");
-    if (nameProp != null)
-    {
-      string name = nameProp.stringValue;
-      if (name == "Wall F0Left"
-          || name == "Wall F0Right"
-          || name == "Wall F2Left"
-          || name == "Wall F2Right"
-          || name == "Wall F3Left"
-          || name == "Wall F3Right")
-      {
-        return true;
-      }
-    }
-
-    SerializedProperty graphicProp = property.FindPropertyRelative("Graphic");
-    if (graphicProp == null)
-      return false;
-
-    return StraightF1WallLogic.IsAuthoredSideWallGraphic(
-        (DungeonGraphicType)graphicProp.intValue);
   }
 
   private static float DrawLine(
