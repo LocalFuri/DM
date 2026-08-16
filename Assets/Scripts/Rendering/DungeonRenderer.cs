@@ -1457,20 +1457,10 @@ namespace DM.Rendering
       if (layout == null || layout.Pieces == null)
         return;
 
-      ViewportPiece frontA =
-          FindLayoutPiece(DungeonGraphicType.FrontWallF1_A);
-      ViewportPiece frontB =
-          FindLayoutPiece(DungeonGraphicType.FrontWallF1_B);
-      ViewportPiece frontLegacy =
+      ViewportPiece selectedF1Front =
           FindLayoutPiece(DungeonGraphicType.FrontWallF1);
-
-      ViewportPiece selectedF1Front = null;
-      if (ShouldDrawPiece(frontA))
-        selectedF1Front = frontA;
-      else if (ShouldDrawPiece(frontB))
-        selectedF1Front = frontB;
-      else if (ShouldDrawPiece(frontLegacy))
-        selectedF1Front = frontLegacy;
+      if (!ShouldDrawPiece(selectedF1Front))
+        selectedF1Front = null;
 
       for (int i = 0;
           i < ViewportWallDebugText.OrderedWallNames.Length;
@@ -1537,9 +1527,7 @@ namespace DM.Rendering
 
       if (StraightF1WallLogic.IsF1WallGroupGraphic(piece.Graphic))
       {
-        if (piece.Graphic == DungeonGraphicType.FrontWallF1_A
-            || piece.Graphic == DungeonGraphicType.FrontWallF1_B
-            || piece.Graphic == DungeonGraphicType.FrontWallF1)
+        if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
         {
           return selectedF1Front == piece;
         }
@@ -1890,7 +1878,7 @@ namespace DM.Rendering
       return StraightF1WallLogic.IsF1WallGroupGraphic(graphic);
     }
 
-    // Straight FrontWallF1 A/B: 224×111 composite 1:1 (skip F1L/F1R).
+    // Straight FrontWallF1: composite 1:1 (skip F1L/F1R).
     // Side-only F1L/F1R when the centre cell is open.
     private void DrawF1WallGroup(
         System.Text.StringBuilder drawnFrontWalls,
@@ -1900,20 +1888,10 @@ namespace DM.Rendering
           FindLayoutPiece(DungeonGraphicType.WallF1L);
       ViewportPiece rightPiece =
           FindLayoutPiece(DungeonGraphicType.WallF1R);
-      ViewportPiece frontA =
-          FindLayoutPiece(DungeonGraphicType.FrontWallF1_A);
-      ViewportPiece frontB =
-          FindLayoutPiece(DungeonGraphicType.FrontWallF1_B);
-      ViewportPiece frontLegacy =
+      ViewportPiece frontPiece =
           FindLayoutPiece(DungeonGraphicType.FrontWallF1);
-
-      ViewportPiece frontPiece = null;
-      if (ShouldDrawPiece(frontA))
-        frontPiece = frontA;
-      else if (ShouldDrawPiece(frontB))
-        frontPiece = frontB;
-      else if (ShouldDrawPiece(frontLegacy))
-        frontPiece = frontLegacy;
+      if (!ShouldDrawPiece(frontPiece))
+        frontPiece = null;
 
       if (frontPiece != null)
       {
@@ -2192,7 +2170,7 @@ namespace DM.Rendering
       if (depth > 0 && IsFrontDepthOccluded(depth))
         return false;
 
-      // Straight FrontWallF1 A/B: centre wall draws wrap alone; suppress F1L/R.
+      // Straight FrontWallF1: centre wall draws wrap alone; suppress F1L/R.
       // F2: centre wall draws FrontWallF2 alone; suppress F2L/R.
       if (depth == 1 && IsCenterFrontWallVisible(1))
         return false;

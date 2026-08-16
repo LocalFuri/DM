@@ -45,8 +45,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("Front Wall F2", false),
     ("Wall F2Left", true),
     ("Wall F2Right", false),
-    ("Front Wall F1 A", false),
-    ("Front Wall F1 B", false),
+    ("Front Wall F1", false),
     ("Wall F1Left", true),
     ("Wall F1Right", true),
     ("Wall F0Left", true),
@@ -1565,7 +1564,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// TEMP diagnostic: force live wall Enabled to Front Wall F1 B only at
+  /// TEMP diagnostic: force live wall Enabled to Front Wall F1 only at
   /// (1,2) West, capture into that pose entry, persist, refresh preview.
   /// </summary>
   private void SetWestF1BOnlyDiagnostic()
@@ -1576,7 +1575,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (!IsPreviewPose12West())
       return;
 
-    Undo.RecordObject(layout, "Set West F1B Only");
+    Undo.RecordObject(layout, "Set West F1 Only");
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -1586,10 +1585,9 @@ public class ViewportLayoutEditor : EditorWindow
 
       switch (piece.Name)
       {
-        case "Front Wall F1 B":
+        case "Front Wall F1":
           piece.Enabled = true;
           break;
-        case "Front Wall F1 A":
         case "Front Wall F2":
         case "Front Wall F3":
         case "Wall F0Left":

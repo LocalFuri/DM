@@ -75,14 +75,8 @@ MonoBehaviour:
     Y: 74
     Enabled: 0
     MirrorHorizontally: 0
-  - Name: Front Wall F1 A
-    Graphic: 27
-    X: 40
-    Y: 47
-    Enabled: 0
-    MirrorHorizontally: 1
-  - Name: Front Wall F1 B
-    Graphic: 28
+  - Name: Front Wall F1
+    Graphic: 23
     X: 40
     Y: 47
     Enabled: 0
