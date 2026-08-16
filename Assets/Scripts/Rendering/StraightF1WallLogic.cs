@@ -10,6 +10,8 @@ namespace DM.Rendering
   public static class StraightF1WallLogic
   {
     public const int CompositeWidth = 224;
+    public const int CompositeWidth191 = 191;
+    public const int CompositeDestX191 = 0;
     public const int CompositeHeight = 111;
 
     public static bool IsStraightF1FrontGraphic(DungeonGraphicType graphic)
@@ -111,7 +113,9 @@ namespace DM.Rendering
     }
 
     /// <summary>
-    /// Copy a 224-wide Front Wall F1 composite 1:1 into the buffer at destinationY.
+    /// Copy a Front Wall F1 composite into the buffer at destinationY.
+    /// 224-wide: 1:1 into columns 0..223.
+    /// TEMP 191-wide: 191 source columns into viewport X 1..191.
     /// Optional horizontal mirror is authored only (layout MirrorHorizontally).
     /// </summary>
     public static void BlitCompositeToBuffer(
@@ -128,8 +132,15 @@ namespace DM.Rendering
       if (!source.isReadable)
         return;
 
-      if (source.width < CompositeWidth || source.height <= 0)
+      if (source.height <= 0)
         return;
+
+      bool is191 = source.width == CompositeWidth191;
+      if (!is191 && source.width < CompositeWidth)
+        return;
+
+      int copyWidth = is191 ? CompositeWidth191 : CompositeWidth;
+      int destOriginX = is191 ? CompositeDestX191 : 0;
 
       Color32[] sourcePixels = source.GetPixels32();
       int sourceWidth = source.width;
@@ -144,13 +155,14 @@ namespace DM.Rendering
         int sourceRow = row * sourceWidth;
         int destRow = targetY * bufferWidth;
 
-        for (int destX = 0; destX < CompositeWidth; destX++)
+        for (int i = 0; i < copyWidth; i++)
         {
+          int destX = destOriginX + i;
           int writeX = WriteDestX(destX, mirrorHorizontally);
           if (writeX < 0 || writeX >= bufferWidth)
             continue;
 
-          Color32 colour = sourcePixels[sourceRow + destX];
+          Color32 colour = sourcePixels[sourceRow + i];
           colour.a = 255;
           destPixels[destRow + writeX] = colour;
         }

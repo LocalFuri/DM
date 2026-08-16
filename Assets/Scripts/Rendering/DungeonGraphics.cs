@@ -97,9 +97,9 @@ namespace DM.Rendering
         case DungeonGraphicType.FrontWallF1:
         case DungeonGraphicType.FrontWallF1_A:
         case DungeonGraphicType.FrontWallF1_B:
-          return ExpandedF1WallTexture.BuildExpandedF1Wall(
+          // TEMP: visual test of 191×111 F1 composite (blit dest X=1).
+          return ExpandedF1WallTexture.BuildExpandedF1Wall191(
               FrontWallF1,
-              WallF1L,
               WallF1R);
         case DungeonGraphicType.FrontWallF2:
           return FrontWallF2;
