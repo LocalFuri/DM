@@ -16,6 +16,12 @@ public static class DungeonMiniMapGui
   private static readonly Color OtherTileColor = new Color(0.5f, 0.5f, 0.5f);
   private static readonly Color CellBorderColor = new Color(0.08f, 0.08f, 0.08f);
   private static readonly Color PlayerColor = new Color(0.95f, 0.7f, 0.1f);
+  private static readonly Color PlayerOnSpecialOverlay =
+      new Color(0.95f, 0.7f, 0.1f, 0.40f);
+  private static readonly Color EntranceColor = new Color(0.82f, 0.16f, 0.14f);
+  private static readonly Color ExitColor = new Color(0.55f, 0.20f, 0.72f);
+  private static readonly Color StairsUpColor = new Color(0.20f, 0.42f, 0.86f);
+  private static readonly Color StairsDownColor = new Color(0.92f, 0.42f, 0.08f);
   private static readonly Color FacingMarkerColor = new Color(0.15f, 0.1f, 0.02f);
   private static readonly Color HoverHighlightColor =
       new Color(0.35f, 0.75f, 1f, 0.45f);
@@ -129,7 +135,9 @@ public static class DungeonMiniMapGui
 
         DrawCell(
             cellRect,
-            map.GetTile(x, y).Type,
+            map,
+            x,
+            y,
             isPlayer,
             isHovered);
 
@@ -290,9 +298,35 @@ public static class DungeonMiniMapGui
     return cellMarkerStyle;
   }
 
+  private static bool TryGetSpecialCellColor(
+      DungeonMap map,
+      int x,
+      int y,
+      out Color color)
+  {
+    if (x == map.StartX && y == map.StartY)
+    {
+      color = EntranceColor;
+      return true;
+    }
+
+    DungeonTile tile = map.GetTile(x, y);
+    if (tile.SourceType == DungeonSourceTileType.Stairs
+        && tile.TryGetStairsDirection(out bool isUp))
+    {
+      color = isUp ? StairsUpColor : StairsDownColor;
+      return true;
+    }
+
+    color = default;
+    return false;
+  }
+
   private static void DrawCell(
       Rect cellRect,
-      DungeonTileType type,
+      DungeonMap map,
+      int x,
+      int y,
       bool isPlayer,
       bool isHovered)
   {
@@ -305,17 +339,32 @@ public static class DungeonMiniMapGui
         cellRect.height - 2f
     );
 
+    bool hasSpecialColor = TryGetSpecialCellColor(
+        map,
+        x,
+        y,
+        out Color specialColor);
+
     Color fillColor;
-    if (isPlayer)
+    if (hasSpecialColor)
+      fillColor = specialColor;
+    else if (isPlayer)
       fillColor = PlayerColor;
-    else if (type == DungeonTileType.Wall)
-      fillColor = WallColor;
-    else if (type == DungeonTileType.Floor)
-      fillColor = FloorColor;
     else
-      fillColor = OtherTileColor;
+    {
+      DungeonTileType type = map.GetTile(x, y).Type;
+      if (type == DungeonTileType.Wall)
+        fillColor = WallColor;
+      else if (type == DungeonTileType.Floor)
+        fillColor = FloorColor;
+      else
+        fillColor = OtherTileColor;
+    }
 
     EditorGUI.DrawRect(fillRect, fillColor);
+
+    if (isPlayer && hasSpecialColor)
+      EditorGUI.DrawRect(fillRect, PlayerOnSpecialOverlay);
 
     if (!isHovered)
       return;
