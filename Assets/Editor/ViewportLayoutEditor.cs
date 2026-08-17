@@ -1395,6 +1395,10 @@ public class ViewportLayoutEditor : EditorWindow
     if (newX == previewX && newY == previewY && newFacing == previewFacing)
       return;
 
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap != null && !previewMiniMap.CanEnter(newX, newY))
+      return;
+
     CaptureCurrentPoseVisibilityToStore();
     PersistPoseVisibilityStore();
 

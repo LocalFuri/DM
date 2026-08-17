@@ -115,6 +115,9 @@ namespace DM.Dungeon
       if (!IsInside(x, y))
         return false;
 
+      if (x == EntranceX && y == EntranceY)
+        return false;
+
       return _tiles[x, y].Type != DungeonTileType.Wall;
     }
 
