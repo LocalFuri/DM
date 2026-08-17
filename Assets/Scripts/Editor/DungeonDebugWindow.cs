@@ -23,12 +23,6 @@ public class DungeonDebugWindow : EditorWindow
 
   private Vector2 miniMapScroll;
 
-  [MenuItem("Tools/Dungeon Master/Dungeon Debug")]
-  public static void Open()
-  {
-    GetWindow<DungeonDebugWindow>("Dungeon Debug");
-  }
-
   private void OnEnable()
   {
     EditorApplication.update += OnEditorUpdate;
