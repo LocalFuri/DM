@@ -101,11 +101,11 @@ MonoBehaviour:
     FrontWallF1Width: 191
   - Name: Front Wall F1
     Graphic: 23
-    X: 1
+    X: 0
     Y: 47
     Enabled: 0
-    MirrorHorizontally: 0
-    FrontWallF1Width: 191
+    MirrorHorizontally: 1
+    FrontWallF1Width: 224
   - Name: Wall F1Left
     Graphic: 5
     X: 0
