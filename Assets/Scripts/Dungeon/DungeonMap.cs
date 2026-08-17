@@ -33,12 +33,19 @@ namespace DM.Dungeon
     public int StartY { get; private set; }
     public DungeonFacing StartFacing { get; private set; }
 
+    public bool ExitRevealed { get; private set; }
+    public int ExitX { get; private set; }
+    public int ExitY { get; private set; }
+
     private DungeonMap(string name, int width, int height)
     {
       Name = name;
       Width = width;
       Height = height;
       _tiles = new DungeonTile[width, height];
+      ExitX = 1;
+      ExitY = 3;
+      ExitRevealed = false;
     }
 
     public static DungeonMap LoadFromJson(TextAsset mapJson)
@@ -391,6 +398,11 @@ namespace DM.Dungeon
         DungeonFacing facing)
     {
       SetPlayerStart(x, y, facing);
+    }
+
+    public void SetExitRevealed(bool revealed)
+    {
+      ExitRevealed = revealed;
     }
 
     private static DungeonTileType ConvertTileType(string typeName)

@@ -269,6 +269,12 @@ public static class DungeonMiniMapGui
       return true;
     }
 
+    if (map.ExitRevealed && x == map.ExitX && y == map.ExitY)
+    {
+      marker = "X";
+      return true;
+    }
+
     DungeonTile tile = map.GetTile(x, y);
     if (tile.SourceType == DungeonSourceTileType.Stairs
         && tile.TryGetStairsDirection(out bool isUp))
@@ -307,6 +313,12 @@ public static class DungeonMiniMapGui
     if (x == map.StartX && y == map.StartY)
     {
       color = EntranceColor;
+      return true;
+    }
+
+    if (map.ExitRevealed && x == map.ExitX && y == map.ExitY)
+    {
+      color = ExitColor;
       return true;
     }
 
