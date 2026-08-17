@@ -1245,9 +1245,6 @@ public class ViewportLayoutEditor : EditorWindow
         DisableWallsKeepChrome();
         PersistChanges();
       }
-
-      if (GUILayout.Button("Reload Pose Visibility"))
-        ReloadPoseVisibilityFromDisk();
       EditorGUILayout.EndHorizontal();
 
       using (new EditorGUI.DisabledScope(!IsPreviewPose12West()))
@@ -1780,38 +1777,6 @@ public class ViewportLayoutEditor : EditorWindow
     return previewX == 1
         && previewY == 2
         && previewFacing == DungeonFacing.West;
-  }
-
-  /// <summary>
-  /// Discard the cached pose store, reimport from disk, apply current
-  /// preview pose, and refresh. Does not capture or save live Enabled.
-  /// </summary>
-  private void ReloadPoseVisibilityFromDisk()
-  {
-    if (Application.isPlaying)
-      return;
-
-    poseVisibilityStore = null;
-
-    string path = ViewportPoseVisibilityStore.DefaultAssetPath;
-    AssetDatabase.ImportAsset(
-        path,
-        ImportAssetOptions.ForceUpdate
-            | ImportAssetOptions.ForceSynchronousImport);
-
-    poseVisibilityStore =
-        AssetDatabase.LoadAssetAtPath<ViewportPoseVisibilityStore>(path);
-
-    if (poseVisibilityStore == null)
-    {
-      Debug.LogWarning(
-          "Reload Pose Visibility: could not load " + path);
-      return;
-    }
-
-    ApplyCurrentPoseVisibilityToLayout();
-    RefreshEditModePreview();
-    Repaint();
   }
 
   private void EnsurePoseVisibilityStore()
