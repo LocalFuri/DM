@@ -21,6 +21,9 @@ public static class DungeonMiniMapGui
       new Color(0.35f, 0.75f, 1f, 0.45f);
   private static readonly Color HoverBorderColor =
       new Color(0.2f, 0.85f, 1f, 1f);
+  private static readonly Color CellMarkerColor = new Color(0.08f, 0.08f, 0.08f);
+
+  private static GUIStyle cellMarkerStyle;
 
   public struct InteractionResult
   {
@@ -130,6 +133,8 @@ public static class DungeonMiniMapGui
             isPlayer,
             isHovered);
 
+        TryDrawCellMarker(cellRect, map, x, y);
+
         if (isPlayer)
           DrawFacingMarker(cellRect, facing);
       }
@@ -230,6 +235,59 @@ public static class DungeonMiniMapGui
 
       GUI.Label(yLabelRect, y.ToString(), yLabelStyle);
     }
+  }
+
+  private static void TryDrawCellMarker(
+      Rect cellRect,
+      DungeonMap map,
+      int x,
+      int y)
+  {
+    if (!TryGetCellMarker(map, x, y, out string marker))
+      return;
+
+    GUI.Label(cellRect, marker, GetCellMarkerStyle());
+  }
+
+  private static bool TryGetCellMarker(
+      DungeonMap map,
+      int x,
+      int y,
+      out string marker)
+  {
+    if (x == map.StartX && y == map.StartY)
+    {
+      marker = "E";
+      return true;
+    }
+
+    DungeonTile tile = map.GetTile(x, y);
+    if (tile.SourceType == DungeonSourceTileType.Stairs
+        && tile.TryGetStairsDirection(out bool isUp))
+    {
+      marker = isUp ? "U" : "D";
+      return true;
+    }
+
+    marker = null;
+    return false;
+  }
+
+  private static GUIStyle GetCellMarkerStyle()
+  {
+    if (cellMarkerStyle != null)
+      return cellMarkerStyle;
+
+    cellMarkerStyle = new GUIStyle(EditorStyles.miniLabel)
+    {
+      alignment = TextAnchor.MiddleCenter,
+      fontSize = 8,
+      fontStyle = FontStyle.Bold,
+      clipping = TextClipping.Overflow
+    };
+    cellMarkerStyle.normal.textColor = CellMarkerColor;
+
+    return cellMarkerStyle;
   }
 
   private static void DrawCell(
