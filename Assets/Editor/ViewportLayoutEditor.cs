@@ -169,7 +169,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  [MenuItem("Tools/Viewport Layout Editor")]
+  [MenuItem("Tools/Viewport Layout Editor &v")]
   public static void Open()
   {
     GetWindow<ViewportLayoutEditor>("Viewport Layout");
