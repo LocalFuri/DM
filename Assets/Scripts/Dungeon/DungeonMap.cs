@@ -29,6 +29,10 @@ namespace DM.Dungeon
     public int PlayerY { get; private set; }
     public DungeonFacing PlayerFacing { get; private set; }
 
+    public int StartX { get; private set; }
+    public int StartY { get; private set; }
+    public DungeonFacing StartFacing { get; private set; }
+
     private DungeonMap(string name, int width, int height)
     {
       Name = name;
@@ -244,6 +248,7 @@ namespace DM.Dungeon
           _tiles[x, y] = new DungeonTile
           {
             Type = DungeonTileType.Wall,
+            SourceType = DungeonSourceTileType.Wall,
             Raw = 0
           };
         }
@@ -270,6 +275,7 @@ namespace DM.Dungeon
         _tiles[x, y] = new DungeonTile
         {
           Type = ConvertTileType(typeName),
+          SourceType = ParseSourceType(typeName),
           Raw = raw
         };
       }
@@ -284,6 +290,9 @@ namespace DM.Dungeon
               out DungeonFacing startFacing))
       {
         SetPlayerStart(startX, startY, startFacing);
+        StartX = startX;
+        StartY = startY;
+        StartFacing = startFacing;
         return;
       }
 
@@ -299,6 +308,10 @@ namespace DM.Dungeon
           HallOfChampionsStartY,
           HallOfChampionsStartFacing
       );
+
+      StartX = HallOfChampionsStartX;
+      StartY = HallOfChampionsStartY;
+      StartFacing = HallOfChampionsStartFacing;
     }
 
     private bool TryParsePlayerStart(
@@ -399,6 +412,33 @@ namespace DM.Dungeon
 
         default:
           return DungeonTileType.Wall;
+      }
+    }
+
+    private static DungeonSourceTileType ParseSourceType(string typeName)
+    {
+      switch (typeName)
+      {
+        case "Wall":
+          return DungeonSourceTileType.Wall;
+        case "Floor":
+          return DungeonSourceTileType.Floor;
+        case "Door":
+          return DungeonSourceTileType.Door;
+        case "Teleporter":
+          return DungeonSourceTileType.Teleporter;
+        case "Stairs":
+          return DungeonSourceTileType.Stairs;
+        case "Pit":
+          return DungeonSourceTileType.Pit;
+        case "FalseWall":
+          return DungeonSourceTileType.FalseWall;
+        case "Special":
+          return DungeonSourceTileType.Special;
+        case "Unknown":
+          return DungeonSourceTileType.Unknown;
+        default:
+          return DungeonSourceTileType.Unknown;
       }
     }
 
