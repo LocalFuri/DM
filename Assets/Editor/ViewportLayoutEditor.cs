@@ -42,6 +42,8 @@ public class ViewportLayoutEditor : EditorWindow
     ("Front Wall F3", false),
     ("Wall F3Left", true),
     ("Wall F3Right", true),
+    ("Wall D3L2", false),
+    ("Wall D3R2", false),
     ("Front Wall F2", false),
     ("Wall F2Left", true),
     ("Wall F2Right", false),

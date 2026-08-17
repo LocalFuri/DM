@@ -20,7 +20,7 @@ MonoBehaviour:
     X: 0
     Y: 128
     Enabled: 1
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
     FrontWallF1Width: 191
   - Name: Ceiling Strip 84
     Graphic: 21
@@ -41,7 +41,7 @@ MonoBehaviour:
     X: 0
     Y: 31
     Enabled: 1
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
   - Name: Front Wall F3
     Graphic: 25
@@ -62,6 +62,20 @@ MonoBehaviour:
     X: 210
     Y: 92
     Enabled: 1
+    MirrorHorizontally: 0
+    FrontWallF1Width: 191
+  - Name: Wall D3L2
+    Graphic: 13
+    X: 0
+    Y: 0
+    Enabled: 0
+    MirrorHorizontally: 0
+    FrontWallF1Width: 191
+  - Name: Wall D3R2
+    Graphic: 14
+    X: 0
+    Y: 0
+    Enabled: 0
     MirrorHorizontally: 0
     FrontWallF1Width: 191
   - Name: Front Wall F2
@@ -167,7 +181,7 @@ MonoBehaviour:
     X: 153
     Y: 60
     Enabled: 0
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
     FrontWallF1Width: 191
   - Name: Black Door
     Graphic: 30
