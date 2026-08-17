@@ -33,6 +33,9 @@ namespace DM.Dungeon
     public int StartY { get; private set; }
     public DungeonFacing StartFacing { get; private set; }
 
+    public int EntranceX { get; private set; }
+    public int EntranceY { get; private set; }
+
     public bool ExitRevealed { get; private set; }
     public int ExitX { get; private set; }
     public int ExitY { get; private set; }
@@ -43,6 +46,8 @@ namespace DM.Dungeon
       Width = width;
       Height = height;
       _tiles = new DungeonTile[width, height];
+      EntranceX = 1;
+      EntranceY = 2;
       ExitX = 1;
       ExitY = 3;
       ExitRevealed = false;

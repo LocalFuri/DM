@@ -89,8 +89,10 @@ public class ViewportLayoutEditor : EditorWindow
   // Edit Mode map-pose preview (Hall of Champions).
   // previewFacing is the single source of truth for viewport compose, minimap
   // arrow, and Console — keep all three on this field only.
-  private int previewX = 1;
-  private int previewY = 2;
+  // Default pose is applied from DungeonMap.StartX/Y/StartFacing in
+  // RestoreSessionPrefs after the map loads.
+  private int previewX;
+  private int previewY;
   private DungeonFacing previewFacing = DungeonFacing.South;
   private DungeonMap previewMiniMap;
   private string previewMiniMapLoadError;
@@ -987,10 +989,15 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void RestoreSessionPrefs()
   {
-    // Always open at the fixed startup pose — do not restore last preview pose.
-    previewX = 1;
-    previewY = 2;
-    previewFacing = DungeonFacing.South;
+    // Always open at the map's actual player start — do not restore last
+    // preview pose. Entrance overlay stays on EntranceX/Y, not StartX/Y.
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap != null)
+    {
+      previewX = previewMiniMap.StartX;
+      previewY = previewMiniMap.StartY;
+      previewFacing = previewMiniMap.StartFacing;
+    }
 
     selectedPieceIndex = EditorPrefs.GetInt(PrefsSelectedPieceIndexKey, 0);
     ClampSelectedPieceIndex();

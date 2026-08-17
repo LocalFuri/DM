@@ -263,7 +263,7 @@ public static class DungeonMiniMapGui
       int y,
       out string marker)
   {
-    if (x == map.StartX && y == map.StartY)
+    if (x == map.EntranceX && y == map.EntranceY)
     {
       marker = "E";
       return true;
@@ -310,7 +310,7 @@ public static class DungeonMiniMapGui
       int y,
       out Color color)
   {
-    if (x == map.StartX && y == map.StartY)
+    if (x == map.EntranceX && y == map.EntranceY)
     {
       color = EntranceColor;
       return true;
