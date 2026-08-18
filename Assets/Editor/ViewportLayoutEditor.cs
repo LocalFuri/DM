@@ -576,6 +576,27 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
+    if (IsFrontWallF2Card(piece))
+    {
+      int widthBefore = FrontWallF2Logic.Normalize(piece.FrontWallF2Width);
+      int widthSelected = EditorGUILayout.IntPopup(
+          "F2 Width",
+          widthBefore,
+          new[] { "106", "131" },
+          new[]
+          {
+            FrontWallF2Logic.Width106,
+            FrontWallF2Logic.Width131
+          });
+      piece.FrontWallF2Width = FrontWallF2Logic.Normalize(widthSelected);
+
+      if (piece.FrontWallF2Width != widthBefore)
+      {
+        changed = true;
+        ApplyFrontWallF2WidthChangeForCurrentPose();
+      }
+    }
+
     if (DrawIntStepper("X", ref piece.X, snap))
     {
       SelectPiece(index);
@@ -1713,10 +1734,37 @@ public class ViewportLayoutEditor : EditorWindow
     return piece.Name == "Front Wall F1";
   }
 
+  private static bool IsFrontWallF2Card(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    return piece.Name == "Front Wall F2";
+  }
+
   /// <summary>
   /// F1 Width toggled: capture per-pose width, then refresh Edit Mode preview.
   /// </summary>
   private void ApplyFrontWallF1WidthChangeForCurrentPose()
+  {
+    if (Application.isPlaying || layout == null)
+      return;
+
+    CaptureCurrentPoseVisibilityToStore();
+    PersistPoseVisibilityStore();
+    EditorUtility.SetDirty(layout);
+
+    ResetEditModeViewportLogCache();
+    DestroyEditModePreviewTextureOnly();
+    RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
+  }
+
+  /// <summary>
+  /// F2 Width toggled: capture per-pose width, then refresh Edit Mode preview.
+  /// </summary>
+  private void ApplyFrontWallF2WidthChangeForCurrentPose()
   {
     if (Application.isPlaying || layout == null)
       return;
@@ -1982,6 +2030,11 @@ public class ViewportLayoutEditor : EditorWindow
       {
         piece.FrontWallF1Width =
             StraightF1WallLogic.DefaultFrontWallF1Width;
+      }
+
+      if (FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
+      {
+        piece.FrontWallF2Width = FrontWallF2Logic.DefaultWidth;
       }
     }
   }
@@ -2429,6 +2482,22 @@ public class ViewportLayoutEditor : EditorWindow
               PreviewWidth,
               PreviewHeight,
               StraightF1WallLogic.FrontWallF1DestX(width, piece.X),
+              piece.Y,
+              mirror);
+          continue;
+        }
+
+        if (FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
+        {
+          int width = FrontWallF2Logic.Normalize(piece.FrontWallF2Width);
+          Texture2D f2Texture = graphics.GetFrontWallF2Texture(width);
+          if (f2Texture == null)
+            continue;
+
+          BlitPieceIntoPreview(
+              pixels,
+              f2Texture,
+              piece.X,
               piece.Y,
               mirror);
           continue;

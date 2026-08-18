@@ -36,5 +36,28 @@ namespace DM.Rendering
 
     [Tooltip("Per-pose Front Wall F1 blit width: 160, 191, or 224.")]
     public int FrontWallF1Width = 191;
+
+    [Tooltip("Per-pose Front Wall F2 blit width: 106 or 131.")]
+    public int FrontWallF2Width = 106;
+  }
+
+  public static class FrontWallF2Logic
+  {
+    public const int Width106 = 106;
+    public const int Width131 = 131;
+    public const int DefaultWidth = Width106;
+
+    public static int Normalize(int width)
+    {
+      if (width == Width131)
+        return width;
+
+      return DefaultWidth;
+    }
+
+    public static bool IsFrontWallF2Graphic(DungeonGraphicType graphic)
+    {
+      return graphic == DungeonGraphicType.FrontWallF2;
+    }
   }
 }

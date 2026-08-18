@@ -46,6 +46,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000101000000010000010101010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000100
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 3
     Facing: 2
@@ -78,6 +79,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000101000000010000010101010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 3
     Facing: 1
@@ -110,6 +112,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000000000000000001000000000101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
     FrontWallF1Width: 224
+    FrontWallF2Width: 106
   - X: 1
     Y: 3
     Facing: 3
@@ -142,6 +145,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000000000000010001000000000101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
     FrontWallF1Width: 224
+    FrontWallF2Width: 106
   - X: 1
     Y: 3
     Facing: 0
@@ -174,6 +178,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000101000000010100010101010101010101010101
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000100
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 2
     Facing: 0
@@ -204,6 +209,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000000100
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 2
     Facing: 3
@@ -234,6 +240,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100000000000001000000000101010101000000
     MirrorHorizontallyFlags: 0000000100000000000000000000000000000000000000
     FrontWallF1Width: 224
+    FrontWallF2Width: 106
   - X: 1
     Y: 2
     Facing: 1
@@ -264,6 +271,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100000000000001000000000101010101000000
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000000000
     FrontWallF1Width: 224
+    FrontWallF2Width: 106
   - X: 2
     Y: 7
     Facing: 3
@@ -296,6 +304,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000000000001000000010001010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 2
     Y: 7
     Facing: 2
@@ -323,6 +332,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 4
     Facing: 2
@@ -355,6 +365,7 @@ MonoBehaviour:
     EnabledFlags: 01000001010000000000000100010101000101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 5
     Facing: 2
@@ -382,6 +393,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 4
     Facing: 3
@@ -414,6 +426,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000000000000010001000000000101010101000000
     MirrorHorizontallyFlags: 01000000000000000001000001000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 6
     Facing: 2
@@ -446,6 +459,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000101000000010000010101010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 7
     Facing: 2
@@ -478,6 +492,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000000000000000001000000010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 4
     Facing: 1
@@ -510,6 +525,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000000000000000001000000000101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000001000000000000000000000000
     FrontWallF1Width: 224
+    FrontWallF2Width: 106
   - X: 1
     Y: 5
     Facing: 1
@@ -540,6 +556,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100000000000001000000000101010101000000
     MirrorHorizontallyFlags: 0000000100000000000001000000000000000000000000
     FrontWallF1Width: 224
+    FrontWallF2Width: 106
   - X: 1
     Y: 6
     Facing: 1
@@ -570,6 +587,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100000100000001000000000101010101000000
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 7
     Facing: 1
@@ -602,6 +620,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000001000000010100010100010101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 2
     Y: 7
     Facing: 1
@@ -634,6 +653,7 @@ MonoBehaviour:
     EnabledFlags: 01000001010000000000000100010101010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 3
     Y: 7
     Facing: 1
@@ -661,6 +681,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 4
     Y: 7
     Facing: 1
@@ -688,6 +709,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 4
     Y: 7
     Facing: 0
@@ -718,6 +740,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101000000
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 4
     Y: 6
     Facing: 0
@@ -745,6 +768,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 4
     Y: 5
     Facing: 0
@@ -772,6 +796,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 4
     Y: 4
     Facing: 0
@@ -799,6 +824,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 4
     Y: 3
     Facing: 0
@@ -826,6 +852,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 4
     Y: 2
     Facing: 0
@@ -853,6 +880,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 4
     Y: 2
     Facing: 3
@@ -880,6 +908,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 4
     Y: 2
     Facing: 2
@@ -907,6 +936,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 7
     Facing: 0
@@ -939,6 +969,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000101000000000100010101000101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 6
     Facing: 0
@@ -971,6 +1002,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000001000000010100000101010101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 5
     Facing: 0
@@ -1003,6 +1035,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000101000000010100010100010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 4
     Facing: 0
@@ -1035,6 +1068,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000101000000010100010101010101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 15
     Y: 9
     Facing: 2
@@ -1062,6 +1096,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 10
     Y: 4
     Facing: 3
@@ -1089,6 +1124,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 8
     Y: 3
     Facing: 2
@@ -1116,6 +1152,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 0
     Y: 5
     Facing: 2
@@ -1143,6 +1180,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 0
     Y: 5
     Facing: 1
@@ -1170,6 +1208,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 0
     Y: 5
     Facing: 0
@@ -1197,6 +1236,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 9
     Y: 1
     Facing: 2
@@ -1224,6 +1264,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 5
     Facing: 3
@@ -1256,6 +1297,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000000000001000000010100000101010101000000
     MirrorHorizontallyFlags: 00000001000000000001000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 0
     Y: 5
     Facing: 3
@@ -1286,6 +1328,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100010100010000010101010101010101000000
     MirrorHorizontallyFlags: 0000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 0
     Y: 4
     Facing: 3
@@ -1316,6 +1359,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100000000000001000001010101010101000000
     MirrorHorizontallyFlags: 0100000000000000000001000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 0
     Y: 4
     Facing: 0
@@ -1346,6 +1390,7 @@ MonoBehaviour:
     EnabledFlags: 0100000100000000000000000001000101010101000000
     MirrorHorizontallyFlags: 0000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 1
     Y: 7
     Facing: 3
@@ -1378,6 +1423,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000000000000000001000001000101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
     FrontWallF1Width: 224
+    FrontWallF2Width: 106
   - X: 1
     Y: 6
     Facing: 3
@@ -1410,6 +1456,7 @@ MonoBehaviour:
     EnabledFlags: 01000001000000000000000101000000000101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - X: 2
     Y: 7
     Facing: 0
@@ -1442,3 +1489,4 @@ MonoBehaviour:
     EnabledFlags: 01000001000000000000000001000000000101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000001000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106

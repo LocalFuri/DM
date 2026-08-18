@@ -2257,7 +2257,9 @@ namespace DM.Rendering
       }
 
       Texture2D texture =
-          graphics.GetTexture(piece.Graphic);
+          FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)
+              ? graphics.GetFrontWallF2Texture(piece.FrontWallF2Width)
+              : graphics.GetTexture(piece.Graphic);
 
       if (texture == null)
       {

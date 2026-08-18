@@ -154,5 +154,17 @@ namespace DM.Rendering
               WallF1R);
       }
     }
+
+    public Texture2D GetFrontWallF2Texture(int width)
+    {
+      if (FrontWallF2Logic.Normalize(width) == FrontWallF2Logic.Width131)
+      {
+        return ExpandedF2WallTexture.BuildExpandedF2Wall(
+            FrontWallF2,
+            WallF2R);
+      }
+
+      return FrontWallF2;
+    }
   }
 }

@@ -14,6 +14,8 @@ public sealed class ViewportPieceDrawer : PropertyDrawer
     int lines = 6;
     if (IsFrontWallF1(property))
       lines++;
+    if (IsFrontWallF2(property))
+      lines++;
 
     return (lines * EditorGUIUtility.singleLineHeight)
         + ((lines - 1) * EditorGUIUtility.standardVerticalSpacing);
@@ -38,6 +40,9 @@ public sealed class ViewportPieceDrawer : PropertyDrawer
     if (IsFrontWallF1(property))
       y = DrawLine(position, y, line, gap, property, "FrontWallF1Width");
 
+    if (IsFrontWallF2(property))
+      y = DrawLine(position, y, line, gap, property, "FrontWallF2Width");
+
     y = DrawLine(position, y, line, gap, property, "X");
     DrawLine(position, y, line, gap, property, "Y");
 
@@ -48,6 +53,12 @@ public sealed class ViewportPieceDrawer : PropertyDrawer
   {
     SerializedProperty nameProp = property.FindPropertyRelative("Name");
     return nameProp != null && nameProp.stringValue == FrontWallF1Name;
+  }
+
+  private static bool IsFrontWallF2(SerializedProperty property)
+  {
+    SerializedProperty nameProp = property.FindPropertyRelative("Name");
+    return nameProp != null && nameProp.stringValue == "Front Wall F2";
   }
 
   private static float DrawLine(

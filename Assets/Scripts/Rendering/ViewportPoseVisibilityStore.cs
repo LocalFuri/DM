@@ -5,7 +5,7 @@ using DM.Rendering;
 using UnityEngine;
 
 /// <summary>
-/// Per-pose Enabled + MirrorHorizontally flags, plus Front Wall F1 width.
+/// Per-pose Enabled + MirrorHorizontally flags, plus Front Wall F1 / F2 widths.
 /// Keyed by exact X + Y + Facing.
 /// Shared by Edit Mode and Play/Build. Does not store Graphic / X / Y / order.
 /// Captures and applies every layout piece — no name/type exclusions.
@@ -206,7 +206,7 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
 
   /// <summary>
   /// Stores Enabled + MirrorHorizontally for every non-null layout piece,
-  /// plus the Front Wall F1 width for the current pose.
+  /// plus Front Wall F1 / F2 widths for the current pose.
   /// </summary>
   public void CaptureFromLayout(
       ViewportPoseVisibilityEntry entry,
@@ -219,6 +219,7 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
     entry.EnabledFlags.Clear();
     entry.MirrorHorizontallyFlags.Clear();
     entry.FrontWallF1Width = StraightF1WallLogic.DefaultFrontWallF1Width;
+    entry.FrontWallF2Width = FrontWallF2Logic.DefaultWidth;
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -236,14 +237,21 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
             StraightF1WallLogic.NormalizeFrontWallF1Width(
                 piece.FrontWallF1Width);
       }
+
+      if (FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
+      {
+        entry.FrontWallF2Width =
+            FrontWallF2Logic.Normalize(piece.FrontWallF2Width);
+      }
     }
   }
 
   /// <summary>
   /// Applies stored Enabled + MirrorHorizontally to every layout piece,
-  /// and Front Wall F1 width to the F1 piece.
+  /// Front Wall F1 width to the F1 piece, and Front Wall F2 width to F2.
   /// Pieces missing from the entry get safe defaults (Enabled=false,
-  /// MirrorHorizontally=false, F1 width 191) so prior-pose state cannot leak.
+  /// MirrorHorizontally=false, F1 width 191, F2 width 106) so prior-pose
+  /// state cannot leak.
   /// </summary>
   public void ApplyToLayout(
       ViewportPoseVisibilityEntry entry,
@@ -273,6 +281,12 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
         piece.FrontWallF1Width =
             StraightF1WallLogic.NormalizeFrontWallF1Width(
                 entry.FrontWallF1Width);
+      }
+
+      if (FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
+      {
+        piece.FrontWallF2Width =
+            FrontWallF2Logic.Normalize(entry.FrontWallF2Width);
       }
     }
   }
@@ -342,4 +356,5 @@ public sealed class ViewportPoseVisibilityEntry
   public List<bool> EnabledFlags = new();
   public List<bool> MirrorHorizontallyFlags = new();
   public int FrontWallF1Width = 191;
+  public int FrontWallF2Width = 106;
 }
