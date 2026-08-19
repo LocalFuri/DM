@@ -2592,6 +2592,18 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
+        if (D3R2NarrowWidthTest.ShouldReplace(piece.Graphic))
+        {
+          D3R2NarrowWidthTest.BlitToBuffer(
+              texture,
+              pixels,
+              PreviewWidth,
+              PreviewHeight,
+              piece.X,
+              piece.Y);
+          continue;
+        }
+
         if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
         {
           StraightF1WallLogic.BlitViewportComponentToBuffer(

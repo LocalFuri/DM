@@ -2337,6 +2337,18 @@ namespace DM.Rendering
         return;
       }
 
+      if (D3R2NarrowWidthTest.ShouldReplace(piece.Graphic))
+      {
+        D3R2NarrowWidthTest.BlitToBuffer(
+            texture,
+            framePixels,
+            viewWidth,
+            viewHeight,
+            piece.X,
+            destY);
+        return;
+      }
+
       // Floor/Ceiling: mirror across the 224px dungeon viewport only.
       if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
       {
