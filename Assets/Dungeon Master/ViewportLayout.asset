@@ -81,7 +81,7 @@ MonoBehaviour:
     FrontWallF2Width: 106
   - Name: Wall D3R2
     Graphic: 14
-    X: 189
+    X: 192
     Y: 93
     Enabled: 0
     MirrorHorizontally: 0

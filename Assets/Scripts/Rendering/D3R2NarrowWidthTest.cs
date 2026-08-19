@@ -4,13 +4,13 @@ namespace DM.Rendering
 {
   /// <summary>
   /// TEMP visual test: Wall D3R2 cropped to 32×49. Copies source columns
-  /// 0..31 1:1 (no scale, no interpolation). Drops the rightmost 12 px of
+  /// 12..43 1:1 (no scale, no interpolation). Drops the leftmost 12 px of
   /// the 44 px source. Does not modify the source texture or D3L2.
   /// </summary>
   public static class D3R2NarrowWidthTest
   {
-    public const int SourceMinX = 0;
-    public const int SourceMaxX = 31;
+    public const int SourceMinX = 12;
+    public const int SourceMaxX = 43;
     public const int SourceHeight = 49;
     public const int DungeonMinX = 0;
     public const int DungeonMaxX = 223;
@@ -25,7 +25,7 @@ namespace DM.Rendering
     }
 
     /// <summary>
-    /// Copy source X 0..31, Y 0..48 1:1 starting at authored
+    /// Copy source X 12..43, Y 0..48 1:1 starting at authored
     /// <paramref name="destinationX"/>. No stretch. Clipped to dungeon
     /// columns 0..223.
     /// </summary>
