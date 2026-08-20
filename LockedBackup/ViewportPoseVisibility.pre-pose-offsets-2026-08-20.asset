@@ -45,8 +45,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000100
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -80,8 +78,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -115,8 +111,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000000000000000001000000000101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 224
     FrontWallF2Width: 106
   - X: 1
@@ -150,8 +144,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000000000000000001000000000101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 224
     FrontWallF2Width: 106
   - X: 1
@@ -185,8 +177,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000010100010101010101010101010101
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000100
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -218,8 +208,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100010100010000010101010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000000100
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -251,8 +239,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000000000001000000000101010101000000
     MirrorHorizontallyFlags: 0000000100000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 224
     FrontWallF2Width: 106
   - X: 1
@@ -284,8 +270,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000000000001000000000101010101000000
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 224
     FrontWallF2Width: 106
   - X: 2
@@ -319,8 +303,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000000000001000000010001010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 131
   - X: 2
@@ -354,8 +336,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -389,8 +369,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001010000000000000100010101000101010101000000
     MirrorHorizontallyFlags: 01000000000000000001000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -424,8 +402,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001010000000000000100010101000101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -459,8 +435,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000000000000010001000000000101010101000000
     MirrorHorizontallyFlags: 01000000000000000001000001000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -494,8 +468,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000000000001000000000101010101010101000000
     MirrorHorizontallyFlags: 00000001000000000001000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 131
   - X: 1
@@ -529,8 +501,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000000000000000001000000010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -564,8 +534,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000000000000000001000000000101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000001000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 224
     FrontWallF2Width: 106
   - X: 1
@@ -599,8 +567,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000000000000000001000000000101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 224
     FrontWallF2Width: 106
   - X: 1
@@ -634,8 +600,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000000000000000001000000000101010101000000
     MirrorHorizontallyFlags: 01000000000000000100000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -669,8 +633,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000001000000010100010100010101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 2
@@ -704,8 +666,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001010000000000000100010101010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
-    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 3
@@ -739,8 +699,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 4
@@ -774,8 +732,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 4
@@ -809,8 +765,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 4
@@ -844,8 +798,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 4
@@ -879,8 +831,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 4
@@ -909,8 +859,6 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 4
@@ -939,8 +887,6 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 4
@@ -969,8 +915,6 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 4
@@ -999,8 +943,6 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 4
@@ -1029,8 +971,6 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -1064,8 +1004,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000000100010101000101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -1099,8 +1037,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000001000000010100000101010101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -1134,8 +1070,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000010100010100010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -1169,8 +1103,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000010100010101010101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 15
@@ -1199,8 +1131,6 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 10
@@ -1229,8 +1159,6 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 8
@@ -1259,8 +1187,6 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 0
@@ -1289,8 +1215,6 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 0
@@ -1319,8 +1243,6 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 0
@@ -1349,8 +1271,6 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 9
@@ -1379,8 +1299,6 @@ MonoBehaviour:
     - Champion Status Slot 4
     EnabledFlags: 0100000100010100010000010101010101010101
     MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -1414,8 +1332,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000000000001000000010100000101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 131
   - X: 0
@@ -1447,8 +1363,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100010100010000010101010101010101000000
     MirrorHorizontallyFlags: 0000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 0
@@ -1480,8 +1394,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000000000001000001010101010101000000
     MirrorHorizontallyFlags: 0100000000000000000001000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 0
@@ -1513,8 +1425,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 0100000100000000000000000001000101010101000000
     MirrorHorizontallyFlags: 0000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -1548,8 +1458,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000000000000000001000001000101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 224
     FrontWallF2Width: 106
   - X: 1
@@ -1583,8 +1491,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000000000000000101000000000101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 2
@@ -1618,8 +1524,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000000010000000001000000000101010101000000
     MirrorHorizontallyFlags: 00000001000100000000000001000000000000000000000000
-    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 4
@@ -1653,8 +1557,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
     MirrorHorizontallyFlags: 00000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 4
@@ -1688,8 +1590,6 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
     MirrorHorizontallyFlags: 00000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 3
@@ -1723,7 +1623,5 @@ MonoBehaviour:
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
     MirrorHorizontallyFlags: 00000000000000000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
     FrontWallF1Width: 191
     FrontWallF2Width: 106

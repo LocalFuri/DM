@@ -1963,8 +1963,8 @@ namespace DM.Rendering
         return;
       }
 
-      int destX = StraightF1WallLogic.FrontWallF1DestX(width, frontPiece.X);
-      int destY = frontPiece.Y + dungeonDrawOffsetY;
+      int destX = StraightF1WallLogic.FrontWallF1DestX(width, frontPiece.EffectiveX);
+      int destY = frontPiece.EffectiveY + dungeonDrawOffsetY;
       StraightF1WallLogic.BlitCompositeToBuffer(
           texture,
           framePixels,
@@ -2290,9 +2290,9 @@ namespace DM.Rendering
             + "x"
             + texture.height
             + "|"
-            + piece.X
+            + piece.EffectiveX
             + ","
-            + (piece.Y + dungeonDrawOffsetY)
+            + (piece.EffectiveY + dungeonDrawOffsetY)
             + "|"
             + sameAsHelper
             + "|Play";
@@ -2313,9 +2313,9 @@ namespace DM.Rendering
                   + "x"
                   + texture.height
                   + " / X="
-                  + piece.X
+                  + piece.EffectiveX
                   + " / Y="
-                  + (piece.Y + dungeonDrawOffsetY)
+                  + (piece.EffectiveY + dungeonDrawOffsetY)
                   + " / GetTexture==BuildExpandedF3Wall="
                   + sameAsHelper
                   + " (Play/Build)");
@@ -2323,7 +2323,8 @@ namespace DM.Rendering
       }
 
       bool mirror = GetEffectiveEnvironmentMirror(piece);
-      int destY = piece.Y + dungeonDrawOffsetY;
+      int destX = piece.EffectiveX;
+      int destY = piece.EffectiveY + dungeonDrawOffsetY;
 
       if (F3RightNarrowStripTest.ShouldReplace(piece.Graphic))
       {
@@ -2332,7 +2333,7 @@ namespace DM.Rendering
             framePixels,
             viewWidth,
             viewHeight,
-            piece.X,
+            destX,
             destY);
         return;
       }
@@ -2344,7 +2345,7 @@ namespace DM.Rendering
             framePixels,
             viewWidth,
             viewHeight,
-            piece.X,
+            destX,
             destY);
         return;
       }
@@ -2357,17 +2358,17 @@ namespace DM.Rendering
             framePixels,
             viewWidth,
             viewHeight,
-            piece.X,
+            destX,
             destY,
             mirror
         );
         return;
       }
 
-      // Full authored sprite at layout X/Y — no crop, shift, or stretch.
+      // Full authored sprite at layout X/Y + per-pose offset — no crop, shift, or stretch.
       Blit(
           texture,
-          piece.X,
+          destX,
           destY,
           flipVertical: false,
           sourceXOffset: 0,

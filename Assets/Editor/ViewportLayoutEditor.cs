@@ -608,6 +608,20 @@ public class ViewportLayoutEditor : EditorWindow
       changed = true;
     }
 
+    if (IsPoseOffsetCard(piece))
+    {
+      int offsetXBefore = piece.PoseOffsetX;
+      int offsetYBefore = piece.PoseOffsetY;
+      DrawIntStepper("Pose Offset X", ref piece.PoseOffsetX, 1);
+      DrawIntStepper("Pose Offset Y", ref piece.PoseOffsetY, 1);
+      if (piece.PoseOffsetX != offsetXBefore
+          || piece.PoseOffsetY != offsetYBefore)
+      {
+        SelectPiece(index);
+        ApplyPoseOffsetChangeForCurrentPose();
+      }
+    }
+
     EditorGUILayout.BeginHorizontal();
 
     using (new EditorGUI.DisabledScope(index <= 0))
@@ -1259,8 +1273,8 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.boldLabel);
     EditorGUILayout.HelpBox(
         "Preview X / Y / Facing select an independent pose. "
-            + "Enabled flags are stored per X+Y+Facing; "
-            + "Graphic / X / Y / Mirror / order stay on ViewportLayout.",
+            + "Enabled, Mirror, F1/F2 width, and Pose Offset X/Y are stored "
+            + "per X+Y+Facing; Graphic / X / Y / order stay on ViewportLayout.",
         MessageType.None);
 
     int editX = previewX;
@@ -1764,6 +1778,51 @@ public class ViewportLayoutEditor : EditorWindow
     return piece.Name == "Front Wall F2";
   }
 
+  private static bool IsPoseOffsetCard(ViewportPiece piece)
+  {
+    if (piece == null || piece.Name == null)
+      return false;
+
+    switch (piece.Name)
+    {
+      case "FrontF3":
+      case "LeftF3":
+      case "RightF3":
+      case "LeftD3":
+      case "RightD3":
+      case "FrontF2":
+      case "LeftF2":
+      case "RightF2":
+      case "FrontF1":
+      case "LeftF1":
+      case "RightF1":
+      case "LeftF0":
+      case "RightF0":
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /// <summary>
+  /// Pose Offset X/Y toggled: capture per-pose offsets without mutating
+  /// layout piece.X / piece.Y, then refresh Edit Mode preview.
+  /// </summary>
+  private void ApplyPoseOffsetChangeForCurrentPose()
+  {
+    if (Application.isPlaying || layout == null)
+      return;
+
+    CaptureCurrentPoseVisibilityToStore();
+    PersistPoseVisibilityStore();
+
+    ResetEditModeViewportLogCache();
+    DestroyEditModePreviewTextureOnly();
+    RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
+  }
+
   /// <summary>
   /// F1 Width toggled: capture per-pose width, then refresh Edit Mode preview.
   /// </summary>
@@ -2048,6 +2107,8 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.MirrorHorizontally = false;
+      piece.PoseOffsetX = 0;
+      piece.PoseOffsetY = 0;
       if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
       {
         piece.FrontWallF1Width =
@@ -2503,8 +2564,8 @@ public class ViewportLayoutEditor : EditorWindow
               pixels,
               PreviewWidth,
               PreviewHeight,
-              StraightF1WallLogic.FrontWallF1DestX(width, piece.X),
-              piece.Y,
+              StraightF1WallLogic.FrontWallF1DestX(width, piece.EffectiveX),
+              piece.EffectiveY,
               mirror);
           continue;
         }
@@ -2519,8 +2580,8 @@ public class ViewportLayoutEditor : EditorWindow
           BlitPieceIntoPreview(
               pixels,
               f2Texture,
-              piece.X,
-              piece.Y,
+              piece.EffectiveX,
+              piece.EffectiveY,
               mirror);
           continue;
         }
@@ -2548,9 +2609,9 @@ public class ViewportLayoutEditor : EditorWindow
               + "x"
               + texture.height
               + "|"
-              + piece.X
+              + piece.EffectiveX
               + ","
-              + piece.Y
+              + piece.EffectiveY
               + "|"
               + sameAsHelper
               + "|Edit";
@@ -2571,9 +2632,9 @@ public class ViewportLayoutEditor : EditorWindow
                     + "x"
                     + texture.height
                     + " / X="
-                    + piece.X
+                    + piece.EffectiveX
                     + " / Y="
-                    + piece.Y
+                    + piece.EffectiveY
                     + " / GetTexture==BuildExpandedF3Wall="
                     + sameAsHelper
                     + " (Edit Mode)");
@@ -2587,8 +2648,8 @@ public class ViewportLayoutEditor : EditorWindow
               pixels,
               PreviewWidth,
               PreviewHeight,
-              piece.X,
-              piece.Y);
+              piece.EffectiveX,
+              piece.EffectiveY);
           continue;
         }
 
@@ -2599,8 +2660,8 @@ public class ViewportLayoutEditor : EditorWindow
               pixels,
               PreviewWidth,
               PreviewHeight,
-              piece.X,
-              piece.Y);
+              piece.EffectiveX,
+              piece.EffectiveY);
           continue;
         }
 
@@ -2611,8 +2672,8 @@ public class ViewportLayoutEditor : EditorWindow
               pixels,
               PreviewWidth,
               PreviewHeight,
-              piece.X,
-              piece.Y,
+              piece.EffectiveX,
+              piece.EffectiveY,
               mirror);
           continue;
         }
@@ -2620,8 +2681,8 @@ public class ViewportLayoutEditor : EditorWindow
         BlitPieceIntoPreview(
             pixels,
             texture,
-            piece.X,
-            piece.Y,
+            piece.EffectiveX,
+            piece.EffectiveY,
             mirror);
       }
     }

@@ -5,8 +5,9 @@ using DM.Rendering;
 using UnityEngine;
 
 /// <summary>
-/// Per-pose Enabled + MirrorHorizontally flags, plus Front Wall F1 / F2 widths.
-/// Keyed by exact X + Y + Facing.
+/// Per-pose Enabled + MirrorHorizontally flags, Front Wall F1 / F2 widths,
+/// and optional per-piece OffsetX / OffsetY blit corrections.
+/// Keyed by exact X + Y + Facing. Offsets are keyed by exact piece Name.
 /// Shared by Edit Mode and Play/Build. Does not store Graphic / X / Y / order.
 /// Captures and applies every layout piece — no name/type exclusions.
 /// </summary>
@@ -118,6 +119,8 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
       int insertAt = indexA >= 0 ? indexA : indexB;
       InsertFlag(entry.EnabledFlags, insertAt, enabled);
       InsertFlag(entry.MirrorHorizontallyFlags, insertAt, mirror);
+      InsertInt(entry.OffsetX, insertAt, 0);
+      InsertInt(entry.OffsetY, insertAt, 0);
       entry.PieceNames.Insert(insertAt, "Front Wall F1");
 
       if (indexA >= 0 && indexA >= insertAt)
@@ -180,6 +183,19 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
     flags.Insert(index, value);
   }
 
+  private static void InsertInt(List<int> values, int index, int value)
+  {
+    if (values == null)
+      return;
+
+    if (index < 0)
+      index = 0;
+    if (index > values.Count)
+      index = values.Count;
+
+    values.Insert(index, value);
+  }
+
   private static void RemoveAt(ViewportPoseVisibilityEntry entry, int index)
   {
     if (entry.PieceNames != null
@@ -202,11 +218,26 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
     {
       entry.MirrorHorizontallyFlags.RemoveAt(index);
     }
+
+    if (entry.OffsetX != null
+        && index >= 0
+        && index < entry.OffsetX.Count)
+    {
+      entry.OffsetX.RemoveAt(index);
+    }
+
+    if (entry.OffsetY != null
+        && index >= 0
+        && index < entry.OffsetY.Count)
+    {
+      entry.OffsetY.RemoveAt(index);
+    }
   }
 
   /// <summary>
-  /// Stores Enabled + MirrorHorizontally for every non-null layout piece,
-  /// plus Front Wall F1 / F2 widths for the current pose.
+  /// Stores Enabled + MirrorHorizontally + OffsetX/OffsetY for every
+  /// non-null layout piece, plus Front Wall F1 / F2 widths for the current pose.
+  /// Does not read or write layout piece.X / piece.Y.
   /// </summary>
   public void CaptureFromLayout(
       ViewportPoseVisibilityEntry entry,
@@ -215,9 +246,16 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
     if (entry == null || layout == null || layout.Pieces == null)
       return;
 
+    if (entry.OffsetX == null)
+      entry.OffsetX = new List<int>();
+    if (entry.OffsetY == null)
+      entry.OffsetY = new List<int>();
+
     entry.PieceNames.Clear();
     entry.EnabledFlags.Clear();
     entry.MirrorHorizontallyFlags.Clear();
+    entry.OffsetX.Clear();
+    entry.OffsetY.Clear();
     entry.FrontWallF1Width = StraightF1WallLogic.DefaultFrontWallF1Width;
     entry.FrontWallF2Width = FrontWallF2Logic.DefaultWidth;
 
@@ -230,6 +268,8 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
       entry.PieceNames.Add(piece.Name ?? string.Empty);
       entry.EnabledFlags.Add(piece.Enabled);
       entry.MirrorHorizontallyFlags.Add(piece.MirrorHorizontally);
+      entry.OffsetX.Add(piece.PoseOffsetX);
+      entry.OffsetY.Add(piece.PoseOffsetY);
 
       if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
       {
@@ -247,11 +287,12 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
   }
 
   /// <summary>
-  /// Applies stored Enabled + MirrorHorizontally to every layout piece,
-  /// Front Wall F1 width to the F1 piece, and Front Wall F2 width to F2.
+  /// Applies stored Enabled + MirrorHorizontally + OffsetX/OffsetY to every
+  /// layout piece, Front Wall F1 width to the F1 piece, and Front Wall F2
+  /// width to F2. Does not mutate piece.X / piece.Y.
   /// Pieces missing from the entry get safe defaults (Enabled=false,
-  /// MirrorHorizontally=false, F1 width 191, F2 width 106) so prior-pose
-  /// state cannot leak.
+  /// MirrorHorizontally=false, OffsetX/Y=0, F1 width 191, F2 width 106)
+  /// so prior-pose state cannot leak.
   /// </summary>
   public void ApplyToLayout(
       ViewportPoseVisibilityEntry entry,
@@ -275,6 +316,16 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
         piece.MirrorHorizontally = mirror;
       else
         piece.MirrorHorizontally = false;
+
+      if (TryGetOffsetXByName(entry, piece.Name, out int offsetX))
+        piece.PoseOffsetX = offsetX;
+      else
+        piece.PoseOffsetX = 0;
+
+      if (TryGetOffsetYByName(entry, piece.Name, out int offsetY))
+        piece.PoseOffsetY = offsetY;
+      else
+        piece.PoseOffsetY = 0;
 
       if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
       {
@@ -343,6 +394,62 @@ public sealed class ViewportPoseVisibilityStore : ScriptableObject
 
     return false;
   }
+
+  private static bool TryGetOffsetXByName(
+      ViewportPoseVisibilityEntry entry,
+      string pieceName,
+      out int offsetX)
+  {
+    offsetX = 0;
+    if (entry == null
+        || entry.PieceNames == null
+        || entry.OffsetX == null
+        || entry.OffsetX.Count == 0)
+    {
+      return false;
+    }
+
+    string key = pieceName ?? string.Empty;
+    int count = Math.Min(entry.PieceNames.Count, entry.OffsetX.Count);
+    for (int i = 0; i < count; i++)
+    {
+      if (entry.PieceNames[i] == key)
+      {
+        offsetX = entry.OffsetX[i];
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private static bool TryGetOffsetYByName(
+      ViewportPoseVisibilityEntry entry,
+      string pieceName,
+      out int offsetY)
+  {
+    offsetY = 0;
+    if (entry == null
+        || entry.PieceNames == null
+        || entry.OffsetY == null
+        || entry.OffsetY.Count == 0)
+    {
+      return false;
+    }
+
+    string key = pieceName ?? string.Empty;
+    int count = Math.Min(entry.PieceNames.Count, entry.OffsetY.Count);
+    for (int i = 0; i < count; i++)
+    {
+      if (entry.PieceNames[i] == key)
+      {
+        offsetY = entry.OffsetY[i];
+        return true;
+      }
+    }
+
+    return false;
+  }
 }
 
 [Serializable]
@@ -355,6 +462,8 @@ public sealed class ViewportPoseVisibilityEntry
   public List<string> PieceNames = new();
   public List<bool> EnabledFlags = new();
   public List<bool> MirrorHorizontallyFlags = new();
+  public List<int> OffsetX = new();
+  public List<int> OffsetY = new();
   public int FrontWallF1Width = 191;
   public int FrontWallF2Width = 106;
 }

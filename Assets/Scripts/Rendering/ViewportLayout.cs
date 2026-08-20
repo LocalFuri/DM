@@ -27,6 +27,23 @@ namespace DM.Rendering
     public int X;
     public int Y;
 
+    /// <summary>
+    /// Live per-pose blit correction. Not serialized on ViewportLayout.
+    /// Effective draw position is X + PoseOffsetX, Y + PoseOffsetY.
+    /// </summary>
+    [System.NonSerialized]
+    public int PoseOffsetX;
+
+    /// <summary>
+    /// Live per-pose blit correction. Not serialized on ViewportLayout.
+    /// </summary>
+    [System.NonSerialized]
+    public int PoseOffsetY;
+
+    public int EffectiveX => X + PoseOffsetX;
+
+    public int EffectiveY => Y + PoseOffsetY;
+
     public bool Enabled = true;
 
     [Tooltip(
