@@ -22,19 +22,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -76,7 +76,7 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001000101000000010000010101010101010101000000
+    EnabledFlags: 01000001000000000000000000000000000101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
     FrontWallF2Width: 106
@@ -88,19 +88,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -142,7 +142,7 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001000000000000000001000000000101010101000000
+    EnabledFlags: 01000001000000000000000000000000000101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
     FrontWallF1Width: 224
     FrontWallF2Width: 106
@@ -175,7 +175,7 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001000101000000010100010101010101010101010101
+    EnabledFlags: 01000001000000000000000000000000000101010101010101
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000100
     FrontWallF1Width: 191
     FrontWallF2Width: 106
@@ -187,17 +187,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -218,17 +218,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -249,17 +249,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -301,7 +301,7 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001000000000001000000010001010101010101000000
+    EnabledFlags: 01000001000000000000000000000000000101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
     FrontWallF2Width: 131
@@ -313,19 +313,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -367,8 +367,8 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001010000000000000100010101000101010101000000
-    MirrorHorizontallyFlags: 01000000000000000001000000000000000000000000000000
+    EnabledFlags: 01000001000000000000000000000000000101010101000000
+    MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -400,7 +400,7 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001010000000000000100010101000101010101000000
+    EnabledFlags: 01000001000000000000000000000000000101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
     FrontWallF2Width: 106
@@ -412,19 +412,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -466,8 +466,8 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001000000000001000000000101010101010101000000
-    MirrorHorizontallyFlags: 00000001000000000001000000000000000000000000000000
+    EnabledFlags: 01000001000000000000000000000000000101010101000000
+    MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
     FrontWallF1Width: 191
     FrontWallF2Width: 131
   - X: 1
@@ -499,7 +499,7 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001000000000000000001000000010101010101000000
+    EnabledFlags: 01000001000000000000000000000000000101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
     FrontWallF2Width: 106
@@ -511,19 +511,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -544,19 +544,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -577,19 +577,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -631,7 +631,7 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001000001000000010100010100010101010101000000
+    EnabledFlags: 01000001000000000000000000000000000101010101000000
     MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
     FrontWallF1Width: 191
     FrontWallF2Width: 106
@@ -664,7 +664,7 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001010000000000000100010101010101010101000000
+    EnabledFlags: 01000001000000000000000000000000000101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
     FrontWallF2Width: 106
@@ -676,19 +676,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -709,19 +709,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -742,19 +742,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -775,19 +775,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -808,19 +808,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -841,17 +841,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -869,17 +869,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -897,17 +897,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -925,17 +925,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -953,17 +953,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -981,19 +981,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1014,19 +1014,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1047,19 +1047,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1080,19 +1080,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1113,17 +1113,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1141,17 +1141,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1169,17 +1169,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1197,17 +1197,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1225,17 +1225,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1253,17 +1253,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1281,17 +1281,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1309,19 +1309,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1342,17 +1342,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1373,17 +1373,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1404,17 +1404,17 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1435,19 +1435,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1468,19 +1468,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1534,19 +1534,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1567,19 +1567,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
@@ -1600,19 +1600,19 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - FrontF3
-    - LeftF3
-    - RightF3
-    - LeftD3
-    - RightD3
-    - FrontF2
-    - LeftF2
-    - RightF2
-    - FrontF1
-    - LeftF1
-    - RightF1
-    - LeftF0
-    - RightF0
+    - Front Wall F3
+    - Wall F3Left
+    - Wall F3Right
+    - Wall D3L2
+    - Wall D3R2
+    - Front Wall F2
+    - Wall F2Left
+    - Wall F2Right
+    - Front Wall F1
+    - Wall F1Left
+    - Wall F1Right
+    - Wall F0Left
+    - Wall F0Right
     - Movement Arrows
     - Champion Status Slot 1
     - Champion Status Slot 2
