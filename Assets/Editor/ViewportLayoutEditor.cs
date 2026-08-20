@@ -238,6 +238,12 @@ public class ViewportLayoutEditor : EditorWindow
     selectionChangedThisFrame = false;
     previewPoseChangedByKeyboardThisFrame = false;
 
+    // Claim EditorWindow focus on click so existing keyboard nav can run.
+    // Do not clear GUI.FocusControl here — a TextField/IntField on this
+    // same MouseDown still needs to receive it.
+    if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
+      Focus();
+
     // Arrow Up/Down must be handled before BeginScrollView — otherwise the
     // scroll view consumes them for scrolling and HandlePreviewMoveKeyboard
     // never sees a usable KeyDown (Left/Right strafe is unaffected).
@@ -365,6 +371,15 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     EditorGUILayout.EndScrollView();
+
+    // Click on empty / non-control area: release leftover text-field focus
+    // so keyboard nav works. Controls that consume MouseDown (TextField,
+    // IntField, buttons) are left alone here.
+    if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
+    {
+      GUI.FocusControl(null);
+      Focus();
+    }
 
     if (selectionChangedThisFrame)
     {
@@ -844,6 +859,20 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void TryRefocusPreviewWindow()
   {
+    GUI.FocusControl(null);
+    Focus();
+    EditorApplication.delayCall += RestoreViewEditKeyboardFocus;
+  }
+
+  /// <summary>
+  /// One-shot: Game View repaint after preview refresh can steal EditorWindow
+  /// focus. Restore ViewEdit unless a text/numeric field is being edited.
+  /// </summary>
+  private void RestoreViewEditKeyboardFocus()
+  {
+    if (this == null)
+      return;
+
     if (EditorGUIUtility.editingTextField)
       return;
 
@@ -1410,6 +1439,7 @@ public class ViewportLayoutEditor : EditorWindow
               GUILayout.Height(buttonHeight)))
       {
         PreviewNavigateTurnLeft();
+        TryRefocusPreviewWindow();
       }
 
       if (GUILayout.Button(
@@ -1418,6 +1448,7 @@ public class ViewportLayoutEditor : EditorWindow
               GUILayout.Height(buttonHeight)))
       {
         PreviewNavigateMoveForward();
+        TryRefocusPreviewWindow();
       }
 
       if (GUILayout.Button(
@@ -1426,6 +1457,7 @@ public class ViewportLayoutEditor : EditorWindow
               GUILayout.Height(buttonHeight)))
       {
         PreviewNavigateTurnRight();
+        TryRefocusPreviewWindow();
       }
 
       EditorGUILayout.EndHorizontal();
@@ -1437,6 +1469,7 @@ public class ViewportLayoutEditor : EditorWindow
               GUILayout.Height(buttonHeight)))
       {
         PreviewNavigateStrafeLeft();
+        TryRefocusPreviewWindow();
       }
 
       if (GUILayout.Button(
@@ -1445,6 +1478,7 @@ public class ViewportLayoutEditor : EditorWindow
               GUILayout.Height(buttonHeight)))
       {
         PreviewNavigateMoveBackward();
+        TryRefocusPreviewWindow();
       }
 
       if (GUILayout.Button(
@@ -1453,6 +1487,7 @@ public class ViewportLayoutEditor : EditorWindow
               GUILayout.Height(buttonHeight)))
       {
         PreviewNavigateStrafeRight();
+        TryRefocusPreviewWindow();
       }
 
       EditorGUILayout.EndHorizontal();

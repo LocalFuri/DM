@@ -57,7 +57,7 @@ MonoBehaviour:
     FrontWallF2Width: 106
   - Name: LeftF3
     Graphic: 9
-    X: 7
+    X: 4
     Y: 92
     Enabled: 0
     MirrorHorizontally: 0
@@ -65,8 +65,8 @@ MonoBehaviour:
     FrontWallF2Width: 106
   - Name: RightF3
     Graphic: 10
-    X: 210
-    Y: 92
+    X: 134
+    Y: 93
     Enabled: 0
     MirrorHorizontally: 0
     FrontWallF1Width: 191
