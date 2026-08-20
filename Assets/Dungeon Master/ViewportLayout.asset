@@ -47,7 +47,7 @@ MonoBehaviour:
     MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
-  - Name: Front Wall F3
+  - Name: FrontF3
     Graphic: 25
     X: 60
     Y: 93
@@ -55,23 +55,23 @@ MonoBehaviour:
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
-  - Name: Wall F3Left
+  - Name: LeftF3
     Graphic: 9
     X: 7
     Y: 92
-    Enabled: 1
+    Enabled: 0
     MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
-  - Name: Wall F3Right
+  - Name: RightF3
     Graphic: 10
     X: 210
     Y: 92
-    Enabled: 1
+    Enabled: 0
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
-  - Name: Wall D3L2
+  - Name: LeftD3
     Graphic: 13
     X: 0
     Y: 97
@@ -79,7 +79,7 @@ MonoBehaviour:
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
-  - Name: Wall D3R2
+  - Name: RightD3
     Graphic: 14
     X: 196
     Y: 93
@@ -87,7 +87,7 @@ MonoBehaviour:
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
-  - Name: Front Wall F2
+  - Name: FrontF2
     Graphic: 24
     X: 59
     Y: 74
@@ -95,23 +95,23 @@ MonoBehaviour:
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
-  - Name: Wall F2Left
+  - Name: LeftF2
     Graphic: 7
     X: -2
     Y: 74
-    Enabled: 1
+    Enabled: 0
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
-  - Name: Wall F2Right
-    Graphic: 0
+  - Name: RightF2
+    Graphic: 8
     X: 147
     Y: 74
     Enabled: 0
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
-  - Name: Front Wall F1
+  - Name: FrontF1
     Graphic: 23
     X: 0
     Y: 47
@@ -119,35 +119,35 @@ MonoBehaviour:
     MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
-  - Name: Wall F1Left
+  - Name: LeftF1
     Graphic: 5
     X: 0
     Y: 47
-    Enabled: 1
+    Enabled: 0
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
-  - Name: Wall F1Right
+  - Name: RightF1
     Graphic: 6
     X: 164
     Y: 47
-    Enabled: 1
+    Enabled: 0
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
-  - Name: Wall F0Left
+  - Name: LeftF0
     Graphic: 3
     X: 0
     Y: 31
-    Enabled: 1
+    Enabled: 0
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
-  - Name: Wall F0Right
+  - Name: RightF0
     Graphic: 4
     X: 191
     Y: 31
-    Enabled: 1
+    Enabled: 0
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
