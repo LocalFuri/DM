@@ -131,5 +131,117 @@ namespace DM.Rendering
       cachedExpanded = expanded;
       return cachedExpanded;
     }
+
+    public const int ExpandedWidth160 = 160;
+    public const int RightStripWidth160 = 55;
+    private const int MinRightWidth160 = RightSourceStartX + RightStripWidth160;
+
+    private static Texture2D cachedFront160;
+    private static Texture2D cachedRight160;
+    private static Texture2D cachedExpanded160;
+
+    /// <summary>
+    /// Returns a cached 160×74 Front Wall F2 composite.
+    /// Original textures are never modified. No horizontal mirroring.
+    ///
+    /// Same architecture as 131, then continues WallF2R to the right:
+    ///   dest[0..104]   = FrontWallF2[:, 1..105]
+    ///   dest[105..159] = WallF2R[:, 19..73]
+    /// (131 is dest[0..130] of this mapping; extra dest[131..159] =
+    /// WallF2R[:, 45..73].)
+    /// </summary>
+    public static Texture2D BuildExpandedF2Wall160(
+        Texture2D front,
+        Texture2D wallF2R)
+    {
+      if (front == null)
+        return null;
+
+      if (cachedExpanded160 != null
+          && cachedFront160 == front
+          && cachedRight160 == wallF2R)
+      {
+        return cachedExpanded160;
+      }
+
+      if (!front.isReadable
+          || wallF2R == null
+          || !wallF2R.isReadable)
+      {
+        Debug.LogWarning(
+            "ExpandedF2WallTexture: FrontWallF2 / WallF2R "
+                + "must be readable (Read/Write enabled).");
+        return front;
+      }
+
+      if (front.width < MinFrontWidth || front.height < SourceHeight)
+      {
+        Debug.LogWarning(
+            "ExpandedF2WallTexture: FrontWallF2 expected at least 106x74, got "
+                + front.width
+                + "x"
+                + front.height
+                + ".");
+        return front;
+      }
+
+      if (wallF2R.width < MinRightWidth160 || wallF2R.height < SourceHeight)
+      {
+        Debug.LogWarning(
+            "ExpandedF2WallTexture: WallF2R expected at least "
+                + MinRightWidth160
+                + "x"
+                + SourceHeight
+                + ", got "
+                + wallF2R.width
+                + "x"
+                + wallF2R.height
+                + ".");
+        return front;
+      }
+
+      Color32[] frontPixels = front.GetPixels32();
+      Color32[] rightPixels = wallF2R.GetPixels32();
+      int frontW = front.width;
+      int rightW = wallF2R.width;
+      Color32[] dst = new Color32[ExpandedWidth160 * ExpandedHeight];
+
+      // dest[0..104]   = FrontWallF2[:, 1..105]
+      // dest[105..159] = WallF2R[:, 19..73]
+      for (int y = 0; y < ExpandedHeight; y++)
+      {
+        int frontRow = y * frontW;
+        int rightRow = y * rightW;
+        int dstRow = y * ExpandedWidth160;
+
+        for (int i = 0; i < FrontStripWidth; i++)
+        {
+          dst[dstRow + i] =
+              frontPixels[frontRow + FrontSourceStartX + i];
+        }
+
+        for (int i = 0; i < RightStripWidth160; i++)
+        {
+          dst[dstRow + RightDestStartX + i] =
+              rightPixels[rightRow + RightSourceStartX + i];
+        }
+      }
+
+      Texture2D expanded = new Texture2D(
+          ExpandedWidth160,
+          ExpandedHeight,
+          TextureFormat.RGBA32,
+          false);
+      expanded.name = front.name + "_Expanded160";
+      expanded.filterMode = FilterMode.Point;
+      expanded.wrapMode = TextureWrapMode.Clamp;
+      expanded.SetPixels32(dst);
+      expanded.Apply(false, false);
+
+      cachedFront160 = front;
+      cachedRight160 = wallF2R;
+      cachedExpanded160 = expanded;
+      return cachedExpanded160;
+    }
   }
 }

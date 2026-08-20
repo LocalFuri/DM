@@ -640,11 +640,12 @@ public class ViewportLayoutEditor : EditorWindow
       int widthSelected = EditorGUILayout.IntPopup(
           "F2 Width",
           widthBefore,
-          new[] { "106", "131" },
+          new[] { "106", "131", "160" },
           new[]
           {
             FrontWallF2Logic.Width106,
-            FrontWallF2Logic.Width131
+            FrontWallF2Logic.Width131,
+            FrontWallF2Logic.Width160
           });
       piece.FrontWallF2Width = FrontWallF2Logic.Normalize(widthSelected);
 

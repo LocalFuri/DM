@@ -54,7 +54,7 @@ namespace DM.Rendering
     [Tooltip("Per-pose Front Wall F1 blit width: 160, 191, or 224.")]
     public int FrontWallF1Width = 191;
 
-    [Tooltip("Per-pose Front Wall F2 blit width: 106 or 131.")]
+    [Tooltip("Per-pose Front Wall F2 blit width: 106, 131, or 160.")]
     public int FrontWallF2Width = 106;
   }
 
@@ -62,11 +62,12 @@ namespace DM.Rendering
   {
     public const int Width106 = 106;
     public const int Width131 = 131;
+    public const int Width160 = 160;
     public const int DefaultWidth = Width106;
 
     public static int Normalize(int width)
     {
-      if (width == Width131)
+      if (width == Width131 || width == Width160)
         return width;
 
       return DefaultWidth;
