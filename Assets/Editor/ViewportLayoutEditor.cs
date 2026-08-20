@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using DM.Dungeon;
 using DM.Rendering;
 using UnityEditor;
@@ -74,6 +75,15 @@ public class ViewportLayoutEditor : EditorWindow
   private GUIStyle searchPiecesLabelStyle;
   private bool[] rememberedEnabledStates;
   private int snap = 1;
+
+  private bool hookedViewEditGlobalNavigation;
+
+  private static int s_viewEditGlobalNavOwners;
+  private static bool s_viewEditGlobalNavCallbackAdded;
+  private static bool s_viewEditGlobalNavDispatch;
+  private static readonly EditorApplication.CallbackFunction
+      ViewEditGlobalNavHandler = HandleViewEditGlobalNavigationEvent;
+  private static System.Delegate s_viewEditBeforeEventProcessedHandler;
 
   // Blocks pose capture while PersistChanges temporarily writes kit baseline
   // Enabled onto the live layout (SaveAssets can re-enter editor code).
@@ -194,10 +204,20 @@ public class ViewportLayoutEditor : EditorWindow
     // Force a fresh compose from the current pose's Enabled flags.
     DestroyEditModePreviewTextureOnly();
     RefreshEditModePreview();
+    if (!hookedViewEditGlobalNavigation)
+    {
+      RegisterViewEditGlobalNavigation();
+      hookedViewEditGlobalNavigation = true;
+    }
   }
 
   private void OnDisable()
   {
+    if (hookedViewEditGlobalNavigation)
+    {
+      UnregisterViewEditGlobalNavigation();
+      hookedViewEditGlobalNavigation = false;
+    }
     StripObsoleteFrontWallF1ABPieces();
     CaptureCurrentPoseVisibilityToStore();
     PersistPoseVisibilityStore();
@@ -726,7 +746,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (current.type != EventType.KeyDown)
       return;
 
-    if (focusedWindow != this)
+    if (!s_viewEditGlobalNavDispatch && focusedWindow != this)
       return;
 
     if (EditorGUIUtility.editingTextField)
@@ -753,7 +773,8 @@ public class ViewportLayoutEditor : EditorWindow
     // Preserve Preview X / Preview Y; only facing changes.
     previewPoseChangedByKeyboardThisFrame = true;
     SwitchPreviewPose(previewX, previewY, nextFacing);
-    TryRefocusPreviewWindow();
+    if (!s_viewEditGlobalNavDispatch)
+      TryRefocusPreviewWindow();
   }
 
   private void HandlePreviewStrafeKeyboard()
@@ -762,7 +783,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (current.type != EventType.KeyDown)
       return;
 
-    if (focusedWindow != this)
+    if (!s_viewEditGlobalNavDispatch && focusedWindow != this)
       return;
 
     if (EditorGUIUtility.editingTextField)
@@ -804,7 +825,8 @@ public class ViewportLayoutEditor : EditorWindow
     // Keep Preview Facing unchanged.
     previewPoseChangedByKeyboardThisFrame = true;
     SwitchPreviewPose(nextX, nextY, previewFacing);
-    TryRefocusPreviewWindow();
+    if (!s_viewEditGlobalNavDispatch)
+      TryRefocusPreviewWindow();
   }
 
   private void HandlePreviewMoveKeyboard()
@@ -813,7 +835,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (current.type != EventType.KeyDown)
       return;
 
-    if (focusedWindow != this)
+    if (!s_viewEditGlobalNavDispatch && focusedWindow != this)
       return;
 
     if (EditorGUIUtility.editingTextField)
@@ -854,7 +876,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     previewPoseChangedByKeyboardThisFrame = true;
     SwitchPreviewPose(nextX, nextY, previewFacing);
-    TryRefocusPreviewWindow();
+    if (!s_viewEditGlobalNavDispatch)
+      TryRefocusPreviewWindow();
   }
 
   private void TryRefocusPreviewWindow()
@@ -877,6 +900,253 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     Focus();
+  }
+
+  private static void RegisterViewEditGlobalNavigation()
+  {
+    s_viewEditGlobalNavOwners++;
+    if (s_viewEditGlobalNavCallbackAdded)
+      return;
+
+    AddViewEditGlobalEventHandler(ViewEditGlobalNavHandler);
+    AddViewEditBeforeEventProcessedHandler();
+    s_viewEditGlobalNavCallbackAdded = true;
+  }
+
+  private static void UnregisterViewEditGlobalNavigation()
+  {
+    s_viewEditGlobalNavOwners--;
+    if (s_viewEditGlobalNavOwners > 0)
+      return;
+
+    s_viewEditGlobalNavOwners = 0;
+    if (!s_viewEditGlobalNavCallbackAdded)
+      return;
+
+    RemoveViewEditGlobalEventHandler(ViewEditGlobalNavHandler);
+    RemoveViewEditBeforeEventProcessedHandler();
+    s_viewEditGlobalNavCallbackAdded = false;
+  }
+
+  private static void AddViewEditGlobalEventHandler(
+      EditorApplication.CallbackFunction handler)
+  {
+    EventInfo evt = typeof(EditorApplication).GetEvent(
+        "globalEventHandler",
+        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+    if (evt != null)
+    {
+      evt.GetAddMethod(true)?.Invoke(null, new object[] { handler });
+      return;
+    }
+
+    FieldInfo field = typeof(EditorApplication).GetField(
+        "globalEventHandler",
+        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+    if (field == null)
+      return;
+
+    var value = (EditorApplication.CallbackFunction)field.GetValue(null);
+    value -= handler;
+    value += handler;
+    field.SetValue(null, value);
+  }
+
+  private static void RemoveViewEditGlobalEventHandler(
+      EditorApplication.CallbackFunction handler)
+  {
+    EventInfo evt = typeof(EditorApplication).GetEvent(
+        "globalEventHandler",
+        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+    if (evt != null)
+    {
+      evt.GetRemoveMethod(true)?.Invoke(null, new object[] { handler });
+      return;
+    }
+
+    FieldInfo field = typeof(EditorApplication).GetField(
+        "globalEventHandler",
+        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+    if (field == null)
+      return;
+
+    var value = (EditorApplication.CallbackFunction)field.GetValue(null);
+    value -= handler;
+    field.SetValue(null, value);
+  }
+
+  private static EventInfo GetGuiViewBeforeEventProcessedEvent()
+  {
+    System.Type guiViewType = typeof(EditorWindow).Assembly.GetType(
+        "UnityEditor.GUIView");
+    if (guiViewType == null)
+      return null;
+
+    return guiViewType.GetEvent(
+        "beforeEventProcessed",
+        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+  }
+
+  private static void AddViewEditBeforeEventProcessedHandler()
+  {
+    EventInfo evt = GetGuiViewBeforeEventProcessedEvent();
+    if (evt == null)
+      return;
+
+    MethodInfo method = typeof(ViewportLayoutEditor).GetMethod(
+        nameof(HandleViewEditBeforeEventProcessed),
+        BindingFlags.Static | BindingFlags.NonPublic);
+    if (method == null)
+      return;
+
+    s_viewEditBeforeEventProcessedHandler = System.Delegate.CreateDelegate(
+        evt.EventHandlerType,
+        method,
+        false);
+    if (s_viewEditBeforeEventProcessedHandler == null)
+      return;
+
+    evt.GetAddMethod(true)?.Invoke(
+        null,
+        new object[] { s_viewEditBeforeEventProcessedHandler });
+  }
+
+  private static void RemoveViewEditBeforeEventProcessedHandler()
+  {
+    EventInfo evt = GetGuiViewBeforeEventProcessedEvent();
+    if (evt == null || s_viewEditBeforeEventProcessedHandler == null)
+      return;
+
+    evt.GetRemoveMethod(true)?.Invoke(
+        null,
+        new object[] { s_viewEditBeforeEventProcessedHandler });
+    s_viewEditBeforeEventProcessedHandler = null;
+  }
+
+  private static void HandleViewEditBeforeEventProcessed(
+      EventType type,
+      KeyCode keyCode,
+      EventModifiers modifiers)
+  {
+    if (type != EventType.KeyDown)
+      return;
+
+    if (!IsViewEditNavigationKey(keyCode))
+      return;
+
+    TryDispatchViewEditGlobalNavigation();
+  }
+
+  private static void HandleViewEditGlobalNavigationEvent()
+  {
+    TryDispatchViewEditGlobalNavigation();
+  }
+
+  private static bool IsViewEditNavigationKey(KeyCode keyCode)
+  {
+    switch (keyCode)
+    {
+      case KeyCode.UpArrow:
+      case KeyCode.DownArrow:
+      case KeyCode.LeftArrow:
+      case KeyCode.RightArrow:
+      case KeyCode.Delete:
+      case KeyCode.PageDown:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private static bool IsEditorTextOrNumericInputActive()
+  {
+    if (EditorGUIUtility.editingTextField)
+      return true;
+
+    EditorWindow focused = focusedWindow;
+    if (focused == null)
+      return false;
+
+    UnityEngine.UIElements.VisualElement root = focused.rootVisualElement;
+    if (root == null)
+      return false;
+
+    UnityEngine.UIElements.Focusable focusedElement =
+        root.focusController != null
+            ? root.focusController.focusedElement
+            : null;
+    return IsUiToolkitTextOrNumericInput(focusedElement);
+  }
+
+  private static bool IsUiToolkitTextOrNumericInput(
+      UnityEngine.UIElements.Focusable focused)
+  {
+    if (focused == null)
+      return false;
+
+    for (System.Type type = focused.GetType(); type != null; type = type.BaseType)
+    {
+      System.Type check = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
+      string name = check.Name;
+      if (name == "TextInputBaseField`1"
+          || name == "TextField"
+          || name == "SearchFieldBase`1"
+          || name == "ToolbarSearchField")
+      {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private static void TryDispatchViewEditGlobalNavigation()
+  {
+    Event current = Event.current;
+    if (current == null || current.type != EventType.KeyDown)
+      return;
+
+    if (!IsViewEditNavigationKey(current.keyCode))
+      return;
+
+    if (Application.isPlaying)
+      return;
+
+    if (IsEditorTextOrNumericInputActive())
+      return;
+
+    ViewportLayoutEditor window = FindOpenViewEditWindow();
+    if (window == null || window.layout == null)
+      return;
+
+    s_viewEditGlobalNavDispatch = true;
+    try
+    {
+      window.HandlePreviewMoveKeyboard();
+      window.HandlePreviewFacingKeyboard();
+      window.HandlePreviewStrafeKeyboard();
+    }
+    finally
+    {
+      s_viewEditGlobalNavDispatch = false;
+    }
+  }
+
+  private static ViewportLayoutEditor FindOpenViewEditWindow()
+  {
+    ViewportLayoutEditor[] windows =
+        Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>();
+    if (windows == null)
+      return null;
+
+    for (int i = 0; i < windows.Length; i++)
+    {
+      ViewportLayoutEditor window = windows[i];
+      if (window != null)
+        return window;
+    }
+
+    return null;
   }
 
   /// <summary>
@@ -1823,18 +2093,20 @@ public class ViewportLayoutEditor : EditorWindow
 
   private static bool IsFrontWallF1Card(ViewportPiece piece)
   {
-    if (piece == null)
+    if (piece == null || piece.Name == null)
       return false;
 
-    return piece.Name == "Front Wall F1";
+    return piece.Name == "FrontF1"
+        || piece.Name == "Front Wall F1";
   }
 
   private static bool IsFrontWallF2Card(ViewportPiece piece)
   {
-    if (piece == null)
+    if (piece == null || piece.Name == null)
       return false;
 
-    return piece.Name == "Front Wall F2";
+    return piece.Name == "FrontF2"
+        || piece.Name == "Front Wall F2";
   }
 
   private static bool IsPoseOffsetCard(ViewportPiece piece)

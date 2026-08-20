@@ -20,7 +20,7 @@ MonoBehaviour:
     X: 0
     Y: 128
     Enabled: 1
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: Ceiling Strip 84
@@ -44,7 +44,7 @@ MonoBehaviour:
     X: 0
     Y: 31
     Enabled: 1
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: d
@@ -94,7 +94,7 @@ MonoBehaviour:
     Enabled: 0
     MirrorHorizontally: 0
     FrontWallF1Width: 191
-    FrontWallF2Width: 106
+    FrontWallF2Width: 131
   - Name: LeftF2
     Graphic: 7
     X: -2

@@ -6,6 +6,9 @@ using UnityEngine;
 public sealed class ViewportPieceDrawer : PropertyDrawer
 {
   private const string FrontWallF1Name = "Front Wall F1";
+  private const string FrontF1Name = "FrontF1";
+  private const string FrontWallF2Name = "Front Wall F2";
+  private const string FrontF2Name = "FrontF2";
 
   public override float GetPropertyHeight(
       SerializedProperty property,
@@ -52,13 +55,21 @@ public sealed class ViewportPieceDrawer : PropertyDrawer
   private static bool IsFrontWallF1(SerializedProperty property)
   {
     SerializedProperty nameProp = property.FindPropertyRelative("Name");
-    return nameProp != null && nameProp.stringValue == FrontWallF1Name;
+    if (nameProp == null)
+      return false;
+
+    string name = nameProp.stringValue;
+    return name == FrontF1Name || name == FrontWallF1Name;
   }
 
   private static bool IsFrontWallF2(SerializedProperty property)
   {
     SerializedProperty nameProp = property.FindPropertyRelative("Name");
-    return nameProp != null && nameProp.stringValue == "Front Wall F2";
+    if (nameProp == null)
+      return false;
+
+    string name = nameProp.stringValue;
+    return name == FrontF2Name || name == FrontWallF2Name;
   }
 
   private static float DrawLine(
