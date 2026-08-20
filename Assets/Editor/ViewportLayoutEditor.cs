@@ -2909,12 +2909,28 @@ public class ViewportLayoutEditor : EditorWindow
           if (f2Texture == null)
             continue;
 
-          BlitPieceIntoPreview(
-              pixels,
-              f2Texture,
-              piece.EffectiveX,
-              piece.EffectiveY,
-              mirror);
+          if (width == FrontWallF2Logic.Width160
+              && f2Texture.width == FrontWallF2Logic.Width160)
+          {
+            FrontWallF2Logic.BlitToBuffer(
+                f2Texture,
+                pixels,
+                PreviewWidth,
+                PreviewHeight,
+                piece.EffectiveX,
+                piece.EffectiveY,
+                mirror);
+          }
+          else
+          {
+            BlitPieceIntoPreview(
+                pixels,
+                f2Texture,
+                piece.EffectiveX,
+                piece.EffectiveY,
+                mirror);
+          }
+
           continue;
         }
 
@@ -3017,6 +3033,8 @@ public class ViewportLayoutEditor : EditorWindow
             piece.EffectiveY,
             mirror);
       }
+
+      BlitFrontWallF2_160ExtraStripIntoPreview(pixels, poseMap);
     }
 
     DungeonBitmapFont bitmapFont = FindEditModeBitmapFont();
@@ -3131,6 +3149,45 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return null;
+  }
+
+  private void BlitFrontWallF2_160ExtraStripIntoPreview(
+      Color32[] pixels,
+      DungeonMap poseMap)
+  {
+    if (layout == null || layout.Pieces == null || graphics == null)
+      return;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (!ShouldDrawPieceAtPreviewPose(piece))
+        continue;
+
+      if (!FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
+        continue;
+
+      if (FrontWallF2Logic.Normalize(piece.FrontWallF2Width)
+          != FrontWallF2Logic.Width160)
+      {
+        continue;
+      }
+
+      Texture2D f2Texture =
+          graphics.GetFrontWallF2Texture(FrontWallF2Logic.Width160);
+      if (f2Texture == null || f2Texture.width != FrontWallF2Logic.Width160)
+        return;
+
+      FrontWallF2Logic.Blit160ExtraStripToBuffer(
+          f2Texture,
+          pixels,
+          PreviewWidth,
+          PreviewHeight,
+          piece.EffectiveX,
+          piece.EffectiveY,
+          GetPreviewMirror(piece, poseMap));
+      return;
+    }
   }
 
   /// <summary>

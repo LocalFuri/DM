@@ -89,7 +89,7 @@ MonoBehaviour:
     FrontWallF2Width: 106
   - Name: FrontF2
     Graphic: 24
-    X: 59
+    X: 32
     Y: 74
     Enabled: 0
     MirrorHorizontally: 0

@@ -157,19 +157,29 @@ namespace DM.Rendering
 
     public Texture2D GetFrontWallF2Texture(int width)
     {
-      switch (FrontWallF2Logic.Normalize(width))
+      int normalized = FrontWallF2Logic.Normalize(width);
+      if (normalized == FrontWallF2Logic.Width160)
       {
-        case FrontWallF2Logic.Width131:
-          return ExpandedF2WallTexture.BuildExpandedF2Wall(
-              FrontWallF2,
-              WallF2R);
-        case FrontWallF2Logic.Width160:
-          return ExpandedF2WallTexture.BuildExpandedF2Wall160(
-              FrontWallF2,
-              WallF2R);
-        default:
-          return FrontWallF2;
+        Texture2D expanded160 = ExpandedF2WallTexture.BuildExpandedF2Wall160(
+            FrontWallF2,
+            WallF2R);
+        if (expanded160 != null
+            && expanded160.width == FrontWallF2Logic.Width160)
+        {
+          return expanded160;
+        }
+
+        return FrontWallF2;
       }
+
+      if (normalized == FrontWallF2Logic.Width131)
+      {
+        return ExpandedF2WallTexture.BuildExpandedF2Wall(
+            FrontWallF2,
+            WallF2R);
+      }
+
+      return FrontWallF2;
     }
   }
 }

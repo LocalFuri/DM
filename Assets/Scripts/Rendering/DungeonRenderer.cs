@@ -1383,6 +1383,8 @@ namespace DM.Rendering
         DrawPiece(piece);
       }
 
+      TryBlitFrontWallF2_160ExtraStrip();
+
       if (!showEntranceScreen)
         TryDrawHeroPortraitOverlay();
 
@@ -2365,6 +2367,22 @@ namespace DM.Rendering
         return;
       }
 
+      if (FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)
+          && FrontWallF2Logic.Normalize(piece.FrontWallF2Width)
+              == FrontWallF2Logic.Width160
+          && texture.width == FrontWallF2Logic.Width160)
+      {
+        FrontWallF2Logic.BlitToBuffer(
+            texture,
+            framePixels,
+            viewWidth,
+            viewHeight,
+            destX,
+            destY,
+            mirror);
+        return;
+      }
+
       // Full authored sprite at layout X/Y + per-pose offset — no crop, shift, or stretch.
       Blit(
           texture,
@@ -2375,6 +2393,34 @@ namespace DM.Rendering
           sourceWidth: -1,
           flipSourceHorizontal: mirror
       );
+    }
+
+    private void TryBlitFrontWallF2_160ExtraStrip()
+    {
+      ViewportPiece piece =
+          FindLayoutPiece(DungeonGraphicType.FrontWallF2);
+      if (!ShouldDrawPiece(piece))
+        return;
+
+      if (FrontWallF2Logic.Normalize(piece.FrontWallF2Width)
+          != FrontWallF2Logic.Width160)
+      {
+        return;
+      }
+
+      Texture2D texture =
+          graphics.GetFrontWallF2Texture(FrontWallF2Logic.Width160);
+      if (texture == null || texture.width != FrontWallF2Logic.Width160)
+        return;
+
+      FrontWallF2Logic.Blit160ExtraStripToBuffer(
+          texture,
+          framePixels,
+          viewWidth,
+          viewHeight,
+          piece.EffectiveX,
+          piece.EffectiveY + dungeonDrawOffsetY,
+          GetEffectiveEnvironmentMirror(piece));
     }
 
     /// <summary>

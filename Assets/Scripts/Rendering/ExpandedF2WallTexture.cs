@@ -158,6 +158,12 @@ namespace DM.Rendering
         return null;
 
       if (cachedExpanded160 != null
+          && cachedExpanded160.width != ExpandedWidth160)
+      {
+        cachedExpanded160 = null;
+      }
+
+      if (cachedExpanded160 != null
           && cachedFront160 == front
           && cachedRight160 == wallF2R)
       {
@@ -216,14 +222,18 @@ namespace DM.Rendering
 
         for (int i = 0; i < FrontStripWidth; i++)
         {
-          dst[dstRow + i] =
+          Color32 colour =
               frontPixels[frontRow + FrontSourceStartX + i];
+          colour.a = 255;
+          dst[dstRow + i] = colour;
         }
 
         for (int i = 0; i < RightStripWidth160; i++)
         {
-          dst[dstRow + RightDestStartX + i] =
+          Color32 colour =
               rightPixels[rightRow + RightSourceStartX + i];
+          colour.a = 255;
+          dst[dstRow + RightDestStartX + i] = colour;
         }
       }
 
@@ -237,6 +247,9 @@ namespace DM.Rendering
       expanded.wrapMode = TextureWrapMode.Clamp;
       expanded.SetPixels32(dst);
       expanded.Apply(false, false);
+
+      if (expanded.width != ExpandedWidth160)
+        return front;
 
       cachedFront160 = front;
       cachedRight160 = wallF2R;
