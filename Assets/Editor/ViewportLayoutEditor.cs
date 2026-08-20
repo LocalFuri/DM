@@ -71,6 +71,7 @@ public class ViewportLayoutEditor : EditorWindow
   private ViewportPoseVisibilityStore poseVisibilityStore;
   private Vector2 editorScroll;
   private string pieceSearchFilter = string.Empty;
+  private GUIStyle searchPiecesLabelStyle;
   private bool[] rememberedEnabledStates;
   private int snap = 1;
 
@@ -329,9 +330,13 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       EditorGUILayout.Space();
-      pieceSearchFilter = EditorGUILayout.TextField(
+      EditorGUILayout.BeginHorizontal();
+      EditorGUILayout.PrefixLabel(
           "Search Pieces",
-          pieceSearchFilter);
+          GUI.skin.textField,
+          GetSearchPiecesLabelStyle());
+      pieceSearchFilter = EditorGUILayout.TextField(pieceSearchFilter);
+      EditorGUILayout.EndHorizontal();
       HandlePieceSearchKeyboard();
 
       EditorGUILayout.LabelField("Pieces (render order)", EditorStyles.boldLabel);
@@ -477,6 +482,24 @@ public class ViewportLayoutEditor : EditorWindow
                pieceSearchFilter.Trim(),
                System.StringComparison.OrdinalIgnoreCase)
            >= 0;
+  }
+
+  private GUIStyle GetSearchPiecesLabelStyle()
+  {
+    if (searchPiecesLabelStyle == null)
+    {
+      searchPiecesLabelStyle = new GUIStyle(EditorStyles.label)
+      {
+        fontStyle = FontStyle.Bold
+      };
+      Color brightGreen = new Color(0.2f, 1.0f, 0.2f);
+      searchPiecesLabelStyle.normal.textColor = brightGreen;
+      searchPiecesLabelStyle.hover.textColor = brightGreen;
+      searchPiecesLabelStyle.focused.textColor = brightGreen;
+      searchPiecesLabelStyle.active.textColor = brightGreen;
+    }
+
+    return searchPiecesLabelStyle;
   }
 
   private void HandlePieceSearchKeyboard()
