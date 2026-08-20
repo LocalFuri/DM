@@ -173,14 +173,15 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  [MenuItem("Tools/Viewport Layout Editor &v")]
+  [MenuItem("Tools/ViewEdit &v")]
   public static void Open()
   {
-    GetWindow<ViewportLayoutEditor>("Viewport Layout");
+    GetWindow<ViewportLayoutEditor>("ViewEdit");
   }
 
   private void OnEnable()
   {
+    titleContent = new GUIContent("ViewEdit");
     wantsMouseMove = true;
     RestorePersistedAssets();
     ReloadLayoutFromDisk();
