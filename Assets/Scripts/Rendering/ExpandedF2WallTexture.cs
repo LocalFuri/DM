@@ -133,26 +133,27 @@ namespace DM.Rendering
     }
 
     public const int ExpandedWidth160 = 160;
-    public const int RightStripWidth160 = 55;
-    private const int MinRightWidth160 = RightSourceStartX + RightStripWidth160;
+    /// <summary>dest[0..105] = FrontWallF2[:, 0..105]</summary>
+    public const int FrontStripWidth160 = 106;
+    public const int FrontSourceStartX160 = 0;
+    /// <summary>dest[106..159] = FrontWallF2[:, 1..54]</summary>
+    public const int WrapStripWidth160 = 54;
+    public const int WrapDestStartX160 = 106;
+    public const int WrapSourceStartX160 = 1;
+    private const int MinFrontWidth160 = 106;
 
     private static Texture2D cachedFront160;
-    private static Texture2D cachedRight160;
     private static Texture2D cachedExpanded160;
 
     /// <summary>
-    /// Returns a cached 160×74 Front Wall F2 composite.
+    /// Returns a cached 160×74 Front Wall F2 composite from FrontWallF2 only.
     /// Original textures are never modified. No horizontal mirroring.
+    /// WallF2R is not used.
     ///
-    /// Same architecture as 131, then continues WallF2R to the right:
-    ///   dest[0..104]   = FrontWallF2[:, 1..105]
-    ///   dest[105..159] = WallF2R[:, 19..73]
-    /// (131 is dest[0..130] of this mapping; extra dest[131..159] =
-    /// WallF2R[:, 45..73].)
+    ///   dest[0..105]   = FrontWallF2[:, 0..105]
+    ///   dest[106..159] = FrontWallF2[:, 1..54]
     /// </summary>
-    public static Texture2D BuildExpandedF2Wall160(
-        Texture2D front,
-        Texture2D wallF2R)
+    public static Texture2D BuildExpandedF2Wall160(Texture2D front)
     {
       if (front == null)
         return null;
@@ -163,24 +164,18 @@ namespace DM.Rendering
         cachedExpanded160 = null;
       }
 
-      if (cachedExpanded160 != null
-          && cachedFront160 == front
-          && cachedRight160 == wallF2R)
-      {
+      if (cachedExpanded160 != null && cachedFront160 == front)
         return cachedExpanded160;
-      }
 
-      if (!front.isReadable
-          || wallF2R == null
-          || !wallF2R.isReadable)
+      if (!front.isReadable)
       {
         Debug.LogWarning(
-            "ExpandedF2WallTexture: FrontWallF2 / WallF2R "
+            "ExpandedF2WallTexture: FrontWallF2 "
                 + "must be readable (Read/Write enabled).");
         return front;
       }
 
-      if (front.width < MinFrontWidth || front.height < SourceHeight)
+      if (front.width < MinFrontWidth160 || front.height < SourceHeight)
       {
         Debug.LogWarning(
             "ExpandedF2WallTexture: FrontWallF2 expected at least 106x74, got "
@@ -191,49 +186,31 @@ namespace DM.Rendering
         return front;
       }
 
-      if (wallF2R.width < MinRightWidth160 || wallF2R.height < SourceHeight)
-      {
-        Debug.LogWarning(
-            "ExpandedF2WallTexture: WallF2R expected at least "
-                + MinRightWidth160
-                + "x"
-                + SourceHeight
-                + ", got "
-                + wallF2R.width
-                + "x"
-                + wallF2R.height
-                + ".");
-        return front;
-      }
-
       Color32[] frontPixels = front.GetPixels32();
-      Color32[] rightPixels = wallF2R.GetPixels32();
       int frontW = front.width;
-      int rightW = wallF2R.width;
       Color32[] dst = new Color32[ExpandedWidth160 * ExpandedHeight];
 
-      // dest[0..104]   = FrontWallF2[:, 1..105]
-      // dest[105..159] = WallF2R[:, 19..73]
+      // dest[0..105]   = FrontWallF2[:, 0..105]
+      // dest[106..159] = FrontWallF2[:, 1..54]
       for (int y = 0; y < ExpandedHeight; y++)
       {
         int frontRow = y * frontW;
-        int rightRow = y * rightW;
         int dstRow = y * ExpandedWidth160;
 
-        for (int i = 0; i < FrontStripWidth; i++)
+        for (int i = 0; i < FrontStripWidth160; i++)
         {
           Color32 colour =
-              frontPixels[frontRow + FrontSourceStartX + i];
+              frontPixels[frontRow + FrontSourceStartX160 + i];
           colour.a = 255;
           dst[dstRow + i] = colour;
         }
 
-        for (int i = 0; i < RightStripWidth160; i++)
+        for (int i = 0; i < WrapStripWidth160; i++)
         {
           Color32 colour =
-              rightPixels[rightRow + RightSourceStartX + i];
+              frontPixels[frontRow + WrapSourceStartX160 + i];
           colour.a = 255;
-          dst[dstRow + RightDestStartX + i] = colour;
+          dst[dstRow + WrapDestStartX160 + i] = colour;
         }
       }
 
@@ -252,7 +229,6 @@ namespace DM.Rendering
         return front;
 
       cachedFront160 = front;
-      cachedRight160 = wallF2R;
       cachedExpanded160 = expanded;
       return cachedExpanded160;
     }

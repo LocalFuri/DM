@@ -161,8 +161,7 @@ namespace DM.Rendering
       if (normalized == FrontWallF2Logic.Width160)
       {
         Texture2D expanded160 = ExpandedF2WallTexture.BuildExpandedF2Wall160(
-            FrontWallF2,
-            WallF2R);
+            FrontWallF2);
         if (expanded160 != null
             && expanded160.width == FrontWallF2Logic.Width160)
         {
