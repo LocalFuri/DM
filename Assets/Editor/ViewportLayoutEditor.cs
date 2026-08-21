@@ -1602,23 +1602,8 @@ public class ViewportLayoutEditor : EditorWindow
   private void DrawMapPosePreviewControls()
   {
     EditorGUILayout.Space();
-
-    int editX = previewX;
-    int editY = previewY;
-    DungeonFacing editFacing = previewFacing;
-    using (new EditorGUI.DisabledScope(Application.isPlaying))
-    {
-      EditorGUI.BeginChangeCheck();
-      editX = EditorGUILayout.IntField("Preview X", editX);
-      editY = EditorGUILayout.IntField("Preview Y", editY);
-      editFacing = (DungeonFacing)EditorGUILayout.EnumPopup(
-          "Preview Facing",
-          editFacing);
-      // Keyboard Delete/PageDown already applied this frame — do not let the
-      // EnumPopup re-apply a stale facing from the same KeyDown.
-      if (EditorGUI.EndChangeCheck() && !previewPoseChangedByKeyboardThisFrame)
-        SwitchPreviewPose(editX, editY, editFacing);
-    }
+    EditorGUILayout.LabelField(
+        previewX + " X /" + previewY + " Y - " + previewFacing);
 
     using (new EditorGUI.DisabledScope(Application.isPlaying))
     {
@@ -1629,12 +1614,6 @@ public class ViewportLayoutEditor : EditorWindow
         PersistChanges();
       }
       EditorGUILayout.EndHorizontal();
-
-      using (new EditorGUI.DisabledScope(!IsPreviewPose12West()))
-      {
-        if (GUILayout.Button("Set West F1B Only"))
-          SetWestF1BOnlyDiagnostic();
-      }
     }
 
     DrawPreviewMiniMap();
