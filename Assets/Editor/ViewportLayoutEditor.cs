@@ -280,39 +280,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     editorScroll = EditorGUILayout.BeginScrollView(editorScroll);
 
-    EditorGUI.BeginChangeCheck();
-    ViewportLayout newLayout = (ViewportLayout)EditorGUILayout.ObjectField(
-        "Viewport Layout",
-        layout,
-        typeof(ViewportLayout),
-        false);
-    if (EditorGUI.EndChangeCheck())
-    {
-      layout = newLayout;
-      rememberedEnabledStates = null;
-      selectedPieceIndex = 0;
-      SaveAssetGuid(PrefsLayoutGuidKey, layout);
-      SaveSessionPrefs();
-      EnsurePoseVisibilityStore();
-      StripObsoleteFrontWallF1ABPieces();
-      MigrateObsoleteFrontWallF1ABPoseStore();
-      ApplyCurrentPoseVisibilityToLayout();
-      RefreshEditModePreview();
-    }
-
-    EditorGUI.BeginChangeCheck();
-    DungeonGraphics newGraphics = (DungeonGraphics)EditorGUILayout.ObjectField(
-        "Dungeon Graphics",
-        graphics,
-        typeof(DungeonGraphics),
-        false);
-    if (EditorGUI.EndChangeCheck())
-    {
-      graphics = newGraphics;
-      SaveAssetGuid(PrefsGraphicsGuidKey, graphics);
-      RefreshEditModePreview();
-    }
-
     if (layout == null)
     {
       EditorGUILayout.HelpBox("Select a ViewportLayout asset.", MessageType.Info);
