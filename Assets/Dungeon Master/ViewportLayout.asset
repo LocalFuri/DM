@@ -92,9 +92,9 @@ MonoBehaviour:
     X: 32
     Y: 74
     Enabled: 0
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
     FrontWallF1Width: 191
-    FrontWallF2Width: 160
+    FrontWallF2Width: 106
   - Name: LeftF2
     Graphic: 7
     X: -2
