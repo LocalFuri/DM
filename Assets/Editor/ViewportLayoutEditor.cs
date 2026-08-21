@@ -75,6 +75,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Vector2 editorScroll;
   private string pieceSearchFilter = string.Empty;
   private GUIStyle searchPiecesLabelStyle;
+  private GUIStyle pieceFamilyHeaderStyle;
   private bool[] rememberedEnabledStates;
   private int snap = 1;
 
@@ -318,6 +319,14 @@ public class ViewportLayoutEditor : EditorWindow
 
       EditorGUILayout.Space();
       EditorGUILayout.BeginHorizontal();
+      if (GUILayout.Button("Disable Walls"))
+      {
+        DisableWallsKeepChrome();
+        PersistChanges();
+      }
+      EditorGUILayout.EndHorizontal();
+
+      EditorGUILayout.BeginHorizontal();
       EditorGUILayout.PrefixLabel(
           "Search Pieces",
           GUI.skin.textField,
@@ -517,6 +526,23 @@ public class ViewportLayoutEditor : EditorWindow
     return searchPiecesLabelStyle;
   }
 
+  private GUIStyle GetPieceFamilyHeaderStyle(Color color)
+  {
+    if (pieceFamilyHeaderStyle == null)
+    {
+      pieceFamilyHeaderStyle = new GUIStyle(EditorStyles.boldLabel)
+      {
+        fontStyle = FontStyle.Bold
+      };
+    }
+
+    pieceFamilyHeaderStyle.normal.textColor = color;
+    pieceFamilyHeaderStyle.hover.textColor = color;
+    pieceFamilyHeaderStyle.focused.textColor = color;
+    pieceFamilyHeaderStyle.active.textColor = color;
+    return pieceFamilyHeaderStyle;
+  }
+
   /// <summary>
   /// Left-click inside the Search Pieces edit box clears the filter text so
   /// the full editor piece list is shown again. Does not change stored
@@ -573,9 +599,17 @@ public class ViewportLayoutEditor : EditorWindow
     GUI.backgroundColor = previousBg;
 
     EditorGUILayout.BeginHorizontal();
-    EditorGUILayout.LabelField(
-        isSelected ? $"▶ {piece.Name}" : piece.Name,
-        EditorStyles.boldLabel);
+    string headerText = isSelected ? $"▶ {piece.Name}" : piece.Name;
+    if (TryGetPieceFamilyLabelColor(piece, out Color familyColor))
+    {
+      EditorGUILayout.LabelField(
+          headerText,
+          GetPieceFamilyHeaderStyle(familyColor));
+    }
+    else
+    {
+      EditorGUILayout.LabelField(headerText, EditorStyles.label);
+    }
     EditorGUILayout.EndHorizontal();
 
     EditorGUI.BeginChangeCheck();
@@ -719,6 +753,86 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.EndHorizontal();
     EditorGUILayout.EndVertical();
+  }
+
+  /// <summary>
+  /// ViewEdit list-label tint for matching wall-piece families. Does not
+  /// change piece data, Enabled, or rendering.
+  /// </summary>
+  private static bool TryGetPieceFamilyLabelColor(
+      ViewportPiece piece,
+      out Color color)
+  {
+    color = default;
+    if (piece == null || string.IsNullOrEmpty(piece.Name))
+      return false;
+
+    switch (piece.Name)
+    {
+      case "Left0":
+      case "LeftF0":
+      case "Wall F0Left":
+        color = new Color32(0x9D, 0xCA, 0xFF, 0xFF);
+        return true;
+      case "Left1":
+      case "LeftF1":
+      case "Wall F1Left":
+        color = new Color32(0x7F, 0xD3, 0xFF, 0xFF);
+        return true;
+      case "Left2":
+      case "LeftF2":
+      case "Wall F2Left":
+        color = new Color32(0x2F, 0xA8, 0xFF, 0xFF);
+        return true;
+      case "Left3":
+      case "LeftF3":
+      case "Wall F3Left":
+        color = new Color32(0x17, 0x6A, 0xA5, 0xFF);
+        return true;
+      case "Front1":
+      case "FrontF1":
+      case "Front Wall F1":
+        color = new Color32(0x79, 0xD9, 0x96, 0xFF);
+        return true;
+      case "Front2":
+      case "FrontF2":
+      case "Front Wall F2":
+        color = new Color32(0x4F, 0xB8, 0x74, 0xFF);
+        return true;
+      case "Front3":
+      case "FrontF3":
+      case "Front Wall F3":
+        color = new Color32(0x33, 0x89, 0x5A, 0xFF);
+        return true;
+      case "Right0":
+      case "RightF0":
+      case "Wall F0Right":
+        color = new Color32(0xFF, 0xD1, 0xA1, 0xFF);
+        return true;
+      case "Right1":
+      case "RightF1":
+      case "Wall F1Right":
+        color = new Color32(0xFF, 0xB8, 0x70, 0xFF);
+        return true;
+      case "Right2":
+      case "RightF2":
+      case "Wall F2Right":
+        color = new Color32(0xE8, 0x95, 0x45, 0xFF);
+        return true;
+      case "Right3":
+      case "RightF3":
+      case "Wall F3Right":
+        color = new Color32(0xB9, 0x6A, 0x22, 0xFF);
+        return true;
+      case "LeftD3":
+      case "Wall D3L2":
+      case "RightD3":
+      case "Wall D3R2":
+        color = new Color32(0x9B, 0x6F, 0xD1, 0xFF);
+        return true;
+      default:
+        return false;
+    }
   }
 
   private void SelectPiece(int index)
@@ -1570,17 +1684,6 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.Space();
     EditorGUILayout.LabelField(
         previewX + " X /" + previewY + " Y - " + previewFacing);
-
-    using (new EditorGUI.DisabledScope(Application.isPlaying))
-    {
-      EditorGUILayout.BeginHorizontal();
-      if (GUILayout.Button("Disable Walls"))
-      {
-        DisableWallsKeepChrome();
-        PersistChanges();
-      }
-      EditorGUILayout.EndHorizontal();
-    }
 
     DrawPreviewMiniMap();
   }
