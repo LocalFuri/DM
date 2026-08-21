@@ -268,6 +268,8 @@ public class ViewportLayoutEditor : EditorWindow
     if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
       Focus();
 
+    HandleViewEditRightClickHome();
+
     // Arrow Up/Down must be handled before BeginScrollView — otherwise the
     // scroll view consumes them for scrolling and HandlePreviewMoveKeyboard
     // never sees a usable KeyDown (Left/Right strafe is unaffected).
@@ -562,6 +564,28 @@ public class ViewportLayoutEditor : EditorWindow
     return true;
   }
 
+  /// <summary>
+  /// Right-click anywhere in ViewEdit scrolls to the top and clears Search
+  /// Pieces so the full piece list is shown. Does not change Enabled flags.
+  /// </summary>
+  private void HandleViewEditRightClickHome()
+  {
+    Event current = Event.current;
+    if (current == null)
+      return;
+
+    bool rightPressed =
+        current.type == EventType.MouseDown && current.button == 1;
+    if (!rightPressed && current.type != EventType.ContextClick)
+      return;
+
+    editorScroll = Vector2.zero;
+    pieceSearchFilter = string.Empty;
+    GUI.FocusControl(null);
+    current.Use();
+    Repaint();
+  }
+
   private void HandlePieceSearchKeyboard()
   {
     Event current = Event.current;
@@ -614,15 +638,29 @@ public class ViewportLayoutEditor : EditorWindow
     piece.Name = EditorGUILayout.TextField("Name", piece.Name);
 
     EditorGUILayout.BeginHorizontal();
-    piece.Enabled = EditorGUILayout.Toggle("Enabled", piece.Enabled);
+    GUILayout.FlexibleSpace();
+    float previousLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth = 55f;
+    piece.Enabled = EditorGUILayout.Toggle(
+        "Enabled",
+        piece.Enabled,
+        GUILayout.Width(72));
     bool nameOrEnabledChanged = EditorGUI.EndChangeCheck();
 
     // Mirror is outside the Name/Enabled/Graphic change-check so SelectPiece →
     // FocusControl(null) cannot swallow the Toggle or skip the live refresh.
     bool mirrorBefore = piece.MirrorHorizontally;
+    GUILayout.FlexibleSpace();
+    const string MirrorLabel = "Mirror Horizontally";
+    float mirrorLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
+    EditorGUIUtility.labelWidth = mirrorLabelWidth;
     piece.MirrorHorizontally = EditorGUILayout.Toggle(
-        "Mirror Horizontally",
-        piece.MirrorHorizontally);
+        MirrorLabel,
+        piece.MirrorHorizontally,
+        GUILayout.Width(mirrorLabelWidth + 18f),
+        GUILayout.ExpandWidth(false));
+    EditorGUIUtility.labelWidth = previousLabelWidth;
     EditorGUILayout.EndHorizontal();
 
     EditorGUI.BeginChangeCheck();
