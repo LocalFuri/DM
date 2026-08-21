@@ -29,8 +29,15 @@ public class ViewportLayoutEditor : EditorWindow
 
   private const int PreviewWidth = 320;
   private const int PreviewHeight = 200;
-  private const string SearchPiecesControlName =
-      "ViewportLayoutEditor.SearchPieces";
+  private static readonly string[] PieceSearchFamilyOptions =
+  {
+    "",
+    "Front",
+    "Left",
+    "Right",
+    "LeftD3",
+    "RightD3",
+  };
 
   /// <summary>
   /// Locked (1,2) South kit Enabled baseline for ViewportLayout.asset disk writes.
@@ -73,7 +80,7 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private ViewportPoseVisibilityStore poseVisibilityStore;
   private Vector2 editorScroll;
-  private string pieceSearchFilter = string.Empty;
+  private int pieceSearchFamilyIndex;
   private GUIStyle searchPiecesLabelStyle;
   private GUIStyle pieceFamilyHeaderStyle;
   private bool[] rememberedEnabledStates;
@@ -260,7 +267,6 @@ public class ViewportLayoutEditor : EditorWindow
   {
     selectionChangedThisFrame = false;
     previewPoseChangedByKeyboardThisFrame = false;
-    bool searchPiecesLeftClicked = false;
 
     // Claim EditorWindow focus on click so existing keyboard nav can run.
     // Do not clear GUI.FocusControl here — a TextField/IntField on this
@@ -331,25 +337,15 @@ public class ViewportLayoutEditor : EditorWindow
       EditorGUILayout.BeginHorizontal();
       EditorGUILayout.PrefixLabel(
           "Search Pieces",
-          GUI.skin.textField,
+          EditorStyles.popup,
           GetSearchPiecesLabelStyle());
-      Rect searchPiecesRect = EditorGUILayout.GetControlRect();
-      searchPiecesLeftClicked =
-          TryClearPieceSearchFilterOnLeftClick(searchPiecesRect);
-      GUI.SetNextControlName(SearchPiecesControlName);
       bool guiChangedBeforeSearch = GUI.changed;
-      pieceSearchFilter = EditorGUI.TextField(
-          searchPiecesRect,
-          pieceSearchFilter);
+      pieceSearchFamilyIndex = EditorGUILayout.Popup(
+          pieceSearchFamilyIndex,
+          PieceSearchFamilyOptions,
+          EditorStyles.popup);
       // Search is a list filter only — never treat it as a layout persist.
       GUI.changed = guiChangedBeforeSearch;
-      if (searchPiecesLeftClicked)
-      {
-        EditorGUI.FocusTextInControl(SearchPiecesControlName);
-        GUI.FocusControl(SearchPiecesControlName);
-        Repaint();
-      }
-
       EditorGUILayout.EndHorizontal();
       HandlePieceSearchKeyboard();
 
@@ -379,11 +375,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Click on empty / non-control area: release leftover text-field focus
     // so keyboard nav works. Controls that consume MouseDown (TextField,
-    // IntField, buttons) are left alone here. A left-click in Search Pieces
-    // must keep keyboard focus in that field.
-    if (Event.current.type == EventType.MouseDown
-        && Event.current.button == 0
-        && !searchPiecesLeftClicked)
+    // IntField, buttons) are left alone here.
+    if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
     {
       GUI.FocusControl(null);
       Focus();
@@ -495,17 +488,44 @@ public class ViewportLayoutEditor : EditorWindow
 
   private bool PieceMatchesSearchFilter(ViewportPiece piece)
   {
-    if (string.IsNullOrWhiteSpace(pieceSearchFilter))
+    if (pieceSearchFamilyIndex <= 0
+        || pieceSearchFamilyIndex >= PieceSearchFamilyOptions.Length)
+    {
       return true;
+    }
 
+    return PieceMatchesSearchFamily(
+        piece,
+        PieceSearchFamilyOptions[pieceSearchFamilyIndex]);
+  }
+
+  /// <summary>
+  /// Exact family filters for the Search Pieces dropdown. Prefixes use FrontF /
+  /// LeftF / RightF so LeftD3 and RightD3 are not included in Left / Right.
+  /// </summary>
+  private static bool PieceMatchesSearchFamily(
+      ViewportPiece piece,
+      string family)
+  {
     if (piece == null)
       return false;
 
     string name = piece.Name ?? string.Empty;
-    return name.IndexOf(
-               pieceSearchFilter.Trim(),
-               System.StringComparison.OrdinalIgnoreCase)
-           >= 0;
+    switch (family)
+    {
+      case "Front":
+        return name.StartsWith("FrontF", System.StringComparison.Ordinal);
+      case "Left":
+        return name.StartsWith("LeftF", System.StringComparison.Ordinal);
+      case "Right":
+        return name.StartsWith("RightF", System.StringComparison.Ordinal);
+      case "LeftD3":
+        return name == "LeftD3";
+      case "RightD3":
+        return name == "RightD3";
+      default:
+        return true;
+    }
   }
 
   private GUIStyle GetSearchPiecesLabelStyle()
@@ -544,27 +564,6 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Left-click inside the Search Pieces edit box clears the filter text so
-  /// the full editor piece list is shown again. Does not change stored
-  /// piece Enabled flags.
-  /// </summary>
-  private bool TryClearPieceSearchFilterOnLeftClick(Rect searchRect)
-  {
-    Event current = Event.current;
-    if (current.type != EventType.MouseDown || current.button != 0)
-      return false;
-
-    if (!searchRect.Contains(current.mousePosition))
-      return false;
-
-    pieceSearchFilter = string.Empty;
-    // Drop any in-progress TextField edit buffer so the next draw shows
-    // the cleared string. Keyboard focus is restored after the field is drawn.
-    GUI.FocusControl(null);
-    return true;
-  }
-
-  /// <summary>
   /// Right-click anywhere in ViewEdit scrolls to the top and clears Search
   /// Pieces so the full piece list is shown. Does not change Enabled flags.
   /// </summary>
@@ -580,7 +579,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     editorScroll = Vector2.zero;
-    pieceSearchFilter = string.Empty;
+    pieceSearchFamilyIndex = 0;
     GUI.FocusControl(null);
     current.Use();
     Repaint();
@@ -598,10 +597,10 @@ public class ViewportLayoutEditor : EditorWindow
     if (current.keyCode != KeyCode.Escape)
       return;
 
-    if (string.IsNullOrEmpty(pieceSearchFilter))
+    if (pieceSearchFamilyIndex == 0)
       return;
 
-    pieceSearchFilter = string.Empty;
+    pieceSearchFamilyIndex = 0;
     current.Use();
     GUI.FocusControl(null);
     Repaint();

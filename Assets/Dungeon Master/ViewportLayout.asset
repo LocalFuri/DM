@@ -20,7 +20,7 @@ MonoBehaviour:
     X: 0
     Y: 128
     Enabled: 1
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: Ceiling Strip 84
