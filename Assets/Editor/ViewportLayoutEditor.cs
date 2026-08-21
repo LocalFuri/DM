@@ -1602,14 +1602,6 @@ public class ViewportLayoutEditor : EditorWindow
   private void DrawMapPosePreviewControls()
   {
     EditorGUILayout.Space();
-    EditorGUILayout.LabelField(
-        "Map Pose Preview",
-        EditorStyles.boldLabel);
-    EditorGUILayout.HelpBox(
-        "Preview X / Y / Facing select an independent pose. "
-            + "Enabled, Mirror, F1/F2 width, and Pose Offset X/Y are stored "
-            + "per X+Y+Facing; Graphic / X / Y / order stay on ViewportLayout.",
-        MessageType.None);
 
     int editX = previewX;
     int editY = previewY;
