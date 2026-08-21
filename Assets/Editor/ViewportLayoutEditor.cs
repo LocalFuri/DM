@@ -306,7 +306,6 @@ public class ViewportLayoutEditor : EditorWindow
     ClampSelectedPieceIndex();
 
     DrawMapPosePreviewControls();
-    DrawF3RightNarrowStripTestToggle();
 
     using (new EditorGUI.DisabledScope(!layoutEditable))
     {
@@ -316,15 +315,6 @@ public class ViewportLayoutEditor : EditorWindow
         Undo.RecordObject(layout, "Viewport Layout Change");
 
       DrawSnapToolbar();
-
-      using (new EditorGUI.DisabledScope(rememberedEnabledStates == null))
-      {
-        if (GUILayout.Button("Restore Enabled States"))
-        {
-          RestoreEnabledStates();
-          PersistChanges();
-        }
-      }
 
       EditorGUILayout.Space();
       EditorGUILayout.BeginHorizontal();
@@ -1573,30 +1563,6 @@ public class ViewportLayoutEditor : EditorWindow
       if (window != null && window.GetType().Name == "GameView")
         window.Repaint();
     }
-  }
-
-  private void DrawF3RightNarrowStripTestToggle()
-  {
-    EditorGUILayout.Space();
-    EditorGUILayout.LabelField(
-        "TEMP F3Right 31px strip test",
-        EditorStyles.boldLabel);
-    EditorGUI.BeginChangeCheck();
-    bool enabled = EditorGUILayout.Toggle(
-        "Show cropped F3Right strip",
-        F3RightNarrowStripTest.Enabled);
-    if (EditorGUI.EndChangeCheck())
-    {
-      F3RightNarrowStripTest.Enabled = enabled;
-      RefreshEditModePreview();
-      RefreshDungeonRenderer();
-    }
-
-    EditorGUILayout.HelpBox(
-        "SOURCE x 0..30 (31px, left edge of Wall F3Right, full height) "
-            + "placed 1:1 at the authored Wall F3Right X. No stretch. "
-            + "Clipped to dungeon X 0..223. Original texture unchanged.",
-        MessageType.Info);
   }
 
   private void DrawMapPosePreviewControls()
