@@ -351,8 +351,6 @@ public class ViewportLayoutEditor : EditorWindow
       EditorGUILayout.EndHorizontal();
       HandlePieceSearchKeyboard();
 
-      EditorGUILayout.LabelField("Pieces (render order)", EditorStyles.boldLabel);
-
       if (layoutEditable)
         StripObsoleteFrontWallF1ABPieces();
 
@@ -614,13 +612,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUI.BeginChangeCheck();
     piece.Name = EditorGUILayout.TextField("Name", piece.Name);
+
+    EditorGUILayout.BeginHorizontal();
     piece.Enabled = EditorGUILayout.Toggle("Enabled", piece.Enabled);
-    piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup("Graphic", piece.Graphic);
-    if (EditorGUI.EndChangeCheck())
-    {
-      SelectPiece(index);
-      changed = true;
-    }
+    bool nameOrEnabledChanged = EditorGUI.EndChangeCheck();
 
     // Mirror is outside the Name/Enabled/Graphic change-check so SelectPiece →
     // FocusControl(null) cannot swallow the Toggle or skip the live refresh.
@@ -628,6 +623,15 @@ public class ViewportLayoutEditor : EditorWindow
     piece.MirrorHorizontally = EditorGUILayout.Toggle(
         "Mirror Horizontally",
         piece.MirrorHorizontally);
+    EditorGUILayout.EndHorizontal();
+
+    EditorGUI.BeginChangeCheck();
+    piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup("Graphic", piece.Graphic);
+    if (EditorGUI.EndChangeCheck() || nameOrEnabledChanged)
+    {
+      SelectPiece(index);
+      changed = true;
+    }
 
     if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
     {
@@ -1691,7 +1695,6 @@ public class ViewportLayoutEditor : EditorWindow
   private void DrawPreviewMiniMap()
   {
     EditorGUILayout.Space();
-    EditorGUILayout.LabelField("Mini-map", EditorStyles.boldLabel);
 
     EnsurePreviewMiniMapLoaded();
 
