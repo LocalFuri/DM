@@ -57,7 +57,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -127,7 +127,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -162,7 +162,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -296,7 +296,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -331,7 +331,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -366,7 +366,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -401,7 +401,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -471,7 +471,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -506,7 +506,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -576,7 +576,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -646,7 +646,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -681,7 +681,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -807,8 +807,8 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001000000000000000000000000000101010101000000
-    MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
+    EnabledFlags: 01000001000101000000010100010100010101010101000000
+    MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
     OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
@@ -821,7 +821,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -842,7 +842,7 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001000101000000010000010101010101010101000000
+    EnabledFlags: 01000001000101000000010100010101010101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -961,7 +961,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -982,11 +982,11 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001000101000000010000010101010101010101000000
+    EnabledFlags: 01000001000000000000000001000000000101010101000000
     MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-    FrontWallF1Width: 191
+    FrontWallF1Width: 224
     FrontWallF2Width: 106
   - X: 4
     Y: 2
@@ -999,6 +999,8 @@ MonoBehaviour:
     - FrontF3
     - LeftF3
     - RightF3
+    - LeftD3
+    - RightD3
     - FrontF2
     - LeftF2
     - RightF2
@@ -1012,11 +1014,14 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    EnabledFlags: 0100000100010100010000010101010101010101
-    MirrorHorizontallyFlags: 0100000000000000000000000000000000000000
-    OffsetX: 
-    OffsetY: 
-    FrontWallF1Width: 191
+    - Black Door Frame Left
+    - Black Door Frame Right
+    - Black Door
+    EnabledFlags: 01000001000000000000000001000000000101010101000000
+    MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
+    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    FrontWallF1Width: 224
     FrontWallF2Width: 106
   - X: 4
     Y: 2
@@ -1056,7 +1061,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1091,7 +1096,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1126,7 +1131,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1161,7 +1166,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1286,7 +1291,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1321,7 +1326,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1356,7 +1361,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1421,7 +1426,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1456,7 +1461,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1557,7 +1562,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1627,7 +1632,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1662,7 +1667,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1683,8 +1688,8 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001000101000000010000010101010101010101000000
-    MirrorHorizontallyFlags: 00000000000000000000000000000000000000000000000000
+    EnabledFlags: 01000001000101000000000100010101000101010101000000
+    MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
     OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
@@ -1697,7 +1702,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1732,7 +1737,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1753,8 +1758,8 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001000101000000010000010101010101010101000000
-    MirrorHorizontallyFlags: 00000000000000000000000000000000000000000000000000
+    EnabledFlags: 01000001010000000000010000010101010101010101000000
+    MirrorHorizontallyFlags: 00000001010000000000000000000000000000000000000000
     OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
@@ -1767,7 +1772,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1802,7 +1807,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1837,7 +1842,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1872,7 +1877,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1907,7 +1912,7 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -1963,11 +1968,11 @@ MonoBehaviour:
     - Black Door Frame Left
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001000000000000000000000000000101010101000000
-    MirrorHorizontallyFlags: 00000000000000000000000000000000000000000000000000
+    EnabledFlags: 01000001000000000000000001000000000101010101000000
+    MirrorHorizontallyFlags: 01000000000000000000000001000000000000000000000000
     OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-    FrontWallF1Width: 191
+    FrontWallF1Width: 224
     FrontWallF2Width: 106
   - X: 4
     Y: 2
@@ -1977,7 +1982,42 @@ MonoBehaviour:
     - Ceiling Strip 84
     - Ceiling Strip 85
     - Floor
-    - d
+    - FrontF3
+    - LeftF3
+    - RightF3
+    - LeftD3
+    - RightD3
+    - FrontF2
+    - LeftF2
+    - RightF2
+    - FrontF1
+    - LeftF1
+    - RightF1
+    - LeftF0
+    - RightF0
+    - Movement Arrows
+    - Champion Status Slot 1
+    - Champion Status Slot 2
+    - Champion Status Slot 3
+    - Champion Status Slot 4
+    - Black Door Frame Left
+    - Black Door Frame Right
+    - Black Door
+    EnabledFlags: 01000001000000000000000000010001010101010101000000
+    MirrorHorizontallyFlags: 00000000000000000000000000000000000000000000000000
+    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    FrontWallF1Width: 191
+    FrontWallF2Width: 106
+  - X: 4
+    Y: 3
+    Facing: 2
+    PieceNames:
+    - Ceiling
+    - Ceiling Strip 84
+    - Ceiling Strip 85
+    - Floor
+    - FrontF3
     - LeftF3
     - RightF3
     - LeftD3
@@ -2003,4 +2043,249 @@ MonoBehaviour:
     OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
+    FrontWallF2Width: 106
+  - X: 4
+    Y: 4
+    Facing: 2
+    PieceNames:
+    - Ceiling
+    - Ceiling Strip 84
+    - Ceiling Strip 85
+    - Floor
+    - FrontF3
+    - LeftF3
+    - RightF3
+    - LeftD3
+    - RightD3
+    - FrontF2
+    - LeftF2
+    - RightF2
+    - FrontF1
+    - LeftF1
+    - RightF1
+    - LeftF0
+    - RightF0
+    - Movement Arrows
+    - Champion Status Slot 1
+    - Champion Status Slot 2
+    - Champion Status Slot 3
+    - Champion Status Slot 4
+    - Black Door Frame Left
+    - Black Door Frame Right
+    - Black Door
+    EnabledFlags: 01000001000000000000000000000000000101010101000000
+    MirrorHorizontallyFlags: 00000000000000000000000000000000000000000000000000
+    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    FrontWallF1Width: 191
+    FrontWallF2Width: 106
+  - X: 4
+    Y: 5
+    Facing: 2
+    PieceNames:
+    - Ceiling
+    - Ceiling Strip 84
+    - Ceiling Strip 85
+    - Floor
+    - FrontF3
+    - LeftF3
+    - RightF3
+    - LeftD3
+    - RightD3
+    - FrontF2
+    - LeftF2
+    - RightF2
+    - FrontF1
+    - LeftF1
+    - RightF1
+    - LeftF0
+    - RightF0
+    - Movement Arrows
+    - Champion Status Slot 1
+    - Champion Status Slot 2
+    - Champion Status Slot 3
+    - Champion Status Slot 4
+    - Black Door Frame Left
+    - Black Door Frame Right
+    - Black Door
+    EnabledFlags: 01000001000000000000000000000000000101010101000000
+    MirrorHorizontallyFlags: 00000000000000000000000000000000000000000000000000
+    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    FrontWallF1Width: 191
+    FrontWallF2Width: 106
+  - X: 4
+    Y: 6
+    Facing: 2
+    PieceNames:
+    - Ceiling
+    - Ceiling Strip 84
+    - Ceiling Strip 85
+    - Floor
+    - FrontF3
+    - LeftF3
+    - RightF3
+    - LeftD3
+    - RightD3
+    - FrontF2
+    - LeftF2
+    - RightF2
+    - FrontF1
+    - LeftF1
+    - RightF1
+    - LeftF0
+    - RightF0
+    - Movement Arrows
+    - Champion Status Slot 1
+    - Champion Status Slot 2
+    - Champion Status Slot 3
+    - Champion Status Slot 4
+    - Black Door Frame Left
+    - Black Door Frame Right
+    - Black Door
+    EnabledFlags: 01000001000000000000000000000000000101010101000000
+    MirrorHorizontallyFlags: 00000000000000000000000000000000000000000000000000
+    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    FrontWallF1Width: 191
+    FrontWallF2Width: 106
+  - X: 4
+    Y: 6
+    Facing: 3
+    PieceNames:
+    - Ceiling
+    - Ceiling Strip 84
+    - Ceiling Strip 85
+    - Floor
+    - FrontF3
+    - LeftF3
+    - RightF3
+    - LeftD3
+    - RightD3
+    - FrontF2
+    - LeftF2
+    - RightF2
+    - FrontF1
+    - LeftF1
+    - RightF1
+    - LeftF0
+    - RightF0
+    - Movement Arrows
+    - Champion Status Slot 1
+    - Champion Status Slot 2
+    - Champion Status Slot 3
+    - Champion Status Slot 4
+    - Black Door Frame Left
+    - Black Door Frame Right
+    - Black Door
+    EnabledFlags: 01000001000000000000000001000000000101010101000000
+    MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
+    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    FrontWallF1Width: 224
+    FrontWallF2Width: 106
+  - X: 4
+    Y: 5
+    Facing: 3
+    PieceNames:
+    - Ceiling
+    - Ceiling Strip 84
+    - Ceiling Strip 85
+    - Floor
+    - FrontF3
+    - LeftF3
+    - RightF3
+    - LeftD3
+    - RightD3
+    - FrontF2
+    - LeftF2
+    - RightF2
+    - FrontF1
+    - LeftF1
+    - RightF1
+    - LeftF0
+    - RightF0
+    - Movement Arrows
+    - Champion Status Slot 1
+    - Champion Status Slot 2
+    - Champion Status Slot 3
+    - Champion Status Slot 4
+    - Black Door Frame Left
+    - Black Door Frame Right
+    - Black Door
+    EnabledFlags: 01000001000000000000000001000000000101010101000000
+    MirrorHorizontallyFlags: 01000000000000000000000001000000000000000000000000
+    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    FrontWallF1Width: 224
+    FrontWallF2Width: 106
+  - X: 4
+    Y: 4
+    Facing: 3
+    PieceNames:
+    - Ceiling
+    - Ceiling Strip 84
+    - Ceiling Strip 85
+    - Floor
+    - FrontF3
+    - LeftF3
+    - RightF3
+    - LeftD3
+    - RightD3
+    - FrontF2
+    - LeftF2
+    - RightF2
+    - FrontF1
+    - LeftF1
+    - RightF1
+    - LeftF0
+    - RightF0
+    - Movement Arrows
+    - Champion Status Slot 1
+    - Champion Status Slot 2
+    - Champion Status Slot 3
+    - Champion Status Slot 4
+    - Black Door Frame Left
+    - Black Door Frame Right
+    - Black Door
+    EnabledFlags: 01000001000000000000000001000000000101010101000000
+    MirrorHorizontallyFlags: 00000001000000000000000000000000000000000000000000
+    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    FrontWallF1Width: 224
+    FrontWallF2Width: 106
+  - X: 4
+    Y: 3
+    Facing: 3
+    PieceNames:
+    - Ceiling
+    - Ceiling Strip 84
+    - Ceiling Strip 85
+    - Floor
+    - FrontF3
+    - LeftF3
+    - RightF3
+    - LeftD3
+    - RightD3
+    - FrontF2
+    - LeftF2
+    - RightF2
+    - FrontF1
+    - LeftF1
+    - RightF1
+    - LeftF0
+    - RightF0
+    - Movement Arrows
+    - Champion Status Slot 1
+    - Champion Status Slot 2
+    - Champion Status Slot 3
+    - Champion Status Slot 4
+    - Black Door Frame Left
+    - Black Door Frame Right
+    - Black Door
+    EnabledFlags: 01000001000000000000000001000000000101010101000000
+    MirrorHorizontallyFlags: 01000000000000000000000000000000000000000000000000
+    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    FrontWallF1Width: 224
     FrontWallF2Width: 106

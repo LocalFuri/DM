@@ -325,15 +325,6 @@ public class ViewportLayoutEditor : EditorWindow
 
       DrawSnapToolbar();
 
-      EditorGUILayout.Space();
-      EditorGUILayout.BeginHorizontal();
-      if (GUILayout.Button("Disable Walls"))
-      {
-        DisableWallsKeepChrome();
-        PersistChanges();
-      }
-      EditorGUILayout.EndHorizontal();
-
       EditorGUILayout.BeginHorizontal();
       EditorGUILayout.PrefixLabel(
           "Search Pieces",
@@ -1653,6 +1644,13 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       GUI.backgroundColor = previousColor;
+    }
+
+    GUILayout.FlexibleSpace();
+    if (GUILayout.Button("Disable Walls", GUILayout.ExpandWidth(false)))
+    {
+      DisableWallsKeepChrome();
+      PersistChanges();
     }
 
     EditorGUILayout.EndHorizontal();
