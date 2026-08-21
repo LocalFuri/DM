@@ -81,6 +81,7 @@ public class ViewportLayoutEditor : EditorWindow
   private ViewportPoseVisibilityStore poseVisibilityStore;
   private Vector2 editorScroll;
   private int pieceSearchFamilyIndex;
+  private bool openSearchPiecesPopup;
   private GUIStyle searchPiecesLabelStyle;
   private GUIStyle pieceFamilyHeaderStyle;
   private bool[] rememberedEnabledStates;
@@ -331,12 +332,23 @@ public class ViewportLayoutEditor : EditorWindow
           EditorStyles.popup,
           GetSearchPiecesLabelStyle());
       bool guiChangedBeforeSearch = GUI.changed;
-      pieceSearchFamilyIndex = EditorGUILayout.Popup(
+      Rect searchPiecesPopupRect = EditorGUILayout.GetControlRect();
+      pieceSearchFamilyIndex = EditorGUI.Popup(
+          searchPiecesPopupRect,
           pieceSearchFamilyIndex,
           PieceSearchFamilyOptions,
           EditorStyles.popup);
       // Search is a list filter only — never treat it as a layout persist.
       GUI.changed = guiChangedBeforeSearch;
+      if (openSearchPiecesPopup && Event.current.type != EventType.Layout)
+      {
+        openSearchPiecesPopup = false;
+        bool previousEnabled = GUI.enabled;
+        GUI.enabled = true;
+        ShowSearchPiecesFamilyMenu(searchPiecesPopupRect);
+        GUI.enabled = previousEnabled;
+      }
+
       EditorGUILayout.EndHorizontal();
       HandlePieceSearchKeyboard();
 
@@ -571,9 +583,33 @@ public class ViewportLayoutEditor : EditorWindow
 
     editorScroll = Vector2.zero;
     pieceSearchFamilyIndex = 0;
+    openSearchPiecesPopup = true;
     GUI.FocusControl(null);
     current.Use();
     Repaint();
+  }
+
+  private void ShowSearchPiecesFamilyMenu(Rect popupRect)
+  {
+    GenericMenu menu = new GenericMenu();
+    for (int i = 0; i < PieceSearchFamilyOptions.Length; i++)
+    {
+      string label = PieceSearchFamilyOptions[i];
+      if (string.IsNullOrEmpty(label))
+        continue;
+
+      int index = i;
+      menu.AddItem(
+          new GUIContent(label),
+          false,
+          () =>
+          {
+            pieceSearchFamilyIndex = index;
+            Repaint();
+          });
+    }
+
+    menu.DropDown(popupRect);
   }
 
   private void HandlePieceSearchKeyboard()
