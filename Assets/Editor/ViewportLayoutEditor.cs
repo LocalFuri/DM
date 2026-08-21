@@ -29,6 +29,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   private const int PreviewWidth = 320;
   private const int PreviewHeight = 200;
+  private const string SearchPiecesControlName =
+      "ViewportLayoutEditor.SearchPieces";
 
   /// <summary>
   /// Locked (1,2) South kit Enabled baseline for ViewportLayout.asset disk writes.
@@ -257,6 +259,7 @@ public class ViewportLayoutEditor : EditorWindow
   {
     selectionChangedThisFrame = false;
     previewPoseChangedByKeyboardThisFrame = false;
+    bool searchPiecesLeftClicked = false;
 
     // Claim EditorWindow focus on click so existing keyboard nav can run.
     // Do not clear GUI.FocusControl here — a TextField/IntField on this
@@ -362,7 +365,23 @@ public class ViewportLayoutEditor : EditorWindow
           "Search Pieces",
           GUI.skin.textField,
           GetSearchPiecesLabelStyle());
-      pieceSearchFilter = EditorGUILayout.TextField(pieceSearchFilter);
+      Rect searchPiecesRect = EditorGUILayout.GetControlRect();
+      searchPiecesLeftClicked =
+          TryClearPieceSearchFilterOnLeftClick(searchPiecesRect);
+      GUI.SetNextControlName(SearchPiecesControlName);
+      bool guiChangedBeforeSearch = GUI.changed;
+      pieceSearchFilter = EditorGUI.TextField(
+          searchPiecesRect,
+          pieceSearchFilter);
+      // Search is a list filter only — never treat it as a layout persist.
+      GUI.changed = guiChangedBeforeSearch;
+      if (searchPiecesLeftClicked)
+      {
+        EditorGUI.FocusTextInControl(SearchPiecesControlName);
+        GUI.FocusControl(SearchPiecesControlName);
+        Repaint();
+      }
+
       EditorGUILayout.EndHorizontal();
       HandlePieceSearchKeyboard();
 
@@ -394,8 +413,11 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Click on empty / non-control area: release leftover text-field focus
     // so keyboard nav works. Controls that consume MouseDown (TextField,
-    // IntField, buttons) are left alone here.
-    if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
+    // IntField, buttons) are left alone here. A left-click in Search Pieces
+    // must keep keyboard focus in that field.
+    if (Event.current.type == EventType.MouseDown
+        && Event.current.button == 0
+        && !searchPiecesLeftClicked)
     {
       GUI.FocusControl(null);
       Focus();
@@ -536,6 +558,27 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return searchPiecesLabelStyle;
+  }
+
+  /// <summary>
+  /// Left-click inside the Search Pieces edit box clears the filter text so
+  /// the full editor piece list is shown again. Does not change stored
+  /// piece Enabled flags.
+  /// </summary>
+  private bool TryClearPieceSearchFilterOnLeftClick(Rect searchRect)
+  {
+    Event current = Event.current;
+    if (current.type != EventType.MouseDown || current.button != 0)
+      return false;
+
+    if (!searchRect.Contains(current.mousePosition))
+      return false;
+
+    pieceSearchFilter = string.Empty;
+    // Drop any in-progress TextField edit buffer so the next draw shows
+    // the cleared string. Keyboard focus is restored after the field is drawn.
+    GUI.FocusControl(null);
+    return true;
   }
 
   private void HandlePieceSearchKeyboard()
