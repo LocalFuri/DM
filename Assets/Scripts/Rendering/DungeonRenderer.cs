@@ -2260,6 +2260,7 @@ namespace DM.Rendering
 
       DungeonGraphicType drawGraphic = piece.Graphic;
       bool? f0MirrorOverride = null;
+      bool? f1LeftMirrorOverride = null;
       if (currentMap != null
           && (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece)))
       {
@@ -2281,6 +2282,28 @@ namespace DM.Rendering
               : DungeonGraphicType.WallF0L;
           f0MirrorOverride = !phaseOn;
         }
+      }
+      else if (currentMap != null && IsWallF1LeftPiece(piece))
+      {
+        bool phaseOn =
+            ((currentMap.PlayerX
+                + currentMap.PlayerY
+                + (int)currentMap.PlayerFacing) & 1) == 0;
+        drawGraphic = phaseOn
+            ? DungeonGraphicType.WallF1R
+            : DungeonGraphicType.WallF1L;
+        f1LeftMirrorOverride = phaseOn;
+      }
+      else if (currentMap != null && IsWallF1RightPiece(piece))
+      {
+        bool phaseOn =
+            ((currentMap.PlayerX
+                + currentMap.PlayerY
+                + (int)currentMap.PlayerFacing) & 1) == 0;
+        drawGraphic = phaseOn
+            ? DungeonGraphicType.WallF1R
+            : DungeonGraphicType.WallF1L;
+        f1LeftMirrorOverride = !phaseOn;
       }
 
       Texture2D texture =
@@ -2349,7 +2372,8 @@ namespace DM.Rendering
         }
       }
 
-      bool mirror = f0MirrorOverride
+      bool mirror = f1LeftMirrorOverride
+          ?? f0MirrorOverride
           ?? GetEffectiveEnvironmentMirror(piece);
       int destX = piece.EffectiveX;
       int destY = piece.EffectiveY + dungeonDrawOffsetY;
@@ -2482,6 +2506,28 @@ namespace DM.Rendering
         return true;
 
       return piece.Graphic == DungeonGraphicType.WallF0R;
+    }
+
+    private static bool IsWallF1LeftPiece(ViewportPiece piece)
+    {
+      if (piece == null)
+        return false;
+
+      if (piece.Name == "Wall F1Left" || piece.Name == "LeftF1")
+        return true;
+
+      return piece.Graphic == DungeonGraphicType.WallF1L;
+    }
+
+    private static bool IsWallF1RightPiece(ViewportPiece piece)
+    {
+      if (piece == null)
+        return false;
+
+      if (piece.Name == "Wall F1Right" || piece.Name == "RightF1")
+        return true;
+
+      return piece.Graphic == DungeonGraphicType.WallF1R;
     }
 
     private void ApplyFrameBuffer()
