@@ -1810,7 +1810,8 @@ namespace DM.Rendering
 
       // After ApplyRuntimePoseVisibility, Enabled matches the saved pose
       // (same gate as Edit Mode ShouldDrawPieceAtPreviewPose).
-      if (piece.Name == "Black Door Frame Left F2")
+      if (piece.Name == "Black Door Frame Left F2"
+          || piece.Name == "Black Door Frame Right F2")
       {
         if (currentMap == null)
           return false;

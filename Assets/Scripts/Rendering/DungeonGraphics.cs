@@ -70,6 +70,7 @@ namespace DM.Rendering
     public Texture2D BlackDoor;
     public Texture2D BlackDoorFrameLeft;
     public Texture2D BlackDoorFrameLeftF2;
+    public Texture2D BlackDoorFrameRightF2;
 
     public Texture2D GetTexture(DungeonGraphicType graphic)
     {
@@ -135,6 +136,10 @@ namespace DM.Rendering
           return BlackDoorFrameLeft;
         case DungeonGraphicType.BlackDoorFrameLeftF2:
           return BlackDoorFrameLeftF2;
+        case DungeonGraphicType.BlackDoorFrameRightF2:
+          return BlackDoorFrameRightF2 != null
+              ? BlackDoorFrameRightF2
+              : BlackDoorFrameLeftF2;
         default:
           return null;
       }

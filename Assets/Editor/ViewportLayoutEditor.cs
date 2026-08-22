@@ -72,7 +72,8 @@ public class ViewportLayoutEditor : EditorWindow
     // Door Enabled is pose-authored; kit default is off.
     ("Black Door Frame Left F1", false),
     ("Black Door Frame Left F2", false),
-    ("Black Door Frame Right", false),
+    ("Black Door Frame Right F1", false),
+    ("Black Door Frame Right F2", false),
     ("Black Door", false),
   };
 
@@ -3824,7 +3825,8 @@ public class ViewportLayoutEditor : EditorWindow
         if (!shouldDraw && !blackDoorF2Exception)
           continue;
 
-        if (piece.Name == "Black Door Frame Left F2"
+        if ((piece.Name == "Black Door Frame Left F2"
+                || piece.Name == "Black Door Frame Right F2")
             && (previewX != 1
                 || previewY != 4
                 || previewFacing != DungeonFacing.North))

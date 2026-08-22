@@ -58,6 +58,12 @@ namespace DM.Rendering
     /// <summary>
     /// F2 left door frame (native 18×65). (1,4) North for now.
     /// </summary>
-    BlackDoorFrameLeftF2
+    BlackDoorFrameLeftF2,
+
+    /// <summary>
+    /// F2 right door frame (native 18×65, same source as left F2).
+    /// (1,4) North for now.
+    /// </summary>
+    BlackDoorFrameRightF2
   }
 }

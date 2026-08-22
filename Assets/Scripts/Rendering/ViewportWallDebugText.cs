@@ -52,7 +52,8 @@ namespace DM.Rendering
       "Floor",
       "Black Door Frame Left F1",
       "Black Door Frame Left F2",
-      "Black Door Frame Right",
+      "Black Door Frame Right F1",
+      "Black Door Frame Right F2",
       "Black Door"
     };
 

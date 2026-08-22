@@ -255,7 +255,7 @@ MonoBehaviour:
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
-  - Name: Black Door Frame Right
+  - Name: Black Door Frame Right F1
     Graphic: 31
     X: 153
     Y: 60
@@ -263,6 +263,16 @@ MonoBehaviour:
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
     MirrorHorizontally: 0
+    FrontWallF1Width: 191
+    FrontWallF2Width: 106
+  - Name: Black Door Frame Right F2
+    Graphic: 33
+    X: 138
+    Y: 77
+    Enabled: 0
+    BlackDoorF2X: 0
+    BlackDoorF2Y: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: Black Door
