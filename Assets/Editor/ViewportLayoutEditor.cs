@@ -2036,6 +2036,7 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyFloorMirrorFromPose();
       ApplyWallF0LeftFromMapGeometry();
       ApplyWallF0RightFromMapGeometry();
+      ApplyWallF1LeftFromMapGeometry();
       return;
     }
 
@@ -2045,6 +2046,7 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyFloorMirrorFromPose();
     ApplyWallF0LeftFromMapGeometry();
     ApplyWallF0RightFromMapGeometry();
+    ApplyWallF1LeftFromMapGeometry();
   }
 
   private void PreviewNavigateTurnLeft()
@@ -2529,6 +2531,7 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyFloorMirrorFromPose();
       ApplyWallF0LeftFromMapGeometry();
       ApplyWallF0RightFromMapGeometry();
+      ApplyWallF1LeftFromMapGeometry();
       entry = poseVisibilityStore.GetOrCreateEntry(
           previewX,
           previewY,
@@ -2543,6 +2546,7 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyFloorMirrorFromPose();
     ApplyWallF0LeftFromMapGeometry();
     ApplyWallF0RightFromMapGeometry();
+    ApplyWallF1LeftFromMapGeometry();
   }
 
   /// <summary>
@@ -2684,6 +2688,44 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
 
     return piece.Graphic == DungeonGraphicType.WallF0R;
+  }
+
+  /// <summary>
+  /// Wall F1Left / LeftF1 from the map tile one step forward and one step left.
+  /// Solid/out-of-bounds → Enabled. Does not change F0, F1Right, Front F1, or mirrors.
+  /// </summary>
+  private void ApplyWallF1LeftFromMapGeometry()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    EnsurePreviewMiniMapLoaded();
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+    int tileX = previewX + forwardX - rightX;
+    int tileY = previewY + forwardY - rightY;
+    bool leftF1IsWall = previewMiniMap == null
+        || !previewMiniMap.IsInside(tileX, tileY)
+        || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (piece.Name != "Wall F1Left" && piece.Name != "LeftF1")
+        continue;
+
+      piece.Enabled = leftF1IsWall;
+      return;
+    }
   }
 
   private void PersistPoseVisibilityStore()
