@@ -44,7 +44,7 @@ MonoBehaviour:
     X: 0
     Y: 31
     Enabled: 1
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: FrontF3
@@ -117,7 +117,7 @@ MonoBehaviour:
     Y: 47
     Enabled: 0
     MirrorHorizontally: 0
-    FrontWallF1Width: 191
+    FrontWallF1Width: 224
     FrontWallF2Width: 106
   - Name: LeftF1
     Graphic: 5
@@ -204,7 +204,7 @@ MonoBehaviour:
     X: 153
     Y: 60
     Enabled: 0
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: Black Door

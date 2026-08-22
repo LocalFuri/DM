@@ -2036,11 +2036,13 @@ public class ViewportLayoutEditor : EditorWindow
             out ViewportPoseVisibilityEntry entry))
     {
       poseVisibilityStore.ApplyToLayout(entry, layout);
+      ApplyCeilingMirrorFromPose();
       return;
     }
 
     // Unknown pose: kit baseline on the live layout only — do not write store.
     ApplyUnknownPoseDefaultsToLayout();
+    ApplyCeilingMirrorFromPose();
   }
 
   private void PreviewNavigateTurnLeft()
@@ -2521,6 +2523,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       // First visit to this pose: start from safe defaults, then capture.
       ApplyUnknownPoseDefaultsToLayout();
+      ApplyCeilingMirrorFromPose();
       entry = poseVisibilityStore.GetOrCreateEntry(
           previewX,
           previewY,
@@ -2531,6 +2534,30 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     poseVisibilityStore.ApplyToLayout(entry, layout);
+    ApplyCeilingMirrorFromPose();
+  }
+
+  /// <summary>
+  /// Ceiling mirror from (1,3) North = ON. Toggles once per tile step
+  /// (forward/back/strafe) and once per 90° turn. Floor and walls unchanged.
+  /// </summary>
+  private void ApplyCeilingMirrorFromPose()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    bool mirrorOn =
+        ((previewX + previewY + (int)previewFacing) & 1) == 0;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null || piece.Name != "Ceiling")
+        continue;
+
+      piece.MirrorHorizontally = mirrorOn;
+      return;
+    }
   }
 
   private void PersistPoseVisibilityStore()
