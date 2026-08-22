@@ -2043,6 +2043,8 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyWallF3LeftFromMapGeometry();
       ApplyWallF3RightFromMapGeometry();
       ApplyFrontF1FromMapGeometry();
+      ApplyFrontF2FromMapGeometry();
+      ApplyFrontF3FromMapGeometry();
       return;
     }
 
@@ -2059,6 +2061,8 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyWallF3LeftFromMapGeometry();
     ApplyWallF3RightFromMapGeometry();
     ApplyFrontF1FromMapGeometry();
+    ApplyFrontF2FromMapGeometry();
+    ApplyFrontF3FromMapGeometry();
   }
 
   private void PreviewNavigateTurnLeft()
@@ -2550,6 +2554,8 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyWallF3LeftFromMapGeometry();
       ApplyWallF3RightFromMapGeometry();
       ApplyFrontF1FromMapGeometry();
+      ApplyFrontF2FromMapGeometry();
+      ApplyFrontF3FromMapGeometry();
       entry = poseVisibilityStore.GetOrCreateEntry(
           previewX,
           previewY,
@@ -2571,6 +2577,8 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyWallF3LeftFromMapGeometry();
     ApplyWallF3RightFromMapGeometry();
     ApplyFrontF1FromMapGeometry();
+    ApplyFrontF2FromMapGeometry();
+    ApplyFrontF3FromMapGeometry();
   }
 
   /// <summary>
@@ -2839,8 +2847,8 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Wall F2Left / LeftF2 from the map tile two steps forward and one step left.
-  /// Solid/out-of-bounds → Enabled. Does not change F0/F1, F2Right, Front F2, or mirrors.
+  /// Wall F2Left / LeftF2 from the map tile two steps forward and one step left,
+  /// but only if both tiles directly forward are open. A solid nearer wall hides F2Left.
   /// </summary>
   private void ApplyWallF2LeftFromMapGeometry()
   {
@@ -2856,11 +2864,26 @@ public class ViewportLayoutEditor : EditorWindow
         previewFacing,
         out int rightX,
         out int rightY);
-    int tileX = previewX + forwardX * 2 - rightX;
-    int tileY = previewY + forwardY * 2 - rightY;
-    bool leftF2IsWall = previewMiniMap == null
-        || !previewMiniMap.IsInside(tileX, tileY)
-        || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+
+    int front1X = previewX + forwardX;
+    int front1Y = previewY + forwardY;
+    int front2X = previewX + forwardX * 2;
+    int front2Y = previewY + forwardY * 2;
+    bool frontBlocked = previewMiniMap == null
+        || !previewMiniMap.IsInside(front1X, front1Y)
+        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(front2X, front2Y)
+        || previewMiniMap.GetTile(front2X, front2Y).Type == DungeonTileType.Wall;
+
+    bool leftF2IsWall = false;
+    if (!frontBlocked)
+    {
+      int tileX = previewX + forwardX * 2 - rightX;
+      int tileY = previewY + forwardY * 2 - rightY;
+      leftF2IsWall = previewMiniMap == null
+          || !previewMiniMap.IsInside(tileX, tileY)
+          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+    }
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -2890,8 +2913,8 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Wall F2Right / RightF2 from the map tile two steps forward and one step right.
-  /// Solid/out-of-bounds → Enabled. Does not change F2Left, Front F2, or mirrors.
+  /// Wall F2Right / RightF2 from the map tile two steps forward and one step right,
+  /// but only if both tiles directly forward are open. A solid nearer wall hides F2Right.
   /// </summary>
   private void ApplyWallF2RightFromMapGeometry()
   {
@@ -2907,11 +2930,26 @@ public class ViewportLayoutEditor : EditorWindow
         previewFacing,
         out int rightX,
         out int rightY);
-    int tileX = previewX + forwardX * 2 + rightX;
-    int tileY = previewY + forwardY * 2 + rightY;
-    bool rightF2IsWall = previewMiniMap == null
-        || !previewMiniMap.IsInside(tileX, tileY)
-        || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+
+    int front1X = previewX + forwardX;
+    int front1Y = previewY + forwardY;
+    int front2X = previewX + forwardX * 2;
+    int front2Y = previewY + forwardY * 2;
+    bool frontBlocked = previewMiniMap == null
+        || !previewMiniMap.IsInside(front1X, front1Y)
+        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(front2X, front2Y)
+        || previewMiniMap.GetTile(front2X, front2Y).Type == DungeonTileType.Wall;
+
+    bool rightF2IsWall = false;
+    if (!frontBlocked)
+    {
+      int tileX = previewX + forwardX * 2 + rightX;
+      int tileY = previewY + forwardY * 2 + rightY;
+      rightF2IsWall = previewMiniMap == null
+          || !previewMiniMap.IsInside(tileX, tileY)
+          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+    }
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -2928,8 +2966,8 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Wall F3Left / LeftF3 from the map tile three steps forward and one step left.
-  /// Solid/out-of-bounds → Enabled. Does not change F0/F1/F2, F3Right, Front F3, or mirrors.
+  /// Wall F3Left / LeftF3 from the map tile three steps forward and one step left,
+  /// but only if all three tiles directly forward are open. A nearer solid wall hides F3Left.
   /// </summary>
   private void ApplyWallF3LeftFromMapGeometry()
   {
@@ -2945,11 +2983,30 @@ public class ViewportLayoutEditor : EditorWindow
         previewFacing,
         out int rightX,
         out int rightY);
-    int tileX = previewX + forwardX * 3 - rightX;
-    int tileY = previewY + forwardY * 3 - rightY;
-    bool leftF3IsWall = previewMiniMap == null
-        || !previewMiniMap.IsInside(tileX, tileY)
-        || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+
+    int front1X = previewX + forwardX;
+    int front1Y = previewY + forwardY;
+    int front2X = previewX + forwardX * 2;
+    int front2Y = previewY + forwardY * 2;
+    int front3X = previewX + forwardX * 3;
+    int front3Y = previewY + forwardY * 3;
+    bool frontBlocked = previewMiniMap == null
+        || !previewMiniMap.IsInside(front1X, front1Y)
+        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(front2X, front2Y)
+        || previewMiniMap.GetTile(front2X, front2Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(front3X, front3Y)
+        || previewMiniMap.GetTile(front3X, front3Y).Type == DungeonTileType.Wall;
+
+    bool leftF3IsWall = false;
+    if (!frontBlocked)
+    {
+      int tileX = previewX + forwardX * 3 - rightX;
+      int tileY = previewY + forwardY * 3 - rightY;
+      leftF3IsWall = previewMiniMap == null
+          || !previewMiniMap.IsInside(tileX, tileY)
+          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+    }
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -2979,8 +3036,8 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Wall F3Right / RightF3 from the map tile three steps forward and one step right.
-  /// Solid/out-of-bounds → Enabled. Does not change F3Left, Front F3, or mirrors.
+  /// Wall F3Right / RightF3 from the map tile three steps forward and one step right,
+  /// but only if all three tiles directly forward are open. A nearer solid wall hides F3Right.
   /// </summary>
   private void ApplyWallF3RightFromMapGeometry()
   {
@@ -2996,11 +3053,30 @@ public class ViewportLayoutEditor : EditorWindow
         previewFacing,
         out int rightX,
         out int rightY);
-    int tileX = previewX + forwardX * 3 + rightX;
-    int tileY = previewY + forwardY * 3 + rightY;
-    bool rightF3IsWall = previewMiniMap == null
-        || !previewMiniMap.IsInside(tileX, tileY)
-        || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+
+    int front1X = previewX + forwardX;
+    int front1Y = previewY + forwardY;
+    int front2X = previewX + forwardX * 2;
+    int front2Y = previewY + forwardY * 2;
+    int front3X = previewX + forwardX * 3;
+    int front3Y = previewY + forwardY * 3;
+    bool frontBlocked = previewMiniMap == null
+        || !previewMiniMap.IsInside(front1X, front1Y)
+        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(front2X, front2Y)
+        || previewMiniMap.GetTile(front2X, front2Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(front3X, front3Y)
+        || previewMiniMap.GetTile(front3X, front3Y).Type == DungeonTileType.Wall;
+
+    bool rightF3IsWall = false;
+    if (!frontBlocked)
+    {
+      int tileX = previewX + forwardX * 3 + rightX;
+      int tileY = previewY + forwardY * 3 + rightY;
+      rightF3IsWall = previewMiniMap == null
+          || !previewMiniMap.IsInside(tileX, tileY)
+          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+    }
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -3059,6 +3135,100 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.Enabled = frontF1IsWall;
+      return;
+    }
+  }
+
+  /// <summary>
+  /// FrontF2 / Front Wall F2 from the map tile two steps forward, only if
+  /// the nearer forward tile is open. A solid F1 wall hides FrontF2.
+  /// </summary>
+  private void ApplyFrontF2FromMapGeometry()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    EnsurePreviewMiniMapLoaded();
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int front1X = previewX + forwardX;
+    int front1Y = previewY + forwardY;
+    bool front1Blocked = previewMiniMap == null
+        || !previewMiniMap.IsInside(front1X, front1Y)
+        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall;
+
+    bool frontF2IsWall = false;
+    if (!front1Blocked)
+    {
+      int tileX = previewX + forwardX * 2;
+      int tileY = previewY + forwardY * 2;
+      frontF2IsWall = previewMiniMap == null
+          || !previewMiniMap.IsInside(tileX, tileY)
+          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+    }
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (piece.Name != "FrontF2" && piece.Name != "Front Wall F2")
+        continue;
+
+      piece.Enabled = frontF2IsWall;
+      return;
+    }
+  }
+
+  /// <summary>
+  /// FrontF3 / Front Wall F3 from the map tile three steps forward, only if
+  /// both nearer forward tiles are open. A solid F1 or F2 wall hides FrontF3.
+  /// </summary>
+  private void ApplyFrontF3FromMapGeometry()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    EnsurePreviewMiniMapLoaded();
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int front1X = previewX + forwardX;
+    int front1Y = previewY + forwardY;
+    int front2X = previewX + forwardX * 2;
+    int front2Y = previewY + forwardY * 2;
+    bool nearerBlocked = previewMiniMap == null
+        || !previewMiniMap.IsInside(front1X, front1Y)
+        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(front2X, front2Y)
+        || previewMiniMap.GetTile(front2X, front2Y).Type == DungeonTileType.Wall;
+
+    bool frontF3IsWall = false;
+    if (!nearerBlocked)
+    {
+      int tileX = previewX + forwardX * 3;
+      int tileY = previewY + forwardY * 3;
+      frontF3IsWall = previewMiniMap == null
+          || !previewMiniMap.IsInside(tileX, tileY)
+          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+    }
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (piece.Name != "FrontF3" && piece.Name != "Front Wall F3")
+        continue;
+
+      piece.Enabled = frontF3IsWall;
       return;
     }
   }

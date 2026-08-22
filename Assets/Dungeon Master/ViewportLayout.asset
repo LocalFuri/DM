@@ -20,7 +20,7 @@ MonoBehaviour:
     X: 0
     Y: 128
     Enabled: 1
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: Ceiling Strip 84
@@ -44,7 +44,7 @@ MonoBehaviour:
     X: 0
     Y: 31
     Enabled: 1
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: FrontF3
@@ -60,7 +60,7 @@ MonoBehaviour:
     X: 6
     Y: 92
     Enabled: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: RightF3
@@ -68,7 +68,7 @@ MonoBehaviour:
     X: 135
     Y: 93
     Enabled: 0
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: LeftD3
@@ -92,7 +92,7 @@ MonoBehaviour:
     X: 60
     Y: 74
     Enabled: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: LeftF2
@@ -100,7 +100,7 @@ MonoBehaviour:
     X: 0
     Y: 72
     Enabled: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: RightF2
@@ -116,15 +116,15 @@ MonoBehaviour:
     X: 0
     Y: 47
     Enabled: 0
-    MirrorHorizontally: 0
-    FrontWallF1Width: 224
+    MirrorHorizontally: 1
+    FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: LeftF1
     Graphic: 5
     X: 0
     Y: 47
     Enabled: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: RightF1
@@ -132,7 +132,7 @@ MonoBehaviour:
     X: 165
     Y: 47
     Enabled: 0
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: LeftF0
@@ -140,7 +140,7 @@ MonoBehaviour:
     X: 0
     Y: 31
     Enabled: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: RightF0
@@ -148,7 +148,7 @@ MonoBehaviour:
     X: 192
     Y: 31
     Enabled: 0
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: Movement Arrows
