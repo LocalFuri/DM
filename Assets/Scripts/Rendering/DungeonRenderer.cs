@@ -2258,10 +2258,18 @@ namespace DM.Rendering
         return;
       }
 
+      DungeonGraphicType drawGraphic = piece.Graphic;
+      bool f0LeftForcedMirror = false;
+      if (IsWallF0LeftPiece(piece))
+      {
+        drawGraphic = DungeonGraphicType.WallF0R;
+        f0LeftForcedMirror = true;
+      }
+
       Texture2D texture =
-          FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)
+          FrontWallF2Logic.IsFrontWallF2Graphic(drawGraphic)
               ? graphics.GetFrontWallF2Texture(piece.FrontWallF2Width)
-              : graphics.GetTexture(piece.Graphic);
+              : graphics.GetTexture(drawGraphic);
 
       if (texture == null)
       {
@@ -2325,6 +2333,8 @@ namespace DM.Rendering
       }
 
       bool mirror = GetEffectiveEnvironmentMirror(piece);
+      if (f0LeftForcedMirror)
+        mirror = true;
       int destX = piece.EffectiveX;
       int destY = piece.EffectiveY + dungeonDrawOffsetY;
 
@@ -2434,6 +2444,17 @@ namespace DM.Rendering
         return false;
 
       return piece.MirrorHorizontally;
+    }
+
+    private static bool IsWallF0LeftPiece(ViewportPiece piece)
+    {
+      if (piece == null)
+        return false;
+
+      if (piece.Name == "Wall F0Left" || piece.Name == "LeftF0")
+        return true;
+
+      return piece.Graphic == DungeonGraphicType.WallF0L;
     }
 
     private void ApplyFrameBuffer()

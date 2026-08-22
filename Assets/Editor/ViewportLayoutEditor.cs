@@ -2035,6 +2035,7 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyCeilingMirrorFromPose();
       ApplyFloorMirrorFromPose();
       ApplyWallF0LeftFromMapGeometry();
+      ApplyWallF0RightFromMapGeometry();
       return;
     }
 
@@ -2043,6 +2044,7 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyCeilingMirrorFromPose();
     ApplyFloorMirrorFromPose();
     ApplyWallF0LeftFromMapGeometry();
+    ApplyWallF0RightFromMapGeometry();
   }
 
   private void PreviewNavigateTurnLeft()
@@ -2526,6 +2528,7 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyCeilingMirrorFromPose();
       ApplyFloorMirrorFromPose();
       ApplyWallF0LeftFromMapGeometry();
+      ApplyWallF0RightFromMapGeometry();
       entry = poseVisibilityStore.GetOrCreateEntry(
           previewX,
           previewY,
@@ -2539,6 +2542,7 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyCeilingMirrorFromPose();
     ApplyFloorMirrorFromPose();
     ApplyWallF0LeftFromMapGeometry();
+    ApplyWallF0RightFromMapGeometry();
   }
 
   /// <summary>
@@ -2617,6 +2621,53 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.Enabled = leftIsWall;
+      piece.MirrorHorizontally = true;
+      return;
+    }
+  }
+
+  private static bool IsWallF0LeftPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Name == "Wall F0Left" || piece.Name == "LeftF0")
+      return true;
+
+    return piece.Graphic == DungeonGraphicType.WallF0L;
+  }
+
+  /// <summary>
+  /// Wall F0Right / RightF0 from the map tile immediately to the player's right.
+  /// Solid/out-of-bounds → Enabled. Does not change F0Left, Ceiling, Floor, or other walls.
+  /// </summary>
+  private void ApplyWallF0RightFromMapGeometry()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    EnsurePreviewMiniMapLoaded();
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+    int neighborX = previewX + rightX;
+    int neighborY = previewY + rightY;
+    bool rightIsWall = previewMiniMap == null
+        || !previewMiniMap.IsInside(neighborX, neighborY)
+        || previewMiniMap.GetTile(neighborX, neighborY).Type
+            == DungeonTileType.Wall;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (piece.Name != "Wall F0Right" && piece.Name != "RightF0")
+        continue;
+
+      piece.Enabled = rightIsWall;
       return;
     }
   }
@@ -3148,6 +3199,12 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
 
         bool mirror = GetPreviewMirror(piece, poseMap);
+        DungeonGraphicType drawGraphic = piece.Graphic;
+        if (IsWallF0LeftPiece(piece))
+        {
+          drawGraphic = DungeonGraphicType.WallF0R;
+          mirror = true;
+        }
 
         if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
         {
@@ -3200,7 +3257,7 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        Texture2D texture = graphics.GetTexture(piece.Graphic);
+        Texture2D texture = graphics.GetTexture(drawGraphic);
         if (texture == null)
           continue;
 
