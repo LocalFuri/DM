@@ -633,6 +633,41 @@ public class ViewportLayoutEditor : EditorWindow
     Repaint();
   }
 
+  /// <summary>
+  /// Piece-card checkbox that toggles only from mouse clicks. Keyboard
+  /// events are ignored and the control is not allowed to keep focus, so
+  /// Delete/Page Down/arrows/Space cannot change Enabled or Mirror.
+  /// </summary>
+  private static bool DrawMouseOnlyToggle(
+      string label,
+      bool value,
+      params GUILayoutOption[] options)
+  {
+    Event current = Event.current;
+    bool isKeyboard = current != null && current.isKey;
+    EventType savedType = EventType.Ignore;
+    bool savedChanged = GUI.changed;
+    if (isKeyboard)
+    {
+      savedType = current.type;
+      current.type = EventType.Used;
+    }
+
+    int keyboardBefore = GUIUtility.keyboardControl;
+    bool result = EditorGUILayout.Toggle(label, value, options);
+    if (GUIUtility.keyboardControl != keyboardBefore)
+      GUIUtility.keyboardControl = 0;
+
+    if (isKeyboard)
+    {
+      current.type = savedType;
+      GUI.changed = savedChanged;
+      return value;
+    }
+
+    return result;
+  }
+
   private void DrawPieceCard(
       int index,
       ViewportPiece piece,
@@ -667,7 +702,7 @@ public class ViewportLayoutEditor : EditorWindow
     GUILayout.FlexibleSpace();
     float previousLabelWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth = 55f;
-    piece.Enabled = EditorGUILayout.Toggle(
+    piece.Enabled = DrawMouseOnlyToggle(
         "Enabled",
         piece.Enabled,
         GUILayout.Width(72));
@@ -681,7 +716,7 @@ public class ViewportLayoutEditor : EditorWindow
     float mirrorLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
     EditorGUIUtility.labelWidth = mirrorLabelWidth;
-    piece.MirrorHorizontally = EditorGUILayout.Toggle(
+    piece.MirrorHorizontally = DrawMouseOnlyToggle(
         MirrorLabel,
         piece.MirrorHorizontally,
         GUILayout.Width(mirrorLabelWidth + 18f),
@@ -936,7 +971,8 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     DungeonFacing nextFacing;
-    switch (current.keyCode)
+    KeyCode key = current.keyCode;
+    switch (key)
     {
       case KeyCode.Delete:
         nextFacing = TurnPreviewFacingLeft(previewFacing);
@@ -948,16 +984,18 @@ public class ViewportLayoutEditor : EditorWindow
         return;
     }
 
+    if (nextFacing != previewFacing)
+    {
+      // Preserve Preview X / Preview Y; only facing changes.
+      previewPoseChangedByKeyboardThisFrame = true;
+      SwitchPreviewPose(previewX, previewY, nextFacing);
+      if (!s_viewEditGlobalNavDispatch)
+        TryRefocusPreviewWindow();
+    }
+
     current.Use();
-
-    if (nextFacing == previewFacing)
-      return;
-
-    // Preserve Preview X / Preview Y; only facing changes.
-    previewPoseChangedByKeyboardThisFrame = true;
-    SwitchPreviewPose(previewX, previewY, nextFacing);
-    if (!s_viewEditGlobalNavDispatch)
-      TryRefocusPreviewWindow();
+    if (key == KeyCode.Delete)
+      GUI.FocusControl(null);
   }
 
   private void HandlePreviewStrafeKeyboard()
