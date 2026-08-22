@@ -3141,7 +3141,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// FrontF2 / Front Wall F2 from the map tile two steps forward, only if
-  /// the nearer forward tile is open. A solid F1 wall hides FrontF2.
+  /// the nearer forward tile is open. A solid F1 wall hides center FrontF2.
+  /// Also on if the left column is open through F1 and the left F2 tile is solid.
   /// </summary>
   private void ApplyFrontF2FromMapGeometry()
   {
@@ -3153,6 +3154,10 @@ public class ViewportLayoutEditor : EditorWindow
         previewFacing,
         out int forwardX,
         out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
 
     int front1X = previewX + forwardX;
     int front1Y = previewY + forwardY;
@@ -3169,6 +3174,24 @@ public class ViewportLayoutEditor : EditorWindow
           || !previewMiniMap.IsInside(tileX, tileY)
           || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
     }
+
+    int left0X = previewX - rightX;
+    int left0Y = previewY - rightY;
+    int left1X = previewX + forwardX - rightX;
+    int left1Y = previewY + forwardY - rightY;
+    int left2X = previewX + forwardX * 2 - rightX;
+    int left2Y = previewY + forwardY * 2 - rightY;
+    bool left0Open = previewMiniMap != null
+        && previewMiniMap.IsInside(left0X, left0Y)
+        && previewMiniMap.GetTile(left0X, left0Y).Type != DungeonTileType.Wall;
+    bool left1Open = previewMiniMap != null
+        && previewMiniMap.IsInside(left1X, left1Y)
+        && previewMiniMap.GetTile(left1X, left1Y).Type != DungeonTileType.Wall;
+    bool left2IsWall = previewMiniMap == null
+        || !previewMiniMap.IsInside(left2X, left2Y)
+        || previewMiniMap.GetTile(left2X, left2Y).Type == DungeonTileType.Wall;
+    if (left0Open && left1Open && left2IsWall)
+      frontF2IsWall = true;
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
