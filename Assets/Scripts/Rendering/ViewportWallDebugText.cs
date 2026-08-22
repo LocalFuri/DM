@@ -50,7 +50,8 @@ namespace DM.Rendering
       "Wall F3Right",
       "Ceiling",
       "Floor",
-      "Black Door Frame Left",
+      "Black Door Frame Left F1",
+      "Black Door Frame Left F2",
       "Black Door Frame Right",
       "Black Door"
     };

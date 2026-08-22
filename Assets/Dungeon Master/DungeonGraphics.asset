@@ -45,3 +45,4 @@ MonoBehaviour:
   ChampionStatusBackground: {fileID: 2800000, guid: 78f30a29e4120d04a8260c9809072b00, type: 3}
   BlackDoor: {fileID: 2800000, guid: 6aba3763c2537564fa5f01393df569ad, type: 3}
   BlackDoorFrameLeft: {fileID: 2800000, guid: ceda001aea472bf42921afbacaa5a881, type: 3}
+  BlackDoorFrameLeftF2: {fileID: 2800000, guid: 7985584cf58e48642852370234ff57ec, type: 3}

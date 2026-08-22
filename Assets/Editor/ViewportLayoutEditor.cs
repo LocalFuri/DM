@@ -70,7 +70,8 @@ public class ViewportLayoutEditor : EditorWindow
     ("Champion Status Slot 3", true),
     ("Champion Status Slot 4", true),
     // Door Enabled is pose-authored; kit default is off.
-    ("Black Door Frame Left", false),
+    ("Black Door Frame Left F1", false),
+    ("Black Door Frame Left F2", false),
     ("Black Door Frame Right", false),
     ("Black Door", false),
   };
@@ -747,6 +748,19 @@ public class ViewportLayoutEditor : EditorWindow
       changed = true;
     }
 
+    if (piece.Name == "Black Door")
+    {
+      EditorGUILayout.BeginHorizontal();
+      EditorGUILayout.PrefixLabel("Size");
+      using (new EditorGUI.DisabledScope(true))
+      {
+        EditorGUILayout.IntField(96, GUILayout.Width(50));
+        EditorGUILayout.LabelField("x", GUILayout.Width(12));
+        EditorGUILayout.IntField(88, GUILayout.Width(50));
+      }
+      EditorGUILayout.EndHorizontal();
+    }
+
     if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
     {
       EditorGUILayout.HelpBox(
@@ -831,6 +845,36 @@ public class ViewportLayoutEditor : EditorWindow
       {
         SelectPiece(index);
         ApplyPoseOffsetChangeForCurrentPose();
+      }
+    }
+
+    if (piece.Name == "Black Door")
+    {
+      EditorGUILayout.Space(4f);
+      EditorGUILayout.LabelField(
+          "F2 exception — (1,4) North only",
+          EditorStyles.boldLabel);
+      EditorGUILayout.LabelField("Graphic", "Black Door");
+      EditorGUILayout.BeginHorizontal();
+      EditorGUILayout.PrefixLabel("Size");
+      using (new EditorGUI.DisabledScope(true))
+      {
+        EditorGUILayout.IntField(63, GUILayout.Width(50));
+        EditorGUILayout.LabelField("x", GUILayout.Width(12));
+        EditorGUILayout.IntField(60, GUILayout.Width(50));
+      }
+      EditorGUILayout.EndHorizontal();
+      int f2X = piece.ResolvedBlackDoorF2X;
+      int f2Y = piece.ResolvedBlackDoorF2Y;
+      int f2XBefore = f2X;
+      int f2YBefore = f2Y;
+      DrawIntStepper("X", ref f2X, 1);
+      DrawIntStepper("Y", ref f2Y, 1);
+      if (f2X != f2XBefore || f2Y != f2YBefore)
+      {
+        piece.BlackDoorF2X = f2X;
+        piece.BlackDoorF2Y = f2Y;
+        changed = true;
       }
     }
 
@@ -3775,8 +3819,15 @@ public class ViewportLayoutEditor : EditorWindow
       {
         ViewportPiece piece = layout.Pieces[i];
         bool shouldDraw = ShouldDrawPieceAtPreviewPose(piece);
+        bool blackDoorF2Exception = IsBlackDoorF2PoseException(piece);
 
-        if (!shouldDraw)
+        if (!shouldDraw && !blackDoorF2Exception)
+          continue;
+
+        if (piece.Name == "Black Door Frame Left F2"
+            && (previewX != 1
+                || previewY != 4
+                || previewFacing != DungeonFacing.North))
           continue;
 
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
@@ -3992,6 +4043,21 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
+        // (1,4) North only: same Black Door source, 63×60 at F2 X/Y.
+        // Independent of the normal Black Door Enabled flag and layout X/Y.
+        if (blackDoorF2Exception)
+        {
+          BlitPieceScaledIntoPreview(
+              pixels,
+              texture,
+              piece.ResolvedBlackDoorF2X,
+              piece.ResolvedBlackDoorF2Y,
+              63,
+              60,
+              mirror);
+          continue;
+        }
+
         BlitPieceIntoPreview(
             pixels,
             texture,
@@ -4173,6 +4239,23 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
+  /// (1,4) North Black Door F2 size exception. Draw may run even when the
+  /// normal Black Door Enabled flag is off. Does not write pose data.
+  /// </summary>
+  private bool IsBlackDoorF2PoseException(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Graphic != DungeonGraphicType.BlackDoor)
+      return false;
+
+    return previewX == 1
+        && previewY == 4
+        && previewFacing == DungeonFacing.North;
+  }
+
+  /// <summary>
   /// Preview-only mirror from the piece's authored MirrorHorizontally flag.
   /// Does not write the layout asset or apply pose phase overrides.
   /// </summary>
@@ -4223,6 +4306,48 @@ public class ViewportLayoutEditor : EditorWindow
 
         Color32 sourceColour =
             sourcePixels[sourceY * source.width + sourceX];
+        if (sourceColour.a == 0)
+          continue;
+
+        dest[targetY * PreviewWidth + targetX] = sourceColour;
+      }
+    }
+  }
+
+  private static void BlitPieceScaledIntoPreview(
+      Color32[] dest,
+      Texture2D source,
+      int destinationX,
+      int destinationY,
+      int destWidth,
+      int destHeight,
+      bool mirrorHorizontally = false)
+  {
+    if (!source.isReadable || destWidth <= 0 || destHeight <= 0)
+      return;
+
+    Color32[] sourcePixels = source.GetPixels32();
+
+    for (int destRow = 0; destRow < destHeight; destRow++)
+    {
+      int targetY = destinationY + destRow;
+      if (targetY < 0 || targetY >= PreviewHeight)
+        continue;
+
+      int sourceY = destRow * source.height / destHeight;
+
+      for (int destCol = 0; destCol < destWidth; destCol++)
+      {
+        int sampleX = destCol * source.width / destWidth;
+        if (mirrorHorizontally)
+          sampleX = source.width - 1 - sampleX;
+
+        int targetX = destinationX + destCol;
+        if (targetX < 0 || targetX >= PreviewWidth)
+          continue;
+
+        Color32 sourceColour =
+            sourcePixels[sourceY * source.width + sampleX];
         if (sourceColour.a == 0)
           continue;
 

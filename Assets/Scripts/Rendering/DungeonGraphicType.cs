@@ -53,6 +53,11 @@ namespace DM.Rendering
     /// <summary>
     /// Hall of Champions entrance door side frame (shared L/R via mirror).
     /// </summary>
-    BlackDoorFrameLeft
+    BlackDoorFrameLeft,
+
+    /// <summary>
+    /// F2 left door frame (native 18×65). (1,4) North for now.
+    /// </summary>
+    BlackDoorFrameLeftF2
   }
 }

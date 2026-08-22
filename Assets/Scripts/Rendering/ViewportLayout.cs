@@ -46,6 +46,30 @@ namespace DM.Rendering
 
     public bool Enabled = true;
 
+    /// <summary>
+    /// Black Door F2 exception dest (1,4 North only). 0,0 means use 77,46.
+    /// Does not affect normal F1 Black Door X/Y.
+    /// </summary>
+    public int BlackDoorF2X;
+
+    /// <summary>
+    /// Black Door F2 exception dest (1,4 North only). 0,0 means use 77,46.
+    /// </summary>
+    public int BlackDoorF2Y;
+
+    public const int DefaultBlackDoorF2X = 77;
+    public const int DefaultBlackDoorF2Y = 46;
+
+    public int ResolvedBlackDoorF2X =>
+        BlackDoorF2X == 0 && BlackDoorF2Y == 0
+            ? DefaultBlackDoorF2X
+            : BlackDoorF2X;
+
+    public int ResolvedBlackDoorF2Y =>
+        BlackDoorF2X == 0 && BlackDoorF2Y == 0
+            ? DefaultBlackDoorF2Y
+            : BlackDoorF2Y;
+
     [Tooltip(
         "When true, the piece's drawn pixels are mirrored horizontally. "
             + "For straight F1, mirrors the full 224px composite.")]

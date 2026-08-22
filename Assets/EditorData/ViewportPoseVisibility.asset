@@ -40,7 +40,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
@@ -75,7 +75,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
@@ -110,7 +110,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000001000000000101010101000000
@@ -145,7 +145,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000001000000000101010101000000
@@ -180,13 +180,14 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
+    - Black Door Frame Left F2
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001000000000001000000010101010101010101010101
-    MirrorHorizontallyFlags: 01000001000100000000010000010001000000000000000100
-    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    EnabledFlags: 0100000100000000000100000001010101010101010100000101
+    MirrorHorizontallyFlags: 0100000100010000000001000001000100000000000000000100
+    OffsetX: 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    OffsetY: 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 1
@@ -213,7 +214,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 0100000100010100010000010101010101010101010101
@@ -246,7 +247,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 0100000100000000000001000000000101010101000000
@@ -279,7 +280,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 0100000100000000000001000000000101010101000000
@@ -314,7 +315,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010100010001010101010101000000
@@ -349,7 +350,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -384,7 +385,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000001000000010100010001010101010101000000
@@ -419,7 +420,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001010000000000000100010101000101010101000000
@@ -454,7 +455,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000001000001000000000101010101000000
@@ -489,7 +490,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010100000101010101010101000000
@@ -524,7 +525,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010101000000010101010101000000
@@ -559,7 +560,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000001000000000101010101000000
@@ -594,7 +595,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000010101000000000101010101000000
@@ -629,7 +630,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000010001000000000101010101000000
@@ -664,7 +665,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000001000000010100010100010101010101000000
@@ -699,7 +700,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000000100010101010101010101000000
@@ -734,7 +735,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010100000101010101010101000000
@@ -769,7 +770,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010100010100010101010101000000
@@ -804,7 +805,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010100010100010101010101000000
@@ -839,7 +840,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010100010101010101010101000000
@@ -874,7 +875,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000100000000010100010101010101010101000000
@@ -909,7 +910,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
@@ -944,7 +945,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010100010001010101010101000000
@@ -979,7 +980,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010100010101000101010101000000
@@ -1014,7 +1015,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000010101010101000000
@@ -1049,7 +1050,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000010101010101000000
@@ -1084,7 +1085,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000000100010101000101010101000000
@@ -1119,7 +1120,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010100000101010101010101000000
@@ -1154,7 +1155,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010100010100010101010101000000
@@ -1189,14 +1190,15 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
+    - Black Door Frame Left F2
     - Black Door Frame Right
     - Black Door
-    EnabledFlags: 01000001010000000000010100010101010101010101000000
-    MirrorHorizontallyFlags: 00000000000001000000000001000100010000000000000000
-    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-    FrontWallF1Width: 224
+    EnabledFlags: 0100000101000000000001010001010101010101010100000000
+    MirrorHorizontallyFlags: 0000000000000100000100000100010001000000000000000000
+    OffsetX: 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    OffsetY: 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    FrontWallF1Width: 191
     FrontWallF2Width: 106
   - X: 15
     Y: 9
@@ -1254,7 +1256,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010000000100010101010101000000
@@ -1289,7 +1291,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010000000101000101010101000000
@@ -1324,7 +1326,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000010101010101000000
@@ -1359,7 +1361,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000001010101010101000000
@@ -1394,7 +1396,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000001000101010101000000
@@ -1459,7 +1461,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000001000000010100000101010101000000
@@ -1494,7 +1496,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000001010101010101000000
@@ -1527,7 +1529,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 0100000100000000000001000001010101010101000000
@@ -1560,7 +1562,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 0100000100000000000000000001000101010101000000
@@ -1595,7 +1597,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010101010101000101010101000000
@@ -1630,7 +1632,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000010100010000000101010101000000
@@ -1665,7 +1667,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -1700,7 +1702,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000100000000010100010101000101010101000000
@@ -1735,7 +1737,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010001000101010101000000
@@ -1770,7 +1772,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000101000000010000010101010101010101000000
@@ -1805,7 +1807,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000100000000010000010000000101010101000000
@@ -1840,7 +1842,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000000101010101000000
@@ -1875,7 +1877,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000000101010101000000
@@ -1910,7 +1912,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000000101010101000000
@@ -1945,7 +1947,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000000101010101000000
@@ -1980,7 +1982,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -2015,7 +2017,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010101000101010101000000
@@ -2050,7 +2052,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010001010101010101000000
@@ -2085,7 +2087,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010001010101010101000000
@@ -2120,7 +2122,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010101010101010101000000
@@ -2155,7 +2157,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010001010101010101000000
@@ -2190,7 +2192,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000100000101010101000000
@@ -2225,7 +2227,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000000101010101000000
@@ -2260,7 +2262,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000000101010101000000
@@ -2295,7 +2297,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000000101010101000000
@@ -2330,7 +2332,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000001010101010101000000
@@ -2365,7 +2367,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000000101010101000000
@@ -2400,7 +2402,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000101000101010101000000
@@ -2435,7 +2437,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010100010101010101000000
@@ -2470,7 +2472,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010100000101010101000000
@@ -2505,7 +2507,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010001010101010101000000
@@ -2540,7 +2542,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010001000101010101000000
@@ -2575,7 +2577,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000100010101010101000000
@@ -2610,7 +2612,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -2645,7 +2647,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -2680,7 +2682,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -2715,7 +2717,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -2750,7 +2752,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -2785,7 +2787,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -2820,7 +2822,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -2855,7 +2857,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -2890,7 +2892,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -2925,7 +2927,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -2960,7 +2962,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -2995,7 +2997,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3030,7 +3032,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3065,7 +3067,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3100,7 +3102,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3135,7 +3137,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3170,7 +3172,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3205,7 +3207,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3240,7 +3242,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3275,7 +3277,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3310,7 +3312,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3345,7 +3347,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3380,7 +3382,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3415,7 +3417,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3450,7 +3452,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000010101010101000000
@@ -3485,7 +3487,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3520,7 +3522,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000001010101010101000000
@@ -3555,7 +3557,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000000101010101000000
@@ -3590,7 +3592,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3625,7 +3627,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000010101010101000000
@@ -3660,7 +3662,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010001000101010101000000
@@ -3695,7 +3697,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010001000101010101000000
@@ -3730,7 +3732,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000000000101010101000000
@@ -3765,7 +3767,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010101000101010101000000
@@ -3800,7 +3802,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000001010101010101000000
@@ -3835,7 +3837,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000000101010101000000
@@ -3870,7 +3872,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000101010101010101000000
@@ -3905,7 +3907,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000100010101010101000000
@@ -3940,7 +3942,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000010101010101000000
@@ -3975,7 +3977,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000100000101010101000000
@@ -4010,7 +4012,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010001000101010101000000
@@ -4045,7 +4047,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010100010101010101000000
@@ -4080,7 +4082,7 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000000001010101010101000000
@@ -4115,11 +4117,116 @@ MonoBehaviour:
     - Champion Status Slot 2
     - Champion Status Slot 3
     - Champion Status Slot 4
-    - Black Door Frame Left
+    - Black Door Frame Left F1
     - Black Door Frame Right
     - Black Door
     EnabledFlags: 01000001000000000000000000010000000101010101000000
     MirrorHorizontallyFlags: 01000001000000000000000000010001000000000000000000
+    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    FrontWallF1Width: 191
+    FrontWallF2Width: 106
+  - X: 17
+    Y: 17
+    Facing: 0
+    PieceNames:
+    - Ceiling
+    - Ceiling Strip 84
+    - Ceiling Strip 85
+    - Floor
+    - FrontF3
+    - LeftF3
+    - RightF3
+    - LeftD3
+    - RightD3
+    - FrontF2
+    - LeftF2
+    - RightF2
+    - FrontF1
+    - LeftF1
+    - RightF1
+    - LeftF0
+    - RightF0
+    - Movement Arrows
+    - Champion Status Slot 1
+    - Champion Status Slot 2
+    - Champion Status Slot 3
+    - Champion Status Slot 4
+    - Black Door Frame Left F1
+    - Black Door Frame Right
+    - Black Door
+    EnabledFlags: 01000001000001000000010100010100010101010101000000
+    MirrorHorizontallyFlags: 01000001000100000000010000010001000000000000000000
+    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    FrontWallF1Width: 191
+    FrontWallF2Width: 106
+  - X: 7
+    Y: 13
+    Facing: 0
+    PieceNames:
+    - Ceiling
+    - Ceiling Strip 84
+    - Ceiling Strip 85
+    - Floor
+    - FrontF3
+    - LeftF3
+    - RightF3
+    - LeftD3
+    - RightD3
+    - FrontF2
+    - LeftF2
+    - RightF2
+    - FrontF1
+    - LeftF1
+    - RightF1
+    - LeftF0
+    - RightF0
+    - Movement Arrows
+    - Champion Status Slot 1
+    - Champion Status Slot 2
+    - Champion Status Slot 3
+    - Champion Status Slot 4
+    - Black Door Frame Left F1
+    - Black Door Frame Right
+    - Black Door
+    EnabledFlags: 01000001000101000001010100000000000101010101000000
+    MirrorHorizontallyFlags: 01000001000100000000010000010001000000000000000000
+    OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    FrontWallF1Width: 191
+    FrontWallF2Width: 106
+  - X: 17
+    Y: 15
+    Facing: 0
+    PieceNames:
+    - Ceiling
+    - Ceiling Strip 84
+    - Ceiling Strip 85
+    - Floor
+    - FrontF3
+    - LeftF3
+    - RightF3
+    - LeftD3
+    - RightD3
+    - FrontF2
+    - LeftF2
+    - RightF2
+    - FrontF1
+    - LeftF1
+    - RightF1
+    - LeftF0
+    - RightF0
+    - Movement Arrows
+    - Champion Status Slot 1
+    - Champion Status Slot 2
+    - Champion Status Slot 3
+    - Champion Status Slot 4
+    - Black Door Frame Left F1
+    - Black Door Frame Right
+    - Black Door
+    EnabledFlags: 01000001000000000001000000000101010101010101000000
+    MirrorHorizontallyFlags: 01000001000100000000010000010001000000000000000000
     OffsetX: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     OffsetY: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     FrontWallF1Width: 191

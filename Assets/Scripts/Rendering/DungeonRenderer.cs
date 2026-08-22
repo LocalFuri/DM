@@ -1356,7 +1356,8 @@ namespace DM.Rendering
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
           continue;
 
-        if (!ShouldDrawPiece(piece))
+        if (!ShouldDrawPiece(piece)
+            && !IsBlackDoorF2PoseException(piece))
           continue;
 
         RecordDrawnWallPiece(
@@ -1809,6 +1810,17 @@ namespace DM.Rendering
 
       // After ApplyRuntimePoseVisibility, Enabled matches the saved pose
       // (same gate as Edit Mode ShouldDrawPieceAtPreviewPose).
+      if (piece.Name == "Black Door Frame Left F2")
+      {
+        if (currentMap == null)
+          return false;
+
+        if (currentMap.PlayerX != 1
+            || currentMap.PlayerY != 4
+            || currentMap.PlayerFacing != DungeonFacing.North)
+          return false;
+      }
+
       return piece.Enabled;
     }
 
@@ -2400,7 +2412,19 @@ namespace DM.Rendering
         return;
       }
 
-      // Full authored sprite at layout X/Y + per-pose offset — no crop, shift, or stretch.
+      // (1,4) North only: same Black Door source, 63×60 at F2 X/Y.
+      if (IsBlackDoorF2PoseException(piece))
+      {
+        BlitScaledNearest(
+            texture,
+            piece.ResolvedBlackDoorF2X,
+            piece.ResolvedBlackDoorF2Y + dungeonDrawOffsetY,
+            63,
+            60,
+            mirror);
+        return;
+      }
+
       Blit(
           texture,
           destX,
@@ -2410,6 +2434,19 @@ namespace DM.Rendering
           sourceWidth: -1,
           flipSourceHorizontal: mirror
       );
+    }
+
+    private bool IsBlackDoorF2PoseException(ViewportPiece piece)
+    {
+      if (piece == null || currentMap == null)
+        return false;
+
+      if (piece.Graphic != DungeonGraphicType.BlackDoor)
+        return false;
+
+      return currentMap.PlayerX == 1
+          && currentMap.PlayerY == 4
+          && currentMap.PlayerFacing == DungeonFacing.North;
     }
 
     private void TryBlitFrontWallF2_160ExtraStrip()
@@ -2619,6 +2656,47 @@ namespace DM.Rendering
               targetY * viewWidth +
               targetX
           ] = sourceColour;
+        }
+      }
+    }
+
+    private void BlitScaledNearest(
+        Texture2D source,
+        int destinationX,
+        int destinationY,
+        int destWidth,
+        int destHeight,
+        bool flipSourceHorizontal)
+    {
+      if (source == null || destWidth <= 0 || destHeight <= 0)
+        return;
+
+      Color32[] sourcePixels = source.GetPixels32();
+
+      for (int destRow = 0; destRow < destHeight; destRow++)
+      {
+        int targetY = destinationY + destRow;
+        if (targetY < 0 || targetY >= viewHeight)
+          continue;
+
+        int sourceY = destRow * source.height / destHeight;
+
+        for (int destCol = 0; destCol < destWidth; destCol++)
+        {
+          int targetX = destinationX + destCol;
+          if (targetX < 0 || targetX >= viewWidth)
+            continue;
+
+          int sampleX = destCol * source.width / destWidth;
+          if (flipSourceHorizontal)
+            sampleX = source.width - 1 - sampleX;
+
+          Color32 sourceColour =
+              sourcePixels[sourceY * source.width + sampleX];
+          if (sourceColour.a == 0)
+            continue;
+
+          framePixels[targetY * viewWidth + targetX] = sourceColour;
         }
       }
     }
