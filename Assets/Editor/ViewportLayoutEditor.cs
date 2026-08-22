@@ -124,7 +124,7 @@ public class ViewportLayoutEditor : EditorWindow
   private DungeonMap previewMiniMap;
   private string previewMiniMapLoadError;
   private Vector2 previewMiniMapScroll;
-  private bool previewPoseChangedByKeyboardThisFrame;
+
   // TEMP F3 diagnostics — remove after verification.
   private static string lastLoggedFrontWallF3EditDrawKey;
 
@@ -271,7 +271,6 @@ public class ViewportLayoutEditor : EditorWindow
   private void OnGUI()
   {
     selectionChangedThisFrame = false;
-    previewPoseChangedByKeyboardThisFrame = false;
 
     // Claim EditorWindow focus on click so existing keyboard nav can run.
     // Do not clear GUI.FocusControl here — a TextField/IntField on this
@@ -1003,7 +1002,6 @@ public class ViewportLayoutEditor : EditorWindow
     if (nextFacing != previewFacing)
     {
       // Preserve Preview X / Preview Y; only facing changes.
-      previewPoseChangedByKeyboardThisFrame = true;
       SwitchPreviewPose(previewX, previewY, nextFacing);
       if (!s_viewEditGlobalNavDispatch)
         TryRefocusPreviewWindow();
@@ -1060,7 +1058,6 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // Keep Preview Facing unchanged.
-    previewPoseChangedByKeyboardThisFrame = true;
     SwitchPreviewPose(nextX, nextY, previewFacing);
     if (!s_viewEditGlobalNavDispatch)
       TryRefocusPreviewWindow();
@@ -1111,7 +1108,6 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    previewPoseChangedByKeyboardThisFrame = true;
     SwitchPreviewPose(nextX, nextY, previewFacing);
     if (!s_viewEditGlobalNavDispatch)
       TryRefocusPreviewWindow();
@@ -2037,12 +2033,14 @@ public class ViewportLayoutEditor : EditorWindow
     {
       poseVisibilityStore.ApplyToLayout(entry, layout);
       ApplyCeilingMirrorFromPose();
+      ApplyFloorMirrorFromPose();
       return;
     }
 
     // Unknown pose: kit baseline on the live layout only — do not write store.
     ApplyUnknownPoseDefaultsToLayout();
     ApplyCeilingMirrorFromPose();
+    ApplyFloorMirrorFromPose();
   }
 
   private void PreviewNavigateTurnLeft()
@@ -2524,6 +2522,7 @@ public class ViewportLayoutEditor : EditorWindow
       // First visit to this pose: start from safe defaults, then capture.
       ApplyUnknownPoseDefaultsToLayout();
       ApplyCeilingMirrorFromPose();
+      ApplyFloorMirrorFromPose();
       entry = poseVisibilityStore.GetOrCreateEntry(
           previewX,
           previewY,
@@ -2535,6 +2534,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     poseVisibilityStore.ApplyToLayout(entry, layout);
     ApplyCeilingMirrorFromPose();
+    ApplyFloorMirrorFromPose();
   }
 
   /// <summary>
@@ -2553,6 +2553,29 @@ public class ViewportLayoutEditor : EditorWindow
     {
       ViewportPiece piece = layout.Pieces[i];
       if (piece == null || piece.Name != "Ceiling")
+        continue;
+
+      piece.MirrorHorizontally = mirrorOn;
+      return;
+    }
+  }
+
+  /// <summary>
+  /// Floor mirror from (1,3) North = ON. Same pose formula as Ceiling.
+  /// Does not change Ceiling or walls.
+  /// </summary>
+  private void ApplyFloorMirrorFromPose()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    bool mirrorOn =
+        ((previewX + previewY + (int)previewFacing) & 1) == 0;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null || piece.Name != "Floor")
         continue;
 
       piece.MirrorHorizontally = mirrorOn;
