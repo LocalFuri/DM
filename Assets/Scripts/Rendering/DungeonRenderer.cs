@@ -81,11 +81,6 @@ namespace DM.Rendering
     [Header("Bitmap Font")]
     [SerializeField] private DungeonBitmapFont bitmapFont;
 
-    [Header("TEMP Reference Wall Test — disable or delete after comparison")]
-    [SerializeField] private bool showOriginalWallReferenceTest = true;
-    [SerializeField]
-    private Texture2D originalWallReference_10_4_North;
-
     [Header("TEMP Exact Comparison")]
     [SerializeField]
     [Tooltip(
@@ -1328,17 +1323,6 @@ namespace DM.Rendering
       // Same saved per-pose Enabled flags as Viewport Layout Editor.
       ApplyRuntimePoseVisibility();
 
-      // TEMP: at (10,4) North, blit the original 224×136 reference wall
-      // instead of composing tiles. Toggle showOriginalWallReferenceTest off
-      // (or clear the texture) to restore normal rendering.
-      if (TryDrawOriginalWallReferenceTest())
-      {
-        visibleWallPieces.Clear();
-        visibleWallPieces.Add("OriginalWallReference");
-        ApplyFrameBuffer();
-        return;
-      }
-
       System.Text.StringBuilder drawnFrontWalls =
           new System.Text.StringBuilder();
       System.Text.StringBuilder drawnSideWalls =
@@ -1611,63 +1595,6 @@ namespace DM.Rendering
           heroPortraitX,
           heroPortraitY + dungeonDrawOffsetY
       );
-    }
-
-    // TEMP reference test — remove with the serialized fields above.
-    private bool TryDrawOriginalWallReferenceTest()
-    {
-      if (!showOriginalWallReferenceTest)
-        return false;
-
-      Texture2D reference = ResolveOriginalWallReferenceTexture();
-      if (reference == null)
-      {
-        Debug.LogWarning(
-            "DungeonRenderer: Original wall reference test is ON but " +
-            "originalWallReference_10_4_North is null."
-        );
-        return false;
-      }
-
-      if (currentMap == null)
-        return false;
-
-      if (currentMap.PlayerX != 10
-          || currentMap.PlayerY != 4
-          || currentMap.PlayerFacing != DungeonFacing.North)
-      {
-        return false;
-      }
-
-      Debug.Log(
-          "DungeonRenderer: TEMP original wall reference blit at " +
-          $"({currentMap.PlayerX},{currentMap.PlayerY}) " +
-          $"facing {currentMap.PlayerFacing} " +
-          $"tex={reference.width}x{reference.height}."
-      );
-
-      Blit(
-          reference,
-          0,
-          dungeonDrawOffsetY
-      );
-
-      return true;
-    }
-
-    private Texture2D ResolveOriginalWallReferenceTexture()
-    {
-      if (originalWallReference_10_4_North != null)
-        return originalWallReference_10_4_North;
-
-#if UNITY_EDITOR
-      originalWallReference_10_4_North =
-          UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
-              "Assets/Art/Reference/OriginalWall_10_4_North.png"
-          );
-#endif
-
-      return originalWallReference_10_4_North;
     }
 
     private bool TryGetHeroOnVisibleFrontWall(out HeroDefinition hero)
