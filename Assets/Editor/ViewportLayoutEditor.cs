@@ -509,6 +509,13 @@ public class ViewportLayoutEditor : EditorWindow
 
   private bool PieceMatchesSearchFilter(ViewportPiece piece)
   {
+    string search = (pieceSearchText ?? string.Empty).Trim();
+    if (search.Length > 0)
+    {
+      string name = piece != null ? piece.Name ?? string.Empty : string.Empty;
+      return name.IndexOf(search, System.StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
     if (pieceSearchFamilyIndex <= 0
         || pieceSearchFamilyIndex >= PieceSearchFamilyOptions.Length)
     {
