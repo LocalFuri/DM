@@ -2262,6 +2262,8 @@ namespace DM.Rendering
       bool? f0MirrorOverride = null;
       bool? f1LeftMirrorOverride = null;
       bool? f2LeftMirrorOverride = null;
+      bool? f3LeftMirrorOverride = null;
+      bool? f3RightMirrorOverride = null;
       if (currentMap != null
           && (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece)))
       {
@@ -2316,6 +2318,28 @@ namespace DM.Rendering
             ? DungeonGraphicType.WallF2R
             : DungeonGraphicType.WallF2L;
         f2LeftMirrorOverride = phaseOn;
+      }
+      else if (currentMap != null && IsWallF3LeftPiece(piece))
+      {
+        bool phaseOn =
+            ((currentMap.PlayerX
+                + currentMap.PlayerY
+                + (int)currentMap.PlayerFacing) & 1) == 0;
+        drawGraphic = phaseOn
+            ? DungeonGraphicType.WallF3R
+            : DungeonGraphicType.WallF3L;
+        f3LeftMirrorOverride = phaseOn;
+      }
+      else if (currentMap != null && IsWallF3RightPiece(piece))
+      {
+        bool phaseOn =
+            ((currentMap.PlayerX
+                + currentMap.PlayerY
+                + (int)currentMap.PlayerFacing) & 1) == 0;
+        drawGraphic = phaseOn
+            ? DungeonGraphicType.WallF3R
+            : DungeonGraphicType.WallF3L;
+        f3RightMirrorOverride = !phaseOn;
       }
 
       Texture2D texture =
@@ -2384,14 +2408,17 @@ namespace DM.Rendering
         }
       }
 
-      bool mirror = f2LeftMirrorOverride
+      bool mirror = f3RightMirrorOverride
+          ?? f3LeftMirrorOverride
+          ?? f2LeftMirrorOverride
           ?? f1LeftMirrorOverride
           ?? f0MirrorOverride
           ?? GetEffectiveEnvironmentMirror(piece);
       int destX = piece.EffectiveX;
       int destY = piece.EffectiveY + dungeonDrawOffsetY;
 
-      if (F3RightNarrowStripTest.ShouldReplace(piece.Graphic))
+      if (F3RightNarrowStripTest.ShouldReplace(piece.Graphic)
+          && drawGraphic == DungeonGraphicType.WallF3R)
       {
         F3RightNarrowStripTest.BlitToBuffer(
             texture,
@@ -2552,6 +2579,28 @@ namespace DM.Rendering
         return true;
 
       return piece.Graphic == DungeonGraphicType.WallF2L;
+    }
+
+    private static bool IsWallF3LeftPiece(ViewportPiece piece)
+    {
+      if (piece == null)
+        return false;
+
+      if (piece.Name == "Wall F3Left" || piece.Name == "LeftF3")
+        return true;
+
+      return piece.Graphic == DungeonGraphicType.WallF3L;
+    }
+
+    private static bool IsWallF3RightPiece(ViewportPiece piece)
+    {
+      if (piece == null)
+        return false;
+
+      if (piece.Name == "Wall F3Right" || piece.Name == "RightF3")
+        return true;
+
+      return piece.Graphic == DungeonGraphicType.WallF3R;
     }
 
     private void ApplyFrameBuffer()

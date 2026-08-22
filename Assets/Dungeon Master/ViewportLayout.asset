@@ -68,7 +68,7 @@ MonoBehaviour:
     X: 135
     Y: 93
     Enabled: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: LeftD3
