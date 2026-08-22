@@ -337,6 +337,14 @@ public class ViewportLayoutEditor : EditorWindow
           GetSearchPiecesLabelStyle());
       bool guiChangedBeforeSearch = GUI.changed;
       Rect searchPiecesPopupRect = EditorGUILayout.GetControlRect();
+      Event searchEvent = Event.current;
+      if (searchEvent.type == EventType.MouseDown
+          && searchEvent.button == 0
+          && searchPiecesPopupRect.Contains(searchEvent.mousePosition))
+      {
+        openSearchPiecesPopup = true;
+        focusSearchPieces = true;
+      }
       GUI.SetNextControlName(SearchPiecesControlName);
       pieceSearchText = EditorGUI.TextField(
           searchPiecesPopupRect,
