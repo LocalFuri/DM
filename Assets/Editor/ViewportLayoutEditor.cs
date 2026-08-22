@@ -20,6 +20,8 @@ public class ViewportLayoutEditor : EditorWindow
       "ViewportLayoutEditor.PreviewFacing";
   private const string PrefsSelectedPieceIndexKey =
       "ViewportLayoutEditor.SelectedPieceIndex";
+  private const string SearchPiecesControlName =
+      "ViewportLayoutEditor.SearchPieces";
 
   private const string HallOfChampionsMapPath =
       "Assets/Data/Maps/HallOfChampions.json";
@@ -81,7 +83,9 @@ public class ViewportLayoutEditor : EditorWindow
   private ViewportPoseVisibilityStore poseVisibilityStore;
   private Vector2 editorScroll;
   private int pieceSearchFamilyIndex;
+  private string pieceSearchText = string.Empty;
   private bool openSearchPiecesPopup;
+  private bool focusSearchPieces;
   private GUIStyle searchPiecesLabelStyle;
   private GUIStyle pieceFamilyHeaderStyle;
   private bool[] rememberedEnabledStates;
@@ -333,11 +337,16 @@ public class ViewportLayoutEditor : EditorWindow
           GetSearchPiecesLabelStyle());
       bool guiChangedBeforeSearch = GUI.changed;
       Rect searchPiecesPopupRect = EditorGUILayout.GetControlRect();
-      pieceSearchFamilyIndex = EditorGUI.Popup(
+      GUI.SetNextControlName(SearchPiecesControlName);
+      pieceSearchText = EditorGUI.TextField(
           searchPiecesPopupRect,
-          pieceSearchFamilyIndex,
-          PieceSearchFamilyOptions,
-          EditorStyles.popup);
+          pieceSearchText ?? string.Empty);
+      if (focusSearchPieces && Event.current.type == EventType.Repaint)
+      {
+        GUI.FocusControl(SearchPiecesControlName);
+        EditorGUI.FocusTextInControl(SearchPiecesControlName);
+        focusSearchPieces = false;
+      }
       // Search is a list filter only — never treat it as a layout persist.
       GUI.changed = guiChangedBeforeSearch;
       if (openSearchPiecesPopup && Event.current.type != EventType.Layout)
@@ -567,8 +576,8 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Right-click anywhere in ViewEdit scrolls to the top and clears Search
-  /// Pieces so the full piece list is shown. Does not change Enabled flags.
+  /// Right-click anywhere in ViewEdit scrolls to the top and focuses the
+  /// Search Pieces text field. Does not open a popup or change Enabled flags.
   /// </summary>
   private void HandleViewEditRightClickHome()
   {
@@ -583,8 +592,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     editorScroll = Vector2.zero;
     pieceSearchFamilyIndex = 0;
-    openSearchPiecesPopup = true;
-    GUI.FocusControl(null);
+    focusSearchPieces = true;
     current.Use();
     Repaint();
   }
