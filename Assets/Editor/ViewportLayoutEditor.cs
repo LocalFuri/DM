@@ -2038,6 +2038,8 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyWallF0RightFromMapGeometry();
       ApplyWallF1LeftFromMapGeometry();
       ApplyWallF1RightFromMapGeometry();
+      ApplyWallF2LeftFromMapGeometry();
+      ApplyWallF2RightFromMapGeometry();
       return;
     }
 
@@ -2049,6 +2051,8 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyWallF0RightFromMapGeometry();
     ApplyWallF1LeftFromMapGeometry();
     ApplyWallF1RightFromMapGeometry();
+    ApplyWallF2LeftFromMapGeometry();
+    ApplyWallF2RightFromMapGeometry();
   }
 
   private void PreviewNavigateTurnLeft()
@@ -2535,6 +2539,8 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyWallF0RightFromMapGeometry();
       ApplyWallF1LeftFromMapGeometry();
       ApplyWallF1RightFromMapGeometry();
+      ApplyWallF2LeftFromMapGeometry();
+      ApplyWallF2RightFromMapGeometry();
       entry = poseVisibilityStore.GetOrCreateEntry(
           previewX,
           previewY,
@@ -2551,6 +2557,8 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyWallF0RightFromMapGeometry();
     ApplyWallF1LeftFromMapGeometry();
     ApplyWallF1RightFromMapGeometry();
+    ApplyWallF2LeftFromMapGeometry();
+    ApplyWallF2RightFromMapGeometry();
   }
 
   /// <summary>
@@ -2794,6 +2802,95 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
 
     return piece.Graphic == DungeonGraphicType.WallF1R;
+  }
+
+  /// <summary>
+  /// Wall F2Left / LeftF2 from the map tile two steps forward and one step left.
+  /// Solid/out-of-bounds → Enabled. Does not change F0/F1, F2Right, Front F2, or mirrors.
+  /// </summary>
+  private void ApplyWallF2LeftFromMapGeometry()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    EnsurePreviewMiniMapLoaded();
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+    int tileX = previewX + forwardX * 2 - rightX;
+    int tileY = previewY + forwardY * 2 - rightY;
+    bool leftF2IsWall = previewMiniMap == null
+        || !previewMiniMap.IsInside(tileX, tileY)
+        || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (piece.Name != "Wall F2Left" && piece.Name != "LeftF2")
+        continue;
+
+      piece.Enabled = leftF2IsWall;
+      piece.MirrorHorizontally =
+          ((previewX + previewY + (int)previewFacing) & 1) == 0;
+      return;
+    }
+  }
+
+  private static bool IsWallF2LeftPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Name == "Wall F2Left" || piece.Name == "LeftF2")
+      return true;
+
+    return piece.Graphic == DungeonGraphicType.WallF2L;
+  }
+
+  /// <summary>
+  /// Wall F2Right / RightF2 from the map tile two steps forward and one step right.
+  /// Solid/out-of-bounds → Enabled. Does not change F2Left, Front F2, or mirrors.
+  /// </summary>
+  private void ApplyWallF2RightFromMapGeometry()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    EnsurePreviewMiniMapLoaded();
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+    int tileX = previewX + forwardX * 2 + rightX;
+    int tileY = previewY + forwardY * 2 + rightY;
+    bool rightF2IsWall = previewMiniMap == null
+        || !previewMiniMap.IsInside(tileX, tileY)
+        || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (piece.Name != "Wall F2Right" && piece.Name != "RightF2")
+        continue;
+
+      piece.Enabled = rightF2IsWall;
+      return;
+    }
   }
 
   private void PersistPoseVisibilityStore()
@@ -3359,6 +3456,15 @@ public class ViewportLayoutEditor : EditorWindow
               ? DungeonGraphicType.WallF1R
               : DungeonGraphicType.WallF1L;
           mirror = !phaseOn;
+        }
+        else if (IsWallF2LeftPiece(piece))
+        {
+          bool phaseOn =
+              ((previewX + previewY + (int)previewFacing) & 1) == 0;
+          drawGraphic = phaseOn
+              ? DungeonGraphicType.WallF2R
+              : DungeonGraphicType.WallF2L;
+          mirror = phaseOn;
         }
 
         if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
