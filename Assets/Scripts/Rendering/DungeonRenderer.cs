@@ -2259,17 +2259,28 @@ namespace DM.Rendering
       }
 
       DungeonGraphicType drawGraphic = piece.Graphic;
-      bool? f0LeftMirrorOverride = null;
-      if (IsWallF0LeftPiece(piece) && currentMap != null)
+      bool? f0MirrorOverride = null;
+      if (currentMap != null
+          && (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece)))
       {
         bool phaseOn =
             ((currentMap.PlayerX
                 + currentMap.PlayerY
                 + (int)currentMap.PlayerFacing) & 1) == 0;
-        drawGraphic = phaseOn
-            ? DungeonGraphicType.WallF0R
-            : DungeonGraphicType.WallF0L;
-        f0LeftMirrorOverride = phaseOn;
+        if (IsWallF0LeftPiece(piece))
+        {
+          drawGraphic = phaseOn
+              ? DungeonGraphicType.WallF0R
+              : DungeonGraphicType.WallF0L;
+          f0MirrorOverride = phaseOn;
+        }
+        else
+        {
+          drawGraphic = phaseOn
+              ? DungeonGraphicType.WallF0R
+              : DungeonGraphicType.WallF0L;
+          f0MirrorOverride = !phaseOn;
+        }
       }
 
       Texture2D texture =
@@ -2338,7 +2349,7 @@ namespace DM.Rendering
         }
       }
 
-      bool mirror = f0LeftMirrorOverride
+      bool mirror = f0MirrorOverride
           ?? GetEffectiveEnvironmentMirror(piece);
       int destX = piece.EffectiveX;
       int destY = piece.EffectiveY + dungeonDrawOffsetY;
@@ -2460,6 +2471,17 @@ namespace DM.Rendering
         return true;
 
       return piece.Graphic == DungeonGraphicType.WallF0L;
+    }
+
+    private static bool IsWallF0RightPiece(ViewportPiece piece)
+    {
+      if (piece == null)
+        return false;
+
+      if (piece.Name == "Wall F0Right" || piece.Name == "RightF0")
+        return true;
+
+      return piece.Graphic == DungeonGraphicType.WallF0R;
     }
 
     private void ApplyFrameBuffer()

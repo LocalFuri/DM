@@ -2669,8 +2669,21 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.Enabled = rightIsWall;
+      piece.MirrorHorizontally =
+          ((previewX + previewY + (int)previewFacing) & 1) != 0;
       return;
     }
+  }
+
+  private static bool IsWallF0RightPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Name == "Wall F0Right" || piece.Name == "RightF0")
+      return true;
+
+    return piece.Graphic == DungeonGraphicType.WallF0R;
   }
 
   private void PersistPoseVisibilityStore()
@@ -3209,6 +3222,15 @@ public class ViewportLayoutEditor : EditorWindow
               ? DungeonGraphicType.WallF0R
               : DungeonGraphicType.WallF0L;
           mirror = phaseOn;
+        }
+        else if (IsWallF0RightPiece(piece))
+        {
+          bool phaseOn =
+              ((previewX + previewY + (int)previewFacing) & 1) == 0;
+          drawGraphic = phaseOn
+              ? DungeonGraphicType.WallF0R
+              : DungeonGraphicType.WallF0L;
+          mirror = !phaseOn;
         }
 
         if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
