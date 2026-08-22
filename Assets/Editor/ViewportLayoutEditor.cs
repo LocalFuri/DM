@@ -2034,6 +2034,7 @@ public class ViewportLayoutEditor : EditorWindow
       poseVisibilityStore.ApplyToLayout(entry, layout);
       ApplyCeilingMirrorFromPose();
       ApplyFloorMirrorFromPose();
+      ApplyWallF0LeftFromMapGeometry();
       return;
     }
 
@@ -2041,6 +2042,7 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyUnknownPoseDefaultsToLayout();
     ApplyCeilingMirrorFromPose();
     ApplyFloorMirrorFromPose();
+    ApplyWallF0LeftFromMapGeometry();
   }
 
   private void PreviewNavigateTurnLeft()
@@ -2523,6 +2525,7 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyUnknownPoseDefaultsToLayout();
       ApplyCeilingMirrorFromPose();
       ApplyFloorMirrorFromPose();
+      ApplyWallF0LeftFromMapGeometry();
       entry = poseVisibilityStore.GetOrCreateEntry(
           previewX,
           previewY,
@@ -2535,6 +2538,7 @@ public class ViewportLayoutEditor : EditorWindow
     poseVisibilityStore.ApplyToLayout(entry, layout);
     ApplyCeilingMirrorFromPose();
     ApplyFloorMirrorFromPose();
+    ApplyWallF0LeftFromMapGeometry();
   }
 
   /// <summary>
@@ -2579,6 +2583,40 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.MirrorHorizontally = mirrorOn;
+      return;
+    }
+  }
+
+  /// <summary>
+  /// Wall F0Left / LeftF0 from the map tile immediately to the player's left.
+  /// Solid/out-of-bounds → Enabled. Does not change Ceiling, Floor, or other walls.
+  /// </summary>
+  private void ApplyWallF0LeftFromMapGeometry()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    EnsurePreviewMiniMapLoaded();
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+    int leftX = previewX - rightX;
+    int leftY = previewY - rightY;
+    bool leftIsWall = previewMiniMap == null
+        || !previewMiniMap.IsInside(leftX, leftY)
+        || previewMiniMap.GetTile(leftX, leftY).Type == DungeonTileType.Wall;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (piece.Name != "Wall F0Left" && piece.Name != "LeftF0")
+        continue;
+
+      piece.Enabled = leftIsWall;
       return;
     }
   }
