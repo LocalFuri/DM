@@ -2621,7 +2621,8 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.Enabled = leftIsWall;
-      piece.MirrorHorizontally = true;
+      piece.MirrorHorizontally =
+          ((previewX + previewY + (int)previewFacing) & 1) == 0;
       return;
     }
   }
@@ -3202,8 +3203,12 @@ public class ViewportLayoutEditor : EditorWindow
         DungeonGraphicType drawGraphic = piece.Graphic;
         if (IsWallF0LeftPiece(piece))
         {
-          drawGraphic = DungeonGraphicType.WallF0R;
-          mirror = true;
+          bool phaseOn =
+              ((previewX + previewY + (int)previewFacing) & 1) == 0;
+          drawGraphic = phaseOn
+              ? DungeonGraphicType.WallF0R
+              : DungeonGraphicType.WallF0L;
+          mirror = phaseOn;
         }
 
         if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))

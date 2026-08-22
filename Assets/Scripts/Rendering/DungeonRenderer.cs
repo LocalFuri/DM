@@ -2259,11 +2259,17 @@ namespace DM.Rendering
       }
 
       DungeonGraphicType drawGraphic = piece.Graphic;
-      bool f0LeftForcedMirror = false;
-      if (IsWallF0LeftPiece(piece))
+      bool? f0LeftMirrorOverride = null;
+      if (IsWallF0LeftPiece(piece) && currentMap != null)
       {
-        drawGraphic = DungeonGraphicType.WallF0R;
-        f0LeftForcedMirror = true;
+        bool phaseOn =
+            ((currentMap.PlayerX
+                + currentMap.PlayerY
+                + (int)currentMap.PlayerFacing) & 1) == 0;
+        drawGraphic = phaseOn
+            ? DungeonGraphicType.WallF0R
+            : DungeonGraphicType.WallF0L;
+        f0LeftMirrorOverride = phaseOn;
       }
 
       Texture2D texture =
@@ -2332,9 +2338,8 @@ namespace DM.Rendering
         }
       }
 
-      bool mirror = GetEffectiveEnvironmentMirror(piece);
-      if (f0LeftForcedMirror)
-        mirror = true;
+      bool mirror = f0LeftMirrorOverride
+          ?? GetEffectiveEnvironmentMirror(piece);
       int destX = piece.EffectiveX;
       int destY = piece.EffectiveY + dungeonDrawOffsetY;
 
