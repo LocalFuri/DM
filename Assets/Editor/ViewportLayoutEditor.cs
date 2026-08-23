@@ -3322,6 +3322,28 @@ public class ViewportLayoutEditor : EditorWindow
     if (layout == null || layout.Pieces == null)
       return;
 
+    // (1,3) North is a Black Door front view. Force FrontF2 off so ViewEdit
+    // matches the exception (not drawn) and the saved pose stays disabled.
+    if (previewX == 1
+        && previewY == 3
+        && previewFacing == DungeonFacing.North)
+    {
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (piece == null)
+          continue;
+
+        if (piece.Name != "FrontF2" && piece.Name != "Front Wall F2")
+          continue;
+
+        piece.Enabled = false;
+        return;
+      }
+
+      return;
+    }
+
     EnsurePreviewMiniMapLoaded();
     DungeonMap.GetForwardOffset(
         previewFacing,
