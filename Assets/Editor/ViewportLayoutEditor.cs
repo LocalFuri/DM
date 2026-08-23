@@ -107,6 +107,14 @@ public class ViewportLayoutEditor : EditorWindow
   // Enabled onto the live layout (SaveAssets can re-enter editor code).
   private bool suppressPoseCaptureFromLayout;
 
+  // ViewEdit-only BlackDoorF2 card controls. Do not write layout/pose and
+  // do not drive rendering; F2 still uses the existing pose exception.
+  private bool blackDoorF2CardInitialized;
+  private bool blackDoorF2CardEnabled;
+  private bool blackDoorF2CardMirror;
+  private DungeonGraphicType blackDoorF2CardGraphic =
+      DungeonGraphicType.BlackDoor;
+
   // Single source of truth for selection.
   private int selectedPieceIndex;
   private bool selectionChangedThisFrame;
@@ -864,11 +872,49 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (piece.Name == "BlackDoorF1")
     {
+      if (!blackDoorF2CardInitialized)
+      {
+        blackDoorF2CardEnabled = false;
+        blackDoorF2CardMirror = piece.MirrorHorizontally;
+        blackDoorF2CardGraphic = DungeonGraphicType.BlackDoor;
+        blackDoorF2CardInitialized = true;
+      }
+
       EditorGUILayout.Space(4f);
-      EditorGUILayout.LabelField(
-          "BlackDoorF2",
-          EditorStyles.boldLabel);
-      EditorGUILayout.LabelField("Graphic", "Black Door");
+      EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+      EditorGUILayout.BeginHorizontal();
+      EditorGUILayout.LabelField("BlackDoorF2", EditorStyles.label);
+      EditorGUILayout.EndHorizontal();
+
+      EditorGUILayout.TextField("Name", "BlackDoorF2");
+
+      EditorGUILayout.BeginHorizontal();
+      GUILayout.FlexibleSpace();
+      float f2PreviousLabelWidth = EditorGUIUtility.labelWidth;
+      EditorGUIUtility.labelWidth = 55f;
+      blackDoorF2CardEnabled = DrawMouseOnlyToggle(
+          "Enabled",
+          blackDoorF2CardEnabled,
+          GUILayout.Width(72));
+      GUILayout.FlexibleSpace();
+      const string F2MirrorLabel = "Mirror Horizontally";
+      float f2MirrorLabelWidth =
+          EditorStyles.label.CalcSize(new GUIContent(F2MirrorLabel)).x;
+      EditorGUIUtility.labelWidth = f2MirrorLabelWidth;
+      blackDoorF2CardMirror = DrawMouseOnlyToggle(
+          F2MirrorLabel,
+          blackDoorF2CardMirror,
+          GUILayout.Width(f2MirrorLabelWidth + 18f),
+          GUILayout.ExpandWidth(false));
+      EditorGUIUtility.labelWidth = f2PreviousLabelWidth;
+      EditorGUILayout.EndHorizontal();
+
+      blackDoorF2CardGraphic =
+          (DungeonGraphicType)EditorGUILayout.EnumPopup(
+              "Graphic",
+              blackDoorF2CardGraphic);
+
       EditorGUILayout.BeginHorizontal();
       EditorGUILayout.PrefixLabel("Size");
       using (new EditorGUI.DisabledScope(true))
@@ -878,6 +924,7 @@ public class ViewportLayoutEditor : EditorWindow
         EditorGUILayout.IntField(60, GUILayout.Width(50));
       }
       EditorGUILayout.EndHorizontal();
+
       int f2X = piece.ResolvedBlackDoorF2X;
       int f2Y = piece.ResolvedBlackDoorF2Y;
       int f2XBefore = f2X;
@@ -890,6 +937,8 @@ public class ViewportLayoutEditor : EditorWindow
         piece.BlackDoorF2Y = f2Y;
         changed = true;
       }
+
+      EditorGUILayout.EndVertical();
     }
 
     EditorGUILayout.BeginHorizontal();
