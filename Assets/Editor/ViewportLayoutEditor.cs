@@ -866,7 +866,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       EditorGUILayout.Space(4f);
       EditorGUILayout.LabelField(
-          "F2 exception — (1,4) North only",
+          "BlackDoorF2",
           EditorStyles.boldLabel);
       EditorGUILayout.LabelField("Graphic", "Black Door");
       EditorGUILayout.BeginHorizontal();
