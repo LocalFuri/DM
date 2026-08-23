@@ -951,8 +951,8 @@ public class ViewportLayoutEditor : EditorWindow
       int f2Y = piece.ResolvedBlackDoorF2Y;
       int f2XBefore = f2X;
       int f2YBefore = f2Y;
-      DrawIntStepper("X", ref f2X, 1);
-      DrawIntStepper("Y", ref f2Y, 1);
+      DrawIntStepper("X", ref f2X, snap);
+      DrawIntStepper("Y", ref f2Y, snap);
       if (f2X != f2XBefore || f2Y != f2YBefore)
       {
         piece.BlackDoorF2X = f2X;
@@ -1015,8 +1015,8 @@ public class ViewportLayoutEditor : EditorWindow
       }
       EditorGUILayout.EndHorizontal();
 
-      DrawIntStepper("X", ref blackDoorF3CardX, 1);
-      DrawIntStepper("Y", ref blackDoorF3CardY, 1);
+      DrawIntStepper("X", ref blackDoorF3CardX, snap);
+      DrawIntStepper("Y", ref blackDoorF3CardY, snap);
 
       EditorGUILayout.EndVertical();
     }
@@ -1139,8 +1139,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
     EditorGUILayout.EndHorizontal();
 
-    DrawIntStepper("X", ref x, 1);
-    DrawIntStepper("Y", ref y, 1);
+    DrawIntStepper("X", ref x, snap);
+    DrawIntStepper("Y", ref y, snap);
 
     EditorGUILayout.EndVertical();
   }
