@@ -137,6 +137,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private Texture2D blackDoorFrameF3SourceTexture;
   private Texture2D blackDoorF3SourceTexture;
+  private Texture2D blackDoorF2SourceTexture;
 
   // Single source of truth for selection.
   private int selectedPieceIndex;
@@ -3784,6 +3785,19 @@ public class ViewportLayoutEditor : EditorWindow
         if (piece == null)
           continue;
 
+        if (piece.Name != "Black Door Frame Right F2")
+          continue;
+
+        piece.Enabled = true;
+        break;
+      }
+
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (piece == null)
+          continue;
+
         if (piece.Name != "BlackDoorF1")
           continue;
 
@@ -4593,18 +4607,20 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        // (1,4) North only: same Black Door source, 63×60 at F2 X/Y.
-        // Independent of the normal Black Door Enabled flag and layout X/Y.
+        // (1,4) North: F2 frames already blitted in kit order; BlackDoorF2
+        // 66×64 1:1 last so it covers overlapping inner frame pixels.
         if (blackDoorF2Exception)
         {
-          BlitPieceScaledIntoPreview(
-              pixels,
-              texture,
-              piece.ResolvedBlackDoorF2X,
-              piece.ResolvedBlackDoorF2Y,
-              63,
-              60,
-              mirror);
+          Texture2D f2Source = GetBlackDoorF2SourceTexture();
+          if (f2Source != null)
+          {
+            BlitPieceIntoPreview(
+                pixels,
+                f2Source,
+                piece.ResolvedBlackDoorF2X,
+                piece.ResolvedBlackDoorF2Y,
+                mirror);
+          }
           continue;
         }
 
@@ -4864,6 +4880,18 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return blackDoorF3SourceTexture;
+  }
+
+  private Texture2D GetBlackDoorF2SourceTexture()
+  {
+    if (blackDoorF2SourceTexture == null)
+    {
+      blackDoorF2SourceTexture =
+          AssetDatabase.LoadAssetAtPath<Texture2D>(
+              "Assets/Art/Walls/BlackDoorF2_66x64.png");
+    }
+
+    return blackDoorF2SourceTexture;
   }
 
   /// <summary>
