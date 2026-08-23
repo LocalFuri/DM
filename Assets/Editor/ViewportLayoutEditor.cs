@@ -115,6 +115,14 @@ public class ViewportLayoutEditor : EditorWindow
   private DungeonGraphicType blackDoorF2CardGraphic =
       DungeonGraphicType.BlackDoor;
 
+  private bool blackDoorF3CardInitialized;
+  private bool blackDoorF3CardEnabled;
+  private bool blackDoorF3CardMirror;
+  private DungeonGraphicType blackDoorF3CardGraphic =
+      DungeonGraphicType.BlackDoor;
+  private int blackDoorF3CardX;
+  private int blackDoorF3CardY;
+
   // Single source of truth for selection.
   private int selectedPieceIndex;
   private bool selectionChangedThisFrame;
@@ -937,6 +945,64 @@ public class ViewportLayoutEditor : EditorWindow
         piece.BlackDoorF2Y = f2Y;
         changed = true;
       }
+
+      EditorGUILayout.EndVertical();
+
+      if (!blackDoorF3CardInitialized)
+      {
+        blackDoorF3CardEnabled = false;
+        blackDoorF3CardMirror = piece.MirrorHorizontally;
+        blackDoorF3CardGraphic = DungeonGraphicType.BlackDoor;
+        blackDoorF3CardInitialized = true;
+      }
+
+      EditorGUILayout.Space(4f);
+      EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+      EditorGUILayout.BeginHorizontal();
+      EditorGUILayout.LabelField("BlackDoorF3", EditorStyles.label);
+      EditorGUILayout.EndHorizontal();
+
+      EditorGUILayout.TextField("Name", "BlackDoorF3");
+
+      EditorGUILayout.BeginHorizontal();
+      GUILayout.FlexibleSpace();
+      float f3PreviousLabelWidth = EditorGUIUtility.labelWidth;
+      EditorGUIUtility.labelWidth = 55f;
+      blackDoorF3CardEnabled = DrawMouseOnlyToggle(
+          "Enabled",
+          blackDoorF3CardEnabled,
+          GUILayout.Width(72));
+      GUILayout.FlexibleSpace();
+      const string F3MirrorLabel = "Mirror Horizontally";
+      float f3MirrorLabelWidth =
+          EditorStyles.label.CalcSize(new GUIContent(F3MirrorLabel)).x;
+      EditorGUIUtility.labelWidth = f3MirrorLabelWidth;
+      blackDoorF3CardMirror = DrawMouseOnlyToggle(
+          F3MirrorLabel,
+          blackDoorF3CardMirror,
+          GUILayout.Width(f3MirrorLabelWidth + 18f),
+          GUILayout.ExpandWidth(false));
+      EditorGUIUtility.labelWidth = f3PreviousLabelWidth;
+      EditorGUILayout.EndHorizontal();
+
+      blackDoorF3CardGraphic =
+          (DungeonGraphicType)EditorGUILayout.EnumPopup(
+              "Graphic",
+              blackDoorF3CardGraphic);
+
+      EditorGUILayout.BeginHorizontal();
+      EditorGUILayout.PrefixLabel("Size");
+      using (new EditorGUI.DisabledScope(true))
+      {
+        EditorGUILayout.IntField(44, GUILayout.Width(50));
+        EditorGUILayout.LabelField("x", GUILayout.Width(12));
+        EditorGUILayout.IntField(39, GUILayout.Width(50));
+      }
+      EditorGUILayout.EndHorizontal();
+
+      DrawIntStepper("X", ref blackDoorF3CardX, 1);
+      DrawIntStepper("Y", ref blackDoorF3CardY, 1);
 
       EditorGUILayout.EndVertical();
     }
