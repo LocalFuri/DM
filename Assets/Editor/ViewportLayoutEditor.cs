@@ -39,6 +39,7 @@ public class ViewportLayoutEditor : EditorWindow
     "Right",
     "LeftD3",
     "RightD3",
+    "Black Door",
   };
 
   /// <summary>
@@ -551,6 +552,8 @@ public class ViewportLayoutEditor : EditorWindow
         return name == "LeftD3";
       case "RightD3":
         return name == "RightD3";
+      case "Black Door":
+        return name.IndexOf("Black Door", System.StringComparison.OrdinalIgnoreCase) >= 0;
       default:
         return true;
     }
