@@ -1013,7 +1013,7 @@ public class ViewportLayoutEditor : EditorWindow
       EditorGUILayout.PrefixLabel("Size");
       using (new EditorGUI.DisabledScope(true))
       {
-        EditorGUILayout.IntField(44, GUILayout.Width(50));
+        EditorGUILayout.IntField(45, GUILayout.Width(50));
         EditorGUILayout.LabelField("x", GUILayout.Width(12));
         EditorGUILayout.IntField(39, GUILayout.Width(50));
       }
@@ -4608,9 +4608,10 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        // (1,5) North: BlackDoorF3 43×38 1:1, then F3 frames.
+        // (1,5) North: F3 frames first, then BlackDoorF3 45×39 1:1 on top.
         if (blackDoorF3Exception)
         {
+          BlitBlackDoorF3FramesIntoPreview(pixels);
           ViewportPiece doorF3 = FindLayoutPieceByName("BlackDoorF3");
           int f3X = doorF3 != null ? doorF3.X : blackDoorF3CardX;
           int f3Y = doorF3 != null ? doorF3.Y : blackDoorF3CardY;
@@ -4624,7 +4625,6 @@ public class ViewportLayoutEditor : EditorWindow
                 f3Y,
                 mirror);
           }
-          BlitBlackDoorF3FramesIntoPreview(pixels);
           continue;
         }
 
@@ -4860,7 +4860,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       blackDoorF3SourceTexture =
           AssetDatabase.LoadAssetAtPath<Texture2D>(
-              "Assets/Art/Walls/BlackDoorF3_43x38.png");
+              "Assets/Art/Walls/BlackDoorF3_45x39.png");
     }
 
     return blackDoorF3SourceTexture;

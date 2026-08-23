@@ -308,7 +308,7 @@ MonoBehaviour:
   - Name: BlackDoorF3
     Graphic: 0
     X: 90
-    Y: 99
+    Y: 98
     Enabled: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
