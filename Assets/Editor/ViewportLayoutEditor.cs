@@ -75,7 +75,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("Black Door Frame Left F2", false),
     ("Black Door Frame Right F1", false),
     ("Black Door Frame Right F2", false),
-    ("Black Door", false),
+    ("BlackDoorF1", false),
   };
 
   [System.NonSerialized]
@@ -552,7 +552,11 @@ public class ViewportLayoutEditor : EditorWindow
       case "RightD3":
         return name == "RightD3";
       case "Black Door":
-        return name.IndexOf("Black Door", System.StringComparison.OrdinalIgnoreCase) >= 0;
+        return name.IndexOf("Black Door", System.StringComparison.OrdinalIgnoreCase) >= 0
+            || string.Equals(
+                name,
+                "BlackDoorF1",
+                System.StringComparison.OrdinalIgnoreCase);
       default:
         return true;
     }
@@ -758,7 +762,7 @@ public class ViewportLayoutEditor : EditorWindow
       changed = true;
     }
 
-    if (piece.Name == "Black Door")
+    if (piece.Name == "BlackDoorF1")
     {
       EditorGUILayout.BeginHorizontal();
       EditorGUILayout.PrefixLabel("Size");
@@ -858,7 +862,7 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    if (piece.Name == "Black Door")
+    if (piece.Name == "BlackDoorF1")
     {
       EditorGUILayout.Space(4f);
       EditorGUILayout.LabelField(

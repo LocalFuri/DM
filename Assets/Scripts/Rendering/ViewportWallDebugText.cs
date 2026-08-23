@@ -54,7 +54,7 @@ namespace DM.Rendering
       "Black Door Frame Left F2",
       "Black Door Frame Right F1",
       "Black Door Frame Right F2",
-      "Black Door"
+      "BlackDoorF1"
     };
 
     public static string FormatConsoleLine(
