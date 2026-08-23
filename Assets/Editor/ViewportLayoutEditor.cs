@@ -4607,20 +4607,9 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        // (1,5) North only: same Black Door source, 44×39 at F3 editor X/Y.
+        // (1,5) North: F3 frames only. Do not downscale the F1 Black Door.
         if (blackDoorF3Exception)
         {
-          ViewportPiece doorF3 = FindLayoutPieceByName("BlackDoorF3");
-          int f3X = doorF3 != null ? doorF3.X : blackDoorF3CardX;
-          int f3Y = doorF3 != null ? doorF3.Y : blackDoorF3CardY;
-          BlitPieceScaledIntoPreview(
-              pixels,
-              texture,
-              f3X,
-              f3Y,
-              44,
-              39,
-              mirror);
           BlitBlackDoorF3FramesIntoPreview(pixels);
           continue;
         }
