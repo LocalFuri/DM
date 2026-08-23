@@ -244,7 +244,6 @@ public class ViewportLayoutEditor : EditorWindow
     SaveSessionPrefs();
 
     EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
-    RestoreViewportTextureAndDestroyPreview();
     RepaintGameViews();
   }
 
