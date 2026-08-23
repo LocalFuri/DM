@@ -449,7 +449,8 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
 
     return piece.Name == "Ceiling Strip 84"
-        || piece.Name == "Ceiling Strip 85";
+        || piece.Name == "Ceiling Strip 85"
+        || piece.Name == "Black Door Frame Left F3";
   }
 
   /// <summary>
@@ -1061,14 +1062,32 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (piece.Name == "Black Door Frame Left F2")
     {
+      ViewportPiece leftF3 = FindLayoutPieceByName("Black Door Frame Left F3");
+      if (leftF3 == null)
+      {
+        leftF3 = EnsureBlackDoorFrameLeftF3Piece();
+        changed = true;
+      }
+      int x = leftF3 != null ? leftF3.X : blackDoorFrameLeftF3CardX;
+      int y = leftF3 != null ? leftF3.Y : blackDoorFrameLeftF3CardY;
+      int xBefore = x;
+      int yBefore = y;
       DrawBlackDoorFrameF3EditorCard(
           "Black Door Frame Left F3",
           ref blackDoorFrameLeftF3CardInitialized,
           ref blackDoorFrameLeftF3CardEnabled,
           ref blackDoorFrameLeftF3CardMirror,
-          ref blackDoorFrameLeftF3CardX,
-          ref blackDoorFrameLeftF3CardY,
+          ref x,
+          ref y,
           false);
+      blackDoorFrameLeftF3CardX = x;
+      blackDoorFrameLeftF3CardY = y;
+      if (leftF3 != null && (x != xBefore || y != yBefore))
+      {
+        leftF3.X = x;
+        leftF3.Y = y;
+        changed = true;
+      }
     }
     else if (piece.Name == "Black Door Frame Right F2")
     {
@@ -1143,6 +1162,58 @@ public class ViewportLayoutEditor : EditorWindow
     DrawIntStepper("Y", ref y, snap);
 
     EditorGUILayout.EndVertical();
+  }
+
+  private ViewportPiece FindLayoutPieceByName(string name)
+  {
+    if (layout == null || layout.Pieces == null || string.IsNullOrEmpty(name))
+      return null;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece != null && piece.Name == name)
+        return piece;
+    }
+
+    return null;
+  }
+
+  /// <summary>
+  /// Persistent Left F3 frame X/Y live on this layout piece, same as Left F2.
+  /// Hidden from the piece list; nested card edits piece.X / piece.Y.
+  /// </summary>
+  private ViewportPiece EnsureBlackDoorFrameLeftF3Piece()
+  {
+    ViewportPiece existing = FindLayoutPieceByName("Black Door Frame Left F3");
+    if (existing != null)
+      return existing;
+
+    if (layout == null || layout.Pieces == null)
+      return null;
+
+    int insertAt = layout.Pieces.Count;
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece != null && piece.Name == "Black Door Frame Left F2")
+      {
+        insertAt = i + 1;
+        break;
+      }
+    }
+
+    ViewportPiece created = new ViewportPiece
+    {
+      Name = "Black Door Frame Left F3",
+      Graphic = DungeonGraphicType.None,
+      X = blackDoorFrameLeftF3CardX,
+      Y = blackDoorFrameLeftF3CardY,
+      Enabled = false,
+      MirrorHorizontally = false
+    };
+    layout.Pieces.Insert(insertAt, created);
+    return created;
   }
 
   /// <summary>
@@ -4689,11 +4760,14 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (blackDoorFrameLeftF3CardEnabled)
     {
+      ViewportPiece leftF3 = FindLayoutPieceByName("Black Door Frame Left F3");
+      int leftX = leftF3 != null ? leftF3.X : blackDoorFrameLeftF3CardX;
+      int leftY = leftF3 != null ? leftF3.Y : blackDoorFrameLeftF3CardY;
       BlitPieceIntoPreview(
           pixels,
           source,
-          blackDoorFrameLeftF3CardX,
-          blackDoorFrameLeftF3CardY,
+          leftX,
+          leftY,
           blackDoorFrameLeftF3CardMirror);
     }
 
