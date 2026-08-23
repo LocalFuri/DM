@@ -57,7 +57,7 @@ MonoBehaviour:
     FrontWallF2Width: 106
   - Name: FrontF3
     Graphic: 25
-    X: 52
+    X: 60
     Y: 93
     Enabled: 0
     BlackDoorF2X: 0
