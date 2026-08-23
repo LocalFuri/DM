@@ -2218,6 +2218,7 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyFrontF1FromMapGeometry();
       ApplyFrontF2FromMapGeometry();
       ApplyFrontF3FromMapGeometry();
+      ApplyBlackDoorEnabledFromPoseException();
       return;
     }
 
@@ -2236,6 +2237,7 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyFrontF1FromMapGeometry();
     ApplyFrontF2FromMapGeometry();
     ApplyFrontF3FromMapGeometry();
+    ApplyBlackDoorEnabledFromPoseException();
   }
 
   private void PreviewNavigateTurnLeft()
@@ -2729,6 +2731,7 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyFrontF1FromMapGeometry();
       ApplyFrontF2FromMapGeometry();
       ApplyFrontF3FromMapGeometry();
+      ApplyBlackDoorEnabledFromPoseException();
       entry = poseVisibilityStore.GetOrCreateEntry(
           previewX,
           previewY,
@@ -2752,6 +2755,7 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyFrontF1FromMapGeometry();
     ApplyFrontF2FromMapGeometry();
     ApplyFrontF3FromMapGeometry();
+    ApplyBlackDoorEnabledFromPoseException();
   }
 
   /// <summary>
@@ -3411,6 +3415,28 @@ public class ViewportLayoutEditor : EditorWindow
     if (layout == null || layout.Pieces == null)
       return;
 
+    // (1,4) North is a Black Door F2 front view. Force FrontF3 off so ViewEdit
+    // matches the exception and the saved pose stays disabled.
+    if (previewX == 1
+        && previewY == 4
+        && previewFacing == DungeonFacing.North)
+    {
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (piece == null)
+          continue;
+
+        if (piece.Name != "FrontF3" && piece.Name != "Front Wall F3")
+          continue;
+
+        piece.Enabled = false;
+        return;
+      }
+
+      return;
+    }
+
     EnsurePreviewMiniMapLoaded();
     DungeonMap.GetForwardOffset(
         previewFacing,
@@ -3447,6 +3473,62 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.Enabled = frontF3IsWall;
+      return;
+    }
+  }
+
+  /// <summary>
+  /// Black Door ViewEdit Enabled exceptions. Does not change blit or other poses.
+  /// (1,4) North: F2 view — F1 off, F2 on.
+  /// (1,3) North: F1 view — F1 on, F2 off, F3 off.
+  /// </summary>
+  private void ApplyBlackDoorEnabledFromPoseException()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    if (previewFacing != DungeonFacing.North || previewX != 1)
+      return;
+
+    if (previewY == 4)
+    {
+      blackDoorF2CardEnabled = true;
+      blackDoorF2CardInitialized = true;
+
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (piece == null)
+          continue;
+
+        if (piece.Name != "BlackDoorF1")
+          continue;
+
+        piece.Enabled = false;
+        return;
+      }
+
+      return;
+    }
+
+    if (previewY != 3)
+      return;
+
+    blackDoorF2CardEnabled = false;
+    blackDoorF2CardInitialized = true;
+    blackDoorF3CardEnabled = false;
+    blackDoorF3CardInitialized = true;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (piece.Name != "BlackDoorF1")
+        continue;
+
+      piece.Enabled = true;
       return;
     }
   }
