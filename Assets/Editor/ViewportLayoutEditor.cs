@@ -3653,6 +3653,7 @@ public class ViewportLayoutEditor : EditorWindow
     blackDoorFrameLeftF3CardInitialized = true;
     blackDoorFrameRightF3CardEnabled = true;
     blackDoorFrameRightF3CardInitialized = true;
+    blackDoorFrameRightF3CardMirror = true;
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -4703,7 +4704,7 @@ public class ViewportLayoutEditor : EditorWindow
           source,
           blackDoorFrameRightF3CardX,
           blackDoorFrameRightF3CardY,
-          blackDoorFrameRightF3CardMirror);
+          true);
     }
   }
 
