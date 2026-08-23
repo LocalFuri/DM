@@ -136,6 +136,7 @@ public class ViewportLayoutEditor : EditorWindow
   private int blackDoorFrameRightF3CardY;
 
   private Texture2D blackDoorFrameF3SourceTexture;
+  private Texture2D blackDoorF3SourceTexture;
 
   // Single source of truth for selection.
   private int selectedPieceIndex;
@@ -4607,9 +4608,22 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        // (1,5) North: F3 frames only. Do not downscale the F1 Black Door.
+        // (1,5) North: BlackDoorF3 43×38 1:1, then F3 frames.
         if (blackDoorF3Exception)
         {
+          ViewportPiece doorF3 = FindLayoutPieceByName("BlackDoorF3");
+          int f3X = doorF3 != null ? doorF3.X : blackDoorF3CardX;
+          int f3Y = doorF3 != null ? doorF3.Y : blackDoorF3CardY;
+          Texture2D f3Source = GetBlackDoorF3SourceTexture();
+          if (f3Source != null)
+          {
+            BlitPieceIntoPreview(
+                pixels,
+                f3Source,
+                f3X,
+                f3Y,
+                mirror);
+          }
           BlitBlackDoorF3FramesIntoPreview(pixels);
           continue;
         }
@@ -4838,6 +4852,18 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return blackDoorFrameF3SourceTexture;
+  }
+
+  private Texture2D GetBlackDoorF3SourceTexture()
+  {
+    if (blackDoorF3SourceTexture == null)
+    {
+      blackDoorF3SourceTexture =
+          AssetDatabase.LoadAssetAtPath<Texture2D>(
+              "Assets/Art/Walls/BlackDoorF3_43x38.png");
+    }
+
+    return blackDoorF3SourceTexture;
   }
 
   /// <summary>
