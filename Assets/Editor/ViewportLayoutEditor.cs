@@ -123,6 +123,20 @@ public class ViewportLayoutEditor : EditorWindow
   private int blackDoorF3CardX;
   private int blackDoorF3CardY;
 
+  private bool blackDoorFrameLeftF3CardInitialized;
+  private bool blackDoorFrameLeftF3CardEnabled;
+  private bool blackDoorFrameLeftF3CardMirror;
+  private int blackDoorFrameLeftF3CardX;
+  private int blackDoorFrameLeftF3CardY;
+
+  private bool blackDoorFrameRightF3CardInitialized;
+  private bool blackDoorFrameRightF3CardEnabled;
+  private bool blackDoorFrameRightF3CardMirror;
+  private int blackDoorFrameRightF3CardX;
+  private int blackDoorFrameRightF3CardY;
+
+  private Texture2D blackDoorFrameF3SourceTexture;
+
   // Single source of truth for selection.
   private int selectedPieceIndex;
   private bool selectionChangedThisFrame;
@@ -1043,6 +1057,91 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     EditorGUILayout.EndHorizontal();
+    EditorGUILayout.EndVertical();
+
+    if (piece.Name == "Black Door Frame Left F2")
+    {
+      DrawBlackDoorFrameF3EditorCard(
+          "Black Door Frame Left F3",
+          ref blackDoorFrameLeftF3CardInitialized,
+          ref blackDoorFrameLeftF3CardEnabled,
+          ref blackDoorFrameLeftF3CardMirror,
+          ref blackDoorFrameLeftF3CardX,
+          ref blackDoorFrameLeftF3CardY,
+          false);
+    }
+    else if (piece.Name == "Black Door Frame Right F2")
+    {
+      DrawBlackDoorFrameF3EditorCard(
+          "Black Door Frame Right F3",
+          ref blackDoorFrameRightF3CardInitialized,
+          ref blackDoorFrameRightF3CardEnabled,
+          ref blackDoorFrameRightF3CardMirror,
+          ref blackDoorFrameRightF3CardX,
+          ref blackDoorFrameRightF3CardY,
+          true);
+    }
+  }
+
+  private void DrawBlackDoorFrameF3EditorCard(
+      string name,
+      ref bool initialized,
+      ref bool enabled,
+      ref bool mirror,
+      ref int x,
+      ref int y,
+      bool defaultMirror)
+  {
+    if (!initialized)
+    {
+      enabled = false;
+      mirror = defaultMirror;
+      initialized = true;
+    }
+
+    EditorGUILayout.Space(4f);
+    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+    EditorGUILayout.BeginHorizontal();
+    EditorGUILayout.LabelField(name, EditorStyles.label);
+    EditorGUILayout.EndHorizontal();
+
+    EditorGUILayout.TextField("Name", name);
+
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.FlexibleSpace();
+    float previousLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth = 55f;
+    enabled = DrawMouseOnlyToggle(
+        "Enabled",
+        enabled,
+        GUILayout.Width(72));
+    GUILayout.FlexibleSpace();
+    const string MirrorLabel = "Mirror Horizontally";
+    float mirrorLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
+    EditorGUIUtility.labelWidth = mirrorLabelWidth;
+    mirror = DrawMouseOnlyToggle(
+        MirrorLabel,
+        mirror,
+        GUILayout.Width(mirrorLabelWidth + 18f),
+        GUILayout.ExpandWidth(false));
+    EditorGUIUtility.labelWidth = previousLabelWidth;
+    EditorGUILayout.EndHorizontal();
+
+    EditorGUILayout.BeginHorizontal();
+    EditorGUILayout.PrefixLabel("Size");
+    using (new EditorGUI.DisabledScope(true))
+    {
+      EditorGUILayout.IntField(10, GUILayout.Width(50));
+      EditorGUILayout.LabelField("x", GUILayout.Width(12));
+      EditorGUILayout.IntField(42, GUILayout.Width(50));
+    }
+    EditorGUILayout.EndHorizontal();
+
+    DrawIntStepper("X", ref x, 1);
+    DrawIntStepper("Y", ref y, 1);
+
     EditorGUILayout.EndVertical();
   }
 
@@ -3495,6 +3594,10 @@ public class ViewportLayoutEditor : EditorWindow
     {
       blackDoorF2CardEnabled = true;
       blackDoorF2CardInitialized = true;
+      blackDoorFrameLeftF3CardEnabled = false;
+      blackDoorFrameLeftF3CardInitialized = true;
+      blackDoorFrameRightF3CardEnabled = false;
+      blackDoorFrameRightF3CardInitialized = true;
 
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
@@ -3518,6 +3621,10 @@ public class ViewportLayoutEditor : EditorWindow
       blackDoorF2CardInitialized = true;
       blackDoorF3CardEnabled = false;
       blackDoorF3CardInitialized = true;
+      blackDoorFrameLeftF3CardEnabled = false;
+      blackDoorFrameLeftF3CardInitialized = true;
+      blackDoorFrameRightF3CardEnabled = false;
+      blackDoorFrameRightF3CardInitialized = true;
 
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
@@ -3542,6 +3649,10 @@ public class ViewportLayoutEditor : EditorWindow
     blackDoorF2CardInitialized = true;
     blackDoorF3CardEnabled = true;
     blackDoorF3CardInitialized = true;
+    blackDoorFrameLeftF3CardEnabled = true;
+    blackDoorFrameLeftF3CardInitialized = true;
+    blackDoorFrameRightF3CardEnabled = true;
+    blackDoorFrameRightF3CardInitialized = true;
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -4328,6 +4439,7 @@ public class ViewportLayoutEditor : EditorWindow
               44,
               39,
               mirror);
+          BlitBlackDoorF3FramesIntoPreview(pixels);
           continue;
         }
 
@@ -4543,6 +4655,56 @@ public class ViewportLayoutEditor : EditorWindow
     return previewX == 1
         && previewY == 5
         && previewFacing == DungeonFacing.North;
+  }
+
+  private Texture2D GetBlackDoorFrameF3SourceTexture()
+  {
+    if (blackDoorFrameF3SourceTexture == null)
+    {
+      blackDoorFrameF3SourceTexture =
+          AssetDatabase.LoadAssetAtPath<Texture2D>(
+              "Assets/Art/Walls/Black Door Frame_Left_10x42.png");
+    }
+
+    return blackDoorFrameF3SourceTexture;
+  }
+
+  /// <summary>
+  /// (1,5) North Black Door F3 frames. Same 10×42 left source; right is
+  /// mirrored. Not wall-geometry pieces. Does not write pose data.
+  /// </summary>
+  private void BlitBlackDoorF3FramesIntoPreview(Color32[] pixels)
+  {
+    if (previewX != 1
+        || previewY != 5
+        || previewFacing != DungeonFacing.North)
+    {
+      return;
+    }
+
+    Texture2D source = GetBlackDoorFrameF3SourceTexture();
+    if (source == null)
+      return;
+
+    if (blackDoorFrameLeftF3CardEnabled)
+    {
+      BlitPieceIntoPreview(
+          pixels,
+          source,
+          blackDoorFrameLeftF3CardX,
+          blackDoorFrameLeftF3CardY,
+          blackDoorFrameLeftF3CardMirror);
+    }
+
+    if (blackDoorFrameRightF3CardEnabled)
+    {
+      BlitPieceIntoPreview(
+          pixels,
+          source,
+          blackDoorFrameRightF3CardX,
+          blackDoorFrameRightF3CardY,
+          blackDoorFrameRightF3CardMirror);
+    }
   }
 
   /// <summary>
