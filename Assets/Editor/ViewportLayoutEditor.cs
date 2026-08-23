@@ -3647,15 +3647,19 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     EnsurePreviewMiniMapLoaded();
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    int tileX = previewX + forwardX;
-    int tileY = previewY + forwardY;
-    bool frontF1IsWall = previewMiniMap == null
-        || !previewMiniMap.IsInside(tileX, tileY)
-        || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+
+    bool frontF1IsWall = true;
+    if (previewMiniMap != null)
+    {
+      RelativeViewportGeometry geometry =
+          RelativeViewportGeometry.Calculate(
+              previewMiniMap,
+              previewX,
+              previewY,
+              previewFacing);
+
+      frontF1IsWall = geometry.F1Center.IsWall;
+    }
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
