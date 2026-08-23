@@ -255,6 +255,16 @@ MonoBehaviour:
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
+  - Name: Black Door Frame Left F3
+    Graphic: 0
+    X: 81
+    Y: 97
+    Enabled: 0
+    BlackDoorF2X: 0
+    BlackDoorF2Y: 0
+    MirrorHorizontally: 0
+    FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - Name: Black Door Frame Right F1
     Graphic: 31
     X: 153
@@ -275,6 +285,16 @@ MonoBehaviour:
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
+  - Name: Black Door Frame Right F3
+    Graphic: 0
+    X: 133
+    Y: 97
+    Enabled: 0
+    BlackDoorF2X: 0
+    BlackDoorF2Y: 0
+    MirrorHorizontally: 0
+    FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - Name: BlackDoorF1
     Graphic: 30
     X: 63
@@ -282,6 +302,16 @@ MonoBehaviour:
     Enabled: 0
     BlackDoorF2X: 80
     BlackDoorF2Y: 82
+    MirrorHorizontally: 0
+    FrontWallF1Width: 191
+    FrontWallF2Width: 106
+  - Name: BlackDoorF3
+    Graphic: 0
+    X: 90
+    Y: 99
+    Enabled: 0
+    BlackDoorF2X: 0
+    BlackDoorF2Y: 0
     MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106

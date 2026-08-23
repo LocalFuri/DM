@@ -450,7 +450,9 @@ public class ViewportLayoutEditor : EditorWindow
 
     return piece.Name == "Ceiling Strip 84"
         || piece.Name == "Ceiling Strip 85"
-        || piece.Name == "Black Door Frame Left F3";
+        || piece.Name == "Black Door Frame Left F3"
+        || piece.Name == "Black Door Frame Right F3"
+        || piece.Name == "BlackDoorF3";
   }
 
   /// <summary>
@@ -1016,8 +1018,26 @@ public class ViewportLayoutEditor : EditorWindow
       }
       EditorGUILayout.EndHorizontal();
 
-      DrawIntStepper("X", ref blackDoorF3CardX, snap);
-      DrawIntStepper("Y", ref blackDoorF3CardY, snap);
+      ViewportPiece doorF3 = FindLayoutPieceByName("BlackDoorF3");
+      if (doorF3 == null)
+      {
+        doorF3 = EnsureBlackDoorF3Piece();
+        changed = true;
+      }
+      int f3X = doorF3 != null ? doorF3.X : blackDoorF3CardX;
+      int f3Y = doorF3 != null ? doorF3.Y : blackDoorF3CardY;
+      int f3XBefore = f3X;
+      int f3YBefore = f3Y;
+      DrawIntStepper("X", ref f3X, snap);
+      DrawIntStepper("Y", ref f3Y, snap);
+      blackDoorF3CardX = f3X;
+      blackDoorF3CardY = f3Y;
+      if (doorF3 != null && (f3X != f3XBefore || f3Y != f3YBefore))
+      {
+        doorF3.X = f3X;
+        doorF3.Y = f3Y;
+        changed = true;
+      }
 
       EditorGUILayout.EndVertical();
     }
@@ -1091,14 +1111,32 @@ public class ViewportLayoutEditor : EditorWindow
     }
     else if (piece.Name == "Black Door Frame Right F2")
     {
+      ViewportPiece rightF3 = FindLayoutPieceByName("Black Door Frame Right F3");
+      if (rightF3 == null)
+      {
+        rightF3 = EnsureBlackDoorFrameRightF3Piece();
+        changed = true;
+      }
+      int x = rightF3 != null ? rightF3.X : blackDoorFrameRightF3CardX;
+      int y = rightF3 != null ? rightF3.Y : blackDoorFrameRightF3CardY;
+      int xBefore = x;
+      int yBefore = y;
       DrawBlackDoorFrameF3EditorCard(
           "Black Door Frame Right F3",
           ref blackDoorFrameRightF3CardInitialized,
           ref blackDoorFrameRightF3CardEnabled,
           ref blackDoorFrameRightF3CardMirror,
-          ref blackDoorFrameRightF3CardX,
-          ref blackDoorFrameRightF3CardY,
+          ref x,
+          ref y,
           true);
+      blackDoorFrameRightF3CardX = x;
+      blackDoorFrameRightF3CardY = y;
+      if (rightF3 != null && (x != xBefore || y != yBefore))
+      {
+        rightF3.X = x;
+        rightF3.Y = y;
+        changed = true;
+      }
     }
   }
 
@@ -1217,9 +1255,78 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// ViewEdit list-label tint for matching wall-piece families. Does not
-  /// change piece data, Enabled, or rendering.
+  /// Persistent Right F3 frame X/Y live on this layout piece, same as Left F3.
+  /// Hidden from the piece list; nested card edits piece.X / piece.Y.
   /// </summary>
+  private ViewportPiece EnsureBlackDoorFrameRightF3Piece()
+  {
+    ViewportPiece existing = FindLayoutPieceByName("Black Door Frame Right F3");
+    if (existing != null)
+      return existing;
+
+    if (layout == null || layout.Pieces == null)
+      return null;
+
+    int insertAt = layout.Pieces.Count;
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece != null && piece.Name == "Black Door Frame Right F2")
+      {
+        insertAt = i + 1;
+        break;
+      }
+    }
+
+    ViewportPiece created = new ViewportPiece
+    {
+      Name = "Black Door Frame Right F3",
+      Graphic = DungeonGraphicType.None,
+      X = blackDoorFrameRightF3CardX,
+      Y = blackDoorFrameRightF3CardY,
+      Enabled = false,
+      MirrorHorizontally = false
+    };
+    layout.Pieces.Insert(insertAt, created);
+    return created;
+  }
+
+  /// <summary>
+  /// Persistent BlackDoorF3 X/Y live on this layout piece, same as F3 frames.
+  /// Hidden from the piece list; nested card edits piece.X / piece.Y.
+  /// </summary>
+  private ViewportPiece EnsureBlackDoorF3Piece()
+  {
+    ViewportPiece existing = FindLayoutPieceByName("BlackDoorF3");
+    if (existing != null)
+      return existing;
+
+    if (layout == null || layout.Pieces == null)
+      return null;
+
+    int insertAt = layout.Pieces.Count;
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece != null && piece.Name == "BlackDoorF1")
+      {
+        insertAt = i + 1;
+        break;
+      }
+    }
+
+    ViewportPiece created = new ViewportPiece
+    {
+      Name = "BlackDoorF3",
+      Graphic = DungeonGraphicType.None,
+      X = blackDoorF3CardX,
+      Y = blackDoorF3CardY,
+      Enabled = false,
+      MirrorHorizontally = false
+    };
+    layout.Pieces.Insert(insertAt, created);
+    return created;
+  }
   private static bool TryGetPieceFamilyLabelColor(
       ViewportPiece piece,
       out Color color)
@@ -4503,11 +4610,14 @@ public class ViewportLayoutEditor : EditorWindow
         // (1,5) North only: same Black Door source, 44×39 at F3 editor X/Y.
         if (blackDoorF3Exception)
         {
+          ViewportPiece doorF3 = FindLayoutPieceByName("BlackDoorF3");
+          int f3X = doorF3 != null ? doorF3.X : blackDoorF3CardX;
+          int f3Y = doorF3 != null ? doorF3.Y : blackDoorF3CardY;
           BlitPieceScaledIntoPreview(
               pixels,
               texture,
-              blackDoorF3CardX,
-              blackDoorF3CardY,
+              f3X,
+              f3Y,
               44,
               39,
               mirror);
@@ -4773,11 +4883,14 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (blackDoorFrameRightF3CardEnabled)
     {
+      ViewportPiece rightF3 = FindLayoutPieceByName("Black Door Frame Right F3");
+      int rightX = rightF3 != null ? rightF3.X : blackDoorFrameRightF3CardX;
+      int rightY = rightF3 != null ? rightF3.Y : blackDoorFrameRightF3CardY;
       BlitPieceIntoPreview(
           pixels,
           source,
-          blackDoorFrameRightF3CardX,
-          blackDoorFrameRightF3CardY,
+          rightX,
+          rightY,
           true);
     }
   }
