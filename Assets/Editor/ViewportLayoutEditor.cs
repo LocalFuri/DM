@@ -2294,7 +2294,44 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.LabelField(
         previewX + " X /" + previewY + " Y - " + previewFacing);
 
+    DrawRelativeViewportGeometryDebug();
     DrawPreviewMiniMap();
+  }
+
+  private void DrawRelativeViewportGeometryDebug()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return;
+
+    RelativeViewportGeometry geometry =
+        RelativeViewportGeometry.Calculate(
+            previewMiniMap,
+            previewX,
+            previewY,
+            previewFacing);
+
+    string text =
+        "F0L=" + FormatRelativeViewportCell(geometry.F0Left)
+        + "   F0R=" + FormatRelativeViewportCell(geometry.F0Right)
+        + "\nF1L=" + FormatRelativeViewportCell(geometry.F1Left)
+        + "   F1C=" + FormatRelativeViewportCell(geometry.F1Center)
+        + "   F1R=" + FormatRelativeViewportCell(geometry.F1Right)
+        + "\nF2L=" + FormatRelativeViewportCell(geometry.F2Left)
+        + "   F2C=" + FormatRelativeViewportCell(geometry.F2Center)
+        + "   F2R=" + FormatRelativeViewportCell(geometry.F2Right)
+        + "\nF3L=" + FormatRelativeViewportCell(geometry.F3Left)
+        + "   F3C=" + FormatRelativeViewportCell(geometry.F3Center)
+        + "   F3R=" + FormatRelativeViewportCell(geometry.F3Right);
+
+    EditorGUILayout.HelpBox(text, MessageType.None);
+  }
+
+  private static string FormatRelativeViewportCell(RelativeViewportCell cell)
+  {
+    return cell.IsInside
+        ? cell.Type + " (" + cell.X + "," + cell.Y + ")"
+        : "OUT (" + cell.X + "," + cell.Y + ")";
   }
 
   private void DrawPreviewMiniMap()
@@ -2517,7 +2554,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       poseVisibilityStore.ApplyToLayout(entry, layout);
       ApplyCeilingMirrorFromPose();
-      ApplyFloorMirrorFromPose();
+      ApplyFloorMirrorReferenceOverride();
       ApplyWallF0LeftFromMapGeometry();
       ApplyWallF0RightFromMapGeometry();
       ApplyWallF1LeftFromMapGeometry();
@@ -2536,7 +2573,7 @@ public class ViewportLayoutEditor : EditorWindow
     // Unknown pose: kit baseline on the live layout only — do not write store.
     ApplyUnknownPoseDefaultsToLayout();
     ApplyCeilingMirrorFromPose();
-    ApplyFloorMirrorFromPose();
+    ApplyFloorMirrorReferenceOverride();
     ApplyWallF0LeftFromMapGeometry();
     ApplyWallF0RightFromMapGeometry();
     ApplyWallF1LeftFromMapGeometry();
@@ -3003,6 +3040,8 @@ public class ViewportLayoutEditor : EditorWindow
     if (poseVisibilityStore == null)
       return;
 
+    ApplyFloorMirrorReferenceOverride();
+
     ViewportPoseVisibilityEntry entry =
         poseVisibilityStore.GetOrCreateEntry(
             previewX,
@@ -3030,7 +3069,7 @@ public class ViewportLayoutEditor : EditorWindow
       // First visit to this pose: start from safe defaults, then capture.
       ApplyUnknownPoseDefaultsToLayout();
       ApplyCeilingMirrorFromPose();
-      ApplyFloorMirrorFromPose();
+      ApplyFloorMirrorReferenceOverride();
       ApplyWallF0LeftFromMapGeometry();
       ApplyWallF0RightFromMapGeometry();
       ApplyWallF1LeftFromMapGeometry();
@@ -3054,7 +3093,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     poseVisibilityStore.ApplyToLayout(entry, layout);
     ApplyCeilingMirrorFromPose();
-    ApplyFloorMirrorFromPose();
+    ApplyFloorMirrorReferenceOverride();
     ApplyWallF0LeftFromMapGeometry();
     ApplyWallF0RightFromMapGeometry();
     ApplyWallF1LeftFromMapGeometry();
@@ -3093,16 +3132,21 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Floor mirror from (1,3) North = ON. Same pose formula as Ceiling.
-  /// Does not change Ceiling or walls.
+  /// Frozen reference: at (1,3) North the original Dungeon Master floor is
+  /// unmirrored. Keep the live Floor flag false and let pose capture persist it.
+  /// No other pose or piece is changed.
   /// </summary>
-  private void ApplyFloorMirrorFromPose()
+  private void ApplyFloorMirrorReferenceOverride()
   {
     if (layout == null || layout.Pieces == null)
       return;
 
-    bool mirrorOn =
-        ((previewX + previewY + (int)previewFacing) & 1) == 0;
+    if (previewX != 1
+        || previewY != 3
+        || previewFacing != DungeonFacing.North)
+    {
+      return;
+    }
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -3110,7 +3154,7 @@ public class ViewportLayoutEditor : EditorWindow
       if (piece == null || piece.Name != "Floor")
         continue;
 
-      piece.MirrorHorizontally = mirrorOn;
+      piece.MirrorHorizontally = false;
       return;
     }
   }
