@@ -239,6 +239,38 @@ public class ViewportLayoutEditor : EditorWindow
     GetWindow<ViewportLayoutEditor>("ViewEdit");
   }
 
+  [InitializeOnLoadMethod]
+  private static void RegisterInspectorRightClickOpen()
+  {
+    EditorApplication.CallbackFunction handler = HandleInspectorRightClickOpen;
+    RemoveViewEditGlobalEventHandler(handler);
+    AddViewEditGlobalEventHandler(handler);
+  }
+
+  private static void HandleInspectorRightClickOpen()
+  {
+    if (HasOpenInstances<ViewportLayoutEditor>())
+      return;
+
+    Event current = Event.current;
+    if (current == null
+        || current.type != EventType.MouseDown
+        || current.button != 1)
+    {
+      return;
+    }
+
+    EditorWindow hovered = mouseOverWindow;
+    if (hovered == null
+        || hovered.GetType().FullName != "UnityEditor.InspectorWindow")
+    {
+      return;
+    }
+
+    current.Use();
+    Open();
+  }
+
   private void OnEnable()
   {
     titleContent = new GUIContent("ViewEdit");
