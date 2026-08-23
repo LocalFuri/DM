@@ -3481,6 +3481,7 @@ public class ViewportLayoutEditor : EditorWindow
   /// Black Door ViewEdit Enabled exceptions. Does not change blit or other poses.
   /// (1,4) North: F2 view — F1 off, F2 on.
   /// (1,3) North: F1 view — F1 on, F2 off, F3 off.
+  /// (1,5) North: F3 view — F1 off, F2 off, F3 on.
   /// </summary>
   private void ApplyBlackDoorEnabledFromPoseException()
   {
@@ -3511,12 +3512,35 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    if (previewY != 3)
+    if (previewY == 3)
+    {
+      blackDoorF2CardEnabled = false;
+      blackDoorF2CardInitialized = true;
+      blackDoorF3CardEnabled = false;
+      blackDoorF3CardInitialized = true;
+
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (piece == null)
+          continue;
+
+        if (piece.Name != "BlackDoorF1")
+          continue;
+
+        piece.Enabled = true;
+        return;
+      }
+
+      return;
+    }
+
+    if (previewY != 5)
       return;
 
     blackDoorF2CardEnabled = false;
     blackDoorF2CardInitialized = true;
-    blackDoorF3CardEnabled = false;
+    blackDoorF3CardEnabled = true;
     blackDoorF3CardInitialized = true;
 
     for (int i = 0; i < layout.Pieces.Count; i++)
@@ -3528,7 +3552,7 @@ public class ViewportLayoutEditor : EditorWindow
       if (piece.Name != "BlackDoorF1")
         continue;
 
-      piece.Enabled = true;
+      piece.Enabled = false;
       return;
     }
   }
@@ -4053,8 +4077,9 @@ public class ViewportLayoutEditor : EditorWindow
         ViewportPiece piece = layout.Pieces[i];
         bool shouldDraw = ShouldDrawPieceAtPreviewPose(piece);
         bool blackDoorF2Exception = IsBlackDoorF2PoseException(piece);
+        bool blackDoorF3Exception = IsBlackDoorF3PoseException(piece);
 
-        if (!shouldDraw && !blackDoorF2Exception)
+        if (!shouldDraw && !blackDoorF2Exception && !blackDoorF3Exception)
           continue;
 
         if ((piece.Name == "Black Door Frame Left F2"
@@ -4292,6 +4317,20 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
+        // (1,5) North only: same Black Door source, 44×39 at F3 editor X/Y.
+        if (blackDoorF3Exception)
+        {
+          BlitPieceScaledIntoPreview(
+              pixels,
+              texture,
+              blackDoorF3CardX,
+              blackDoorF3CardY,
+              44,
+              39,
+              mirror);
+          continue;
+        }
+
         BlitPieceIntoPreview(
             pixels,
             texture,
@@ -4486,6 +4525,23 @@ public class ViewportLayoutEditor : EditorWindow
 
     return previewX == 1
         && previewY == 4
+        && previewFacing == DungeonFacing.North;
+  }
+
+  /// <summary>
+  /// (1,5) North Black Door F3 size exception. Draw may run even when the
+  /// normal Black Door Enabled flag is off. Does not write pose data.
+  /// </summary>
+  private bool IsBlackDoorF3PoseException(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Graphic != DungeonGraphicType.BlackDoor)
+      return false;
+
+    return previewX == 1
+        && previewY == 5
         && previewFacing == DungeonFacing.North;
   }
 
