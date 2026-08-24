@@ -740,29 +740,43 @@ public class ViewportLayoutEditor : EditorWindow
       bool value,
       params GUILayoutOption[] options)
   {
+    Rect rowRect = EditorGUILayout.GetControlRect(
+        true,
+        EditorGUIUtility.singleLineHeight,
+        options);
+    Rect toggleRect = EditorGUI.PrefixLabel(rowRect, new GUIContent(label));
+    toggleRect.width = 16f;
+
     Event current = Event.current;
-    bool isKeyboard = current != null && current.isKey;
-    EventType savedType = EventType.Ignore;
-    bool savedChanged = GUI.changed;
-    if (isKeyboard)
+    if (current != null
+        && current.type == EventType.MouseDown
+        && current.button == 0
+        && toggleRect.Contains(current.mousePosition))
     {
-      savedType = current.type;
-      current.type = EventType.Used;
+      value = !value;
+      GUI.changed = true;
+      current.Use();
     }
 
-    int keyboardBefore = GUIUtility.keyboardControl;
-    bool result = EditorGUILayout.Toggle(label, value, options);
-    if (GUIUtility.keyboardControl != keyboardBefore)
-      GUIUtility.keyboardControl = 0;
-
-    if (isKeyboard)
+    // Draw the normal unchecked Unity box, then our own checked mark so only
+    // the mark changes color. Use the exact green from "Search Pieces".
+    GUI.Toggle(toggleRect, false, GUIContent.none, EditorStyles.toggle);
+    if (value)
     {
-      current.type = savedType;
-      GUI.changed = savedChanged;
-      return value;
+      GUIStyle checkStyle = new GUIStyle(EditorStyles.label)
+      {
+        alignment = TextAnchor.MiddleCenter,
+        fontStyle = FontStyle.Bold,
+        fontSize = 13,
+        padding = new RectOffset(0, 0, 0, 1)
+      };
+      checkStyle.normal.textColor = new Color(0.2f, 1.0f, 0.2f);
+      GUI.Label(toggleRect, "✓", checkStyle);
     }
 
-    return result;
+    // This custom toggle never takes keyboard focus, preserving ViewEdit's
+    // Delete/Page Down/arrows/Space navigation behavior.
+    return value;
   }
 
   private void DrawPieceCard(
