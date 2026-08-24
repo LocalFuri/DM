@@ -3,7 +3,7 @@ using UnityEngine;
 namespace DM.Rendering
 {
   /// <summary>
-  /// Builds the Front Wall F2 131×74 composite from FrontWallF2 + WallF2R
+  /// Builds the Front Wall F2 132×74 composite from FrontWallF2 + WallF2R
   /// via exact horizontal pixel copies (no mirroring, no scaling).
   /// 106×74 is the raw FrontWallF2 texture.
   /// </summary>
@@ -11,15 +11,15 @@ namespace DM.Rendering
   {
     public const int SourceWidth = 106;
     public const int SourceHeight = 74;
-    public const int ExpandedWidth = 131;
+    public const int ExpandedWidth = 132;
     public const int ExpandedHeight = 74;
 
     /// <summary>dest[0..104] = FrontWallF2[:, 1..105]</summary>
     public const int FrontStripWidth = 105;
     public const int FrontSourceStartX = 1;
 
-    /// <summary>dest[105..130] = WallF2R[:, 19..44]</summary>
-    public const int RightStripWidth = 26;
+    /// <summary>dest[105..131] = WallF2R[:, 19..45]</summary>
+    public const int RightStripWidth = 27;
     public const int RightDestStartX = 105;
     public const int RightSourceStartX = 19;
 
@@ -31,12 +31,12 @@ namespace DM.Rendering
     private static Texture2D cachedExpanded;
 
     /// <summary>
-    /// Returns a cached 131×74 Front Wall F2 composite.
+    /// Returns a cached 132×74 Front Wall F2 composite.
     /// Original textures are never modified. No horizontal mirroring.
     ///
-    /// Proven mapping (attached 106×74 vs 131×74, palette-exact):
+    /// Test mapping for 132×74:
     ///   dest[0..104]   = FrontWallF2[:, 1..105]
-    ///   dest[105..130] = WallF2R[:, 19..44]
+    ///   dest[105..131] = WallF2R[:, 19..45]
     /// </summary>
     public static Texture2D BuildExpandedF2Wall(
         Texture2D front,
@@ -95,7 +95,7 @@ namespace DM.Rendering
       Color32[] dst = new Color32[ExpandedWidth * ExpandedHeight];
 
       // dest[0..104]   = FrontWallF2[:, 1..105]
-      // dest[105..130] = WallF2R[:, 19..44]
+      // dest[105..131] = WallF2R[:, 19..45]
       for (int y = 0; y < ExpandedHeight; y++)
       {
         int frontRow = y * frontW;
@@ -120,7 +120,7 @@ namespace DM.Rendering
           ExpandedHeight,
           TextureFormat.RGBA32,
           false);
-      expanded.name = front.name + "_Expanded131";
+      expanded.name = front.name + "_Expanded132";
       expanded.filterMode = FilterMode.Point;
       expanded.wrapMode = TextureWrapMode.Clamp;
       expanded.SetPixels32(dst);
