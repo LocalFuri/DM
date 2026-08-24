@@ -40,6 +40,7 @@ public class ViewportLayoutEditor : EditorWindow
     "LeftD3",
     "RightD3",
     "Black Door",
+    "Active",
   };
 
   /// <summary>
@@ -624,6 +625,8 @@ public class ViewportLayoutEditor : EditorWindow
                 name,
                 "BlackDoorF1",
                 System.StringComparison.OrdinalIgnoreCase);
+      case "Active":
+        return piece.Enabled;
       default:
         return true;
     }
@@ -1123,6 +1126,15 @@ public class ViewportLayoutEditor : EditorWindow
       SelectPiece(index);
       SoloPiece(index);
       changed = true;
+    }
+
+    using (new EditorGUI.DisabledScope(rememberedEnabledStates == null))
+    {
+      if (GUILayout.Button("Restore"))
+      {
+        RestoreEnabledStates();
+        changed = true;
+      }
     }
 
     EditorGUILayout.EndHorizontal();
@@ -3843,7 +3855,7 @@ public class ViewportLayoutEditor : EditorWindow
     bool left2IsWall = previewMiniMap == null
         || !previewMiniMap.IsInside(left2X, left2Y)
         || previewMiniMap.GetTile(left2X, left2Y).Type == DungeonTileType.Wall;
-    if (left0Open && left1Open && left2IsWall)
+    if (!front1Blocked && left0Open && left1Open && left2IsWall)
       frontF2IsWall = true;
 
     for (int i = 0; i < layout.Pieces.Count; i++)

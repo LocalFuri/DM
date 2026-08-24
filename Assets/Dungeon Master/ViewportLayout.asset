@@ -107,14 +107,14 @@ MonoBehaviour:
     FrontWallF2Width: 106
   - Name: FrontF2
     Graphic: 24
-    X: 33
-    Y: 74
+    X: -18
+    Y: 75
     Enabled: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
-    FrontWallF2Width: 106
+    FrontWallF2Width: 131
   - Name: LeftF2
     Graphic: 7
     X: 0
@@ -142,7 +142,7 @@ MonoBehaviour:
     Enabled: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 192
     FrontWallF2Width: 106
   - Name: LeftF1
