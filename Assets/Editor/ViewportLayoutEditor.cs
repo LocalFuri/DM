@@ -160,6 +160,7 @@ public class ViewportLayoutEditor : EditorWindow
   private DungeonMap previewMiniMap;
   private string previewMiniMapLoadError;
   private Vector2 previewMiniMapScroll;
+  private string deterministicWallDiagnosticText;
 
   // TEMP F3 diagnostics — remove after verification.
   private static string lastLoggedFrontWallF3EditDrawKey;
@@ -2321,6 +2322,13 @@ public class ViewportLayoutEditor : EditorWindow
         previewX + " X /" + previewY + " Y - " + previewFacing);
 
     DrawRelativeViewportGeometryDebug();
+
+    if (GUILayout.Button("Explain Walls", GUILayout.Width(120f)))
+      deterministicWallDiagnosticText = BuildDeterministicWallDiagnostic();
+
+    if (!string.IsNullOrEmpty(deterministicWallDiagnosticText))
+      EditorGUILayout.HelpBox(deterministicWallDiagnosticText, MessageType.None);
+
     DrawPreviewMiniMap();
   }
 
@@ -2358,6 +2366,132 @@ public class ViewportLayoutEditor : EditorWindow
     return cell.IsInside
         ? cell.Type + " (" + cell.X + "," + cell.Y + ")"
         : "OUT (" + cell.X + "," + cell.Y + ")";
+  }
+
+  private string BuildDeterministicWallDiagnostic()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return string.IsNullOrEmpty(previewMiniMapLoadError)
+          ? "Could not load Hall of Champions map."
+          : previewMiniMapLoadError;
+
+    RelativeViewportGeometry geometry =
+        RelativeViewportGeometry.Calculate(
+            previewMiniMap,
+            previewX,
+            previewY,
+            previewFacing);
+
+    System.Text.StringBuilder report = new System.Text.StringBuilder();
+    report.Append("POSE ")
+        .Append(previewX)
+        .Append(",")
+        .Append(previewY)
+        .Append(" ")
+        .Append(previewFacing)
+        .Append("\nSOURCE ")
+        .Append(HallOfChampionsMapPath)
+        .Append("\n\nMAP GEOMETRY\n");
+
+    report.Append("F0L=").Append(FormatRelativeViewportCell(geometry.F0Left))
+        .Append("   F0R=").Append(FormatRelativeViewportCell(geometry.F0Right))
+        .Append("\nF1L=").Append(FormatRelativeViewportCell(geometry.F1Left))
+        .Append("   F1C=").Append(FormatRelativeViewportCell(geometry.F1Center))
+        .Append("   F1R=").Append(FormatRelativeViewportCell(geometry.F1Right))
+        .Append("\nF2L=").Append(FormatRelativeViewportCell(geometry.F2Left))
+        .Append("   F2C=").Append(FormatRelativeViewportCell(geometry.F2Center))
+        .Append("   F2R=").Append(FormatRelativeViewportCell(geometry.F2Right))
+        .Append("\nF3L=").Append(FormatRelativeViewportCell(geometry.F3Left))
+        .Append("   F3C=").Append(FormatRelativeViewportCell(geometry.F3Center))
+        .Append("   F3R=").Append(FormatRelativeViewportCell(geometry.F3Right));
+
+    report.Append("\n\nFRONT F2 RULE\n");
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int front1X = previewX + forwardX;
+    int front1Y = previewY + forwardY;
+    bool front1Blocked = previewMiniMap == null
+        || !previewMiniMap.IsInside(front1X, front1Y)
+        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall;
+
+    bool centerF2Wall = false;
+    if (!front1Blocked)
+    {
+      int centerF2X = previewX + forwardX * 2;
+      int centerF2Y = previewY + forwardY * 2;
+      centerF2Wall = previewMiniMap == null
+          || !previewMiniMap.IsInside(centerF2X, centerF2Y)
+          || previewMiniMap.GetTile(centerF2X, centerF2Y).Type == DungeonTileType.Wall;
+    }
+
+    int left0X = previewX - rightX;
+    int left0Y = previewY - rightY;
+    int left1X = previewX + forwardX - rightX;
+    int left1Y = previewY + forwardY - rightY;
+    int left2X = previewX + forwardX * 2 - rightX;
+    int left2Y = previewY + forwardY * 2 - rightY;
+
+    bool left0Open = previewMiniMap != null
+        && previewMiniMap.IsInside(left0X, left0Y)
+        && previewMiniMap.GetTile(left0X, left0Y).Type != DungeonTileType.Wall;
+    bool left1Open = previewMiniMap != null
+        && previewMiniMap.IsInside(left1X, left1Y)
+        && previewMiniMap.GetTile(left1X, left1Y).Type != DungeonTileType.Wall;
+    bool left2IsWall = previewMiniMap == null
+        || !previewMiniMap.IsInside(left2X, left2Y)
+        || previewMiniMap.GetTile(left2X, left2Y).Type == DungeonTileType.Wall;
+
+    bool centerF2 =
+        !front1Blocked && centerF2Wall;
+    bool leftExposedF2 =
+        front1Blocked && left1Open && left2IsWall;
+    bool frontF2Enabled = centerF2 || leftExposedF2;
+
+    string frontF2Class = centerF2
+        ? "Center"
+        : leftExposedF2
+            ? "LeftExposed"
+            : "None";
+
+    report.Append("front1Blocked=").Append(front1Blocked)
+        .Append("\ncenterF2Wall=").Append(centerF2Wall)
+        .Append("\nleft0Open=").Append(left0Open)
+        .Append("  left1Open=").Append(left1Open)
+        .Append("  left2IsWall=").Append(left2IsWall)
+        .Append("\ncenterF2=").Append(centerF2)
+        .Append("  leftExposedF2=").Append(leftExposedF2)
+        .Append("\n=> FrontF2 Class=").Append(frontF2Class)
+        .Append("\n=> FrontF2 Enabled=").Append(frontF2Enabled);
+
+    ViewportPiece frontF2 = FindLayoutPieceByName("FrontF2");
+    if (frontF2 == null)
+      frontF2 = FindLayoutPieceByName("Front Wall F2");
+
+    report.Append("\n\nCURRENT FRONT F2 PIECE\n");
+    if (frontF2 == null)
+    {
+      report.Append("not found");
+    }
+    else
+    {
+      report.Append("Enabled=").Append(frontF2.Enabled)
+          .Append("  Width=")
+          .Append(FrontWallF2Logic.Normalize(frontF2.FrontWallF2Width))
+          .Append("  X=").Append(frontF2.X)
+          .Append("  Y=").Append(frontF2.Y)
+          .Append("  Mirror=").Append(frontF2.MirrorHorizontally);
+    }
+
+    return report.ToString();
   }
 
   private void DrawPreviewMiniMap()
@@ -3830,33 +3964,37 @@ public class ViewportLayoutEditor : EditorWindow
         || !previewMiniMap.IsInside(front1X, front1Y)
         || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall;
 
-    bool frontF2IsWall = false;
+    bool centerF2Wall = false;
     if (!front1Blocked)
     {
       int tileX = previewX + forwardX * 2;
       int tileY = previewY + forwardY * 2;
-      frontF2IsWall = previewMiniMap == null
+      centerF2Wall = previewMiniMap == null
           || !previewMiniMap.IsInside(tileX, tileY)
           || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
     }
 
-    int left0X = previewX - rightX;
-    int left0Y = previewY - rightY;
     int left1X = previewX + forwardX - rightX;
     int left1Y = previewY + forwardY - rightY;
     int left2X = previewX + forwardX * 2 - rightX;
     int left2Y = previewY + forwardY * 2 - rightY;
-    bool left0Open = previewMiniMap != null
-        && previewMiniMap.IsInside(left0X, left0Y)
-        && previewMiniMap.GetTile(left0X, left0Y).Type != DungeonTileType.Wall;
+
     bool left1Open = previewMiniMap != null
         && previewMiniMap.IsInside(left1X, left1Y)
         && previewMiniMap.GetTile(left1X, left1Y).Type != DungeonTileType.Wall;
     bool left2IsWall = previewMiniMap == null
         || !previewMiniMap.IsInside(left2X, left2Y)
         || previewMiniMap.GetTile(left2X, left2Y).Type == DungeonTileType.Wall;
-    if (!front1Blocked && left0Open && left1Open && left2IsWall)
-      frontF2IsWall = true;
+
+    // Classify FrontF2 only from relative map geometry.
+    // Center: F1 center open and F2 center solid/out.
+    // LeftExposed: F1 center blocked, F1 left open, F2 left solid/out.
+    bool centerF2 =
+        !front1Blocked && centerF2Wall;
+    bool leftExposedF2 =
+        front1Blocked && left1Open && left2IsWall;
+
+    bool frontF2IsWall = centerF2 || leftExposedF2;
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -3867,6 +4005,8 @@ public class ViewportLayoutEditor : EditorWindow
       if (piece.Name != "FrontF2" && piece.Name != "Front Wall F2")
         continue;
 
+      // Classification controls visibility only in this step.
+      // Width / X / Y / Mirror are intentionally left untouched.
       piece.Enabled = frontF2IsWall;
       return;
     }
