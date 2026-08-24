@@ -2577,6 +2577,7 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyWallF2RightFromMapGeometry();
       ApplyWallF3LeftFromMapGeometry();
       ApplyWallF3RightFromMapGeometry();
+    ApplyRightD3FromMapGeometry();
       ApplyFrontF1FromMapGeometry();
       ApplyFrontF2FromMapGeometry();
       ApplyFrontF3FromMapGeometry();
@@ -2596,6 +2597,7 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyWallF2RightFromMapGeometry();
     ApplyWallF3LeftFromMapGeometry();
     ApplyWallF3RightFromMapGeometry();
+    ApplyRightD3FromMapGeometry();
     ApplyFrontF1FromMapGeometry();
     ApplyFrontF2FromMapGeometry();
     ApplyFrontF3FromMapGeometry();
@@ -3092,6 +3094,7 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyWallF2RightFromMapGeometry();
       ApplyWallF3LeftFromMapGeometry();
       ApplyWallF3RightFromMapGeometry();
+    ApplyRightD3FromMapGeometry();
       ApplyFrontF1FromMapGeometry();
       ApplyFrontF2FromMapGeometry();
       ApplyFrontF3FromMapGeometry();
@@ -3116,6 +3119,7 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyWallF2RightFromMapGeometry();
     ApplyWallF3LeftFromMapGeometry();
     ApplyWallF3RightFromMapGeometry();
+    ApplyRightD3FromMapGeometry();
     ApplyFrontF1FromMapGeometry();
     ApplyFrontF2FromMapGeometry();
     ApplyFrontF3FromMapGeometry();
@@ -3649,6 +3653,83 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
 
     return piece.Graphic == DungeonGraphicType.WallF3R;
+  }
+
+  /// <summary>
+  /// RightD3 / Wall D3R2 visibility from map geometry.
+  /// Normal rule: all three forward tiles must be open and the depth-3/right
+  /// tile must be solid. The existing (1,5) North Black Door F3 view is locked
+  /// and deliberately left untouched by this rule.
+  /// </summary>
+  private void ApplyRightD3FromMapGeometry()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    // Locked existing Black Door F3 view: do not alter its RightD3 state.
+    if (previewX == 1
+        && previewY == 5
+        && previewFacing == DungeonFacing.North)
+    {
+      return;
+    }
+
+    EnsurePreviewMiniMapLoaded();
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int front1X = previewX + forwardX;
+    int front1Y = previewY + forwardY;
+    int front2X = previewX + forwardX * 2;
+    int front2Y = previewY + forwardY * 2;
+    int front3X = previewX + forwardX * 3;
+    int front3Y = previewY + forwardY * 3;
+
+    bool frontBlocked = previewMiniMap == null
+        || !previewMiniMap.IsInside(front1X, front1Y)
+        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(front2X, front2Y)
+        || previewMiniMap.GetTile(front2X, front2Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(front3X, front3Y)
+        || previewMiniMap.GetTile(front3X, front3Y).Type == DungeonTileType.Wall;
+
+    bool rightD3IsWall = false;
+    if (!frontBlocked)
+    {
+      int tileX = previewX + forwardX * 3 + rightX;
+      int tileY = previewY + forwardY * 3 + rightY;
+      rightD3IsWall = previewMiniMap == null
+          || !previewMiniMap.IsInside(tileX, tileY)
+          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
+    }
+
+    // Unique Hall of Champions Black Door oblique view.
+    // Visibility is forced here, but position is preview-only below.
+    bool blackDoorObliqueException =
+        previewX == 0
+        && previewY == 5
+        && previewFacing == DungeonFacing.North;
+
+    bool enabled = rightD3IsWall || blackDoorObliqueException;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (piece.Name != "Wall D3R2" && piece.Name != "RightD3")
+        continue;
+
+      piece.Enabled = enabled;
+      return;
+    }
   }
 
   /// <summary>
@@ -4477,9 +4558,16 @@ public class ViewportLayoutEditor : EditorWindow
         bool shouldDraw = ShouldDrawPieceAtPreviewPose(piece);
         bool blackDoorF2Exception = IsBlackDoorF2PoseException(piece);
         bool blackDoorF3Exception = IsBlackDoorF3PoseException(piece);
+        bool blackDoorObliqueRightD3Exception =
+            IsBlackDoorObliqueRightD3PoseException(piece);
 
-        if (!shouldDraw && !blackDoorF2Exception && !blackDoorF3Exception)
+        if (!shouldDraw
+            && !blackDoorF2Exception
+            && !blackDoorF3Exception
+            && !blackDoorObliqueRightD3Exception)
+        {
           continue;
+        }
 
         if ((piece.Name == "Black Door Frame Left F2"
                 || piece.Name == "Black Door Frame Right F2")
@@ -4678,13 +4766,28 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (D3R2NarrowWidthTest.ShouldReplace(piece.Graphic))
         {
-          D3R2NarrowWidthTest.BlitToBuffer(
-              texture,
-              pixels,
-              PreviewWidth,
-              PreviewHeight,
-              piece.EffectiveX,
-              piece.EffectiveY);
+          if (blackDoorObliqueRightD3Exception)
+          {
+            // ViewEdit display position was measured as X=196, Y=58.
+            // D3R2 is 49 px high, so bottom-up framebuffer Y is 200-58-49=93.
+            D3R2NarrowWidthTest.BlitToBuffer(
+                texture,
+                pixels,
+                PreviewWidth,
+                PreviewHeight,
+                196,
+                93);
+          }
+          else
+          {
+            D3R2NarrowWidthTest.BlitToBuffer(
+                texture,
+                pixels,
+                PreviewWidth,
+                PreviewHeight,
+                piece.EffectiveX,
+                piece.EffectiveY);
+          }
           continue;
         }
 
@@ -4746,6 +4849,7 @@ public class ViewportLayoutEditor : EditorWindow
             mirror);
       }
 
+      BlitBlackDoorObliqueRightF3FrameIntoPreview(pixels);
       BlitFrontWallF2_160ExtraStripIntoPreview(pixels, poseMap);
     }
 
@@ -4975,6 +5079,50 @@ public class ViewportLayoutEditor : EditorWindow
     return previewX == 1
         && previewY == 5
         && previewFacing == DungeonFacing.North;
+  }
+
+  /// <summary>
+  /// Unique Hall of Champions oblique Black Door side view.
+  /// Preview-only: never changes layout X/Y, pose offsets, mirror flags, or the
+  /// existing (1,5) North Black Door F3 setup.
+  /// </summary>
+  private bool IsBlackDoorObliqueRightD3PoseException(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Name != "Wall D3R2" && piece.Name != "RightD3")
+      return false;
+
+    return previewX == 0
+        && previewY == 5
+        && previewFacing == DungeonFacing.North;
+  }
+
+  /// <summary>
+  /// (0,5) North only: draw the Black Door right F3 frame at its measured
+  /// oblique position. This is completely separate from the locked (1,5) North
+  /// F3 frame path and does not mutate the hidden frame piece.
+  /// </summary>
+  private void BlitBlackDoorObliqueRightF3FrameIntoPreview(Color32[] pixels)
+  {
+    if (previewX != 0
+        || previewY != 5
+        || previewFacing != DungeonFacing.North)
+    {
+      return;
+    }
+
+    Texture2D source = GetBlackDoorFrameF3SourceTexture();
+    if (source == null)
+      return;
+
+    BlitPieceIntoPreview(
+        pixels,
+        source,
+        195,
+        98,
+        true);
   }
 
   private Texture2D GetBlackDoorFrameF3SourceTexture()
