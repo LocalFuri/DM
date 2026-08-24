@@ -10,10 +10,10 @@ namespace DM.Rendering
   public static class StraightF1WallLogic
   {
     public const int CompositeWidth = 224;
-    public const int CompositeWidth191 = 191;
+    public const int CompositeWidth191 = 192;
     public const int CompositeWidth160 = 160;
     public const int CompositeDestX191 = 0;
-    public const int DefaultFrontWallF1Width = 191;
+    public const int DefaultFrontWallF1Width = 192;
     public const int CompositeHeight = 111;
 
     public static int NormalizeFrontWallF1Width(int width)
@@ -134,7 +134,7 @@ namespace DM.Rendering
     /// <summary>
     /// Copy a Front Wall F1 texture into the buffer.
     /// 224-wide: 1:1 into columns 0..223.
-    /// 191-wide: 191 source columns at authored piece X.
+    /// 192-wide: 192 source columns at authored piece X.
     /// 160-wide: 160 source columns at authored piece X.
     /// Writes are clipped to dungeon viewport columns 0..223.
     /// Optional horizontal mirror is authored only (layout MirrorHorizontally).

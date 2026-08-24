@@ -5,8 +5,8 @@ namespace DM.Rendering
   /// <summary>
   /// Builds Front Wall F1 composites from FrontWallF1 + WallF1L + WallF1R
   /// via exact horizontal pixel copies.
-  /// 224×111 includes both side extensions. 191×111 is left extension +
-  /// center only (drops WallF1R x 59; no WallF1L).
+  /// 224×111 includes both side extensions. 192×111 is left extension +
+  /// center only (32px WallF1R extension + 160px center; no WallF1L).
   /// </summary>
   public static class ExpandedF1WallTexture
   {
@@ -14,7 +14,7 @@ namespace DM.Rendering
     public const int SourceHeight = 111;
     public const int SideWidth = 60;
     public const int ExpandedWidth = 224;
-    public const int ExpandedWidth191 = 191;
+    public const int ExpandedWidth191 = 192;
     public const int ExpandedHeight = 111;
 
     private static Texture2D cachedFront;
@@ -133,7 +133,7 @@ namespace DM.Rendering
     }
 
     /// <summary>
-    /// Returns a cached 191×111 Front Wall F1 composite (left extension +
+    /// Returns a cached 192×111 Front Wall F1 composite (left extension +
     /// 160px center). Original textures are never modified.
     /// </summary>
     public static Texture2D BuildExpandedF1Wall191(
@@ -188,19 +188,19 @@ namespace DM.Rendering
       int rightW = wallF1R.width;
       Color32[] dst = new Color32[ExpandedWidth191 * ExpandedHeight];
 
-      // dest[0..30]    = hflip(F1R[:, 28..58])  // drops WallF1R x 59
-      // dest[31..190]  = hflip(Front[:, 0..159])
+      // dest[0..31]    = hflip(F1R[:, 28..59])
+      // dest[32..191]  = hflip(Front[:, 0..159])
       for (int y = 0; y < ExpandedHeight; y++)
       {
         int frontRow = y * frontW;
         int rightRow = y * rightW;
         int dstRow = y * ExpandedWidth191;
 
-        for (int i = 0; i < 31; i++)
-          dst[dstRow + i] = rightPixels[rightRow + (58 - i)];
+        for (int i = 0; i < 32; i++)
+          dst[dstRow + i] = rightPixels[rightRow + (59 - i)];
 
         for (int i = 0; i < 160; i++)
-          dst[dstRow + 31 + i] = frontPixels[frontRow + (159 - i)];
+          dst[dstRow + 32 + i] = frontPixels[frontRow + (159 - i)];
       }
 
       Texture2D expanded = new Texture2D(
@@ -208,7 +208,7 @@ namespace DM.Rendering
           ExpandedHeight,
           TextureFormat.RGBA32,
           false);
-      expanded.name = front.name + "_Expanded191";
+      expanded.name = front.name + "_Expanded192";
       expanded.filterMode = FilterMode.Point;
       expanded.wrapMode = TextureWrapMode.Clamp;
       expanded.SetPixels32(dst);
