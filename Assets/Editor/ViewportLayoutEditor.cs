@@ -94,6 +94,8 @@ public class ViewportLayoutEditor : EditorWindow
   private GUIStyle pieceFamilyHeaderStyle;
   private bool[] rememberedEnabledStates;
   private int snap = 1;
+  private readonly Dictionary<string, bool> extraPieceDeterministicByName =
+      new Dictionary<string, bool>();
 
   private bool hookedViewEditGlobalNavigation;
 
@@ -815,41 +817,41 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.BeginHorizontal();
     float previousLabelWidth = EditorGUIUtility.labelWidth;
-    EditorGUIUtility.labelWidth = 55f;
+    const float ToggleBoxWidth = 18f;
+    const float ToggleGroupGap = 10f;
+
+    const string EnabledLabel = "Enabled";
+    float enabledLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent(EnabledLabel)).x;
+    EditorGUIUtility.labelWidth = enabledLabelWidth;
     piece.Enabled = DrawMouseOnlyToggle(
-        "Enabled",
+        EnabledLabel,
         piece.Enabled,
-        GUILayout.Width(72),
+        GUILayout.Width(enabledLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
     bool nameOrEnabledChanged = EditorGUI.EndChangeCheck();
 
-    if (layout != null
-        && (IsFrontWallF1Card(piece)
-            || IsFrontWallF2Card(piece)
-            || IsFrontWallF3Card(piece)))
+    GUILayout.Space(ToggleGroupGap);
+    const string DeterministicLabel = "Deterministic";
+    float deterministicLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent(DeterministicLabel)).x;
+    EditorGUIUtility.labelWidth = deterministicLabelWidth;
+    bool deterministicBefore = GetPieceDeterministic(piece);
+    bool deterministic = DrawMouseOnlyToggle(
+        DeterministicLabel,
+        deterministicBefore,
+        GUILayout.Width(deterministicLabelWidth + ToggleBoxWidth),
+        GUILayout.ExpandWidth(false));
+    if (deterministic != deterministicBefore)
     {
-      bool deterministicBefore = GetFrontWallDeterministic(layout, piece);
-      GUILayout.Space(8f);
-      const string DeterministicLabel = "Deterministic";
-      float deterministicLabelWidth =
-          EditorStyles.label.CalcSize(new GUIContent(DeterministicLabel)).x;
-      EditorGUIUtility.labelWidth = deterministicLabelWidth;
-      bool deterministic = DrawMouseOnlyToggle(
-          DeterministicLabel,
-          deterministicBefore,
-          GUILayout.Width(deterministicLabelWidth + 18f),
-          GUILayout.ExpandWidth(false));
-      if (deterministic != deterministicBefore)
-      {
-        SetFrontWallDeterministic(layout, piece, deterministic);
-        changed = true;
-      }
+      SetPieceDeterministic(piece, deterministic);
+      changed = true;
     }
 
     // Mirror is outside the Name/Enabled/Graphic change-check so SelectPiece →
     // FocusControl(null) cannot swallow the Toggle or skip the live refresh.
     bool mirrorBefore = piece.MirrorHorizontally;
-    GUILayout.Space(8f);
+    GUILayout.Space(ToggleGroupGap);
     const string MirrorLabel = "Mirror";
     float mirrorLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
@@ -857,7 +859,7 @@ public class ViewportLayoutEditor : EditorWindow
     piece.MirrorHorizontally = DrawMouseOnlyToggle(
         MirrorLabel,
         piece.MirrorHorizontally,
-        GUILayout.Width(mirrorLabelWidth + 18f),
+        GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = previousLabelWidth;
     EditorGUILayout.EndHorizontal();
@@ -3029,36 +3031,49 @@ public class ViewportLayoutEditor : EditorWindow
         || piece.Name == "Front Wall F3";
   }
 
-  private static bool GetFrontWallDeterministic(
-      ViewportLayout layout,
-      ViewportPiece piece)
+  private bool GetPieceDeterministic(ViewportPiece piece)
   {
-    if (layout == null)
-      return false;
+    if (layout != null)
+    {
+      if (IsFrontWallF1Card(piece))
+        return layout.FrontF1Deterministic;
+      if (IsFrontWallF2Card(piece))
+        return layout.FrontF2Deterministic;
+      if (IsFrontWallF3Card(piece))
+        return layout.FrontF3Deterministic;
+    }
 
-    if (IsFrontWallF1Card(piece))
-      return layout.FrontF1Deterministic;
-    if (IsFrontWallF2Card(piece))
-      return layout.FrontF2Deterministic;
-    if (IsFrontWallF3Card(piece))
-      return layout.FrontF3Deterministic;
+    string key = piece != null && piece.Name != null ? piece.Name : string.Empty;
+    if (extraPieceDeterministicByName.TryGetValue(key, out bool value))
+      return value;
     return false;
   }
 
-  private static void SetFrontWallDeterministic(
-      ViewportLayout layout,
-      ViewportPiece piece,
-      bool value)
+  private void SetPieceDeterministic(ViewportPiece piece, bool value)
   {
-    if (layout == null)
-      return;
+    if (layout != null)
+    {
+      if (IsFrontWallF1Card(piece))
+      {
+        layout.FrontF1Deterministic = value;
+        return;
+      }
 
-    if (IsFrontWallF1Card(piece))
-      layout.FrontF1Deterministic = value;
-    else if (IsFrontWallF2Card(piece))
-      layout.FrontF2Deterministic = value;
-    else if (IsFrontWallF3Card(piece))
-      layout.FrontF3Deterministic = value;
+      if (IsFrontWallF2Card(piece))
+      {
+        layout.FrontF2Deterministic = value;
+        return;
+      }
+
+      if (IsFrontWallF3Card(piece))
+      {
+        layout.FrontF3Deterministic = value;
+        return;
+      }
+    }
+
+    string key = piece != null && piece.Name != null ? piece.Name : string.Empty;
+    extraPieceDeterministicByName[key] = value;
   }
 
   private static bool IsPoseOffsetCard(ViewportPiece piece)
