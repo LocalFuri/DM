@@ -979,20 +979,6 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUIUtility.labelWidth = savedXyLabelWidth;
     EditorGUILayout.EndHorizontal();
 
-    if (IsPoseOffsetCard(piece))
-    {
-      int offsetXBefore = piece.PoseOffsetX;
-      int offsetYBefore = piece.PoseOffsetY;
-      DrawIntStepper("Pose Offset X", ref piece.PoseOffsetX, 1);
-      DrawIntStepper("Pose Offset Y", ref piece.PoseOffsetY, 1);
-      if (piece.PoseOffsetX != offsetXBefore
-          || piece.PoseOffsetY != offsetYBefore)
-      {
-        SelectPiece(index);
-        ApplyPoseOffsetChangeForCurrentPose();
-      }
-    }
-
     if (piece.Name == "BlackDoorF1")
     {
       if (!blackDoorF2CardInitialized)
