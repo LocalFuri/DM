@@ -814,37 +814,43 @@ public class ViewportLayoutEditor : EditorWindow
     piece.Name = EditorGUILayout.TextField("Name", piece.Name);
 
     EditorGUILayout.BeginHorizontal();
-    GUILayout.FlexibleSpace();
     float previousLabelWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth = 55f;
     piece.Enabled = DrawMouseOnlyToggle(
         "Enabled",
         piece.Enabled,
-        GUILayout.Width(72));
+        GUILayout.Width(72),
+        GUILayout.ExpandWidth(false));
     bool nameOrEnabledChanged = EditorGUI.EndChangeCheck();
 
-    if (IsFrontWallF2Card(piece) && layout != null)
+    if (layout != null
+        && (IsFrontWallF1Card(piece)
+            || IsFrontWallF2Card(piece)
+            || IsFrontWallF3Card(piece)))
     {
-      bool deterministicBefore = layout.FrontF2Deterministic;
-      GUILayout.FlexibleSpace();
+      bool deterministicBefore = GetFrontWallDeterministic(layout, piece);
+      GUILayout.Space(8f);
       const string DeterministicLabel = "Deterministic";
       float deterministicLabelWidth =
           EditorStyles.label.CalcSize(new GUIContent(DeterministicLabel)).x;
       EditorGUIUtility.labelWidth = deterministicLabelWidth;
-      layout.FrontF2Deterministic = DrawMouseOnlyToggle(
+      bool deterministic = DrawMouseOnlyToggle(
           DeterministicLabel,
-          layout.FrontF2Deterministic,
+          deterministicBefore,
           GUILayout.Width(deterministicLabelWidth + 18f),
           GUILayout.ExpandWidth(false));
-      if (layout.FrontF2Deterministic != deterministicBefore)
+      if (deterministic != deterministicBefore)
+      {
+        SetFrontWallDeterministic(layout, piece, deterministic);
         changed = true;
+      }
     }
 
     // Mirror is outside the Name/Enabled/Graphic change-check so SelectPiece →
     // FocusControl(null) cannot swallow the Toggle or skip the live refresh.
     bool mirrorBefore = piece.MirrorHorizontally;
-    GUILayout.FlexibleSpace();
-    const string MirrorLabel = "Mirror Horizontally";
+    GUILayout.Space(8f);
+    const string MirrorLabel = "Mirror";
     float mirrorLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
     EditorGUIUtility.labelWidth = mirrorLabelWidth;
@@ -3012,6 +3018,47 @@ public class ViewportLayoutEditor : EditorWindow
 
     return piece.Name == "FrontF2"
         || piece.Name == "Front Wall F2";
+  }
+
+  private static bool IsFrontWallF3Card(ViewportPiece piece)
+  {
+    if (piece == null || piece.Name == null)
+      return false;
+
+    return piece.Name == "FrontF3"
+        || piece.Name == "Front Wall F3";
+  }
+
+  private static bool GetFrontWallDeterministic(
+      ViewportLayout layout,
+      ViewportPiece piece)
+  {
+    if (layout == null)
+      return false;
+
+    if (IsFrontWallF1Card(piece))
+      return layout.FrontF1Deterministic;
+    if (IsFrontWallF2Card(piece))
+      return layout.FrontF2Deterministic;
+    if (IsFrontWallF3Card(piece))
+      return layout.FrontF3Deterministic;
+    return false;
+  }
+
+  private static void SetFrontWallDeterministic(
+      ViewportLayout layout,
+      ViewportPiece piece,
+      bool value)
+  {
+    if (layout == null)
+      return;
+
+    if (IsFrontWallF1Card(piece))
+      layout.FrontF1Deterministic = value;
+    else if (IsFrontWallF2Card(piece))
+      layout.FrontF2Deterministic = value;
+    else if (IsFrontWallF3Card(piece))
+      layout.FrontF3Deterministic = value;
   }
 
   private static bool IsPoseOffsetCard(ViewportPiece piece)

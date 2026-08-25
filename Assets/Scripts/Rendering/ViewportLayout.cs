@@ -14,9 +14,11 @@ namespace DM.Rendering
     public int Height = 200;
 
     /// <summary>
-    /// FrontF2 feature flag stored on this layout. Not keyed by pose.
+    /// Front wall feature flags stored on this layout. Not keyed by pose.
     /// </summary>
+    public bool FrontF1Deterministic;
     public bool FrontF2Deterministic;
+    public bool FrontF3Deterministic;
 
     [Header("Render Order")]
     public List<ViewportPiece> Pieces = new();
