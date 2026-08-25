@@ -823,6 +823,23 @@ public class ViewportLayoutEditor : EditorWindow
         GUILayout.Width(72));
     bool nameOrEnabledChanged = EditorGUI.EndChangeCheck();
 
+    if (IsFrontWallF2Card(piece) && layout != null)
+    {
+      bool deterministicBefore = layout.FrontF2Deterministic;
+      GUILayout.FlexibleSpace();
+      const string DeterministicLabel = "Deterministic";
+      float deterministicLabelWidth =
+          EditorStyles.label.CalcSize(new GUIContent(DeterministicLabel)).x;
+      EditorGUIUtility.labelWidth = deterministicLabelWidth;
+      layout.FrontF2Deterministic = DrawMouseOnlyToggle(
+          DeterministicLabel,
+          layout.FrontF2Deterministic,
+          GUILayout.Width(deterministicLabelWidth + 18f),
+          GUILayout.ExpandWidth(false));
+      if (layout.FrontF2Deterministic != deterministicBefore)
+        changed = true;
+    }
+
     // Mirror is outside the Name/Enabled/Graphic change-check so SelectPiece →
     // FocusControl(null) cannot swallow the Toggle or skip the live refresh.
     bool mirrorBefore = piece.MirrorHorizontally;

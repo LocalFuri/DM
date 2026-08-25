@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DM.Rendering.ViewportLayout
   Width: 320
   Height: 200
+  FrontF2Deterministic: 0
   Pieces:
   - Name: Ceiling
     Graphic: 1

@@ -13,6 +13,11 @@ namespace DM.Rendering
     public int Width = 320;
     public int Height = 200;
 
+    /// <summary>
+    /// FrontF2 feature flag stored on this layout. Not keyed by pose.
+    /// </summary>
+    public bool FrontF2Deterministic;
+
     [Header("Render Order")]
     public List<ViewportPiece> Pieces = new();
   }
