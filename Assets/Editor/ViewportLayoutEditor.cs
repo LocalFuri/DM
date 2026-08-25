@@ -813,7 +813,14 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.EndHorizontal();
 
     EditorGUI.BeginChangeCheck();
+    EditorGUILayout.BeginHorizontal();
+    float nameLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("Name")).x;
+    float savedNameLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth = nameLabelWidth;
     piece.Name = EditorGUILayout.TextField("Name", piece.Name);
+    EditorGUIUtility.labelWidth = savedNameLabelWidth;
+    EditorGUILayout.EndHorizontal();
 
     EditorGUILayout.BeginHorizontal();
     float previousLabelWidth = EditorGUIUtility.labelWidth;
@@ -947,17 +954,29 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     EditorGUILayout.BeginHorizontal();
+    float savedXyLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
     if (DrawIntStepper("X", ref piece.X, snap))
     {
       SelectPiece(index);
       changed = true;
     }
+    EditorGUILayout.EndHorizontal();
 
+    GUILayout.Space(10f);
+
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
     if (DrawTopDownYStepper(piece, snap))
     {
       SelectPiece(index);
       changed = true;
     }
+    EditorGUILayout.EndHorizontal();
+    EditorGUIUtility.labelWidth = savedXyLabelWidth;
     EditorGUILayout.EndHorizontal();
 
     if (IsPoseOffsetCard(piece))
