@@ -938,6 +938,7 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
+    EditorGUILayout.BeginHorizontal();
     if (DrawIntStepper("X", ref piece.X, snap))
     {
       SelectPiece(index);
@@ -949,6 +950,7 @@ public class ViewportLayoutEditor : EditorWindow
       SelectPiece(index);
       changed = true;
     }
+    EditorGUILayout.EndHorizontal();
 
     if (IsPoseOffsetCard(piece))
     {
