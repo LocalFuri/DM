@@ -839,7 +839,7 @@ public class ViewportLayoutEditor : EditorWindow
     bool nameOrEnabledChanged = EditorGUI.EndChangeCheck();
 
     GUILayout.Space(ToggleGroupGap);
-    const string DeterministicLabel = "Deterministic";
+    const string DeterministicLabel = "DTerm";
     float deterministicLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent(DeterministicLabel)).x;
     EditorGUIUtility.labelWidth = deterministicLabelWidth;
