@@ -3382,21 +3382,17 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Frozen reference: at (1,3) North the original Dungeon Master floor is
-  /// unmirrored. Keep the live Floor flag false and let pose capture persist it.
-  /// No other pose or piece is changed.
+  /// Floor mirror from (1,3) North = OFF. Toggles once per tile step
+  /// (forward/back/strafe) and once per 90° turn, opposite to the ceiling phase.
+  /// No other piece is changed.
   /// </summary>
   private void ApplyFloorMirrorReferenceOverride()
   {
     if (layout == null || layout.Pieces == null)
       return;
 
-    if (previewX != 1
-        || previewY != 3
-        || previewFacing != DungeonFacing.North)
-    {
-      return;
-    }
+    bool mirrorOn =
+        ((previewX + previewY + (int)previewFacing) & 1) != 0;
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -3404,7 +3400,7 @@ public class ViewportLayoutEditor : EditorWindow
       if (piece == null || piece.Name != "Floor")
         continue;
 
-      piece.MirrorHorizontally = false;
+      piece.MirrorHorizontally = mirrorOn;
       return;
     }
   }
