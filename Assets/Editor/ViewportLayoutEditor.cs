@@ -744,6 +744,7 @@ public class ViewportLayoutEditor : EditorWindow
   private static bool DrawMouseOnlyToggle(
       string label,
       bool value,
+      bool pieceEnabled,
       params GUILayoutOption[] options)
   {
     Rect rowRect = EditorGUILayout.GetControlRect(
@@ -769,12 +770,14 @@ public class ViewportLayoutEditor : EditorWindow
     GUI.Toggle(toggleRect, false, GUIContent.none, EditorStyles.toggle);
 
     Color checkColor = new Color(0.2f, 1.0f, 0.2f);
-    if (label == "DTerm")
+    if (pieceEnabled && value && label == "DTerm")
     {
       EditorGUI.DrawRect(InsetToggleFillRect(toggleRect), new Color(1f, 210f / 255f, 0f));
       checkColor = Color.black;
     }
-    else if (label == "Mirror" || label == "Mirror Horizontally")
+    else if (pieceEnabled
+        && value
+        && (label == "Mirror" || label == "Mirror Horizontally"))
     {
       EditorGUI.DrawRect(InsetToggleFillRect(toggleRect), new Color(1f, 140f / 255f, 0f));
       checkColor = Color.black;
@@ -857,6 +860,7 @@ public class ViewportLayoutEditor : EditorWindow
     piece.Enabled = DrawMouseOnlyToggle(
         EnabledLabel,
         piece.Enabled,
+        piece.Enabled,
         GUILayout.Width(enabledLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
     bool nameOrEnabledChanged = EditorGUI.EndChangeCheck();
@@ -870,6 +874,7 @@ public class ViewportLayoutEditor : EditorWindow
     bool deterministic = DrawMouseOnlyToggle(
         DeterministicLabel,
         deterministicBefore,
+        piece.Enabled,
         GUILayout.Width(deterministicLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
     if (piece.Enabled
@@ -898,6 +903,7 @@ public class ViewportLayoutEditor : EditorWindow
     piece.MirrorHorizontally = DrawMouseOnlyToggle(
         MirrorLabel,
         piece.MirrorHorizontally,
+        piece.Enabled,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = previousLabelWidth;
@@ -1037,6 +1043,7 @@ public class ViewportLayoutEditor : EditorWindow
       blackDoorF2CardEnabled = DrawMouseOnlyToggle(
           "Enabled",
           blackDoorF2CardEnabled,
+          blackDoorF2CardEnabled,
           GUILayout.Width(72));
       GUILayout.FlexibleSpace();
       const string F2MirrorLabel = "Mirror Horizontally";
@@ -1046,6 +1053,7 @@ public class ViewportLayoutEditor : EditorWindow
       blackDoorF2CardMirror = DrawMouseOnlyToggle(
           F2MirrorLabel,
           blackDoorF2CardMirror,
+          blackDoorF2CardEnabled,
           GUILayout.Width(f2MirrorLabelWidth + 18f),
           GUILayout.ExpandWidth(false));
       EditorGUIUtility.labelWidth = f2PreviousLabelWidth;
@@ -1105,6 +1113,7 @@ public class ViewportLayoutEditor : EditorWindow
       blackDoorF3CardEnabled = DrawMouseOnlyToggle(
           "Enabled",
           blackDoorF3CardEnabled,
+          blackDoorF3CardEnabled,
           GUILayout.Width(72));
       GUILayout.FlexibleSpace();
       const string F3MirrorLabel = "Mirror Horizontally";
@@ -1114,6 +1123,7 @@ public class ViewportLayoutEditor : EditorWindow
       blackDoorF3CardMirror = DrawMouseOnlyToggle(
           F3MirrorLabel,
           blackDoorF3CardMirror,
+          blackDoorF3CardEnabled,
           GUILayout.Width(f3MirrorLabelWidth + 18f),
           GUILayout.ExpandWidth(false));
       EditorGUIUtility.labelWidth = f3PreviousLabelWidth;
@@ -1297,6 +1307,7 @@ public class ViewportLayoutEditor : EditorWindow
     enabled = DrawMouseOnlyToggle(
         "Enabled",
         enabled,
+        enabled,
         GUILayout.Width(72));
     GUILayout.FlexibleSpace();
     const string MirrorLabel = "Mirror Horizontally";
@@ -1306,6 +1317,7 @@ public class ViewportLayoutEditor : EditorWindow
     mirror = DrawMouseOnlyToggle(
         MirrorLabel,
         mirror,
+        enabled,
         GUILayout.Width(mirrorLabelWidth + 18f),
         GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = previousLabelWidth;
