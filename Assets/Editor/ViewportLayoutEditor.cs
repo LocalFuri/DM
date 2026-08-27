@@ -895,7 +895,10 @@ public class ViewportLayoutEditor : EditorWindow
             || IsWallF2LeftPiece(piece)
             || IsWallF2RightPiece(piece)
             || IsWallF3LeftPiece(piece)
-            || IsWallF3RightPiece(piece)))
+            || IsWallF3RightPiece(piece)
+            || IsFrontWallF1Card(piece)
+            || IsFrontWallF2Card(piece)
+            || IsFrontWallF3Card(piece)))
       deterministic = true;
     if (!piece.Enabled)
       deterministic = false;
@@ -3105,7 +3108,10 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF2LeftPiece(piece)
         || IsWallF2RightPiece(piece)
         || IsWallF3LeftPiece(piece)
-        || IsWallF3RightPiece(piece))
+        || IsWallF3RightPiece(piece)
+        || IsFrontWallF1Card(piece)
+        || IsFrontWallF2Card(piece)
+        || IsFrontWallF3Card(piece))
       return true;
 
     if (layout != null)
