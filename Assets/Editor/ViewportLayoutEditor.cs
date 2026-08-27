@@ -87,6 +87,7 @@ public class ViewportLayoutEditor : EditorWindow
   private ViewportPoseVisibilityStore poseVisibilityStore;
   private Vector2 editorScroll;
   private int pieceSearchFamilyIndex;
+  private bool showWallsActivFilter;
   private string pieceSearchText = string.Empty;
   private bool openSearchPiecesPopup;
   private bool focusSearchPieces;
@@ -587,6 +588,12 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null || !piece.Enabled)
       return false;
 
+    if (showWallsActivFilter)
+    {
+      if (IsFloorOrCeiling(piece) || !ShouldDrawNonDTermStatus(piece))
+        return false;
+    }
+
     string search = (pieceSearchText ?? string.Empty).Trim();
     if (search.Length > 0)
     {
@@ -934,17 +941,20 @@ public class ViewportLayoutEditor : EditorWindow
         piece.Enabled,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
-    GUILayout.Space(ToggleGroupGap);
-    const string NonDTermLabel = "Non-DTerm";
-    float nonDTermLabelWidth =
-        EditorStyles.label.CalcSize(new GUIContent(NonDTermLabel)).x;
-    EditorGUIUtility.labelWidth = nonDTermLabelWidth;
-    DrawMouseOnlyToggle(
-        NonDTermLabel,
-        piece.Enabled && !deterministic,
-        piece.Enabled,
-        GUILayout.Width(nonDTermLabelWidth + ToggleBoxWidth),
-        GUILayout.ExpandWidth(false));
+    if (ShouldDrawNonDTermStatus(piece))
+    {
+      GUILayout.Space(ToggleGroupGap);
+      const string NonDTermLabel = "Non-DTerm";
+      float nonDTermLabelWidth =
+          EditorStyles.label.CalcSize(new GUIContent(NonDTermLabel)).x;
+      EditorGUIUtility.labelWidth = nonDTermLabelWidth;
+      DrawMouseOnlyToggle(
+          NonDTermLabel,
+          piece.Enabled && !deterministic,
+          piece.Enabled,
+          GUILayout.Width(nonDTermLabelWidth + ToggleBoxWidth),
+          GUILayout.ExpandWidth(false));
+    }
     EditorGUIUtility.labelWidth = previousLabelWidth;
     EditorGUILayout.EndHorizontal();
 
@@ -2359,6 +2369,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     GUILayout.FlexibleSpace();
+    if (GUILayout.Button("Show Walls Activ", GUILayout.ExpandWidth(false)))
+      showWallsActivFilter = !showWallsActivFilter;
     if (GUILayout.Button("Disable Walls", GUILayout.ExpandWidth(false)))
     {
       DisableWallsKeepChrome();
@@ -3033,6 +3045,28 @@ public class ViewportLayoutEditor : EditorWindow
         || piece.Graphic == DungeonGraphicType.Ceiling
         || piece.Name == "Floor"
         || piece.Name == "Ceiling";
+  }
+
+  private static bool ShouldDrawNonDTermStatus(ViewportPiece piece)
+  {
+    if (piece == null || IsFloorOrCeiling(piece))
+      return false;
+
+    return IsWallF0LeftPiece(piece)
+        || IsWallF0RightPiece(piece)
+        || IsWallF1LeftPiece(piece)
+        || IsWallF1RightPiece(piece)
+        || IsWallF2LeftPiece(piece)
+        || IsWallF2RightPiece(piece)
+        || IsWallF3LeftPiece(piece)
+        || IsWallF3RightPiece(piece)
+        || IsFrontWallF1Card(piece)
+        || IsFrontWallF2Card(piece)
+        || IsFrontWallF3Card(piece)
+        || piece.Graphic == DungeonGraphicType.WallD3L2
+        || piece.Graphic == DungeonGraphicType.WallD3R2
+        || piece.Name == "LeftD3"
+        || piece.Name == "RightD3";
   }
 
   private void PersistChanges()
