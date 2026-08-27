@@ -937,7 +937,7 @@ public class ViewportLayoutEditor : EditorWindow
       int widthSelected = EditorGUILayout.IntPopup(
           "F2 Width",
           widthBefore,
-          new[] { "106", "131", "160" },
+          new[] { "106", "131", "162" },
           new[]
           {
             FrontWallF2Logic.Width106,
