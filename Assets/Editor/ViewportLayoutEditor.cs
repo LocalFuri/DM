@@ -881,8 +881,11 @@ public class ViewportLayoutEditor : EditorWindow
         && (IsWallF0LeftPiece(piece)
             || IsWallF0RightPiece(piece)
             || IsWallF1LeftPiece(piece)
+            || IsWallF1RightPiece(piece)
             || IsWallF2LeftPiece(piece)
-            || IsWallF3LeftPiece(piece)))
+            || IsWallF2RightPiece(piece)
+            || IsWallF3LeftPiece(piece)
+            || IsWallF3RightPiece(piece)))
       deterministic = true;
     if (!piece.Enabled)
       deterministic = false;
@@ -3088,8 +3091,11 @@ public class ViewportLayoutEditor : EditorWindow
     if (IsWallF0LeftPiece(piece)
         || IsWallF0RightPiece(piece)
         || IsWallF1LeftPiece(piece)
+        || IsWallF1RightPiece(piece)
         || IsWallF2LeftPiece(piece)
-        || IsWallF3LeftPiece(piece))
+        || IsWallF2RightPiece(piece)
+        || IsWallF3LeftPiece(piece)
+        || IsWallF3RightPiece(piece))
       return true;
 
     if (layout != null)
@@ -3795,6 +3801,17 @@ public class ViewportLayoutEditor : EditorWindow
       piece.Enabled = rightF2IsWall;
       return;
     }
+  }
+
+  private static bool IsWallF2RightPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Name == "Wall F2Right" || piece.Name == "RightF2")
+      return true;
+
+    return piece.Graphic == DungeonGraphicType.WallF2R;
   }
 
   /// <summary>
