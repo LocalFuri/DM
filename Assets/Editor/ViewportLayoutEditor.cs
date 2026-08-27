@@ -851,7 +851,9 @@ public class ViewportLayoutEditor : EditorWindow
         GUILayout.ExpandWidth(false));
     if (IsWallF0LeftPiece(piece)
         || IsWallF0RightPiece(piece)
-        || IsWallF1LeftPiece(piece))
+        || IsWallF1LeftPiece(piece)
+        || IsWallF2LeftPiece(piece)
+        || IsWallF3LeftPiece(piece))
       deterministic = true;
     if (deterministic != deterministicBefore)
     {
@@ -3044,7 +3046,9 @@ public class ViewportLayoutEditor : EditorWindow
   {
     if (IsWallF0LeftPiece(piece)
         || IsWallF0RightPiece(piece)
-        || IsWallF1LeftPiece(piece))
+        || IsWallF1LeftPiece(piece)
+        || IsWallF2LeftPiece(piece)
+        || IsWallF3LeftPiece(piece))
       return true;
 
     if (layout != null)
