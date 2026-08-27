@@ -764,9 +764,22 @@ public class ViewportLayoutEditor : EditorWindow
       current.Use();
     }
 
-    // Draw the normal unchecked Unity box, then our own checked mark so only
-    // the mark changes color. Use the exact green from "Search Pieces".
+    // Shared Unity checkbox chrome for all three types. Colored fills are
+    // inset so they cannot cover the PrefixLabel or change hit-testing.
     GUI.Toggle(toggleRect, false, GUIContent.none, EditorStyles.toggle);
+
+    Color checkColor = new Color(0.2f, 1.0f, 0.2f);
+    if (label == "DTerm")
+    {
+      EditorGUI.DrawRect(InsetToggleFillRect(toggleRect), new Color(1f, 210f / 255f, 0f));
+      checkColor = Color.black;
+    }
+    else if (label == "Mirror" || label == "Mirror Horizontally")
+    {
+      EditorGUI.DrawRect(InsetToggleFillRect(toggleRect), new Color(1f, 140f / 255f, 0f));
+      checkColor = Color.black;
+    }
+
     if (value)
     {
       GUIStyle checkStyle = new GUIStyle(EditorStyles.label)
@@ -776,13 +789,23 @@ public class ViewportLayoutEditor : EditorWindow
         fontSize = 13,
         padding = new RectOffset(0, 0, 0, 1)
       };
-      checkStyle.normal.textColor = new Color(0.2f, 1.0f, 0.2f);
+      checkStyle.normal.textColor = checkColor;
       GUI.Label(toggleRect, "✓", checkStyle);
     }
 
     // This custom toggle never takes keyboard focus, preserving ViewEdit's
     // Delete/Page Down/arrows/Space navigation behavior.
     return value;
+  }
+
+  private static Rect InsetToggleFillRect(Rect toggleRect)
+  {
+    const float inset = 2f;
+    return new Rect(
+        toggleRect.x + inset,
+        toggleRect.y + inset,
+        toggleRect.width - inset * 2f,
+        toggleRect.height - inset * 2f);
   }
 
   private void DrawPieceCard(
@@ -849,12 +872,15 @@ public class ViewportLayoutEditor : EditorWindow
         deterministicBefore,
         GUILayout.Width(deterministicLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
-    if (IsWallF0LeftPiece(piece)
-        || IsWallF0RightPiece(piece)
-        || IsWallF1LeftPiece(piece)
-        || IsWallF2LeftPiece(piece)
-        || IsWallF3LeftPiece(piece))
+    if (piece.Enabled
+        && (IsWallF0LeftPiece(piece)
+            || IsWallF0RightPiece(piece)
+            || IsWallF1LeftPiece(piece)
+            || IsWallF2LeftPiece(piece)
+            || IsWallF3LeftPiece(piece)))
       deterministic = true;
+    if (!piece.Enabled)
+      deterministic = false;
     if (deterministic != deterministicBefore)
     {
       SetPieceDeterministic(piece, deterministic);
@@ -3044,6 +3070,9 @@ public class ViewportLayoutEditor : EditorWindow
 
   private bool GetPieceDeterministic(ViewportPiece piece)
   {
+    if (piece == null || !piece.Enabled)
+      return false;
+
     if (IsWallF0LeftPiece(piece)
         || IsWallF0RightPiece(piece)
         || IsWallF1LeftPiece(piece)
