@@ -763,15 +763,22 @@ public class ViewportLayoutEditor : EditorWindow
 
     Event current = Event.current;
     bool isMirror = label == "Mirror" || label == "Mirror Horizontally";
+    bool isStatusOnly = label == "Non-DTerm";
     if (current != null
         && current.type == EventType.MouseDown
         && current.button == 0
-        && toggleRect.Contains(current.mousePosition)
-        && (!isMirror || pieceEnabled))
+        && toggleRect.Contains(current.mousePosition))
     {
-      value = !value;
-      GUI.changed = true;
-      current.Use();
+      if (isStatusOnly)
+      {
+        current.Use();
+      }
+      else if (!isMirror || pieceEnabled)
+      {
+        value = !value;
+        GUI.changed = true;
+        current.Use();
+      }
     }
 
     // Shared Unity checkbox chrome for all three types. Colored fills are
@@ -791,6 +798,11 @@ public class ViewportLayoutEditor : EditorWindow
     {
       EditorGUI.DrawRect(InsetToggleFillRect(toggleRect), new Color(1f, 140f / 255f, 0f));
       checkColor = Color.black;
+    }
+    else if (showChecked && isStatusOnly)
+    {
+      EditorGUI.DrawRect(InsetToggleFillRect(toggleRect), Color.red);
+      checkColor = Color.yellow;
     }
 
     if (showChecked)
@@ -921,6 +933,17 @@ public class ViewportLayoutEditor : EditorWindow
         piece.MirrorHorizontally,
         piece.Enabled,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
+        GUILayout.ExpandWidth(false));
+    GUILayout.Space(ToggleGroupGap);
+    const string NonDTermLabel = "Non-DTerm";
+    float nonDTermLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent(NonDTermLabel)).x;
+    EditorGUIUtility.labelWidth = nonDTermLabelWidth;
+    DrawMouseOnlyToggle(
+        NonDTermLabel,
+        piece.Enabled && !deterministic,
+        piece.Enabled,
+        GUILayout.Width(nonDTermLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = previousLabelWidth;
     EditorGUILayout.EndHorizontal();
