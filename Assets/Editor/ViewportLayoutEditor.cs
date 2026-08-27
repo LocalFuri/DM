@@ -41,6 +41,13 @@ public class ViewportLayoutEditor : EditorWindow
     "RightD3",
     "Black Door",
     "Active",
+    "Arrows",
+    "Champion Slot 1",
+    "Champion Slot 2",
+    "Champion Slot 3",
+    "Champion Slot 4",
+    "Ceiling",
+    "Floor",
   };
 
   /// <summary>
@@ -437,6 +444,7 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       EditorGUILayout.EndHorizontal();
+      ClampSearchFamilyToEnabledPieces();
       HandlePieceSearchKeyboard();
 
       if (layoutEditable)
@@ -601,12 +609,27 @@ public class ViewportLayoutEditor : EditorWindow
     if (pieceSearchFamilyIndex <= 0
         || pieceSearchFamilyIndex >= PieceSearchFamilyOptions.Length)
     {
-      return true;
+      return !IsOnDemandSearchPiece(piece);
     }
 
     return PieceMatchesSearchFamily(
         piece,
         PieceSearchFamilyOptions[pieceSearchFamilyIndex]);
+  }
+
+  /// <summary>
+  /// Movement Arrows, Champion Status Slots, Ceiling, and Floor stay off the
+  /// unfiltered ViewEdit list; Search Pieces text/family can still reveal them.
+  /// </summary>
+  private static bool IsOnDemandSearchPiece(ViewportPiece piece)
+  {
+    return PieceMatchesSearchFamily(piece, "Arrows")
+        || PieceMatchesSearchFamily(piece, "Champion Slot 1")
+        || PieceMatchesSearchFamily(piece, "Champion Slot 2")
+        || PieceMatchesSearchFamily(piece, "Champion Slot 3")
+        || PieceMatchesSearchFamily(piece, "Champion Slot 4")
+        || PieceMatchesSearchFamily(piece, "Ceiling")
+        || PieceMatchesSearchFamily(piece, "Floor");
   }
 
   /// <summary>
@@ -682,6 +705,23 @@ public class ViewportLayoutEditor : EditorWindow
                 System.StringComparison.OrdinalIgnoreCase);
       case "Active":
         return piece.Enabled;
+      case "Arrows":
+        return name == "Movement Arrows"
+            || piece.Graphic == DungeonGraphicType.MovementArrows;
+      case "Champion Slot 1":
+        return name == "Champion Status Slot 1";
+      case "Champion Slot 2":
+        return name == "Champion Status Slot 2";
+      case "Champion Slot 3":
+        return name == "Champion Status Slot 3";
+      case "Champion Slot 4":
+        return name == "Champion Status Slot 4";
+      case "Ceiling":
+        return name == "Ceiling"
+            || piece.Graphic == DungeonGraphicType.Ceiling;
+      case "Floor":
+        return name == "Floor"
+            || piece.Graphic == DungeonGraphicType.Floor;
       default:
         return true;
     }
@@ -753,6 +793,9 @@ public class ViewportLayoutEditor : EditorWindow
       if (string.IsNullOrEmpty(label))
         continue;
 
+      if (!IsPermanentSearchFamily(label) && !FamilyHasEnabledPiece(label))
+        continue;
+
       int index = i;
       menu.AddItem(
           new GUIContent(label),
@@ -765,6 +808,60 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     menu.DropDown(popupRect);
+  }
+
+  private void ClampSearchFamilyToEnabledPieces()
+  {
+    if (pieceSearchFamilyIndex <= 0)
+      return;
+
+    if (pieceSearchFamilyIndex >= PieceSearchFamilyOptions.Length)
+    {
+      pieceSearchFamilyIndex = 0;
+      return;
+    }
+
+    string family = PieceSearchFamilyOptions[pieceSearchFamilyIndex];
+    if (string.IsNullOrEmpty(family))
+    {
+      pieceSearchFamilyIndex = 0;
+      return;
+    }
+
+    if (IsPermanentSearchFamily(family))
+      return;
+
+    if (!FamilyHasEnabledPiece(family))
+      pieceSearchFamilyIndex = 0;
+  }
+
+  private static bool IsPermanentSearchFamily(string family)
+  {
+    return family == "Arrows"
+        || family == "Champion Slot 1"
+        || family == "Champion Slot 2"
+        || family == "Champion Slot 3"
+        || family == "Champion Slot 4"
+        || family == "Ceiling"
+        || family == "Floor";
+  }
+
+  private bool FamilyHasEnabledPiece(string family)
+  {
+    if (layout == null || layout.Pieces == null || string.IsNullOrEmpty(family))
+      return false;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null || !piece.Enabled)
+        continue;
+
+      if (PieceMatchesSearchFamily(piece, family))
+        return true;
+    }
+
+    return false;
   }
 
   private void HandlePieceSearchKeyboard()
