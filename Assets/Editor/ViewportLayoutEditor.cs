@@ -849,7 +849,7 @@ public class ViewportLayoutEditor : EditorWindow
         deterministicBefore,
         GUILayout.Width(deterministicLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
-    if (IsWallF0LeftPiece(piece))
+    if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
       deterministic = true;
     if (deterministic != deterministicBefore)
     {
@@ -3040,7 +3040,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private bool GetPieceDeterministic(ViewportPiece piece)
   {
-    if (IsWallF0LeftPiece(piece))
+    if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
       return true;
 
     if (layout != null)
