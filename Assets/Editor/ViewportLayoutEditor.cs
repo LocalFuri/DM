@@ -589,10 +589,7 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
 
     if (showWallsActivFilter)
-    {
-      if (IsFloorOrCeiling(piece) || !ShouldDrawNonDTermStatus(piece))
-        return false;
-    }
+      return MatchesShowWallsActivFilter(piece);
 
     string search = (pieceSearchText ?? string.Empty).Trim();
     if (search.Length > 0)
@@ -610,6 +607,47 @@ public class ViewportLayoutEditor : EditorWindow
     return PieceMatchesSearchFamily(
         piece,
         PieceSearchFamilyOptions[pieceSearchFamilyIndex]);
+  }
+
+  /// <summary>
+  /// Show Walls Activ: every currently enabled wall piece, including FrontF1/F2/F3
+  /// by name or graphic. Ceiling and Floor are never included. Family and text
+  /// search are not applied.
+  /// </summary>
+  private static bool MatchesShowWallsActivFilter(ViewportPiece piece)
+  {
+    if (piece == null || !piece.Enabled || IsFloorOrCeiling(piece))
+      return false;
+
+    if (ShouldDrawNonDTermStatus(piece))
+      return true;
+
+    DungeonGraphicType graphic = piece.Graphic;
+    if (graphic == DungeonGraphicType.FrontWallF1
+        || graphic == DungeonGraphicType.FrontWallF1_A
+        || graphic == DungeonGraphicType.FrontWallF1_B
+        || graphic == DungeonGraphicType.FrontWallF2
+        || graphic == DungeonGraphicType.FrontWallF3
+        || graphic == DungeonGraphicType.WallF0L
+        || graphic == DungeonGraphicType.WallF0R
+        || graphic == DungeonGraphicType.WallF1L
+        || graphic == DungeonGraphicType.WallF1R
+        || graphic == DungeonGraphicType.WallF2L
+        || graphic == DungeonGraphicType.WallF2R
+        || graphic == DungeonGraphicType.WallF3L
+        || graphic == DungeonGraphicType.WallF3R)
+    {
+      return true;
+    }
+
+    string name = piece.Name ?? string.Empty;
+    return name.StartsWith("FrontF", System.StringComparison.Ordinal)
+        || name.StartsWith("Front Wall F", System.StringComparison.Ordinal)
+        || name.StartsWith("LeftF", System.StringComparison.Ordinal)
+        || name.StartsWith("RightF", System.StringComparison.Ordinal)
+        || name.StartsWith("Wall F", System.StringComparison.Ordinal)
+        || name == "LeftD3"
+        || name == "RightD3";
   }
 
   /// <summary>
