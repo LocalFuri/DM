@@ -132,26 +132,32 @@ namespace DM.Rendering
       return cachedExpanded;
     }
 
-    public const int ExpandedWidth160 = 160;
+    public const int ExpandedWidth160 = 162;
     /// <summary>dest[0..105] = FrontWallF2[:, 0..105]</summary>
-    public const int FrontStripWidth160 = 106;
-    public const int FrontSourceStartX160 = 0;
-    /// <summary>dest[106..159] = FrontWallF2[:, 1..54]</summary>
-    public const int WrapStripWidth160 = 54;
-    public const int WrapDestStartX160 = 106;
-    public const int WrapSourceStartX160 = 1;
+    public const int CenterStripWidth160 = 106;
+    public const int CenterDestStartX160 = 0;
+    public const int CenterSourceStartX160 = 0;
+    /// <summary>dest[106..127] = FrontWallF2[:, 1..22]</summary>
+    public const int RightAStripWidth160 = 22;
+    public const int RightADestStartX160 = 106;
+    public const int RightASourceStartX160 = 1;
+    /// <summary>dest[128..161] = FrontWallF2[:, 24..57]</summary>
+    public const int RightBStripWidth160 = 34;
+    public const int RightBDestStartX160 = 128;
+    public const int RightBSourceStartX160 = 24;
     private const int MinFrontWidth160 = 106;
 
     private static Texture2D cachedFront160;
     private static Texture2D cachedExpanded160;
 
     /// <summary>
-    /// Returns a cached 160×74 Front Wall F2 composite from FrontWallF2 only.
+    /// Returns a cached 162×74 Front Wall F2 composite from FrontWallF2 only.
     /// Original textures are never modified. No horizontal mirroring.
     /// WallF2R is not used.
     ///
     ///   dest[0..105]   = FrontWallF2[:, 0..105]
-    ///   dest[106..159] = FrontWallF2[:, 1..54]
+    ///   dest[106..127] = FrontWallF2[:, 1..22]
+    ///   dest[128..161] = FrontWallF2[:, 24..57]
     /// </summary>
     public static Texture2D BuildExpandedF2Wall160(Texture2D front)
     {
@@ -191,26 +197,29 @@ namespace DM.Rendering
       Color32[] dst = new Color32[ExpandedWidth160 * ExpandedHeight];
 
       // dest[0..105]   = FrontWallF2[:, 0..105]
-      // dest[106..159] = FrontWallF2[:, 1..54]
+      // dest[106..127] = FrontWallF2[:, 1..22]
+      // dest[128..161] = FrontWallF2[:, 24..57]
       for (int y = 0; y < ExpandedHeight; y++)
       {
         int frontRow = y * frontW;
         int dstRow = y * ExpandedWidth160;
 
-        for (int i = 0; i < FrontStripWidth160; i++)
+        for (int i = 0; i < CenterStripWidth160; i++)
         {
-          Color32 colour =
-              frontPixels[frontRow + FrontSourceStartX160 + i];
-          colour.a = 255;
-          dst[dstRow + i] = colour;
+          dst[dstRow + CenterDestStartX160 + i] =
+              frontPixels[frontRow + CenterSourceStartX160 + i];
         }
 
-        for (int i = 0; i < WrapStripWidth160; i++)
+        for (int i = 0; i < RightAStripWidth160; i++)
         {
-          Color32 colour =
-              frontPixels[frontRow + WrapSourceStartX160 + i];
-          colour.a = 255;
-          dst[dstRow + WrapDestStartX160 + i] = colour;
+          dst[dstRow + RightADestStartX160 + i] =
+              frontPixels[frontRow + RightASourceStartX160 + i];
+        }
+
+        for (int i = 0; i < RightBStripWidth160; i++)
+        {
+          dst[dstRow + RightBDestStartX160 + i] =
+              frontPixels[frontRow + RightBSourceStartX160 + i];
         }
       }
 

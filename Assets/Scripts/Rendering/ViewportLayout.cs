@@ -93,13 +93,16 @@ namespace DM.Rendering
   {
     public const int Width106 = 106;
     public const int Width131 = 131;
-    public const int Width160 = 160;
+    public const int Width160 = 162;
     public const int DefaultWidth = Width106;
 
     public static int Normalize(int width)
     {
-      if (width == Width131 || width == Width160)
+      if (width == Width131)
         return width;
+
+      if (width == Width160 || width == 160 || width == 159)
+        return Width160;
 
       return DefaultWidth;
     }
@@ -110,8 +113,8 @@ namespace DM.Rendering
     }
 
     /// <summary>
-    /// Copy a Front Wall F2 texture 1:1. 106 / 131 / 160 are the only legal
-    /// widths. Transparent source pixels are written opaque so a 160-wide
+    /// Copy a Front Wall F2 texture 1:1. 106 / 131 / 162 are the only legal
+    /// widths. Transparent source pixels are written opaque so a 162-wide
     /// composite cannot collapse to a 131-wide visible hole.
     /// Clips to the destination buffer (320×200), not to 131 or 224.
     /// </summary>
@@ -137,8 +140,8 @@ namespace DM.Rendering
     }
 
     /// <summary>
-    /// Re-write dest columns 131..159 of a 160-wide FrontF2 blit.
-    /// Used after nearer pieces (RightF0 at X=191) so the extra 29 px stay
+    /// Re-write dest columns 131..161 of a 162-wide FrontF2 blit.
+    /// Used after nearer pieces (RightF0 at X=191) so the extra 31 px stay
     /// visible. 106 / 131 do not call this and are unchanged.
     /// </summary>
     public static void Blit160ExtraStripToBuffer(
