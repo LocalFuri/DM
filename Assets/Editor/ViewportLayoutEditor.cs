@@ -480,11 +480,15 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// Muted investigation pieces stay in the layout asset but are not listed.
+  /// Disabled pieces for the current pose are also omitted from ViewEdit.
   /// </summary>
   private static bool IsHiddenFromEditorPieceList(ViewportPiece piece)
   {
     if (piece == null || piece.Name == null)
       return false;
+
+    if (!piece.Enabled)
+      return true;
 
     return piece.Name == "Ceiling Strip 84"
         || piece.Name == "Ceiling Strip 85"
@@ -580,6 +584,9 @@ public class ViewportLayoutEditor : EditorWindow
 
   private bool PieceMatchesSearchFilter(ViewportPiece piece)
   {
+    if (piece == null || !piece.Enabled)
+      return false;
+
     string search = (pieceSearchText ?? string.Empty).Trim();
     if (search.Length > 0)
     {
@@ -755,10 +762,12 @@ public class ViewportLayoutEditor : EditorWindow
     toggleRect.width = 16f;
 
     Event current = Event.current;
+    bool isMirror = label == "Mirror" || label == "Mirror Horizontally";
     if (current != null
         && current.type == EventType.MouseDown
         && current.button == 0
-        && toggleRect.Contains(current.mousePosition))
+        && toggleRect.Contains(current.mousePosition)
+        && (!isMirror || pieceEnabled))
     {
       value = !value;
       GUI.changed = true;
@@ -770,20 +779,21 @@ public class ViewportLayoutEditor : EditorWindow
     GUI.Toggle(toggleRect, false, GUIContent.none, EditorStyles.toggle);
 
     Color checkColor = new Color(0.2f, 1.0f, 0.2f);
-    if (pieceEnabled && value && label == "DTerm")
+    bool showChecked = value;
+    if (isMirror && !pieceEnabled)
+      showChecked = false;
+    if (pieceEnabled && showChecked && label == "DTerm")
     {
       EditorGUI.DrawRect(InsetToggleFillRect(toggleRect), new Color(1f, 210f / 255f, 0f));
       checkColor = Color.black;
     }
-    else if (pieceEnabled
-        && value
-        && (label == "Mirror" || label == "Mirror Horizontally"))
+    else if (pieceEnabled && showChecked && isMirror)
     {
       EditorGUI.DrawRect(InsetToggleFillRect(toggleRect), new Color(1f, 140f / 255f, 0f));
       checkColor = Color.black;
     }
 
-    if (value)
+    if (showChecked)
     {
       GUIStyle checkStyle = new GUIStyle(EditorStyles.label)
       {
