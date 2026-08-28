@@ -1044,7 +1044,6 @@ public class ViewportLayoutEditor : EditorWindow
             || IsWallF3LeftPiece(piece)
             || IsWallF3RightPiece(piece)
             || IsFrontWallF1Card(piece)
-            || IsFrontWallF2Card(piece)
             || IsFrontWallF3Card(piece)))
       deterministic = true;
     if (!piece.Enabled)
@@ -3295,7 +3294,6 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF3LeftPiece(piece)
         || IsWallF3RightPiece(piece)
         || IsFrontWallF1Card(piece)
-        || IsFrontWallF2Card(piece)
         || IsFrontWallF3Card(piece))
       return true;
 

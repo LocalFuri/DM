@@ -146,7 +146,7 @@ MonoBehaviour:
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
     MirrorHorizontally: 0
-    FrontWallF1Width: 224
+    FrontWallF1Width: 192
     FrontWallF2Width: 106
   - Name: LeftF1
     Graphic: 5
