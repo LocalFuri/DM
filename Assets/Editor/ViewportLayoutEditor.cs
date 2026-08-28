@@ -41,13 +41,6 @@ public class ViewportLayoutEditor : EditorWindow
     "RightD3",
     "Black Door",
     "Active",
-    "Arrows",
-    "Champion Slot 1",
-    "Champion Slot 2",
-    "Champion Slot 3",
-    "Champion Slot 4",
-    "Ceiling",
-    "Floor",
   };
 
   /// <summary>
