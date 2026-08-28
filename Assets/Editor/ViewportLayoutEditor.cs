@@ -4577,6 +4577,19 @@ public class ViewportLayoutEditor : EditorWindow
         if (piece == null)
           continue;
 
+        if (piece.Name != "Black Door Frame Left F1")
+          continue;
+
+        piece.Enabled = true;
+        break;
+      }
+
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (piece == null)
+          continue;
+
         if (piece.Name != "BlackDoorF1")
           continue;
 
