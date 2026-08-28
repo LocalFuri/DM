@@ -89,6 +89,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Vector2 editorScroll;
   private int pieceSearchFamilyIndex;
   private bool showWallsActivFilter;
+  private bool showOnlyWallsNeededForCurrentPose;
   private string pieceSearchText = string.Empty;
   private bool openSearchPiecesPopup;
   private bool focusSearchPieces;
@@ -401,6 +402,24 @@ public class ViewportLayoutEditor : EditorWindow
 
       DrawSnapToolbar();
 
+      if (GUILayout.Button(
+              showOnlyWallsNeededForCurrentPose
+                  ? "Show All Walls"
+                  : "Show all Walls we Need"))
+      {
+        showOnlyWallsNeededForCurrentPose =
+            !showOnlyWallsNeededForCurrentPose;
+
+        if (showOnlyWallsNeededForCurrentPose)
+          EnableAllWallsNeededForCurrentPose();
+
+        pieceSearchFamilyIndex = 0;
+        pieceSearchText = string.Empty;
+        editorScroll = Vector2.zero;
+        GUI.FocusControl(null);
+        Repaint();
+      }
+
       EditorGUILayout.BeginHorizontal();
       EditorGUILayout.PrefixLabel(
           "Search Pieces",
@@ -510,34 +529,252 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
     }
 
-    // Restarted one piece at a time.
-    // Only LeftF0 is currently geometry-filtered in ViewEdit.
-    // All other wall pieces keep their existing behavior until we add them
-    // individually and verify each rule.
-    if (IsWallF0LeftPiece(piece))
-      return !IsLeftF0NeededForCurrentPose();
+    if (showOnlyWallsNeededForCurrentPose
+        && IsWallEditorPiece(piece)
+        && !IsWallNeededForCurrentPose(piece))
+    {
+      return true;
+    }
 
     return false;
   }
 
-  private bool IsLeftF0NeededForCurrentPose()
+  private void EnableAllWallsNeededForCurrentPose()
   {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    Undo.RecordObject(layout, "Enable Walls Needed For Current Pose");
+
+    bool changed = false;
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null || !IsWallEditorPiece(piece))
+        continue;
+
+      bool needed = IsWallNeededForCurrentPose(piece);
+      if (needed && !piece.Enabled)
+      {
+        piece.Enabled = true;
+        changed = true;
+      }
+    }
+
+    if (!changed)
+      return;
+
+    CaptureCurrentPoseVisibilityToStore();
+    EditorUtility.SetDirty(layout);
+    if (poseVisibilityStore != null)
+      EditorUtility.SetDirty(poseVisibilityStore);
+
+    RefreshEditModePreview();
+  }
+
+  private static bool IsWallEditorPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (IsWallF0LeftPiece(piece)
+        || IsWallF0RightPiece(piece)
+        || IsWallF1LeftPiece(piece)
+        || IsWallF1RightPiece(piece)
+        || IsWallF2LeftPiece(piece)
+        || IsWallF2RightPiece(piece)
+        || IsWallF3LeftPiece(piece)
+        || IsWallF3RightPiece(piece)
+        || IsFrontWallF1Card(piece)
+        || IsFrontWallF2Card(piece)
+        || IsFrontWallF3Card(piece))
+    {
+      return true;
+    }
+
+    string name = piece.Name ?? string.Empty;
+    return name == "LeftD3"
+        || name == "RightD3"
+        || name == "Wall D3L2"
+        || name == "Wall D3R2"
+        || name == "Black Door Frame Left F1"
+        || name == "Black Door Frame Right F1"
+        || name == "Black Door Frame Left F2"
+        || name == "Black Door Frame Right F2"
+        || name == "BlackDoorF1";
+  }
+
+  private bool IsWallNeededForCurrentPose(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
     EnsurePreviewMiniMapLoaded();
 
-    // If the map cannot be read, keep LeftF0 available instead of hiding it.
+    // If the minimap cannot be read, do not hide wall cards.
     if (previewMiniMap == null)
       return true;
 
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
     DungeonMap.GetRightOffset(
         previewFacing,
         out int rightX,
         out int rightY);
 
-    int leftX = previewX - rightX;
-    int leftY = previewY - rightY;
+    bool TileIsWallOrOutside(int x, int y)
+    {
+      return !previewMiniMap.IsInside(x, y)
+          || previewMiniMap.GetTile(x, y).Type == DungeonTileType.Wall;
+    }
 
-    return !previewMiniMap.IsInside(leftX, leftY)
-        || previewMiniMap.GetTile(leftX, leftY).Type == DungeonTileType.Wall;
+    int f1X = previewX + forwardX;
+    int f1Y = previewY + forwardY;
+    int f2X = previewX + forwardX * 2;
+    int f2Y = previewY + forwardY * 2;
+    int f3X = previewX + forwardX * 3;
+    int f3Y = previewY + forwardY * 3;
+
+    bool f1CenterWall = TileIsWallOrOutside(f1X, f1Y);
+    bool f2CenterWall = TileIsWallOrOutside(f2X, f2Y);
+    bool f3CenterWall = TileIsWallOrOutside(f3X, f3Y);
+
+    if (IsWallF0LeftPiece(piece))
+      return TileIsWallOrOutside(previewX - rightX, previewY - rightY);
+
+    if (IsWallF0RightPiece(piece))
+      return TileIsWallOrOutside(previewX + rightX, previewY + rightY);
+
+    if (IsWallF1LeftPiece(piece))
+      return !f1CenterWall
+          && TileIsWallOrOutside(f1X - rightX, f1Y - rightY);
+
+    if (IsWallF1RightPiece(piece))
+      return !f1CenterWall
+          && TileIsWallOrOutside(f1X + rightX, f1Y + rightY);
+
+    if (IsWallF2LeftPiece(piece))
+      return !f1CenterWall
+          && !f2CenterWall
+          && TileIsWallOrOutside(f2X - rightX, f2Y - rightY);
+
+    if (IsWallF2RightPiece(piece))
+      return !f1CenterWall
+          && !f2CenterWall
+          && TileIsWallOrOutside(f2X + rightX, f2Y + rightY);
+
+    if (IsWallF3LeftPiece(piece))
+      return !f1CenterWall
+          && !f2CenterWall
+          && !f3CenterWall
+          && TileIsWallOrOutside(f3X - rightX, f3Y - rightY);
+
+    if (IsWallF3RightPiece(piece))
+      return !f1CenterWall
+          && !f2CenterWall
+          && !f3CenterWall
+          && TileIsWallOrOutside(f3X + rightX, f3Y + rightY);
+
+    if (IsFrontWallF1Card(piece))
+      return f1CenterWall;
+
+    if (IsFrontWallF2Card(piece))
+    {
+      if (previewX == 1
+          && previewY == 3
+          && previewFacing == DungeonFacing.North)
+      {
+        return false;
+      }
+
+      bool centerF2 = !f1CenterWall && f2CenterWall;
+      bool leftF1Open =
+          !TileIsWallOrOutside(f1X - rightX, f1Y - rightY);
+      bool leftF2Wall =
+          TileIsWallOrOutside(f2X - rightX, f2Y - rightY);
+      bool leftExposedF2 =
+          f1CenterWall && leftF1Open && leftF2Wall;
+      return centerF2 || leftExposedF2;
+    }
+
+    if (IsFrontWallF3Card(piece))
+    {
+      if (previewX == 1
+          && previewY == 4
+          && previewFacing == DungeonFacing.North)
+      {
+        return false;
+      }
+
+      return !f1CenterWall && !f2CenterWall && f3CenterWall;
+    }
+
+    string name = piece.Name ?? string.Empty;
+
+    // Hall of Champions Black Door front views.
+    if (previewX == 1 && previewFacing == DungeonFacing.North)
+    {
+      if (previewY == 3)
+      {
+        return name == "Black Door Frame Left F1"
+            || name == "Black Door Frame Right F1"
+            || name == "BlackDoorF1";
+      }
+
+      if (previewY == 4)
+      {
+        // BlackDoorF1 stays visible as the parent editor card for its F2 card.
+        return name == "Black Door Frame Left F2"
+            || name == "Black Door Frame Right F2"
+            || name == "BlackDoorF1";
+      }
+
+      if (previewY == 5)
+      {
+        // F3 editor cards are nested under the F2 frame / door parent cards.
+        return name == "Black Door Frame Left F2"
+            || name == "Black Door Frame Right F2"
+            || name == "BlackDoorF1";
+      }
+    }
+
+    if (name == "LeftD3" || name == "Wall D3L2")
+    {
+      return !f1CenterWall
+          && !f2CenterWall
+          && !f3CenterWall
+          && TileIsWallOrOutside(f3X - rightX, f3Y - rightY);
+    }
+
+    if (name == "RightD3" || name == "Wall D3R2")
+    {
+      bool normalRightD3 =
+          !f1CenterWall
+          && !f2CenterWall
+          && !f3CenterWall
+          && TileIsWallOrOutside(f3X + rightX, f3Y + rightY);
+
+      bool blackDoorOblique =
+          previewX == 0
+          && previewY == 5
+          && previewFacing == DungeonFacing.North;
+
+      return normalRightD3 || blackDoorOblique;
+    }
+
+    // Other Black Door cards are hidden unless one of the exact views above needs them.
+    if (name == "Black Door Frame Left F1"
+        || name == "Black Door Frame Right F1"
+        || name == "Black Door Frame Left F2"
+        || name == "Black Door Frame Right F2"
+        || name == "BlackDoorF1")
+    {
+      return false;
+    }
+
+    return true;
   }
 
   /// <summary>
