@@ -41,6 +41,7 @@ public class ViewportLayoutEditor : EditorWindow
     "RightD3",
     "Black Door",
     "Active",
+    "DTerm active",
   };
 
   /// <summary>
@@ -484,16 +485,59 @@ public class ViewportLayoutEditor : EditorWindow
   /// Muted investigation pieces stay in the layout asset but are not listed.
   /// Disabled pieces for the current pose are also omitted from ViewEdit.
   /// </summary>
-  private static bool IsHiddenFromEditorPieceList(ViewportPiece piece)
+  private bool IsHiddenFromEditorPieceList(ViewportPiece piece)
   {
     if (piece == null || piece.Name == null)
       return false;
 
-    return piece.Name == "Ceiling Strip 84"
+    // Permanent ViewEdit exclusions.
+    if (piece.Name == "Ceiling"
+        || piece.Name == "Floor"
+        || piece.Graphic == DungeonGraphicType.Ceiling
+        || piece.Graphic == DungeonGraphicType.Floor
+        || piece.Name == "Movement Arrows"
+        || piece.Graphic == DungeonGraphicType.MovementArrows
+        || piece.Name == "Champion Status Slot 1"
+        || piece.Name == "Champion Status Slot 2"
+        || piece.Name == "Champion Status Slot 3"
+        || piece.Name == "Champion Status Slot 4"
+        || piece.Name == "Ceiling Strip 84"
         || piece.Name == "Ceiling Strip 85"
         || piece.Name == "Black Door Frame Left F3"
         || piece.Name == "Black Door Frame Right F3"
-        || piece.Name == "BlackDoorF3";
+        || piece.Name == "BlackDoorF3")
+    {
+      return true;
+    }
+
+    // Restarted one piece at a time.
+    // Only LeftF0 is currently geometry-filtered in ViewEdit.
+    // All other wall pieces keep their existing behavior until we add them
+    // individually and verify each rule.
+    if (IsWallF0LeftPiece(piece))
+      return !IsLeftF0NeededForCurrentPose();
+
+    return false;
+  }
+
+  private bool IsLeftF0NeededForCurrentPose()
+  {
+    EnsurePreviewMiniMapLoaded();
+
+    // If the map cannot be read, keep LeftF0 available instead of hiding it.
+    if (previewMiniMap == null)
+      return true;
+
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int leftX = previewX - rightX;
+    int leftY = previewY - rightY;
+
+    return !previewMiniMap.IsInside(leftX, leftY)
+        || previewMiniMap.GetTile(leftX, leftY).Type == DungeonTileType.Wall;
   }
 
   /// <summary>
@@ -602,9 +646,12 @@ public class ViewportLayoutEditor : EditorWindow
       return !IsOnDemandSearchPiece(piece);
     }
 
-    return PieceMatchesSearchFamily(
-        piece,
-        PieceSearchFamilyOptions[pieceSearchFamilyIndex]);
+    string selectedFamily =
+        PieceSearchFamilyOptions[pieceSearchFamilyIndex];
+    if (selectedFamily == "DTerm active")
+      return piece.Enabled && GetPieceDeterministic(piece);
+
+    return PieceMatchesSearchFamily(piece, selectedFamily);
   }
 
   /// <summary>
@@ -783,9 +830,6 @@ public class ViewportLayoutEditor : EditorWindow
       if (string.IsNullOrEmpty(label))
         continue;
 
-      if (!IsPermanentSearchFamily(label) && !FamilyHasEnabledPiece(label))
-        continue;
-
       int index = i;
       menu.AddItem(
           new GUIContent(label),
@@ -818,16 +862,14 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    if (IsPermanentSearchFamily(family))
-      return;
-
-    if (!FamilyHasEnabledPiece(family))
-      pieceSearchFamilyIndex = 0;
+    // Keep the selected family even when all of its pieces are disabled.
+    // This lets ViewEdit show those disabled pieces so they can be enabled again.
   }
 
   private static bool IsPermanentSearchFamily(string family)
   {
-    return family == "Arrows"
+    return family == "DTerm active"
+        || family == "Arrows"
         || family == "Champion Slot 1"
         || family == "Champion Slot 2"
         || family == "Champion Slot 3"
