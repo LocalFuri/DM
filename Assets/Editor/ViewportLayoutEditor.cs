@@ -4357,11 +4357,77 @@ public class ViewportLayoutEditor : EditorWindow
       if (piece.Name != "FrontF2" && piece.Name != "Front Wall F2")
         continue;
 
-      // Classification controls visibility only in this step.
-      // Width / X / Y / Mirror are intentionally left untouched.
       piece.Enabled = frontF2IsWall;
+
+      // DTerm FrontF2: identical center-F2 map geometry uses the authored
+      // (1,5) West FrontF2 Width/X/Y as the canonical reference.
+      // This makes geometry twins such as (1,5) West and (1,16) West render
+      // identically while leaving Non-DTerm poses fully pose-authored.
+      if (frontF2IsWall
+          && centerF2
+          && layout.FrontF2Deterministic
+          && TryGetCenterFrontF2DeterministicReference(
+              out int deterministicWidth,
+              out int deterministicX,
+              out int deterministicY))
+      {
+        piece.FrontWallF2Width = deterministicWidth;
+        piece.X = deterministicX;
+        piece.Y = deterministicY;
+      }
+
       return;
     }
+  }
+
+  private bool TryGetCenterFrontF2DeterministicReference(
+      out int width,
+      out int x,
+      out int y)
+  {
+    width = FrontWallF2Logic.DefaultWidth;
+    x = 0;
+    y = 0;
+
+    EnsurePoseVisibilityStore();
+    if (poseVisibilityStore == null || layout == null)
+      return false;
+
+    if (!poseVisibilityStore.TryFindEntry(
+            1,
+            5,
+            DungeonFacing.West,
+            out ViewportPoseVisibilityEntry referenceEntry))
+    {
+      return false;
+    }
+
+    ViewportLayout referenceLayout = UnityEngine.Object.Instantiate(layout);
+    try
+    {
+      poseVisibilityStore.ApplyToLayout(referenceEntry, referenceLayout);
+
+      if (referenceLayout.Pieces == null)
+        return false;
+
+      for (int i = 0; i < referenceLayout.Pieces.Count; i++)
+      {
+        ViewportPiece referencePiece = referenceLayout.Pieces[i];
+        if (!IsFrontWallF2Card(referencePiece))
+          continue;
+
+        width = FrontWallF2Logic.Normalize(referencePiece.FrontWallF2Width);
+        x = referencePiece.X;
+        y = referencePiece.Y;
+        return true;
+      }
+    }
+    finally
+    {
+      UnityEngine.Object.DestroyImmediate(referenceLayout);
+    }
+
+    return false;
   }
 
   /// <summary>
