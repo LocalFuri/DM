@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-// CHATGPT_BUILD_FRONTF2_LEFT_PRESET_20260829_E
+// CHATGPT_BUILD_GEOMETRY_ASSEMBLY_STAGE3_F1_CANONICAL_20260829_P
 public class ViewportLayoutEditor : EditorWindow
 {
   private static readonly int[] SnapValues = { 1, 2, 4, 8 };
@@ -168,6 +168,39 @@ public class ViewportLayoutEditor : EditorWindow
   private Vector2 previewMiniMapScroll;
   private string deterministicWallDiagnosticText;
 
+  // New normal-wall pipeline foundation:
+  // pose-store data may still exist, but normal-wall placement is restored from
+  // one clean baseline before the relative-geometry resolver runs.
+  private readonly Dictionary<string, NormalWallBaseline> normalWallBaselineByName =
+      new Dictionary<string, NormalWallBaseline>();
+
+  private struct NormalWallBaseline
+  {
+    public DungeonGraphicType Graphic;
+    public int X;
+    public int Y;
+    public bool Mirror;
+    public int FrontF1Width;
+    public int FrontF2Width;
+  }
+
+  // Per-pose, transient normal-wall result. Never written to the layout asset
+  // or pose store. This is the render-time assembly produced from map geometry.
+  private readonly Dictionary<ViewportPiece, ResolvedNormalWallState>
+      resolvedNormalWallByPiece =
+          new Dictionary<ViewportPiece, ResolvedNormalWallState>();
+
+  private struct ResolvedNormalWallState
+  {
+    public bool Enabled;
+    public DungeonGraphicType Graphic;
+    public int X;
+    public int Y;
+    public bool Mirror;
+    public int FrontF1Width;
+    public int FrontF2Width;
+  }
+
   // TEMP F3 diagnostics — remove after verification.
   private static string lastLoggedFrontWallF3EditDrawKey;
 
@@ -289,6 +322,7 @@ public class ViewportLayoutEditor : EditorWindow
     EnsurePoseVisibilityStore();
     StripObsoleteFrontWallF1ABPieces();
     MigrateObsoleteFrontWallF1ABPoseStore();
+    CaptureNormalWallBaselinesFromLayout();
     ApplyCurrentPoseVisibilityToLayout();
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
     // Force a fresh compose from the current pose's Enabled flags.
@@ -697,7 +731,13 @@ public class ViewportLayoutEditor : EditorWindow
           TileIsWallOrOutside(f2X - rightX, f2Y - rightY);
       bool leftExposedF2 =
           f1CenterWall && leftF1Open && leftF2Wall;
-      return centerF2 || leftExposedF2;
+      bool rightF1Open =
+          !TileIsWallOrOutside(f1X + rightX, f1Y + rightY);
+      bool rightF2Wall =
+          TileIsWallOrOutside(f2X + rightX, f2Y + rightY);
+      bool rightExposedF2 =
+          f1CenterWall && rightF1Open && rightF2Wall;
+      return centerF2 || leftExposedF2 || rightExposedF2;
     }
 
     if (IsFrontWallF3Card(piece))
@@ -3235,8 +3275,8 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Load saved Enabled/Mirror for the current preview pose without creating
-  /// or capturing entries (no SetDirty / SaveAssets).
+  /// Navigation preview: legacy pose data may restore special objects, but
+  /// normal walls are immediately reset and rebuilt from relative map geometry.
   /// </summary>
   private void ApplyPoseVisibilityForNavigationOnly()
   {
@@ -3244,52 +3284,31 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     EnsurePoseVisibilityStore();
-    if (poseVisibilityStore == null)
-      return;
 
-    if (poseVisibilityStore.TryFindEntry(
+    if (poseVisibilityStore != null
+        && poseVisibilityStore.TryFindEntry(
             previewX,
             previewY,
             previewFacing,
             out ViewportPoseVisibilityEntry entry))
     {
       poseVisibilityStore.ApplyToLayout(entry, layout);
-      ApplyCeilingMirrorFromPose();
-      ApplyFloorMirrorReferenceOverride();
-      ApplyWallF0LeftFromMapGeometry();
-      ApplyWallF0RightFromMapGeometry();
-      ApplyWallF1LeftFromMapGeometry();
-      ApplyWallF1RightFromMapGeometry();
-      ApplyWallF2LeftFromMapGeometry();
-      ApplyWallF2RightFromMapGeometry();
-      ApplyWallF3LeftFromMapGeometry();
-      ApplyWallF3RightFromMapGeometry();
-    ApplyRightD3FromMapGeometry();
-      ApplyFrontF1FromMapGeometry();
-      ApplyFrontF2FromMapGeometry();
-      ApplyFrontF3FromMapGeometry();
-      ApplyFrontF1F2MirrorFromVisibleWallConfiguration();
-      ApplyBlackDoorEnabledFromPoseException();
-      return;
+    }
+    else
+    {
+      ApplyUnknownPoseDefaultsToLayout();
     }
 
-    // Unknown pose: kit baseline on the live layout only — do not write store.
-    ApplyUnknownPoseDefaultsToLayout();
+    EnsureChampionStatusSlotsEnabled();
     ApplyCeilingMirrorFromPose();
     ApplyFloorMirrorReferenceOverride();
-    ApplyWallF0LeftFromMapGeometry();
-    ApplyWallF0RightFromMapGeometry();
-    ApplyWallF1LeftFromMapGeometry();
-    ApplyWallF1RightFromMapGeometry();
-    ApplyWallF2LeftFromMapGeometry();
-    ApplyWallF2RightFromMapGeometry();
-    ApplyWallF3LeftFromMapGeometry();
-    ApplyWallF3RightFromMapGeometry();
+
+    // CUTOVER: no legacy normal-wall method is allowed to run after this point.
+    RestoreNormalWallBaselineProperties();
+    ApplyNormalWallVisibilityFromRelativeGeometry();
+
+    // Special/non-normal wall features remain separate.
     ApplyRightD3FromMapGeometry();
-    ApplyFrontF1FromMapGeometry();
-    ApplyFrontF2FromMapGeometry();
-    ApplyFrontF3FromMapGeometry();
-    ApplyFrontF1F2MirrorFromVisibleWallConfiguration();
     ApplyBlackDoorEnabledFromPoseException();
   }
 
@@ -3874,61 +3893,480 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     EnsurePoseVisibilityStore();
-    if (poseVisibilityStore == null)
-      return;
 
-    if (!poseVisibilityStore.TryFindEntry(
+    ViewportPoseVisibilityEntry entry = null;
+    bool hasEntry =
+        poseVisibilityStore != null
+        && poseVisibilityStore.TryFindEntry(
             previewX,
             previewY,
             previewFacing,
-            out ViewportPoseVisibilityEntry entry))
+            out entry);
+
+    if (hasEntry)
     {
-      // First visit to this pose: start from safe defaults, then capture.
+      // Keep legacy pose restoration only for non-normal-wall/special content.
+      poseVisibilityStore.ApplyToLayout(entry, layout);
+      EnsureChampionStatusSlotsEnabled();
+    }
+    else
+    {
       ApplyUnknownPoseDefaultsToLayout();
-      ApplyCeilingMirrorFromPose();
-      ApplyFloorMirrorReferenceOverride();
-      ApplyWallF0LeftFromMapGeometry();
-      ApplyWallF0RightFromMapGeometry();
-      ApplyWallF1LeftFromMapGeometry();
-      ApplyWallF1RightFromMapGeometry();
-      ApplyWallF2LeftFromMapGeometry();
-      ApplyWallF2RightFromMapGeometry();
-      ApplyWallF3LeftFromMapGeometry();
-      ApplyWallF3RightFromMapGeometry();
+    }
+
+    ApplyCeilingMirrorFromPose();
+    ApplyFloorMirrorReferenceOverride();
+
+    // CUTOVER: this is now the only normal-wall decision path.
+    RestoreNormalWallBaselineProperties();
+    ApplyNormalWallVisibilityFromRelativeGeometry();
+
+    // Special features remain outside the normal-wall resolver.
     ApplyRightD3FromMapGeometry();
-      ApplyFrontF1FromMapGeometry();
-      ApplyFrontF2FromMapGeometry();
-      ApplyFrontF3FromMapGeometry();
-      ApplyFrontF1F2MirrorFromVisibleWallConfiguration();
-      ApplyBlackDoorEnabledFromPoseException();
+    ApplyBlackDoorEnabledFromPoseException();
+
+    if (!hasEntry && poseVisibilityStore != null)
+    {
       entry = poseVisibilityStore.GetOrCreateEntry(
           previewX,
           previewY,
           previewFacing);
       poseVisibilityStore.CaptureFromLayout(entry, layout);
       EditorUtility.SetDirty(poseVisibilityStore);
+    }
+  }
+
+  private static bool IsNormalWallPiece(ViewportPiece piece)
+  {
+    return piece != null
+        && (IsWallF0LeftPiece(piece)
+            || IsWallF0RightPiece(piece)
+            || IsWallF1LeftPiece(piece)
+            || IsWallF1RightPiece(piece)
+            || IsWallF2LeftPiece(piece)
+            || IsWallF2RightPiece(piece)
+            || IsWallF3LeftPiece(piece)
+            || IsWallF3RightPiece(piece)
+            || IsFrontWallF1Card(piece)
+            || IsFrontWallF2Card(piece)
+            || IsFrontWallF3Card(piece));
+  }
+
+  private void CaptureNormalWallBaselinesFromLayout()
+  {
+    normalWallBaselineByName.Clear();
+
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (!IsNormalWallPiece(piece))
+        continue;
+
+      string key = piece.Name ?? string.Empty;
+      if (key.Length == 0)
+        continue;
+
+      normalWallBaselineByName[key] = new NormalWallBaseline
+      {
+        Graphic = piece.Graphic,
+        X = piece.X,
+        Y = piece.Y,
+        Mirror = piece.MirrorHorizontally,
+        FrontF1Width = piece.FrontWallF1Width,
+        FrontF2Width = piece.FrontWallF2Width
+      };
+    }
+  }
+
+  private void RestoreNormalWallBaselineProperties()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    if (normalWallBaselineByName.Count == 0)
+      CaptureNormalWallBaselinesFromLayout();
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (!IsNormalWallPiece(piece))
+        continue;
+
+      string key = piece.Name ?? string.Empty;
+      if (!normalWallBaselineByName.TryGetValue(key, out NormalWallBaseline baseline))
+        continue;
+
+      piece.Graphic = baseline.Graphic;
+      piece.X = baseline.X;
+      piece.Y = baseline.Y;
+      piece.MirrorHorizontally = baseline.Mirror;
+      piece.PoseOffsetX = 0;
+      piece.PoseOffsetY = 0;
+      piece.FrontWallF1Width = baseline.FrontF1Width;
+      piece.FrontWallF2Width = baseline.FrontF2Width;
+    }
+  }
+
+  /// <summary>
+  /// Single authority for normal-wall visibility.
+  /// Reads only the player-relative forward cone: F0 left/right and
+  /// F1/F2/F3 left-center-right. Absolute map coordinates never choose a wall.
+  /// </summary>
+  private void ApplyNormalWallVisibilityFromRelativeGeometry()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    EnsurePreviewMiniMapLoaded();
+    resolvedNormalWallByPiece.Clear();
+
+    if (previewMiniMap == null)
+      return;
+
+    RelativeViewportGeometry g =
+        RelativeViewportGeometry.Calculate(
+            previewMiniMap,
+            previewX,
+            previewY,
+            previewFacing);
+
+    bool f0L = g.F0Left.IsWall;
+    bool f0R = g.F0Right.IsWall;
+
+    bool f1C = g.F1Center.IsWall;
+    bool f1L = !f1C && g.F1Left.IsWall;
+    bool f1R = !f1C && g.F1Right.IsWall;
+
+    bool f2CenterVisible = !f1C && g.F2Center.IsWall;
+    bool f2L = !f1C && !g.F2Center.IsWall && g.F2Left.IsWall;
+    bool f2R = !f1C && !g.F2Center.IsWall && g.F2Right.IsWall;
+
+    bool f2FrontLeftExposed =
+        f1C && !g.F1Left.IsWall && g.F2Left.IsWall;
+    bool f2FrontRightExposed =
+        f1C && !g.F1Right.IsWall && g.F2Right.IsWall;
+    bool f2Front =
+        f2CenterVisible || f2FrontLeftExposed || f2FrontRightExposed;
+
+    bool f3CenterVisible =
+        !f1C && !g.F2Center.IsWall && g.F3Center.IsWall;
+    bool f3L =
+        !f1C
+        && !g.F2Center.IsWall
+        && !g.F3Center.IsWall
+        && g.F3Left.IsWall;
+    bool f3R =
+        !f1C
+        && !g.F2Center.IsWall
+        && !g.F3Center.IsWall
+        && g.F3Right.IsWall;
+
+    // First pass: visibility only.
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (!IsNormalWallPiece(piece))
+        continue;
+
+      bool enabled = false;
+      if (IsWallF0LeftPiece(piece))
+        enabled = f0L;
+      else if (IsWallF0RightPiece(piece))
+        enabled = f0R;
+      else if (IsWallF1LeftPiece(piece))
+        enabled = f1L;
+      else if (IsWallF1RightPiece(piece))
+        enabled = f1R;
+      else if (IsWallF2LeftPiece(piece))
+        enabled = f2L;
+      else if (IsWallF2RightPiece(piece))
+        enabled = f2R;
+      else if (IsWallF3LeftPiece(piece))
+        enabled = f3L;
+      else if (IsWallF3RightPiece(piece))
+        enabled = f3R;
+      else if (IsFrontWallF1Card(piece))
+        enabled = f1C;
+      else if (IsFrontWallF2Card(piece))
+        enabled = f2Front;
+      else if (IsFrontWallF3Card(piece))
+        enabled = f3CenterVisible;
+
+      // Keep Enabled synchronized for ViewEdit filtering/status only.
+      piece.Enabled = enabled;
+
+      ResolvedNormalWallState state = new ResolvedNormalWallState
+      {
+        Enabled = enabled,
+        Graphic = piece.Graphic,
+        X = piece.X,
+        Y = piece.Y,
+        Mirror = piece.MirrorHorizontally,
+        FrontF1Width = StraightF1WallLogic.NormalizeFrontWallF1Width(
+            piece.FrontWallF1Width),
+        FrontF2Width = FrontWallF2Logic.Normalize(piece.FrontWallF2Width)
+      };
+
+      resolvedNormalWallByPiece[piece] = state;
+    }
+
+    // Second pass: resolve orientation from player-relative wall side.
+    ResolveF0OrientationFromRelativeSide();
+    ResolveF1OrientationFromRelativeSide();
+
+    // Third pass: assemble the selected pieces as one scene.
+    // The front plane is centered between the inner edges of the visible
+    // left/right side walls at that depth. No absolute map coordinates are used.
+    ResolveFrontF1Assembly();
+    ResolveFrontF2Assembly();
+  }
+
+  /// <summary>
+  /// F0 orientation comes only from the wall's side relative to the player.
+  /// Keep the piece's own graphic; derive only mirror from Left/Right.
+  /// Facing and absolute map coordinates do not participate.
+  /// </summary>
+  private void ResolveF0OrientationFromRelativeSide()
+  {
+    ViewportPiece left = FindNormalWallPiece(IsWallF0LeftPiece);
+    if (left != null
+        && resolvedNormalWallByPiece.TryGetValue(
+            left,
+            out ResolvedNormalWallState leftState))
+    {
+      leftState.Mirror = true;
+      resolvedNormalWallByPiece[left] = leftState;
+    }
+
+    ViewportPiece right = FindNormalWallPiece(IsWallF0RightPiece);
+    if (right != null
+        && resolvedNormalWallByPiece.TryGetValue(
+            right,
+            out ResolvedNormalWallState rightState))
+    {
+      rightState.Mirror = false;
+      resolvedNormalWallByPiece[right] = rightState;
+    }
+  }
+
+  /// <summary>
+  /// F1 orientation uses one canonical source graphic.
+  /// LeftF1 = WallF1R mirrored; RightF1 = WallF1R normal.
+  /// No absolute map X/Y and no facing parity.
+  /// </summary>
+  private void ResolveF1OrientationFromRelativeSide()
+  {
+    ViewportPiece left = FindNormalWallPiece(IsWallF1LeftPiece);
+    if (left != null
+        && resolvedNormalWallByPiece.TryGetValue(
+            left,
+            out ResolvedNormalWallState leftState))
+    {
+      leftState.Graphic = DungeonGraphicType.WallF1R;
+      leftState.Mirror = true;
+      resolvedNormalWallByPiece[left] = leftState;
+    }
+
+    ViewportPiece right = FindNormalWallPiece(IsWallF1RightPiece);
+    if (right != null
+        && resolvedNormalWallByPiece.TryGetValue(
+            right,
+            out ResolvedNormalWallState rightState))
+    {
+      rightState.Graphic = DungeonGraphicType.WallF1R;
+      rightState.Mirror = false;
+      resolvedNormalWallByPiece[right] = rightState;
+    }
+  }
+
+  private void ResolveFrontF1Assembly()
+  {
+    ViewportPiece front = FindNormalWallPiece(IsFrontWallF1Card);
+    if (front == null
+        || !resolvedNormalWallByPiece.TryGetValue(
+            front,
+            out ResolvedNormalWallState state)
+        || !state.Enabled)
+    {
       return;
     }
 
-    poseVisibilityStore.ApplyToLayout(entry, layout);
-    EnsureChampionStatusSlotsEnabled();
-    ApplyCeilingMirrorFromPose();
-    ApplyFloorMirrorReferenceOverride();
-    ApplyWallF0LeftFromMapGeometry();
-    ApplyWallF0RightFromMapGeometry();
-    ApplyWallF1LeftFromMapGeometry();
-    ApplyWallF1RightFromMapGeometry();
-    ApplyWallF2LeftFromMapGeometry();
-    ApplyWallF2RightFromMapGeometry();
-    ApplyWallF3LeftFromMapGeometry();
-    ApplyWallF3RightFromMapGeometry();
-    ApplyRightD3FromMapGeometry();
-    ApplyFrontF1FromMapGeometry();
-    ApplyFrontF2FromMapGeometry();
-    ApplyFrontF3FromMapGeometry();
-    ApplyFrontF1F2MirrorFromVisibleWallConfiguration();
-    ApplyBlackDoorEnabledFromPoseException();
+    int leftEdge = 0;
+    int rightEdge = 224;
+
+    ViewportPiece left = FindNormalWallPiece(IsWallF0LeftPiece);
+    if (TryGetResolvedInnerRightEdge(left, out int leftInner))
+      leftEdge = Mathf.Clamp(leftInner, 0, 224);
+
+    ViewportPiece right = FindNormalWallPiece(IsWallF0RightPiece);
+    if (TryGetResolvedInnerLeftEdge(right, out int rightInner))
+      rightEdge = Mathf.Clamp(rightInner, 0, 224);
+
+    if (rightEdge <= leftEdge)
+    {
+      leftEdge = 0;
+      rightEdge = 224;
+    }
+
+    int span = rightEdge - leftEdge;
+    int width = ChooseFrontF1WidthForSpan(span);
+
+    state.FrontF1Width = width;
+    state.X = leftEdge + (span - width) / 2;
+    resolvedNormalWallByPiece[front] = state;
   }
+
+  private void ResolveFrontF2Assembly()
+  {
+    ViewportPiece front = FindNormalWallPiece(IsFrontWallF2Card);
+    if (front == null
+        || !resolvedNormalWallByPiece.TryGetValue(
+            front,
+            out ResolvedNormalWallState state)
+        || !state.Enabled)
+    {
+      return;
+    }
+
+    int leftEdge = 0;
+    int rightEdge = 224;
+
+    // For a center F2 plane, the visible opening is bounded by F1 side walls.
+    ViewportPiece left = FindNormalWallPiece(IsWallF1LeftPiece);
+    if (TryGetResolvedInnerRightEdge(left, out int leftInner))
+      leftEdge = Mathf.Clamp(leftInner, 0, 224);
+
+    ViewportPiece right = FindNormalWallPiece(IsWallF1RightPiece);
+    if (TryGetResolvedInnerLeftEdge(right, out int rightInner))
+      rightEdge = Mathf.Clamp(rightInner, 0, 224);
+
+    if (rightEdge <= leftEdge)
+    {
+      leftEdge = 0;
+      rightEdge = 224;
+    }
+
+    int span = rightEdge - leftEdge;
+    int width = ChooseFrontF2WidthForSpan(span);
+
+    state.FrontF2Width = width;
+    state.X = leftEdge + (span - width) / 2;
+    resolvedNormalWallByPiece[front] = state;
+  }
+
+  private ViewportPiece FindNormalWallPiece(
+      System.Func<ViewportPiece, bool> predicate)
+  {
+    if (layout == null || layout.Pieces == null || predicate == null)
+      return null;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece != null && predicate(piece))
+        return piece;
+    }
+
+    return null;
+  }
+
+  private bool TryGetResolvedInnerRightEdge(
+      ViewportPiece piece,
+      out int edge)
+  {
+    edge = 0;
+    if (piece == null
+        || !resolvedNormalWallByPiece.TryGetValue(
+            piece,
+            out ResolvedNormalWallState state)
+        || !state.Enabled)
+    {
+      return false;
+    }
+
+    Texture2D texture = graphics != null ? graphics.GetTexture(state.Graphic) : null;
+    if (texture == null)
+      return false;
+
+    edge = state.X + texture.width;
+    return true;
+  }
+
+  private bool TryGetResolvedInnerLeftEdge(
+      ViewportPiece piece,
+      out int edge)
+  {
+    edge = 0;
+    if (piece == null
+        || !resolvedNormalWallByPiece.TryGetValue(
+            piece,
+            out ResolvedNormalWallState state)
+        || !state.Enabled)
+    {
+      return false;
+    }
+
+    edge = state.X;
+    return true;
+  }
+
+  private static int ChooseFrontF1WidthForSpan(int span)
+  {
+    int[] widths =
+    {
+      StraightF1WallLogic.CompositeWidth160,
+      StraightF1WallLogic.CompositeWidth191,
+      StraightF1WallLogic.CompositeWidth
+    };
+
+    return ChooseNearestWidth(span, widths);
+  }
+
+  private static int ChooseFrontF2WidthForSpan(int span)
+  {
+    int[] widths =
+    {
+      FrontWallF2Logic.Width106,
+      FrontWallF2Logic.Width131,
+      FrontWallF2Logic.Width160
+    };
+
+    return ChooseNearestWidth(span, widths);
+  }
+
+  private static int ChooseNearestWidth(int span, int[] widths)
+  {
+    if (widths == null || widths.Length == 0)
+      return span;
+
+    int best = widths[0];
+    int bestDelta = Mathf.Abs(span - best);
+
+    for (int i = 1; i < widths.Length; i++)
+    {
+      int delta = Mathf.Abs(span - widths[i]);
+      if (delta < bestDelta)
+      {
+        best = widths[i];
+        bestDelta = delta;
+      }
+    }
+
+    return best;
+  }
+
+  private bool TryGetResolvedNormalWallState(
+      ViewportPiece piece,
+      out ResolvedNormalWallState state)
+  {
+    state = default;
+    return piece != null
+        && resolvedNormalWallByPiece.TryGetValue(piece, out state);
+  }
+
 
   /// <summary>
   /// Ceiling mirror from (1,3) North = ON. Toggles once per tile step
@@ -3981,6 +4419,7 @@ public class ViewportLayoutEditor : EditorWindow
   /// Wall F0Left / LeftF0 from the map tile immediately to the player's left.
   /// Solid/out-of-bounds → Enabled. Does not change Ceiling, Floor, or other walls.
   /// </summary>
+  // LEGACY NORMAL-WALL PATH: retained temporarily for reference; not called by cutover pipeline.
   private void ApplyWallF0LeftFromMapGeometry()
   {
     if (layout == null || layout.Pieces == null)
@@ -4547,6 +4986,7 @@ public class ViewportLayoutEditor : EditorWindow
   /// FrontF1 / Front Wall F1 from the map tile one step directly forward.
   /// Solid/out-of-bounds → Enabled. Does not change side walls, FrontF2/F3, width, or mirrors.
   /// </summary>
+  // LEGACY FRONT-WALL PATH: retained temporarily for reference; not called by cutover pipeline.
   private void ApplyFrontF1FromMapGeometry()
   {
     if (layout == null || layout.Pieces == null)
@@ -4643,6 +5083,10 @@ public class ViewportLayoutEditor : EditorWindow
     int left1Y = previewY + forwardY - rightY;
     int left2X = previewX + forwardX * 2 - rightX;
     int left2Y = previewY + forwardY * 2 - rightY;
+    int right1X = previewX + forwardX + rightX;
+    int right1Y = previewY + forwardY + rightY;
+    int right2X = previewX + forwardX * 2 + rightX;
+    int right2Y = previewY + forwardY * 2 + rightY;
 
     bool left1Open = previewMiniMap != null
         && previewMiniMap.IsInside(left1X, left1Y)
@@ -4650,16 +5094,25 @@ public class ViewportLayoutEditor : EditorWindow
     bool left2IsWall = previewMiniMap == null
         || !previewMiniMap.IsInside(left2X, left2Y)
         || previewMiniMap.GetTile(left2X, left2Y).Type == DungeonTileType.Wall;
+    bool right1Open = previewMiniMap != null
+        && previewMiniMap.IsInside(right1X, right1Y)
+        && previewMiniMap.GetTile(right1X, right1Y).Type != DungeonTileType.Wall;
+    bool right2IsWall = previewMiniMap == null
+        || !previewMiniMap.IsInside(right2X, right2Y)
+        || previewMiniMap.GetTile(right2X, right2Y).Type == DungeonTileType.Wall;
 
     // Classify FrontF2 only from relative map geometry.
     // Center: F1 center open and F2 center solid/out.
     // LeftExposed: F1 center blocked, F1 left open, F2 left solid/out.
+    // RightExposed: F1 center blocked, F1 right open, F2 right solid/out.
     bool centerF2 =
         !front1Blocked && centerF2Wall;
     bool leftExposedF2 =
         front1Blocked && left1Open && left2IsWall;
+    bool rightExposedF2 =
+        front1Blocked && right1Open && right2IsWall;
 
-    bool frontF2IsWall = centerF2 || leftExposedF2;
+    bool frontF2IsWall = centerF2 || leftExposedF2 || rightExposedF2;
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -5523,76 +5976,35 @@ public class ViewportLayoutEditor : EditorWindow
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
           continue;
 
+        // CUTOVER: render transient geometry assembly for normal walls.
         bool mirror = GetPreviewMirror(piece, poseMap);
         DungeonGraphicType drawGraphic = piece.Graphic;
-        if (IsWallF0LeftPiece(piece))
+        int resolvedX = piece.EffectiveX;
+        int resolvedY = piece.EffectiveY;
+        int resolvedF1Width =
+            StraightF1WallLogic.NormalizeFrontWallF1Width(
+                piece.FrontWallF1Width);
+        int resolvedF2Width =
+            FrontWallF2Logic.Normalize(piece.FrontWallF2Width);
+
+        if (TryGetResolvedNormalWallState(
+                piece,
+                out ResolvedNormalWallState resolvedWall))
         {
-          bool phaseOn =
-              ((previewX + previewY + (int)previewFacing) & 1) == 0;
-          drawGraphic = phaseOn
-              ? DungeonGraphicType.WallF0R
-              : DungeonGraphicType.WallF0L;
-          mirror = phaseOn;
-        }
-        else if (IsWallF0RightPiece(piece))
-        {
-          bool phaseOn =
-              ((previewX + previewY + (int)previewFacing) & 1) == 0;
-          drawGraphic = phaseOn
-              ? DungeonGraphicType.WallF0R
-              : DungeonGraphicType.WallF0L;
-          mirror = !phaseOn;
-        }
-        else if (IsWallF1LeftPiece(piece))
-        {
-          bool phaseOn =
-              ((previewX + previewY + (int)previewFacing) & 1) == 0;
-          drawGraphic = phaseOn
-              ? DungeonGraphicType.WallF1R
-              : DungeonGraphicType.WallF1L;
-          mirror = phaseOn;
-        }
-        else if (IsWallF1RightPiece(piece))
-        {
-          bool phaseOn =
-              ((previewX + previewY + (int)previewFacing) & 1) == 0;
-          drawGraphic = phaseOn
-              ? DungeonGraphicType.WallF1R
-              : DungeonGraphicType.WallF1L;
-          mirror = !phaseOn;
-        }
-        else if (IsWallF2LeftPiece(piece))
-        {
-          bool phaseOn =
-              ((previewX + previewY + (int)previewFacing) & 1) == 0;
-          drawGraphic = phaseOn
-              ? DungeonGraphicType.WallF2R
-              : DungeonGraphicType.WallF2L;
-          mirror = phaseOn;
-        }
-        else if (IsWallF3LeftPiece(piece))
-        {
-          bool phaseOn =
-              ((previewX + previewY + (int)previewFacing) & 1) == 0;
-          drawGraphic = phaseOn
-              ? DungeonGraphicType.WallF3R
-              : DungeonGraphicType.WallF3L;
-          mirror = phaseOn;
-        }
-        else if (IsWallF3RightPiece(piece))
-        {
-          bool phaseOn =
-              ((previewX + previewY + (int)previewFacing) & 1) == 0;
-          drawGraphic = phaseOn
-              ? DungeonGraphicType.WallF3R
-              : DungeonGraphicType.WallF3L;
-          mirror = !phaseOn;
+          if (!resolvedWall.Enabled)
+            continue;
+
+          mirror = resolvedWall.Mirror;
+          drawGraphic = resolvedWall.Graphic;
+          resolvedX = resolvedWall.X;
+          resolvedY = resolvedWall.Y;
+          resolvedF1Width = resolvedWall.FrontF1Width;
+          resolvedF2Width = resolvedWall.FrontF2Width;
         }
 
         if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
         {
-          int width = StraightF1WallLogic.NormalizeFrontWallF1Width(
-              piece.FrontWallF1Width);
+          int width = resolvedF1Width;
           Texture2D f1Texture = graphics.GetFrontWallF1Texture(width);
           if (f1Texture == null)
             continue;
@@ -5602,15 +6014,19 @@ public class ViewportLayoutEditor : EditorWindow
               pixels,
               PreviewWidth,
               PreviewHeight,
-              StraightF1WallLogic.FrontWallF1DestX(width, piece.EffectiveX),
-              piece.EffectiveY,
+              StraightF1WallLogic.FrontWallF1DestX(width, resolvedX),
+              resolvedY,
               mirror);
+          ClearFrontWallOverflowIntoUi(
+              pixels,
+              resolvedY,
+              f1Texture.height);
           continue;
         }
 
         if (FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
         {
-          int width = FrontWallF2Logic.Normalize(piece.FrontWallF2Width);
+          int width = resolvedF2Width;
           Texture2D f2Texture = graphics.GetFrontWallF2Texture(width);
           if (f2Texture == null)
             continue;
@@ -5623,8 +6039,8 @@ public class ViewportLayoutEditor : EditorWindow
                 pixels,
                 PreviewWidth,
                 PreviewHeight,
-                piece.EffectiveX,
-                piece.EffectiveY,
+                resolvedX,
+                resolvedY,
                 mirror);
           }
           else
@@ -5632,11 +6048,15 @@ public class ViewportLayoutEditor : EditorWindow
             BlitPieceIntoPreview(
                 pixels,
                 f2Texture,
-                piece.EffectiveX,
-                piece.EffectiveY,
+                resolvedX,
+                resolvedY,
                 mirror);
           }
 
+          ClearFrontWallOverflowIntoUi(
+              pixels,
+              resolvedY,
+              f2Texture.height);
           continue;
         }
 
@@ -5788,9 +6208,17 @@ public class ViewportLayoutEditor : EditorWindow
         BlitPieceIntoPreview(
             pixels,
             texture,
-            piece.EffectiveX,
-            piece.EffectiveY,
+            resolvedX,
+            resolvedY,
             mirror);
+
+        if (piece.Graphic == DungeonGraphicType.FrontWallF3)
+        {
+          ClearFrontWallOverflowIntoUi(
+              pixels,
+              piece.EffectiveY,
+              texture.height);
+        }
       }
 
       BlitBlackDoorObliqueRightF3FrameIntoPreview(pixels);
@@ -6155,6 +6583,26 @@ public class ViewportLayoutEditor : EditorWindow
 
     previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
     return previewMiniMap;
+  }
+
+  private static void ClearFrontWallOverflowIntoUi(
+      Color32[] pixels,
+      int destinationY,
+      int height)
+  {
+    if (pixels == null || height <= 0)
+      return;
+
+    Color32 magenta = new Color32(255, 0, 255, 255);
+    int startY = Mathf.Max(0, destinationY);
+    int endY = Mathf.Min(PreviewHeight, destinationY + height);
+
+    for (int y = startY; y < endY; y++)
+    {
+      int row = y * PreviewWidth;
+      for (int x = 224; x < PreviewWidth; x++)
+        pixels[row + x] = magenta;
+    }
   }
 
   private static void BlitPieceIntoPreview(
