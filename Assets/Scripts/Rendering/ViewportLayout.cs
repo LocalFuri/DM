@@ -53,6 +53,9 @@ namespace DM.Rendering
 
     public bool Enabled = true;
 
+    [Tooltip("When true, this viewport piece is deterministic and the setting is saved with ViewportLayout.")]
+    public bool Deterministic;
+
     /// <summary>
     /// Black Door F2 exception dest (1,4 North only). 0,0 means use 77,46.
     /// Does not affect normal F1 Black Door X/Y.
