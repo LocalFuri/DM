@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-// CHATGPT_BUILD_FRONTF2_LEFT_EXTEND_20260829_C
+// CHATGPT_BUILD_FRONTF2_LEFT_PRESET_20260829_E
 public class ViewportLayoutEditor : EditorWindow
 {
   private static readonly int[] SnapValues = { 1, 2, 4, 8 };
@@ -4672,19 +4672,19 @@ public class ViewportLayoutEditor : EditorWindow
 
       piece.Enabled = frontF2IsWall;
 
-      // FrontF2 width is geometry-driven, not pose-authored.
-      // A left-exposed F2 wall needs the 131 px composite; a normal
-      // centered F2 wall uses the native 106 px width.
+      // FrontF2 width and X are geometry-driven, not pose-authored.
+      // These are canonical placements for the two relative F2 geometry cases.
       if (leftExposedF2)
       {
         piece.FrontWallF2Width = FrontWallF2Logic.Width131;
-        // The 131 px composite must grow to the left, keeping the same
-        // right edge as the native 106 px FrontF2.
-        piece.PoseOffsetX = -(FrontWallF2Logic.Width131 - FrontWallF2Logic.Width106);
+        piece.X = -40;
+        piece.PoseOffsetX = 0;
+        piece.MirrorHorizontally = false;
       }
       else if (centerF2)
       {
         piece.FrontWallF2Width = FrontWallF2Logic.Width106;
+        piece.X = 59;
         piece.PoseOffsetX = 0;
       }
 

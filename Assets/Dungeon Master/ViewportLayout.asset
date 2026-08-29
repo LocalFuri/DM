@@ -119,7 +119,7 @@ MonoBehaviour:
     FrontWallF2Width: 106
   - Name: FrontF2
     Graphic: 24
-    X: 5
+    X: -40
     Y: 74
     Enabled: 0
     Deterministic: 0
