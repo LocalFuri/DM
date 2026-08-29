@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-// CHATGPT_BUILD_GEOMETRY_ASSEMBLY_STAGE3_F1_CANONICAL_20260829_P
+// CHATGPT_BUILD_GEOMETRY_ASSEMBLY_STAGE5_FRONTF1_OPEN_SIDE_20260829_T
 public class ViewportLayoutEditor : EditorWindow
 {
   private static readonly int[] SnapValues = { 1, 2, 4, 8 };
@@ -4041,13 +4041,21 @@ public class ViewportLayoutEditor : EditorWindow
     bool f1R = !f1C && g.F1Right.IsWall;
 
     bool f2CenterVisible = !f1C && g.F2Center.IsWall;
-    bool f2L = !f1C && !g.F2Center.IsWall && g.F2Left.IsWall;
-    bool f2R = !f1C && !g.F2Center.IsWall && g.F2Right.IsWall;
 
-    bool f2FrontLeftExposed =
+    bool f2LeftNormallyVisible =
+        !f1C && !g.F2Center.IsWall && g.F2Left.IsWall;
+    bool f2RightNormallyVisible =
+        !f1C && !g.F2Center.IsWall && g.F2Right.IsWall;
+    bool f2LeftExposedBesideF1 =
         f1C && !g.F1Left.IsWall && g.F2Left.IsWall;
-    bool f2FrontRightExposed =
+    bool f2RightExposedBesideF1 =
         f1C && !g.F1Right.IsWall && g.F2Right.IsWall;
+
+    bool f2L = f2LeftNormallyVisible || f2LeftExposedBesideF1;
+    bool f2R = f2RightNormallyVisible || f2RightExposedBesideF1;
+
+    bool f2FrontLeftExposed = f2LeftExposedBesideF1;
+    bool f2FrontRightExposed = f2RightExposedBesideF1;
     bool f2Front =
         f2CenterVisible || f2FrontLeftExposed || f2FrontRightExposed;
 
@@ -4116,11 +4124,12 @@ public class ViewportLayoutEditor : EditorWindow
     // Second pass: resolve orientation from player-relative wall side.
     ResolveF0OrientationFromRelativeSide();
     ResolveF1OrientationFromRelativeSide();
+    ResolveF2OrientationFromRelativeSide();
 
     // Third pass: assemble the selected pieces as one scene.
     // The front plane is centered between the inner edges of the visible
     // left/right side walls at that depth. No absolute map coordinates are used.
-    ResolveFrontF1Assembly();
+    ResolveFrontF1Assembly(g);
     ResolveFrontF2Assembly();
   }
 
@@ -4182,7 +4191,37 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  private void ResolveFrontF1Assembly()
+  /// <summary>
+  /// F2 orientation uses one canonical source graphic.
+  /// LeftF2 = WallF2R mirrored; RightF2 = WallF2R normal.
+  /// No absolute map X/Y and no facing parity.
+  /// </summary>
+  private void ResolveF2OrientationFromRelativeSide()
+  {
+    ViewportPiece left = FindNormalWallPiece(IsWallF2LeftPiece);
+    if (left != null
+        && resolvedNormalWallByPiece.TryGetValue(
+            left,
+            out ResolvedNormalWallState leftState))
+    {
+      leftState.Graphic = DungeonGraphicType.WallF2R;
+      leftState.Mirror = true;
+      resolvedNormalWallByPiece[left] = leftState;
+    }
+
+    ViewportPiece right = FindNormalWallPiece(IsWallF2RightPiece);
+    if (right != null
+        && resolvedNormalWallByPiece.TryGetValue(
+            right,
+            out ResolvedNormalWallState rightState))
+    {
+      rightState.Graphic = DungeonGraphicType.WallF2R;
+      rightState.Mirror = false;
+      resolvedNormalWallByPiece[right] = rightState;
+    }
+  }
+
+  private void ResolveFrontF1Assembly(RelativeViewportGeometry geometry)
   {
     ViewportPiece front = FindNormalWallPiece(IsFrontWallF1Card);
     if (front == null
@@ -4194,28 +4233,40 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    int leftEdge = 0;
-    int rightEdge = 224;
+    // A center F1 wall can still expose deeper geometry on either side.
+    // Its visible width/anchor therefore comes from F1L/F1R, not from F0.
+    bool leftOpen = !geometry.F1Left.IsWall;
+    bool rightOpen = !geometry.F1Right.IsWall;
 
-    ViewportPiece left = FindNormalWallPiece(IsWallF0LeftPiece);
-    if (TryGetResolvedInnerRightEdge(left, out int leftInner))
-      leftEdge = Mathf.Clamp(leftInner, 0, 224);
-
-    ViewportPiece right = FindNormalWallPiece(IsWallF0RightPiece);
-    if (TryGetResolvedInnerLeftEdge(right, out int rightInner))
-      rightEdge = Mathf.Clamp(rightInner, 0, 224);
-
-    if (rightEdge <= leftEdge)
+    if (!leftOpen && !rightOpen)
     {
-      leftEdge = 0;
-      rightEdge = 224;
+      state.FrontF1Width = StraightF1WallLogic.CompositeWidth;
+      state.X = 0;
+    }
+    else if (!leftOpen && rightOpen)
+    {
+      // Right side is open: keep the 191px F1 wall anchored to the left edge.
+      int width = StraightF1WallLogic.CompositeWidth191;
+      int centeredDestX = (224 - width) / 2;
+      state.FrontF1Width = width;
+      state.X = -centeredDestX;
+    }
+    else if (leftOpen && !rightOpen)
+    {
+      // Left side is open: keep the 191px F1 wall anchored to the right edge.
+      int width = StraightF1WallLogic.CompositeWidth191;
+      int centeredDestX = (224 - width) / 2;
+      int rightAnchoredDestX = 224 - width;
+      state.FrontF1Width = width;
+      state.X = rightAnchoredDestX - centeredDestX;
+    }
+    else
+    {
+      // Both sides are open: use the narrow centered F1 projection.
+      state.FrontF1Width = StraightF1WallLogic.CompositeWidth160;
+      state.X = 0;
     }
 
-    int span = rightEdge - leftEdge;
-    int width = ChooseFrontF1WidthForSpan(span);
-
-    state.FrontF1Width = width;
-    state.X = leftEdge + (span - width) / 2;
     resolvedNormalWallByPiece[front] = state;
   }
 
