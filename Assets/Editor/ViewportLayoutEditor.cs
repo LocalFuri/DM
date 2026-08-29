@@ -5845,8 +5845,6 @@ public class ViewportLayoutEditor : EditorWindow
 
   private static DungeonBitmapFont FindEditModeBitmapFont()
   {
-    Debug.Log("FindEditModeBitmapFont CALLED");
-
     DungeonBitmapFont[] fonts =
         Resources.FindObjectsOfTypeAll<DungeonBitmapFont>();
 
@@ -5855,18 +5853,6 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonBitmapFont font = fonts[i];
       if (font == null)
         continue;
-
-      Debug.Log(
-          "FindEditModeBitmapFont candidate: "
-              + font.name
-              + " AlphabetGridNull="
-              + (font.AlphabetGrid == null)
-              + " IsPersistent="
-              + EditorUtility.IsPersistent(font)
-              + " SceneValid="
-              + font.gameObject.scene.IsValid()
-              + " SceneLoaded="
-              + font.gameObject.scene.isLoaded);
 
       if (font.AlphabetGrid == null)
         continue;
