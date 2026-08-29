@@ -3844,6 +3844,27 @@ public class ViewportLayoutEditor : EditorWindow
     EditorUtility.SetDirty(poseVisibilityStore);
   }
 
+  private void EnsureChampionStatusSlotsEnabled()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (piece.Name == "Champion Status Slot 1"
+          || piece.Name == "Champion Status Slot 2"
+          || piece.Name == "Champion Status Slot 3"
+          || piece.Name == "Champion Status Slot 4")
+      {
+        piece.Enabled = true;
+      }
+    }
+  }
+
   private void ApplyCurrentPoseVisibilityToLayout()
   {
     if (layout == null)
@@ -3886,6 +3907,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     poseVisibilityStore.ApplyToLayout(entry, layout);
+    EnsureChampionStatusSlotsEnabled();
     ApplyCeilingMirrorFromPose();
     ApplyFloorMirrorReferenceOverride();
     ApplyWallF0LeftFromMapGeometry();
