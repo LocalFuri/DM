@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
+// CHATGPT_BUILD_FRONTF2_GEOMETRY_WIDTH_20260829_B
 public class ViewportLayoutEditor : EditorWindow
 {
   private static readonly int[] SnapValues = { 1, 2, 4, 8 };
@@ -3267,6 +3268,7 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyFrontF1FromMapGeometry();
       ApplyFrontF2FromMapGeometry();
       ApplyFrontF3FromMapGeometry();
+      ApplyFrontF1F2MirrorFromVisibleWallConfiguration();
       ApplyBlackDoorEnabledFromPoseException();
       return;
     }
@@ -3287,6 +3289,7 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyFrontF1FromMapGeometry();
     ApplyFrontF2FromMapGeometry();
     ApplyFrontF3FromMapGeometry();
+    ApplyFrontF1F2MirrorFromVisibleWallConfiguration();
     ApplyBlackDoorEnabledFromPoseException();
   }
 
@@ -3896,6 +3899,7 @@ public class ViewportLayoutEditor : EditorWindow
       ApplyFrontF1FromMapGeometry();
       ApplyFrontF2FromMapGeometry();
       ApplyFrontF3FromMapGeometry();
+      ApplyFrontF1F2MirrorFromVisibleWallConfiguration();
       ApplyBlackDoorEnabledFromPoseException();
       entry = poseVisibilityStore.GetOrCreateEntry(
           previewX,
@@ -3922,6 +3926,7 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyFrontF1FromMapGeometry();
     ApplyFrontF2FromMapGeometry();
     ApplyFrontF3FromMapGeometry();
+    ApplyFrontF1F2MirrorFromVisibleWallConfiguration();
     ApplyBlackDoorEnabledFromPoseException();
   }
 
@@ -4667,22 +4672,13 @@ public class ViewportLayoutEditor : EditorWindow
 
       piece.Enabled = frontF2IsWall;
 
-      // DTerm FrontF2: identical center-F2 map geometry uses the authored
-      // (1,5) West FrontF2 Width/X/Y as the canonical reference.
-      // This makes geometry twins such as (1,5) West and (1,16) West render
-      // identically while leaving Non-DTerm poses fully pose-authored.
-      if (frontF2IsWall
-          && centerF2
-          && layout.FrontF2Deterministic
-          && TryGetCenterFrontF2DeterministicReference(
-              out int deterministicWidth,
-              out int deterministicX,
-              out int deterministicY))
-      {
-        piece.FrontWallF2Width = deterministicWidth;
-        piece.X = deterministicX;
-        piece.Y = deterministicY;
-      }
+      // FrontF2 width is geometry-driven, not pose-authored.
+      // A left-exposed F2 wall needs the 131 px composite; a normal
+      // centered F2 wall uses the native 106 px width.
+      if (leftExposedF2)
+        piece.FrontWallF2Width = FrontWallF2Logic.Width131;
+      else if (centerF2)
+        piece.FrontWallF2Width = FrontWallF2Logic.Width106;
 
       return;
     }
@@ -4806,6 +4802,55 @@ public class ViewportLayoutEditor : EditorWindow
 
       piece.Enabled = frontF3IsWall;
       return;
+    }
+  }
+
+  /// <summary>
+  /// FrontF1/F2 mirror phase from the visible normal-wall configuration only.
+  /// Absolute map X/Y, facing parity, DTerm, and hidden map cells do not participate.
+  /// Identical visible normal-wall configurations therefore get the same phase.
+  /// </summary>
+  private void ApplyFrontF1F2MirrorFromVisibleWallConfiguration()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    int signature = 17;
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      bool isNormalWall =
+          IsWallF0LeftPiece(piece)
+          || IsWallF0RightPiece(piece)
+          || IsWallF1LeftPiece(piece)
+          || IsWallF1RightPiece(piece)
+          || IsWallF2LeftPiece(piece)
+          || IsWallF2RightPiece(piece)
+          || IsWallF3LeftPiece(piece)
+          || IsWallF3RightPiece(piece)
+          || IsFrontWallF1Card(piece)
+          || IsFrontWallF2Card(piece)
+          || IsFrontWallF3Card(piece);
+
+      if (!isNormalWall)
+        continue;
+
+      signature = unchecked(signature * 31 + (piece.Enabled ? 1 : 0));
+    }
+
+    bool mirror = (signature & 1) != 0;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (IsFrontWallF1Card(piece) || IsFrontWallF2Card(piece))
+        piece.MirrorHorizontally = mirror;
     }
   }
 
