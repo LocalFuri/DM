@@ -164,6 +164,27 @@ namespace DM.Rendering
     private DungeonFacing lastLoggedPoseFacing = (DungeonFacing)(-1);
     private string lastMissingPoseVisibilityWarned;
 
+    // TEMP FrontF1 diagnostics — remove after verification.
+    private int lastLoggedFrontF1DiagX = int.MinValue;
+    private int lastLoggedFrontF1DiagY = int.MinValue;
+    private DungeonFacing lastLoggedFrontF1DiagFacing = (DungeonFacing)(-1);
+
+    // TEMP FrontF1 buffer overwrite diagnostics — remove after verification.
+    private int lastLoggedFrontF1BufferX = int.MinValue;
+    private int lastLoggedFrontF1BufferY = int.MinValue;
+    private DungeonFacing lastLoggedFrontF1BufferFacing = (DungeonFacing)(-1);
+    private bool frontF1BufferCapturedThisFrame;
+    private int frontF1BufDestX;
+    private int frontF1BufDestY;
+    private int frontF1BufTexW;
+    private int frontF1BufTexH;
+    private int frontF1BufWidth;
+    private bool frontF1BufMirror;
+    private uint frontF1HashAfter;
+    private uint frontF1HashCursor;
+    private readonly List<string> frontF1LaterDraws = new();
+    private readonly List<string> frontF1LaterOverwrites = new();
+
     public bool IsEntranceBlockingInput =>
         !entranceViewportReady
         || (!entranceDoorOpened
@@ -1322,6 +1343,7 @@ namespace DM.Rendering
 
       // Same saved per-pose Enabled flags as Viewport Layout Editor.
       ApplyRuntimePoseVisibility();
+      ApplyRuntimeFrontF1GeometryMirror();
 
       System.Text.StringBuilder drawnFrontWalls =
           new System.Text.StringBuilder();
@@ -1333,6 +1355,9 @@ namespace DM.Rendering
       F3RightNarrowStripTest.Enabled = showF3RightNarrowStripTest;
 
       bool f1WallGroupDrawn = false;
+      frontF1BufferCapturedThisFrame = false;
+      frontF1LaterDraws.Clear();
+      frontF1LaterOverwrites.Clear();
 
       foreach (ViewportPiece piece in layout.Pieces)
       {
@@ -1366,20 +1391,34 @@ namespace DM.Rendering
             drawnSideWalls
         );
         DrawPiece(piece);
+        TrackFrontF1LaterDraw("DrawPiece:" + (piece.Name ?? ""));
       }
 
       TryBlitFrontWallF2_160ExtraStrip();
+      TrackFrontF1LaterDraw("TryBlitFrontWallF2_160ExtraStrip");
 
       if (!showEntranceScreen)
+      {
         TryDrawHeroPortraitOverlay();
+        TrackFrontF1LaterDraw("TryDrawHeroPortraitOverlay");
+      }
 
       if (showEntranceScreen)
+      {
         DrawEntranceOverlay();
+        TrackFrontF1LaterDraw("DrawEntranceOverlay");
+      }
 
       if (!showEntranceScreen)
+      {
         DrawChampionNameTest();
+        TrackFrontF1LaterDraw("DrawChampionNameTest");
+      }
 
       DrawComparisonModeDebugInfo();
+      TrackFrontF1LaterDraw("DrawComparisonModeDebugInfo");
+
+      LogFrontF1BufferDiagIfNeeded();
 
       // After ApplyRuntimePoseVisibility + compose — Console line (deduped).
       LogViewportStateIfChanged();
@@ -1800,6 +1839,28 @@ namespace DM.Rendering
       poseVisibility.ApplyToLayout(entry, layout);
     }
 
+    /// <summary>
+    /// FrontF1 Mirror from player X/Y/facing (same as ViewEdit), not the
+    /// saved per-pose MirrorHorizontally written by ApplyToLayout.
+    /// Does not change FrontF1 X, Y, width, or Enabled.
+    /// </summary>
+    private void ApplyRuntimeFrontF1GeometryMirror()
+    {
+      if (currentMap == null || layout == null)
+        return;
+
+      ViewportPiece frontPiece =
+          FindLayoutPiece(DungeonGraphicType.FrontWallF1);
+      if (frontPiece == null)
+        return;
+
+      frontPiece.MirrorHorizontally =
+          StraightF1WallLogic.GetFrontF2LateralMirrorPhase(
+              currentMap.PlayerX,
+              currentMap.PlayerY,
+              currentMap.PlayerFacing);
+    }
+
     private bool ShouldDrawPiece(ViewportPiece piece)
     {
       if (piece == null)
@@ -1899,14 +1960,11 @@ namespace DM.Rendering
         return;
       }
 
-      if (texture.height <= 0
-          || (texture.width != StraightF1WallLogic.CompositeWidth160
-              && texture.width != StraightF1WallLogic.CompositeWidth191
-              && texture.width != StraightF1WallLogic.CompositeWidth))
+      if (texture.height <= 0 || texture.width <= 0)
       {
         Debug.LogWarning(
             "DungeonRenderer: FrontWallF1 texture size " +
-            $"{texture.width}x{texture.height} is not a 160, 191, or 224-wide F1."
+            $"{texture.width}x{texture.height} is invalid."
         );
         return;
       }
@@ -1915,6 +1973,38 @@ namespace DM.Rendering
           ? 32
           : StraightF1WallLogic.FrontWallF1DestX(width, frontPiece.EffectiveX);
       int destY = frontPiece.EffectiveY + dungeonDrawOffsetY;
+      bool mirror = frontPiece.MirrorHorizontally;
+
+      if (currentMap != null)
+      {
+        int playerX = currentMap.PlayerX;
+        int playerY = currentMap.PlayerY;
+        DungeonFacing facing = currentMap.PlayerFacing;
+        if (playerX != lastLoggedFrontF1DiagX
+            || playerY != lastLoggedFrontF1DiagY
+            || facing != lastLoggedFrontF1DiagFacing)
+        {
+          lastLoggedFrontF1DiagX = playerX;
+          lastLoggedFrontF1DiagY = playerY;
+          lastLoggedFrontF1DiagFacing = facing;
+          Debug.Log(
+              "FrontF1 DIAG\n"
+                  + "X=" + playerX + "\n"
+                  + "Y=" + playerY + "\n"
+                  + "Facing=" + facing + "\n"
+                  + "Piece=" + frontPiece.Name + "\n"
+                  + "Enabled=" + frontPiece.Enabled + "\n"
+                  + "MirrorField=" + frontPiece.MirrorHorizontally + "\n"
+                  + "WidthField=" + frontPiece.FrontWallF1Width + "\n"
+                  + "NormalizedWidth=" + width + "\n"
+                  + "DestX=" + destX + "\n"
+                  + "DestY=" + destY + "\n"
+                  + "Texture=" + texture.name + "\n"
+                  + "TextureSize=" + texture.width + "x" + texture.height + "\n"
+                  + "MirrorPassed=" + mirror);
+        }
+      }
+
       StraightF1WallLogic.BlitCompositeToBuffer(
           texture,
           framePixels,
@@ -1922,7 +2012,102 @@ namespace DM.Rendering
           viewHeight,
           destX,
           destY,
-          frontPiece.MirrorHorizontally);
+          mirror);
+
+      frontF1BufferCapturedThisFrame = true;
+      frontF1BufDestX = destX;
+      frontF1BufDestY = destY;
+      frontF1BufTexW = texture.width;
+      frontF1BufTexH = texture.height;
+      frontF1BufWidth = width;
+      frontF1BufMirror = mirror;
+      frontF1HashAfter = HashFrontF1DestRect();
+      frontF1HashCursor = frontF1HashAfter;
+    }
+
+    private uint HashFrontF1DestRect()
+    {
+      uint hash = 2166136261u;
+      if (framePixels == null
+          || frontF1BufTexW <= 0
+          || frontF1BufTexH <= 0)
+      {
+        return hash;
+      }
+
+      int x1 = frontF1BufDestX + frontF1BufTexW;
+      int y1 = frontF1BufDestY + frontF1BufTexH;
+      for (int y = frontF1BufDestY; y < y1; y++)
+      {
+        if (y < 0 || y >= viewHeight)
+          continue;
+
+        int row = y * viewWidth;
+        for (int x = frontF1BufDestX; x < x1; x++)
+        {
+          if (x < 0 || x >= viewWidth)
+            continue;
+
+          Color32 c = framePixels[row + x];
+          hash ^= (uint)(c.r | (c.g << 8) | (c.b << 16) | (c.a << 24));
+          hash *= 16777619u;
+        }
+      }
+
+      return hash;
+    }
+
+    private void TrackFrontF1LaterDraw(string label)
+    {
+      if (!frontF1BufferCapturedThisFrame)
+        return;
+
+      frontF1LaterDraws.Add(label);
+      uint now = HashFrontF1DestRect();
+      if (now != frontF1HashCursor)
+      {
+        frontF1LaterOverwrites.Add(label);
+        frontF1HashCursor = now;
+      }
+    }
+
+    private void LogFrontF1BufferDiagIfNeeded()
+    {
+      if (!frontF1BufferCapturedThisFrame || currentMap == null)
+        return;
+
+      int playerX = currentMap.PlayerX;
+      int playerY = currentMap.PlayerY;
+      DungeonFacing facing = currentMap.PlayerFacing;
+      if (playerX == lastLoggedFrontF1BufferX
+          && playerY == lastLoggedFrontF1BufferY
+          && facing == lastLoggedFrontF1BufferFacing)
+      {
+        return;
+      }
+
+      lastLoggedFrontF1BufferX = playerX;
+      lastLoggedFrontF1BufferY = playerY;
+      lastLoggedFrontF1BufferFacing = facing;
+
+      uint hashEnd = HashFrontF1DestRect();
+      Debug.Log(
+          "FrontF1 BUFFER DIAG\n"
+              + "X=" + playerX + "\n"
+              + "Y=" + playerY + "\n"
+              + "Facing=" + facing + "\n"
+              + "Mirror=" + frontF1BufMirror + "\n"
+              + "HashAfterF1=" + frontF1HashAfter.ToString("X8") + "\n"
+              + "HashEndFrame=" + hashEnd.ToString("X8"));
+
+      if (frontF1HashAfter != hashEnd
+          && frontF1LaterOverwrites.Count > 0)
+      {
+        Debug.Log(
+            "FrontF1 OVERWRITE\n"
+                + "OverwroteF1="
+                + string.Join(", ", frontF1LaterOverwrites));
+      }
     }
 
     private ViewportPiece FindLayoutPiece(DungeonGraphicType graphic)

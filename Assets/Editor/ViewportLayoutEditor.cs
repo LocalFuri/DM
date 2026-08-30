@@ -91,6 +91,7 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private DungeonGraphics graphics;
   private Vector2 editorScroll;
+  private bool scrollToBottomOnNextRepaint;
   private int pieceSearchFamilyIndex;
   private bool showWallsActivFilter;
   private bool showOnlyWallsNeededForCurrentPose;
@@ -380,6 +381,23 @@ public class ViewportLayoutEditor : EditorWindow
       RestoreViewportTextureAndDestroyPreview();
     }
 
+    if (state == PlayModeStateChange.EnteredPlayMode)
+    {
+      // In Play Mode, ViewEdit becomes a live "what is actually active" wall view.
+      // Clear list filters and show only wall pieces whose runtime Enabled flag is on.
+      showOnlyWallsNeededForCurrentPose = true;
+      pieceSearchFamilyIndex = 0;
+      pieceSearchText = string.Empty;
+
+      // Request a one-shot scroll-to-bottom after the Play Mode UI has
+      // completed a real repaint. Setting the scroll position only here is too
+      // early because Unity has not calculated the final content height yet.
+      scrollToBottomOnNextRepaint = true;
+      editorScroll = new Vector2(0f, float.MaxValue);
+
+      Repaint();
+    }
+
     if (state == PlayModeStateChange.EnteredEditMode)
     {
       // Re-apply preview pose after Play mutated live layout Enabled flags.
@@ -390,6 +408,12 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (state == PlayModeStateChange.ExitingPlayMode)
       RepaintGameViews();
+  }
+
+  private void OnInspectorUpdate()
+  {
+    if (Application.isPlaying)
+      Repaint();
   }
 
   private void OnGUI()
@@ -542,6 +566,22 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.EndScrollView();
 
+    // Keep ViewEdit pinned to the true bottom during Play Mode.
+    // The active-wall list changes height as the player moves, so a one-shot
+    // startup scroll is not enough.
+    if (Application.isPlaying
+        && Event.current.type == EventType.Repaint)
+    {
+      editorScroll = new Vector2(0f, float.MaxValue);
+    }
+    else if (scrollToBottomOnNextRepaint
+        && Event.current.type == EventType.Repaint)
+    {
+      editorScroll = new Vector2(0f, float.MaxValue);
+      scrollToBottomOnNextRepaint = false;
+      Repaint();
+    }
+
     // Click on empty / non-control area: release leftover text-field focus
     // so keyboard nav works. Controls that consume MouseDown (TextField,
     // IntField, buttons) are left alone here.
@@ -588,10 +628,17 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     if (showOnlyWallsNeededForCurrentPose
-        && IsWallEditorPiece(piece)
-        && !IsWallNeededForCurrentPose(piece))
+        && IsWallEditorPiece(piece))
     {
-      return true;
+      // Edit Mode: show walls required by the preview geometry.
+      // Play Mode: show the walls the runtime renderer has actually enabled.
+      bool wallIsActive =
+          Application.isPlaying
+          ? piece.Enabled
+          : IsWallNeededForCurrentPose(piece);
+
+      if (!wallIsActive)
+        return true;
     }
 
     return false;
@@ -4008,19 +4055,10 @@ public class ViewportLayoutEditor : EditorWindow
       int playerY,
       DungeonFacing facing)
   {
-    // FrontF2 changes brick phase only when the player moves sideways
-    // relative to the current facing:
-    //   North/South -> sideways movement changes X
-    //   East/West   -> sideways movement changes Y
-    //
-    // Phase is chosen so the validated (0,5) West reference remains
-    // unmirrored, while each one-tile strafe left/right toggles the wall.
-    int lateralCoordinate =
-        facing == DungeonFacing.North || facing == DungeonFacing.South
-        ? playerX
-        : playerY;
-
-    return (lateralCoordinate & 1) == 0;
+    return StraightF1WallLogic.GetFrontF2LateralMirrorPhase(
+        playerX,
+        playerY,
+        facing);
   }
 
   private void ApplyF1MinimapWallRecipe()

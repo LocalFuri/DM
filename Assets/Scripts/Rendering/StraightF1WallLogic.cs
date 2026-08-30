@@ -81,6 +81,25 @@ namespace DM.Rendering
     }
 
     /// <summary>
+    /// FrontF1 / FrontF2 brick phase from player tile + facing.
+    /// North/South uses player X; East/West uses player Y.
+    /// Even → mirrored. (0,5) West stays unmirrored.
+    /// Independent of saved per-pose MirrorHorizontally.
+    /// </summary>
+    public static bool GetFrontF2LateralMirrorPhase(
+        int playerX,
+        int playerY,
+        DungeonFacing facing)
+    {
+      int lateralCoordinate =
+          facing == DungeonFacing.North || facing == DungeonFacing.South
+          ? playerX
+          : playerY;
+
+      return (lateralCoordinate & 1) == 0;
+    }
+
+    /// <summary>
     /// Environment phase for Floor and Ceiling.
     /// Uses the depth-1 cell ahead of the player (same axis as PreferVariantB).
     /// </summary>
@@ -132,12 +151,11 @@ namespace DM.Rendering
     }
 
     /// <summary>
-    /// Copy a Front Wall F1 texture into the buffer.
-    /// 224-wide: 1:1 into columns 0..223.
-    /// 192-wide: 192 source columns at authored piece X.
-    /// 160-wide: 160 source columns at authored piece X.
-    /// Writes are clipped to dungeon viewport columns 0..223.
-    /// Optional horizontal mirror is authored only (layout MirrorHorizontally).
+    /// Copy a Front Wall F1 texture into the buffer at destinationX/Y.
+    /// Writes destinationX + i for each source column. Clips writes to
+    /// dungeon viewport columns 0..223.
+    /// When mirrored, samples source right-to-left inside the texture;
+    /// the destination rectangle is unchanged.
     /// </summary>
     public static void BlitCompositeToBuffer(
         Texture2D source,
@@ -154,16 +172,8 @@ namespace DM.Rendering
       if (!source.isReadable)
         return;
 
-      if (source.height <= 0)
+      if (source.height <= 0 || source.width <= 0)
         return;
-
-      int copyWidth = source.width;
-      if (copyWidth != CompositeWidth160
-          && copyWidth != CompositeWidth191
-          && copyWidth != CompositeWidth)
-      {
-        return;
-      }
 
       Color32[] sourcePixels = source.GetPixels32();
       int sourceWidth = source.width;
@@ -178,19 +188,19 @@ namespace DM.Rendering
         int sourceRow = row * sourceWidth;
         int destRow = targetY * bufferWidth;
 
-        for (int i = 0; i < copyWidth; i++)
+        for (int i = 0; i < sourceWidth; i++)
         {
           int destX = destinationX + i;
           if (destX < 0 || destX >= CompositeWidth)
             continue;
 
-          int writeX = WriteDestX(destX, mirrorHorizontally);
-          if (writeX < 0 || writeX >= CompositeWidth)
-            continue;
+          int sourceX = mirrorHorizontally
+              ? sourceWidth - 1 - i
+              : i;
 
-          Color32 colour = sourcePixels[sourceRow + i];
+          Color32 colour = sourcePixels[sourceRow + sourceX];
           colour.a = 255;
-          destPixels[destRow + writeX] = colour;
+          destPixels[destRow + destX] = colour;
         }
       }
     }
