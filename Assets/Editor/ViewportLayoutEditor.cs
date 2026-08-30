@@ -3802,9 +3802,10 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyCeilingMirrorFromPose();
     ApplyFloorMirrorReferenceOverride();
 
-    // CHATGPT_BUILD_REMOVE_WALL_RENDERING_20260829_AJ
-    // Clean reset: no wall piece is enabled or rendered by ViewEdit.
-    DisableAllWallRenderingPieces();
+    // CHATGPT_BUILD_F1_MINIMAP_ALGORITHM_STAGE1_20260830_AB
+    // Stage 1: automatic F0/F1 wall assembly from minimap only.
+    // F2/F3/D3/Black Door remain disabled until F1 is verified.
+    ApplyF1MinimapWallRecipe();
   }
 
   /// <summary>
@@ -6140,9 +6141,10 @@ public class ViewportLayoutEditor : EditorWindow
     // pieces remain off.
     if (IsWallRenderingPiece(piece))
     {
-      return TryGetResolvedNormalWallState(
-          piece,
-          out ResolvedNormalWallState wallState)
+      return piece.Enabled
+          && TryGetResolvedNormalWallState(
+              piece,
+              out ResolvedNormalWallState wallState)
           && wallState.Enabled;
     }
 

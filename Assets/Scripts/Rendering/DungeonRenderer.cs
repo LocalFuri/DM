@@ -1882,6 +1882,7 @@ namespace DM.Rendering
     {
       int width = StraightF1WallLogic.NormalizeFrontWallF1Width(
           frontPiece.FrontWallF1Width);
+
       Texture2D texture = graphics.GetFrontWallF1Texture(width);
 
       if (texture == null)
@@ -1905,7 +1906,8 @@ namespace DM.Rendering
         return;
       }
 
-      int destX = StraightF1WallLogic.FrontWallF1DestX(width, frontPiece.EffectiveX);
+      int destX = StraightF1WallLogic.FrontWallF1DestX(
+          width, frontPiece.EffectiveX);
       int destY = frontPiece.EffectiveY + dungeonDrawOffsetY;
       StraightF1WallLogic.BlitCompositeToBuffer(
           texture,
@@ -2204,27 +2206,24 @@ namespace DM.Rendering
       bool? f2LeftMirrorOverride = null;
       bool? f3LeftMirrorOverride = null;
       bool? f3RightMirrorOverride = null;
-      if (currentMap != null
-          && (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece)))
+      if (currentMap != null && IsWallF0LeftPiece(piece))
+      {
+        // LeftF0 is an authored left-side image. Never swap it to WallF0R
+        // and never mirror it. Visibility remains controlled solely by
+        // piece.Enabled / the ViewEdit Enabled checkbox for the current pose.
+        drawGraphic = DungeonGraphicType.WallF0L;
+        f0MirrorOverride = false;
+      }
+      else if (currentMap != null && IsWallF0RightPiece(piece))
       {
         bool phaseOn =
             ((currentMap.PlayerX
                 + currentMap.PlayerY
                 + (int)currentMap.PlayerFacing) & 1) == 0;
-        if (IsWallF0LeftPiece(piece))
-        {
-          drawGraphic = phaseOn
-              ? DungeonGraphicType.WallF0R
-              : DungeonGraphicType.WallF0L;
-          f0MirrorOverride = phaseOn;
-        }
-        else
-        {
-          drawGraphic = phaseOn
-              ? DungeonGraphicType.WallF0R
-              : DungeonGraphicType.WallF0L;
-          f0MirrorOverride = !phaseOn;
-        }
+        drawGraphic = phaseOn
+            ? DungeonGraphicType.WallF0R
+            : DungeonGraphicType.WallF0L;
+        f0MirrorOverride = !phaseOn;
       }
       else if (currentMap != null && IsWallF1LeftPiece(piece))
       {
@@ -2357,6 +2356,13 @@ namespace DM.Rendering
       int destX = piece.EffectiveX;
       int destY = piece.EffectiveY + dungeonDrawOffsetY;
 
+      // Deterministic LeftF0 vertical placement:
+      // use the authored asset Y (31 in ViewportLayout), ignoring any
+      // per-pose Y correction. With the 136px F0 texture in a 200px
+      // framebuffer this starts exactly 33px from the top.
+      if (IsWallF0LeftPiece(piece))
+        destY = piece.Y + dungeonDrawOffsetY;
+
       if (F3RightNarrowStripTest.ShouldReplace(piece.Graphic)
           && drawGraphic == DungeonGraphicType.WallF3R)
       {
@@ -2436,6 +2442,7 @@ namespace DM.Rendering
           flipSourceHorizontal: mirror
       );
     }
+
 
     private bool IsBlackDoorF2PoseException(ViewportPiece piece)
     {
