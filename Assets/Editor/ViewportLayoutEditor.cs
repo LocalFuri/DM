@@ -4054,6 +4054,26 @@ public class ViewportLayoutEditor : EditorWindow
   ///
   /// F1 side walls are visible only when F1 center is open.
   /// </summary>
+  private static bool GetFrontF2LateralMirrorPhase(
+      int playerX,
+      int playerY,
+      DungeonFacing facing)
+  {
+    // FrontF2 changes brick phase only when the player moves sideways
+    // relative to the current facing:
+    //   North/South -> sideways movement changes X
+    //   East/West   -> sideways movement changes Y
+    //
+    // Phase is chosen so the validated (0,5) West reference remains
+    // unmirrored, while each one-tile strafe left/right toggles the wall.
+    int lateralCoordinate =
+        facing == DungeonFacing.North || facing == DungeonFacing.South
+        ? playerX
+        : playerY;
+
+    return (lateralCoordinate & 1) == 0;
+  }
+
   private void ApplyF1MinimapWallRecipe()
   {
     DisableAllWallRenderingPieces();
@@ -4230,6 +4250,15 @@ public class ViewportLayoutEditor : EditorWindow
             state.X = 31;
             state.Mirror = false;
           }
+
+          // The original game alternates the FrontF2 brick arrangement when
+          // moving left/right. Use only the coordinate perpendicular to the
+          // current facing, so forward/back movement does not change the phase.
+          state.Mirror =
+              GetFrontF2LateralMirrorPhase(
+                  previewX,
+                  previewY,
+                  previewFacing);
         }
       }
       else
