@@ -92,6 +92,9 @@ public class ViewportLayoutEditor : EditorWindow
   private DungeonGraphics graphics;
   private Vector2 editorScroll;
   private bool scrollToBottomOnNextRepaint;
+  private int lastPlayModeScrollX = int.MinValue;
+  private int lastPlayModeScrollY = int.MinValue;
+  private DungeonFacing lastPlayModeScrollFacing = (DungeonFacing)(-1);
   private int pieceSearchFamilyIndex;
   private bool showWallsActivFilter;
   private bool showOnlyWallsNeededForCurrentPose;
@@ -420,6 +423,17 @@ public class ViewportLayoutEditor : EditorWindow
   {
     selectionChangedThisFrame = false;
 
+    if (Application.isPlaying
+        && (previewX != lastPlayModeScrollX
+            || previewY != lastPlayModeScrollY
+            || previewFacing != lastPlayModeScrollFacing))
+    {
+      lastPlayModeScrollX = previewX;
+      lastPlayModeScrollY = previewY;
+      lastPlayModeScrollFacing = previewFacing;
+      scrollToBottomOnNextRepaint = true;
+    }
+
     // Claim EditorWindow focus on click so existing keyboard nav can run.
     // Do not clear GUI.FocusControl here — a TextField/IntField on this
     // same MouseDown still needs to receive it.
@@ -566,15 +580,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.EndScrollView();
 
-    // Keep ViewEdit pinned to the true bottom during Play Mode.
-    // The active-wall list changes height as the player moves, so a one-shot
-    // startup scroll is not enough.
-    if (Application.isPlaying
-        && Event.current.type == EventType.Repaint)
-    {
-      editorScroll = new Vector2(0f, float.MaxValue);
-    }
-    else if (scrollToBottomOnNextRepaint
+    if (scrollToBottomOnNextRepaint
         && Event.current.type == EventType.Repaint)
     {
       editorScroll = new Vector2(0f, float.MaxValue);
