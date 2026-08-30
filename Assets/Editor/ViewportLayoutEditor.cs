@@ -189,6 +189,13 @@ public class ViewportLayoutEditor : EditorWindow
       resolvedNormalWallByPiece =
           new Dictionary<ViewportPiece, ResolvedNormalWallState>();
 
+  // ViewEdit-only normal-wall Mirror overrides. These exist only while the
+  // current preview pose is stationary. They are never written to the layout
+  // asset or pose store and are cleared on every pose/facing change.
+  private readonly Dictionary<ViewportPiece, bool> previewMirrorOverrideByPiece =
+      new Dictionary<ViewportPiece, bool>();
+  private bool previewMirrorChangedThisFrame;
+
   private struct ResolvedNormalWallState
   {
     public bool Enabled;
@@ -508,8 +515,10 @@ public class ViewportLayoutEditor : EditorWindow
         DrawPieceCard(i, piece, isSelected, ref changed);
       }
 
-      if (EditorGUI.EndChangeCheck() || changed)
+      bool editorChanged = EditorGUI.EndChangeCheck();
+      if ((editorChanged || changed) && !previewMirrorChangedThisFrame)
         PersistChanges();
+      previewMirrorChangedThisFrame = false;
     }
 
     EditorGUILayout.EndScrollView();
@@ -1354,17 +1363,23 @@ public class ViewportLayoutEditor : EditorWindow
       changed = true;
     }
 
-    // Mirror is outside the Name/Enabled/Graphic change-check so SelectPiece →
-    // FocusControl(null) cannot swallow the Toggle or skip the live refresh.
+    // Normal-wall Mirror is a temporary ViewEdit override only. Geometry remains
+    // authoritative and the override is discarded as soon as the preview pose
+    // changes. Non-normal pieces retain their existing authored behavior.
+    bool normalWallMirrorPreview = IsNormalWallPiece(piece);
     bool mirrorBefore = piece.MirrorHorizontally;
+    if (normalWallMirrorPreview
+        && previewMirrorOverrideByPiece.TryGetValue(piece, out bool previewMirror))
+      mirrorBefore = previewMirror;
+
     GUILayout.Space(ToggleGroupGap);
     const string MirrorLabel = "Mirror";
     float mirrorLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
     EditorGUIUtility.labelWidth = mirrorLabelWidth;
-    piece.MirrorHorizontally = DrawMouseOnlyToggle(
+    bool mirrorAfter = DrawMouseOnlyToggle(
         MirrorLabel,
-        piece.MirrorHorizontally,
+        mirrorBefore,
         piece.Enabled,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
@@ -1414,10 +1429,24 @@ public class ViewportLayoutEditor : EditorWindow
           MessageType.None);
     }
 
-    if (piece.MirrorHorizontally != mirrorBefore)
+    if (mirrorAfter != mirrorBefore)
     {
-      changed = true;
-      ApplyMirrorHorizontallyChangeForCurrentPose();
+      if (normalWallMirrorPreview)
+      {
+        previewMirrorOverrideByPiece[piece] = mirrorAfter;
+        previewMirrorChangedThisFrame = true;
+        ResetEditModeViewportLogCache();
+        DestroyEditModePreviewTextureOnly();
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
+      else
+      {
+        piece.MirrorHorizontally = mirrorAfter;
+        changed = true;
+        ApplyMirrorHorizontallyChangeForCurrentPose();
+      }
     }
 
     if (IsFrontWallF1Card(piece))
@@ -3257,6 +3286,18 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
 
+    // Any manual Mirror test belongs only to the pose we are leaving.
+    // Restore the checkbox itself to the geometry result before changing pose,
+    // then discard the temporary preview override.
+    foreach (ViewportPiece overriddenPiece in previewMirrorOverrideByPiece.Keys)
+    {
+      if (overriddenPiece != null
+          && resolvedNormalWallByPiece.TryGetValue(
+              overriddenPiece, out ResolvedNormalWallState resolvedState))
+        overriddenPiece.MirrorHorizontally = resolvedState.Mirror;
+    }
+    previewMirrorOverrideByPiece.Clear();
+
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
@@ -3287,6 +3328,18 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (newX == previewX && newY == previewY && newFacing == previewFacing)
       return;
+
+    // Any manual Mirror test belongs only to the pose we are leaving.
+    // Restore the checkbox itself to the geometry result before changing pose,
+    // then discard the temporary preview override.
+    foreach (ViewportPiece overriddenPiece in previewMirrorOverrideByPiece.Keys)
+    {
+      if (overriddenPiece != null
+          && resolvedNormalWallByPiece.TryGetValue(
+              overriddenPiece, out ResolvedNormalWallState resolvedState))
+        overriddenPiece.MirrorHorizontally = resolvedState.Mirror;
+    }
+    previewMirrorOverrideByPiece.Clear();
 
     previewX = newX;
     previewY = newY;
@@ -3922,7 +3975,7 @@ public class ViewportLayoutEditor : EditorWindow
         state.Enabled = f0LeftWall;
         state.X = 0;
         state.Y = 31;
-        state.Mirror = phaseA;
+        state.Mirror = false;
       }
       else if (IsWallF0RightPiece(piece))
       {
@@ -3963,6 +4016,7 @@ public class ViewportLayoutEditor : EditorWindow
 
       // Keep ViewEdit cards synchronized with the transient result.
       piece.Enabled = state.Enabled;
+      piece.MirrorHorizontally = state.Mirror;
       piece.PoseOffsetX = 0;
       piece.PoseOffsetY = 0;
     }
@@ -4256,8 +4310,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.Enabled = leftIsWall;
-      piece.MirrorHorizontally =
-          ((previewX + previewY + (int)previewFacing) & 1) == 0;
+      piece.MirrorHorizontally = false;
       return;
     }
   }
@@ -4304,8 +4357,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.Enabled = rightIsWall;
-      piece.MirrorHorizontally =
-          ((previewX + previewY + (int)previewFacing) & 1) != 0;
+      piece.MirrorHorizontally = false;
       return;
     }
   }
@@ -4366,8 +4418,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.Enabled = leftF1IsWall;
-      piece.MirrorHorizontally =
-          ((previewX + previewY + (int)previewFacing) & 1) == 0;
+      piece.MirrorHorizontally = false;
       return;
     }
   }
@@ -4428,8 +4479,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.Enabled = rightF1IsWall;
-      piece.MirrorHorizontally =
-          ((previewX + previewY + (int)previewFacing) & 1) != 0;
+      piece.MirrorHorizontally = false;
       return;
     }
   }
@@ -4494,8 +4544,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.Enabled = leftF2IsWall;
-      piece.MirrorHorizontally =
-          ((previewX + previewY + (int)previewFacing) & 1) == 0;
+      piece.MirrorHorizontally = false;
       return;
     }
   }
@@ -4560,6 +4609,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.Enabled = rightF2IsWall;
+      piece.MirrorHorizontally = false;
       return;
     }
   }
@@ -4628,8 +4678,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.Enabled = leftF3IsWall;
-      piece.MirrorHorizontally =
-          ((previewX + previewY + (int)previewFacing) & 1) == 0;
+      piece.MirrorHorizontally = false;
       return;
     }
   }
@@ -4698,8 +4747,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       piece.Enabled = rightF3IsWall;
-      piece.MirrorHorizontally =
-          ((previewX + previewY + (int)previewFacing) & 1) != 0;
+      piece.MirrorHorizontally = false;
       return;
     }
   }
@@ -5747,8 +5795,11 @@ public class ViewportLayoutEditor : EditorWindow
           if (!resolvedWall.Enabled)
             continue;
 
-          // ViewEdit Mirror checkbox is authoritative for the visible preview.
-          mirror = piece.MirrorHorizontally;
+          // Geometry supplies the normal orientation. A ViewEdit-only checkbox
+          // override may temporarily replace it until the preview pose changes.
+          mirror = resolvedWall.Mirror;
+          if (previewMirrorOverrideByPiece.TryGetValue(piece, out bool previewMirror))
+            mirror = previewMirror;
           drawGraphic = resolvedWall.Graphic;
           resolvedX = resolvedWall.X;
           resolvedY = resolvedWall.Y;
