@@ -144,6 +144,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D blackDoorFrameF3SourceTexture;
   private Texture2D blackDoorF3SourceTexture;
   private Texture2D blackDoorF2SourceTexture;
+  private Texture2D frontWallF2_224ReferenceTexture;
 
   // Single source of truth for selection.
   private int selectedPieceIndex;
@@ -6073,10 +6074,16 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
         {
-          int width = resolvedF2Width;
-          Texture2D f2Texture = graphics.GetFrontWallF2Texture(width);
+          // TEST: use the original-game 224x74 FrontF2 reference texture.
+          // It is drawn full-width at X=0; nearer side walls remain responsible
+          // for hiding the outer portions. Horizontal mirror is still controlled
+          // by the normal geometry/ViewEdit mirror state.
+          int width = 224;
+          Texture2D f2Texture = GetFrontWallF2_224ReferenceTexture();
           if (f2Texture == null)
             continue;
+
+          resolvedX = 0;
 
           bool verticalMirror =
               previewVerticalMirrorOverrideByPiece.TryGetValue(
@@ -6539,6 +6546,18 @@ public class ViewportLayoutEditor : EditorWindow
         195,
         98,
         true);
+  }
+
+  private Texture2D GetFrontWallF2_224ReferenceTexture()
+  {
+    if (frontWallF2_224ReferenceTexture == null)
+    {
+      frontWallF2_224ReferenceTexture =
+          AssetDatabase.LoadAssetAtPath<Texture2D>(
+              "Assets/Art/Walls/Front Wall F2_224x74.png");
+    }
+
+    return frontWallF2_224ReferenceTexture;
   }
 
   private Texture2D GetBlackDoorFrameF3SourceTexture()
