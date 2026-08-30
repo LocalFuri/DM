@@ -202,11 +202,6 @@ public class ViewportLayoutEditor : EditorWindow
   private readonly Dictionary<ViewportPiece, Vector2Int> previewPositionOverrideByPiece =
       new Dictionary<ViewportPiece, Vector2Int>();
 
-  // ViewEdit-only FrontF2 vertical-mirror test. Preview only; never persisted.
-  // Cleared whenever X/Y/Facing changes.
-  private readonly Dictionary<ViewportPiece, bool> previewVerticalMirrorOverrideByPiece =
-      new Dictionary<ViewportPiece, bool>();
-
   // ViewEdit-only Enabled override for exception pieces. This lets the user hide
   // an automatically active DTerm exception without fighting the exception rule.
   private readonly Dictionary<ViewportPiece, bool> previewEnabledOverrideByPiece =
@@ -1528,50 +1523,6 @@ public class ViewportLayoutEditor : EditorWindow
       {
         changed = true;
         ApplyFrontWallF1WidthChangeForCurrentPose();
-      }
-    }
-
-    if (IsFrontWallF2Card(piece))
-    {
-      int widthBefore = FrontWallF2Logic.Normalize(piece.FrontWallF2Width);
-      int widthSelected = EditorGUILayout.IntPopup(
-          "F2 Width",
-          widthBefore,
-          new[] { "106", "131", "162" },
-          new[]
-          {
-            FrontWallF2Logic.Width106,
-            FrontWallF2Logic.Width131,
-            FrontWallF2Logic.Width160
-          });
-      piece.FrontWallF2Width = FrontWallF2Logic.Normalize(widthSelected);
-
-      if (piece.FrontWallF2Width != widthBefore)
-      {
-        changed = true;
-        ApplyFrontWallF2WidthChangeForCurrentPose();
-      }
-
-      bool verticalMirrorBefore =
-          previewVerticalMirrorOverrideByPiece.TryGetValue(
-              piece, out bool previewVerticalMirror)
-          && previewVerticalMirror;
-
-      bool verticalMirrorAfter = DrawMouseOnlyToggle(
-          "Vertical Mirror",
-          verticalMirrorBefore,
-          piece.Enabled,
-          GUILayout.Width(115f),
-          GUILayout.ExpandWidth(false));
-
-      if (verticalMirrorAfter != verticalMirrorBefore)
-      {
-        previewVerticalMirrorOverrideByPiece[piece] = verticalMirrorAfter;
-        ResetEditModeViewportLogCache();
-        DestroyEditModePreviewTextureOnly();
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
       }
     }
 
@@ -3434,7 +3385,6 @@ public class ViewportLayoutEditor : EditorWindow
     }
     previewMirrorOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
-    previewVerticalMirrorOverrideByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
 
     previewX = newX;
@@ -3480,7 +3430,6 @@ public class ViewportLayoutEditor : EditorWindow
     }
     previewMirrorOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
-    previewVerticalMirrorOverrideByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
 
     previewX = newX;
@@ -4198,8 +4147,16 @@ public class ViewportLayoutEditor : EditorWindow
         // 320x200 viewport: FrontF1 is 111 px high. ViewEdit uses
         // top-origin/GIMP Y; a displayed Y of 42 corresponds to Unity Y=47.
         state.Y = 47;
-        // FrontF1 uses the original source orientation for this geometry recipe.
-        state.Mirror = false;
+
+        // Like FrontF2, the original alternates the front-wall brick phase
+        // when the player moves sideways relative to the current facing.
+        // (0,5) West remains unmirrored with this phase rule.
+        state.Mirror =
+            GetFrontF2LateralMirrorPhase(
+                previewX,
+                previewY,
+                previewFacing);
+
         state.FrontF1Width = frontWidth;
       }
       else if (IsWallF1RightPiece(piece))
@@ -4211,49 +4168,16 @@ public class ViewportLayoutEditor : EditorWindow
       }
       else if (IsFrontWallF2Card(piece))
       {
-        // FrontF2 depth comes from the two forward center cells:
-        // F1 open + F2 wall => FrontF2.
+        // F1 open + F2 center wall => FrontF2.
         state.Enabled = !f1CenterWall && f2CenterWall;
 
         if (state.Enabled)
         {
-          // Then compare the F2 left/right neighbours to choose the perspective
-          // width. The 106 px wall is the closed-on-both-sides form. Opening one
-          // side extends the wall toward that side; opening both sides uses the
-          // widest F2 form. These are geometry rules, not pose coordinates.
-          if (f2LeftWall && f2RightWall)
-          {
-            // Tested geometry: F1 row open, F2 left/center/right all wall.
-            // Use the widest FrontF2 form for this full-width wall row.
-            state.FrontF2Width = FrontWallF2Logic.Width160;
-            state.X = 31;
-            state.Mirror = false;
-          }
-          else if (f2LeftWall && !f2RightWall)
-          {
-            // Right side open: keep the native left edge and extend right.
-            state.FrontF2Width = FrontWallF2Logic.Width131;
-            state.X = 59;
-            state.Mirror = false;
-          }
-          else if (!f2LeftWall && f2RightWall)
-          {
-            // Left side open: mirror the one-sided extension and move it left.
-            state.FrontF2Width = FrontWallF2Logic.Width131;
-            state.X = 34;
-            state.Mirror = true;
-          }
-          else
-          {
-            // Both sides open: widest centered F2 form.
-            state.FrontF2Width = FrontWallF2Logic.Width160;
-            state.X = 31;
-            state.Mirror = false;
-          }
+          // Use the extracted original-game 224x74 reference wall full-width.
+          // Nearer side walls occlude the parts that should not be visible.
+          state.X = 0;
 
-          // The original game alternates the FrontF2 brick arrangement when
-          // moving left/right. Use only the coordinate perpendicular to the
-          // current facing, so forward/back movement does not change the phase.
+          // The original alternates the brick phase when moving sideways.
           state.Mirror =
               GetFrontF2LateralMirrorPhase(
                   previewX,
@@ -4272,8 +4196,6 @@ public class ViewportLayoutEditor : EditorWindow
       // Keep ViewEdit cards synchronized with the transient result.
       piece.Enabled = state.Enabled;
       piece.MirrorHorizontally = state.Mirror;
-      if (IsFrontWallF2Card(piece))
-        piece.FrontWallF2Width = state.FrontF2Width;
       piece.PoseOffsetX = 0;
       piece.PoseOffsetY = 0;
     }
@@ -5137,131 +5059,6 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// FrontF2 / Front Wall F2 from the map tile two steps forward, only if
-  /// the nearer forward tile is open. A solid F1 wall hides center FrontF2.
-  /// Also on if the left column is open through F1 and the left F2 tile is solid.
-  /// </summary>
-  private void ApplyFrontF2FromMapGeometry()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    // (1,3) North is a Black Door front view. Force FrontF2 off so ViewEdit
-    // matches the exception (not drawn) and the saved pose stays disabled.
-    if (previewX == 1
-        && previewY == 3
-        && previewFacing == DungeonFacing.North)
-    {
-      for (int i = 0; i < layout.Pieces.Count; i++)
-      {
-        ViewportPiece piece = layout.Pieces[i];
-        if (piece == null)
-          continue;
-
-        if (piece.Name != "FrontF2" && piece.Name != "Front Wall F2")
-          continue;
-
-        piece.Enabled = false;
-        return;
-      }
-
-      return;
-    }
-
-    EnsurePreviewMiniMapLoaded();
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    int front1X = previewX + forwardX;
-    int front1Y = previewY + forwardY;
-    bool front1Blocked = previewMiniMap == null
-        || !previewMiniMap.IsInside(front1X, front1Y)
-        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall;
-
-    bool centerF2Wall = false;
-    if (!front1Blocked)
-    {
-      int tileX = previewX + forwardX * 2;
-      int tileY = previewY + forwardY * 2;
-      centerF2Wall = previewMiniMap == null
-          || !previewMiniMap.IsInside(tileX, tileY)
-          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
-    }
-
-    int left1X = previewX + forwardX - rightX;
-    int left1Y = previewY + forwardY - rightY;
-    int left2X = previewX + forwardX * 2 - rightX;
-    int left2Y = previewY + forwardY * 2 - rightY;
-    int right1X = previewX + forwardX + rightX;
-    int right1Y = previewY + forwardY + rightY;
-    int right2X = previewX + forwardX * 2 + rightX;
-    int right2Y = previewY + forwardY * 2 + rightY;
-
-    bool left1Open = previewMiniMap != null
-        && previewMiniMap.IsInside(left1X, left1Y)
-        && previewMiniMap.GetTile(left1X, left1Y).Type != DungeonTileType.Wall;
-    bool left2IsWall = previewMiniMap == null
-        || !previewMiniMap.IsInside(left2X, left2Y)
-        || previewMiniMap.GetTile(left2X, left2Y).Type == DungeonTileType.Wall;
-    bool right1Open = previewMiniMap != null
-        && previewMiniMap.IsInside(right1X, right1Y)
-        && previewMiniMap.GetTile(right1X, right1Y).Type != DungeonTileType.Wall;
-    bool right2IsWall = previewMiniMap == null
-        || !previewMiniMap.IsInside(right2X, right2Y)
-        || previewMiniMap.GetTile(right2X, right2Y).Type == DungeonTileType.Wall;
-
-    // Classify FrontF2 only from relative map geometry.
-    // Center: F1 center open and F2 center solid/out.
-    // LeftExposed: F1 center blocked, F1 left open, F2 left solid/out.
-    // RightExposed: F1 center blocked, F1 right open, F2 right solid/out.
-    bool centerF2 =
-        !front1Blocked && centerF2Wall;
-    bool leftExposedF2 =
-        front1Blocked && left1Open && left2IsWall;
-    bool rightExposedF2 =
-        front1Blocked && right1Open && right2IsWall;
-
-    bool frontF2IsWall = centerF2 || leftExposedF2 || rightExposedF2;
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (piece.Name != "FrontF2" && piece.Name != "Front Wall F2")
-        continue;
-
-      piece.Enabled = frontF2IsWall;
-
-      // FrontF2 width and X are geometry-driven, not pose-authored.
-      // These are canonical placements for the two relative F2 geometry cases.
-      if (leftExposedF2)
-      {
-        piece.FrontWallF2Width = FrontWallF2Logic.Width131;
-        piece.X = -40;
-        piece.PoseOffsetX = 0;
-        piece.MirrorHorizontally = false;
-      }
-      else if (centerF2)
-      {
-        piece.FrontWallF2Width = FrontWallF2Logic.Width106;
-        piece.X = 59;
-        piece.PoseOffsetX = 0;
-      }
-
-      return;
-    }
-  }
-
-
-  /// <summary>
   /// FrontF3 / Front Wall F3 from the map tile three steps forward, only if
   /// both nearer forward tiles are open. A solid F1 or F2 wall hides FrontF3.
   /// </summary>
@@ -6049,8 +5846,6 @@ public class ViewportLayoutEditor : EditorWindow
         int resolvedF1Width =
             StraightF1WallLogic.NormalizeFrontWallF1Width(
                 piece.FrontWallF1Width);
-        int resolvedF2Width =
-            FrontWallF2Logic.Normalize(piece.FrontWallF2Width);
 
         if (TryGetResolvedNormalWallState(
                 piece,
@@ -6073,7 +5868,6 @@ public class ViewportLayoutEditor : EditorWindow
             resolvedY = previewPosition.y;
           }
           resolvedF1Width = resolvedWall.FrontF1Width;
-          resolvedF2Width = resolvedWall.FrontF2Width;
         }
 
         if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
@@ -6103,53 +5897,16 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
         {
-          // TEST: use the original-game 224x74 FrontF2 reference texture.
-          // It is drawn full-width at X=0; nearer side walls remain responsible
-          // for hiding the outer portions. Horizontal mirror is still controlled
-          // by the normal geometry/ViewEdit mirror state.
-          int width = 224;
           Texture2D f2Texture = GetFrontWallF2_224ReferenceTexture();
           if (f2Texture == null)
             continue;
 
-          resolvedX = 0;
-
-          bool verticalMirror =
-              previewVerticalMirrorOverrideByPiece.TryGetValue(
-                  piece, out bool previewVerticalMirror)
-              && previewVerticalMirror;
-
-          if (verticalMirror)
-          {
-            BlitPieceIntoPreview(
-                pixels,
-                f2Texture,
-                resolvedX,
-                resolvedY,
-                mirror,
-                true);
-          }
-          else if (width == FrontWallF2Logic.Width160
-              && f2Texture.width == FrontWallF2Logic.Width160)
-          {
-            FrontWallF2Logic.BlitToBuffer(
-                f2Texture,
-                pixels,
-                PreviewWidth,
-                PreviewHeight,
-                resolvedX,
-                resolvedY,
-                mirror);
-          }
-          else
-          {
-            BlitPieceIntoPreview(
-                pixels,
-                f2Texture,
-                resolvedX,
-                resolvedY,
-                mirror);
-          }
+          BlitPieceIntoPreview(
+              pixels,
+              f2Texture,
+              0,
+              resolvedY,
+              mirror);
 
           ClearFrontWallOverflowIntoUi(
               pixels,
@@ -6728,8 +6485,7 @@ public class ViewportLayoutEditor : EditorWindow
       Texture2D source,
       int destinationX,
       int destinationY,
-      bool mirrorHorizontally = false,
-      bool mirrorVertically = false)
+      bool mirrorHorizontally = false)
   {
     if (!source.isReadable)
       return;
@@ -6742,10 +6498,6 @@ public class ViewportLayoutEditor : EditorWindow
       if (targetY < 0 || targetY >= PreviewHeight)
         continue;
 
-      int sampledSourceY = mirrorVertically
-          ? source.height - 1 - sourceY
-          : sourceY;
-
       for (int column = 0; column < source.width; column++)
       {
         int sourceX = mirrorHorizontally
@@ -6756,7 +6508,7 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
 
         Color32 sourceColour =
-            sourcePixels[sampledSourceY * source.width + sourceX];
+            sourcePixels[sourceY * source.width + sourceX];
         if (sourceColour.a == 0)
           continue;
 
