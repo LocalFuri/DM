@@ -200,8 +200,13 @@ public class ViewportLayoutEditor : EditorWindow
   // X/Y/Facing changes. They are never written to the layout asset/pose store.
   private readonly Dictionary<ViewportPiece, Vector2Int> previewPositionOverrideByPiece =
       new Dictionary<ViewportPiece, Vector2Int>();
+  // ViewEdit-only Enabled override for exception pieces. This lets the user hide
+  // an automatically active DTerm exception without fighting the exception rule.
+  private readonly Dictionary<ViewportPiece, bool> previewEnabledOverrideByPiece =
+      new Dictionary<ViewportPiece, bool>();
   private bool previewMirrorChangedThisFrame;
   private bool previewPositionChangedThisFrame;
+  private bool previewEnabledChangedThisFrame;
 
   private struct ResolvedNormalWallState
   {
@@ -525,10 +530,12 @@ public class ViewportLayoutEditor : EditorWindow
       bool editorChanged = EditorGUI.EndChangeCheck();
       if ((editorChanged || changed)
           && !previewMirrorChangedThisFrame
-          && !previewPositionChangedThisFrame)
+          && !previewPositionChangedThisFrame
+          && !previewEnabledChangedThisFrame)
         PersistChanges();
       previewMirrorChangedThisFrame = false;
       previewPositionChangedThisFrame = false;
+      previewEnabledChangedThisFrame = false;
     }
 
     EditorGUILayout.EndScrollView();
@@ -802,18 +809,15 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (name == "RightD3" || name == "Wall D3R2")
     {
-      bool normalRightD3 =
-          !f1CenterWall
-          && !f2CenterWall
-          && !f3CenterWall
-          && TileIsWallOrOutside(f3X + rightX, f3Y + rightY);
-
+      // Old standalone normal-geometry selector disabled. RightD3 must now be
+      // chosen only by a complete geometry recipe. Keep the existing Black Door
+      // oblique exception alive for the exception layer.
       bool blackDoorOblique =
           previewX == 0
           && previewY == 5
           && previewFacing == DungeonFacing.North;
 
-      return normalRightD3 || blackDoorOblique;
+      return blackDoorOblique;
     }
 
     // Other Black Door cards are hidden unless one of the exact views above needs them.
@@ -1333,13 +1337,45 @@ public class ViewportLayoutEditor : EditorWindow
     float enabledLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent(EnabledLabel)).x;
     EditorGUIUtility.labelWidth = enabledLabelWidth;
-    piece.Enabled = DrawMouseOnlyToggle(
+
+    bool isBlackDoorRightD3Exception =
+        IsBlackDoorObliqueRightD3PoseException(piece);
+    bool enabledBefore = piece.Enabled;
+    if (isBlackDoorRightD3Exception
+        && previewEnabledOverrideByPiece.TryGetValue(
+            piece, out bool manualPreviewEnabled))
+    {
+      enabledBefore = manualPreviewEnabled;
+    }
+
+    bool enabledAfter = DrawMouseOnlyToggle(
         EnabledLabel,
-        piece.Enabled,
-        piece.Enabled,
+        enabledBefore,
+        enabledBefore,
         GUILayout.Width(enabledLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
     bool nameOrEnabledChanged = EditorGUI.EndChangeCheck();
+
+    if (isBlackDoorRightD3Exception && enabledAfter != enabledBefore)
+    {
+      // Preview-only test. Keep the automatic exception state intact and only
+      // override whether it is drawn while the user remains on this pose.
+      previewEnabledOverrideByPiece[piece] = enabledAfter;
+      previewEnabledChangedThisFrame = true;
+      ResetEditModeViewportLogCache();
+      DestroyEditModePreviewTextureOnly();
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+    else if (!isBlackDoorRightD3Exception)
+    {
+      piece.Enabled = enabledAfter;
+    }
+
+    bool effectiveEnabled = isBlackDoorRightD3Exception
+        ? enabledAfter
+        : piece.Enabled;
 
     GUILayout.Space(ToggleGroupGap);
     const string DeterministicLabel = "DTerm";
@@ -1350,10 +1386,10 @@ public class ViewportLayoutEditor : EditorWindow
     bool deterministic = DrawMouseOnlyToggle(
         DeterministicLabel,
         deterministicBefore,
-        piece.Enabled,
+        effectiveEnabled,
         GUILayout.Width(deterministicLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
-    if (piece.Enabled
+    if (effectiveEnabled
         && (IsWallF0LeftPiece(piece)
             || IsWallF0RightPiece(piece)
             || IsWallF1LeftPiece(piece)
@@ -1365,7 +1401,11 @@ public class ViewportLayoutEditor : EditorWindow
             || IsFrontWallF1Card(piece)
             || IsFrontWallF3Card(piece)))
       deterministic = true;
-    if (!piece.Enabled)
+    // DTerm describes that this piece belongs to the exception layer.
+    // For the Black Door RightD3 exception it must remain true even while the
+    // temporary Enabled preview override is false, otherwise ViewEdit toggles
+    // DTerm false every repaint while GetPieceDeterministic() returns true again.
+    if (!effectiveEnabled && !isBlackDoorRightD3Exception)
       deterministic = false;
     if (deterministic != deterministicBefore)
     {
@@ -1390,7 +1430,7 @@ public class ViewportLayoutEditor : EditorWindow
     bool mirrorAfter = DrawMouseOnlyToggle(
         MirrorLabel,
         mirrorBefore,
-        piece.Enabled,
+        effectiveEnabled,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
     if (ShouldDrawNonDTermStatus(piece))
@@ -1402,8 +1442,8 @@ public class ViewportLayoutEditor : EditorWindow
       EditorGUIUtility.labelWidth = nonDTermLabelWidth;
       DrawMouseOnlyToggle(
           NonDTermLabel,
-          piece.Enabled && !deterministic,
-          piece.Enabled,
+          effectiveEnabled && !deterministic,
+          effectiveEnabled,
           GUILayout.Width(nonDTermLabelWidth + ToggleBoxWidth),
           GUILayout.ExpandWidth(false));
     }
@@ -3349,6 +3389,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
     previewMirrorOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
+    previewEnabledOverrideByPiece.Clear();
 
     previewX = newX;
     previewY = newY;
@@ -3393,6 +3434,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
     previewMirrorOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
+    previewEnabledOverrideByPiece.Clear();
 
     previewX = newX;
     previewY = newY;
@@ -3688,7 +3730,16 @@ public class ViewportLayoutEditor : EditorWindow
 
   private bool GetPieceDeterministic(ViewportPiece piece)
   {
-    if (piece == null || !piece.Enabled)
+    if (piece == null)
+      return false;
+
+    // DTerm marks the active exception layer. Check this before piece.Enabled:
+    // the Black Door oblique RightD3 is rendered through an exception bypass,
+    // so its normal Enabled flag can be false while it is still visible.
+    if (IsBlackDoorObliqueRightD3PoseException(piece))
+      return true;
+
+    if (!piece.Enabled)
       return false;
 
     if (IsWallF0LeftPiece(piece)
@@ -3912,6 +3963,35 @@ public class ViewportLayoutEditor : EditorWindow
     // Stage 1: automatic F0/F1 wall assembly from minimap only.
     // F2/F3/D3/Black Door remain disabled until F1 is verified.
     ApplyF1MinimapWallRecipe();
+
+    // Exception layer: the Hall of Champions oblique RightD3 starts enabled so
+    // ViewEdit reflects what is actually rendered. The user may temporarily
+    // disable it with the Enabled checkbox for visual testing.
+    EnableBlackDoorObliqueRightD3ForCurrentPose();
+  }
+
+  private void EnableBlackDoorObliqueRightD3ForCurrentPose()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    if (previewX != 0
+        || previewY != 5
+        || previewFacing != DungeonFacing.North)
+      return;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (piece.Name != "Wall D3R2" && piece.Name != "RightD3")
+        continue;
+
+      piece.Enabled = true;
+      return;
+    }
   }
 
   /// <summary>
@@ -5810,7 +5890,10 @@ public class ViewportLayoutEditor : EditorWindow
         bool blackDoorF2Exception = IsBlackDoorF2PoseException(piece);
         bool blackDoorF3Exception = IsBlackDoorF3PoseException(piece);
         bool blackDoorObliqueRightD3Exception =
-            IsBlackDoorObliqueRightD3PoseException(piece);
+            IsBlackDoorObliqueRightD3PoseException(piece)
+            && (!previewEnabledOverrideByPiece.TryGetValue(
+                    piece, out bool manualExceptionEnabled)
+                || manualExceptionEnabled);
 
         if (!shouldDraw
             && !blackDoorF2Exception
