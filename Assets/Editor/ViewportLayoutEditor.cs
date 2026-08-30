@@ -200,6 +200,12 @@ public class ViewportLayoutEditor : EditorWindow
   // X/Y/Facing changes. They are never written to the layout asset/pose store.
   private readonly Dictionary<ViewportPiece, Vector2Int> previewPositionOverrideByPiece =
       new Dictionary<ViewportPiece, Vector2Int>();
+
+  // ViewEdit-only FrontF2 vertical-mirror test. Preview only; never persisted.
+  // Cleared whenever X/Y/Facing changes.
+  private readonly Dictionary<ViewportPiece, bool> previewVerticalMirrorOverrideByPiece =
+      new Dictionary<ViewportPiece, bool>();
+
   // ViewEdit-only Enabled override for exception pieces. This lets the user hide
   // an automatically active DTerm exception without fighting the exception rule.
   private readonly Dictionary<ViewportPiece, bool> previewEnabledOverrideByPiece =
@@ -1543,6 +1549,28 @@ public class ViewportLayoutEditor : EditorWindow
       {
         changed = true;
         ApplyFrontWallF2WidthChangeForCurrentPose();
+      }
+
+      bool verticalMirrorBefore =
+          previewVerticalMirrorOverrideByPiece.TryGetValue(
+              piece, out bool previewVerticalMirror)
+          && previewVerticalMirror;
+
+      bool verticalMirrorAfter = DrawMouseOnlyToggle(
+          "Vertical Mirror",
+          verticalMirrorBefore,
+          piece.Enabled,
+          GUILayout.Width(115f),
+          GUILayout.ExpandWidth(false));
+
+      if (verticalMirrorAfter != verticalMirrorBefore)
+      {
+        previewVerticalMirrorOverrideByPiece[piece] = verticalMirrorAfter;
+        ResetEditModeViewportLogCache();
+        DestroyEditModePreviewTextureOnly();
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
       }
     }
 
@@ -3025,19 +3053,35 @@ public class ViewportLayoutEditor : EditorWindow
             previewY,
             previewFacing);
 
+    string frontDecision;
+    if (geometry.F1Center.IsWall)
+      frontDecision = "Front decision: FrontF1";
+    else if (geometry.F2Center.IsWall)
+      frontDecision = "Front decision: FrontF2";
+    else if (geometry.F3Center.IsWall)
+      frontDecision = "Front decision: FrontF3";
+    else
+      frontDecision = "Front decision: none";
+
     string text =
-        "MAP GEOMETRY ONLY — WALL RENDERING OFF\n"
-        + "F0L=" + FormatRelativeViewportCell(geometry.F0Left)
-        + "   F0R=" + FormatRelativeViewportCell(geometry.F0Right)
+        "GEOMETRY DIAGNOSTIC\n"
+        + "F1: L=" + FormatRelativeViewportCellShort(geometry.F1Left)
+        + "  C=" + FormatRelativeViewportCellShort(geometry.F1Center)
+        + "  R=" + FormatRelativeViewportCellShort(geometry.F1Right)
+        + "\nF2: L=" + FormatRelativeViewportCellShort(geometry.F2Left)
+        + "  C=" + FormatRelativeViewportCellShort(geometry.F2Center)
+        + "  R=" + FormatRelativeViewportCellShort(geometry.F2Right)
+        + "\nF3: L=" + FormatRelativeViewportCellShort(geometry.F3Left)
+        + "  C=" + FormatRelativeViewportCellShort(geometry.F3Center)
+        + "  R=" + FormatRelativeViewportCellShort(geometry.F3Right)
+        + "\n" + frontDecision
+        + "\n\nCoordinates:"
         + "\nF1L=" + FormatRelativeViewportCell(geometry.F1Left)
         + "   F1C=" + FormatRelativeViewportCell(geometry.F1Center)
         + "   F1R=" + FormatRelativeViewportCell(geometry.F1Right)
         + "\nF2L=" + FormatRelativeViewportCell(geometry.F2Left)
         + "   F2C=" + FormatRelativeViewportCell(geometry.F2Center)
-        + "   F2R=" + FormatRelativeViewportCell(geometry.F2Right)
-        + "\nF3L=" + FormatRelativeViewportCell(geometry.F3Left)
-        + "   F3C=" + FormatRelativeViewportCell(geometry.F3Center)
-        + "   F3R=" + FormatRelativeViewportCell(geometry.F3Right);
+        + "   F2R=" + FormatRelativeViewportCell(geometry.F2Right);
 
     EditorGUILayout.HelpBox(text, MessageType.None);
   }
@@ -3389,6 +3433,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
     previewMirrorOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
+    previewVerticalMirrorOverrideByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
 
     previewX = newX;
@@ -3434,6 +3479,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
     previewMirrorOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
+    previewVerticalMirrorOverrideByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
 
     previewX = newX;
@@ -4031,6 +4077,9 @@ public class ViewportLayoutEditor : EditorWindow
     bool f0LeftWall = g.F0Left.IsWall;
     bool f0RightWall = g.F0Right.IsWall;
     bool f1CenterWall = g.F1Center.IsWall;
+    bool f2CenterWall = g.F2Center.IsWall;
+    bool f2LeftWall = g.F2Left.IsWall;
+    bool f2RightWall = g.F2Right.IsWall;
 
     bool f1LeftWall = !f1CenterWall && g.F1Left.IsWall;
     bool f1RightWall = !f1CenterWall && g.F1Right.IsWall;
@@ -4139,9 +4188,52 @@ public class ViewportLayoutEditor : EditorWindow
         state.Y = 16;
         state.Mirror = false;
       }
+      else if (IsFrontWallF2Card(piece))
+      {
+        // FrontF2 depth comes from the two forward center cells:
+        // F1 open + F2 wall => FrontF2.
+        state.Enabled = !f1CenterWall && f2CenterWall;
+
+        if (state.Enabled)
+        {
+          // Then compare the F2 left/right neighbours to choose the perspective
+          // width. The 106 px wall is the closed-on-both-sides form. Opening one
+          // side extends the wall toward that side; opening both sides uses the
+          // widest F2 form. These are geometry rules, not pose coordinates.
+          if (f2LeftWall && f2RightWall)
+          {
+            // Tested geometry: F1 row open, F2 left/center/right all wall.
+            // Use the widest FrontF2 form for this full-width wall row.
+            state.FrontF2Width = FrontWallF2Logic.Width160;
+            state.X = 31;
+            state.Mirror = false;
+          }
+          else if (f2LeftWall && !f2RightWall)
+          {
+            // Right side open: keep the native left edge and extend right.
+            state.FrontF2Width = FrontWallF2Logic.Width131;
+            state.X = 59;
+            state.Mirror = false;
+          }
+          else if (!f2LeftWall && f2RightWall)
+          {
+            // Left side open: mirror the one-sided extension and move it left.
+            state.FrontF2Width = FrontWallF2Logic.Width131;
+            state.X = 34;
+            state.Mirror = true;
+          }
+          else
+          {
+            // Both sides open: widest centered F2 form.
+            state.FrontF2Width = FrontWallF2Logic.Width160;
+            state.X = 31;
+            state.Mirror = false;
+          }
+        }
+      }
       else
       {
-        // Stage 1 deliberately leaves every deeper/special wall off.
+        // Other deeper/special walls remain off until tested.
         continue;
       }
 
@@ -4150,6 +4242,8 @@ public class ViewportLayoutEditor : EditorWindow
       // Keep ViewEdit cards synchronized with the transient result.
       piece.Enabled = state.Enabled;
       piece.MirrorHorizontally = state.Mirror;
+      if (IsFrontWallF2Card(piece))
+        piece.FrontWallF2Width = state.FrontF2Width;
       piece.PoseOffsetX = 0;
       piece.PoseOffsetY = 0;
     }
@@ -5984,7 +6078,22 @@ public class ViewportLayoutEditor : EditorWindow
           if (f2Texture == null)
             continue;
 
-          if (width == FrontWallF2Logic.Width160
+          bool verticalMirror =
+              previewVerticalMirrorOverrideByPiece.TryGetValue(
+                  piece, out bool previewVerticalMirror)
+              && previewVerticalMirror;
+
+          if (verticalMirror)
+          {
+            BlitPieceIntoPreview(
+                pixels,
+                f2Texture,
+                resolvedX,
+                resolvedY,
+                mirror,
+                true);
+          }
+          else if (width == FrontWallF2Logic.Width160
               && f2Texture.width == FrontWallF2Logic.Width160)
           {
             FrontWallF2Logic.BlitToBuffer(
@@ -6571,7 +6680,8 @@ public class ViewportLayoutEditor : EditorWindow
       Texture2D source,
       int destinationX,
       int destinationY,
-      bool mirrorHorizontally = false)
+      bool mirrorHorizontally = false,
+      bool mirrorVertically = false)
   {
     if (!source.isReadable)
       return;
@@ -6584,6 +6694,10 @@ public class ViewportLayoutEditor : EditorWindow
       if (targetY < 0 || targetY >= PreviewHeight)
         continue;
 
+      int sampledSourceY = mirrorVertically
+          ? source.height - 1 - sourceY
+          : sourceY;
+
       for (int column = 0; column < source.width; column++)
       {
         int sourceX = mirrorHorizontally
@@ -6594,7 +6708,7 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
 
         Color32 sourceColour =
-            sourcePixels[sourceY * source.width + sourceX];
+            sourcePixels[sampledSourceY * source.width + sourceX];
         if (sourceColour.a == 0)
           continue;
 
