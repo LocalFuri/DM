@@ -152,8 +152,8 @@ MonoBehaviour:
     FrontWallF2Width: 106
   - Name: FrontF1
     Graphic: 23
-    X: 0
-    Y: 16
+    X: 1
+    Y: 15
     Enabled: 1
     Deterministic: 0
     BlackDoorF2X: 0
@@ -185,7 +185,7 @@ MonoBehaviour:
     FrontWallF2Width: 106
   - Name: LeftF0
     Graphic: 3
-    X: 0
+    X: -5
     Y: 31
     Enabled: 1
     Deterministic: 0

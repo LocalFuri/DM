@@ -194,7 +194,14 @@ public class ViewportLayoutEditor : EditorWindow
   // asset or pose store and are cleared on every pose/facing change.
   private readonly Dictionary<ViewportPiece, bool> previewMirrorOverrideByPiece =
       new Dictionary<ViewportPiece, bool>();
+
+  // ViewEdit-only normal-wall X/Y overrides. Like the temporary Mirror test,
+  // these affect only the stationary preview pose and are discarded whenever
+  // X/Y/Facing changes. They are never written to the layout asset/pose store.
+  private readonly Dictionary<ViewportPiece, Vector2Int> previewPositionOverrideByPiece =
+      new Dictionary<ViewportPiece, Vector2Int>();
   private bool previewMirrorChangedThisFrame;
+  private bool previewPositionChangedThisFrame;
 
   private struct ResolvedNormalWallState
   {
@@ -516,9 +523,12 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       bool editorChanged = EditorGUI.EndChangeCheck();
-      if ((editorChanged || changed) && !previewMirrorChangedThisFrame)
+      if ((editorChanged || changed)
+          && !previewMirrorChangedThisFrame
+          && !previewPositionChangedThisFrame)
         PersistChanges();
       previewMirrorChangedThisFrame = false;
+      previewPositionChangedThisFrame = false;
     }
 
     EditorGUILayout.EndScrollView();
@@ -1501,10 +1511,39 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
-    if (DrawIntStepper("X", ref piece.X, snap))
+
+    bool normalWallPositionPreview = IsNormalWallPiece(piece);
+    int editX = piece.X;
+    int editUnityY = piece.Y;
+    if (normalWallPositionPreview
+        && TryGetResolvedNormalWallState(piece, out ResolvedNormalWallState xyState))
+    {
+      editX = xyState.X;
+      editUnityY = xyState.Y;
+    }
+    if (normalWallPositionPreview
+        && previewPositionOverrideByPiece.TryGetValue(piece, out Vector2Int previewPosition))
+    {
+      editX = previewPosition.x;
+      editUnityY = previewPosition.y;
+    }
+
+    int xBefore = editX;
+    bool xChanged = DrawIntStepper("X", ref editX, snap);
+    if (xChanged && editX != xBefore)
     {
       SelectPiece(index);
-      changed = true;
+      if (normalWallPositionPreview)
+      {
+        previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
+        previewPositionChangedThisFrame = true;
+        RefreshTemporaryNormalWallPreview();
+      }
+      else
+      {
+        piece.X = editX;
+        changed = true;
+      }
     }
     EditorGUILayout.EndHorizontal();
 
@@ -1513,10 +1552,22 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
-    if (DrawTopDownYStepper(piece, snap))
+    int yBefore = editUnityY;
+    bool yChanged = DrawTopDownYStepper(ref editUnityY, GetPieceHeightForEditorY(piece), snap);
+    if (yChanged && editUnityY != yBefore)
     {
       SelectPiece(index);
-      changed = true;
+      if (normalWallPositionPreview)
+      {
+        previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
+        previewPositionChangedThisFrame = true;
+        RefreshTemporaryNormalWallPreview();
+      }
+      else
+      {
+        piece.Y = editUnityY;
+        changed = true;
+      }
     }
     EditorGUILayout.EndHorizontal();
     EditorGUIUtility.labelWidth = savedXyLabelWidth;
@@ -1740,8 +1791,8 @@ public class ViewportLayoutEditor : EditorWindow
       }
       int x = leftF3 != null ? leftF3.X : blackDoorFrameLeftF3CardX;
       int y = leftF3 != null ? leftF3.Y : blackDoorFrameLeftF3CardY;
-      int xBefore = x;
-      int yBefore = y;
+      int leftF3XBefore = x;
+      int leftF3YBefore = y;
       DrawBlackDoorFrameF3EditorCard(
           "Black Door Frame Left F3",
           ref blackDoorFrameLeftF3CardInitialized,
@@ -1752,7 +1803,7 @@ public class ViewportLayoutEditor : EditorWindow
           false);
       blackDoorFrameLeftF3CardX = x;
       blackDoorFrameLeftF3CardY = y;
-      if (leftF3 != null && (x != xBefore || y != yBefore))
+      if (leftF3 != null && (x != leftF3XBefore || y != leftF3YBefore))
       {
         leftF3.X = x;
         leftF3.Y = y;
@@ -1769,8 +1820,8 @@ public class ViewportLayoutEditor : EditorWindow
       }
       int x = rightF3 != null ? rightF3.X : blackDoorFrameRightF3CardX;
       int y = rightF3 != null ? rightF3.Y : blackDoorFrameRightF3CardY;
-      int xBefore = x;
-      int yBefore = y;
+      int rightF3XBefore = x;
+      int rightF3YBefore = y;
       DrawBlackDoorFrameF3EditorCard(
           "Black Door Frame Right F3",
           ref blackDoorFrameRightF3CardInitialized,
@@ -1781,7 +1832,7 @@ public class ViewportLayoutEditor : EditorWindow
           true);
       blackDoorFrameRightF3CardX = x;
       blackDoorFrameRightF3CardY = y;
-      if (rightF3 != null && (x != xBefore || y != yBefore))
+      if (rightF3 != null && (x != rightF3XBefore || y != rightF3YBefore))
       {
         rightF3.X = x;
         rightF3.Y = y;
@@ -3297,6 +3348,7 @@ public class ViewportLayoutEditor : EditorWindow
         overriddenPiece.MirrorHorizontally = resolvedState.Mirror;
     }
     previewMirrorOverrideByPiece.Clear();
+    previewPositionOverrideByPiece.Clear();
 
     previewX = newX;
     previewY = newY;
@@ -3340,6 +3392,7 @@ public class ViewportLayoutEditor : EditorWindow
         overriddenPiece.MirrorHorizontally = resolvedState.Mirror;
     }
     previewMirrorOverrideByPiece.Clear();
+    previewPositionOverrideByPiece.Clear();
 
     previewX = newX;
     previewY = newY;
@@ -3950,9 +4003,6 @@ public class ViewportLayoutEditor : EditorWindow
           previewY + forwardY);
     }
 
-    bool phaseA =
-        ((previewX + previewY + (int)previewFacing) & 1) == 0;
-
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece piece = layout.Pieces[i];
@@ -3982,20 +4032,22 @@ public class ViewportLayoutEditor : EditorWindow
         state.Enabled = f0RightWall;
         state.X = 192;
         state.Y = 31;
-        state.Mirror = !phaseA;
+        state.Mirror = false;
       }
       else if (IsWallF1LeftPiece(piece))
       {
         state.Enabled = f1LeftWall;
         state.X = 0;
         state.Y = 16;
-        state.Mirror = phaseA;
+        state.Mirror = false;
       }
       else if (IsFrontWallF1Card(piece))
       {
         state.Enabled = f1CenterWall;
         state.X = frontX;
-        state.Y = 16;
+        // 320x200 viewport: FrontF1 is 111 px high. ViewEdit uses
+        // top-origin/GIMP Y; a displayed Y of 42 corresponds to Unity Y=47.
+        state.Y = 47;
         state.Mirror = frontMirror;
         state.FrontF1Width = frontWidth;
       }
@@ -4004,7 +4056,7 @@ public class ViewportLayoutEditor : EditorWindow
         state.Enabled = f1RightWall;
         state.X = 160;
         state.Y = 16;
-        state.Mirror = !phaseA;
+        state.Mirror = false;
       }
       else
       {
@@ -5779,6 +5831,10 @@ public class ViewportLayoutEditor : EditorWindow
 
         // CUTOVER: render transient geometry assembly for normal walls.
         bool mirror = GetPreviewMirror(piece, poseMap);
+        // ViewEdit Mirror remains a temporary manual test for every normal wall,
+        // including F2/F3 pieces that are not in the current cutover resolver.
+        if (previewMirrorOverrideByPiece.TryGetValue(piece, out bool manualPreviewMirror))
+          mirror = manualPreviewMirror;
         DungeonGraphicType drawGraphic = piece.Graphic;
         int resolvedX = piece.EffectiveX;
         int resolvedY = piece.EffectiveY;
@@ -5803,6 +5859,11 @@ public class ViewportLayoutEditor : EditorWindow
           drawGraphic = resolvedWall.Graphic;
           resolvedX = resolvedWall.X;
           resolvedY = resolvedWall.Y;
+          if (previewPositionOverrideByPiece.TryGetValue(piece, out Vector2Int previewPosition))
+          {
+            resolvedX = previewPosition.x;
+            resolvedY = previewPosition.y;
+          }
           resolvedF1Width = resolvedWall.FrontF1Width;
           resolvedF2Width = resolvedWall.FrontF2Width;
         }
@@ -5814,12 +5875,15 @@ public class ViewportLayoutEditor : EditorWindow
           if (f1Texture == null)
             continue;
 
+          int f1DestX = previewPositionOverrideByPiece.ContainsKey(piece)
+              ? resolvedX
+              : StraightF1WallLogic.FrontWallF1DestX(width, resolvedX);
           StraightF1WallLogic.BlitCompositeToBuffer(
               f1Texture,
               pixels,
               PreviewWidth,
               PreviewHeight,
-              StraightF1WallLogic.FrontWallF1DestX(width, resolvedX),
+              f1DestX,
               resolvedY,
               mirror);
           ClearFrontWallOverflowIntoUi(
@@ -6373,6 +6437,18 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null)
       return false;
 
+    // All normal Left/Right wall source images are authoritative as imported.
+    // Never apply an automatic horizontal mirror to F0/F1/F2/F3 side pieces.
+    if (IsWallF0LeftPiece(piece)
+        || IsWallF0RightPiece(piece)
+        || IsWallF1LeftPiece(piece)
+        || IsWallF1RightPiece(piece)
+        || IsWallF2LeftPiece(piece)
+        || IsWallF2RightPiece(piece)
+        || IsWallF3LeftPiece(piece)
+        || IsWallF3RightPiece(piece))
+      return false;
+
     return piece.MirrorHorizontally;
   }
 
@@ -6532,9 +6608,10 @@ public class ViewportLayoutEditor : EditorWindow
   private static bool DrawIntStepper(string label, ref int value, int step)
   {
     EditorGUILayout.BeginHorizontal();
-    value = EditorGUILayout.IntField(label, value);
+    EditorGUI.BeginChangeCheck();
+    value = EditorGUILayout.IntField(label, value, GUILayout.Width(62f));
 
-    bool changed = false;
+    bool changed = EditorGUI.EndChangeCheck();
 
     if (GUILayout.Button($"-{step}", GUILayout.Width(36)))
     {
@@ -6550,6 +6627,43 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.EndHorizontal();
     return changed;
+  }
+
+  private void RefreshTemporaryNormalWallPreview()
+  {
+    ResetEditModeViewportLogCache();
+    DestroyEditModePreviewTextureOnly();
+    RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
+  }
+
+  /// <summary>
+  /// Temporary normal-wall Y editor. The value is Unity bottom-origin, while
+  /// ViewEdit displays GIMP/top-origin Y. No layout field is mutated.
+  /// </summary>
+  private static bool DrawTopDownYStepper(ref int unityY, int pieceHeight, int step)
+  {
+    int oldUnityY = unityY;
+    int displayY = UnityYToDisplayY(unityY, pieceHeight);
+
+    EditorGUI.BeginChangeCheck();
+    EditorGUILayout.BeginHorizontal();
+    displayY = EditorGUILayout.IntField("Y", displayY, GUILayout.Width(62f));
+
+    if (GUILayout.Button($"-{step}", GUILayout.Width(36)))
+      displayY -= step;
+
+    if (GUILayout.Button($"+{step}", GUILayout.Width(36)))
+      displayY += step;
+
+    EditorGUILayout.EndHorizontal();
+
+    int maxDisplayY = Mathf.Max(0, PreviewHeight - Mathf.Max(1, pieceHeight));
+    displayY = Mathf.Clamp(displayY, 0, maxDisplayY);
+    unityY = DisplayYToUnityY(displayY, pieceHeight);
+
+    return EditorGUI.EndChangeCheck() || unityY != oldUnityY;
   }
 
   /// <summary>
@@ -6588,6 +6702,22 @@ public class ViewportLayoutEditor : EditorWindow
   {
     if (piece == null || graphics == null)
       return 1;
+
+    if (IsFrontWallF1Card(piece))
+    {
+      int width = StraightF1WallLogic.NormalizeFrontWallF1Width(
+          piece.FrontWallF1Width);
+      if (TryGetResolvedNormalWallState(
+              piece,
+              out ResolvedNormalWallState resolvedWall))
+      {
+        width = resolvedWall.FrontF1Width;
+      }
+
+      Texture2D f1Texture = graphics.GetFrontWallF1Texture(width);
+      if (f1Texture != null && f1Texture.height > 0)
+        return f1Texture.height;
+    }
 
     Texture2D texture = graphics.GetTexture(piece.Graphic);
     if (texture == null || texture.height <= 0)
