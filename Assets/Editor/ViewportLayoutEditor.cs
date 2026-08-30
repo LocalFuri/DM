@@ -5747,7 +5747,8 @@ public class ViewportLayoutEditor : EditorWindow
           if (!resolvedWall.Enabled)
             continue;
 
-          mirror = resolvedWall.Mirror;
+          // ViewEdit Mirror checkbox is authoritative for the visible preview.
+          mirror = piece.MirrorHorizontally;
           drawGraphic = resolvedWall.Graphic;
           resolvedX = resolvedWall.X;
           resolvedY = resolvedWall.Y;
