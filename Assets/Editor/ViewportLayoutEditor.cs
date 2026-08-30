@@ -4092,54 +4092,6 @@ public class ViewportLayoutEditor : EditorWindow
     bool f1LeftWall = !f1CenterWall && g.F1Left.IsWall;
     bool f1RightWall = !f1CenterWall && g.F1Right.IsWall;
 
-    int frontWidth = StraightF1WallLogic.CompositeWidth;
-    int frontX = 0;
-    bool frontMirror = false;
-
-    if (f0LeftWall && f0RightWall)
-    {
-      frontWidth = StraightF1WallLogic.CompositeWidth160;
-      frontX = 32;
-
-      // With no side extension, mirroring is free to follow the wall phase.
-      DungeonMap.GetForwardOffset(
-          previewFacing,
-          out int forwardX,
-          out int forwardY);
-      frontMirror = StraightF1WallLogic.PreferVariantB(
-          previewFacing,
-          previewX + forwardX,
-          previewY + forwardY);
-    }
-    else if (f0LeftWall && !f0RightWall)
-    {
-      // The open right side needs the extension on the right.
-      frontWidth = StraightF1WallLogic.CompositeWidth191;
-      frontX = 0;
-      frontMirror = true;
-    }
-    else if (!f0LeftWall && f0RightWall)
-    {
-      // The open left side needs the extension on the left.
-      frontWidth = StraightF1WallLogic.CompositeWidth191;
-      frontX = 0;
-      frontMirror = false;
-    }
-    else
-    {
-      frontWidth = StraightF1WallLogic.CompositeWidth;
-      frontX = 0;
-
-      DungeonMap.GetForwardOffset(
-          previewFacing,
-          out int forwardX,
-          out int forwardY);
-      frontMirror = StraightF1WallLogic.PreferVariantB(
-          previewFacing,
-          previewX + forwardX,
-          previewY + forwardY);
-    }
-
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece piece = layout.Pieces[i];
@@ -4181,7 +4133,7 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsFrontWallF1Card(piece))
       {
         state.Enabled = f1CenterWall;
-        state.X = frontX;
+        state.X = 0;
         // 320x200 viewport: FrontF1 is 111 px high. ViewEdit uses
         // top-origin/GIMP Y; a displayed Y of 42 corresponds to Unity Y=47.
         state.Y = 47;
@@ -4195,7 +4147,7 @@ public class ViewportLayoutEditor : EditorWindow
                 previewY,
                 previewFacing);
 
-        state.FrontF1Width = frontWidth;
+        state.FrontF1Width = StraightF1WallLogic.CompositeWidth;
       }
       else if (IsWallF1RightPiece(piece))
       {
@@ -5910,14 +5862,14 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
         {
-          int width = resolvedF1Width;
+          int width = StraightF1WallLogic.CompositeWidth;
           Texture2D f1Texture = graphics.GetFrontWallF1Texture(width);
           if (f1Texture == null)
             continue;
 
           int f1DestX = previewPositionOverrideByPiece.ContainsKey(piece)
               ? resolvedX
-              : StraightF1WallLogic.FrontWallF1DestX(width, resolvedX);
+              : 0;
           StraightF1WallLogic.BlitCompositeToBuffer(
               f1Texture,
               pixels,

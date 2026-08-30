@@ -42,6 +42,12 @@ namespace DM.Rendering
     public Texture2D FrontWallF2;
     public Texture2D FrontWallF3;
 
+    public const string FrontWallF1_224AssetPath =
+        "Assets/Art/Walls/Front Wall F1_224x111.png";
+
+    [System.NonSerialized]
+    private Texture2D cachedFrontWallF1_224;
+
     [Header("Side Wall Graphics")]
     [FormerlySerializedAs("WallS3L")]
     public Texture2D WallD3L2;
@@ -104,7 +110,7 @@ namespace DM.Rendering
         case DungeonGraphicType.FrontWallF1_A:
         case DungeonGraphicType.FrontWallF1_B:
           return GetFrontWallF1Texture(
-              StraightF1WallLogic.DefaultFrontWallF1Width);
+              StraightF1WallLogic.CompositeWidth);
         case DungeonGraphicType.FrontWallF2:
           return FrontWallF2;
         case DungeonGraphicType.FrontWallF3:
@@ -147,20 +153,25 @@ namespace DM.Rendering
 
     public Texture2D GetFrontWallF1Texture(int width)
     {
-      switch (StraightF1WallLogic.NormalizeFrontWallF1Width(width))
+      if (cachedFrontWallF1_224 != null)
+        return cachedFrontWallF1_224;
+
+#if UNITY_EDITOR
+      cachedFrontWallF1_224 =
+          UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+              FrontWallF1_224AssetPath);
+#endif
+      if (cachedFrontWallF1_224 != null)
+        return cachedFrontWallF1_224;
+
+      if (FrontWallF1 != null
+          && FrontWallF1.width == StraightF1WallLogic.CompositeWidth)
       {
-        case StraightF1WallLogic.CompositeWidth160:
-          return FrontWallF1;
-        case StraightF1WallLogic.CompositeWidth:
-          return ExpandedF1WallTexture.BuildExpandedF1Wall(
-              FrontWallF1,
-              WallF1L,
-              WallF1R);
-        default:
-          return ExpandedF1WallTexture.BuildExpandedF1Wall191(
-              FrontWallF1,
-              WallF1R);
+        cachedFrontWallF1_224 = FrontWallF1;
+        return cachedFrontWallF1_224;
       }
+
+      return FrontWallF1;
     }
 
     public Texture2D GetFrontWallF2Texture(int width)

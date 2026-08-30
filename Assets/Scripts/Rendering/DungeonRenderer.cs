@@ -1938,17 +1938,10 @@ namespace DM.Rendering
       }
     }
 
-    // Front Wall F1: 160 / 191 / 224 from the current pose. Authored Y + Mirror.
+    // Front Wall F1: real 224×111 reference at X=0. Authored Y + Mirror.
     private void DrawStraightF1FrontWall(ViewportPiece frontPiece)
     {
-      int width = StraightF1WallLogic.NormalizeFrontWallF1Width(
-          frontPiece.FrontWallF1Width);
-
-      // Exact geometry test for pose (0,5) West:
-      // LeftF0 0..32, FrontF1 32..191, RightF0 191..223.
-      if (IsPose0_5West())
-        width = StraightF1WallLogic.CompositeWidth160;
-
+      int width = StraightF1WallLogic.CompositeWidth;
       Texture2D texture = graphics.GetFrontWallF1Texture(width);
 
       if (texture == null)
@@ -1969,9 +1962,7 @@ namespace DM.Rendering
         return;
       }
 
-      int destX = IsPose0_5West()
-          ? 32
-          : StraightF1WallLogic.FrontWallF1DestX(width, frontPiece.EffectiveX);
+      int destX = 0;
       int destY = frontPiece.EffectiveY + dungeonDrawOffsetY;
       bool mirror = frontPiece.MirrorHorizontally;
 
