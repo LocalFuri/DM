@@ -4048,7 +4048,8 @@ public class ViewportLayoutEditor : EditorWindow
         // 320x200 viewport: FrontF1 is 111 px high. ViewEdit uses
         // top-origin/GIMP Y; a displayed Y of 42 corresponds to Unity Y=47.
         state.Y = 47;
-        state.Mirror = frontMirror;
+        // FrontF1 uses the original source orientation for this geometry recipe.
+        state.Mirror = false;
         state.FrontF1Width = frontWidth;
       }
       else if (IsWallF1RightPiece(piece))
