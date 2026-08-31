@@ -4078,9 +4078,6 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap == null)
       return;
 
-    // Restore the shared authored source/Y geometry before resolving this pose.
-    RestoreNormalWallBaselineProperties();
-
     RelativeViewportGeometry g =
         RelativeViewportGeometry.Calculate(
             previewMiniMap,
@@ -4088,19 +4085,56 @@ public class ViewportLayoutEditor : EditorWindow
             previewY,
             previewFacing);
 
-    bool f0LeftWall = g.F0Left.IsWall;
-    bool f0RightWall = g.F0Right.IsWall;
-    bool f1CenterWall = g.F1Center.IsWall;
-    bool f2CenterWall = g.F2Center.IsWall;
-    bool f2LeftWall = g.F2Left.IsWall;
-    bool f2RightWall = g.F2Right.IsWall;
+    bool frontF1 =
+        g.F1Center.IsWall;
+    bool frontF2 =
+        !g.F1Center.IsWall &&
+        g.F2Center.IsWall;
+    bool frontF3 =
+        !g.F1Center.IsWall &&
+        !g.F2Center.IsWall &&
+        g.F3Center.IsWall;
 
-    bool f1LeftWall = !f1CenterWall && g.F1Left.IsWall;
-    bool f1RightWall = !f1CenterWall && g.F1Right.IsWall;
-    bool frontF2Enabled = !f1CenterWall && f2CenterWall;
-    // Minimap-derived trio: FrontF2 + LeftF1 + RightF1. Not a map pose.
-    bool confirmedFrontF2WithF1Sides =
-        frontF2Enabled && f1LeftWall && f1RightWall;
+    bool leftF0 = g.F0Left.IsWall;
+    bool rightF0 = g.F0Right.IsWall;
+
+    bool leftF1 =
+        !g.F1Center.IsWall &&
+        g.F1Left.IsWall;
+    bool rightF1 =
+        !g.F1Center.IsWall &&
+        g.F1Right.IsWall;
+
+    bool leftF2 =
+        !g.F1Center.IsWall &&
+        !g.F2Center.IsWall &&
+        g.F2Left.IsWall;
+    bool rightF2 =
+        !g.F1Center.IsWall &&
+        !g.F2Center.IsWall &&
+        g.F2Right.IsWall;
+
+    bool leftF3 =
+        !g.F1Center.IsWall &&
+        !g.F2Center.IsWall &&
+        !g.F3Center.IsWall &&
+        g.F3Left.IsWall;
+    bool rightF3 =
+        !g.F1Center.IsWall &&
+        !g.F2Center.IsWall &&
+        !g.F3Center.IsWall &&
+        g.F3Right.IsWall;
+
+    // Minimap occupancy signature, not a map pose.
+    bool frontF2WithF1Sides = frontF2 && leftF1 && rightF1;
+    bool frontMirror =
+        GetFrontF2LateralMirrorPhase(
+            previewX,
+            previewY,
+            previewFacing);
+
+    const int TempUnconfirmedX = 0;
+    const int TempUnconfirmedY = 0;
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -4108,118 +4142,127 @@ public class ViewportLayoutEditor : EditorWindow
       if (piece == null)
         continue;
 
-      ResolvedNormalWallState state = new ResolvedNormalWallState
-      {
-        Enabled = false,
-        Graphic = piece.Graphic,
-        X = piece.X,
-        Y = piece.Y,
-        Mirror = piece.MirrorHorizontally,
-        FrontF1Width = piece.FrontWallF1Width,
-        FrontF2Width = piece.FrontWallF2Width
-      };
+      bool enabled;
+      int x;
+      int y;
+      bool mirror = false;
+      int frontF1Width = 0;
 
-      if (IsWallF0LeftPiece(piece))
+      if (IsFrontWallF1Card(piece))
       {
-        state.Enabled = f0LeftWall;
-        state.X = 0;
-        state.Y = 31;
-        state.Mirror = false;
-      }
-      else if (IsWallF0RightPiece(piece))
-      {
-        state.Enabled = f0RightWall;
-        state.X = 192;
-        state.Y = 31;
-        state.Mirror = false;
-      }
-      else if (IsWallF1LeftPiece(piece))
-      {
-        state.Enabled = f1LeftWall;
-        state.X = 0;
-        state.Y = 16;
-        state.Mirror = false;
-        if (confirmedFrontF2WithF1Sides)
-        {
-          // ViewEdit display Y=41 (top-origin) -> state.Y via DisplayYToUnityY.
-          state.X = 0;
-          state.Y = DisplayYToUnityY(41, GetPieceHeightForEditorY(piece));
-        }
-      }
-      else if (IsFrontWallF1Card(piece))
-      {
-        state.Enabled = f1CenterWall;
-        state.X = 0;
-        // 320x200 viewport: FrontF1 is 111 px high. ViewEdit uses
-        // top-origin/GIMP Y; a displayed Y of 42 corresponds to Unity Y=47.
-        state.Y = 47;
-
-        // Like FrontF2, the original alternates the front-wall brick phase
-        // when the player moves sideways relative to the current facing.
-        // (0,5) West remains unmirrored with this phase rule.
-        state.Mirror =
-            GetFrontF2LateralMirrorPhase(
-                previewX,
-                previewY,
-                previewFacing);
-
-        state.FrontF1Width = StraightF1WallLogic.CompositeWidth;
-      }
-      else if (IsWallF1RightPiece(piece))
-      {
-        state.Enabled = f1RightWall;
-        state.X = 160;
-        state.Y = 16;
-        state.Mirror = false;
-        if (confirmedFrontF2WithF1Sides)
-        {
-          // ViewEdit display Y=41 (top-origin) -> state.Y via DisplayYToUnityY.
-          state.X = 164;
-          state.Y = DisplayYToUnityY(41, GetPieceHeightForEditorY(piece));
-        }
+        enabled = frontF1;
+        x = 0;
+        // Display Y 42 -> Unity Y 47 (FrontF1 height 111).
+        y = 47;
+        mirror = frontMirror;
+        frontF1Width = StraightF1WallLogic.CompositeWidth;
       }
       else if (IsFrontWallF2Card(piece))
       {
-        // F1 open + F2 center wall => FrontF2.
-        state.Enabled = !f1CenterWall && f2CenterWall;
-
-        if (state.Enabled)
+        enabled = frontF2;
+        x = 0;
+        if (frontF2WithF1Sides)
         {
-          // Use the extracted original-game 224x74 reference wall full-width.
-          // Nearer side walls occlude the parts that should not be visible.
-          state.X = 0;
-          if (confirmedFrontF2WithF1Sides)
-          {
-            // ViewEdit display Y=125 (top-origin) -> state.Y via DisplayYToUnityY.
-            state.Y = DisplayYToUnityY(
-                125,
-                GetPieceHeightForEditorY(piece));
-          }
-
-          // The original alternates the brick phase when moving sideways.
-          state.Mirror =
-              GetFrontF2LateralMirrorPhase(
-                  previewX,
-                  previewY,
-                  previewFacing);
+          y = DisplayYToUnityY(125, GetPieceHeightForEditorY(piece));
         }
+        else
+        {
+          y = TempUnconfirmedY;
+        }
+        mirror = frontMirror;
       }
       else if (IsFrontWallF3Card(piece))
       {
-        state.Enabled =
-            !f1CenterWall &&
-            !f2CenterWall &&
-            g.F3Center.IsWall;
+        enabled = frontF3;
+        x = 67;
+        y = DisplayYToUnityY(56, GetPieceHeightForEditorY(piece));
+      }
+      else if (IsWallF0LeftPiece(piece))
+      {
+        enabled = leftF0;
+        x = 0;
+        y = 31;
+      }
+      else if (IsWallF0RightPiece(piece))
+      {
+        enabled = rightF0;
+        x = 192;
+        y = 31;
+      }
+      else if (IsWallF1LeftPiece(piece))
+      {
+        enabled = leftF1;
+        if (frontF2WithF1Sides)
+        {
+          x = 0;
+          y = DisplayYToUnityY(41, GetPieceHeightForEditorY(piece));
+        }
+        else if (frontF3 && leftF1)
+        {
+          x = 0;
+          y = DisplayYToUnityY(43, GetPieceHeightForEditorY(piece));
+        }
+        else
+        {
+          x = 0;
+          y = 16;
+        }
+      }
+      else if (IsWallF1RightPiece(piece))
+      {
+        enabled = rightF1;
+        if (frontF2WithF1Sides)
+        {
+          x = 164;
+          y = DisplayYToUnityY(41, GetPieceHeightForEditorY(piece));
+        }
+        else
+        {
+          x = 160;
+          y = 16;
+        }
+      }
+      else if (IsWallF2LeftPiece(piece))
+      {
+        enabled = leftF2;
+        x = TempUnconfirmedX;
+        y = TempUnconfirmedY;
+      }
+      else if (IsWallF2RightPiece(piece))
+      {
+        enabled = rightF2;
+        x = TempUnconfirmedX;
+        y = TempUnconfirmedY;
+      }
+      else if (IsWallF3LeftPiece(piece))
+      {
+        enabled = leftF3;
+        x = TempUnconfirmedX;
+        y = TempUnconfirmedY;
+      }
+      else if (IsWallF3RightPiece(piece))
+      {
+        enabled = rightF3;
+        x = TempUnconfirmedX;
+        y = TempUnconfirmedY;
       }
       else
       {
-        // Other deeper/special walls remain off until tested.
         continue;
       }
 
-      resolvedNormalWallByPiece[piece] = state;
+      ResolvedNormalWallState state = new ResolvedNormalWallState
+      {
+        Enabled = enabled,
+        Graphic = piece.Graphic,
+        X = x,
+        Y = y,
+        Mirror = mirror,
+        FrontF1Width = frontF1Width,
+        FrontF2Width = 0
+      };
 
-      // Keep ViewEdit cards synchronized with the transient result.
+      resolvedNormalWallByPiece[piece] = state;
       piece.Enabled = state.Enabled;
       piece.MirrorHorizontally = state.Mirror;
       piece.PoseOffsetX = 0;
