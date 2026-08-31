@@ -4216,6 +4216,11 @@ public class ViewportLayoutEditor : EditorWindow
           x = 164;
           y = DisplayYToUnityY(41, GetPieceHeightForEditorY(piece));
         }
+        else if (frontF3 && rightF1)
+        {
+          x = 164;
+          y = DisplayYToUnityY(42, GetPieceHeightForEditorY(piece));
+        }
         else
         {
           x = 160;
