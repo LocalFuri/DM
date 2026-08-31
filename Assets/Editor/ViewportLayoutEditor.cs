@@ -4204,6 +4204,13 @@ public class ViewportLayoutEditor : EditorWindow
                   previewFacing);
         }
       }
+      else if (IsFrontWallF3Card(piece))
+      {
+        state.Enabled =
+            !f1CenterWall &&
+            !f2CenterWall &&
+            g.F3Center.IsWall;
+      }
       else
       {
         // Other deeper/special walls remain off until tested.
