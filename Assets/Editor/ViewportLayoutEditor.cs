@@ -4097,6 +4097,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     bool f1LeftWall = !f1CenterWall && g.F1Left.IsWall;
     bool f1RightWall = !f1CenterWall && g.F1Right.IsWall;
+    bool frontF2Enabled = !f1CenterWall && f2CenterWall;
+    // Minimap-derived trio: FrontF2 + LeftF1 + RightF1. Not a map pose.
+    bool confirmedFrontF2WithF1Sides =
+        frontF2Enabled && f1LeftWall && f1RightWall;
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -4135,6 +4139,12 @@ public class ViewportLayoutEditor : EditorWindow
         state.X = 0;
         state.Y = 16;
         state.Mirror = false;
+        if (confirmedFrontF2WithF1Sides)
+        {
+          // ViewEdit display Y=41 (top-origin) -> state.Y via DisplayYToUnityY.
+          state.X = 0;
+          state.Y = DisplayYToUnityY(41, GetPieceHeightForEditorY(piece));
+        }
       }
       else if (IsFrontWallF1Card(piece))
       {
@@ -4161,6 +4171,12 @@ public class ViewportLayoutEditor : EditorWindow
         state.X = 160;
         state.Y = 16;
         state.Mirror = false;
+        if (confirmedFrontF2WithF1Sides)
+        {
+          // ViewEdit display Y=41 (top-origin) -> state.Y via DisplayYToUnityY.
+          state.X = 164;
+          state.Y = DisplayYToUnityY(41, GetPieceHeightForEditorY(piece));
+        }
       }
       else if (IsFrontWallF2Card(piece))
       {
@@ -4172,6 +4188,13 @@ public class ViewportLayoutEditor : EditorWindow
           // Use the extracted original-game 224x74 reference wall full-width.
           // Nearer side walls occlude the parts that should not be visible.
           state.X = 0;
+          if (confirmedFrontF2WithF1Sides)
+          {
+            // ViewEdit display Y=125 (top-origin) -> state.Y via DisplayYToUnityY.
+            state.Y = DisplayYToUnityY(
+                125,
+                GetPieceHeightForEditorY(piece));
+          }
 
           // The original alternates the brick phase when moving sideways.
           state.Mirror =
