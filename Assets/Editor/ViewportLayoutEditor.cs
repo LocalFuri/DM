@@ -6112,7 +6112,7 @@ public class ViewportLayoutEditor : EditorWindow
           BlitPieceIntoPreview(
               pixels,
               f2Texture,
-              0,
+              resolvedX,
               resolvedY,
               mirror);
 
