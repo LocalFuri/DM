@@ -4175,8 +4175,9 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsFrontWallF3Card(piece))
       {
         enabled = frontF3;
-        x = 67;
-        y = DisplayYToUnityY(56, GetPieceHeightForEditorY(piece));
+        x = 7;
+        y = DisplayYToUnityY(58, GetPieceHeightForEditorY(piece));
+        mirror = true;
       }
       else if (IsWallF0LeftPiece(piece))
       {
@@ -4237,8 +4238,8 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsWallF2RightPiece(piece))
       {
         enabled = rightF2;
-        x = TempUnconfirmedX;
-        y = TempUnconfirmedY;
+        x = 146;
+        y = DisplayYToUnityY(51, GetPieceHeightForEditorY(piece));
       }
       else if (IsWallF3LeftPiece(piece))
       {
