@@ -176,7 +176,7 @@ MonoBehaviour:
     Graphic: 6
     X: 160
     Y: 16
-    Enabled: 0
+    Enabled: 1
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0

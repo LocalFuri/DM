@@ -343,6 +343,7 @@ public class ViewportLayoutEditor : EditorWindow
     RestorePersistedAssets();
     ReloadLayoutFromDisk();
     RestoreSessionPrefs();
+    showOnlyWallsNeededForCurrentPose = true;
     StripObsoleteFrontWallF1ABPieces();
     CaptureNormalWallBaselinesFromLayout();
     ApplyCurrentPoseVisibilityToLayout();
