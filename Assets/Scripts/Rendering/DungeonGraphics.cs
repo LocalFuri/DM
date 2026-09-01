@@ -45,8 +45,14 @@ namespace DM.Rendering
     public const string FrontWallF1_224AssetPath =
         "Assets/Art/Walls/Front Wall F1_224x111.png";
 
+    public const string FrontWallF3_141AssetPath =
+        "Assets/Art/Walls/Front Wall F3_141x49.png";
+
     [System.NonSerialized]
     private Texture2D cachedFrontWallF1_224;
+
+    [System.NonSerialized]
+    private Texture2D cachedFrontWallF3_141;
 
     [Header("Side Wall Graphics")]
     [FormerlySerializedAs("WallS3L")]
@@ -114,10 +120,7 @@ namespace DM.Rendering
         case DungeonGraphicType.FrontWallF2:
           return FrontWallF2;
         case DungeonGraphicType.FrontWallF3:
-          return ExpandedF3WallTexture.BuildExpandedF3Wall(
-              FrontWallF3,
-              WallF3L,
-              WallF3R);
+          return GetFrontWallF3Texture();
         case DungeonGraphicType.WallD3L2:
           return WallD3L2;
         case DungeonGraphicType.WallD3R2:
@@ -172,6 +175,30 @@ namespace DM.Rendering
       }
 
       return FrontWallF1;
+    }
+
+    public Texture2D GetFrontWallF3Texture()
+    {
+      if (cachedFrontWallF3_141 != null)
+        return cachedFrontWallF3_141;
+
+#if UNITY_EDITOR
+      cachedFrontWallF3_141 =
+          UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+              FrontWallF3_141AssetPath);
+#endif
+      if (cachedFrontWallF3_141 != null)
+        return cachedFrontWallF3_141;
+
+      if (FrontWallF3 != null
+          && FrontWallF3.width == 141
+          && FrontWallF3.height == 49)
+      {
+        cachedFrontWallF3_141 = FrontWallF3;
+        return cachedFrontWallF3_141;
+      }
+
+      return FrontWallF3;
     }
 
     public Texture2D GetFrontWallF2Texture(int width)

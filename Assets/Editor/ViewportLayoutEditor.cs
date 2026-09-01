@@ -6682,7 +6682,7 @@ public class ViewportLayoutEditor : EditorWindow
   {
     EditorGUILayout.BeginHorizontal();
     EditorGUI.BeginChangeCheck();
-    value = EditorGUILayout.IntField(label, value, GUILayout.Width(62f));
+    value = EditorGUILayout.DelayedIntField(label, value, GUILayout.Width(90f));
 
     bool changed = EditorGUI.EndChangeCheck();
 
@@ -6722,7 +6722,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUI.BeginChangeCheck();
     EditorGUILayout.BeginHorizontal();
-    displayY = EditorGUILayout.IntField("Y", displayY, GUILayout.Width(62f));
+    displayY = EditorGUILayout.DelayedIntField("Y", displayY, GUILayout.Width(90f));
 
     if (GUILayout.Button($"-{step}", GUILayout.Width(36)))
       displayY -= step;
