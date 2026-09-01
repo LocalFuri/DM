@@ -90,6 +90,8 @@ public class ViewportLayoutEditor : EditorWindow
   private ViewportLayout layout;
   [System.NonSerialized]
   private DungeonGraphics graphics;
+  [System.NonSerialized]
+  private ViewportDTermStore dtermStore;
   private Vector2 editorScroll;
   private bool scrollToBottomOnNextRepaint;
   private int lastPlayModeScrollX = int.MinValue;
@@ -1445,24 +1447,11 @@ public class ViewportLayoutEditor : EditorWindow
         effectiveEnabled,
         GUILayout.Width(deterministicLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
-    if (effectiveEnabled
-        && (IsWallF0LeftPiece(piece)
-            || IsWallF0RightPiece(piece)
-            || IsWallF1LeftPiece(piece)
-            || IsWallF1RightPiece(piece)
-            || IsWallF2LeftPiece(piece)
-            || IsWallF2RightPiece(piece)
-            || IsWallF3LeftPiece(piece)
-            || IsWallF3RightPiece(piece)
-            || IsFrontWallF1Card(piece)
-            || IsFrontWallF3Card(piece)))
+    // Black Door RightD3 stays DTerm-on even if the temporary Enabled preview
+    // is off. Normal-wall DTerm is store-backed: never force it off just
+    // because Enabled is false during a redraw, or the persisted row is lost.
+    if (isBlackDoorRightD3Exception)
       deterministic = true;
-    // DTerm describes that this piece belongs to the exception layer.
-    // For the Black Door RightD3 exception it must remain true even while the
-    // temporary Enabled preview override is false, otherwise ViewEdit toggles
-    // DTerm false every repaint while GetPieceDeterministic() returns true again.
-    if (!effectiveEnabled && !isBlackDoorRightD3Exception)
-      deterministic = false;
     if (deterministic != deterministicBefore)
     {
       SetPieceDeterministic(piece, deterministic);
@@ -1511,6 +1500,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (EditorGUI.EndChangeCheck() || nameOrEnabledChanged)
     {
       SelectPiece(index);
+      RecaptureDTermIfVerified(piece);
       changed = true;
     }
 
@@ -1541,6 +1531,7 @@ public class ViewportLayoutEditor : EditorWindow
       {
         previewMirrorOverrideByPiece[piece] = mirrorAfter;
         previewMirrorChangedThisFrame = true;
+        RecaptureDTermIfVerified(piece);
         ResetEditModeViewportLogCache();
         DestroyEditModePreviewTextureOnly();
         RefreshEditModePreview();
@@ -1611,6 +1602,7 @@ public class ViewportLayoutEditor : EditorWindow
       {
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
         previewPositionChangedThisFrame = true;
+        RecaptureDTermIfVerified(piece);
         RefreshTemporaryNormalWallPreview();
       }
       else
@@ -1635,6 +1627,7 @@ public class ViewportLayoutEditor : EditorWindow
       {
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
         previewPositionChangedThisFrame = true;
+        RecaptureDTermIfVerified(piece);
         RefreshTemporaryNormalWallPreview();
       }
       else
@@ -2768,6 +2761,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (graphics != null)
       SaveAssetGuid(PrefsGraphicsGuidKey, graphics);
+
+    EnsureDTermStore();
   }
 
   /// <summary>
@@ -3789,32 +3784,21 @@ public class ViewportLayoutEditor : EditorWindow
     if (IsBlackDoorObliqueRightD3PoseException(piece))
       return true;
 
-    if (!piece.Enabled)
-      return false;
-
-    if (IsWallF0LeftPiece(piece)
-        || IsWallF0RightPiece(piece)
-        || IsWallF1LeftPiece(piece)
-        || IsWallF1RightPiece(piece)
-        || IsWallF2LeftPiece(piece)
-        || IsWallF2RightPiece(piece)
-        || IsWallF3LeftPiece(piece)
-        || IsWallF3RightPiece(piece)
-        || IsFrontWallF1Card(piece)
-        || IsFrontWallF3Card(piece))
-      return true;
-
-    if (layout != null)
+    string geometryKey = GetCurrentGeometryKey();
+    if (!string.IsNullOrEmpty(geometryKey)
+        && piece.Name != null
+        && EnsureDTermStore()
+        && dtermStore.HasEntry(geometryKey, piece.Name))
     {
-      if (IsFrontWallF1Card(piece))
-        return layout.FrontF1Deterministic;
-      if (IsFrontWallF2Card(piece))
-        return layout.FrontF2Deterministic;
-      if (IsFrontWallF3Card(piece))
-        return layout.FrontF3Deterministic;
+      return true;
     }
 
-    string key = piece != null && piece.Name != null ? piece.Name : string.Empty;
+    // Normal walls: checked means a persisted GeometryKey+PieceName row exists.
+    // Session flags must not make DTerm look verified without that row.
+    if (IsNormalWallPiece(piece))
+      return false;
+
+    string key = piece.Name != null ? piece.Name : string.Empty;
     if (extraPieceDeterministicByName.TryGetValue(key, out bool value))
       return value;
     return false;
@@ -3822,29 +3806,175 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void SetPieceDeterministic(ViewportPiece piece, bool value)
   {
-    if (layout != null)
+    if (piece == null)
+      return;
+
+    if (IsBlackDoorObliqueRightD3PoseException(piece))
+      return;
+
+    bool isNormalWall = IsNormalWallPiece(piece);
+    string geometryKey = GetCurrentGeometryKey();
+    if (string.IsNullOrEmpty(geometryKey) || string.IsNullOrEmpty(piece.Name))
     {
-      if (IsFrontWallF1Card(piece))
-      {
-        layout.FrontF1Deterministic = value;
-        return;
-      }
-
-      if (IsFrontWallF2Card(piece))
-      {
-        layout.FrontF2Deterministic = value;
-        return;
-      }
-
-      if (IsFrontWallF3Card(piece))
-      {
-        layout.FrontF3Deterministic = value;
-        return;
-      }
+      if (!isNormalWall)
+        extraPieceDeterministicByName[piece.Name ?? string.Empty] = value;
+      return;
     }
 
-    string key = piece != null && piece.Name != null ? piece.Name : string.Empty;
-    extraPieceDeterministicByName[key] = value;
+    if (!EnsureDTermStore())
+      return;
+
+    if (value)
+    {
+      dtermStore.Upsert(CaptureDTermEntry(piece, geometryKey));
+      OverlayDTermOnResolvedWalls();
+    }
+    else
+    {
+      dtermStore.Remove(geometryKey, piece.Name);
+      extraPieceDeterministicByName.Remove(piece.Name);
+      ApplyF1MinimapWallRecipe();
+    }
+
+    dtermStore.Persist();
+    RefreshEditModePreview();
+    Repaint();
+  }
+
+  private bool EnsureDTermStore()
+  {
+    if (dtermStore == null)
+      dtermStore = ViewportDTermStore.LoadDefault();
+    return dtermStore != null;
+  }
+
+  private string GetCurrentGeometryKey()
+  {
+    EnsurePreviewMiniMapLoaded();
+    return ViewportDTermStore.BuildGeometryKey(
+        previewMiniMap,
+        previewX,
+        previewY,
+        previewFacing);
+  }
+
+  private ViewportDTermEntry CaptureDTermEntry(
+      ViewportPiece piece,
+      string geometryKey)
+  {
+    bool enabled = piece.Enabled;
+    DungeonGraphicType graphic = piece.Graphic;
+    int x = piece.X;
+    int y = piece.Y;
+    bool mirror = piece.MirrorHorizontally;
+    int frontF1Width = piece.FrontWallF1Width;
+    int frontF2Width = piece.FrontWallF2Width;
+
+    if (TryGetResolvedNormalWallState(
+            piece,
+            out ResolvedNormalWallState resolved))
+    {
+      enabled = resolved.Enabled;
+      graphic = resolved.Graphic;
+      x = resolved.X;
+      y = resolved.Y;
+      mirror = resolved.Mirror;
+      frontF1Width = resolved.FrontF1Width;
+      frontF2Width = resolved.FrontF2Width;
+    }
+
+    if (previewEnabledOverrideByPiece.TryGetValue(
+            piece,
+            out bool enabledOverride))
+      enabled = enabledOverride;
+
+    if (previewPositionOverrideByPiece.TryGetValue(
+            piece,
+            out Vector2Int previewPosition))
+    {
+      x = previewPosition.x;
+      y = previewPosition.y;
+    }
+
+    if (previewMirrorOverrideByPiece.TryGetValue(
+            piece,
+            out bool mirrorOverride))
+      mirror = mirrorOverride;
+
+    return new ViewportDTermEntry
+    {
+      GeometryKey = geometryKey,
+      PieceName = piece.Name,
+      Enabled = enabled,
+      Graphic = graphic,
+      X = x,
+      Y = y,
+      Mirror = mirror,
+      FrontWallF1Width = frontF1Width,
+      FrontWallF2Width = frontF2Width
+    };
+  }
+
+  private void OverlayDTermOnResolvedWalls()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    if (!EnsureDTermStore())
+      return;
+
+    string geometryKey = GetCurrentGeometryKey();
+    if (string.IsNullOrEmpty(geometryKey))
+      return;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null || string.IsNullOrEmpty(piece.Name))
+        continue;
+
+      if (!dtermStore.TryGet(
+              geometryKey,
+              piece.Name,
+              out ViewportDTermEntry entry))
+      {
+        continue;
+      }
+
+      resolvedNormalWallByPiece.TryGetValue(
+          piece,
+          out ResolvedNormalWallState state);
+      state.Enabled = entry.Enabled;
+      state.Graphic = entry.Graphic;
+      state.X = entry.X;
+      state.Y = entry.Y;
+      state.Mirror = entry.Mirror;
+      state.FrontF1Width = entry.FrontWallF1Width;
+      state.FrontF2Width = entry.FrontWallF2Width;
+      resolvedNormalWallByPiece[piece] = state;
+      piece.Enabled = entry.Enabled;
+      piece.MirrorHorizontally = entry.Mirror;
+    }
+  }
+
+  private void RecaptureDTermIfVerified(ViewportPiece piece)
+  {
+    if (piece == null || string.IsNullOrEmpty(piece.Name))
+      return;
+
+    if (IsBlackDoorObliqueRightD3PoseException(piece))
+      return;
+
+    if (!GetPieceDeterministic(piece))
+      return;
+
+    string geometryKey = GetCurrentGeometryKey();
+    if (string.IsNullOrEmpty(geometryKey) || !EnsureDTermStore())
+      return;
+
+    dtermStore.Upsert(CaptureDTermEntry(piece, geometryKey));
+    OverlayDTermOnResolvedWalls();
+    dtermStore.Persist();
   }
 
   private static bool IsPoseOffsetCard(ViewportPiece piece)
@@ -4275,6 +4405,8 @@ public class ViewportLayoutEditor : EditorWindow
       piece.PoseOffsetX = 0;
       piece.PoseOffsetY = 0;
     }
+
+    OverlayDTermOnResolvedWalls();
   }
 
   /// <summary>

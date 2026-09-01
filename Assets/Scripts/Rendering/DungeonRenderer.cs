@@ -44,6 +44,14 @@ namespace DM.Rendering
     )]
     private ViewportPoseVisibilityStore poseVisibility;
 
+    [Header("DTerm Geometry")]
+    [SerializeField]
+    [Tooltip(
+        "Occupancy-keyed verified wall states (same asset as ViewEdit). " +
+        "Overrides recipe X/Y/Mirror/Enabled/Graphic for matching geometry."
+    )]
+    private ViewportDTermStore dtermStore;
+
     [Header("Graphics Database")]
     [SerializeField] private DungeonGraphics graphics;
 
@@ -1881,6 +1889,9 @@ namespace DM.Rendering
           return false;
       }
 
+      if (TryGetDTermEntry(piece, out ViewportDTermEntry dtermEntry))
+        return dtermEntry.Enabled;
+
       return piece.Enabled;
     }
 
@@ -1940,6 +1951,22 @@ namespace DM.Rendering
     private void DrawStraightF1FrontWall(ViewportPiece frontPiece)
     {
       int width = StraightF1WallLogic.CompositeWidth;
+      int destX = 0;
+      int destY = frontPiece.EffectiveY + dungeonDrawOffsetY;
+      bool mirror = frontPiece.MirrorHorizontally;
+
+      if (TryGetDTermEntry(frontPiece, out ViewportDTermEntry dtermEntry))
+      {
+        destX = dtermEntry.X;
+        destY = dtermEntry.Y + dungeonDrawOffsetY;
+        mirror = dtermEntry.Mirror;
+        if (dtermEntry.FrontWallF1Width != 0)
+        {
+          width = StraightF1WallLogic.NormalizeFrontWallF1Width(
+              dtermEntry.FrontWallF1Width);
+        }
+      }
+
       Texture2D texture = graphics.GetFrontWallF1Texture(width);
 
       if (texture == null)
@@ -1959,10 +1986,6 @@ namespace DM.Rendering
         );
         return;
       }
-
-      int destX = 0;
-      int destY = frontPiece.EffectiveY + dungeonDrawOffsetY;
-      bool mirror = frontPiece.MirrorHorizontally;
 
       if (currentMap != null)
       {
@@ -2381,25 +2404,7 @@ namespace DM.Rendering
       }
 
       DungeonGraphicType drawGraphic = piece.Graphic;
-
-      // Normal Left/Right wall images use their authored source image and are
-      // not auto-mirrored. MirrorHorizontally remains available as an explicit
-      // manual/test override until a specific geometry case says otherwise.
-      Texture2D texture =
-          FrontWallF2Logic.IsFrontWallF2Graphic(drawGraphic)
-              ? graphics.GetFrontWallF2Texture(piece.FrontWallF2Width)
-              : graphics.GetTexture(drawGraphic);
-
-      if (texture == null)
-      {
-        Debug.LogWarning(
-            "DungeonRenderer: Missing texture for " +
-            piece.Graphic
-        );
-
-        return;
-      }
-
+      int frontF2Width = piece.FrontWallF2Width;
       bool mirror = GetEffectiveEnvironmentMirror(piece);
       int destX = piece.EffectiveX;
       int destY = piece.EffectiveY + dungeonDrawOffsetY;
@@ -2411,6 +2416,30 @@ namespace DM.Rendering
           destX = 0;
         else if (IsWallF0RightPiece(piece))
           destX = 191;
+      }
+
+      if (TryGetDTermEntry(piece, out ViewportDTermEntry dtermEntry))
+      {
+        drawGraphic = dtermEntry.Graphic;
+        frontF2Width = dtermEntry.FrontWallF2Width;
+        mirror = dtermEntry.Mirror;
+        destX = dtermEntry.X;
+        destY = dtermEntry.Y + dungeonDrawOffsetY;
+      }
+
+      Texture2D texture =
+          FrontWallF2Logic.IsFrontWallF2Graphic(drawGraphic)
+              ? graphics.GetFrontWallF2Texture(frontF2Width)
+              : graphics.GetTexture(drawGraphic);
+
+      if (texture == null)
+      {
+        Debug.LogWarning(
+            "DungeonRenderer: Missing texture for " +
+            piece.Graphic
+        );
+
+        return;
       }
 
       if (F3RightNarrowStripTest.ShouldReplace(piece.Graphic)
@@ -2453,8 +2482,8 @@ namespace DM.Rendering
         return;
       }
 
-      if (FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)
-          && FrontWallF2Logic.Normalize(piece.FrontWallF2Width)
+      if (FrontWallF2Logic.IsFrontWallF2Graphic(drawGraphic)
+          && FrontWallF2Logic.Normalize(frontF2Width)
               == FrontWallF2Logic.Width160
           && texture.width == FrontWallF2Logic.Width160)
       {
@@ -2521,7 +2550,20 @@ namespace DM.Rendering
       if (!ShouldDrawPiece(piece))
         return;
 
-      if (FrontWallF2Logic.Normalize(piece.FrontWallF2Width)
+      int f2Width = piece.FrontWallF2Width;
+      int destX = piece.EffectiveX;
+      int destY = piece.EffectiveY + dungeonDrawOffsetY;
+      bool mirror = GetEffectiveEnvironmentMirror(piece);
+
+      if (TryGetDTermEntry(piece, out ViewportDTermEntry dtermEntry))
+      {
+        f2Width = dtermEntry.FrontWallF2Width;
+        destX = dtermEntry.X;
+        destY = dtermEntry.Y + dungeonDrawOffsetY;
+        mirror = dtermEntry.Mirror;
+      }
+
+      if (FrontWallF2Logic.Normalize(f2Width)
           != FrontWallF2Logic.Width160)
       {
         return;
@@ -2537,9 +2579,9 @@ namespace DM.Rendering
           framePixels,
           viewWidth,
           viewHeight,
-          piece.EffectiveX,
-          piece.EffectiveY + dungeonDrawOffsetY,
-          GetEffectiveEnvironmentMirror(piece));
+          destX,
+          destY,
+          mirror);
     }
 
     /// <summary>
@@ -2553,6 +2595,39 @@ namespace DM.Rendering
         return false;
 
       return piece.MirrorHorizontally;
+    }
+
+    private void EnsureDTermStore()
+    {
+      if (dtermStore == null)
+        dtermStore = ViewportDTermStore.LoadDefault();
+    }
+
+    private bool TryGetDTermEntry(
+        ViewportPiece piece,
+        out ViewportDTermEntry entry)
+    {
+      entry = null;
+      if (piece == null
+          || string.IsNullOrEmpty(piece.Name)
+          || currentMap == null)
+      {
+        return false;
+      }
+
+      EnsureDTermStore();
+      if (dtermStore == null)
+        return false;
+
+      string geometryKey = ViewportDTermStore.BuildGeometryKey(
+          currentMap,
+          currentMap.PlayerX,
+          currentMap.PlayerY,
+          currentMap.PlayerFacing);
+      if (string.IsNullOrEmpty(geometryKey))
+        return false;
+
+      return dtermStore.TryGet(geometryKey, piece.Name, out entry);
     }
 
     private static bool IsWallF0LeftPiece(ViewportPiece piece)
