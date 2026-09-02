@@ -27,7 +27,7 @@ public sealed class Gauntlet2SpriteCaptureExtractorWindow : EditorWindow
     private readonly List<Candidate> candidates = new List<Candidate>();
     private Vector2 scroll;
 
-    [MenuItem("Tools/Gauntlet II/Sprite Capture Extractor")]
+    [MenuItem("Tools/Sprite Capture Extractor")]
     private static void Open() => GetWindow<Gauntlet2SpriteCaptureExtractorWindow>("Gauntlet II Extractor");
 
     private void OnDisable()
