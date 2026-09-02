@@ -3197,14 +3197,7 @@ public class ViewportLayoutEditor : EditorWindow
         + "\nF3: L=" + FormatRelativeViewportCellShort(geometry.F3Left)
         + "  C=" + FormatRelativeViewportCellShort(geometry.F3Center)
         + "  R=" + FormatRelativeViewportCellShort(geometry.F3Right)
-        + "\n" + frontDecision
-        + "\n\nCoordinates:"
-        + "\nF1L=" + FormatRelativeViewportCell(geometry.F1Left)
-        + "   F1C=" + FormatRelativeViewportCell(geometry.F1Center)
-        + "   F1R=" + FormatRelativeViewportCell(geometry.F1Right)
-        + "\nF2L=" + FormatRelativeViewportCell(geometry.F2Left)
-        + "   F2C=" + FormatRelativeViewportCell(geometry.F2Center)
-        + "   F2R=" + FormatRelativeViewportCell(geometry.F2Right);
+        + "\n" + frontDecision;
 
     EditorGUILayout.HelpBox(text, MessageType.None);
   }
