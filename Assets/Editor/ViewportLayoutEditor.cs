@@ -6257,19 +6257,6 @@ public class ViewportLayoutEditor : EditorWindow
         if (texture == null)
           continue;
 
-        if (F3RightNarrowStripTest.ShouldReplace(piece.Graphic)
-            && drawGraphic == DungeonGraphicType.WallF3R)
-        {
-          F3RightNarrowStripTest.BlitToBuffer(
-              texture,
-              pixels,
-              PreviewWidth,
-              PreviewHeight,
-              resolvedX,
-              resolvedY);
-          continue;
-        }
-
         if (D3R2NarrowWidthTest.ShouldReplace(piece.Graphic))
         {
           if (blackDoorObliqueRightD3Exception)
