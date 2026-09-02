@@ -125,7 +125,7 @@ MonoBehaviour:
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: LeftF2
@@ -158,14 +158,14 @@ MonoBehaviour:
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 192
     FrontWallF2Width: 106
   - Name: LeftF1
     Graphic: 5
     X: 0
     Y: 16
-    Enabled: 0
+    Enabled: 1
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
@@ -187,7 +187,7 @@ MonoBehaviour:
     Graphic: 3
     X: -5
     Y: 31
-    Enabled: 1
+    Enabled: 0
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
