@@ -1429,6 +1429,22 @@ public class ViewportLayoutEditor : EditorWindow
     else if (!isBlackDoorRightD3Exception)
     {
       piece.Enabled = enabledAfter;
+      if (IsWallF1RightPiece(piece) && enabledAfter != enabledBefore)
+      {
+        previewEnabledOverrideByPiece[piece] = enabledAfter;
+        if (resolvedNormalWallByPiece.TryGetValue(
+                piece, out ResolvedNormalWallState enabledState))
+        {
+          enabledState.Enabled = enabledAfter;
+          resolvedNormalWallByPiece[piece] = enabledState;
+        }
+        previewEnabledChangedThisFrame = true;
+        ResetEditModeViewportLogCache();
+        DestroyEditModePreviewTextureOnly();
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
     }
 
     bool effectiveEnabled = isBlackDoorRightD3Exception
@@ -3833,7 +3849,6 @@ public class ViewportLayoutEditor : EditorWindow
     {
       dtermStore.Remove(geometryKey, piece.Name);
       extraPieceDeterministicByName.Remove(piece.Name);
-      ApplyF1MinimapWallRecipe();
     }
 
     dtermStore.Persist();
@@ -4407,6 +4422,22 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     OverlayDTermOnResolvedWalls();
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (!IsWallF1RightPiece(piece))
+        continue;
+      if (!previewEnabledOverrideByPiece.TryGetValue(
+              piece, out bool manualEnabled))
+        continue;
+
+      resolvedNormalWallByPiece.TryGetValue(
+          piece, out ResolvedNormalWallState state);
+      state.Enabled = manualEnabled;
+      resolvedNormalWallByPiece[piece] = state;
+      piece.Enabled = manualEnabled;
+    }
   }
 
   /// <summary>

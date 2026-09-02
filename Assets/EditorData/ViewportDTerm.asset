@@ -104,11 +104,11 @@ MonoBehaviour:
     FrontWallF1Width: 0
     FrontWallF2Width: 0
   - GeometryKey: WW|OOW|WWW|WWW
-    PieceName: LeftF0
+    PieceName: RightF1
     Enabled: 1
-    Graphic: 3
-    X: 0
-    Y: 31
+    Graphic: 6
+    X: 165
+    Y: 48
     Mirror: 0
     FrontWallF1Width: 0
     FrontWallF2Width: 0
@@ -122,11 +122,20 @@ MonoBehaviour:
     FrontWallF1Width: 0
     FrontWallF2Width: 0
   - GeometryKey: WW|OOW|WWW|WWW
-    PieceName: RightF1
+    PieceName: LeftF0
     Enabled: 1
-    Graphic: 6
-    X: 165
-    Y: 48
+    Graphic: 3
+    X: 0
+    Y: 31
+    Mirror: 0
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: WW|OOW|WWW|WWW
+    PieceName: FrontF2
+    Enabled: 1
+    Graphic: 24
+    X: 0
+    Y: 75
     Mirror: 0
     FrontWallF1Width: 0
     FrontWallF2Width: 0
