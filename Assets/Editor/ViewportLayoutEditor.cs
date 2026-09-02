@@ -557,6 +557,7 @@ public class ViewportLayoutEditor : EditorWindow
 
       bool changed = false;
 
+      List<int> displayIndices = new List<int>();
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
         ViewportPiece piece = layout.Pieces[i];
@@ -566,6 +567,15 @@ public class ViewportLayoutEditor : EditorWindow
         if (!PieceMatchesSearchFilter(piece))
           continue;
 
+        displayIndices.Add(i);
+      }
+
+      displayIndices.Sort(CompareViewEditPieceDisplayOrder);
+
+      for (int n = 0; n < displayIndices.Count; n++)
+      {
+        int i = displayIndices[n];
+        ViewportPiece piece = layout.Pieces[i];
         bool isSelected = i == selectedPieceIndex;
         DrawPieceCard(i, piece, isSelected, ref changed);
       }
@@ -1347,6 +1357,102 @@ public class ViewportLayoutEditor : EditorWindow
         toggleRect.y + inset,
         toggleRect.width - inset * 2f,
         toggleRect.height - inset * 2f);
+  }
+
+  /// <summary>
+  /// ViewEdit card list only. Does not change layout.Pieces or draw order.
+  /// Front, then Left, then Right, then all remaining pieces in original order.
+  /// </summary>
+  private int CompareViewEditPieceDisplayOrder(int indexA, int indexB)
+  {
+    ViewportPiece pieceA = layout.Pieces[indexA];
+    ViewportPiece pieceB = layout.Pieces[indexB];
+    int groupA = GetViewEditDisplayFamilyGroup(pieceA);
+    int groupB = GetViewEditDisplayFamilyGroup(pieceB);
+    if (groupA != groupB)
+      return groupA.CompareTo(groupB);
+
+    int distanceA = GetViewEditDisplayDistanceOrder(pieceA);
+    int distanceB = GetViewEditDisplayDistanceOrder(pieceB);
+    if (distanceA != distanceB)
+      return distanceA.CompareTo(distanceB);
+
+    return indexA.CompareTo(indexB);
+  }
+
+  private static int GetViewEditDisplayFamilyGroup(ViewportPiece piece)
+  {
+    if (piece == null)
+      return 3;
+
+    if (IsFrontWallF1Card(piece)
+        || IsFrontWallF2Card(piece)
+        || IsFrontWallF3Card(piece))
+    {
+      return 0;
+    }
+
+    if (IsWallF0LeftPiece(piece)
+        || IsWallF1LeftPiece(piece)
+        || IsWallF2LeftPiece(piece)
+        || IsWallF3LeftPiece(piece)
+        || piece.Name == "LeftD3"
+        || piece.Name == "Wall D3L2")
+    {
+      return 1;
+    }
+
+    if (IsWallF0RightPiece(piece)
+        || IsWallF1RightPiece(piece)
+        || IsWallF2RightPiece(piece)
+        || IsWallF3RightPiece(piece)
+        || piece.Name == "RightD3"
+        || piece.Name == "Wall D3R2")
+    {
+      return 2;
+    }
+
+    return 3;
+  }
+
+  private static int GetViewEditDisplayDistanceOrder(ViewportPiece piece)
+  {
+    if (piece == null)
+      return 0;
+
+    if (IsFrontWallF1Card(piece)
+        || IsWallF0LeftPiece(piece)
+        || IsWallF0RightPiece(piece))
+    {
+      return 0;
+    }
+
+    if (IsFrontWallF2Card(piece)
+        || IsWallF1LeftPiece(piece)
+        || IsWallF1RightPiece(piece))
+    {
+      return 1;
+    }
+
+    if (IsFrontWallF3Card(piece)
+        || IsWallF2LeftPiece(piece)
+        || IsWallF2RightPiece(piece))
+    {
+      return 2;
+    }
+
+    if (IsWallF3LeftPiece(piece) || IsWallF3RightPiece(piece))
+      return 3;
+
+    if (piece.Name == "LeftD3"
+        || piece.Name == "Wall D3L2"
+        || piece.Name == "RightD3"
+        || piece.Name == "Wall D3R2")
+    {
+      return 4;
+    }
+
+    return 0;
   }
 
   private void DrawPieceCard(
