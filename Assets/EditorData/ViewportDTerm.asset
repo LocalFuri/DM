@@ -436,3 +436,57 @@ MonoBehaviour:
     Mirror: 0
     FrontWallF1Width: 0
     FrontWallF2Width: 0
+  - GeometryKey: WO|WOW|WOW|WOO
+    PieceName: LeftF0
+    Enabled: 1
+    Graphic: 3
+    X: 0
+    Y: 31
+    Mirror: 0
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: WO|WOW|WOW|WOO
+    PieceName: LeftF1
+    Enabled: 1
+    Graphic: 5
+    X: 0
+    Y: 47
+    Mirror: 0
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: WO|WOW|WOW|WOO
+    PieceName: LeftF2
+    Enabled: 1
+    Graphic: 7
+    X: 0
+    Y: 74
+    Mirror: 0
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: WO|WOW|WOW|WOO
+    PieceName: LeftF3
+    Enabled: 1
+    Graphic: 9
+    X: 5
+    Y: 91
+    Mirror: 0
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: WO|WOW|WOW|WOO
+    PieceName: RightF1
+    Enabled: 1
+    Graphic: 6
+    X: 164
+    Y: 47
+    Mirror: 0
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: WO|WOW|WOW|WOO
+    PieceName: RightF2
+    Enabled: 1
+    Graphic: 8
+    X: 146
+    Y: 75
+    Mirror: 0
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
