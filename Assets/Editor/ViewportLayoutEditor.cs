@@ -6272,8 +6272,8 @@ public class ViewportLayoutEditor : EditorWindow
               pixels,
               PreviewWidth,
               PreviewHeight,
-              piece.EffectiveX,
-              piece.EffectiveY);
+              resolvedX,
+              resolvedY);
           continue;
         }
 
