@@ -802,29 +802,7 @@ public class ViewportLayoutEditor : EditorWindow
       return f1CenterWall;
 
     if (IsFrontWallF2Card(piece))
-    {
-      if (previewX == 1
-          && previewY == 3
-          && previewFacing == DungeonFacing.North)
-      {
-        return false;
-      }
-
-      bool centerF2 = !f1CenterWall && f2CenterWall;
-      bool leftF1Open =
-          !TileIsWallOrOutside(f1X - rightX, f1Y - rightY);
-      bool leftF2Wall =
-          TileIsWallOrOutside(f2X - rightX, f2Y - rightY);
-      bool leftExposedF2 =
-          f1CenterWall && leftF1Open && leftF2Wall;
-      bool rightF1Open =
-          !TileIsWallOrOutside(f1X + rightX, f1Y + rightY);
-      bool rightF2Wall =
-          TileIsWallOrOutside(f2X + rightX, f2Y + rightY);
-      bool rightExposedF2 =
-          f1CenterWall && rightF1Open && rightF2Wall;
-      return centerF2 || leftExposedF2 || rightExposedF2;
-    }
+      return !f1CenterWall && f2CenterWall;
 
     if (IsFrontWallF3Card(piece))
     {
@@ -1815,7 +1793,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     int xBefore = editX;
     bool hasCanonicalRef = TryGetCanonicalReferenceXY(
-        piece.Name, out int canonicalRefX, out int canonicalRefY);
+        piece.Name, out canonicalRefX, out canonicalRefY);
     int pieceHeightForY = GetPieceHeightForEditorY(piece);
     int displayYForRef = UnityYToDisplayY(editUnityY, pieceHeightForY);
     bool xChanged = DrawIntStepper(
