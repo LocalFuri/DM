@@ -2420,9 +2420,8 @@ public class ViewportLayoutEditor : EditorWindow
     if (!s_viewEditGlobalNavDispatch && focusedWindow != this)
       return;
 
-    if (EditorGUIUtility.editingTextField)
-      return;
-
+    // Delete/PageDown are reserved ViewEdit turn keys. Do not let a stale
+    // TextField/DelayedIntField focus block direction changes.
     DungeonFacing nextFacing;
     KeyCode key = current.keyCode;
     switch (key)
@@ -2783,7 +2782,12 @@ public class ViewportLayoutEditor : EditorWindow
     if (Application.isPlaying)
       return;
 
-    if (IsEditorTextOrNumericInputActive())
+    // Arrow movement should still respect active text/numeric input, but
+    // Delete/PageDown are reserved for ViewEdit turning and must always pass.
+    bool isFacingKey =
+        current.keyCode == KeyCode.Delete
+        || current.keyCode == KeyCode.PageDown;
+    if (!isFacingKey && IsEditorTextOrNumericInputActive())
       return;
 
     ViewportLayoutEditor window = FindOpenViewEditWindow();
