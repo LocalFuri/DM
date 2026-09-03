@@ -4423,13 +4423,15 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// Deterministic FrontF1 mirror phase.
-  /// Reference map position (1,3) is Mirror OFF; each one-tile map move flips
-  /// the phase. Facing does not affect FrontF1.
+  /// Reference pose (1,3) South is Mirror OFF.
+  /// Moving one map tile OR turning 90 degrees flips the phase.
   /// </summary>
   private bool GetFrontF1MirrorFromPose()
   {
-    int referenceParity = (1 + 3) & 1;
-    int currentParity = (previewX + previewY) & 1;
+    int referenceParity =
+        (1 + 3 + (int)DungeonFacing.South) & 1;
+    int currentParity =
+        (previewX + previewY + (int)previewFacing) & 1;
 
     return currentParity != referenceParity;
   }
