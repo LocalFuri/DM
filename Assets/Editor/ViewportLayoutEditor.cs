@@ -1814,7 +1814,15 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     int xBefore = editX;
-    bool xChanged = DrawIntStepper("X", ref editX, snap);
+    bool hasCanonicalRef = TryGetCanonicalReferenceXY(
+        piece.Name, out int canonicalRefX, out int canonicalRefY);
+    int pieceHeightForY = GetPieceHeightForEditorY(piece);
+    int displayYForRef = UnityYToDisplayY(editUnityY, pieceHeightForY);
+    bool xChanged = DrawIntStepper(
+        "X",
+        ref editX,
+        snap,
+        hasCanonicalRef && editX != canonicalRefX);
     if (xChanged && editX != xBefore)
     {
       SelectPiece(index);
@@ -1839,7 +1847,11 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
     int yBefore = editUnityY;
-    bool yChanged = DrawTopDownYStepper(ref editUnityY, GetPieceHeightForEditorY(piece), snap);
+    bool yChanged = DrawTopDownYStepper(
+        ref editUnityY,
+        pieceHeightForY,
+        snap,
+        hasCanonicalRef && displayYForRef != canonicalRefY);
     if (yChanged && editUnityY != yBefore)
     {
       SelectPiece(index);
@@ -7026,11 +7038,41 @@ public class ViewportLayoutEditor : EditorWindow
     renderer.RequestRedraw();
   }
 
-  private static bool DrawIntStepper(string label, ref int value, int step)
+  private static int DrawDelayedIntFieldMaybeRed(
+      string label,
+      int value,
+      bool valueDiffersFromRef)
+  {
+    Color previousGuiColor = GUI.color;
+    Color previousContentColor = GUI.contentColor;
+    GUIStyle fieldStyle = EditorStyles.numberField;
+    if (valueDiffersFromRef)
+    {
+      fieldStyle = new GUIStyle(EditorStyles.numberField);
+      Color red = Color.red;
+      fieldStyle.normal.textColor = red;
+      fieldStyle.hover.textColor = red;
+      fieldStyle.focused.textColor = red;
+      fieldStyle.active.textColor = red;
+    }
+
+    int result = EditorGUILayout.DelayedIntField(
+        label, value, fieldStyle, GUILayout.Width(90f));
+    GUI.color = previousGuiColor;
+    GUI.contentColor = previousContentColor;
+    return result;
+  }
+
+  private static bool DrawIntStepper(
+      string label,
+      ref int value,
+      int step,
+      bool valueDiffersFromRef = false)
   {
     EditorGUILayout.BeginHorizontal();
     EditorGUI.BeginChangeCheck();
-    value = EditorGUILayout.DelayedIntField(label, value, GUILayout.Width(90f));
+    value = DrawDelayedIntFieldMaybeRed(
+        label, value, valueDiffersFromRef);
 
     bool changed = EditorGUI.EndChangeCheck();
 
@@ -7063,14 +7105,19 @@ public class ViewportLayoutEditor : EditorWindow
   /// Temporary normal-wall Y editor. The value is Unity bottom-origin, while
   /// ViewEdit displays GIMP/top-origin Y. No layout field is mutated.
   /// </summary>
-  private static bool DrawTopDownYStepper(ref int unityY, int pieceHeight, int step)
+  private static bool DrawTopDownYStepper(
+      ref int unityY,
+      int pieceHeight,
+      int step,
+      bool valueDiffersFromRef = false)
   {
     int oldUnityY = unityY;
     int displayY = UnityYToDisplayY(unityY, pieceHeight);
 
     EditorGUI.BeginChangeCheck();
     EditorGUILayout.BeginHorizontal();
-    displayY = EditorGUILayout.DelayedIntField("Y", displayY, GUILayout.Width(90f));
+    displayY = DrawDelayedIntFieldMaybeRed(
+        "Y", displayY, valueDiffersFromRef);
 
     if (GUILayout.Button($"-{step}", GUILayout.Width(36)))
       displayY -= step;
