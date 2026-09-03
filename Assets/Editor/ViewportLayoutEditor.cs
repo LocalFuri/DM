@@ -1490,6 +1490,12 @@ public class ViewportLayoutEditor : EditorWindow
   };
 
   /// <summary>
+  /// Runtime Adjust Ref overrides. Checked before the static table.
+  /// </summary>
+  private static readonly Dictionary<string, Vector2Int> CanonicalReferenceXYOverrides =
+      new Dictionary<string, Vector2Int>();
+
+  /// <summary>
   /// Read-only canonical ViewEdit X/Y by piece name. Display only.
   /// </summary>
   private static bool TryGetCanonicalReferenceXY(
@@ -1501,6 +1507,14 @@ public class ViewportLayoutEditor : EditorWindow
     y = 0;
     if (string.IsNullOrEmpty(pieceName))
       return false;
+
+    if (CanonicalReferenceXYOverrides.TryGetValue(
+            pieceName, out Vector2Int overridden))
+    {
+      x = overridden.x;
+      y = overridden.y;
+      return true;
+    }
 
     for (int i = 0; i < CanonicalReferenceXYByName.Length; i++)
     {
@@ -1517,6 +1531,14 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return false;
+  }
+
+  private static void SetCanonicalReferenceXY(string pieceName, int x, int y)
+  {
+    if (string.IsNullOrEmpty(pieceName))
+      return;
+
+    CanonicalReferenceXYOverrides[pieceName] = new Vector2Int(x, y);
   }
 
   private void DrawPieceCard(
@@ -2015,6 +2037,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (GUILayout.Button("Adjust Ref"))
     {
+      int refDisplayY =
+          UnityYToDisplayY(editUnityY, GetPieceHeightForEditorY(piece));
+      SetCanonicalReferenceXY(piece.Name, editX, refDisplayY);
+      Repaint();
     }
 
     if (GUILayout.Button("Solo"))
