@@ -4417,7 +4417,7 @@ public class ViewportLayoutEditor : EditorWindow
   /// Reference pose (1,3) South is Mirror OFF.
   /// Moving one map tile OR turning 90 degrees flips the phase.
   /// </summary>
-  private bool GetF0MirrorFromPose()
+  private bool GetSideWallMirrorFromPose()
   {
     int referenceParity =
         (1 + 3 + (int)DungeonFacing.South) & 1;
@@ -4425,6 +4425,11 @@ public class ViewportLayoutEditor : EditorWindow
         (previewX + previewY + (int)previewFacing) & 1;
 
     return currentParity != referenceParity;
+  }
+
+  private bool GetF0MirrorFromPose()
+  {
+    return GetSideWallMirrorFromPose();
   }
 
   /// <summary>
@@ -4684,9 +4689,6 @@ public class ViewportLayoutEditor : EditorWindow
               piece, out ResolvedNormalWallState f0State))
       {
         f0State.Mirror = f0Mirror;
-        f0State.X = IsWallF0LeftPiece(piece)
-            ? (f0Mirror ? 192 : 0)
-            : (f0Mirror ? 0 : 192);
         resolvedNormalWallByPiece[piece] = f0State;
       }
 
@@ -6397,15 +6399,16 @@ public class ViewportLayoutEditor : EditorWindow
           resolvedF1Width = resolvedWall.FrontF1Width;
         }
 
-        // F0 position/mirror are deterministic from the current map pose.
-        // Do not allow stale ViewEdit preview overrides or DTerm values to
-        // replace the final render state.
-        if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
+        // All normal Left/Right side-wall mirror phases are deterministic
+        // from the current pose, but mirror never changes geometric side.
+        // Left pieces keep their resolved left-side X; right pieces keep their
+        // resolved right-side X. Only the source pixels are mirrored.
+        if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece)
+            || IsWallF1LeftPiece(piece) || IsWallF1RightPiece(piece)
+            || IsWallF2LeftPiece(piece) || IsWallF2RightPiece(piece)
+            || IsWallF3LeftPiece(piece) || IsWallF3RightPiece(piece))
         {
-          mirror = GetF0MirrorFromPose();
-          resolvedX = IsWallF0LeftPiece(piece)
-              ? (mirror ? 192 : 0)
-              : (mirror ? 0 : 192);
+          mirror = GetSideWallMirrorFromPose();
         }
 
         // FrontF1 mirror is deterministic from map position. Do not allow a
