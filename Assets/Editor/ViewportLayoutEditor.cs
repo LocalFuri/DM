@@ -1077,7 +1077,8 @@ public class ViewportLayoutEditor : EditorWindow
     switch (family)
     {
       case "Front":
-        return name.StartsWith("FrontF", System.StringComparison.Ordinal);
+        return name.StartsWith("FrontF", System.StringComparison.Ordinal)
+            || name.StartsWith("Front Wall F", System.StringComparison.Ordinal);
       case "Left":
         return name.StartsWith("LeftF", System.StringComparison.Ordinal);
       case "Right":
