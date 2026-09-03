@@ -4404,6 +4404,21 @@ public class ViewportLayoutEditor : EditorWindow
         facing);
   }
 
+  /// <summary>
+  /// Deterministic F0 side-wall mirror phase.
+  /// Reference pose (1,3) South is Mirror OFF; each one-tile move or 90-degree
+  /// turn flips the phase. This is geometry/pose-derived and not stored per pose.
+  /// </summary>
+  private bool GetF0MirrorFromPose()
+  {
+    int referenceParity =
+        (1 + 3 + (int)DungeonFacing.South) & 1;
+    int currentParity =
+        (previewX + previewY + (int)previewFacing) & 1;
+
+    return currentParity != referenceParity;
+  }
+
   private void ApplyF1MinimapWallRecipe()
   {
     DisableAllWallRenderingPieces();
@@ -4434,6 +4449,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     bool leftF0 = g.F0Left.IsWall;
     bool rightF0 = g.F0Right.IsWall;
+    bool f0Mirror = GetF0MirrorFromPose();
 
     bool leftF1 =
         !g.F1Center.IsWall &&
@@ -4518,14 +4534,16 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsWallF0LeftPiece(piece))
       {
         enabled = leftF0;
-        x = 0;
+        x = f0Mirror ? 192 : 0;
         y = 31;
+        mirror = f0Mirror;
       }
       else if (IsWallF0RightPiece(piece))
       {
         enabled = rightF0;
-        x = 192;
+        x = f0Mirror ? 0 : 192;
         y = 31;
+        mirror = f0Mirror;
       }
       else if (IsWallF1LeftPiece(piece))
       {
@@ -4613,6 +4631,28 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     OverlayDTermOnResolvedWalls();
+
+    // F0 mirror is deterministic from the current pose, so a DTerm row must not
+    // freeze the mirror phase from the pose where that row was captured.
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null
+          || (!IsWallF0LeftPiece(piece) && !IsWallF0RightPiece(piece)))
+        continue;
+
+      if (resolvedNormalWallByPiece.TryGetValue(
+              piece, out ResolvedNormalWallState f0State))
+      {
+        f0State.Mirror = f0Mirror;
+        f0State.X = IsWallF0LeftPiece(piece)
+            ? (f0Mirror ? 192 : 0)
+            : (f0Mirror ? 0 : 192);
+        resolvedNormalWallByPiece[piece] = f0State;
+      }
+
+      piece.MirrorHorizontally = f0Mirror;
+    }
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -6847,16 +6887,17 @@ public class ViewportLayoutEditor : EditorWindow
   /// Preview-only mirror from the piece's authored MirrorHorizontally flag.
   /// Does not write the layout asset or apply pose phase overrides.
   /// </summary>
-  private static bool GetPreviewMirror(ViewportPiece piece, DungeonMap poseMap)
+  private bool GetPreviewMirror(ViewportPiece piece, DungeonMap poseMap)
   {
     if (piece == null)
       return false;
 
-    // All normal Left/Right wall source images are authoritative as imported.
-    // Never apply an automatic horizontal mirror to F0/F1/F2/F3 side pieces.
-    if (IsWallF0LeftPiece(piece)
-        || IsWallF0RightPiece(piece)
-        || IsWallF1LeftPiece(piece)
+    // F0 side walls use the deterministic pose phase. F1/F2/F3 keep their
+    // current imported orientation until their mirror rules are verified.
+    if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
+      return GetF0MirrorFromPose();
+
+    if (IsWallF1LeftPiece(piece)
         || IsWallF1RightPiece(piece)
         || IsWallF2LeftPiece(piece)
         || IsWallF2RightPiece(piece)
