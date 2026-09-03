@@ -1456,6 +1456,91 @@ public class ViewportLayoutEditor : EditorWindow
     return 0;
   }
 
+  /// <summary>
+  /// Read-only canonical ViewEdit X/Y by piece name. Display only.
+  /// One entry per wall piece. Null X/Y means not yet defined (Ref X/Y - / -).
+  /// </summary>
+  private static readonly (string Name, int? X, int? Y)[] CanonicalReferenceXYByName =
+  {
+    // Front
+    ("FrontF0", null, null),
+    ("FrontF1", 0, 42),
+    ("FrontF2", 0, 125),
+    ("FrontF3", 0, 58),
+    ("Front Wall F1", null, null),
+    ("Front Wall F2", null, null),
+    ("Front Wall F3", null, null),
+
+    // Left
+    ("LeftF0", 0, 33),
+    ("LeftF1", 0, 42),
+    ("LeftF2", 0, 52),
+    ("LeftF3", 5, 60),
+    ("Wall F0Left", null, null),
+    ("Wall F1Left", null, null),
+    ("Wall F2Left", null, null),
+    ("Wall F3Left", null, null),
+
+    // Right
+    ("RightF0", 192, 33),
+    ("RightF1", 165, 41),
+    ("RightF2", 147, 51),
+    ("RightF3", 136, 60),
+    ("Wall F0Right", null, null),
+    ("Wall F1Right", null, null),
+    ("Wall F2Right", null, null),
+    ("Wall F3Right", null, null),
+
+    // LeftD3
+    ("LeftD3", null, null),
+    ("Wall D3L2", null, null),
+
+    // RightD3
+    ("RightD3", null, null),
+    ("Wall D3R2", null, null),
+
+    // Black Door
+    ("BlackDoorF1", null, null),
+    ("BlackDoorF2", null, null),
+    ("BlackDoorF3", null, null),
+    ("Black Door Frame Left F1", null, null),
+    ("Black Door Frame Left F2", null, null),
+    ("Black Door Frame Left F3", null, null),
+    ("Black Door Frame Right F1", null, null),
+    ("Black Door Frame Right F2", null, null),
+    ("Black Door Frame Right F3", null, null),
+  };
+
+  /// <summary>
+  /// Read-only canonical ViewEdit X/Y by piece name. Display only.
+  /// </summary>
+  private static bool TryGetCanonicalReferenceXY(
+      string pieceName,
+      out int x,
+      out int y)
+  {
+    x = 0;
+    y = 0;
+    if (string.IsNullOrEmpty(pieceName))
+      return false;
+
+    for (int i = 0; i < CanonicalReferenceXYByName.Length; i++)
+    {
+      (string Name, int? X, int? Y) entry = CanonicalReferenceXYByName[i];
+      if (entry.Name != pieceName)
+        continue;
+
+      if (!entry.X.HasValue || !entry.Y.HasValue)
+        return false;
+
+      x = entry.X.Value;
+      y = entry.Y.Value;
+      return true;
+    }
+
+    return false;
+  }
+
   private void DrawPieceCard(
       int index,
       ViewportPiece piece,
@@ -1619,7 +1704,19 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.EndHorizontal();
 
     EditorGUI.BeginChangeCheck();
+    EditorGUILayout.BeginHorizontal();
     piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup("Graphic", piece.Graphic);
+    if (TryGetCanonicalReferenceXY(piece.Name, out int canonicalRefX, out int canonicalRefY))
+    {
+      EditorGUILayout.LabelField(
+          $"Ref X/Y {canonicalRefX} / {canonicalRefY}",
+          GUILayout.ExpandWidth(false));
+    }
+    else
+    {
+      EditorGUILayout.LabelField("Ref X/Y - / -", GUILayout.ExpandWidth(false));
+    }
+    EditorGUILayout.EndHorizontal();
     if (EditorGUI.EndChangeCheck() || nameOrEnabledChanged)
     {
       SelectPiece(index);
