@@ -230,6 +230,10 @@ public class ViewportLayoutEditor : EditorWindow
   // TEMP F3 diagnostics — remove after verification.
   private static string lastLoggedFrontWallF3EditDrawKey;
 
+  // TEMP F0 mirror diagnostic — remove after strafe/forward verification.
+  private static string lastLoggedF0MirrorDiagnosticKey;
+  private static string lastLoggedF0DrawDiagnosticKey;
+
   // Temporary 320×200 presentation (restored on close / Play Mode).
   private bool presentationOverrideActive;
   private bool canvasScalerStateSaved;
@@ -4406,15 +4410,26 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// Deterministic F0 side-wall mirror phase.
-  /// Reference pose (1,3) South is Mirror OFF; each one-tile move or 90-degree
-  /// turn flips the phase. This is geometry/pose-derived and not stored per pose.
+  /// Reference map position (1,3) is Mirror OFF; each one-tile map move flips
+  /// the phase. Facing does not affect the F0 brick phase.
   /// </summary>
   private bool GetF0MirrorFromPose()
   {
-    int referenceParity =
-        (1 + 3 + (int)DungeonFacing.South) & 1;
-    int currentParity =
-        (previewX + previewY + (int)previewFacing) & 1;
+    int referenceParity = (1 + 3) & 1;
+    int currentParity = (previewX + previewY) & 1;
+
+    return currentParity != referenceParity;
+  }
+
+  /// <summary>
+  /// Deterministic FrontF1 mirror phase.
+  /// Reference map position (1,3) is Mirror OFF; each one-tile map move flips
+  /// the phase. Facing does not affect FrontF1.
+  /// </summary>
+  private bool GetFrontF1MirrorFromPose()
+  {
+    int referenceParity = (1 + 3) & 1;
+    int currentParity = (previewX + previewY) & 1;
 
     return currentParity != referenceParity;
   }
@@ -4450,6 +4465,22 @@ public class ViewportLayoutEditor : EditorWindow
     bool leftF0 = g.F0Left.IsWall;
     bool rightF0 = g.F0Right.IsWall;
     bool f0Mirror = GetF0MirrorFromPose();
+    bool frontF1Mirror = GetFrontF1MirrorFromPose();
+
+    string f0MirrorDiagnosticKey =
+        previewX + "," + previewY + "," + previewFacing + "," + f0Mirror;
+    if (lastLoggedF0MirrorDiagnosticKey != f0MirrorDiagnosticKey)
+    {
+      lastLoggedF0MirrorDiagnosticKey = f0MirrorDiagnosticKey;
+      int leftF0X = f0Mirror ? 192 : 0;
+      int rightF0X = f0Mirror ? 0 : 192;
+      Debug.Log(
+          "F0 MIRROR | "
+          + previewX + "," + previewY + " " + previewFacing.ToString().ToUpperInvariant()
+          + " | mirror=" + (f0Mirror ? "ON" : "OFF")
+          + " | LeftX=" + leftF0X
+          + " | RightX=" + rightF0X);
+    }
 
     bool leftF1 =
         !g.F1Center.IsWall &&
@@ -4507,7 +4538,7 @@ public class ViewportLayoutEditor : EditorWindow
         x = 0;
         // Display Y 42 -> Unity Y 47 (FrontF1 height 111).
         y = 47;
-        mirror = frontMirror;
+        mirror = frontF1Mirror;
         frontF1Width = StraightF1WallLogic.CompositeWidth;
       }
       else if (IsFrontWallF2Card(piece))
@@ -4652,6 +4683,24 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       piece.MirrorHorizontally = f0Mirror;
+    }
+
+    // FrontF1 mirror is deterministic from the current map pose. DTerm may
+    // still supply Enabled/Graphic/X/Y/width, but it must not freeze Mirror.
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null || !IsFrontWallF1Card(piece))
+        continue;
+
+      if (resolvedNormalWallByPiece.TryGetValue(
+              piece, out ResolvedNormalWallState frontF1State))
+      {
+        frontF1State.Mirror = frontF1Mirror;
+        resolvedNormalWallByPiece[piece] = frontF1State;
+      }
+
+      piece.MirrorHorizontally = frontF1Mirror;
     }
 
     for (int i = 0; i < layout.Pieces.Count; i++)
@@ -6338,6 +6387,43 @@ public class ViewportLayoutEditor : EditorWindow
             resolvedY = previewPosition.y;
           }
           resolvedF1Width = resolvedWall.FrontF1Width;
+        }
+
+        // F0 position/mirror are deterministic from the current map pose.
+        // Do not allow stale ViewEdit preview overrides or DTerm values to
+        // replace the final render state.
+        if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
+        {
+          mirror = GetF0MirrorFromPose();
+          resolvedX = IsWallF0LeftPiece(piece)
+              ? (mirror ? 192 : 0)
+              : (mirror ? 0 : 192);
+        }
+
+        // FrontF1 mirror is deterministic from map position. Do not allow a
+        // stale ViewEdit mirror override or DTerm mirror to replace it.
+        if (IsFrontWallF1Card(piece))
+          mirror = GetFrontF1MirrorFromPose();
+
+        if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
+        {
+          string f0DrawDiagnosticKey =
+              previewX + "," + previewY + "," + previewFacing
+              + "|" + piece.Name
+              + "|" + resolvedX
+              + "|" + resolvedY
+              + "|" + mirror;
+          if (lastLoggedF0DrawDiagnosticKey != f0DrawDiagnosticKey)
+          {
+            lastLoggedF0DrawDiagnosticKey = f0DrawDiagnosticKey;
+            Debug.Log(
+                "F0 DRAW | "
+                + previewX + "," + previewY + " " + previewFacing.ToString().ToUpperInvariant()
+                + " | " + piece.Name
+                + " | X=" + resolvedX
+                + " | Y=" + resolvedY
+                + " | mirror=" + (mirror ? "ON" : "OFF"));
+          }
         }
 
         if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
