@@ -2013,30 +2013,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
     EditorGUILayout.BeginHorizontal();
 
-    using (new EditorGUI.DisabledScope(index <= 0))
+    if (GUILayout.Button("Adjust Ref"))
     {
-      if (GUILayout.Button("Move Up"))
-      {
-        SwapPieces(index, index - 1);
-        if (selectedPieceIndex == index)
-          SelectPiece(index - 1);
-        else if (selectedPieceIndex == index - 1)
-          SelectPiece(index);
-        changed = true;
-      }
-    }
-
-    using (new EditorGUI.DisabledScope(index >= layout.Pieces.Count - 1))
-    {
-      if (GUILayout.Button("Move Down"))
-      {
-        SwapPieces(index, index + 1);
-        if (selectedPieceIndex == index)
-          SelectPiece(index + 1);
-        else if (selectedPieceIndex == index + 1)
-          SelectPiece(index);
-        changed = true;
-      }
     }
 
     if (GUILayout.Button("Solo"))
