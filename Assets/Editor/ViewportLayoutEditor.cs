@@ -47,7 +47,6 @@ public class ViewportLayoutEditor : EditorWindow
     "RightD3",
     "Black Door",
     "Active",
-    "DTerm active",
   };
 
   /// <summary>
@@ -90,8 +89,6 @@ public class ViewportLayoutEditor : EditorWindow
   private ViewportLayout layout;
   [System.NonSerialized]
   private DungeonGraphics graphics;
-  [System.NonSerialized]
-  private ViewportDTermStore dtermStore;
   private Vector2 editorScroll;
   private bool scrollToBottomOnNextRepaint;
   private int lastPlayModeScrollX = int.MinValue;
@@ -107,8 +104,6 @@ public class ViewportLayoutEditor : EditorWindow
   private GUIStyle pieceFamilyHeaderStyle;
   private bool[] rememberedEnabledStates;
   private int snap = 1;
-  private readonly Dictionary<string, bool> extraPieceDeterministicByName =
-      new Dictionary<string, bool>();
 
   private bool hookedViewEditGlobalNavigation;
 
@@ -209,7 +204,7 @@ public class ViewportLayoutEditor : EditorWindow
       new Dictionary<ViewportPiece, Vector2Int>();
 
   // ViewEdit-only Enabled override for exception pieces. This lets the user hide
-  // an automatically active DTerm exception without fighting the exception rule.
+  // an automatically active exception without fighting the exception rule.
   private readonly Dictionary<ViewportPiece, bool> previewEnabledOverrideByPiece =
       new Dictionary<ViewportPiece, bool>();
   private bool previewMirrorChangedThisFrame;
@@ -982,9 +977,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     string selectedFamily =
         PieceSearchFamilyOptions[pieceSearchFamilyIndex];
-    if (selectedFamily == "DTerm active")
-      return piece.Enabled && GetPieceDeterministic(piece);
-
     return PieceMatchesSearchFamily(piece, selectedFamily);
   }
 
@@ -1012,9 +1004,6 @@ public class ViewportLayoutEditor : EditorWindow
   {
     if (piece == null || !piece.Enabled || IsFloorOrCeiling(piece))
       return false;
-
-    if (ShouldDrawNonDTermStatus(piece))
-      return true;
 
     DungeonGraphicType graphic = piece.Graphic;
     if (graphic == DungeonGraphicType.FrontWallF1
@@ -1203,8 +1192,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private static bool IsPermanentSearchFamily(string family)
   {
-    return family == "DTerm active"
-        || family == "Arrows"
+    return family == "Arrows"
         || family == "Champion Slot 1"
         || family == "Champion Slot 2"
         || family == "Champion Slot 3"
@@ -1272,17 +1260,12 @@ public class ViewportLayoutEditor : EditorWindow
 
     Event current = Event.current;
     bool isMirror = label == "Mirror" || label == "Mirror Horizontally";
-    bool isStatusOnly = label == "Non-DTerm";
     if (current != null
         && current.type == EventType.MouseDown
         && current.button == 0
         && toggleRect.Contains(current.mousePosition))
     {
-      if (isStatusOnly)
-      {
-        current.Use();
-      }
-      else if (!isMirror || pieceEnabled)
+      if (!isMirror || pieceEnabled)
       {
         value = !value;
         GUI.changed = true;
@@ -1290,7 +1273,7 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    // Shared Unity checkbox chrome for all three types. Colored fills are
+    // Shared Unity checkbox chrome. Colored fills are
     // inset so they cannot cover the PrefixLabel or change hit-testing.
     GUI.Toggle(toggleRect, false, GUIContent.none, EditorStyles.toggle);
 
@@ -1298,20 +1281,10 @@ public class ViewportLayoutEditor : EditorWindow
     bool showChecked = value;
     if (isMirror && !pieceEnabled)
       showChecked = false;
-    if (pieceEnabled && showChecked && label == "DTerm")
-    {
-      EditorGUI.DrawRect(InsetToggleFillRect(toggleRect), new Color(1f, 210f / 255f, 0f));
-      checkColor = Color.black;
-    }
-    else if (pieceEnabled && showChecked && isMirror)
+    if (pieceEnabled && showChecked && isMirror)
     {
       EditorGUI.DrawRect(InsetToggleFillRect(toggleRect), new Color(1f, 140f / 255f, 0f));
       checkColor = Color.black;
-    }
-    else if (showChecked && isStatusOnly)
-    {
-      EditorGUI.DrawRect(InsetToggleFillRect(toggleRect), Color.red);
-      checkColor = Color.yellow;
     }
 
     if (showChecked)
@@ -1511,12 +1484,12 @@ public class ViewportLayoutEditor : EditorWindow
   {
     ("LeftF0", 192),
     ("LeftF1", 0),
-    ("LeftF2", 147),
+    ("LeftF2", 0),
     ("LeftF3", 136),
     ("RightF0", 0),
     ("RightF1", 0),
-    ("RightF2", 0),
-    ("RightF3", 5),
+    ("RightF2", 147),
+    ("RightF3", 136),
   };
 
   /// <summary>
@@ -1668,15 +1641,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null || string.IsNullOrEmpty(piece.Name))
       return false;
 
-    if (!TryGetCanonicalReferenceXY(piece.Name, out x, out y))
-      return false;
-
-    if (mirror
-        && TryGetSideWallCanonicalName(piece, out _)
-        && TryGetMirroredReferenceX(piece, out int mirroredX))
-      x = mirroredX;
-
-    return true;
+    return TryGetCanonicalReferenceXY(piece.Name, out x, out y);
   }
 
   private static void SetActiveCanonicalReferenceXY(
@@ -1687,14 +1652,6 @@ public class ViewportLayoutEditor : EditorWindow
   {
     if (piece == null || string.IsNullOrEmpty(piece.Name))
       return;
-
-    if (mirror && TryGetSideWallCanonicalName(piece, out _))
-    {
-      CanonicalMirroredReferenceXOverrides[piece.Name] = x;
-      if (TryGetCanonicalReferenceXY(piece.Name, out int existingX, out _))
-        SetCanonicalReferenceXY(piece.Name, existingX, y);
-      return;
-    }
 
     SetCanonicalReferenceXY(piece.Name, x, y);
   }
@@ -1779,6 +1736,21 @@ public class ViewportLayoutEditor : EditorWindow
     else if (!isBlackDoorRightD3Exception)
     {
       piece.Enabled = enabledAfter;
+      if (IsWallF0LeftPiece(piece) && enabledAfter != enabledBefore)
+      {
+        if (resolvedNormalWallByPiece.TryGetValue(
+                piece, out ResolvedNormalWallState leftF0EnabledState))
+        {
+          leftF0EnabledState.Enabled = enabledAfter;
+          resolvedNormalWallByPiece[piece] = leftF0EnabledState;
+        }
+
+        ResetEditModeViewportLogCache();
+        DestroyEditModePreviewTextureOnly();
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
       if (IsWallF1RightPiece(piece) && enabledAfter != enabledBefore)
       {
         previewEnabledOverrideByPiece[piece] = enabledAfter;
@@ -1801,29 +1773,6 @@ public class ViewportLayoutEditor : EditorWindow
         ? enabledAfter
         : piece.Enabled;
 
-    GUILayout.Space(ToggleGroupGap);
-    const string DeterministicLabel = "DTerm";
-    float deterministicLabelWidth =
-        EditorStyles.label.CalcSize(new GUIContent(DeterministicLabel)).x;
-    EditorGUIUtility.labelWidth = deterministicLabelWidth;
-    bool deterministicBefore = GetPieceDeterministic(piece);
-    bool deterministic = DrawMouseOnlyToggle(
-        DeterministicLabel,
-        deterministicBefore,
-        effectiveEnabled,
-        GUILayout.Width(deterministicLabelWidth + ToggleBoxWidth),
-        GUILayout.ExpandWidth(false));
-    // Black Door RightD3 stays DTerm-on even if the temporary Enabled preview
-    // is off. Normal-wall DTerm is store-backed: never force it off just
-    // because Enabled is false during a redraw, or the persisted row is lost.
-    if (isBlackDoorRightD3Exception)
-      deterministic = true;
-    if (deterministic != deterministicBefore)
-    {
-      SetPieceDeterministic(piece, deterministic);
-      changed = true;
-    }
-
     // Normal-wall Mirror is a temporary ViewEdit override only. Geometry remains
     // authoritative and the override is discarded as soon as the preview pose
     // changes. Non-normal pieces retain their existing authored behavior.
@@ -1844,24 +1793,10 @@ public class ViewportLayoutEditor : EditorWindow
         effectiveEnabled,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
-    if (ShouldDrawNonDTermStatus(piece))
-    {
-      GUILayout.Space(ToggleGroupGap);
-      const string NonDTermLabel = "Non-DTerm";
-      float nonDTermLabelWidth =
-          EditorStyles.label.CalcSize(new GUIContent(NonDTermLabel)).x;
-      EditorGUIUtility.labelWidth = nonDTermLabelWidth;
-      DrawMouseOnlyToggle(
-          NonDTermLabel,
-          effectiveEnabled && !deterministic,
-          effectiveEnabled,
-          GUILayout.Width(nonDTermLabelWidth + ToggleBoxWidth),
-          GUILayout.ExpandWidth(false));
-    }
+    EditorGUIUtility.labelWidth = previousLabelWidth;
     GUILayout.Space(ToggleGroupGap);
     bool overrideClicked = GUILayout.Button(
         "Override", GUILayout.Width(70f), GUILayout.ExpandWidth(false));
-    EditorGUIUtility.labelWidth = previousLabelWidth;
     EditorGUILayout.EndHorizontal();
 
     EditorGUI.BeginChangeCheck();
@@ -1882,7 +1817,6 @@ public class ViewportLayoutEditor : EditorWindow
     if (EditorGUI.EndChangeCheck() || nameOrEnabledChanged)
     {
       SelectPiece(index);
-      RecaptureDTermIfVerified(piece);
       changed = true;
     }
 
@@ -1907,14 +1841,12 @@ public class ViewportLayoutEditor : EditorWindow
           MessageType.None);
     }
 
-    bool mirrorChangedThisFrame = false;
     if (mirrorAfter != mirrorBefore)
     {
       if (normalWallMirrorPreview)
       {
         previewMirrorOverrideByPiece[piece] = mirrorAfter;
         previewMirrorChangedThisFrame = true;
-        mirrorChangedThisFrame = true;
         ResetEditModeViewportLogCache();
         DestroyEditModePreviewTextureOnly();
         RefreshEditModePreview();
@@ -1976,38 +1908,6 @@ public class ViewportLayoutEditor : EditorWindow
       editUnityY = previewPosition.y;
     }
 
-    if (mirrorAfter
-        && TryGetSideWallCanonicalName(piece, out string sideWallName)
-        && TryGetMirroredReferenceX(piece, out int mirroredRefX))
-    {
-      bool hasPositionOverride =
-          previewPositionOverrideByPiece.TryGetValue(
-              piece, out Vector2Int existingOverride);
-      if (mirrorChangedThisFrame || !hasPositionOverride)
-      {
-        editX = mirroredRefX;
-
-        if (TryGetCanonicalReferenceXY(piece.Name, out _, out int normalRefY)
-            || TryGetCanonicalReferenceXY(sideWallName, out _, out normalRefY))
-        {
-          editUnityY = DisplayYToUnityY(
-              normalRefY, GetPieceHeightForEditorY(piece));
-        }
-
-        Vector2Int mirroredPosition = new Vector2Int(editX, editUnityY);
-
-        if (!hasPositionOverride || existingOverride != mirroredPosition)
-        {
-          previewPositionOverrideByPiece[piece] = mirroredPosition;
-          previewPositionChangedThisFrame = true;
-          RefreshTemporaryNormalWallPreview();
-        }
-      }
-    }
-
-    if (mirrorChangedThisFrame)
-      RecaptureDTermIfVerified(piece);
-
     int xBefore = editX;
     bool hasCanonicalRef = TryGetActiveCanonicalReferenceXY(
         piece, mirrorAfter, out canonicalRefX, out canonicalRefY);
@@ -2025,7 +1925,6 @@ public class ViewportLayoutEditor : EditorWindow
       {
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
         previewPositionChangedThisFrame = true;
-        RecaptureDTermIfVerified(piece);
         RefreshTemporaryNormalWallPreview();
       }
       else
@@ -2054,7 +1953,6 @@ public class ViewportLayoutEditor : EditorWindow
       {
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
         previewPositionChangedThisFrame = true;
-        RecaptureDTermIfVerified(piece);
         RefreshTemporaryNormalWallPreview();
       }
       else
@@ -3182,8 +3080,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (graphics != null)
       SaveAssetGuid(PrefsGraphicsGuidKey, graphics);
-
-    EnsureDTermStore();
   }
 
   /// <summary>
@@ -4105,28 +4001,6 @@ public class ViewportLayoutEditor : EditorWindow
         || piece.Name == "Ceiling";
   }
 
-  private static bool ShouldDrawNonDTermStatus(ViewportPiece piece)
-  {
-    if (piece == null || IsFloorOrCeiling(piece))
-      return false;
-
-    return IsWallF0LeftPiece(piece)
-        || IsWallF0RightPiece(piece)
-        || IsWallF1LeftPiece(piece)
-        || IsWallF1RightPiece(piece)
-        || IsWallF2LeftPiece(piece)
-        || IsWallF2RightPiece(piece)
-        || IsWallF3LeftPiece(piece)
-        || IsWallF3RightPiece(piece)
-        || IsFrontWallF1Card(piece)
-        || IsFrontWallF2Card(piece)
-        || IsFrontWallF3Card(piece)
-        || piece.Graphic == DungeonGraphicType.WallD3L2
-        || piece.Graphic == DungeonGraphicType.WallD3R2
-        || piece.Name == "LeftD3"
-        || piece.Name == "RightD3";
-  }
-
   private void PersistChanges()
   {
     if (Application.isPlaying || layout == null)
@@ -4185,209 +4059,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     return piece.Name == "FrontF3"
         || piece.Name == "Front Wall F3";
-  }
-
-  private bool GetPieceDeterministic(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    // DTerm marks the active exception layer. Check this before piece.Enabled:
-    // the Black Door oblique RightD3 is rendered through an exception bypass,
-    // so its normal Enabled flag can be false while it is still visible.
-    if (IsBlackDoorObliqueRightD3PoseException(piece))
-      return true;
-
-    string geometryKey = GetCurrentGeometryKey();
-    if (!string.IsNullOrEmpty(geometryKey)
-        && piece.Name != null
-        && EnsureDTermStore()
-        && dtermStore.HasEntry(geometryKey, piece.Name))
-    {
-      return true;
-    }
-
-    // Normal walls: checked means a persisted GeometryKey+PieceName row exists.
-    // Session flags must not make DTerm look verified without that row.
-    if (IsNormalWallPiece(piece))
-      return false;
-
-    string key = piece.Name != null ? piece.Name : string.Empty;
-    if (extraPieceDeterministicByName.TryGetValue(key, out bool value))
-      return value;
-    return false;
-  }
-
-  private void SetPieceDeterministic(ViewportPiece piece, bool value)
-  {
-    if (piece == null)
-      return;
-
-    if (IsBlackDoorObliqueRightD3PoseException(piece))
-      return;
-
-    bool isNormalWall = IsNormalWallPiece(piece);
-    string geometryKey = GetCurrentGeometryKey();
-    if (string.IsNullOrEmpty(geometryKey) || string.IsNullOrEmpty(piece.Name))
-    {
-      if (!isNormalWall)
-        extraPieceDeterministicByName[piece.Name ?? string.Empty] = value;
-      return;
-    }
-
-    if (!EnsureDTermStore())
-      return;
-
-    if (value)
-    {
-      dtermStore.Upsert(CaptureDTermEntry(piece, geometryKey));
-      OverlayDTermOnResolvedWalls();
-    }
-    else
-    {
-      dtermStore.Remove(geometryKey, piece.Name);
-      extraPieceDeterministicByName.Remove(piece.Name);
-    }
-
-    dtermStore.Persist();
-    RefreshEditModePreview();
-    Repaint();
-  }
-
-  private bool EnsureDTermStore()
-  {
-    if (dtermStore == null)
-      dtermStore = ViewportDTermStore.LoadDefault();
-    return dtermStore != null;
-  }
-
-  private string GetCurrentGeometryKey()
-  {
-    EnsurePreviewMiniMapLoaded();
-    return ViewportDTermStore.BuildGeometryKey(
-        previewMiniMap,
-        previewX,
-        previewY,
-        previewFacing);
-  }
-
-  private ViewportDTermEntry CaptureDTermEntry(
-      ViewportPiece piece,
-      string geometryKey)
-  {
-    bool enabled = piece.Enabled;
-    DungeonGraphicType graphic = piece.Graphic;
-    int x = piece.X;
-    int y = piece.Y;
-    bool mirror = piece.MirrorHorizontally;
-    int frontF1Width = piece.FrontWallF1Width;
-    int frontF2Width = piece.FrontWallF2Width;
-
-    if (TryGetResolvedNormalWallState(
-            piece,
-            out ResolvedNormalWallState resolved))
-    {
-      enabled = resolved.Enabled;
-      graphic = resolved.Graphic;
-      x = resolved.X;
-      y = resolved.Y;
-      mirror = resolved.Mirror;
-      frontF1Width = resolved.FrontF1Width;
-      frontF2Width = resolved.FrontF2Width;
-    }
-
-    if (previewEnabledOverrideByPiece.TryGetValue(
-            piece,
-            out bool enabledOverride))
-      enabled = enabledOverride;
-
-    if (previewPositionOverrideByPiece.TryGetValue(
-            piece,
-            out Vector2Int previewPosition))
-    {
-      x = previewPosition.x;
-      y = previewPosition.y;
-    }
-
-    if (previewMirrorOverrideByPiece.TryGetValue(
-            piece,
-            out bool mirrorOverride))
-      mirror = mirrorOverride;
-
-    return new ViewportDTermEntry
-    {
-      GeometryKey = geometryKey,
-      PieceName = piece.Name,
-      Enabled = enabled,
-      Graphic = graphic,
-      X = x,
-      Y = y,
-      Mirror = mirror,
-      FrontWallF1Width = frontF1Width,
-      FrontWallF2Width = frontF2Width
-    };
-  }
-
-  private void OverlayDTermOnResolvedWalls()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    if (!EnsureDTermStore())
-      return;
-
-    string geometryKey = GetCurrentGeometryKey();
-    if (string.IsNullOrEmpty(geometryKey))
-      return;
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null || string.IsNullOrEmpty(piece.Name))
-        continue;
-
-      if (!dtermStore.TryGet(
-              geometryKey,
-              piece.Name,
-              out ViewportDTermEntry entry))
-      {
-        continue;
-      }
-
-      resolvedNormalWallByPiece.TryGetValue(
-          piece,
-          out ResolvedNormalWallState state);
-      state.Enabled = entry.Enabled;
-      state.Graphic = entry.Graphic;
-      state.X = entry.X;
-      state.Y = entry.Y;
-      state.Mirror = entry.Mirror;
-      state.FrontF1Width = entry.FrontWallF1Width;
-      state.FrontF2Width = entry.FrontWallF2Width;
-      resolvedNormalWallByPiece[piece] = state;
-      piece.Enabled = entry.Enabled;
-      piece.MirrorHorizontally = entry.Mirror;
-    }
-  }
-
-  private void RecaptureDTermIfVerified(ViewportPiece piece)
-  {
-    if (piece == null || string.IsNullOrEmpty(piece.Name))
-      return;
-
-    if (IsBlackDoorObliqueRightD3PoseException(piece))
-      return;
-
-    if (!GetPieceDeterministic(piece))
-      return;
-
-    string geometryKey = GetCurrentGeometryKey();
-    if (string.IsNullOrEmpty(geometryKey) || !EnsureDTermStore())
-      return;
-
-    dtermStore.Upsert(CaptureDTermEntry(piece, geometryKey));
-    OverlayDTermOnResolvedWalls();
-    dtermStore.Persist();
   }
 
   private static bool IsPoseOffsetCard(ViewportPiece piece)
@@ -4777,84 +4448,130 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsWallF0LeftPiece(piece))
       {
         enabled = leftF0;
-        x = f0Mirror ? 192 : 0;
-        y = 31;
-        mirror = f0Mirror;
+        mirror = GetSideWallMirrorFromPose();
+        if (TryGetActiveCanonicalReferenceXY(
+                piece, mirror, out int leftF0RefX, out int leftF0RefY))
+        {
+          x = leftF0RefX;
+          y = DisplayYToUnityY(leftF0RefY, GetPieceHeightForEditorY(piece));
+        }
+        else
+        {
+          x = 0;
+          y = DisplayYToUnityY(33, GetPieceHeightForEditorY(piece));
+        }
       }
       else if (IsWallF0RightPiece(piece))
       {
         enabled = rightF0;
-        x = f0Mirror ? 0 : 192;
-        y = 31;
-        mirror = f0Mirror;
+        mirror = GetSideWallMirrorFromPose();
+        if (TryGetActiveCanonicalReferenceXY(
+                piece, mirror, out int rightF0RefX, out int rightF0RefY))
+        {
+          x = rightF0RefX;
+          y = DisplayYToUnityY(rightF0RefY, GetPieceHeightForEditorY(piece));
+        }
+        else
+        {
+          x = 192;
+          y = DisplayYToUnityY(33, GetPieceHeightForEditorY(piece));
+        }
       }
       else if (IsWallF1LeftPiece(piece))
       {
         enabled = leftF1;
         mirror = GetSideWallMirrorFromPose();
-        if (frontF2WithF1Sides)
+
+        if (TryGetActiveCanonicalReferenceXY(piece, mirror, out int leftF1RefX, out int leftF1RefY))
         {
-          x = 0;
-          y = DisplayYToUnityY(41, GetPieceHeightForEditorY(piece));
-        }
-        else if (frontF3 && leftF1)
-        {
-          x = 0;
-          y = DisplayYToUnityY(43, GetPieceHeightForEditorY(piece));
+          x = leftF1RefX;
+          y = DisplayYToUnityY(leftF1RefY, GetPieceHeightForEditorY(piece));
         }
         else
         {
           x = 0;
-          y = 16;
+          y = DisplayYToUnityY(42, GetPieceHeightForEditorY(piece));
         }
       }
       else if (IsWallF1RightPiece(piece))
       {
         enabled = rightF1;
         mirror = GetSideWallMirrorFromPose();
-        if (frontF2WithF1Sides)
+
+        if (TryGetActiveCanonicalReferenceXY(piece, mirror, out int rightF1RefX, out int rightF1RefY))
         {
-          x = 164;
-          y = DisplayYToUnityY(41, GetPieceHeightForEditorY(piece));
-        }
-        else if (frontF3 && rightF1)
-        {
-          x = 164;
-          y = DisplayYToUnityY(42, GetPieceHeightForEditorY(piece));
+          x = rightF1RefX;
+          y = DisplayYToUnityY(rightF1RefY, GetPieceHeightForEditorY(piece));
         }
         else
         {
-          x = 160;
-          y = 16;
+          x = 165;
+          y = DisplayYToUnityY(41, GetPieceHeightForEditorY(piece));
         }
       }
       else if (IsWallF2LeftPiece(piece))
       {
         enabled = leftF2;
         mirror = GetSideWallMirrorFromPose();
-        x = TempUnconfirmedX;
-        y = TempUnconfirmedY;
+        if (TryGetActiveCanonicalReferenceXY(
+                piece, mirror, out int leftF2RefX, out int leftF2RefY))
+        {
+          x = leftF2RefX;
+          y = DisplayYToUnityY(leftF2RefY, GetPieceHeightForEditorY(piece));
+        }
+        else
+        {
+          x = 0;
+          y = DisplayYToUnityY(52, GetPieceHeightForEditorY(piece));
+        }
       }
       else if (IsWallF2RightPiece(piece))
       {
         enabled = rightF2;
         mirror = GetSideWallMirrorFromPose();
-        x = 146;
-        y = DisplayYToUnityY(51, GetPieceHeightForEditorY(piece));
+        if (TryGetActiveCanonicalReferenceXY(
+                piece, mirror, out int rightF2RefX, out int rightF2RefY))
+        {
+          x = rightF2RefX;
+          y = DisplayYToUnityY(rightF2RefY, GetPieceHeightForEditorY(piece));
+        }
+        else
+        {
+          x = 147;
+          y = DisplayYToUnityY(51, GetPieceHeightForEditorY(piece));
+        }
       }
       else if (IsWallF3LeftPiece(piece))
       {
         enabled = leftF3;
         mirror = GetSideWallMirrorFromPose();
-        x = TempUnconfirmedX;
-        y = TempUnconfirmedY;
+        if (TryGetActiveCanonicalReferenceXY(
+                piece, mirror, out int leftF3RefX, out int leftF3RefY))
+        {
+          x = leftF3RefX;
+          y = DisplayYToUnityY(leftF3RefY, GetPieceHeightForEditorY(piece));
+        }
+        else
+        {
+          x = 5;
+          y = DisplayYToUnityY(60, GetPieceHeightForEditorY(piece));
+        }
       }
       else if (IsWallF3RightPiece(piece))
       {
         enabled = rightF3;
         mirror = GetSideWallMirrorFromPose();
-        x = TempUnconfirmedX;
-        y = TempUnconfirmedY;
+        if (TryGetActiveCanonicalReferenceXY(
+                piece, mirror, out int rightF3RefX, out int rightF3RefY))
+        {
+          x = rightF3RefX;
+          y = DisplayYToUnityY(rightF3RefY, GetPieceHeightForEditorY(piece));
+        }
+        else
+        {
+          x = 136;
+          y = DisplayYToUnityY(60, GetPieceHeightForEditorY(piece));
+        }
       }
       else
       {
@@ -4879,10 +4596,6 @@ public class ViewportLayoutEditor : EditorWindow
       piece.PoseOffsetY = 0;
     }
 
-    OverlayDTermOnResolvedWalls();
-
-    // Side-wall mirror is deterministic from the current pose, so a DTerm row
-    // must not freeze the mirror phase from the pose where that row was captured.
     bool sideWallMirror = GetSideWallMirrorFromPose();
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -4904,8 +4617,7 @@ public class ViewportLayoutEditor : EditorWindow
       piece.MirrorHorizontally = sideWallMirror;
     }
 
-    // FrontF1 mirror is deterministic from the current map pose. DTerm may
-    // still supply Enabled/Graphic/X/Y/width, but it must not freeze Mirror.
+    // FrontF1 mirror is deterministic from the current map pose.
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece piece = layout.Pieces[i];
@@ -5869,7 +5581,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// FrontF1/F2 mirror phase from the visible normal-wall configuration only.
-  /// Absolute map X/Y, facing parity, DTerm, and hidden map cells do not participate.
+  /// Absolute map X/Y, facing parity, and hidden map cells do not participate.
   /// Identical visible normal-wall configurations therefore get the same phase.
   /// </summary>
   private void ApplyFrontF1F2MirrorFromVisibleWallConfiguration()
@@ -6542,9 +6254,54 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (layout != null && layout.Pieces != null)
     {
+      bool is14South =
+          previewX == 1
+          && previewY == 4
+          && previewFacing == DungeonFacing.South;
+      bool leftF0OverlapArmed = false;
+      int leftF0OverlapX = 0;
+      int leftF0OverlapY = 0;
+      int leftF0OverlapW = 0;
+      int leftF0OverlapH = 0;
+
+      void LogIfOverlapsLeftF0(
+          ViewportPiece laterPiece,
+          DungeonGraphicType laterGraphic,
+          int laterX,
+          int laterY,
+          int laterW,
+          int laterH)
+      {
+        if (!leftF0OverlapArmed
+            || laterPiece == null
+            || IsWallF0LeftPiece(laterPiece)
+            || laterW <= 0
+            || laterH <= 0)
+          return;
+
+        bool overlaps =
+            laterX < leftF0OverlapX + leftF0OverlapW
+            && laterX + laterW > leftF0OverlapX
+            && laterY < leftF0OverlapY + leftF0OverlapH
+            && laterY + laterH > leftF0OverlapY;
+        if (!overlaps)
+          return;
+
+        Debug.Log(
+            "LEFTF0 OVERLAP | "
+            + laterPiece.Name
+            + " | "
+            + laterGraphic
+            + " | X=" + laterX
+            + " Y=" + laterY
+            + " | "
+            + laterW + "x" + laterH);
+      }
+
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
         ViewportPiece piece = layout.Pieces[i];
+        bool isLeftF0Diag = is14South && IsWallF0LeftPiece(piece);
         bool shouldDraw = ShouldDrawPieceAtPreviewPose(piece);
         bool blackDoorF2Exception = IsBlackDoorF2PoseException(piece);
         bool blackDoorF3Exception = IsBlackDoorF3PoseException(piece);
@@ -6589,6 +6346,13 @@ public class ViewportLayoutEditor : EditorWindow
                 piece,
                 out ResolvedNormalWallState resolvedWall))
         {
+          if (isLeftF0Diag)
+            Debug.Log(
+                "LEFTF0 DIAG | "
+                + piece.Name
+                + " | resolvedWall.Enabled="
+                + resolvedWall.Enabled);
+
           if (!resolvedWall.Enabled)
             continue;
 
@@ -6598,30 +6362,53 @@ public class ViewportLayoutEditor : EditorWindow
           if (previewMirrorOverrideByPiece.TryGetValue(piece, out bool previewMirror))
             mirror = previewMirror;
           drawGraphic = resolvedWall.Graphic;
-          resolvedX = resolvedWall.X;
-          resolvedY = resolvedWall.Y;
-          if (previewPositionOverrideByPiece.TryGetValue(piece, out Vector2Int previewPosition))
+          if (isLeftF0Diag)
+            Debug.Log("LEFTF0 DIAG | drawGraphic=" + drawGraphic);
+          if (!IsWallF0LeftPiece(piece) && !IsWallF0RightPiece(piece)
+              && !IsWallF1LeftPiece(piece) && !IsWallF1RightPiece(piece)
+              && !IsWallF2LeftPiece(piece) && !IsWallF2RightPiece(piece)
+              && !IsWallF3LeftPiece(piece) && !IsWallF3RightPiece(piece))
           {
-            resolvedX = previewPosition.x;
-            resolvedY = previewPosition.y;
+            resolvedX = resolvedWall.X;
+            resolvedY = resolvedWall.Y;
+            if (previewPositionOverrideByPiece.TryGetValue(piece, out Vector2Int previewPosition))
+            {
+              resolvedX = previewPosition.x;
+              resolvedY = previewPosition.y;
+            }
           }
           resolvedF1Width = resolvedWall.FrontF1Width;
         }
 
-        // All normal Left/Right side-wall mirror phases are deterministic
-        // from the current pose, but mirror never changes geometric side.
-        // Left pieces keep their resolved left-side X; right pieces keep their
-        // resolved right-side X. Only the source pixels are mirrored.
+        // Side-wall dest is override else that piece's canonical Ref.
+        // Mirror flips source pixels only; it never changes X/Y.
         if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece)
             || IsWallF1LeftPiece(piece) || IsWallF1RightPiece(piece)
             || IsWallF2LeftPiece(piece) || IsWallF2RightPiece(piece)
             || IsWallF3LeftPiece(piece) || IsWallF3RightPiece(piece))
         {
+          if (previewPositionOverrideByPiece.TryGetValue(
+                  piece, out Vector2Int sideWallOverride))
+          {
+            resolvedX = sideWallOverride.x;
+            resolvedY = sideWallOverride.y;
+          }
+          else if (TryGetCanonicalReferenceXY(
+                       piece.Name, out int sideRefX, out int sideRefY)
+                   || (TryGetSideWallCanonicalName(piece, out string sideCanonicalName)
+                       && TryGetCanonicalReferenceXY(
+                           sideCanonicalName, out sideRefX, out sideRefY)))
+          {
+            resolvedX = sideRefX;
+            resolvedY = DisplayYToUnityY(
+                sideRefY, GetPieceHeightForEditorY(piece));
+          }
+
           mirror = GetSideWallMirrorFromPose();
         }
 
         // FrontF1 mirror is deterministic from map position. Do not allow a
-        // stale ViewEdit mirror override or DTerm mirror to replace it.
+        // stale ViewEdit mirror override to replace it.
         if (IsFrontWallF1Card(piece))
           mirror = GetFrontF1MirrorFromPose();
 
@@ -6664,6 +6451,13 @@ public class ViewportLayoutEditor : EditorWindow
               f1DestX,
               resolvedY,
               mirror);
+          LogIfOverlapsLeftF0(
+              piece,
+              piece.Graphic,
+              f1DestX,
+              resolvedY,
+              f1Texture.width,
+              f1Texture.height);
           ClearFrontWallOverflowIntoUi(
               pixels,
               resolvedY,
@@ -6683,6 +6477,13 @@ public class ViewportLayoutEditor : EditorWindow
               resolvedX,
               resolvedY,
               mirror);
+          LogIfOverlapsLeftF0(
+              piece,
+              piece.Graphic,
+              resolvedX,
+              resolvedY,
+              f2Texture.width,
+              f2Texture.height);
 
           ClearFrontWallOverflowIntoUi(
               pixels,
@@ -6691,7 +6492,24 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
+        if (IsWallF0LeftPiece(piece) && mirror)
+          drawGraphic = DungeonGraphicType.WallF0R;
+
         Texture2D texture = graphics.GetTexture(drawGraphic);
+        if (isLeftF0Diag)
+        {
+          if (texture == null)
+          {
+            Debug.Log("LEFTF0 DIAG | texture=null");
+          }
+          else
+          {
+            Debug.Log(
+                "LEFTF0 DIAG | texture="
+                + texture.width + "x" + texture.height
+                + " | isReadable=" + texture.isReadable);
+          }
+        }
         if (texture == null)
           continue;
 
@@ -6708,6 +6526,13 @@ public class ViewportLayoutEditor : EditorWindow
                 PreviewHeight,
                 196,
                 93);
+            LogIfOverlapsLeftF0(
+                piece,
+                drawGraphic,
+                196,
+                93,
+                texture.width,
+                texture.height);
           }
           else
           {
@@ -6718,6 +6543,13 @@ public class ViewportLayoutEditor : EditorWindow
                 PreviewHeight,
                 piece.EffectiveX,
                 piece.EffectiveY);
+            LogIfOverlapsLeftF0(
+                piece,
+                drawGraphic,
+                piece.EffectiveX,
+                piece.EffectiveY,
+                texture.width,
+                texture.height);
           }
           continue;
         }
@@ -6732,6 +6564,13 @@ public class ViewportLayoutEditor : EditorWindow
               piece.EffectiveX,
               piece.EffectiveY,
               mirror);
+          LogIfOverlapsLeftF0(
+              piece,
+              drawGraphic,
+              piece.EffectiveX,
+              piece.EffectiveY,
+              texture.width,
+              texture.height);
           continue;
         }
 
@@ -6748,6 +6587,13 @@ public class ViewportLayoutEditor : EditorWindow
                 piece.ResolvedBlackDoorF2X,
                 piece.ResolvedBlackDoorF2Y,
                 mirror);
+            LogIfOverlapsLeftF0(
+                piece,
+                drawGraphic,
+                piece.ResolvedBlackDoorF2X,
+                piece.ResolvedBlackDoorF2Y,
+                f2Source.width,
+                f2Source.height);
           }
           continue;
         }
@@ -6768,8 +6614,33 @@ public class ViewportLayoutEditor : EditorWindow
                 f3X,
                 f3Y,
                 mirror);
+            LogIfOverlapsLeftF0(
+                piece,
+                drawGraphic,
+                f3X,
+                f3Y,
+                f3Source.width,
+                f3Source.height);
           }
           continue;
+        }
+
+        string leftF0UnreadableLog = null;
+        if (isLeftF0Diag)
+        {
+          Debug.Log(
+              "LEFTF0 BLIT CALLED | X="
+              + resolvedX
+              + " Y="
+              + resolvedY
+              + " | mirror="
+              + (mirror ? "ON" : "OFF"));
+          leftF0UnreadableLog = "LEFTF0 BLIT EXIT isReadable=false";
+          leftF0OverlapArmed = true;
+          leftF0OverlapX = resolvedX;
+          leftF0OverlapY = resolvedY;
+          leftF0OverlapW = texture.width;
+          leftF0OverlapH = texture.height;
         }
 
         BlitPieceIntoPreview(
@@ -6777,7 +6648,19 @@ public class ViewportLayoutEditor : EditorWindow
             texture,
             resolvedX,
             resolvedY,
-            mirror);
+            mirror,
+            leftF0UnreadableLog);
+
+        if (!isLeftF0Diag)
+        {
+          LogIfOverlapsLeftF0(
+              piece,
+              drawGraphic,
+              resolvedX,
+              resolvedY,
+              texture.width,
+              texture.height);
+        }
 
         if (piece.Graphic == DungeonGraphicType.FrontWallF3)
         {
@@ -7249,10 +7132,15 @@ public class ViewportLayoutEditor : EditorWindow
       Texture2D source,
       int destinationX,
       int destinationY,
-      bool mirrorHorizontally = false)
+      bool mirrorHorizontally = false,
+      string unreadableDiagnostic = null)
   {
     if (!source.isReadable)
+    {
+      if (!string.IsNullOrEmpty(unreadableDiagnostic))
+        Debug.Log(unreadableDiagnostic);
       return;
+    }
 
     Color32[] sourcePixels = source.GetPixels32();
 
