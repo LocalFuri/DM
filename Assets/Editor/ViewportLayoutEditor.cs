@@ -1824,6 +1824,19 @@ public class ViewportLayoutEditor : EditorWindow
         && TryGetCanonicalReferenceXY("RightF0", out int rightF0RefX, out _))
     {
       editX = rightF0RefX;
+
+      if (TryGetCanonicalReferenceXY(piece.Name, out _, out int leftF0RefY))
+        SetCanonicalReferenceXY(piece.Name, rightF0RefX, leftF0RefY);
+
+      Vector2Int mirroredPosition = new Vector2Int(editX, editUnityY);
+
+      if (!previewPositionOverrideByPiece.TryGetValue(piece, out Vector2Int existingOverride)
+          || existingOverride != mirroredPosition)
+      {
+        previewPositionOverrideByPiece[piece] = mirroredPosition;
+        previewPositionChangedThisFrame = true;
+        RefreshTemporaryNormalWallPreview();
+      }
     }
 
     int xBefore = editX;

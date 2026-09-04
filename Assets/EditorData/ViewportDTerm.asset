@@ -625,15 +625,6 @@ MonoBehaviour:
     Mirror: 0
     FrontWallF1Width: 0
     FrontWallF2Width: 0
-  - GeometryKey: WW|WOO|WOW|OOW
-    PieceName: RightF0
-    Enabled: 1
-    Graphic: 4
-    X: 192
-    Y: 31
-    Mirror: 0
-    FrontWallF1Width: 0
-    FrontWallF2Width: 0
   - GeometryKey: OO|WWO|WWW|WWW
     PieceName: FrontF1
     Enabled: 1
@@ -658,15 +649,6 @@ MonoBehaviour:
     Graphic: 24
     X: -2
     Y: 74
-    Mirror: 0
-    FrontWallF1Width: 0
-    FrontWallF2Width: 0
-  - GeometryKey: WW|WOO|WOW|OOW
-    PieceName: LeftF0
-    Enabled: 1
-    Graphic: 3
-    X: 0
-    Y: 31
     Mirror: 0
     FrontWallF1Width: 0
     FrontWallF2Width: 0
@@ -776,5 +758,14 @@ MonoBehaviour:
     X: 5
     Y: 91
     Mirror: 0
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: WW|WOO|WOW|OOW
+    PieceName: LeftF0
+    Enabled: 1
+    Graphic: 3
+    X: 192
+    Y: 31
+    Mirror: 1
     FrontWallF1Width: 0
     FrontWallF2Width: 0
