@@ -1820,6 +1820,12 @@ public class ViewportLayoutEditor : EditorWindow
       editUnityY = previewPosition.y;
     }
 
+    if (IsWallF0LeftPiece(piece) && mirrorAfter
+        && TryGetCanonicalReferenceXY("RightF0", out int rightF0RefX, out _))
+    {
+      editX = rightF0RefX;
+    }
+
     int xBefore = editX;
     bool hasCanonicalRef = TryGetCanonicalReferenceXY(
         piece.Name, out canonicalRefX, out canonicalRefY);
