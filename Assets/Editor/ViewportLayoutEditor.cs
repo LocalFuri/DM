@@ -1510,7 +1510,7 @@ public class ViewportLayoutEditor : EditorWindow
   private static readonly (string Name, int X)[] CanonicalMirroredReferenceXDefaults =
   {
     ("LeftF0", 192),
-    ("LeftF1", 165),
+    ("LeftF1", 0),
     ("LeftF2", 147),
     ("LeftF3", 136),
     ("RightF0", 0),
@@ -1986,6 +1986,16 @@ public class ViewportLayoutEditor : EditorWindow
       if (mirrorChangedThisFrame || !hasPositionOverride)
       {
         editX = mirroredRefX;
+
+        if (IsWallF1LeftPiece(piece)
+            && (TryGetCanonicalReferenceXY(
+                    piece.Name, out _, out int leftF1RefY)
+                || TryGetCanonicalReferenceXY(
+                    "LeftF1", out _, out leftF1RefY)))
+        {
+          editUnityY = DisplayYToUnityY(
+              leftF1RefY, GetPieceHeightForEditorY(piece));
+        }
 
         Vector2Int mirroredPosition = new Vector2Int(editX, editUnityY);
 
@@ -4804,6 +4814,7 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsWallF1RightPiece(piece))
       {
         enabled = rightF1;
+        mirror = GetSideWallMirrorFromPose();
         if (frontF2WithF1Sides)
         {
           x = 164;
@@ -4823,24 +4834,28 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsWallF2LeftPiece(piece))
       {
         enabled = leftF2;
+        mirror = GetSideWallMirrorFromPose();
         x = TempUnconfirmedX;
         y = TempUnconfirmedY;
       }
       else if (IsWallF2RightPiece(piece))
       {
         enabled = rightF2;
+        mirror = GetSideWallMirrorFromPose();
         x = 146;
         y = DisplayYToUnityY(51, GetPieceHeightForEditorY(piece));
       }
       else if (IsWallF3LeftPiece(piece))
       {
         enabled = leftF3;
+        mirror = GetSideWallMirrorFromPose();
         x = TempUnconfirmedX;
         y = TempUnconfirmedY;
       }
       else if (IsWallF3RightPiece(piece))
       {
         enabled = rightF3;
+        mirror = GetSideWallMirrorFromPose();
         x = TempUnconfirmedX;
         y = TempUnconfirmedY;
       }
@@ -4869,23 +4884,27 @@ public class ViewportLayoutEditor : EditorWindow
 
     OverlayDTermOnResolvedWalls();
 
-    // F0 mirror is deterministic from the current pose, so a DTerm row must not
-    // freeze the mirror phase from the pose where that row was captured.
+    // Side-wall mirror is deterministic from the current pose, so a DTerm row
+    // must not freeze the mirror phase from the pose where that row was captured.
+    bool sideWallMirror = GetSideWallMirrorFromPose();
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece piece = layout.Pieces[i];
       if (piece == null
-          || (!IsWallF0LeftPiece(piece) && !IsWallF0RightPiece(piece)))
+          || (!IsWallF0LeftPiece(piece) && !IsWallF0RightPiece(piece)
+              && !IsWallF1LeftPiece(piece) && !IsWallF1RightPiece(piece)
+              && !IsWallF2LeftPiece(piece) && !IsWallF2RightPiece(piece)
+              && !IsWallF3LeftPiece(piece) && !IsWallF3RightPiece(piece)))
         continue;
 
       if (resolvedNormalWallByPiece.TryGetValue(
-              piece, out ResolvedNormalWallState f0State))
+              piece, out ResolvedNormalWallState sideWallState))
       {
-        f0State.Mirror = f0Mirror;
-        resolvedNormalWallByPiece[piece] = f0State;
+        sideWallState.Mirror = sideWallMirror;
+        resolvedNormalWallByPiece[piece] = sideWallState;
       }
 
-      piece.MirrorHorizontally = f0Mirror;
+      piece.MirrorHorizontally = sideWallMirror;
     }
 
     // FrontF1 mirror is deterministic from the current map pose. DTerm may
