@@ -1495,9 +1495,29 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// Runtime Adjust Ref overrides. Checked before the static table.
+  /// Stores non-mirrored Ref X and Ref Y.
   /// </summary>
   private static readonly Dictionary<string, Vector2Int> CanonicalReferenceXYOverrides =
       new Dictionary<string, Vector2Int>();
+
+  /// <summary>
+  /// Runtime mirrored Ref X only. Non-mirrored Ref X and Ref Y stay in
+  /// CanonicalReferenceXYOverrides.
+  /// </summary>
+  private static readonly Dictionary<string, int> CanonicalMirroredReferenceXOverrides =
+      new Dictionary<string, int>();
+
+  private static readonly (string Name, int X)[] CanonicalMirroredReferenceXDefaults =
+  {
+    ("LeftF0", 192),
+    ("LeftF1", 165),
+    ("LeftF2", 147),
+    ("LeftF3", 136),
+    ("RightF0", 0),
+    ("RightF1", 0),
+    ("RightF2", 0),
+    ("RightF3", 5),
+  };
 
   /// <summary>
   /// Read-only canonical ViewEdit X/Y by piece name. Display only.
@@ -1543,6 +1563,140 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     CanonicalReferenceXYOverrides[pieceName] = new Vector2Int(x, y);
+  }
+
+  private static bool TryGetSideWallCanonicalName(
+      ViewportPiece piece,
+      out string name)
+  {
+    name = null;
+    if (piece == null)
+      return false;
+
+    if (IsWallF0LeftPiece(piece))
+    {
+      name = "LeftF0";
+      return true;
+    }
+    if (IsWallF1LeftPiece(piece))
+    {
+      name = "LeftF1";
+      return true;
+    }
+    if (IsWallF2LeftPiece(piece))
+    {
+      name = "LeftF2";
+      return true;
+    }
+    if (IsWallF3LeftPiece(piece))
+    {
+      name = "LeftF3";
+      return true;
+    }
+    if (IsWallF0RightPiece(piece))
+    {
+      name = "RightF0";
+      return true;
+    }
+    if (IsWallF1RightPiece(piece))
+    {
+      name = "RightF1";
+      return true;
+    }
+    if (IsWallF2RightPiece(piece))
+    {
+      name = "RightF2";
+      return true;
+    }
+    if (IsWallF3RightPiece(piece))
+    {
+      name = "RightF3";
+      return true;
+    }
+
+    return false;
+  }
+
+  private static bool TryGetMirroredReferenceXDefault(string pieceName, out int x)
+  {
+    x = 0;
+    if (string.IsNullOrEmpty(pieceName))
+      return false;
+
+    for (int i = 0; i < CanonicalMirroredReferenceXDefaults.Length; i++)
+    {
+      if (CanonicalMirroredReferenceXDefaults[i].Name != pieceName)
+        continue;
+
+      x = CanonicalMirroredReferenceXDefaults[i].X;
+      return true;
+    }
+
+    return false;
+  }
+
+  private static bool TryGetMirroredReferenceX(ViewportPiece piece, out int x)
+  {
+    x = 0;
+    if (piece == null)
+      return false;
+
+    if (!string.IsNullOrEmpty(piece.Name)
+        && CanonicalMirroredReferenceXOverrides.TryGetValue(piece.Name, out x))
+      return true;
+
+    if (TryGetSideWallCanonicalName(piece, out string canonicalName)
+        && CanonicalMirroredReferenceXOverrides.TryGetValue(canonicalName, out x))
+      return true;
+
+    if (!string.IsNullOrEmpty(piece.Name)
+        && TryGetMirroredReferenceXDefault(piece.Name, out x))
+      return true;
+
+    return TryGetSideWallCanonicalName(piece, out canonicalName)
+        && TryGetMirroredReferenceXDefault(canonicalName, out x);
+  }
+
+  private static bool TryGetActiveCanonicalReferenceXY(
+      ViewportPiece piece,
+      bool mirror,
+      out int x,
+      out int y)
+  {
+    x = 0;
+    y = 0;
+    if (piece == null || string.IsNullOrEmpty(piece.Name))
+      return false;
+
+    if (!TryGetCanonicalReferenceXY(piece.Name, out x, out y))
+      return false;
+
+    if (mirror
+        && TryGetSideWallCanonicalName(piece, out _)
+        && TryGetMirroredReferenceX(piece, out int mirroredX))
+      x = mirroredX;
+
+    return true;
+  }
+
+  private static void SetActiveCanonicalReferenceXY(
+      ViewportPiece piece,
+      bool mirror,
+      int x,
+      int y)
+  {
+    if (piece == null || string.IsNullOrEmpty(piece.Name))
+      return;
+
+    if (mirror && TryGetSideWallCanonicalName(piece, out _))
+    {
+      CanonicalMirroredReferenceXOverrides[piece.Name] = x;
+      if (TryGetCanonicalReferenceXY(piece.Name, out int existingX, out _))
+        SetCanonicalReferenceXY(piece.Name, existingX, y);
+      return;
+    }
+
+    SetCanonicalReferenceXY(piece.Name, x, y);
   }
 
   private void DrawPieceCard(
@@ -1713,7 +1867,8 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUI.BeginChangeCheck();
     EditorGUILayout.BeginHorizontal();
     piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup("Graphic", piece.Graphic);
-    if (TryGetCanonicalReferenceXY(piece.Name, out int canonicalRefX, out int canonicalRefY))
+    if (TryGetActiveCanonicalReferenceXY(
+            piece, mirrorAfter, out int canonicalRefX, out int canonicalRefY))
     {
       EditorGUILayout.LabelField(
           $"Ref X/Y {canonicalRefX} / {canonicalRefY}",
@@ -1820,13 +1975,11 @@ public class ViewportLayoutEditor : EditorWindow
       editUnityY = previewPosition.y;
     }
 
-    if (IsWallF0LeftPiece(piece) && mirrorAfter
-        && TryGetCanonicalReferenceXY("RightF0", out int rightF0RefX, out _))
+    if (mirrorAfter
+        && TryGetSideWallCanonicalName(piece, out _)
+        && TryGetMirroredReferenceX(piece, out int mirroredRefX))
     {
-      editX = rightF0RefX;
-
-      if (TryGetCanonicalReferenceXY(piece.Name, out _, out int leftF0RefY))
-        SetCanonicalReferenceXY(piece.Name, rightF0RefX, leftF0RefY);
+      editX = mirroredRefX;
 
       Vector2Int mirroredPosition = new Vector2Int(editX, editUnityY);
 
@@ -1840,8 +1993,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     int xBefore = editX;
-    bool hasCanonicalRef = TryGetCanonicalReferenceXY(
-        piece.Name, out canonicalRefX, out canonicalRefY);
+    bool hasCanonicalRef = TryGetActiveCanonicalReferenceXY(
+        piece, mirrorAfter, out canonicalRefX, out canonicalRefY);
     int pieceHeightForY = GetPieceHeightForEditorY(piece);
     int displayYForRef = UnityYToDisplayY(editUnityY, pieceHeightForY);
     bool xChanged = DrawIntStepper(
@@ -2065,7 +2218,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       int refDisplayY =
           UnityYToDisplayY(editUnityY, GetPieceHeightForEditorY(piece));
-      SetCanonicalReferenceXY(piece.Name, editX, refDisplayY);
+      SetActiveCanonicalReferenceXY(piece, mirrorAfter, editX, refDisplayY);
       Repaint();
     }
 
@@ -2073,7 +2226,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       int refDisplayY =
           UnityYToDisplayY(editUnityY, GetPieceHeightForEditorY(piece));
-      SetCanonicalReferenceXY(piece.Name, editX, refDisplayY);
+      SetActiveCanonicalReferenceXY(piece, mirrorAfter, editX, refDisplayY);
       Repaint();
     }
 
