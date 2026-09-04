@@ -760,3 +760,12 @@ MonoBehaviour:
     Mirror: 1
     FrontWallF1Width: 0
     FrontWallF2Width: 0
+  - GeometryKey: WW|WOO|WOW|OOW
+    PieceName: RightF0
+    Enabled: 1
+    Graphic: 4
+    X: 0
+    Y: 31
+    Mirror: 1
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0

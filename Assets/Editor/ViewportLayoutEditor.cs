@@ -1977,7 +1977,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     if (mirrorAfter
-        && TryGetSideWallCanonicalName(piece, out _)
+        && TryGetSideWallCanonicalName(piece, out string sideWallName)
         && TryGetMirroredReferenceX(piece, out int mirroredRefX))
     {
       bool hasPositionOverride =
@@ -1987,14 +1987,11 @@ public class ViewportLayoutEditor : EditorWindow
       {
         editX = mirroredRefX;
 
-        if (IsWallF1LeftPiece(piece)
-            && (TryGetCanonicalReferenceXY(
-                    piece.Name, out _, out int leftF1RefY)
-                || TryGetCanonicalReferenceXY(
-                    "LeftF1", out _, out leftF1RefY)))
+        if (TryGetCanonicalReferenceXY(piece.Name, out _, out int normalRefY)
+            || TryGetCanonicalReferenceXY(sideWallName, out _, out normalRefY))
         {
           editUnityY = DisplayYToUnityY(
-              leftF1RefY, GetPieceHeightForEditorY(piece));
+              normalRefY, GetPieceHeightForEditorY(piece));
         }
 
         Vector2Int mirroredPosition = new Vector2Int(editX, editUnityY);
