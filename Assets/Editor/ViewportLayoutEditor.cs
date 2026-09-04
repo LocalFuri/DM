@@ -1907,13 +1907,14 @@ public class ViewportLayoutEditor : EditorWindow
           MessageType.None);
     }
 
+    bool mirrorChangedThisFrame = false;
     if (mirrorAfter != mirrorBefore)
     {
       if (normalWallMirrorPreview)
       {
         previewMirrorOverrideByPiece[piece] = mirrorAfter;
         previewMirrorChangedThisFrame = true;
-        RecaptureDTermIfVerified(piece);
+        mirrorChangedThisFrame = true;
         ResetEditModeViewportLogCache();
         DestroyEditModePreviewTextureOnly();
         RefreshEditModePreview();
@@ -1979,18 +1980,26 @@ public class ViewportLayoutEditor : EditorWindow
         && TryGetSideWallCanonicalName(piece, out _)
         && TryGetMirroredReferenceX(piece, out int mirroredRefX))
     {
-      editX = mirroredRefX;
-
-      Vector2Int mirroredPosition = new Vector2Int(editX, editUnityY);
-
-      if (!previewPositionOverrideByPiece.TryGetValue(piece, out Vector2Int existingOverride)
-          || existingOverride != mirroredPosition)
+      bool hasPositionOverride =
+          previewPositionOverrideByPiece.TryGetValue(
+              piece, out Vector2Int existingOverride);
+      if (mirrorChangedThisFrame || !hasPositionOverride)
       {
-        previewPositionOverrideByPiece[piece] = mirroredPosition;
-        previewPositionChangedThisFrame = true;
-        RefreshTemporaryNormalWallPreview();
+        editX = mirroredRefX;
+
+        Vector2Int mirroredPosition = new Vector2Int(editX, editUnityY);
+
+        if (!hasPositionOverride || existingOverride != mirroredPosition)
+        {
+          previewPositionOverrideByPiece[piece] = mirroredPosition;
+          previewPositionChangedThisFrame = true;
+          RefreshTemporaryNormalWallPreview();
+        }
       }
     }
+
+    if (mirrorChangedThisFrame)
+      RecaptureDTermIfVerified(piece);
 
     int xBefore = editX;
     bool hasCanonicalRef = TryGetActiveCanonicalReferenceXY(
@@ -4775,6 +4784,7 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsWallF1LeftPiece(piece))
       {
         enabled = leftF1;
+        mirror = GetSideWallMirrorFromPose();
         if (frontF2WithF1Sides)
         {
           x = 0;
