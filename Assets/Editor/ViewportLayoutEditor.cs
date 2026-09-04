@@ -1704,6 +1704,8 @@ public class ViewportLayoutEditor : EditorWindow
           GUILayout.Width(nonDTermLabelWidth + ToggleBoxWidth),
           GUILayout.ExpandWidth(false));
     }
+    GUILayout.Space(ToggleGroupGap);
+    GUILayout.Button("Override", GUILayout.Width(70f), GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = previousLabelWidth;
     EditorGUILayout.EndHorizontal();
 
