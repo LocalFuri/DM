@@ -1705,7 +1705,8 @@ public class ViewportLayoutEditor : EditorWindow
           GUILayout.ExpandWidth(false));
     }
     GUILayout.Space(ToggleGroupGap);
-    GUILayout.Button("Override", GUILayout.Width(70f), GUILayout.ExpandWidth(false));
+    bool overrideClicked = GUILayout.Button(
+        "Override", GUILayout.Width(70f), GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = previousLabelWidth;
     EditorGUILayout.EndHorizontal();
 
@@ -2042,6 +2043,14 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.BeginHorizontal();
 
     if (GUILayout.Button("Adjust Ref"))
+    {
+      int refDisplayY =
+          UnityYToDisplayY(editUnityY, GetPieceHeightForEditorY(piece));
+      SetCanonicalReferenceXY(piece.Name, editX, refDisplayY);
+      Repaint();
+    }
+
+    if (overrideClicked)
     {
       int refDisplayY =
           UnityYToDisplayY(editUnityY, GetPieceHeightForEditorY(piece));

@@ -715,15 +715,6 @@ MonoBehaviour:
     Mirror: 0
     FrontWallF1Width: 0
     FrontWallF2Width: 0
-  - GeometryKey: WW|WOW|WOO|WOW
-    PieceName: LeftF3
-    Enabled: 1
-    Graphic: 9
-    X: 7
-    Y: 92
-    Mirror: 0
-    FrontWallF1Width: 0
-    FrontWallF2Width: 0
   - GeometryKey: WO|WWO|WWO|WWO
     PieceName: FrontF1
     Enabled: 1
@@ -775,6 +766,15 @@ MonoBehaviour:
     Graphic: 10
     X: 135
     Y: 93
+    Mirror: 0
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: WW|WOW|WOO|WOW
+    PieceName: LeftF3
+    Enabled: 1
+    Graphic: 9
+    X: 5
+    Y: 91
     Mirror: 0
     FrontWallF1Width: 0
     FrontWallF2Width: 0
