@@ -375,6 +375,7 @@ public class ViewportLayoutEditor : EditorWindow
     ReloadLayoutFromDisk();
     RestoreSessionPrefs();
     showOnlyWallsNeededForCurrentPose = true;
+    showWallsActivFilter = true;
     StripObsoleteFrontWallF1ABPieces();
     CaptureNormalWallBaselinesFromLayout();
     ApplyCurrentPoseVisibilityToLayout();
@@ -3999,6 +4000,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
+    showWallsActivFilter = true;
     SaveSessionPrefs();
     PlayerWallBumpFeedback.ResetWallHitLog();
 
@@ -4045,6 +4047,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
+    showWallsActivFilter = true;
     SaveSessionPrefs();
     PlayerWallBumpFeedback.ResetWallHitLog();
 
