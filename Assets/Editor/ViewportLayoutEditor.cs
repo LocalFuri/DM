@@ -6491,12 +6491,14 @@ public class ViewportLayoutEditor : EditorWindow
               f2Texture.height);
           continue;
         }
+                if (IsWallF0LeftPiece(piece) && mirror)
+                    drawGraphic = DungeonGraphicType.WallF0R;
+                else if (IsWallF0RightPiece(piece) && mirror)
+                    drawGraphic = DungeonGraphicType.WallF0L;
 
-        if (IsWallF0LeftPiece(piece) && mirror)
-          drawGraphic = DungeonGraphicType.WallF0R;
+                Texture2D texture = graphics.GetTexture(drawGraphic);
 
-        Texture2D texture = graphics.GetTexture(drawGraphic);
-        if (isLeftF0Diag)
+                if (isLeftF0Diag)
         {
           if (texture == null)
           {
