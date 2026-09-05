@@ -806,7 +806,8 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
 
     // Permanent ViewEdit exclusions.
-    if (piece.Name == "Ceiling"
+    if (piece.Name == "Front Wall F1"
+        || piece.Name == "Ceiling"
         || piece.Name == "Floor"
         || piece.Graphic == DungeonGraphicType.Ceiling
         || piece.Graphic == DungeonGraphicType.Floor
@@ -1861,28 +1862,47 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.BeginVertical(EditorStyles.helpBox);
     GUI.backgroundColor = previousBg;
 
-    EditorGUILayout.BeginHorizontal();
-    string headerText = isSelected ? $"▶ {piece.Name}" : piece.Name;
-    if (TryGetPieceFamilyLabelColor(piece, out Color familyColor))
-    {
-      EditorGUILayout.LabelField(
-          headerText,
-          GetPieceFamilyHeaderStyle(familyColor));
-    }
-    else
-    {
-      EditorGUILayout.LabelField(headerText, EditorStyles.label);
-    }
-    EditorGUILayout.EndHorizontal();
-
     bool compactFrontF1Header = IsFrontWallF1Card(piece);
     bool hideNameForWall = IsWallEditorPiece(piece);
+
+    if (!compactFrontF1Header)
+    {
+      EditorGUILayout.BeginHorizontal();
+      string headerText = isSelected ? $"▶ {piece.Name}" : piece.Name;
+      if (TryGetPieceFamilyLabelColor(piece, out Color familyColor))
+      {
+        EditorGUILayout.LabelField(
+            headerText,
+            GetPieceFamilyHeaderStyle(familyColor));
+      }
+      else
+      {
+        EditorGUILayout.LabelField(headerText, EditorStyles.label);
+      }
+      EditorGUILayout.EndHorizontal();
+    }
 
     EditorGUI.BeginChangeCheck();
     EditorGUILayout.BeginHorizontal();
     float savedNameLabelWidth = EditorGUIUtility.labelWidth;
     if (compactFrontF1Header)
     {
+      string headerText = isSelected ? $"▶ {piece.Name}" : piece.Name;
+      if (TryGetPieceFamilyLabelColor(piece, out Color familyColor))
+      {
+        EditorGUILayout.LabelField(
+            headerText,
+            GetPieceFamilyHeaderStyle(familyColor),
+            GUILayout.Width(110f));
+      }
+      else
+      {
+        EditorGUILayout.LabelField(
+            headerText,
+            EditorStyles.label,
+            GUILayout.Width(110f));
+      }
+
       EditorGUIUtility.labelWidth = 0f;
       piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
           GUIContent.none, piece.Graphic, GUILayout.Width(190f));
@@ -1979,35 +1999,37 @@ public class ViewportLayoutEditor : EditorWindow
         GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = previousLabelWidth;
     GUILayout.Space(ToggleGroupGap);
-    EditorGUILayout.EndHorizontal();
 
-    EditorGUI.BeginChangeCheck();
-    EditorGUILayout.BeginHorizontal();
-    if (!compactFrontF1Header)
-      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup("Graphic", piece.Graphic);
     bool hasDTermRef = TryGetDTermEntryForPiece(
         piece, out ViewportDTermEntry dtermRef);
-    if (TryGetPieceCardReferenceXY(
-            piece, mirrorAfter, out int canonicalRefX, out int canonicalRefY))
-    {
-      string refLabel = $"Ref X/Y {canonicalRefX} / {canonicalRefY}";
-      if (hasDTermRef)
-      {
-        refLabel =
-            $"Ref {dtermRef.Graphic}  X/Y {canonicalRefX} / {canonicalRefY}";
-        if (IsFrontWallF1Card(piece))
-          refLabel += "  W " + dtermRef.FrontWallF1Width;
-      }
+    bool hasPieceCardReference = TryGetPieceCardReferenceXY(
+        piece, mirrorAfter, out int canonicalRefX, out int canonicalRefY);
 
+    if (compactFrontF1Header)
+    {
+      string refLabel = hasPieceCardReference
+          ? $"Ref X {canonicalRefX} / Y {canonicalRefY}"
+          : "Ref X - / Y -";
       EditorGUILayout.LabelField(
           refLabel,
           GUILayout.ExpandWidth(false));
     }
-    else
-    {
-      EditorGUILayout.LabelField("Ref X/Y - / -", GUILayout.ExpandWidth(false));
-    }
+
     EditorGUILayout.EndHorizontal();
+
+    EditorGUI.BeginChangeCheck();
+    if (!compactFrontF1Header)
+    {
+      EditorGUILayout.BeginHorizontal();
+      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup("Graphic", piece.Graphic);
+      string refLabel = hasPieceCardReference
+          ? $"Ref X {canonicalRefX} / Y {canonicalRefY}"
+          : "Ref X - / Y -";
+      EditorGUILayout.LabelField(
+          refLabel,
+          GUILayout.ExpandWidth(false));
+      EditorGUILayout.EndHorizontal();
+    }
     if (EditorGUI.EndChangeCheck() || nameOrEnabledChanged)
     {
       SelectPiece(index);
@@ -2055,9 +2077,11 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    if (IsFrontWallF1Card(piece))
+    bool hasFrontF1Width = IsFrontWallF1Card(piece);
+    int frontF1WidthBefore = 0;
+    if (hasFrontF1Width)
     {
-      int widthBefore =
+      frontF1WidthBefore =
           StraightF1WallLogic.NormalizeFrontWallF1Width(
               piece.FrontWallF1Width);
 
@@ -2065,7 +2089,7 @@ public class ViewportLayoutEditor : EditorWindow
               piece, out ResolvedNormalWallState resolvedF1WidthState)
           && resolvedF1WidthState.FrontF1Width > 0)
       {
-        widthBefore =
+        frontF1WidthBefore =
             StraightF1WallLogic.NormalizeFrontWallF1Width(
                 resolvedF1WidthState.FrontF1Width);
       }
@@ -2073,14 +2097,18 @@ public class ViewportLayoutEditor : EditorWindow
       if (previewFrontF1WidthOverrideByPiece.TryGetValue(
               piece, out int previewF1Width))
       {
-        widthBefore =
+        frontF1WidthBefore =
             StraightF1WallLogic.NormalizeFrontWallF1Width(previewF1Width);
       }
+    }
 
-      EditorGUILayout.BeginHorizontal();
-      EditorGUILayout.PrefixLabel("F1 Width");
+    EditorGUILayout.BeginHorizontal();
+
+    if (hasFrontF1Width)
+    {
+      EditorGUILayout.LabelField("Width", GUILayout.Width(38f));
       int widthSelected = EditorGUILayout.IntPopup(
-          widthBefore,
+          frontF1WidthBefore,
           new[] { "160", "192", "224" },
           new[]
           {
@@ -2089,13 +2117,11 @@ public class ViewportLayoutEditor : EditorWindow
             StraightF1WallLogic.CompositeWidth
           },
           GUILayout.Width(60f));
-      GUILayout.FlexibleSpace();
-      EditorGUILayout.EndHorizontal();
 
       widthSelected =
           StraightF1WallLogic.NormalizeFrontWallF1Width(widthSelected);
 
-      if (widthSelected != widthBefore)
+      if (widthSelected != frontF1WidthBefore)
       {
         previewFrontF1WidthOverrideByPiece[piece] = widthSelected;
         previewFrontF1WidthChangedThisFrame = true;
@@ -2105,9 +2131,9 @@ public class ViewportLayoutEditor : EditorWindow
         RepaintGameViews();
         Repaint();
       }
-    }
 
-    EditorGUILayout.BeginHorizontal();
+      GUILayout.Space(10f);
+    }
     float savedXyLabelWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
