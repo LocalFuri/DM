@@ -197,6 +197,11 @@ public class ViewportLayoutEditor : EditorWindow
   private readonly Dictionary<ViewportPiece, bool> previewMirrorOverrideByPiece =
       new Dictionary<ViewportPiece, bool>();
 
+  // ViewEdit-only FrontF1 width overrides. Like the Mirror test, these exist
+  // only while the current X/Y/Facing is unchanged and are never persisted.
+  private readonly Dictionary<ViewportPiece, int> previewFrontF1WidthOverrideByPiece =
+      new Dictionary<ViewportPiece, int>();
+
   // ViewEdit-only normal-wall X/Y overrides. Like the temporary Mirror test,
   // these affect only the stationary preview pose and are discarded whenever
   // X/Y/Facing changes. They are never written to the layout asset/pose store.
@@ -208,6 +213,7 @@ public class ViewportLayoutEditor : EditorWindow
   private readonly Dictionary<ViewportPiece, bool> previewEnabledOverrideByPiece =
       new Dictionary<ViewportPiece, bool>();
   private bool previewMirrorChangedThisFrame;
+  private bool previewFrontF1WidthChangedThisFrame;
   private bool previewPositionChangedThisFrame;
   private bool previewEnabledChangedThisFrame;
 
@@ -582,10 +588,12 @@ public class ViewportLayoutEditor : EditorWindow
       bool editorChanged = EditorGUI.EndChangeCheck();
       if ((editorChanged || changed)
           && !previewMirrorChangedThisFrame
+          && !previewFrontF1WidthChangedThisFrame
           && !previewPositionChangedThisFrame
           && !previewEnabledChangedThisFrame)
         PersistChanges();
       previewMirrorChangedThisFrame = false;
+      previewFrontF1WidthChangedThisFrame = false;
       previewPositionChangedThisFrame = false;
       previewEnabledChangedThisFrame = false;
     }
@@ -1871,23 +1879,46 @@ public class ViewportLayoutEditor : EditorWindow
       int widthBefore =
           StraightF1WallLogic.NormalizeFrontWallF1Width(
               piece.FrontWallF1Width);
+
+      if (TryGetResolvedNormalWallState(
+              piece, out ResolvedNormalWallState resolvedF1WidthState)
+          && resolvedF1WidthState.FrontF1Width > 0)
+      {
+        widthBefore =
+            StraightF1WallLogic.NormalizeFrontWallF1Width(
+                resolvedF1WidthState.FrontF1Width);
+      }
+
+      if (previewFrontF1WidthOverrideByPiece.TryGetValue(
+              piece, out int previewF1Width))
+      {
+        widthBefore =
+            StraightF1WallLogic.NormalizeFrontWallF1Width(previewF1Width);
+      }
+
       int widthSelected = EditorGUILayout.IntPopup(
           "F1 Width",
           widthBefore,
-          new[] { "160", "191", "224" },
+          new[] { "160", "192", "224" },
           new[]
           {
             StraightF1WallLogic.CompositeWidth160,
             StraightF1WallLogic.CompositeWidth191,
             StraightF1WallLogic.CompositeWidth
           });
-      piece.FrontWallF1Width =
+
+      widthSelected =
           StraightF1WallLogic.NormalizeFrontWallF1Width(widthSelected);
 
-      if (piece.FrontWallF1Width != widthBefore)
+      if (widthSelected != widthBefore)
       {
-        changed = true;
-        ApplyFrontWallF1WidthChangeForCurrentPose();
+        previewFrontF1WidthOverrideByPiece[piece] = widthSelected;
+        previewFrontF1WidthChangedThisFrame = true;
+        ResetEditModeViewportLogCache();
+        DestroyEditModePreviewTextureOnly();
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
       }
     }
 
@@ -2132,14 +2163,6 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
     EditorGUILayout.BeginHorizontal();
-
-    if (GUILayout.Button("Adjust Ref"))
-    {
-      int refDisplayY =
-          UnityYToDisplayY(editUnityY, GetPieceHeightForEditorY(piece));
-      SetActiveCanonicalReferenceXY(piece, mirrorAfter, editX, refDisplayY);
-      Repaint();
-    }
 
     if (overrideClicked)
     {
@@ -3748,6 +3771,7 @@ public class ViewportLayoutEditor : EditorWindow
         overriddenPiece.MirrorHorizontally = resolvedState.Mirror;
     }
     previewMirrorOverrideByPiece.Clear();
+    previewFrontF1WidthOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
 
@@ -3793,6 +3817,7 @@ public class ViewportLayoutEditor : EditorWindow
         overriddenPiece.MirrorHorizontally = resolvedState.Mirror;
     }
     previewMirrorOverrideByPiece.Clear();
+    previewFrontF1WidthOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
 
@@ -6408,6 +6433,15 @@ public class ViewportLayoutEditor : EditorWindow
           resolvedF1Width = resolvedWall.FrontF1Width;
         }
 
+        if (IsFrontWallF1Card(piece)
+            && previewFrontF1WidthOverrideByPiece.TryGetValue(
+                piece, out int manualFrontF1Width))
+        {
+          resolvedF1Width =
+              StraightF1WallLogic.NormalizeFrontWallF1Width(
+                  manualFrontF1Width);
+        }
+
         // Side-wall dest is override else that piece's canonical Ref.
         // Mirror flips source pixels only; it never changes X/Y.
         if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece)
@@ -6435,10 +6469,14 @@ public class ViewportLayoutEditor : EditorWindow
           mirror = GetSideWallMirrorFromPose();
         }
 
-        // FrontF1 mirror is deterministic from map position. Do not allow a
-        // stale ViewEdit mirror override to replace it.
-        if (IsFrontWallF1Card(piece))
+        // FrontF1 uses the deterministic map-pose mirror unless ViewEdit has a
+        // temporary mirror override for this exact stationary X/Y/Facing.
+        // The override dictionary is cleared whenever position or facing changes.
+        if (IsFrontWallF1Card(piece)
+            && !previewMirrorOverrideByPiece.ContainsKey(piece))
+        {
           mirror = GetFrontF1MirrorFromPose();
+        }
 
         if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
         {
