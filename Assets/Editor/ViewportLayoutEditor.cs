@@ -220,6 +220,13 @@ public class ViewportLayoutEditor : EditorWindow
   private static readonly Dictionary<string, bool> normalWallEnabledGeometryOverrides =
       new Dictionary<string, bool>();
 
+  // Verified X/Y and Mirror for any normal wall, keyed by relative minimap
+  // geometry + piece identity. These are independent of absolute map position.
+  private static readonly Dictionary<string, Vector2Int> normalWallPositionGeometryOverrides =
+      new Dictionary<string, Vector2Int>();
+  private static readonly Dictionary<string, bool> normalWallMirrorGeometryOverrides =
+      new Dictionary<string, bool>();
+
   // ViewEdit-only normal-wall X/Y overrides. Like the temporary Mirror test,
   // these affect only the stationary preview pose and are discarded whenever
   // X/Y/Facing changes. They are never written to the layout asset/pose store.
@@ -445,6 +452,105 @@ public class ViewportLayoutEditor : EditorWindow
       Repaint();
   }
 
+  private void StoreAllNormalWallOverridesForCurrentGeometry()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return;
+
+    RelativeViewportGeometry geometry =
+        RelativeViewportGeometry.Calculate(
+            previewMiniMap,
+            previewX,
+            previewY,
+            previewFacing);
+
+    string frontF1GeometryKey = BuildFrontF1GeometryKey(geometry);
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null || !IsNormalWallPiece(piece))
+        continue;
+
+      ResolvedNormalWallState state;
+      bool hasResolved =
+          resolvedNormalWallByPiece.TryGetValue(piece, out state);
+
+      bool enabled = hasResolved ? state.Enabled : piece.Enabled;
+      if (previewEnabledOverrideByPiece.TryGetValue(
+              piece, out bool previewEnabled))
+      {
+        enabled = previewEnabled;
+      }
+
+      int x = hasResolved ? state.X : piece.EffectiveX;
+      int y = hasResolved ? state.Y : piece.EffectiveY;
+      if (previewPositionOverrideByPiece.TryGetValue(
+              piece, out Vector2Int previewPosition))
+      {
+        x = previewPosition.x;
+        y = previewPosition.y;
+      }
+
+      bool mirror = hasResolved ? state.Mirror : piece.MirrorHorizontally;
+      if (previewMirrorOverrideByPiece.TryGetValue(
+              piece, out bool previewMirror))
+      {
+        mirror = previewMirror;
+      }
+
+      string geometryPieceKey =
+          BuildNormalWallEnabledGeometryKey(geometry, piece);
+
+      normalWallEnabledGeometryOverrides[geometryPieceKey] = enabled;
+      normalWallPositionGeometryOverrides[geometryPieceKey] =
+          new Vector2Int(x, y);
+      normalWallMirrorGeometryOverrides[geometryPieceKey] = mirror;
+
+      if (IsFrontWallF1Card(piece))
+      {
+        int width = hasResolved
+            ? state.FrontF1Width
+            : piece.FrontWallF1Width;
+
+        if (previewFrontF1WidthOverrideByPiece.TryGetValue(
+                piece, out int previewWidth))
+        {
+          width = previewWidth;
+        }
+
+        width =
+            StraightF1WallLogic.NormalizeFrontWallF1Width(width);
+
+        frontF1GeometryOverrides[frontF1GeometryKey] =
+            new FrontF1GeometryOverride
+            {
+              X = x,
+              Y = y,
+              Width = width
+            };
+      }
+    }
+
+    // The current geometry is now committed. Discard only the temporary
+    // stationary-pose tests; the geometry overrides above become authoritative.
+    previewEnabledOverrideByPiece.Clear();
+    previewPositionOverrideByPiece.Clear();
+    previewMirrorOverrideByPiece.Clear();
+    previewFrontF1WidthOverrideByPiece.Clear();
+
+    ApplyCurrentPoseVisibilityToLayout();
+    ResetEditModeViewportLogCache();
+    DestroyEditModePreviewTextureOnly();
+    RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
+  }
+
   private void OnGUI()
   {
     selectionChangedThisFrame = false;
@@ -533,6 +639,12 @@ public class ViewportLayoutEditor : EditorWindow
         editorScroll = Vector2.zero;
         GUI.FocusControl(null);
         Repaint();
+      }
+
+      if (GUILayout.Button("Override Current Walls"))
+      {
+        StoreAllNormalWallOverridesForCurrentGeometry();
+        GUI.FocusControl(null);
       }
 
       EditorGUILayout.BeginHorizontal();
@@ -2165,93 +2277,6 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
     EditorGUILayout.BeginHorizontal();
-
-    // Process Override only here, after Width and X/Y have been read and edited
-    // for this GUI event, so it captures the values currently shown in the card.
-    if (GUILayout.Button("Override", GUILayout.Width(70f), GUILayout.ExpandWidth(false)))
-    {
-      EnsurePreviewMiniMapLoaded();
-
-      RelativeViewportGeometry overrideGeometry = default;
-      bool hasOverrideGeometry = previewMiniMap != null;
-      if (hasOverrideGeometry)
-      {
-        overrideGeometry =
-            RelativeViewportGeometry.Calculate(
-                previewMiniMap,
-                previewX,
-                previewY,
-                previewFacing);
-
-        if (IsNormalWallPiece(piece))
-        {
-          bool enabledToStore = effectiveEnabled;
-          if (previewEnabledOverrideByPiece.TryGetValue(
-                  piece, out bool previewEnabled))
-          {
-            enabledToStore = previewEnabled;
-          }
-
-          normalWallEnabledGeometryOverrides[
-              BuildNormalWallEnabledGeometryKey(
-                  overrideGeometry,
-                  piece)] = enabledToStore;
-
-          // Enabled is now verified for this relative geometry. Remove the
-          // temporary stationary-pose test; the geometry override takes over.
-          previewEnabledOverrideByPiece.Remove(piece);
-        }
-      }
-
-      if (IsFrontWallF1Card(piece))
-      {
-        if (hasOverrideGeometry)
-        {
-          RelativeViewportGeometry geometry = overrideGeometry;
-
-          int widthToStore = piece.FrontWallF1Width;
-          if (resolvedNormalWallByPiece.TryGetValue(
-                  piece, out ResolvedNormalWallState resolvedF1))
-          {
-            widthToStore = resolvedF1.FrontF1Width;
-          }
-          if (previewFrontF1WidthOverrideByPiece.TryGetValue(
-                  piece, out int previewWidth))
-          {
-            widthToStore = previewWidth;
-          }
-
-          widthToStore =
-              StraightF1WallLogic.NormalizeFrontWallF1Width(widthToStore);
-
-          frontF1GeometryOverrides[BuildFrontF1GeometryKey(geometry)] =
-              new FrontF1GeometryOverride
-              {
-                X = editX,
-                Y = editUnityY,
-                Width = widthToStore
-              };
-
-          // The verified geometry override is now authoritative. Remove only the
-          // temporary stationary-pose tests so movement can safely clear them.
-          previewPositionOverrideByPiece.Remove(piece);
-          previewFrontF1WidthOverrideByPiece.Remove(piece);
-
-          ApplyCurrentPoseVisibilityToLayout();
-          DestroyEditModePreviewTextureOnly();
-          RefreshEditModePreview();
-          RepaintGameViews();
-        }
-      }
-      else
-      {
-        int refDisplayY =
-            UnityYToDisplayY(editUnityY, GetPieceHeightForEditorY(piece));
-        SetActiveCanonicalReferenceXY(piece, mirrorAfter, editX, refDisplayY);
-      }
-
-      Repaint();
-    }
 
     if (GUILayout.Button("Solo"))
     {
@@ -4754,11 +4779,29 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
+      string normalWallGeometryKey =
+          BuildNormalWallEnabledGeometryKey(g, piece);
+
       if (normalWallEnabledGeometryOverrides.TryGetValue(
-              BuildNormalWallEnabledGeometryKey(g, piece),
+              normalWallGeometryKey,
               out bool verifiedEnabled))
       {
         enabled = verifiedEnabled;
+      }
+
+      if (normalWallPositionGeometryOverrides.TryGetValue(
+              normalWallGeometryKey,
+              out Vector2Int verifiedPosition))
+      {
+        x = verifiedPosition.x;
+        y = verifiedPosition.y;
+      }
+
+      if (normalWallMirrorGeometryOverrides.TryGetValue(
+              normalWallGeometryKey,
+              out bool verifiedMirror))
+      {
+        mirror = verifiedMirror;
       }
 
       ResolvedNormalWallState state = new ResolvedNormalWallState
