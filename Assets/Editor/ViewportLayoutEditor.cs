@@ -1866,9 +1866,18 @@ public class ViewportLayoutEditor : EditorWindow
     GUI.backgroundColor = previousBg;
 
     bool compactFrontF1Header = IsFrontWallF1Card(piece);
+    bool compactSideWallHeader =
+        IsWallF0LeftPiece(piece)
+        || IsWallF0RightPiece(piece)
+        || IsWallF1LeftPiece(piece)
+        || IsWallF1RightPiece(piece)
+        || IsWallF2LeftPiece(piece)
+        || IsWallF2RightPiece(piece)
+        || IsWallF3LeftPiece(piece)
+        || IsWallF3RightPiece(piece);
     bool hideNameForWall = IsWallEditorPiece(piece);
 
-    if (!compactFrontF1Header)
+    if (!compactFrontF1Header && !compactSideWallHeader)
     {
       EditorGUILayout.BeginHorizontal();
       string headerText = isSelected ? $"▶ {piece.Name}" : piece.Name;
@@ -1914,6 +1923,30 @@ public class ViewportLayoutEditor : EditorWindow
       // Enabled / Mirror / Ref continue on a new second row.
       EditorGUILayout.EndHorizontal();
       EditorGUILayout.BeginHorizontal();
+    }
+    else if (compactSideWallHeader)
+    {
+      string headerText = isSelected ? $"▶ {piece.Name}" : piece.Name;
+      if (TryGetPieceFamilyLabelColor(piece, out Color familyColor))
+      {
+        EditorGUILayout.LabelField(
+            headerText,
+            GetPieceFamilyHeaderStyle(familyColor),
+            GUILayout.Width(110f));
+      }
+      else
+      {
+        EditorGUILayout.LabelField(
+            headerText,
+            EditorStyles.label,
+            GUILayout.Width(110f));
+      }
+
+      EditorGUIUtility.labelWidth = 0f;
+      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
+          GUIContent.none, piece.Graphic, GUILayout.Width(135f));
+
+      // Keep side-wall Enabled and Mirror on the same first row.
     }
     else if (!hideNameForWall)
     {
@@ -2025,22 +2058,12 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.EndHorizontal();
 
     EditorGUI.BeginChangeCheck();
-    if (!compactFrontF1Header)
+    if (!compactFrontF1Header && !compactSideWallHeader)
     {
       EditorGUILayout.BeginHorizontal();
 
-      bool isSideWall =
-          IsWallF0LeftPiece(piece)
-          || IsWallF0RightPiece(piece)
-          || IsWallF1LeftPiece(piece)
-          || IsWallF1RightPiece(piece)
-          || IsWallF2LeftPiece(piece)
-          || IsWallF2RightPiece(piece)
-          || IsWallF3LeftPiece(piece)
-          || IsWallF3RightPiece(piece);
-
       piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
-          isSideWall ? GUIContent.none : new GUIContent("Graphic"),
+          "Graphic",
           piece.Graphic);
 
       string refLabel = hasPieceCardReference
