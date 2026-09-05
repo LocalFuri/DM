@@ -4435,7 +4435,6 @@ public class ViewportLayoutEditor : EditorWindow
       if (IsFrontWallF1Card(piece))
       {
         enabled = frontF1;
-        x = 0;
         // Display Y 42 -> Unity Y 47 (FrontF1 height 111).
         y = 47;
         mirror = frontF1Mirror;
@@ -4447,6 +4446,7 @@ public class ViewportLayoutEditor : EditorWindow
             frontF1Width = StraightF1WallLogic.CompositeWidth191;
         else
             frontF1Width = StraightF1WallLogic.CompositeWidth;
+        x = frontF1Width == StraightF1WallLogic.CompositeWidth ? 0 : 32;
       }
       else if (IsFrontWallF2Card(piece))
       {
@@ -6468,9 +6468,14 @@ public class ViewportLayoutEditor : EditorWindow
           if (f1Texture == null)
             continue;
 
-          int f1DestX = previewPositionOverrideByPiece.ContainsKey(piece)
-              ? resolvedX
-              : 0;
+          int f1DestX;
+
+          if (previewPositionOverrideByPiece.ContainsKey(piece))
+              f1DestX = resolvedX;
+          else if (width == StraightF1WallLogic.CompositeWidth)
+              f1DestX = 0;
+          else
+              f1DestX = 32;
           StraightF1WallLogic.BlitCompositeToBuffer(
               f1Texture,
               pixels,
