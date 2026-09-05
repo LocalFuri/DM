@@ -7707,7 +7707,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.LabelField(label, GUILayout.Width(12f));
     int result = EditorGUILayout.DelayedIntField(
-        value, fieldStyle, GUILayout.Width(48f));
+        value, fieldStyle, GUILayout.Width(36f));
     GUI.color = previousGuiColor;
     GUI.contentColor = previousContentColor;
     return result;
