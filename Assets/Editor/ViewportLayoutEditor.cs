@@ -1877,18 +1877,13 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.EndHorizontal();
 
     bool compactFrontF1Header = IsFrontWallF1Card(piece);
+    bool hideNameForWall = IsWallEditorPiece(piece);
 
     EditorGUI.BeginChangeCheck();
     EditorGUILayout.BeginHorizontal();
-    float nameLabelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("Name")).x;
     float savedNameLabelWidth = EditorGUIUtility.labelWidth;
-    EditorGUIUtility.labelWidth = nameLabelWidth;
     if (compactFrontF1Header)
     {
-      piece.Name = EditorGUILayout.TextField(
-          "Name", piece.Name, GUILayout.Width(170f));
-      GUILayout.Space(6f);
       float graphicLabelWidth =
           EditorStyles.label.CalcSize(new GUIContent("Graphic")).x;
       EditorGUIUtility.labelWidth = graphicLabelWidth;
@@ -1896,8 +1891,11 @@ public class ViewportLayoutEditor : EditorWindow
           "Graphic", piece.Graphic, GUILayout.Width(190f));
       GUILayout.Space(6f);
     }
-    else
+    else if (!hideNameForWall)
     {
+      float nameLabelWidth =
+          EditorStyles.label.CalcSize(new GUIContent("Name")).x;
+      EditorGUIUtility.labelWidth = nameLabelWidth;
       piece.Name = EditorGUILayout.TextField("Name", piece.Name);
       EditorGUILayout.EndHorizontal();
       EditorGUILayout.BeginHorizontal();
