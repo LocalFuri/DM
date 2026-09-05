@@ -1884,11 +1884,9 @@ public class ViewportLayoutEditor : EditorWindow
     float savedNameLabelWidth = EditorGUIUtility.labelWidth;
     if (compactFrontF1Header)
     {
-      float graphicLabelWidth =
-          EditorStyles.label.CalcSize(new GUIContent("Graphic")).x;
-      EditorGUIUtility.labelWidth = graphicLabelWidth;
+      EditorGUIUtility.labelWidth = 0f;
       piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
-          "Graphic", piece.Graphic, GUILayout.Width(190f));
+          GUIContent.none, piece.Graphic, GUILayout.Width(190f));
       GUILayout.Space(6f);
     }
     else if (!hideNameForWall)
