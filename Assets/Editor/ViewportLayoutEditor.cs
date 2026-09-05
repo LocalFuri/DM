@@ -2028,7 +2028,21 @@ public class ViewportLayoutEditor : EditorWindow
     if (!compactFrontF1Header)
     {
       EditorGUILayout.BeginHorizontal();
-      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup("Graphic", piece.Graphic);
+
+      bool isSideWall =
+          IsWallF0LeftPiece(piece)
+          || IsWallF0RightPiece(piece)
+          || IsWallF1LeftPiece(piece)
+          || IsWallF1RightPiece(piece)
+          || IsWallF2LeftPiece(piece)
+          || IsWallF2RightPiece(piece)
+          || IsWallF3LeftPiece(piece)
+          || IsWallF3RightPiece(piece);
+
+      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
+          isSideWall ? GUIContent.none : new GUIContent("Graphic"),
+          piece.Graphic);
+
       string refLabel = hasPieceCardReference
           ? $"Ref X {canonicalRefX} / Y {canonicalRefY}"
           : "Ref X - / Y -";
