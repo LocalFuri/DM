@@ -1876,17 +1876,34 @@ public class ViewportLayoutEditor : EditorWindow
     }
     EditorGUILayout.EndHorizontal();
 
+    bool compactFrontF1Header = IsFrontWallF1Card(piece);
+
     EditorGUI.BeginChangeCheck();
     EditorGUILayout.BeginHorizontal();
     float nameLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent("Name")).x;
     float savedNameLabelWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth = nameLabelWidth;
-    piece.Name = EditorGUILayout.TextField("Name", piece.Name);
+    if (compactFrontF1Header)
+    {
+      piece.Name = EditorGUILayout.TextField(
+          "Name", piece.Name, GUILayout.Width(170f));
+      GUILayout.Space(6f);
+      float graphicLabelWidth =
+          EditorStyles.label.CalcSize(new GUIContent("Graphic")).x;
+      EditorGUIUtility.labelWidth = graphicLabelWidth;
+      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
+          "Graphic", piece.Graphic, GUILayout.Width(190f));
+      GUILayout.Space(6f);
+    }
+    else
+    {
+      piece.Name = EditorGUILayout.TextField("Name", piece.Name);
+      EditorGUILayout.EndHorizontal();
+      EditorGUILayout.BeginHorizontal();
+    }
     EditorGUIUtility.labelWidth = savedNameLabelWidth;
-    EditorGUILayout.EndHorizontal();
 
-    EditorGUILayout.BeginHorizontal();
     float previousLabelWidth = EditorGUIUtility.labelWidth;
     const float ToggleBoxWidth = 18f;
     const float ToggleGroupGap = 10f;
@@ -1971,7 +1988,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUI.BeginChangeCheck();
     EditorGUILayout.BeginHorizontal();
-    piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup("Graphic", piece.Graphic);
+    if (!compactFrontF1Header)
+      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup("Graphic", piece.Graphic);
     bool hasDTermRef = TryGetDTermEntryForPiece(
         piece, out ViewportDTermEntry dtermRef);
     if (TryGetPieceCardReferenceXY(
