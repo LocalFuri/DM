@@ -4439,7 +4439,14 @@ public class ViewportLayoutEditor : EditorWindow
         // Display Y 42 -> Unity Y 47 (FrontF1 height 111).
         y = 47;
         mirror = frontF1Mirror;
-        frontF1Width = StraightF1WallLogic.CompositeWidth;
+        if (rightD3ObliqueOpening)
+            frontF1Width = StraightF1WallLogic.CompositeWidth191;
+        else if (leftF0 && rightF0)
+            frontF1Width = StraightF1WallLogic.CompositeWidth160;
+        else if (leftF0 || rightF0)
+            frontF1Width = StraightF1WallLogic.CompositeWidth191;
+        else
+            frontF1Width = StraightF1WallLogic.CompositeWidth;
       }
       else if (IsFrontWallF2Card(piece))
       {
@@ -6456,7 +6463,7 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
         {
-          int width = StraightF1WallLogic.CompositeWidth;
+          int width = resolvedF1Width;
           Texture2D f1Texture = graphics.GetFrontWallF1Texture(width);
           if (f1Texture == null)
             continue;
@@ -6471,7 +6478,8 @@ public class ViewportLayoutEditor : EditorWindow
               PreviewHeight,
               f1DestX,
               resolvedY,
-              mirror);
+              mirror,
+              width);
           LogIfOverlapsLeftF0(
               piece,
               piece.Graphic,

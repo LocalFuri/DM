@@ -164,7 +164,8 @@ namespace DM.Rendering
         int bufferHeight,
         int destinationX,
         int destinationY,
-        bool mirrorHorizontally)
+        bool mirrorHorizontally,
+        int requestedWidth = 0)
     {
       if (source == null || destPixels == null)
         return;
@@ -177,6 +178,9 @@ namespace DM.Rendering
 
       Color32[] sourcePixels = source.GetPixels32();
       int sourceWidth = source.width;
+      int copyWidth = requestedWidth <= 0
+          ? sourceWidth
+          : Mathf.Min(requestedWidth, sourceWidth);
       int sourceHeight = source.height;
 
       for (int row = 0; row < sourceHeight; row++)
@@ -188,7 +192,7 @@ namespace DM.Rendering
         int sourceRow = row * sourceWidth;
         int destRow = targetY * bufferWidth;
 
-        for (int i = 0; i < sourceWidth; i++)
+        for (int i = 0; i < copyWidth; i++)
         {
           int destX = destinationX + i;
           if (destX < 0 || destX >= CompositeWidth)
