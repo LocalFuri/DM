@@ -215,6 +215,11 @@ public class ViewportLayoutEditor : EditorWindow
       frontF1GeometryOverrides =
           new Dictionary<string, FrontF1GeometryOverride>();
 
+  // Verified Enabled state for any normal wall, keyed by relative minimap
+  // geometry + piece identity. This is independent of absolute map X/Y/Facing.
+  private static readonly Dictionary<string, bool> normalWallEnabledGeometryOverrides =
+      new Dictionary<string, bool>();
+
   // ViewEdit-only normal-wall X/Y overrides. Like the temporary Mirror test,
   // these affect only the stationary preview pose and are discarded whenever
   // X/Y/Facing changes. They are never written to the layout asset/pose store.
@@ -755,6 +760,13 @@ public class ViewportLayoutEditor : EditorWindow
     // If the minimap cannot be read, do not hide wall cards.
     if (previewMiniMap == null)
       return true;
+
+    if (IsNormalWallPiece(piece)
+        && TryGetResolvedNormalWallState(
+            piece, out ResolvedNormalWallState resolvedNeededState))
+    {
+      return resolvedNeededState.Enabled;
+    }
 
     DungeonMap.GetForwardOffset(
         previewFacing,
@@ -1729,10 +1741,18 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent(EnabledLabel)).x;
     EditorGUIUtility.labelWidth = enabledLabelWidth;
 
+    bool normalWallEnabledPreview = IsNormalWallPiece(piece);
     bool isBlackDoorRightD3Exception =
         IsBlackDoorObliqueRightD3PoseException(piece);
+
     bool enabledBefore = piece.Enabled;
-    if (isBlackDoorRightD3Exception
+    if (normalWallEnabledPreview
+        && TryGetResolvedNormalWallState(
+            piece, out ResolvedNormalWallState enabledPreviewState))
+    {
+      enabledBefore = enabledPreviewState.Enabled;
+    }
+    if ((normalWallEnabledPreview || isBlackDoorRightD3Exception)
         && previewEnabledOverrideByPiece.TryGetValue(
             piece, out bool manualPreviewEnabled))
     {
@@ -1747,10 +1767,11 @@ public class ViewportLayoutEditor : EditorWindow
         GUILayout.ExpandWidth(false));
     bool nameOrEnabledChanged = EditorGUI.EndChangeCheck();
 
-    if (isBlackDoorRightD3Exception && enabledAfter != enabledBefore)
+    if ((normalWallEnabledPreview || isBlackDoorRightD3Exception)
+        && enabledAfter != enabledBefore)
     {
-      // Preview-only test. Keep the automatic exception state intact and only
-      // override whether it is drawn while the user remains on this pose.
+      // ViewEdit-only stationary-pose test, identical in lifetime to X/Y/Mirror.
+      // Geometry remains authoritative after X/Y/Facing changes.
       previewEnabledOverrideByPiece[piece] = enabledAfter;
       previewEnabledChangedThisFrame = true;
       ResetEditModeViewportLogCache();
@@ -1759,43 +1780,13 @@ public class ViewportLayoutEditor : EditorWindow
       RepaintGameViews();
       Repaint();
     }
-    else if (!isBlackDoorRightD3Exception)
+    else if (!normalWallEnabledPreview && !isBlackDoorRightD3Exception)
     {
       piece.Enabled = enabledAfter;
-      if (IsWallF0LeftPiece(piece) && enabledAfter != enabledBefore)
-      {
-        if (resolvedNormalWallByPiece.TryGetValue(
-                piece, out ResolvedNormalWallState leftF0EnabledState))
-        {
-          leftF0EnabledState.Enabled = enabledAfter;
-          resolvedNormalWallByPiece[piece] = leftF0EnabledState;
-        }
-
-        ResetEditModeViewportLogCache();
-        DestroyEditModePreviewTextureOnly();
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
-      }
-      if (IsWallF1RightPiece(piece) && enabledAfter != enabledBefore)
-      {
-        previewEnabledOverrideByPiece[piece] = enabledAfter;
-        if (resolvedNormalWallByPiece.TryGetValue(
-                piece, out ResolvedNormalWallState enabledState))
-        {
-          enabledState.Enabled = enabledAfter;
-          resolvedNormalWallByPiece[piece] = enabledState;
-        }
-        previewEnabledChangedThisFrame = true;
-        ResetEditModeViewportLogCache();
-        DestroyEditModePreviewTextureOnly();
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
-      }
     }
 
-    bool effectiveEnabled = isBlackDoorRightD3Exception
+    bool effectiveEnabled =
+        (normalWallEnabledPreview || isBlackDoorRightD3Exception)
         ? enabledAfter
         : piece.Enabled;
 
@@ -1821,8 +1812,6 @@ public class ViewportLayoutEditor : EditorWindow
         GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = previousLabelWidth;
     GUILayout.Space(ToggleGroupGap);
-    bool overrideClicked = GUILayout.Button(
-        "Override", GUILayout.Width(70f), GUILayout.ExpandWidth(false));
     EditorGUILayout.EndHorizontal();
 
     EditorGUI.BeginChangeCheck();
@@ -2177,19 +2166,48 @@ public class ViewportLayoutEditor : EditorWindow
     }
     EditorGUILayout.BeginHorizontal();
 
-    if (overrideClicked)
+    // Process Override only here, after Width and X/Y have been read and edited
+    // for this GUI event, so it captures the values currently shown in the card.
+    if (GUILayout.Button("Override", GUILayout.Width(70f), GUILayout.ExpandWidth(false)))
     {
+      EnsurePreviewMiniMapLoaded();
+
+      RelativeViewportGeometry overrideGeometry = default;
+      bool hasOverrideGeometry = previewMiniMap != null;
+      if (hasOverrideGeometry)
+      {
+        overrideGeometry =
+            RelativeViewportGeometry.Calculate(
+                previewMiniMap,
+                previewX,
+                previewY,
+                previewFacing);
+
+        if (IsNormalWallPiece(piece))
+        {
+          bool enabledToStore = effectiveEnabled;
+          if (previewEnabledOverrideByPiece.TryGetValue(
+                  piece, out bool previewEnabled))
+          {
+            enabledToStore = previewEnabled;
+          }
+
+          normalWallEnabledGeometryOverrides[
+              BuildNormalWallEnabledGeometryKey(
+                  overrideGeometry,
+                  piece)] = enabledToStore;
+
+          // Enabled is now verified for this relative geometry. Remove the
+          // temporary stationary-pose test; the geometry override takes over.
+          previewEnabledOverrideByPiece.Remove(piece);
+        }
+      }
+
       if (IsFrontWallF1Card(piece))
       {
-        EnsurePreviewMiniMapLoaded();
-        if (previewMiniMap != null)
+        if (hasOverrideGeometry)
         {
-          RelativeViewportGeometry geometry =
-              RelativeViewportGeometry.Calculate(
-                  previewMiniMap,
-                  previewX,
-                  previewY,
-                  previewFacing);
+          RelativeViewportGeometry geometry = overrideGeometry;
 
           int widthToStore = piece.FrontWallF1Width;
           if (resolvedNormalWallByPiece.TryGetValue(
@@ -4428,6 +4446,18 @@ public class ViewportLayoutEditor : EditorWindow
         + (g.F3Right.IsWall ? "W" : "O");
   }
 
+  private static string BuildNormalWallEnabledGeometryKey(
+      RelativeViewportGeometry g,
+      ViewportPiece piece)
+  {
+    string pieceId = piece != null
+        ? (!string.IsNullOrEmpty(piece.Name)
+            ? piece.Name
+            : piece.Graphic.ToString())
+        : "<null>";
+    return BuildFrontF1GeometryKey(g) + "|" + pieceId;
+  }
+
   private void ApplyF1MinimapWallRecipe()
   {
     DisableAllWallRenderingPieces();
@@ -4722,6 +4752,13 @@ public class ViewportLayoutEditor : EditorWindow
       else
       {
         continue;
+      }
+
+      if (normalWallEnabledGeometryOverrides.TryGetValue(
+              BuildNormalWallEnabledGeometryKey(g, piece),
+              out bool verifiedEnabled))
+      {
+        enabled = verifiedEnabled;
       }
 
       ResolvedNormalWallState state = new ResolvedNormalWallState
@@ -6457,7 +6494,14 @@ public class ViewportLayoutEditor : EditorWindow
                     piece, out bool manualExceptionEnabled)
                 || manualExceptionEnabled);
 
+        bool manualNormalWallEnabledForDraw =
+            IsNormalWallPiece(piece)
+            && previewEnabledOverrideByPiece.TryGetValue(
+                piece, out bool manualWallEnabledForDraw)
+            && manualWallEnabledForDraw;
+
         if (!shouldDraw
+            && !manualNormalWallEnabledForDraw
             && !blackDoorF2Exception
             && !blackDoorF3Exception
             && !blackDoorObliqueRightD3Exception)
@@ -6499,7 +6543,14 @@ public class ViewportLayoutEditor : EditorWindow
                 + " | resolvedWall.Enabled="
                 + resolvedWall.Enabled);
 
-          if (!resolvedWall.Enabled)
+          bool resolvedEnabled = resolvedWall.Enabled;
+          if (previewEnabledOverrideByPiece.TryGetValue(
+                  piece, out bool manualNormalWallEnabled))
+          {
+            resolvedEnabled = manualNormalWallEnabled;
+          }
+
+          if (!resolvedEnabled)
             continue;
 
           // Geometry supplies the normal orientation. A ViewEdit-only checkbox
@@ -6599,14 +6650,11 @@ public class ViewportLayoutEditor : EditorWindow
           if (f1Texture == null)
             continue;
 
-          int f1DestX;
+          // FrontF1 X is already resolved by the geometry recipe/override system.
+          // Compose must not derive X from width again, otherwise a verified
+          // geometry override (for example X=0 with width 192) gets lost.
+          int f1DestX = resolvedX;
 
-          if (previewPositionOverrideByPiece.ContainsKey(piece))
-              f1DestX = resolvedX;
-          else if (width == StraightF1WallLogic.CompositeWidth)
-              f1DestX = 0;
-          else
-              f1DestX = 32;
           StraightF1WallLogic.BlitCompositeToBuffer(
               f1Texture,
               pixels,
