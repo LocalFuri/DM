@@ -202,6 +202,19 @@ public class ViewportLayoutEditor : EditorWindow
   private readonly Dictionary<ViewportPiece, int> previewFrontF1WidthOverrideByPiece =
       new Dictionary<ViewportPiece, int>();
 
+  private struct FrontF1GeometryOverride
+  {
+    public int X;
+    public int Y;
+    public int Width;
+  }
+
+  // Verified FrontF1 values keyed by relative minimap geometry, not absolute map pose.
+  // These survive movement/turning within the current editor session.
+  private static readonly Dictionary<string, FrontF1GeometryOverride>
+      frontF1GeometryOverrides =
+          new Dictionary<string, FrontF1GeometryOverride>();
+
   // ViewEdit-only normal-wall X/Y overrides. Like the temporary Mirror test,
   // these affect only the stationary preview pose and are discarded whenever
   // X/Y/Facing changes. They are never written to the layout asset/pose store.
@@ -2166,9 +2179,59 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (overrideClicked)
     {
-      int refDisplayY =
-          UnityYToDisplayY(editUnityY, GetPieceHeightForEditorY(piece));
-      SetActiveCanonicalReferenceXY(piece, mirrorAfter, editX, refDisplayY);
+      if (IsFrontWallF1Card(piece))
+      {
+        EnsurePreviewMiniMapLoaded();
+        if (previewMiniMap != null)
+        {
+          RelativeViewportGeometry geometry =
+              RelativeViewportGeometry.Calculate(
+                  previewMiniMap,
+                  previewX,
+                  previewY,
+                  previewFacing);
+
+          int widthToStore = piece.FrontWallF1Width;
+          if (resolvedNormalWallByPiece.TryGetValue(
+                  piece, out ResolvedNormalWallState resolvedF1))
+          {
+            widthToStore = resolvedF1.FrontF1Width;
+          }
+          if (previewFrontF1WidthOverrideByPiece.TryGetValue(
+                  piece, out int previewWidth))
+          {
+            widthToStore = previewWidth;
+          }
+
+          widthToStore =
+              StraightF1WallLogic.NormalizeFrontWallF1Width(widthToStore);
+
+          frontF1GeometryOverrides[BuildFrontF1GeometryKey(geometry)] =
+              new FrontF1GeometryOverride
+              {
+                X = editX,
+                Y = editUnityY,
+                Width = widthToStore
+              };
+
+          // The verified geometry override is now authoritative. Remove only the
+          // temporary stationary-pose tests so movement can safely clear them.
+          previewPositionOverrideByPiece.Remove(piece);
+          previewFrontF1WidthOverrideByPiece.Remove(piece);
+
+          ApplyCurrentPoseVisibilityToLayout();
+          DestroyEditModePreviewTextureOnly();
+          RefreshEditModePreview();
+          RepaintGameViews();
+        }
+      }
+      else
+      {
+        int refDisplayY =
+            UnityYToDisplayY(editUnityY, GetPieceHeightForEditorY(piece));
+        SetActiveCanonicalReferenceXY(piece, mirrorAfter, editX, refDisplayY);
+      }
+
       Repaint();
     }
 
@@ -4347,6 +4410,24 @@ public class ViewportLayoutEditor : EditorWindow
     return currentParity != referenceParity;
   }
 
+  private static string BuildFrontF1GeometryKey(RelativeViewportGeometry g)
+  {
+    return (g.F0Left.IsWall ? "W" : "O")
+        + (g.F0Right.IsWall ? "W" : "O")
+        + "|"
+        + (g.F1Left.IsWall ? "W" : "O")
+        + (g.F1Center.IsWall ? "W" : "O")
+        + (g.F1Right.IsWall ? "W" : "O")
+        + "|"
+        + (g.F2Left.IsWall ? "W" : "O")
+        + (g.F2Center.IsWall ? "W" : "O")
+        + (g.F2Right.IsWall ? "W" : "O")
+        + "|"
+        + (g.F3Left.IsWall ? "W" : "O")
+        + (g.F3Center.IsWall ? "W" : "O")
+        + (g.F3Right.IsWall ? "W" : "O");
+  }
+
   private void ApplyF1MinimapWallRecipe()
   {
     DisableAllWallRenderingPieces();
@@ -4364,6 +4445,8 @@ public class ViewportLayoutEditor : EditorWindow
             previewX,
             previewY,
             previewFacing);
+
+    string frontF1GeometryKey = BuildFrontF1GeometryKey(g);
 
     bool frontF1 =
         g.F1Center.IsWall;
@@ -4472,6 +4555,16 @@ public class ViewportLayoutEditor : EditorWindow
         else
             frontF1Width = StraightF1WallLogic.CompositeWidth;
         x = frontF1Width == StraightF1WallLogic.CompositeWidth ? 0 : 32;
+
+        if (frontF1GeometryOverrides.TryGetValue(
+                frontF1GeometryKey, out FrontF1GeometryOverride verifiedF1))
+        {
+          x = verifiedF1.X;
+          y = verifiedF1.Y;
+          frontF1Width =
+              StraightF1WallLogic.NormalizeFrontWallF1Width(
+                  verifiedF1.Width);
+        }
       }
       else if (IsFrontWallF2Card(piece))
       {
