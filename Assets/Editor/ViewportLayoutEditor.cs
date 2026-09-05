@@ -2077,8 +2077,9 @@ public class ViewportLayoutEditor : EditorWindow
             StraightF1WallLogic.NormalizeFrontWallF1Width(previewF1Width);
       }
 
+      EditorGUILayout.BeginHorizontal();
+      EditorGUILayout.PrefixLabel("F1 Width");
       int widthSelected = EditorGUILayout.IntPopup(
-          "F1 Width",
           widthBefore,
           new[] { "160", "192", "224" },
           new[]
@@ -2086,7 +2087,10 @@ public class ViewportLayoutEditor : EditorWindow
             StraightF1WallLogic.CompositeWidth160,
             StraightF1WallLogic.CompositeWidth191,
             StraightF1WallLogic.CompositeWidth
-          });
+          },
+          GUILayout.Width(60f));
+      GUILayout.FlexibleSpace();
+      EditorGUILayout.EndHorizontal();
 
       widthSelected =
           StraightF1WallLogic.NormalizeFrontWallF1Width(widthSelected);
@@ -7680,7 +7684,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     int result = EditorGUILayout.DelayedIntField(
-        label, value, fieldStyle, GUILayout.Width(90f));
+        label, value, fieldStyle, GUILayout.Width(60f));
     GUI.color = previousGuiColor;
     GUI.contentColor = previousContentColor;
     return result;
