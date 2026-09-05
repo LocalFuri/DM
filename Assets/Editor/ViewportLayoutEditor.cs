@@ -666,7 +666,8 @@ public class ViewportLayoutEditor : EditorWindow
       if (GUILayout.Button(
               showOnlyWallsNeededForCurrentPose
                   ? "Show All Walls"
-                  : "Show all Walls we Need"))
+                  : "Show all Walls we Need",
+              GUILayout.Width(170f)))
       {
         showOnlyWallsNeededForCurrentPose =
             !showOnlyWallsNeededForCurrentPose;
@@ -681,7 +682,9 @@ public class ViewportLayoutEditor : EditorWindow
         Repaint();
       }
 
-      if (GUILayout.Button("Override Current Walls"))
+      if (GUILayout.Button(
+              "Override Current Walls",
+              GUILayout.Width(190f)))
       {
         StoreAllNormalWallOverridesForCurrentGeometry();
         GUI.FocusControl(null);
@@ -3483,10 +3486,10 @@ public class ViewportLayoutEditor : EditorWindow
       GUI.backgroundColor = previousColor;
     }
 
-    GUILayout.FlexibleSpace();
-    if (GUILayout.Button("Show Walls Activ", GUILayout.ExpandWidth(false)))
+    GUILayout.Space(8f);
+    if (GUILayout.Button("Show Walls Activ", GUILayout.Width(120f)))
       showWallsActivFilter = !showWallsActivFilter;
-    if (GUILayout.Button("Disable Walls", GUILayout.ExpandWidth(false)))
+    if (GUILayout.Button("Disable Walls", GUILayout.Width(100f)))
     {
       DisableWallsKeepChrome();
       PersistChanges();
@@ -3831,7 +3834,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     GUILayout.Space(6f);
 
-    // Compact 3×2 pad immediately to the right, top-aligned with the map.
+    // Keep the compact 3×2 movement pad visible beside the minimap.
     EditorGUILayout.BeginVertical(GUILayout.Width(96f));
     DrawPreviewNavigationPad();
     EditorGUILayout.EndVertical();
