@@ -102,7 +102,6 @@ public class ViewportLayoutEditor : EditorWindow
   private bool focusSearchPieces;
   private GUIStyle searchPiecesLabelStyle;
   private GUIStyle pieceFamilyHeaderStyle;
-  private bool[] rememberedEnabledStates;
   private int snap = 1;
 
   private bool hookedViewEditGlobalNavigation;
@@ -2344,25 +2343,6 @@ public class ViewportLayoutEditor : EditorWindow
         EditorGUILayout.EndVertical();
       }
     }
-    EditorGUILayout.BeginHorizontal();
-
-    if (GUILayout.Button("Solo"))
-    {
-      SelectPiece(index);
-      SoloPiece(index);
-      changed = true;
-    }
-
-    using (new EditorGUI.DisabledScope(rememberedEnabledStates == null))
-    {
-      if (GUILayout.Button("Restore"))
-      {
-        RestoreEnabledStates();
-        changed = true;
-      }
-    }
-
-    EditorGUILayout.EndHorizontal();
     EditorGUILayout.EndVertical();
 
     if (piece.Name == "Black Door Frame Left F2")
@@ -4126,27 +4106,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  private void SoloPiece(int soloIndex)
-  {
-    Undo.RecordObject(layout, "Viewport Layout Solo Piece");
-
-    rememberedEnabledStates = new bool[layout.Pieces.Count];
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-      rememberedEnabledStates[i] = layout.Pieces[i].Enabled;
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      piece.Enabled =
-          i == soloIndex || IsFloorOrCeiling(piece)
-          || piece.Graphic == DungeonGraphicType.MovementArrows;
-    }
-  }
-
   /// <summary>
-  /// Snapshots Enabled into rememberedEnabledStates (Solo/Restore), then
-  /// disables every piece except Floor, Ceiling, Movement Arrows, and
+  /// Disables every piece except Floor, Ceiling, Movement Arrows, and
   /// Champion Status Slot 1–4 (matched by ViewportPiece.Name).
   /// </summary>
   private void DisableWallsKeepChrome()
@@ -4155,11 +4116,6 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     Undo.RecordObject(layout, "Viewport Layout Disable Walls");
-
-    rememberedEnabledStates = new bool[layout.Pieces.Count];
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-      rememberedEnabledStates[i] = layout.Pieces[i].Enabled;
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -4180,21 +4136,6 @@ public class ViewportLayoutEditor : EditorWindow
         || piece.Name == "Champion Status Slot 2"
         || piece.Name == "Champion Status Slot 3"
         || piece.Name == "Champion Status Slot 4";
-  }
-
-  private void RestoreEnabledStates()
-  {
-    if (rememberedEnabledStates == null)
-      return;
-
-    Undo.RecordObject(layout, "Viewport Layout Restore Enabled");
-
-    int count = Mathf.Min(
-        rememberedEnabledStates.Length,
-        layout.Pieces.Count);
-
-    for (int i = 0; i < count; i++)
-      layout.Pieces[i].Enabled = rememberedEnabledStates[i];
   }
 
   private static bool IsFloorOrCeiling(ViewportPiece piece)
