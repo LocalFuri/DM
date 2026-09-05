@@ -97,6 +97,7 @@ public class ViewportLayoutEditor : EditorWindow
   private int pieceSearchFamilyIndex;
   private bool showWallsActivFilter;
   private bool showOnlyWallsNeededForCurrentPose;
+  private bool showGeometryDiagnostics;
   private string pieceSearchText = string.Empty;
   private bool openSearchPiecesPopup;
   private bool focusSearchPieces;
@@ -664,11 +665,15 @@ public class ViewportLayoutEditor : EditorWindow
 
       EditorGUILayout.BeginHorizontal();
 
+      string showWallsLabel = showOnlyWallsNeededForCurrentPose
+          ? "Show All Walls"
+          : "Show all Walls we Need";
+      float showWallsWidth =
+          GUI.skin.button.CalcSize(new GUIContent(showWallsLabel)).x;
       if (GUILayout.Button(
-              showOnlyWallsNeededForCurrentPose
-                  ? "Show All Walls"
-                  : "Show all Walls we Need",
-              GUILayout.Width(170f)))
+              showWallsLabel,
+              GUILayout.Width(showWallsWidth),
+              GUILayout.ExpandWidth(false)))
       {
         showOnlyWallsNeededForCurrentPose =
             !showOnlyWallsNeededForCurrentPose;
@@ -683,12 +688,31 @@ public class ViewportLayoutEditor : EditorWindow
         Repaint();
       }
 
+      const string OverrideWallsLabel = "Override Current Walls";
+      float overrideWallsWidth =
+          GUI.skin.button.CalcSize(new GUIContent(OverrideWallsLabel)).x;
       if (GUILayout.Button(
-              "Override Current Walls",
-              GUILayout.Width(190f)))
+              OverrideWallsLabel,
+              GUILayout.Width(overrideWallsWidth),
+              GUILayout.ExpandWidth(false)))
       {
         StoreAllNormalWallOverridesForCurrentGeometry();
         GUI.FocusControl(null);
+      }
+
+      const string DiagnosticsLabel = "Diagnostics";
+      float diagnosticsWidth =
+          GUI.skin.button.CalcSize(new GUIContent(DiagnosticsLabel)).x;
+      bool diagnosticsPressed = GUILayout.Toggle(
+          showGeometryDiagnostics,
+          DiagnosticsLabel,
+          GUI.skin.button,
+          GUILayout.Width(diagnosticsWidth),
+          GUILayout.ExpandWidth(false));
+      if (diagnosticsPressed != showGeometryDiagnostics)
+      {
+        showGeometryDiagnostics = diagnosticsPressed;
+        Repaint();
       }
 
       EditorGUILayout.EndHorizontal();
@@ -3598,13 +3622,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void DrawMapPosePreviewControls()
   {
-    EditorGUILayout.Space();
-    EditorGUILayout.LabelField(
-        previewX + " X /" + previewY + " Y - " + previewFacing);
-
-    // CHATGPT_BUILD_MAP_GEOMETRY_ONLY_DEBUG_20260829_AK
-    // Geometry stays live and visible for verification. Wall rendering stays off.
-    DrawRelativeViewportGeometryDebug();
+    if (showGeometryDiagnostics)
+      DrawRelativeViewportGeometryDebug();
 
     DrawPreviewMiniMap();
   }
