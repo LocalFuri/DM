@@ -4393,7 +4393,7 @@ public class ViewportLayoutEditor : EditorWindow
         g.F3Right.IsWall;
 
     // Minimap occupancy signature, not a map pose.
-    bool frontF2WithF1Sides = frontF2 && leftF1 && rightF1;
+    //bool frontF2WithF1Sides = frontF2 && leftF1 && rightF1;
     bool frontMirror =
         GetFrontF2LateralMirrorPhase(
             previewX,
@@ -4424,21 +4424,16 @@ public class ViewportLayoutEditor : EditorWindow
         mirror = frontF1Mirror;
         frontF1Width = StraightF1WallLogic.CompositeWidth;
       }
-      else if (IsFrontWallF2Card(piece))
-      {
-        enabled = frontF2;
-        x = 0;
-        if (frontF2WithF1Sides)
-        {
-          y = DisplayYToUnityY(125, GetPieceHeightForEditorY(piece));
-        }
-        else
-        {
-          y = TempUnconfirmedY;
-        }
-        mirror = frontMirror;
-      }
-      else if (IsFrontWallF3Card(piece))
+
+            else if (IsFrontWallF2Card(piece))
+            {
+                enabled = frontF2;
+                x = 0;
+                y = DisplayYToUnityY(125, GetPieceHeightForEditorY(piece));
+                mirror = frontMirror;
+            }
+
+            else if (IsFrontWallF3Card(piece))
       {
         enabled = frontF3;
         x = 7;
