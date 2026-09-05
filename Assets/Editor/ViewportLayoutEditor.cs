@@ -6495,7 +6495,14 @@ public class ViewportLayoutEditor : EditorWindow
                     drawGraphic = DungeonGraphicType.WallF0R;
                 else if (IsWallF0RightPiece(piece) && mirror)
                     drawGraphic = DungeonGraphicType.WallF0L;
-
+                else if (IsWallF1LeftPiece(piece) && mirror)
+                    drawGraphic = DungeonGraphicType.WallF1R;
+                else if (IsWallF1RightPiece(piece) && mirror)
+                    drawGraphic = DungeonGraphicType.WallF1L;
+                else if (IsWallF2LeftPiece(piece) && mirror)
+                    drawGraphic = DungeonGraphicType.WallF2R;
+                else if (IsWallF2RightPiece(piece) && mirror)
+                    drawGraphic = DungeonGraphicType.WallF2L;
                 Texture2D texture = graphics.GetTexture(drawGraphic);
 
                 if (isLeftF0Diag)
