@@ -1908,7 +1908,7 @@ public class ViewportLayoutEditor : EditorWindow
 
       EditorGUIUtility.labelWidth = 0f;
       piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
-          GUIContent.none, piece.Graphic, GUILayout.Width(190f));
+          GUIContent.none, piece.Graphic, GUILayout.Width(135f));
       GUILayout.Space(6f);
     }
     else if (!hideNameForWall)
@@ -2119,7 +2119,7 @@ public class ViewportLayoutEditor : EditorWindow
             StraightF1WallLogic.CompositeWidth191,
             StraightF1WallLogic.CompositeWidth
           },
-          GUILayout.Width(60f));
+          GUILayout.Width(52f));
 
       widthSelected =
           StraightF1WallLogic.NormalizeFrontWallF1Width(widthSelected);
@@ -2135,12 +2135,11 @@ public class ViewportLayoutEditor : EditorWindow
         Repaint();
       }
 
-      GUILayout.Space(10f);
+      GUILayout.Space(4f);
     }
     float savedXyLabelWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
 
     bool normalWallPositionPreview = IsNormalWallPiece(piece);
     int editX = piece.X;
@@ -2163,7 +2162,7 @@ public class ViewportLayoutEditor : EditorWindow
         piece, mirrorAfter, out canonicalRefX, out canonicalRefY);
     int pieceHeightForY = GetPieceHeightForEditorY(piece);
     int displayYForRef = UnityYToDisplayY(editUnityY, pieceHeightForY);
-    bool xChanged = DrawIntStepper(
+    bool xChanged = DrawIntStepperInline(
         "X",
         ref editX,
         snap,
@@ -2183,15 +2182,11 @@ public class ViewportLayoutEditor : EditorWindow
         changed = true;
       }
     }
-    EditorGUILayout.EndHorizontal();
-
-    GUILayout.Space(10f);
 
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-    EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
     int yBefore = editUnityY;
-    bool yChanged = DrawTopDownYStepper(
+    bool yChanged = DrawTopDownYStepperInline(
         ref editUnityY,
         pieceHeightForY,
         snap,
@@ -2211,7 +2206,6 @@ public class ViewportLayoutEditor : EditorWindow
         changed = true;
       }
     }
-    EditorGUILayout.EndHorizontal();
     EditorGUIUtility.labelWidth = savedXyLabelWidth;
     EditorGUILayout.EndHorizontal();
 
@@ -3820,7 +3814,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.BeginHorizontal();
 
-    EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(false));
+    EditorGUILayout.BeginVertical(GUILayout.Width(300f));
     previewMiniMapScroll = DungeonMiniMapGui.Draw(
         previewMiniMap,
         previewX,
@@ -3832,9 +3826,8 @@ public class ViewportLayoutEditor : EditorWindow
     );
     EditorGUILayout.EndVertical();
 
-    GUILayout.Space(6f);
 
-    // Keep the compact 3×2 movement pad visible beside the minimap.
+    // Keep the compact 3×2 movement pad directly beside the minimap.
     EditorGUILayout.BeginVertical(GUILayout.Width(96f));
     DrawPreviewNavigationPad();
     EditorGUILayout.EndVertical();
@@ -7712,11 +7705,65 @@ public class ViewportLayoutEditor : EditorWindow
       fieldStyle.active.textColor = red;
     }
 
+    EditorGUILayout.LabelField(label, GUILayout.Width(12f));
     int result = EditorGUILayout.DelayedIntField(
-        label, value, fieldStyle, GUILayout.Width(60f));
+        value, fieldStyle, GUILayout.Width(48f));
     GUI.color = previousGuiColor;
     GUI.contentColor = previousContentColor;
     return result;
+  }
+
+  private static bool DrawIntStepperInline(
+      string label,
+      ref int value,
+      int step,
+      bool valueDiffersFromRef = false)
+  {
+    EditorGUI.BeginChangeCheck();
+    value = DrawDelayedIntFieldMaybeRed(
+        label, value, valueDiffersFromRef);
+
+    bool changed = EditorGUI.EndChangeCheck();
+
+    if (GUILayout.Button($"-{step}", GUILayout.Width(36f)))
+    {
+      value -= step;
+      changed = true;
+    }
+
+    if (GUILayout.Button($"+{step}", GUILayout.Width(36f)))
+    {
+      value += step;
+      changed = true;
+    }
+
+    return changed;
+  }
+
+  private static bool DrawTopDownYStepperInline(
+      ref int unityY,
+      int pieceHeight,
+      int step,
+      bool valueDiffersFromRef = false)
+  {
+    int oldUnityY = unityY;
+    int displayY = UnityYToDisplayY(unityY, pieceHeight);
+
+    EditorGUI.BeginChangeCheck();
+    displayY = DrawDelayedIntFieldMaybeRed(
+        "Y", displayY, valueDiffersFromRef);
+
+    if (GUILayout.Button($"-{step}", GUILayout.Width(36f)))
+      displayY -= step;
+
+    if (GUILayout.Button($"+{step}", GUILayout.Width(36f)))
+      displayY += step;
+
+    int maxDisplayY = Mathf.Max(0, PreviewHeight - Mathf.Max(1, pieceHeight));
+    displayY = Mathf.Clamp(displayY, 0, maxDisplayY);
+    unityY = DisplayYToUnityY(displayY, pieceHeight);
+
+    return EditorGUI.EndChangeCheck() || unityY != oldUnityY;
   }
 
   private static bool DrawIntStepper(
@@ -7725,7 +7772,7 @@ public class ViewportLayoutEditor : EditorWindow
       int step,
       bool valueDiffersFromRef = false)
   {
-    EditorGUILayout.BeginHorizontal();
+    EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
     EditorGUI.BeginChangeCheck();
     value = DrawDelayedIntFieldMaybeRed(
         label, value, valueDiffersFromRef);
@@ -7771,7 +7818,7 @@ public class ViewportLayoutEditor : EditorWindow
     int displayY = UnityYToDisplayY(unityY, pieceHeight);
 
     EditorGUI.BeginChangeCheck();
-    EditorGUILayout.BeginHorizontal();
+    EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
     displayY = DrawDelayedIntFieldMaybeRed(
         "Y", displayY, valueDiffersFromRef);
 
