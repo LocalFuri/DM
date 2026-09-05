@@ -854,9 +854,14 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (name == "RightD3" || name == "Wall D3R2")
     {
-      // Old standalone normal-geometry selector disabled. RightD3 must now be
-      // chosen only by a complete geometry recipe. Keep the existing Black Door
-      // oblique exception alive for the exception layer.
+      // Normal RightD3 visibility comes from the minimap resolver. Keep the
+      // existing Black Door oblique exception as a separate exception layer.
+      if (TryGetResolvedNormalWallState(
+              piece, out ResolvedNormalWallState rightD3State))
+      {
+        return rightD3State.Enabled;
+      }
+
       bool blackDoorOblique =
           previewX == 0
           && previewY == 5
@@ -4392,16 +4397,28 @@ public class ViewportLayoutEditor : EditorWindow
         !g.F3Center.IsWall &&
         g.F3Right.IsWall;
 
+    // RightD3 oblique-right opening derived from repeated minimap geometry,
+    // not absolute map coordinates. Confirmed at 1,6 East and 9,14 East.
+    // Shared relative signature:
+    //   F1: L=wall, C=wall, R=open
+    //   F2: L=wall, C=either, R=open
+    //   F3: L=open, C=open, R=open
+    bool rightD3ObliqueOpening =
+        g.F1Left.IsWall
+        && g.F1Center.IsWall
+        && !g.F1Right.IsWall
+        && g.F2Left.IsWall
+        && !g.F2Right.IsWall
+        && !g.F3Left.IsWall
+        && !g.F3Center.IsWall
+        && !g.F3Right.IsWall;
+
     // Minimap occupancy signature, not a map pose.
-    //bool frontF2WithF1Sides = frontF2 && leftF1 && rightF1;
     bool frontMirror =
         GetFrontF2LateralMirrorPhase(
             previewX,
             previewY,
             previewFacing);
-
-    const int TempUnconfirmedX = 0;
-    const int TempUnconfirmedY = 0;
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -4424,16 +4441,14 @@ public class ViewportLayoutEditor : EditorWindow
         mirror = frontF1Mirror;
         frontF1Width = StraightF1WallLogic.CompositeWidth;
       }
-
-            else if (IsFrontWallF2Card(piece))
-            {
-                enabled = frontF2;
-                x = 0;
-                y = DisplayYToUnityY(125, GetPieceHeightForEditorY(piece));
-                mirror = frontMirror;
-            }
-
-            else if (IsFrontWallF3Card(piece))
+      else if (IsFrontWallF2Card(piece))
+      {
+        enabled = frontF2;
+        x = 0;
+        y = DisplayYToUnityY(125, GetPieceHeightForEditorY(piece));
+        mirror = frontMirror;
+      }
+      else if (IsFrontWallF3Card(piece))
       {
         enabled = frontF3;
         x = 7;
@@ -4567,6 +4582,17 @@ public class ViewportLayoutEditor : EditorWindow
           x = 136;
           y = DisplayYToUnityY(60, GetPieceHeightForEditorY(piece));
         }
+      }
+      else if (piece.Name == "RightD3"
+          || piece.Name == "Wall D3R2"
+          || piece.Graphic == DungeonGraphicType.WallD3R2)
+      {
+        // Geometry-driven oblique right-side depth piece. Position/blit stay on
+        // the existing RightD3 path; this rule decides only whether it is needed.
+        enabled = rightD3ObliqueOpening;
+        x = piece.EffectiveX;
+        y = piece.EffectiveY;
+        mirror = piece.MirrorHorizontally;
       }
       else
       {
