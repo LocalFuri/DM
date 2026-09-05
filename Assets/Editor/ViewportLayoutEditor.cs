@@ -1909,7 +1909,11 @@ public class ViewportLayoutEditor : EditorWindow
       EditorGUIUtility.labelWidth = 0f;
       piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
           GUIContent.none, piece.Graphic, GUILayout.Width(135f));
-      GUILayout.Space(6f);
+
+      // FrontF1 row 1 ends after Header + Graphic.
+      // Enabled / Mirror / Ref continue on a new second row.
+      EditorGUILayout.EndHorizontal();
+      EditorGUILayout.BeginHorizontal();
     }
     else if (!hideNameForWall)
     {
