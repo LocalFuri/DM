@@ -1965,6 +1965,14 @@ public class ViewportLayoutEditor : EditorWindow
       if (cropAfter != frontF1CropPreview)
       {
         frontF1CropPreview = cropAfter;
+        if (frontF1CropPreview
+            && previewX == 0
+            && previewY == 5
+            && previewFacing == DungeonFacing.South)
+        {
+          frontF1CropStartXPreview = 32;
+        }
+
         GUI.FocusControl(null);
         RefreshTemporaryNormalWallPreview();
       }
@@ -7207,14 +7215,66 @@ public class ViewportLayoutEditor : EditorWindow
         {
           int width = resolvedF1Width;
           int frontF1TextureHeight = StraightF1WallLogic.CompositeHeight;
-          bool isolateFrontF1FullWidthAt05South =
-              previewX == 0
-              && previewY == 5
-              && previewFacing == DungeonFacing.South;
-          if (isolateFrontF1FullWidthAt05South)
-            width = StraightF1WallLogic.CompositeWidth;
 
-          if (frontF1CropPreview && !isolateFrontF1FullWidthAt05South)
+          if (previewX == 0
+              && previewY == 5
+              && previewFacing == DungeonFacing.South)
+          {
+            width = StraightF1WallLogic.CompositeWidth;
+            Texture2D f1Texture = graphics.GetFrontWallF1Texture(width);
+            if (f1Texture == null)
+              continue;
+
+            frontF1TextureHeight = f1Texture.height;
+
+            // GameView dest X stays 0 for Crop OFF and Crop ON.
+            // Crop ON only changes the start X inside the already-mirrored image.
+            int destinationStartX = 0;
+            bool f1Mirror = true;
+
+            if (frontF1CropPreview)
+            {
+              int sourceStartX = 32;
+              int copyWidth =
+                  StraightF1WallLogic.CompositeWidth - sourceStartX;
+
+              BlitFrontF1MirroredImageFromX(
+                  pixels,
+                  f1Texture,
+                  sourceStartX,
+                  destinationStartX,
+                  resolvedY);
+
+              LogIfOverlapsLeftF0(
+                  piece,
+                  piece.Graphic,
+                  destinationStartX,
+                  resolvedY,
+                  copyWidth,
+                  f1Texture.height);
+            }
+            else
+            {
+              StraightF1WallLogic.BlitCompositeToBuffer(
+                  f1Texture,
+                  pixels,
+                  PreviewWidth,
+                  PreviewHeight,
+                  destinationStartX,
+                  resolvedY,
+                  f1Mirror,
+                  width);
+
+              LogIfOverlapsLeftF0(
+                  piece,
+                  piece.Graphic,
+                  destinationStartX,
+                  resolvedY,
+                  width,
+                  f1Texture.height);
+            }
+          }
+          else if (frontF1CropPreview)
           {
             Texture2D fullF1Texture =
                 graphics.GetFrontWallF1Texture(StraightF1WallLogic.CompositeWidth);
@@ -7959,6 +8019,57 @@ public class ViewportLayoutEditor : EditorWindow
       int row = y * PreviewWidth;
       for (int x = 224; x < PreviewWidth; x++)
         pixels[row + x] = magenta;
+    }
+  }
+
+  // Mirror the complete 224x111 FrontF1 first, then copy from mirrored
+  // image X = mirroredSourceStartX through the last column.
+  // Destination start is independent and is not derived from source start.
+  private static void BlitFrontF1MirroredImageFromX(
+      Color32[] dest,
+      Texture2D source,
+      int mirroredSourceStartX,
+      int destinationStartX,
+      int destinationY)
+  {
+    if (dest == null || source == null || !source.isReadable)
+      return;
+
+    int imageWidth = Mathf.Min(
+        source.width,
+        StraightF1WallLogic.CompositeWidth);
+    if (imageWidth <= 0)
+      return;
+
+    int lastImageX = imageWidth - 1;
+    mirroredSourceStartX = Mathf.Clamp(mirroredSourceStartX, 0, lastImageX);
+    int copyWidth = lastImageX - mirroredSourceStartX + 1;
+    if (copyWidth <= 0)
+      return;
+
+    Color32[] sourcePixels = source.GetPixels32();
+
+    for (int sourceY = 0; sourceY < source.height; sourceY++)
+    {
+      int targetY = destinationY + sourceY;
+      if (targetY < 0 || targetY >= PreviewHeight)
+        continue;
+
+      int sourceRow = sourceY * source.width;
+      int destRow = targetY * PreviewWidth;
+
+      for (int i = 0; i < copyWidth; i++)
+      {
+        int targetX = destinationStartX + i;
+        if (targetX < 0 || targetX >= StraightF1WallLogic.CompositeWidth)
+          continue;
+
+        int mirroredX = mirroredSourceStartX + i;
+        int originalX = lastImageX - mirroredX;
+        Color32 colour = sourcePixels[sourceRow + originalX];
+        colour.a = 255;
+        dest[destRow + targetX] = colour;
+      }
     }
   }
 
