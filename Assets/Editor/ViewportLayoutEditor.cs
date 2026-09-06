@@ -669,7 +669,7 @@ public class ViewportLayoutEditor : EditorWindow
               showOnlyWallsNeededForCurrentPose
                   ? "Show All Walls"
                   : "Show all Walls we Need",
-              GUILayout.Width(170f)))
+              GUILayout.Width(130f)))
       {
         showOnlyWallsNeededForCurrentPose =
             !showOnlyWallsNeededForCurrentPose;
@@ -686,7 +686,7 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (GUILayout.Button(
               "Override Current Walls",
-              GUILayout.Width(190f)))
+              GUILayout.Width(170f)))
       {
         StoreAllNormalWallOverridesForCurrentGeometry();
         GUI.FocusControl(null);
