@@ -6806,6 +6806,45 @@ public class ViewportLayoutEditor : EditorWindow
     };
   }
 
+  private static int GetNormalWallRenderDepth(ViewportPiece piece)
+  {
+    if (piece == null)
+      return -1;
+
+    // Higher number = farther from the player. Compose draws far -> near.
+    if (IsWallF3LeftPiece(piece)
+        || IsWallF3RightPiece(piece)
+        || IsFrontWallF3Card(piece)
+        || piece.Graphic == DungeonGraphicType.WallD3L2
+        || piece.Graphic == DungeonGraphicType.WallD3R2
+        || piece.Name == "LeftD3"
+        || piece.Name == "RightD3"
+        || piece.Name == "Wall D3L2"
+        || piece.Name == "Wall D3R2")
+    {
+      return 3;
+    }
+
+    if (IsWallF2LeftPiece(piece)
+        || IsWallF2RightPiece(piece)
+        || IsFrontWallF2Card(piece))
+    {
+      return 2;
+    }
+
+    if (IsWallF1LeftPiece(piece)
+        || IsWallF1RightPiece(piece)
+        || IsFrontWallF1Card(piece))
+    {
+      return 1;
+    }
+
+    if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
+      return 0;
+
+    return -1;
+  }
+
   private void ComposeEditModePreview()
   {
     EnsureEditModePreviewTexture();
@@ -6866,9 +6905,26 @@ public class ViewportLayoutEditor : EditorWindow
             + laterW + "x" + laterH);
       }
 
+      // Draw normal walls by physical depth (far -> near) without changing
+      // layout.Pieces itself. Non-wall pieces keep their original slots/order.
+      List<ViewportPiece> orderedNormalWalls = new List<ViewportPiece>();
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece candidate = layout.Pieces[i];
+        if (IsNormalWallPiece(candidate))
+          orderedNormalWalls.Add(candidate);
+      }
+
+      orderedNormalWalls.Sort(
+          (a, b) => GetNormalWallRenderDepth(b).CompareTo(
+              GetNormalWallRenderDepth(a)));
+
+      int nextNormalWall = 0;
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
         ViewportPiece piece = layout.Pieces[i];
+        if (IsNormalWallPiece(piece))
+          piece = orderedNormalWalls[nextNormalWall++];
         bool isLeftF0Diag = is14South && IsWallF0LeftPiece(piece);
         bool shouldDraw = ShouldDrawPieceAtPreviewPose(piece);
         bool blackDoorF2Exception = IsBlackDoorF2PoseException(piece);
