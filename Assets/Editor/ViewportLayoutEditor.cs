@@ -1957,26 +1957,30 @@ public class ViewportLayoutEditor : EditorWindow
 
       GUILayout.Space(6f);
       bool guiChangedBeforeCrop = GUI.changed;
-      bool cropUiForcedOnAt05South =
+      bool cropUiAt05South =
           previewX == 0
           && previewY == 5
           && previewFacing == DungeonFacing.South;
-      bool cropDisplayed = cropUiForcedOnAt05South || frontF1CropPreview;
-      int cropXDisplayed = cropUiForcedOnAt05South ? 32 : frontF1CropStartXPreview;
+      int cropXDisplayed =
+          (cropUiAt05South && frontF1CropPreview)
+              ? 32
+              : frontF1CropStartXPreview;
       bool cropAfter = GUILayout.Toggle(
-          cropDisplayed,
-          cropDisplayed ? "Crop ON" : "Crop OFF",
+          frontF1CropPreview,
+          frontF1CropPreview ? "Crop ON" : "Crop OFF",
           EditorStyles.miniButton,
           GUILayout.Width(90f));
-      if (!cropUiForcedOnAt05South && cropAfter != frontF1CropPreview)
+      if (cropAfter != frontF1CropPreview)
       {
         frontF1CropPreview = cropAfter;
+        if (frontF1CropPreview && cropUiAt05South)
+          frontF1CropStartXPreview = 32;
         GUI.FocusControl(null);
         RefreshTemporaryNormalWallPreview();
       }
 
       GUILayout.Space(4f);
-      EditorGUI.BeginDisabledGroup(!cropDisplayed);
+      EditorGUI.BeginDisabledGroup(!frontF1CropPreview);
       EditorGUIUtility.labelWidth = 42f;
       int cropXAfter = EditorGUILayout.DelayedIntField(
           "Crop X",
@@ -1989,7 +1993,7 @@ public class ViewportLayoutEditor : EditorWindow
           cropXAfter,
           0,
           StraightF1WallLogic.CompositeWidth - 1);
-      if (!cropUiForcedOnAt05South && cropXAfter != frontF1CropStartXPreview)
+      if (!cropUiAt05South && cropXAfter != frontF1CropStartXPreview)
       {
         frontF1CropStartXPreview = cropXAfter;
         GUI.FocusControl(null);
@@ -7214,26 +7218,52 @@ public class ViewportLayoutEditor : EditorWindow
 
             frontF1TextureHeight = f1Texture.height;
 
-            // GameView dest X is independent of the mirrored-image start X.
-            int destinationStartX = 32;
-            int sourceStartX = 32;
-            int copyWidth =
-                StraightF1WallLogic.CompositeWidth - sourceStartX;
+            if (frontF1CropPreview)
+            {
+              // GameView dest X is independent of the mirrored-image start X.
+              int destinationStartX = 32;
+              int sourceStartX = 32;
+              int copyWidth =
+                  StraightF1WallLogic.CompositeWidth - sourceStartX;
 
-            BlitFrontF1MirroredImageFromX(
-                pixels,
-                f1Texture,
-                sourceStartX,
-                destinationStartX,
-                resolvedY);
+              BlitFrontF1MirroredImageFromX(
+                  pixels,
+                  f1Texture,
+                  sourceStartX,
+                  destinationStartX,
+                  resolvedY);
 
-            LogIfOverlapsLeftF0(
-                piece,
-                piece.Graphic,
-                destinationStartX,
-                resolvedY,
-                copyWidth,
-                f1Texture.height);
+              LogIfOverlapsLeftF0(
+                  piece,
+                  piece.Graphic,
+                  destinationStartX,
+                  resolvedY,
+                  copyWidth,
+                  f1Texture.height);
+            }
+            else
+            {
+              int destinationStartX = 0;
+              bool f1Mirror = true;
+
+              StraightF1WallLogic.BlitCompositeToBuffer(
+                  f1Texture,
+                  pixels,
+                  PreviewWidth,
+                  PreviewHeight,
+                  destinationStartX,
+                  resolvedY,
+                  f1Mirror,
+                  width);
+
+              LogIfOverlapsLeftF0(
+                  piece,
+                  piece.Graphic,
+                  destinationStartX,
+                  resolvedY,
+                  width,
+                  f1Texture.height);
+            }
           }
           else if (frontF1CropPreview)
           {
