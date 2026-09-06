@@ -6981,21 +6981,6 @@ public class ViewportLayoutEditor : EditorWindow
         if (IsNormalWallPiece(piece))
           piece = orderedNormalWalls[nextNormalWall++];
 
-        // TEMP isolation test for exactly (0,5) South:
-        // Ceiling + Floor + FrontF1 only. No other walls.
-        bool isolateFrontF1At05South =
-            previewX == 0
-            && previewY == 5
-            && previewFacing == DungeonFacing.South;
-
-        if (isolateFrontF1At05South
-            && (piece == null
-                || (!IsFloorOrCeiling(piece)
-                    && !IsFrontWallF1Card(piece))))
-        {
-          continue;
-        }
-
         bool isLeftF0Diag = is14South && IsWallF0LeftPiece(piece);
         bool shouldDraw = ShouldDrawPieceAtPreviewPose(piece);
         bool blackDoorF2Exception = IsBlackDoorF2PoseException(piece);
@@ -7223,7 +7208,11 @@ public class ViewportLayoutEditor : EditorWindow
             width = StraightF1WallLogic.CompositeWidth;
             Texture2D f1Texture = graphics.GetFrontWallF1Texture(width);
             if (f1Texture == null)
+            {
+              Debug.LogError(
+                  "FrontF1 0,5 South: required 224x111 source texture is missing.");
               continue;
+            }
 
             frontF1TextureHeight = f1Texture.height;
 
