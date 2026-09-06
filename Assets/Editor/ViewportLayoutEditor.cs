@@ -4286,6 +4286,31 @@ public class ViewportLayoutEditor : EditorWindow
     return false;
   }
 
+  private bool TryGetFrontF1PreviewPositionOverride(
+      ViewportPiece piece,
+      out Vector2Int position)
+  {
+    if (piece != null
+        && previewPositionOverrideByPiece.TryGetValue(piece, out position))
+    {
+      return true;
+    }
+
+    foreach (KeyValuePair<ViewportPiece, Vector2Int> entry in previewPositionOverrideByPiece)
+    {
+      if (entry.Key == null || !IsFrontWallF1Card(entry.Key))
+        continue;
+      if (piece != null && ReferenceEquals(entry.Key, piece))
+        continue;
+
+      position = entry.Value;
+      return true;
+    }
+
+    position = default;
+    return false;
+  }
+
   private static bool IsFrontWallF2Card(ViewportPiece piece)
   {
     if (piece == null || piece.Name == null)
@@ -6999,7 +7024,14 @@ public class ViewportLayoutEditor : EditorWindow
         {
           mirror = livePreviewMirror;
         }
-        if (previewPositionOverrideByPiece.TryGetValue(
+        if (IsFrontWallF1Card(piece)
+            && TryGetFrontF1PreviewPositionOverride(
+                piece, out Vector2Int frontF1PreviewPosition))
+        {
+          resolvedX = frontF1PreviewPosition.x;
+          resolvedY = frontF1PreviewPosition.y;
+        }
+        else if (previewPositionOverrideByPiece.TryGetValue(
                 piece, out Vector2Int livePreviewPosition))
         {
           resolvedX = livePreviewPosition.x;
