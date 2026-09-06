@@ -7227,9 +7227,8 @@ public class ViewportLayoutEditor : EditorWindow
 
             frontF1TextureHeight = f1Texture.height;
 
-            // GameView dest X stays 0 for Crop OFF and Crop ON.
-            // Crop ON only changes the start X inside the already-mirrored image.
-            int destinationStartX = 0;
+            // GameView dest X is independent of the mirrored-image start X.
+            int destinationStartX = 32;
             bool f1Mirror = true;
 
             if (frontF1CropPreview)
