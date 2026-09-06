@@ -486,19 +486,37 @@ public class ViewportLayoutEditor : EditorWindow
       {
         enabled = previewEnabled;
       }
+      else if (IsFrontWallF1Card(piece)
+          && TryGetFrontF1PreviewEnabledOverride(out previewEnabled))
+      {
+        enabled = previewEnabled;
+      }
 
       int x = hasResolved ? state.X : piece.EffectiveX;
       int y = hasResolved ? state.Y : piece.EffectiveY;
-      if (previewPositionOverrideByPiece.TryGetValue(
+      if (IsFrontWallF1Card(piece)
+          && TryGetFrontF1PreviewPositionOverride(
               piece, out Vector2Int previewPosition))
+      {
+        x = previewPosition.x;
+        y = previewPosition.y;
+      }
+      else if (previewPositionOverrideByPiece.TryGetValue(
+              piece, out previewPosition))
       {
         x = previewPosition.x;
         y = previewPosition.y;
       }
 
       bool mirror = hasResolved ? state.Mirror : piece.MirrorHorizontally;
-      if (previewMirrorOverrideByPiece.TryGetValue(
+      if (IsFrontWallF1Card(piece)
+          && TryGetFrontF1PreviewMirrorOverride(
               piece, out bool previewMirror))
+      {
+        mirror = previewMirror;
+      }
+      else if (previewMirrorOverrideByPiece.TryGetValue(
+              piece, out previewMirror))
       {
         mirror = previewMirror;
       }
@@ -512,7 +530,7 @@ public class ViewportLayoutEditor : EditorWindow
         frontWallF1Width = hasResolved
             ? state.FrontF1Width
             : piece.FrontWallF1Width;
-        if (previewFrontF1WidthOverrideByPiece.TryGetValue(
+        if (TryGetFrontF1PreviewWidthOverride(
                 piece, out int previewWidth))
         {
           frontWallF1Width = previewWidth;
