@@ -179,26 +179,31 @@ namespace DM.Rendering
 
     public Texture2D GetFrontWallF3Texture()
     {
-      if (cachedFrontWallF3_141 != null)
+      if (cachedFrontWallF3_141 != null
+          && cachedFrontWallF3_141.width == 141
+          && cachedFrontWallF3_141.height == 49)
+      {
         return cachedFrontWallF3_141;
+      }
 
 #if UNITY_EDITOR
       cachedFrontWallF3_141 =
           UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
               FrontWallF3_141AssetPath);
 #endif
-      if (cachedFrontWallF3_141 != null)
-        return cachedFrontWallF3_141;
-
-      if (FrontWallF3 != null
-          && FrontWallF3.width == 141
-          && FrontWallF3.height == 49)
+      if (cachedFrontWallF3_141 != null
+          && cachedFrontWallF3_141.width == 141
+          && cachedFrontWallF3_141.height == 49)
       {
-        cachedFrontWallF3_141 = FrontWallF3;
         return cachedFrontWallF3_141;
       }
 
-      return FrontWallF3;
+      cachedFrontWallF3_141 = null;
+      Debug.LogError(
+          "FrontWallF3 141x49 asset is missing/unavailable: "
+          + FrontWallF3_141AssetPath
+          + ". NO FALLBACK APPLIED.");
+      return null;
     }
 
     public Texture2D GetFrontWallF2Texture(int width)
