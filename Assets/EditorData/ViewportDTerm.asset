@@ -701,7 +701,7 @@ MonoBehaviour:
     PieceName: RightF0
     Enabled: 1
     Graphic: 4
-    X: 0
+    X: 192
     Y: 31
     Mirror: 1
     FrontWallF1Width: 0
@@ -1323,6 +1323,105 @@ MonoBehaviour:
     Enabled: 0
     Graphic: 4
     X: 192
+    Y: 31
+    Mirror: 1
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: OW|OWW|OWW|WWW
+    PieceName: FrontF3
+    Enabled: 0
+    Graphic: 25
+    X: 7
+    Y: 93
+    Mirror: 1
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: OW|OWW|OWW|WWW
+    PieceName: LeftF3
+    Enabled: 0
+    Graphic: 9
+    X: 5
+    Y: 91
+    Mirror: 1
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: OW|OWW|OWW|WWW
+    PieceName: RightF3
+    Enabled: 0
+    Graphic: 10
+    X: 136
+    Y: 91
+    Mirror: 1
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: OW|OWW|OWW|WWW
+    PieceName: LeftD3
+    Enabled: 0
+    Graphic: 13
+    X: 0
+    Y: 97
+    Mirror: 0
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: OW|OWW|OWW|WWW
+    PieceName: RightD3
+    Enabled: 0
+    Graphic: 14
+    X: 196
+    Y: 93
+    Mirror: 0
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: OW|OWW|OWW|WWW
+    PieceName: FrontF2
+    Enabled: 0
+    Graphic: 24
+    X: 0
+    Y: 74
+    Mirror: 1
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: OW|OWW|OWW|WWW
+    PieceName: LeftF2
+    Enabled: 0
+    Graphic: 7
+    X: 0
+    Y: 74
+    Mirror: 1
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: OW|OWW|OWW|WWW
+    PieceName: RightF2
+    Enabled: 0
+    Graphic: 8
+    X: 147
+    Y: 75
+    Mirror: 1
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: OW|OWW|OWW|WWW
+    PieceName: LeftF1
+    Enabled: 0
+    Graphic: 5
+    X: 0
+    Y: 47
+    Mirror: 1
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: OW|OWW|OWW|WWW
+    PieceName: RightF1
+    Enabled: 0
+    Graphic: 6
+    X: 165
+    Y: 48
+    Mirror: 1
+    FrontWallF1Width: 0
+    FrontWallF2Width: 0
+  - GeometryKey: OW|OWW|OWW|WWW
+    PieceName: LeftF0
+    Enabled: 0
+    Graphic: 3
+    X: 0
     Y: 31
     Mirror: 1
     FrontWallF1Width: 0
