@@ -154,12 +154,12 @@ MonoBehaviour:
     Graphic: 23
     X: 1
     Y: 15
-    Enabled: 0
+    Enabled: 1
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
-    FrontWallF1Width: 192
+    MirrorHorizontally: 1
+    FrontWallF1Width: 224
     FrontWallF2Width: 106
   - Name: LeftF1
     Graphic: 5
@@ -352,10 +352,10 @@ MonoBehaviour:
     Graphic: 23
     X: 40
     Y: 47
-    Enabled: 0
+    Enabled: 1
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
-    FrontWallF1Width: 192
+    MirrorHorizontally: 1
+    FrontWallF1Width: 224
     FrontWallF2Width: 106

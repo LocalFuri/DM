@@ -33,10 +33,6 @@ public class ViewportLayoutEditor : EditorWindow
   private const int PreviewWidth = 320;
   private const int PreviewHeight = 200;
 
-  // Maximum visible/rendered depth (F3). Canonical diagnostic scans F1..F3
-  // only. Unused by Compose / DTerm / wall recipes.
-  private const int CanonicalViewDepth = 3;
-
   // NORMAL-WALL REBOOT:
   // Until the new geometry renderer is built, old normal-wall rendering is
   // completely disconnected. Only the relative geometry snapshot is active.
@@ -206,12 +202,6 @@ public class ViewportLayoutEditor : EditorWindow
   private readonly Dictionary<ViewportPiece, int> previewFrontF1WidthOverrideByPiece =
       new Dictionary<ViewportPiece, int>();
 
-  // ViewEdit-only Graphic override. Same lifetime as Mirror/X/Y: stationary
-  // pose only, never persisted until Override Current Walls.
-  private readonly Dictionary<ViewportPiece, DungeonGraphicType>
-      previewGraphicOverrideByPiece =
-          new Dictionary<ViewportPiece, DungeonGraphicType>();
-
   private struct FrontF1GeometryOverride
   {
     public int X;
@@ -251,7 +241,6 @@ public class ViewportLayoutEditor : EditorWindow
   private bool previewFrontF1WidthChangedThisFrame;
   private bool previewPositionChangedThisFrame;
   private bool previewEnabledChangedThisFrame;
-  private bool previewGraphicChangedThisFrame;
 
   private struct ResolvedNormalWallState
   {
@@ -270,9 +259,6 @@ public class ViewportLayoutEditor : EditorWindow
   // TEMP F0 mirror diagnostic — remove after strafe/forward verification.
   private static string lastLoggedF0MirrorDiagnosticKey;
   private static string lastLoggedF0DrawDiagnosticKey;
-
-  // Canonical N/E/S/W 3x3 diagnostic — log once per origin so Console is readable.
-  private string lastLoggedCanonicalGeometryDiagnostic;
 
   // Temporary 320×200 presentation (restored on close / Play Mode).
   private bool presentationOverrideActive;
@@ -521,11 +507,6 @@ public class ViewportLayoutEditor : EditorWindow
 
       DungeonGraphicType graphic =
           hasResolved ? state.Graphic : piece.Graphic;
-      if (previewGraphicOverrideByPiece.TryGetValue(
-              piece, out DungeonGraphicType previewGraphic))
-      {
-        graphic = previewGraphic;
-      }
 
       int frontWallF1Width = 0;
       if (IsFrontWallF1Card(piece))
@@ -601,7 +582,6 @@ public class ViewportLayoutEditor : EditorWindow
     previewPositionOverrideByPiece.Clear();
     previewMirrorOverrideByPiece.Clear();
     previewFrontF1WidthOverrideByPiece.Clear();
-    previewGraphicOverrideByPiece.Clear();
 
     ApplyCurrentPoseVisibilityToLayout();
     ResetEditModeViewportLogCache();
@@ -685,15 +665,11 @@ public class ViewportLayoutEditor : EditorWindow
 
       EditorGUILayout.BeginHorizontal();
 
-      string showWallsLabel = showOnlyWallsNeededForCurrentPose
-          ? "Show All Walls"
-          : "Show all Walls we Need";
-      float showWallsWidth =
-          GUI.skin.button.CalcSize(new GUIContent(showWallsLabel)).x;
       if (GUILayout.Button(
-              showWallsLabel,
-              GUILayout.Width(showWallsWidth),
-              GUILayout.ExpandWidth(false)))
+              showOnlyWallsNeededForCurrentPose
+                  ? "Show All Walls"
+                  : "Show all Walls we Need",
+              GUILayout.Width(170f)))
       {
         showOnlyWallsNeededForCurrentPose =
             !showOnlyWallsNeededForCurrentPose;
@@ -708,27 +684,19 @@ public class ViewportLayoutEditor : EditorWindow
         Repaint();
       }
 
-      const string OverrideWallsLabel = "Override Current Walls";
-      float overrideWallsWidth =
-          GUI.skin.button.CalcSize(new GUIContent(OverrideWallsLabel)).x;
       if (GUILayout.Button(
-              OverrideWallsLabel,
-              GUILayout.Width(overrideWallsWidth),
-              GUILayout.ExpandWidth(false)))
+              "Override Current Walls",
+              GUILayout.Width(190f)))
       {
         StoreAllNormalWallOverridesForCurrentGeometry();
         GUI.FocusControl(null);
       }
 
-      const string DiagnosticsLabel = "Diagnostics";
-      float diagnosticsWidth =
-          GUI.skin.button.CalcSize(new GUIContent(DiagnosticsLabel)).x;
       bool diagnosticsPressed = GUILayout.Toggle(
           showGeometryDiagnostics,
-          DiagnosticsLabel,
-          GUI.skin.button,
-          GUILayout.Width(diagnosticsWidth),
-          GUILayout.ExpandWidth(false));
+          "Diagnostics",
+          EditorStyles.miniButton,
+          GUILayout.Width(90f));
       if (diagnosticsPressed != showGeometryDiagnostics)
       {
         showGeometryDiagnostics = diagnosticsPressed;
@@ -810,14 +778,12 @@ public class ViewportLayoutEditor : EditorWindow
           && !previewMirrorChangedThisFrame
           && !previewFrontF1WidthChangedThisFrame
           && !previewPositionChangedThisFrame
-          && !previewEnabledChangedThisFrame
-          && !previewGraphicChangedThisFrame)
+          && !previewEnabledChangedThisFrame)
         PersistChanges();
       previewMirrorChangedThisFrame = false;
       previewFrontF1WidthChangedThisFrame = false;
       previewPositionChangedThisFrame = false;
       previewEnabledChangedThisFrame = false;
-      previewGraphicChangedThisFrame = false;
     }
 
     EditorGUILayout.EndScrollView();
@@ -1899,44 +1865,6 @@ public class ViewportLayoutEditor : EditorWindow
     SetCanonicalReferenceXY(piece.Name, x, y);
   }
 
-  private DungeonGraphicType GetDisplayedWallGraphic(ViewportPiece piece)
-  {
-    DungeonGraphicType graphic = piece.Graphic;
-    if (IsNormalWallPiece(piece)
-        && TryGetResolvedNormalWallState(
-            piece, out ResolvedNormalWallState graphicState))
-    {
-      graphic = graphicState.Graphic;
-    }
-
-    if (previewGraphicOverrideByPiece.TryGetValue(
-            piece, out DungeonGraphicType previewGraphic))
-    {
-      graphic = previewGraphic;
-    }
-
-    return graphic;
-  }
-
-  private void ApplyWallGraphicPopupChange(
-      ViewportPiece piece,
-      DungeonGraphicType before,
-      DungeonGraphicType after)
-  {
-    if (piece == null || after == before)
-      return;
-
-    if (IsNormalWallPiece(piece))
-    {
-      previewGraphicOverrideByPiece[piece] = after;
-      previewGraphicChangedThisFrame = true;
-      RefreshTemporaryNormalWallPreview();
-      return;
-    }
-
-    piece.Graphic = after;
-  }
-
   private void DrawPieceCard(
       int index,
       ViewportPiece piece,
@@ -2001,11 +1929,10 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       EditorGUIUtility.labelWidth = 0f;
-      DungeonGraphicType compactF1GraphicBefore = GetDisplayedWallGraphic(piece);
-      DungeonGraphicType compactF1GraphicAfter =
-          (DungeonGraphicType)EditorGUILayout.EnumPopup(
-              GUIContent.none, compactF1GraphicBefore, GUILayout.Width(135f));
-      ApplyWallGraphicPopupChange(piece, compactF1GraphicBefore, compactF1GraphicAfter);
+      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
+          GUIContent.none, piece.Graphic, GUILayout.Width(135f));
+
+      // FrontF1 row 1 ends after Header + Graphic.
       // Enabled / Mirror / Ref continue on a new second row.
       EditorGUILayout.EndHorizontal();
       EditorGUILayout.BeginHorizontal();
@@ -2029,12 +1956,10 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       EditorGUIUtility.labelWidth = 0f;
-      DungeonGraphicType compactSideGraphicBefore = GetDisplayedWallGraphic(piece);
-      DungeonGraphicType compactSideGraphicAfter =
-          (DungeonGraphicType)EditorGUILayout.EnumPopup(
-              GUIContent.none, compactSideGraphicBefore, GUILayout.Width(135f));
-      ApplyWallGraphicPopupChange(
-          piece, compactSideGraphicBefore, compactSideGraphicAfter);
+      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
+          GUIContent.none, piece.Graphic, GUILayout.Width(135f));
+
+      // Keep side-wall Enabled and Mirror on the same first row.
     }
     else if (!hideNameForWall)
     {
@@ -2150,12 +2075,9 @@ public class ViewportLayoutEditor : EditorWindow
     {
       EditorGUILayout.BeginHorizontal();
 
-      DungeonGraphicType cardGraphicBefore = GetDisplayedWallGraphic(piece);
-      DungeonGraphicType cardGraphicAfter =
-          (DungeonGraphicType)EditorGUILayout.EnumPopup(
-              "Graphic",
-              cardGraphicBefore);
-      ApplyWallGraphicPopupChange(piece, cardGraphicBefore, cardGraphicAfter);
+      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
+          "Graphic",
+          piece.Graphic);
 
       string refLabel = hasPieceCardReference
           ? $"Ref X {canonicalRefX} / Y {canonicalRefY}"
@@ -2165,8 +2087,7 @@ public class ViewportLayoutEditor : EditorWindow
           GUILayout.ExpandWidth(false));
       EditorGUILayout.EndHorizontal();
     }
-    if ((EditorGUI.EndChangeCheck() || nameOrEnabledChanged)
-        && !previewGraphicChangedThisFrame)
+    if (EditorGUI.EndChangeCheck() || nameOrEnabledChanged)
     {
       SelectPiece(index);
       changed = true;
@@ -2302,6 +2223,7 @@ public class ViewportLayoutEditor : EditorWindow
         hasCanonicalRef && editX != canonicalRefX);
     if (xChanged && editX != xBefore)
     {
+      SelectPiece(index);
       if (normalWallPositionPreview)
       {
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
@@ -2325,6 +2247,7 @@ public class ViewportLayoutEditor : EditorWindow
         hasCanonicalRef && displayYForRef != canonicalRefY);
     if (yChanged && editUnityY != yBefore)
     {
+      SelectPiece(index);
       if (normalWallPositionPreview)
       {
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
@@ -3730,80 +3653,6 @@ public class ViewportLayoutEditor : EditorWindow
         + "\n" + frontDecision;
 
     EditorGUILayout.HelpBox(text, MessageType.None);
-
-    string canonicalDiagnostic = BuildCanonicalGeometryDiagnosticText();
-    EditorGUILayout.HelpBox(canonicalDiagnostic, MessageType.None);
-    if (canonicalDiagnostic != lastLoggedCanonicalGeometryDiagnostic)
-    {
-      lastLoggedCanonicalGeometryDiagnostic = canonicalDiagnostic;
-      Debug.Log(canonicalDiagnostic);
-    }
-  }
-
-  private string BuildCanonicalGeometryDiagnosticText()
-  {
-    EnsurePreviewMiniMapLoaded();
-
-    return "Current position: " + previewX + "," + previewY
-        + "\nCanonical depth: " + CanonicalViewDepth
-        + "\n\nNorth:\n"
-        + FormatCanonicalDirectionBlock(previewX, previewY, DungeonFacing.North)
-        + "\n\nEast:\n"
-        + FormatCanonicalDirectionBlock(previewX, previewY, DungeonFacing.East)
-        + "\n\nSouth:\n"
-        + FormatCanonicalDirectionBlock(previewX, previewY, DungeonFacing.South)
-        + "\n\nWest:\n"
-        + FormatCanonicalDirectionBlock(previewX, previewY, DungeonFacing.West);
-  }
-
-  /// <summary>
-  /// One directional 3x3 canonical block at max depth CanonicalViewDepth.
-  /// Rows are F3, F2, F1 (far to near). Columns are Left, Center, Right.
-  /// Uses DungeonMap forward/right offsets for that facing. Diagnostic only.
-  /// </summary>
-  private string FormatCanonicalDirectionBlock(
-      int originX,
-      int originY,
-      DungeonFacing facing)
-  {
-    if (previewMiniMap == null)
-      return "(map not loaded)";
-
-    DungeonMap.GetForwardOffset(facing, out int forwardX, out int forwardY);
-    DungeonMap.GetRightOffset(facing, out int rightX, out int rightY);
-
-    System.Text.StringBuilder block = new System.Text.StringBuilder(12);
-    for (int depth = CanonicalViewDepth; depth >= 1; depth--)
-    {
-      if (depth < CanonicalViewDepth)
-        block.Append('\n');
-
-      int centerX = originX + forwardX * depth;
-      int centerY = originY + forwardY * depth;
-      block.Append(
-          ClassifyCanonicalMapSymbol(centerX - rightX, centerY - rightY));
-      block.Append(ClassifyCanonicalMapSymbol(centerX, centerY));
-      block.Append(
-          ClassifyCanonicalMapSymbol(centerX + rightX, centerY + rightY));
-    }
-
-    return block.ToString();
-  }
-
-  private char ClassifyCanonicalMapSymbol(int mapX, int mapY)
-  {
-    if (previewMiniMap == null || !previewMiniMap.IsInside(mapX, mapY))
-      return 'X';
-
-    string type = previewMiniMap.GetTile(mapX, mapY).Type.ToString();
-    if (type.IndexOf("STONE", System.StringComparison.OrdinalIgnoreCase) >= 0
-        || type.IndexOf("WALL", System.StringComparison.OrdinalIgnoreCase) >= 0)
-      return 'W';
-
-    if (type.IndexOf("DOOR", System.StringComparison.OrdinalIgnoreCase) >= 0)
-      return 'D';
-
-    return 'O';
   }
 
   private static string FormatRelativeViewportCell(RelativeViewportCell cell)
@@ -4154,7 +4003,6 @@ public class ViewportLayoutEditor : EditorWindow
     previewFrontF1WidthOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
-    previewGraphicOverrideByPiece.Clear();
 
     previewX = newX;
     previewY = newY;
@@ -4202,7 +4050,6 @@ public class ViewportLayoutEditor : EditorWindow
     previewFrontF1WidthOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
-    previewGraphicOverrideByPiece.Clear();
 
     previewX = newX;
     previewY = newY;
@@ -6926,11 +6773,6 @@ public class ViewportLayoutEditor : EditorWindow
         if (previewMirrorOverrideByPiece.TryGetValue(piece, out bool manualPreviewMirror))
           mirror = manualPreviewMirror;
         DungeonGraphicType drawGraphic = piece.Graphic;
-        if (previewGraphicOverrideByPiece.TryGetValue(
-                piece, out DungeonGraphicType initialPreviewGraphic))
-        {
-          drawGraphic = initialPreviewGraphic;
-        }
         int resolvedX = piece.EffectiveX;
         int resolvedY = piece.EffectiveY;
         int resolvedF1Width =
@@ -6964,11 +6806,6 @@ public class ViewportLayoutEditor : EditorWindow
           if (previewMirrorOverrideByPiece.TryGetValue(piece, out bool previewMirror))
             mirror = previewMirror;
           drawGraphic = resolvedWall.Graphic;
-          if (previewGraphicOverrideByPiece.TryGetValue(
-                  piece, out DungeonGraphicType previewDrawGraphic))
-          {
-            drawGraphic = previewDrawGraphic;
-          }
           if (isLeftF0Diag)
             Debug.Log("LEFTF0 DIAG | drawGraphic=" + drawGraphic);
           if (!IsWallF0LeftPiece(piece) && !IsWallF0RightPiece(piece)
@@ -7062,7 +6899,7 @@ public class ViewportLayoutEditor : EditorWindow
           }
         }
 
-        if (StraightF1WallLogic.IsStraightF1FrontGraphic(drawGraphic))
+        if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
         {
           int width = resolvedF1Width;
           Texture2D f1Texture = graphics.GetFrontWallF1Texture(width);
@@ -7097,7 +6934,7 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        if (FrontWallF2Logic.IsFrontWallF2Graphic(drawGraphic))
+        if (FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
         {
           Texture2D f2Texture = GetFrontWallF2_224ReferenceTexture();
           if (f2Texture == null)
@@ -7920,7 +7757,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     EditorGUILayout.LabelField(label, GUILayout.Width(12f));
-    int result = EditorGUILayout.IntField(
+    int result = EditorGUILayout.DelayedIntField(
         value, fieldStyle, GUILayout.Width(36f));
     GUI.color = previousGuiColor;
     GUI.contentColor = previousContentColor;
