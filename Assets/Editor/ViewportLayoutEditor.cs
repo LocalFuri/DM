@@ -6993,6 +6993,21 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
+        // TEMP isolation test for exactly (0,5) South:
+        // Ceiling + Floor + FrontF3 only. No other walls.
+        bool isolateFrontF3At05South =
+            previewX == 0
+            && previewY == 5
+            && previewFacing == DungeonFacing.South;
+
+        if (isolateFrontF3At05South
+            && (piece == null
+                || (!IsFloorOrCeiling(piece)
+                    && !IsFrontWallF3Card(piece))))
+        {
+          continue;
+        }
+
         bool isLeftF0Diag = is14South && IsWallF0LeftPiece(piece);
         bool shouldDraw = ShouldDrawPieceAtPreviewPose(piece);
         bool blackDoorF2Exception = IsBlackDoorF2PoseException(piece);
