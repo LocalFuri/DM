@@ -256,8 +256,6 @@ public class ViewportLayoutEditor : EditorWindow
   // TEMP F3 diagnostics — remove after verification.
   private static string lastLoggedFrontWallF3EditDrawKey;
 
-  // TEMP F0 mirror diagnostic — remove after strafe/forward verification.
-  private static string lastLoggedF0MirrorDiagnosticKey;
   private static string lastLoggedF0DrawDiagnosticKey;
 
   // Temporary 320×200 presentation (restored on close / Play Mode).
@@ -370,7 +368,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnEnable()
   {
-    titleContent = new GUIContent("ViewEdit BUILD CHECK");
+    titleContent = new GUIContent("ViewEdit");
     wantsMouseMove = true;
     RestorePersistedAssets();
     ReloadLayoutFromDisk();
@@ -2013,14 +2011,6 @@ public class ViewportLayoutEditor : EditorWindow
       // ViewEdit-only stationary-pose test, identical in lifetime to X/Y/Mirror.
       // Geometry remains authoritative after X/Y/Facing changes.
       previewEnabledOverrideByPiece[piece] = enabledAfter;
-      if (IsFrontWallF1Card(piece))
-      {
-        Debug.Log(
-            "FRONTF1 ENABLE EDIT | "
-            + "hash=" + piece.GetHashCode()
-            + " | enabled=" + enabledAfter
-            + " | dictCount=" + previewEnabledOverrideByPiece.Count);
-      }
       previewEnabledChangedThisFrame = true;
       RefreshTemporaryNormalWallPreview();
     }
@@ -2223,15 +2213,6 @@ public class ViewportLayoutEditor : EditorWindow
       if (normalWallPositionPreview)
       {
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
-
-        if (IsFrontWallF1Card(piece))
-        {
-          Debug.Log(
-              "FRONTF1 X EDIT | "
-              + piece.Name
-              + " | hash=" + piece.GetHashCode()
-              + " | X=" + editX);
-        }
 
         previewPositionChangedThisFrame = true;
         RefreshTemporaryNormalWallPreview();
@@ -4817,21 +4798,6 @@ public class ViewportLayoutEditor : EditorWindow
     bool f0Mirror = GetF0MirrorFromPose();
     bool frontF1Mirror = GetFrontF1MirrorFromPose();
 
-    string f0MirrorDiagnosticKey =
-        previewX + "," + previewY + "," + previewFacing + "," + f0Mirror;
-    if (lastLoggedF0MirrorDiagnosticKey != f0MirrorDiagnosticKey)
-    {
-      lastLoggedF0MirrorDiagnosticKey = f0MirrorDiagnosticKey;
-      int leftF0X = f0Mirror ? 192 : 0;
-      int rightF0X = f0Mirror ? 0 : 192;
-      Debug.Log(
-          "F0 MIRROR | "
-          + previewX + "," + previewY + " " + previewFacing.ToString().ToUpperInvariant()
-          + " | mirror=" + (f0Mirror ? "ON" : "OFF")
-          + " | LeftX=" + leftF0X
-          + " | RightX=" + rightF0X);
-    }
-
     bool leftF1 =
         !g.F1Center.IsWall &&
         g.F1Left.IsWall;
@@ -6895,15 +6861,6 @@ public class ViewportLayoutEditor : EditorWindow
                     piece, out bool manualExceptionEnabled)
                 || manualExceptionEnabled);
 
-        if (IsFrontWallF1Card(piece))
-        {
-          Debug.Log(
-              "FRONTF1 COMPOSE INSTANCE | "
-              + "hash=" + piece.GetHashCode()
-              + " | dictCount=" + previewEnabledOverrideByPiece.Count
-              + " | contains=" + previewEnabledOverrideByPiece.ContainsKey(piece));
-        }
-
         bool manualNormalWallEnabledForDraw =
             IsNormalWallPiece(piece)
             && previewEnabledOverrideByPiece.TryGetValue(
@@ -6964,19 +6921,6 @@ public class ViewportLayoutEditor : EditorWindow
                   out bool frontF1EnabledOverride))
           {
             resolvedEnabled = frontF1EnabledOverride;
-          }
-
-          if (IsFrontWallF1Card(piece))
-          {
-            bool hasOverride = previewEnabledOverrideByPiece.TryGetValue(
-                piece, out bool loggedOverride);
-            Debug.Log(
-                "FRONTF1 ENABLE DRAW | name=" + piece.Name
-                + " | hash=" + piece.GetHashCode()
-                + " | base=" + resolvedWall.Enabled
-                + " | hasOverride=" + hasOverride
-                + " | override=" + (hasOverride ? loggedOverride.ToString() : "-")
-                + " | final=" + resolvedEnabled);
           }
 
           if (!resolvedEnabled)
@@ -7133,14 +7077,6 @@ public class ViewportLayoutEditor : EditorWindow
           // Compose must not derive X from width again, otherwise a verified
           // geometry override (for example X=0 with width 192) gets lost.
           int f1DestX = resolvedX;
-
-          Debug.Log(
-              "FRONTF1 DRAW | "
-              + piece.Name
-              + " | hash=" + piece.GetHashCode()
-              + " | resolvedX=" + resolvedX
-              + " | hasOverride="
-              + previewPositionOverrideByPiece.ContainsKey(piece));
 
           StraightF1WallLogic.BlitCompositeToBuffer(
               f1Texture,
@@ -7485,7 +7421,6 @@ public class ViewportLayoutEditor : EditorWindow
     lastEditLoggedPoseY = previewY;
     lastEditLoggedPoseFacing = previewFacing;
     lastEditModeViewportLogMessage = message;
-    Debug.Log(message);
   }
 
   private static DungeonBitmapFont FindEditModeBitmapFont()
