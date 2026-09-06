@@ -210,6 +210,63 @@ namespace DM.Rendering
     }
 
     /// <summary>
+    /// Copy FrontF1 starting at the right edge of the 224px dungeon viewport
+    /// and writing destination columns right-to-left.
+    /// Source column 0 is written at x=223, source column 1 at x=222, etc.
+    /// </summary>
+    public static void BlitCompositeRightToLeftToBuffer(
+        Texture2D source,
+        Color32[] destPixels,
+        int bufferWidth,
+        int bufferHeight,
+        int destinationRightX,
+        int destinationY,
+        bool mirrorHorizontally,
+        int requestedWidth = 0)
+    {
+      if (source == null || destPixels == null)
+        return;
+
+      if (!source.isReadable)
+        return;
+
+      if (source.height <= 0 || source.width <= 0)
+        return;
+
+      Color32[] sourcePixels = source.GetPixels32();
+      int sourceWidth = source.width;
+      int copyWidth = requestedWidth <= 0
+          ? sourceWidth
+          : Mathf.Min(requestedWidth, sourceWidth);
+      int sourceHeight = source.height;
+
+      for (int row = 0; row < sourceHeight; row++)
+      {
+        int targetY = destinationY + row;
+        if (targetY < 0 || targetY >= bufferHeight)
+          continue;
+
+        int sourceRow = row * sourceWidth;
+        int destRow = targetY * bufferWidth;
+
+        for (int i = 0; i < copyWidth; i++)
+        {
+          int destX = destinationRightX - i;
+          if (destX < 0 || destX >= CompositeWidth)
+            continue;
+
+          int sourceX = mirrorHorizontally
+              ? copyWidth - 1 - i
+              : i;
+
+          Color32 colour = sourcePixels[sourceRow + sourceX];
+          colour.a = 255;
+          destPixels[destRow + destX] = colour;
+        }
+      }
+    }
+
+    /// <summary>
     /// Blit a floor/ceiling sprite into the buffer, optionally mirroring
     /// across the full 224px dungeon viewport (columns 0..223).
     /// </summary>

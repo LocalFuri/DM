@@ -202,6 +202,11 @@ public class ViewportLayoutEditor : EditorWindow
   private readonly Dictionary<ViewportPiece, int> previewFrontF1WidthOverrideByPiece =
       new Dictionary<ViewportPiece, int>();
 
+  // ViewEdit FrontF1 anchor control. UI/state only for now; render behavior is
+  // added separately after the control placement is verified.
+  private bool frontF1RightAnchorPreview;
+  private const bool FrontF1ReferenceRightAnchor = false;
+
   private struct FrontF1GeometryOverride
   {
     public int X;
@@ -1948,7 +1953,23 @@ public class ViewportLayoutEditor : EditorWindow
       piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
           GUIContent.none, piece.Graphic, GUILayout.Width(135f));
 
-      // FrontF1 row 1 ends after Header + Graphic.
+      GUILayout.Space(6f);
+      bool guiChangedBeforeAnchor = GUI.changed;
+      bool anchorAfter = GUILayout.Toggle(
+          frontF1RightAnchorPreview,
+          frontF1RightAnchorPreview ? "Anchor ON" : "Anchor OFF",
+          EditorStyles.miniButton,
+          GUILayout.Width(90f));
+      if (anchorAfter != frontF1RightAnchorPreview)
+      {
+        frontF1RightAnchorPreview = anchorAfter;
+        GUI.FocusControl(null);
+        RefreshTemporaryNormalWallPreview();
+      }
+      // Anchor is a ViewEdit preview control, not a layout-asset edit.
+      GUI.changed = guiChangedBeforeAnchor;
+
+      // FrontF1 row 1 ends after Header + Graphic + Anchor.
       // Enabled / Mirror / Ref continue on a new second row.
       EditorGUILayout.EndHorizontal();
       EditorGUILayout.BeginHorizontal();
@@ -2073,8 +2094,10 @@ public class ViewportLayoutEditor : EditorWindow
     if (compactFrontF1Header)
     {
       string refLabel = hasPieceCardReference
-          ? $"Ref X {canonicalRefX} / Y {canonicalRefY}"
-          : "Ref X - / Y -";
+          ? $"Ref X {canonicalRefX} / Y {canonicalRefY} / Anchor "
+              + (FrontF1ReferenceRightAnchor ? "ON" : "OFF")
+          : "Ref X - / Y - / Anchor "
+              + (FrontF1ReferenceRightAnchor ? "ON" : "OFF");
       EditorGUILayout.LabelField(
           refLabel,
           GUILayout.ExpandWidth(false));
@@ -7143,35 +7166,74 @@ public class ViewportLayoutEditor : EditorWindow
         if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
         {
           int width = resolvedF1Width;
-          Texture2D f1Texture = graphics.GetFrontWallF1Texture(width);
-          if (f1Texture == null)
-            continue;
+          int frontF1TextureHeight = StraightF1WallLogic.CompositeHeight;
 
-          // FrontF1 X is already resolved by the geometry recipe/override system.
-          // Compose must not derive X from width again, otherwise a verified
-          // geometry override (for example X=0 with width 192) gets lost.
-          int f1DestX = resolvedX;
+          if (frontF1RightAnchorPreview)
+          {
+            Texture2D fullF1Texture =
+                graphics.GetFrontWallF1Texture(StraightF1WallLogic.CompositeWidth);
+            if (fullF1Texture == null)
+              continue;
 
-          StraightF1WallLogic.BlitCompositeToBuffer(
-              f1Texture,
-              pixels,
-              PreviewWidth,
-              PreviewHeight,
-              f1DestX,
-              resolvedY,
-              mirror,
-              width);
-          LogIfOverlapsLeftF0(
-              piece,
-              piece.Graphic,
-              f1DestX,
-              resolvedY,
-              f1Texture.width,
-              f1Texture.height);
+            frontF1TextureHeight = fullF1Texture.height;
+            // In Anchor ON mode, keep ViewEdit X as a small adjustment from
+            // the viewport's right edge rather than treating X as an absolute
+            // right-edge coordinate. This preserves X=0 as the natural anchor.
+            int f1RightEdgeX =
+                StraightF1WallLogic.CompositeWidth - 1 + resolvedX;
+
+            // Anchor controls destination direction.
+            // Mirror controls source direction.
+            BlitFrontF1RightAnchoredPreview(
+                pixels,
+                fullF1Texture,
+                f1RightEdgeX,
+                resolvedY,
+                width,
+                mirror);
+
+            int f1DestX = f1RightEdgeX - width + 1;
+            LogIfOverlapsLeftF0(
+                piece,
+                piece.Graphic,
+                f1DestX,
+                resolvedY,
+                width,
+                fullF1Texture.height);
+          }
+          else
+          {
+            Texture2D f1Texture = graphics.GetFrontWallF1Texture(width);
+            if (f1Texture == null)
+              continue;
+
+            frontF1TextureHeight = f1Texture.height;
+
+            // Normal FrontF1 mode: use the resolved left-edge X exactly.
+            int f1DestX = resolvedX;
+
+            StraightF1WallLogic.BlitCompositeToBuffer(
+                f1Texture,
+                pixels,
+                PreviewWidth,
+                PreviewHeight,
+                f1DestX,
+                resolvedY,
+                mirror,
+                width);
+
+            LogIfOverlapsLeftF0(
+                piece,
+                piece.Graphic,
+                f1DestX,
+                resolvedY,
+                f1Texture.width,
+                f1Texture.height);
+          }
           ClearFrontWallOverflowIntoUi(
               pixels,
               resolvedY,
-              f1Texture.height);
+              frontF1TextureHeight);
           continue;
         }
 
@@ -7847,6 +7909,48 @@ public class ViewportLayoutEditor : EditorWindow
       int row = y * PreviewWidth;
       for (int x = 224; x < PreviewWidth; x++)
         pixels[row + x] = magenta;
+    }
+  }
+
+  private static void BlitFrontF1RightAnchoredPreview(
+      Color32[] dest,
+      Texture2D source,
+      int destinationRightX,
+      int destinationY,
+      int width,
+      bool mirrorHorizontally)
+  {
+    if (dest == null || source == null || !source.isReadable || width <= 0)
+      return;
+
+    int copyWidth = Mathf.Min(width, source.width);
+    Color32[] sourcePixels = source.GetPixels32();
+
+    for (int sourceY = 0; sourceY < source.height; sourceY++)
+    {
+      int targetY = destinationY + sourceY;
+      if (targetY < 0 || targetY >= PreviewHeight)
+        continue;
+
+      int sourceRow = sourceY * source.width;
+      int destRow = targetY * PreviewWidth;
+
+      for (int i = 0; i < copyWidth; i++)
+      {
+        // Anchor ON: destination always runs from right to left.
+        int targetX = destinationRightX - i;
+        if (targetX < 0 || targetX >= StraightF1WallLogic.CompositeWidth)
+          continue;
+
+        // Mirror is independent: it only changes source-reading direction.
+        int sourceX = mirrorHorizontally
+            ? copyWidth - 1 - i
+            : i;
+
+        Color32 colour = sourcePixels[sourceRow + sourceX];
+        colour.a = 255;
+        dest[destRow + targetX] = colour;
+      }
     }
   }
 
