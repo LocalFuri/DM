@@ -674,8 +674,8 @@ public class ViewportLayoutEditor : EditorWindow
         showOnlyWallsNeededForCurrentPose =
             !showOnlyWallsNeededForCurrentPose;
 
-        if (showOnlyWallsNeededForCurrentPose)
-          EnableAllWallsNeededForCurrentPose();
+        if (!showOnlyWallsNeededForCurrentPose)
+          showWallsActivFilter = false;
 
         pieceSearchFamilyIndex = 0;
         pieceSearchText = string.Empty;
