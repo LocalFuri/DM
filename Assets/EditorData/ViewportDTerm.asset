@@ -701,7 +701,7 @@ MonoBehaviour:
     PieceName: RightF0
     Enabled: 1
     Graphic: 4
-    X: 192
+    X: 191
     Y: 31
     Mirror: 1
     FrontWallF1Width: 0
