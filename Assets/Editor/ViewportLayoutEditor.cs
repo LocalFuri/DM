@@ -2014,11 +2014,7 @@ public class ViewportLayoutEditor : EditorWindow
       // Geometry remains authoritative after X/Y/Facing changes.
       previewEnabledOverrideByPiece[piece] = enabledAfter;
       previewEnabledChangedThisFrame = true;
-      ResetEditModeViewportLogCache();
-      DestroyEditModePreviewTextureOnly();
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
+      RefreshTemporaryNormalWallPreview();
     }
     else if (!normalWallEnabledPreview && !isBlackDoorRightD3Exception)
     {
@@ -2120,11 +2116,7 @@ public class ViewportLayoutEditor : EditorWindow
       {
         previewMirrorOverrideByPiece[piece] = mirrorAfter;
         previewMirrorChangedThisFrame = true;
-        ResetEditModeViewportLogCache();
-        DestroyEditModePreviewTextureOnly();
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
+        RefreshTemporaryNormalWallPreview();
       }
       else
       {
@@ -2182,11 +2174,7 @@ public class ViewportLayoutEditor : EditorWindow
       {
         previewFrontF1WidthOverrideByPiece[piece] = widthSelected;
         previewFrontF1WidthChangedThisFrame = true;
-        ResetEditModeViewportLogCache();
-        DestroyEditModePreviewTextureOnly();
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
+        RefreshTemporaryNormalWallPreview();
       }
 
       GUILayout.Space(4f);
@@ -2227,6 +2215,16 @@ public class ViewportLayoutEditor : EditorWindow
       if (normalWallPositionPreview)
       {
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
+
+        if (IsFrontWallF1Card(piece))
+        {
+          Debug.Log(
+              "FRONTF1 X EDIT | "
+              + piece.Name
+              + " | hash=" + piece.GetHashCode()
+              + " | X=" + editX);
+        }
+
         previewPositionChangedThisFrame = true;
         RefreshTemporaryNormalWallPreview();
       }
@@ -5062,23 +5060,80 @@ public class ViewportLayoutEditor : EditorWindow
       piece.MirrorHorizontally = frontF1Mirror;
     }
 
+    ApplyPersistedDTermWallRows(frontF1GeometryKey);
+    ApplyTemporaryNormalWallPreviewOverrides();
+  }
+
+  /// <summary>
+  /// Stationary-pose ViewEdit tests overlay geometry/DTerm in resolved state
+  /// only. They are never written to DTerm or ViewportLayout.asset.
+  /// </summary>
+  private void ApplyTemporaryNormalWallPreviewOverrides()
+  {
+    if (layout == null || layout.Pieces == null)
+      return;
+
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece piece = layout.Pieces[i];
-      if (!IsWallF1RightPiece(piece))
-        continue;
-      if (!previewEnabledOverrideByPiece.TryGetValue(
-              piece, out bool manualEnabled))
+      if (piece == null || !IsNormalWallPiece(piece))
         continue;
 
-      resolvedNormalWallByPiece.TryGetValue(
-          piece, out ResolvedNormalWallState state);
-      state.Enabled = manualEnabled;
+      bool hasEnabledOverride = previewEnabledOverrideByPiece.TryGetValue(
+          piece, out bool previewEnabled);
+      bool hasPositionOverride = previewPositionOverrideByPiece.TryGetValue(
+          piece, out Vector2Int previewPosition);
+      bool hasMirrorOverride = previewMirrorOverrideByPiece.TryGetValue(
+          piece, out bool previewMirror);
+      bool hasWidthOverride = false;
+      int previewWidth = 0;
+      if (IsFrontWallF1Card(piece)
+          && previewFrontF1WidthOverrideByPiece.TryGetValue(
+              piece, out previewWidth))
+      {
+        hasWidthOverride = true;
+      }
+
+      if (!hasEnabledOverride
+          && !hasPositionOverride
+          && !hasMirrorOverride
+          && !hasWidthOverride)
+      {
+        continue;
+      }
+
+      if (!resolvedNormalWallByPiece.TryGetValue(
+              piece, out ResolvedNormalWallState state))
+      {
+        state = new ResolvedNormalWallState
+        {
+          Enabled = piece.Enabled,
+          Graphic = piece.Graphic,
+          X = piece.EffectiveX,
+          Y = piece.EffectiveY,
+          Mirror = piece.MirrorHorizontally,
+          FrontF1Width = piece.FrontWallF1Width,
+          FrontF2Width = piece.FrontWallF2Width
+        };
+      }
+
+      if (hasEnabledOverride)
+        state.Enabled = previewEnabled;
+      if (hasPositionOverride)
+      {
+        state.X = previewPosition.x;
+        state.Y = previewPosition.y;
+      }
+      if (hasMirrorOverride)
+        state.Mirror = previewMirror;
+      if (hasWidthOverride)
+      {
+        state.FrontF1Width =
+            StraightF1WallLogic.NormalizeFrontWallF1Width(previewWidth);
+      }
+
       resolvedNormalWallByPiece[piece] = state;
-      piece.Enabled = manualEnabled;
     }
-
-    ApplyPersistedDTermWallRows(frontF1GeometryKey);
   }
 
   /// <summary>
@@ -6864,7 +6919,8 @@ public class ViewportLayoutEditor : EditorWindow
                 sideRefY, GetPieceHeightForEditorY(piece));
           }
 
-          if (!hasDTermRow)
+          if (!hasDTermRow
+              && !previewMirrorOverrideByPiece.ContainsKey(piece))
             mirror = GetSideWallMirrorFromPose();
         }
 
@@ -6876,6 +6932,35 @@ public class ViewportLayoutEditor : EditorWindow
             && !hasDTermRow)
         {
           mirror = GetFrontF1MirrorFromPose();
+        }
+
+        // Temporary ViewEdit tests always win over DTerm / canonical / pose
+        // mirror for this stationary preview. Override Current Walls commits.
+        if (previewEnabledOverrideByPiece.TryGetValue(
+                piece, out bool livePreviewEnabled)
+            && IsNormalWallPiece(piece)
+            && !livePreviewEnabled)
+        {
+          continue;
+        }
+        if (previewMirrorOverrideByPiece.TryGetValue(
+                piece, out bool livePreviewMirror))
+        {
+          mirror = livePreviewMirror;
+        }
+        if (previewPositionOverrideByPiece.TryGetValue(
+                piece, out Vector2Int livePreviewPosition))
+        {
+          resolvedX = livePreviewPosition.x;
+          resolvedY = livePreviewPosition.y;
+        }
+        if (IsFrontWallF1Card(piece)
+            && previewFrontF1WidthOverrideByPiece.TryGetValue(
+                piece, out int livePreviewWidth))
+        {
+          resolvedF1Width =
+              StraightF1WallLogic.NormalizeFrontWallF1Width(
+                  livePreviewWidth);
         }
 
         if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
@@ -6910,6 +6995,14 @@ public class ViewportLayoutEditor : EditorWindow
           // Compose must not derive X from width again, otherwise a verified
           // geometry override (for example X=0 with width 192) gets lost.
           int f1DestX = resolvedX;
+
+          Debug.Log(
+              "FRONTF1 DRAW | "
+              + piece.Name
+              + " | hash=" + piece.GetHashCode()
+              + " | resolvedX=" + resolvedX
+              + " | hasOverride="
+              + previewPositionOverrideByPiece.ContainsKey(piece));
 
           StraightF1WallLogic.BlitCompositeToBuffer(
               f1Texture,
@@ -7848,6 +7941,10 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void RefreshTemporaryNormalWallPreview()
   {
+    if (Application.isPlaying)
+      return;
+
+    ApplyCurrentPoseVisibilityToLayout();
     ResetEditModeViewportLogCache();
     DestroyEditModePreviewTextureOnly();
     RefreshEditModePreview();
