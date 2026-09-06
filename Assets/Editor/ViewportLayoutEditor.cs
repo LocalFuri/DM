@@ -202,12 +202,21 @@ public class ViewportLayoutEditor : EditorWindow
   private readonly Dictionary<ViewportPiece, int> previewFrontF1WidthOverrideByPiece =
       new Dictionary<ViewportPiece, int>();
 
-  // ViewEdit FrontF1 crop control.
-  // Crop ON keeps source X and destination X aligned:
-  // e.g. X=32 copies source 32..223 to screen 32..223.
+  // ViewEdit FrontF1 crop control for the current pose (live cache).
+  // Canonical storage is previewFrontF1CropByPose, keyed by X/Y/Facing.
   private bool frontF1CropPreview;
   private int frontF1CropStartXPreview;
   private const bool FrontF1ReferenceCrop = false;
+
+  private struct FrontF1CropPreviewState
+  {
+    public bool Enabled;
+    public int CropX;
+  }
+
+  private readonly Dictionary<string, FrontF1CropPreviewState>
+      previewFrontF1CropByPose =
+          new Dictionary<string, FrontF1CropPreviewState>();
 
   private struct FrontF1GeometryOverride
   {
@@ -1975,6 +1984,7 @@ public class ViewportLayoutEditor : EditorWindow
         frontF1CropPreview = cropAfter;
         if (frontF1CropPreview && cropUiAt05South)
           frontF1CropStartXPreview = 32;
+        SaveCurrentFrontF1CropPreview();
         GUI.FocusControl(null);
         RefreshTemporaryNormalWallPreview();
       }
@@ -1996,6 +2006,7 @@ public class ViewportLayoutEditor : EditorWindow
       if (!cropUiAt05South && cropXAfter != frontF1CropStartXPreview)
       {
         frontF1CropStartXPreview = cropXAfter;
+        SaveCurrentFrontF1CropPreview();
         GUI.FocusControl(null);
         RefreshTemporaryNormalWallPreview();
       }
@@ -3480,6 +3491,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     selectedPieceIndex = EditorPrefs.GetInt(PrefsSelectedPieceIndexKey, 0);
     ClampSelectedPieceIndex();
+    LoadFrontF1CropPreviewForCurrentPose();
   }
 
   private void SaveSessionPrefs()
@@ -4069,6 +4081,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
+    LoadFrontF1CropPreviewForCurrentPose();
     showWallsActivFilter = true;
     SaveSessionPrefs();
     PlayerWallBumpFeedback.ResetWallHitLog();
@@ -4116,6 +4129,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
+    LoadFrontF1CropPreviewForCurrentPose();
     showWallsActivFilter = true;
     SaveSessionPrefs();
     PlayerWallBumpFeedback.ResetWallHitLog();
@@ -4416,6 +4430,55 @@ public class ViewportLayoutEditor : EditorWindow
 
     width = 0;
     return false;
+  }
+
+  private string CurrentPreviewPoseKey()
+  {
+    return previewX + "," + previewY + "," + previewFacing;
+  }
+
+  private void EnsureFrontF1Crop05SouthDefault()
+  {
+    string key05South = "0,5," + DungeonFacing.South;
+    if (previewFrontF1CropByPose.ContainsKey(key05South))
+      return;
+
+    previewFrontF1CropByPose[key05South] = new FrontF1CropPreviewState
+    {
+      Enabled = true,
+      CropX = 32
+    };
+  }
+
+  private void SaveCurrentFrontF1CropPreview()
+  {
+    previewFrontF1CropByPose[CurrentPreviewPoseKey()] =
+        new FrontF1CropPreviewState
+        {
+          Enabled = frontF1CropPreview,
+          CropX = Mathf.Clamp(
+              frontF1CropStartXPreview,
+              0,
+              StraightF1WallLogic.CompositeWidth - 1)
+        };
+  }
+
+  private void LoadFrontF1CropPreviewForCurrentPose()
+  {
+    EnsureFrontF1Crop05SouthDefault();
+    if (previewFrontF1CropByPose.TryGetValue(
+            CurrentPreviewPoseKey(), out FrontF1CropPreviewState state))
+    {
+      frontF1CropPreview = state.Enabled;
+      frontF1CropStartXPreview = Mathf.Clamp(
+          state.CropX,
+          0,
+          StraightF1WallLogic.CompositeWidth - 1);
+      return;
+    }
+
+    frontF1CropPreview = false;
+    frontF1CropStartXPreview = 0;
   }
 
   private static bool IsFrontWallF2Card(ViewportPiece piece)
