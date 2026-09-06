@@ -4336,6 +4336,32 @@ public class ViewportLayoutEditor : EditorWindow
     return false;
   }
 
+  private bool TryGetFrontF1PreviewWidthOverride(
+      ViewportPiece piece,
+      out int width)
+  {
+    if (piece != null
+        && previewFrontF1WidthOverrideByPiece.TryGetValue(piece, out width))
+    {
+      width = StraightF1WallLogic.NormalizeFrontWallF1Width(width);
+      return true;
+    }
+
+    foreach (KeyValuePair<ViewportPiece, int> entry in previewFrontF1WidthOverrideByPiece)
+    {
+      if (entry.Key == null || !IsFrontWallF1Card(entry.Key))
+        continue;
+      if (piece != null && ReferenceEquals(entry.Key, piece))
+        continue;
+
+      width = StraightF1WallLogic.NormalizeFrontWallF1Width(entry.Value);
+      return true;
+    }
+
+    width = 0;
+    return false;
+  }
+
   private static bool IsFrontWallF2Card(ViewportPiece piece)
   {
     if (piece == null || piece.Name == null)
@@ -7069,12 +7095,10 @@ public class ViewportLayoutEditor : EditorWindow
           resolvedY = livePreviewPosition.y;
         }
         if (IsFrontWallF1Card(piece)
-            && previewFrontF1WidthOverrideByPiece.TryGetValue(
+            && TryGetFrontF1PreviewWidthOverride(
                 piece, out int livePreviewWidth))
         {
-          resolvedF1Width =
-              StraightF1WallLogic.NormalizeFrontWallF1Width(
-                  livePreviewWidth);
+          resolvedF1Width = livePreviewWidth;
         }
 
         if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
