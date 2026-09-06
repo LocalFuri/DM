@@ -202,10 +202,12 @@ public class ViewportLayoutEditor : EditorWindow
   private readonly Dictionary<ViewportPiece, int> previewFrontF1WidthOverrideByPiece =
       new Dictionary<ViewportPiece, int>();
 
-  // ViewEdit FrontF1 anchor control. UI/state only for now; render behavior is
-  // added separately after the control placement is verified.
-  private bool frontF1RightAnchorPreview;
-  private const bool FrontF1ReferenceRightAnchor = false;
+  // ViewEdit FrontF1 crop control.
+  // Crop ON keeps source X and destination X aligned:
+  // e.g. X=32 copies source 32..223 to screen 32..223.
+  private bool frontF1CropPreview;
+  private int frontF1CropStartXPreview;
+  private const bool FrontF1ReferenceCrop = false;
 
   private struct FrontF1GeometryOverride
   {
@@ -1954,22 +1956,44 @@ public class ViewportLayoutEditor : EditorWindow
           GUIContent.none, piece.Graphic, GUILayout.Width(135f));
 
       GUILayout.Space(6f);
-      bool guiChangedBeforeAnchor = GUI.changed;
-      bool anchorAfter = GUILayout.Toggle(
-          frontF1RightAnchorPreview,
-          frontF1RightAnchorPreview ? "Anchor ON" : "Anchor OFF",
+      bool guiChangedBeforeCrop = GUI.changed;
+      bool cropAfter = GUILayout.Toggle(
+          frontF1CropPreview,
+          frontF1CropPreview ? "Crop ON" : "Crop OFF",
           EditorStyles.miniButton,
           GUILayout.Width(90f));
-      if (anchorAfter != frontF1RightAnchorPreview)
+      if (cropAfter != frontF1CropPreview)
       {
-        frontF1RightAnchorPreview = anchorAfter;
+        frontF1CropPreview = cropAfter;
         GUI.FocusControl(null);
         RefreshTemporaryNormalWallPreview();
       }
-      // Anchor is a ViewEdit preview control, not a layout-asset edit.
-      GUI.changed = guiChangedBeforeAnchor;
 
-      // FrontF1 row 1 ends after Header + Graphic + Anchor.
+      GUILayout.Space(4f);
+      EditorGUI.BeginDisabledGroup(!frontF1CropPreview);
+      EditorGUIUtility.labelWidth = 42f;
+      int cropXAfter = EditorGUILayout.DelayedIntField(
+          "Crop X",
+          frontF1CropStartXPreview,
+          GUILayout.Width(92f));
+      EditorGUIUtility.labelWidth = 0f;
+      EditorGUI.EndDisabledGroup();
+
+      cropXAfter = Mathf.Clamp(
+          cropXAfter,
+          0,
+          StraightF1WallLogic.CompositeWidth - 1);
+      if (cropXAfter != frontF1CropStartXPreview)
+      {
+        frontF1CropStartXPreview = cropXAfter;
+        GUI.FocusControl(null);
+        RefreshTemporaryNormalWallPreview();
+      }
+
+      // Crop/Crop X are ViewEdit preview controls, not layout-asset edits.
+      GUI.changed = guiChangedBeforeCrop;
+
+      // FrontF1 row 1 ends after Header + Graphic + Crop controls.
       // Enabled / Mirror / Ref continue on a new second row.
       EditorGUILayout.EndHorizontal();
       EditorGUILayout.BeginHorizontal();
@@ -2094,10 +2118,10 @@ public class ViewportLayoutEditor : EditorWindow
     if (compactFrontF1Header)
     {
       string refLabel = hasPieceCardReference
-          ? $"Ref X {canonicalRefX} / Y {canonicalRefY} / Anchor "
-              + (FrontF1ReferenceRightAnchor ? "ON" : "OFF")
-          : "Ref X - / Y - / Anchor "
-              + (FrontF1ReferenceRightAnchor ? "ON" : "OFF");
+          ? $"Ref X {canonicalRefX} / Y {canonicalRefY} / Crop "
+              + (FrontF1ReferenceCrop ? "ON" : "OFF")
+          : "Ref X - / Y - / Crop "
+              + (FrontF1ReferenceCrop ? "ON" : "OFF");
       EditorGUILayout.LabelField(
           refLabel,
           GUILayout.ExpandWidth(false));
@@ -6948,6 +6972,22 @@ public class ViewportLayoutEditor : EditorWindow
         ViewportPiece piece = layout.Pieces[i];
         if (IsNormalWallPiece(piece))
           piece = orderedNormalWalls[nextNormalWall++];
+
+        // TEMP isolation test for exactly (0,5) South:
+        // Ceiling + Floor + FrontF1 only. No other walls.
+        bool isolateFrontF1At05South =
+            previewX == 0
+            && previewY == 5
+            && previewFacing == DungeonFacing.South;
+
+        if (isolateFrontF1At05South
+            && (piece == null
+                || (!IsFloorOrCeiling(piece)
+                    && !IsFrontWallF1Card(piece))))
+        {
+          continue;
+        }
+
         bool isLeftF0Diag = is14South && IsWallF0LeftPiece(piece);
         bool shouldDraw = ShouldDrawPieceAtPreviewPose(piece);
         bool blackDoorF2Exception = IsBlackDoorF2PoseException(piece);
@@ -7167,8 +7207,14 @@ public class ViewportLayoutEditor : EditorWindow
         {
           int width = resolvedF1Width;
           int frontF1TextureHeight = StraightF1WallLogic.CompositeHeight;
+          bool isolateFrontF1FullWidthAt05South =
+              previewX == 0
+              && previewY == 5
+              && previewFacing == DungeonFacing.South;
+          if (isolateFrontF1FullWidthAt05South)
+            width = StraightF1WallLogic.CompositeWidth;
 
-          if (frontF1RightAnchorPreview)
+          if (frontF1CropPreview && !isolateFrontF1FullWidthAt05South)
           {
             Texture2D fullF1Texture =
                 graphics.GetFrontWallF1Texture(StraightF1WallLogic.CompositeWidth);
@@ -7176,29 +7222,33 @@ public class ViewportLayoutEditor : EditorWindow
               continue;
 
             frontF1TextureHeight = fullF1Texture.height;
-            // In Anchor ON mode, keep ViewEdit X as a small adjustment from
-            // the viewport's right edge rather than treating X as an absolute
-            // right-edge coordinate. This preserves X=0 as the natural anchor.
-            int f1RightEdgeX =
-                StraightF1WallLogic.CompositeWidth - 1 + resolvedX;
 
-            // Anchor controls destination direction.
-            // Mirror controls source direction.
-            BlitFrontF1RightAnchoredPreview(
+            // Crop X defines both the first source column and first screen column.
+            // Example: Crop X=32 -> source 32..223 -> screen 32..223.
+            // In Crop ON mode, normal X is not used; Y still uses resolvedY.
+            int cropStartX = Mathf.Clamp(
+                frontF1CropStartXPreview,
+                0,
+                StraightF1WallLogic.CompositeWidth - 1);
+            int cropDestinationX = cropStartX;
+            bool cropMirror = mirror;
+
+            int cropWidth = StraightF1WallLogic.CompositeWidth - cropStartX;
+
+            BlitFrontF1CroppedPreview(
                 pixels,
                 fullF1Texture,
-                f1RightEdgeX,
+                cropStartX,
+                cropDestinationX,
                 resolvedY,
-                width,
-                mirror);
+                cropMirror);
 
-            int f1DestX = f1RightEdgeX - width + 1;
             LogIfOverlapsLeftF0(
                 piece,
                 piece.Graphic,
-                f1DestX,
+                cropDestinationX,
                 resolvedY,
-                width,
+                cropWidth,
                 fullF1Texture.height);
           }
           else
@@ -7912,18 +7962,28 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  private static void BlitFrontF1RightAnchoredPreview(
+  private static void BlitFrontF1CroppedPreview(
       Color32[] dest,
       Texture2D source,
-      int destinationRightX,
+      int sourceStartX,
+      int destinationStartX,
       int destinationY,
-      int width,
       bool mirrorHorizontally)
   {
-    if (dest == null || source == null || !source.isReadable || width <= 0)
+    if (dest == null || source == null || !source.isReadable)
       return;
 
-    int copyWidth = Mathf.Min(width, source.width);
+    sourceStartX = Mathf.Clamp(
+        sourceStartX,
+        0,
+        Mathf.Min(source.width, StraightF1WallLogic.CompositeWidth) - 1);
+    int sourceEndX = Mathf.Min(
+        source.width,
+        StraightF1WallLogic.CompositeWidth) - 1;
+    int copyWidth = sourceEndX - sourceStartX + 1;
+    if (copyWidth <= 0)
+      return;
+
     Color32[] sourcePixels = source.GetPixels32();
 
     for (int sourceY = 0; sourceY < source.height; sourceY++)
@@ -7937,15 +7997,15 @@ public class ViewportLayoutEditor : EditorWindow
 
       for (int i = 0; i < copyWidth; i++)
       {
-        // Anchor ON: destination always runs from right to left.
-        int targetX = destinationRightX - i;
+        int targetX = destinationStartX + i;
         if (targetX < 0 || targetX >= StraightF1WallLogic.CompositeWidth)
           continue;
 
-        // Mirror is independent: it only changes source-reading direction.
+        // Crop controls the source/destination start.
+        // Mirror remains independent and reverses only the selected source strip.
         int sourceX = mirrorHorizontally
-            ? copyWidth - 1 - i
-            : i;
+            ? sourceEndX - i
+            : sourceStartX + i;
 
         Color32 colour = sourcePixels[sourceRow + sourceX];
         colour.a = 255;

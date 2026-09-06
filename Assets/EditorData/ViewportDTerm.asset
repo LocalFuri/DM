@@ -674,7 +674,7 @@ MonoBehaviour:
     PieceName: FrontF1
     Enabled: 1
     Graphic: 23
-    X: 1
+    X: 0
     Y: 47
     Mirror: 1
     FrontWallF1Width: 224
