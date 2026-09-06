@@ -7390,6 +7390,12 @@ public class ViewportLayoutEditor : EditorWindow
                 0,
                 StraightF1WallLogic.CompositeWidth - 1);
             int cropDestinationX = cropStartX;
+            if (previewX == 1
+                && previewY == 7
+                && previewFacing == DungeonFacing.South)
+            {
+              cropDestinationX = 0;
+            }
             bool cropMirror = mirror;
 
             int cropWidth = StraightF1WallLogic.CompositeWidth - cropStartX;
@@ -7420,6 +7426,12 @@ public class ViewportLayoutEditor : EditorWindow
 
             // Normal FrontF1 mode: use the resolved left-edge X exactly.
             int f1DestX = resolvedX;
+            if (previewX == 1
+                && previewY == 7
+                && previewFacing == DungeonFacing.South)
+            {
+              f1DestX = 0;
+            }
 
             StraightF1WallLogic.BlitCompositeToBuffer(
                 f1Texture,
