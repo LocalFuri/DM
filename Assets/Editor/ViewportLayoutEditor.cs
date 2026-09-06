@@ -7229,49 +7229,24 @@ public class ViewportLayoutEditor : EditorWindow
 
             // GameView dest X is independent of the mirrored-image start X.
             int destinationStartX = 32;
-            bool f1Mirror = true;
+            int sourceStartX = 32;
+            int copyWidth =
+                StraightF1WallLogic.CompositeWidth - sourceStartX;
 
-            if (frontF1CropPreview)
-            {
-              int sourceStartX = 32;
-              int copyWidth =
-                  StraightF1WallLogic.CompositeWidth - sourceStartX;
+            BlitFrontF1MirroredImageFromX(
+                pixels,
+                f1Texture,
+                sourceStartX,
+                destinationStartX,
+                resolvedY);
 
-              BlitFrontF1MirroredImageFromX(
-                  pixels,
-                  f1Texture,
-                  sourceStartX,
-                  destinationStartX,
-                  resolvedY);
-
-              LogIfOverlapsLeftF0(
-                  piece,
-                  piece.Graphic,
-                  destinationStartX,
-                  resolvedY,
-                  copyWidth,
-                  f1Texture.height);
-            }
-            else
-            {
-              StraightF1WallLogic.BlitCompositeToBuffer(
-                  f1Texture,
-                  pixels,
-                  PreviewWidth,
-                  PreviewHeight,
-                  destinationStartX,
-                  resolvedY,
-                  f1Mirror,
-                  width);
-
-              LogIfOverlapsLeftF0(
-                  piece,
-                  piece.Graphic,
-                  destinationStartX,
-                  resolvedY,
-                  width,
-                  f1Texture.height);
-            }
+            LogIfOverlapsLeftF0(
+                piece,
+                piece.Graphic,
+                destinationStartX,
+                resolvedY,
+                copyWidth,
+                f1Texture.height);
           }
           else if (frontF1CropPreview)
           {
