@@ -1957,32 +1957,30 @@ public class ViewportLayoutEditor : EditorWindow
 
       GUILayout.Space(6f);
       bool guiChangedBeforeCrop = GUI.changed;
+      bool cropUiForcedOnAt05South =
+          previewX == 0
+          && previewY == 5
+          && previewFacing == DungeonFacing.South;
+      bool cropDisplayed = cropUiForcedOnAt05South || frontF1CropPreview;
+      int cropXDisplayed = cropUiForcedOnAt05South ? 32 : frontF1CropStartXPreview;
       bool cropAfter = GUILayout.Toggle(
-          frontF1CropPreview,
-          frontF1CropPreview ? "Crop ON" : "Crop OFF",
+          cropDisplayed,
+          cropDisplayed ? "Crop ON" : "Crop OFF",
           EditorStyles.miniButton,
           GUILayout.Width(90f));
-      if (cropAfter != frontF1CropPreview)
+      if (!cropUiForcedOnAt05South && cropAfter != frontF1CropPreview)
       {
         frontF1CropPreview = cropAfter;
-        if (frontF1CropPreview
-            && previewX == 0
-            && previewY == 5
-            && previewFacing == DungeonFacing.South)
-        {
-          frontF1CropStartXPreview = 32;
-        }
-
         GUI.FocusControl(null);
         RefreshTemporaryNormalWallPreview();
       }
 
       GUILayout.Space(4f);
-      EditorGUI.BeginDisabledGroup(!frontF1CropPreview);
+      EditorGUI.BeginDisabledGroup(!cropDisplayed);
       EditorGUIUtility.labelWidth = 42f;
       int cropXAfter = EditorGUILayout.DelayedIntField(
           "Crop X",
-          frontF1CropStartXPreview,
+          cropXDisplayed,
           GUILayout.Width(92f));
       EditorGUIUtility.labelWidth = 0f;
       EditorGUI.EndDisabledGroup();
@@ -1991,7 +1989,7 @@ public class ViewportLayoutEditor : EditorWindow
           cropXAfter,
           0,
           StraightF1WallLogic.CompositeWidth - 1);
-      if (cropXAfter != frontF1CropStartXPreview)
+      if (!cropUiForcedOnAt05South && cropXAfter != frontF1CropStartXPreview)
       {
         frontF1CropStartXPreview = cropXAfter;
         GUI.FocusControl(null);
