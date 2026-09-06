@@ -4299,6 +4299,20 @@ public class ViewportLayoutEditor : EditorWindow
         || piece.Name == "Ceiling";
   }
 
+  private static bool IsChampionStatusSlotPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Graphic == DungeonGraphicType.ChampionStatusBackground)
+      return true;
+
+    return piece.Name == "Champion Status Slot 1"
+        || piece.Name == "Champion Status Slot 2"
+        || piece.Name == "Champion Status Slot 3"
+        || piece.Name == "Champion Status Slot 4";
+  }
+
   private void PersistChanges()
   {
     if (Application.isPlaying || layout == null)
@@ -7066,6 +7080,7 @@ public class ViewportLayoutEditor : EditorWindow
         if (isolateFrontF1At05South
             && (piece == null
                 || (!IsFloorOrCeiling(piece)
+                    && !IsChampionStatusSlotPiece(piece)
                     && !IsFrontWallF1Card(piece)
                     && !IsFrontWallF3Card(piece)
                     && !IsWallF0RightPiece(piece))))
@@ -7693,7 +7708,6 @@ public class ViewportLayoutEditor : EditorWindow
           previewY,
           previewFacing
       );
-
     }
 
     editModePreviewTexture.SetPixels32(pixels);
