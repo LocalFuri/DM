@@ -1329,7 +1329,7 @@ MonoBehaviour:
     FrontWallF2Width: 0
   - GeometryKey: OW|OWW|OWW|WWW
     PieceName: FrontF3
-    Enabled: 0
+    Enabled: 1
     Graphic: 25
     X: 7
     Y: 93

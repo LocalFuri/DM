@@ -6965,9 +6965,12 @@ public class ViewportLayoutEditor : EditorWindow
       // Draw normal walls by physical depth (far -> near) without changing
       // layout.Pieces itself. Non-wall pieces keep their original slots/order.
       List<ViewportPiece> orderedNormalWalls = new List<ViewportPiece>();
+      bool hasLiveFrontF3Card = false;
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
         ViewportPiece candidate = layout.Pieces[i];
+        if (candidate != null && candidate.Name == "FrontF3")
+          hasLiveFrontF3Card = true;
         if (IsNormalWallPiece(candidate))
           orderedNormalWalls.Add(candidate);
       }
@@ -6982,6 +6985,13 @@ public class ViewportLayoutEditor : EditorWindow
         ViewportPiece piece = layout.Pieces[i];
         if (IsNormalWallPiece(piece))
           piece = orderedNormalWalls[nextNormalWall++];
+
+        if (hasLiveFrontF3Card
+            && piece != null
+            && piece.Name == "Front Wall F3")
+        {
+          continue;
+        }
 
         bool isLeftF0Diag = is14South && IsWallF0LeftPiece(piece);
         bool shouldDraw = ShouldDrawPieceAtPreviewPose(piece);
