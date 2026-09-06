@@ -370,7 +370,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnEnable()
   {
-    titleContent = new GUIContent("ViewEdit");
+    titleContent = new GUIContent("ViewEdit BUILD CHECK");
     wantsMouseMove = true;
     RestorePersistedAssets();
     ReloadLayoutFromDisk();
@@ -2013,6 +2013,14 @@ public class ViewportLayoutEditor : EditorWindow
       // ViewEdit-only stationary-pose test, identical in lifetime to X/Y/Mirror.
       // Geometry remains authoritative after X/Y/Facing changes.
       previewEnabledOverrideByPiece[piece] = enabledAfter;
+      if (IsFrontWallF1Card(piece))
+      {
+        Debug.Log(
+            "FRONTF1 ENABLE EDIT | "
+            + "hash=" + piece.GetHashCode()
+            + " | enabled=" + enabledAfter
+            + " | dictCount=" + previewEnabledOverrideByPiece.Count);
+      }
       previewEnabledChangedThisFrame = true;
       RefreshTemporaryNormalWallPreview();
     }
@@ -4261,6 +4269,21 @@ public class ViewportLayoutEditor : EditorWindow
 
     return piece.Name == "FrontF1"
         || piece.Name == "Front Wall F1";
+  }
+
+  private bool TryGetFrontF1PreviewEnabledOverride(out bool value)
+  {
+    value = false;
+    foreach (KeyValuePair<ViewportPiece, bool> entry in previewEnabledOverrideByPiece)
+    {
+      if (entry.Key == null || !IsFrontWallF1Card(entry.Key))
+        continue;
+
+      value = entry.Value;
+      return true;
+    }
+
+    return false;
   }
 
   private static bool IsFrontWallF2Card(ViewportPiece piece)
@@ -6796,6 +6819,15 @@ public class ViewportLayoutEditor : EditorWindow
                     piece, out bool manualExceptionEnabled)
                 || manualExceptionEnabled);
 
+        if (IsFrontWallF1Card(piece))
+        {
+          Debug.Log(
+              "FRONTF1 COMPOSE INSTANCE | "
+              + "hash=" + piece.GetHashCode()
+              + " | dictCount=" + previewEnabledOverrideByPiece.Count
+              + " | contains=" + previewEnabledOverrideByPiece.ContainsKey(piece));
+        }
+
         bool manualNormalWallEnabledForDraw =
             IsNormalWallPiece(piece)
             && previewEnabledOverrideByPiece.TryGetValue(
@@ -6850,6 +6882,25 @@ public class ViewportLayoutEditor : EditorWindow
                   piece, out bool manualNormalWallEnabled))
           {
             resolvedEnabled = manualNormalWallEnabled;
+          }
+          else if (IsFrontWallF1Card(piece)
+              && TryGetFrontF1PreviewEnabledOverride(
+                  out bool frontF1EnabledOverride))
+          {
+            resolvedEnabled = frontF1EnabledOverride;
+          }
+
+          if (IsFrontWallF1Card(piece))
+          {
+            bool hasOverride = previewEnabledOverrideByPiece.TryGetValue(
+                piece, out bool loggedOverride);
+            Debug.Log(
+                "FRONTF1 ENABLE DRAW | name=" + piece.Name
+                + " | hash=" + piece.GetHashCode()
+                + " | base=" + resolvedWall.Enabled
+                + " | hasOverride=" + hasOverride
+                + " | override=" + (hasOverride ? loggedOverride.ToString() : "-")
+                + " | final=" + resolvedEnabled);
           }
 
           if (!resolvedEnabled)
