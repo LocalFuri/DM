@@ -1331,9 +1331,9 @@ MonoBehaviour:
     PieceName: FrontF3
     Enabled: 1
     Graphic: 25
-    X: 7
+    X: -63
     Y: 93
-    Mirror: 1
+    Mirror: 0
     FrontWallF1Width: 0
     FrontWallF2Width: 0
   - GeometryKey: OW|OWW|OWW|WWW
