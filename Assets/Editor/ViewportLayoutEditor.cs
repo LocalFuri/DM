@@ -6994,7 +6994,7 @@ public class ViewportLayoutEditor : EditorWindow
         }
 
         // TEMP isolation test for exactly (0,5) South:
-        // Ceiling + Floor + FrontF1 only. No other walls.
+        // Ceiling + Floor + FrontF1 + FrontF3 + RightF0 only.
         bool isolateFrontF1At05South =
             previewX == 0
             && previewY == 5
@@ -7003,7 +7003,9 @@ public class ViewportLayoutEditor : EditorWindow
         if (isolateFrontF1At05South
             && (piece == null
                 || (!IsFloorOrCeiling(piece)
-                    && !IsFrontWallF1Card(piece))))
+                    && !IsFrontWallF1Card(piece)
+                    && !IsFrontWallF3Card(piece)
+                    && !IsWallF0RightPiece(piece))))
         {
           continue;
         }
@@ -7028,7 +7030,9 @@ public class ViewportLayoutEditor : EditorWindow
             && !manualNormalWallEnabledForDraw
             && !blackDoorF2Exception
             && !blackDoorF3Exception
-            && !blackDoorObliqueRightD3Exception)
+            && !blackDoorObliqueRightD3Exception
+            && !(isolateFrontF1At05South
+                && (IsFrontWallF3Card(piece) || IsWallF0RightPiece(piece))))
         {
           continue;
         }
@@ -7080,7 +7084,8 @@ public class ViewportLayoutEditor : EditorWindow
             resolvedEnabled = frontF1EnabledOverride;
           }
 
-          if (!resolvedEnabled)
+          if (!resolvedEnabled
+              && !(isolateFrontF1At05South && IsFrontWallF3Card(piece)))
             continue;
 
           // Geometry supplies the normal orientation. A ViewEdit-only checkbox
