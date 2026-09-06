@@ -4311,6 +4311,31 @@ public class ViewportLayoutEditor : EditorWindow
     return false;
   }
 
+  private bool TryGetFrontF1PreviewMirrorOverride(
+      ViewportPiece piece,
+      out bool mirror)
+  {
+    if (piece != null
+        && previewMirrorOverrideByPiece.TryGetValue(piece, out mirror))
+    {
+      return true;
+    }
+
+    foreach (KeyValuePair<ViewportPiece, bool> entry in previewMirrorOverrideByPiece)
+    {
+      if (entry.Key == null || !IsFrontWallF1Card(entry.Key))
+        continue;
+      if (piece != null && ReferenceEquals(entry.Key, piece))
+        continue;
+
+      mirror = entry.Value;
+      return true;
+    }
+
+    mirror = false;
+    return false;
+  }
+
   private static bool IsFrontWallF2Card(ViewportPiece piece)
   {
     if (piece == null || piece.Name == null)
@@ -7004,7 +7029,7 @@ public class ViewportLayoutEditor : EditorWindow
         // temporary mirror override for this exact stationary X/Y/Facing,
         // or a persisted DTerm row already supplied Mirror.
         if (IsFrontWallF1Card(piece)
-            && !previewMirrorOverrideByPiece.ContainsKey(piece)
+            && !TryGetFrontF1PreviewMirrorOverride(piece, out _)
             && !hasDTermRow)
         {
           mirror = GetFrontF1MirrorFromPose();
@@ -7019,7 +7044,13 @@ public class ViewportLayoutEditor : EditorWindow
         {
           continue;
         }
-        if (previewMirrorOverrideByPiece.TryGetValue(
+        if (IsFrontWallF1Card(piece)
+            && TryGetFrontF1PreviewMirrorOverride(
+                piece, out bool frontF1PreviewMirror))
+        {
+          mirror = frontF1PreviewMirror;
+        }
+        else if (previewMirrorOverrideByPiece.TryGetValue(
                 piece, out bool livePreviewMirror))
         {
           mirror = livePreviewMirror;
