@@ -618,6 +618,50 @@ public class ViewportLayoutEditor : EditorWindow
     previewMirrorOverrideByPiece.Clear();
     previewFrontF1WidthOverrideByPiece.Clear();
 
+    // Keep the visually verified Black Door F1 layout authoritative.
+    // These are the accepted working reference values for 1,3 North.
+    if (IsVerifiedBlackDoorF1Pose())
+    {
+      ViewportPiece leftFrame =
+          FindLayoutPieceByName("Black Door Frame Left F1");
+      if (leftFrame != null)
+      {
+        leftFrame.Enabled = true;
+        leftFrame.X = 44;
+        leftFrame.Y = DisplayYToUnityY(46, 94);
+      }
+
+      ViewportPiece rightFrame =
+          FindLayoutPieceByName("Black Door Frame Right F1");
+      if (rightFrame != null)
+      {
+        rightFrame.Enabled = true;
+        rightFrame.X = 154;
+        rightFrame.Y = DisplayYToUnityY(46, 94);
+      }
+
+      ViewportPiece frontDoor =
+          FindLayoutPieceByName("BlackDoorF1");
+      if (frontDoor != null)
+      {
+        frontDoor.Enabled = true;
+        frontDoor.X = 63;
+        frontDoor.Y = DisplayYToUnityY(47, 88);
+      }
+
+      ViewportPiece rightF1 =
+          FindLayoutPieceByName("RightF1");
+      if (rightF1 == null)
+        rightF1 = FindLayoutPieceByName("Wall F1Right");
+      if (rightF1 != null)
+      {
+        rightF1.X = 165;
+        rightF1.Y = DisplayYToUnityY(
+            42,
+            GetPieceHeightForEditorY(rightF1));
+      }
+    }
+
     ApplyCurrentPoseVisibilityToLayout();
     ResetEditModeViewportLogCache();
     DestroyEditModePreviewTextureOnly();
@@ -5421,6 +5465,15 @@ public class ViewportLayoutEditor : EditorWindow
           x = 165;
           y = DisplayYToUnityY(41, GetPieceHeightForEditorY(piece));
         }
+
+        // Verified Black Door F1 side-wall alignment at 1,3 North.
+        if (previewX == 1
+            && previewY == 3
+            && previewFacing == DungeonFacing.North)
+        {
+          x = 165;
+          y = DisplayYToUnityY(42, GetPieceHeightForEditorY(piece));
+        }
       }
       else if (IsWallF2LeftPiece(piece))
       {
@@ -6885,30 +6938,35 @@ public class ViewportLayoutEditor : EditorWindow
       blackDoorFrameRightF3CardEnabled = false;
       blackDoorFrameRightF3CardInitialized = true;
 
+      // Verified Black Door F1 layout for the 1,3 North front-door view.
+      // Display coordinates:
+      //   Left frame  X=44  Y=46
+      //   Right frame X=154 Y=46
+      //   Door        X=63  Y=47
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
         ViewportPiece piece = layout.Pieces[i];
         if (piece == null)
           continue;
 
-        if (piece.Name != "Black Door Frame Left F1")
-          continue;
-
-        piece.Enabled = true;
-        break;
-      }
-
-      for (int i = 0; i < layout.Pieces.Count; i++)
-      {
-        ViewportPiece piece = layout.Pieces[i];
-        if (piece == null)
-          continue;
-
-        if (piece.Name != "BlackDoorF1")
-          continue;
-
-        piece.Enabled = true;
-        return;
+        if (piece.Name == "Black Door Frame Left F1")
+        {
+          piece.Enabled = true;
+          piece.X = 44;
+          piece.Y = DisplayYToUnityY(46, 94);
+        }
+        else if (piece.Name == "Black Door Frame Right F1")
+        {
+          piece.Enabled = true;
+          piece.X = 154;
+          piece.Y = DisplayYToUnityY(46, 94);
+        }
+        else if (piece.Name == "BlackDoorF1")
+        {
+          piece.Enabled = true;
+          piece.X = 63;
+          piece.Y = DisplayYToUnityY(47, 88);
+        }
       }
 
       return;
@@ -8181,26 +8239,8 @@ public class ViewportLayoutEditor : EditorWindow
         // can visually tune placement next without changing the asset.
         if (blackDoorF1Exception)
         {
-          Texture2D f1DoorSource = GetBlackDoorF1SourceTexture();
-          if (f1DoorSource != null)
-          {
-            BlitPieceIntoPreview(
-                pixels,
-                f1DoorSource,
-                piece.EffectiveX,
-                piece.EffectiveY,
-                mirror);
-            LogIfOverlapsLeftF0(
-                piece,
-                drawGraphic,
-                piece.EffectiveX,
-                piece.EffectiveY,
-                f1DoorSource.width,
-                f1DoorSource.height);
-          }
-
-          // The F1 frame pieces are in front of the door in the original
-          // view, so draw them immediately AFTER the 96x88 door.
+          // Original layering: draw the left/right F1 frame pieces first,
+          // then draw the front Black Door over them.
           // The game only has one F1 frame graphic, so the right frame uses
           // the same left-frame texture mirrored horizontally.
           Texture2D leftFrameSource = GetBlackDoorFrameLeftF1SourceTexture();
@@ -8227,6 +8267,24 @@ public class ViewportLayoutEditor : EditorWindow
                 rightFramePiece.EffectiveX,
                 rightFramePiece.EffectiveY,
                 true);
+          }
+
+          Texture2D f1DoorSource = GetBlackDoorF1SourceTexture();
+          if (f1DoorSource != null)
+          {
+            BlitPieceIntoPreview(
+                pixels,
+                f1DoorSource,
+                piece.EffectiveX,
+                piece.EffectiveY,
+                mirror);
+            LogIfOverlapsLeftF0(
+                piece,
+                drawGraphic,
+                piece.EffectiveX,
+                piece.EffectiveY,
+                f1DoorSource.width,
+                f1DoorSource.height);
           }
 
           continue;
@@ -8562,6 +8620,13 @@ public class ViewportLayoutEditor : EditorWindow
   /// (1,3) North Black Door F1 front view.
   /// Uses the dedicated 96x88 source texture and does not write pose data.
   /// </summary>
+  private bool IsVerifiedBlackDoorF1Pose()
+  {
+    return previewX == 1
+        && previewY == 3
+        && previewFacing == DungeonFacing.North;
+  }
+
   private bool IsBlackDoorF1PoseException(ViewportPiece piece)
   {
     if (piece == null || piece.Name != "BlackDoorF1")
