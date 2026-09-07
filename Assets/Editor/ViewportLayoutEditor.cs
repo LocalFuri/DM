@@ -4813,6 +4813,29 @@ public class ViewportLayoutEditor : EditorWindow
     return cell.IsWall;
   }
 
+  private static bool IsVerifiedRightF1MirrorOnGeometry(
+      RelativeViewportGeometry g)
+  {
+    // Verified original-DM reference first observed at 1,7 East.
+    // Keyed only by normalized diagnostic geometry, not map coordinates/facing.
+    //
+    // F0: L=O R=W
+    // F1: L=W C=O R=W
+    // F2: L=W C=O R=W
+    // F3: L=O C=O R=W
+    return !IsViewEditGeometryWall(g.F0Left)
+        && IsViewEditGeometryWall(g.F0Right)
+        && IsViewEditGeometryWall(g.F1Left)
+        && !IsViewEditGeometryWall(g.F1Center)
+        && IsViewEditGeometryWall(g.F1Right)
+        && IsViewEditGeometryWall(g.F2Left)
+        && !IsViewEditGeometryWall(g.F2Center)
+        && IsViewEditGeometryWall(g.F2Right)
+        && !IsViewEditGeometryWall(g.F3Left)
+        && !IsViewEditGeometryWall(g.F3Center)
+        && IsViewEditGeometryWall(g.F3Right);
+  }
+
   private static bool IsVerifiedRightF0MirrorOnGeometry(
       RelativeViewportGeometry g)
   {
@@ -5264,7 +5287,9 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsWallF1RightPiece(piece))
       {
         enabled = rightF1;
-        mirror = GetSideWallMirrorFromPose();
+        mirror = IsVerifiedRightF1MirrorOnGeometry(g)
+            ? true
+            : GetSideWallMirrorFromPose();
 
         if (TryGetActiveCanonicalReferenceXY(piece, mirror, out int rightF1RefX, out int rightF1RefY))
         {
@@ -5443,8 +5468,10 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       bool resolvedSideMirror =
-          IsWallF0RightPiece(piece)
-          && IsVerifiedRightF0MirrorOnGeometry(g)
+          (IsWallF0RightPiece(piece)
+              && IsVerifiedRightF0MirrorOnGeometry(g))
+          || (IsWallF1RightPiece(piece)
+              && IsVerifiedRightF1MirrorOnGeometry(g))
               ? true
               : sideWallMirror;
 
@@ -5494,6 +5521,29 @@ public class ViewportLayoutEditor : EditorWindow
         {
           rightF0StateAfterDTerm.Mirror = true;
           resolvedNormalWallByPiece[piece] = rightF0StateAfterDTerm;
+        }
+
+        piece.MirrorHorizontally = true;
+      }
+    }
+
+    // Verified RightF1 geometry mirror authority.
+    // DTerm may contain an older mirror value, so re-apply the normalized
+    // geometry result after DTerm. Manual ViewEdit mirror overrides still
+    // apply afterward for testing.
+    if (IsVerifiedRightF1MirrorOnGeometry(g))
+    {
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (piece == null || !IsWallF1RightPiece(piece))
+          continue;
+
+        if (resolvedNormalWallByPiece.TryGetValue(
+                piece, out ResolvedNormalWallState rightF1StateAfterDTerm))
+        {
+          rightF1StateAfterDTerm.Mirror = true;
+          resolvedNormalWallByPiece[piece] = rightF1StateAfterDTerm;
         }
 
         piece.MirrorHorizontally = true;
