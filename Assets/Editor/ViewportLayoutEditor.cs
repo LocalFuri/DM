@@ -2880,6 +2880,17 @@ public class ViewportLayoutEditor : EditorWindow
       case "Wall D3R2":
         color = new Color32(0x9B, 0x6F, 0xD1, 0xFF);
         return true;
+      case "BlackDoorF1":
+      case "BlackDoorF2":
+      case "BlackDoorF3":
+      case "Black Door Frame Left F1":
+      case "Black Door Frame Right F1":
+      case "Black Door Frame Left F2":
+      case "Black Door Frame Right F2":
+      case "Black Door Frame Left F3":
+      case "Black Door Frame Right F3":
+        color = Color.magenta;
+        return true;
       default:
         return false;
     }
