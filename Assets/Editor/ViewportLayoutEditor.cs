@@ -2563,65 +2563,6 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
     EditorGUILayout.EndVertical();
-
-    if (piece.Name == "Black Door Frame Left F2")
-    {
-      ViewportPiece leftF3 = FindLayoutPieceByName("Black Door Frame Left F3");
-      if (leftF3 == null)
-      {
-        leftF3 = EnsureBlackDoorFrameLeftF3Piece();
-        changed = true;
-      }
-      int x = leftF3 != null ? leftF3.X : blackDoorFrameLeftF3CardX;
-      int y = leftF3 != null ? leftF3.Y : blackDoorFrameLeftF3CardY;
-      int leftF3XBefore = x;
-      int leftF3YBefore = y;
-      DrawBlackDoorFrameF3EditorCard(
-          "Black Door Frame Left F3",
-          ref blackDoorFrameLeftF3CardInitialized,
-          ref blackDoorFrameLeftF3CardEnabled,
-          ref blackDoorFrameLeftF3CardMirror,
-          ref x,
-          ref y,
-          false);
-      blackDoorFrameLeftF3CardX = x;
-      blackDoorFrameLeftF3CardY = y;
-      if (leftF3 != null && (x != leftF3XBefore || y != leftF3YBefore))
-      {
-        leftF3.X = x;
-        leftF3.Y = y;
-        changed = true;
-      }
-    }
-    else if (piece.Name == "Black Door Frame Right F2")
-    {
-      ViewportPiece rightF3 = FindLayoutPieceByName("Black Door Frame Right F3");
-      if (rightF3 == null)
-      {
-        rightF3 = EnsureBlackDoorFrameRightF3Piece();
-        changed = true;
-      }
-      int x = rightF3 != null ? rightF3.X : blackDoorFrameRightF3CardX;
-      int y = rightF3 != null ? rightF3.Y : blackDoorFrameRightF3CardY;
-      int rightF3XBefore = x;
-      int rightF3YBefore = y;
-      DrawBlackDoorFrameF3EditorCard(
-          "Black Door Frame Right F3",
-          ref blackDoorFrameRightF3CardInitialized,
-          ref blackDoorFrameRightF3CardEnabled,
-          ref blackDoorFrameRightF3CardMirror,
-          ref x,
-          ref y,
-          true);
-      blackDoorFrameRightF3CardX = x;
-      blackDoorFrameRightF3CardY = y;
-      if (rightF3 != null && (x != rightF3XBefore || y != rightF3YBefore))
-      {
-        rightF3.X = x;
-        rightF3.Y = y;
-        changed = true;
-      }
-    }
   }
 
   private void DrawBlackDoorFrameF3EditorCard(
