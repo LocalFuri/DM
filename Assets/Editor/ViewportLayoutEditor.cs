@@ -4939,14 +4939,26 @@ public class ViewportLayoutEditor : EditorWindow
       out int x,
       out int y)
   {
+    bool leftD3FrontF1Reference =
+        IsFrontWallF1Card(piece)
+        && TryGetCurrentRelativeViewportGeometry(
+            out RelativeViewportGeometry currentGeometry)
+        && IsLeftD3ObliqueOpening(currentGeometry);
+
     if (TryGetDTermEntryForPiece(piece, out ViewportDTermEntry entry))
     {
-      x = entry.X;
+      x = leftD3FrontF1Reference ? 32 : entry.X;
       y = UnityYToDisplayY(entry.Y, GetPieceHeightForEditorY(piece));
       return true;
     }
 
-    return TryGetActiveCanonicalReferenceXY(piece, mirror, out x, out y);
+    if (!TryGetActiveCanonicalReferenceXY(piece, mirror, out x, out y))
+      return false;
+
+    if (leftD3FrontF1Reference)
+      x = 32;
+
+    return true;
   }
 
   private void ApplyPersistedDTermWallRows(string geometryKey)
