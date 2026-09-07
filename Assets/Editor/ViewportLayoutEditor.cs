@@ -882,10 +882,7 @@ public class ViewportLayoutEditor : EditorWindow
         || piece.Name == "Champion Status Slot 3"
         || piece.Name == "Champion Status Slot 4"
         || piece.Name == "Ceiling Strip 84"
-        || piece.Name == "Ceiling Strip 85"
-        || piece.Name == "Black Door Frame Left F3"
-        || piece.Name == "Black Door Frame Right F3"
-        || piece.Name == "BlackDoorF3")
+        || piece.Name == "Ceiling Strip 85")
     {
       return true;
     }
