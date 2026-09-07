@@ -8294,11 +8294,9 @@ public class ViewportLayoutEditor : EditorWindow
         // 66×64 1:1 last so it covers overlapping inner frame pixels.
         if (blackDoorF2Exception)
         {
-          // 1,4 North uses only the dedicated F2 door path.
-          // The F2 ViewEdit controls are authoritative for visibility/mirror.
-          if (!blackDoorF2CardEnabled)
-            continue;
-
+          // 1,4 North: draw ONLY the dedicated front F2 door for now.
+          // Do not depend on the virtual editor-card Enabled state yet;
+          // first establish the correct F2 door graphic/placement.
           Texture2D f2Source = GetBlackDoorF2SourceTexture();
           if (f2Source != null)
           {
@@ -8307,7 +8305,7 @@ public class ViewportLayoutEditor : EditorWindow
                 f2Source,
                 piece.ResolvedBlackDoorF2X,
                 piece.ResolvedBlackDoorF2Y,
-                blackDoorF2CardMirror);
+                false);
             LogIfOverlapsLeftF0(
                 piece,
                 drawGraphic,
