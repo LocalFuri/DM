@@ -5379,6 +5379,14 @@ public class ViewportLayoutEditor : EditorWindow
         mirror = verifiedMirror;
       }
 
+      // FrontF1 mirror is pose-parity driven and must flip when moving one
+      // tile or turning 90 degrees. Keep it authoritative over any older
+      // geometry-level mirror override.
+      if (IsFrontWallF1Card(piece))
+      {
+        mirror = GetFrontF1MirrorFromPose();
+      }
+
       ResolvedNormalWallState state = new ResolvedNormalWallState
       {
         Enabled = enabled,
@@ -5436,6 +5444,28 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     ApplyPersistedDTermWallRows(frontF1GeometryKey);
+
+    // DTerm may contain an older FrontF1 Mirror value. FrontF1 mirror is
+    // pose-parity driven, so restore the pose value after DTerm is applied.
+    // Temporary ViewEdit mirror overrides are applied afterward and still win.
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null || !IsFrontWallF1Card(piece))
+        continue;
+
+      bool poseMirror = GetFrontF1MirrorFromPose();
+
+      if (resolvedNormalWallByPiece.TryGetValue(
+              piece, out ResolvedNormalWallState frontF1StateAfterDTerm))
+      {
+        frontF1StateAfterDTerm.Mirror = poseMirror;
+        resolvedNormalWallByPiece[piece] = frontF1StateAfterDTerm;
+      }
+
+      piece.MirrorHorizontally = poseMirror;
+    }
+
     ApplyTemporaryNormalWallPreviewOverrides();
   }
 
