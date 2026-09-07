@@ -7700,7 +7700,33 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (D3R2NarrowWidthTest.ShouldReplace(piece.Graphic))
         {
-          if (blackDoorObliqueRightD3Exception)
+          bool hasManualRightD3Position =
+              previewPositionOverrideByPiece.ContainsKey(piece);
+          bool hasManualRightD3Mirror =
+              previewMirrorOverrideByPiece.ContainsKey(piece);
+
+          // When RightD3 is being manually tested in ViewEdit, use the normal
+          // preview blit so the live X/Y and Mirror controls actually affect
+          // what is drawn. With no manual test active, preserve the existing
+          // D3R2 narrow-strip rendering exactly as before.
+          if (hasManualRightD3Position || hasManualRightD3Mirror)
+          {
+            BlitPieceIntoPreview(
+                pixels,
+                texture,
+                resolvedX,
+                resolvedY,
+                mirror);
+
+            LogIfOverlapsLeftF0(
+                piece,
+                drawGraphic,
+                resolvedX,
+                resolvedY,
+                texture.width,
+                texture.height);
+          }
+          else if (blackDoorObliqueRightD3Exception)
           {
             // ViewEdit display position was measured as X=196, Y=58.
             // D3R2 is 49 px high, so bottom-up framebuffer Y is 200-58-49=93.
