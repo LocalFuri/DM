@@ -5113,7 +5113,9 @@ public class ViewportLayoutEditor : EditorWindow
         // Display Y 42 -> Unity Y 47 (FrontF1 height 111).
         y = 47;
         mirror = frontF1Mirror;
-        if (leftD3ObliqueOpening || rightD3ObliqueOpening)
+        if (leftD3ObliqueOpening && rightD3ObliqueOpening)
+            frontF1Width = StraightF1WallLogic.CompositeWidth160;
+        else if (leftD3ObliqueOpening || rightD3ObliqueOpening)
             frontF1Width = StraightF1WallLogic.CompositeWidth191;
         else if (leftF0 && rightF0)
             frontF1Width = StraightF1WallLogic.CompositeWidth160;
@@ -7502,6 +7504,17 @@ public class ViewportLayoutEditor : EditorWindow
             frontF1TextureHeight = fullF1Texture.height;
             const int leftD3FrontF1StartX = 32;
 
+            bool rightD3AlsoActive =
+                !currentGeometry.F0Left.IsWall
+                && !currentGeometry.F0Right.IsWall
+                && currentGeometry.F1Center.IsWall
+                && !currentGeometry.F1Right.IsWall;
+
+            int leftD3FrontF1CopyWidth =
+                rightD3AlsoActive
+                    ? StraightF1WallLogic.CompositeWidth160
+                    : StraightF1WallLogic.CompositeWidth191;
+
             if (mirror)
             {
               BlitFrontF1MirroredImageFromX(
@@ -7509,7 +7522,8 @@ public class ViewportLayoutEditor : EditorWindow
                   fullF1Texture,
                   leftD3FrontF1StartX,
                   leftD3FrontF1StartX,
-                  resolvedY);
+                  resolvedY,
+                  leftD3FrontF1CopyWidth);
             }
             else
             {
@@ -7519,7 +7533,8 @@ public class ViewportLayoutEditor : EditorWindow
                   leftD3FrontF1StartX,
                   leftD3FrontF1StartX,
                   resolvedY,
-                  false);
+                  false,
+                  leftD3FrontF1CopyWidth);
             }
 
             LogIfOverlapsLeftF0(
@@ -7527,7 +7542,7 @@ public class ViewportLayoutEditor : EditorWindow
                 piece.Graphic,
                 leftD3FrontF1StartX,
                 resolvedY,
-                StraightF1WallLogic.CompositeWidth - leftD3FrontF1StartX,
+                leftD3FrontF1CopyWidth,
                 fullF1Texture.height);
           }
           else if (frontF1CropPreview)
@@ -8297,7 +8312,8 @@ public class ViewportLayoutEditor : EditorWindow
       Texture2D source,
       int mirroredSourceStartX,
       int destinationStartX,
-      int destinationY)
+      int destinationY,
+      int maxCopyWidth = int.MaxValue)
   {
     if (dest == null || source == null || !source.isReadable)
       return;
@@ -8311,6 +8327,7 @@ public class ViewportLayoutEditor : EditorWindow
     int lastImageX = imageWidth - 1;
     mirroredSourceStartX = Mathf.Clamp(mirroredSourceStartX, 0, lastImageX);
     int copyWidth = lastImageX - mirroredSourceStartX + 1;
+    copyWidth = Mathf.Min(copyWidth, maxCopyWidth);
     if (copyWidth <= 0)
       return;
 
@@ -8346,7 +8363,8 @@ public class ViewportLayoutEditor : EditorWindow
       int sourceStartX,
       int destinationStartX,
       int destinationY,
-      bool mirrorHorizontally)
+      bool mirrorHorizontally,
+      int maxCopyWidth = int.MaxValue)
   {
     if (dest == null || source == null || !source.isReadable)
       return;
@@ -8359,6 +8377,7 @@ public class ViewportLayoutEditor : EditorWindow
         source.width,
         StraightF1WallLogic.CompositeWidth) - 1;
     int copyWidth = sourceEndX - sourceStartX + 1;
+    copyWidth = Mathf.Min(copyWidth, maxCopyWidth);
     if (copyWidth <= 0)
       return;
 
