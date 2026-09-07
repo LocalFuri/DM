@@ -744,6 +744,18 @@ public class ViewportLayoutEditor : EditorWindow
           "Search Pieces",
           EditorStyles.popup,
           GetSearchPiecesLabelStyle());
+
+      GUIStyle searchPoseStyle = new GUIStyle(EditorStyles.boldLabel);
+      Color brightBlue = new Color(0.2f, 0.7f, 1.0f);
+      searchPoseStyle.normal.textColor = brightBlue;
+      searchPoseStyle.hover.textColor = brightBlue;
+      searchPoseStyle.focused.textColor = brightBlue;
+      searchPoseStyle.active.textColor = brightBlue;
+      GUILayout.Label(
+          previewX + "/" + previewY + " " + previewFacing,
+          searchPoseStyle,
+          GUILayout.Width(78f));
+
       bool guiChangedBeforeSearch = GUI.changed;
       Rect searchPiecesPopupRect = EditorGUILayout.GetControlRect();
       Event searchEvent = Event.current;
