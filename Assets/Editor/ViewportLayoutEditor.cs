@@ -8294,6 +8294,11 @@ public class ViewportLayoutEditor : EditorWindow
         // 66×64 1:1 last so it covers overlapping inner frame pixels.
         if (blackDoorF2Exception)
         {
+          // 1,4 North uses only the dedicated F2 door path.
+          // The F2 ViewEdit controls are authoritative for visibility/mirror.
+          if (!blackDoorF2CardEnabled)
+            continue;
+
           Texture2D f2Source = GetBlackDoorF2SourceTexture();
           if (f2Source != null)
           {
@@ -8302,7 +8307,7 @@ public class ViewportLayoutEditor : EditorWindow
                 f2Source,
                 piece.ResolvedBlackDoorF2X,
                 piece.ResolvedBlackDoorF2Y,
-                mirror);
+                blackDoorF2CardMirror);
             LogIfOverlapsLeftF0(
                 piece,
                 drawGraphic,
@@ -8643,10 +8648,9 @@ public class ViewportLayoutEditor : EditorWindow
   /// </summary>
   private bool IsBlackDoorF2PoseException(ViewportPiece piece)
   {
-    if (piece == null)
-      return false;
-
-    if (piece.Graphic != DungeonGraphicType.BlackDoor)
+    // F2 is rendered only through the existing BlackDoorF1 carrier piece.
+    // Do not match every piece that happens to use the BlackDoor graphic.
+    if (piece == null || piece.Name != "BlackDoorF1")
       return false;
 
     return previewX == 1
