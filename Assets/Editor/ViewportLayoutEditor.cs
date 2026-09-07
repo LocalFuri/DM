@@ -4800,6 +4800,10 @@ public class ViewportLayoutEditor : EditorWindow
     // F2/F3/D3/Black Door remain disabled until F1 is verified.
     ApplyF1MinimapWallRecipe();
 
+    // Apply Black Door F1/F2/F3 pose-specific Enabled states after the normal
+    // wall recipe. This routine previously existed but was never called.
+    ApplyBlackDoorEnabledFromPoseException();
+
     // Exception layer: the Hall of Champions oblique RightD3 starts enabled so
     // ViewEdit reflects what is actually rendered. The user may temporarily
     // disable it with the Enabled checkbox for visual testing.
@@ -6904,11 +6908,11 @@ public class ViewportLayoutEditor : EditorWindow
         if (piece == null)
           continue;
 
-        if (piece.Name != "Black Door Frame Right F2")
-          continue;
-
-        piece.Enabled = true;
-        break;
+        if (piece.Name == "Black Door Frame Left F2"
+            || piece.Name == "Black Door Frame Right F2")
+        {
+          piece.Enabled = true;
+        }
       }
 
       for (int i = 0; i < layout.Pieces.Count; i++)
@@ -8294,9 +8298,45 @@ public class ViewportLayoutEditor : EditorWindow
         // 66×64 1:1 last so it covers overlapping inner frame pixels.
         if (blackDoorF2Exception)
         {
-          // 1,4 North: draw ONLY the dedicated front F2 door for now.
-          // Do not depend on the virtual editor-card Enabled state yet;
-          // first establish the correct F2 door graphic/placement.
+          // 1,4 North: draw the special F2 left/right frame parts first,
+          // then draw the dedicated front F2 door over them.
+          ViewportPiece leftF2Frame =
+              FindLayoutPieceByName("Black Door Frame Left F2");
+          if (leftF2Frame != null && leftF2Frame.Enabled)
+          {
+            Texture2D leftF2FrameSource =
+                AssetDatabase.LoadAssetAtPath<Texture2D>(
+                    "Assets/Art/Walls/Black Door Frame_Left_18x65.png");
+            if (leftF2FrameSource != null)
+            {
+              BlitPieceIntoPreview(
+                  pixels,
+                  leftF2FrameSource,
+                  leftF2Frame.EffectiveX,
+                  leftF2Frame.EffectiveY,
+                  leftF2Frame.MirrorHorizontally);
+            }
+          }
+
+          ViewportPiece rightF2Frame =
+              FindLayoutPieceByName("Black Door Frame Right F2");
+          if (rightF2Frame != null && rightF2Frame.Enabled)
+          {
+            Texture2D rightF2FrameSource =
+                AssetDatabase.LoadAssetAtPath<Texture2D>(
+                    "Assets/Art/Walls/Black Door Frame_Left_18x65.png");
+            if (rightF2FrameSource != null)
+            {
+              BlitPieceIntoPreview(
+                  pixels,
+                  rightF2FrameSource,
+                  rightF2Frame.EffectiveX,
+                  rightF2Frame.EffectiveY,
+                  true);
+            }
+          }
+
+          // Dedicated front F2 door.
           Texture2D f2Source = GetBlackDoorF2SourceTexture();
           if (f2Source != null)
           {
