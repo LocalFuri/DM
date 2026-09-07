@@ -888,7 +888,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     if (showOnlyWallsNeededForCurrentPose
-        && IsWallEditorPiece(piece))
+        && (IsWallEditorPiece(piece) || IsBlackDoorEditorPiece(piece)))
     {
       // Edit Mode: show walls required by the preview geometry.
       // Play Mode: show the walls the runtime renderer has actually enabled.
@@ -915,7 +915,8 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece piece = layout.Pieces[i];
-      if (piece == null || !IsWallEditorPiece(piece))
+      if (piece == null
+          || (!IsWallEditorPiece(piece) && !IsBlackDoorEditorPiece(piece)))
         continue;
 
       bool needed = IsWallNeededForCurrentPose(piece);
@@ -963,11 +964,24 @@ public class ViewportLayoutEditor : EditorWindow
         || name == "Black Door Frame Right F1"
         || name == "Black Door Frame Left F2"
         || name == "Black Door Frame Right F2"
-        || name == "Black Door Frame Left F3"
-        || name == "Black Door Frame Right F3"
-        || name == "BlackDoorF1"
+        || name == "BlackDoorF1";
+  }
+
+  private static bool IsBlackDoorEditorPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    string name = piece.Name ?? string.Empty;
+    return name == "BlackDoorF1"
         || name == "BlackDoorF2"
-        || name == "BlackDoorF3";
+        || name == "BlackDoorF3"
+        || name == "Black Door Frame Left F1"
+        || name == "Black Door Frame Right F1"
+        || name == "Black Door Frame Left F2"
+        || name == "Black Door Frame Right F2"
+        || name == "Black Door Frame Left F3"
+        || name == "Black Door Frame Right F3";
   }
 
   private bool IsWallNeededForCurrentPose(ViewportPiece piece)
@@ -1071,7 +1085,8 @@ public class ViewportLayoutEditor : EditorWindow
     string name = piece.Name ?? string.Empty;
 
     // Hall of Champions Black Door front views.
-    // Show the actual standalone depth elements needed at the current pose.
+    // These are editor/filter decisions only; Black Door F2/F3 are kept out
+    // of the generic wall classifier so they do not disturb wall resolver code.
     if (previewX == 1 && previewFacing == DungeonFacing.North)
     {
       if (previewY == 3)
@@ -1095,6 +1110,10 @@ public class ViewportLayoutEditor : EditorWindow
             || name == "BlackDoorF3";
       }
     }
+
+    // Black Door elements are only needed in the dedicated front views above.
+    if (IsBlackDoorEditorPiece(piece))
+      return false;
 
     if (name == "LeftD3" || name == "Wall D3L2")
     {
