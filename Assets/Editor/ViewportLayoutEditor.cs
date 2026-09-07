@@ -1950,6 +1950,9 @@ public class ViewportLayoutEditor : EditorWindow
     GUI.backgroundColor = previousBg;
 
     bool compactFrontF1Header = IsFrontWallF1Card(piece);
+    bool compactBlackDoorF1FrameHeader =
+        piece.Name == "Black Door Frame Left F1"
+        || piece.Name == "Black Door Frame Right F1";
     bool compactD3Header =
         piece.Name == "LeftD3"
         || piece.Name == "Wall D3L2"
@@ -1968,7 +1971,10 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF3RightPiece(piece);
     bool hideNameForWall = IsWallEditorPiece(piece);
 
-    if (!compactFrontF1Header && !compactD3Header && !compactSideWallHeader)
+    if (!compactFrontF1Header
+        && !compactBlackDoorF1FrameHeader
+        && !compactD3Header
+        && !compactSideWallHeader)
     {
       EditorGUILayout.BeginHorizontal();
       string headerText = isSelected ? $"▶ {piece.Name}" : piece.Name;
@@ -2012,6 +2018,35 @@ public class ViewportLayoutEditor : EditorWindow
 
       // FrontF1 crop is now geometry-driven. The obsolete manual Crop
       // button / Crop X controls are intentionally not shown in ViewEdit.
+      EditorGUILayout.EndHorizontal();
+      EditorGUILayout.BeginHorizontal();
+    }
+    else if (compactBlackDoorF1FrameHeader)
+    {
+      string headerText = isSelected ? $"▶ {piece.Name}" : piece.Name;
+      if (TryGetPieceFamilyLabelColor(piece, out Color familyColor))
+      {
+        EditorGUILayout.LabelField(
+            headerText,
+            GetPieceFamilyHeaderStyle(familyColor),
+            GUILayout.Width(180f));
+      }
+      else
+      {
+        EditorGUILayout.LabelField(
+            headerText,
+            EditorStyles.label,
+            GUILayout.Width(180f));
+      }
+
+      EditorGUIUtility.labelWidth = 0f;
+      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
+          GUIContent.none, piece.Graphic, GUILayout.Width(135f));
+
+      // Match the compact FrontF1/D3 card layout:
+      // row 1 = name + Graphic
+      // row 2 = Enabled + Mirror + Ref
+      // row 3 = X + Y
       EditorGUILayout.EndHorizontal();
       EditorGUILayout.BeginHorizontal();
     }
@@ -2159,7 +2194,9 @@ public class ViewportLayoutEditor : EditorWindow
     bool hasPieceCardReference = TryGetPieceCardReferenceXY(
         piece, mirrorAfter, out int canonicalRefX, out int canonicalRefY);
 
-    if (compactFrontF1Header || compactD3Header)
+    if (compactFrontF1Header
+        || compactBlackDoorF1FrameHeader
+        || compactD3Header)
     {
       string refLabel = hasPieceCardReference
           ? $"Ref X {canonicalRefX} / Y {canonicalRefY}"
@@ -2172,7 +2209,10 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.EndHorizontal();
 
     EditorGUI.BeginChangeCheck();
-    if (!compactFrontF1Header && !compactD3Header && !compactSideWallHeader)
+    if (!compactFrontF1Header
+        && !compactBlackDoorF1FrameHeader
+        && !compactD3Header
+        && !compactSideWallHeader)
     {
       EditorGUILayout.BeginHorizontal();
 
