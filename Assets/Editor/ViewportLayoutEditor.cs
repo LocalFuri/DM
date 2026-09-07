@@ -7590,12 +7590,13 @@ public class ViewportLayoutEditor : EditorWindow
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
           continue;
 
-        // Black Door F1 left frame is explicitly drawn immediately after the
-        // door below, so skip its normal list-order draw at this pose.
+        // Black Door F1 frame pieces are explicitly drawn immediately after
+        // the door below, so skip their normal list-order draw at this pose.
         if (previewX == 1
             && previewY == 3
             && previewFacing == DungeonFacing.North
-            && piece.Name == "Black Door Frame Left F1")
+            && (piece.Name == "Black Door Frame Left F1"
+                || piece.Name == "Black Door Frame Right F1"))
         {
           continue;
         }
@@ -8169,9 +8170,12 @@ public class ViewportLayoutEditor : EditorWindow
                 f1DoorSource.height);
           }
 
-          // The F1 left frame is in front of the door in the original view,
-          // so draw it immediately AFTER the 96x88 door.
+          // The F1 frame pieces are in front of the door in the original
+          // view, so draw them immediately AFTER the 96x88 door.
+          // The game only has one F1 frame graphic, so the right frame uses
+          // the same left-frame texture mirrored horizontally.
           Texture2D leftFrameSource = GetBlackDoorFrameLeftF1SourceTexture();
+
           ViewportPiece leftFramePiece =
               FindLayoutPieceByName("Black Door Frame Left F1");
           if (leftFrameSource != null && leftFramePiece != null)
@@ -8182,6 +8186,18 @@ public class ViewportLayoutEditor : EditorWindow
                 leftFramePiece.EffectiveX,
                 leftFramePiece.EffectiveY,
                 leftFramePiece.MirrorHorizontally);
+          }
+
+          ViewportPiece rightFramePiece =
+              FindLayoutPieceByName("Black Door Frame Right F1");
+          if (leftFrameSource != null && rightFramePiece != null)
+          {
+            BlitPieceIntoPreview(
+                pixels,
+                leftFrameSource,
+                rightFramePiece.EffectiveX,
+                rightFramePiece.EffectiveY,
+                true);
           }
 
           continue;
