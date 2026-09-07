@@ -4814,6 +4814,15 @@ public class ViewportLayoutEditor : EditorWindow
     return GetSideWallMirrorFromPose();
   }
 
+
+  private static bool IsLeftD3ObliqueOpening(RelativeViewportGeometry g)
+  {
+    return !g.F0Left.IsWall
+        && !g.F0Right.IsWall
+        && g.F1Center.IsWall
+        && !g.F1Left.IsWall;
+  }
+
   /// <summary>
   /// Deterministic FrontF1 mirror phase.
   /// Reference pose (1,3) South is Mirror OFF.
@@ -4875,6 +4884,21 @@ public class ViewportLayoutEditor : EditorWindow
     if (!string.IsNullOrEmpty(piece.Name))
       return piece.Name;
     return null;
+  }
+
+  private bool TryGetCurrentRelativeViewportGeometry(out RelativeViewportGeometry geometry)
+  {
+    geometry = default;
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return false;
+
+    geometry = RelativeViewportGeometry.Calculate(
+        previewMiniMap,
+        previewX,
+        previewY,
+        previewFacing);
+    return true;
   }
 
   private bool TryGetCurrentFrontF1GeometryKey(out string geometryKey)
@@ -5047,6 +5071,11 @@ public class ViewportLayoutEditor : EditorWindow
         && g.F1Center.IsWall
         && !g.F1Right.IsWall;
 
+    // LeftD3 oblique-left opening is the independent mirror-side decision.
+    // Verified at 2,17 North and 7,15 North; 16,17 North confirms that
+    // LeftD3 and RightD3 can both be active at the same time.
+    bool leftD3ObliqueOpening = IsLeftD3ObliqueOpening(g);
+
     // Minimap occupancy signature, not a map pose.
     bool frontMirror =
         GetFrontF2LateralMirrorPhase(
@@ -5072,7 +5101,7 @@ public class ViewportLayoutEditor : EditorWindow
         // Display Y 42 -> Unity Y 47 (FrontF1 height 111).
         y = 47;
         mirror = frontF1Mirror;
-        if (rightD3ObliqueOpening)
+        if (leftD3ObliqueOpening || rightD3ObliqueOpening)
             frontF1Width = StraightF1WallLogic.CompositeWidth191;
         else if (leftF0 && rightF0)
             frontF1Width = StraightF1WallLogic.CompositeWidth160;
@@ -5092,10 +5121,14 @@ public class ViewportLayoutEditor : EditorWindow
                   verifiedF1.Width);
         }
 
-        // RightD3 oblique views always anchor FrontF1 at the left edge.
-        // Keep this geometry rule authoritative even if an older verified
-        // geometry override still contains X=32.
-        if (rightD3ObliqueOpening)
+        // D3 oblique views keep their geometry-specific FrontF1 anchor
+        // authoritative even if an older verified geometry override disagrees.
+        // LeftD3 needs the first 32 screen pixels free, so FrontF1 starts at X=32.
+        // RightD3-only views anchor FrontF1 at X=0. If both are active, LeftD3
+        // wins because X=0 would cover the left oblique strip.
+        if (leftD3ObliqueOpening)
+          x = 32;
+        else if (rightD3ObliqueOpening)
           x = 0;
       }
       else if (IsFrontWallF2Card(piece))
@@ -5239,6 +5272,17 @@ public class ViewportLayoutEditor : EditorWindow
           x = 136;
           y = DisplayYToUnityY(60, GetPieceHeightForEditorY(piece));
         }
+      }
+      else if (piece.Name == "LeftD3"
+          || piece.Name == "Wall D3L2"
+          || piece.Graphic == DungeonGraphicType.WallD3L2)
+      {
+        // Geometry-driven oblique left-side depth piece. Position/blit stay on
+        // the existing LeftD3 path; this rule decides only whether it is needed.
+        enabled = leftD3ObliqueOpening;
+        x = piece.EffectiveX;
+        y = piece.EffectiveY;
+        mirror = piece.MirrorHorizontally;
       }
       else if (piece.Name == "RightD3"
           || piece.Name == "Wall D3R2"
@@ -7432,6 +7476,35 @@ public class ViewportLayoutEditor : EditorWindow
                   width,
                   f1Texture.height);
             }
+          }
+          else if (TryGetCurrentRelativeViewportGeometry(out RelativeViewportGeometry currentGeometry)
+              && IsLeftD3ObliqueOpening(currentGeometry))
+          {
+            // LeftD3 composition: keep the left 32 screen pixels free for LeftD3.
+            // FrontF1 starts at source X=32 and is drawn at destination X=32.
+            Texture2D fullF1Texture =
+                graphics.GetFrontWallF1Texture(StraightF1WallLogic.CompositeWidth);
+            if (fullF1Texture == null)
+              continue;
+
+            frontF1TextureHeight = fullF1Texture.height;
+            const int leftD3FrontF1StartX = 32;
+
+            BlitFrontF1CroppedPreview(
+                pixels,
+                fullF1Texture,
+                leftD3FrontF1StartX,
+                leftD3FrontF1StartX,
+                resolvedY,
+                mirror);
+
+            LogIfOverlapsLeftF0(
+                piece,
+                piece.Graphic,
+                leftD3FrontF1StartX,
+                resolvedY,
+                StraightF1WallLogic.CompositeWidth - leftD3FrontF1StartX,
+                fullF1Texture.height);
           }
           else if (frontF1CropPreview)
           {
