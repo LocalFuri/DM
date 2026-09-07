@@ -995,6 +995,41 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap == null)
       return true;
 
+    string name = piece.Name ?? string.Empty;
+
+    // Black Door editor cards must be decided BEFORE the generic normal-wall
+    // resolver. Some Black Door pieces are classified as normal wall pieces,
+    // so the old ordering returned their resolved Enabled=false before these
+    // dedicated door-pose rules were ever reached.
+    if (IsBlackDoorEditorPiece(piece))
+    {
+      if (previewX == 1 && previewFacing == DungeonFacing.North)
+      {
+        if (previewY == 3)
+        {
+          return name == "Black Door Frame Left F1"
+              || name == "Black Door Frame Right F1"
+              || name == "BlackDoorF1";
+        }
+
+        if (previewY == 4)
+        {
+          return name == "Black Door Frame Left F2"
+              || name == "Black Door Frame Right F2"
+              || name == "BlackDoorF2";
+        }
+
+        if (previewY == 5)
+        {
+          return name == "Black Door Frame Left F3"
+              || name == "Black Door Frame Right F3"
+              || name == "BlackDoorF3";
+        }
+      }
+
+      return false;
+    }
+
     if (IsNormalWallPiece(piece)
         && TryGetResolvedNormalWallState(
             piece, out ResolvedNormalWallState resolvedNeededState))
@@ -1081,39 +1116,6 @@ public class ViewportLayoutEditor : EditorWindow
 
       return !f1CenterWall && !f2CenterWall && f3CenterWall;
     }
-
-    string name = piece.Name ?? string.Empty;
-
-    // Hall of Champions Black Door front views.
-    // These are editor/filter decisions only; Black Door F2/F3 are kept out
-    // of the generic wall classifier so they do not disturb wall resolver code.
-    if (previewX == 1 && previewFacing == DungeonFacing.North)
-    {
-      if (previewY == 3)
-      {
-        return name == "Black Door Frame Left F1"
-            || name == "Black Door Frame Right F1"
-            || name == "BlackDoorF1";
-      }
-
-      if (previewY == 4)
-      {
-        return name == "Black Door Frame Left F2"
-            || name == "Black Door Frame Right F2"
-            || name == "BlackDoorF2";
-      }
-
-      if (previewY == 5)
-      {
-        return name == "Black Door Frame Left F3"
-            || name == "Black Door Frame Right F3"
-            || name == "BlackDoorF3";
-      }
-    }
-
-    // Black Door elements are only needed in the dedicated front views above.
-    if (IsBlackDoorEditorPiece(piece))
-      return false;
 
     if (name == "LeftD3" || name == "Wall D3L2")
     {
@@ -1236,7 +1238,16 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
 
     if (showWallsActivFilter)
-      return MatchesShowWallsActivFilter(piece);
+    {
+      if (MatchesShowWallsActivFilter(piece))
+        return true;
+
+      // Pose changes force Activ on. Activ only matches enabled normal walls,
+      // so needed Black Door cards would be dropped after the Needed check.
+      return showOnlyWallsNeededForCurrentPose
+          && IsBlackDoorEditorPiece(piece)
+          && IsWallNeededForCurrentPose(piece);
+    }
 
     string search = (pieceSearchText ?? string.Empty).Trim();
     if (search.Length > 0)
@@ -2069,12 +2080,9 @@ public class ViewportLayoutEditor : EditorWindow
       piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
           GUIContent.none, piece.Graphic, GUILayout.Width(135f));
 
-      // Match the compact FrontF1/D3 card layout:
-      // row 1 = name + Graphic
-      // row 2 = Enabled + Mirror + Ref
-      // row 3 = X + Y
-      EditorGUILayout.EndHorizontal();
-      EditorGUILayout.BeginHorizontal();
+      // Black Door elements use the same compact arrangement as the normal
+      // Left/Right wall cards: name + Graphic + Enabled + Mirror on row 1,
+      // then X / Y on row 2.
     }
     else if (compactD3Header)
     {
@@ -2221,7 +2229,6 @@ public class ViewportLayoutEditor : EditorWindow
         piece, mirrorAfter, out int canonicalRefX, out int canonicalRefY);
 
     if (compactFrontF1Header
-        || compactBlackDoorF1FrameHeader
         || compactD3Header)
     {
       string refLabel = hasPieceCardReference
