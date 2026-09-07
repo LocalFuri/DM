@@ -3801,6 +3801,9 @@ public class ViewportLayoutEditor : EditorWindow
     if (!cell.IsInside)
       return "X";
 
+    if (IsViewEditGeometryWall(cell))
+      return "W";
+
     string type = cell.Type.ToString();
     if (type.IndexOf("STONE", System.StringComparison.OrdinalIgnoreCase) >= 0
         || type.IndexOf("WALL", System.StringComparison.OrdinalIgnoreCase) >= 0)
@@ -4815,12 +4818,55 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
 
+  // TEMP MAP-CHECK SIMULATION:
+  // Treat map cell (0,5) as a wall in ViewEdit geometry only.
+  // Remove/disable this after the map check; HallOfChampions.json is untouched.
+  private const bool TemporaryDisableMapCell0_5 = false;
+
+  private static bool IsViewEditGeometryWall(RelativeViewportCell cell)
+  {
+    if (TemporaryDisableMapCell0_5 && cell.X == 0 && cell.Y == 5)
+      return false;
+
+    return cell.IsWall;
+  }
+
   private static bool IsLeftD3ObliqueOpening(RelativeViewportGeometry g)
   {
-    return !g.F0Left.IsWall
-        && !g.F0Right.IsWall
-        && g.F1Center.IsWall
-        && !g.F1Left.IsWall;
+    return !IsViewEditGeometryWall(g.F0Left)
+        && !IsViewEditGeometryWall(g.F0Right)
+        && IsViewEditGeometryWall(g.F1Center)
+        && !IsViewEditGeometryWall(g.F1Left);
+  }
+
+  private bool HasLeftD3LeadingStripActiveTile()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return false;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int sampleX = previewX + forwardX * 2 - rightX * 2;
+    int sampleY = previewY + forwardY * 2 - rightY * 2;
+
+    // Temporary comparison switch: "disabled" means black wall / non-existing.
+    if (TemporaryDisableMapCell0_5 && sampleX == 0 && sampleY == 5)
+      return false;
+
+    if (!previewMiniMap.IsInside(sampleX, sampleY))
+      return false;
+
+    // White/active map tile -> the tiny 8 px leading strip is visible.
+    // Black wall/non-existing tile -> the strip is hidden.
+    return previewMiniMap.GetTile(sampleX, sampleY).Type != DungeonTileType.Wall;
   }
 
   /// <summary>
@@ -4840,20 +4886,20 @@ public class ViewportLayoutEditor : EditorWindow
 
   private static string BuildFrontF1GeometryKey(RelativeViewportGeometry g)
   {
-    return (g.F0Left.IsWall ? "W" : "O")
-        + (g.F0Right.IsWall ? "W" : "O")
+    return (IsViewEditGeometryWall(g.F0Left) ? "W" : "O")
+        + (IsViewEditGeometryWall(g.F0Right) ? "W" : "O")
         + "|"
-        + (g.F1Left.IsWall ? "W" : "O")
-        + (g.F1Center.IsWall ? "W" : "O")
-        + (g.F1Right.IsWall ? "W" : "O")
+        + (IsViewEditGeometryWall(g.F1Left) ? "W" : "O")
+        + (IsViewEditGeometryWall(g.F1Center) ? "W" : "O")
+        + (IsViewEditGeometryWall(g.F1Right) ? "W" : "O")
         + "|"
-        + (g.F2Left.IsWall ? "W" : "O")
-        + (g.F2Center.IsWall ? "W" : "O")
-        + (g.F2Right.IsWall ? "W" : "O")
+        + (IsViewEditGeometryWall(g.F2Left) ? "W" : "O")
+        + (IsViewEditGeometryWall(g.F2Center) ? "W" : "O")
+        + (IsViewEditGeometryWall(g.F2Right) ? "W" : "O")
         + "|"
-        + (g.F3Left.IsWall ? "W" : "O")
-        + (g.F3Center.IsWall ? "W" : "O")
-        + (g.F3Right.IsWall ? "W" : "O");
+        + (IsViewEditGeometryWall(g.F3Left) ? "W" : "O")
+        + (IsViewEditGeometryWall(g.F3Center) ? "W" : "O")
+        + (IsViewEditGeometryWall(g.F3Right) ? "W" : "O");
   }
 
   private static string BuildNormalWallEnabledGeometryKey(
@@ -5032,56 +5078,56 @@ public class ViewportLayoutEditor : EditorWindow
     string frontF1GeometryKey = BuildFrontF1GeometryKey(g);
 
     bool frontF1 =
-        g.F1Center.IsWall;
+        IsViewEditGeometryWall(g.F1Center);
     bool frontF2 =
-        !g.F1Center.IsWall &&
-        g.F2Center.IsWall;
+        !IsViewEditGeometryWall(g.F1Center) &&
+        IsViewEditGeometryWall(g.F2Center);
     bool frontF3 =
-        !g.F1Center.IsWall &&
-        !g.F2Center.IsWall &&
-        g.F3Center.IsWall;
+        !IsViewEditGeometryWall(g.F1Center) &&
+        !IsViewEditGeometryWall(g.F2Center) &&
+        IsViewEditGeometryWall(g.F3Center);
 
-    bool leftF0 = g.F0Left.IsWall;
-    bool rightF0 = g.F0Right.IsWall;
+    bool leftF0 = IsViewEditGeometryWall(g.F0Left);
+    bool rightF0 = IsViewEditGeometryWall(g.F0Right);
     bool f0Mirror = GetF0MirrorFromPose();
     bool frontF1Mirror = GetFrontF1MirrorFromPose();
 
     bool leftF1 =
-        !g.F1Center.IsWall &&
-        g.F1Left.IsWall;
+        !IsViewEditGeometryWall(g.F1Center) &&
+        IsViewEditGeometryWall(g.F1Left);
     bool rightF1 =
-        !g.F1Center.IsWall &&
-        g.F1Right.IsWall;
+        !IsViewEditGeometryWall(g.F1Center) &&
+        IsViewEditGeometryWall(g.F1Right);
 
     bool leftF2 =
-        !g.F1Center.IsWall &&
-        !g.F2Center.IsWall &&
-        g.F2Left.IsWall;
+        !IsViewEditGeometryWall(g.F1Center) &&
+        !IsViewEditGeometryWall(g.F2Center) &&
+        IsViewEditGeometryWall(g.F2Left);
     bool rightF2 =
-        !g.F1Center.IsWall &&
-        !g.F2Center.IsWall &&
-        g.F2Right.IsWall;
+        !IsViewEditGeometryWall(g.F1Center) &&
+        !IsViewEditGeometryWall(g.F2Center) &&
+        IsViewEditGeometryWall(g.F2Right);
 
     bool leftF3 =
-        !g.F1Center.IsWall &&
-        !g.F2Center.IsWall &&
-        !g.F3Center.IsWall &&
-        g.F3Left.IsWall;
+        !IsViewEditGeometryWall(g.F1Center) &&
+        !IsViewEditGeometryWall(g.F2Center) &&
+        !IsViewEditGeometryWall(g.F3Center) &&
+        IsViewEditGeometryWall(g.F3Left);
     bool rightF3 =
-        !g.F1Center.IsWall &&
-        !g.F2Center.IsWall &&
-        !g.F3Center.IsWall &&
-        g.F3Right.IsWall;
+        !IsViewEditGeometryWall(g.F1Center) &&
+        !IsViewEditGeometryWall(g.F2Center) &&
+        !IsViewEditGeometryWall(g.F3Center) &&
+        IsViewEditGeometryWall(g.F3Right);
 
     // RightD3 oblique-right opening derived only from player-relative near geometry,
     // never from absolute map coordinates. Verified examples include 1,6 East,
     // 1,16 East, 6,2 East, 6,14 East, and 15,7 East. Deeper F2/F3 cells
     // vary across those views, so they are deliberately not part of the rule.
     bool rightD3ObliqueOpening =
-        !g.F0Left.IsWall
-        && !g.F0Right.IsWall
-        && g.F1Center.IsWall
-        && !g.F1Right.IsWall;
+        !IsViewEditGeometryWall(g.F0Left)
+        && !IsViewEditGeometryWall(g.F0Right)
+        && IsViewEditGeometryWall(g.F1Center)
+        && !IsViewEditGeometryWall(g.F1Right);
 
     // LeftD3 oblique-left opening is the independent mirror-side decision.
     // Verified at 2,17 North and 7,15 North; 16,17 North confirms that
@@ -5291,10 +5337,12 @@ public class ViewportLayoutEditor : EditorWindow
           || piece.Name == "Wall D3L2"
           || piece.Graphic == DungeonGraphicType.WallD3L2)
       {
-        // Geometry-driven oblique left-side depth piece. Position/blit stay on
-        // the existing LeftD3 path; this rule decides only whether it is needed.
+        // Geometry-driven oblique left-side depth piece.
+        // The first tiny leading strip is visible when the outer-left map tile
+        // at 2-forward / 2-left is active/white. A black wall/non-existing
+        // tile shifts the piece 8 px left so the strip disappears.
         enabled = leftD3ObliqueOpening;
-        x = piece.EffectiveX;
+        x = HasLeftD3LeadingStripActiveTile() ? 0 : -8;
         y = piece.EffectiveY;
         mirror = piece.MirrorHorizontally;
       }
@@ -5330,6 +5378,16 @@ public class ViewportLayoutEditor : EditorWindow
       {
         x = verifiedPosition.x;
         y = verifiedPosition.y;
+      }
+
+      // LeftD3 X is geometry-driven from the outer-left active/black map tile and
+      // stays authoritative even if an older saved position disagrees.
+      if ((piece.Name == "LeftD3"
+              || piece.Name == "Wall D3L2"
+              || piece.Graphic == DungeonGraphicType.WallD3L2)
+          && enabled)
+      {
+        x = HasLeftD3LeadingStripActiveTile() ? 0 : -8;
       }
 
       if (normalWallMirrorGeometryOverrides.TryGetValue(
@@ -5505,20 +5563,20 @@ public class ViewportLayoutEditor : EditorWindow
     // Source-backed Dungeon Master occupancy: each relative wall cell is
     // enabled directly from its own map cell. Do not manually suppress farther
     // cells; the original renderer gets occlusion from fixed draw order/shapes.
-    bool leftF0   = g.F0Left.IsWall;
-    bool rightF0  = g.F0Right.IsWall;
+    bool leftF0   = IsViewEditGeometryWall(g.F0Left);
+    bool rightF0  = IsViewEditGeometryWall(g.F0Right);
 
-    bool leftF1   = g.F1Left.IsWall;
-    bool frontF1  = g.F1Center.IsWall;
-    bool rightF1  = g.F1Right.IsWall;
+    bool leftF1   = IsViewEditGeometryWall(g.F1Left);
+    bool frontF1  = IsViewEditGeometryWall(g.F1Center);
+    bool rightF1  = IsViewEditGeometryWall(g.F1Right);
 
-    bool leftF2   = g.F2Left.IsWall;
-    bool frontF2  = g.F2Center.IsWall;
-    bool rightF2  = g.F2Right.IsWall;
+    bool leftF2   = IsViewEditGeometryWall(g.F2Left);
+    bool frontF2  = IsViewEditGeometryWall(g.F2Center);
+    bool rightF2  = IsViewEditGeometryWall(g.F2Right);
 
-    bool leftF3   = g.F3Left.IsWall;
-    bool frontF3  = g.F3Center.IsWall;
-    bool rightF3  = g.F3Right.IsWall;
+    bool leftF3   = IsViewEditGeometryWall(g.F3Left);
+    bool frontF3  = IsViewEditGeometryWall(g.F3Center);
+    bool rightF3  = IsViewEditGeometryWall(g.F3Right);
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
