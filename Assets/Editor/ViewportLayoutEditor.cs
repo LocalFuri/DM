@@ -5051,6 +5051,12 @@ public class ViewportLayoutEditor : EditorWindow
               StraightF1WallLogic.NormalizeFrontWallF1Width(
                   verifiedF1.Width);
         }
+
+        // RightD3 oblique views always anchor FrontF1 at the left edge.
+        // Keep this geometry rule authoritative even if an older verified
+        // geometry override still contains X=32.
+        if (rightD3ObliqueOpening)
+          x = 0;
       }
       else if (IsFrontWallF2Card(piece))
       {
