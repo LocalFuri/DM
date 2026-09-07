@@ -3729,7 +3729,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     string text =
-        "GEOMETRY DIAGNOSTIC\n"
+        "GEOMETRY DIAGNOSTIC  "
+        + previewX + "," + previewY + " " + previewFacing + "\n"
         + "F0: L=" + FormatRelativeViewportCellShort(geometry.F0Left)
         + "  R=" + FormatRelativeViewportCellShort(geometry.F0Right)
         + "\nF1: L=" + FormatRelativeViewportCellShort(geometry.F1Left)
