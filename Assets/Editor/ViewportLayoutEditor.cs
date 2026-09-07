@@ -168,6 +168,7 @@ public class ViewportLayoutEditor : EditorWindow
   private string previewMiniMapLoadError;
   private Vector2 previewMiniMapScroll;
   private string deterministicWallDiagnosticText;
+  private Rect geometryDiagnosticRect;
 
   // New normal-wall pipeline foundation:
   // pose-store data may still exist, but normal-wall placement is restored from
@@ -644,7 +645,8 @@ public class ViewportLayoutEditor : EditorWindow
     if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
       Focus();
 
-    HandleViewEditRightClickHome();
+    if (!HandleGeometryDiagnosticsRightClickClose())
+      HandleViewEditRightClickHome();
 
     // Arrow Up/Down must be handled before BeginScrollView — otherwise the
     // scroll view consumes them for scrolling and HandlePreviewMoveKeyboard
@@ -1362,6 +1364,29 @@ public class ViewportLayoutEditor : EditorWindow
     pieceFamilyHeaderStyle.focused.textColor = color;
     pieceFamilyHeaderStyle.active.textColor = color;
     return pieceFamilyHeaderStyle;
+  }
+
+  private bool HandleGeometryDiagnosticsRightClickClose()
+  {
+    if (!showGeometryDiagnostics)
+      return false;
+
+    Event current = Event.current;
+    if (current == null)
+      return false;
+
+    bool rightPressed =
+        current.type == EventType.MouseDown && current.button == 1;
+    if (!rightPressed && current.type != EventType.ContextClick)
+      return false;
+
+    if (!geometryDiagnosticRect.Contains(current.mousePosition))
+      return false;
+
+    showGeometryDiagnostics = false;
+    current.Use();
+    Repaint();
+    return true;
   }
 
   /// <summary>
@@ -3748,6 +3773,8 @@ public class ViewportLayoutEditor : EditorWindow
             : "none");
 
     EditorGUILayout.HelpBox(text, MessageType.None);
+    if (Event.current.type == EventType.Repaint)
+      geometryDiagnosticRect = GUILayoutUtility.GetLastRect();
   }
 
   private static string FormatRelativeViewportCell(RelativeViewportCell cell)
