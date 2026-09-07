@@ -1951,9 +1951,15 @@ public class ViewportLayoutEditor : EditorWindow
 
     bool compactFrontF1Header = IsFrontWallF1Card(piece);
     bool compactBlackDoorF1FrameHeader =
-        piece.Name == "Black Door Frame Left F1"
+        piece.Name == "BlackDoorF1"
+        || piece.Name == "BlackDoorF2"
+        || piece.Name == "BlackDoorF3"
+        || piece.Name == "Black Door Frame Left F1"
         || piece.Name == "Black Door Frame Right F1"
-        || piece.Name == "Black Door Frame Right F2";
+        || piece.Name == "Black Door Frame Left F2"
+        || piece.Name == "Black Door Frame Right F2"
+        || piece.Name == "Black Door Frame Left F3"
+        || piece.Name == "Black Door Frame Right F3";
     bool compactD3Header =
         piece.Name == "LeftD3"
         || piece.Name == "Wall D3L2"
