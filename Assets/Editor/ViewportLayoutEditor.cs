@@ -7490,13 +7490,25 @@ public class ViewportLayoutEditor : EditorWindow
             frontF1TextureHeight = fullF1Texture.height;
             const int leftD3FrontF1StartX = 32;
 
-            BlitFrontF1CroppedPreview(
-                pixels,
-                fullF1Texture,
-                leftD3FrontF1StartX,
-                leftD3FrontF1StartX,
-                resolvedY,
-                mirror);
+            if (mirror)
+            {
+              BlitFrontF1MirroredImageFromX(
+                  pixels,
+                  fullF1Texture,
+                  leftD3FrontF1StartX,
+                  leftD3FrontF1StartX,
+                  resolvedY);
+            }
+            else
+            {
+              BlitFrontF1CroppedPreview(
+                  pixels,
+                  fullF1Texture,
+                  leftD3FrontF1StartX,
+                  leftD3FrontF1StartX,
+                  resolvedY,
+                  false);
+            }
 
             LogIfOverlapsLeftF0(
                 piece,
