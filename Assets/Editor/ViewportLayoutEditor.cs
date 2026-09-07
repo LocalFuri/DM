@@ -4816,22 +4816,23 @@ public class ViewportLayoutEditor : EditorWindow
   private static bool IsVerifiedFrontF1X0Geometry(
       RelativeViewportGeometry g)
   {
-    // Verified original-DM reference first observed at 4,7 East.
+    // Verified original-DM references: 4,7 East and 4,17 East.
     // Keyed only by normalized diagnostic geometry, never absolute map pose.
     //
-    // F0: L=O R=W
+    // Shared decisive geometry:
+    // F0:       R=W
     // F1: L=W C=W R=W
-    // F2: L=W C=W R=W
-    // F3: L=W C=W R=W
-    return !IsViewEditGeometryWall(g.F0Left)
-        && IsViewEditGeometryWall(g.F0Right)
+    // F2:     C=W R=W
+    // F3:     C=W R=W
+    //
+    // F0 Left, F2 Left and F3 Left are deliberately ignored because the
+    // verified views differ there but both require FrontF1 X=0.
+    return IsViewEditGeometryWall(g.F0Right)
         && IsViewEditGeometryWall(g.F1Left)
         && IsViewEditGeometryWall(g.F1Center)
         && IsViewEditGeometryWall(g.F1Right)
-        && IsViewEditGeometryWall(g.F2Left)
         && IsViewEditGeometryWall(g.F2Center)
         && IsViewEditGeometryWall(g.F2Right)
-        && IsViewEditGeometryWall(g.F3Left)
         && IsViewEditGeometryWall(g.F3Center)
         && IsViewEditGeometryWall(g.F3Right);
   }
@@ -5617,6 +5618,11 @@ public class ViewportLayoutEditor : EditorWindow
           frontF1StateAfterDTerm.X = 0;
           resolvedNormalWallByPiece[piece] = frontF1StateAfterDTerm;
         }
+
+        // Remove any older temporary ViewEdit X/Y edit for FrontF1 in this
+        // verified geometry. Otherwise ApplyTemporaryNormalWallPreviewOverrides()
+        // would put the stale X=32 back after the geometry rule fixed it.
+        previewPositionOverrideByPiece.Remove(piece);
       }
     }
 
