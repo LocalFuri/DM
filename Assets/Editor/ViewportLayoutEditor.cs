@@ -1952,7 +1952,8 @@ public class ViewportLayoutEditor : EditorWindow
     bool compactFrontF1Header = IsFrontWallF1Card(piece);
     bool compactBlackDoorF1FrameHeader =
         piece.Name == "Black Door Frame Left F1"
-        || piece.Name == "Black Door Frame Right F1";
+        || piece.Name == "Black Door Frame Right F1"
+        || piece.Name == "Black Door Frame Right F2";
     bool compactD3Header =
         piece.Name == "LeftD3"
         || piece.Name == "Wall D3L2"
@@ -2881,15 +2882,19 @@ public class ViewportLayoutEditor : EditorWindow
         color = new Color32(0x9B, 0x6F, 0xD1, 0xFF);
         return true;
       case "BlackDoorF1":
-      case "BlackDoorF2":
-      case "BlackDoorF3":
       case "Black Door Frame Left F1":
       case "Black Door Frame Right F1":
+        color = new Color32(0xFF, 0x66, 0xFF, 0xFF);
+        return true;
+      case "BlackDoorF2":
       case "Black Door Frame Left F2":
       case "Black Door Frame Right F2":
+        color = new Color32(0xD8, 0x3F, 0xD8, 0xFF);
+        return true;
+      case "BlackDoorF3":
       case "Black Door Frame Left F3":
       case "Black Door Frame Right F3":
-        color = Color.magenta;
+        color = new Color32(0x9C, 0x2B, 0x9C, 0xFF);
         return true;
       default:
         return false;
