@@ -143,6 +143,8 @@ public class ViewportLayoutEditor : EditorWindow
   private int blackDoorFrameRightF3CardY;
 
   private Texture2D blackDoorFrameF3SourceTexture;
+  private Texture2D blackDoorFrameLeftF1SourceTexture;
+  private Texture2D blackDoorF1SourceTexture;
   private Texture2D blackDoorF3SourceTexture;
   private Texture2D blackDoorF2SourceTexture;
   private Texture2D frontWallF2_224ReferenceTexture;
@@ -7551,6 +7553,7 @@ public class ViewportLayoutEditor : EditorWindow
 
         bool isLeftF0Diag = is14South && IsWallF0LeftPiece(piece);
         bool shouldDraw = ShouldDrawPieceAtPreviewPose(piece);
+        bool blackDoorF1Exception = IsBlackDoorF1PoseException(piece);
         bool blackDoorF2Exception = IsBlackDoorF2PoseException(piece);
         bool blackDoorF3Exception = IsBlackDoorF3PoseException(piece);
         bool blackDoorObliqueRightD3Exception =
@@ -7567,6 +7570,7 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (!shouldDraw
             && !manualNormalWallEnabledForDraw
+            && !blackDoorF1Exception
             && !blackDoorF2Exception
             && !blackDoorF3Exception
             && !blackDoorObliqueRightD3Exception
@@ -7585,6 +7589,26 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
           continue;
+
+        // Black Door F1 left frame is explicitly drawn immediately after the
+        // door below, so skip its normal list-order draw at this pose.
+        if (previewX == 1
+            && previewY == 3
+            && previewFacing == DungeonFacing.North
+            && piece.Name == "Black Door Frame Left F1")
+        {
+          continue;
+        }
+
+        // (1,3) North Black Door F1 occupies the center opening.
+        // Do not draw the normal FrontF2 wall through the door.
+        if (previewX == 1
+            && previewY == 3
+            && previewFacing == DungeonFacing.North
+            && IsFrontWallF2Card(piece))
+        {
+          continue;
+        }
 
         // CUTOVER: render transient geometry assembly for normal walls.
         bool mirror = GetPreviewMirror(piece, poseMap);
@@ -8122,6 +8146,47 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
+        // (1,3) North: dedicated Black Door F1 96x88 source.
+        // Keep X/Y from the existing BlackDoorF1 ViewEdit/layout piece so we
+        // can visually tune placement next without changing the asset.
+        if (blackDoorF1Exception)
+        {
+          Texture2D f1DoorSource = GetBlackDoorF1SourceTexture();
+          if (f1DoorSource != null)
+          {
+            BlitPieceIntoPreview(
+                pixels,
+                f1DoorSource,
+                piece.EffectiveX,
+                piece.EffectiveY,
+                mirror);
+            LogIfOverlapsLeftF0(
+                piece,
+                drawGraphic,
+                piece.EffectiveX,
+                piece.EffectiveY,
+                f1DoorSource.width,
+                f1DoorSource.height);
+          }
+
+          // The F1 left frame is in front of the door in the original view,
+          // so draw it immediately AFTER the 96x88 door.
+          Texture2D leftFrameSource = GetBlackDoorFrameLeftF1SourceTexture();
+          ViewportPiece leftFramePiece =
+              FindLayoutPieceByName("Black Door Frame Left F1");
+          if (leftFrameSource != null && leftFramePiece != null)
+          {
+            BlitPieceIntoPreview(
+                pixels,
+                leftFrameSource,
+                leftFramePiece.EffectiveX,
+                leftFramePiece.EffectiveY,
+                leftFramePiece.MirrorHorizontally);
+          }
+
+          continue;
+        }
+
         // (1,4) North: F2 frames already blitted in kit order; BlackDoorF2
         // 66×64 1:1 last so it covers overlapping inner frame pixels.
         if (blackDoorF2Exception)
@@ -8449,6 +8514,20 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
+  /// (1,3) North Black Door F1 front view.
+  /// Uses the dedicated 96x88 source texture and does not write pose data.
+  /// </summary>
+  private bool IsBlackDoorF1PoseException(ViewportPiece piece)
+  {
+    if (piece == null || piece.Name != "BlackDoorF1")
+      return false;
+
+    return previewX == 1
+        && previewY == 3
+        && previewFacing == DungeonFacing.North;
+  }
+
+  /// <summary>
   /// (1,4) North Black Door F2 size exception. Draw may run even when the
   /// normal Black Door Enabled flag is off. Does not write pose data.
   /// </summary>
@@ -8548,6 +8627,30 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return blackDoorFrameF3SourceTexture;
+  }
+
+  private Texture2D GetBlackDoorFrameLeftF1SourceTexture()
+  {
+    if (blackDoorFrameLeftF1SourceTexture == null)
+    {
+      blackDoorFrameLeftF1SourceTexture =
+          AssetDatabase.LoadAssetAtPath<Texture2D>(
+              "Assets/Art/Walls/Black Door Frame_Left_25x94.png");
+    }
+
+    return blackDoorFrameLeftF1SourceTexture;
+  }
+
+  private Texture2D GetBlackDoorF1SourceTexture()
+  {
+    if (blackDoorF1SourceTexture == null)
+    {
+      blackDoorF1SourceTexture =
+          AssetDatabase.LoadAssetAtPath<Texture2D>(
+              "Assets/Art/Walls/Black Door 96x88.png");
+    }
+
+    return blackDoorF1SourceTexture;
   }
 
   private Texture2D GetBlackDoorF3SourceTexture()
