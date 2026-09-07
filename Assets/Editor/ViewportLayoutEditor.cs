@@ -3703,19 +3703,36 @@ public class ViewportLayoutEditor : EditorWindow
             previewY,
             previewFacing);
 
-    string frontDecision;
-    if (geometry.F1Center.IsWall)
-      frontDecision = "Front decision: FrontF1";
-    else if (geometry.F2Center.IsWall)
-      frontDecision = "Front decision: FrontF2";
-    else if (geometry.F3Center.IsWall)
-      frontDecision = "Front decision: FrontF3";
-    else
-      frontDecision = "Front decision: none";
+    HashSet<string> drawPieces = new HashSet<string>();
+    if (layout != null && layout.Pieces != null)
+    {
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (piece == null)
+          continue;
+
+        if (!TryGetResolvedNormalWallState(
+                piece, out ResolvedNormalWallState state)
+            || !state.Enabled)
+        {
+          continue;
+        }
+
+        string name = GetDTermPieceName(piece);
+        if (string.IsNullOrEmpty(name))
+          name = piece.Name ?? string.Empty;
+
+        if (!string.IsNullOrEmpty(name))
+          drawPieces.Add(name);
+      }
+    }
 
     string text =
         "GEOMETRY DIAGNOSTIC\n"
-        + "F1: L=" + FormatRelativeViewportCellShort(geometry.F1Left)
+        + "F0: L=" + FormatRelativeViewportCellShort(geometry.F0Left)
+        + "  R=" + FormatRelativeViewportCellShort(geometry.F0Right)
+        + "\nF1: L=" + FormatRelativeViewportCellShort(geometry.F1Left)
         + "  C=" + FormatRelativeViewportCellShort(geometry.F1Center)
         + "  R=" + FormatRelativeViewportCellShort(geometry.F1Right)
         + "\nF2: L=" + FormatRelativeViewportCellShort(geometry.F2Left)
@@ -3724,7 +3741,10 @@ public class ViewportLayoutEditor : EditorWindow
         + "\nF3: L=" + FormatRelativeViewportCellShort(geometry.F3Left)
         + "  C=" + FormatRelativeViewportCellShort(geometry.F3Center)
         + "  R=" + FormatRelativeViewportCellShort(geometry.F3Right)
-        + "\n" + frontDecision;
+        + "\n\nDRAW: "
+        + (drawPieces.Count > 0
+            ? string.Join(", ", drawPieces)
+            : "none");
 
     EditorGUILayout.HelpBox(text, MessageType.None);
   }
@@ -4977,21 +4997,15 @@ public class ViewportLayoutEditor : EditorWindow
         !g.F3Center.IsWall &&
         g.F3Right.IsWall;
 
-    // RightD3 oblique-right opening derived from repeated minimap geometry,
-    // not absolute map coordinates. Confirmed at 1,6 East and 9,14 East.
-    // Shared relative signature:
-    //   F1: L=wall, C=wall, R=open
-    //   F2: L=wall, C=either, R=open
-    //   F3: L=open, C=open, R=open
+    // RightD3 oblique-right opening derived only from player-relative near geometry,
+    // never from absolute map coordinates. Verified examples include 1,6 East,
+    // 1,16 East, 6,2 East, 6,14 East, and 15,7 East. Deeper F2/F3 cells
+    // vary across those views, so they are deliberately not part of the rule.
     bool rightD3ObliqueOpening =
-        g.F1Left.IsWall
+        !g.F0Left.IsWall
+        && !g.F0Right.IsWall
         && g.F1Center.IsWall
-        && !g.F1Right.IsWall
-        && g.F2Left.IsWall
-        && !g.F2Right.IsWall
-        && !g.F3Left.IsWall
-        && !g.F3Center.IsWall
-        && !g.F3Right.IsWall;
+        && !g.F1Right.IsWall;
 
     // Minimap occupancy signature, not a map pose.
     bool frontMirror =
