@@ -963,7 +963,11 @@ public class ViewportLayoutEditor : EditorWindow
         || name == "Black Door Frame Right F1"
         || name == "Black Door Frame Left F2"
         || name == "Black Door Frame Right F2"
-        || name == "BlackDoorF1";
+        || name == "Black Door Frame Left F3"
+        || name == "Black Door Frame Right F3"
+        || name == "BlackDoorF1"
+        || name == "BlackDoorF2"
+        || name == "BlackDoorF3";
   }
 
   private bool IsWallNeededForCurrentPose(ViewportPiece piece)
@@ -1067,6 +1071,7 @@ public class ViewportLayoutEditor : EditorWindow
     string name = piece.Name ?? string.Empty;
 
     // Hall of Champions Black Door front views.
+    // Show the actual standalone depth elements needed at the current pose.
     if (previewX == 1 && previewFacing == DungeonFacing.North)
     {
       if (previewY == 3)
@@ -1078,18 +1083,16 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (previewY == 4)
       {
-        // BlackDoorF1 stays visible as the parent editor card for its F2 card.
         return name == "Black Door Frame Left F2"
             || name == "Black Door Frame Right F2"
-            || name == "BlackDoorF1";
+            || name == "BlackDoorF2";
       }
 
       if (previewY == 5)
       {
-        // F3 editor cards are nested under the F2 frame / door parent cards.
-        return name == "Black Door Frame Left F2"
-            || name == "Black Door Frame Right F2"
-            || name == "BlackDoorF1";
+        return name == "Black Door Frame Left F3"
+            || name == "Black Door Frame Right F3"
+            || name == "BlackDoorF3";
       }
     }
 
