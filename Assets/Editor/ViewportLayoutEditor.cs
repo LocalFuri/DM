@@ -2001,58 +2001,8 @@ public class ViewportLayoutEditor : EditorWindow
       piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
           GUIContent.none, piece.Graphic, GUILayout.Width(135f));
 
-      GUILayout.Space(6f);
-      bool guiChangedBeforeCrop = GUI.changed;
-      bool cropUiAt05South =
-          previewX == 0
-          && previewY == 5
-          && previewFacing == DungeonFacing.South;
-      int cropXDisplayed =
-          (cropUiAt05South && frontF1CropPreview)
-              ? 32
-              : frontF1CropStartXPreview;
-      bool cropAfter = GUILayout.Toggle(
-          frontF1CropPreview,
-          frontF1CropPreview ? "Crop ON" : "Crop OFF",
-          EditorStyles.miniButton,
-          GUILayout.Width(90f));
-      if (cropAfter != frontF1CropPreview)
-      {
-        frontF1CropPreview = cropAfter;
-        if (frontF1CropPreview && cropUiAt05South)
-          frontF1CropStartXPreview = 32;
-        SaveCurrentFrontF1CropPreview();
-        GUI.FocusControl(null);
-        RefreshTemporaryNormalWallPreview();
-      }
-
-      GUILayout.Space(4f);
-      EditorGUI.BeginDisabledGroup(!frontF1CropPreview);
-      EditorGUIUtility.labelWidth = 42f;
-      int cropXAfter = EditorGUILayout.DelayedIntField(
-          "Crop X",
-          cropXDisplayed,
-          GUILayout.Width(92f));
-      EditorGUIUtility.labelWidth = 0f;
-      EditorGUI.EndDisabledGroup();
-
-      cropXAfter = Mathf.Clamp(
-          cropXAfter,
-          0,
-          StraightF1WallLogic.CompositeWidth - 1);
-      if (!cropUiAt05South && cropXAfter != frontF1CropStartXPreview)
-      {
-        frontF1CropStartXPreview = cropXAfter;
-        SaveCurrentFrontF1CropPreview();
-        GUI.FocusControl(null);
-        RefreshTemporaryNormalWallPreview();
-      }
-
-      // Crop/Crop X are ViewEdit preview controls, not layout-asset edits.
-      GUI.changed = guiChangedBeforeCrop;
-
-      // FrontF1 row 1 ends after Header + Graphic + Crop controls.
-      // Enabled / Mirror / Ref continue on a new second row.
+      // FrontF1 crop is now geometry-driven. The obsolete manual Crop
+      // button / Crop X controls are intentionally not shown in ViewEdit.
       EditorGUILayout.EndHorizontal();
       EditorGUILayout.BeginHorizontal();
     }
@@ -2176,10 +2126,8 @@ public class ViewportLayoutEditor : EditorWindow
     if (compactFrontF1Header)
     {
       string refLabel = hasPieceCardReference
-          ? $"Ref X {canonicalRefX} / Y {canonicalRefY} / Crop "
-              + (FrontF1ReferenceCrop ? "ON" : "OFF")
-          : "Ref X - / Y - / Crop "
-              + (FrontF1ReferenceCrop ? "ON" : "OFF");
+          ? $"Ref X {canonicalRefX} / Y {canonicalRefY}"
+          : "Ref X - / Y -";
       EditorGUILayout.LabelField(
           refLabel,
           GUILayout.ExpandWidth(false));
