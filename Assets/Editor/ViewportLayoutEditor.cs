@@ -5239,14 +5239,14 @@ public class ViewportLayoutEditor : EditorWindow
         && IsVerifiedFrontF1X0Geometry(currentGeometry);
 
     // Pose-specific canonical reference verified in ViewEdit:
-    // 1,5 North LeftF1 = X 0 / display Y 41 / Mirror OFF.
+    // 1,5 North LeftF1 = X 0 / display Y 42 / Mirror OFF.
     if (IsWallF1LeftPiece(piece)
         && previewX == 1
         && previewY == 5
         && previewFacing == DungeonFacing.North)
     {
       x = 0;
-      y = 41;
+      y = 42;
       return true;
     }
 
@@ -5532,14 +5532,14 @@ public class ViewportLayoutEditor : EditorWindow
         }
 
         // Verified canonical Black Door F3 view at 1,5 North.
-        // LeftF1 is visible at X=0, display Y=41, Mirror OFF.
+        // LeftF1 is visible at X=0, display Y=42, Mirror OFF.
         if (previewX == 1
             && previewY == 5
             && previewFacing == DungeonFacing.North)
         {
           enabled = true;
           x = 0;
-          y = DisplayYToUnityY(41, GetPieceHeightForEditorY(piece));
+          y = DisplayYToUnityY(42, GetPieceHeightForEditorY(piece));
           mirror = false;
         }
       }
