@@ -644,7 +644,6 @@ public class ViewportLayoutEditor : EditorWindow
           FindLayoutPieceByName("BlackDoorF1");
       if (frontDoor != null)
       {
-        frontDoor.Enabled = true;
         frontDoor.X = 63;
         frontDoor.Y = DisplayYToUnityY(47, 88);
       }
@@ -6930,8 +6929,14 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (previewY == 4)
     {
-      blackDoorF2CardEnabled = true;
-      blackDoorF2CardInitialized = true;
+      // Initialize the ViewEdit F2 card once for this editor session.
+      // Do not force it back on every preview compose, otherwise the
+      // user's Enabled toggle is immediately overwritten.
+      if (!blackDoorF2CardInitialized)
+      {
+        blackDoorF2CardEnabled = true;
+        blackDoorF2CardInitialized = true;
+      }
       blackDoorFrameLeftF3CardEnabled = false;
       blackDoorFrameLeftF3CardInitialized = true;
       blackDoorFrameRightF3CardEnabled = false;
@@ -7002,7 +7007,6 @@ public class ViewportLayoutEditor : EditorWindow
         }
         else if (piece.Name == "BlackDoorF1")
         {
-          piece.Enabled = true;
           piece.X = 63;
           piece.Y = DisplayYToUnityY(47, 88);
         }
@@ -8308,22 +8312,25 @@ public class ViewportLayoutEditor : EditorWindow
                 true);
           }
 
-          Texture2D f1DoorSource = GetBlackDoorF1SourceTexture();
-          if (f1DoorSource != null)
+          if (piece.Enabled)
           {
-            BlitPieceIntoPreview(
-                pixels,
-                f1DoorSource,
-                piece.EffectiveX,
-                piece.EffectiveY,
-                mirror);
-            LogIfOverlapsLeftF0(
-                piece,
-                drawGraphic,
-                piece.EffectiveX,
-                piece.EffectiveY,
-                f1DoorSource.width,
-                f1DoorSource.height);
+            Texture2D f1DoorSource = GetBlackDoorF1SourceTexture();
+            if (f1DoorSource != null)
+            {
+              BlitPieceIntoPreview(
+                  pixels,
+                  f1DoorSource,
+                  piece.EffectiveX,
+                  piece.EffectiveY,
+                  mirror);
+              LogIfOverlapsLeftF0(
+                  piece,
+                  drawGraphic,
+                  piece.EffectiveX,
+                  piece.EffectiveY,
+                  f1DoorSource.width,
+                  f1DoorSource.height);
+            }
           }
 
           continue;
@@ -8728,7 +8735,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     return previewX == 1
         && previewY == 4
-        && previewFacing == DungeonFacing.North;
+        && previewFacing == DungeonFacing.North
+        && blackDoorF2CardEnabled;
   }
 
   /// <summary>
