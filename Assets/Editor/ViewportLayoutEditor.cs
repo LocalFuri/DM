@@ -1515,6 +1515,10 @@ public class ViewportLayoutEditor : EditorWindow
           () =>
           {
             pieceSearchFamilyIndex = index;
+            showWallsActivFilter = false;
+            pieceSearchText = string.Empty;
+            editorScroll = Vector2.zero;
+            GUI.FocusControl(null);
             Repaint();
           });
     }
