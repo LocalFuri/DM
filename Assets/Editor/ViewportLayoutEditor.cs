@@ -7083,6 +7083,10 @@ public class ViewportLayoutEditor : EditorWindow
       if (piece == null)
         continue;
 
+      if (piece.Name == "BlackDoorF2"
+          || piece.Name == "BlackDoorF3")
+        continue;
+
       bool found = false;
       for (int b = 0; b < KitBaselineEnabled.Length; b++)
       {
@@ -8379,22 +8383,30 @@ public class ViewportLayoutEditor : EditorWindow
           }
 
           // Dedicated front F2 door.
-          Texture2D f2Source = GetBlackDoorF2SourceTexture();
-          if (f2Source != null)
+          ViewportPiece doorF2 = FindLayoutPieceByName("BlackDoorF2");
+          bool f2DoorEnabled =
+              doorF2 != null
+                  ? doorF2.Enabled
+                  : blackDoorF2CardEnabled;
+          if (f2DoorEnabled)
           {
-            BlitPieceIntoPreview(
-                pixels,
-                f2Source,
-                piece.ResolvedBlackDoorF2X,
-                piece.ResolvedBlackDoorF2Y,
-                false);
-            LogIfOverlapsLeftF0(
-                piece,
-                drawGraphic,
-                piece.ResolvedBlackDoorF2X,
-                piece.ResolvedBlackDoorF2Y,
-                f2Source.width,
-                f2Source.height);
+            Texture2D f2Source = GetBlackDoorF2SourceTexture();
+            if (f2Source != null)
+            {
+              BlitPieceIntoPreview(
+                  pixels,
+                  f2Source,
+                  piece.ResolvedBlackDoorF2X,
+                  piece.ResolvedBlackDoorF2Y,
+                  false);
+              LogIfOverlapsLeftF0(
+                  piece,
+                  drawGraphic,
+                  piece.ResolvedBlackDoorF2X,
+                  piece.ResolvedBlackDoorF2Y,
+                  f2Source.width,
+                  f2Source.height);
+            }
           }
           continue;
         }
@@ -8404,24 +8416,31 @@ public class ViewportLayoutEditor : EditorWindow
         {
           BlitBlackDoorF3FramesIntoPreview(pixels);
           ViewportPiece doorF3 = FindLayoutPieceByName("BlackDoorF3");
+          bool f3DoorEnabled =
+              doorF3 != null
+                  ? doorF3.Enabled
+                  : blackDoorF3CardEnabled;
           int f3X = doorF3 != null ? doorF3.X : blackDoorF3CardX;
           int f3Y = doorF3 != null ? doorF3.Y : blackDoorF3CardY;
-          Texture2D f3Source = GetBlackDoorF3SourceTexture();
-          if (f3Source != null)
+          if (f3DoorEnabled)
           {
-            BlitPieceIntoPreview(
-                pixels,
-                f3Source,
-                f3X,
-                f3Y,
-                mirror);
-            LogIfOverlapsLeftF0(
-                piece,
-                drawGraphic,
-                f3X,
-                f3Y,
-                f3Source.width,
-                f3Source.height);
+            Texture2D f3Source = GetBlackDoorF3SourceTexture();
+            if (f3Source != null)
+            {
+              BlitPieceIntoPreview(
+                  pixels,
+                  f3Source,
+                  f3X,
+                  f3Y,
+                  mirror);
+              LogIfOverlapsLeftF0(
+                  piece,
+                  drawGraphic,
+                  f3X,
+                  f3Y,
+                  f3Source.width,
+                  f3Source.height);
+            }
           }
           continue;
         }
@@ -8671,6 +8690,9 @@ public class ViewportLayoutEditor : EditorWindow
       ViewportPiece piece = layout.Pieces[i];
       if (!IsWallRenderingPiece(piece))
         continue;
+      if (piece.Name == "BlackDoorF2"
+          || piece.Name == "BlackDoorF3")
+        continue;
 
       piece.Enabled = false;
       piece.PoseOffsetX = 0;
@@ -8735,8 +8757,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     return previewX == 1
         && previewY == 4
-        && previewFacing == DungeonFacing.North
-        && blackDoorF2CardEnabled;
+        && previewFacing == DungeonFacing.North;
   }
 
   /// <summary>
