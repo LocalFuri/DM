@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using DM.Dungeon;
@@ -113,6 +113,10 @@ public class ViewportLayoutEditor : EditorWindow
   private static readonly EditorApplication.CallbackFunction
       ViewEditGlobalNavHandler = HandleViewEditGlobalNavigationEvent;
   private static System.Delegate s_viewEditBeforeEventProcessedHandler;
+
+  // BlackDoorF1 layout Enabled is initialized once for the verified 1,3 North pose.
+  // After initialization, the visible BlackDoorF1 checkbox remains authoritative.
+  private bool blackDoorF1EnabledInitialized;
 
   // ViewEdit-only BlackDoorF2 card controls. Do not write layout/pose and
   // do not drive rendering; F2 still uses the existing pose exception.
@@ -3834,6 +3838,15 @@ public class ViewportLayoutEditor : EditorWindow
         if (piece == null)
           continue;
 
+        // BlackDoorF1 is a special editor piece and does not use the normal-wall
+        // resolver. Include it in Diagnostics when its dedicated needed-pose
+        // rule says it belongs to the current view.
+        if (piece.Name == "BlackDoorF1" && IsWallNeededForCurrentPose(piece))
+        {
+          drawPieces.Add("BlackDoorF1");
+          continue;
+        }
+
         if (!TryGetResolvedNormalWallState(
                 piece, out ResolvedNormalWallState state)
             || !state.Enabled)
@@ -6955,19 +6968,6 @@ public class ViewportLayoutEditor : EditorWindow
         }
       }
 
-      for (int i = 0; i < layout.Pieces.Count; i++)
-      {
-        ViewportPiece piece = layout.Pieces[i];
-        if (piece == null)
-          continue;
-
-        if (piece.Name != "BlackDoorF1")
-          continue;
-
-        piece.Enabled = false;
-        return;
-      }
-
       return;
     }
 
@@ -7007,6 +7007,12 @@ public class ViewportLayoutEditor : EditorWindow
         }
         else if (piece.Name == "BlackDoorF1")
         {
+          if (!blackDoorF1EnabledInitialized)
+          {
+            piece.Enabled = true;
+            blackDoorF1EnabledInitialized = true;
+          }
+
           piece.X = 63;
           piece.Y = DisplayYToUnityY(47, 88);
         }
@@ -7028,18 +7034,6 @@ public class ViewportLayoutEditor : EditorWindow
     blackDoorFrameRightF3CardInitialized = true;
     blackDoorFrameRightF3CardMirror = true;
 
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (piece.Name != "BlackDoorF1")
-        continue;
-
-      piece.Enabled = false;
-      return;
-    }
   }
 
 
@@ -7083,7 +7077,8 @@ public class ViewportLayoutEditor : EditorWindow
       if (piece == null)
         continue;
 
-      if (piece.Name == "BlackDoorF2"
+      if (piece.Name == "BlackDoorF1"
+          || piece.Name == "BlackDoorF2"
           || piece.Name == "BlackDoorF3")
         continue;
 
@@ -8690,7 +8685,8 @@ public class ViewportLayoutEditor : EditorWindow
       ViewportPiece piece = layout.Pieces[i];
       if (!IsWallRenderingPiece(piece))
         continue;
-      if (piece.Name == "BlackDoorF2"
+      if (piece.Name == "BlackDoorF1"
+          || piece.Name == "BlackDoorF2"
           || piece.Name == "BlackDoorF3")
         continue;
 
