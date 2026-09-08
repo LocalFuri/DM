@@ -286,7 +286,7 @@ MonoBehaviour:
     Graphic: 0
     X: 81
     Y: 97
-    Enabled: 0
+    Enabled: 1
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
@@ -319,7 +319,7 @@ MonoBehaviour:
     Graphic: 0
     X: 134
     Y: 97
-    Enabled: 0
+    Enabled: 1
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
