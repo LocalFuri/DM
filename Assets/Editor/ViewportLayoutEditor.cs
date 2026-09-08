@@ -117,6 +117,8 @@ public class ViewportLayoutEditor : EditorWindow
   // BlackDoorF1 layout Enabled is initialized once for the verified 1,3 North pose.
   // After initialization, the visible BlackDoorF1 checkbox remains authoritative.
   private bool blackDoorF1EnabledInitialized;
+  private bool blackDoorFrameLeftF1EnabledInitialized;
+  private bool blackDoorFrameRightF1EnabledInitialized;
 
   // ViewEdit-only BlackDoorF2 card controls. Do not write layout/pose and
   // do not drive rendering; F2 still uses the existing pose exception.
@@ -632,7 +634,6 @@ public class ViewportLayoutEditor : EditorWindow
           FindLayoutPieceByName("Black Door Frame Left F1");
       if (leftFrame != null)
       {
-        leftFrame.Enabled = true;
         leftFrame.X = 44;
         leftFrame.Y = DisplayYToUnityY(46, 94);
       }
@@ -641,7 +642,6 @@ public class ViewportLayoutEditor : EditorWindow
           FindLayoutPieceByName("Black Door Frame Right F1");
       if (rightFrame != null)
       {
-        rightFrame.Enabled = true;
         rightFrame.X = 154;
         rightFrame.Y = DisplayYToUnityY(46, 94);
       }
@@ -7007,13 +7007,23 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (piece.Name == "Black Door Frame Left F1")
         {
-          piece.Enabled = true;
+          if (!blackDoorFrameLeftF1EnabledInitialized)
+          {
+            piece.Enabled = true;
+            blackDoorFrameLeftF1EnabledInitialized = true;
+          }
+
           piece.X = 44;
           piece.Y = DisplayYToUnityY(46, 94);
         }
         else if (piece.Name == "Black Door Frame Right F1")
         {
-          piece.Enabled = true;
+          if (!blackDoorFrameRightF1EnabledInitialized)
+          {
+            piece.Enabled = true;
+            blackDoorFrameRightF1EnabledInitialized = true;
+          }
+
           piece.X = 154;
           piece.Y = DisplayYToUnityY(46, 94);
         }
@@ -7129,6 +7139,8 @@ public class ViewportLayoutEditor : EditorWindow
       if (piece.Name == "BlackDoorF1"
           || piece.Name == "BlackDoorF2"
           || piece.Name == "BlackDoorF3"
+          || piece.Name == "Black Door Frame Left F1"
+          || piece.Name == "Black Door Frame Right F1"
           || piece.Name == "Black Door Frame Left F3"
           || piece.Name == "Black Door Frame Right F3")
         continue;
@@ -8353,7 +8365,7 @@ public class ViewportLayoutEditor : EditorWindow
 
           ViewportPiece leftFramePiece =
               FindLayoutPieceByName("Black Door Frame Left F1");
-          if (leftFrameSource != null && leftFramePiece != null)
+          if (leftFrameSource != null && leftFramePiece != null && leftFramePiece.Enabled)
           {
             BlitPieceIntoPreview(
                 pixels,
@@ -8365,7 +8377,7 @@ public class ViewportLayoutEditor : EditorWindow
 
           ViewportPiece rightFramePiece =
               FindLayoutPieceByName("Black Door Frame Right F1");
-          if (leftFrameSource != null && rightFramePiece != null)
+          if (leftFrameSource != null && rightFramePiece != null && rightFramePiece.Enabled)
           {
             BlitPieceIntoPreview(
                 pixels,
@@ -8752,6 +8764,8 @@ public class ViewportLayoutEditor : EditorWindow
       if (piece.Name == "BlackDoorF1"
           || piece.Name == "BlackDoorF2"
           || piece.Name == "BlackDoorF3"
+          || piece.Name == "Black Door Frame Left F1"
+          || piece.Name == "Black Door Frame Right F1"
           || piece.Name == "Black Door Frame Left F3"
           || piece.Name == "Black Door Frame Right F3")
         continue;
