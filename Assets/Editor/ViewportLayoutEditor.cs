@@ -6966,6 +6966,15 @@ public class ViewportLayoutEditor : EditorWindow
         {
           piece.Enabled = true;
         }
+
+        // Black Door F2 occupies the front view at (1,4) North. Any normal
+        // FrontF3 card/graphic must stay disabled so it cannot appear behind
+        // the dedicated door view.
+        if (IsFrontWallF3Card(piece)
+            || piece.Graphic == DungeonGraphicType.FrontWallF3)
+        {
+          piece.Enabled = false;
+        }
       }
 
       return;
@@ -7658,6 +7667,18 @@ public class ViewportLayoutEditor : EditorWindow
         if (hasLiveFrontF3Card
             && piece != null
             && piece.Name == "Front Wall F3")
+        {
+          continue;
+        }
+
+        // (1,4) North is the Black Door F2 front view. The normal FrontF3
+        // wall must never render behind/through that dedicated door view.
+        if (previewX == 1
+            && previewY == 4
+            && previewFacing == DungeonFacing.North
+            && piece != null
+            && (IsFrontWallF3Card(piece)
+                || piece.Graphic == DungeonGraphicType.FrontWallF3))
         {
           continue;
         }
