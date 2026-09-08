@@ -1046,6 +1046,17 @@ public class ViewportLayoutEditor : EditorWindow
 
     string name = piece.Name ?? string.Empty;
 
+    // At the verified Black Door F1 pose, the door occupies the front opening.
+    // The normal FrontF2 wall is therefore not a needed piece for this view.
+    if (previewX == 1
+        && previewY == 3
+        && previewFacing == DungeonFacing.North
+        && (IsFrontWallF2Card(piece)
+            || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)))
+    {
+      return false;
+    }
+
     // Black Door editor cards must be decided BEFORE the generic normal-wall
     // resolver. Some Black Door pieces are classified as normal wall pieces,
     // so the old ordering returned their resolved Enabled=false before these
@@ -7044,6 +7055,14 @@ public class ViewportLayoutEditor : EditorWindow
           piece.X = 63;
           piece.Y = DisplayYToUnityY(47, 88);
         }
+
+        // Black Door F1 occupies the front opening at (1,3) North.
+        // Keep the normal FrontF2 wall disabled for this dedicated door view.
+        if (IsFrontWallF2Card(piece)
+            || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
+        {
+          piece.Enabled = false;
+        }
       }
 
       return;
@@ -7817,7 +7836,8 @@ public class ViewportLayoutEditor : EditorWindow
         if (previewX == 1
             && previewY == 3
             && previewFacing == DungeonFacing.North
-            && IsFrontWallF2Card(piece))
+            && (IsFrontWallF2Card(piece)
+                || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)))
         {
           continue;
         }
