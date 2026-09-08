@@ -6815,10 +6815,11 @@ public class ViewportLayoutEditor : EditorWindow
     if (layout == null || layout.Pieces == null)
       return;
 
-    // (1,4) North is a Black Door F2 front view. Force FrontF3 off so ViewEdit
-    // matches the exception and the saved pose stays disabled.
+    // (1,4) North is a Black Door F2 front view and (1,5) North is a
+    // Black Door F3 front view. Force the normal FrontF3 wall off so
+    // ViewEdit matches the dedicated Black Door front view.
     if (previewX == 1
-        && previewY == 4
+        && (previewY == 4 || previewY == 5)
         && previewFacing == DungeonFacing.North)
     {
       for (int i = 0; i < layout.Pieces.Count; i++)
@@ -7042,6 +7043,21 @@ public class ViewportLayoutEditor : EditorWindow
     blackDoorFrameRightF3CardEnabled = true;
     blackDoorFrameRightF3CardInitialized = true;
     blackDoorFrameRightF3CardMirror = true;
+
+    // Black Door F3 occupies the front view at (1,5) North. Keep any
+    // normal FrontF3 card/graphic disabled so it cannot render behind it.
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (IsFrontWallF3Card(piece)
+          || piece.Graphic == DungeonGraphicType.FrontWallF3)
+      {
+        piece.Enabled = false;
+      }
+    }
 
   }
 
@@ -7671,10 +7687,11 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        // (1,4) North is the Black Door F2 front view. The normal FrontF3
-        // wall must never render behind/through that dedicated door view.
+        // (1,4) North is the Black Door F2 front view and (1,5) North is
+        // the Black Door F3 front view. The normal FrontF3 wall must never
+        // render behind/through either dedicated door view.
         if (previewX == 1
-            && previewY == 4
+            && (previewY == 4 || previewY == 5)
             && previewFacing == DungeonFacing.North
             && piece != null
             && (IsFrontWallF3Card(piece)
