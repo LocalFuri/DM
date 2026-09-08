@@ -136,6 +136,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private bool blackDoorFrameLeftF3CardInitialized;
   private bool blackDoorFrameLeftF3EnabledInitialized;
+  private bool blackDoorFrameRightF3EnabledInitialized;
   private bool blackDoorFrameLeftF3CardEnabled;
   private bool blackDoorFrameLeftF3CardMirror;
   private int blackDoorFrameLeftF3CardX;
@@ -7056,6 +7057,17 @@ public class ViewportLayoutEditor : EditorWindow
       blackDoorFrameLeftF3EnabledInitialized = true;
     }
 
+    // Initialize the visible Right F3 frame layout card once. After this,
+    // its Enabled checkbox is authoritative and pose refreshes preserve it.
+    if (!blackDoorFrameRightF3EnabledInitialized)
+    {
+      ViewportPiece rightF3Frame = FindLayoutPieceByName("Black Door Frame Right F3");
+      if (rightF3Frame != null)
+        rightF3Frame.Enabled = true;
+
+      blackDoorFrameRightF3EnabledInitialized = true;
+    }
+
     // Black Door F3 occupies the front view at (1,5) North. Keep any
     // normal FrontF3 card/graphic disabled so it cannot render behind it.
     for (int i = 0; i < layout.Pieces.Count; i++)
@@ -7117,7 +7129,8 @@ public class ViewportLayoutEditor : EditorWindow
       if (piece.Name == "BlackDoorF1"
           || piece.Name == "BlackDoorF2"
           || piece.Name == "BlackDoorF3"
-          || piece.Name == "Black Door Frame Left F3")
+          || piece.Name == "Black Door Frame Left F3"
+          || piece.Name == "Black Door Frame Right F3")
         continue;
 
       bool found = false;
@@ -8739,7 +8752,8 @@ public class ViewportLayoutEditor : EditorWindow
       if (piece.Name == "BlackDoorF1"
           || piece.Name == "BlackDoorF2"
           || piece.Name == "BlackDoorF3"
-          || piece.Name == "Black Door Frame Left F3")
+          || piece.Name == "Black Door Frame Left F3"
+          || piece.Name == "Black Door Frame Right F3")
         continue;
 
       piece.Enabled = false;
@@ -8976,9 +8990,14 @@ public class ViewportLayoutEditor : EditorWindow
           blackDoorFrameLeftF3CardMirror);
     }
 
-    if (blackDoorFrameRightF3CardEnabled)
+    ViewportPiece rightF3 = FindLayoutPieceByName("Black Door Frame Right F3");
+    bool rightF3FrameEnabled =
+        rightF3 != null
+            ? rightF3.Enabled
+            : blackDoorFrameRightF3CardEnabled;
+
+    if (rightF3FrameEnabled)
     {
-      ViewportPiece rightF3 = FindLayoutPieceByName("Black Door Frame Right F3");
       int rightX = rightF3 != null ? rightF3.X : blackDoorFrameRightF3CardX;
       int rightY = rightF3 != null ? rightF3.Y : blackDoorFrameRightF3CardY;
       BlitPieceIntoPreview(
