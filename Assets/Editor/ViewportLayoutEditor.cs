@@ -2044,12 +2044,16 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.BeginVertical(EditorStyles.helpBox);
     GUI.backgroundColor = previousBg;
 
-    bool compactFrontF1Header = IsFrontWallF1Card(piece);
-    bool compactBlackDoorF1FrameHeader =
+    bool compactFrontWallHeader =
+        IsFrontWallF1Card(piece)
+        || IsFrontWallF2Card(piece)
+        || IsFrontWallF3Card(piece);
+    bool compactBlackDoorFrontHeader =
         piece.Name == "BlackDoorF1"
         || piece.Name == "BlackDoorF2"
-        || piece.Name == "BlackDoorF3"
-        || piece.Name == "Black Door Frame Left F1"
+        || piece.Name == "BlackDoorF3";
+    bool compactBlackDoorF1FrameHeader =
+        piece.Name == "Black Door Frame Left F1"
         || piece.Name == "Black Door Frame Right F1"
         || piece.Name == "Black Door Frame Left F2"
         || piece.Name == "Black Door Frame Right F2"
@@ -2073,7 +2077,8 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF3RightPiece(piece);
     bool hideNameForWall = IsWallEditorPiece(piece);
 
-    if (!compactFrontF1Header
+    if (!compactFrontWallHeader
+        && !compactBlackDoorFrontHeader
         && !compactBlackDoorF1FrameHeader
         && !compactD3Header
         && !compactSideWallHeader)
@@ -2096,7 +2101,7 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUI.BeginChangeCheck();
     EditorGUILayout.BeginHorizontal();
     float savedNameLabelWidth = EditorGUIUtility.labelWidth;
-    if (compactFrontF1Header)
+    if (compactFrontWallHeader || compactBlackDoorFrontHeader)
     {
       string headerText = isSelected ? $"▶ {piece.Name}" : piece.Name;
       if (TryGetPieceFamilyLabelColor(piece, out Color familyColor))
@@ -2118,10 +2123,9 @@ public class ViewportLayoutEditor : EditorWindow
       piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
           GUIContent.none, piece.Graphic, GUILayout.Width(135f));
 
-      // FrontF1 crop is now geometry-driven. The obsolete manual Crop
-      // button / Crop X controls are intentionally not shown in ViewEdit.
-      EditorGUILayout.EndHorizontal();
-      EditorGUILayout.BeginHorizontal();
+      // Front pieces use two compact rows:
+      // row 1 = name + Graphic + Enabled + Mirror
+      // row 2 = Width (when applicable) + X + Y + Ref.
     }
     else if (compactBlackDoorF1FrameHeader)
     {
@@ -2293,8 +2297,7 @@ public class ViewportLayoutEditor : EditorWindow
     bool hasPieceCardReference = TryGetPieceCardReferenceXY(
         piece, mirrorAfter, out int canonicalRefX, out int canonicalRefY);
 
-    if (compactFrontF1Header
-        || compactD3Header)
+    if (compactD3Header)
     {
       string refLabel = hasPieceCardReference
           ? $"Ref X {canonicalRefX} / Y {canonicalRefY}"
@@ -2307,7 +2310,8 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.EndHorizontal();
 
     EditorGUI.BeginChangeCheck();
-    if (!compactFrontF1Header
+    if (!compactFrontWallHeader
+        && !compactBlackDoorFrontHeader
         && !compactBlackDoorF1FrameHeader
         && !compactD3Header
         && !compactSideWallHeader)
@@ -2494,7 +2498,9 @@ public class ViewportLayoutEditor : EditorWindow
     }
     EditorGUIUtility.labelWidth = savedXyLabelWidth;
 
-    if (compactSideWallHeader)
+    if (compactSideWallHeader
+        || compactFrontWallHeader
+        || compactBlackDoorFrontHeader)
     {
       string refLabel = hasCanonicalRef
           ? $"Ref X {canonicalRefX} / Y {canonicalRefY}"

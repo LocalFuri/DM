@@ -334,7 +334,7 @@ MonoBehaviour:
     Deterministic: 0
     BlackDoorF2X: 78
     BlackDoorF2Y: 80
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: BlackDoorF2
