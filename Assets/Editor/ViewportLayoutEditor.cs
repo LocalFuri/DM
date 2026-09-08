@@ -5755,6 +5755,27 @@ public class ViewportLayoutEditor : EditorWindow
 
     ApplyPersistedDTermWallRows(frontF1GeometryKey);
 
+    // LeftF0 mirror is deterministic from the current pose. DTerm can contain
+    // the mirror value from a previously verified geometry, so restore the
+    // current pose value after DTerm. A temporary manual ViewEdit mirror
+    // override is applied later and can still win for testing.
+    bool leftF0PoseMirror = GetSideWallMirrorFromPose();
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null || !IsWallF0LeftPiece(piece))
+        continue;
+
+      if (resolvedNormalWallByPiece.TryGetValue(
+              piece, out ResolvedNormalWallState leftF0StateAfterDTerm))
+      {
+        leftF0StateAfterDTerm.Mirror = leftF0PoseMirror;
+        resolvedNormalWallByPiece[piece] = leftF0StateAfterDTerm;
+      }
+
+      piece.MirrorHorizontally = leftF0PoseMirror;
+    }
+
     // Verified FrontF1 X authority for the solid-front/right-wall geometry.
     // DTerm may contain an older X=32 value; restore X=0 after DTerm.
     // Temporary ViewEdit X/Y overrides are applied afterward and still win.
