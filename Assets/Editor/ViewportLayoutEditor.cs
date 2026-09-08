@@ -1792,7 +1792,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Right
     ("RightF0", 192, 33),
-    ("RightF1", 165, 41),
+    ("RightF1", 165, 42),
     ("RightF2", 147, 51),
     ("RightF3", 136, 60),
     ("Wall F0Right", null, null),
@@ -1995,7 +1995,19 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null || string.IsNullOrEmpty(piece.Name))
       return false;
 
-    return TryGetCanonicalReferenceXY(piece.Name, out x, out y);
+    string referenceName = piece.Name;
+    if (TryGetSideWallCanonicalName(piece, out string canonicalName))
+      referenceName = canonicalName;
+
+    if (!TryGetCanonicalReferenceXY(referenceName, out x, out y))
+      return false;
+
+    // For side walls, Mirror changes only the active Ref X.
+    // Ref Y always stays at the normal canonical Y.
+    if (mirror && TryGetMirroredReferenceX(piece, out int mirroredX))
+      x = mirroredX;
+
+    return true;
   }
 
   private static void SetActiveCanonicalReferenceXY(
@@ -2472,6 +2484,19 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
     EditorGUIUtility.labelWidth = savedXyLabelWidth;
+
+    if (compactSideWallHeader)
+    {
+      string refLabel = hasCanonicalRef
+          ? $"Ref X {canonicalRefX} / Y {canonicalRefY}"
+          : "Ref X - / Y -";
+      GUILayout.Space(10f);
+      EditorGUILayout.LabelField(
+          refLabel,
+          GUILayout.Width(125f),
+          GUILayout.ExpandWidth(false));
+    }
+
     EditorGUILayout.EndHorizontal();
 
     if (piece.Name == "BlackDoorF1")
@@ -5176,6 +5201,12 @@ public class ViewportLayoutEditor : EditorWindow
         IsFrontWallF1Card(piece)
         && hasCurrentGeometry
         && IsVerifiedFrontF1X0Geometry(currentGeometry);
+
+    if (TryGetSideWallCanonicalName(piece, out _)
+        && TryGetActiveCanonicalReferenceXY(piece, mirror, out x, out y))
+    {
+      return true;
+    }
 
     if (TryGetDTermEntryForPiece(piece, out ViewportDTermEntry entry))
     {
