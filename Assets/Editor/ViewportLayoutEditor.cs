@@ -8490,17 +8490,23 @@ public class ViewportLayoutEditor : EditorWindow
             Texture2D f2Source = GetBlackDoorF2SourceTexture();
             if (f2Source != null)
             {
+              int f2DoorX = piece.ResolvedBlackDoorF2X;
+              int f2DoorY = piece.ResolvedBlackDoorF2Y;
+              bool f2DoorMirror = doorF2 != null
+                  ? doorF2.MirrorHorizontally
+                  : blackDoorF2CardMirror;
+
               BlitPieceIntoPreview(
                   pixels,
                   f2Source,
-                  piece.ResolvedBlackDoorF2X,
-                  piece.ResolvedBlackDoorF2Y,
-                  false);
+                  f2DoorX,
+                  f2DoorY,
+                  f2DoorMirror);
               LogIfOverlapsLeftF0(
-                  piece,
+                  doorF2 ?? piece,
                   drawGraphic,
-                  piece.ResolvedBlackDoorF2X,
-                  piece.ResolvedBlackDoorF2Y,
+                  f2DoorX,
+                  f2DoorY,
                   f2Source.width,
                   f2Source.height);
             }
