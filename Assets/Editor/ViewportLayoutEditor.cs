@@ -8049,6 +8049,21 @@ public class ViewportLayoutEditor : EditorWindow
           resolvedF1Width = livePreviewWidth;
         }
 
+        // Final canonical authority for the verified 1,5 North LeftF1 view.
+        // This is deliberately after DTerm/canonical/temporary resolution so
+        // no older stored or preview value can move the final blit.
+        if (IsWallF1LeftPiece(piece)
+            && previewX == 1
+            && previewY == 5
+            && previewFacing == DungeonFacing.North)
+        {
+          resolvedX = 0;
+          resolvedY = DisplayYToUnityY(
+              42, GetPieceHeightForEditorY(piece));
+          mirror = false;
+          drawGraphic = DungeonGraphicType.WallF1L;
+        }
+
         if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
         {
           string f0DrawDiagnosticKey =
