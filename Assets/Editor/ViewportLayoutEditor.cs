@@ -1833,7 +1833,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("BlackDoorF2", null, null),
     ("BlackDoorF3", null, null),
     ("Black Door Frame Left F1", null, null),
-    ("Black Door Frame Left F2", null, null),
+    ("Black Door Frame Left F2", 64, 54),
     ("Black Door Frame Left F3", null, null),
     ("Black Door Frame Right F1", null, null),
     ("Black Door Frame Right F2", null, null),
@@ -2511,7 +2511,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (compactSideWallHeader
         || compactFrontWallHeader
-        || compactBlackDoorFrontHeader)
+        || compactBlackDoorFrontHeader
+        || compactBlackDoorF1FrameHeader)
     {
       string refLabel = hasCanonicalRef
           ? $"Ref X {canonicalRefX} / Y {canonicalRefY}"
@@ -5753,8 +5754,9 @@ public class ViewportLayoutEditor : EditorWindow
       piece.MirrorHorizontally = frontF1Mirror;
     }
 
-    ApplyPersistedDTermWallRows(frontF1GeometryKey);
+    // DTerm application disabled: canonical/recipe logic is now authoritative.
 
+    // ApplyPersistedDTermWallRows(frontF1GeometryKey);
     // LeftF0 mirror is deterministic from the current pose. DTerm can contain
     // the mirror value from a previously verified geometry, so restore the
     // current pose value after DTerm. A temporary manual ViewEdit mirror
