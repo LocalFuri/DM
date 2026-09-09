@@ -2018,12 +2018,6 @@ public class ViewportLayoutEditor : EditorWindow
     SetCanonicalReferenceXY(piece.Name, x, y);
   }
 
-  // SOURCE_TEST_0909 — temporary trace helper. W = wall, X = open.
-  private static string TraceCellWallFlag0909(RelativeViewportCell cell)
-  {
-    return IsViewEditGeometryWall(cell) ? "W" : "X";
-  }
-
   private void DrawPieceCard(
       int index,
       ViewportPiece piece,
@@ -2437,42 +2431,6 @@ public class ViewportLayoutEditor : EditorWindow
       editUnityY = previewPosition.y;
     }
 
-    // SOURCE_TEST_0909 — temporary FrontF1 X source trace. Read-only.
-    string frontF1SourceTrace0909 = null;
-    if (IsFrontWallF1Card(piece))
-    {
-      bool traceHasResolved = TryGetResolvedNormalWallState(
-          piece, out ResolvedNormalWallState traceResolvedState);
-      bool traceHasPreview = previewPositionOverrideByPiece.TryGetValue(
-          piece, out Vector2Int tracePreviewPosition);
-
-      frontF1SourceTrace0909 =
-          "TRACE SOURCE_TEST_0909"
-          + "  piece.X=" + piece.X
-          + "  resolved.X="
-          + (traceHasResolved ? traceResolvedState.X.ToString() : "NONE")
-          + "  preview.X="
-          + (traceHasPreview ? tracePreviewPosition.x.ToString() : "NONE")
-          + "  editX=" + editX;
-
-      if (TryGetCurrentRelativeViewportGeometry(
-              out RelativeViewportGeometry traceGeometry))
-      {
-        frontF1SourceTrace0909 +=
-            "\nF0: L=" + TraceCellWallFlag0909(traceGeometry.F0Left)
-            + " R=" + TraceCellWallFlag0909(traceGeometry.F0Right)
-            + "\nF1: L=" + TraceCellWallFlag0909(traceGeometry.F1Left)
-            + " C=" + TraceCellWallFlag0909(traceGeometry.F1Center)
-            + " R=" + TraceCellWallFlag0909(traceGeometry.F1Right)
-            + "\nF2: L=" + TraceCellWallFlag0909(traceGeometry.F2Left)
-            + " C=" + TraceCellWallFlag0909(traceGeometry.F2Center)
-            + " R=" + TraceCellWallFlag0909(traceGeometry.F2Right)
-            + "\nF3: L=" + TraceCellWallFlag0909(traceGeometry.F3Left)
-            + " C=" + TraceCellWallFlag0909(traceGeometry.F3Center)
-            + " R=" + TraceCellWallFlag0909(traceGeometry.F3Right);
-      }
-    }
-
     int xBefore = editX;
     bool hasCanonicalRef = TryGetPieceCardReferenceXY(
         piece, mirrorAfter, out canonicalRefX, out canonicalRefY);
@@ -2541,13 +2499,6 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     EditorGUILayout.EndHorizontal();
-
-    if (frontF1SourceTrace0909 != null)
-    {
-      EditorGUILayout.LabelField(
-          frontF1SourceTrace0909,
-          EditorStyles.wordWrappedMiniLabel);
-    }
 
     if (piece.Name == "BlackDoorF1")
     {
