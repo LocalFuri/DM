@@ -495,7 +495,6 @@ public class ViewportLayoutEditor : EditorWindow
             previewFacing);
 
     string frontF1GeometryKey = BuildFrontF1GeometryKey(geometry);
-    ViewportDTermStore dtermStore = ViewportDTermStore.LoadDefault();
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -594,30 +593,7 @@ public class ViewportLayoutEditor : EditorWindow
             };
       }
 
-      if (dtermStore != null)
-      {
-        string dtermPieceName = GetDTermPieceName(piece);
-        if (!string.IsNullOrEmpty(dtermPieceName))
-        {
-          dtermStore.Upsert(
-              new ViewportDTermEntry
-              {
-                GeometryKey = frontF1GeometryKey,
-                PieceName = dtermPieceName,
-                Enabled = enabled,
-                Graphic = graphic,
-                X = x,
-                Y = y,
-                Mirror = mirror,
-                FrontWallF1Width = frontWallF1Width,
-                FrontWallF2Width = frontWallF2Width
-              });
-        }
-      }
     }
-
-    if (dtermStore != null)
-      dtermStore.Persist();
 
     // The current geometry is now committed. Discard only the temporary
     // stationary-pose tests; the geometry overrides above become authoritative.
@@ -2042,6 +2018,12 @@ public class ViewportLayoutEditor : EditorWindow
     SetCanonicalReferenceXY(piece.Name, x, y);
   }
 
+  // SOURCE_TEST_0909 — temporary trace helper. W = wall, X = open.
+  private static string TraceCellWallFlag0909(RelativeViewportCell cell)
+  {
+    return IsViewEditGeometryWall(cell) ? "W" : "X";
+  }
+
   private void DrawPieceCard(
       int index,
       ViewportPiece piece,
@@ -2303,8 +2285,6 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUIUtility.labelWidth = previousLabelWidth;
     GUILayout.Space(ToggleGroupGap);
 
-    bool hasDTermRef = TryGetDTermEntryForPiece(
-        piece, out ViewportDTermEntry dtermRef);
     bool hasPieceCardReference = TryGetPieceCardReferenceXY(
         piece, mirrorAfter, out int canonicalRefX, out int canonicalRefY);
 
@@ -2457,6 +2437,42 @@ public class ViewportLayoutEditor : EditorWindow
       editUnityY = previewPosition.y;
     }
 
+    // SOURCE_TEST_0909 — temporary FrontF1 X source trace. Read-only.
+    string frontF1SourceTrace0909 = null;
+    if (IsFrontWallF1Card(piece))
+    {
+      bool traceHasResolved = TryGetResolvedNormalWallState(
+          piece, out ResolvedNormalWallState traceResolvedState);
+      bool traceHasPreview = previewPositionOverrideByPiece.TryGetValue(
+          piece, out Vector2Int tracePreviewPosition);
+
+      frontF1SourceTrace0909 =
+          "TRACE SOURCE_TEST_0909"
+          + "  piece.X=" + piece.X
+          + "  resolved.X="
+          + (traceHasResolved ? traceResolvedState.X.ToString() : "NONE")
+          + "  preview.X="
+          + (traceHasPreview ? tracePreviewPosition.x.ToString() : "NONE")
+          + "  editX=" + editX;
+
+      if (TryGetCurrentRelativeViewportGeometry(
+              out RelativeViewportGeometry traceGeometry))
+      {
+        frontF1SourceTrace0909 +=
+            "\nF0: L=" + TraceCellWallFlag0909(traceGeometry.F0Left)
+            + " R=" + TraceCellWallFlag0909(traceGeometry.F0Right)
+            + "\nF1: L=" + TraceCellWallFlag0909(traceGeometry.F1Left)
+            + " C=" + TraceCellWallFlag0909(traceGeometry.F1Center)
+            + " R=" + TraceCellWallFlag0909(traceGeometry.F1Right)
+            + "\nF2: L=" + TraceCellWallFlag0909(traceGeometry.F2Left)
+            + " C=" + TraceCellWallFlag0909(traceGeometry.F2Center)
+            + " R=" + TraceCellWallFlag0909(traceGeometry.F2Right)
+            + "\nF3: L=" + TraceCellWallFlag0909(traceGeometry.F3Left)
+            + " C=" + TraceCellWallFlag0909(traceGeometry.F3Center)
+            + " R=" + TraceCellWallFlag0909(traceGeometry.F3Right);
+      }
+    }
+
     int xBefore = editX;
     bool hasCanonicalRef = TryGetPieceCardReferenceXY(
         piece, mirrorAfter, out canonicalRefX, out canonicalRefY);
@@ -2525,6 +2541,13 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     EditorGUILayout.EndHorizontal();
+
+    if (frontF1SourceTrace0909 != null)
+    {
+      EditorGUILayout.LabelField(
+          frontF1SourceTrace0909,
+          EditorStyles.wordWrappedMiniLabel);
+    }
 
     if (piece.Name == "BlackDoorF1")
     {
@@ -3874,9 +3897,14 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        string name = GetDTermPieceName(piece);
-        if (string.IsNullOrEmpty(name))
-          name = piece.Name ?? string.Empty;
+        string name = null;
+        if (!TryGetSideWallCanonicalName(piece, out name))
+        {
+          if (IsFrontWallF1Card(piece)) name = "FrontF1";
+          else if (IsFrontWallF2Card(piece)) name = "FrontF2";
+          else if (IsFrontWallF3Card(piece)) name = "FrontF3";
+          else name = piece.Name ?? string.Empty;
+        }
 
         if (!string.IsNullOrEmpty(name))
           drawPieces.Add(name);
@@ -5153,24 +5181,6 @@ public class ViewportLayoutEditor : EditorWindow
     return BuildFrontF1GeometryKey(g) + "|" + pieceId;
   }
 
-  private static string GetDTermPieceName(ViewportPiece piece)
-  {
-    if (piece == null)
-      return null;
-
-    if (IsFrontWallF1Card(piece))
-      return "FrontF1";
-    if (IsFrontWallF2Card(piece))
-      return "FrontF2";
-    if (IsFrontWallF3Card(piece))
-      return "FrontF3";
-    if (TryGetSideWallCanonicalName(piece, out string canonicalName))
-      return canonicalName;
-    if (!string.IsNullOrEmpty(piece.Name))
-      return piece.Name;
-    return null;
-  }
-
   private bool TryGetCurrentRelativeViewportGeometry(out RelativeViewportGeometry geometry)
   {
     geometry = default;
@@ -5184,38 +5194,6 @@ public class ViewportLayoutEditor : EditorWindow
         previewY,
         previewFacing);
     return true;
-  }
-
-  private bool TryGetCurrentFrontF1GeometryKey(out string geometryKey)
-  {
-    geometryKey = null;
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null)
-      return false;
-
-    RelativeViewportGeometry geometry =
-        RelativeViewportGeometry.Calculate(
-            previewMiniMap,
-            previewX,
-            previewY,
-            previewFacing);
-    geometryKey = BuildFrontF1GeometryKey(geometry);
-    return !string.IsNullOrEmpty(geometryKey);
-  }
-
-  private bool TryGetDTermEntryForPiece(
-      ViewportPiece piece,
-      out ViewportDTermEntry entry)
-  {
-    entry = null;
-    string pieceName = GetDTermPieceName(piece);
-    if (string.IsNullOrEmpty(pieceName))
-      return false;
-    if (!TryGetCurrentFrontF1GeometryKey(out string geometryKey))
-      return false;
-
-    ViewportDTermStore store = ViewportDTermStore.LoadDefault();
-    return store != null && store.TryGet(geometryKey, pieceName, out entry);
   }
 
   private bool TryGetPieceCardReferenceXY(
@@ -5256,17 +5234,6 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
     }
 
-    if (TryGetDTermEntryForPiece(piece, out ViewportDTermEntry entry))
-    {
-      x = verifiedFrontF1X0Reference
-          ? 0
-          : leftD3FrontF1Reference
-              ? 32
-              : entry.X;
-      y = UnityYToDisplayY(entry.Y, GetPieceHeightForEditorY(piece));
-      return true;
-    }
-
     if (!TryGetActiveCanonicalReferenceXY(piece, mirror, out x, out y))
       return false;
 
@@ -5276,56 +5243,6 @@ public class ViewportLayoutEditor : EditorWindow
       x = 32;
 
     return true;
-  }
-
-  private void ApplyPersistedDTermWallRows(string geometryKey)
-  {
-    if (string.IsNullOrEmpty(geometryKey)
-        || layout == null
-        || layout.Pieces == null)
-    {
-      return;
-    }
-
-    ViewportDTermStore store = ViewportDTermStore.LoadDefault();
-    if (store == null)
-      return;
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      string pieceName = GetDTermPieceName(piece);
-      if (string.IsNullOrEmpty(pieceName))
-        continue;
-      if (!store.TryGet(geometryKey, pieceName, out ViewportDTermEntry entry)
-          || entry == null)
-      {
-        continue;
-      }
-
-      if (!resolvedNormalWallByPiece.TryGetValue(
-              piece, out ResolvedNormalWallState state))
-      {
-        continue;
-      }
-
-      state.Enabled = entry.Enabled;
-      state.Graphic = entry.Graphic;
-      state.X = entry.X;
-      state.Y = entry.Y;
-      state.Mirror = entry.Mirror;
-      state.FrontF1Width = entry.FrontWallF1Width;
-      state.FrontF2Width = entry.FrontWallF2Width;
-      resolvedNormalWallByPiece[piece] = state;
-
-      piece.Enabled = entry.Enabled;
-      piece.Graphic = entry.Graphic;
-      piece.MirrorHorizontally = entry.Mirror;
-      if (IsFrontWallF1Card(piece))
-        piece.FrontWallF1Width = entry.FrontWallF1Width;
-      if (IsFrontWallF2Card(piece))
-        piece.FrontWallF2Width = entry.FrontWallF2Width;
-    }
   }
 
   private void ApplyF1MinimapWallRecipe()
@@ -5440,9 +5357,14 @@ public class ViewportLayoutEditor : EditorWindow
             frontF1Width = StraightF1WallLogic.CompositeWidth191;
         else
             frontF1Width = StraightF1WallLogic.CompositeWidth;
-        x = frontF1Width == StraightF1WallLogic.CompositeWidth ? 0 : 32;
+        x = (leftF0 && rightF0)
+            ? 0
+            : frontF1Width == StraightF1WallLogic.CompositeWidth ? 0 : 32;
 
-        if (frontF1GeometryOverrides.TryGetValue(
+        // The current canonical recipe owns FrontF1 at a solid F0-left/F0-right view.
+        // Do not let the legacy FrontF1 geometry-position store restore X=32 here.
+        if (!(leftF0 && rightF0)
+            && frontF1GeometryOverrides.TryGetValue(
                 frontF1GeometryKey, out FrontF1GeometryOverride verifiedF1))
         {
           x = verifiedF1.X;
@@ -5677,7 +5599,11 @@ public class ViewportLayoutEditor : EditorWindow
         enabled = verifiedEnabled;
       }
 
-      if (normalWallPositionGeometryOverrides.TryGetValue(
+      // FrontF1 at a solid F0-left/F0-right view is now canonical recipe-owned.
+      // The legacy normal-wall position store contains X=32 for this geometry;
+      // bypass it so it cannot override the verified X=0 reference.
+      if (!(IsFrontWallF1Card(piece) && leftF0 && rightF0)
+          && normalWallPositionGeometryOverrides.TryGetValue(
               normalWallGeometryKey,
               out Vector2Int verifiedPosition))
       {
@@ -5778,12 +5704,12 @@ public class ViewportLayoutEditor : EditorWindow
       piece.MirrorHorizontally = frontF1Mirror;
     }
 
-    // DTerm application disabled: canonical/recipe logic is now authoritative.
+    // legacy store application disabled: canonical/recipe logic is now authoritative.
 
-    // ApplyPersistedDTermWallRows(frontF1GeometryKey);
-    // LeftF0 mirror is deterministic from the current pose. DTerm can contain
+    // ApplyPersistedlegacy storeWallRows(frontF1GeometryKey);
+    // LeftF0 mirror is deterministic from the current pose. older stored geometry can contain
     // the mirror value from a previously verified geometry, so restore the
-    // current pose value after DTerm. A temporary manual ViewEdit mirror
+    // current pose value after geometry resolution. A temporary manual ViewEdit mirror
     // override is applied later and can still win for testing.
     bool leftF0PoseMirror = GetSideWallMirrorFromPose();
     for (int i = 0; i < layout.Pieces.Count; i++)
@@ -5793,43 +5719,50 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       if (resolvedNormalWallByPiece.TryGetValue(
-              piece, out ResolvedNormalWallState leftF0StateAfterDTerm))
+              piece, out ResolvedNormalWallState leftF0StateAfterResolve))
       {
-        leftF0StateAfterDTerm.Mirror = leftF0PoseMirror;
-        resolvedNormalWallByPiece[piece] = leftF0StateAfterDTerm;
+        leftF0StateAfterResolve.Mirror = leftF0PoseMirror;
+        resolvedNormalWallByPiece[piece] = leftF0StateAfterResolve;
       }
 
       piece.MirrorHorizontally = leftF0PoseMirror;
     }
 
-    // Verified FrontF1 X authority for the solid-front/right-wall geometry.
-    // DTerm may contain an older X=32 value; restore X=0 after DTerm.
+    // FrontF1 live X follows the canonical card reference for this geometry, so
+    // the resolved value can never disagree with the Ref shown on the card.
     // Temporary ViewEdit X/Y overrides are applied afterward and still win.
-    if (IsVerifiedFrontF1X0Geometry(g))
+    for (int i = 0; i < layout.Pieces.Count; i++)
     {
-      for (int i = 0; i < layout.Pieces.Count; i++)
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null || !IsFrontWallF1Card(piece))
+        continue;
+
+      if (!TryGetPieceCardReferenceXY(
+              piece,
+              GetFrontF1MirrorFromPose(),
+              out int frontF1RefX,
+              out _))
       {
-        ViewportPiece piece = layout.Pieces[i];
-        if (piece == null || !IsFrontWallF1Card(piece))
-          continue;
-
-        if (resolvedNormalWallByPiece.TryGetValue(
-                piece, out ResolvedNormalWallState frontF1StateAfterDTerm))
-        {
-          frontF1StateAfterDTerm.X = 0;
-          resolvedNormalWallByPiece[piece] = frontF1StateAfterDTerm;
-        }
-
-        // Remove any older temporary ViewEdit X/Y edit for FrontF1 in this
-        // verified geometry. Otherwise ApplyTemporaryNormalWallPreviewOverrides()
-        // would put the stale X=32 back after the geometry rule fixed it.
-        previewPositionOverrideByPiece.Remove(piece);
+        continue;
       }
+
+      if (resolvedNormalWallByPiece.TryGetValue(
+              piece, out ResolvedNormalWallState frontF1StateAfterResolve))
+      {
+        frontF1StateAfterResolve.X = frontF1RefX;
+        resolvedNormalWallByPiece[piece] = frontF1StateAfterResolve;
+      }
+
+      // Remove any older temporary ViewEdit X/Y edit for FrontF1 in the
+      // solid-front geometries that previously owned this rule. Otherwise
+      // ApplyTemporaryNormalWallPreviewOverrides() would put a stale X back.
+      if ((leftF0 && rightF0) || IsVerifiedFrontF1X0Geometry(g))
+        previewPositionOverrideByPiece.Remove(piece);
     }
 
     // Verified RightF0 geometry mirror authority.
-    // DTerm may contain an older mirror value, so re-apply the normalized
-    // geometry result after DTerm. A manual ViewEdit mirror override still
+    // Older stored geometry may contain an mirror value, so re-apply the normalized
+    // geometry result after geometry resolution. A manual ViewEdit mirror override still
     // applies afterward and can be used for testing.
     if (IsVerifiedRightF0MirrorOnGeometry(g))
     {
@@ -5840,10 +5773,10 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
 
         if (resolvedNormalWallByPiece.TryGetValue(
-                piece, out ResolvedNormalWallState rightF0StateAfterDTerm))
+                piece, out ResolvedNormalWallState rightF0StateAfterResolve))
         {
-          rightF0StateAfterDTerm.Mirror = true;
-          resolvedNormalWallByPiece[piece] = rightF0StateAfterDTerm;
+          rightF0StateAfterResolve.Mirror = true;
+          resolvedNormalWallByPiece[piece] = rightF0StateAfterResolve;
         }
 
         piece.MirrorHorizontally = true;
@@ -5851,7 +5784,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // Verified RightF3 geometry mirror authority.
-    // Re-apply after DTerm so an older stored mirror value cannot overwrite
+    // Re-apply after geometry resolution so an older stored mirror value cannot overwrite
     // the normalized geometry result. Manual ViewEdit mirror overrides still
     // apply afterward for testing.
     if (IsVerifiedRightF3MirrorOnGeometry(g))
@@ -5863,10 +5796,10 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
 
         if (resolvedNormalWallByPiece.TryGetValue(
-                piece, out ResolvedNormalWallState rightF3StateAfterDTerm))
+                piece, out ResolvedNormalWallState rightF3StateAfterResolve))
         {
-          rightF3StateAfterDTerm.Mirror = true;
-          resolvedNormalWallByPiece[piece] = rightF3StateAfterDTerm;
+          rightF3StateAfterResolve.Mirror = true;
+          resolvedNormalWallByPiece[piece] = rightF3StateAfterResolve;
         }
 
         piece.MirrorHorizontally = true;
@@ -5874,7 +5807,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // Verified RightF2 geometry mirror authority.
-    // Re-apply after DTerm so an older stored mirror value cannot overwrite
+    // Re-apply after geometry resolution so an older stored mirror value cannot overwrite
     // the normalized geometry result. Manual ViewEdit mirror overrides still
     // apply afterward for testing.
     if (IsVerifiedRightF2MirrorOnGeometry(g))
@@ -5886,10 +5819,10 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
 
         if (resolvedNormalWallByPiece.TryGetValue(
-                piece, out ResolvedNormalWallState rightF2StateAfterDTerm))
+                piece, out ResolvedNormalWallState rightF2StateAfterResolve))
         {
-          rightF2StateAfterDTerm.Mirror = true;
-          resolvedNormalWallByPiece[piece] = rightF2StateAfterDTerm;
+          rightF2StateAfterResolve.Mirror = true;
+          resolvedNormalWallByPiece[piece] = rightF2StateAfterResolve;
         }
 
         piece.MirrorHorizontally = true;
@@ -5897,8 +5830,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // Verified RightF1 geometry mirror authority.
-    // DTerm may contain an older mirror value, so re-apply the normalized
-    // geometry result after DTerm. Manual ViewEdit mirror overrides still
+    // Older stored geometry may contain an mirror value, so re-apply the normalized
+    // geometry result after geometry resolution. Manual ViewEdit mirror overrides still
     // apply afterward for testing.
     if (IsVerifiedRightF1MirrorOnGeometry(g))
     {
@@ -5909,18 +5842,18 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
 
         if (resolvedNormalWallByPiece.TryGetValue(
-                piece, out ResolvedNormalWallState rightF1StateAfterDTerm))
+                piece, out ResolvedNormalWallState rightF1StateAfterResolve))
         {
-          rightF1StateAfterDTerm.Mirror = true;
-          resolvedNormalWallByPiece[piece] = rightF1StateAfterDTerm;
+          rightF1StateAfterResolve.Mirror = true;
+          resolvedNormalWallByPiece[piece] = rightF1StateAfterResolve;
         }
 
         piece.MirrorHorizontally = true;
       }
     }
 
-    // DTerm may contain an older FrontF1 Mirror value. FrontF1 mirror is
-    // pose-parity driven, so restore the pose value after DTerm is applied.
+    // Older stored geometry may contain an FrontF1 Mirror value. FrontF1 mirror is
+    // pose-parity driven, so restore the pose value after geometry resolution is applied.
     // Temporary ViewEdit mirror overrides are applied afterward and still win.
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -5931,10 +5864,10 @@ public class ViewportLayoutEditor : EditorWindow
       bool poseMirror = GetFrontF1MirrorFromPose();
 
       if (resolvedNormalWallByPiece.TryGetValue(
-              piece, out ResolvedNormalWallState frontF1StateAfterDTerm))
+              piece, out ResolvedNormalWallState frontF1StateAfterResolve))
       {
-        frontF1StateAfterDTerm.Mirror = poseMirror;
-        resolvedNormalWallByPiece[piece] = frontF1StateAfterDTerm;
+        frontF1StateAfterResolve.Mirror = poseMirror;
+        resolvedNormalWallByPiece[piece] = frontF1StateAfterResolve;
       }
 
       piece.MirrorHorizontally = poseMirror;
@@ -5944,8 +5877,8 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Stationary-pose ViewEdit tests overlay geometry/DTerm in resolved state
-  /// only. They are never written to DTerm or ViewportLayout.asset.
+  /// Stationary-pose ViewEdit tests overlay geometry in resolved state
+  /// only. They are never written to ViewportLayout.asset.
   /// </summary>
   private void ApplyTemporaryNormalWallPreviewOverrides()
   {
@@ -7965,8 +7898,6 @@ public class ViewportLayoutEditor : EditorWindow
 
         // Side-wall dest is override else that piece's canonical Ref.
         // Mirror flips source pixels only; it never changes X/Y.
-        bool hasDTermRow = TryGetDTermEntryForPiece(
-            piece, out ViewportDTermEntry dtermRow);
         if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece)
             || IsWallF1LeftPiece(piece) || IsWallF1RightPiece(piece)
             || IsWallF2LeftPiece(piece) || IsWallF2RightPiece(piece)
@@ -7977,11 +7908,6 @@ public class ViewportLayoutEditor : EditorWindow
           {
             resolvedX = sideWallOverride.x;
             resolvedY = sideWallOverride.y;
-          }
-          else if (hasDTermRow)
-          {
-            resolvedX = dtermRow.X;
-            resolvedY = dtermRow.Y;
           }
           else if (TryGetCanonicalReferenceXY(
                        piece.Name, out int sideRefX, out int sideRefY)
@@ -7994,22 +7920,19 @@ public class ViewportLayoutEditor : EditorWindow
                 sideRefY, GetPieceHeightForEditorY(piece));
           }
 
-          if (!hasDTermRow
-              && !previewMirrorOverrideByPiece.ContainsKey(piece))
+          if (!previewMirrorOverrideByPiece.ContainsKey(piece))
             mirror = GetSideWallMirrorFromPose();
         }
 
         // FrontF1 uses the deterministic map-pose mirror unless ViewEdit has a
-        // temporary mirror override for this exact stationary X/Y/Facing,
-        // or a persisted DTerm row already supplied Mirror.
+        // temporary mirror override for this exact stationary X/Y/Facing.
         if (IsFrontWallF1Card(piece)
-            && !TryGetFrontF1PreviewMirrorOverride(piece, out _)
-            && !hasDTermRow)
+            && !TryGetFrontF1PreviewMirrorOverride(piece, out _))
         {
           mirror = GetFrontF1MirrorFromPose();
         }
 
-        // Temporary ViewEdit tests always win over DTerm / canonical / pose
+        // Temporary ViewEdit tests always win over canonical / pose
         // mirror for this stationary preview. Override Current Walls commits.
         if (previewEnabledOverrideByPiece.TryGetValue(
                 piece, out bool livePreviewEnabled)
@@ -8050,7 +7973,7 @@ public class ViewportLayoutEditor : EditorWindow
         }
 
         // Final canonical authority for the verified 1,5 North LeftF1 view.
-        // This is deliberately after DTerm/canonical/temporary resolution so
+        // This is deliberately after geometry resolution/canonical/temporary resolution so
         // no older stored or preview value can move the final blit.
         if (IsWallF1LeftPiece(piece)
             && previewX == 1
