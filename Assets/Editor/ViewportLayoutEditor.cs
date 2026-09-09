@@ -5435,7 +5435,7 @@ public class ViewportLayoutEditor : EditorWindow
         else if (leftD3ObliqueOpening || rightD3ObliqueOpening)
             frontF1Width = StraightF1WallLogic.CompositeWidth191;
         else if (leftF0 && rightF0)
-            frontF1Width = StraightF1WallLogic.CompositeWidth160;
+            frontF1Width = StraightF1WallLogic.CompositeWidth191;
         else if (leftF0 || rightF0)
             frontF1Width = StraightF1WallLogic.CompositeWidth191;
         else
