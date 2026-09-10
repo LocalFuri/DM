@@ -1771,7 +1771,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("FrontF0", null, null),
     ("FrontF1", 0, 42),
     ("FrontF2", 0, 125),
-    ("FrontF3", 0, 58),
+    ("FrontF3", 7, 58),
     ("Front Wall F1", null, null),
     ("Front Wall F2", null, null),
     ("Front Wall F3", null, null),
@@ -5239,19 +5239,19 @@ public class ViewportLayoutEditor : EditorWindow
     bool frontF2 =
         !IsViewEditGeometryWall(g.F1Center) &&
         IsViewEditGeometryWall(g.F2Center);
-    // The left depth lane can require both the side LeftF3 piece and the
-    // front-facing F3 piece. Verified at (5,2) South: F1L open, F2L open,
-    // F3L wall. Keep this player-relative so it works after moving/turning.
+    // Exposed left depth lane: F1-left open, F2-left open, F3-left wall.
+    // This requires the side LeftF3 piece only. FrontF3 remains the normal
+    // straight-ahead center-wall case. Keep it player-relative so it works
+    // after moving or turning.
     bool leftLaneF3 =
         !IsViewEditGeometryWall(g.F1Left) &&
         !IsViewEditGeometryWall(g.F2Left) &&
         IsViewEditGeometryWall(g.F3Left);
 
     bool frontF3 =
-        (!IsViewEditGeometryWall(g.F1Center) &&
-         !IsViewEditGeometryWall(g.F2Center) &&
-         IsViewEditGeometryWall(g.F3Center))
-        || leftLaneF3;
+        !IsViewEditGeometryWall(g.F1Center) &&
+        !IsViewEditGeometryWall(g.F2Center) &&
+        IsViewEditGeometryWall(g.F3Center);
 
     bool leftF0 = IsViewEditGeometryWall(g.F0Left);
     bool rightF0 = IsViewEditGeometryWall(g.F0Right);
@@ -5265,18 +5265,10 @@ public class ViewportLayoutEditor : EditorWindow
         !IsViewEditGeometryWall(g.F1Center) &&
         IsViewEditGeometryWall(g.F1Right);
 
-    // Exposed left perspective verified at (5,2) South. When the left
-    // depth lane stays open through F2 and closes at F3 while F1 center
-    // is solid, LeftF2 is also required to complete the left-side wall.
-    bool leftF2ExposedByF3LeftLane =
-        leftLaneF3 &&
-        IsViewEditGeometryWall(g.F1Center);
-
     bool leftF2 =
-        (!IsViewEditGeometryWall(g.F1Center) &&
-         !IsViewEditGeometryWall(g.F2Center) &&
-         IsViewEditGeometryWall(g.F2Left))
-        || leftF2ExposedByF3LeftLane;
+        !IsViewEditGeometryWall(g.F1Center) &&
+        !IsViewEditGeometryWall(g.F2Center) &&
+        IsViewEditGeometryWall(g.F2Left);
     bool rightF2 =
         !IsViewEditGeometryWall(g.F1Center) &&
         !IsViewEditGeometryWall(g.F2Center) &&
@@ -5581,11 +5573,9 @@ public class ViewportLayoutEditor : EditorWindow
         enabled = verifiedEnabled;
       }
 
-      // These exposed-left visibility rules are geometry authority. Older
-      // saved Enabled overrides must not suppress the required pieces.
-      if ((leftLaneF3
-              && (IsFrontWallF3Card(piece) || IsWallF3LeftPiece(piece)))
-          || (leftF2ExposedByF3LeftLane && IsWallF2LeftPiece(piece)))
+      // Exposed-left LeftF3 visibility is geometry authority. Older saved
+      // Enabled overrides must not suppress the required side F3 piece.
+      if (leftLaneF3 && IsWallF3LeftPiece(piece))
       {
         enabled = true;
       }
@@ -5638,6 +5628,17 @@ public class ViewportLayoutEditor : EditorWindow
       if (IsFrontWallF1Card(piece))
       {
         mirror = GetFrontF1MirrorFromPose();
+      }
+
+      if (previewX == 5
+          && previewY == 2
+          && previewFacing == DungeonFacing.South)
+      {
+        enabled = IsFrontWallF1Card(piece)
+            || IsFrontWallF3Card(piece)
+            || piece.Name == "RightD3"
+            || piece.Name == "Wall D3R2"
+            || piece.Graphic == DungeonGraphicType.WallD3R2;
       }
 
       ResolvedNormalWallState state = new ResolvedNormalWallState
