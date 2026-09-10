@@ -1806,12 +1806,12 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Black Door
     ("BlackDoorF1", 63, 47),
-    ("BlackDoorF2", null, null),
+    ("BlackDoorF2", 77, 46),
     ("BlackDoorF3", 90, 101),
     ("Black Door Frame Left F1", 44, 46),
     ("Black Door Frame Left F2", 64, 54),
     ("Black Door Frame Left F3", 81, 102),
-    ("Black Door Frame Right F1", null, null),
+    ("Black Door Frame Right F1", 154, 46),
     ("Black Door Frame Right F2", null, null),
     ("Black Door Frame Right F3", 134, 102),
   };
