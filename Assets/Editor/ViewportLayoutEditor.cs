@@ -5239,10 +5239,19 @@ public class ViewportLayoutEditor : EditorWindow
     bool frontF2 =
         !IsViewEditGeometryWall(g.F1Center) &&
         IsViewEditGeometryWall(g.F2Center);
+    // The left depth lane can require both the side LeftF3 piece and the
+    // front-facing F3 piece. Verified at (5,2) South: F1L open, F2L open,
+    // F3L wall. Keep this player-relative so it works after moving/turning.
+    bool leftLaneF3 =
+        !IsViewEditGeometryWall(g.F1Left) &&
+        !IsViewEditGeometryWall(g.F2Left) &&
+        IsViewEditGeometryWall(g.F3Left);
+
     bool frontF3 =
-        !IsViewEditGeometryWall(g.F1Center) &&
-        !IsViewEditGeometryWall(g.F2Center) &&
-        IsViewEditGeometryWall(g.F3Center);
+        (!IsViewEditGeometryWall(g.F1Center) &&
+         !IsViewEditGeometryWall(g.F2Center) &&
+         IsViewEditGeometryWall(g.F3Center))
+        || leftLaneF3;
 
     bool leftF0 = IsViewEditGeometryWall(g.F0Left);
     bool rightF0 = IsViewEditGeometryWall(g.F0Right);
@@ -5256,22 +5265,24 @@ public class ViewportLayoutEditor : EditorWindow
         !IsViewEditGeometryWall(g.F1Center) &&
         IsViewEditGeometryWall(g.F1Right);
 
+    // Exposed left perspective verified at (5,2) South. When the left
+    // depth lane stays open through F2 and closes at F3 while F1 center
+    // is solid, LeftF2 is also required to complete the left-side wall.
+    bool leftF2ExposedByF3LeftLane =
+        leftLaneF3 &&
+        IsViewEditGeometryWall(g.F1Center);
+
     bool leftF2 =
-        !IsViewEditGeometryWall(g.F1Center) &&
-        !IsViewEditGeometryWall(g.F2Center) &&
-        IsViewEditGeometryWall(g.F2Left);
+        (!IsViewEditGeometryWall(g.F1Center) &&
+         !IsViewEditGeometryWall(g.F2Center) &&
+         IsViewEditGeometryWall(g.F2Left))
+        || leftF2ExposedByF3LeftLane;
     bool rightF2 =
         !IsViewEditGeometryWall(g.F1Center) &&
         !IsViewEditGeometryWall(g.F2Center) &&
         IsViewEditGeometryWall(g.F2Right);
 
-    // LeftF3 is visible when the player's left depth lane stays open through
-    // F1 and F2 and closes with a wall at F3. This remains visible even when
-    // the center lane is blocked; (5,2) South is the verified example.
-    bool leftF3 =
-        !IsViewEditGeometryWall(g.F1Left) &&
-        !IsViewEditGeometryWall(g.F2Left) &&
-        IsViewEditGeometryWall(g.F3Left);
+    bool leftF3 = leftLaneF3;
     bool rightF3 =
         !IsViewEditGeometryWall(g.F1Center) &&
         !IsViewEditGeometryWall(g.F2Center) &&
@@ -5568,6 +5579,15 @@ public class ViewportLayoutEditor : EditorWindow
               out bool verifiedEnabled))
       {
         enabled = verifiedEnabled;
+      }
+
+      // These exposed-left visibility rules are geometry authority. Older
+      // saved Enabled overrides must not suppress the required pieces.
+      if ((leftLaneF3
+              && (IsFrontWallF3Card(piece) || IsWallF3LeftPiece(piece)))
+          || (leftF2ExposedByF3LeftLane && IsWallF2LeftPiece(piece)))
+      {
+        enabled = true;
       }
 
       // FrontF1 at a solid F0-left/F0-right view is now canonical recipe-owned.
