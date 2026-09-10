@@ -1801,7 +1801,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("Wall D3L2", null, null),
 
     // RightD3
-    ("RightD3", null, null),
+    ("RightD3", 190, 58),
     ("Wall D3R2", null, null),
 
     // Black Door
@@ -5580,6 +5580,19 @@ public class ViewportLayoutEditor : EditorWindow
         y = verifiedPosition.y;
       }
 
+      // RightD3 canonical position is authoritative over any older saved
+      // geometry-position override. Ref Y is top-down display space.
+      if ((piece.Name == "RightD3"
+              || piece.Name == "Wall D3R2"
+              || piece.Graphic == DungeonGraphicType.WallD3R2)
+          && TryGetActiveCanonicalReferenceXY(
+              piece, mirror, out int rightD3RefX, out int rightD3RefY))
+      {
+        x = rightD3RefX;
+        y = DisplayYToUnityY(
+            rightD3RefY, GetPieceHeightForEditorY(piece));
+      }
+
       // LeftD3 X is geometry-driven from the outer-left active/black map tile and
       // stays authoritative even if an older saved position disagrees.
       if ((piece.Name == "LeftD3"
@@ -8465,8 +8478,12 @@ public class ViewportLayoutEditor : EditorWindow
             Texture2D f2Source = GetBlackDoorF2SourceTexture();
             if (f2Source != null)
             {
-              int f2DoorX = piece.ResolvedBlackDoorF2X;
-              int f2DoorY = piece.ResolvedBlackDoorF2Y;
+              int f2DoorX = doorF2 != null
+                  ? doorF2.X
+                  : piece.ResolvedBlackDoorF2X;
+              int f2DoorY = doorF2 != null
+                  ? doorF2.Y
+                  : piece.ResolvedBlackDoorF2Y;
               bool f2DoorMirror = doorF2 != null
                   ? doorF2.MirrorHorizontally
                   : blackDoorF2CardMirror;
