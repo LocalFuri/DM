@@ -2107,8 +2107,26 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       EditorGUIUtility.labelWidth = 0f;
-      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
-          GUIContent.none, piece.Graphic, GUILayout.Width(135f));
+      if (IsFrontWallF1Card(piece))
+      {
+        // FrontF1 has exactly one valid graphic. Do not expose the full
+        // DungeonGraphicType enum (doors, ornaments, obsolete F1_A/F1_B, etc.).
+        if (piece.Graphic != DungeonGraphicType.FrontWallF1)
+        {
+          piece.Graphic = DungeonGraphicType.FrontWallF1;
+          GUI.changed = true;
+        }
+
+        EditorGUILayout.Popup(
+            0,
+            new[] { "Front Wall F1" },
+            GUILayout.Width(135f));
+      }
+      else
+      {
+        piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
+            GUIContent.none, piece.Graphic, GUILayout.Width(135f));
+      }
 
       // Front pieces use two compact rows:
       // row 1 = name + Graphic + Enabled + Mirror
@@ -8140,15 +8158,36 @@ public class ViewportLayoutEditor : EditorWindow
               f1DestX = 0;
             }
 
-            StraightF1WallLogic.BlitCompositeToBuffer(
-                f1Texture,
-                pixels,
-                PreviewWidth,
-                PreviewHeight,
-                f1DestX,
-                resolvedY,
-                mirror,
-                width);
+            if (mirror && width < StraightF1WallLogic.CompositeWidth)
+            {
+              // A narrow mirrored FrontF1 must reflect the same columns it
+              // would draw unmirrored. Mirroring the full composite first and
+              // then copying keeps the selected window; passing the narrow
+              // width straight to the composite blit would instead sample the
+              // opposite end of the 224px source.
+              int mirroredSourceStartX =
+                  StraightF1WallLogic.CompositeWidth - width;
+
+              BlitFrontF1MirroredImageFromX(
+                  pixels,
+                  f1Texture,
+                  mirroredSourceStartX,
+                  f1DestX,
+                  resolvedY,
+                  width);
+            }
+            else
+            {
+              StraightF1WallLogic.BlitCompositeToBuffer(
+                  f1Texture,
+                  pixels,
+                  PreviewWidth,
+                  PreviewHeight,
+                  f1DestX,
+                  resolvedY,
+                  mirror,
+                  width);
+            }
 
             LogIfOverlapsLeftF0(
                 piece,
