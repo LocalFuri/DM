@@ -5244,17 +5244,6 @@ public class ViewportLayoutEditor : EditorWindow
         !IsViewEditGeometryWall(g.F2Center) &&
         IsViewEditGeometryWall(g.F3Center);
 
-    // Left-lane FrontF3: follow the three visible depth cells from the
-    // player's point of view. If the left lane is open at F1 and F2 and
-    // closes with a wall at F3, that wall is front-facing and uses FrontF3.
-    // This is relative geometry only; no absolute map pose is involved.
-    bool frontF3LeftLane =
-        !IsViewEditGeometryWall(g.F1Left)
-        && !IsViewEditGeometryWall(g.F2Left)
-        && IsViewEditGeometryWall(g.F3Left);
-
-    frontF3 = frontF3 || frontF3LeftLane;
-
     bool leftF0 = IsViewEditGeometryWall(g.F0Left);
     bool rightF0 = IsViewEditGeometryWall(g.F0Right);
     bool f0Mirror = GetF0MirrorFromPose();
@@ -5276,10 +5265,12 @@ public class ViewportLayoutEditor : EditorWindow
         !IsViewEditGeometryWall(g.F2Center) &&
         IsViewEditGeometryWall(g.F2Right);
 
+    // LeftF3 is visible when the player's left depth lane stays open through
+    // F1 and F2 and closes with a wall at F3. This remains visible even when
+    // the center lane is blocked; (5,2) South is the verified example.
     bool leftF3 =
-        !IsViewEditGeometryWall(g.F1Center) &&
-        !IsViewEditGeometryWall(g.F2Center) &&
-        !IsViewEditGeometryWall(g.F3Center) &&
+        !IsViewEditGeometryWall(g.F1Left) &&
+        !IsViewEditGeometryWall(g.F2Left) &&
         IsViewEditGeometryWall(g.F3Left);
     bool rightF3 =
         !IsViewEditGeometryWall(g.F1Center) &&
