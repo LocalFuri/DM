@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using DM.Dungeon;
@@ -136,7 +136,6 @@ public class ViewportLayoutEditor : EditorWindow
   private int blackDoorF3CardX;
   private int blackDoorF3CardY;
 
-  private bool blackDoorFrameLeftF3CardInitialized;
   private bool blackDoorFrameLeftF3EnabledInitialized;
   private bool blackDoorFrameRightF3EnabledInitialized;
   private bool blackDoorFrameLeftF3CardEnabled;
@@ -144,9 +143,7 @@ public class ViewportLayoutEditor : EditorWindow
   private int blackDoorFrameLeftF3CardX;
   private int blackDoorFrameLeftF3CardY;
 
-  private bool blackDoorFrameRightF3CardInitialized;
   private bool blackDoorFrameRightF3CardEnabled;
-  private bool blackDoorFrameRightF3CardMirror;
   private int blackDoorFrameRightF3CardX;
   private int blackDoorFrameRightF3CardY;
 
@@ -279,9 +276,6 @@ public class ViewportLayoutEditor : EditorWindow
     public int FrontF1Width;
     public int FrontF2Width;
   }
-
-  // TEMP F3 diagnostics — remove after verification.
-  private static string lastLoggedFrontWallF3EditDrawKey;
 
   private static string lastLoggedF0DrawDiagnosticKey;
 
@@ -1139,7 +1133,7 @@ public class ViewportLayoutEditor : EditorWindow
       return f1CenterWall;
 
     if (IsFrontWallF2Card(piece))
-      return !f1CenterWall && f2CenterWall;
+      return false;
 
     if (IsFrontWallF3Card(piece))
     {
@@ -3599,9 +3593,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     Object.DestroyImmediate(editModePreviewTexture);
     editModePreviewTexture = null;
-
-    // Allow F3 diagnostics to re-emit after a forced preview rebuild.
-    lastLoggedFrontWallF3EditDrawKey = null;
   }
 
   private void RestoreSessionPrefs()
@@ -5272,9 +5263,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     bool frontF1 =
         IsViewEditGeometryWall(g.F1Center);
-    bool frontF2 =
-        !IsViewEditGeometryWall(g.F1Center) &&
-        IsViewEditGeometryWall(g.F2Center);
     // Exposed left depth lane: F1-left open, F2-left open, F3-left wall.
     // This requires the side LeftF3 piece only. FrontF3 remains the normal
     // straight-ahead center-wall case. Keep it player-relative so it works
@@ -5401,7 +5389,8 @@ public class ViewportLayoutEditor : EditorWindow
       }
       else if (IsFrontWallF2Card(piece))
       {
-        enabled = frontF2;
+        // FrontF2 Enabled is owned by ViewEdit / saved pose visibility only.
+        enabled = piece.Enabled;
         x = 0;
         y = DisplayYToUnityY(125, GetPieceHeightForEditorY(piece));
         mirror = frontMirror;
@@ -5602,7 +5591,8 @@ public class ViewportLayoutEditor : EditorWindow
       string normalWallGeometryKey =
           BuildNormalWallEnabledGeometryKey(g, piece);
 
-      if (normalWallEnabledGeometryOverrides.TryGetValue(
+      if (!IsFrontWallF2Card(piece)
+          && normalWallEnabledGeometryOverrides.TryGetValue(
               normalWallGeometryKey,
               out bool verifiedEnabled))
       {
@@ -5676,7 +5666,9 @@ public class ViewportLayoutEditor : EditorWindow
       // Test ViewEdit visibility for (5,2) South. Keep only FrontF1,
       // FrontF3, LeftF2 and RightD3; all other normal wall/D3 pieces are
       // disabled for this pose. Visibility only.
-      if (previewX == 5
+      // FrontF2 Enabled is not owned here; leave the ViewEdit / saved value.
+      if (!IsFrontWallF2Card(piece)
+          && previewX == 5
           && previewY == 2
           && previewFacing == DungeonFacing.South)
       {
@@ -5700,7 +5692,8 @@ public class ViewportLayoutEditor : EditorWindow
       };
 
       resolvedNormalWallByPiece[piece] = state;
-      piece.Enabled = state.Enabled;
+      if (!IsFrontWallF2Card(piece))
+        piece.Enabled = state.Enabled;
       piece.MirrorHorizontally = state.Mirror;
       piece.PoseOffsetX = 0;
       piece.PoseOffsetY = 0;
@@ -6042,7 +6035,6 @@ public class ViewportLayoutEditor : EditorWindow
     bool rightF1  = IsViewEditGeometryWall(g.F1Right);
 
     bool leftF2   = IsViewEditGeometryWall(g.F2Left);
-    bool frontF2  = IsViewEditGeometryWall(g.F2Center);
     bool rightF2  = IsViewEditGeometryWall(g.F2Right);
 
     bool leftF3   = IsViewEditGeometryWall(g.F3Left);
@@ -6070,7 +6062,7 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsWallF2LeftPiece(piece))
         enabled = leftF2;
       else if (IsFrontWallF2Card(piece))
-        enabled = frontF2;
+        enabled = piece.Enabled;
       else if (IsWallF2RightPiece(piece))
         enabled = rightF2;
       else if (IsWallF3LeftPiece(piece))
@@ -6085,7 +6077,8 @@ public class ViewportLayoutEditor : EditorWindow
         enabled = false;
       }
 
-      piece.Enabled = enabled;
+      if (!IsFrontWallF2Card(piece))
+        piece.Enabled = enabled;
       piece.PoseOffsetX = 0;
       piece.PoseOffsetY = 0;
 
@@ -7003,9 +6996,7 @@ public class ViewportLayoutEditor : EditorWindow
         blackDoorF2CardInitialized = true;
       }
       blackDoorFrameLeftF3CardEnabled = false;
-      blackDoorFrameLeftF3CardInitialized = true;
       blackDoorFrameRightF3CardEnabled = false;
-      blackDoorFrameRightF3CardInitialized = true;
 
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
@@ -7039,9 +7030,7 @@ public class ViewportLayoutEditor : EditorWindow
       blackDoorF3CardEnabled = false;
       blackDoorF3CardInitialized = true;
       blackDoorFrameLeftF3CardEnabled = false;
-      blackDoorFrameLeftF3CardInitialized = true;
       blackDoorFrameRightF3CardEnabled = false;
-      blackDoorFrameRightF3CardInitialized = true;
 
       // Verified Black Door F1 layout for the 1,3 North front-door view.
       // Display coordinates:
@@ -7108,10 +7097,7 @@ public class ViewportLayoutEditor : EditorWindow
     blackDoorF3CardEnabled = true;
     blackDoorF3CardInitialized = true;
     blackDoorFrameLeftF3CardEnabled = true;
-    blackDoorFrameLeftF3CardInitialized = true;
     blackDoorFrameRightF3CardEnabled = true;
-    blackDoorFrameRightF3CardInitialized = true;
-    blackDoorFrameRightF3CardMirror = true;
 
     // Initialize the visible Left F3 frame layout card once. After this,
     // its Enabled checkbox is authoritative and pose refreshes preserve it.
@@ -8878,6 +8864,12 @@ public class ViewportLayoutEditor : EditorWindow
       ViewportPiece piece = layout.Pieces[i];
       if (!IsWallRenderingPiece(piece))
         continue;
+      if (IsFrontWallF2Card(piece))
+      {
+        piece.PoseOffsetX = 0;
+        piece.PoseOffsetY = 0;
+        continue;
+      }
       if (piece.Name == "BlackDoorF1"
           || piece.Name == "BlackDoorF2"
           || piece.Name == "BlackDoorF3"
