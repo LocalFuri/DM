@@ -261,10 +261,14 @@ public class ViewportLayoutEditor : EditorWindow
   // an automatically active exception without fighting the exception rule.
   private readonly Dictionary<ViewportPiece, bool> previewEnabledOverrideByPiece =
       new Dictionary<ViewportPiece, bool>();
+  private readonly Dictionary<ViewportPiece, DungeonGraphicType>
+      previewGraphicOverrideByPiece =
+          new Dictionary<ViewportPiece, DungeonGraphicType>();
   private bool previewMirrorChangedThisFrame;
   private bool previewFrontF1WidthChangedThisFrame;
   private bool previewPositionChangedThisFrame;
   private bool previewEnabledChangedThisFrame;
+  private bool previewGraphicChangedThisFrame;
 
   private struct ResolvedNormalWallState
   {
@@ -595,6 +599,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewPositionOverrideByPiece.Clear();
     previewMirrorOverrideByPiece.Clear();
     previewFrontF1WidthOverrideByPiece.Clear();
+    previewGraphicOverrideByPiece.Clear();
 
     // Keep the visually verified Black Door F1 layout authoritative.
     // These are the accepted working reference values for 1,3 North.
@@ -845,12 +850,14 @@ public class ViewportLayoutEditor : EditorWindow
           && !previewMirrorChangedThisFrame
           && !previewFrontF1WidthChangedThisFrame
           && !previewPositionChangedThisFrame
-          && !previewEnabledChangedThisFrame)
+          && !previewEnabledChangedThisFrame
+          && !previewGraphicChangedThisFrame)
         PersistChanges();
       previewMirrorChangedThisFrame = false;
       previewFrontF1WidthChangedThisFrame = false;
       previewPositionChangedThisFrame = false;
       previewEnabledChangedThisFrame = false;
+      previewGraphicChangedThisFrame = false;
     }
 
     EditorGUILayout.EndScrollView();
@@ -2023,6 +2030,11 @@ public class ViewportLayoutEditor : EditorWindow
     SetCanonicalReferenceXY(piece.Name, x, y);
   }
 
+  private bool IsShowAllWallsPreview()
+  {
+    return !Application.isPlaying && !showOnlyWallsNeededForCurrentPose;
+  }
+
   private void DrawPieceCard(
       int index,
       ViewportPiece piece,
@@ -2035,6 +2047,14 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.BeginVertical(EditorStyles.helpBox);
     GUI.backgroundColor = previousBg;
+
+    DungeonGraphicType graphicBeforePopup = piece.Graphic;
+    if (previewGraphicOverrideByPiece.TryGetValue(
+            piece, out DungeonGraphicType graphicOverride))
+    {
+      graphicBeforePopup = graphicOverride;
+      piece.Graphic = graphicOverride;
+    }
 
     bool compactFrontWallHeader =
         IsFrontWallF1Card(piece)
@@ -2257,8 +2277,9 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // (5,2) South only forces pieces outside the allowed set OFF.
-    // Allowed pieces remain manually toggleable in ViewEdit.
-    if (TryGet52SouthForcedWallEnabled(piece, out bool forced52UiEnabled)
+    // Show All Walls keeps the ViewEdit Enabled checkbox as the preview authority.
+    if (!IsShowAllWallsPreview()
+        && TryGet52SouthForcedWallEnabled(piece, out bool forced52UiEnabled)
         && !forced52UiEnabled)
       enabledBefore = false;
 
@@ -2274,7 +2295,8 @@ public class ViewportLayoutEditor : EditorWindow
         && enabledAfter != enabledBefore)
     {
       bool is52SouthForcedOff =
-          TryGet52SouthForcedWallEnabled(piece, out bool forced52UiChangeEnabled)
+          !IsShowAllWallsPreview()
+          && TryGet52SouthForcedWallEnabled(piece, out bool forced52UiChangeEnabled)
           && !forced52UiChangeEnabled;
       if (!is52SouthForcedOff)
       {
@@ -2358,6 +2380,13 @@ public class ViewportLayoutEditor : EditorWindow
     {
       SelectPiece(index);
       changed = true;
+    }
+
+    if (piece.Graphic != graphicBeforePopup)
+    {
+      previewGraphicOverrideByPiece[piece] = piece.Graphic;
+      previewGraphicChangedThisFrame = true;
+      RefreshTemporaryNormalWallPreview();
     }
 
     if (piece.Name == "BlackDoorF1")
@@ -2479,7 +2508,8 @@ public class ViewportLayoutEditor : EditorWindow
         "X",
         ref editX,
         snap,
-        hasCanonicalRef && editX != canonicalRefX);
+        hasCanonicalRef && editX != canonicalRefX,
+        IsShowAllWallsPreview());
     if (xChanged && editX != xBefore)
     {
       SelectPiece(index);
@@ -2504,7 +2534,8 @@ public class ViewportLayoutEditor : EditorWindow
         ref editUnityY,
         pieceHeightForY,
         snap,
-        hasCanonicalRef && displayYForRef != canonicalRefY);
+        hasCanonicalRef && displayYForRef != canonicalRefY,
+        IsShowAllWallsPreview());
     if (yChanged && editUnityY != yBefore)
     {
       SelectPiece(index);
@@ -4273,6 +4304,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewFrontF1WidthOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
+    previewGraphicOverrideByPiece.Clear();
 
     previewX = newX;
     previewY = newY;
@@ -4321,6 +4353,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewFrontF1WidthOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
+    previewGraphicOverrideByPiece.Clear();
 
     previewX = newX;
     previewY = newY;
@@ -5992,6 +6025,8 @@ public class ViewportLayoutEditor : EditorWindow
           piece, out Vector2Int previewPosition);
       bool hasMirrorOverride = previewMirrorOverrideByPiece.TryGetValue(
           piece, out bool previewMirror);
+      bool hasGraphicOverride = previewGraphicOverrideByPiece.TryGetValue(
+          piece, out DungeonGraphicType previewGraphic);
       bool hasWidthOverride = false;
       int previewWidth = 0;
       if (IsFrontWallF1Card(piece)
@@ -6004,7 +6039,8 @@ public class ViewportLayoutEditor : EditorWindow
       if (!hasEnabledOverride
           && !hasPositionOverride
           && !hasMirrorOverride
-          && !hasWidthOverride)
+          && !hasWidthOverride
+          && !hasGraphicOverride)
       {
         continue;
       }
@@ -6026,6 +6062,8 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (hasEnabledOverride)
         state.Enabled = previewEnabled;
+      if (hasGraphicOverride)
+        state.Graphic = previewGraphic;
       if (hasPositionOverride)
       {
         state.X = previewPosition.x;
@@ -7836,6 +7874,7 @@ public class ViewportLayoutEditor : EditorWindow
             && previewX == 5
             && previewY == 2
             && previewFacing == DungeonFacing.South
+            && !IsShowAllWallsPreview()
             && IsNormalWallPiece(piece)
             && TryGet52SouthForcedWallEnabled(piece, out bool forced52EarlyEnabled)
             && !forced52EarlyEnabled)
@@ -7974,7 +8013,8 @@ public class ViewportLayoutEditor : EditorWindow
 
           // For (5,2) South, only disallowed pieces are forced OFF.
           // Allowed pieces keep their ViewEdit Enabled override.
-          if (TryGet52SouthForcedWallEnabled(piece, out bool forced52DrawEnabled)
+          if (!IsShowAllWallsPreview()
+              && TryGet52SouthForcedWallEnabled(piece, out bool forced52DrawEnabled)
               && !forced52DrawEnabled)
             resolvedEnabled = false;
 
@@ -7988,6 +8028,9 @@ public class ViewportLayoutEditor : EditorWindow
           if (previewMirrorOverrideByPiece.TryGetValue(piece, out bool previewMirror))
             mirror = previewMirror;
           drawGraphic = resolvedWall.Graphic;
+          if (previewGraphicOverrideByPiece.TryGetValue(
+                  piece, out DungeonGraphicType previewGraphic))
+            drawGraphic = previewGraphic;
           if (isLeftF0Diag)
             Debug.Log("LEFTF0 DIAG | drawGraphic=" + drawGraphic);
           if (!IsWallF0LeftPiece(piece) && !IsWallF0RightPiece(piece)
@@ -8956,6 +8999,12 @@ public class ViewportLayoutEditor : EditorWindow
     // pieces remain off.
     if (IsWallRenderingPiece(piece))
     {
+      if (previewEnabledOverrideByPiece.TryGetValue(
+              piece, out bool previewEnabled))
+      {
+        return previewEnabled;
+      }
+
       return piece.Enabled
           && TryGetResolvedNormalWallState(
               piece,
@@ -9486,7 +9535,8 @@ public class ViewportLayoutEditor : EditorWindow
   private static int DrawDelayedIntFieldMaybeRed(
       string label,
       int value,
-      bool valueDiffersFromRef)
+      bool valueDiffersFromRef,
+      bool immediate = false)
   {
     Color previousGuiColor = GUI.color;
     Color previousContentColor = GUI.contentColor;
@@ -9502,8 +9552,10 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     EditorGUILayout.LabelField(label, GUILayout.Width(12f));
-    int result = EditorGUILayout.DelayedIntField(
-        value, fieldStyle, GUILayout.Width(36f));
+    int result = immediate
+        ? EditorGUILayout.IntField(value, fieldStyle, GUILayout.Width(36f))
+        : EditorGUILayout.DelayedIntField(
+            value, fieldStyle, GUILayout.Width(36f));
     GUI.color = previousGuiColor;
     GUI.contentColor = previousContentColor;
     return result;
@@ -9513,11 +9565,12 @@ public class ViewportLayoutEditor : EditorWindow
       string label,
       ref int value,
       int step,
-      bool valueDiffersFromRef = false)
+      bool valueDiffersFromRef = false,
+      bool immediate = false)
   {
     EditorGUI.BeginChangeCheck();
     value = DrawDelayedIntFieldMaybeRed(
-        label, value, valueDiffersFromRef);
+        label, value, valueDiffersFromRef, immediate);
 
     bool changed = EditorGUI.EndChangeCheck();
 
@@ -9540,14 +9593,15 @@ public class ViewportLayoutEditor : EditorWindow
       ref int unityY,
       int pieceHeight,
       int step,
-      bool valueDiffersFromRef = false)
+      bool valueDiffersFromRef = false,
+      bool immediate = false)
   {
     int oldUnityY = unityY;
     int displayY = UnityYToDisplayY(unityY, pieceHeight);
 
     EditorGUI.BeginChangeCheck();
     displayY = DrawDelayedIntFieldMaybeRed(
-        "Y", displayY, valueDiffersFromRef);
+        "Y", displayY, valueDiffersFromRef, immediate);
 
     if (GUILayout.Button($"-{step}", GUILayout.Width(36f)))
       displayY -= step;
