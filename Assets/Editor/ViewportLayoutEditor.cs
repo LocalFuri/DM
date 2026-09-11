@@ -1667,6 +1667,17 @@ public class ViewportLayoutEditor : EditorWindow
   {
     ViewportPiece pieceA = layout.Pieces[indexA];
     ViewportPiece pieceB = layout.Pieces[indexB];
+    if (previewX == 5
+        && previewY == 2
+        && previewFacing == DungeonFacing.South)
+    {
+      int orderA = Get52SouthLeftToRightOrder(pieceA);
+      int orderB = Get52SouthLeftToRightOrder(pieceB);
+      if (orderA != orderB)
+        return orderA.CompareTo(orderB);
+      return indexA.CompareTo(indexB);
+    }
+
     int groupA = GetViewEditDisplayFamilyGroup(pieceA);
     int groupB = GetViewEditDisplayFamilyGroup(pieceB);
     if (groupA != groupB)
@@ -2040,13 +2051,16 @@ public class ViewportLayoutEditor : EditorWindow
         || piece.Name == "Black Door Frame Right F2"
         || piece.Name == "Black Door Frame Left F3"
         || piece.Name == "Black Door Frame Right F3";
-    bool compactD3Header =
+    bool isLeftD3Card =
         piece.Name == "LeftD3"
         || piece.Name == "Wall D3L2"
-        || piece.Name == "RightD3"
-        || piece.Name == "Wall D3R2"
-        || piece.Graphic == DungeonGraphicType.WallD3L2
-        || piece.Graphic == DungeonGraphicType.WallD3R2;
+        || piece.Name == "WallD3L2";
+    bool compactD3Header =
+        !isLeftD3Card
+        && (piece.Name == "RightD3"
+            || piece.Name == "Wall D3R2"
+            || piece.Graphic == DungeonGraphicType.WallD3L2
+            || piece.Graphic == DungeonGraphicType.WallD3R2);
     bool compactSideWallHeader =
         IsWallF0LeftPiece(piece)
         || IsWallF0RightPiece(piece)
@@ -2055,7 +2069,8 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF2LeftPiece(piece)
         || IsWallF2RightPiece(piece)
         || IsWallF3LeftPiece(piece)
-        || IsWallF3RightPiece(piece);
+        || IsWallF3RightPiece(piece)
+        || isLeftD3Card;
     bool hideNameForWall = IsWallEditorPiece(piece);
 
     if (!compactFrontWallHeader
@@ -4694,6 +4709,40 @@ public class ViewportLayoutEditor : EditorWindow
         || piece.Name == "Front Wall F3";
   }
 
+  private static bool Is52SouthLeftD3Piece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    return piece.Name == "LeftD3"
+        || piece.Name == "Wall D3L2"
+        || piece.Name == "WallD3L2"
+        || piece.Graphic == DungeonGraphicType.WallD3L2;
+  }
+
+  /// <summary>
+  /// (5,2) South left-to-right blit / ViewEdit list order:
+  /// LeftD3, FrontF3, FrontF1, RightD3.
+  /// </summary>
+  private static int Get52SouthLeftToRightOrder(ViewportPiece piece)
+  {
+    if (Is52SouthLeftD3Piece(piece))
+      return 0;
+    if (IsFrontWallF3Card(piece))
+      return 1;
+    if (IsFrontWallF1Card(piece))
+      return 2;
+    if (piece != null
+        && (piece.Name == "RightD3"
+            || piece.Name == "Wall D3R2"
+            || piece.Graphic == DungeonGraphicType.WallD3R2))
+    {
+      return 3;
+    }
+
+    return 4;
+  }
+
   private bool TryGet52SouthForcedWallEnabled(
       ViewportPiece piece,
       out bool enabled)
@@ -4709,8 +4758,9 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    enabled = IsFrontWallF1Card(piece)
+    enabled = Is52SouthLeftD3Piece(piece)
         || IsFrontWallF3Card(piece)
+        || IsFrontWallF1Card(piece)
         || piece.Name == "RightD3"
         || piece.Name == "Wall D3R2"
         || piece.Graphic == DungeonGraphicType.WallD3R2;
@@ -5662,17 +5712,16 @@ public class ViewportLayoutEditor : EditorWindow
         mirror = GetFrontF1MirrorFromPose();
       }
 
-      // Test ViewEdit visibility for (5,2) South. Keep only FrontF1,
-      // FrontF3 and RightD3; all other normal wall/D3 pieces are
-      // disabled for this pose. Visibility only.
-      // FrontF2 Enabled is not owned here; leave the ViewEdit / saved value.
-      if (!IsFrontWallF2Card(piece)
-          && previewX == 5
+      // Test ViewEdit visibility for (5,2) South. Keep only LeftD3,
+      // FrontF3, FrontF1 and RightD3. FrontF2 and all other normal walls
+      // are disabled for this pose. Visibility only.
+      if (previewX == 5
           && previewY == 2
           && previewFacing == DungeonFacing.South)
       {
-        enabled = IsFrontWallF1Card(piece)
+        enabled = Is52SouthLeftD3Piece(piece)
             || IsFrontWallF3Card(piece)
+            || IsFrontWallF1Card(piece)
             || piece.Name == "RightD3"
             || piece.Name == "Wall D3R2"
             || piece.Graphic == DungeonGraphicType.WallD3R2;
@@ -5690,7 +5739,10 @@ public class ViewportLayoutEditor : EditorWindow
       };
 
       resolvedNormalWallByPiece[piece] = state;
-      if (!IsFrontWallF2Card(piece))
+      if (!IsFrontWallF2Card(piece)
+          || (previewX == 5
+              && previewY == 2
+              && previewFacing == DungeonFacing.South))
         piece.Enabled = state.Enabled;
       piece.MirrorHorizontally = state.Mirror;
       piece.PoseOffsetX = 0;
@@ -7748,9 +7800,20 @@ public class ViewportLayoutEditor : EditorWindow
           orderedNormalWalls.Add(candidate);
       }
 
-      orderedNormalWalls.Sort(
-          (a, b) => GetNormalWallRenderDepth(b).CompareTo(
-              GetNormalWallRenderDepth(a)));
+      if (previewX == 5
+          && previewY == 2
+          && previewFacing == DungeonFacing.South)
+      {
+        orderedNormalWalls.Sort(
+            (a, b) => Get52SouthLeftToRightOrder(a).CompareTo(
+                Get52SouthLeftToRightOrder(b)));
+      }
+      else
+      {
+        orderedNormalWalls.Sort(
+            (a, b) => GetNormalWallRenderDepth(b).CompareTo(
+                GetNormalWallRenderDepth(a)));
+      }
 
       int nextNormalWall = 0;
       for (int i = 0; i < layout.Pieces.Count; i++)
