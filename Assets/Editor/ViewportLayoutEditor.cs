@@ -917,6 +917,15 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
     }
 
+    // Black Door cards are pose-area list items only. Show All Walls still
+    // hides them outside the existing Black Door views. Stored values and
+    // render logic are not changed.
+    if (IsBlackDoorEditorPiece(piece)
+        && !IsWallNeededForCurrentPose(piece))
+    {
+      return true;
+    }
+
     if (showOnlyWallsNeededForCurrentPose
         && (IsWallEditorPiece(piece) || IsBlackDoorEditorPiece(piece)))
     {
