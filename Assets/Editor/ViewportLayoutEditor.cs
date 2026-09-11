@@ -2247,6 +2247,12 @@ public class ViewportLayoutEditor : EditorWindow
       enabledBefore = manualPreviewEnabled;
     }
 
+    // (5,2) South only forces pieces outside the allowed set OFF.
+    // Allowed pieces remain manually toggleable in ViewEdit.
+    if (TryGet52SouthForcedWallEnabled(piece, out bool forced52UiEnabled)
+        && !forced52UiEnabled)
+      enabledBefore = false;
+
     bool enabledAfter = DrawMouseOnlyToggle(
         EnabledLabel,
         enabledBefore,
@@ -2258,11 +2264,17 @@ public class ViewportLayoutEditor : EditorWindow
     if ((normalWallEnabledPreview || isBlackDoorRightD3Exception)
         && enabledAfter != enabledBefore)
     {
-      // ViewEdit-only stationary-pose test, identical in lifetime to X/Y/Mirror.
-      // Geometry remains authoritative after X/Y/Facing changes.
-      previewEnabledOverrideByPiece[piece] = enabledAfter;
-      previewEnabledChangedThisFrame = true;
-      RefreshTemporaryNormalWallPreview();
+      bool is52SouthForcedOff =
+          TryGet52SouthForcedWallEnabled(piece, out bool forced52UiChangeEnabled)
+          && !forced52UiChangeEnabled;
+      if (!is52SouthForcedOff)
+      {
+        // ViewEdit-only stationary-pose test, identical in lifetime to X/Y/Mirror.
+        // Geometry remains authoritative after X/Y/Facing changes.
+        previewEnabledOverrideByPiece[piece] = enabledAfter;
+        previewEnabledChangedThisFrame = true;
+        RefreshTemporaryNormalWallPreview();
+      }
     }
     else if (!normalWallEnabledPreview && !isBlackDoorRightD3Exception)
     {
@@ -4691,6 +4703,30 @@ public class ViewportLayoutEditor : EditorWindow
         || piece.Name == "Front Wall F3";
   }
 
+  private bool TryGet52SouthForcedWallEnabled(
+      ViewportPiece piece,
+      out bool enabled)
+  {
+    enabled = false;
+
+    if (piece == null
+        || previewX != 5
+        || previewY != 2
+        || previewFacing != DungeonFacing.South
+        || !IsNormalWallPiece(piece))
+    {
+      return false;
+    }
+
+    enabled = IsFrontWallF1Card(piece)
+        || IsFrontWallF3Card(piece)
+        || IsWallF2LeftPiece(piece)
+        || piece.Name == "RightD3"
+        || piece.Name == "Wall D3R2"
+        || piece.Graphic == DungeonGraphicType.WallD3R2;
+    return true;
+  }
+
   private static bool IsPoseOffsetCard(ViewportPiece piece)
   {
     if (piece == null || piece.Name == null)
@@ -5592,6 +5628,13 @@ public class ViewportLayoutEditor : EditorWindow
         y = verifiedPosition.y;
       }
 
+      // FrontF3 canonical X is authoritative over any older saved
+      // geometry-position override. The verified wall starts at screen X=7.
+      if (IsFrontWallF3Card(piece))
+      {
+        x = 7;
+      }
+
       // RightD3 canonical position is authoritative over any older saved
       // geometry-position override. Ref Y is top-down display space.
       if ((piece.Name == "RightD3"
@@ -5630,12 +5673,16 @@ public class ViewportLayoutEditor : EditorWindow
         mirror = GetFrontF1MirrorFromPose();
       }
 
+      // Test ViewEdit visibility for (5,2) South. Keep only FrontF1,
+      // FrontF3, LeftF2 and RightD3; all other normal wall/D3 pieces are
+      // disabled for this pose. Visibility only.
       if (previewX == 5
           && previewY == 2
           && previewFacing == DungeonFacing.South)
       {
         enabled = IsFrontWallF1Card(piece)
             || IsFrontWallF3Card(piece)
+            || IsWallF2LeftPiece(piece)
             || piece.Name == "RightD3"
             || piece.Name == "Wall D3R2"
             || piece.Graphic == DungeonGraphicType.WallD3R2;
@@ -7735,6 +7782,20 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
+        // Final early draw gate for verified ViewEdit pose (5,2) South.
+        // Reject disabled normal-wall/D3 pieces before any special blit path
+        // (especially the FrontF2 224-reference blit) can run.
+        if (piece != null
+            && previewX == 5
+            && previewY == 2
+            && previewFacing == DungeonFacing.South
+            && IsNormalWallPiece(piece)
+            && TryGet52SouthForcedWallEnabled(piece, out bool forced52EarlyEnabled)
+            && !forced52EarlyEnabled)
+        {
+          continue;
+        }
+
         // (1,4) North is the Black Door F2 front view and (1,5) North is
         // the Black Door F3 front view. The normal FrontF3 wall must never
         // render behind/through either dedicated door view.
@@ -7864,6 +7925,12 @@ public class ViewportLayoutEditor : EditorWindow
             resolvedEnabled = frontF1EnabledOverride;
           }
 
+          // For (5,2) South, only disallowed pieces are forced OFF.
+          // Allowed pieces keep their ViewEdit Enabled override.
+          if (TryGet52SouthForcedWallEnabled(piece, out bool forced52DrawEnabled)
+              && !forced52DrawEnabled)
+            resolvedEnabled = false;
+
           if (!resolvedEnabled
               && !(isolateFrontF1At05South && IsFrontWallF3Card(piece)))
             continue;
@@ -7939,10 +8006,13 @@ public class ViewportLayoutEditor : EditorWindow
 
         // Temporary ViewEdit tests always win over canonical / pose
         // mirror for this stationary preview. Override Current Walls commits.
+        bool hasForced52LiveEnabled =
+            TryGet52SouthForcedWallEnabled(piece, out bool forced52LiveEnabled);
         if (previewEnabledOverrideByPiece.TryGetValue(
                 piece, out bool livePreviewEnabled)
             && IsNormalWallPiece(piece)
-            && !livePreviewEnabled)
+            && !livePreviewEnabled
+            && (!hasForced52LiveEnabled || forced52LiveEnabled))
         {
           continue;
         }
