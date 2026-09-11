@@ -132,7 +132,7 @@ MonoBehaviour:
     Graphic: 7
     X: 0
     Y: 73
-    Enabled: 1
+    Enabled: 0
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
@@ -264,7 +264,7 @@ MonoBehaviour:
     Graphic: 31
     X: 44
     Y: 60
-    Enabled: 1
+    Enabled: 0
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
@@ -286,7 +286,7 @@ MonoBehaviour:
     Graphic: 0
     X: 81
     Y: 97
-    Enabled: 1
+    Enabled: 0
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
@@ -297,7 +297,7 @@ MonoBehaviour:
     Graphic: 31
     X: 154
     Y: 60
-    Enabled: 1
+    Enabled: 0
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
@@ -319,7 +319,7 @@ MonoBehaviour:
     Graphic: 0
     X: 134
     Y: 97
-    Enabled: 1
+    Enabled: 0
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
@@ -330,7 +330,7 @@ MonoBehaviour:
     Graphic: 30
     X: 63
     Y: 65
-    Enabled: 1
+    Enabled: 0
     Deterministic: 0
     BlackDoorF2X: 78
     BlackDoorF2Y: 80
@@ -341,7 +341,7 @@ MonoBehaviour:
     Graphic: 30
     X: 57
     Y: 65
-    Enabled: 1
+    Enabled: 0
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
@@ -352,7 +352,7 @@ MonoBehaviour:
     Graphic: 0
     X: 90
     Y: 98
-    Enabled: 1
+    Enabled: 0
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
