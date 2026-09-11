@@ -4711,7 +4711,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     enabled = IsFrontWallF1Card(piece)
         || IsFrontWallF3Card(piece)
-        || IsWallF2LeftPiece(piece)
         || piece.Name == "RightD3"
         || piece.Name == "Wall D3R2"
         || piece.Graphic == DungeonGraphicType.WallD3R2;
@@ -5664,7 +5663,7 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       // Test ViewEdit visibility for (5,2) South. Keep only FrontF1,
-      // FrontF3, LeftF2 and RightD3; all other normal wall/D3 pieces are
+      // FrontF3 and RightD3; all other normal wall/D3 pieces are
       // disabled for this pose. Visibility only.
       // FrontF2 Enabled is not owned here; leave the ViewEdit / saved value.
       if (!IsFrontWallF2Card(piece)
@@ -5674,7 +5673,6 @@ public class ViewportLayoutEditor : EditorWindow
       {
         enabled = IsFrontWallF1Card(piece)
             || IsFrontWallF3Card(piece)
-            || IsWallF2LeftPiece(piece)
             || piece.Name == "RightD3"
             || piece.Name == "Wall D3R2"
             || piece.Graphic == DungeonGraphicType.WallD3R2;
