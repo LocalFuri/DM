@@ -401,6 +401,7 @@ public class ViewportLayoutEditor : EditorWindow
     showOnlyWallsNeededForCurrentPose = true;
     showWallsActivFilter = true;
     StripObsoleteFrontWallF1ABPieces();
+    EnsureLeft2SAndRight2SPieces();
     CaptureNormalWallBaselinesFromLayout();
     ApplyCurrentPoseVisibilityToLayout();
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
@@ -818,7 +819,10 @@ public class ViewportLayoutEditor : EditorWindow
       HandlePieceSearchKeyboard();
 
       if (layoutEditable)
+      {
         StripObsoleteFrontWallF1ABPieces();
+        EnsureLeft2SAndRight2SPieces();
+      }
 
       bool changed = false;
 
@@ -984,6 +988,8 @@ public class ViewportLayoutEditor : EditorWindow
     string name = piece.Name ?? string.Empty;
     return name == "LeftD3"
         || name == "RightD3"
+        || name == "Left2S"
+        || name == "Right2S"
         || name == "Wall D3L2"
         || name == "Wall D3R2"
         || name == "Black Door Frame Left F1"
@@ -1354,7 +1360,9 @@ public class ViewportLayoutEditor : EditorWindow
         || name.StartsWith("RightF", System.StringComparison.Ordinal)
         || name.StartsWith("Wall F", System.StringComparison.Ordinal)
         || name == "LeftD3"
-        || name == "RightD3";
+        || name == "RightD3"
+        || name == "Left2S"
+        || name == "Right2S";
   }
 
   /// <summary>
@@ -1715,7 +1723,8 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF2LeftPiece(piece)
         || IsWallF3LeftPiece(piece)
         || piece.Name == "LeftD3"
-        || piece.Name == "Wall D3L2")
+        || piece.Name == "Wall D3L2"
+        || piece.Name == "Left2S")
     {
       return 1;
     }
@@ -1725,7 +1734,8 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF2RightPiece(piece)
         || IsWallF3RightPiece(piece)
         || piece.Name == "RightD3"
-        || piece.Name == "Wall D3R2")
+        || piece.Name == "Wall D3R2"
+        || piece.Name == "Right2S")
     {
       return 2;
     }
@@ -1815,6 +1825,10 @@ public class ViewportLayoutEditor : EditorWindow
     // RightD3
     ("RightD3", 190, 58),
     ("Wall D3R2", null, null),
+
+    // 2S (ViewEdit list only; no geometry yet)
+    ("Left2S", null, null),
+    ("Right2S", null, null),
 
     // Black Door
     ("BlackDoorF1", 63, 47),
@@ -2090,7 +2104,9 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF2RightPiece(piece)
         || IsWallF3LeftPiece(piece)
         || IsWallF3RightPiece(piece)
-        || isLeftD3Card;
+        || isLeftD3Card
+        || piece.Name == "Left2S"
+        || piece.Name == "Right2S";
     bool hideNameForWall = IsWallEditorPiece(piece);
 
     if (!compactFrontWallHeader
@@ -2814,6 +2830,54 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
+  /// ViewEdit list entries only. Separate from LeftF2 / RightF2 / LeftD3 / RightD3.
+  /// No geometry or render rules yet.
+  /// </summary>
+  private void EnsureLeft2SAndRight2SPieces()
+  {
+    EnsureNamedWallListPiece("Left2S", "LeftF2");
+    EnsureNamedWallListPiece("Right2S", "RightF2");
+  }
+
+  private ViewportPiece EnsureNamedWallListPiece(
+      string name,
+      string insertAfterName)
+  {
+    ViewportPiece existing = FindLayoutPieceByName(name);
+    if (existing != null)
+      return existing;
+
+    if (layout == null || layout.Pieces == null)
+      return null;
+
+    int insertAt = layout.Pieces.Count;
+    if (!string.IsNullOrEmpty(insertAfterName))
+    {
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (piece != null && piece.Name == insertAfterName)
+        {
+          insertAt = i + 1;
+          break;
+        }
+      }
+    }
+
+    ViewportPiece created = new ViewportPiece
+    {
+      Name = name,
+      Graphic = DungeonGraphicType.None,
+      X = 0,
+      Y = 0,
+      Enabled = false,
+      MirrorHorizontally = false
+    };
+    layout.Pieces.Insert(insertAt, created);
+    return created;
+  }
+
+  /// <summary>
   /// Persistent Left F3 frame X/Y live on this layout piece, same as Left F2.
   /// Hidden from the piece list; nested card edits piece.X / piece.Y.
   /// </summary>
@@ -2992,6 +3056,10 @@ public class ViewportLayoutEditor : EditorWindow
       case "Wall D3L2":
       case "RightD3":
       case "Wall D3R2":
+        color = new Color32(0x9B, 0x6F, 0xD1, 0xFF);
+        return true;
+      case "Left2S":
+      case "Right2S":
         color = new Color32(0x9B, 0x6F, 0xD1, 0xFF);
         return true;
       case "BlackDoorF1":
