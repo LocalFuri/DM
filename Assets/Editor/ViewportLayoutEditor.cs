@@ -5440,14 +5440,16 @@ public class ViewportLayoutEditor : EditorWindow
 
     bool frontF1 =
         IsViewEditGeometryWall(g.F1Center);
-    // Exposed left depth lane: F1-left open, F2-left open, F3-left wall.
-    // This requires the side LeftF3 piece only. FrontF3 remains the normal
-    // straight-ahead center-wall case. Keep it player-relative so it works
-    // after moving or turning.
+    // Exposed left depth lane: F1/F2 centers open, F1-left open, F2-left open,
+    // F3-left wall. This requires the side LeftF3 piece only. FrontF3 remains
+    // the normal straight-ahead center-wall case. Keep it player-relative so
+    // it works after moving or turning.
     bool leftLaneF3 =
-        !IsViewEditGeometryWall(g.F1Left) &&
-        !IsViewEditGeometryWall(g.F2Left) &&
-        IsViewEditGeometryWall(g.F3Left);
+        !IsViewEditGeometryWall(g.F1Center)
+        && !IsViewEditGeometryWall(g.F2Center)
+        && !IsViewEditGeometryWall(g.F1Left)
+        && !IsViewEditGeometryWall(g.F2Left)
+        && IsViewEditGeometryWall(g.F3Left);
 
     bool frontF3 =
         !IsViewEditGeometryWall(g.F1Center) &&
@@ -5501,7 +5503,9 @@ public class ViewportLayoutEditor : EditorWindow
     // LeftD3 oblique-left opening is the independent mirror-side decision.
     // Verified at 2,17 North and 7,15 North; 16,17 North confirms that
     // LeftD3 and RightD3 can both be active at the same time.
-    bool leftD3ObliqueOpening = IsLeftD3ObliqueOpening(g);
+    bool leftD3ObliqueOpening =
+        IsLeftD3ObliqueOpening(g)
+        && !leftS2;
 
     // Minimap occupancy signature, not a map pose.
     bool frontMirror =
