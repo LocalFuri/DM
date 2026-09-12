@@ -1853,7 +1853,7 @@ public class ViewportLayoutEditor : EditorWindow
     // Black Door
     ("BlackDoorF1", 63, 47),
     ("BlackDoorF2", 79, 27),
-    ("BlackDoorF3", 90, 101),
+    ("BlackDoorF3", 88, 61),
     ("Black Door Frame Left F1", 44, 46),
     ("Black Door Frame Left F2", 64, 54),
     ("Black Door Frame Left F3", 81, 102),
@@ -2241,11 +2241,18 @@ public class ViewportLayoutEditor : EditorWindow
         && previewX == 1
         && previewY == 5
         && previewFacing == DungeonFacing.North;
+    bool isBlackDoorF3FrameRequired =
+        (piece.Name == "Black Door Frame Left F3"
+         || piece.Name == "Black Door Frame Right F3")
+        && previewX == 1
+        && previewY == 5
+        && previewFacing == DungeonFacing.North;
     bool wallRenderingPreview = IsWallRenderingPiece(piece);
     bool usePreviewEnabledOverride =
         normalWallEnabledPreview
         || isBlackDoorRightD3Exception
         || isBlackDoorF3Required
+        || isBlackDoorF3FrameRequired
         || (previewDisableAllWalls && wallRenderingPreview);
 
     bool enabledBefore = piece.Enabled;
@@ -2272,9 +2279,10 @@ public class ViewportLayoutEditor : EditorWindow
       enabledBefore = manualPreviewEnabled;
     }
 
-    // BlackDoorF3 is an exact exception door at (1,5) North. The code, not
-    // the stored layout Enabled flag, owns its preview visibility.
-    if (isBlackDoorF3Required)
+    // BlackDoorF3 and both F3 frame pieces are exact exception pieces at
+    // (1,5) North. The code, not the stored layout Enabled flag, owns their
+    // preview visibility.
+    if (isBlackDoorF3Required || isBlackDoorF3FrameRequired)
       enabledBefore = true;
 
     // (5,2) South only forces pieces outside the allowed set OFF.
@@ -2290,7 +2298,7 @@ public class ViewportLayoutEditor : EditorWindow
         enabledBefore,
         GUILayout.Width(enabledLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
-    if (isBlackDoorF3Required)
+    if (isBlackDoorF3Required || isBlackDoorF3FrameRequired)
       enabledAfter = true;
     bool nameOrEnabledChanged = EditorGUI.EndChangeCheck();
 
@@ -2487,6 +2495,14 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
 
     bool normalWallPositionPreview = IsNormalWallPiece(piece);
+    bool blackDoorF3PositionPreview =
+        piece.Name == "BlackDoorF3"
+        && previewX == 1
+        && previewY == 5
+        && previewFacing == DungeonFacing.North;
+    bool temporaryPositionPreview =
+        normalWallPositionPreview || blackDoorF3PositionPreview;
+
     int editX = piece.X;
     int editUnityY = piece.Y;
     if (normalWallPositionPreview
@@ -2495,7 +2511,20 @@ public class ViewportLayoutEditor : EditorWindow
       editX = xyState.X;
       editUnityY = xyState.Y;
     }
-    if (normalWallPositionPreview
+
+    // BlackDoorF3 is an exact exception at 1,5 North. Its default ViewEdit
+    // position is always the canonical Ref X/Y, without writing those values
+    // back into the layout asset. A manual ViewEdit X/Y override may still win.
+    if (blackDoorF3PositionPreview
+        && TryGetCanonicalReferenceXY("BlackDoorF3", out int f3RefX, out int f3RefY))
+    {
+      editX = f3RefX;
+      editUnityY = DisplayYToUnityY(
+          f3RefY,
+          GetPieceHeightForEditorY(piece));
+    }
+
+    if (temporaryPositionPreview
         && previewPositionOverrideByPiece.TryGetValue(piece, out Vector2Int previewPosition))
     {
       editX = previewPosition.x;
@@ -2516,7 +2545,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (xChanged && editX != xBefore)
     {
       SelectPiece(index);
-      if (normalWallPositionPreview)
+      if (temporaryPositionPreview)
       {
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
 
@@ -2542,7 +2571,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (yChanged && editUnityY != yBefore)
     {
       SelectPiece(index);
-      if (normalWallPositionPreview)
+      if (temporaryPositionPreview)
       {
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
         previewPositionChangedThisFrame = true;
@@ -8984,9 +9013,26 @@ public class ViewportLayoutEditor : EditorWindow
         {
           BlitBlackDoorF3FramesIntoPreview(pixels);
           ViewportPiece doorF3 = FindLayoutPieceByName("BlackDoorF3");
+          Texture2D f3Source = GetBlackDoorF3SourceTexture();
           int f3X = doorF3 != null ? doorF3.X : blackDoorF3CardX;
           int f3Y = doorF3 != null ? doorF3.Y : blackDoorF3CardY;
-          Texture2D f3Source = GetBlackDoorF3SourceTexture();
+
+          // Exact 1,5 North exception: start from canonical Ref X/Y.
+          // A live ViewEdit position override wins so the card remains editable.
+          if (f3Source != null
+              && TryGetCanonicalReferenceXY("BlackDoorF3", out int f3RefX, out int f3RefY))
+          {
+            f3X = f3RefX;
+            f3Y = DisplayYToUnityY(f3RefY, f3Source.height);
+          }
+          if (doorF3 != null
+              && previewPositionOverrideByPiece.TryGetValue(
+                  doorF3, out Vector2Int f3DoorOverride))
+          {
+            f3X = f3DoorOverride.x;
+            f3Y = f3DoorOverride.y;
+          }
+
           if (f3Source != null)
           {
             BlitPieceIntoPreview(
@@ -9509,41 +9555,27 @@ public class ViewportLayoutEditor : EditorWindow
     if (source == null)
       return;
 
+    // Exact Black Door F3 exception: both frame images are always visible at
+    // (1,5) North. Stored Enabled flags must not suppress this door view.
     ViewportPiece leftF3 = FindLayoutPieceByName("Black Door Frame Left F3");
-    bool leftF3FrameEnabled =
-        leftF3 != null
-            ? leftF3.Enabled
-            : blackDoorFrameLeftF3CardEnabled;
-
-    if (leftF3FrameEnabled)
-    {
-      int leftX = leftF3 != null ? leftF3.X : blackDoorFrameLeftF3CardX;
-      int leftY = leftF3 != null ? leftF3.Y : blackDoorFrameLeftF3CardY;
-      BlitPieceIntoPreview(
-          pixels,
-          source,
-          leftX,
-          leftY,
-          blackDoorFrameLeftF3CardMirror);
-    }
+    int leftX = leftF3 != null ? leftF3.X : blackDoorFrameLeftF3CardX;
+    int leftY = leftF3 != null ? leftF3.Y : blackDoorFrameLeftF3CardY;
+    BlitPieceIntoPreview(
+        pixels,
+        source,
+        leftX,
+        leftY,
+        blackDoorFrameLeftF3CardMirror);
 
     ViewportPiece rightF3 = FindLayoutPieceByName("Black Door Frame Right F3");
-    bool rightF3FrameEnabled =
-        rightF3 != null
-            ? rightF3.Enabled
-            : blackDoorFrameRightF3CardEnabled;
-
-    if (rightF3FrameEnabled)
-    {
-      int rightX = rightF3 != null ? rightF3.X : blackDoorFrameRightF3CardX;
-      int rightY = rightF3 != null ? rightF3.Y : blackDoorFrameRightF3CardY;
-      BlitPieceIntoPreview(
-          pixels,
-          source,
-          rightX,
-          rightY,
-          true);
-    }
+    int rightX = rightF3 != null ? rightF3.X : blackDoorFrameRightF3CardX;
+    int rightY = rightF3 != null ? rightF3.Y : blackDoorFrameRightF3CardY;
+    BlitPieceIntoPreview(
+        pixels,
+        source,
+        rightX,
+        rightY,
+        true);
   }
 
   /// <summary>
@@ -10031,6 +10063,13 @@ public class ViewportLayoutEditor : EditorWindow
   {
     if (piece == null || graphics == null)
       return 1;
+
+    if (piece.Name == "BlackDoorF3")
+    {
+      Texture2D f3Texture = GetBlackDoorF3SourceTexture();
+      if (f3Texture != null && f3Texture.height > 0)
+        return f3Texture.height;
+    }
 
     if (IsFrontWallF1Card(piece))
     {
