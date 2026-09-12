@@ -4880,16 +4880,14 @@ public class ViewportLayoutEditor : EditorWindow
         || previewX != 5
         || previewY != 2
         || previewFacing != DungeonFacing.South
-        || !IsNormalWallPiece(piece))
+        || !IsNormalWallPiece(piece)
+        || piece.Name == "LeftS2")
     {
       return false;
     }
 
-    // (5,2) South: use LeftS2 as the geometry-enabled left-side wall.
     // LeftD3 remains available only through Show All Walls for manual testing.
-    enabled = piece.Name == "LeftS2"
-        || piece.Graphic == DungeonGraphicType.Left2S
-        || IsFrontWallF3Card(piece)
+    enabled = IsFrontWallF3Card(piece)
         || IsFrontWallF1Card(piece)
         || piece.Name == "RightD3"
         || piece.Name == "Wall D3R2"
@@ -5484,6 +5482,12 @@ public class ViewportLayoutEditor : EditorWindow
         !IsViewEditGeometryWall(g.F3Center) &&
         IsViewEditGeometryWall(g.F3Right);
 
+    bool leftS2 =
+        IsViewEditGeometryWall(g.F1Center)
+        && !IsViewEditGeometryWall(g.F1Left)
+        && !IsViewEditGeometryWall(g.F2Left)
+        && IsViewEditGeometryWall(g.F3Left);
+
     // RightD3 oblique-right opening derived only from player-relative near geometry,
     // never from absolute map coordinates. Verified examples include 1,6 East,
     // 1,16 East, 6,2 East, 6,14 East, and 15,7 East. Deeper F2/F3 cells
@@ -5738,11 +5742,17 @@ public class ViewportLayoutEditor : EditorWindow
           y = DisplayYToUnityY(60, GetPieceHeightForEditorY(piece));
         }
       }
-      else if (piece.Name == "LeftS2" || piece.Name == "Right2S")
+      else if (piece.Name == "LeftS2")
       {
-        // Dedicated 2S side-wall cards participate in the normal-wall resolver.
-        // Pose-specific geometry below decides which one is enabled; X/Y/Mirror
-        // remain the card's live ViewEdit values.
+        enabled = leftS2;
+        x = 0;
+        y = DisplayYToUnityY(
+            57,
+            GetPieceHeightForEditorY(piece));
+        mirror = GetSideWallMirrorFromPose();
+      }
+      else if (piece.Name == "Right2S")
+      {
         enabled = false;
         x = piece.EffectiveX;
         y = piece.EffectiveY;
@@ -5852,15 +5862,15 @@ public class ViewportLayoutEditor : EditorWindow
         mirror = GetFrontF1MirrorFromPose();
       }
 
-      // ViewEdit visibility for (5,2) South. LeftS2 is the geometry-enabled
-      // left-side wall; LeftD3 stays manual-only in Show All Walls.
+      // ViewEdit visibility for (5,2) South.
+      // LeftD3 stays manual-only in Show All Walls.
+      // LeftS2 Enabled comes from leftS2 geometry, not this pose list.
       if (previewX == 5
           && previewY == 2
-          && previewFacing == DungeonFacing.South)
+          && previewFacing == DungeonFacing.South
+          && piece.Name != "LeftS2")
       {
-        enabled = piece.Name == "LeftS2"
-            || piece.Graphic == DungeonGraphicType.Left2S
-            || IsFrontWallF3Card(piece)
+        enabled = IsFrontWallF3Card(piece)
             || IsFrontWallF1Card(piece)
             || piece.Name == "RightD3"
             || piece.Name == "Wall D3R2"
