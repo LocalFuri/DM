@@ -1831,7 +1831,7 @@ public class ViewportLayoutEditor : EditorWindow
     // Right
     ("RightF0", 192, 33),
     ("RightF1", 165, 42),
-    ("RightF2", 147, 51),
+    ("RightF2", 147, 52),
     ("RightF3", 136, 60),
     ("Wall F0Right", null, null),
     ("Wall F1Right", null, null),
@@ -5857,7 +5857,7 @@ public class ViewportLayoutEditor : EditorWindow
         else
         {
           x = 147;
-          y = DisplayYToUnityY(51, GetPieceHeightForEditorY(piece));
+          y = DisplayYToUnityY(52, GetPieceHeightForEditorY(piece));
         }
       }
       else if (IsWallF3LeftPiece(piece))
