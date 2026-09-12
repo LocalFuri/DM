@@ -142,8 +142,8 @@ MonoBehaviour:
   - Name: Left2S
     Graphic: 34
     X: 0
-    Y: 0
-    Enabled: 0
+    Y: 91
+    Enabled: 1
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0

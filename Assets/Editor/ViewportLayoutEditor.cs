@@ -8524,7 +8524,27 @@ public class ViewportLayoutEditor : EditorWindow
               f2Texture.height);
           continue;
         }
-                if (IsWallF0LeftPiece(piece) && mirror)
+                // Left2S / Right2S use the opposite-side source artwork when mirrored,
+                // matching the existing left/right side-wall behavior.
+                if (piece.Name == "Left2S" && mirror)
+                {
+                    ViewportPiece oppositePiece = FindLayoutPieceByName("Right2S");
+                    if (oppositePiece != null
+                        && oppositePiece.Graphic != DungeonGraphicType.None)
+                    {
+                        drawGraphic = oppositePiece.Graphic;
+                    }
+                }
+                else if (piece.Name == "Right2S" && mirror)
+                {
+                    ViewportPiece oppositePiece = FindLayoutPieceByName("Left2S");
+                    if (oppositePiece != null
+                        && oppositePiece.Graphic != DungeonGraphicType.None)
+                    {
+                        drawGraphic = oppositePiece.Graphic;
+                    }
+                }
+                else if (IsWallF0LeftPiece(piece) && mirror)
                     drawGraphic = DungeonGraphicType.WallF0R;
                 else if (IsWallF0RightPiece(piece) && mirror)
                     drawGraphic = DungeonGraphicType.WallF0L;
