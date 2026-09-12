@@ -5599,6 +5599,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     bool leftS2 =
         IsViewEditGeometryWall(g.F1Center)
+        && IsViewEditGeometryWall(g.F2Center)
+        && IsViewEditGeometryWall(g.F3Center)
         && !IsViewEditGeometryWall(g.F1Left)
         && !IsViewEditGeometryWall(g.F2Left)
         && IsViewEditGeometryWall(g.F3Left);
@@ -5724,8 +5726,14 @@ public class ViewportLayoutEditor : EditorWindow
       }
       else if (IsFrontWallF2Card(piece))
       {
-        // FrontF2 Enabled is owned by ViewEdit / saved pose visibility only.
-        enabled = piece.Enabled;
+        // Verified 1,5 West edge-of-map view: F2 center is outside the map,
+        // so the boundary must render as the front F2 wall.
+        bool frontF2BoundaryAt15West =
+            previewX == 1
+            && previewY == 5
+            && previewFacing == DungeonFacing.West;
+
+        enabled = frontF2BoundaryAt15West || piece.Enabled;
         x = 0;
         y = DisplayYToUnityY(125, GetPieceHeightForEditorY(piece));
         mirror = frontMirror;
@@ -9351,6 +9359,23 @@ public class ViewportLayoutEditor : EditorWindow
             || !manuallyEnabledAfterDisable))
     {
       return false;
+    }
+
+    // Verified 1,5 West edge-of-map front boundary. The F2 wall is required
+    // even if its stored layout Enabled flag is false. A temporary ViewEdit
+    // Enabled override may still hide/show it for testing.
+    if (IsFrontWallF2Card(piece)
+        && previewX == 1
+        && previewY == 5
+        && previewFacing == DungeonFacing.West)
+    {
+      if (previewEnabledOverrideByPiece.TryGetValue(
+              piece, out bool frontF2PreviewEnabled))
+      {
+        return frontF2PreviewEnabled;
+      }
+
+      return true;
     }
 
     // Normal walls draw only when the current minimap resolver explicitly
