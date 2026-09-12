@@ -2278,6 +2278,14 @@ public class ViewportLayoutEditor : EditorWindow
     {
       enabledBefore = manualPreviewEnabled;
     }
+    else if (isBlackDoorF3FrameRequired)
+    {
+      // At (1,5) North the two F3 frame pieces default ON in ViewEdit.
+      // Their stored layout Enabled flag is not authoritative for this
+      // exception pose; an explicit ViewEdit toggle is stored in the
+      // temporary preview override above and can still turn either frame OFF.
+      enabledBefore = true;
+    }
 
     // BlackDoorF3 itself is a hard exception at (1,5) North and stays ON.
     // The two F3 frame pieces default ON when this pose is entered, but their
@@ -9560,9 +9568,9 @@ public class ViewportLayoutEditor : EditorWindow
     // (1,5) North, but their ViewEdit Enabled toggles can temporarily hide
     // either side for visual checking.
     ViewportPiece leftF3 = FindLayoutPieceByName("Black Door Frame Left F3");
-    bool leftEnabled = leftF3 != null
-        ? leftF3.Enabled
-        : blackDoorFrameLeftF3CardEnabled;
+    // The 1,5 North exception defaults both F3 frames ON regardless of the
+    // stored layout Enabled flag. A temporary ViewEdit toggle can override it.
+    bool leftEnabled = true;
     if (leftF3 != null
         && previewEnabledOverrideByPiece.TryGetValue(leftF3, out bool leftPreviewEnabled))
       leftEnabled = leftPreviewEnabled;
@@ -9580,9 +9588,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     ViewportPiece rightF3 = FindLayoutPieceByName("Black Door Frame Right F3");
-    bool rightEnabled = rightF3 != null
-        ? rightF3.Enabled
-        : blackDoorFrameRightF3CardEnabled;
+    // Same rule for the right F3 frame: default ON, temporary toggle wins.
+    bool rightEnabled = true;
     if (rightF3 != null
         && previewEnabledOverrideByPiece.TryGetValue(rightF3, out bool rightPreviewEnabled))
       rightEnabled = rightPreviewEnabled;
