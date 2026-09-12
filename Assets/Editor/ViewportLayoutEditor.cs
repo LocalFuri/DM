@@ -730,7 +730,7 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (GUILayout.Button(
               showOnlyWallsNeededForCurrentPose
-                  ? "Show All Walls"
+                  ? "Show all walls"
                   : "Show all Walls we Need",
               GUILayout.Width(130f)))
       {
@@ -3998,7 +3998,11 @@ public class ViewportLayoutEditor : EditorWindow
             previewY,
             previewFacing);
 
-    HashSet<string> drawPieces = new HashSet<string>();
+    // Diagnostics only: collect rendered wall names with their resolved X
+    // position, then list them from left to right. This does not change the
+    // actual render/blit order.
+    Dictionary<string, int> drawPieceXByName =
+        new Dictionary<string, int>();
     if (layout != null && layout.Pieces != null)
     {
       for (int i = 0; i < layout.Pieces.Count; i++)
@@ -4007,12 +4011,29 @@ public class ViewportLayoutEditor : EditorWindow
         if (piece == null)
           continue;
 
-        // BlackDoorF1 is a special editor piece and does not use the normal-wall
-        // resolver. Include it in Diagnostics when its dedicated needed-pose
-        // rule says it belongs to the current view.
-        if (piece.Name == "BlackDoorF1" && IsWallNeededForCurrentPose(piece))
+        // Black Door cards/frames use dedicated editor draw paths rather than
+        // the normal-wall resolver. Include every Black Door piece needed for
+        // the current pose so Diagnostics reflects the actual visible set.
+        if (IsBlackDoorEditorPiece(piece) && IsWallNeededForCurrentPose(piece))
         {
-          drawPieces.Add("BlackDoorF1");
+          int blackDoorX = piece.EffectiveX;
+          if (previewPositionOverrideByPiece.TryGetValue(
+                  piece, out Vector2Int blackDoorPosition))
+          {
+            blackDoorX = blackDoorPosition.x;
+          }
+
+          string blackDoorName = piece.Name ?? string.Empty;
+          if (!string.IsNullOrEmpty(blackDoorName))
+          {
+            if (!drawPieceXByName.TryGetValue(
+                    blackDoorName, out int existingBlackDoorX)
+                || blackDoorX < existingBlackDoorX)
+            {
+              drawPieceXByName[blackDoorName] = blackDoorX;
+            }
+          }
+
           continue;
         }
 
@@ -4033,9 +4054,40 @@ public class ViewportLayoutEditor : EditorWindow
         }
 
         if (!string.IsNullOrEmpty(name))
-          drawPieces.Add(name);
+        {
+          int drawX = state.X;
+          if (previewPositionOverrideByPiece.TryGetValue(
+                  piece, out Vector2Int previewPosition))
+          {
+            drawX = previewPosition.x;
+          }
+
+          if (!drawPieceXByName.TryGetValue(name, out int existingX)
+              || drawX < existingX)
+          {
+            drawPieceXByName[name] = drawX;
+          }
+        }
       }
     }
+
+    List<KeyValuePair<string, int>> drawPiecesLeftToRight =
+        new List<KeyValuePair<string, int>>(drawPieceXByName);
+    drawPiecesLeftToRight.Sort((a, b) =>
+    {
+      int xCompare = a.Value.CompareTo(b.Value);
+      if (xCompare != 0)
+        return xCompare;
+
+      return string.CompareOrdinal(a.Key, b.Key);
+    });
+
+    List<string> drawPieceNamesLeftToRight =
+        new List<string>(drawPiecesLeftToRight.Count);
+    for (int i = 0; i < drawPiecesLeftToRight.Count; i++)
+      drawPieceNamesLeftToRight.Add(drawPiecesLeftToRight[i].Key);
+
+    string drawText = BuildBalancedDrawDiagnosticText(drawPieceNamesLeftToRight);
 
     string text =
         "GEOMETRY DIAGNOSTIC  "
@@ -4051,14 +4103,60 @@ public class ViewportLayoutEditor : EditorWindow
         + "\nF3: L=" + FormatRelativeViewportCellShort(geometry.F3Left)
         + "  C=" + FormatRelativeViewportCellShort(geometry.F3Center)
         + "  R=" + FormatRelativeViewportCellShort(geometry.F3Right)
-        + "\n\nDRAW: "
-        + (drawPieces.Count > 0
-            ? string.Join(", ", drawPieces)
-            : "none");
+        + "\n\n"
+        + drawText;
 
-    EditorGUILayout.HelpBox(text, MessageType.None);
+    GUIStyle diagnosticStyle = new GUIStyle(EditorStyles.helpBox);
+    diagnosticStyle.normal.textColor = new Color32(255, 255, 255, 255);
+    diagnosticStyle.wordWrap = true;
+    GUILayout.Label(text, diagnosticStyle, GUILayout.ExpandWidth(true));
     if (Event.current.type == EventType.Repaint)
       geometryDiagnosticRect = GUILayoutUtility.GetLastRect();
+  }
+
+  private static string BuildBalancedDrawDiagnosticText(List<string> names)
+  {
+    if (names == null || names.Count == 0)
+      return "DRAW: none";
+
+    if (names.Count == 1)
+      return "DRAW: " + names[0];
+
+    int bestSplit = 1;
+    int bestDifference = int.MaxValue;
+
+    for (int split = 1; split < names.Count; split++)
+    {
+      int firstLength = "DRAW: ".Length;
+      for (int i = 0; i < split; i++)
+      {
+        if (i > 0)
+          firstLength += 2;
+        firstLength += names[i].Length;
+      }
+
+      int secondLength = "      ".Length;
+      for (int i = split; i < names.Count; i++)
+      {
+        if (i > split)
+          secondLength += 2;
+        secondLength += names[i].Length;
+      }
+
+      int difference = Mathf.Abs(firstLength - secondLength);
+      if (difference < bestDifference)
+      {
+        bestDifference = difference;
+        bestSplit = split;
+      }
+    }
+
+    string firstLine =
+        "DRAW: " + string.Join(", ", names.GetRange(0, bestSplit));
+    string secondLine =
+        "      " + string.Join(", ", names.GetRange(bestSplit, names.Count - bestSplit));
+
+    return firstLine + "\n" + secondLine;
   }
 
   private static string FormatRelativeViewportCell(RelativeViewportCell cell)
@@ -4419,7 +4517,16 @@ public class ViewportLayoutEditor : EditorWindow
     previewY = newY;
     previewFacing = newFacing;
     LoadFrontF1CropPreviewForCurrentPose();
-    showWallsActivFilter = true;
+
+    // A new pose always returns ViewEdit to the geometry-needed wall list.
+    // The button therefore offers "Show all walls", and no Activ/search
+    // filter can hide a wall required by the new view.
+    showOnlyWallsNeededForCurrentPose = true;
+    showWallsActivFilter = false;
+    pieceSearchFamilyIndex = 0;
+    pieceSearchText = string.Empty;
+    editorScroll = Vector2.zero;
+
     SaveSessionPrefs();
     PlayerWallBumpFeedback.ResetWallHitLog();
 
@@ -4469,7 +4576,16 @@ public class ViewportLayoutEditor : EditorWindow
     previewY = newY;
     previewFacing = newFacing;
     LoadFrontF1CropPreviewForCurrentPose();
-    showWallsActivFilter = true;
+
+    // A new pose always returns ViewEdit to the geometry-needed wall list.
+    // The button therefore offers "Show all walls", and no Activ/search
+    // filter can hide a wall required by the new view.
+    showOnlyWallsNeededForCurrentPose = true;
+    showWallsActivFilter = false;
+    pieceSearchFamilyIndex = 0;
+    pieceSearchText = string.Empty;
+    editorScroll = Vector2.zero;
+
     SaveSessionPrefs();
     PlayerWallBumpFeedback.ResetWallHitLog();
 
