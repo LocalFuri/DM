@@ -2290,10 +2290,16 @@ public class ViewportLayoutEditor : EditorWindow
     bool normalWallEnabledPreview = IsNormalWallPiece(piece);
     bool isBlackDoorRightD3Exception =
         IsBlackDoorObliqueRightD3PoseException(piece);
+    bool isBlackDoorF3Required =
+        piece.Name == "BlackDoorF3"
+        && previewX == 1
+        && previewY == 5
+        && previewFacing == DungeonFacing.North;
     bool wallRenderingPreview = IsWallRenderingPiece(piece);
     bool usePreviewEnabledOverride =
         normalWallEnabledPreview
         || isBlackDoorRightD3Exception
+        || isBlackDoorF3Required
         || (previewDisableAllWalls && wallRenderingPreview);
 
     bool enabledBefore = piece.Enabled;
@@ -2320,6 +2326,11 @@ public class ViewportLayoutEditor : EditorWindow
       enabledBefore = manualPreviewEnabled;
     }
 
+    // BlackDoorF3 is an exact exception door at (1,5) North. The code, not
+    // the stored layout Enabled flag, owns its preview visibility.
+    if (isBlackDoorF3Required)
+      enabledBefore = true;
+
     // (5,2) South only forces pieces outside the allowed set OFF.
     // Show All Walls keeps the ViewEdit Enabled checkbox as the preview authority.
     if (!IsShowAllWallsPreview()
@@ -2333,6 +2344,8 @@ public class ViewportLayoutEditor : EditorWindow
         enabledBefore,
         GUILayout.Width(enabledLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
+    if (isBlackDoorF3Required)
+      enabledAfter = true;
     bool nameOrEnabledChanged = EditorGUI.EndChangeCheck();
 
     if (usePreviewEnabledOverride
@@ -9012,31 +9025,24 @@ public class ViewportLayoutEditor : EditorWindow
         {
           BlitBlackDoorF3FramesIntoPreview(pixels);
           ViewportPiece doorF3 = FindLayoutPieceByName("BlackDoorF3");
-          bool f3DoorEnabled =
-              doorF3 != null
-                  ? doorF3.Enabled
-                  : blackDoorF3CardEnabled;
           int f3X = doorF3 != null ? doorF3.X : blackDoorF3CardX;
           int f3Y = doorF3 != null ? doorF3.Y : blackDoorF3CardY;
-          if (f3DoorEnabled)
+          Texture2D f3Source = GetBlackDoorF3SourceTexture();
+          if (f3Source != null)
           {
-            Texture2D f3Source = GetBlackDoorF3SourceTexture();
-            if (f3Source != null)
-            {
-              BlitPieceIntoPreview(
-                  pixels,
-                  f3Source,
-                  f3X,
-                  f3Y,
-                  mirror);
-              LogIfOverlapsLeftF0(
-                  piece,
-                  drawGraphic,
-                  f3X,
-                  f3Y,
-                  f3Source.width,
-                  f3Source.height);
-            }
+            BlitPieceIntoPreview(
+                pixels,
+                f3Source,
+                f3X,
+                f3Y,
+                mirror);
+            LogIfOverlapsLeftF0(
+                piece,
+                drawGraphic,
+                f3X,
+                f3Y,
+                f3Source.width,
+                f3Source.height);
           }
           continue;
         }
