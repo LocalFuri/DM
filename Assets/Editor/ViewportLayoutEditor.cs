@@ -2102,8 +2102,8 @@ public class ViewportLayoutEditor : EditorWindow
         || piece.Name == "WallD3L2";
     bool compactD3Header =
         !isLeftD3Card
-        && (piece.Name == "RightD3"
-            || piece.Name == "Wall D3R2"
+        && piece.Name != "RightD3"
+        && (piece.Name == "Wall D3R2"
             || piece.Graphic == DungeonGraphicType.WallD3L2
             || piece.Graphic == DungeonGraphicType.WallD3R2);
     bool compactSideWallHeader =
@@ -2117,7 +2117,9 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF3RightPiece(piece)
         || isLeftD3Card
         || piece.Name == "LeftS2"
-        || piece.Name == "Right2S";
+        || piece.Name == "Left2S"
+        || piece.Name == "Right2S"
+        || piece.Name == "RightD3";
     bool hideNameForWall = IsWallEditorPiece(piece);
 
     if (!compactFrontWallHeader
