@@ -2537,6 +2537,10 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
 
     bool normalWallPositionPreview = IsNormalWallPiece(piece);
+    bool blackDoorF2PositionPreview = isBlackDoorF2RequiredException;
+    bool usePreviewPositionOverride =
+        normalWallPositionPreview || blackDoorF2PositionPreview;
+
     int editX = piece.X;
     int editUnityY = piece.Y;
     if (normalWallPositionPreview
@@ -2545,22 +2549,24 @@ public class ViewportLayoutEditor : EditorWindow
       editX = xyState.X;
       editUnityY = xyState.Y;
     }
-    if (normalWallPositionPreview
-        && previewPositionOverrideByPiece.TryGetValue(piece, out Vector2Int previewPosition))
-    {
-      editX = previewPosition.x;
-      editUnityY = previewPosition.y;
-    }
 
-    // (1,4) North BlackDoorF2 is an exception door. Its live ViewEdit
-    // position is the canonical reference, not the stored layout X/Y.
-    if (isBlackDoorF2RequiredException
+    // (1,4) North BlackDoorF2 defaults to its canonical reference, but a
+    // manual ViewEdit X/Y override must be allowed to move the exception door.
+    if (blackDoorF2PositionPreview
         && TryGetCanonicalReferenceXY(
             "BlackDoorF2", out int blackDoorF2RefX, out int blackDoorF2RefY))
     {
       editX = blackDoorF2RefX;
       editUnityY = DisplayYToUnityY(
           blackDoorF2RefY, GetPieceHeightForEditorY(piece));
+    }
+
+    // Manual X/Y wins over the geometry/reference default for the current pose.
+    if (usePreviewPositionOverride
+        && previewPositionOverrideByPiece.TryGetValue(piece, out Vector2Int previewPosition))
+    {
+      editX = previewPosition.x;
+      editUnityY = previewPosition.y;
     }
 
     int xBefore = editX;
@@ -2577,7 +2583,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (xChanged && editX != xBefore)
     {
       SelectPiece(index);
-      if (normalWallPositionPreview)
+      if (usePreviewPositionOverride)
       {
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
 
@@ -2603,7 +2609,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (yChanged && editUnityY != yBefore)
     {
       SelectPiece(index);
-      if (normalWallPositionPreview)
+      if (usePreviewPositionOverride)
       {
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
         previewPositionChangedThisFrame = true;
@@ -7392,6 +7398,17 @@ public class ViewportLayoutEditor : EditorWindow
             || piece.Name == "Black Door Frame Right F2")
         {
           piece.Enabled = true;
+
+          // Keep the verified Right F2 frame at its canonical reference
+          // for the dedicated (1,4) North Black Door exception view.
+          if (piece.Name == "Black Door Frame Right F2"
+              && TryGetCanonicalReferenceXY(
+                  piece.Name, out int rightF2RefX, out int rightF2RefY))
+          {
+            piece.X = rightF2RefX;
+            piece.Y = DisplayYToUnityY(
+                rightF2RefY, GetPieceHeightForEditorY(piece));
+          }
         }
 
         // Black Door F2 occupies the front view at (1,4) North. Any normal
@@ -8991,11 +9008,18 @@ public class ViewportLayoutEditor : EditorWindow
           {
             int f2DoorX;
             int f2DoorY;
-            if (TryGetCanonicalReferenceXY(
-                    "BlackDoorF2", out int f2RefX, out int f2RefY))
+            if (doorF2 != null
+                && previewPositionOverrideByPiece.TryGetValue(
+                    doorF2, out Vector2Int f2PreviewPosition))
             {
-              // Exception-door authority: always draw at the canonical
-              // ViewEdit reference X/Y for (1,4) North.
+              // Manual ViewEdit X/Y is authoritative for the current pose.
+              f2DoorX = f2PreviewPosition.x;
+              f2DoorY = f2PreviewPosition.y;
+            }
+            else if (TryGetCanonicalReferenceXY(
+                         "BlackDoorF2", out int f2RefX, out int f2RefY))
+            {
+              // With no manual override, the exception door defaults to Ref.
               f2DoorX = f2RefX;
               f2DoorY = DisplayYToUnityY(f2RefY, f2Source.height);
             }
