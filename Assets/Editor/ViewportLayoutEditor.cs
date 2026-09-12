@@ -4011,10 +4011,10 @@ public class ViewportLayoutEditor : EditorWindow
         if (piece == null)
           continue;
 
-        // BlackDoorF1 is a special editor piece and does not use the normal-wall
-        // resolver. Include it in Diagnostics when its dedicated needed-pose
-        // rule says it belongs to the current view.
-        if (piece.Name == "BlackDoorF1" && IsWallNeededForCurrentPose(piece))
+        // Black Door cards/frames use dedicated editor draw paths rather than
+        // the normal-wall resolver. Include every Black Door piece needed for
+        // the current pose so Diagnostics reflects the complete visible set.
+        if (IsBlackDoorEditorPiece(piece) && IsWallNeededForCurrentPose(piece))
         {
           int blackDoorX = piece.EffectiveX;
           if (previewPositionOverrideByPiece.TryGetValue(
@@ -4023,7 +4023,17 @@ public class ViewportLayoutEditor : EditorWindow
             blackDoorX = blackDoorPosition.x;
           }
 
-          drawPieceXByName["BlackDoorF1"] = blackDoorX;
+          string blackDoorName = piece.Name ?? string.Empty;
+          if (!string.IsNullOrEmpty(blackDoorName))
+          {
+            if (!drawPieceXByName.TryGetValue(
+                    blackDoorName, out int existingBlackDoorX)
+                || blackDoorX < existingBlackDoorX)
+            {
+              drawPieceXByName[blackDoorName] = blackDoorX;
+            }
+          }
+
           continue;
         }
 
@@ -4077,6 +4087,8 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < drawPiecesLeftToRight.Count; i++)
       drawPieceNamesLeftToRight.Add(drawPiecesLeftToRight[i].Key);
 
+    string drawText = BuildBalancedDrawDiagnosticText(drawPieceNamesLeftToRight);
+
     string text =
         "GEOMETRY DIAGNOSTIC  "
         + previewX + "," + previewY + " " + previewFacing + "\n"
@@ -4091,14 +4103,60 @@ public class ViewportLayoutEditor : EditorWindow
         + "\nF3: L=" + FormatRelativeViewportCellShort(geometry.F3Left)
         + "  C=" + FormatRelativeViewportCellShort(geometry.F3Center)
         + "  R=" + FormatRelativeViewportCellShort(geometry.F3Right)
-        + "\n\nDRAW: "
-        + (drawPieceNamesLeftToRight.Count > 0
-            ? string.Join(", ", drawPieceNamesLeftToRight)
-            : "none");
+        + "\n\n"
+        + drawText;
 
-    EditorGUILayout.HelpBox(text, MessageType.None);
+    GUIStyle diagnosticStyle = new GUIStyle(EditorStyles.helpBox);
+    diagnosticStyle.normal.textColor = new Color32(255, 255, 255, 255);
+    diagnosticStyle.wordWrap = true;
+    GUILayout.Label(text, diagnosticStyle, GUILayout.ExpandWidth(true));
     if (Event.current.type == EventType.Repaint)
       geometryDiagnosticRect = GUILayoutUtility.GetLastRect();
+  }
+
+  private static string BuildBalancedDrawDiagnosticText(List<string> names)
+  {
+    if (names == null || names.Count == 0)
+      return "DRAW: none";
+
+    if (names.Count == 1)
+      return "DRAW: " + names[0];
+
+    int bestSplit = 1;
+    int bestDifference = int.MaxValue;
+
+    for (int split = 1; split < names.Count; split++)
+    {
+      int firstLength = "DRAW: ".Length;
+      for (int i = 0; i < split; i++)
+      {
+        if (i > 0)
+          firstLength += 2;
+        firstLength += names[i].Length;
+      }
+
+      int secondLength = "      ".Length;
+      for (int i = split; i < names.Count; i++)
+      {
+        if (i > split)
+          secondLength += 2;
+        secondLength += names[i].Length;
+      }
+
+      int difference = Mathf.Abs(firstLength - secondLength);
+      if (difference < bestDifference)
+      {
+        bestDifference = difference;
+        bestSplit = split;
+      }
+    }
+
+    string firstLine =
+        "DRAW: " + string.Join(", ", names.GetRange(0, bestSplit));
+    string secondLine =
+        "      " + string.Join(", ", names.GetRange(bestSplit, names.Count - bestSplit));
+
+    return firstLine + "\n" + secondLine;
   }
 
   private static string FormatRelativeViewportCell(RelativeViewportCell cell)
