@@ -5588,7 +5588,7 @@ public class ViewportLayoutEditor : EditorWindow
         enabled = frontF3;
         x = 7;
         y = DisplayYToUnityY(58, GetPieceHeightForEditorY(piece));
-        mirror = true;
+        mirror = false;
       }
       else if (IsWallF0LeftPiece(piece))
       {
