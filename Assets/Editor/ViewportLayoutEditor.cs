@@ -5875,6 +5875,18 @@ public class ViewportLayoutEditor : EditorWindow
           x = 5;
           y = DisplayYToUnityY(60, GetPieceHeightForEditorY(piece));
         }
+
+        // Verified canonical Black Door F3 view at 1,5 North.
+        // LeftF3 fills the narrow strip immediately left of the F3 frame.
+        if (previewX == 1
+            && previewY == 5
+            && previewFacing == DungeonFacing.North)
+        {
+          enabled = true;
+          x = 5;
+          y = DisplayYToUnityY(60, GetPieceHeightForEditorY(piece));
+          mirror = false;
+        }
       }
       else if (IsWallF3RightPiece(piece))
       {
