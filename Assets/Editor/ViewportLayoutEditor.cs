@@ -176,6 +176,7 @@ public class ViewportLayoutEditor : EditorWindow
   private DungeonMap previewMiniMap;
   private string previewMiniMapLoadError;
   private Vector2 previewMiniMapScroll;
+  private bool previewMiniMapMuted;
   private string deterministicWallDiagnosticText;
   private Rect geometryDiagnosticRect;
 
@@ -674,8 +675,10 @@ public class ViewportLayoutEditor : EditorWindow
     if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
       Focus();
 
-    if (!HandleGeometryDiagnosticsRightClickClose())
-      HandleViewEditRightClickHome();
+    // Diagnostics may consume its own right-click here. The general ViewEdit
+    // right-click handler is deliberately deferred until after the minimap is
+    // drawn, so the minimap gets first chance to toggle its mute state.
+    HandleGeometryDiagnosticsRightClickClose();
 
     // Arrow Up/Down must be handled before BeginScrollView — otherwise the
     // scroll view consumes them for scrolling and HandlePreviewMoveKeyboard
@@ -716,6 +719,12 @@ public class ViewportLayoutEditor : EditorWindow
     ClampSelectedPieceIndex();
 
     DrawMapPosePreviewControls();
+
+    // Run the global ViewEdit right-click action only after DrawPreviewMiniMap
+    // has had a chance to consume a right-click inside the minimap. This keeps
+    // the existing "right-click anywhere else -> Search/top" behavior without
+    // overruling the minimap mute toggle.
+    HandleViewEditRightClickHome();
 
     using (new EditorGUI.DisabledScope(!layoutEditable))
     {
@@ -3862,6 +3871,16 @@ public class ViewportLayoutEditor : EditorWindow
       Repaint();
     }
 
+    // Always-visible minimap collapse toggle. Keep it in the Snap toolbar so
+    // the control remains reachable even while the minimap itself is hidden.
+    if (GUILayout.Button(
+            previewMiniMapMuted ? "Show Map" : "Hide Map",
+            GUILayout.Width(72f)))
+    {
+      previewMiniMapMuted = !previewMiniMapMuted;
+      Repaint();
+    }
+
     EditorGUILayout.EndHorizontal();
   }
 
@@ -4301,8 +4320,12 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void DrawPreviewMiniMap()
   {
-    EditorGUILayout.Space();
+    // When hidden, reserve no minimap layout space at all. The Show/Hide Map
+    // button lives in DrawSnapToolbar(), which remains visible.
+    if (previewMiniMapMuted)
+      return;
 
+    EditorGUILayout.Space();
     EnsurePreviewMiniMapLoaded();
 
     if (previewMiniMap == null)
@@ -4321,6 +4344,8 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.BeginHorizontal();
 
     EditorGUILayout.BeginVertical(GUILayout.Width(300f));
+
+    DungeonMiniMapGui.InteractionResult interaction = default;
     previewMiniMapScroll = DungeonMiniMapGui.Draw(
         previewMiniMap,
         previewX,
@@ -4328,10 +4353,10 @@ public class ViewportLayoutEditor : EditorWindow
         previewFacing,
         previewMiniMapScroll,
         interactive: true,
-        out DungeonMiniMapGui.InteractionResult interaction
+        out interaction
     );
-    EditorGUILayout.EndVertical();
 
+    EditorGUILayout.EndVertical();
 
     // Keep the compact 3×2 movement pad directly beside the minimap.
     EditorGUILayout.BeginVertical(GUILayout.Width(96f));
@@ -4352,9 +4377,6 @@ public class ViewportLayoutEditor : EditorWindow
           interaction.ClickY);
   }
 
-  /// <summary>
-  /// Compact 3×2 navigation pad (editor-only). Uses NavigatePreviewPoseOnly.
-  /// </summary>
   private void DrawPreviewNavigationPad()
   {
     using (new EditorGUI.DisabledScope(Application.isPlaying || layout == null))
