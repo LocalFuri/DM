@@ -139,6 +139,17 @@ MonoBehaviour:
     MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
+  - Name: LeftS2
+    Graphic: 34
+    X: 0
+    Y: 0
+    Enabled: 1
+    Deterministic: 0
+    BlackDoorF2X: 0
+    BlackDoorF2Y: 0
+    MirrorHorizontally: 0
+    FrontWallF1Width: 191
+    FrontWallF2Width: 106
   - Name: Left2S
     Graphic: 34
     X: 0

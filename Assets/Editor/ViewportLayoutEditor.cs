@@ -154,6 +154,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D blackDoorF3SourceTexture;
   private Texture2D blackDoorF2SourceTexture;
   private Texture2D frontWallF2_224ReferenceTexture;
+  private Texture2D right2SSourceTexture;
 
   // Single source of truth for selection.
   private int selectedPieceIndex;
@@ -998,7 +999,7 @@ public class ViewportLayoutEditor : EditorWindow
     string name = piece.Name ?? string.Empty;
     return name == "LeftD3"
         || name == "RightD3"
-        || name == "Left2S"
+        || name == "LeftS2"
         || name == "Right2S"
         || name == "Wall D3L2"
         || name == "Wall D3R2"
@@ -1371,7 +1372,7 @@ public class ViewportLayoutEditor : EditorWindow
         || name.StartsWith("Wall F", System.StringComparison.Ordinal)
         || name == "LeftD3"
         || name == "RightD3"
-        || name == "Left2S"
+        || name == "LeftS2"
         || name == "Right2S";
   }
 
@@ -1734,7 +1735,7 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF3LeftPiece(piece)
         || piece.Name == "LeftD3"
         || piece.Name == "Wall D3L2"
-        || piece.Name == "Left2S")
+        || piece.Name == "LeftS2")
     {
       return 1;
     }
@@ -1837,7 +1838,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("Wall D3R2", null, null),
 
     // 2S (ViewEdit list only; no geometry yet)
-    ("Left2S", null, null),
+    ("LeftS2", null, null),
     ("Right2S", null, null),
 
     // Black Door
@@ -2115,7 +2116,7 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF3LeftPiece(piece)
         || IsWallF3RightPiece(piece)
         || isLeftD3Card
-        || piece.Name == "Left2S"
+        || piece.Name == "LeftS2"
         || piece.Name == "Right2S";
     bool hideNameForWall = IsWallEditorPiece(piece);
 
@@ -2845,7 +2846,7 @@ public class ViewportLayoutEditor : EditorWindow
   /// </summary>
   private void EnsureLeft2SAndRight2SPieces()
   {
-    EnsureNamedWallListPiece("Left2S", "LeftF2");
+    EnsureNamedWallListPiece("LeftS2", "LeftF2");
     EnsureNamedWallListPiece("Right2S", "RightF2");
   }
 
@@ -2856,7 +2857,7 @@ public class ViewportLayoutEditor : EditorWindow
     ViewportPiece existing = FindLayoutPieceByName(name);
     if (existing != null)
     {
-      if (name == "Left2S"
+      if (name == "LeftS2"
           && existing.Graphic == DungeonGraphicType.None)
       {
         existing.Graphic = DungeonGraphicType.Left2S;
@@ -2885,7 +2886,7 @@ public class ViewportLayoutEditor : EditorWindow
     ViewportPiece created = new ViewportPiece
     {
       Name = name,
-      Graphic = name == "Left2S"
+      Graphic = name == "LeftS2"
           ? DungeonGraphicType.Left2S
           : DungeonGraphicType.None,
       X = 0,
@@ -3078,7 +3079,7 @@ public class ViewportLayoutEditor : EditorWindow
       case "Wall D3R2":
         color = new Color32(0x9B, 0x6F, 0xD1, 0xFF);
         return true;
-      case "Left2S":
+      case "LeftS2":
       case "Right2S":
         color = new Color32(0x9B, 0x6F, 0xD1, 0xFF);
         return true;
@@ -4845,12 +4846,12 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// (5,2) South left-to-right blit / ViewEdit list order:
-  /// Left2S, FrontF3, FrontF1, RightD3. LeftD3 shares the leftmost
+  /// LeftS2, FrontF3, FrontF1, RightD3. LeftD3 shares the leftmost
   /// slot when manually enabled in Show All Walls.
   /// </summary>
   private static int Get52SouthLeftToRightOrder(ViewportPiece piece)
   {
-    if (piece != null && piece.Name == "Left2S")
+    if (piece != null && piece.Name == "LeftS2")
       return 0;
     if (Is52SouthLeftD3Piece(piece))
       return 0;
@@ -4884,9 +4885,9 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    // (5,2) South: use Left2S as the geometry-enabled left-side wall.
+    // (5,2) South: use LeftS2 as the geometry-enabled left-side wall.
     // LeftD3 remains available only through Show All Walls for manual testing.
-    enabled = piece.Name == "Left2S"
+    enabled = piece.Name == "LeftS2"
         || piece.Graphic == DungeonGraphicType.Left2S
         || IsFrontWallF3Card(piece)
         || IsFrontWallF1Card(piece)
@@ -5737,7 +5738,7 @@ public class ViewportLayoutEditor : EditorWindow
           y = DisplayYToUnityY(60, GetPieceHeightForEditorY(piece));
         }
       }
-      else if (piece.Name == "Left2S" || piece.Name == "Right2S")
+      else if (piece.Name == "LeftS2" || piece.Name == "Right2S")
       {
         // Dedicated 2S side-wall cards participate in the normal-wall resolver.
         // Pose-specific geometry below decides which one is enabled; X/Y/Mirror
@@ -5851,13 +5852,13 @@ public class ViewportLayoutEditor : EditorWindow
         mirror = GetFrontF1MirrorFromPose();
       }
 
-      // ViewEdit visibility for (5,2) South. Left2S is the geometry-enabled
+      // ViewEdit visibility for (5,2) South. LeftS2 is the geometry-enabled
       // left-side wall; LeftD3 stays manual-only in Show All Walls.
       if (previewX == 5
           && previewY == 2
           && previewFacing == DungeonFacing.South)
       {
-        enabled = piece.Name == "Left2S"
+        enabled = piece.Name == "LeftS2"
             || piece.Graphic == DungeonGraphicType.Left2S
             || IsFrontWallF3Card(piece)
             || IsFrontWallF1Card(piece)
@@ -6322,7 +6323,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     return piece.Graphic == DungeonGraphicType.WallD3L2
         || piece.Graphic == DungeonGraphicType.WallD3R2
-        || piece.Name == "Left2S"
+        || piece.Name == "LeftS2"
         || piece.Name == "Right2S"
         || piece.Name == "LeftD3"
         || piece.Name == "RightD3"
@@ -8024,7 +8025,7 @@ public class ViewportLayoutEditor : EditorWindow
                     && !IsFrontWallF1Card(piece)
                     && !IsFrontWallF3Card(piece)
                     && !IsWallF0RightPiece(piece)
-                    && piece.Name != "Left2S")))
+                    && piece.Name != "LeftS2")))
         {
           continue;
         }
@@ -8289,6 +8290,39 @@ public class ViewportLayoutEditor : EditorWindow
           }
         }
 
+        // LeftS2 / Right2S must be handled before any generic front/side wall
+        // graphic path.  The opposite 2S artwork is a source-image substitute
+        // only: X/Y always stay with the card being drawn, and Mirror=true
+        // must still flip the substituted source pixels.
+        if (piece.Name == "LeftS2" || piece.Name == "Right2S")
+        {
+          Texture2D wall2STexture = piece.Name == "LeftS2"
+              ? (mirror
+                  ? GetRight2STexture()
+                  : graphics.GetTexture(DungeonGraphicType.Left2S))
+              : (mirror
+                  ? graphics.GetTexture(DungeonGraphicType.Left2S)
+                  : GetRight2STexture());
+
+          if (wall2STexture == null)
+            continue;
+
+          BlitPieceIntoPreview(
+              pixels,
+              wall2STexture,
+              resolvedX,
+              resolvedY,
+              mirror);
+          LogIfOverlapsLeftF0(
+              piece,
+              piece.Graphic,
+              resolvedX,
+              resolvedY,
+              wall2STexture.width,
+              wall2STexture.height);
+          continue;
+        }
+
         if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
         {
           int width = resolvedF1Width;
@@ -8542,44 +8576,25 @@ public class ViewportLayoutEditor : EditorWindow
               f2Texture.height);
           continue;
         }
-                // Left2S / Right2S use the opposite-side source artwork when mirrored,
-                // matching the existing left/right side-wall behavior.
-                if (piece.Name == "Left2S" && mirror)
-                {
-                    ViewportPiece oppositePiece = FindLayoutPieceByName("Right2S");
-                    if (oppositePiece != null
-                        && oppositePiece.Graphic != DungeonGraphicType.None)
-                    {
-                        drawGraphic = oppositePiece.Graphic;
-                    }
-                }
-                else if (piece.Name == "Right2S" && mirror)
-                {
-                    ViewportPiece oppositePiece = FindLayoutPieceByName("Left2S");
-                    if (oppositePiece != null
-                        && oppositePiece.Graphic != DungeonGraphicType.None)
-                    {
-                        drawGraphic = oppositePiece.Graphic;
-                    }
-                }
-                else if (IsWallF0LeftPiece(piece) && mirror)
-                    drawGraphic = DungeonGraphicType.WallF0R;
-                else if (IsWallF0RightPiece(piece) && mirror)
-                    drawGraphic = DungeonGraphicType.WallF0L;
-                else if (IsWallF1LeftPiece(piece) && mirror)
-                    drawGraphic = DungeonGraphicType.WallF1R;
-                else if (IsWallF1RightPiece(piece) && mirror)
-                    drawGraphic = DungeonGraphicType.WallF1L;
-                else if (IsWallF2LeftPiece(piece) && mirror)
-                    drawGraphic = DungeonGraphicType.WallF2R;
-                else if (IsWallF2RightPiece(piece) && mirror)
-                    drawGraphic = DungeonGraphicType.WallF2L;
-                else if (IsWallF3LeftPiece(piece) && mirror)
-                    drawGraphic = DungeonGraphicType.WallF3R;
-                else if (IsWallF3RightPiece(piece) && mirror)
-                    drawGraphic = DungeonGraphicType.WallF3L;
 
-                Texture2D texture = graphics.GetTexture(drawGraphic);
+        if (IsWallF0LeftPiece(piece) && mirror)
+          drawGraphic = DungeonGraphicType.WallF0R;
+        else if (IsWallF0RightPiece(piece) && mirror)
+          drawGraphic = DungeonGraphicType.WallF0L;
+        else if (IsWallF1LeftPiece(piece) && mirror)
+          drawGraphic = DungeonGraphicType.WallF1R;
+        else if (IsWallF1RightPiece(piece) && mirror)
+          drawGraphic = DungeonGraphicType.WallF1L;
+        else if (IsWallF2LeftPiece(piece) && mirror)
+          drawGraphic = DungeonGraphicType.WallF2R;
+        else if (IsWallF2RightPiece(piece) && mirror)
+          drawGraphic = DungeonGraphicType.WallF2L;
+        else if (IsWallF3LeftPiece(piece) && mirror)
+          drawGraphic = DungeonGraphicType.WallF3R;
+        else if (IsWallF3RightPiece(piece) && mirror)
+          drawGraphic = DungeonGraphicType.WallF3L;
+
+        Texture2D texture = graphics.GetTexture(drawGraphic);
 
                 if (isLeftF0Diag)
         {
@@ -9265,6 +9280,18 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return frontWallF2_224ReferenceTexture;
+  }
+
+  private Texture2D GetRight2STexture()
+  {
+    if (right2SSourceTexture == null)
+    {
+      right2SSourceTexture =
+          AssetDatabase.LoadAssetAtPath<Texture2D>(
+              "Assets/Art/Walls/Right2S.png");
+    }
+
+    return right2SSourceTexture;
   }
 
   private Texture2D GetBlackDoorFrameF3SourceTexture()
