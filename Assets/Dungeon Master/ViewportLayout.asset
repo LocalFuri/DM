@@ -372,8 +372,8 @@ MonoBehaviour:
     FrontWallF2Width: 106
   - Name: BlackDoorF2
     Graphic: 30
-    X: 78
-    Y: 91
+    X: 79
+    Y: 85
     Enabled: 1
     Deterministic: 0
     BlackDoorF2X: 0
