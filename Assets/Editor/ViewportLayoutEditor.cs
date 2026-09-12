@@ -3098,7 +3098,7 @@ public class ViewportLayoutEditor : EditorWindow
         return true;
       case "LeftS2":
       case "Right2S":
-        color = new Color32(0x9B, 0x6F, 0xD1, 0xFF);
+        color = new Color32(0x00, 0xFF, 0xFF, 0xFF);
         return true;
       case "BlackDoorF1":
       case "Black Door Frame Left F1":
