@@ -1830,7 +1830,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("Wall F3Right", null, null),
 
     // LeftD3
-    ("LeftD3", null, null),
+    ("LeftD3", 0, 54),
     ("Wall D3L2", null, null),
 
     // RightD3
@@ -1838,7 +1838,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("Wall D3R2", null, null),
 
     // 2S (ViewEdit list only; no geometry yet)
-    ("LeftS2", null, null),
+    ("LeftS2", 0, 57),
     ("Right2S", null, null),
 
     // Black Door
@@ -2290,6 +2290,11 @@ public class ViewportLayoutEditor : EditorWindow
     bool normalWallEnabledPreview = IsNormalWallPiece(piece);
     bool isBlackDoorRightD3Exception =
         IsBlackDoorObliqueRightD3PoseException(piece);
+    bool wallRenderingPreview = IsWallRenderingPiece(piece);
+    bool usePreviewEnabledOverride =
+        normalWallEnabledPreview
+        || isBlackDoorRightD3Exception
+        || (previewDisableAllWalls && wallRenderingPreview);
 
     bool enabledBefore = piece.Enabled;
     if (normalWallEnabledPreview
@@ -2298,7 +2303,17 @@ public class ViewportLayoutEditor : EditorWindow
     {
       enabledBefore = enabledPreviewState.Enabled;
     }
-    if ((normalWallEnabledPreview || isBlackDoorRightD3Exception)
+
+    // Disable Walls blanks every wall, but an explicit ViewEdit Enabled toggle
+    // may turn an individual wall back on while the hard geometry block remains.
+    if (previewDisableAllWalls
+        && wallRenderingPreview
+        && !IsDisableWallsKeeper(piece))
+    {
+      enabledBefore = false;
+    }
+
+    if (usePreviewEnabledOverride
         && previewEnabledOverrideByPiece.TryGetValue(
             piece, out bool manualPreviewEnabled))
     {
@@ -2320,7 +2335,7 @@ public class ViewportLayoutEditor : EditorWindow
         GUILayout.ExpandWidth(false));
     bool nameOrEnabledChanged = EditorGUI.EndChangeCheck();
 
-    if ((normalWallEnabledPreview || isBlackDoorRightD3Exception)
+    if (usePreviewEnabledOverride
         && enabledAfter != enabledBefore)
     {
       bool is52SouthForcedOff =
@@ -2336,13 +2351,13 @@ public class ViewportLayoutEditor : EditorWindow
         RefreshTemporaryNormalWallPreview();
       }
     }
-    else if (!normalWallEnabledPreview && !isBlackDoorRightD3Exception)
+    else if (!usePreviewEnabledOverride)
     {
       piece.Enabled = enabledAfter;
     }
 
     bool effectiveEnabled =
-        (normalWallEnabledPreview || isBlackDoorRightD3Exception)
+        usePreviewEnabledOverride
         ? enabledAfter
         : piece.Enabled;
 
@@ -4596,6 +4611,9 @@ public class ViewportLayoutEditor : EditorWindow
     if (Application.isPlaying)
       return;
 
+    // Start a fresh manual wall-selection session. Geometry/pose rules remain
+    // blocked, but the user can explicitly re-enable individual walls.
+    previewEnabledOverrideByPiece.Clear();
     previewDisableAllWalls = true;
   }
 
@@ -8004,7 +8022,10 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (previewDisableAllWalls
             && piece != null
-            && !IsDisableWallsKeeper(piece))
+            && !IsDisableWallsKeeper(piece)
+            && (!previewEnabledOverrideByPiece.TryGetValue(
+                    piece, out bool manuallyEnabledAfterDisable)
+                || !manuallyEnabledAfterDisable))
         {
           continue;
         }
@@ -9170,8 +9191,14 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null)
       return false;
 
-    if (previewDisableAllWalls && !IsDisableWallsKeeper(piece))
+    if (previewDisableAllWalls
+        && !IsDisableWallsKeeper(piece)
+        && (!previewEnabledOverrideByPiece.TryGetValue(
+                piece, out bool manuallyEnabledAfterDisable)
+            || !manuallyEnabledAfterDisable))
+    {
       return false;
+    }
 
     // Normal walls draw only when the current minimap resolver explicitly
     // produced an enabled transient state. Black Door and all unresolved wall
