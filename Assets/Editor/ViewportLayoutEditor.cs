@@ -2552,6 +2552,17 @@ public class ViewportLayoutEditor : EditorWindow
       editUnityY = previewPosition.y;
     }
 
+    // (1,4) North BlackDoorF2 is an exception door. Its live ViewEdit
+    // position is the canonical reference, not the stored layout X/Y.
+    if (isBlackDoorF2RequiredException
+        && TryGetCanonicalReferenceXY(
+            "BlackDoorF2", out int blackDoorF2RefX, out int blackDoorF2RefY))
+    {
+      editX = blackDoorF2RefX;
+      editUnityY = DisplayYToUnityY(
+          blackDoorF2RefY, GetPieceHeightForEditorY(piece));
+    }
+
     int xBefore = editX;
     bool hasCanonicalRef = TryGetPieceCardReferenceXY(
         piece, mirrorAfter, out canonicalRefX, out canonicalRefY);
@@ -8978,12 +8989,26 @@ public class ViewportLayoutEditor : EditorWindow
           Texture2D f2Source = GetBlackDoorF2SourceTexture();
           if (f2Source != null)
           {
-            int f2DoorX = doorF2 != null
-                ? doorF2.X
-                : piece.ResolvedBlackDoorF2X;
-            int f2DoorY = doorF2 != null
-                ? doorF2.Y
-                : piece.ResolvedBlackDoorF2Y;
+            int f2DoorX;
+            int f2DoorY;
+            if (TryGetCanonicalReferenceXY(
+                    "BlackDoorF2", out int f2RefX, out int f2RefY))
+            {
+              // Exception-door authority: always draw at the canonical
+              // ViewEdit reference X/Y for (1,4) North.
+              f2DoorX = f2RefX;
+              f2DoorY = DisplayYToUnityY(f2RefY, f2Source.height);
+            }
+            else
+            {
+              f2DoorX = doorF2 != null
+                  ? doorF2.X
+                  : piece.ResolvedBlackDoorF2X;
+              f2DoorY = doorF2 != null
+                  ? doorF2.Y
+                  : piece.ResolvedBlackDoorF2Y;
+            }
+
             bool f2DoorMirror = doorF2 != null
                 ? doorF2.MirrorHorizontally
                 : blackDoorF2CardMirror;
@@ -10062,7 +10087,19 @@ public class ViewportLayoutEditor : EditorWindow
 
   private int GetPieceHeightForEditorY(ViewportPiece piece)
   {
-    if (piece == null || graphics == null)
+    if (piece == null)
+      return 1;
+
+    // BlackDoorF2 uses its dedicated 66x64 exception texture rather than
+    // the normal BlackDoor graphic, so ViewEdit Y must use that height.
+    if (piece.Name == "BlackDoorF2")
+    {
+      Texture2D f2Texture = GetBlackDoorF2SourceTexture();
+      if (f2Texture != null && f2Texture.height > 0)
+        return f2Texture.height;
+    }
+
+    if (graphics == null)
       return 1;
 
     if (IsFrontWallF1Card(piece))
