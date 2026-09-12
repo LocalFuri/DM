@@ -2077,7 +2077,6 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF3RightPiece(piece)
         || isLeftD3Card
         || piece.Name == "LeftS2"
-        || piece.Name == "Left2S"
         || piece.Name == "Right2S"
         || piece.Name == "RightD3";
     bool hideNameForWall = IsWallEditorPiece(piece);
@@ -2874,6 +2873,33 @@ public class ViewportLayoutEditor : EditorWindow
   /// </summary>
   private void EnsureLeft2SAndRight2SPieces()
   {
+    // Migrate the old ViewEdit-only alias once so all geometry/filter/render
+    // logic has a single canonical piece name: LeftS2.
+    if (layout != null && layout.Pieces != null)
+    {
+      ViewportPiece canonicalLeftS2 = FindLayoutPieceByName("LeftS2");
+      ViewportPiece legacyLeft2S = FindLayoutPieceByName("Left2S");
+      bool migrated = false;
+
+      if (canonicalLeftS2 == null && legacyLeft2S != null)
+      {
+        legacyLeft2S.Name = "LeftS2";
+        if (legacyLeft2S.Graphic == DungeonGraphicType.None)
+          legacyLeft2S.Graphic = DungeonGraphicType.Left2S;
+        migrated = true;
+      }
+      else if (canonicalLeftS2 != null && legacyLeft2S != null)
+      {
+        // If an older asset already contains both names, keep the canonical
+        // LeftS2 card and remove the stale duplicate alias.
+        layout.Pieces.Remove(legacyLeft2S);
+        migrated = true;
+      }
+
+      if (migrated)
+        EditorUtility.SetDirty(layout);
+    }
+
     EnsureNamedWallListPiece("LeftS2", "LeftF2");
     EnsureNamedWallListPiece("Right2S", "RightF2");
   }
@@ -5336,6 +5362,28 @@ public class ViewportLayoutEditor : EditorWindow
         && FormatRelativeViewportCellShort(g.F3Right) == "X";
   }
 
+  private static bool IsCanonicalFrontF2F0SidesGeometry(
+      RelativeViewportGeometry g)
+  {
+    // Canonical corridor-ending diagnostic first verified at 0,5 East.
+    // Match the diagnostic cells exactly, never absolute map coordinates:
+    // F0: L=W R=W
+    // F1: L=O C=O R=O
+    // F2: L=W C=W R=W
+    // F3: L=W C=W R=W
+    return FormatRelativeViewportCellShort(g.F0Left) == "W"
+        && FormatRelativeViewportCellShort(g.F0Right) == "W"
+        && FormatRelativeViewportCellShort(g.F1Left) == "O"
+        && FormatRelativeViewportCellShort(g.F1Center) == "O"
+        && FormatRelativeViewportCellShort(g.F1Right) == "O"
+        && FormatRelativeViewportCellShort(g.F2Left) == "W"
+        && FormatRelativeViewportCellShort(g.F2Center) == "W"
+        && FormatRelativeViewportCellShort(g.F2Right) == "W"
+        && FormatRelativeViewportCellShort(g.F3Left) == "W"
+        && FormatRelativeViewportCellShort(g.F3Center) == "W"
+        && FormatRelativeViewportCellShort(g.F3Right) == "W";
+  }
+
   private static bool IsCanonicalFrontF1F0EdgeGeometry(
       RelativeViewportGeometry g)
   {
@@ -5644,6 +5692,8 @@ public class ViewportLayoutEditor : EditorWindow
     string frontF1GeometryKey = BuildFrontF1GeometryKey(g);
     bool canonicalFrontF2F1SidesEdgeGeometry =
         IsCanonicalFrontF2F1SidesEdgeGeometry(g);
+    bool canonicalFrontF2F0SidesGeometry =
+        IsCanonicalFrontF2F0SidesGeometry(g);
     bool canonicalFrontF1F0EdgeGeometry =
         IsCanonicalFrontF1F0EdgeGeometry(g);
 
@@ -5794,7 +5844,9 @@ public class ViewportLayoutEditor : EditorWindow
         // Canonical edge-of-map geometry: the F2 row is outside the map,
         // so the boundary renders as FrontF2 for every pose with the same
         // diagnostic signature.
-        enabled = canonicalFrontF2F1SidesEdgeGeometry || piece.Enabled;
+        enabled = canonicalFrontF2F1SidesEdgeGeometry
+            || canonicalFrontF2F0SidesGeometry
+            || piece.Enabled;
         x = 0;
         y = DisplayYToUnityY(125, GetPieceHeightForEditorY(piece));
         mirror = canonicalFrontF2F1SidesEdgeGeometry ? true : frontMirror;
@@ -9469,7 +9521,8 @@ public class ViewportLayoutEditor : EditorWindow
     // same normalized diagnostic geometry, not only the original map pose.
     if (IsFrontWallF2Card(piece)
         && TryGetCurrentRelativeViewportGeometry(out RelativeViewportGeometry edgeGeometry)
-        && IsCanonicalFrontF2F1SidesEdgeGeometry(edgeGeometry))
+        && (IsCanonicalFrontF2F1SidesEdgeGeometry(edgeGeometry)
+            || IsCanonicalFrontF2F0SidesGeometry(edgeGeometry)))
     {
       if (previewEnabledOverrideByPiece.TryGetValue(
               piece, out bool frontF2PreviewEnabled))
