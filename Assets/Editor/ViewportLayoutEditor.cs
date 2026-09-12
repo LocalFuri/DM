@@ -2279,10 +2279,11 @@ public class ViewportLayoutEditor : EditorWindow
       enabledBefore = manualPreviewEnabled;
     }
 
-    // BlackDoorF3 and both F3 frame pieces are exact exception pieces at
-    // (1,5) North. The code, not the stored layout Enabled flag, owns their
-    // preview visibility.
-    if (isBlackDoorF3Required || isBlackDoorF3FrameRequired)
+    // BlackDoorF3 itself is a hard exception at (1,5) North and stays ON.
+    // The two F3 frame pieces default ON when this pose is entered, but their
+    // ViewEdit Enabled toggles remain authoritative so they can be tested
+    // individually without changing pose geometry.
+    if (isBlackDoorF3Required)
       enabledBefore = true;
 
     // (5,2) South only forces pieces outside the allowed set OFF.
@@ -2298,7 +2299,7 @@ public class ViewportLayoutEditor : EditorWindow
         enabledBefore,
         GUILayout.Width(enabledLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
-    if (isBlackDoorF3Required || isBlackDoorF3FrameRequired)
+    if (isBlackDoorF3Required)
       enabledAfter = true;
     bool nameOrEnabledChanged = EditorGUI.EndChangeCheck();
 
@@ -9555,27 +9556,48 @@ public class ViewportLayoutEditor : EditorWindow
     if (source == null)
       return;
 
-    // Exact Black Door F3 exception: both frame images are always visible at
-    // (1,5) North. Stored Enabled flags must not suppress this door view.
+    // Exact Black Door F3 exception: the two frame cards default ON at
+    // (1,5) North, but their ViewEdit Enabled toggles can temporarily hide
+    // either side for visual checking.
     ViewportPiece leftF3 = FindLayoutPieceByName("Black Door Frame Left F3");
-    int leftX = leftF3 != null ? leftF3.X : blackDoorFrameLeftF3CardX;
-    int leftY = leftF3 != null ? leftF3.Y : blackDoorFrameLeftF3CardY;
-    BlitPieceIntoPreview(
-        pixels,
-        source,
-        leftX,
-        leftY,
-        blackDoorFrameLeftF3CardMirror);
+    bool leftEnabled = leftF3 != null
+        ? leftF3.Enabled
+        : blackDoorFrameLeftF3CardEnabled;
+    if (leftF3 != null
+        && previewEnabledOverrideByPiece.TryGetValue(leftF3, out bool leftPreviewEnabled))
+      leftEnabled = leftPreviewEnabled;
+
+    if (leftEnabled)
+    {
+      int leftX = leftF3 != null ? leftF3.X : blackDoorFrameLeftF3CardX;
+      int leftY = leftF3 != null ? leftF3.Y : blackDoorFrameLeftF3CardY;
+      BlitPieceIntoPreview(
+          pixels,
+          source,
+          leftX,
+          leftY,
+          blackDoorFrameLeftF3CardMirror);
+    }
 
     ViewportPiece rightF3 = FindLayoutPieceByName("Black Door Frame Right F3");
-    int rightX = rightF3 != null ? rightF3.X : blackDoorFrameRightF3CardX;
-    int rightY = rightF3 != null ? rightF3.Y : blackDoorFrameRightF3CardY;
-    BlitPieceIntoPreview(
-        pixels,
-        source,
-        rightX,
-        rightY,
-        true);
+    bool rightEnabled = rightF3 != null
+        ? rightF3.Enabled
+        : blackDoorFrameRightF3CardEnabled;
+    if (rightF3 != null
+        && previewEnabledOverrideByPiece.TryGetValue(rightF3, out bool rightPreviewEnabled))
+      rightEnabled = rightPreviewEnabled;
+
+    if (rightEnabled)
+    {
+      int rightX = rightF3 != null ? rightF3.X : blackDoorFrameRightF3CardX;
+      int rightY = rightF3 != null ? rightF3.Y : blackDoorFrameRightF3CardY;
+      BlitPieceIntoPreview(
+          pixels,
+          source,
+          rightX,
+          rightY,
+          true);
+    }
   }
 
   /// <summary>
