@@ -2290,16 +2290,10 @@ public class ViewportLayoutEditor : EditorWindow
     bool normalWallEnabledPreview = IsNormalWallPiece(piece);
     bool isBlackDoorRightD3Exception =
         IsBlackDoorObliqueRightD3PoseException(piece);
-    bool isBlackDoorF2RequiredException =
-        piece.Name == "BlackDoorF2"
-        && previewX == 1
-        && previewY == 4
-        && previewFacing == DungeonFacing.North;
     bool wallRenderingPreview = IsWallRenderingPiece(piece);
     bool usePreviewEnabledOverride =
         normalWallEnabledPreview
         || isBlackDoorRightD3Exception
-        || isBlackDoorF2RequiredException
         || (previewDisableAllWalls && wallRenderingPreview);
 
     bool enabledBefore = piece.Enabled;
@@ -2332,9 +2326,6 @@ public class ViewportLayoutEditor : EditorWindow
         && TryGet52SouthForcedWallEnabled(piece, out bool forced52UiEnabled)
         && !forced52UiEnabled)
       enabledBefore = false;
-
-    if (isBlackDoorF2RequiredException)
-      enabledBefore = true;
 
     bool enabledAfter = DrawMouseOnlyToggle(
         EnabledLabel,
@@ -2537,10 +2528,6 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
 
     bool normalWallPositionPreview = IsNormalWallPiece(piece);
-    bool blackDoorF2PositionPreview = isBlackDoorF2RequiredException;
-    bool usePreviewPositionOverride =
-        normalWallPositionPreview || blackDoorF2PositionPreview;
-
     int editX = piece.X;
     int editUnityY = piece.Y;
     if (normalWallPositionPreview
@@ -2549,20 +2536,7 @@ public class ViewportLayoutEditor : EditorWindow
       editX = xyState.X;
       editUnityY = xyState.Y;
     }
-
-    // (1,4) North BlackDoorF2 defaults to its canonical reference, but a
-    // manual ViewEdit X/Y override must be allowed to move the exception door.
-    if (blackDoorF2PositionPreview
-        && TryGetCanonicalReferenceXY(
-            "BlackDoorF2", out int blackDoorF2RefX, out int blackDoorF2RefY))
-    {
-      editX = blackDoorF2RefX;
-      editUnityY = DisplayYToUnityY(
-          blackDoorF2RefY, GetPieceHeightForEditorY(piece));
-    }
-
-    // Manual X/Y wins over the geometry/reference default for the current pose.
-    if (usePreviewPositionOverride
+    if (normalWallPositionPreview
         && previewPositionOverrideByPiece.TryGetValue(piece, out Vector2Int previewPosition))
     {
       editX = previewPosition.x;
@@ -2583,7 +2557,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (xChanged && editX != xBefore)
     {
       SelectPiece(index);
-      if (usePreviewPositionOverride)
+      if (normalWallPositionPreview)
       {
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
 
@@ -2609,7 +2583,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (yChanged && editUnityY != yBefore)
     {
       SelectPiece(index);
-      if (usePreviewPositionOverride)
+      if (normalWallPositionPreview)
       {
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
         previewPositionChangedThisFrame = true;
@@ -2651,7 +2625,7 @@ public class ViewportLayoutEditor : EditorWindow
       {
         if (!blackDoorF2CardInitialized)
         {
-          blackDoorF2CardEnabled = false;
+          blackDoorF2CardEnabled = true;
           blackDoorF2CardMirror = piece.MirrorHorizontally;
           blackDoorF2CardGraphic = DungeonGraphicType.BlackDoor;
           blackDoorF2CardInitialized = true;
@@ -2700,7 +2674,7 @@ public class ViewportLayoutEditor : EditorWindow
         {
           EditorGUILayout.IntField(63, GUILayout.Width(50));
           EditorGUILayout.LabelField("x", GUILayout.Width(12));
-          EditorGUILayout.IntField(60, GUILayout.Width(50));
+          EditorGUILayout.IntField(59, GUILayout.Width(50));
         }
         EditorGUILayout.EndHorizontal();
 
@@ -4037,10 +4011,10 @@ public class ViewportLayoutEditor : EditorWindow
         if (piece == null)
           continue;
 
-        // Black Door cards/frames use dedicated editor draw paths rather than
-        // the normal-wall resolver. Include every Black Door piece needed for
-        // the current pose so Diagnostics reflects the actual visible set.
-        if (IsBlackDoorEditorPiece(piece) && IsWallNeededForCurrentPose(piece))
+        // BlackDoorF1 is a special editor piece and does not use the normal-wall
+        // resolver. Include it in Diagnostics when its dedicated needed-pose
+        // rule says it belongs to the current view.
+        if (piece.Name == "BlackDoorF1" && IsWallNeededForCurrentPose(piece))
         {
           int blackDoorX = piece.EffectiveX;
           if (previewPositionOverrideByPiece.TryGetValue(
@@ -4049,17 +4023,7 @@ public class ViewportLayoutEditor : EditorWindow
             blackDoorX = blackDoorPosition.x;
           }
 
-          string blackDoorName = piece.Name ?? string.Empty;
-          if (!string.IsNullOrEmpty(blackDoorName))
-          {
-            if (!drawPieceXByName.TryGetValue(
-                    blackDoorName, out int existingBlackDoorX)
-                || blackDoorX < existingBlackDoorX)
-            {
-              drawPieceXByName[blackDoorName] = blackDoorX;
-            }
-          }
-
+          drawPieceXByName["BlackDoorF1"] = blackDoorX;
           continue;
         }
 
@@ -4113,8 +4077,6 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < drawPiecesLeftToRight.Count; i++)
       drawPieceNamesLeftToRight.Add(drawPiecesLeftToRight[i].Key);
 
-    string drawText = BuildBalancedDrawDiagnosticText(drawPieceNamesLeftToRight);
-
     string text =
         "GEOMETRY DIAGNOSTIC  "
         + previewX + "," + previewY + " " + previewFacing + "\n"
@@ -4129,60 +4091,14 @@ public class ViewportLayoutEditor : EditorWindow
         + "\nF3: L=" + FormatRelativeViewportCellShort(geometry.F3Left)
         + "  C=" + FormatRelativeViewportCellShort(geometry.F3Center)
         + "  R=" + FormatRelativeViewportCellShort(geometry.F3Right)
-        + "\n\n"
-        + drawText;
+        + "\n\nDRAW: "
+        + (drawPieceNamesLeftToRight.Count > 0
+            ? string.Join(", ", drawPieceNamesLeftToRight)
+            : "none");
 
-    GUIStyle diagnosticStyle = new GUIStyle(EditorStyles.helpBox);
-    diagnosticStyle.normal.textColor = new Color32(255, 255, 255, 255);
-    diagnosticStyle.wordWrap = true;
-    GUILayout.Label(text, diagnosticStyle, GUILayout.ExpandWidth(true));
+    EditorGUILayout.HelpBox(text, MessageType.None);
     if (Event.current.type == EventType.Repaint)
       geometryDiagnosticRect = GUILayoutUtility.GetLastRect();
-  }
-
-  private static string BuildBalancedDrawDiagnosticText(List<string> names)
-  {
-    if (names == null || names.Count == 0)
-      return "DRAW: none";
-
-    if (names.Count == 1)
-      return "DRAW: " + names[0];
-
-    int bestSplit = 1;
-    int bestDifference = int.MaxValue;
-
-    for (int split = 1; split < names.Count; split++)
-    {
-      int firstLength = "DRAW: ".Length;
-      for (int i = 0; i < split; i++)
-      {
-        if (i > 0)
-          firstLength += 2;
-        firstLength += names[i].Length;
-      }
-
-      int secondLength = "      ".Length;
-      for (int i = split; i < names.Count; i++)
-      {
-        if (i > split)
-          secondLength += 2;
-        secondLength += names[i].Length;
-      }
-
-      int difference = Mathf.Abs(firstLength - secondLength);
-      if (difference < bestDifference)
-      {
-        bestDifference = difference;
-        bestSplit = split;
-      }
-    }
-
-    string firstLine =
-        "DRAW: " + string.Join(", ", names.GetRange(0, bestSplit));
-    string secondLine =
-        "      " + string.Join(", ", names.GetRange(bestSplit, names.Count - bestSplit));
-
-    return firstLine + "\n" + secondLine;
   }
 
   private static string FormatRelativeViewportCell(RelativeViewportCell cell)
@@ -7398,17 +7314,6 @@ public class ViewportLayoutEditor : EditorWindow
             || piece.Name == "Black Door Frame Right F2")
         {
           piece.Enabled = true;
-
-          // Keep the verified Right F2 frame at its canonical reference
-          // for the dedicated (1,4) North Black Door exception view.
-          if (piece.Name == "Black Door Frame Right F2"
-              && TryGetCanonicalReferenceXY(
-                  piece.Name, out int rightF2RefX, out int rightF2RefY))
-          {
-            piece.X = rightF2RefX;
-            piece.Y = DisplayYToUnityY(
-                rightF2RefY, GetPieceHeightForEditorY(piece));
-          }
         }
 
         // Black Door F2 occupies the front view at (1,4) North. Any normal
@@ -8959,7 +8864,7 @@ public class ViewportLayoutEditor : EditorWindow
         }
 
         // (1,4) North: F2 frames already blitted in kit order; BlackDoorF2
-        // 66×64 1:1 last so it covers overlapping inner frame pixels.
+        // 63×59 1:1 last so it covers overlapping inner frame pixels.
         if (blackDoorF2Exception)
         {
           // 1,4 North: draw the special F2 left/right frame parts first,
@@ -9000,42 +8905,32 @@ public class ViewportLayoutEditor : EditorWindow
             }
           }
 
-          // Dedicated front F2 door. The 1,4 North exception requires this
-          // door regardless of stored asset Enabled.
+          // Dedicated front F2 door. At the verified (1,4) North
+          // exception pose the door is mandatory; do not gate it on the
+          // stored Enabled flag.
           ViewportPiece doorF2 = FindLayoutPieceByName("BlackDoorF2");
           Texture2D f2Source = GetBlackDoorF2SourceTexture();
           if (f2Source != null)
           {
-            int f2DoorX;
-            int f2DoorY;
-            if (doorF2 != null
-                && previewPositionOverrideByPiece.TryGetValue(
-                    doorF2, out Vector2Int f2PreviewPosition))
-            {
-              // Manual ViewEdit X/Y is authoritative for the current pose.
-              f2DoorX = f2PreviewPosition.x;
-              f2DoorY = f2PreviewPosition.y;
-            }
-            else if (TryGetCanonicalReferenceXY(
-                         "BlackDoorF2", out int f2RefX, out int f2RefY))
-            {
-              // With no manual override, the exception door defaults to Ref.
-              f2DoorX = f2RefX;
-              f2DoorY = DisplayYToUnityY(f2RefY, f2Source.height);
-            }
-            else
-            {
-              f2DoorX = doorF2 != null
-                  ? doorF2.X
-                  : piece.ResolvedBlackDoorF2X;
-              f2DoorY = doorF2 != null
-                  ? doorF2.Y
-                  : piece.ResolvedBlackDoorF2Y;
-            }
+            int f2DoorX = piece.ResolvedBlackDoorF2X;
+            int f2DoorY = piece.ResolvedBlackDoorF2Y;
+            bool f2DoorMirror = blackDoorF2CardMirror;
 
-            bool f2DoorMirror = doorF2 != null
-                ? doorF2.MirrorHorizontally
-                : blackDoorF2CardMirror;
+            // If a real BlackDoorF2 card exists, keep its live ViewEdit
+            // position/mirror values. A temporary position override wins.
+            if (doorF2 != null)
+            {
+              f2DoorX = doorF2.X;
+              f2DoorY = doorF2.Y;
+              f2DoorMirror = doorF2.MirrorHorizontally;
+
+              if (previewPositionOverrideByPiece.TryGetValue(
+                      doorF2, out Vector2Int f2DoorOverride))
+              {
+                f2DoorX = f2DoorOverride.x;
+                f2DoorY = f2DoorOverride.y;
+              }
+            }
 
             BlitPieceIntoPreview(
                 pixels,
@@ -9568,7 +9463,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       blackDoorF2SourceTexture =
           AssetDatabase.LoadAssetAtPath<Texture2D>(
-              "Assets/Art/Walls/BlackDoorF2_66x64.png");
+              "Assets/Art/Walls/BlackDoorF2_63x59.png");
     }
 
     return blackDoorF2SourceTexture;
@@ -10111,19 +10006,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private int GetPieceHeightForEditorY(ViewportPiece piece)
   {
-    if (piece == null)
-      return 1;
-
-    // BlackDoorF2 uses its dedicated 66x64 exception texture rather than
-    // the normal BlackDoor graphic, so ViewEdit Y must use that height.
-    if (piece.Name == "BlackDoorF2")
-    {
-      Texture2D f2Texture = GetBlackDoorF2SourceTexture();
-      if (f2Texture != null && f2Texture.height > 0)
-        return f2Texture.height;
-    }
-
-    if (graphics == null)
+    if (piece == null || graphics == null)
       return 1;
 
     if (IsFrontWallF1Card(piece))
