@@ -1100,6 +1100,20 @@ public class ViewportLayoutEditor : EditorWindow
       return resolvedNeededState.Enabled;
     }
 
+    // LeftS2 is a ViewEdit-only geometry piece, so it is not classified as a
+    // normal wall. Use the same resolved strict-geometry state for the needed
+    // walls filter instead of falling through to the default-visible path.
+    if (name == "LeftS2")
+    {
+      if (TryGetResolvedNormalWallState(
+              piece, out ResolvedNormalWallState leftS2NeededState))
+      {
+        return leftS2NeededState.Enabled;
+      }
+
+      return false;
+    }
+
     DungeonMap.GetForwardOffset(
         previewFacing,
         out int forwardX,
@@ -5736,7 +5750,7 @@ public class ViewportLayoutEditor : EditorWindow
         enabled = frontF2BoundaryAt15West || piece.Enabled;
         x = 0;
         y = DisplayYToUnityY(125, GetPieceHeightForEditorY(piece));
-        mirror = frontMirror;
+        mirror = frontF2BoundaryAt15West ? true : frontMirror;
       }
       else if (IsFrontWallF3Card(piece))
       {
@@ -5806,6 +5820,17 @@ public class ViewportLayoutEditor : EditorWindow
           y = DisplayYToUnityY(42, GetPieceHeightForEditorY(piece));
           mirror = false;
         }
+
+        // Verified canonical edge-of-map view at 1,5 West.
+        if (previewX == 1
+            && previewY == 5
+            && previewFacing == DungeonFacing.West)
+        {
+          enabled = true;
+          x = 0;
+          y = DisplayYToUnityY(42, GetPieceHeightForEditorY(piece));
+          mirror = true;
+        }
       }
       else if (IsWallF1RightPiece(piece))
       {
@@ -5832,6 +5857,18 @@ public class ViewportLayoutEditor : EditorWindow
         {
           x = 165;
           y = DisplayYToUnityY(42, GetPieceHeightForEditorY(piece));
+        }
+
+
+        // Verified canonical edge-of-map view at 1,5 West.
+        if (previewX == 1
+            && previewY == 5
+            && previewFacing == DungeonFacing.West)
+        {
+          enabled = true;
+          x = 165;
+          y = DisplayYToUnityY(42, GetPieceHeightForEditorY(piece));
+          mirror = true;
         }
       }
       else if (IsWallF2LeftPiece(piece))
