@@ -54,12 +54,20 @@ namespace DM.Rendering
     [System.NonSerialized]
     private Texture2D cachedFrontWallF3_141;
 
+    [System.NonSerialized]
+    private Texture2D cachedLeft2S;
+
     [Header("Side Wall Graphics")]
     [FormerlySerializedAs("WallS3L")]
     public Texture2D WallD3L2;
 
     [FormerlySerializedAs("WallS3R")]
     public Texture2D WallD3R2;
+
+    [Header("2S Walls")]
+    public Texture2D Left2S;
+
+    public const string Left2SAssetPath = "Assets/Art/Walls/Left2S.png";
 
     [Header("Doors")]
     public Texture2D DoorClosed;
@@ -125,6 +133,8 @@ namespace DM.Rendering
           return WallD3L2;
         case DungeonGraphicType.WallD3R2:
           return WallD3R2;
+        case DungeonGraphicType.Left2S:
+          return GetLeft2STexture();
         case DungeonGraphicType.DoorClosed:
           return DoorClosed;
         case DungeonGraphicType.DoorOpen:
@@ -175,6 +185,22 @@ namespace DM.Rendering
       }
 
       return FrontWallF1;
+    }
+
+    public Texture2D GetLeft2STexture()
+    {
+      if (Left2S != null)
+        return Left2S;
+
+      if (cachedLeft2S != null)
+        return cachedLeft2S;
+
+#if UNITY_EDITOR
+      cachedLeft2S =
+          UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+              Left2SAssetPath);
+#endif
+      return cachedLeft2S != null ? cachedLeft2S : Left2S;
     }
 
     public Texture2D GetFrontWallF3Texture()

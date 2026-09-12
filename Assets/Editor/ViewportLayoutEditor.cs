@@ -97,6 +97,7 @@ public class ViewportLayoutEditor : EditorWindow
   private int pieceSearchFamilyIndex;
   private bool showWallsActivFilter;
   private bool showOnlyWallsNeededForCurrentPose;
+  private bool previewDisableAllWalls;
   private bool showGeometryDiagnostics;
   private string pieceSearchText = string.Empty;
   private bool openSearchPiecesPopup;
@@ -2854,7 +2855,15 @@ public class ViewportLayoutEditor : EditorWindow
   {
     ViewportPiece existing = FindLayoutPieceByName(name);
     if (existing != null)
+    {
+      if (name == "Left2S"
+          && existing.Graphic == DungeonGraphicType.None)
+      {
+        existing.Graphic = DungeonGraphicType.Left2S;
+      }
+
       return existing;
+    }
 
     if (layout == null || layout.Pieces == null)
       return null;
@@ -2876,7 +2885,9 @@ public class ViewportLayoutEditor : EditorWindow
     ViewportPiece created = new ViewportPiece
     {
       Name = name,
-      Graphic = DungeonGraphicType.None,
+      Graphic = name == "Left2S"
+          ? DungeonGraphicType.Left2S
+          : DungeonGraphicType.None,
       X = 0,
       Y = 0,
       Enabled = false,
@@ -3878,7 +3889,9 @@ public class ViewportLayoutEditor : EditorWindow
     if (GUILayout.Button("Disable Walls", GUILayout.Width(100f)))
     {
       DisableWallsKeepChrome();
-      PersistChanges();
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
     }
 
     EditorGUILayout.EndHorizontal();
@@ -4382,6 +4395,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewPositionOverrideByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
     previewGraphicOverrideByPiece.Clear();
+    previewDisableAllWalls = false;
 
     previewX = newX;
     previewY = newY;
@@ -4431,6 +4445,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewPositionOverrideByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
     previewGraphicOverrideByPiece.Clear();
+    previewDisableAllWalls = false;
 
     previewX = newX;
     previewY = newY;
@@ -4569,18 +4584,16 @@ public class ViewportLayoutEditor : EditorWindow
   /// Disables every piece except Floor, Ceiling, Movement Arrows, and
   /// Champion Status Slot 1–4 (matched by ViewportPiece.Name).
   /// </summary>
+  /// <summary>
+  /// ViewEdit preview only. Floor, ceiling, arrows, and champion slots stay.
+  /// Stored piece Enabled / X / Y / Graphic / Mirror are not changed.
+  /// </summary>
   private void DisableWallsKeepChrome()
   {
-    if (layout == null || Application.isPlaying)
+    if (Application.isPlaying)
       return;
 
-    Undo.RecordObject(layout, "Viewport Layout Disable Walls");
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      piece.Enabled = IsDisableWallsKeeper(piece);
-    }
+    previewDisableAllWalls = true;
   }
 
   private static bool IsDisableWallsKeeper(ViewportPiece piece)
@@ -7937,6 +7950,13 @@ public class ViewportLayoutEditor : EditorWindow
         if (IsNormalWallPiece(piece))
           piece = orderedNormalWalls[nextNormalWall++];
 
+        if (previewDisableAllWalls
+            && piece != null
+            && !IsDisableWallsKeeper(piece))
+        {
+          continue;
+        }
+
         if (hasLiveFrontF3Card
             && piece != null
             && piece.Name == "Front Wall F3")
@@ -7985,7 +8005,8 @@ public class ViewportLayoutEditor : EditorWindow
                     && !IsChampionStatusSlotPiece(piece)
                     && !IsFrontWallF1Card(piece)
                     && !IsFrontWallF3Card(piece)
-                    && !IsWallF0RightPiece(piece))))
+                    && !IsWallF0RightPiece(piece)
+                    && piece.Name != "Left2S")))
         {
           continue;
         }
@@ -9069,6 +9090,9 @@ public class ViewportLayoutEditor : EditorWindow
   private bool ShouldDrawPieceAtPreviewPose(ViewportPiece piece)
   {
     if (piece == null)
+      return false;
+
+    if (previewDisableAllWalls && !IsDisableWallsKeeper(piece))
       return false;
 
     // Normal walls draw only when the current minimap resolver explicitly

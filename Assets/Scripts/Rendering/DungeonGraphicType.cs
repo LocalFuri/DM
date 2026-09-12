@@ -64,6 +64,11 @@ namespace DM.Rendering
     /// F2 right door frame (native 18×65, same source as left F2).
     /// (1,4) North for now.
     /// </summary>
-    BlackDoorFrameRightF2
+    BlackDoorFrameRightF2,
+
+    /// <summary>
+    /// Manual ViewEdit Left2S wall image. Not LeftF2 / WallF2L.
+    /// </summary>
+    Left2S
   }
 }

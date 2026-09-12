@@ -140,7 +140,7 @@ MonoBehaviour:
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: Left2S
-    Graphic: 0
+    Graphic: 34
     X: 0
     Y: 0
     Enabled: 0
