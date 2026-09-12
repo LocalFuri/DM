@@ -1874,7 +1874,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("LeftF2", 0),
     ("LeftF3", 136),
     ("RightF0", 192),
-    ("RightF1", 0),
+    ("RightF1", 165),
     ("RightF2", 147),
     ("RightF3", 136),
   };
