@@ -5451,10 +5451,17 @@ public class ViewportLayoutEditor : EditorWindow
         && !IsViewEditGeometryWall(g.F2Left)
         && IsViewEditGeometryWall(g.F3Left);
 
+    bool leftS2 =
+        IsViewEditGeometryWall(g.F1Center)
+        && !IsViewEditGeometryWall(g.F1Left)
+        && !IsViewEditGeometryWall(g.F2Left)
+        && IsViewEditGeometryWall(g.F3Left);
+
     bool frontF3 =
-        !IsViewEditGeometryWall(g.F1Center) &&
-        !IsViewEditGeometryWall(g.F2Center) &&
-        IsViewEditGeometryWall(g.F3Center);
+        (!IsViewEditGeometryWall(g.F1Center) &&
+         !IsViewEditGeometryWall(g.F2Center) &&
+         IsViewEditGeometryWall(g.F3Center))
+        || leftS2;
 
     bool leftF0 = IsViewEditGeometryWall(g.F0Left);
     bool rightF0 = IsViewEditGeometryWall(g.F0Right);
@@ -5483,12 +5490,6 @@ public class ViewportLayoutEditor : EditorWindow
         !IsViewEditGeometryWall(g.F2Center) &&
         !IsViewEditGeometryWall(g.F3Center) &&
         IsViewEditGeometryWall(g.F3Right);
-
-    bool leftS2 =
-        IsViewEditGeometryWall(g.F1Center)
-        && !IsViewEditGeometryWall(g.F1Left)
-        && !IsViewEditGeometryWall(g.F2Left)
-        && IsViewEditGeometryWall(g.F3Left);
 
     // RightD3 oblique-right opening derived only from player-relative near geometry,
     // never from absolute map coordinates. Verified examples include 1,6 East,
