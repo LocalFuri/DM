@@ -5314,6 +5314,28 @@ public class ViewportLayoutEditor : EditorWindow
     return cell.IsWall;
   }
 
+  private static bool IsCanonicalFrontF2F1SidesEdgeGeometry(
+      RelativeViewportGeometry g)
+  {
+    // Canonical diagnostic signature first verified at 1,5 West.
+    // Match the diagnostic cells exactly, not absolute map coordinates:
+    // F0: L=O R=O
+    // F1: L=W C=O R=W
+    // F2: L=X C=X R=X
+    // F3: L=X C=X R=X
+    return FormatRelativeViewportCellShort(g.F0Left) == "O"
+        && FormatRelativeViewportCellShort(g.F0Right) == "O"
+        && FormatRelativeViewportCellShort(g.F1Left) == "W"
+        && FormatRelativeViewportCellShort(g.F1Center) == "O"
+        && FormatRelativeViewportCellShort(g.F1Right) == "W"
+        && FormatRelativeViewportCellShort(g.F2Left) == "X"
+        && FormatRelativeViewportCellShort(g.F2Center) == "X"
+        && FormatRelativeViewportCellShort(g.F2Right) == "X"
+        && FormatRelativeViewportCellShort(g.F3Left) == "X"
+        && FormatRelativeViewportCellShort(g.F3Center) == "X"
+        && FormatRelativeViewportCellShort(g.F3Right) == "X";
+  }
+
   private static bool IsVerifiedFrontF1X0Geometry(
       RelativeViewportGeometry g)
   {
@@ -5597,6 +5619,8 @@ public class ViewportLayoutEditor : EditorWindow
             previewFacing);
 
     string frontF1GeometryKey = BuildFrontF1GeometryKey(g);
+    bool canonicalFrontF2F1SidesEdgeGeometry =
+        IsCanonicalFrontF2F1SidesEdgeGeometry(g);
 
     bool frontF1 =
         IsViewEditGeometryWall(g.F1Center);
@@ -5740,17 +5764,13 @@ public class ViewportLayoutEditor : EditorWindow
       }
       else if (IsFrontWallF2Card(piece))
       {
-        // Verified 1,5 West edge-of-map view: F2 center is outside the map,
-        // so the boundary must render as the front F2 wall.
-        bool frontF2BoundaryAt15West =
-            previewX == 1
-            && previewY == 5
-            && previewFacing == DungeonFacing.West;
-
-        enabled = frontF2BoundaryAt15West || piece.Enabled;
+        // Canonical edge-of-map geometry: the F2 row is outside the map,
+        // so the boundary renders as FrontF2 for every pose with the same
+        // diagnostic signature.
+        enabled = canonicalFrontF2F1SidesEdgeGeometry || piece.Enabled;
         x = 0;
         y = DisplayYToUnityY(125, GetPieceHeightForEditorY(piece));
-        mirror = frontF2BoundaryAt15West ? true : frontMirror;
+        mirror = canonicalFrontF2F1SidesEdgeGeometry ? true : frontMirror;
       }
       else if (IsFrontWallF3Card(piece))
       {
@@ -5821,10 +5841,8 @@ public class ViewportLayoutEditor : EditorWindow
           mirror = false;
         }
 
-        // Verified canonical edge-of-map view at 1,5 West.
-        if (previewX == 1
-            && previewY == 5
-            && previewFacing == DungeonFacing.West)
+        // Canonical edge-of-map geometry first verified at 1,5 West.
+        if (canonicalFrontF2F1SidesEdgeGeometry)
         {
           enabled = true;
           x = 0;
@@ -5860,10 +5878,8 @@ public class ViewportLayoutEditor : EditorWindow
         }
 
 
-        // Verified canonical edge-of-map view at 1,5 West.
-        if (previewX == 1
-            && previewY == 5
-            && previewFacing == DungeonFacing.West)
+        // Same canonical edge-of-map geometry on the right side.
+        if (canonicalFrontF2F1SidesEdgeGeometry)
         {
           enabled = true;
           x = 165;
@@ -9398,13 +9414,11 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    // Verified 1,5 West edge-of-map front boundary. The F2 wall is required
-    // even if its stored layout Enabled flag is false. A temporary ViewEdit
-    // Enabled override may still hide/show it for testing.
+    // Canonical edge-of-map front boundary. Apply to every pose with the
+    // same normalized diagnostic geometry, not only the original map pose.
     if (IsFrontWallF2Card(piece)
-        && previewX == 1
-        && previewY == 5
-        && previewFacing == DungeonFacing.West)
+        && TryGetCurrentRelativeViewportGeometry(out RelativeViewportGeometry edgeGeometry)
+        && IsCanonicalFrontF2F1SidesEdgeGeometry(edgeGeometry))
     {
       if (previewEnabledOverrideByPiece.TryGetValue(
               piece, out bool frontF2PreviewEnabled))
