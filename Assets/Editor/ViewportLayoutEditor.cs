@@ -5860,6 +5860,11 @@ public class ViewportLayoutEditor : EditorWindow
         mirror = verifiedMirror;
       }
 
+      if (IsFrontWallF3Card(piece))
+      {
+        mirror = false;
+      }
+
       // FrontF1 mirror is pose-parity driven and must flip when moving one
       // tile or turning 90 degrees. Keep it authoritative over any older
       // geometry-level mirror override.
