@@ -1861,25 +1861,6 @@ public class ViewportLayoutEditor : EditorWindow
       new Dictionary<string, Vector2Int>();
 
   /// <summary>
-  /// Runtime mirrored Ref X only. Non-mirrored Ref X and Ref Y stay in
-  /// CanonicalReferenceXYOverrides.
-  /// </summary>
-  private static readonly Dictionary<string, int> CanonicalMirroredReferenceXOverrides =
-      new Dictionary<string, int>();
-
-  private static readonly (string Name, int X)[] CanonicalMirroredReferenceXDefaults =
-  {
-    ("LeftF0", 192),
-    ("LeftF1", 0),
-    ("LeftF2", 0),
-    ("LeftF3", 136),
-    ("RightF0", 192),
-    ("RightF1", 165),
-    ("RightF2", 147),
-    ("RightF3", 136),
-  };
-
-  /// <summary>
   /// Read-only canonical ViewEdit X/Y by piece name. Display only.
   /// </summary>
   private static bool TryGetCanonicalReferenceXY(
@@ -1977,46 +1958,6 @@ public class ViewportLayoutEditor : EditorWindow
     return false;
   }
 
-  private static bool TryGetMirroredReferenceXDefault(string pieceName, out int x)
-  {
-    x = 0;
-    if (string.IsNullOrEmpty(pieceName))
-      return false;
-
-    for (int i = 0; i < CanonicalMirroredReferenceXDefaults.Length; i++)
-    {
-      if (CanonicalMirroredReferenceXDefaults[i].Name != pieceName)
-        continue;
-
-      x = CanonicalMirroredReferenceXDefaults[i].X;
-      return true;
-    }
-
-    return false;
-  }
-
-  private static bool TryGetMirroredReferenceX(ViewportPiece piece, out int x)
-  {
-    x = 0;
-    if (piece == null)
-      return false;
-
-    if (!string.IsNullOrEmpty(piece.Name)
-        && CanonicalMirroredReferenceXOverrides.TryGetValue(piece.Name, out x))
-      return true;
-
-    if (TryGetSideWallCanonicalName(piece, out string canonicalName)
-        && CanonicalMirroredReferenceXOverrides.TryGetValue(canonicalName, out x))
-      return true;
-
-    if (!string.IsNullOrEmpty(piece.Name)
-        && TryGetMirroredReferenceXDefault(piece.Name, out x))
-      return true;
-
-    return TryGetSideWallCanonicalName(piece, out canonicalName)
-        && TryGetMirroredReferenceXDefault(canonicalName, out x);
-  }
-
   private static bool TryGetActiveCanonicalReferenceXY(
       ViewportPiece piece,
       bool mirror,
@@ -2035,11 +1976,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (!TryGetCanonicalReferenceXY(referenceName, out x, out y))
       return false;
 
-    // For side walls, Mirror changes only the active Ref X.
-    // Ref Y always stays at the normal canonical Y.
-    if (mirror && TryGetMirroredReferenceX(piece, out int mirroredX))
-      x = mirroredX;
-
+    // Mirror flips only the side-wall pixels. It never changes canonical X/Y.
     return true;
   }
 
