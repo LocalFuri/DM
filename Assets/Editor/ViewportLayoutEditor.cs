@@ -2290,10 +2290,16 @@ public class ViewportLayoutEditor : EditorWindow
     bool normalWallEnabledPreview = IsNormalWallPiece(piece);
     bool isBlackDoorRightD3Exception =
         IsBlackDoorObliqueRightD3PoseException(piece);
+    bool isBlackDoorF2RequiredException =
+        piece.Name == "BlackDoorF2"
+        && previewX == 1
+        && previewY == 4
+        && previewFacing == DungeonFacing.North;
     bool wallRenderingPreview = IsWallRenderingPiece(piece);
     bool usePreviewEnabledOverride =
         normalWallEnabledPreview
         || isBlackDoorRightD3Exception
+        || isBlackDoorF2RequiredException
         || (previewDisableAllWalls && wallRenderingPreview);
 
     bool enabledBefore = piece.Enabled;
@@ -2326,6 +2332,9 @@ public class ViewportLayoutEditor : EditorWindow
         && TryGet52SouthForcedWallEnabled(piece, out bool forced52UiEnabled)
         && !forced52UiEnabled)
       enabledBefore = false;
+
+    if (isBlackDoorF2RequiredException)
+      enabledBefore = true;
 
     bool enabledAfter = DrawMouseOnlyToggle(
         EnabledLabel,
@@ -8963,41 +8972,35 @@ public class ViewportLayoutEditor : EditorWindow
             }
           }
 
-          // Dedicated front F2 door.
+          // Dedicated front F2 door. The 1,4 North exception requires this
+          // door regardless of stored asset Enabled.
           ViewportPiece doorF2 = FindLayoutPieceByName("BlackDoorF2");
-          bool f2DoorEnabled =
-              doorF2 != null
-                  ? doorF2.Enabled
-                  : blackDoorF2CardEnabled;
-          if (f2DoorEnabled)
+          Texture2D f2Source = GetBlackDoorF2SourceTexture();
+          if (f2Source != null)
           {
-            Texture2D f2Source = GetBlackDoorF2SourceTexture();
-            if (f2Source != null)
-            {
-              int f2DoorX = doorF2 != null
-                  ? doorF2.X
-                  : piece.ResolvedBlackDoorF2X;
-              int f2DoorY = doorF2 != null
-                  ? doorF2.Y
-                  : piece.ResolvedBlackDoorF2Y;
-              bool f2DoorMirror = doorF2 != null
-                  ? doorF2.MirrorHorizontally
-                  : blackDoorF2CardMirror;
+            int f2DoorX = doorF2 != null
+                ? doorF2.X
+                : piece.ResolvedBlackDoorF2X;
+            int f2DoorY = doorF2 != null
+                ? doorF2.Y
+                : piece.ResolvedBlackDoorF2Y;
+            bool f2DoorMirror = doorF2 != null
+                ? doorF2.MirrorHorizontally
+                : blackDoorF2CardMirror;
 
-              BlitPieceIntoPreview(
-                  pixels,
-                  f2Source,
-                  f2DoorX,
-                  f2DoorY,
-                  f2DoorMirror);
-              LogIfOverlapsLeftF0(
-                  doorF2 ?? piece,
-                  drawGraphic,
-                  f2DoorX,
-                  f2DoorY,
-                  f2Source.width,
-                  f2Source.height);
-            }
+            BlitPieceIntoPreview(
+                pixels,
+                f2Source,
+                f2DoorX,
+                f2DoorY,
+                f2DoorMirror);
+            LogIfOverlapsLeftF0(
+                doorF2 ?? piece,
+                drawGraphic,
+                f2DoorX,
+                f2DoorY,
+                f2Source.width,
+                f2Source.height);
           }
           continue;
         }

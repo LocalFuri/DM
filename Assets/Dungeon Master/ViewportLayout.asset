@@ -26,7 +26,7 @@ MonoBehaviour:
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 1
+    MirrorHorizontally: 0
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: Ceiling Strip 84
@@ -59,7 +59,7 @@ MonoBehaviour:
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: FrontF3
@@ -81,7 +81,7 @@ MonoBehaviour:
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: RightF3
@@ -92,7 +92,7 @@ MonoBehaviour:
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: LeftD3
@@ -132,11 +132,11 @@ MonoBehaviour:
     Graphic: 7
     X: 0
     Y: 73
-    Enabled: 0
+    Enabled: 1
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: LeftS2
@@ -165,11 +165,11 @@ MonoBehaviour:
     Graphic: 8
     X: 147
     Y: 74
-    Enabled: 0
+    Enabled: 1
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: Right2S
@@ -191,7 +191,7 @@ MonoBehaviour:
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 192
     FrontWallF2Width: 106
   - Name: LeftF1
@@ -202,7 +202,7 @@ MonoBehaviour:
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: RightF1
@@ -213,7 +213,7 @@ MonoBehaviour:
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: LeftF0
@@ -224,7 +224,7 @@ MonoBehaviour:
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: RightF0
@@ -235,7 +235,7 @@ MonoBehaviour:
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 191
     FrontWallF2Width: 106
   - Name: Movement Arrows
@@ -308,7 +308,7 @@ MonoBehaviour:
     Graphic: 32
     X: 64
     Y: 81
-    Enabled: 0
+    Enabled: 1
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
@@ -341,7 +341,7 @@ MonoBehaviour:
     Graphic: 33
     X: 140
     Y: 81
-    Enabled: 0
+    Enabled: 1
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
@@ -400,6 +400,6 @@ MonoBehaviour:
     Deterministic: 0
     BlackDoorF2X: 0
     BlackDoorF2Y: 0
-    MirrorHorizontally: 0
+    MirrorHorizontally: 1
     FrontWallF1Width: 192
     FrontWallF2Width: 106
