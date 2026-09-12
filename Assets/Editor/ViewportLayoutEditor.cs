@@ -10,7 +10,7 @@ using UnityEngine.UI;
 // CHATGPT_BUILD_F1_MINIMAP_ALGORITHM_STAGE1_20260830_AA
 public class ViewportLayoutEditor : EditorWindow
 {
-  private static readonly int[] SnapValues = { 1, 2, 4, 8 };
+  private static readonly int[] SnapValues = { 1, 8 };
 
   private const string PrefsLayoutGuidKey = "ViewportLayoutEditor.LayoutGuid";
   private const string PrefsGraphicsGuidKey =
