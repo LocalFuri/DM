@@ -5755,7 +5755,7 @@ public class ViewportLayoutEditor : EditorWindow
         y = DisplayYToUnityY(
             57,
             GetPieceHeightForEditorY(piece));
-        mirror = GetSideWallMirrorFromPose();
+        mirror = false;
       }
       else if (piece.Name == "Right2S")
       {
@@ -5866,6 +5866,16 @@ public class ViewportLayoutEditor : EditorWindow
       if (IsFrontWallF1Card(piece))
       {
         mirror = frontF1Mirror;
+      }
+
+      if (piece.Name == "LeftS2")
+      {
+        enabled = leftS2;
+        x = 0;
+        y = DisplayYToUnityY(
+            57,
+            GetPieceHeightForEditorY(piece));
+        mirror = false;
       }
 
       // ViewEdit visibility for (5,2) South.
