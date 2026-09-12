@@ -5336,6 +5336,29 @@ public class ViewportLayoutEditor : EditorWindow
         && FormatRelativeViewportCellShort(g.F3Right) == "X";
   }
 
+  private static bool IsCanonicalFrontF1F0EdgeGeometry(
+      RelativeViewportGeometry g)
+  {
+    // Canonical solid edge-of-map diagnostic first verified at 0,5 West.
+    // Every pose with this exact geometry uses the same wall mirrors:
+    // FrontF1 OFF, LeftF0 OFF, RightF0 OFF.
+    // F0: L=W R=W
+    // F1: L=X C=X R=X
+    // F2: L=X C=X R=X
+    // F3: L=X C=X R=X
+    return FormatRelativeViewportCellShort(g.F0Left) == "W"
+        && FormatRelativeViewportCellShort(g.F0Right) == "W"
+        && FormatRelativeViewportCellShort(g.F1Left) == "X"
+        && FormatRelativeViewportCellShort(g.F1Center) == "X"
+        && FormatRelativeViewportCellShort(g.F1Right) == "X"
+        && FormatRelativeViewportCellShort(g.F2Left) == "X"
+        && FormatRelativeViewportCellShort(g.F2Center) == "X"
+        && FormatRelativeViewportCellShort(g.F2Right) == "X"
+        && FormatRelativeViewportCellShort(g.F3Left) == "X"
+        && FormatRelativeViewportCellShort(g.F3Center) == "X"
+        && FormatRelativeViewportCellShort(g.F3Right) == "X";
+  }
+
   private static bool IsVerifiedFrontF1X0Geometry(
       RelativeViewportGeometry g)
   {
@@ -5621,6 +5644,8 @@ public class ViewportLayoutEditor : EditorWindow
     string frontF1GeometryKey = BuildFrontF1GeometryKey(g);
     bool canonicalFrontF2F1SidesEdgeGeometry =
         IsCanonicalFrontF2F1SidesEdgeGeometry(g);
+    bool canonicalFrontF1F0EdgeGeometry =
+        IsCanonicalFrontF1F0EdgeGeometry(g);
 
     bool frontF1 =
         IsViewEditGeometryWall(g.F1Center);
@@ -5653,7 +5678,9 @@ public class ViewportLayoutEditor : EditorWindow
     bool rightF0 = IsViewEditGeometryWall(g.F0Right);
     bool f0Mirror = GetF0MirrorFromPose();
     bool frontF1Mirror =
-        leftS2 || GetFrontF1MirrorFromPose();
+        canonicalFrontF1F0EdgeGeometry
+            ? false
+            : leftS2 || GetFrontF1MirrorFromPose();
 
     bool leftF1 =
         !IsViewEditGeometryWall(g.F1Center) &&
@@ -5782,7 +5809,9 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsWallF0LeftPiece(piece))
       {
         enabled = leftF0;
-        mirror = GetSideWallMirrorFromPose();
+        mirror = canonicalFrontF1F0EdgeGeometry
+            ? false
+            : GetSideWallMirrorFromPose();
         if (TryGetActiveCanonicalReferenceXY(
                 piece, mirror, out int leftF0RefX, out int leftF0RefY))
         {
@@ -5798,9 +5827,11 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsWallF0RightPiece(piece))
       {
         enabled = rightF0;
-        mirror = IsVerifiedRightF0MirrorOnGeometry(g)
-            ? true
-            : GetSideWallMirrorFromPose();
+        mirror = canonicalFrontF1F0EdgeGeometry
+            ? false
+            : IsVerifiedRightF0MirrorOnGeometry(g)
+                ? true
+                : GetSideWallMirrorFromPose();
         if (TryGetActiveCanonicalReferenceXY(
                 piece, mirror, out int rightF0RefX, out int rightF0RefY))
         {
@@ -6150,17 +6181,26 @@ public class ViewportLayoutEditor : EditorWindow
               && !IsWallF3LeftPiece(piece) && !IsWallF3RightPiece(piece)))
         continue;
 
-      bool resolvedSideMirror =
-          (IsWallF0RightPiece(piece)
-              && IsVerifiedRightF0MirrorOnGeometry(g))
-          || (IsWallF1RightPiece(piece)
-              && IsVerifiedRightF1MirrorOnGeometry(g))
-          || (IsWallF2RightPiece(piece)
-              && IsVerifiedRightF2MirrorOnGeometry(g))
-          || (IsWallF3RightPiece(piece)
-              && IsVerifiedRightF3MirrorOnGeometry(g))
-              ? true
-              : sideWallMirror;
+      bool resolvedSideMirror;
+      if (canonicalFrontF1F0EdgeGeometry
+          && (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece)))
+      {
+        resolvedSideMirror = false;
+      }
+      else
+      {
+        resolvedSideMirror =
+            (IsWallF0RightPiece(piece)
+                && IsVerifiedRightF0MirrorOnGeometry(g))
+            || (IsWallF1RightPiece(piece)
+                && IsVerifiedRightF1MirrorOnGeometry(g))
+            || (IsWallF2RightPiece(piece)
+                && IsVerifiedRightF2MirrorOnGeometry(g))
+            || (IsWallF3RightPiece(piece)
+                && IsVerifiedRightF3MirrorOnGeometry(g))
+                ? true
+                : sideWallMirror;
+      }
 
       if (resolvedNormalWallByPiece.TryGetValue(
               piece, out ResolvedNormalWallState sideWallState))
@@ -6196,7 +6236,9 @@ public class ViewportLayoutEditor : EditorWindow
     // the mirror value from a previously verified geometry, so restore the
     // current pose value after geometry resolution. A temporary manual ViewEdit mirror
     // override is applied later and can still win for testing.
-    bool leftF0PoseMirror = GetSideWallMirrorFromPose();
+    bool leftF0PoseMirror = canonicalFrontF1F0EdgeGeometry
+        ? false
+        : GetSideWallMirrorFromPose();
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece piece = layout.Pieces[i];
@@ -8137,6 +8179,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Temporary pose for visibility/mirror only — never write the layout asset.
     DungeonMap poseMap = TryGetPreviewPoseMap();
+    bool composeCanonicalFrontF1F0EdgeGeometry =
+        TryGetCurrentRelativeViewportGeometry(
+            out RelativeViewportGeometry composeGeometry)
+        && IsCanonicalFrontF1F0EdgeGeometry(composeGeometry);
 
     if (layout != null && layout.Pieces != null)
     {
@@ -8453,7 +8499,12 @@ public class ViewportLayoutEditor : EditorWindow
           }
 
           if (!previewMirrorOverrideByPiece.ContainsKey(piece))
-            mirror = GetSideWallMirrorFromPose();
+          {
+            mirror = composeCanonicalFrontF1F0EdgeGeometry
+                && (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
+                ? false
+                : GetSideWallMirrorFromPose();
+          }
         }
 
         // Temporary ViewEdit tests always win over canonical / pose
