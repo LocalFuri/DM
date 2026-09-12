@@ -5466,7 +5466,8 @@ public class ViewportLayoutEditor : EditorWindow
     bool leftF0 = IsViewEditGeometryWall(g.F0Left);
     bool rightF0 = IsViewEditGeometryWall(g.F0Right);
     bool f0Mirror = GetF0MirrorFromPose();
-    bool frontF1Mirror = GetFrontF1MirrorFromPose();
+    bool frontF1Mirror =
+        leftS2 || GetFrontF1MirrorFromPose();
 
     bool leftF1 =
         !IsViewEditGeometryWall(g.F1Center) &&
@@ -5864,7 +5865,7 @@ public class ViewportLayoutEditor : EditorWindow
       // geometry-level mirror override.
       if (IsFrontWallF1Card(piece))
       {
-        mirror = GetFrontF1MirrorFromPose();
+        mirror = frontF1Mirror;
       }
 
       // ViewEdit visibility for (5,2) South.
@@ -6111,7 +6112,7 @@ public class ViewportLayoutEditor : EditorWindow
       if (piece == null || !IsFrontWallF1Card(piece))
         continue;
 
-      bool poseMirror = GetFrontF1MirrorFromPose();
+      bool poseMirror = frontF1Mirror;
 
       if (resolvedNormalWallByPiece.TryGetValue(
               piece, out ResolvedNormalWallState frontF1StateAfterResolve))
@@ -8216,14 +8217,6 @@ public class ViewportLayoutEditor : EditorWindow
 
           if (!previewMirrorOverrideByPiece.ContainsKey(piece))
             mirror = GetSideWallMirrorFromPose();
-        }
-
-        // FrontF1 uses the deterministic map-pose mirror unless ViewEdit has a
-        // temporary mirror override for this exact stationary X/Y/Facing.
-        if (IsFrontWallF1Card(piece)
-            && !TryGetFrontF1PreviewMirrorOverride(piece, out _))
-        {
-          mirror = GetFrontF1MirrorFromPose();
         }
 
         // Temporary ViewEdit tests always win over canonical / pose
