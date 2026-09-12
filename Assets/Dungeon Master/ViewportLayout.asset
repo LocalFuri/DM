@@ -317,7 +317,7 @@ MonoBehaviour:
     FrontWallF2Width: 106
   - Name: Black Door Frame Left F3
     Graphic: 0
-    X: 80
+    X: 79
     Y: 97
     Enabled: 0
     Deterministic: 0
@@ -350,7 +350,7 @@ MonoBehaviour:
     FrontWallF2Width: 106
   - Name: Black Door Frame Right F3
     Graphic: 0
-    X: 133
+    X: 132
     Y: 96
     Enabled: 0
     Deterministic: 0
