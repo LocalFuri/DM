@@ -100,7 +100,10 @@ public class ViewportLayoutEditor : EditorWindow
   private bool previewDisableAllWalls;
   private bool showGeometryDiagnostics;
   private bool viewport17D3LeftCalibrationPreview;
-  private int viewport17D3LeftCalibrationCandidate;
+  // Stage 6G: free D3 LEFT source-window calibration. Destination stays fixed
+  // at X=0..31; Source X slides across the native 141px FrontF3.
+  private int viewport17D3LeftSourceX = 0;
+  private bool viewport17D3LeftMirror = true;
   private string pieceSearchText = string.Empty;
   private bool openSearchPiecesPopup;
   private bool focusSearchPieces;
@@ -794,14 +797,43 @@ public class ViewportLayoutEditor : EditorWindow
         Repaint();
       }
 
-      int d3LeftCandidatePressed = GUILayout.Toolbar(
-          viewport17D3LeftCalibrationCandidate,
-          new[] { "A", "B", "C", "D" },
-          GUILayout.Width(96f));
-      if (d3LeftCandidatePressed != viewport17D3LeftCalibrationCandidate)
+      GUILayout.Label("Src X", GUILayout.Width(34f));
+      GUILayout.Label(viewport17D3LeftSourceX.ToString(), GUILayout.Width(30f));
+
+      int d3LeftSourceDelta = 0;
+      if (GUILayout.Button("-8", EditorStyles.miniButton, GUILayout.Width(30f)))
+        d3LeftSourceDelta = -8;
+      if (GUILayout.Button("-1", EditorStyles.miniButton, GUILayout.Width(30f)))
+        d3LeftSourceDelta = -1;
+      if (GUILayout.Button("+1", EditorStyles.miniButton, GUILayout.Width(30f)))
+        d3LeftSourceDelta = 1;
+      if (GUILayout.Button("+8", EditorStyles.miniButton, GUILayout.Width(30f)))
+        d3LeftSourceDelta = 8;
+
+      if (d3LeftSourceDelta != 0)
       {
-        viewport17D3LeftCalibrationCandidate =
-            Mathf.Clamp(d3LeftCandidatePressed, 0, 3);
+        int oldD3LeftSourceX = viewport17D3LeftSourceX;
+        viewport17D3LeftSourceX = Mathf.Clamp(
+            viewport17D3LeftSourceX + d3LeftSourceDelta,
+            0,
+            109);
+
+        if (viewport17D3LeftSourceX != oldD3LeftSourceX)
+        {
+          if (viewport17D3LeftCalibrationPreview)
+            RefreshEditModePreview();
+          Repaint();
+        }
+      }
+
+      bool d3LeftMirrorPressed = GUILayout.Toggle(
+          viewport17D3LeftMirror,
+          "Mirror",
+          EditorStyles.miniButton,
+          GUILayout.Width(58f));
+      if (d3LeftMirrorPressed != viewport17D3LeftMirror)
+      {
+        viewport17D3LeftMirror = d3LeftMirrorPressed;
         if (viewport17D3LeftCalibrationPreview)
           RefreshEditModePreview();
         Repaint();
@@ -4183,8 +4215,8 @@ public class ViewportLayoutEditor : EditorWindow
         + BuildViewport17RenderCommandDiagnostic(inspection)
         + "\n\nD3 LEFT CALIBRATION PREVIEW: "
         + (viewport17D3LeftCalibrationPreview ? "ON" : "OFF")
-        + "  candidate=" + GetViewport17D3LeftCandidateLabel()
-        + " (D3L Test overlays the selected candidate last in Edit Mode preview)"
+        + "  " + GetViewport17D3LeftCalibrationLabel()
+        + " (D3L Test overlays this 32px source window last in Edit Mode preview)"
         + "\n\nTOTAL EVALUATIONS: 14 map tiles + 3 D0 faces = 17"
         + "\n\nLEGACY " + drawText;
 
@@ -4925,19 +4957,11 @@ public class ViewportLayoutEditor : EditorWindow
     return commands;
   }
 
-  private string GetViewport17D3LeftCandidateLabel()
+  private string GetViewport17D3LeftCalibrationLabel()
   {
-    switch (Mathf.Clamp(viewport17D3LeftCalibrationCandidate, 0, 3))
-    {
-      case 0:
-        return "A: RIGHT32 / MIRROR OFF";
-      case 1:
-        return "B: LEFT32 / MIRROR OFF";
-      case 2:
-        return "C: RIGHT32 / MIRROR ON";
-      default:
-        return "D: LEFT32 / MIRROR ON";
-    }
+    int sourceStart = Mathf.Clamp(viewport17D3LeftSourceX, 0, 109);
+    return "sourceX=" + sourceStart + ".." + (sourceStart + 31)
+        + " mirror=" + (viewport17D3LeftMirror ? "ON" : "OFF");
   }
 
   private bool TryGetViewport17FrontProjectionSlot(
@@ -4960,33 +4984,12 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (d3Left)
     {
-      switch (Mathf.Clamp(viewport17D3LeftCalibrationCandidate, 0, 3))
-      {
-        case 0:
-          d3LeftSourceWindow = "RIGHT_EDGE_32";
-          d3LeftOriginRule = "ALIGN_SELECTED_WINDOW_TO_DEST_X_0_31";
-          d3LeftMirror = false;
-          d3LeftStatus = "CANDIDATE_A_RIGHT_EDGE_32_MIRROR_OFF";
-          break;
-        case 1:
-          d3LeftSourceWindow = "LEFT_EDGE_32";
-          d3LeftOriginRule = "ALIGN_SELECTED_WINDOW_TO_DEST_X_0_31";
-          d3LeftMirror = false;
-          d3LeftStatus = "CANDIDATE_B_LEFT_EDGE_32_MIRROR_OFF";
-          break;
-        case 2:
-          d3LeftSourceWindow = "RIGHT_EDGE_32";
-          d3LeftOriginRule = "ALIGN_SELECTED_WINDOW_TO_DEST_X_0_31";
-          d3LeftMirror = true;
-          d3LeftStatus = "CANDIDATE_C_RIGHT_EDGE_32_MIRROR_ON";
-          break;
-        default:
-          d3LeftSourceWindow = "LEFT_EDGE_32";
-          d3LeftOriginRule = "ALIGN_SELECTED_WINDOW_TO_DEST_X_0_31";
-          d3LeftMirror = true;
-          d3LeftStatus = "CANDIDATE_D_LEFT_EDGE_32_MIRROR_ON";
-          break;
-      }
+      int sourceStart = Mathf.Clamp(viewport17D3LeftSourceX, 0, 109);
+      d3LeftSourceWindow = "SLIDING_32_FROM_X_" + sourceStart;
+      d3LeftOriginRule = "CROP_SELECTED_32_TO_DEST_X_0_31";
+      d3LeftMirror = viewport17D3LeftMirror;
+      d3LeftStatus = "CALIBRATING_SOURCE_X_" + sourceStart
+          + "_MIRROR_" + (d3LeftMirror ? "ON" : "OFF");
     }
 
     slot = new Viewport17FrontProjectionSlot
@@ -4999,8 +5002,8 @@ public class ViewportLayoutEditor : EditorWindow
 
       // CENTER is fully calibrated from the canonical family Ref.
       // D3 LEFT keeps the calibrated destination band (Y from canonical
-      // FrontF3, destination X 0..31). Stage 6E lets A/B/C/D select which
-      // 32px source edge and mirror state feed that destination band.
+      // FrontF3, destination X 0..31). Stage 6G lets Source X slide across
+      // FrontF3 while Mirror can be toggled independently.
       HasDisplayXOffset = center,
       HasDisplayYOffset = center || d3Left,
       DisplayOffsetX = 0,
@@ -5302,17 +5305,12 @@ public class ViewportLayoutEditor : EditorWindow
               command.PieceHeight);
         }
 
-        // Stage 6E D3 LEFT calibration candidates A/B/C/D.
-        // Destination geometry is fixed at X 0..31, Y from canonical FrontF3.
-        // Candidate selection varies only:
-        //   A = right edge 32, mirror OFF
-        //   B = left  edge 32, mirror OFF
-        //   C = right edge 32, mirror ON
-        //   D = left  edge 32, mirror ON
+        // Stage 6G D3 LEFT free source-window calibration. Destination geometry
+        // is fixed at X 0..31, Y from canonical FrontF3. Source X slides across
+        // the native FrontF3 and Mirror reverses only the selected 32px strip.
         bool d3LeftCandidate = command.Depth == 3
             && command.LocalX == -1
-            && (slot.SourceWindowMode == "RIGHT_EDGE_32"
-                || slot.SourceWindowMode == "LEFT_EDGE_32");
+            && slot.SourceWindowMode.StartsWith("SLIDING_32_FROM_X_");
         if (d3LeftCandidate
             && slot.HasClipWindow
             && command.HasPieceWidth
@@ -5321,40 +5319,26 @@ public class ViewportLayoutEditor : EditorWindow
         {
           int visibleWidth = slot.ClipMaxX - slot.ClipMinX + 1;
           visibleWidth = Mathf.Clamp(visibleWidth, 1, command.PieceWidth);
+          int maxSourceStart = Mathf.Max(0, command.PieceWidth - visibleWidth);
+          int sourceStart = Mathf.Clamp(viewport17D3LeftSourceX, 0, maxSourceStart);
 
-          bool useRightEdge = slot.SourceWindowMode == "RIGHT_EDGE_32";
           command.HasSourceWindow = true;
-          command.SourceMinX = useRightEdge
-              ? command.PieceWidth - visibleWidth
-              : 0;
-          command.SourceMaxX = useRightEdge
-              ? command.PieceWidth - 1
-              : visibleWidth - 1;
+          command.SourceMinX = sourceStart;
+          command.SourceMaxX = sourceStart + visibleWidth - 1;
 
-          // BlitPieceIntoPreview mirrors the full source by converting each
-          // destination column to sourceX=(width-1-column). Compute which
-          // source column must land at destination ClipMinX, then derive the
-          // full-graphic origin. This keeps all four candidates honest.
-          int firstSourceAtClipMin = slot.Mirror
-              ? command.SourceMaxX
-              : command.SourceMinX;
-          int sourceColumnAtClipMin = slot.Mirror
-              ? command.PieceWidth - 1 - firstSourceAtClipMin
-              : firstSourceAtClipMin;
-
+          // This is now a true cropped-strip command, not a shifted full graphic.
+          // Its destination origin is the calibrated lane band itself.
           command.HasProjectedGraphicOriginX = true;
-          command.ProjectedGraphicOriginX =
-              slot.ClipMinX - sourceColumnAtClipMin;
+          command.ProjectedGraphicOriginX = slot.ClipMinX;
 
           command.HasDisplayPlacement = true;
-          command.DisplayX = command.ProjectedGraphicOriginX;
+          command.DisplayX = slot.ClipMinX;
           command.DisplayY = command.ProjectedDisplayY;
           command.HasBufferPlacement = true;
-          command.BufferX = command.ProjectedGraphicOriginX;
+          command.BufferX = slot.ClipMinX;
           command.BufferY = command.ProjectedBufferY;
           command.SourceWindowMode =
-              "SRC_X_[" + command.SourceMinX + ".." + command.SourceMaxX + "]_"
-              + (useRightEdge ? "RIGHT_EDGE" : "LEFT_EDGE")
+              "SRC_X_[" + command.SourceMinX + ".." + command.SourceMaxX + "]"
               + (slot.Mirror ? "_MIRROR_ON" : "_MIRROR_OFF");
         }
 
@@ -5379,7 +5363,7 @@ public class ViewportLayoutEditor : EditorWindow
             "projectionSlot=D" + slot.Depth + "/" + slot.Lane
             + " status=" + slot.CalibrationStatus
             + (d3LeftCandidate && command.HasSourceWindow
-                ? "; D3 LEFT candidate resolved: selected 32px source edge -> destination X 0..31; compare A/B/C/D brick pattern"
+                ? "; D3 LEFT calibration resolved: selected 32px source window -> destination X 0..31; adjust Source X / Mirror until brick pattern matches"
                 : command.HasDisplayPlacement
                     ? "; canonical base + calibrated lane offset"
                     : command.HasProjectedDisplayY
@@ -5519,12 +5503,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     lines.Add("");
     lines.Add(
-        "STAGE 6E: D3 LEFT destination remains fixed at X=[0..31], displayY=58. "
-        + "Use the A/B/C/D toolbar next to D3L Test to switch source calibration live: "
-        + "A=right edge 32 mirror OFF, B=left edge 32 mirror OFF, "
-        + "C=right edge 32 mirror ON, D=left edge 32 mirror ON. "
-        + "The selected candidate is overlaid last only while D3L Test is ON. "
-        + "CENTER slots remain calibrated; all other projected lanes remain pending.");
+        "STAGE 6H: D3 LEFT destination remains fixed at X=[0..31], displayY=58. "
+        + "Use Src X -8/-1/+1/+8 buttons (clamped 0..109) to move the 32px source window across the 141px FrontF3, "
+        + "and toggle Mirror independently. The selected strip is overlaid last only while "
+        + "D3L Test is ON. CENTER slots remain calibrated; all other projected lanes remain pending.");
     lines.Add(
         "DIAGNOSTIC ONLY: renderer/Enabled states are still unchanged.");
     return string.Join("\n", lines);
@@ -11335,9 +11317,58 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  // Stage 6E: isolated visual calibration hook for the generic D3 LEFT
-  // projection candidates A/B/C/D. This does not replace the legacy renderer.
-  // When D3L Test is ON, the selected Viewport-17 D3 LEFT command is blitted LAST
+  // Stage 6G: generic cropped-strip preview blitter for Viewport-17
+  // calibration. Copies exactly sourceMinX..sourceMaxX into consecutive
+  // destination columns. Mirror reverses only that selected strip.
+  private static void BlitViewport17SourceStripPreview(
+      Color32[] dest,
+      Texture2D source,
+      int sourceMinX,
+      int sourceMaxX,
+      int destinationStartX,
+      int destinationY,
+      bool mirrorHorizontally)
+  {
+    if (dest == null || source == null || !source.isReadable)
+      return;
+
+    sourceMinX = Mathf.Clamp(sourceMinX, 0, source.width - 1);
+    sourceMaxX = Mathf.Clamp(sourceMaxX, sourceMinX, source.width - 1);
+    int copyWidth = sourceMaxX - sourceMinX + 1;
+    if (copyWidth <= 0)
+      return;
+
+    Color32[] sourcePixels = source.GetPixels32();
+
+    for (int sourceY = 0; sourceY < source.height; sourceY++)
+    {
+      int targetY = destinationY + sourceY;
+      if (targetY < 0 || targetY >= PreviewHeight)
+        continue;
+
+      int sourceRow = sourceY * source.width;
+      int destRow = targetY * PreviewWidth;
+
+      for (int i = 0; i < copyWidth; i++)
+      {
+        int targetX = destinationStartX + i;
+        if (targetX < 0 || targetX >= StraightF1WallLogic.CompositeWidth)
+          continue;
+
+        int sourceX = mirrorHorizontally
+            ? sourceMaxX - i
+            : sourceMinX + i;
+
+        Color32 colour = sourcePixels[sourceRow + sourceX];
+        colour.a = 255;
+        dest[destRow + targetX] = colour;
+      }
+    }
+  }
+
+  // Stage 6G: isolated visual calibration hook for the generic D3 LEFT
+  // sliding 32px source-window calibration. This does not replace the legacy renderer.
+  // When D3L Test is ON, the current Viewport-17 D3 LEFT source window is blitted LAST
   // so its source-window/brick pattern can be compared directly in Game View.
   // The method is map-independent: it only draws when the current 17-sample
   // geometry actually produces a D3 LEFT FRONT command.
@@ -11386,13 +11417,13 @@ public class ViewportLayoutEditor : EditorWindow
       if (command.HasPieceMetrics && source.height != command.PieceHeight)
         return;
 
-      // BufferX and mirror are resolved per A/B/C/D candidate so the selected
-      // 32px source edge lands at destination X 0..31. This intentionally uses
-      // the existing normal blitter so the test is
-      // representative of the future painter path.
-      BlitPieceIntoPreview(
+      // Stage 6G: copy ONLY the selected 32px source window. Source X can
+      // slide across FrontF3; Mirror reverses only this selected strip.
+      BlitViewport17SourceStripPreview(
           pixels,
           source,
+          command.SourceMinX,
+          command.SourceMaxX,
           command.BufferX,
           command.BufferY,
           command.Mirror);
