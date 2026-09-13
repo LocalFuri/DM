@@ -763,11 +763,27 @@ public class ViewportLayoutEditor : EditorWindow
         GUI.FocusControl(null);
       }
 
+      GUIStyle viewport17AuthorityStyle = new GUIStyle(EditorStyles.miniButton);
+      Color viewport17AuthorityTextColor = useViewport17WallAuthority
+          ? Color.green
+          : Color.white;
+      viewport17AuthorityStyle.normal.textColor = viewport17AuthorityTextColor;
+      viewport17AuthorityStyle.hover.textColor = viewport17AuthorityTextColor;
+      viewport17AuthorityStyle.active.textColor = viewport17AuthorityTextColor;
+      viewport17AuthorityStyle.focused.textColor = viewport17AuthorityTextColor;
+      viewport17AuthorityStyle.onNormal.textColor = viewport17AuthorityTextColor;
+      viewport17AuthorityStyle.onHover.textColor = viewport17AuthorityTextColor;
+      viewport17AuthorityStyle.onActive.textColor = viewport17AuthorityTextColor;
+      viewport17AuthorityStyle.onFocused.textColor = viewport17AuthorityTextColor;
+
+      string viewport17AuthorityLabel = useViewport17WallAuthority
+          ? "V17 Walls=enabled"
+          : "V17 Walls=disabled";
       bool viewport17AuthorityPressed = GUILayout.Toggle(
           useViewport17WallAuthority,
-          "V17 Walls",
-          EditorStyles.miniButton,
-          GUILayout.Width(68f));
+          viewport17AuthorityLabel,
+          viewport17AuthorityStyle,
+          GUILayout.Width(126f));
       if (viewport17AuthorityPressed != useViewport17WallAuthority)
       {
         useViewport17WallAuthority = viewport17AuthorityPressed;
