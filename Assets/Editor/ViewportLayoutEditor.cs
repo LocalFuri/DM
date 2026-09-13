@@ -4147,6 +4147,8 @@ public class ViewportLayoutEditor : EditorWindow
         + BuildViewport17FaceDiagnostic(inspection)
         + "\n\n"
         + BuildViewport17SurfaceDiagnostic(inspection)
+        + "\n\n"
+        + BuildViewport17RenderCommandDiagnostic(inspection)
         + "\n\nTOTAL EVALUATIONS: 14 map tiles + 3 D0 faces = 17"
         + "\n\nLEGACY " + drawText;
 
@@ -4219,6 +4221,15 @@ public class ViewportLayoutEditor : EditorWindow
     public int LocalX;
     public Viewport17Cell PrimaryCell;
     public Viewport17Cell AdjacentCell;
+  }
+
+  private struct Viewport17RenderCommand
+  {
+    public string PieceFamily;
+    public string Projection;
+    public int Depth;
+    public int LocalX;
+    public Viewport17Surface SourceSurface;
   }
 
   private struct Viewport17Inspection
@@ -4628,6 +4639,142 @@ public class ViewportLayoutEditor : EditorWindow
         + " = " + (inspection.BackFace.IsSolid ? "SOLID" : "OPEN")
         + " via " + FormatViewport17Cell(inspection.BackFace.ProbeCell));
 
+    return string.Join("\n", lines);
+  }
+
+  // -------------------------------------------------------------------------
+  // Stage 3: translate generic viewport surfaces into ordered render commands.
+  //
+  // This is still diagnostic-only. A render command names the Dungeon Master
+  // wall-piece FAMILY that would be used for that surface, while preserving
+  // the source lane/projection. It does not enable pieces or blit anything.
+  //
+  // Front surfaces:
+  //   D1 -> FrontF1, D2 -> FrontF2, D3 -> FrontF3
+  //   The lane (LEFT/CENTER/RIGHT) is retained because more than one front
+  //   projection can exist at the same depth.
+  //
+  // Side surfaces:
+  //   D1 -> Left/RightF1, D2 -> Left/RightF2
+  //   D3 inner transition -> Left/RightF3
+  //   D3 outer transition (LL/L or R/RR edge) -> Left/RightD3
+  //
+  // D0 inner faces:
+  //   LEFT INNER -> LeftF0, RIGHT INNER -> RightF0
+  // -------------------------------------------------------------------------
+  private static List<Viewport17RenderCommand> BuildViewport17RenderCommands(
+      Viewport17Inspection inspection)
+  {
+    List<Viewport17Surface> surfaces =
+        BuildViewport17SurfaceCandidates(inspection);
+    List<Viewport17RenderCommand> commands =
+        new List<Viewport17RenderCommand>(surfaces.Count);
+
+    for (int i = 0; i < surfaces.Count; i++)
+    {
+      Viewport17Surface surface = surfaces[i];
+      string pieceFamily = null;
+      string projection = null;
+
+      switch (surface.Type)
+      {
+        case Viewport17SurfaceType.Front:
+          if (surface.Depth >= 1 && surface.Depth <= 3)
+          {
+            pieceFamily = "FrontF" + surface.Depth;
+            projection = GetViewport17SurfaceLaneLabel(surface.LocalX);
+          }
+          break;
+
+        case Viewport17SurfaceType.LeftSide:
+          if (surface.Depth == 1)
+            pieceFamily = "LeftF1";
+          else if (surface.Depth == 2)
+            pieceFamily = "LeftF2";
+          else if (surface.Depth == 3)
+          {
+            bool outerD3 = surface.LocalX <= -2;
+            pieceFamily = outerD3 ? "LeftD3" : "LeftF3";
+            projection = outerD3 ? "OUTER D3" : "INNER D3";
+          }
+          break;
+
+        case Viewport17SurfaceType.RightSide:
+          if (surface.Depth == 1)
+            pieceFamily = "RightF1";
+          else if (surface.Depth == 2)
+            pieceFamily = "RightF2";
+          else if (surface.Depth == 3)
+          {
+            bool outerD3 = surface.LocalX >= 2;
+            pieceFamily = outerD3 ? "RightD3" : "RightF3";
+            projection = outerD3 ? "OUTER D3" : "INNER D3";
+          }
+          break;
+
+        case Viewport17SurfaceType.LeftInner:
+          pieceFamily = "LeftF0";
+          projection = "D0 INNER";
+          break;
+
+        case Viewport17SurfaceType.RightInner:
+          pieceFamily = "RightF0";
+          projection = "D0 INNER";
+          break;
+      }
+
+      if (string.IsNullOrEmpty(pieceFamily))
+        continue;
+
+      commands.Add(new Viewport17RenderCommand
+      {
+        PieceFamily = pieceFamily,
+        Projection = projection ?? string.Empty,
+        Depth = surface.Depth,
+        LocalX = surface.LocalX,
+        SourceSurface = surface
+      });
+    }
+
+    return commands;
+  }
+
+  private static string FormatViewport17RenderCommand(
+      Viewport17RenderCommand command)
+  {
+    string source = FormatViewport17Surface(command.SourceSurface);
+    string projection = string.IsNullOrEmpty(command.Projection)
+        ? string.Empty
+        : " [" + command.Projection + "]";
+
+    return source
+        + "  ->  " + command.PieceFamily
+        + projection;
+  }
+
+  private static string BuildViewport17RenderCommandDiagnostic(
+      Viewport17Inspection inspection)
+  {
+    List<Viewport17RenderCommand> commands =
+        BuildViewport17RenderCommands(inspection);
+
+    List<string> lines = new List<string>
+    {
+      "RENDER COMMANDS FROM SURFACES (FAR -> NEAR):"
+    };
+
+    if (commands.Count == 0)
+    {
+      lines.Add("none");
+    }
+    else
+    {
+      for (int i = 0; i < commands.Count; i++)
+        lines.Add(FormatViewport17RenderCommand(commands[i]));
+    }
+
+    lines.Add("");
+    lines.Add("DIAGNOSTIC ONLY: renderer/Enabled states are unchanged.");
     return string.Join("\n", lines);
   }
 
