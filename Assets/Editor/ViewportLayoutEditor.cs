@@ -4235,15 +4235,23 @@ public class ViewportLayoutEditor : EditorWindow
     public int Depth;
     public int LocalX;
 
-    // Stage 5 resolves the command against our verified canonical ViewEdit
-    // references where that mapping is unambiguous. ScreenY is the same
-    // top-down/display Y shown by Ref Y in ViewEdit, not Unity bottom-up Y.
+    // Stage 5B keeps ViewEdit/display coordinates and framebuffer coordinates
+    // separate. Canonical Ref X/Y are top-down ViewEdit coordinates. Buffer Y
+    // is the bottom-origin coordinate consumed by the existing blitters.
     public bool HasBaseReference;
     public int BaseReferenceX;
     public int BaseReferenceY;
-    public bool HasScreenPlacement;
-    public int ScreenX;
-    public int ScreenY;
+    public bool HasPieceMetrics;
+    public int PieceHeight;
+    public bool HasBaseBufferReference;
+    public int BaseBufferX;
+    public int BaseBufferY;
+    public bool HasDisplayPlacement;
+    public int DisplayX;
+    public int DisplayY;
+    public bool HasBufferPlacement;
+    public int BufferX;
+    public int BufferY;
 
     // Mirror and clipping remain instance properties. Stage 5 resolves only
     // cases that are already deterministic; unknown projection-specific
@@ -4791,9 +4799,17 @@ public class ViewportLayoutEditor : EditorWindow
         HasBaseReference = false,
         BaseReferenceX = 0,
         BaseReferenceY = 0,
-        HasScreenPlacement = false,
-        ScreenX = 0,
-        ScreenY = 0,
+        HasPieceMetrics = false,
+        PieceHeight = 0,
+        HasBaseBufferReference = false,
+        BaseBufferX = 0,
+        BaseBufferY = 0,
+        HasDisplayPlacement = false,
+        DisplayX = 0,
+        DisplayY = 0,
+        HasBufferPlacement = false,
+        BufferX = 0,
+        BufferY = 0,
         HasMirror = false,
         Mirror = false,
         ClipMode = "PENDING",
@@ -4806,64 +4822,122 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   // -------------------------------------------------------------------------
-  // Stage 5: resolve command instances against verified canonical references.
+  // Stage 5B: normalize command coordinates.
   //
-  // This deliberately does NOT invent lane projection coordinates. A CENTER
-  // front face maps one-to-one to the canonical FrontF1/F2/F3 reference and
-  // can therefore be placed immediately. LEFT/RIGHT front-face instances use
-  // the same source family but require their own horizontal projection/clip;
-  // those stay pending until we derive the original projection table.
+  // Canonical ViewEdit Ref X/Y are DISPLAY coordinates (top-origin). The
+  // existing framebuffer blitters consume X plus a bottom-origin Y. Keep both
+  // coordinate spaces explicitly on every command so diagnostics can never
+  // confuse values such as FrontF2 display Y=125 with framebuffer Y=1.
   //
-  // Side/inner wall commands map one-to-one to their canonical ViewEdit piece
-  // references. F0-F3 side-wall mirroring uses the already deterministic pose
-  // phase. D3 outer pieces keep mirror pending until separately calibrated.
+  // This still does NOT invent LEFT/RIGHT front-lane projection coordinates.
+  // Projected front instances retain their normalized base reference but their
+  // actual display/buffer placement remains PENDING.
   // -------------------------------------------------------------------------
-  private void ResolveViewport17RenderCommandStage5(
+  private bool TryGetViewport17PieceHeight(
+      string pieceFamily,
+      out int height)
+  {
+    height = 0;
+    if (string.IsNullOrEmpty(pieceFamily))
+      return false;
+
+    ViewportPiece piece = FindLayoutPieceByName(pieceFamily);
+    if (piece == null)
+    {
+      switch (pieceFamily)
+      {
+        case "FrontF1": piece = FindLayoutPieceByName("Front Wall F1"); break;
+        case "FrontF2": piece = FindLayoutPieceByName("Front Wall F2"); break;
+        case "FrontF3": piece = FindLayoutPieceByName("Front Wall F3"); break;
+        case "LeftF0": piece = FindLayoutPieceByName("Wall F0Left"); break;
+        case "LeftF1": piece = FindLayoutPieceByName("Wall F1Left"); break;
+        case "LeftF2": piece = FindLayoutPieceByName("Wall F2Left"); break;
+        case "LeftF3": piece = FindLayoutPieceByName("Wall F3Left"); break;
+        case "RightF0": piece = FindLayoutPieceByName("Wall F0Right"); break;
+        case "RightF1": piece = FindLayoutPieceByName("Wall F1Right"); break;
+        case "RightF2": piece = FindLayoutPieceByName("Wall F2Right"); break;
+        case "RightF3": piece = FindLayoutPieceByName("Wall F3Right"); break;
+        case "LeftD3": piece = FindLayoutPieceByName("Wall D3L2"); break;
+        case "RightD3": piece = FindLayoutPieceByName("Wall D3R2"); break;
+      }
+    }
+
+    if (piece == null)
+      return false;
+
+    height = GetPieceHeightForEditorY(piece);
+    return height > 0;
+  }
+
+  private void ResolveViewport17RenderCommandStage5B(
       ref Viewport17RenderCommand command)
   {
     command.HasBaseReference = false;
-    command.HasScreenPlacement = false;
+    command.HasPieceMetrics = false;
+    command.HasBaseBufferReference = false;
+    command.HasDisplayPlacement = false;
+    command.HasBufferPlacement = false;
     command.HasMirror = false;
     command.ClipMode = "PENDING";
     command.ResolutionNote = string.Empty;
 
     if (TryGetCanonicalReferenceXY(
-            command.PieceFamily, out int refX, out int refY))
+            command.PieceFamily, out int refX, out int refDisplayY))
     {
       command.HasBaseReference = true;
       command.BaseReferenceX = refX;
-      command.BaseReferenceY = refY;
+      command.BaseReferenceY = refDisplayY;
+    }
+
+    if (TryGetViewport17PieceHeight(command.PieceFamily, out int pieceHeight))
+    {
+      command.HasPieceMetrics = true;
+      command.PieceHeight = pieceHeight;
+    }
+
+    if (command.HasBaseReference && command.HasPieceMetrics)
+    {
+      command.HasBaseBufferReference = true;
+      command.BaseBufferX = command.BaseReferenceX;
+      command.BaseBufferY = DisplayYToUnityY(
+          command.BaseReferenceY,
+          command.PieceHeight);
     }
 
     bool isFront = command.SurfaceType == Viewport17SurfaceType.Front;
     bool isCenterFront = isFront && command.LocalX == 0;
     bool isProjectedFront = isFront && command.LocalX != 0;
 
-    if (isCenterFront && command.HasBaseReference)
+    if (isCenterFront && command.HasBaseBufferReference)
     {
-      command.HasScreenPlacement = true;
-      command.ScreenX = command.BaseReferenceX;
-      command.ScreenY = command.BaseReferenceY;
+      command.HasDisplayPlacement = true;
+      command.DisplayX = command.BaseReferenceX;
+      command.DisplayY = command.BaseReferenceY;
+      command.HasBufferPlacement = true;
+      command.BufferX = command.BaseBufferX;
+      command.BufferY = command.BaseBufferY;
       command.ClipMode = "NONE";
-      command.ResolutionNote = "canonical center projection";
+      command.ResolutionNote = "canonical center projection; display/buffer normalized";
     }
     else if (isProjectedFront)
     {
       command.ClipMode = command.LocalX < 0
           ? "LEFT_LANE_PENDING"
           : "RIGHT_LANE_PENDING";
-      command.ResolutionNote = command.HasBaseReference
-          ? "base Ref known; lane projection/clip still required"
+      command.ResolutionNote = command.HasBaseBufferReference
+          ? "normalized base Ref known; lane projection/clip still required"
           : "lane projection/clip still required";
     }
-    else if (command.HasBaseReference)
+    else if (command.HasBaseBufferReference)
     {
-      // Left/Right F0-F3 and D3 side families have their own canonical piece.
-      command.HasScreenPlacement = true;
-      command.ScreenX = command.BaseReferenceX;
-      command.ScreenY = command.BaseReferenceY;
+      command.HasDisplayPlacement = true;
+      command.DisplayX = command.BaseReferenceX;
+      command.DisplayY = command.BaseReferenceY;
+      command.HasBufferPlacement = true;
+      command.BufferX = command.BaseBufferX;
+      command.BufferY = command.BaseBufferY;
       command.ClipMode = "NONE";
-      command.ResolutionNote = "canonical piece reference";
+      command.ResolutionNote = "canonical piece reference; display/buffer normalized";
     }
 
     bool ordinarySideFamily =
@@ -4881,9 +4955,9 @@ public class ViewportLayoutEditor : EditorWindow
       command.HasMirror = true;
       command.Mirror = GetSideWallMirrorFromPose();
     }
-    // Front-face mirror phase and LeftD3/RightD3 mirror are intentionally not
-    // inferred from legacy piece state here. They remain PENDING until their
-    // original-style projection/mirror rule is derived from geometry.
+    // Front-face mirror phase and LeftD3/RightD3 mirror stay PENDING until
+    // their geometry-driven rule is derived. No legacy pose exception is
+    // imported into the Viewport-17 engine here.
   }
 
   private static string FormatViewport17RenderCommand(
@@ -4892,12 +4966,30 @@ public class ViewportLayoutEditor : EditorWindow
     string projection = string.IsNullOrEmpty(command.Projection)
         ? string.Empty
         : " [" + command.Projection + "]";
+
+    string metrics = command.HasPieceMetrics
+        ? " h=" + command.PieceHeight
+        : " h=PENDING";
+
     string baseRef = command.HasBaseReference
-        ? " ref=" + command.BaseReferenceX + "," + command.BaseReferenceY
-        : " ref=PENDING";
-    string placement = command.HasScreenPlacement
-        ? " x=" + command.ScreenX + " y=" + command.ScreenY
-        : " placement=PENDING";
+        ? " baseDisplay=(" + command.BaseReferenceX + "," + command.BaseReferenceY + ")"
+        : " baseDisplay=PENDING";
+
+    string baseBuffer = command.HasBaseBufferReference
+        ? " baseBuffer=(" + command.BaseBufferX + "," + command.BaseBufferY + ")"
+        : " baseBuffer=PENDING";
+
+    string placement;
+    if (command.HasDisplayPlacement && command.HasBufferPlacement)
+    {
+      placement = " display=(" + command.DisplayX + "," + command.DisplayY + ")"
+          + " buffer=(" + command.BufferX + "," + command.BufferY + ")";
+    }
+    else
+    {
+      placement = " placement=PENDING";
+    }
+
     string mirror = command.HasMirror
         ? " mirror=" + (command.Mirror ? "ON" : "OFF")
         : " mirror=PENDING";
@@ -4912,7 +5004,9 @@ public class ViewportLayoutEditor : EditorWindow
         + "  ->  " + command.PieceFamily
         + projection
         + "  source=" + FormatViewport17Cell(command.SourceSurface.PrimaryCell)
+        + metrics
         + baseRef
+        + baseBuffer
         + placement
         + mirror
         + " clip=" + command.ClipMode
@@ -4928,7 +5022,7 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < commands.Count; i++)
     {
       Viewport17RenderCommand resolved = commands[i];
-      ResolveViewport17RenderCommandStage5(ref resolved);
+      ResolveViewport17RenderCommandStage5B(ref resolved);
       commands[i] = resolved;
     }
 
@@ -4950,9 +5044,9 @@ public class ViewportLayoutEditor : EditorWindow
 
     lines.Add("");
     lines.Add(
-        "STAGE 5: canonical one-to-one placements are resolved; projected "
-        + "LEFT/RIGHT front instances remain explicit PENDING until the "
-        + "original lane projection/clip table is derived.");
+        "STAGE 5B: ViewEdit/display and framebuffer coordinates are now "
+        + "explicitly separated; projected LEFT/RIGHT front instances remain "
+        + "PENDING until the original lane projection/clip table is derived.");
     lines.Add(
         "DIAGNOSTIC ONLY: renderer/Enabled states are still unchanged.");
     return string.Join("\n", lines);
