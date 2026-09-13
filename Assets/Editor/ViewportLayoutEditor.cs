@@ -4225,10 +4225,34 @@ public class ViewportLayoutEditor : EditorWindow
 
   private struct Viewport17RenderCommand
   {
+    // Painter-order identity. Two commands may intentionally use the same
+    // PieceFamily (for example two FrontF3 projections).
+    public int Sequence;
     public string PieceFamily;
     public string Projection;
+    public string Lane;
+    public Viewport17SurfaceType SurfaceType;
     public int Depth;
     public int LocalX;
+
+    // Stage 5 resolves the command against our verified canonical ViewEdit
+    // references where that mapping is unambiguous. ScreenY is the same
+    // top-down/display Y shown by Ref Y in ViewEdit, not Unity bottom-up Y.
+    public bool HasBaseReference;
+    public int BaseReferenceX;
+    public int BaseReferenceY;
+    public bool HasScreenPlacement;
+    public int ScreenX;
+    public int ScreenY;
+
+    // Mirror and clipping remain instance properties. Stage 5 resolves only
+    // cases that are already deterministic; unknown projection-specific
+    // behaviour stays explicit rather than borrowing a legacy pose exception.
+    public bool HasMirror;
+    public bool Mirror;
+    public string ClipMode;
+    public string ResolutionNote;
+
     public Viewport17Surface SourceSurface;
   }
 
@@ -4662,6 +4686,35 @@ public class ViewportLayoutEditor : EditorWindow
   // D0 inner faces:
   //   LEFT INNER -> LeftF0, RIGHT INNER -> RightF0
   // -------------------------------------------------------------------------
+  private static string GetViewport17CommandLane(Viewport17Surface surface)
+  {
+    switch (surface.Type)
+    {
+      case Viewport17SurfaceType.Front:
+        if (surface.LocalX < 0) return "LEFT";
+        if (surface.LocalX > 0) return "RIGHT";
+        return "CENTER";
+
+      case Viewport17SurfaceType.LeftSide:
+        return surface.Depth == 3 && surface.LocalX <= -2
+            ? "OUTER_LEFT"
+            : "LEFT";
+
+      case Viewport17SurfaceType.RightSide:
+        return surface.Depth == 3 && surface.LocalX >= 2
+            ? "OUTER_RIGHT"
+            : "RIGHT";
+
+      case Viewport17SurfaceType.LeftInner:
+        return "LEFT";
+
+      case Viewport17SurfaceType.RightInner:
+        return "RIGHT";
+    }
+
+    return "CONTEXT";
+  }
+
   private static List<Viewport17RenderCommand> BuildViewport17RenderCommands(
       Viewport17Inspection inspection)
   {
@@ -4728,10 +4781,23 @@ public class ViewportLayoutEditor : EditorWindow
 
       commands.Add(new Viewport17RenderCommand
       {
+        Sequence = commands.Count,
         PieceFamily = pieceFamily,
         Projection = projection ?? string.Empty,
+        Lane = GetViewport17CommandLane(surface),
+        SurfaceType = surface.Type,
         Depth = surface.Depth,
         LocalX = surface.LocalX,
+        HasBaseReference = false,
+        BaseReferenceX = 0,
+        BaseReferenceY = 0,
+        HasScreenPlacement = false,
+        ScreenX = 0,
+        ScreenY = 0,
+        HasMirror = false,
+        Mirror = false,
+        ClipMode = "PENDING",
+        ResolutionNote = string.Empty,
         SourceSurface = surface
       });
     }
@@ -4739,28 +4805,137 @@ public class ViewportLayoutEditor : EditorWindow
     return commands;
   }
 
+  // -------------------------------------------------------------------------
+  // Stage 5: resolve command instances against verified canonical references.
+  //
+  // This deliberately does NOT invent lane projection coordinates. A CENTER
+  // front face maps one-to-one to the canonical FrontF1/F2/F3 reference and
+  // can therefore be placed immediately. LEFT/RIGHT front-face instances use
+  // the same source family but require their own horizontal projection/clip;
+  // those stay pending until we derive the original projection table.
+  //
+  // Side/inner wall commands map one-to-one to their canonical ViewEdit piece
+  // references. F0-F3 side-wall mirroring uses the already deterministic pose
+  // phase. D3 outer pieces keep mirror pending until separately calibrated.
+  // -------------------------------------------------------------------------
+  private void ResolveViewport17RenderCommandStage5(
+      ref Viewport17RenderCommand command)
+  {
+    command.HasBaseReference = false;
+    command.HasScreenPlacement = false;
+    command.HasMirror = false;
+    command.ClipMode = "PENDING";
+    command.ResolutionNote = string.Empty;
+
+    if (TryGetCanonicalReferenceXY(
+            command.PieceFamily, out int refX, out int refY))
+    {
+      command.HasBaseReference = true;
+      command.BaseReferenceX = refX;
+      command.BaseReferenceY = refY;
+    }
+
+    bool isFront = command.SurfaceType == Viewport17SurfaceType.Front;
+    bool isCenterFront = isFront && command.LocalX == 0;
+    bool isProjectedFront = isFront && command.LocalX != 0;
+
+    if (isCenterFront && command.HasBaseReference)
+    {
+      command.HasScreenPlacement = true;
+      command.ScreenX = command.BaseReferenceX;
+      command.ScreenY = command.BaseReferenceY;
+      command.ClipMode = "NONE";
+      command.ResolutionNote = "canonical center projection";
+    }
+    else if (isProjectedFront)
+    {
+      command.ClipMode = command.LocalX < 0
+          ? "LEFT_LANE_PENDING"
+          : "RIGHT_LANE_PENDING";
+      command.ResolutionNote = command.HasBaseReference
+          ? "base Ref known; lane projection/clip still required"
+          : "lane projection/clip still required";
+    }
+    else if (command.HasBaseReference)
+    {
+      // Left/Right F0-F3 and D3 side families have their own canonical piece.
+      command.HasScreenPlacement = true;
+      command.ScreenX = command.BaseReferenceX;
+      command.ScreenY = command.BaseReferenceY;
+      command.ClipMode = "NONE";
+      command.ResolutionNote = "canonical piece reference";
+    }
+
+    bool ordinarySideFamily =
+        command.PieceFamily == "LeftF0"
+        || command.PieceFamily == "RightF0"
+        || command.PieceFamily == "LeftF1"
+        || command.PieceFamily == "RightF1"
+        || command.PieceFamily == "LeftF2"
+        || command.PieceFamily == "RightF2"
+        || command.PieceFamily == "LeftF3"
+        || command.PieceFamily == "RightF3";
+
+    if (ordinarySideFamily)
+    {
+      command.HasMirror = true;
+      command.Mirror = GetSideWallMirrorFromPose();
+    }
+    // Front-face mirror phase and LeftD3/RightD3 mirror are intentionally not
+    // inferred from legacy piece state here. They remain PENDING until their
+    // original-style projection/mirror rule is derived from geometry.
+  }
+
   private static string FormatViewport17RenderCommand(
       Viewport17RenderCommand command)
   {
-    string source = FormatViewport17Surface(command.SourceSurface);
     string projection = string.IsNullOrEmpty(command.Projection)
         ? string.Empty
         : " [" + command.Projection + "]";
+    string baseRef = command.HasBaseReference
+        ? " ref=" + command.BaseReferenceX + "," + command.BaseReferenceY
+        : " ref=PENDING";
+    string placement = command.HasScreenPlacement
+        ? " x=" + command.ScreenX + " y=" + command.ScreenY
+        : " placement=PENDING";
+    string mirror = command.HasMirror
+        ? " mirror=" + (command.Mirror ? "ON" : "OFF")
+        : " mirror=PENDING";
+    string note = string.IsNullOrEmpty(command.ResolutionNote)
+        ? string.Empty
+        : "  note=" + command.ResolutionNote;
 
-    return source
+    return "#" + command.Sequence.ToString("00")
+        + " D" + command.Depth
+        + " lane=" + command.Lane
+        + " surface=" + command.SurfaceType.ToString().ToUpperInvariant()
         + "  ->  " + command.PieceFamily
-        + projection;
+        + projection
+        + "  source=" + FormatViewport17Cell(command.SourceSurface.PrimaryCell)
+        + baseRef
+        + placement
+        + mirror
+        + " clip=" + command.ClipMode
+        + note;
   }
 
-  private static string BuildViewport17RenderCommandDiagnostic(
+  private string BuildViewport17RenderCommandDiagnostic(
       Viewport17Inspection inspection)
   {
     List<Viewport17RenderCommand> commands =
         BuildViewport17RenderCommands(inspection);
 
+    for (int i = 0; i < commands.Count; i++)
+    {
+      Viewport17RenderCommand resolved = commands[i];
+      ResolveViewport17RenderCommandStage5(ref resolved);
+      commands[i] = resolved;
+    }
+
     List<string> lines = new List<string>
     {
-      "RENDER COMMANDS FROM SURFACES (FAR -> NEAR):"
+      "VIEWPORT-17 RENDER COMMAND INSTANCES (FAR -> NEAR):",
+      "One command = one drawable surface instance; duplicate families are allowed."
     };
 
     if (commands.Count == 0)
@@ -4774,7 +4949,12 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     lines.Add("");
-    lines.Add("DIAGNOSTIC ONLY: renderer/Enabled states are unchanged.");
+    lines.Add(
+        "STAGE 5: canonical one-to-one placements are resolved; projected "
+        + "LEFT/RIGHT front instances remain explicit PENDING until the "
+        + "original lane projection/clip table is derived.");
+    lines.Add(
+        "DIAGNOSTIC ONLY: renderer/Enabled states are still unchanged.");
     return string.Join("\n", lines);
   }
 
