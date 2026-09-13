@@ -5370,14 +5370,14 @@ public class ViewportLayoutEditor : EditorWindow
       out int displayY)
   {
     // Viewport-17 uses one normalized coordinate convention: display Y is
-    // top-origin. FrontF2 is a legacy special case in the old renderer where
-    // 125 is the framebuffer/bottom-origin Y. Its normalized display Y is 1
-    // because 200 - 1 - 74 = 125. Keep this correction local to the new
-    // Viewport-17 engine so the legacy renderer remains untouched.
+    // top-origin. Canonical table FrontF2 Y=125 is framebuffer Y, which is
+    // display Y=1, and that parks the 74px wall on the name bar. Original
+    // FrontF2 sits in the same dungeon band as FrontF1 (display Y=42):
+    // shorter wall, more floor. Verified against (0,5) East original.
     if (pieceFamily == "FrontF2")
     {
       x = 0;
-      displayY = 1;
+      displayY = 42;
       return true;
     }
 
@@ -8502,26 +8502,28 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyViewport17LiveDrawToResolvedWalls();
   }
 
-  // FrontF1 dest/width from V17 occupancy, not from a map pose.
+  // Front dest/width from V17 occupancy, not from a map pose.
   // Left 32px is LeftF0 or a FrontF3 L-only strip. Right 32px is RightF0,
   // a FrontF3 R-only strip, or an open D1-right corridor (0,5 North).
-  // Both insets -> dest 32, width 160 (verified 0,5 South and 0,5 North).
-  private static bool TryComputeViewport17FrontF1LiveBlit(
+  // Both insets -> dest 32, width 160 (FrontF1 at 0,5 South/North/West;
+  // FrontF2 at 0,5 East between the same F0 pair).
+  private static bool TryComputeViewport17InsetFrontLiveBlit(
       List<Viewport17RenderCommand> finalCommands,
       Viewport17Inspection inspection,
+      string frontFamily,
       out int destX,
       out int width)
   {
     destX = 0;
     width = StraightF1WallLogic.CompositeWidth;
-    if (finalCommands == null)
+    if (finalCommands == null || string.IsNullOrEmpty(frontFamily))
       return false;
 
     bool hasLeftF0 = false;
     bool hasRightF0 = false;
     bool frontF3LeftOnly = false;
     bool frontF3RightOnly = false;
-    bool frontF1Center = false;
+    bool frontCenter = false;
     for (int i = 0; i < finalCommands.Count; i++)
     {
       Viewport17RenderCommand command = finalCommands[i];
@@ -8538,13 +8540,13 @@ public class ViewportLayoutEditor : EditorWindow
         frontF3LeftOnly |= command.FrontLeft && !command.FrontCenter;
         frontF3RightOnly |= command.FrontRight && !command.FrontCenter;
       }
-      else if (command.PieceFamily == "FrontF1")
+      else if (command.PieceFamily == frontFamily)
       {
-        frontF1Center |= command.FrontCenter;
+        frontCenter |= command.FrontCenter;
       }
     }
 
-    if (!frontF1Center)
+    if (!frontCenter)
       return false;
 
     bool d1RightOpen = false;
@@ -8596,6 +8598,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     bool frontF3Center = false;
     bool frontF3LeftOnly = false;
+    bool frontF2Center = false;
     bool frontF1Center = false;
     for (int i = 0; i < finalCommands.Count; i++)
     {
@@ -8607,6 +8610,10 @@ public class ViewportLayoutEditor : EditorWindow
       {
         frontF3Center = command.FrontCenter;
         frontF3LeftOnly = command.FrontLeft && !command.FrontCenter;
+      }
+      else if (command.PieceFamily == "FrontF2")
+      {
+        frontF2Center = command.FrontCenter;
       }
       else if (command.PieceFamily == "FrontF1")
       {
@@ -8657,13 +8664,40 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
+      if (IsFrontWallF2Card(piece))
+      {
+        state.Enabled = frontF2Center;
+        if (frontF2Center)
+        {
+          state.Y = DisplayYToUnityY(42, 74);
+          state.Mirror = GetFrontF2LateralMirrorPhase(
+              previewX,
+              previewY,
+              previewFacing);
+          if (TryComputeViewport17InsetFrontLiveBlit(
+                  finalCommands,
+                  inspection,
+                  "FrontF2",
+                  out int frontF2DestX,
+                  out int frontF2Width))
+          {
+            state.X = frontF2DestX;
+            state.FrontF2Width = frontF2Width;
+          }
+        }
+
+        resolvedNormalWallByPiece[piece] = state;
+        continue;
+      }
+
       if (IsFrontWallF1Card(piece))
       {
         state.Enabled = frontF1Center;
         if (frontF1Center
-            && TryComputeViewport17FrontF1LiveBlit(
+            && TryComputeViewport17InsetFrontLiveBlit(
                 finalCommands,
                 inspection,
+                "FrontF1",
                 out int frontF1DestX,
                 out int frontF1Width))
         {
@@ -11183,6 +11217,57 @@ public class ViewportLayoutEditor : EditorWindow
           if (f2Texture == null)
             continue;
 
+          if (viewport17WallAuthorityActive)
+          {
+            if (!TryGetResolvedNormalWallState(
+                    piece, out ResolvedNormalWallState liveFrontF2)
+                || !liveFrontF2.Enabled)
+            {
+              continue;
+            }
+
+            int destinationStartX = liveFrontF2.X;
+            int copyWidth = liveFrontF2.FrontF2Width > 0
+                ? liveFrontF2.FrontF2Width
+                : StraightF1WallLogic.CompositeWidth;
+            int sourceStartX = destinationStartX;
+
+            if (liveFrontF2.Mirror)
+            {
+              BlitFrontF1MirroredImageFromX(
+                  pixels,
+                  f2Texture,
+                  sourceStartX,
+                  destinationStartX,
+                  liveFrontF2.Y,
+                  copyWidth);
+            }
+            else
+            {
+              BlitFrontF1CroppedPreview(
+                  pixels,
+                  f2Texture,
+                  sourceStartX,
+                  destinationStartX,
+                  liveFrontF2.Y,
+                  false,
+                  copyWidth);
+            }
+
+            LogIfOverlapsLeftF0(
+                piece,
+                piece.Graphic,
+                destinationStartX,
+                liveFrontF2.Y,
+                copyWidth,
+                f2Texture.height);
+            ClearFrontWallOverflowIntoUi(
+                pixels,
+                liveFrontF2.Y,
+                f2Texture.height);
+            continue;
+          }
+
           BlitPieceIntoPreview(
               pixels,
               f2Texture,
@@ -12842,6 +12927,14 @@ public class ViewportLayoutEditor : EditorWindow
       Texture2D f1Texture = graphics.GetFrontWallF1Texture(width);
       if (f1Texture != null && f1Texture.height > 0)
         return f1Texture.height;
+    }
+
+    if (IsFrontWallF2Card(piece))
+    {
+      Texture2D f2Texture = GetFrontWallF2_224ReferenceTexture();
+      if (f2Texture != null && f2Texture.height > 0)
+        return f2Texture.height;
+      return 74;
     }
 
     Texture2D texture = graphics.GetTexture(piece.Graphic);
