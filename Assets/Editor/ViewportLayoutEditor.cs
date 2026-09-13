@@ -777,7 +777,8 @@ public class ViewportLayoutEditor : EditorWindow
       if (diagnosticsPressed != showGeometryDiagnostics)
       {
         showGeometryDiagnostics = diagnosticsPressed;
-        if (!showGeometryDiagnostics && viewport17D3LeftCalibrationPreview)
+        if (!showGeometryDiagnostics
+            && viewport17D3LeftCalibrationPreview)
         {
           viewport17D3LeftCalibrationPreview = false;
           RefreshEditModePreview();
@@ -840,6 +841,7 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       EditorGUILayout.EndHorizontal();
+
 
       EditorGUILayout.BeginHorizontal();
       EditorGUILayout.PrefixLabel(
@@ -5006,7 +5008,10 @@ public class ViewportLayoutEditor : EditorWindow
       // FrontF3 while Mirror can be toggled independently.
       HasDisplayXOffset = center,
       HasDisplayYOffset = center || d3Left,
-      DisplayOffsetX = 0,
+      // Calibrated from the original Dungeon Master reference: D1 CENTER
+      // FrontF1 sits exactly one pixel right of its canonical ViewEdit Ref.
+      // This is a generic depth/lane projection rule, not a map-position fix.
+      DisplayOffsetX = center && depth == 1 ? 1 : 0,
       DisplayOffsetY = 0,
       HasClipWindow = d3Left,
       ClipMinX = d3Left ? 0 : 0,
@@ -5029,7 +5034,9 @@ public class ViewportLayoutEditor : EditorWindow
       HasMirror = d3Left,
       Mirror = d3LeftMirror,
       CalibrationStatus = center
-          ? "CALIBRATED_CANONICAL_CENTER"
+          ? (depth == 1
+              ? "CALIBRATED_D1_CENTER_X_PLUS_1"
+              : "CALIBRATED_CANONICAL_CENTER")
           : d3Left
               ? d3LeftStatus
               : "PENDING_LANE_CALIBRATION"
@@ -5503,7 +5510,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     lines.Add("");
     lines.Add(
-        "STAGE 6H: D3 LEFT destination remains fixed at X=[0..31], displayY=58. "
+        "STAGE 6N: generic D1 CENTER FrontF1 X offset is LOCKED at +1px. D3 LEFT destination remains fixed at X=[0..31], displayY=58. "
         + "Use Src X -8/-1/+1/+8 buttons (clamped 0..109) to move the 32px source window across the 141px FrontF3, "
         + "and toggle Mirror independently. The selected strip is overlaid last only while "
         + "D3L Test is ON. CENTER slots remain calibrated; all other projected lanes remain pending.");
@@ -10042,10 +10049,26 @@ public class ViewportLayoutEditor : EditorWindow
 
             frontF1TextureHeight = f1Texture.height;
 
+            // Bridge the calibrated generic Viewport-17 D1 CENTER projection
+            // into the current legacy preview path.  Source/crop stays exactly
+            // the same; only the destination is shifted by the locked generic
+            // projection offset (currently +1 px).
+            int viewport17D1CenterOffsetX = 0;
+            if (TryGetViewport17FrontProjectionSlot(
+                    1,
+                    0,
+                    out Viewport17FrontProjectionSlot d1CenterProjection)
+                && d1CenterProjection.HasDisplayXOffset)
+            {
+              viewport17D1CenterOffsetX = d1CenterProjection.DisplayOffsetX;
+            }
+
             if (frontF1CropPreview)
             {
               // GameView dest X is independent of the mirrored-image start X.
-              int destinationStartX = 32;
+              // Keep sourceStartX=32; only the destination uses the calibrated
+              // D1 CENTER offset.
+              int destinationStartX = 32 + viewport17D1CenterOffsetX;
               int sourceStartX = 32;
               int copyWidth =
                   StraightF1WallLogic.CompositeWidth - sourceStartX;
@@ -10067,7 +10090,7 @@ public class ViewportLayoutEditor : EditorWindow
             }
             else
             {
-              int destinationStartX = 0;
+              int destinationStartX = viewport17D1CenterOffsetX;
               bool f1Mirror = true;
 
               StraightF1WallLogic.BlitCompositeToBuffer(
@@ -10113,13 +10136,14 @@ public class ViewportLayoutEditor : EditorWindow
                     ? StraightF1WallLogic.CompositeWidth160
                     : StraightF1WallLogic.CompositeWidth191;
 
+            int leftD3FrontF1DestinationX = leftD3FrontF1StartX;
             if (mirror)
             {
               BlitFrontF1MirroredImageFromX(
                   pixels,
                   fullF1Texture,
                   leftD3FrontF1StartX,
-                  leftD3FrontF1StartX,
+                  leftD3FrontF1DestinationX,
                   resolvedY,
                   leftD3FrontF1CopyWidth);
             }
@@ -10129,7 +10153,7 @@ public class ViewportLayoutEditor : EditorWindow
                   pixels,
                   fullF1Texture,
                   leftD3FrontF1StartX,
-                  leftD3FrontF1StartX,
+                  leftD3FrontF1DestinationX,
                   resolvedY,
                   false,
                   leftD3FrontF1CopyWidth);
@@ -10138,7 +10162,7 @@ public class ViewportLayoutEditor : EditorWindow
             LogIfOverlapsLeftF0(
                 piece,
                 piece.Graphic,
-                leftD3FrontF1StartX,
+                leftD3FrontF1DestinationX,
                 resolvedY,
                 leftD3FrontF1CopyWidth,
                 fullF1Texture.height);
