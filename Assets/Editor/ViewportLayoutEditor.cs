@@ -100,6 +100,7 @@ public class ViewportLayoutEditor : EditorWindow
   private bool previewDisableAllWalls;
   private bool showGeometryDiagnostics;
   private bool viewport17D3LeftCalibrationPreview;
+  private int viewport17D3LeftCalibrationCandidate;
   private string pieceSearchText = string.Empty;
   private bool openSearchPiecesPopup;
   private bool focusSearchPieces;
@@ -790,6 +791,19 @@ public class ViewportLayoutEditor : EditorWindow
       {
         viewport17D3LeftCalibrationPreview = d3LeftTestPressed;
         RefreshEditModePreview();
+        Repaint();
+      }
+
+      int d3LeftCandidatePressed = GUILayout.Toolbar(
+          viewport17D3LeftCalibrationCandidate,
+          new[] { "A", "B", "C", "D" },
+          GUILayout.Width(96f));
+      if (d3LeftCandidatePressed != viewport17D3LeftCalibrationCandidate)
+      {
+        viewport17D3LeftCalibrationCandidate =
+            Mathf.Clamp(d3LeftCandidatePressed, 0, 3);
+        if (viewport17D3LeftCalibrationPreview)
+          RefreshEditModePreview();
         Repaint();
       }
 
@@ -4169,7 +4183,8 @@ public class ViewportLayoutEditor : EditorWindow
         + BuildViewport17RenderCommandDiagnostic(inspection)
         + "\n\nD3 LEFT CALIBRATION PREVIEW: "
         + (viewport17D3LeftCalibrationPreview ? "ON" : "OFF")
-        + " (D3L Test overlays Candidate A last in Edit Mode preview)"
+        + "  candidate=" + GetViewport17D3LeftCandidateLabel()
+        + " (D3L Test overlays the selected candidate last in Edit Mode preview)"
         + "\n\nTOTAL EVALUATIONS: 14 map tiles + 3 D0 faces = 17"
         + "\n\nLEGACY " + drawText;
 
@@ -4910,7 +4925,22 @@ public class ViewportLayoutEditor : EditorWindow
     return commands;
   }
 
-  private static bool TryGetViewport17FrontProjectionSlot(
+  private string GetViewport17D3LeftCandidateLabel()
+  {
+    switch (Mathf.Clamp(viewport17D3LeftCalibrationCandidate, 0, 3))
+    {
+      case 0:
+        return "A: RIGHT32 / MIRROR OFF";
+      case 1:
+        return "B: LEFT32 / MIRROR OFF";
+      case 2:
+        return "C: RIGHT32 / MIRROR ON";
+      default:
+        return "D: LEFT32 / MIRROR ON";
+    }
+  }
+
+  private bool TryGetViewport17FrontProjectionSlot(
       int depth,
       int localX,
       out Viewport17FrontProjectionSlot slot)
@@ -4923,6 +4953,42 @@ public class ViewportLayoutEditor : EditorWindow
     bool d3Left = depth == 3 && localX == -1;
     string lane = localX < 0 ? "LEFT" : localX > 0 ? "RIGHT" : "CENTER";
 
+    string d3LeftSourceWindow = "PENDING";
+    string d3LeftOriginRule = "PENDING";
+    bool d3LeftMirror = false;
+    string d3LeftStatus = "PENDING_LANE_CALIBRATION";
+
+    if (d3Left)
+    {
+      switch (Mathf.Clamp(viewport17D3LeftCalibrationCandidate, 0, 3))
+      {
+        case 0:
+          d3LeftSourceWindow = "RIGHT_EDGE_32";
+          d3LeftOriginRule = "ALIGN_SELECTED_WINDOW_TO_DEST_X_0_31";
+          d3LeftMirror = false;
+          d3LeftStatus = "CANDIDATE_A_RIGHT_EDGE_32_MIRROR_OFF";
+          break;
+        case 1:
+          d3LeftSourceWindow = "LEFT_EDGE_32";
+          d3LeftOriginRule = "ALIGN_SELECTED_WINDOW_TO_DEST_X_0_31";
+          d3LeftMirror = false;
+          d3LeftStatus = "CANDIDATE_B_LEFT_EDGE_32_MIRROR_OFF";
+          break;
+        case 2:
+          d3LeftSourceWindow = "RIGHT_EDGE_32";
+          d3LeftOriginRule = "ALIGN_SELECTED_WINDOW_TO_DEST_X_0_31";
+          d3LeftMirror = true;
+          d3LeftStatus = "CANDIDATE_C_RIGHT_EDGE_32_MIRROR_ON";
+          break;
+        default:
+          d3LeftSourceWindow = "LEFT_EDGE_32";
+          d3LeftOriginRule = "ALIGN_SELECTED_WINDOW_TO_DEST_X_0_31";
+          d3LeftMirror = true;
+          d3LeftStatus = "CANDIDATE_D_LEFT_EDGE_32_MIRROR_ON";
+          break;
+      }
+    }
+
     slot = new Viewport17FrontProjectionSlot
     {
       Depth = depth,
@@ -4932,10 +4998,9 @@ public class ViewportLayoutEditor : EditorWindow
       UseCanonicalBase = true,
 
       // CENTER is fully calibrated from the canonical family Ref.
-      // D3 LEFT keeps the Stage 6A destination band (Y from canonical FrontF3,
-      // destination X 0..31). Stage 6C adds Candidate A for source mapping:
-      // use FrontF3's rightmost 32 source pixels, align that right edge to
-      // destination X=31, and do not mirror. Renderer remains unchanged.
+      // D3 LEFT keeps the calibrated destination band (Y from canonical
+      // FrontF3, destination X 0..31). Stage 6E lets A/B/C/D select which
+      // 32px source edge and mirror state feed that destination band.
       HasDisplayXOffset = center,
       HasDisplayYOffset = center || d3Left,
       DisplayOffsetX = 0,
@@ -4951,19 +5016,19 @@ public class ViewportLayoutEditor : EditorWindow
       SourceWindowMode = center
           ? "FULL_SOURCE"
           : d3Left
-              ? "RIGHT_EDGE_32_CANDIDATE"
+              ? d3LeftSourceWindow
               : "PENDING",
       GraphicOriginRule = center
           ? "CANONICAL_REF_X"
           : d3Left
-              ? "ALIGN_SOURCE_RIGHT_EDGE_TO_DEST_CLIP_RIGHT"
+              ? d3LeftOriginRule
               : "PENDING",
       HasMirror = d3Left,
-      Mirror = false,
+      Mirror = d3LeftMirror,
       CalibrationStatus = center
           ? "CALIBRATED_CANONICAL_CENTER"
           : d3Left
-              ? "CANDIDATE_A_RIGHT_EDGE_32_MIRROR_OFF"
+              ? d3LeftStatus
               : "PENDING_LANE_CALIBRATION"
     };
 
@@ -4999,7 +5064,7 @@ public class ViewportLayoutEditor : EditorWindow
         + "status=" + slot.CalibrationStatus;
   }
 
-  private static string BuildViewport17FrontProjectionTableDiagnostic()
+  private string BuildViewport17FrontProjectionTableDiagnostic()
   {
     List<string> lines = new List<string>
     {
@@ -5237,14 +5302,17 @@ public class ViewportLayoutEditor : EditorWindow
               command.PieceHeight);
         }
 
-        // Stage 6C Candidate A for D3 LEFT. Treat the projected front face as
-        // the same full 141x49 FrontF3 graphic shifted left so only its
-        // rightmost 32 source pixels land in destination X 0..31.
-        // For a 141px FrontF3 this resolves graphic origin X to -109 and
-        // source window X 109..140. This remains diagnostic-only.
+        // Stage 6E D3 LEFT calibration candidates A/B/C/D.
+        // Destination geometry is fixed at X 0..31, Y from canonical FrontF3.
+        // Candidate selection varies only:
+        //   A = right edge 32, mirror OFF
+        //   B = left  edge 32, mirror OFF
+        //   C = right edge 32, mirror ON
+        //   D = left  edge 32, mirror ON
         bool d3LeftCandidate = command.Depth == 3
             && command.LocalX == -1
-            && slot.SourceWindowMode == "RIGHT_EDGE_32_CANDIDATE";
+            && (slot.SourceWindowMode == "RIGHT_EDGE_32"
+                || slot.SourceWindowMode == "LEFT_EDGE_32");
         if (d3LeftCandidate
             && slot.HasClipWindow
             && command.HasPieceWidth
@@ -5254,13 +5322,29 @@ public class ViewportLayoutEditor : EditorWindow
           int visibleWidth = slot.ClipMaxX - slot.ClipMinX + 1;
           visibleWidth = Mathf.Clamp(visibleWidth, 1, command.PieceWidth);
 
+          bool useRightEdge = slot.SourceWindowMode == "RIGHT_EDGE_32";
           command.HasSourceWindow = true;
-          command.SourceMinX = command.PieceWidth - visibleWidth;
-          command.SourceMaxX = command.PieceWidth - 1;
+          command.SourceMinX = useRightEdge
+              ? command.PieceWidth - visibleWidth
+              : 0;
+          command.SourceMaxX = useRightEdge
+              ? command.PieceWidth - 1
+              : visibleWidth - 1;
+
+          // BlitPieceIntoPreview mirrors the full source by converting each
+          // destination column to sourceX=(width-1-column). Compute which
+          // source column must land at destination ClipMinX, then derive the
+          // full-graphic origin. This keeps all four candidates honest.
+          int firstSourceAtClipMin = slot.Mirror
+              ? command.SourceMaxX
+              : command.SourceMinX;
+          int sourceColumnAtClipMin = slot.Mirror
+              ? command.PieceWidth - 1 - firstSourceAtClipMin
+              : firstSourceAtClipMin;
 
           command.HasProjectedGraphicOriginX = true;
           command.ProjectedGraphicOriginX =
-              slot.ClipMaxX - command.SourceMaxX;
+              slot.ClipMinX - sourceColumnAtClipMin;
 
           command.HasDisplayPlacement = true;
           command.DisplayX = command.ProjectedGraphicOriginX;
@@ -5269,7 +5353,9 @@ public class ViewportLayoutEditor : EditorWindow
           command.BufferX = command.ProjectedGraphicOriginX;
           command.BufferY = command.ProjectedBufferY;
           command.SourceWindowMode =
-              "SRC_X_[" + command.SourceMinX + ".." + command.SourceMaxX + "]_RIGHT_EDGE_CANDIDATE";
+              "SRC_X_[" + command.SourceMinX + ".." + command.SourceMaxX + "]_"
+              + (useRightEdge ? "RIGHT_EDGE" : "LEFT_EDGE")
+              + (slot.Mirror ? "_MIRROR_ON" : "_MIRROR_OFF");
         }
 
         if (slot.UseCanonicalBase
@@ -5293,7 +5379,7 @@ public class ViewportLayoutEditor : EditorWindow
             "projectionSlot=D" + slot.Depth + "/" + slot.Lane
             + " status=" + slot.CalibrationStatus
             + (d3LeftCandidate && command.HasSourceWindow
-                ? "; Candidate A resolved: rightmost 32 source pixels -> destination X 0..31; verify brick pattern before renderer hookup"
+                ? "; D3 LEFT candidate resolved: selected 32px source edge -> destination X 0..31; compare A/B/C/D brick pattern"
                 : command.HasDisplayPlacement
                     ? "; canonical base + calibrated lane offset"
                     : command.HasProjectedDisplayY
@@ -5433,10 +5519,12 @@ public class ViewportLayoutEditor : EditorWindow
 
     lines.Add("");
     lines.Add(
-        "STAGE 6D: D3 LEFT Candidate A can now be visually overlaid with the D3L Test toggle. "
-        + "The full FrontF3 graphic is shifted left so its rightmost 32 source pixels map to destination X=[0..31]; "
-        + "for the current 141px FrontF3 this resolves source X=[109..140], graphic origin X=-109, displayY=58/bufferY=93, mirror=OFF. "
-        + "This is intentionally a calibration candidate until the brick pattern is visually verified. CENTER slots remain calibrated; all other projected lanes remain pending.");
+        "STAGE 6E: D3 LEFT destination remains fixed at X=[0..31], displayY=58. "
+        + "Use the A/B/C/D toolbar next to D3L Test to switch source calibration live: "
+        + "A=right edge 32 mirror OFF, B=left edge 32 mirror OFF, "
+        + "C=right edge 32 mirror ON, D=left edge 32 mirror ON. "
+        + "The selected candidate is overlaid last only while D3L Test is ON. "
+        + "CENTER slots remain calibrated; all other projected lanes remain pending.");
     lines.Add(
         "DIAGNOSTIC ONLY: renderer/Enabled states are still unchanged.");
     return string.Join("\n", lines);
@@ -10567,8 +10655,8 @@ public class ViewportLayoutEditor : EditorWindow
       // Wall rendering is intentionally disabled. No special wall/door blits.
     }
 
-    // Stage 6D calibration overlay is intentionally LAST among wall pixels so
-    // Candidate A can be visually inspected without altering legacy Enabled
+    // Stage 6E calibration overlay is intentionally LAST among wall pixels so
+    // the selected A/B/C/D candidate can be visually inspected without altering legacy Enabled
     // states, render order, or stored ViewEdit data.
     BlitViewport17D3LeftCalibrationCandidate(pixels);
 
@@ -11247,9 +11335,9 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  // Stage 6D: isolated visual calibration hook for the generic D3 LEFT
-  // projection candidate. This does not replace the legacy renderer. When
-  // D3L Test is ON, the resolved Viewport-17 D3 LEFT command is blitted LAST
+  // Stage 6E: isolated visual calibration hook for the generic D3 LEFT
+  // projection candidates A/B/C/D. This does not replace the legacy renderer.
+  // When D3L Test is ON, the selected Viewport-17 D3 LEFT command is blitted LAST
   // so its source-window/brick pattern can be compared directly in Game View.
   // The method is map-independent: it only draws when the current 17-sample
   // geometry actually produces a D3 LEFT FRONT command.
@@ -11291,16 +11379,16 @@ public class ViewportLayoutEditor : EditorWindow
       if (source == null || !source.isReadable)
         return;
 
-      // Candidate A currently expects the native 141x49 FrontF3. Refuse to
+      // Calibration candidates expect the native FrontF3 geometry. Refuse to
       // silently test a different source geometry; diagnostics remain truth.
       if (command.HasPieceWidth && source.width != command.PieceWidth)
         return;
       if (command.HasPieceMetrics && source.height != command.PieceHeight)
         return;
 
-      // BufferX=-109 for a 141px source naturally clips source X 0..108 off
-      // the viewport and maps source X 109..140 to destination X 0..31.
-      // This intentionally uses the existing normal blitter so the test is
+      // BufferX and mirror are resolved per A/B/C/D candidate so the selected
+      // 32px source edge lands at destination X 0..31. This intentionally uses
+      // the existing normal blitter so the test is
       // representative of the future painter path.
       BlitPieceIntoPreview(
           pixels,
