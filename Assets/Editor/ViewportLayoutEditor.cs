@@ -2353,6 +2353,9 @@ public class ViewportLayoutEditor : EditorWindow
       enabledBefore = enabledPreviewState.Enabled;
     }
 
+    bool viewport17LiveFields =
+        IsViewport17WallAuthorityActive() && IsNormalWallPiece(piece);
+
     // Disable Walls blanks every wall, but an explicit ViewEdit Enabled toggle
     // may turn an individual wall back on while the hard geometry block remains.
     if (previewDisableAllWalls
@@ -2362,7 +2365,8 @@ public class ViewportLayoutEditor : EditorWindow
       enabledBefore = false;
     }
 
-    if (usePreviewEnabledOverride
+    if (!viewport17LiveFields
+        && usePreviewEnabledOverride
         && previewEnabledOverrideByPiece.TryGetValue(
             piece, out bool manualPreviewEnabled))
     {
@@ -2433,6 +2437,14 @@ public class ViewportLayoutEditor : EditorWindow
     bool normalWallMirrorPreview = IsNormalWallPiece(piece);
     bool mirrorBefore = piece.MirrorHorizontally;
     if (normalWallMirrorPreview
+        && TryGetResolvedNormalWallState(
+            piece, out ResolvedNormalWallState mirrorPreviewState))
+    {
+      mirrorBefore = mirrorPreviewState.Mirror;
+    }
+
+    if (!viewport17LiveFields
+        && normalWallMirrorPreview
         && previewMirrorOverrideByPiece.TryGetValue(piece, out bool previewMirror))
       mirrorBefore = previewMirror;
 
@@ -2554,7 +2566,8 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       if (previewFrontF1WidthOverrideByPiece.TryGetValue(
-              piece, out int previewF1Width))
+              piece, out int previewF1Width)
+          && !viewport17LiveFields)
       {
         frontF1WidthBefore =
             StraightF1WallLogic.NormalizeFrontWallF1Width(previewF1Width);
@@ -2624,6 +2637,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     if (temporaryPositionPreview
+        && !viewport17LiveFields
         && previewPositionOverrideByPiece.TryGetValue(piece, out Vector2Int previewPosition))
     {
       editX = previewPosition.x;
@@ -7644,6 +7658,20 @@ public class ViewportLayoutEditor : EditorWindow
       out int x,
       out int y)
   {
+    // V17 Game View dest is the card Ref. Live X/Y must not show red against
+    // an older family default (FrontF1 Ref 0, FrontF3 Ref 7, etc.).
+    if (IsViewport17WallAuthorityActive()
+        && TryGetResolvedNormalWallState(
+            piece, out ResolvedNormalWallState liveDraw)
+        && liveDraw.Enabled)
+    {
+      x = liveDraw.X;
+      y = UnityYToDisplayY(
+          liveDraw.Y,
+          GetPieceHeightForEditorY(piece));
+      return true;
+    }
+
     bool hasCurrentGeometry =
         TryGetCurrentRelativeViewportGeometry(
             out RelativeViewportGeometry currentGeometry);
@@ -8469,6 +8497,114 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     ApplyTemporaryNormalWallPreviewOverrides();
+    ApplyViewport17LiveDrawToResolvedWalls();
+  }
+
+  /// <summary>
+  /// When V17 Walls owns Game View, ViewEdit must show the same Enabled / X /
+  /// Y / Width / Mirror that Compose actually blits. This overlay is last so
+  /// it wins over the legacy recipe and over stationary-pose test overrides.
+  /// </summary>
+  private void ApplyViewport17LiveDrawToResolvedWalls()
+  {
+    if (!IsViewport17WallAuthorityActive()
+        || layout == null
+        || layout.Pieces == null)
+    {
+      return;
+    }
+
+    Viewport17Inspection inspection = BuildViewport17Inspection();
+    List<Viewport17RenderCommand> finalCommands =
+        BuildViewport17FinalDrawCommands(inspection);
+
+    bool frontF3Center = false;
+    bool frontF3LeftOnly = false;
+    bool frontF1Center = false;
+    for (int i = 0; i < finalCommands.Count; i++)
+    {
+      Viewport17RenderCommand command = finalCommands[i];
+      if (!command.IsFrontComposite)
+        continue;
+
+      if (command.PieceFamily == "FrontF3")
+      {
+        frontF3Center = command.FrontCenter;
+        frontF3LeftOnly = command.FrontLeft && !command.FrontCenter;
+      }
+      else if (command.PieceFamily == "FrontF1")
+      {
+        frontF1Center = command.FrontCenter;
+      }
+    }
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null || !IsNormalWallPiece(piece))
+        continue;
+
+      if (!resolvedNormalWallByPiece.TryGetValue(
+              piece, out ResolvedNormalWallState state))
+      {
+        continue;
+      }
+
+      if (piece.Name == "LeftS3" || piece.Name == "RightS3")
+      {
+        state.Enabled = false;
+        resolvedNormalWallByPiece[piece] = state;
+        continue;
+      }
+
+      if (IsFrontWallF3Card(piece))
+      {
+        if (frontF3Center)
+        {
+          state.Enabled = true;
+        }
+        else if (frontF3LeftOnly)
+        {
+          state.Enabled = true;
+          state.X = 0;
+          state.Y = DisplayYToUnityY(
+              58,
+              GetPieceHeightForEditorY(piece));
+          state.Mirror = false;
+        }
+        else
+        {
+          state.Enabled = false;
+        }
+
+        resolvedNormalWallByPiece[piece] = state;
+        continue;
+      }
+
+      if (IsFrontWallF1Card(piece))
+      {
+        state.Enabled = frontF1Center;
+        if (frontF1Center
+            && previewX == 0
+            && previewY == 5
+            && previewFacing == DungeonFacing.South
+            && frontF1CropPreview)
+        {
+          state.X = 32;
+          state.FrontF1Width = StraightF1WallLogic.CompositeWidth160;
+          state.Mirror = true;
+        }
+
+        resolvedNormalWallByPiece[piece] = state;
+        continue;
+      }
+
+      state.Enabled = IsViewport17NormalWallSelected(piece, finalCommands);
+      if (state.Enabled && IsWallF0RightPiece(piece))
+        state.X = 191;
+
+      resolvedNormalWallByPiece[piece] = state;
+    }
   }
 
   /// <summary>
@@ -10765,6 +10901,14 @@ public class ViewportLayoutEditor : EditorWindow
               int destinationStartX = 32;
               int sourceStartX = 32;
               int copyWidth = StraightF1WallLogic.CompositeWidth160;
+              if (TryGetResolvedNormalWallState(
+                      piece, out ResolvedNormalWallState liveFrontF1)
+                  && liveFrontF1.Enabled)
+              {
+                destinationStartX = liveFrontF1.X;
+                if (liveFrontF1.FrontF1Width > 0)
+                  copyWidth = liveFrontF1.FrontF1Width;
+              }
 
               BlitFrontF1MirroredImageFromX(
                   pixels,
