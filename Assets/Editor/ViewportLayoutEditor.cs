@@ -99,11 +99,24 @@ public class ViewportLayoutEditor : EditorWindow
   private bool showOnlyWallsNeededForCurrentPose;
   private bool previewDisableAllWalls;
   private bool showGeometryDiagnostics;
+  // Viewport-17 diagnostics are compact by default. Turn Details on only when
+  // the full projection/surface/command trace is needed for calibration.
+  private bool showViewport17DiagnosticDetails;
+  // Stage 6T cutover switch. When ON, the generic Viewport-17 FINAL DRAW
+  // owns normal-wall visibility in ViewEdit. Legacy wall-selection rules stay
+  // in the file but are muted so we can compare/refine safely before deletion.
+  // Existing placement/blit code is intentionally retained during cutover.
+  private bool useViewport17WallAuthority = true;
   private bool viewport17D3LeftCalibrationPreview;
-  // Stage 6G: free D3 LEFT source-window calibration. Destination stays fixed
-  // at X=0..31; Source X slides across the native 141px FrontF3.
-  private int viewport17D3LeftSourceX = 0;
-  private bool viewport17D3LeftMirror = true;
+  private bool viewport17D3RightCalibrationPreview;
+  // Stage 6P: D3 LEFT is fully locked from the original reference.
+  // Destination X=0..31, FrontF3 source X=64..95, displayY=58, Mirror OFF.
+  private const int Viewport17D3SideLockedSourceX = 64;
+  private const bool Viewport17D3LeftLockedMirror = false;
+  // D3 RIGHT is derived as the symmetric generic candidate: same 32px source
+  // window mirrored into destination X=192..223. It remains a candidate until
+  // visually verified against an original-game D3 RIGHT case.
+  private const bool Viewport17D3RightCandidateMirror = true;
   private string pieceSearchText = string.Empty;
   private bool openSearchPiecesPopup;
   private bool focusSearchPieces;
@@ -743,54 +756,63 @@ public class ViewportLayoutEditor : EditorWindow
       EditorGUILayout.BeginHorizontal();
 
       if (GUILayout.Button(
-              showOnlyWallsNeededForCurrentPose
-                  ? "Show all walls"
-                  : "Show all Walls we Need",
-              GUILayout.Width(130f)))
-      {
-        showOnlyWallsNeededForCurrentPose =
-            !showOnlyWallsNeededForCurrentPose;
-
-        if (!showOnlyWallsNeededForCurrentPose)
-          showWallsActivFilter = false;
-
-        pieceSearchFamilyIndex = 0;
-        pieceSearchText = string.Empty;
-        editorScroll = Vector2.zero;
-        GUI.FocusControl(null);
-        Repaint();
-      }
-
-      if (GUILayout.Button(
               "Override Current Walls",
-              GUILayout.Width(170f)))
+              GUILayout.Width(150f)))
       {
         StoreAllNormalWallOverridesForCurrentGeometry();
         GUI.FocusControl(null);
+      }
+
+      bool viewport17AuthorityPressed = GUILayout.Toggle(
+          useViewport17WallAuthority,
+          "V17 Walls",
+          EditorStyles.miniButton,
+          GUILayout.Width(68f));
+      if (viewport17AuthorityPressed != useViewport17WallAuthority)
+      {
+        useViewport17WallAuthority = viewport17AuthorityPressed;
+        RefreshEditModePreview();
+        Repaint();
       }
 
       bool diagnosticsPressed = GUILayout.Toggle(
           showGeometryDiagnostics,
           "Diagnostics",
           EditorStyles.miniButton,
-          GUILayout.Width(90f));
+          GUILayout.Width(85f));
       if (diagnosticsPressed != showGeometryDiagnostics)
       {
         showGeometryDiagnostics = diagnosticsPressed;
         if (!showGeometryDiagnostics
-            && viewport17D3LeftCalibrationPreview)
+            && (viewport17D3LeftCalibrationPreview
+                || viewport17D3RightCalibrationPreview))
         {
           viewport17D3LeftCalibrationPreview = false;
+          viewport17D3RightCalibrationPreview = false;
           RefreshEditModePreview();
         }
         Repaint();
+      }
+
+      if (showGeometryDiagnostics)
+      {
+        bool detailsPressed = GUILayout.Toggle(
+            showViewport17DiagnosticDetails,
+            "Details",
+            EditorStyles.miniButton,
+            GUILayout.Width(52f));
+        if (detailsPressed != showViewport17DiagnosticDetails)
+        {
+          showViewport17DiagnosticDetails = detailsPressed;
+          Repaint();
+        }
       }
 
       bool d3LeftTestPressed = GUILayout.Toggle(
           viewport17D3LeftCalibrationPreview,
           "D3L Test",
           EditorStyles.miniButton,
-          GUILayout.Width(72f));
+          GUILayout.Width(65f));
       if (d3LeftTestPressed != viewport17D3LeftCalibrationPreview)
       {
         viewport17D3LeftCalibrationPreview = d3LeftTestPressed;
@@ -798,45 +820,18 @@ public class ViewportLayoutEditor : EditorWindow
         Repaint();
       }
 
-      GUILayout.Label("Src X", GUILayout.Width(34f));
-      GUILayout.Label(viewport17D3LeftSourceX.ToString(), GUILayout.Width(30f));
+      GUILayout.Label("Src X 64", GUILayout.Width(48f));
+      GUILayout.Label("M OFF", EditorStyles.miniLabel, GUILayout.Width(34f));
 
-      int d3LeftSourceDelta = 0;
-      if (GUILayout.Button("-8", EditorStyles.miniButton, GUILayout.Width(30f)))
-        d3LeftSourceDelta = -8;
-      if (GUILayout.Button("-1", EditorStyles.miniButton, GUILayout.Width(30f)))
-        d3LeftSourceDelta = -1;
-      if (GUILayout.Button("+1", EditorStyles.miniButton, GUILayout.Width(30f)))
-        d3LeftSourceDelta = 1;
-      if (GUILayout.Button("+8", EditorStyles.miniButton, GUILayout.Width(30f)))
-        d3LeftSourceDelta = 8;
-
-      if (d3LeftSourceDelta != 0)
-      {
-        int oldD3LeftSourceX = viewport17D3LeftSourceX;
-        viewport17D3LeftSourceX = Mathf.Clamp(
-            viewport17D3LeftSourceX + d3LeftSourceDelta,
-            0,
-            109);
-
-        if (viewport17D3LeftSourceX != oldD3LeftSourceX)
-        {
-          if (viewport17D3LeftCalibrationPreview)
-            RefreshEditModePreview();
-          Repaint();
-        }
-      }
-
-      bool d3LeftMirrorPressed = GUILayout.Toggle(
-          viewport17D3LeftMirror,
-          "Mirror",
+      bool d3RightTestPressed = GUILayout.Toggle(
+          viewport17D3RightCalibrationPreview,
+          "D3R Test",
           EditorStyles.miniButton,
-          GUILayout.Width(58f));
-      if (d3LeftMirrorPressed != viewport17D3LeftMirror)
+          GUILayout.Width(65f));
+      if (d3RightTestPressed != viewport17D3RightCalibrationPreview)
       {
-        viewport17D3LeftMirror = d3LeftMirrorPressed;
-        if (viewport17D3LeftCalibrationPreview)
-          RefreshEditModePreview();
+        viewport17D3RightCalibrationPreview = d3RightTestPressed;
+        RefreshEditModePreview();
         Repaint();
       }
 
@@ -4025,6 +4020,28 @@ public class ViewportLayoutEditor : EditorWindow
       Repaint();
     }
 
+    // Keep the two ViewEdit toolbar rows approximately the same width.
+    // "Show all walls" used to start row 2, which pushed D3R Test too far
+    // to the right. Moving it here keeps all calibration controls visible.
+    if (GUILayout.Button(
+            showOnlyWallsNeededForCurrentPose
+                ? "Show all walls"
+                : "Show all Walls we Need",
+            GUILayout.Width(130f)))
+    {
+      showOnlyWallsNeededForCurrentPose =
+          !showOnlyWallsNeededForCurrentPose;
+
+      if (!showOnlyWallsNeededForCurrentPose)
+        showWallsActivFilter = false;
+
+      pieceSearchFamilyIndex = 0;
+      pieceSearchText = string.Empty;
+      editorScroll = Vector2.zero;
+      GUI.FocusControl(null);
+      Repaint();
+    }
+
     EditorGUILayout.EndHorizontal();
   }
 
@@ -4205,22 +4222,34 @@ public class ViewportLayoutEditor : EditorWindow
 
     Viewport17Inspection inspection = BuildViewport17Inspection();
 
-    string text =
-        "VIEWPORT-17 GENERIC MODEL  "
-        + previewX + "," + previewY + " " + previewFacing + "\n\n"
-        + BuildViewport17ArrayDiagnostic(inspection)
-        + "\n\n"
-        + BuildViewport17FaceDiagnostic(inspection)
-        + "\n\n"
-        + BuildViewport17SurfaceDiagnostic(inspection)
-        + "\n\n"
-        + BuildViewport17RenderCommandDiagnostic(inspection)
-        + "\n\nD3 LEFT CALIBRATION PREVIEW: "
-        + (viewport17D3LeftCalibrationPreview ? "ON" : "OFF")
-        + "  " + GetViewport17D3LeftCalibrationLabel()
-        + " (D3L Test overlays this 32px source window last in Edit Mode preview)"
-        + "\n\nTOTAL EVALUATIONS: 14 map tiles + 3 D0 faces = 17"
-        + "\n\nLEGACY " + drawText;
+    string text;
+    if (showViewport17DiagnosticDetails)
+    {
+      text =
+          "VIEWPORT-17 DETAILS  "
+          + previewX + "," + previewY + " " + previewFacing + "\n\n"
+          + BuildViewport17ArrayDiagnostic(inspection)
+          + "\n\n"
+          + BuildViewport17FaceDiagnostic(inspection)
+          + "\n\n"
+          + BuildViewport17SurfaceDiagnostic(inspection)
+          + "\n\n"
+          + BuildViewport17RenderCommandDiagnostic(inspection)
+          + "\n\nD3 LEFT CALIBRATION PREVIEW: "
+          + (viewport17D3LeftCalibrationPreview ? "ON" : "OFF")
+          + "  " + GetViewport17D3LeftCalibrationLabel()
+          + " (LOCKED)"
+          + "\nD3 RIGHT SYMMETRY PREVIEW: "
+          + (viewport17D3RightCalibrationPreview ? "ON" : "OFF")
+          + "  " + GetViewport17D3RightCalibrationLabel()
+          + " (candidate until visually verified)"
+          + "\n\nTOTAL EVALUATIONS: 14 map tiles + 3 D0 faces = 17"
+          + "\n\nLEGACY " + drawText;
+    }
+    else
+    {
+      text = BuildViewport17CompactDiagnostic(inspection);
+    }
 
     GUIStyle diagnosticStyle = new GUIStyle(EditorStyles.helpBox);
     diagnosticStyle.normal.textColor = new Color32(255, 255, 255, 255);
@@ -4351,6 +4380,14 @@ public class ViewportLayoutEditor : EditorWindow
     public Viewport17SurfaceType SurfaceType;
     public int Depth;
     public int LocalX;
+
+    // Stage 6Q: front L/C/R wall cells at the same depth are one composite
+    // front-wall decision, not three duplicate FrontF draw instances.
+    public bool IsFrontComposite;
+    public bool FrontLeft;
+    public bool FrontCenter;
+    public bool FrontRight;
+    public string FrontMask;
 
     // Stage 5B keeps ViewEdit/display coordinates and framebuffer coordinates
     // separate. Canonical Ref X/Y are top-down ViewEdit coordinates. Buffer Y
@@ -4856,6 +4893,91 @@ public class ViewportLayoutEditor : EditorWindow
     return "CONTEXT";
   }
 
+  private static Viewport17RenderCommand CreateViewport17RenderCommand(
+      string pieceFamily,
+      string projection,
+      string lane,
+      Viewport17Surface surface)
+  {
+    return new Viewport17RenderCommand
+    {
+      Sequence = 0,
+      PieceFamily = pieceFamily,
+      Projection = projection ?? string.Empty,
+      Lane = lane,
+      SurfaceType = surface.Type,
+      Depth = surface.Depth,
+      LocalX = surface.LocalX,
+      IsFrontComposite = false,
+      FrontLeft = false,
+      FrontCenter = false,
+      FrontRight = false,
+      FrontMask = string.Empty,
+      HasBaseReference = false,
+      BaseReferenceX = 0,
+      BaseReferenceY = 0,
+      HasPieceMetrics = false,
+      PieceHeight = 0,
+      HasPieceWidth = false,
+      PieceWidth = 0,
+      HasBaseBufferReference = false,
+      BaseBufferX = 0,
+      BaseBufferY = 0,
+      HasDisplayPlacement = false,
+      DisplayX = 0,
+      DisplayY = 0,
+      HasBufferPlacement = false,
+      BufferX = 0,
+      BufferY = 0,
+      HasProjectedDisplayY = false,
+      ProjectedDisplayY = 0,
+      HasProjectedBufferY = false,
+      ProjectedBufferY = 0,
+      HasProjectedGraphicOriginX = false,
+      ProjectedGraphicOriginX = 0,
+      HasSourceWindow = false,
+      SourceMinX = 0,
+      SourceMaxX = 0,
+      SourceWindowMode = "PENDING",
+      HasMirror = false,
+      Mirror = false,
+      ClipMode = "PENDING",
+      ResolutionNote = string.Empty,
+      SourceSurface = surface
+    };
+  }
+
+  private static string BuildViewport17FrontMask(
+      bool left,
+      bool center,
+      bool right)
+  {
+    string mask = string.Empty;
+    if (left) mask += "L";
+    if (center) mask += "C";
+    if (right) mask += "R";
+    return mask;
+  }
+
+  private static Viewport17Surface FindViewport17FrontSurface(
+      List<Viewport17Surface> surfaces,
+      int depth,
+      int localX)
+  {
+    for (int i = 0; i < surfaces.Count; i++)
+    {
+      Viewport17Surface surface = surfaces[i];
+      if (surface.Type == Viewport17SurfaceType.Front
+          && surface.Depth == depth
+          && surface.LocalX == localX)
+      {
+        return surface;
+      }
+    }
+
+    return default;
+  }
+
   private static List<Viewport17RenderCommand> BuildViewport17RenderCommands(
       Viewport17Inspection inspection)
   {
@@ -4864,96 +4986,148 @@ public class ViewportLayoutEditor : EditorWindow
     List<Viewport17RenderCommand> commands =
         new List<Viewport17RenderCommand>(surfaces.Count);
 
-    for (int i = 0; i < surfaces.Count; i++)
+    // Stage 6Q: group the three front-wall lanes at each depth into ONE
+    // front-wall composition. The occupancy mask (L/C/R) is carried on the
+    // command and will later drive the exact crop/composite geometry.
+    //
+    // Example:
+    //   D1 L=W C=W R=W -> one FrontF1 command with mask=LCR
+    // NOT three FrontF1 commands.
+    //
+    // Side surfaces remain independent commands. We still emit far -> near.
+    for (int depth = 3; depth >= 1; depth--)
     {
-      Viewport17Surface surface = surfaces[i];
-      string pieceFamily = null;
-      string projection = null;
+      bool frontLeft = false;
+      bool frontCenter = false;
+      bool frontRight = false;
 
-      switch (surface.Type)
+      for (int i = 0; i < surfaces.Count; i++)
       {
-        case Viewport17SurfaceType.Front:
-          if (surface.Depth >= 1 && surface.Depth <= 3)
-          {
-            pieceFamily = "FrontF" + surface.Depth;
-            projection = GetViewport17SurfaceLaneLabel(surface.LocalX);
-          }
-          break;
+        Viewport17Surface surface = surfaces[i];
+        if (surface.Type != Viewport17SurfaceType.Front
+            || surface.Depth != depth)
+        {
+          continue;
+        }
 
-        case Viewport17SurfaceType.LeftSide:
-          if (surface.Depth == 1)
+        if (surface.LocalX < 0)
+          frontLeft = true;
+        else if (surface.LocalX > 0)
+          frontRight = true;
+        else
+          frontCenter = true;
+      }
+
+      if (frontLeft || frontCenter || frontRight)
+      {
+        // Use CENTER as the representative source when present because the
+        // family canonical Ref belongs to the center projection. Otherwise
+        // retain one of the real occupied lanes for source-map diagnostics.
+        int representativeLocalX = frontCenter ? 0 : frontLeft ? -1 : 1;
+        Viewport17Surface representative =
+            FindViewport17FrontSurface(
+                surfaces,
+                depth,
+                representativeLocalX);
+
+        string mask =
+            BuildViewport17FrontMask(frontLeft, frontCenter, frontRight);
+        Viewport17RenderCommand frontCommand =
+            CreateViewport17RenderCommand(
+                "FrontF" + depth,
+                "COMPOSITE " + mask,
+                "COMPOSITE",
+                representative);
+
+        frontCommand.IsFrontComposite = true;
+        frontCommand.FrontLeft = frontLeft;
+        frontCommand.FrontCenter = frontCenter;
+        frontCommand.FrontRight = frontRight;
+        frontCommand.FrontMask = mask;
+        // A front composite is depth-owned, not lane-owned. LocalX=0 keeps
+        // the canonical family reference neutral; FrontMask carries geometry.
+        frontCommand.LocalX = 0;
+        frontCommand.Sequence = commands.Count;
+        commands.Add(frontCommand);
+      }
+
+      // Add side surfaces for this depth after the front composition, keeping
+      // the same far-to-near layer order used by the existing candidate list.
+      for (int i = 0; i < surfaces.Count; i++)
+      {
+        Viewport17Surface surface = surfaces[i];
+        if (surface.Depth != depth
+            || surface.Type == Viewport17SurfaceType.Front)
+        {
+          continue;
+        }
+
+        string pieceFamily = null;
+        string projection = null;
+
+        if (surface.Type == Viewport17SurfaceType.LeftSide)
+        {
+          if (depth == 1)
             pieceFamily = "LeftF1";
-          else if (surface.Depth == 2)
+          else if (depth == 2)
             pieceFamily = "LeftF2";
-          else if (surface.Depth == 3)
+          else if (depth == 3)
           {
             bool outerD3 = surface.LocalX <= -2;
             pieceFamily = outerD3 ? "LeftD3" : "LeftF3";
             projection = outerD3 ? "OUTER D3" : "INNER D3";
           }
-          break;
-
-        case Viewport17SurfaceType.RightSide:
-          if (surface.Depth == 1)
+        }
+        else if (surface.Type == Viewport17SurfaceType.RightSide)
+        {
+          if (depth == 1)
             pieceFamily = "RightF1";
-          else if (surface.Depth == 2)
+          else if (depth == 2)
             pieceFamily = "RightF2";
-          else if (surface.Depth == 3)
+          else if (depth == 3)
           {
             bool outerD3 = surface.LocalX >= 2;
             pieceFamily = outerD3 ? "RightD3" : "RightF3";
             projection = outerD3 ? "OUTER D3" : "INNER D3";
           }
-          break;
+        }
 
-        case Viewport17SurfaceType.LeftInner:
-          pieceFamily = "LeftF0";
-          projection = "D0 INNER";
-          break;
+        if (string.IsNullOrEmpty(pieceFamily))
+          continue;
 
-        case Viewport17SurfaceType.RightInner:
-          pieceFamily = "RightF0";
-          projection = "D0 INNER";
-          break;
+        Viewport17RenderCommand sideCommand =
+            CreateViewport17RenderCommand(
+                pieceFamily,
+                projection,
+                GetViewport17CommandLane(surface),
+                surface);
+        sideCommand.Sequence = commands.Count;
+        commands.Add(sideCommand);
       }
+    }
+
+    // D0 inner faces are nearest and therefore appended last.
+    for (int i = 0; i < surfaces.Count; i++)
+    {
+      Viewport17Surface surface = surfaces[i];
+      string pieceFamily = null;
+
+      if (surface.Type == Viewport17SurfaceType.LeftInner)
+        pieceFamily = "LeftF0";
+      else if (surface.Type == Viewport17SurfaceType.RightInner)
+        pieceFamily = "RightF0";
 
       if (string.IsNullOrEmpty(pieceFamily))
         continue;
 
-      commands.Add(new Viewport17RenderCommand
-      {
-        Sequence = commands.Count,
-        PieceFamily = pieceFamily,
-        Projection = projection ?? string.Empty,
-        Lane = GetViewport17CommandLane(surface),
-        SurfaceType = surface.Type,
-        Depth = surface.Depth,
-        LocalX = surface.LocalX,
-        HasBaseReference = false,
-        BaseReferenceX = 0,
-        BaseReferenceY = 0,
-        HasPieceMetrics = false,
-        PieceHeight = 0,
-        HasBaseBufferReference = false,
-        BaseBufferX = 0,
-        BaseBufferY = 0,
-        HasDisplayPlacement = false,
-        DisplayX = 0,
-        DisplayY = 0,
-        HasBufferPlacement = false,
-        BufferX = 0,
-        BufferY = 0,
-        HasProjectedDisplayY = false,
-        ProjectedDisplayY = 0,
-        HasProjectedBufferY = false,
-        ProjectedBufferY = 0,
-        SourceWindowMode = "PENDING",
-        HasMirror = false,
-        Mirror = false,
-        ClipMode = "PENDING",
-        ResolutionNote = string.Empty,
-        SourceSurface = surface
-      });
+      Viewport17RenderCommand innerCommand =
+          CreateViewport17RenderCommand(
+              pieceFamily,
+              "D0 INNER",
+              GetViewport17CommandLane(surface),
+              surface);
+      innerCommand.Sequence = commands.Count;
+      commands.Add(innerCommand);
     }
 
     return commands;
@@ -4961,9 +5135,16 @@ public class ViewportLayoutEditor : EditorWindow
 
   private string GetViewport17D3LeftCalibrationLabel()
   {
-    int sourceStart = Mathf.Clamp(viewport17D3LeftSourceX, 0, 109);
+    int sourceStart = Viewport17D3SideLockedSourceX;
     return "sourceX=" + sourceStart + ".." + (sourceStart + 31)
-        + " mirror=" + (viewport17D3LeftMirror ? "ON" : "OFF");
+        + " destX=0..31 mirror=OFF";
+  }
+
+  private string GetViewport17D3RightCalibrationLabel()
+  {
+    int sourceStart = Viewport17D3SideLockedSourceX;
+    return "sourceX=" + sourceStart + ".." + (sourceStart + 31)
+        + " destX=192..223 mirror=ON";
   }
 
   private bool TryGetViewport17FrontProjectionSlot(
@@ -4977,21 +5158,28 @@ public class ViewportLayoutEditor : EditorWindow
 
     bool center = localX == 0;
     bool d3Left = depth == 3 && localX == -1;
+    bool d3Right = depth == 3 && localX == 1;
+    bool d3Side = d3Left || d3Right;
     string lane = localX < 0 ? "LEFT" : localX > 0 ? "RIGHT" : "CENTER";
 
-    string d3LeftSourceWindow = "PENDING";
-    string d3LeftOriginRule = "PENDING";
-    bool d3LeftMirror = false;
-    string d3LeftStatus = "PENDING_LANE_CALIBRATION";
+    string d3SideSourceWindow = "PENDING";
+    string d3SideOriginRule = "PENDING";
+    bool d3SideMirror = false;
+    string d3SideStatus = "PENDING_LANE_CALIBRATION";
 
-    if (d3Left)
+    if (d3Side)
     {
-      int sourceStart = Mathf.Clamp(viewport17D3LeftSourceX, 0, 109);
-      d3LeftSourceWindow = "SLIDING_32_FROM_X_" + sourceStart;
-      d3LeftOriginRule = "CROP_SELECTED_32_TO_DEST_X_0_31";
-      d3LeftMirror = viewport17D3LeftMirror;
-      d3LeftStatus = "CALIBRATING_SOURCE_X_" + sourceStart
-          + "_MIRROR_" + (d3LeftMirror ? "ON" : "OFF");
+      int sourceStart = Viewport17D3SideLockedSourceX;
+      d3SideSourceWindow = "LOCKED_32_FROM_X_" + sourceStart;
+      d3SideMirror = d3Left
+          ? Viewport17D3LeftLockedMirror
+          : Viewport17D3RightCandidateMirror;
+      d3SideOriginRule = d3Left
+          ? "CROP_LOCKED_32_TO_DEST_X_0_31"
+          : "CROP_SYMMETRIC_32_TO_DEST_X_192_223";
+      d3SideStatus = d3Left
+          ? "LOCKED_D3_LEFT_SOURCE_X_64_MIRROR_OFF"
+          : "SYMMETRIC_D3_RIGHT_CANDIDATE_SOURCE_X_64_MIRROR_ON";
     }
 
     slot = new Viewport17FrontProjectionSlot
@@ -5003,42 +5191,44 @@ public class ViewportLayoutEditor : EditorWindow
       UseCanonicalBase = true,
 
       // CENTER is fully calibrated from the canonical family Ref.
-      // D3 LEFT keeps the calibrated destination band (Y from canonical
-      // FrontF3, destination X 0..31). Stage 6G lets Source X slide across
-      // FrontF3 while Mirror can be toggled independently.
+      // D3 LEFT is fully locked from the original reference. D3 RIGHT uses
+      // the symmetric candidate slot until an original-game right-side case
+      // visually confirms it.
       HasDisplayXOffset = center,
-      HasDisplayYOffset = center || d3Left,
+      HasDisplayYOffset = center || d3Side,
       // Calibrated from the original Dungeon Master reference: D1 CENTER
       // FrontF1 sits exactly one pixel right of its canonical ViewEdit Ref.
       // This is a generic depth/lane projection rule, not a map-position fix.
       DisplayOffsetX = center && depth == 1 ? 1 : 0,
       DisplayOffsetY = 0,
-      HasClipWindow = d3Left,
-      ClipMinX = d3Left ? 0 : 0,
-      ClipMaxX = d3Left ? 31 : 0,
+      HasClipWindow = d3Side,
+      ClipMinX = d3Left ? 0 : d3Right ? 192 : 0,
+      ClipMaxX = d3Left ? 31 : d3Right ? 223 : 0,
       ClipMode = center
           ? "NONE"
           : d3Left
               ? "DEST_X_0_31"
-              : (localX < 0 ? "LEFT_LANE_PENDING" : "RIGHT_LANE_PENDING"),
+              : d3Right
+                  ? "DEST_X_192_223"
+                  : (localX < 0 ? "LEFT_LANE_PENDING" : "RIGHT_LANE_PENDING"),
       SourceWindowMode = center
           ? "FULL_SOURCE"
-          : d3Left
-              ? d3LeftSourceWindow
+          : d3Side
+              ? d3SideSourceWindow
               : "PENDING",
       GraphicOriginRule = center
           ? "CANONICAL_REF_X"
-          : d3Left
-              ? d3LeftOriginRule
+          : d3Side
+              ? d3SideOriginRule
               : "PENDING",
-      HasMirror = d3Left,
-      Mirror = d3LeftMirror,
+      HasMirror = d3Side,
+      Mirror = d3SideMirror,
       CalibrationStatus = center
           ? (depth == 1
               ? "CALIBRATED_D1_CENTER_X_PLUS_1"
               : "CALIBRATED_CANONICAL_CENTER")
-          : d3Left
-              ? d3LeftStatus
+          : d3Side
+              ? d3SideStatus
               : "PENDING_LANE_CALIBRATION"
     };
 
@@ -5285,7 +5475,73 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (isFront)
     {
-      if (TryGetViewport17FrontProjectionSlot(
+      // Stage 6Q front-composite decisions group L/C/R occupancy at a depth
+      // into one FrontF family command. FULL/CENTER compositions can already
+      // use the canonical center projection. Partial multi-lane masks retain
+      // their canonical Y but leave exact X/crop composition for the next
+      // projection stage.
+      if (command.IsFrontComposite)
+      {
+        string mask = string.IsNullOrEmpty(command.FrontMask)
+            ? "NONE"
+            : command.FrontMask;
+
+        command.ClipMode = "FRONT_COMPOSITE_MASK_" + mask;
+        command.SourceWindowMode = "COMPOSITE_BY_MASK_" + mask;
+
+        if (command.HasBaseReference && command.HasPieceMetrics)
+        {
+          command.HasProjectedDisplayY = true;
+          command.ProjectedDisplayY = command.BaseReferenceY;
+          command.HasProjectedBufferY = true;
+          command.ProjectedBufferY = DisplayYToUnityY(
+              command.ProjectedDisplayY,
+              command.PieceHeight);
+        }
+
+        bool canonicalFullOrCenter =
+            mask == "LCR"
+            || mask == "C";
+
+        if (canonicalFullOrCenter
+            && TryGetViewport17FrontProjectionSlot(
+                command.Depth, 0, out var centerSlot)
+            && centerSlot.UseCanonicalBase
+            && centerSlot.HasDisplayXOffset
+            && centerSlot.HasDisplayYOffset
+            && command.HasBaseReference
+            && command.HasPieceMetrics)
+        {
+          command.HasDisplayPlacement = true;
+          command.DisplayX =
+              command.BaseReferenceX + centerSlot.DisplayOffsetX;
+          command.DisplayY =
+              command.BaseReferenceY + centerSlot.DisplayOffsetY;
+          command.HasBufferPlacement = true;
+          command.BufferX = command.DisplayX;
+          command.BufferY = DisplayYToUnityY(
+              command.DisplayY,
+              command.PieceHeight);
+          command.SourceWindowMode =
+              mask == "LCR" ? "FULL_COMPOSITE" : "CENTER_ONLY";
+          command.ClipMode =
+              mask == "LCR" ? "NONE" : "CENTER_COMPOSITE";
+          command.ResolutionNote =
+              "front occupancy grouped into one "
+              + command.PieceFamily
+              + " composition; mask=" + mask
+              + "; canonical center projection";
+        }
+        else
+        {
+          command.ResolutionNote =
+              "front occupancy grouped into one "
+              + command.PieceFamily
+              + " composition; mask=" + mask
+              + "; exact partial composite X/crop still pending";
+        }
+      }
+      else if (TryGetViewport17FrontProjectionSlot(
               command.Depth, command.LocalX, out var slot))
       {
         command.ClipMode = slot.HasClipWindow
@@ -5312,13 +5568,13 @@ public class ViewportLayoutEditor : EditorWindow
               command.PieceHeight);
         }
 
-        // Stage 6G D3 LEFT free source-window calibration. Destination geometry
-        // is fixed at X 0..31, Y from canonical FrontF3. Source X slides across
-        // the native FrontF3 and Mirror reverses only the selected 32px strip.
-        bool d3LeftCandidate = command.Depth == 3
-            && command.LocalX == -1
-            && slot.SourceWindowMode.StartsWith("SLIDING_32_FROM_X_");
-        if (d3LeftCandidate
+        // Stage 6P D3 side-strip projection. D3 LEFT is fully locked; D3 RIGHT
+        // uses the symmetric candidate. Both use the same 32px FrontF3 source
+        // window and independent destination bands.
+        bool d3SideCandidate = command.Depth == 3
+            && (command.LocalX == -1 || command.LocalX == 1)
+            && slot.SourceWindowMode.StartsWith("LOCKED_32_FROM_X_");
+        if (d3SideCandidate
             && slot.HasClipWindow
             && command.HasPieceWidth
             && command.HasProjectedDisplayY
@@ -5327,7 +5583,7 @@ public class ViewportLayoutEditor : EditorWindow
           int visibleWidth = slot.ClipMaxX - slot.ClipMinX + 1;
           visibleWidth = Mathf.Clamp(visibleWidth, 1, command.PieceWidth);
           int maxSourceStart = Mathf.Max(0, command.PieceWidth - visibleWidth);
-          int sourceStart = Mathf.Clamp(viewport17D3LeftSourceX, 0, maxSourceStart);
+          int sourceStart = Mathf.Clamp(Viewport17D3SideLockedSourceX, 0, maxSourceStart);
 
           command.HasSourceWindow = true;
           command.SourceMinX = sourceStart;
@@ -5369,8 +5625,10 @@ public class ViewportLayoutEditor : EditorWindow
         command.ResolutionNote =
             "projectionSlot=D" + slot.Depth + "/" + slot.Lane
             + " status=" + slot.CalibrationStatus
-            + (d3LeftCandidate && command.HasSourceWindow
-                ? "; D3 LEFT calibration resolved: selected 32px source window -> destination X 0..31; adjust Source X / Mirror until brick pattern matches"
+            + (d3SideCandidate && command.HasSourceWindow
+                ? (command.LocalX < 0
+                    ? "; D3 LEFT locked: source X 64..95 -> destination X 0..31, mirror OFF"
+                    : "; D3 RIGHT symmetric candidate: source X 64..95 -> destination X 192..223, mirror ON")
                 : command.HasDisplayPlacement
                     ? "; canonical base + calibrated lane offset"
                     : command.HasProjectedDisplayY
@@ -5422,6 +5680,9 @@ public class ViewportLayoutEditor : EditorWindow
     string projection = string.IsNullOrEmpty(command.Projection)
         ? string.Empty
         : " [" + command.Projection + "]";
+    string frontMask = command.IsFrontComposite
+        ? " frontMask=" + command.FrontMask
+        : string.Empty;
 
     string metrics = (command.HasPieceWidth ? " w=" + command.PieceWidth : " w=PENDING")
         + (command.HasPieceMetrics ? " h=" + command.PieceHeight : " h=PENDING");
@@ -5463,6 +5724,7 @@ public class ViewportLayoutEditor : EditorWindow
         + " surface=" + command.SurfaceType.ToString().ToUpperInvariant()
         + "  ->  " + command.PieceFamily
         + projection
+        + frontMask
         + "  source=" + FormatViewport17Cell(command.SourceSurface.PrimaryCell)
         + metrics
         + baseRef
@@ -5475,6 +5737,260 @@ public class ViewportLayoutEditor : EditorWindow
             ? " graphicOriginX=" + command.ProjectedGraphicOriginX
             : string.Empty)
         + note;
+  }
+
+  // -------------------------------------------------------------------------
+  // Stage 6S: final draw decision from the generic Viewport-17 geometry.
+  //
+  // BuildViewport17RenderCommands() deliberately emits far->near candidates.
+  // This pass performs geometry-only visibility reduction for diagnostics:
+  //   * for each front lane (L/C/R), only the nearest real front wall survives;
+  //   * a solid D0 inner face blocks all deeper geometry on that same side;
+  //   * a nearer front wall in a side lane blocks deeper side surfaces there.
+  //
+  // A front composite may therefore survive with a smaller mask. Example:
+  // D3 mask=LC plus a nearer D1 center wall -> final D3 mask=L.
+  // No map coordinate or pose exception is used here.
+  // -------------------------------------------------------------------------
+  private static List<Viewport17RenderCommand> BuildViewport17FinalDrawCommands(
+      Viewport17Inspection inspection)
+  {
+    List<Viewport17RenderCommand> candidates =
+        BuildViewport17RenderCommands(inspection);
+    List<Viewport17RenderCommand> finalCommands =
+        new List<Viewport17RenderCommand>(candidates.Count);
+
+    bool d0LeftBlocked = false;
+    bool d0RightBlocked = false;
+    int nearestLeftFront = int.MaxValue;
+    int nearestCenterFront = int.MaxValue;
+    int nearestRightFront = int.MaxValue;
+
+    for (int i = 0; i < candidates.Count; i++)
+    {
+      Viewport17RenderCommand command = candidates[i];
+
+      if (command.PieceFamily == "LeftF0")
+        d0LeftBlocked = true;
+      else if (command.PieceFamily == "RightF0")
+        d0RightBlocked = true;
+
+      if (!command.IsFrontComposite)
+        continue;
+
+      if (command.FrontLeft)
+        nearestLeftFront = Mathf.Min(nearestLeftFront, command.Depth);
+      if (command.FrontCenter)
+        nearestCenterFront = Mathf.Min(nearestCenterFront, command.Depth);
+      if (command.FrontRight)
+        nearestRightFront = Mathf.Min(nearestRightFront, command.Depth);
+    }
+
+    for (int i = 0; i < candidates.Count; i++)
+    {
+      Viewport17RenderCommand command = candidates[i];
+
+      if (command.IsFrontComposite)
+      {
+        bool keepLeft = command.FrontLeft
+            && !d0LeftBlocked
+            && command.Depth == nearestLeftFront;
+        bool keepCenter = command.FrontCenter
+            && command.Depth == nearestCenterFront;
+        bool keepRight = command.FrontRight
+            && !d0RightBlocked
+            && command.Depth == nearestRightFront;
+
+        if (!keepLeft && !keepCenter && !keepRight)
+          continue;
+
+        command.FrontLeft = keepLeft;
+        command.FrontCenter = keepCenter;
+        command.FrontRight = keepRight;
+        command.FrontMask = BuildViewport17FrontMask(
+            keepLeft, keepCenter, keepRight);
+        command.Projection = "COMPOSITE " + command.FrontMask;
+        command.Sequence = finalCommands.Count;
+        finalCommands.Add(command);
+        continue;
+      }
+
+      bool leftSide = command.SurfaceType == Viewport17SurfaceType.LeftSide;
+      bool rightSide = command.SurfaceType == Viewport17SurfaceType.RightSide;
+
+      if (leftSide)
+      {
+        if (d0LeftBlocked)
+          continue;
+        if (nearestLeftFront < command.Depth)
+          continue;
+      }
+      else if (rightSide)
+      {
+        if (d0RightBlocked)
+          continue;
+        if (nearestRightFront < command.Depth)
+          continue;
+      }
+
+      // D0 inner commands themselves always survive; they are the nearest
+      // side boundary and are what caused the same-side blocking above.
+      command.Sequence = finalCommands.Count;
+      finalCommands.Add(command);
+    }
+
+    return finalCommands;
+  }
+
+  private bool IsViewport17WallAuthorityActive()
+  {
+    // Show-all-walls is the manual authoring escape hatch. It temporarily
+    // suspends Viewport-17 visibility authority so every wall can be edited.
+    return !Application.isPlaying
+        && useViewport17WallAuthority
+        && showOnlyWallsNeededForCurrentPose;
+  }
+
+  private HashSet<string> BuildViewport17FinalPieceFamilySet()
+  {
+    Viewport17Inspection inspection = BuildViewport17Inspection();
+    List<Viewport17RenderCommand> finalCommands =
+        BuildViewport17FinalDrawCommands(inspection);
+    HashSet<string> families = new HashSet<string>(System.StringComparer.Ordinal);
+
+    for (int i = 0; i < finalCommands.Count; i++)
+    {
+      string family = finalCommands[i].PieceFamily;
+      if (!string.IsNullOrEmpty(family))
+        families.Add(family);
+    }
+
+    return families;
+  }
+
+  private static string GetViewport17NormalWallFamily(ViewportPiece piece)
+  {
+    if (piece == null)
+      return string.Empty;
+
+    if (IsFrontWallF1Card(piece)) return "FrontF1";
+    if (IsFrontWallF2Card(piece)) return "FrontF2";
+    if (IsFrontWallF3Card(piece)) return "FrontF3";
+    if (IsWallF0LeftPiece(piece)) return "LeftF0";
+    if (IsWallF0RightPiece(piece)) return "RightF0";
+    if (IsWallF1LeftPiece(piece)) return "LeftF1";
+    if (IsWallF1RightPiece(piece)) return "RightF1";
+    if (IsWallF2LeftPiece(piece)) return "LeftF2";
+    if (IsWallF2RightPiece(piece)) return "RightF2";
+    if (IsWallF3LeftPiece(piece)) return "LeftF3";
+    if (IsWallF3RightPiece(piece)) return "RightF3";
+
+    if (piece.Name == "LeftD3"
+        || piece.Name == "Wall D3L2"
+        || piece.Graphic == DungeonGraphicType.WallD3L2)
+      return "LeftD3";
+
+    if (piece.Name == "RightD3"
+        || piece.Name == "Wall D3R2"
+        || piece.Graphic == DungeonGraphicType.WallD3R2)
+      return "RightD3";
+
+    // LeftS2 / Right2S are legacy-only wall families. Viewport-17 does not
+    // emit them, so they intentionally resolve to no selected family.
+    return string.Empty;
+  }
+
+  private static bool IsViewport17NormalWallSelected(
+      ViewportPiece piece,
+      HashSet<string> finalFamilies)
+  {
+    if (piece == null || finalFamilies == null)
+      return false;
+
+    string family = GetViewport17NormalWallFamily(piece);
+    return !string.IsNullOrEmpty(family) && finalFamilies.Contains(family);
+  }
+
+  private static string FormatViewport17FinalDrawCommand(
+      Viewport17RenderCommand command)
+  {
+    if (command.IsFrontComposite)
+    {
+      return "D" + command.Depth
+          + " Front " + command.FrontMask
+          + " -> " + command.PieceFamily;
+    }
+
+    return "D" + command.Depth
+        + " " + command.Lane
+        + " -> " + command.PieceFamily;
+  }
+
+  private static string BuildViewport17FinalDrawDiagnostic(
+      Viewport17Inspection inspection)
+  {
+    List<Viewport17RenderCommand> candidates =
+        BuildViewport17RenderCommands(inspection);
+    List<Viewport17RenderCommand> finalCommands =
+        BuildViewport17FinalDrawCommands(inspection);
+
+    List<string> lines = new List<string>
+    {
+      "FINAL DRAW FROM VIEWPORT-17:"
+    };
+
+    if (finalCommands.Count == 0)
+      lines.Add("none");
+    else
+    {
+      for (int i = 0; i < finalCommands.Count; i++)
+        lines.Add(FormatViewport17FinalDrawCommand(finalCommands[i]));
+    }
+
+    lines.Add(
+        "FINAL PIECES: " + finalCommands.Count
+        + "  (candidates before occlusion: " + candidates.Count + ")");
+    return string.Join("\n", lines);
+  }
+
+  private static string BuildViewport17ImageDecisionDiagnostic(
+      List<Viewport17RenderCommand> commands)
+  {
+    List<string> lines = new List<string>
+    {
+      "IMAGE DECISIONS FROM VIEWPORT-17:"
+    };
+
+    if (commands == null || commands.Count == 0)
+    {
+      lines.Add("none");
+      return string.Join("\n", lines);
+    }
+
+    for (int i = 0; i < commands.Count; i++)
+    {
+      Viewport17RenderCommand command = commands[i];
+
+      if (command.IsFrontComposite)
+      {
+        lines.Add(
+            "D" + command.Depth
+            + " FRONT mask=" + command.FrontMask
+            + " -> " + command.PieceFamily
+            + " (ONE composite command)");
+      }
+      else
+      {
+        lines.Add(
+            "D" + command.Depth
+            + " " + command.Lane
+            + " " + command.SurfaceType.ToString().ToUpperInvariant()
+            + " -> " + command.PieceFamily);
+      }
+    }
+
+    lines.Add("COMMAND COUNT BEFORE OCCLUSION: " + commands.Count);
+    return string.Join("\n", lines);
   }
 
   private string BuildViewport17RenderCommandDiagnostic(
@@ -5494,8 +6010,12 @@ public class ViewportLayoutEditor : EditorWindow
     {
       BuildViewport17FrontProjectionTableDiagnostic(),
       "",
+      BuildViewport17ImageDecisionDiagnostic(commands),
+      "",
+      BuildViewport17FinalDrawDiagnostic(inspection),
+      "",
       "VIEWPORT-17 RENDER COMMAND INSTANCES (FAR -> NEAR):",
-      "One command = one drawable surface instance; duplicate families are allowed."
+      "Front L/C/R cells at one depth are grouped into ONE composite FrontF command."
     };
 
     if (commands.Count == 0)
@@ -5510,12 +6030,75 @@ public class ViewportLayoutEditor : EditorWindow
 
     lines.Add("");
     lines.Add(
-        "STAGE 6N: generic D1 CENTER FrontF1 X offset is LOCKED at +1px. D3 LEFT destination remains fixed at X=[0..31], displayY=58. "
-        + "Use Src X -8/-1/+1/+8 buttons (clamped 0..109) to move the 32px source window across the 141px FrontF3, "
-        + "and toggle Mirror independently. The selected strip is overlaid last only while "
-        + "D3L Test is ON. CENTER slots remain calibrated; all other projected lanes remain pending.");
+        "STAGE 6S: front L/C/R occupancy is grouped into one FrontF command, then a generic lane-occlusion pass produces the FINAL DRAW diagnostic. "
+        + "Only the nearest front wall per lane survives; D0 inner walls block deeper same-side geometry. "
+        + "D1 CENTER +1px and the locked D3 LEFT source calibration remain preserved.");
     lines.Add(
-        "DIAGNOSTIC ONLY: renderer/Enabled states are still unchanged.");
+        "CUTOVER: when V17 Walls is ON (and Show all walls is OFF), FINAL DRAW owns normal-wall visibility in ViewEdit; legacy visibility rules are muted. Existing placement/blit code remains temporarily in use.");
+    return string.Join("\n", lines);
+  }
+
+  private string BuildViewport17CompactDiagnostic(
+      Viewport17Inspection inspection)
+  {
+    List<Viewport17RenderCommand> commands =
+        BuildViewport17RenderCommands(inspection);
+
+    List<string> lines = new List<string>
+    {
+      "VIEWPORT-17  " + previewX + "," + previewY + " " + previewFacing,
+      "VIEWEDIT WALL AUTHORITY: "
+          + (IsViewport17WallAuthorityActive()
+              ? "VIEWPORT-17 (legacy visibility muted)"
+              : useViewport17WallAuthority && !showOnlyWallsNeededForCurrentPose
+                  ? "MANUAL SHOW-ALL (V17 temporarily suspended)"
+                  : "LEGACY")
+    };
+
+    // Keep the four geometry rows because they are the map truth. Omit the
+    // long face/surface/projection traces unless Details is explicitly on.
+    for (int depth = 3; depth >= 0; depth--)
+    {
+      int minLocalX = depth == 3 ? -2 : -1;
+      int maxLocalX = depth == 3 ? 2 : 1;
+      List<string> row = new List<string>();
+
+      for (int localX = minLocalX; localX <= maxLocalX; localX++)
+      {
+        Viewport17Cell cell =
+            FindViewport17Cell(inspection.Cells, localX, depth);
+        row.Add(
+            GetViewport17LaneLabel(localX, depth)
+            + "=" + FormatViewport17State(cell));
+      }
+
+      lines.Add("D" + depth + ": " + string.Join("  ", row));
+    }
+
+    lines.Add("");
+
+    List<Viewport17RenderCommand> finalCommands =
+        BuildViewport17FinalDrawCommands(inspection);
+    lines.Add("FINAL DRAW FROM MINIMAP:");
+
+    if (finalCommands.Count == 0)
+    {
+      lines.Add("none");
+    }
+    else
+    {
+      for (int i = 0; i < finalCommands.Count; i++)
+        lines.Add(FormatViewport17FinalDrawCommand(finalCommands[i]));
+    }
+
+    lines.Add(
+        "Final pieces: " + finalCommands.Count
+        + "  (candidates: " + (commands?.Count ?? 0) + ")");
+    lines.Add(
+        IsViewport17WallAuthorityActive()
+            ? "ViewEdit draw = FINAL DRAW above"
+            : "ViewEdit draw = legacy/manual fallback");
+    lines.Add("Details = full trace");
     return string.Join("\n", lines);
   }
 
@@ -9589,6 +10172,11 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Temporary pose for visibility/mirror only — never write the layout asset.
     DungeonMap poseMap = TryGetPreviewPoseMap();
+    bool viewport17WallAuthorityActive = IsViewport17WallAuthorityActive();
+    HashSet<string> viewport17FinalWallFamilies =
+        viewport17WallAuthorityActive
+            ? BuildViewport17FinalPieceFamilySet()
+            : null;
     bool composeCanonicalFrontF1F0EdgeGeometry =
         TryGetCurrentRelativeViewportGeometry(
             out RelativeViewportGeometry composeGeometry)
@@ -9695,7 +10283,8 @@ public class ViewportLayoutEditor : EditorWindow
         // Final early draw gate for verified ViewEdit pose (5,2) South.
         // Reject disabled normal-wall/D3 pieces before any special blit path
         // (especially the FrontF2 224-reference blit) can run.
-        if (piece != null
+        if (!viewport17WallAuthorityActive
+            && piece != null
             && previewX == 5
             && previewY == 2
             && previewFacing == DungeonFacing.South
@@ -9723,7 +10312,8 @@ public class ViewportLayoutEditor : EditorWindow
         // TEMP isolation test for exactly (0,5) South:
         // Ceiling + Floor + FrontF1 + FrontF3 + RightF0 only.
         bool isolateFrontF1At05South =
-            previewX == 0
+            !viewport17WallAuthorityActive
+            && previewX == 0
             && previewY == 5
             && previewFacing == DungeonFacing.South;
 
@@ -9740,7 +10330,15 @@ public class ViewportLayoutEditor : EditorWindow
         }
 
         bool isLeftF0Diag = is14South && IsWallF0LeftPiece(piece);
-        bool shouldDraw = ShouldDrawPieceAtPreviewPose(piece);
+        bool viewport17NormalWall =
+            viewport17WallAuthorityActive && IsNormalWallPiece(piece);
+        bool viewport17Selected =
+            viewport17NormalWall
+            && IsViewport17NormalWallSelected(
+                piece, viewport17FinalWallFamilies);
+        bool shouldDraw = viewport17NormalWall
+            ? viewport17Selected
+            : ShouldDrawPieceAtPreviewPose(piece);
         bool blackDoorF1Exception = IsBlackDoorF1PoseException(piece);
         bool blackDoorF2Exception = IsBlackDoorF2PoseException(piece);
         bool blackDoorF3Exception = IsBlackDoorF3PoseException(piece);
@@ -9751,12 +10349,21 @@ public class ViewportLayoutEditor : EditorWindow
                 || manualExceptionEnabled);
 
         bool manualNormalWallEnabledForDraw =
-            IsNormalWallPiece(piece)
+            !viewport17NormalWall
+            && IsNormalWallPiece(piece)
             && previewEnabledOverrideByPiece.TryGetValue(
                 piece, out bool manualWallEnabledForDraw)
             && manualWallEnabledForDraw;
 
-        if (!shouldDraw
+        if (viewport17NormalWall)
+        {
+          // Hard cutover gate: FINAL DRAW FROM VIEWPORT-17 is the sole
+          // visibility authority for normal walls. No legacy exception or
+          // manual Enabled override may resurrect an unselected wall here.
+          if (!viewport17Selected)
+            continue;
+        }
+        else if (!shouldDraw
             && !manualNormalWallEnabledForDraw
             && !blackDoorF1Exception
             && !blackDoorF2Exception
@@ -9824,25 +10431,31 @@ public class ViewportLayoutEditor : EditorWindow
                 + " | resolvedWall.Enabled="
                 + resolvedWall.Enabled);
 
-          bool resolvedEnabled = resolvedWall.Enabled;
-          if (previewEnabledOverrideByPiece.TryGetValue(
-                  piece, out bool manualNormalWallEnabled))
-          {
-            resolvedEnabled = manualNormalWallEnabled;
-          }
-          else if (IsFrontWallF1Card(piece)
-              && TryGetFrontF1PreviewEnabledOverride(
-                  out bool frontF1EnabledOverride))
-          {
-            resolvedEnabled = frontF1EnabledOverride;
-          }
+          bool resolvedEnabled = viewport17NormalWall
+              ? viewport17Selected
+              : resolvedWall.Enabled;
 
-          // For (5,2) South, only disallowed pieces are forced OFF.
-          // Allowed pieces keep their ViewEdit Enabled override.
-          if (!IsShowAllWallsPreview()
-              && TryGet52SouthForcedWallEnabled(piece, out bool forced52DrawEnabled)
-              && !forced52DrawEnabled)
-            resolvedEnabled = false;
+          if (!viewport17NormalWall)
+          {
+            if (previewEnabledOverrideByPiece.TryGetValue(
+                    piece, out bool manualNormalWallEnabled))
+            {
+              resolvedEnabled = manualNormalWallEnabled;
+            }
+            else if (IsFrontWallF1Card(piece)
+                && TryGetFrontF1PreviewEnabledOverride(
+                    out bool frontF1EnabledOverride))
+            {
+              resolvedEnabled = frontF1EnabledOverride;
+            }
+
+            // Legacy (5,2) visibility rule is muted while Viewport-17 owns
+            // normal-wall selection. It remains intact for fallback mode.
+            if (!IsShowAllWallsPreview()
+                && TryGet52SouthForcedWallEnabled(piece, out bool forced52DrawEnabled)
+                && !forced52DrawEnabled)
+              resolvedEnabled = false;
+          }
 
           if (!resolvedEnabled
               && !(isolateFrontF1At05South && IsFrontWallF3Card(piece)))
@@ -9921,7 +10534,8 @@ public class ViewportLayoutEditor : EditorWindow
         // mirror for this stationary preview. Override Current Walls commits.
         bool hasForced52LiveEnabled =
             TryGet52SouthForcedWallEnabled(piece, out bool forced52LiveEnabled);
-        if (previewEnabledOverrideByPiece.TryGetValue(
+        if (!viewport17NormalWall
+            && previewEnabledOverrideByPiece.TryGetValue(
                 piece, out bool livePreviewEnabled)
             && IsNormalWallPiece(piece)
             && !livePreviewEnabled
@@ -10665,6 +11279,7 @@ public class ViewportLayoutEditor : EditorWindow
     // the selected A/B/C/D candidate can be visually inspected without altering legacy Enabled
     // states, render order, or stored ViewEdit data.
     BlitViewport17D3LeftCalibrationCandidate(pixels);
+    BlitViewport17D3RightCalibrationCandidate(pixels);
 
     DungeonBitmapFont bitmapFont = FindEditModeBitmapFont();
     if (bitmapFont != null)
@@ -11390,12 +12005,45 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  // Stage 6G: isolated visual calibration hook for the generic D3 LEFT
-  // sliding 32px source-window calibration. This does not replace the legacy renderer.
+  // Stage 6P: isolated visual verification hook for the generic D3 LEFT
+  // locked 32px source-window calibration. This does not replace the legacy renderer.
   // When D3L Test is ON, the current Viewport-17 D3 LEFT source window is blitted LAST
   // so its source-window/brick pattern can be compared directly in Game View.
   // The method is map-independent: it only draws when the current 17-sample
   // geometry actually produces a D3 LEFT FRONT command.
+  private bool TryBuildViewport17SingleFrontCalibrationCommand(
+      Viewport17Inspection inspection,
+      int depth,
+      int localX,
+      out Viewport17RenderCommand command)
+  {
+    command = default;
+    List<Viewport17Surface> surfaces =
+        BuildViewport17SurfaceCandidates(inspection);
+
+    for (int i = 0; i < surfaces.Count; i++)
+    {
+      Viewport17Surface surface = surfaces[i];
+      if (surface.Type != Viewport17SurfaceType.Front
+          || surface.Depth != depth
+          || surface.LocalX != localX)
+      {
+        continue;
+      }
+
+      command = CreateViewport17RenderCommand(
+          "FrontF" + depth,
+          GetViewport17SurfaceLaneLabel(localX),
+          GetViewport17SurfaceLaneLabel(localX),
+          surface);
+      command.Sequence = 0;
+      ResolveViewport17RenderCommandStage6(ref command);
+      return true;
+    }
+
+    return false;
+  }
+
   private void BlitViewport17D3LeftCalibrationCandidate(Color32[] pixels)
   {
     if (!showGeometryDiagnostics
@@ -11407,52 +12055,88 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     Viewport17Inspection inspection = BuildViewport17Inspection();
-    List<Viewport17RenderCommand> commands =
-        BuildViewport17RenderCommands(inspection);
-
-    for (int i = 0; i < commands.Count; i++)
+    if (!TryBuildViewport17SingleFrontCalibrationCommand(
+            inspection, 3, -1, out Viewport17RenderCommand command))
     {
-      Viewport17RenderCommand command = commands[i];
-      ResolveViewport17RenderCommandStage6(ref command);
-
-      bool isD3LeftFront =
-          command.SurfaceType == Viewport17SurfaceType.Front
-          && command.Depth == 3
-          && command.LocalX == -1
-          && command.PieceFamily == "FrontF3";
-      if (!isD3LeftFront)
-        continue;
-
-      if (!command.HasBufferPlacement
-          || !command.HasSourceWindow
-          || !command.HasMirror)
-      {
-        return;
-      }
-
-      Texture2D source = graphics.GetTexture(DungeonGraphicType.FrontWallF3);
-      if (source == null || !source.isReadable)
-        return;
-
-      // Calibration candidates expect the native FrontF3 geometry. Refuse to
-      // silently test a different source geometry; diagnostics remain truth.
-      if (command.HasPieceWidth && source.width != command.PieceWidth)
-        return;
-      if (command.HasPieceMetrics && source.height != command.PieceHeight)
-        return;
-
-      // Stage 6G: copy ONLY the selected 32px source window. Source X can
-      // slide across FrontF3; Mirror reverses only this selected strip.
-      BlitViewport17SourceStripPreview(
-          pixels,
-          source,
-          command.SourceMinX,
-          command.SourceMaxX,
-          command.BufferX,
-          command.BufferY,
-          command.Mirror);
       return;
     }
+
+    if (!command.HasBufferPlacement
+        || !command.HasSourceWindow
+        || !command.HasMirror)
+    {
+      return;
+    }
+
+    Texture2D source = graphics.GetTexture(DungeonGraphicType.FrontWallF3);
+    if (source == null || !source.isReadable)
+      return;
+
+    // Calibration candidates expect the native FrontF3 geometry. Refuse to
+    // silently test a different source geometry; diagnostics remain truth.
+    if (command.HasPieceWidth && source.width != command.PieceWidth)
+      return;
+    if (command.HasPieceMetrics && source.height != command.PieceHeight)
+      return;
+
+    // Stage 6Q: D3L Test remains a single-lane calibration overlay even though
+    // production image decisions now group front L/C/R into one composition.
+    BlitViewport17SourceStripPreview(
+        pixels,
+        source,
+        command.SourceMinX,
+        command.SourceMaxX,
+        command.BufferX,
+        command.BufferY,
+        command.Mirror);
+  }
+
+  // Stage 6P: visual verification hook for the symmetric generic D3 RIGHT
+  // candidate. It uses the same locked 32px FrontF3 source window as D3 LEFT,
+  // mirrored into the rightmost 32 pixels of the 224px dungeon viewport.
+  // It only draws when the current Viewport-17 geometry actually produces a
+  // D3 RIGHT FRONT command. No map-position special case is used.
+  private void BlitViewport17D3RightCalibrationCandidate(Color32[] pixels)
+  {
+    if (!showGeometryDiagnostics
+        || !viewport17D3RightCalibrationPreview
+        || graphics == null
+        || pixels == null)
+    {
+      return;
+    }
+
+    Viewport17Inspection inspection = BuildViewport17Inspection();
+    if (!TryBuildViewport17SingleFrontCalibrationCommand(
+            inspection, 3, 1, out Viewport17RenderCommand command))
+    {
+      return;
+    }
+
+    if (!command.HasBufferPlacement
+        || !command.HasSourceWindow
+        || !command.HasMirror)
+    {
+      return;
+    }
+
+    Texture2D source = graphics.GetTexture(DungeonGraphicType.FrontWallF3);
+    if (source == null || !source.isReadable)
+      return;
+
+    if (command.HasPieceWidth && source.width != command.PieceWidth)
+      return;
+    if (command.HasPieceMetrics && source.height != command.PieceHeight)
+      return;
+
+    BlitViewport17SourceStripPreview(
+        pixels,
+        source,
+        command.SourceMinX,
+        command.SourceMaxX,
+        command.BufferX,
+        command.BufferY,
+        command.Mirror);
   }
 
   private static void BlitPieceIntoPreview(
