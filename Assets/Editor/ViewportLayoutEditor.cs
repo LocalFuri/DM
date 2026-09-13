@@ -4750,10 +4750,12 @@ public class ViewportLayoutEditor : EditorWindow
         Viewport17Cell cell =
             FindViewport17Cell(inspection.Cells, localX, depth);
 
-        // Only a real in-map WALL tile owns a normal front face. Outside-map
-        // X(W) remains solid context for side/boundary tests, but it must not
-        // invent a normal FRONT wall where no map tile exists.
-        if (cell.State == Viewport17CellState.Wall)
+        // Solid cells own a front face: in-map WALL and map-edge Outside.
+        // (0,5) West looks into Outside at D1 center, so FrontF1 must draw.
+        // Side-lane Outside fronts are still dropped when a D0 F0 blocks
+        // that side — (0,5) South RightF0 keeps D1-R Outside from becoming
+        // a FrontF1 right strip.
+        if (IsViewport17Solid(cell))
         {
           surfaces.Add(new Viewport17Surface
           {
@@ -8550,7 +8552,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       Viewport17Cell d1Right = FindViewport17Cell(inspection.Cells, 1, 1);
       if (d1Right.LocalX == 1 && d1Right.Depth == 1)
-        d1RightOpen = d1Right.State != Viewport17CellState.Wall;
+        d1RightOpen = d1Right.State == Viewport17CellState.Open;
     }
     bool leftInset = hasLeftF0 || frontF3LeftOnly;
     bool rightInset = hasRightF0 || frontF3RightOnly || d1RightOpen;
@@ -8675,9 +8677,15 @@ public class ViewportLayoutEditor : EditorWindow
 
       state.Enabled = IsViewport17NormalWallSelected(piece, finalCommands);
       if (state.Enabled && IsWallF0RightPiece(piece))
+      {
         state.X = 191;
+        state.Mirror = GetSideWallMirrorFromPose();
+      }
       if (state.Enabled && IsWallF0LeftPiece(piece))
+      {
         state.X = 0;
+        state.Mirror = GetSideWallMirrorFromPose();
+      }
 
       resolvedNormalWallByPiece[piece] = state;
     }
@@ -10790,7 +10798,19 @@ public class ViewportLayoutEditor : EditorWindow
 
         // Side-wall dest is override else that piece's canonical Ref.
         // Mirror flips source pixels only; it never changes X/Y.
-        if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece)
+        // V17 owns F0 dest/mirror from live overlay; do not apply the
+        // canonical edge-of-map geometry restriction.
+        if (viewport17WallAuthorityActive
+            && (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
+            && TryGetResolvedNormalWallState(
+                piece, out ResolvedNormalWallState liveF0))
+        {
+          resolvedX = liveF0.X;
+          resolvedY = liveF0.Y;
+          if (!previewMirrorOverrideByPiece.ContainsKey(piece))
+            mirror = liveF0.Mirror;
+        }
+        else if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece)
             || IsWallF1LeftPiece(piece) || IsWallF1RightPiece(piece)
             || IsWallF2LeftPiece(piece) || IsWallF2RightPiece(piece)
             || IsWallF3LeftPiece(piece) || IsWallF3RightPiece(piece))
