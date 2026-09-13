@@ -4224,7 +4224,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   // -------------------------------------------------------------------------
-  // Stage 6: generic front-lane projection table.
+  // Stage 6A: generic front-lane projection table + D3 LEFT destination calibration.
   //
   // A front wall graphic is selected by DEPTH (FrontF1/F2/F3), while its
   // screen projection is selected independently by LANE (LEFT/CENTER/RIGHT).
@@ -4232,9 +4232,9 @@ public class ViewportLayoutEditor : EditorWindow
   // never appears in the projection table.
   //
   // CENTER slots are already calibrated: they use the canonical ViewEdit Ref
-  // position with zero offset and no clipping. LEFT/RIGHT slots exist now as
-  // first-class projection slots, but remain PENDING until we calibrate their
-  // original Dungeon Master offset/clip values from references.
+  // position with zero offset and no clipping. Stage 6A additionally calibrates
+  // only the D3 LEFT destination band (Y + destination clip X 0..31). Its
+  // source window, graphic-origin X, and mirror remain PENDING by design.
   // -------------------------------------------------------------------------
   private struct Viewport17FrontProjectionSlot
   {
@@ -4244,17 +4244,23 @@ public class ViewportLayoutEditor : EditorWindow
     public string PieceFamily;
 
     // All slots are defined relative to the canonical family reference.
+    // X and Y calibration are independent because a projected lane can have
+    // a known vertical band while its source-to-destination X mapping is still
+    // unresolved. This is exactly the case for D3 LEFT in Stage 6A.
     public bool UseCanonicalBase;
-    public bool HasDisplayOffset;
+    public bool HasDisplayXOffset;
+    public bool HasDisplayYOffset;
     public int DisplayOffsetX;
     public int DisplayOffsetY;
 
-    // Clip values are framebuffer X bounds once calibrated. CENTER requires
-    // no clip. Projected LEFT/RIGHT slots remain explicitly unresolved.
+    // Clip values are DESTINATION framebuffer X bounds. They do not imply
+    // which source pixels are sampled from the source texture. Source-window
+    // calibration is tracked separately so we never accidentally invent it.
     public bool HasClipWindow;
     public int ClipMinX;
     public int ClipMaxX;
     public string ClipMode;
+    public string SourceWindowMode;
 
     public bool HasMirror;
     public bool Mirror;
@@ -4290,6 +4296,15 @@ public class ViewportLayoutEditor : EditorWindow
     public bool HasBufferPlacement;
     public int BufferX;
     public int BufferY;
+
+    // Stage 6A may know the projected vertical band even when the projected
+    // X/source-window mapping is still pending. Keep that partial calibration
+    // explicit instead of pretending we have a complete placement.
+    public bool HasProjectedDisplayY;
+    public int ProjectedDisplayY;
+    public bool HasProjectedBufferY;
+    public int ProjectedBufferY;
+    public string SourceWindowMode;
 
     // Mirror and clipping remain instance properties. Stage 5 resolves only
     // cases that are already deterministic; unknown projection-specific
@@ -4848,6 +4863,11 @@ public class ViewportLayoutEditor : EditorWindow
         HasBufferPlacement = false,
         BufferX = 0,
         BufferY = 0,
+        HasProjectedDisplayY = false,
+        ProjectedDisplayY = 0,
+        HasProjectedBufferY = false,
+        ProjectedBufferY = 0,
+        SourceWindowMode = "PENDING",
         HasMirror = false,
         Mirror = false,
         ClipMode = "PENDING",
@@ -4869,6 +4889,7 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
 
     bool center = localX == 0;
+    bool d3Left = depth == 3 && localX == -1;
     string lane = localX < 0 ? "LEFT" : localX > 0 ? "RIGHT" : "CENTER";
 
     slot = new Viewport17FrontProjectionSlot
@@ -4878,20 +4899,36 @@ public class ViewportLayoutEditor : EditorWindow
       Lane = lane,
       PieceFamily = "FrontF" + depth,
       UseCanonicalBase = true,
-      HasDisplayOffset = center,
+
+      // CENTER is fully calibrated from the canonical family Ref.
+      // Stage 6A calibrates only the D3 LEFT destination band: its Y is the
+      // canonical FrontF3 Y and the visible destination window is X 0..31.
+      // The source X window, graphic-origin X, and mirror remain intentionally
+      // pending until the brick pattern is matched against the original.
+      HasDisplayXOffset = center,
+      HasDisplayYOffset = center || d3Left,
       DisplayOffsetX = 0,
       DisplayOffsetY = 0,
-      HasClipWindow = false,
-      ClipMinX = 0,
-      ClipMaxX = 0,
+      HasClipWindow = d3Left,
+      ClipMinX = d3Left ? 0 : 0,
+      ClipMaxX = d3Left ? 31 : 0,
       ClipMode = center
           ? "NONE"
-          : (localX < 0 ? "LEFT_LANE_PENDING" : "RIGHT_LANE_PENDING"),
+          : d3Left
+              ? "DEST_X_0_31"
+              : (localX < 0 ? "LEFT_LANE_PENDING" : "RIGHT_LANE_PENDING"),
+      SourceWindowMode = center
+          ? "FULL_SOURCE"
+          : d3Left
+              ? "PENDING_SOURCE_WINDOW"
+              : "PENDING",
       HasMirror = false,
       Mirror = false,
       CalibrationStatus = center
           ? "CALIBRATED_CANONICAL_CENTER"
-          : "PENDING_LANE_CALIBRATION"
+          : d3Left
+              ? "CALIBRATED_DESTINATION_ONLY"
+              : "PENDING_LANE_CALIBRATION"
     };
 
     return true;
@@ -4900,11 +4937,14 @@ public class ViewportLayoutEditor : EditorWindow
   private static string FormatViewport17FrontProjectionSlot(
       Viewport17FrontProjectionSlot slot)
   {
-    string offset = slot.HasDisplayOffset
-        ? "offset=(" + slot.DisplayOffsetX + "," + slot.DisplayOffsetY + ")"
-        : "offset=PENDING";
+    string offsetX = slot.HasDisplayXOffset
+        ? "offsetX=" + slot.DisplayOffsetX
+        : "offsetX=PENDING";
+    string offsetY = slot.HasDisplayYOffset
+        ? "offsetY=" + slot.DisplayOffsetY
+        : "offsetY=PENDING";
     string clip = slot.HasClipWindow
-        ? "clipX=[" + slot.ClipMinX + ".." + slot.ClipMaxX + "]"
+        ? "destClipX=[" + slot.ClipMinX + ".." + slot.ClipMaxX + "]"
         : "clip=" + slot.ClipMode;
     string mirror = slot.HasMirror
         ? "mirror=" + (slot.Mirror ? "ON" : "OFF")
@@ -4914,8 +4954,10 @@ public class ViewportLayoutEditor : EditorWindow
         + " " + slot.Lane
         + " -> " + slot.PieceFamily
         + " base=CANONICAL_REF "
-        + offset + " "
+        + offsetX + " "
+        + offsetY + " "
         + clip + " "
+        + "sourceWindow=" + slot.SourceWindowMode + " "
         + mirror + " "
         + "status=" + slot.CalibrationStatus;
   }
@@ -4951,6 +4993,26 @@ public class ViewportLayoutEditor : EditorWindow
   // Projected front instances retain their normalized base reference but their
   // actual display/buffer placement remains PENDING.
   // -------------------------------------------------------------------------
+  private static bool TryGetViewport17CanonicalReferenceXY(
+      string pieceFamily,
+      out int x,
+      out int displayY)
+  {
+    // Viewport-17 uses one normalized coordinate convention: display Y is
+    // top-origin. FrontF2 is a legacy special case in the old renderer where
+    // 125 is the framebuffer/bottom-origin Y. Its normalized display Y is 1
+    // because 200 - 1 - 74 = 125. Keep this correction local to the new
+    // Viewport-17 engine so the legacy renderer remains untouched.
+    if (pieceFamily == "FrontF2")
+    {
+      x = 0;
+      displayY = 1;
+      return true;
+    }
+
+    return TryGetCanonicalReferenceXY(pieceFamily, out x, out displayY);
+  }
+
   private bool TryGetViewport17PieceHeight(
       string pieceFamily,
       out int height)
@@ -4958,6 +5020,16 @@ public class ViewportLayoutEditor : EditorWindow
     height = 0;
     if (string.IsNullOrEmpty(pieceFamily))
       return false;
+
+    // FrontF2 is drawn through a special 106x74/224-reference path in the
+    // legacy renderer, so graphics.GetTexture(piece.Graphic) can report the
+    // placeholder height rather than the actual wall height. Normalize it for
+    // Viewport-17 command geometry.
+    if (pieceFamily == "FrontF2")
+    {
+      height = 74;
+      return true;
+    }
 
     ViewportPiece piece = FindLayoutPieceByName(pieceFamily);
     if (piece == null)
@@ -4995,11 +5067,14 @@ public class ViewportLayoutEditor : EditorWindow
     command.HasBaseBufferReference = false;
     command.HasDisplayPlacement = false;
     command.HasBufferPlacement = false;
+    command.HasProjectedDisplayY = false;
+    command.HasProjectedBufferY = false;
+    command.SourceWindowMode = "PENDING";
     command.HasMirror = false;
     command.ClipMode = "PENDING";
     command.ResolutionNote = string.Empty;
 
-    if (TryGetCanonicalReferenceXY(
+    if (TryGetViewport17CanonicalReferenceXY(
             command.PieceFamily, out int refX, out int refDisplayY))
     {
       command.HasBaseReference = true;
@@ -5029,7 +5104,10 @@ public class ViewportLayoutEditor : EditorWindow
       if (TryGetViewport17FrontProjectionSlot(
               command.Depth, command.LocalX, out var slot))
       {
-        command.ClipMode = slot.ClipMode;
+        command.ClipMode = slot.HasClipWindow
+            ? "DEST_X_[" + slot.ClipMinX + ".." + slot.ClipMaxX + "]"
+            : slot.ClipMode;
+        command.SourceWindowMode = slot.SourceWindowMode;
 
         if (slot.HasMirror)
         {
@@ -5038,7 +5116,21 @@ public class ViewportLayoutEditor : EditorWindow
         }
 
         if (slot.UseCanonicalBase
-            && slot.HasDisplayOffset
+            && slot.HasDisplayYOffset
+            && command.HasBaseReference
+            && command.HasPieceMetrics)
+        {
+          command.HasProjectedDisplayY = true;
+          command.ProjectedDisplayY = command.BaseReferenceY + slot.DisplayOffsetY;
+          command.HasProjectedBufferY = true;
+          command.ProjectedBufferY = DisplayYToUnityY(
+              command.ProjectedDisplayY,
+              command.PieceHeight);
+        }
+
+        if (slot.UseCanonicalBase
+            && slot.HasDisplayXOffset
+            && slot.HasDisplayYOffset
             && command.HasBaseReference
             && command.HasPieceMetrics)
         {
@@ -5058,7 +5150,9 @@ public class ViewportLayoutEditor : EditorWindow
             + " status=" + slot.CalibrationStatus
             + (command.HasDisplayPlacement
                 ? "; canonical base + calibrated lane offset"
-                : "; normalized base Ref known; lane placement/clip still pending");
+                : command.HasProjectedDisplayY
+                    ? "; destination Y/clip calibrated; graphic-origin X/source window still pending"
+                    : "; normalized base Ref known; lane placement/clip still pending");
       }
       else
       {
@@ -5074,6 +5168,7 @@ public class ViewportLayoutEditor : EditorWindow
       command.BufferX = command.BaseBufferX;
       command.BufferY = command.BaseBufferY;
       command.ClipMode = "NONE";
+      command.SourceWindowMode = "FULL_SOURCE";
       command.ResolutionNote =
           "canonical piece reference; display/buffer normalized";
     }
@@ -5123,6 +5218,11 @@ public class ViewportLayoutEditor : EditorWindow
       placement = " display=(" + command.DisplayX + "," + command.DisplayY + ")"
           + " buffer=(" + command.BufferX + "," + command.BufferY + ")";
     }
+    else if (command.HasProjectedDisplayY && command.HasProjectedBufferY)
+    {
+      placement = " displayX=PENDING displayY=" + command.ProjectedDisplayY
+          + " bufferX=PENDING bufferY=" + command.ProjectedBufferY;
+    }
     else
     {
       placement = " placement=PENDING";
@@ -5148,6 +5248,7 @@ public class ViewportLayoutEditor : EditorWindow
         + placement
         + mirror
         + " clip=" + command.ClipMode
+        + " sourceWindow=" + command.SourceWindowMode
         + note;
   }
 
@@ -5184,10 +5285,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     lines.Add("");
     lines.Add(
-        "STAGE 6: front-wall projection is now a generic depth/lane table. "
-        + "CENTER slots are calibrated from canonical refs; LEFT/RIGHT slots "
-        + "exist as independent projection slots and remain PENDING until "
-        + "their original offset/clip values are calibrated.");
+        "STAGE 6B: normalized FrontF2 command geometry fixed (displayY=1, height=74, bufferY=125). D3 LEFT destination calibration remains unchanged: "
+        + "displayY follows canonical FrontF3 (Y=58 here) and destination clip X=[0..31]. "
+        + "Graphic-origin X, source pixel window, and mirror remain explicitly PENDING. "
+        + "CENTER slots remain calibrated from canonical refs; all other projected lanes remain pending.");
     lines.Add(
         "DIAGNOSTIC ONLY: renderer/Enabled states are still unchanged.");
     return string.Join("\n", lines);
