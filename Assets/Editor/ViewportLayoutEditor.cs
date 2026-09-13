@@ -4223,6 +4223,44 @@ public class ViewportLayoutEditor : EditorWindow
     public Viewport17Cell AdjacentCell;
   }
 
+  // -------------------------------------------------------------------------
+  // Stage 6: generic front-lane projection table.
+  //
+  // A front wall graphic is selected by DEPTH (FrontF1/F2/F3), while its
+  // screen projection is selected independently by LANE (LEFT/CENTER/RIGHT).
+  // This is deliberately keyed only by relative viewport geometry; map X/Y
+  // never appears in the projection table.
+  //
+  // CENTER slots are already calibrated: they use the canonical ViewEdit Ref
+  // position with zero offset and no clipping. LEFT/RIGHT slots exist now as
+  // first-class projection slots, but remain PENDING until we calibrate their
+  // original Dungeon Master offset/clip values from references.
+  // -------------------------------------------------------------------------
+  private struct Viewport17FrontProjectionSlot
+  {
+    public int Depth;
+    public int LocalX;
+    public string Lane;
+    public string PieceFamily;
+
+    // All slots are defined relative to the canonical family reference.
+    public bool UseCanonicalBase;
+    public bool HasDisplayOffset;
+    public int DisplayOffsetX;
+    public int DisplayOffsetY;
+
+    // Clip values are framebuffer X bounds once calibrated. CENTER requires
+    // no clip. Projected LEFT/RIGHT slots remain explicitly unresolved.
+    public bool HasClipWindow;
+    public int ClipMinX;
+    public int ClipMaxX;
+    public string ClipMode;
+
+    public bool HasMirror;
+    public bool Mirror;
+    public string CalibrationStatus;
+  }
+
   private struct Viewport17RenderCommand
   {
     // Painter-order identity. Two commands may intentionally use the same
@@ -4821,6 +4859,86 @@ public class ViewportLayoutEditor : EditorWindow
     return commands;
   }
 
+  private static bool TryGetViewport17FrontProjectionSlot(
+      int depth,
+      int localX,
+      out Viewport17FrontProjectionSlot slot)
+  {
+    slot = default;
+    if (depth < 1 || depth > 3 || localX < -1 || localX > 1)
+      return false;
+
+    bool center = localX == 0;
+    string lane = localX < 0 ? "LEFT" : localX > 0 ? "RIGHT" : "CENTER";
+
+    slot = new Viewport17FrontProjectionSlot
+    {
+      Depth = depth,
+      LocalX = localX,
+      Lane = lane,
+      PieceFamily = "FrontF" + depth,
+      UseCanonicalBase = true,
+      HasDisplayOffset = center,
+      DisplayOffsetX = 0,
+      DisplayOffsetY = 0,
+      HasClipWindow = false,
+      ClipMinX = 0,
+      ClipMaxX = 0,
+      ClipMode = center
+          ? "NONE"
+          : (localX < 0 ? "LEFT_LANE_PENDING" : "RIGHT_LANE_PENDING"),
+      HasMirror = false,
+      Mirror = false,
+      CalibrationStatus = center
+          ? "CALIBRATED_CANONICAL_CENTER"
+          : "PENDING_LANE_CALIBRATION"
+    };
+
+    return true;
+  }
+
+  private static string FormatViewport17FrontProjectionSlot(
+      Viewport17FrontProjectionSlot slot)
+  {
+    string offset = slot.HasDisplayOffset
+        ? "offset=(" + slot.DisplayOffsetX + "," + slot.DisplayOffsetY + ")"
+        : "offset=PENDING";
+    string clip = slot.HasClipWindow
+        ? "clipX=[" + slot.ClipMinX + ".." + slot.ClipMaxX + "]"
+        : "clip=" + slot.ClipMode;
+    string mirror = slot.HasMirror
+        ? "mirror=" + (slot.Mirror ? "ON" : "OFF")
+        : "mirror=PENDING";
+
+    return "D" + slot.Depth
+        + " " + slot.Lane
+        + " -> " + slot.PieceFamily
+        + " base=CANONICAL_REF "
+        + offset + " "
+        + clip + " "
+        + mirror + " "
+        + "status=" + slot.CalibrationStatus;
+  }
+
+  private static string BuildViewport17FrontProjectionTableDiagnostic()
+  {
+    List<string> lines = new List<string>
+    {
+      "FRONT LANE PROJECTION TABLE (GENERIC, MAP-INDEPENDENT):"
+    };
+
+    for (int depth = 3; depth >= 1; depth--)
+    {
+      for (int localX = -1; localX <= 1; localX++)
+      {
+        if (TryGetViewport17FrontProjectionSlot(depth, localX, out var slot))
+          lines.Add(FormatViewport17FrontProjectionSlot(slot));
+      }
+    }
+
+    return string.Join("\n", lines);
+  }
+
   // -------------------------------------------------------------------------
   // Stage 5B: normalize command coordinates.
   //
@@ -4869,7 +4987,7 @@ public class ViewportLayoutEditor : EditorWindow
     return height > 0;
   }
 
-  private void ResolveViewport17RenderCommandStage5B(
+  private void ResolveViewport17RenderCommandStage6(
       ref Viewport17RenderCommand command)
   {
     command.HasBaseReference = false;
@@ -4905,28 +5023,47 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     bool isFront = command.SurfaceType == Viewport17SurfaceType.Front;
-    bool isCenterFront = isFront && command.LocalX == 0;
-    bool isProjectedFront = isFront && command.LocalX != 0;
 
-    if (isCenterFront && command.HasBaseBufferReference)
+    if (isFront)
     {
-      command.HasDisplayPlacement = true;
-      command.DisplayX = command.BaseReferenceX;
-      command.DisplayY = command.BaseReferenceY;
-      command.HasBufferPlacement = true;
-      command.BufferX = command.BaseBufferX;
-      command.BufferY = command.BaseBufferY;
-      command.ClipMode = "NONE";
-      command.ResolutionNote = "canonical center projection; display/buffer normalized";
-    }
-    else if (isProjectedFront)
-    {
-      command.ClipMode = command.LocalX < 0
-          ? "LEFT_LANE_PENDING"
-          : "RIGHT_LANE_PENDING";
-      command.ResolutionNote = command.HasBaseBufferReference
-          ? "normalized base Ref known; lane projection/clip still required"
-          : "lane projection/clip still required";
+      if (TryGetViewport17FrontProjectionSlot(
+              command.Depth, command.LocalX, out var slot))
+      {
+        command.ClipMode = slot.ClipMode;
+
+        if (slot.HasMirror)
+        {
+          command.HasMirror = true;
+          command.Mirror = slot.Mirror;
+        }
+
+        if (slot.UseCanonicalBase
+            && slot.HasDisplayOffset
+            && command.HasBaseReference
+            && command.HasPieceMetrics)
+        {
+          command.HasDisplayPlacement = true;
+          command.DisplayX = command.BaseReferenceX + slot.DisplayOffsetX;
+          command.DisplayY = command.BaseReferenceY + slot.DisplayOffsetY;
+
+          command.HasBufferPlacement = true;
+          command.BufferX = command.DisplayX;
+          command.BufferY = DisplayYToUnityY(
+              command.DisplayY,
+              command.PieceHeight);
+        }
+
+        command.ResolutionNote =
+            "projectionSlot=D" + slot.Depth + "/" + slot.Lane
+            + " status=" + slot.CalibrationStatus
+            + (command.HasDisplayPlacement
+                ? "; canonical base + calibrated lane offset"
+                : "; normalized base Ref known; lane placement/clip still pending");
+      }
+      else
+      {
+        command.ResolutionNote = "front projection slot unavailable";
+      }
     }
     else if (command.HasBaseBufferReference)
     {
@@ -4937,7 +5074,8 @@ public class ViewportLayoutEditor : EditorWindow
       command.BufferX = command.BaseBufferX;
       command.BufferY = command.BaseBufferY;
       command.ClipMode = "NONE";
-      command.ResolutionNote = "canonical piece reference; display/buffer normalized";
+      command.ResolutionNote =
+          "canonical piece reference; display/buffer normalized";
     }
 
     bool ordinarySideFamily =
@@ -4956,8 +5094,8 @@ public class ViewportLayoutEditor : EditorWindow
       command.Mirror = GetSideWallMirrorFromPose();
     }
     // Front-face mirror phase and LeftD3/RightD3 mirror stay PENDING until
-    // their geometry-driven rule is derived. No legacy pose exception is
-    // imported into the Viewport-17 engine here.
+    // their geometry-driven rules are derived. No map-position exception is
+    // imported into the Viewport-17 engine.
   }
 
   private static string FormatViewport17RenderCommand(
@@ -5022,12 +5160,14 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < commands.Count; i++)
     {
       Viewport17RenderCommand resolved = commands[i];
-      ResolveViewport17RenderCommandStage5B(ref resolved);
+      ResolveViewport17RenderCommandStage6(ref resolved);
       commands[i] = resolved;
     }
 
     List<string> lines = new List<string>
     {
+      BuildViewport17FrontProjectionTableDiagnostic(),
+      "",
       "VIEWPORT-17 RENDER COMMAND INSTANCES (FAR -> NEAR):",
       "One command = one drawable surface instance; duplicate families are allowed."
     };
@@ -5044,9 +5184,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     lines.Add("");
     lines.Add(
-        "STAGE 5B: ViewEdit/display and framebuffer coordinates are now "
-        + "explicitly separated; projected LEFT/RIGHT front instances remain "
-        + "PENDING until the original lane projection/clip table is derived.");
+        "STAGE 6: front-wall projection is now a generic depth/lane table. "
+        + "CENTER slots are calibrated from canonical refs; LEFT/RIGHT slots "
+        + "exist as independent projection slots and remain PENDING until "
+        + "their original offset/clip values are calibrated.");
     lines.Add(
         "DIAGNOSTIC ONLY: renderer/Enabled states are still unchanged.");
     return string.Join("\n", lines);
