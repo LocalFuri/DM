@@ -422,7 +422,7 @@ public class ViewportLayoutEditor : EditorWindow
     showOnlyWallsNeededForCurrentPose = true;
     showWallsActivFilter = true;
     StripObsoleteFrontWallF1ABPieces();
-    EnsureLeft2SAndRight2SPieces();
+    EnsureLeftS3AndRightS3Pieces();
     CaptureNormalWallBaselinesFromLayout();
     ApplyCurrentPoseVisibilityToLayout();
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
@@ -909,7 +909,7 @@ public class ViewportLayoutEditor : EditorWindow
       if (layoutEditable)
       {
         StripObsoleteFrontWallF1ABPieces();
-        EnsureLeft2SAndRight2SPieces();
+        EnsureLeftS3AndRightS3Pieces();
       }
 
       bool changed = false;
@@ -1085,8 +1085,8 @@ public class ViewportLayoutEditor : EditorWindow
     string name = piece.Name ?? string.Empty;
     return name == "LeftD3"
         || name == "RightD3"
-        || name == "LeftS2"
-        || name == "Right2S"
+        || name == "LeftS3"
+        || name == "RightS3"
         || name == "Wall D3L2"
         || name == "Wall D3R2"
         || name == "Black Door Frame Left F1"
@@ -1177,10 +1177,10 @@ public class ViewportLayoutEditor : EditorWindow
       return resolvedNeededState.Enabled;
     }
 
-    // LeftS2 is a ViewEdit-only geometry piece, so it is not classified as a
+    // LeftS3 is a ViewEdit-only geometry piece, so it is not classified as a
     // normal wall. Use the same resolved strict-geometry state for the needed
     // walls filter instead of falling through to the default-visible path.
-    if (name == "LeftS2")
+    if (name == "LeftS3")
     {
       if (TryGetResolvedNormalWallState(
               piece, out ResolvedNormalWallState leftS2NeededState))
@@ -1472,8 +1472,8 @@ public class ViewportLayoutEditor : EditorWindow
         || name.StartsWith("Wall F", System.StringComparison.Ordinal)
         || name == "LeftD3"
         || name == "RightD3"
-        || name == "LeftS2"
-        || name == "Right2S";
+        || name == "LeftS3"
+        || name == "RightS3";
   }
 
   /// <summary>
@@ -1835,7 +1835,7 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF3LeftPiece(piece)
         || piece.Name == "LeftD3"
         || piece.Name == "Wall D3L2"
-        || piece.Name == "LeftS2")
+        || piece.Name == "LeftS3")
     {
       return 1;
     }
@@ -1846,7 +1846,7 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF3RightPiece(piece)
         || piece.Name == "RightD3"
         || piece.Name == "Wall D3R2"
-        || piece.Name == "Right2S")
+        || piece.Name == "RightS3")
     {
       return 2;
     }
@@ -1938,8 +1938,8 @@ public class ViewportLayoutEditor : EditorWindow
     ("Wall D3R2", null, null),
 
     // 2S (ViewEdit list only; no geometry yet)
-    ("LeftS2", 0, 57),
-    ("Right2S", null, null),
+    ("LeftS3", 0, 57),
+    ("RightS3", null, null),
 
     // Black Door
     ("BlackDoorF1", 63, 47),
@@ -2153,8 +2153,8 @@ public class ViewportLayoutEditor : EditorWindow
         || IsWallF3LeftPiece(piece)
         || IsWallF3RightPiece(piece)
         || isLeftD3Card
-        || piece.Name == "LeftS2"
-        || piece.Name == "Right2S"
+        || piece.Name == "LeftS3"
+        || piece.Name == "RightS3"
         || piece.Name == "RightD3";
     bool hideNameForWall = IsWallEditorPiece(piece);
 
@@ -2948,37 +2948,75 @@ public class ViewportLayoutEditor : EditorWindow
   /// ViewEdit list entries only. Separate from LeftF2 / RightF2 / LeftD3 / RightD3.
   /// No geometry or render rules yet.
   /// </summary>
-  private void EnsureLeft2SAndRight2SPieces()
+  private void EnsureLeftS3AndRightS3Pieces()
   {
-    // Migrate the old ViewEdit-only alias once so all geometry/filter/render
-    // logic has a single canonical piece name: LeftS2.
+    // Canonical ViewEdit names now describe their real distance: LeftS3 / RightS3.
+    // Keep the frozen graphic enum/asset names (Left2S / Right2S.png) unchanged.
+    // Existing layout assets are migrated in-place from the older aliases.
     if (layout != null && layout.Pieces != null)
     {
-      ViewportPiece canonicalLeftS2 = FindLayoutPieceByName("LeftS2");
-      ViewportPiece legacyLeft2S = FindLayoutPieceByName("Left2S");
       bool migrated = false;
 
-      if (canonicalLeftS2 == null && legacyLeft2S != null)
+      ViewportPiece canonicalLeftS3 = FindLayoutPieceByName("LeftS3");
+      ViewportPiece oldLeftS2 = FindLayoutPieceByName("LeftS2");
+      ViewportPiece oldLeft2S = FindLayoutPieceByName("Left2S");
+
+      ViewportPiece leftSource = oldLeftS2 ?? oldLeft2S;
+      if (canonicalLeftS3 == null && leftSource != null)
       {
-        legacyLeft2S.Name = "LeftS2";
-        if (legacyLeft2S.Graphic == DungeonGraphicType.None)
-          legacyLeft2S.Graphic = DungeonGraphicType.Left2S;
+        leftSource.Name = "LeftS3";
+        if (leftSource.Graphic == DungeonGraphicType.None)
+          leftSource.Graphic = DungeonGraphicType.Left2S;
+        canonicalLeftS3 = leftSource;
         migrated = true;
       }
-      else if (canonicalLeftS2 != null && legacyLeft2S != null)
+
+      if (canonicalLeftS3 != null)
       {
-        // If an older asset already contains both names, keep the canonical
-        // LeftS2 card and remove the stale duplicate alias.
-        layout.Pieces.Remove(legacyLeft2S);
+        if (oldLeftS2 != null && oldLeftS2 != canonicalLeftS3)
+        {
+          layout.Pieces.Remove(oldLeftS2);
+          migrated = true;
+        }
+        if (oldLeft2S != null && oldLeft2S != canonicalLeftS3)
+        {
+          layout.Pieces.Remove(oldLeft2S);
+          migrated = true;
+        }
+      }
+
+      ViewportPiece canonicalRightS3 = FindLayoutPieceByName("RightS3");
+      ViewportPiece oldRightS2 = FindLayoutPieceByName("RightS2");
+      ViewportPiece oldRight2S = FindLayoutPieceByName("Right2S");
+
+      ViewportPiece rightSource = oldRightS2 ?? oldRight2S;
+      if (canonicalRightS3 == null && rightSource != null)
+      {
+        rightSource.Name = "RightS3";
+        canonicalRightS3 = rightSource;
         migrated = true;
+      }
+
+      if (canonicalRightS3 != null)
+      {
+        if (oldRightS2 != null && oldRightS2 != canonicalRightS3)
+        {
+          layout.Pieces.Remove(oldRightS2);
+          migrated = true;
+        }
+        if (oldRight2S != null && oldRight2S != canonicalRightS3)
+        {
+          layout.Pieces.Remove(oldRight2S);
+          migrated = true;
+        }
       }
 
       if (migrated)
         EditorUtility.SetDirty(layout);
     }
 
-    EnsureNamedWallListPiece("LeftS2", "LeftF2");
-    EnsureNamedWallListPiece("Right2S", "RightF2");
+    EnsureNamedWallListPiece("LeftS3", "LeftF2");
+    EnsureNamedWallListPiece("RightS3", "RightF2");
   }
 
   private ViewportPiece EnsureNamedWallListPiece(
@@ -2988,7 +3026,7 @@ public class ViewportLayoutEditor : EditorWindow
     ViewportPiece existing = FindLayoutPieceByName(name);
     if (existing != null)
     {
-      if (name == "LeftS2"
+      if (name == "LeftS3"
           && existing.Graphic == DungeonGraphicType.None)
       {
         existing.Graphic = DungeonGraphicType.Left2S;
@@ -3017,7 +3055,7 @@ public class ViewportLayoutEditor : EditorWindow
     ViewportPiece created = new ViewportPiece
     {
       Name = name,
-      Graphic = name == "LeftS2"
+      Graphic = name == "LeftS3"
           ? DungeonGraphicType.Left2S
           : DungeonGraphicType.None,
       X = 0,
@@ -3210,8 +3248,8 @@ public class ViewportLayoutEditor : EditorWindow
       case "Wall D3R2":
         color = new Color32(0x9B, 0x6F, 0xD1, 0xFF);
         return true;
-      case "LeftS2":
-      case "Right2S":
+      case "LeftS3":
+      case "RightS3":
         color = new Color32(0x00, 0xFF, 0xFF, 0xFF);
         return true;
       case "BlackDoorF1":
@@ -4348,10 +4386,9 @@ public class ViewportLayoutEditor : EditorWindow
   //
   // CENTER slots are already calibrated: they use the canonical ViewEdit Ref
   // position with zero offset and no clipping. Stage 6A additionally calibrates
-  // only the D3 LEFT destination band (Y + destination clip X 0..31). Its
-  // Stage 6C adds a diagnostic-only D3 LEFT source mapping candidate: the rightmost
-  // 32 pixels of FrontF3 are aligned to destination X 0..31 with mirror OFF.
-  // This is still diagnostic-only and can be adjusted after brick-pattern comparison.
+  // only the D3 LEFT destination band (Y + destination clip X 0..31).
+  // Stage 6C locks FrontF3 source X 64..95 into dest X 0..31, mirror OFF.
+  // V17 production blits that strip when FINAL DRAW is FrontF3 mask L without C.
   // -------------------------------------------------------------------------
   private struct Viewport17FrontProjectionSlot
   {
@@ -5911,20 +5948,50 @@ public class ViewportLayoutEditor : EditorWindow
         || piece.Graphic == DungeonGraphicType.WallD3R2)
       return "RightD3";
 
-    // LeftS2 / Right2S are legacy-only wall families. Viewport-17 does not
+    // LeftS3 / RightS3 are special distance-3 strip families. Viewport-17 does not
     // emit them, so they intentionally resolve to no selected family.
     return string.Empty;
   }
 
   private static bool IsViewport17NormalWallSelected(
       ViewportPiece piece,
-      HashSet<string> finalFamilies)
+      List<Viewport17RenderCommand> finalCommands)
   {
-    if (piece == null || finalFamilies == null)
+    if (piece == null || finalCommands == null)
       return false;
 
     string family = GetViewport17NormalWallFamily(piece);
-    return !string.IsNullOrEmpty(family) && finalFamilies.Contains(family);
+    if (string.IsNullOrEmpty(family))
+      return false;
+
+    bool isFrontFamily =
+        family == "FrontF1"
+        || family == "FrontF2"
+        || family == "FrontF3";
+
+    for (int i = 0; i < finalCommands.Count; i++)
+    {
+      Viewport17RenderCommand command = finalCommands[i];
+      if (!string.Equals(
+              command.PieceFamily,
+              family,
+              System.StringComparison.Ordinal))
+      {
+        continue;
+      }
+
+      // FrontF1/F2/F3 ViewEdit cards are CENTER projections. A surviving
+      // front command with only L and/or R occupancy must not turn on the
+      // full center card. FrontF3 mask L (no C) is blitted as the locked
+      // 32px dest X 0..31 strip, not LeftS3 and not the center FrontF3 card.
+      if (isFrontFamily)
+        return command.IsFrontComposite && command.FrontCenter;
+
+      // Side-wall and D3 families remain a direct family match.
+      return true;
+    }
+
+    return false;
   }
 
   private static string FormatViewport17FinalDrawCommand(
@@ -6050,7 +6117,7 @@ public class ViewportLayoutEditor : EditorWindow
         + "Only the nearest front wall per lane survives; D0 inner walls block deeper same-side geometry. "
         + "D1 CENTER +1px and the locked D3 LEFT source calibration remain preserved.");
     lines.Add(
-        "CUTOVER: when V17 Walls is ON (and Show all walls is OFF), FINAL DRAW owns normal-wall visibility in ViewEdit; legacy visibility rules are muted. Existing placement/blit code remains temporarily in use.");
+        "CUTOVER: when V17 Walls is ON (and Show all walls is OFF), FINAL DRAW owns normal-wall visibility in ViewEdit; legacy visibility rules are muted. FrontF3 mask L (no C) blits the locked 32px dest X 0..31 FrontF3 strip. Other placement/blit code remains temporarily in use.");
     return string.Join("\n", lines);
   }
 
@@ -6981,12 +7048,12 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// (5,2) South left-to-right blit / ViewEdit list order:
-  /// LeftS2, FrontF3, FrontF1, RightD3. LeftD3 shares the leftmost
+  /// LeftS3, FrontF3, FrontF1, RightD3. LeftD3 shares the leftmost
   /// slot when manually enabled in Show All Walls.
   /// </summary>
   private static int Get52SouthLeftToRightOrder(ViewportPiece piece)
   {
-    if (piece != null && piece.Name == "LeftS2")
+    if (piece != null && piece.Name == "LeftS3")
       return 0;
     if (Is52SouthLeftD3Piece(piece))
       return 0;
@@ -7016,7 +7083,7 @@ public class ViewportLayoutEditor : EditorWindow
         || previewY != 2
         || previewFacing != DungeonFacing.South
         || !IsNormalWallPiece(piece)
-        || piece.Name == "LeftS2")
+        || piece.Name == "LeftS3")
     {
       return false;
     }
@@ -7999,7 +8066,7 @@ public class ViewportLayoutEditor : EditorWindow
           y = DisplayYToUnityY(60, GetPieceHeightForEditorY(piece));
         }
       }
-      else if (piece.Name == "LeftS2")
+      else if (piece.Name == "LeftS3")
       {
         enabled = leftS2;
         x = 0;
@@ -8008,7 +8075,7 @@ public class ViewportLayoutEditor : EditorWindow
             GetPieceHeightForEditorY(piece));
         mirror = false;
       }
-      else if (piece.Name == "Right2S")
+      else if (piece.Name == "RightS3")
       {
         enabled = false;
         x = piece.EffectiveX;
@@ -8124,7 +8191,7 @@ public class ViewportLayoutEditor : EditorWindow
         mirror = frontF1Mirror;
       }
 
-      if (piece.Name == "LeftS2")
+      if (piece.Name == "LeftS3")
       {
         enabled = leftS2;
         x = 0;
@@ -8136,11 +8203,11 @@ public class ViewportLayoutEditor : EditorWindow
 
       // ViewEdit visibility for (5,2) South.
       // LeftD3 stays manual-only in Show All Walls.
-      // LeftS2 Enabled comes from leftS2 geometry, not this pose list.
+      // LeftS3 Enabled comes from leftS2 geometry, not this pose list.
       if (previewX == 5
           && previewY == 2
           && previewFacing == DungeonFacing.South
-          && piece.Name != "LeftS2")
+          && piece.Name != "LeftS3")
       {
         enabled = IsFrontWallF3Card(piece)
             || IsFrontWallF1Card(piece)
@@ -8616,8 +8683,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     return piece.Graphic == DungeonGraphicType.WallD3L2
         || piece.Graphic == DungeonGraphicType.WallD3R2
-        || piece.Name == "LeftS2"
-        || piece.Name == "Right2S"
+        || piece.Name == "LeftS3"
+        || piece.Name == "RightS3"
         || piece.Name == "LeftD3"
         || piece.Name == "RightD3"
         || piece.Name == "Wall D3L2"
@@ -10181,10 +10248,14 @@ public class ViewportLayoutEditor : EditorWindow
     // Temporary pose for visibility/mirror only — never write the layout asset.
     DungeonMap poseMap = TryGetPreviewPoseMap();
     bool viewport17WallAuthorityActive = IsViewport17WallAuthorityActive();
-    HashSet<string> viewport17FinalWallFamilies =
-        viewport17WallAuthorityActive
-            ? BuildViewport17FinalPieceFamilySet()
-            : null;
+    Viewport17Inspection viewport17Inspection = default;
+    List<Viewport17RenderCommand> viewport17FinalWallCommands = null;
+    if (viewport17WallAuthorityActive)
+    {
+      viewport17Inspection = BuildViewport17Inspection();
+      viewport17FinalWallCommands =
+          BuildViewport17FinalDrawCommands(viewport17Inspection);
+    }
     bool composeCanonicalFrontF1F0EdgeGeometry =
         TryGetCurrentRelativeViewportGeometry(
             out RelativeViewportGeometry composeGeometry)
@@ -10332,7 +10403,7 @@ public class ViewportLayoutEditor : EditorWindow
                     && !IsFrontWallF1Card(piece)
                     && !IsFrontWallF3Card(piece)
                     && !IsWallF0RightPiece(piece)
-                    && piece.Name != "LeftS2")))
+                    && piece.Name != "LeftS3")))
         {
           continue;
         }
@@ -10343,7 +10414,7 @@ public class ViewportLayoutEditor : EditorWindow
         bool viewport17Selected =
             viewport17NormalWall
             && IsViewport17NormalWallSelected(
-                piece, viewport17FinalWallFamilies);
+                piece, viewport17FinalWallCommands);
         bool shouldDraw = viewport17NormalWall
             ? viewport17Selected
             : ShouldDrawPieceAtPreviewPose(piece);
@@ -10618,13 +10689,13 @@ public class ViewportLayoutEditor : EditorWindow
           }
         }
 
-        // LeftS2 / Right2S must be handled before any generic front/side wall
-        // graphic path.  The opposite 2S artwork is a source-image substitute
+        // LeftS3 / RightS3 must be handled before any generic front/side wall
+        // graphic path.  The opposite strip artwork is a source-image substitute
         // only: X/Y always stay with the card being drawn, and Mirror=true
         // must still flip the substituted source pixels.
-        if (piece.Name == "LeftS2" || piece.Name == "Right2S")
+        if (piece.Name == "LeftS3" || piece.Name == "RightS3")
         {
-          Texture2D wall2STexture = piece.Name == "LeftS2"
+          Texture2D wall2STexture = piece.Name == "LeftS3"
               ? (mirror
                   ? GetRight2STexture()
                   : graphics.GetTexture(DungeonGraphicType.Left2S))
@@ -10671,10 +10742,10 @@ public class ViewportLayoutEditor : EditorWindow
 
             frontF1TextureHeight = f1Texture.height;
 
-            // Bridge the calibrated generic Viewport-17 D1 CENTER projection
-            // into the current legacy preview path.  Source/crop stays exactly
-            // the same; only the destination is shifted by the locked generic
-            // projection offset (currently +1 px).
+            // The D3-left FrontF3 strip occupies dest X 0..31. FrontF1 must
+            // start at 32 so the two walls abut. Do not add the D1 CENTER +1
+            // offset here: that shift is for a full-width FrontF1 vs Ref X,
+            // and it leaves a 1px gap beside the 32px strip.
             int viewport17D1CenterOffsetX = 0;
             if (TryGetViewport17FrontProjectionSlot(
                     1,
@@ -10687,10 +10758,7 @@ public class ViewportLayoutEditor : EditorWindow
 
             if (frontF1CropPreview)
             {
-              // GameView dest X is independent of the mirrored-image start X.
-              // Keep sourceStartX=32; only the destination uses the calibrated
-              // D1 CENTER offset.
-              int destinationStartX = 32 + viewport17D1CenterOffsetX;
+              int destinationStartX = 32;
               int sourceStartX = 32;
               int copyWidth =
                   StraightF1WallLogic.CompositeWidth - sourceStartX;
@@ -11281,6 +11349,14 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       // Wall rendering is intentionally disabled. No special wall/door blits.
+    }
+
+    if (viewport17WallAuthorityActive)
+    {
+      BlitViewport17FrontF3LeftLaneStrip(
+          pixels,
+          viewport17Inspection,
+          viewport17FinalWallCommands);
     }
 
     // Stage 6E calibration overlay is intentionally LAST among wall pixels so
@@ -12050,6 +12126,66 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return false;
+  }
+
+  // Production V17 blit for FrontF3 mask L without C: the D3-left front
+  // face fills dest X 0..31 from the locked FrontF3 source window.
+  // LeftS3 is an 8px graphic and must not be used for this 32px corridor.
+  private void BlitViewport17FrontF3LeftLaneStrip(
+      Color32[] pixels,
+      Viewport17Inspection inspection,
+      List<Viewport17RenderCommand> finalCommands)
+  {
+    if (graphics == null || pixels == null || finalCommands == null)
+      return;
+
+    bool leftLaneOnly = false;
+    for (int i = 0; i < finalCommands.Count; i++)
+    {
+      Viewport17RenderCommand command = finalCommands[i];
+      if (command.PieceFamily != "FrontF3" || !command.IsFrontComposite)
+        continue;
+
+      if (command.FrontLeft && !command.FrontCenter)
+      {
+        leftLaneOnly = true;
+        break;
+      }
+    }
+
+    if (!leftLaneOnly)
+      return;
+
+    if (!TryBuildViewport17SingleFrontCalibrationCommand(
+            inspection, 3, -1, out Viewport17RenderCommand laneCommand))
+    {
+      return;
+    }
+
+    if (!laneCommand.HasBufferPlacement
+        || !laneCommand.HasSourceWindow
+        || !laneCommand.HasMirror)
+    {
+      return;
+    }
+
+    Texture2D source = graphics.GetTexture(DungeonGraphicType.FrontWallF3);
+    if (source == null || !source.isReadable)
+      return;
+
+    if (laneCommand.HasPieceWidth && source.width != laneCommand.PieceWidth)
+      return;
+    if (laneCommand.HasPieceMetrics && source.height != laneCommand.PieceHeight)
+      return;
+
+    BlitViewport17SourceStripPreview(
+        pixels,
+        source,
+        laneCommand.SourceMinX,
+        laneCommand.SourceMaxX,
+        laneCommand.BufferX,
+        laneCommand.BufferY,
+        laneCommand.Mirror);
   }
 
   private void BlitViewport17D3LeftCalibrationCandidate(Color32[] pixels)
