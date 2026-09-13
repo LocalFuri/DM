@@ -4145,6 +4145,8 @@ public class ViewportLayoutEditor : EditorWindow
         + BuildViewport17ArrayDiagnostic(inspection)
         + "\n\n"
         + BuildViewport17FaceDiagnostic(inspection)
+        + "\n\n"
+        + BuildViewport17SurfaceDiagnostic(inspection)
         + "\n\nTOTAL EVALUATIONS: 14 map tiles + 3 D0 faces = 17"
         + "\n\nLEGACY " + drawText;
 
@@ -4198,6 +4200,25 @@ public class ViewportLayoutEditor : EditorWindow
     public string RelativeProbe;
     public bool IsSolid;
     public Viewport17Cell ProbeCell;
+  }
+
+  private enum Viewport17SurfaceType
+  {
+    Front,
+    LeftSide,
+    RightSide,
+    Back,
+    LeftInner,
+    RightInner
+  }
+
+  private struct Viewport17Surface
+  {
+    public Viewport17SurfaceType Type;
+    public int Depth;
+    public int LocalX;
+    public Viewport17Cell PrimaryCell;
+    public Viewport17Cell AdjacentCell;
   }
 
   private struct Viewport17Inspection
@@ -4431,6 +4452,183 @@ public class ViewportLayoutEditor : EditorWindow
         + FormatViewport17FaceEvaluation(inspection.BackFace) + "\n"
         + FormatViewport17FaceEvaluation(inspection.LeftInnerFace) + "\n"
         + FormatViewport17FaceEvaluation(inspection.RightInnerFace);
+  }
+
+  private static List<Viewport17Surface> BuildViewport17SurfaceCandidates(
+      Viewport17Inspection inspection)
+  {
+    List<Viewport17Surface> surfaces = new List<Viewport17Surface>();
+    if (inspection.Cells == null)
+      return surfaces;
+
+    // Painter order: far to near. D3's LL/RR samples are context samples;
+    // only the three main lanes L/C/R create front-face candidates.
+    for (int depth = 3; depth >= 1; depth--)
+    {
+      for (int localX = -1; localX <= 1; localX++)
+      {
+        Viewport17Cell cell =
+            FindViewport17Cell(inspection.Cells, localX, depth);
+
+        // Only a real in-map WALL tile owns a normal front face. Outside-map
+        // X(W) remains solid context for side/boundary tests, but it must not
+        // invent a normal FRONT wall where no map tile exists.
+        if (cell.State == Viewport17CellState.Wall)
+        {
+          surfaces.Add(new Viewport17Surface
+          {
+            Type = Viewport17SurfaceType.Front,
+            Depth = depth,
+            LocalX = localX,
+            PrimaryCell = cell,
+            AdjacentCell = default
+          });
+        }
+      }
+
+      // A side face exists at an OPEN/SOLID transition within the inspected
+      // row. At D3 the two extra LL/RR cells supply the outer context.
+      int minLocalX = depth == 3 ? -2 : -1;
+      int maxLocalX = depth == 3 ? 2 : 1;
+      for (int localX = minLocalX; localX < maxLocalX; localX++)
+      {
+        Viewport17Cell leftCell =
+            FindViewport17Cell(inspection.Cells, localX, depth);
+        Viewport17Cell rightCell =
+            FindViewport17Cell(inspection.Cells, localX + 1, depth);
+
+        bool leftSolid = IsViewport17Solid(leftCell);
+        bool rightSolid = IsViewport17Solid(rightCell);
+        if (leftSolid == rightSolid)
+          continue;
+
+        if (leftSolid)
+        {
+          // Solid geometry is on the LEFT side of an open passage.
+          surfaces.Add(new Viewport17Surface
+          {
+            Type = Viewport17SurfaceType.LeftSide,
+            Depth = depth,
+            LocalX = localX,
+            PrimaryCell = leftCell,
+            AdjacentCell = rightCell
+          });
+        }
+        else
+        {
+          // Solid geometry is on the RIGHT side of an open passage.
+          surfaces.Add(new Viewport17Surface
+          {
+            Type = Viewport17SurfaceType.RightSide,
+            Depth = depth,
+            LocalX = localX + 1,
+            PrimaryCell = rightCell,
+            AdjacentCell = leftCell
+          });
+        }
+      }
+    }
+
+    // D0 BACK is one of the original 17 evaluations, but it is context for
+    // closure/lighting rather than a drawable viewport wall. LEFT/RIGHT INNER
+    // remain drawable near-side face candidates.
+    if (inspection.LeftInnerFace.IsSolid)
+    {
+      surfaces.Add(new Viewport17Surface
+      {
+        Type = Viewport17SurfaceType.LeftInner,
+        Depth = 0,
+        LocalX = -1,
+        PrimaryCell = inspection.LeftInnerFace.ProbeCell,
+        AdjacentCell = default
+      });
+    }
+
+    if (inspection.RightInnerFace.IsSolid)
+    {
+      surfaces.Add(new Viewport17Surface
+      {
+        Type = Viewport17SurfaceType.RightInner,
+        Depth = 0,
+        LocalX = 1,
+        PrimaryCell = inspection.RightInnerFace.ProbeCell,
+        AdjacentCell = default
+      });
+    }
+
+    return surfaces;
+  }
+
+  private static string GetViewport17SurfaceLaneLabel(int localX)
+  {
+    if (localX < 0) return "LEFT";
+    if (localX > 0) return "RIGHT";
+    return "CENTER";
+  }
+
+  private static string FormatViewport17Surface(Viewport17Surface surface)
+  {
+    string depthPrefix = "D" + surface.Depth + " ";
+
+    switch (surface.Type)
+    {
+      case Viewport17SurfaceType.Front:
+        return depthPrefix
+            + GetViewport17SurfaceLaneLabel(surface.LocalX)
+            + " FRONT via " + FormatViewport17Cell(surface.PrimaryCell);
+
+      case Viewport17SurfaceType.LeftSide:
+        return depthPrefix
+            + "LEFT SIDE: solid " + FormatViewport17Cell(surface.PrimaryCell)
+            + " beside open " + FormatViewport17Cell(surface.AdjacentCell);
+
+      case Viewport17SurfaceType.RightSide:
+        return depthPrefix
+            + "RIGHT SIDE: solid " + FormatViewport17Cell(surface.PrimaryCell)
+            + " beside open " + FormatViewport17Cell(surface.AdjacentCell);
+
+      case Viewport17SurfaceType.Back:
+        return "D0 BACK via " + FormatViewport17Cell(surface.PrimaryCell);
+
+      case Viewport17SurfaceType.LeftInner:
+        return "D0 LEFT INNER via "
+            + FormatViewport17Cell(surface.PrimaryCell);
+
+      case Viewport17SurfaceType.RightInner:
+        return "D0 RIGHT INNER via "
+            + FormatViewport17Cell(surface.PrimaryCell);
+    }
+
+    return surface.Type.ToString();
+  }
+
+  private static string BuildViewport17SurfaceDiagnostic(
+      Viewport17Inspection inspection)
+  {
+    List<Viewport17Surface> surfaces =
+        BuildViewport17SurfaceCandidates(inspection);
+
+    List<string> lines = new List<string>
+    {
+      "RENDER SURFACES FROM VIEWPORT-17 (CANDIDATES, FAR -> NEAR):"
+    };
+
+    if (surfaces.Count == 0)
+      lines.Add("none");
+    else
+    {
+      for (int i = 0; i < surfaces.Count; i++)
+        lines.Add(FormatViewport17Surface(surfaces[i]));
+    }
+
+    lines.Add("");
+    lines.Add(
+        "CONTEXT: D0 BACK "
+        + inspection.BackFace.RelativeProbe
+        + " = " + (inspection.BackFace.IsSolid ? "SOLID" : "OPEN")
+        + " via " + FormatViewport17Cell(inspection.BackFace.ProbeCell));
+
+    return string.Join("\n", lines);
   }
 
   private static string BuildBalancedDrawDiagnosticText(List<string> names)
