@@ -1920,7 +1920,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("Wall F3Left", null, null),
 
     // Right
-    ("RightF0", 192, 33),
+    ("RightF0", 191, 33),
     ("RightF1", 165, 42),
     ("RightF2", 147, 52),
     ("RightF3", 136, 60),
@@ -7908,7 +7908,7 @@ public class ViewportLayoutEditor : EditorWindow
         }
         else
         {
-          x = 192;
+          x = 191;
           y = DisplayYToUnityY(33, GetPieceHeightForEditorY(piece));
         }
       }
@@ -10758,17 +10758,21 @@ public class ViewportLayoutEditor : EditorWindow
 
             if (frontF1CropPreview)
             {
+              // Dest 0..31 = D3-left FrontF3 strip. Dest 192..223 = RightF0.
+              // D1 center FrontF1 is dest 32..191 (160px). Copying through
+              // dest 223 draws the F1 right-side extension and puts an extra
+              // vertical edge over RightF0.
               int destinationStartX = 32;
               int sourceStartX = 32;
-              int copyWidth =
-                  StraightF1WallLogic.CompositeWidth - sourceStartX;
+              int copyWidth = StraightF1WallLogic.CompositeWidth160;
 
               BlitFrontF1MirroredImageFromX(
                   pixels,
                   f1Texture,
                   sourceStartX,
                   destinationStartX,
-                  resolvedY);
+                  resolvedY,
+                  copyWidth);
 
               LogIfOverlapsLeftF0(
                   piece,
