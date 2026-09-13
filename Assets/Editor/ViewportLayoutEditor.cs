@@ -4135,7 +4135,9 @@ public class ViewportLayoutEditor : EditorWindow
       drawPieceNamesLeftToRight.Add(drawPiecesLeftToRight[i].Key);
 
     string drawText = BuildBalancedDrawDiagnosticText(drawPieceNamesLeftToRight);
-    string visibleSurfacesText = BuildVisibleWallSurfaceDiagnostic(geometry);
+    List<VisibleWallSurface> visibleSurfaces = BuildVisibleWallSurfaces(geometry);
+    string visibleSurfacesText = BuildVisibleWallSurfaceDiagnostic(visibleSurfaces);
+    string expectedPiecesText = BuildExpectedPieceDiagnostic(visibleSurfaces);
 
     string text =
         "GEOMETRY DIAGNOSTIC  "
@@ -4154,6 +4156,8 @@ public class ViewportLayoutEditor : EditorWindow
         + "\n\n"
         + visibleSurfacesText
         + "\n\n"
+        + expectedPiecesText
+        + "\n\n"
         + drawText;
 
     GUIStyle diagnosticStyle = new GUIStyle(EditorStyles.helpBox);
@@ -4165,13 +4169,26 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   // Geometry-engine stage 1: derive visible wall surfaces from the minimap
-  // only. This diagnostic deliberately does NOT read ViewEdit piece Enabled
-  // state, DTerm/pose overrides, graphics, X/Y placement, or the current DRAW
-  // resolver. It is the map -> visible-surfaces foundation for the new renderer.
-  private static string BuildVisibleWallSurfaceDiagnostic(
+  // only. This deliberately does NOT read ViewEdit piece Enabled state,
+  // DTerm/pose overrides, graphics, X/Y placement, or the current DRAW resolver.
+  private enum VisibleWallSurfaceKind
+  {
+    Side,
+    Front
+  }
+
+  private struct VisibleWallSurface
+  {
+    public VisibleWallSurfaceKind Kind;
+    public int Depth;
+    public string Lane;
+    public RelativeViewportCell Cell;
+  }
+
+  private static List<VisibleWallSurface> BuildVisibleWallSurfaces(
       RelativeViewportGeometry geometry)
   {
-    List<string> surfaces = new List<string>();
+    List<VisibleWallSurface> surfaces = new List<VisibleWallSurface>();
 
     // F0 side surfaces are always in the player's immediate field of view.
     // A cell outside the map is treated as a solid boundary side wall here.
@@ -4182,7 +4199,6 @@ public class ViewportLayoutEditor : EditorWindow
     // in that lane owns the visible FRONT surface; anything deeper in the same
     // lane is occluded. Outside-map cells end the lane without inventing a
     // front wall -- map boundaries at the player's side are represented by F0.
-    // Scan depth-first so the text reads F1, then F2, then F3.
     RelativeViewportCell[] leftLane =
     {
       geometry.F1Left, geometry.F2Left, geometry.F3Left
@@ -4200,6 +4216,8 @@ public class ViewportLayoutEditor : EditorWindow
     int centerDepth = FindFirstVisibleFrontWallDepth(centerLane);
     int rightDepth = FindFirstVisibleFrontWallDepth(rightLane);
 
+    // Keep the surface order depth-first so the diagnostic is easy to compare
+    // with the F1/F2/F3 geometry rows above it.
     for (int depth = 1; depth <= 3; depth++)
     {
       if (leftDepth == depth)
@@ -4210,22 +4228,51 @@ public class ViewportLayoutEditor : EditorWindow
         AddFrontSurface(surfaces, depth, "RIGHT", rightLane[depth - 1]);
     }
 
-    if (surfaces.Count == 0)
+    return surfaces;
+  }
+
+  private static string BuildVisibleWallSurfaceDiagnostic(
+      List<VisibleWallSurface> surfaces)
+  {
+    if (surfaces == null || surfaces.Count == 0)
       return "VISIBLE SURFACES: none";
 
-    return "VISIBLE SURFACES:\n" + string.Join("\n", surfaces);
+    List<string> lines = new List<string>(surfaces.Count);
+    for (int i = 0; i < surfaces.Count; i++)
+    {
+      VisibleWallSurface surface = surfaces[i];
+      if (surface.Kind == VisibleWallSurfaceKind.Side)
+      {
+        lines.Add(
+            "F0 " + surface.Lane + " SIDE ("
+            + surface.Cell.X + "," + surface.Cell.Y + ")");
+      }
+      else
+      {
+        lines.Add(
+            "F" + surface.Depth + " " + surface.Lane + " FRONT ("
+            + surface.Cell.X + "," + surface.Cell.Y + ")");
+      }
+    }
+
+    return "VISIBLE SURFACES:\n" + string.Join("\n", lines);
   }
 
   private static void AddF0VisibleSideSurface(
-      List<string> surfaces,
+      List<VisibleWallSurface> surfaces,
       string sideName,
       RelativeViewportCell cell)
   {
     if (cell.IsInside && !IsViewEditGeometryWall(cell))
       return;
 
-    surfaces.Add(
-        "F0 " + sideName + " SIDE (" + cell.X + "," + cell.Y + ")");
+    surfaces.Add(new VisibleWallSurface
+    {
+      Kind = VisibleWallSurfaceKind.Side,
+      Depth = 0,
+      Lane = sideName,
+      Cell = cell
+    });
   }
 
   private static int FindFirstVisibleFrontWallDepth(
@@ -4251,14 +4298,71 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   private static void AddFrontSurface(
-      List<string> surfaces,
+      List<VisibleWallSurface> surfaces,
       int depth,
       string laneName,
       RelativeViewportCell cell)
   {
-    surfaces.Add(
-        "F" + depth + " " + laneName + " FRONT ("
-        + cell.X + "," + cell.Y + ")");
+    surfaces.Add(new VisibleWallSurface
+    {
+      Kind = VisibleWallSurfaceKind.Front,
+      Depth = depth,
+      Lane = laneName,
+      Cell = cell
+    });
+  }
+
+  // Geometry-engine stage 2: translate the stage-1 visible surfaces into the
+  // wall-piece families the renderer should need. This is still diagnostic
+  // only: it does not enable/disable pieces or alter DRAW.
+  //
+  // Current projection rule:
+  //   F0 LEFT/RIGHT SIDE -> LeftF0 / RightF0
+  //   any visible FRONT at depth 1/2/3 -> FrontF1 / FrontF2 / FrontF3
+  // Multiple lanes at the same depth collapse to one expected piece family.
+  private static string BuildExpectedPieceDiagnostic(
+      List<VisibleWallSurface> surfaces)
+  {
+    bool frontF1 = false;
+    bool frontF2 = false;
+    bool frontF3 = false;
+    bool leftF0 = false;
+    bool rightF0 = false;
+
+    if (surfaces != null)
+    {
+      for (int i = 0; i < surfaces.Count; i++)
+      {
+        VisibleWallSurface surface = surfaces[i];
+        if (surface.Kind == VisibleWallSurfaceKind.Side)
+        {
+          if (surface.Lane == "LEFT")
+            leftF0 = true;
+          else if (surface.Lane == "RIGHT")
+            rightF0 = true;
+          continue;
+        }
+
+        if (surface.Depth == 1)
+          frontF1 = true;
+        else if (surface.Depth == 2)
+          frontF2 = true;
+        else if (surface.Depth == 3)
+          frontF3 = true;
+      }
+    }
+
+    List<string> names = new List<string>();
+    if (frontF1) names.Add("FrontF1");
+    if (frontF2) names.Add("FrontF2");
+    if (frontF3) names.Add("FrontF3");
+    if (leftF0) names.Add("LeftF0");
+    if (rightF0) names.Add("RightF0");
+
+    if (names.Count == 0)
+      return "EXPECTED PIECES: none";
+
+    return "EXPECTED PIECES: " + string.Join(", ", names);
   }
 
   private static string BuildBalancedDrawDiagnosticText(List<string> names)
