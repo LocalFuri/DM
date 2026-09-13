@@ -4139,17 +4139,17 @@ public class ViewportLayoutEditor : EditorWindow
     string text =
         "GEOMETRY DIAGNOSTIC  "
         + previewX + "," + previewY + " " + previewFacing + "\n"
-        + "F0: L=" + FormatF0ViewportCellShort(geometry.F0Left)
-        + "  R=" + FormatF0ViewportCellShort(geometry.F0Right)
-        + "\nF1: L=" + FormatRelativeViewportCellShort(geometry.F1Left)
-        + "  C=" + FormatRelativeViewportCellShort(geometry.F1Center)
-        + "  R=" + FormatRelativeViewportCellShort(geometry.F1Right)
-        + "\nF2: L=" + FormatRelativeViewportCellShort(geometry.F2Left)
-        + "  C=" + FormatRelativeViewportCellShort(geometry.F2Center)
-        + "  R=" + FormatRelativeViewportCellShort(geometry.F2Right)
-        + "\nF3: L=" + FormatRelativeViewportCellShort(geometry.F3Left)
-        + "  C=" + FormatRelativeViewportCellShort(geometry.F3Center)
-        + "  R=" + FormatRelativeViewportCellShort(geometry.F3Right)
+        + "F0: L=" + FormatF0ViewportCellDiagnostic(geometry.F0Left)
+        + "  R=" + FormatF0ViewportCellDiagnostic(geometry.F0Right)
+        + "\nF1: L=" + FormatRelativeViewportCellDiagnostic(geometry.F1Left)
+        + "  C=" + FormatRelativeViewportCellDiagnostic(geometry.F1Center)
+        + "  R=" + FormatRelativeViewportCellDiagnostic(geometry.F1Right)
+        + "\nF2: L=" + FormatRelativeViewportCellDiagnostic(geometry.F2Left)
+        + "  C=" + FormatRelativeViewportCellDiagnostic(geometry.F2Center)
+        + "  R=" + FormatRelativeViewportCellDiagnostic(geometry.F2Right)
+        + "\nF3: L=" + FormatRelativeViewportCellDiagnostic(geometry.F3Left)
+        + "  C=" + FormatRelativeViewportCellDiagnostic(geometry.F3Center)
+        + "  R=" + FormatRelativeViewportCellDiagnostic(geometry.F3Right)
         + "\n\n"
         + drawText;
 
@@ -4222,6 +4222,18 @@ public class ViewportLayoutEditor : EditorWindow
       return "X(W)";
 
     return FormatRelativeViewportCellShort(cell);
+  }
+
+  private static string FormatF0ViewportCellDiagnostic(RelativeViewportCell cell)
+  {
+    return FormatF0ViewportCellShort(cell)
+        + " (" + cell.X + "," + cell.Y + ")";
+  }
+
+  private static string FormatRelativeViewportCellDiagnostic(RelativeViewportCell cell)
+  {
+    return FormatRelativeViewportCellShort(cell)
+        + " (" + cell.X + "," + cell.Y + ")";
   }
 
   private static string FormatRelativeViewportCellShort(RelativeViewportCell cell)
