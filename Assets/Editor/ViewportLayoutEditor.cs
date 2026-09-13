@@ -99,6 +99,7 @@ public class ViewportLayoutEditor : EditorWindow
   private bool showOnlyWallsNeededForCurrentPose;
   private bool previewDisableAllWalls;
   private bool showGeometryDiagnostics;
+  private bool viewport17D3LeftCalibrationPreview;
   private string pieceSearchText = string.Empty;
   private bool openSearchPiecesPopup;
   private bool focusSearchPieces;
@@ -772,6 +773,23 @@ public class ViewportLayoutEditor : EditorWindow
       if (diagnosticsPressed != showGeometryDiagnostics)
       {
         showGeometryDiagnostics = diagnosticsPressed;
+        if (!showGeometryDiagnostics && viewport17D3LeftCalibrationPreview)
+        {
+          viewport17D3LeftCalibrationPreview = false;
+          RefreshEditModePreview();
+        }
+        Repaint();
+      }
+
+      bool d3LeftTestPressed = GUILayout.Toggle(
+          viewport17D3LeftCalibrationPreview,
+          "D3L Test",
+          EditorStyles.miniButton,
+          GUILayout.Width(72f));
+      if (d3LeftTestPressed != viewport17D3LeftCalibrationPreview)
+      {
+        viewport17D3LeftCalibrationPreview = d3LeftTestPressed;
+        RefreshEditModePreview();
         Repaint();
       }
 
@@ -4149,6 +4167,9 @@ public class ViewportLayoutEditor : EditorWindow
         + BuildViewport17SurfaceDiagnostic(inspection)
         + "\n\n"
         + BuildViewport17RenderCommandDiagnostic(inspection)
+        + "\n\nD3 LEFT CALIBRATION PREVIEW: "
+        + (viewport17D3LeftCalibrationPreview ? "ON" : "OFF")
+        + " (D3L Test overlays Candidate A last in Edit Mode preview)"
         + "\n\nTOTAL EVALUATIONS: 14 map tiles + 3 D0 faces = 17"
         + "\n\nLEGACY " + drawText;
 
@@ -5412,7 +5433,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     lines.Add("");
     lines.Add(
-        "STAGE 6C: D3 LEFT now has diagnostic Candidate A source projection. "
+        "STAGE 6D: D3 LEFT Candidate A can now be visually overlaid with the D3L Test toggle. "
         + "The full FrontF3 graphic is shifted left so its rightmost 32 source pixels map to destination X=[0..31]; "
         + "for the current 141px FrontF3 this resolves source X=[109..140], graphic origin X=-109, displayY=58/bufferY=93, mirror=OFF. "
         + "This is intentionally a calibration candidate until the brick pattern is visually verified. CENTER slots remain calibrated; all other projected lanes remain pending.");
@@ -10546,6 +10567,11 @@ public class ViewportLayoutEditor : EditorWindow
       // Wall rendering is intentionally disabled. No special wall/door blits.
     }
 
+    // Stage 6D calibration overlay is intentionally LAST among wall pixels so
+    // Candidate A can be visually inspected without altering legacy Enabled
+    // states, render order, or stored ViewEdit data.
+    BlitViewport17D3LeftCalibrationCandidate(pixels);
+
     DungeonBitmapFont bitmapFont = FindEditModeBitmapFont();
     if (bitmapFont != null)
     {
@@ -11218,6 +11244,71 @@ public class ViewportLayoutEditor : EditorWindow
         colour.a = 255;
         dest[destRow + targetX] = colour;
       }
+    }
+  }
+
+  // Stage 6D: isolated visual calibration hook for the generic D3 LEFT
+  // projection candidate. This does not replace the legacy renderer. When
+  // D3L Test is ON, the resolved Viewport-17 D3 LEFT command is blitted LAST
+  // so its source-window/brick pattern can be compared directly in Game View.
+  // The method is map-independent: it only draws when the current 17-sample
+  // geometry actually produces a D3 LEFT FRONT command.
+  private void BlitViewport17D3LeftCalibrationCandidate(Color32[] pixels)
+  {
+    if (!showGeometryDiagnostics
+        || !viewport17D3LeftCalibrationPreview
+        || graphics == null
+        || pixels == null)
+    {
+      return;
+    }
+
+    Viewport17Inspection inspection = BuildViewport17Inspection();
+    List<Viewport17RenderCommand> commands =
+        BuildViewport17RenderCommands(inspection);
+
+    for (int i = 0; i < commands.Count; i++)
+    {
+      Viewport17RenderCommand command = commands[i];
+      ResolveViewport17RenderCommandStage6(ref command);
+
+      bool isD3LeftFront =
+          command.SurfaceType == Viewport17SurfaceType.Front
+          && command.Depth == 3
+          && command.LocalX == -1
+          && command.PieceFamily == "FrontF3";
+      if (!isD3LeftFront)
+        continue;
+
+      if (!command.HasBufferPlacement
+          || !command.HasSourceWindow
+          || !command.HasMirror)
+      {
+        return;
+      }
+
+      Texture2D source = graphics.GetTexture(DungeonGraphicType.FrontWallF3);
+      if (source == null || !source.isReadable)
+        return;
+
+      // Candidate A currently expects the native 141x49 FrontF3. Refuse to
+      // silently test a different source geometry; diagnostics remain truth.
+      if (command.HasPieceWidth && source.width != command.PieceWidth)
+        return;
+      if (command.HasPieceMetrics && source.height != command.PieceHeight)
+        return;
+
+      // BufferX=-109 for a 141px source naturally clips source X 0..108 off
+      // the viewport and maps source X 109..140 to destination X 0..31.
+      // This intentionally uses the existing normal blitter so the test is
+      // representative of the future painter path.
+      BlitPieceIntoPreview(
+          pixels,
+          source,
+          command.BufferX,
+          command.BufferY,
+          command.Mirror);
+      return;
     }
   }
 
