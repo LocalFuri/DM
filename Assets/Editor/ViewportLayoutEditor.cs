@@ -4139,8 +4139,8 @@ public class ViewportLayoutEditor : EditorWindow
     string text =
         "GEOMETRY DIAGNOSTIC  "
         + previewX + "," + previewY + " " + previewFacing + "\n"
-        + "F0: L=" + FormatRelativeViewportCellShort(geometry.F0Left)
-        + "  R=" + FormatRelativeViewportCellShort(geometry.F0Right)
+        + "F0: L=" + FormatF0ViewportCellShort(geometry.F0Left)
+        + "  R=" + FormatF0ViewportCellShort(geometry.F0Right)
         + "\nF1: L=" + FormatRelativeViewportCellShort(geometry.F1Left)
         + "  C=" + FormatRelativeViewportCellShort(geometry.F1Center)
         + "  R=" + FormatRelativeViewportCellShort(geometry.F1Right)
@@ -4213,6 +4213,17 @@ public class ViewportLayoutEditor : EditorWindow
         : "OUT (" + cell.X + "," + cell.Y + ")";
   }
 
+  private static string FormatF0ViewportCellShort(RelativeViewportCell cell)
+  {
+    // F0 left/right are always visible to the player. An out-of-map cell
+    // therefore behaves as a solid boundary wall for rendering, while X is
+    // preserved in the diagnostic so we can still distinguish map bounds.
+    if (!cell.IsInside)
+      return "X(W)";
+
+    return FormatRelativeViewportCellShort(cell);
+  }
+
   private static string FormatRelativeViewportCellShort(RelativeViewportCell cell)
   {
     if (!cell.IsInside)
@@ -4257,8 +4268,8 @@ public class ViewportLayoutEditor : EditorWindow
             previewY,
             previewFacing);
 
-    return "F0 L" + FormatRelativeViewportCellShort(g.F0Left)
-        + " R" + FormatRelativeViewportCellShort(g.F0Right)
+    return "F0 L" + FormatF0ViewportCellShort(g.F0Left)
+        + " R" + FormatF0ViewportCellShort(g.F0Right)
         + "\nF1 L" + FormatRelativeViewportCellShort(g.F1Left)
         + " C" + FormatRelativeViewportCellShort(g.F1Center)
         + " R" + FormatRelativeViewportCellShort(g.F1Right)
