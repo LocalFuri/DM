@@ -1793,17 +1793,6 @@ public class ViewportLayoutEditor : EditorWindow
   {
     ViewportPiece pieceA = layout.Pieces[indexA];
     ViewportPiece pieceB = layout.Pieces[indexB];
-    if (previewX == 5
-        && previewY == 2
-        && previewFacing == DungeonFacing.South)
-    {
-      int orderA = Get52SouthLeftToRightOrder(pieceA);
-      int orderB = Get52SouthLeftToRightOrder(pieceB);
-      if (orderA != orderB)
-        return orderA.CompareTo(orderB);
-      return indexA.CompareTo(indexB);
-    }
-
     int groupA = GetViewEditDisplayFamilyGroup(pieceA);
     int groupB = GetViewEditDisplayFamilyGroup(pieceB);
     if (groupA != groupB)
@@ -2388,13 +2377,6 @@ public class ViewportLayoutEditor : EditorWindow
     if (isBlackDoorF3Required)
       enabledBefore = true;
 
-    // (5,2) South only forces pieces outside the allowed set OFF.
-    // Show All Walls keeps the ViewEdit Enabled checkbox as the preview authority.
-    if (!IsShowAllWallsPreview()
-        && TryGet52SouthForcedWallEnabled(piece, out bool forced52UiEnabled)
-        && !forced52UiEnabled)
-      enabledBefore = false;
-
     bool enabledAfter = DrawMouseOnlyToggle(
         EnabledLabel,
         enabledBefore,
@@ -2408,18 +2390,11 @@ public class ViewportLayoutEditor : EditorWindow
     if (usePreviewEnabledOverride
         && enabledAfter != enabledBefore)
     {
-      bool is52SouthForcedOff =
-          !IsShowAllWallsPreview()
-          && TryGet52SouthForcedWallEnabled(piece, out bool forced52UiChangeEnabled)
-          && !forced52UiChangeEnabled;
-      if (!is52SouthForcedOff)
-      {
-        // ViewEdit-only stationary-pose test, identical in lifetime to X/Y/Mirror.
-        // Geometry remains authoritative after X/Y/Facing changes.
-        previewEnabledOverrideByPiece[piece] = enabledAfter;
-        previewEnabledChangedThisFrame = true;
-        RefreshTemporaryNormalWallPreview();
-      }
+      // ViewEdit-only stationary-pose test, identical in lifetime to X/Y/Mirror.
+      // Geometry remains authoritative after X/Y/Facing changes.
+      previewEnabledOverrideByPiece[piece] = enabledAfter;
+      previewEnabledChangedThisFrame = true;
+      RefreshTemporaryNormalWallPreview();
     }
     else if (!usePreviewEnabledOverride)
     {
@@ -7051,68 +7026,6 @@ public class ViewportLayoutEditor : EditorWindow
         || piece.Name == "Front Wall F3";
   }
 
-  private static bool Is52SouthLeftD3Piece(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    return piece.Name == "LeftD3"
-        || piece.Name == "Wall D3L2"
-        || piece.Name == "WallD3L2"
-        || piece.Graphic == DungeonGraphicType.WallD3L2;
-  }
-
-  /// <summary>
-  /// (5,2) South left-to-right blit / ViewEdit list order:
-  /// LeftS3, FrontF3, FrontF1, RightD3. LeftD3 shares the leftmost
-  /// slot when manually enabled in Show All Walls.
-  /// </summary>
-  private static int Get52SouthLeftToRightOrder(ViewportPiece piece)
-  {
-    if (piece != null && piece.Name == "LeftS3")
-      return 0;
-    if (Is52SouthLeftD3Piece(piece))
-      return 0;
-    if (IsFrontWallF3Card(piece))
-      return 1;
-    if (IsFrontWallF1Card(piece))
-      return 2;
-    if (piece != null
-        && (piece.Name == "RightD3"
-            || piece.Name == "Wall D3R2"
-            || piece.Graphic == DungeonGraphicType.WallD3R2))
-    {
-      return 3;
-    }
-
-    return 4;
-  }
-
-  private bool TryGet52SouthForcedWallEnabled(
-      ViewportPiece piece,
-      out bool enabled)
-  {
-    enabled = false;
-
-    if (piece == null
-        || previewX != 5
-        || previewY != 2
-        || previewFacing != DungeonFacing.South
-        || !IsNormalWallPiece(piece)
-        || piece.Name == "LeftS3")
-    {
-      return false;
-    }
-
-    // LeftD3 remains available only through Show All Walls for manual testing.
-    enabled = IsFrontWallF3Card(piece)
-        || IsFrontWallF1Card(piece)
-        || piece.Name == "RightD3"
-        || piece.Name == "Wall D3R2"
-        || piece.Graphic == DungeonGraphicType.WallD3R2;
-    return true;
-  }
-
   private static bool IsPoseOffsetCard(ViewportPiece piece)
   {
     if (piece == null || piece.Name == null)
@@ -7189,59 +7102,6 @@ public class ViewportLayoutEditor : EditorWindow
     RepaintGameViews();
     Repaint();
   }
-
-  /// <summary>
-  /// TEMP diagnostic: force live wall Enabled to Front Wall F1 only at
-  /// (1,2) West, capture into that pose entry, persist, refresh preview.
-  /// </summary>
-  private void SetWestF1BOnlyDiagnostic()
-  {
-    if (Application.isPlaying || layout == null || layout.Pieces == null)
-      return;
-
-    if (!IsPreviewPose12West())
-      return;
-
-    Undo.RecordObject(layout, "Set West F1 Only");
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null || string.IsNullOrEmpty(piece.Name))
-        continue;
-
-      switch (piece.Name)
-      {
-        case "Front Wall F1":
-          piece.Enabled = true;
-          break;
-        case "Front Wall F2":
-        case "Front Wall F3":
-        case "Wall F0Left":
-        case "Wall F0Right":
-        case "Wall F1Left":
-        case "Wall F1Right":
-        case "Wall F2Left":
-        case "Wall F2Right":
-        case "Wall F3Left":
-        case "Wall F3Right":
-          piece.Enabled = false;
-          break;
-      }
-    }
-
-    // Capture + persist current pose (1,2 West) via existing workflow.
-    PersistChanges();
-  }
-
-  private bool IsPreviewPose12West()
-  {
-    return previewX == 1
-        && previewY == 2
-        && previewFacing == DungeonFacing.West;
-  }
-
-
 
   private void EnsureChampionStatusSlotsEnabled()
   {
@@ -7359,201 +7219,9 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
 
-  // TEMP MAP-CHECK SIMULATION:
-  // Treat map cell (0,5) as a wall in ViewEdit geometry only.
-  // Remove/disable this after the map check; HallOfChampions.json is untouched.
-  private const bool TemporaryDisableMapCell0_5 = false;
-
   private static bool IsViewEditGeometryWall(RelativeViewportCell cell)
   {
-    if (TemporaryDisableMapCell0_5 && cell.X == 0 && cell.Y == 5)
-      return false;
-
     return cell.IsWall;
-  }
-
-  private static bool IsCanonicalFrontF2F1SidesEdgeGeometry(
-      RelativeViewportGeometry g)
-  {
-    // Canonical diagnostic signature first verified at 1,5 West.
-    // Match the diagnostic cells exactly, not absolute map coordinates:
-    // F0: L=O R=O
-    // F1: L=W C=O R=W
-    // F2: L=X C=X R=X
-    // F3: L=X C=X R=X
-    return FormatRelativeViewportCellShort(g.F0Left) == "O"
-        && FormatRelativeViewportCellShort(g.F0Right) == "O"
-        && FormatRelativeViewportCellShort(g.F1Left) == "W"
-        && FormatRelativeViewportCellShort(g.F1Center) == "O"
-        && FormatRelativeViewportCellShort(g.F1Right) == "W"
-        && FormatRelativeViewportCellShort(g.F2Left) == "X"
-        && FormatRelativeViewportCellShort(g.F2Center) == "X"
-        && FormatRelativeViewportCellShort(g.F2Right) == "X"
-        && FormatRelativeViewportCellShort(g.F3Left) == "X"
-        && FormatRelativeViewportCellShort(g.F3Center) == "X"
-        && FormatRelativeViewportCellShort(g.F3Right) == "X";
-  }
-
-  private static bool IsCanonicalFrontF2F0SidesGeometry(
-      RelativeViewportGeometry g)
-  {
-    // Canonical corridor-ending diagnostic first verified at 0,5 East.
-    // Match the diagnostic cells exactly, never absolute map coordinates:
-    // F0: L=W R=W
-    // F1: L=O C=O R=O
-    // F2: L=W C=W R=W
-    // F3: L=W C=W R=W
-    return FormatRelativeViewportCellShort(g.F0Left) == "W"
-        && FormatRelativeViewportCellShort(g.F0Right) == "W"
-        && FormatRelativeViewportCellShort(g.F1Left) == "O"
-        && FormatRelativeViewportCellShort(g.F1Center) == "O"
-        && FormatRelativeViewportCellShort(g.F1Right) == "O"
-        && FormatRelativeViewportCellShort(g.F2Left) == "W"
-        && FormatRelativeViewportCellShort(g.F2Center) == "W"
-        && FormatRelativeViewportCellShort(g.F2Right) == "W"
-        && FormatRelativeViewportCellShort(g.F3Left) == "W"
-        && FormatRelativeViewportCellShort(g.F3Center) == "W"
-        && FormatRelativeViewportCellShort(g.F3Right) == "W";
-  }
-
-  private static bool IsCanonicalFrontF1F0EdgeGeometry(
-      RelativeViewportGeometry g)
-  {
-    // Canonical solid edge-of-map diagnostic first verified at 0,5 West.
-    // Every pose with this exact geometry uses the same wall mirrors:
-    // FrontF1 OFF, LeftF0 OFF, RightF0 OFF.
-    // F0: L=W R=W
-    // F1: L=X C=X R=X
-    // F2: L=X C=X R=X
-    // F3: L=X C=X R=X
-    return FormatRelativeViewportCellShort(g.F0Left) == "W"
-        && FormatRelativeViewportCellShort(g.F0Right) == "W"
-        && FormatRelativeViewportCellShort(g.F1Left) == "X"
-        && FormatRelativeViewportCellShort(g.F1Center) == "X"
-        && FormatRelativeViewportCellShort(g.F1Right) == "X"
-        && FormatRelativeViewportCellShort(g.F2Left) == "X"
-        && FormatRelativeViewportCellShort(g.F2Center) == "X"
-        && FormatRelativeViewportCellShort(g.F2Right) == "X"
-        && FormatRelativeViewportCellShort(g.F3Left) == "X"
-        && FormatRelativeViewportCellShort(g.F3Center) == "X"
-        && FormatRelativeViewportCellShort(g.F3Right) == "X";
-  }
-
-  private static bool IsVerifiedFrontF1X0Geometry(
-      RelativeViewportGeometry g)
-  {
-    // Verified original-DM references: 4,7 East and 4,17 East.
-    // Keyed only by normalized diagnostic geometry, never absolute map pose.
-    //
-    // Shared decisive geometry:
-    // F0:       R=W
-    // F1: L=W C=W R=W
-    // F2:     C=W R=W
-    // F3:     C=W R=W
-    //
-    // F0 Left, F2 Left and F3 Left are deliberately ignored because the
-    // verified views differ there but both require FrontF1 X=0.
-    return IsViewEditGeometryWall(g.F0Right)
-        && IsViewEditGeometryWall(g.F1Left)
-        && IsViewEditGeometryWall(g.F1Center)
-        && IsViewEditGeometryWall(g.F1Right)
-        && IsViewEditGeometryWall(g.F2Center)
-        && IsViewEditGeometryWall(g.F2Right)
-        && IsViewEditGeometryWall(g.F3Center)
-        && IsViewEditGeometryWall(g.F3Right);
-  }
-
-  private static bool IsVerifiedRightF3MirrorOnGeometry(
-      RelativeViewportGeometry g)
-  {
-    // Verified original-DM reference first observed at 1,7 East.
-    // Keyed only by normalized diagnostic geometry, not map coordinates/facing.
-    //
-    // F0: L=O R=W
-    // F1: L=W C=O R=W
-    // F2: L=W C=O R=W
-    // F3: L=O C=O R=W
-    return !IsViewEditGeometryWall(g.F0Left)
-        && IsViewEditGeometryWall(g.F0Right)
-        && IsViewEditGeometryWall(g.F1Left)
-        && !IsViewEditGeometryWall(g.F1Center)
-        && IsViewEditGeometryWall(g.F1Right)
-        && IsViewEditGeometryWall(g.F2Left)
-        && !IsViewEditGeometryWall(g.F2Center)
-        && IsViewEditGeometryWall(g.F2Right)
-        && !IsViewEditGeometryWall(g.F3Left)
-        && !IsViewEditGeometryWall(g.F3Center)
-        && IsViewEditGeometryWall(g.F3Right);
-  }
-
-  private static bool IsVerifiedRightF2MirrorOnGeometry(
-      RelativeViewportGeometry g)
-  {
-    // Verified original-DM reference first observed at 1,7 East.
-    // Keyed only by normalized diagnostic geometry, not map coordinates/facing.
-    //
-    // F0: L=O R=W
-    // F1: L=W C=O R=W
-    // F2: L=W C=O R=W
-    // F3: L=O C=O R=W
-    return !IsViewEditGeometryWall(g.F0Left)
-        && IsViewEditGeometryWall(g.F0Right)
-        && IsViewEditGeometryWall(g.F1Left)
-        && !IsViewEditGeometryWall(g.F1Center)
-        && IsViewEditGeometryWall(g.F1Right)
-        && IsViewEditGeometryWall(g.F2Left)
-        && !IsViewEditGeometryWall(g.F2Center)
-        && IsViewEditGeometryWall(g.F2Right)
-        && !IsViewEditGeometryWall(g.F3Left)
-        && !IsViewEditGeometryWall(g.F3Center)
-        && IsViewEditGeometryWall(g.F3Right);
-  }
-
-  private static bool IsVerifiedRightF1MirrorOnGeometry(
-      RelativeViewportGeometry g)
-  {
-    // Verified original-DM reference first observed at 1,7 East.
-    // Keyed only by normalized diagnostic geometry, not map coordinates/facing.
-    //
-    // F0: L=O R=W
-    // F1: L=W C=O R=W
-    // F2: L=W C=O R=W
-    // F3: L=O C=O R=W
-    return !IsViewEditGeometryWall(g.F0Left)
-        && IsViewEditGeometryWall(g.F0Right)
-        && IsViewEditGeometryWall(g.F1Left)
-        && !IsViewEditGeometryWall(g.F1Center)
-        && IsViewEditGeometryWall(g.F1Right)
-        && IsViewEditGeometryWall(g.F2Left)
-        && !IsViewEditGeometryWall(g.F2Center)
-        && IsViewEditGeometryWall(g.F2Right)
-        && !IsViewEditGeometryWall(g.F3Left)
-        && !IsViewEditGeometryWall(g.F3Center)
-        && IsViewEditGeometryWall(g.F3Right);
-  }
-
-  private static bool IsVerifiedRightF0MirrorOnGeometry(
-      RelativeViewportGeometry g)
-  {
-    // Verified original-DM reference first observed at 1,7 East.
-    // IMPORTANT: this is keyed only by the normalized diagnostic geometry,
-    // not by absolute map X/Y or facing.
-    //
-    // F0: L=O R=W
-    // F1: L=W C=O R=W
-    // F2: L=W C=O R=W
-    // F3: L=O C=O R=W
-    return !IsViewEditGeometryWall(g.F0Left)
-        && IsViewEditGeometryWall(g.F0Right)
-        && IsViewEditGeometryWall(g.F1Left)
-        && !IsViewEditGeometryWall(g.F1Center)
-        && IsViewEditGeometryWall(g.F1Right)
-        && IsViewEditGeometryWall(g.F2Left)
-        && !IsViewEditGeometryWall(g.F2Center)
-        && IsViewEditGeometryWall(g.F2Right)
-        && !IsViewEditGeometryWall(g.F3Left)
-        && !IsViewEditGeometryWall(g.F3Center)
-        && IsViewEditGeometryWall(g.F3Right);
   }
 
   private static bool IsLeftD3ObliqueOpening(RelativeViewportGeometry g)
@@ -7582,15 +7250,9 @@ public class ViewportLayoutEditor : EditorWindow
     int sampleX = previewX + forwardX * 2 - rightX * 2;
     int sampleY = previewY + forwardY * 2 - rightY * 2;
 
-    // Temporary comparison switch: "disabled" means black wall / non-existing.
-    if (TemporaryDisableMapCell0_5 && sampleX == 0 && sampleY == 5)
-      return false;
-
     if (!previewMiniMap.IsInside(sampleX, sampleY))
       return false;
 
-    // White/active map tile -> the tiny 8 px leading strip is visible.
-    // Black wall/non-existing tile -> the strip is hidden.
     return previewMiniMap.GetTile(sampleX, sampleY).Type != DungeonTileType.Wall;
   }
 
@@ -7683,23 +7345,6 @@ public class ViewportLayoutEditor : EditorWindow
         && hasCurrentGeometry
         && IsLeftD3ObliqueOpening(currentGeometry);
 
-    bool verifiedFrontF1X0Reference =
-        IsFrontWallF1Card(piece)
-        && hasCurrentGeometry
-        && IsVerifiedFrontF1X0Geometry(currentGeometry);
-
-    // Pose-specific canonical reference verified in ViewEdit:
-    // 1,5 North LeftF1 = X 0 / display Y 42 / Mirror OFF.
-    if (IsWallF1LeftPiece(piece)
-        && previewX == 1
-        && previewY == 5
-        && previewFacing == DungeonFacing.North)
-    {
-      x = 0;
-      y = 42;
-      return true;
-    }
-
     if (TryGetSideWallCanonicalName(piece, out _)
         && TryGetActiveCanonicalReferenceXY(piece, mirror, out x, out y))
     {
@@ -7709,9 +7354,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (!TryGetActiveCanonicalReferenceXY(piece, mirror, out x, out y))
       return false;
 
-    if (verifiedFrontF1X0Reference)
-      x = 0;
-    else if (leftD3FrontF1Reference)
+    if (leftD3FrontF1Reference)
       x = 32;
 
     return true;
@@ -7736,12 +7379,6 @@ public class ViewportLayoutEditor : EditorWindow
             previewFacing);
 
     string frontF1GeometryKey = BuildFrontF1GeometryKey(g);
-    bool canonicalFrontF2F1SidesEdgeGeometry =
-        IsCanonicalFrontF2F1SidesEdgeGeometry(g);
-    bool canonicalFrontF2F0SidesGeometry =
-        IsCanonicalFrontF2F0SidesGeometry(g);
-    bool canonicalFrontF1F0EdgeGeometry =
-        IsCanonicalFrontF1F0EdgeGeometry(g);
 
     bool frontF1 =
         IsViewEditGeometryWall(g.F1Center);
@@ -7773,10 +7410,7 @@ public class ViewportLayoutEditor : EditorWindow
     bool leftF0 = IsViewEditGeometryWall(g.F0Left);
     bool rightF0 = IsViewEditGeometryWall(g.F0Right);
     bool f0Mirror = GetF0MirrorFromPose();
-    bool frontF1Mirror =
-        canonicalFrontF1F0EdgeGeometry
-            ? false
-            : leftS2 || GetFrontF1MirrorFromPose();
+    bool frontF1Mirror = leftS2 || GetFrontF1MirrorFromPose();
 
     bool leftF1 =
         !IsViewEditGeometryWall(g.F1Center) &&
@@ -7870,8 +7504,7 @@ public class ViewportLayoutEditor : EditorWindow
                   verifiedF1.Width);
         }
 
-        // D3 oblique views keep their geometry-specific FrontF1 anchor
-        // authoritative even if an older verified geometry override disagrees.
+        // D3 oblique views keep their occupancy-specific FrontF1 anchor.
         // LeftD3 needs the first 32 screen pixels free, so FrontF1 starts at X=32.
         // RightD3-only views anchor FrontF1 at X=0. If both are active, LeftD3
         // wins because X=0 would cover the left oblique strip.
@@ -7879,23 +7512,14 @@ public class ViewportLayoutEditor : EditorWindow
           x = 32;
         else if (rightD3ObliqueOpening)
           x = 0;
-
-        // Solid-front/right-wall reference: moving FrontF1 to X=0 removes
-        // the verified left-edge gap. Geometry signature only.
-        if (IsVerifiedFrontF1X0Geometry(g))
-          x = 0;
       }
       else if (IsFrontWallF2Card(piece))
       {
-        // Canonical edge-of-map geometry: the F2 row is outside the map,
-        // so the boundary renders as FrontF2 for every pose with the same
-        // diagnostic signature.
-        enabled = canonicalFrontF2F1SidesEdgeGeometry
-            || canonicalFrontF2F0SidesGeometry
-            || piece.Enabled;
+        enabled = !IsViewEditGeometryWall(g.F1Center)
+            && IsViewEditGeometryWall(g.F2Center);
         x = 0;
-        y = DisplayYToUnityY(125, GetPieceHeightForEditorY(piece));
-        mirror = canonicalFrontF2F1SidesEdgeGeometry ? true : frontMirror;
+        y = DisplayYToUnityY(42, 74);
+        mirror = frontMirror;
       }
       else if (IsFrontWallF3Card(piece))
       {
@@ -7907,9 +7531,7 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsWallF0LeftPiece(piece))
       {
         enabled = leftF0;
-        mirror = canonicalFrontF1F0EdgeGeometry
-            ? false
-            : GetSideWallMirrorFromPose();
+        mirror = GetSideWallMirrorFromPose();
         if (TryGetActiveCanonicalReferenceXY(
                 piece, mirror, out int leftF0RefX, out int leftF0RefY))
         {
@@ -7925,11 +7547,7 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsWallF0RightPiece(piece))
       {
         enabled = rightF0;
-        mirror = canonicalFrontF1F0EdgeGeometry
-            ? false
-            : IsVerifiedRightF0MirrorOnGeometry(g)
-                ? true
-                : GetSideWallMirrorFromPose();
+        mirror = GetSideWallMirrorFromPose();
         if (TryGetActiveCanonicalReferenceXY(
                 piece, mirror, out int rightF0RefX, out int rightF0RefY))
         {
@@ -7957,34 +7575,11 @@ public class ViewportLayoutEditor : EditorWindow
           x = 0;
           y = DisplayYToUnityY(42, GetPieceHeightForEditorY(piece));
         }
-
-        // Verified canonical Black Door F3 view at 1,5 North.
-        // LeftF1 is visible at X=0, display Y=42, Mirror OFF.
-        if (previewX == 1
-            && previewY == 5
-            && previewFacing == DungeonFacing.North)
-        {
-          enabled = true;
-          x = 0;
-          y = DisplayYToUnityY(42, GetPieceHeightForEditorY(piece));
-          mirror = false;
-        }
-
-        // Canonical edge-of-map geometry first verified at 1,5 West.
-        if (canonicalFrontF2F1SidesEdgeGeometry)
-        {
-          enabled = true;
-          x = 0;
-          y = DisplayYToUnityY(42, GetPieceHeightForEditorY(piece));
-          mirror = true;
-        }
       }
       else if (IsWallF1RightPiece(piece))
       {
         enabled = rightF1;
-        mirror = IsVerifiedRightF1MirrorOnGeometry(g)
-            ? true
-            : GetSideWallMirrorFromPose();
+        mirror = GetSideWallMirrorFromPose();
 
         if (TryGetActiveCanonicalReferenceXY(piece, mirror, out int rightF1RefX, out int rightF1RefY))
         {
@@ -7995,25 +7590,6 @@ public class ViewportLayoutEditor : EditorWindow
         {
           x = 165;
           y = DisplayYToUnityY(41, GetPieceHeightForEditorY(piece));
-        }
-
-        // Verified Black Door F1 side-wall alignment at 1,3 North.
-        if (previewX == 1
-            && previewY == 3
-            && previewFacing == DungeonFacing.North)
-        {
-          x = 165;
-          y = DisplayYToUnityY(42, GetPieceHeightForEditorY(piece));
-        }
-
-
-        // Same canonical edge-of-map geometry on the right side.
-        if (canonicalFrontF2F1SidesEdgeGeometry)
-        {
-          enabled = true;
-          x = 165;
-          y = DisplayYToUnityY(42, GetPieceHeightForEditorY(piece));
-          mirror = true;
         }
       }
       else if (IsWallF2LeftPiece(piece))
@@ -8035,9 +7611,7 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsWallF2RightPiece(piece))
       {
         enabled = rightF2;
-        mirror = IsVerifiedRightF2MirrorOnGeometry(g)
-            ? true
-            : GetSideWallMirrorFromPose();
+        mirror = GetSideWallMirrorFromPose();
         if (TryGetActiveCanonicalReferenceXY(
                 piece, mirror, out int rightF2RefX, out int rightF2RefY))
         {
@@ -8065,25 +7639,11 @@ public class ViewportLayoutEditor : EditorWindow
           x = 5;
           y = DisplayYToUnityY(60, GetPieceHeightForEditorY(piece));
         }
-
-        // Verified canonical Black Door F3 view at 1,5 North.
-        // LeftF3 fills the narrow strip immediately left of the F3 frame.
-        if (previewX == 1
-            && previewY == 5
-            && previewFacing == DungeonFacing.North)
-        {
-          enabled = true;
-          x = 5;
-          y = DisplayYToUnityY(60, GetPieceHeightForEditorY(piece));
-          mirror = false;
-        }
       }
       else if (IsWallF3RightPiece(piece))
       {
         enabled = rightF3;
-        mirror = IsVerifiedRightF3MirrorOnGeometry(g)
-            ? true
-            : GetSideWallMirrorFromPose();
+        mirror = GetSideWallMirrorFromPose();
         if (TryGetActiveCanonicalReferenceXY(
                 piece, mirror, out int rightF3RefX, out int rightF3RefY))
         {
@@ -8231,21 +7791,6 @@ public class ViewportLayoutEditor : EditorWindow
         mirror = false;
       }
 
-      // ViewEdit visibility for (5,2) South.
-      // LeftD3 stays manual-only in Show All Walls.
-      // LeftS3 Enabled comes from leftS2 geometry, not this pose list.
-      if (previewX == 5
-          && previewY == 2
-          && previewFacing == DungeonFacing.South
-          && piece.Name != "LeftS3")
-      {
-        enabled = IsFrontWallF3Card(piece)
-            || IsFrontWallF1Card(piece)
-            || piece.Name == "RightD3"
-            || piece.Name == "Wall D3R2"
-            || piece.Graphic == DungeonGraphicType.WallD3R2;
-      }
-
       ResolvedNormalWallState state = new ResolvedNormalWallState
       {
         Enabled = enabled,
@@ -8258,11 +7803,7 @@ public class ViewportLayoutEditor : EditorWindow
       };
 
       resolvedNormalWallByPiece[piece] = state;
-      if (!IsFrontWallF2Card(piece)
-          || (previewX == 5
-              && previewY == 2
-              && previewFacing == DungeonFacing.South))
-        piece.Enabled = state.Enabled;
+      piece.Enabled = state.Enabled;
       piece.MirrorHorizontally = state.Mirror;
       piece.PoseOffsetX = 0;
       piece.PoseOffsetY = 0;
@@ -8279,26 +7820,7 @@ public class ViewportLayoutEditor : EditorWindow
               && !IsWallF3LeftPiece(piece) && !IsWallF3RightPiece(piece)))
         continue;
 
-      bool resolvedSideMirror;
-      if (canonicalFrontF1F0EdgeGeometry
-          && (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece)))
-      {
-        resolvedSideMirror = false;
-      }
-      else
-      {
-        resolvedSideMirror =
-            (IsWallF0RightPiece(piece)
-                && IsVerifiedRightF0MirrorOnGeometry(g))
-            || (IsWallF1RightPiece(piece)
-                && IsVerifiedRightF1MirrorOnGeometry(g))
-            || (IsWallF2RightPiece(piece)
-                && IsVerifiedRightF2MirrorOnGeometry(g))
-            || (IsWallF3RightPiece(piece)
-                && IsVerifiedRightF3MirrorOnGeometry(g))
-                ? true
-                : sideWallMirror;
-      }
+      bool resolvedSideMirror = sideWallMirror;
 
       if (resolvedNormalWallByPiece.TryGetValue(
               piece, out ResolvedNormalWallState sideWallState))
@@ -8334,9 +7856,7 @@ public class ViewportLayoutEditor : EditorWindow
     // the mirror value from a previously verified geometry, so restore the
     // current pose value after geometry resolution. A temporary manual ViewEdit mirror
     // override is applied later and can still win for testing.
-    bool leftF0PoseMirror = canonicalFrontF1F0EdgeGeometry
-        ? false
-        : GetSideWallMirrorFromPose();
+    bool leftF0PoseMirror = GetSideWallMirrorFromPose();
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece piece = layout.Pieces[i];
@@ -8381,100 +7901,8 @@ public class ViewportLayoutEditor : EditorWindow
       // Remove any older temporary ViewEdit X/Y edit for FrontF1 in the
       // solid-front geometries that previously owned this rule. Otherwise
       // ApplyTemporaryNormalWallPreviewOverrides() would put a stale X back.
-      if ((leftF0 && rightF0) || IsVerifiedFrontF1X0Geometry(g))
+      if (leftF0 && rightF0)
         previewPositionOverrideByPiece.Remove(piece);
-    }
-
-    // Verified RightF0 geometry mirror authority.
-    // Older stored geometry may contain an mirror value, so re-apply the normalized
-    // geometry result after geometry resolution. A manual ViewEdit mirror override still
-    // applies afterward and can be used for testing.
-    if (IsVerifiedRightF0MirrorOnGeometry(g))
-    {
-      for (int i = 0; i < layout.Pieces.Count; i++)
-      {
-        ViewportPiece piece = layout.Pieces[i];
-        if (piece == null || !IsWallF0RightPiece(piece))
-          continue;
-
-        if (resolvedNormalWallByPiece.TryGetValue(
-                piece, out ResolvedNormalWallState rightF0StateAfterResolve))
-        {
-          rightF0StateAfterResolve.Mirror = true;
-          resolvedNormalWallByPiece[piece] = rightF0StateAfterResolve;
-        }
-
-        piece.MirrorHorizontally = true;
-      }
-    }
-
-    // Verified RightF3 geometry mirror authority.
-    // Re-apply after geometry resolution so an older stored mirror value cannot overwrite
-    // the normalized geometry result. Manual ViewEdit mirror overrides still
-    // apply afterward for testing.
-    if (IsVerifiedRightF3MirrorOnGeometry(g))
-    {
-      for (int i = 0; i < layout.Pieces.Count; i++)
-      {
-        ViewportPiece piece = layout.Pieces[i];
-        if (piece == null || !IsWallF3RightPiece(piece))
-          continue;
-
-        if (resolvedNormalWallByPiece.TryGetValue(
-                piece, out ResolvedNormalWallState rightF3StateAfterResolve))
-        {
-          rightF3StateAfterResolve.Mirror = true;
-          resolvedNormalWallByPiece[piece] = rightF3StateAfterResolve;
-        }
-
-        piece.MirrorHorizontally = true;
-      }
-    }
-
-    // Verified RightF2 geometry mirror authority.
-    // Re-apply after geometry resolution so an older stored mirror value cannot overwrite
-    // the normalized geometry result. Manual ViewEdit mirror overrides still
-    // apply afterward for testing.
-    if (IsVerifiedRightF2MirrorOnGeometry(g))
-    {
-      for (int i = 0; i < layout.Pieces.Count; i++)
-      {
-        ViewportPiece piece = layout.Pieces[i];
-        if (piece == null || !IsWallF2RightPiece(piece))
-          continue;
-
-        if (resolvedNormalWallByPiece.TryGetValue(
-                piece, out ResolvedNormalWallState rightF2StateAfterResolve))
-        {
-          rightF2StateAfterResolve.Mirror = true;
-          resolvedNormalWallByPiece[piece] = rightF2StateAfterResolve;
-        }
-
-        piece.MirrorHorizontally = true;
-      }
-    }
-
-    // Verified RightF1 geometry mirror authority.
-    // Older stored geometry may contain an mirror value, so re-apply the normalized
-    // geometry result after geometry resolution. Manual ViewEdit mirror overrides still
-    // apply afterward for testing.
-    if (IsVerifiedRightF1MirrorOnGeometry(g))
-    {
-      for (int i = 0; i < layout.Pieces.Count; i++)
-      {
-        ViewportPiece piece = layout.Pieces[i];
-        if (piece == null || !IsWallF1RightPiece(piece))
-          continue;
-
-        if (resolvedNormalWallByPiece.TryGetValue(
-                piece, out ResolvedNormalWallState rightF1StateAfterResolve))
-        {
-          rightF1StateAfterResolve.Mirror = true;
-          resolvedNormalWallByPiece[piece] = rightF1StateAfterResolve;
-        }
-
-        piece.MirrorHorizontally = true;
-      }
     }
 
     // Older stored geometry may contain an FrontF1 Mirror value. FrontF1 mirror is
@@ -9058,727 +8486,6 @@ public class ViewportLayoutEditor : EditorWindow
 
       piece.MirrorHorizontally = mirrorOn;
       return;
-    }
-  }
-
-  /// <summary>
-  /// Wall F0Left / LeftF0 from the map tile immediately to the player's left.
-  /// Solid/out-of-bounds → Enabled. Does not change Ceiling, Floor, or other walls.
-  /// </summary>
-  // LEGACY NORMAL-WALL PATH: retained temporarily for reference; not called by cutover pipeline.
-  private void ApplyWallF0LeftFromMapGeometry()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    EnsurePreviewMiniMapLoaded();
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-    int leftX = previewX - rightX;
-    int leftY = previewY - rightY;
-    bool leftIsWall = previewMiniMap == null
-        || !previewMiniMap.IsInside(leftX, leftY)
-        || previewMiniMap.GetTile(leftX, leftY).Type == DungeonTileType.Wall;
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (piece.Name != "Wall F0Left" && piece.Name != "LeftF0")
-        continue;
-
-      piece.Enabled = leftIsWall;
-      piece.MirrorHorizontally = false;
-      return;
-    }
-  }
-
-  private static bool IsWallF0LeftPiece(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    if (piece.Name == "Wall F0Left" || piece.Name == "LeftF0")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF0L;
-  }
-
-  /// <summary>
-  /// Wall F0Right / RightF0 from the map tile immediately to the player's right.
-  /// Solid/out-of-bounds → Enabled. Does not change F0Left, Ceiling, Floor, or other walls.
-  /// </summary>
-  private void ApplyWallF0RightFromMapGeometry()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    EnsurePreviewMiniMapLoaded();
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-    int neighborX = previewX + rightX;
-    int neighborY = previewY + rightY;
-    bool rightIsWall = previewMiniMap == null
-        || !previewMiniMap.IsInside(neighborX, neighborY)
-        || previewMiniMap.GetTile(neighborX, neighborY).Type
-            == DungeonTileType.Wall;
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (piece.Name != "Wall F0Right" && piece.Name != "RightF0")
-        continue;
-
-      piece.Enabled = rightIsWall;
-      piece.MirrorHorizontally = false;
-      return;
-    }
-  }
-
-  private static bool IsWallF0RightPiece(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    if (piece.Name == "Wall F0Right" || piece.Name == "RightF0")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF0R;
-  }
-
-  /// <summary>
-  /// Wall F1Left / LeftF1 from the map tile one step forward and one step left,
-  /// but only if the tile directly forward is open. A solid forward wall hides F1Left.
-  /// </summary>
-  private void ApplyWallF1LeftFromMapGeometry()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    EnsurePreviewMiniMapLoaded();
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    int frontX = previewX + forwardX;
-    int frontY = previewY + forwardY;
-    bool frontIsWall = previewMiniMap == null
-        || !previewMiniMap.IsInside(frontX, frontY)
-        || previewMiniMap.GetTile(frontX, frontY).Type == DungeonTileType.Wall;
-
-    bool leftF1IsWall = false;
-    if (!frontIsWall)
-    {
-      int tileX = previewX + forwardX - rightX;
-      int tileY = previewY + forwardY - rightY;
-      leftF1IsWall = previewMiniMap == null
-          || !previewMiniMap.IsInside(tileX, tileY)
-          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
-    }
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (piece.Name != "Wall F1Left" && piece.Name != "LeftF1")
-        continue;
-
-      piece.Enabled = leftF1IsWall;
-      piece.MirrorHorizontally = false;
-      return;
-    }
-  }
-
-  private static bool IsWallF1LeftPiece(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    if (piece.Name == "Wall F1Left" || piece.Name == "LeftF1")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF1L;
-  }
-
-  /// <summary>
-  /// Wall F1Right / RightF1 from the map tile one step forward and one step right,
-  /// but only if the tile directly forward is open. A solid forward wall hides F1Right.
-  /// </summary>
-  private void ApplyWallF1RightFromMapGeometry()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    EnsurePreviewMiniMapLoaded();
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    int frontX = previewX + forwardX;
-    int frontY = previewY + forwardY;
-    bool frontIsWall = previewMiniMap == null
-        || !previewMiniMap.IsInside(frontX, frontY)
-        || previewMiniMap.GetTile(frontX, frontY).Type == DungeonTileType.Wall;
-
-    bool rightF1IsWall = false;
-    if (!frontIsWall)
-    {
-      int tileX = previewX + forwardX + rightX;
-      int tileY = previewY + forwardY + rightY;
-      rightF1IsWall = previewMiniMap == null
-          || !previewMiniMap.IsInside(tileX, tileY)
-          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
-    }
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (piece.Name != "Wall F1Right" && piece.Name != "RightF1")
-        continue;
-
-      piece.Enabled = rightF1IsWall;
-      piece.MirrorHorizontally = false;
-      return;
-    }
-  }
-
-  private static bool IsWallF1RightPiece(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    if (piece.Name == "Wall F1Right" || piece.Name == "RightF1")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF1R;
-  }
-
-  /// <summary>
-  /// Wall F2Left / LeftF2 from the map tile two steps forward and one step left,
-  /// but only if both tiles directly forward are open. A solid nearer wall hides F2Left.
-  /// </summary>
-  private void ApplyWallF2LeftFromMapGeometry()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    EnsurePreviewMiniMapLoaded();
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    int front1X = previewX + forwardX;
-    int front1Y = previewY + forwardY;
-    int front2X = previewX + forwardX * 2;
-    int front2Y = previewY + forwardY * 2;
-    bool frontBlocked = previewMiniMap == null
-        || !previewMiniMap.IsInside(front1X, front1Y)
-        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(front2X, front2Y)
-        || previewMiniMap.GetTile(front2X, front2Y).Type == DungeonTileType.Wall;
-
-    bool leftF2IsWall = false;
-    if (!frontBlocked)
-    {
-      int tileX = previewX + forwardX * 2 - rightX;
-      int tileY = previewY + forwardY * 2 - rightY;
-      leftF2IsWall = previewMiniMap == null
-          || !previewMiniMap.IsInside(tileX, tileY)
-          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
-    }
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (piece.Name != "Wall F2Left" && piece.Name != "LeftF2")
-        continue;
-
-      piece.Enabled = leftF2IsWall;
-      piece.MirrorHorizontally = false;
-      return;
-    }
-  }
-
-  private static bool IsWallF2LeftPiece(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    if (piece.Name == "Wall F2Left" || piece.Name == "LeftF2")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF2L;
-  }
-
-  /// <summary>
-  /// Wall F2Right / RightF2 from the map tile two steps forward and one step right,
-  /// but only if both tiles directly forward are open. A solid nearer wall hides F2Right.
-  /// </summary>
-  private void ApplyWallF2RightFromMapGeometry()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    EnsurePreviewMiniMapLoaded();
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    int front1X = previewX + forwardX;
-    int front1Y = previewY + forwardY;
-    int front2X = previewX + forwardX * 2;
-    int front2Y = previewY + forwardY * 2;
-    bool frontBlocked = previewMiniMap == null
-        || !previewMiniMap.IsInside(front1X, front1Y)
-        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(front2X, front2Y)
-        || previewMiniMap.GetTile(front2X, front2Y).Type == DungeonTileType.Wall;
-
-    bool rightF2IsWall = false;
-    if (!frontBlocked)
-    {
-      int tileX = previewX + forwardX * 2 + rightX;
-      int tileY = previewY + forwardY * 2 + rightY;
-      rightF2IsWall = previewMiniMap == null
-          || !previewMiniMap.IsInside(tileX, tileY)
-          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
-    }
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (piece.Name != "Wall F2Right" && piece.Name != "RightF2")
-        continue;
-
-      piece.Enabled = rightF2IsWall;
-      piece.MirrorHorizontally = false;
-      return;
-    }
-  }
-
-  private static bool IsWallF2RightPiece(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    if (piece.Name == "Wall F2Right" || piece.Name == "RightF2")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF2R;
-  }
-
-  /// <summary>
-  /// Wall F3Left / LeftF3 from the map tile three steps forward and one step left,
-  /// but only if all three tiles directly forward are open. A nearer solid wall hides F3Left.
-  /// </summary>
-  private void ApplyWallF3LeftFromMapGeometry()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    EnsurePreviewMiniMapLoaded();
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    int front1X = previewX + forwardX;
-    int front1Y = previewY + forwardY;
-    int front2X = previewX + forwardX * 2;
-    int front2Y = previewY + forwardY * 2;
-    int front3X = previewX + forwardX * 3;
-    int front3Y = previewY + forwardY * 3;
-    bool frontBlocked = previewMiniMap == null
-        || !previewMiniMap.IsInside(front1X, front1Y)
-        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(front2X, front2Y)
-        || previewMiniMap.GetTile(front2X, front2Y).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(front3X, front3Y)
-        || previewMiniMap.GetTile(front3X, front3Y).Type == DungeonTileType.Wall;
-
-    bool leftF3IsWall = false;
-    if (!frontBlocked)
-    {
-      int tileX = previewX + forwardX * 3 - rightX;
-      int tileY = previewY + forwardY * 3 - rightY;
-      leftF3IsWall = previewMiniMap == null
-          || !previewMiniMap.IsInside(tileX, tileY)
-          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
-    }
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (piece.Name != "Wall F3Left" && piece.Name != "LeftF3")
-        continue;
-
-      piece.Enabled = leftF3IsWall;
-      piece.MirrorHorizontally = false;
-      return;
-    }
-  }
-
-  private static bool IsWallF3LeftPiece(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    if (piece.Name == "Wall F3Left" || piece.Name == "LeftF3")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF3L;
-  }
-
-  /// <summary>
-  /// Wall F3Right / RightF3 from the map tile three steps forward and one step right,
-  /// but only if all three tiles directly forward are open. A nearer solid wall hides F3Right.
-  /// </summary>
-  private void ApplyWallF3RightFromMapGeometry()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    EnsurePreviewMiniMapLoaded();
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    int front1X = previewX + forwardX;
-    int front1Y = previewY + forwardY;
-    int front2X = previewX + forwardX * 2;
-    int front2Y = previewY + forwardY * 2;
-    int front3X = previewX + forwardX * 3;
-    int front3Y = previewY + forwardY * 3;
-    bool frontBlocked = previewMiniMap == null
-        || !previewMiniMap.IsInside(front1X, front1Y)
-        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(front2X, front2Y)
-        || previewMiniMap.GetTile(front2X, front2Y).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(front3X, front3Y)
-        || previewMiniMap.GetTile(front3X, front3Y).Type == DungeonTileType.Wall;
-
-    bool rightF3IsWall = false;
-    if (!frontBlocked)
-    {
-      int tileX = previewX + forwardX * 3 + rightX;
-      int tileY = previewY + forwardY * 3 + rightY;
-      rightF3IsWall = previewMiniMap == null
-          || !previewMiniMap.IsInside(tileX, tileY)
-          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
-    }
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (piece.Name != "Wall F3Right" && piece.Name != "RightF3")
-        continue;
-
-      piece.Enabled = rightF3IsWall;
-      piece.MirrorHorizontally = false;
-      return;
-    }
-  }
-
-  private static bool IsWallF3RightPiece(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    if (piece.Name == "Wall F3Right" || piece.Name == "RightF3")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF3R;
-  }
-
-  /// <summary>
-  /// RightD3 / Wall D3R2 visibility from map geometry.
-  /// Normal rule: all three forward tiles must be open and the depth-3/right
-  /// tile must be solid. The existing (1,5) North Black Door F3 view is locked
-  /// and deliberately left untouched by this rule.
-  /// </summary>
-  private void ApplyRightD3FromMapGeometry()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    // Locked existing Black Door F3 view: do not alter its RightD3 state.
-    if (previewX == 1
-        && previewY == 5
-        && previewFacing == DungeonFacing.North)
-    {
-      return;
-    }
-
-    EnsurePreviewMiniMapLoaded();
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    int front1X = previewX + forwardX;
-    int front1Y = previewY + forwardY;
-    int front2X = previewX + forwardX * 2;
-    int front2Y = previewY + forwardY * 2;
-    int front3X = previewX + forwardX * 3;
-    int front3Y = previewY + forwardY * 3;
-
-    bool frontBlocked = previewMiniMap == null
-        || !previewMiniMap.IsInside(front1X, front1Y)
-        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(front2X, front2Y)
-        || previewMiniMap.GetTile(front2X, front2Y).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(front3X, front3Y)
-        || previewMiniMap.GetTile(front3X, front3Y).Type == DungeonTileType.Wall;
-
-    bool rightD3IsWall = false;
-    if (!frontBlocked)
-    {
-      int tileX = previewX + forwardX * 3 + rightX;
-      int tileY = previewY + forwardY * 3 + rightY;
-      rightD3IsWall = previewMiniMap == null
-          || !previewMiniMap.IsInside(tileX, tileY)
-          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
-    }
-
-    // Unique Hall of Champions Black Door oblique view.
-    // Visibility is forced here, but position is preview-only below.
-    bool blackDoorObliqueException =
-        previewX == 0
-        && previewY == 5
-        && previewFacing == DungeonFacing.North;
-
-    bool enabled = rightD3IsWall || blackDoorObliqueException;
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (piece.Name != "Wall D3R2" && piece.Name != "RightD3")
-        continue;
-
-      piece.Enabled = enabled;
-      return;
-    }
-  }
-
-  /// <summary>
-  /// FrontF1 / Front Wall F1 from the map tile one step directly forward.
-  /// Solid/out-of-bounds → Enabled. Does not change side walls, FrontF2/F3, width, or mirrors.
-  /// </summary>
-  // LEGACY FRONT-WALL PATH: retained temporarily for reference; not called by cutover pipeline.
-  private void ApplyFrontF1FromMapGeometry()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    EnsurePreviewMiniMapLoaded();
-
-    bool frontF1IsWall = true;
-    if (previewMiniMap != null)
-    {
-      RelativeViewportGeometry geometry =
-          RelativeViewportGeometry.Calculate(
-              previewMiniMap,
-              previewX,
-              previewY,
-              previewFacing);
-
-      frontF1IsWall = geometry.F1Center.IsWall;
-    }
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (piece.Name != "FrontF1" && piece.Name != "Front Wall F1")
-        continue;
-
-      piece.Enabled = frontF1IsWall;
-      return;
-    }
-  }
-
-  /// <summary>
-  /// FrontF3 / Front Wall F3 from the map tile three steps forward, only if
-  /// both nearer forward tiles are open. A solid F1 or F2 wall hides FrontF3.
-  /// </summary>
-  private void ApplyFrontF3FromMapGeometry()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    // (1,4) North is a Black Door F2 front view and (1,5) North is a
-    // Black Door F3 front view. Force the normal FrontF3 wall off so
-    // ViewEdit matches the dedicated Black Door front view.
-    if (previewX == 1
-        && (previewY == 4 || previewY == 5)
-        && previewFacing == DungeonFacing.North)
-    {
-      for (int i = 0; i < layout.Pieces.Count; i++)
-      {
-        ViewportPiece piece = layout.Pieces[i];
-        if (piece == null)
-          continue;
-
-        if (piece.Name != "FrontF3" && piece.Name != "Front Wall F3")
-          continue;
-
-        piece.Enabled = false;
-        return;
-      }
-
-      return;
-    }
-
-    EnsurePreviewMiniMapLoaded();
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-
-    int front1X = previewX + forwardX;
-    int front1Y = previewY + forwardY;
-    int front2X = previewX + forwardX * 2;
-    int front2Y = previewY + forwardY * 2;
-    bool nearerBlocked = previewMiniMap == null
-        || !previewMiniMap.IsInside(front1X, front1Y)
-        || previewMiniMap.GetTile(front1X, front1Y).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(front2X, front2Y)
-        || previewMiniMap.GetTile(front2X, front2Y).Type == DungeonTileType.Wall;
-
-    bool frontF3IsWall = false;
-    if (!nearerBlocked)
-    {
-      int tileX = previewX + forwardX * 3;
-      int tileY = previewY + forwardY * 3;
-      frontF3IsWall = previewMiniMap == null
-          || !previewMiniMap.IsInside(tileX, tileY)
-          || previewMiniMap.GetTile(tileX, tileY).Type == DungeonTileType.Wall;
-    }
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (piece.Name != "FrontF3" && piece.Name != "Front Wall F3")
-        continue;
-
-      piece.Enabled = frontF3IsWall;
-      return;
-    }
-  }
-
-  /// <summary>
-  /// FrontF1/F2 mirror phase from the visible normal-wall configuration only.
-  /// Absolute map X/Y, facing parity, and hidden map cells do not participate.
-  /// Identical visible normal-wall configurations therefore get the same phase.
-  /// </summary>
-  private void ApplyFrontF1F2MirrorFromVisibleWallConfiguration()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    int signature = 17;
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      bool isNormalWall =
-          IsWallF0LeftPiece(piece)
-          || IsWallF0RightPiece(piece)
-          || IsWallF1LeftPiece(piece)
-          || IsWallF1RightPiece(piece)
-          || IsWallF2LeftPiece(piece)
-          || IsWallF2RightPiece(piece)
-          || IsWallF3LeftPiece(piece)
-          || IsWallF3RightPiece(piece)
-          || IsFrontWallF1Card(piece)
-          || IsFrontWallF2Card(piece)
-          || IsFrontWallF3Card(piece);
-
-      if (!isNormalWall)
-        continue;
-
-      signature = unchecked(signature * 31 + (piece.Enabled ? 1 : 0));
-    }
-
-    bool mirror = (signature & 1) != 0;
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (IsFrontWallF1Card(piece) || IsFrontWallF2Card(piece))
-        piece.MirrorHorizontally = mirror;
     }
   }
 
@@ -10510,10 +9217,6 @@ public class ViewportLayoutEditor : EditorWindow
       viewport17FinalWallCommands =
           BuildViewport17FinalDrawCommands(viewport17Inspection);
     }
-    bool composeCanonicalFrontF1F0EdgeGeometry =
-        TryGetCurrentRelativeViewportGeometry(
-            out RelativeViewportGeometry composeGeometry)
-        && IsCanonicalFrontF1F0EdgeGeometry(composeGeometry);
 
     if (layout != null && layout.Pieces != null)
     {
@@ -10574,20 +9277,9 @@ public class ViewportLayoutEditor : EditorWindow
           orderedNormalWalls.Add(candidate);
       }
 
-      if (previewX == 5
-          && previewY == 2
-          && previewFacing == DungeonFacing.South)
-      {
-        orderedNormalWalls.Sort(
-            (a, b) => Get52SouthLeftToRightOrder(a).CompareTo(
-                Get52SouthLeftToRightOrder(b)));
-      }
-      else
-      {
-        orderedNormalWalls.Sort(
-            (a, b) => GetNormalWallRenderDepth(b).CompareTo(
-                GetNormalWallRenderDepth(a)));
-      }
+      orderedNormalWalls.Sort(
+          (a, b) => GetNormalWallRenderDepth(b).CompareTo(
+              GetNormalWallRenderDepth(a)));
 
       int nextNormalWall = 0;
       for (int i = 0; i < layout.Pieces.Count; i++)
@@ -10613,22 +9305,6 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        // Final early draw gate for verified ViewEdit pose (5,2) South.
-        // Reject disabled normal-wall/D3 pieces before any special blit path
-        // (especially the FrontF2 224-reference blit) can run.
-        if (!viewport17WallAuthorityActive
-            && piece != null
-            && previewX == 5
-            && previewY == 2
-            && previewFacing == DungeonFacing.South
-            && !IsShowAllWallsPreview()
-            && IsNormalWallPiece(piece)
-            && TryGet52SouthForcedWallEnabled(piece, out bool forced52EarlyEnabled)
-            && !forced52EarlyEnabled)
-        {
-          continue;
-        }
-
         // (1,4) North is the Black Door F2 front view and (1,5) North is
         // the Black Door F3 front view. The normal FrontF3 wall must never
         // render behind/through either dedicated door view.
@@ -10638,26 +9314,6 @@ public class ViewportLayoutEditor : EditorWindow
             && piece != null
             && (IsFrontWallF3Card(piece)
                 || piece.Graphic == DungeonGraphicType.FrontWallF3))
-        {
-          continue;
-        }
-
-        // TEMP isolation test for exactly (0,5) South:
-        // Ceiling + Floor + FrontF1 + FrontF3 + RightF0 only.
-        bool isolateFrontF1At05South =
-            !viewport17WallAuthorityActive
-            && previewX == 0
-            && previewY == 5
-            && previewFacing == DungeonFacing.South;
-
-        if (isolateFrontF1At05South
-            && (piece == null
-                || (!IsFloorOrCeiling(piece)
-                    && !IsChampionStatusSlotPiece(piece)
-                    && !IsFrontWallF1Card(piece)
-                    && !IsFrontWallF3Card(piece)
-                    && !IsWallF0RightPiece(piece)
-                    && piece.Name != "LeftS3")))
         {
           continue;
         }
@@ -10701,9 +9357,7 @@ public class ViewportLayoutEditor : EditorWindow
             && !blackDoorF1Exception
             && !blackDoorF2Exception
             && !blackDoorF3Exception
-            && !blackDoorObliqueRightD3Exception
-            && !(isolateFrontF1At05South
-                && (IsFrontWallF3Card(piece) || IsWallF0RightPiece(piece))))
+            && !blackDoorObliqueRightD3Exception)
         {
           continue;
         }
@@ -10781,17 +9435,9 @@ public class ViewportLayoutEditor : EditorWindow
             {
               resolvedEnabled = frontF1EnabledOverride;
             }
-
-            // Legacy (5,2) visibility rule is muted while Viewport-17 owns
-            // normal-wall selection. It remains intact for fallback mode.
-            if (!IsShowAllWallsPreview()
-                && TryGet52SouthForcedWallEnabled(piece, out bool forced52DrawEnabled)
-                && !forced52DrawEnabled)
-              resolvedEnabled = false;
           }
 
-          if (!resolvedEnabled
-              && !(isolateFrontF1At05South && IsFrontWallF3Card(piece)))
+          if (!resolvedEnabled)
             continue;
 
           // Geometry supplies the normal orientation. A ViewEdit-only checkbox
@@ -10868,23 +9514,17 @@ public class ViewportLayoutEditor : EditorWindow
 
           if (!previewMirrorOverrideByPiece.ContainsKey(piece))
           {
-            mirror = composeCanonicalFrontF1F0EdgeGeometry
-                && (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
-                ? false
-                : GetSideWallMirrorFromPose();
+            mirror = GetSideWallMirrorFromPose();
           }
         }
 
         // Temporary ViewEdit tests always win over canonical / pose
         // mirror for this stationary preview. Override Current Walls commits.
-        bool hasForced52LiveEnabled =
-            TryGet52SouthForcedWallEnabled(piece, out bool forced52LiveEnabled);
         if (!viewport17NormalWall
             && previewEnabledOverrideByPiece.TryGetValue(
                 piece, out bool livePreviewEnabled)
             && IsNormalWallPiece(piece)
-            && !livePreviewEnabled
-            && (!hasForced52LiveEnabled || forced52LiveEnabled))
+            && !livePreviewEnabled)
         {
           continue;
         }
@@ -10917,21 +9557,6 @@ public class ViewportLayoutEditor : EditorWindow
                 piece, out int livePreviewWidth))
         {
           resolvedF1Width = livePreviewWidth;
-        }
-
-        // Final canonical authority for the verified 1,5 North LeftF1 view.
-        // This is deliberately after geometry resolution/canonical/temporary resolution so
-        // no older stored or preview value can move the final blit.
-        if (IsWallF1LeftPiece(piece)
-            && previewX == 1
-            && previewY == 5
-            && previewFacing == DungeonFacing.North)
-        {
-          resolvedX = 0;
-          resolvedY = DisplayYToUnityY(
-              42, GetPieceHeightForEditorY(piece));
-          mirror = false;
-          drawGraphic = DungeonGraphicType.WallF1L;
         }
 
         if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
@@ -11122,12 +9747,6 @@ public class ViewportLayoutEditor : EditorWindow
                 0,
                 StraightF1WallLogic.CompositeWidth - 1);
             int cropDestinationX = cropStartX;
-            if (previewX == 1
-                && previewY == 7
-                && previewFacing == DungeonFacing.South)
-            {
-              cropDestinationX = 0;
-            }
             bool cropMirror = mirror;
 
             int cropWidth = StraightF1WallLogic.CompositeWidth - cropStartX;
@@ -11158,12 +9777,6 @@ public class ViewportLayoutEditor : EditorWindow
 
             // Normal FrontF1 mode: use the resolved left-edge X exactly.
             int f1DestX = resolvedX;
-            if (previewX == 1
-                && previewY == 7
-                && previewFacing == DungeonFacing.South)
-            {
-              f1DestX = 0;
-            }
 
             if (mirror && width < StraightF1WallLogic.CompositeWidth)
             {
@@ -11893,22 +10506,6 @@ public class ViewportLayoutEditor : EditorWindow
             || !manuallyEnabledAfterDisable))
     {
       return false;
-    }
-
-    // Canonical edge-of-map front boundary. Apply to every pose with the
-    // same normalized diagnostic geometry, not only the original map pose.
-    if (IsFrontWallF2Card(piece)
-        && TryGetCurrentRelativeViewportGeometry(out RelativeViewportGeometry edgeGeometry)
-        && (IsCanonicalFrontF2F1SidesEdgeGeometry(edgeGeometry)
-            || IsCanonicalFrontF2F0SidesGeometry(edgeGeometry)))
-    {
-      if (previewEnabledOverrideByPiece.TryGetValue(
-              piece, out bool frontF2PreviewEnabled))
-      {
-        return frontF2PreviewEnabled;
-      }
-
-      return true;
     }
 
     // Normal walls draw only when the current minimap resolver explicitly
