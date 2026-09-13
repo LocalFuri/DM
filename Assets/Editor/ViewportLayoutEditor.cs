@@ -4135,30 +4135,18 @@ public class ViewportLayoutEditor : EditorWindow
       drawPieceNamesLeftToRight.Add(drawPiecesLeftToRight[i].Key);
 
     string drawText = BuildBalancedDrawDiagnosticText(drawPieceNamesLeftToRight);
-    List<VisibleWallSurface> visibleSurfaces = BuildVisibleWallSurfaces(geometry);
-    string visibleSurfacesText = BuildVisibleWallSurfaceDiagnostic(visibleSurfaces);
-    string expectedPiecesText = BuildExpectedPieceDiagnostic(visibleSurfaces);
+
+
+    Viewport17Inspection inspection = BuildViewport17Inspection();
 
     string text =
-        "GEOMETRY DIAGNOSTIC  "
-        + previewX + "," + previewY + " " + previewFacing + "\n"
-        + "F0: L=" + FormatF0ViewportCellDiagnostic(geometry.F0Left)
-        + "  R=" + FormatF0ViewportCellDiagnostic(geometry.F0Right)
-        + "\nF1: L=" + FormatRelativeViewportCellDiagnostic(geometry.F1Left)
-        + "  C=" + FormatRelativeViewportCellDiagnostic(geometry.F1Center)
-        + "  R=" + FormatRelativeViewportCellDiagnostic(geometry.F1Right)
-        + "\nF2: L=" + FormatRelativeViewportCellDiagnostic(geometry.F2Left)
-        + "  C=" + FormatRelativeViewportCellDiagnostic(geometry.F2Center)
-        + "  R=" + FormatRelativeViewportCellDiagnostic(geometry.F2Right)
-        + "\nF3: L=" + FormatRelativeViewportCellDiagnostic(geometry.F3Left)
-        + "  C=" + FormatRelativeViewportCellDiagnostic(geometry.F3Center)
-        + "  R=" + FormatRelativeViewportCellDiagnostic(geometry.F3Right)
+        "VIEWPORT-17 GENERIC MODEL  "
+        + previewX + "," + previewY + " " + previewFacing + "\n\n"
+        + BuildViewport17ArrayDiagnostic(inspection)
         + "\n\n"
-        + visibleSurfacesText
-        + "\n\n"
-        + expectedPiecesText
-        + "\n\n"
-        + drawText;
+        + BuildViewport17FaceDiagnostic(inspection)
+        + "\n\nTOTAL EVALUATIONS: 14 map tiles + 3 D0 faces = 17"
+        + "\n\nLEGACY " + drawText;
 
     GUIStyle diagnosticStyle = new GUIStyle(EditorStyles.helpBox);
     diagnosticStyle.normal.textColor = new Color32(255, 255, 255, 255);
@@ -4168,201 +4156,281 @@ public class ViewportLayoutEditor : EditorWindow
       geometryDiagnosticRect = GUILayoutUtility.GetLastRect();
   }
 
-  // Geometry-engine stage 1: derive visible wall surfaces from the minimap
-  // only. This deliberately does NOT read ViewEdit piece Enabled state,
-  // DTerm/pose overrides, graphics, X/Y placement, or the current DRAW resolver.
-  private enum VisibleWallSurfaceKind
-  {
-    Side,
-    Front
-  }
-
-  private struct VisibleWallSurface
-  {
-    public VisibleWallSurfaceKind Kind;
-    public int Depth;
-    public string Lane;
-    public RelativeViewportCell Cell;
-  }
-
-  private static List<VisibleWallSurface> BuildVisibleWallSurfaces(
-      RelativeViewportGeometry geometry)
-  {
-    List<VisibleWallSurface> surfaces = new List<VisibleWallSurface>();
-
-    // F0 side surfaces are always in the player's immediate field of view.
-    // A cell outside the map is treated as a solid boundary side wall here.
-    AddF0VisibleSideSurface(surfaces, "LEFT", geometry.F0Left);
-    AddF0VisibleSideSurface(surfaces, "RIGHT", geometry.F0Right);
-
-    // Each lateral lane is an independent forward sight line. The first wall
-    // in that lane owns the visible FRONT surface; anything deeper in the same
-    // lane is occluded. Outside-map cells end the lane without inventing a
-    // front wall -- map boundaries at the player's side are represented by F0.
-    RelativeViewportCell[] leftLane =
-    {
-      geometry.F1Left, geometry.F2Left, geometry.F3Left
-    };
-    RelativeViewportCell[] centerLane =
-    {
-      geometry.F1Center, geometry.F2Center, geometry.F3Center
-    };
-    RelativeViewportCell[] rightLane =
-    {
-      geometry.F1Right, geometry.F2Right, geometry.F3Right
-    };
-
-    int leftDepth = FindFirstVisibleFrontWallDepth(leftLane);
-    int centerDepth = FindFirstVisibleFrontWallDepth(centerLane);
-    int rightDepth = FindFirstVisibleFrontWallDepth(rightLane);
-
-    // Keep the surface order depth-first so the diagnostic is easy to compare
-    // with the F1/F2/F3 geometry rows above it.
-    for (int depth = 1; depth <= 3; depth++)
-    {
-      if (leftDepth == depth)
-        AddFrontSurface(surfaces, depth, "LEFT", leftLane[depth - 1]);
-      if (centerDepth == depth)
-        AddFrontSurface(surfaces, depth, "CENTER", centerLane[depth - 1]);
-      if (rightDepth == depth)
-        AddFrontSurface(surfaces, depth, "RIGHT", rightLane[depth - 1]);
-    }
-
-    return surfaces;
-  }
-
-  private static string BuildVisibleWallSurfaceDiagnostic(
-      List<VisibleWallSurface> surfaces)
-  {
-    if (surfaces == null || surfaces.Count == 0)
-      return "VISIBLE SURFACES: none";
-
-    List<string> lines = new List<string>(surfaces.Count);
-    for (int i = 0; i < surfaces.Count; i++)
-    {
-      VisibleWallSurface surface = surfaces[i];
-      if (surface.Kind == VisibleWallSurfaceKind.Side)
-      {
-        lines.Add(
-            "F0 " + surface.Lane + " SIDE ("
-            + surface.Cell.X + "," + surface.Cell.Y + ")");
-      }
-      else
-      {
-        lines.Add(
-            "F" + surface.Depth + " " + surface.Lane + " FRONT ("
-            + surface.Cell.X + "," + surface.Cell.Y + ")");
-      }
-    }
-
-    return "VISIBLE SURFACES:\n" + string.Join("\n", lines);
-  }
-
-  private static void AddF0VisibleSideSurface(
-      List<VisibleWallSurface> surfaces,
-      string sideName,
-      RelativeViewportCell cell)
-  {
-    if (cell.IsInside && !IsViewEditGeometryWall(cell))
-      return;
-
-    surfaces.Add(new VisibleWallSurface
-    {
-      Kind = VisibleWallSurfaceKind.Side,
-      Depth = 0,
-      Lane = sideName,
-      Cell = cell
-    });
-  }
-
-  private static int FindFirstVisibleFrontWallDepth(
-      RelativeViewportCell[] lane)
-  {
-    if (lane == null)
-      return 0;
-
-    for (int i = 0; i < lane.Length; i++)
-    {
-      RelativeViewportCell cell = lane[i];
-
-      // Once a sight line leaves the map there cannot be a deeper map wall in
-      // that lane, and X itself is not a forward-facing wall surface.
-      if (!cell.IsInside)
-        return 0;
-
-      if (IsViewEditGeometryWall(cell))
-        return i + 1;
-    }
-
-    return 0;
-  }
-
-  private static void AddFrontSurface(
-      List<VisibleWallSurface> surfaces,
-      int depth,
-      string laneName,
-      RelativeViewportCell cell)
-  {
-    surfaces.Add(new VisibleWallSurface
-    {
-      Kind = VisibleWallSurfaceKind.Front,
-      Depth = depth,
-      Lane = laneName,
-      Cell = cell
-    });
-  }
-
-  // Geometry-engine stage 2: translate the stage-1 visible surfaces into the
-  // wall-piece families the renderer should need. This is still diagnostic
-  // only: it does not enable/disable pieces or alter DRAW.
+  // -------------------------------------------------------------------------
+  // Generic original-style viewport inspection model.
   //
-  // Current projection rule:
-  //   F0 LEFT/RIGHT SIDE -> LeftF0 / RightF0
-  //   any visible FRONT at depth 1/2/3 -> FrontF1 / FrontF2 / FrontF3
-  // Multiple lanes at the same depth collapse to one expected piece family.
-  private static string BuildExpectedPieceDiagnostic(
-      List<VisibleWallSurface> surfaces)
+  // This is deliberately geometry/diagnostic only. It does NOT change any
+  // ViewEdit Enabled state, wall-piece selection, DTerm data, X/Y positions,
+  // graphics, mirror values, draw order, or Play Mode rendering.
+  //
+  // 14 sampled map tiles:
+  //   D3: [-2,3] [-1,3] [0,3] [1,3] [2,3]
+  //   D2:        [-1,2] [0,2] [1,2]
+  //   D1:        [-1,1] [0,1] [1,1]
+  //   D0:        [-1,0] [0,0] [1,0]
+  //
+  // plus 3 D0 face evaluations:
+  //   BACK        -> probe [0,-1]
+  //   LEFT INNER  -> boundary between party [0,0] and left neighbor [-1,0]
+  //   RIGHT INNER -> boundary between party [0,0] and right neighbor [1,0]
+  // -------------------------------------------------------------------------
+  private enum Viewport17CellState
   {
-    bool frontF1 = false;
-    bool frontF2 = false;
-    bool frontF3 = false;
-    bool leftF0 = false;
-    bool rightF0 = false;
+    Open,
+    Wall,
+    Outside
+  }
 
-    if (surfaces != null)
+  private struct Viewport17Cell
+  {
+    public int LocalX;
+    public int Depth;
+    public int MapX;
+    public int MapY;
+    public bool IsInside;
+    public DungeonTileType Type;
+    public Viewport17CellState State;
+  }
+
+  private struct Viewport17FaceEvaluation
+  {
+    public string Name;
+    public string RelativeProbe;
+    public bool IsSolid;
+    public Viewport17Cell ProbeCell;
+  }
+
+  private struct Viewport17Inspection
+  {
+    public List<Viewport17Cell> Cells;
+    public Viewport17FaceEvaluation BackFace;
+    public Viewport17FaceEvaluation LeftInnerFace;
+    public Viewport17FaceEvaluation RightInnerFace;
+  }
+
+  private Viewport17Inspection BuildViewport17Inspection()
+  {
+    Viewport17Inspection inspection = new Viewport17Inspection
     {
-      for (int i = 0; i < surfaces.Count; i++)
-      {
-        VisibleWallSurface surface = surfaces[i];
-        if (surface.Kind == VisibleWallSurfaceKind.Side)
-        {
-          if (surface.Lane == "LEFT")
-            leftF0 = true;
-          else if (surface.Lane == "RIGHT")
-            rightF0 = true;
-          continue;
-        }
+      Cells = new List<Viewport17Cell>(14)
+    };
 
-        if (surface.Depth == 1)
-          frontF1 = true;
-        else if (surface.Depth == 2)
-          frontF2 = true;
-        else if (surface.Depth == 3)
-          frontF3 = true;
+    // The order in the list is not used for visibility. Keeping rows in
+    // near-to-far order makes the footprint definition easy to audit.
+    AddViewport17Row(inspection.Cells, 0, -1, 1);
+    AddViewport17Row(inspection.Cells, 1, -1, 1);
+    AddViewport17Row(inspection.Cells, 2, -1, 1);
+    AddViewport17Row(inspection.Cells, 3, -2, 2);
+
+    Viewport17Cell backProbe = SampleViewport17Cell(0, -1);
+    Viewport17Cell leftProbe = FindViewport17Cell(inspection.Cells, -1, 0);
+    Viewport17Cell rightProbe = FindViewport17Cell(inspection.Cells, 1, 0);
+
+    inspection.BackFace = new Viewport17FaceEvaluation
+    {
+      Name = "BACK",
+      RelativeProbe = "[0,-1]",
+      IsSolid = IsViewport17Solid(backProbe),
+      ProbeCell = backProbe
+    };
+
+    inspection.LeftInnerFace = new Viewport17FaceEvaluation
+    {
+      Name = "LEFT INNER",
+      RelativeProbe = "[-1,0]",
+      IsSolid = IsViewport17Solid(leftProbe),
+      ProbeCell = leftProbe
+    };
+
+    inspection.RightInnerFace = new Viewport17FaceEvaluation
+    {
+      Name = "RIGHT INNER",
+      RelativeProbe = "[1,0]",
+      IsSolid = IsViewport17Solid(rightProbe),
+      ProbeCell = rightProbe
+    };
+
+    return inspection;
+  }
+
+  private void AddViewport17Row(
+      List<Viewport17Cell> cells,
+      int depth,
+      int minLocalX,
+      int maxLocalX)
+  {
+    for (int localX = minLocalX; localX <= maxLocalX; localX++)
+      cells.Add(SampleViewport17Cell(localX, depth));
+  }
+
+  private Viewport17Cell SampleViewport17Cell(int localX, int depth)
+  {
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int mapX = previewX + forwardX * depth + rightX * localX;
+    int mapY = previewY + forwardY * depth + rightY * localX;
+    bool isInside = previewMiniMap != null && previewMiniMap.IsInside(mapX, mapY);
+
+    DungeonTileType tileType = default;
+    Viewport17CellState state = Viewport17CellState.Outside;
+
+    if (isInside)
+    {
+      tileType = previewMiniMap.GetTile(mapX, mapY).Type;
+      state = IsViewport17WallType(tileType)
+          ? Viewport17CellState.Wall
+          : Viewport17CellState.Open;
+    }
+
+    return new Viewport17Cell
+    {
+      LocalX = localX,
+      Depth = depth,
+      MapX = mapX,
+      MapY = mapY,
+      IsInside = isInside,
+      Type = tileType,
+      State = state
+    };
+  }
+
+  private static bool IsViewport17WallType(DungeonTileType type)
+  {
+    string typeName = type.ToString();
+    return typeName.IndexOf(
+               "STONE",
+               System.StringComparison.OrdinalIgnoreCase) >= 0
+        || typeName.IndexOf(
+               "WALL",
+               System.StringComparison.OrdinalIgnoreCase) >= 0;
+  }
+
+  private static Viewport17Cell FindViewport17Cell(
+      List<Viewport17Cell> cells,
+      int localX,
+      int depth)
+  {
+    if (cells != null)
+    {
+      for (int i = 0; i < cells.Count; i++)
+      {
+        Viewport17Cell cell = cells[i];
+        if (cell.LocalX == localX && cell.Depth == depth)
+          return cell;
       }
     }
 
-    List<string> names = new List<string>();
-    if (frontF1) names.Add("FrontF1");
-    if (frontF2) names.Add("FrontF2");
-    if (frontF3) names.Add("FrontF3");
-    if (leftF0) names.Add("LeftF0");
-    if (rightF0) names.Add("RightF0");
+    return default;
+  }
 
-    if (names.Count == 0)
-      return "EXPECTED PIECES: none";
+  private static bool IsViewport17Solid(Viewport17Cell cell)
+  {
+    return cell.State == Viewport17CellState.Wall
+        || cell.State == Viewport17CellState.Outside;
+  }
 
-    return "EXPECTED PIECES: " + string.Join(", ", names);
+  private static string FormatViewport17State(Viewport17Cell cell)
+  {
+    if (!cell.IsInside)
+      return "X(W)";
+
+    if (cell.State == Viewport17CellState.Wall)
+      return "W";
+
+    string typeName = cell.Type.ToString();
+    if (typeName.IndexOf("DOOR", System.StringComparison.OrdinalIgnoreCase) >= 0)
+      return "D";
+    if (typeName.IndexOf("PIT", System.StringComparison.OrdinalIgnoreCase) >= 0)
+      return "P";
+    if (typeName.IndexOf("STAIR", System.StringComparison.OrdinalIgnoreCase) >= 0)
+      return "S";
+    if (typeName.IndexOf("TELE", System.StringComparison.OrdinalIgnoreCase) >= 0)
+      return "T";
+    if (typeName.IndexOf("FALSE", System.StringComparison.OrdinalIgnoreCase) >= 0)
+      return "F";
+
+    return "O";
+  }
+
+  private static string FormatViewport17Cell(Viewport17Cell cell)
+  {
+    return FormatViewport17State(cell)
+        + " (" + cell.MapX + "," + cell.MapY + ")";
+  }
+
+  private static string GetViewport17LaneLabel(int localX, int depth)
+  {
+    if (depth == 3)
+    {
+      if (localX == -2) return "LL";
+      if (localX == -1) return "L";
+      if (localX == 0) return "C";
+      if (localX == 1) return "R";
+      if (localX == 2) return "RR";
+    }
+
+    if (localX == -1) return "L";
+    if (localX == 0) return depth == 0 ? "P" : "C";
+    if (localX == 1) return "R";
+
+    return localX.ToString();
+  }
+
+  private static string BuildViewport17ArrayDiagnostic(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null || inspection.Cells.Count != 14)
+      return "14 MAP TILE SAMPLES: unavailable";
+
+    List<string> lines = new List<string>
+    {
+      "14 MAP TILE SAMPLES:"
+    };
+
+    for (int depth = 3; depth >= 0; depth--)
+    {
+      int minLocalX = depth == 3 ? -2 : -1;
+      int maxLocalX = depth == 3 ? 2 : 1;
+      List<string> row = new List<string>();
+
+      for (int localX = minLocalX; localX <= maxLocalX; localX++)
+      {
+        Viewport17Cell cell =
+            FindViewport17Cell(inspection.Cells, localX, depth);
+        row.Add(
+            GetViewport17LaneLabel(localX, depth)
+            + "=" + FormatViewport17Cell(cell));
+      }
+
+      lines.Add("D" + depth + ": " + string.Join("  ", row));
+    }
+
+    return string.Join("\n", lines);
+  }
+
+  private static string FormatViewport17FaceEvaluation(
+      Viewport17FaceEvaluation face)
+  {
+    return face.Name
+        + " " + face.RelativeProbe
+        + " = " + (face.IsSolid ? "SOLID" : "OPEN")
+        + " via " + FormatViewport17Cell(face.ProbeCell);
+  }
+
+  private static string BuildViewport17FaceDiagnostic(
+      Viewport17Inspection inspection)
+  {
+    return "3 D0 FACE EVALUATIONS:\n"
+        + FormatViewport17FaceEvaluation(inspection.BackFace) + "\n"
+        + FormatViewport17FaceEvaluation(inspection.LeftInnerFace) + "\n"
+        + FormatViewport17FaceEvaluation(inspection.RightInnerFace);
   }
 
   private static string BuildBalancedDrawDiagnosticText(List<string> names)
@@ -4417,29 +4485,6 @@ public class ViewportLayoutEditor : EditorWindow
         : "OUT (" + cell.X + "," + cell.Y + ")";
   }
 
-  private static string FormatF0ViewportCellShort(RelativeViewportCell cell)
-  {
-    // F0 left/right are always visible to the player. An out-of-map cell
-    // therefore behaves as a solid boundary wall for rendering, while X is
-    // preserved in the diagnostic so we can still distinguish map bounds.
-    if (!cell.IsInside)
-      return "X(W)";
-
-    return FormatRelativeViewportCellShort(cell);
-  }
-
-  private static string FormatF0ViewportCellDiagnostic(RelativeViewportCell cell)
-  {
-    return FormatF0ViewportCellShort(cell)
-        + " (" + cell.X + "," + cell.Y + ")";
-  }
-
-  private static string FormatRelativeViewportCellDiagnostic(RelativeViewportCell cell)
-  {
-    return FormatRelativeViewportCellShort(cell)
-        + " (" + cell.X + "," + cell.Y + ")";
-  }
-
   private static string FormatRelativeViewportCellShort(RelativeViewportCell cell)
   {
     if (!cell.IsInside)
@@ -4484,8 +4529,8 @@ public class ViewportLayoutEditor : EditorWindow
             previewY,
             previewFacing);
 
-    return "F0 L" + FormatF0ViewportCellShort(g.F0Left)
-        + " R" + FormatF0ViewportCellShort(g.F0Right)
+    return "F0 L" + FormatRelativeViewportCellShort(g.F0Left)
+        + " R" + FormatRelativeViewportCellShort(g.F0Right)
         + "\nF1 L" + FormatRelativeViewportCellShort(g.F1Left)
         + " C" + FormatRelativeViewportCellShort(g.F1Center)
         + " R" + FormatRelativeViewportCellShort(g.F1Right)
