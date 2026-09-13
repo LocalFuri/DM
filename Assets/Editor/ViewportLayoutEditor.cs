@@ -4135,6 +4135,7 @@ public class ViewportLayoutEditor : EditorWindow
       drawPieceNamesLeftToRight.Add(drawPiecesLeftToRight[i].Key);
 
     string drawText = BuildBalancedDrawDiagnosticText(drawPieceNamesLeftToRight);
+    string visibleSurfacesText = BuildVisibleWallSurfaceDiagnostic(geometry);
 
     string text =
         "GEOMETRY DIAGNOSTIC  "
@@ -4151,6 +4152,8 @@ public class ViewportLayoutEditor : EditorWindow
         + "  C=" + FormatRelativeViewportCellDiagnostic(geometry.F3Center)
         + "  R=" + FormatRelativeViewportCellDiagnostic(geometry.F3Right)
         + "\n\n"
+        + visibleSurfacesText
+        + "\n\n"
         + drawText;
 
     GUIStyle diagnosticStyle = new GUIStyle(EditorStyles.helpBox);
@@ -4159,6 +4162,103 @@ public class ViewportLayoutEditor : EditorWindow
     GUILayout.Label(text, diagnosticStyle, GUILayout.ExpandWidth(true));
     if (Event.current.type == EventType.Repaint)
       geometryDiagnosticRect = GUILayoutUtility.GetLastRect();
+  }
+
+  // Geometry-engine stage 1: derive visible wall surfaces from the minimap
+  // only. This diagnostic deliberately does NOT read ViewEdit piece Enabled
+  // state, DTerm/pose overrides, graphics, X/Y placement, or the current DRAW
+  // resolver. It is the map -> visible-surfaces foundation for the new renderer.
+  private static string BuildVisibleWallSurfaceDiagnostic(
+      RelativeViewportGeometry geometry)
+  {
+    List<string> surfaces = new List<string>();
+
+    // F0 side surfaces are always in the player's immediate field of view.
+    // A cell outside the map is treated as a solid boundary side wall here.
+    AddF0VisibleSideSurface(surfaces, "LEFT", geometry.F0Left);
+    AddF0VisibleSideSurface(surfaces, "RIGHT", geometry.F0Right);
+
+    // Each lateral lane is an independent forward sight line. The first wall
+    // in that lane owns the visible FRONT surface; anything deeper in the same
+    // lane is occluded. Outside-map cells end the lane without inventing a
+    // front wall -- map boundaries at the player's side are represented by F0.
+    // Scan depth-first so the text reads F1, then F2, then F3.
+    RelativeViewportCell[] leftLane =
+    {
+      geometry.F1Left, geometry.F2Left, geometry.F3Left
+    };
+    RelativeViewportCell[] centerLane =
+    {
+      geometry.F1Center, geometry.F2Center, geometry.F3Center
+    };
+    RelativeViewportCell[] rightLane =
+    {
+      geometry.F1Right, geometry.F2Right, geometry.F3Right
+    };
+
+    int leftDepth = FindFirstVisibleFrontWallDepth(leftLane);
+    int centerDepth = FindFirstVisibleFrontWallDepth(centerLane);
+    int rightDepth = FindFirstVisibleFrontWallDepth(rightLane);
+
+    for (int depth = 1; depth <= 3; depth++)
+    {
+      if (leftDepth == depth)
+        AddFrontSurface(surfaces, depth, "LEFT", leftLane[depth - 1]);
+      if (centerDepth == depth)
+        AddFrontSurface(surfaces, depth, "CENTER", centerLane[depth - 1]);
+      if (rightDepth == depth)
+        AddFrontSurface(surfaces, depth, "RIGHT", rightLane[depth - 1]);
+    }
+
+    if (surfaces.Count == 0)
+      return "VISIBLE SURFACES: none";
+
+    return "VISIBLE SURFACES:\n" + string.Join("\n", surfaces);
+  }
+
+  private static void AddF0VisibleSideSurface(
+      List<string> surfaces,
+      string sideName,
+      RelativeViewportCell cell)
+  {
+    if (cell.IsInside && !IsViewEditGeometryWall(cell))
+      return;
+
+    surfaces.Add(
+        "F0 " + sideName + " SIDE (" + cell.X + "," + cell.Y + ")");
+  }
+
+  private static int FindFirstVisibleFrontWallDepth(
+      RelativeViewportCell[] lane)
+  {
+    if (lane == null)
+      return 0;
+
+    for (int i = 0; i < lane.Length; i++)
+    {
+      RelativeViewportCell cell = lane[i];
+
+      // Once a sight line leaves the map there cannot be a deeper map wall in
+      // that lane, and X itself is not a forward-facing wall surface.
+      if (!cell.IsInside)
+        return 0;
+
+      if (IsViewEditGeometryWall(cell))
+        return i + 1;
+    }
+
+    return 0;
+  }
+
+  private static void AddFrontSurface(
+      List<string> surfaces,
+      int depth,
+      string laneName,
+      RelativeViewportCell cell)
+  {
+    surfaces.Add(
+        "F" + depth + " " + laneName + " FRONT ("
+        + cell.X + "," + cell.Y + ")");
   }
 
   private static string BuildBalancedDrawDiagnosticText(List<string> names)
