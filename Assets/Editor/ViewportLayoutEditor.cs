@@ -8500,6 +8500,80 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyViewport17LiveDrawToResolvedWalls();
   }
 
+  // FrontF1 dest/width from V17 occupancy, not from a map pose.
+  // Left 32px is LeftF0 or a FrontF3 L-only strip. Right 32px is RightF0,
+  // a FrontF3 R-only strip, or an open D1-right corridor (0,5 North).
+  // Both insets -> dest 32, width 160 (verified 0,5 South and 0,5 North).
+  private static bool TryComputeViewport17FrontF1LiveBlit(
+      List<Viewport17RenderCommand> finalCommands,
+      Viewport17Inspection inspection,
+      out int destX,
+      out int width)
+  {
+    destX = 0;
+    width = StraightF1WallLogic.CompositeWidth;
+    if (finalCommands == null)
+      return false;
+
+    bool hasLeftF0 = false;
+    bool hasRightF0 = false;
+    bool frontF3LeftOnly = false;
+    bool frontF3RightOnly = false;
+    bool frontF1Center = false;
+    for (int i = 0; i < finalCommands.Count; i++)
+    {
+      Viewport17RenderCommand command = finalCommands[i];
+      if (command.PieceFamily == "LeftF0")
+        hasLeftF0 = true;
+      else if (command.PieceFamily == "RightF0")
+        hasRightF0 = true;
+
+      if (!command.IsFrontComposite)
+        continue;
+
+      if (command.PieceFamily == "FrontF3")
+      {
+        frontF3LeftOnly |= command.FrontLeft && !command.FrontCenter;
+        frontF3RightOnly |= command.FrontRight && !command.FrontCenter;
+      }
+      else if (command.PieceFamily == "FrontF1")
+      {
+        frontF1Center |= command.FrontCenter;
+      }
+    }
+
+    if (!frontF1Center)
+      return false;
+
+    bool d1RightOpen = false;
+    if (inspection.Cells != null)
+    {
+      Viewport17Cell d1Right = FindViewport17Cell(inspection.Cells, 1, 1);
+      if (d1Right.LocalX == 1 && d1Right.Depth == 1)
+        d1RightOpen = d1Right.State != Viewport17CellState.Wall;
+    }
+    bool leftInset = hasLeftF0 || frontF3LeftOnly;
+    bool rightInset = hasRightF0 || frontF3RightOnly || d1RightOpen;
+
+    if (leftInset && rightInset)
+    {
+      destX = 32;
+      width = StraightF1WallLogic.CompositeWidth160;
+    }
+    else if (leftInset)
+    {
+      destX = 32;
+      width = StraightF1WallLogic.CompositeWidth191;
+    }
+    else if (rightInset)
+    {
+      destX = 0;
+      width = StraightF1WallLogic.CompositeWidth191;
+    }
+
+    return true;
+  }
+
   /// <summary>
   /// When V17 Walls owns Game View, ViewEdit must show the same Enabled / X /
   /// Y / Width / Mirror that Compose actually blits. This overlay is last so
@@ -8585,14 +8659,14 @@ public class ViewportLayoutEditor : EditorWindow
       {
         state.Enabled = frontF1Center;
         if (frontF1Center
-            && previewX == 0
-            && previewY == 5
-            && previewFacing == DungeonFacing.South
-            && frontF1CropPreview)
+            && TryComputeViewport17FrontF1LiveBlit(
+                finalCommands,
+                inspection,
+                out int frontF1DestX,
+                out int frontF1Width))
         {
-          state.X = 32;
-          state.FrontF1Width = StraightF1WallLogic.CompositeWidth160;
-          state.Mirror = true;
+          state.X = frontF1DestX;
+          state.FrontF1Width = frontF1Width;
         }
 
         resolvedNormalWallByPiece[piece] = state;
@@ -8602,6 +8676,8 @@ public class ViewportLayoutEditor : EditorWindow
       state.Enabled = IsViewport17NormalWallSelected(piece, finalCommands);
       if (state.Enabled && IsWallF0RightPiece(piece))
         state.X = 191;
+      if (state.Enabled && IsWallF0LeftPiece(piece))
+        state.X = 0;
 
       resolvedNormalWallByPiece[piece] = state;
     }
@@ -10863,53 +10939,33 @@ public class ViewportLayoutEditor : EditorWindow
           int width = resolvedF1Width;
           int frontF1TextureHeight = StraightF1WallLogic.CompositeHeight;
 
-          if (previewX == 0
-              && previewY == 5
-              && previewFacing == DungeonFacing.South)
+          if (viewport17WallAuthorityActive)
           {
-            width = StraightF1WallLogic.CompositeWidth;
-            Texture2D f1Texture = graphics.GetFrontWallF1Texture(width);
+            if (!TryGetResolvedNormalWallState(
+                    piece, out ResolvedNormalWallState liveFrontF1)
+                || !liveFrontF1.Enabled)
+            {
+              continue;
+            }
+
+            Texture2D f1Texture = graphics.GetFrontWallF1Texture(
+                StraightF1WallLogic.CompositeWidth);
             if (f1Texture == null)
             {
               Debug.LogError(
-                  "FrontF1 0,5 South: required 224x111 source texture is missing.");
+                  "FrontF1 V17: required 224x111 source texture is missing.");
               continue;
             }
 
             frontF1TextureHeight = f1Texture.height;
+            int destinationStartX = liveFrontF1.X;
+            int copyWidth = liveFrontF1.FrontF1Width > 0
+                ? liveFrontF1.FrontF1Width
+                : StraightF1WallLogic.CompositeWidth;
+            int sourceStartX = destinationStartX;
 
-            // The D3-left FrontF3 strip occupies dest X 0..31. FrontF1 must
-            // start at 32 so the two walls abut. Do not add the D1 CENTER +1
-            // offset here: that shift is for a full-width FrontF1 vs Ref X,
-            // and it leaves a 1px gap beside the 32px strip.
-            int viewport17D1CenterOffsetX = 0;
-            if (TryGetViewport17FrontProjectionSlot(
-                    1,
-                    0,
-                    out Viewport17FrontProjectionSlot d1CenterProjection)
-                && d1CenterProjection.HasDisplayXOffset)
+            if (liveFrontF1.Mirror)
             {
-              viewport17D1CenterOffsetX = d1CenterProjection.DisplayOffsetX;
-            }
-
-            if (frontF1CropPreview)
-            {
-              // Dest 0..31 = D3-left FrontF3 strip. Dest 192..223 = RightF0.
-              // D1 center FrontF1 is dest 32..191 (160px). Copying through
-              // dest 223 draws the F1 right-side extension and puts an extra
-              // vertical edge over RightF0.
-              int destinationStartX = 32;
-              int sourceStartX = 32;
-              int copyWidth = StraightF1WallLogic.CompositeWidth160;
-              if (TryGetResolvedNormalWallState(
-                      piece, out ResolvedNormalWallState liveFrontF1)
-                  && liveFrontF1.Enabled)
-              {
-                destinationStartX = liveFrontF1.X;
-                if (liveFrontF1.FrontF1Width > 0)
-                  copyWidth = liveFrontF1.FrontF1Width;
-              }
-
               BlitFrontF1MirroredImageFromX(
                   pixels,
                   f1Texture,
@@ -10917,40 +10973,30 @@ public class ViewportLayoutEditor : EditorWindow
                   destinationStartX,
                   resolvedY,
                   copyWidth);
-
-              LogIfOverlapsLeftF0(
-                  piece,
-                  piece.Graphic,
-                  destinationStartX,
-                  resolvedY,
-                  copyWidth,
-                  f1Texture.height);
             }
             else
             {
-              int destinationStartX = viewport17D1CenterOffsetX;
-              bool f1Mirror = true;
-
-              StraightF1WallLogic.BlitCompositeToBuffer(
-                  f1Texture,
+              BlitFrontF1CroppedPreview(
                   pixels,
-                  PreviewWidth,
-                  PreviewHeight,
+                  f1Texture,
+                  sourceStartX,
                   destinationStartX,
                   resolvedY,
-                  f1Mirror,
-                  width);
-
-              LogIfOverlapsLeftF0(
-                  piece,
-                  piece.Graphic,
-                  destinationStartX,
-                  resolvedY,
-                  width,
-                  f1Texture.height);
+                  false,
+                  copyWidth);
             }
+
+            LogIfOverlapsLeftF0(
+                piece,
+                piece.Graphic,
+                destinationStartX,
+                resolvedY,
+                copyWidth,
+                f1Texture.height);
+            continue;
           }
-          else if (TryGetCurrentRelativeViewportGeometry(out RelativeViewportGeometry currentGeometry)
+
+          if (TryGetCurrentRelativeViewportGeometry(out RelativeViewportGeometry currentGeometry)
               && IsLeftD3ObliqueOpening(currentGeometry))
           {
             // LeftD3 composition: keep the left 32 screen pixels free for LeftD3.
