@@ -4224,7 +4224,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   // -------------------------------------------------------------------------
-  // Stage 6A: generic front-lane projection table + D3 LEFT destination calibration.
+  // Stage 6C: generic front-lane projection table + D3 LEFT source-window candidate.
   //
   // A front wall graphic is selected by DEPTH (FrontF1/F2/F3), while its
   // screen projection is selected independently by LANE (LEFT/CENTER/RIGHT).
@@ -4234,7 +4234,9 @@ public class ViewportLayoutEditor : EditorWindow
   // CENTER slots are already calibrated: they use the canonical ViewEdit Ref
   // position with zero offset and no clipping. Stage 6A additionally calibrates
   // only the D3 LEFT destination band (Y + destination clip X 0..31). Its
-  // source window, graphic-origin X, and mirror remain PENDING by design.
+  // Stage 6C adds a diagnostic-only D3 LEFT source mapping candidate: the rightmost
+  // 32 pixels of FrontF3 are aligned to destination X 0..31 with mirror OFF.
+  // This is still diagnostic-only and can be adjusted after brick-pattern comparison.
   // -------------------------------------------------------------------------
   private struct Viewport17FrontProjectionSlot
   {
@@ -4261,6 +4263,7 @@ public class ViewportLayoutEditor : EditorWindow
     public int ClipMaxX;
     public string ClipMode;
     public string SourceWindowMode;
+    public string GraphicOriginRule;
 
     public bool HasMirror;
     public bool Mirror;
@@ -4287,6 +4290,8 @@ public class ViewportLayoutEditor : EditorWindow
     public int BaseReferenceY;
     public bool HasPieceMetrics;
     public int PieceHeight;
+    public bool HasPieceWidth;
+    public int PieceWidth;
     public bool HasBaseBufferReference;
     public int BaseBufferX;
     public int BaseBufferY;
@@ -4304,6 +4309,11 @@ public class ViewportLayoutEditor : EditorWindow
     public int ProjectedDisplayY;
     public bool HasProjectedBufferY;
     public int ProjectedBufferY;
+    public bool HasProjectedGraphicOriginX;
+    public int ProjectedGraphicOriginX;
+    public bool HasSourceWindow;
+    public int SourceMinX;
+    public int SourceMaxX;
     public string SourceWindowMode;
 
     // Mirror and clipping remain instance properties. Stage 5 resolves only
@@ -4901,10 +4911,10 @@ public class ViewportLayoutEditor : EditorWindow
       UseCanonicalBase = true,
 
       // CENTER is fully calibrated from the canonical family Ref.
-      // Stage 6A calibrates only the D3 LEFT destination band: its Y is the
-      // canonical FrontF3 Y and the visible destination window is X 0..31.
-      // The source X window, graphic-origin X, and mirror remain intentionally
-      // pending until the brick pattern is matched against the original.
+      // D3 LEFT keeps the Stage 6A destination band (Y from canonical FrontF3,
+      // destination X 0..31). Stage 6C adds Candidate A for source mapping:
+      // use FrontF3's rightmost 32 source pixels, align that right edge to
+      // destination X=31, and do not mirror. Renderer remains unchanged.
       HasDisplayXOffset = center,
       HasDisplayYOffset = center || d3Left,
       DisplayOffsetX = 0,
@@ -4920,14 +4930,19 @@ public class ViewportLayoutEditor : EditorWindow
       SourceWindowMode = center
           ? "FULL_SOURCE"
           : d3Left
-              ? "PENDING_SOURCE_WINDOW"
+              ? "RIGHT_EDGE_32_CANDIDATE"
               : "PENDING",
-      HasMirror = false,
+      GraphicOriginRule = center
+          ? "CANONICAL_REF_X"
+          : d3Left
+              ? "ALIGN_SOURCE_RIGHT_EDGE_TO_DEST_CLIP_RIGHT"
+              : "PENDING",
+      HasMirror = d3Left,
       Mirror = false,
       CalibrationStatus = center
           ? "CALIBRATED_CANONICAL_CENTER"
           : d3Left
-              ? "CALIBRATED_DESTINATION_ONLY"
+              ? "CANDIDATE_A_RIGHT_EDGE_32_MIRROR_OFF"
               : "PENDING_LANE_CALIBRATION"
     };
 
@@ -4958,6 +4973,7 @@ public class ViewportLayoutEditor : EditorWindow
         + offsetY + " "
         + clip + " "
         + "sourceWindow=" + slot.SourceWindowMode + " "
+        + "originRule=" + slot.GraphicOriginRule + " "
         + mirror + " "
         + "status=" + slot.CalibrationStatus;
   }
@@ -5059,16 +5075,82 @@ public class ViewportLayoutEditor : EditorWindow
     return height > 0;
   }
 
+  private bool TryGetViewport17PieceWidth(
+      string pieceFamily,
+      out int width)
+  {
+    width = 0;
+    if (string.IsNullOrEmpty(pieceFamily))
+      return false;
+
+    // FrontF2 has a special legacy reference path. Its native source is 106px
+    // wide; Stage 6C only needs FrontF3, but keeping this explicit prevents
+    // future command calibration from reading a placeholder texture width.
+    if (pieceFamily == "FrontF2")
+    {
+      width = 106;
+      return true;
+    }
+
+    ViewportPiece piece = FindLayoutPieceByName(pieceFamily);
+    if (piece == null)
+    {
+      switch (pieceFamily)
+      {
+        case "FrontF1": piece = FindLayoutPieceByName("Front Wall F1"); break;
+        case "FrontF2": piece = FindLayoutPieceByName("Front Wall F2"); break;
+        case "FrontF3": piece = FindLayoutPieceByName("Front Wall F3"); break;
+        case "LeftF0": piece = FindLayoutPieceByName("Wall F0Left"); break;
+        case "LeftF1": piece = FindLayoutPieceByName("Wall F1Left"); break;
+        case "LeftF2": piece = FindLayoutPieceByName("Wall F2Left"); break;
+        case "LeftF3": piece = FindLayoutPieceByName("Wall F3Left"); break;
+        case "RightF0": piece = FindLayoutPieceByName("Wall F0Right"); break;
+        case "RightF1": piece = FindLayoutPieceByName("Wall F1Right"); break;
+        case "RightF2": piece = FindLayoutPieceByName("Wall F2Right"); break;
+        case "RightF3": piece = FindLayoutPieceByName("Wall F3Right"); break;
+        case "LeftD3": piece = FindLayoutPieceByName("Wall D3L2"); break;
+        case "RightD3": piece = FindLayoutPieceByName("Wall D3R2"); break;
+      }
+    }
+
+    if (piece == null || graphics == null)
+      return false;
+
+    if (pieceFamily == "FrontF1")
+    {
+      int f1Width = StraightF1WallLogic.NormalizeFrontWallF1Width(
+          piece.FrontWallF1Width);
+      Texture2D f1Texture = graphics.GetFrontWallF1Texture(f1Width);
+      if (f1Texture != null && f1Texture.width > 0)
+      {
+        width = f1Texture.width;
+        return true;
+      }
+    }
+
+    Texture2D texture = graphics.GetTexture(piece.Graphic);
+    if (texture == null || texture.width <= 0)
+      return false;
+
+    width = texture.width;
+    return true;
+  }
+
   private void ResolveViewport17RenderCommandStage6(
       ref Viewport17RenderCommand command)
   {
     command.HasBaseReference = false;
     command.HasPieceMetrics = false;
+    command.HasPieceWidth = false;
     command.HasBaseBufferReference = false;
     command.HasDisplayPlacement = false;
     command.HasBufferPlacement = false;
     command.HasProjectedDisplayY = false;
     command.HasProjectedBufferY = false;
+    command.HasProjectedGraphicOriginX = false;
+    command.HasSourceWindow = false;
+    command.SourceMinX = 0;
+    command.SourceMaxX = 0;
     command.SourceWindowMode = "PENDING";
     command.HasMirror = false;
     command.ClipMode = "PENDING";
@@ -5086,6 +5168,12 @@ public class ViewportLayoutEditor : EditorWindow
     {
       command.HasPieceMetrics = true;
       command.PieceHeight = pieceHeight;
+    }
+
+    if (TryGetViewport17PieceWidth(command.PieceFamily, out int pieceWidth))
+    {
+      command.HasPieceWidth = true;
+      command.PieceWidth = pieceWidth;
     }
 
     if (command.HasBaseReference && command.HasPieceMetrics)
@@ -5128,6 +5216,41 @@ public class ViewportLayoutEditor : EditorWindow
               command.PieceHeight);
         }
 
+        // Stage 6C Candidate A for D3 LEFT. Treat the projected front face as
+        // the same full 141x49 FrontF3 graphic shifted left so only its
+        // rightmost 32 source pixels land in destination X 0..31.
+        // For a 141px FrontF3 this resolves graphic origin X to -109 and
+        // source window X 109..140. This remains diagnostic-only.
+        bool d3LeftCandidate = command.Depth == 3
+            && command.LocalX == -1
+            && slot.SourceWindowMode == "RIGHT_EDGE_32_CANDIDATE";
+        if (d3LeftCandidate
+            && slot.HasClipWindow
+            && command.HasPieceWidth
+            && command.HasProjectedDisplayY
+            && command.HasProjectedBufferY)
+        {
+          int visibleWidth = slot.ClipMaxX - slot.ClipMinX + 1;
+          visibleWidth = Mathf.Clamp(visibleWidth, 1, command.PieceWidth);
+
+          command.HasSourceWindow = true;
+          command.SourceMinX = command.PieceWidth - visibleWidth;
+          command.SourceMaxX = command.PieceWidth - 1;
+
+          command.HasProjectedGraphicOriginX = true;
+          command.ProjectedGraphicOriginX =
+              slot.ClipMaxX - command.SourceMaxX;
+
+          command.HasDisplayPlacement = true;
+          command.DisplayX = command.ProjectedGraphicOriginX;
+          command.DisplayY = command.ProjectedDisplayY;
+          command.HasBufferPlacement = true;
+          command.BufferX = command.ProjectedGraphicOriginX;
+          command.BufferY = command.ProjectedBufferY;
+          command.SourceWindowMode =
+              "SRC_X_[" + command.SourceMinX + ".." + command.SourceMaxX + "]_RIGHT_EDGE_CANDIDATE";
+        }
+
         if (slot.UseCanonicalBase
             && slot.HasDisplayXOffset
             && slot.HasDisplayYOffset
@@ -5148,11 +5271,13 @@ public class ViewportLayoutEditor : EditorWindow
         command.ResolutionNote =
             "projectionSlot=D" + slot.Depth + "/" + slot.Lane
             + " status=" + slot.CalibrationStatus
-            + (command.HasDisplayPlacement
-                ? "; canonical base + calibrated lane offset"
-                : command.HasProjectedDisplayY
-                    ? "; destination Y/clip calibrated; graphic-origin X/source window still pending"
-                    : "; normalized base Ref known; lane placement/clip still pending");
+            + (d3LeftCandidate && command.HasSourceWindow
+                ? "; Candidate A resolved: rightmost 32 source pixels -> destination X 0..31; verify brick pattern before renderer hookup"
+                : command.HasDisplayPlacement
+                    ? "; canonical base + calibrated lane offset"
+                    : command.HasProjectedDisplayY
+                        ? "; destination Y/clip calibrated; graphic-origin X/source window still pending"
+                        : "; normalized base Ref known; lane placement/clip still pending");
       }
       else
       {
@@ -5200,9 +5325,8 @@ public class ViewportLayoutEditor : EditorWindow
         ? string.Empty
         : " [" + command.Projection + "]";
 
-    string metrics = command.HasPieceMetrics
-        ? " h=" + command.PieceHeight
-        : " h=PENDING";
+    string metrics = (command.HasPieceWidth ? " w=" + command.PieceWidth : " w=PENDING")
+        + (command.HasPieceMetrics ? " h=" + command.PieceHeight : " h=PENDING");
 
     string baseRef = command.HasBaseReference
         ? " baseDisplay=(" + command.BaseReferenceX + "," + command.BaseReferenceY + ")"
@@ -5249,6 +5373,9 @@ public class ViewportLayoutEditor : EditorWindow
         + mirror
         + " clip=" + command.ClipMode
         + " sourceWindow=" + command.SourceWindowMode
+        + (command.HasProjectedGraphicOriginX
+            ? " graphicOriginX=" + command.ProjectedGraphicOriginX
+            : string.Empty)
         + note;
   }
 
@@ -5285,10 +5412,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     lines.Add("");
     lines.Add(
-        "STAGE 6B: normalized FrontF2 command geometry fixed (displayY=1, height=74, bufferY=125). D3 LEFT destination calibration remains unchanged: "
-        + "displayY follows canonical FrontF3 (Y=58 here) and destination clip X=[0..31]. "
-        + "Graphic-origin X, source pixel window, and mirror remain explicitly PENDING. "
-        + "CENTER slots remain calibrated from canonical refs; all other projected lanes remain pending.");
+        "STAGE 6C: D3 LEFT now has diagnostic Candidate A source projection. "
+        + "The full FrontF3 graphic is shifted left so its rightmost 32 source pixels map to destination X=[0..31]; "
+        + "for the current 141px FrontF3 this resolves source X=[109..140], graphic origin X=-109, displayY=58/bufferY=93, mirror=OFF. "
+        + "This is intentionally a calibration candidate until the brick pattern is visually verified. CENTER slots remain calibrated; all other projected lanes remain pending.");
     lines.Add(
         "DIAGNOSTIC ONLY: renderer/Enabled states are still unchanged.");
     return string.Join("\n", lines);
