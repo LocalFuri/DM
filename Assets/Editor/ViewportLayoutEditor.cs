@@ -6057,22 +6057,18 @@ public class ViewportLayoutEditor : EditorWindow
   private string BuildViewport17CompactDiagnostic(
       Viewport17Inspection inspection)
   {
-    List<Viewport17RenderCommand> commands =
-        BuildViewport17RenderCommands(inspection);
-
     List<string> lines = new List<string>
     {
       "VIEWPORT-17  " + previewX + "," + previewY + " " + previewFacing,
-      "VIEWEDIT WALL AUTHORITY: "
+      "V17 WALLS: "
           + (IsViewport17WallAuthorityActive()
-              ? "VIEWPORT-17 (legacy visibility muted)"
+              ? "ENABLED  (legacy visibility muted)"
               : useViewport17WallAuthority && !showOnlyWallsNeededForCurrentPose
-                  ? "MANUAL SHOW-ALL (V17 temporarily suspended)"
-                  : "LEGACY")
+                  ? "SUSPENDED BY SHOW ALL WALLS"
+                  : "DISABLED")
     };
 
-    // Keep the four geometry rows because they are the map truth. Omit the
-    // long face/surface/projection traces unless Details is explicitly on.
+    // Compact mode shows only the map truth plus the final wall decision.
     for (int depth = 3; depth >= 0; depth--)
     {
       int minLocalX = depth == 3 ? -2 : -1;
@@ -6091,30 +6087,26 @@ public class ViewportLayoutEditor : EditorWindow
       lines.Add("D" + depth + ": " + string.Join("  ", row));
     }
 
-    lines.Add("");
-
     List<Viewport17RenderCommand> finalCommands =
         BuildViewport17FinalDrawCommands(inspection);
-    lines.Add("FINAL DRAW FROM MINIMAP:");
 
-    if (finalCommands.Count == 0)
+    List<string> finalPieces = new List<string>();
+    HashSet<string> seenFamilies = new HashSet<string>();
+    for (int i = 0; i < finalCommands.Count; i++)
     {
-      lines.Add("none");
-    }
-    else
-    {
-      for (int i = 0; i < finalCommands.Count; i++)
-        lines.Add(FormatViewport17FinalDrawCommand(finalCommands[i]));
+      string family = finalCommands[i].PieceFamily;
+      if (!string.IsNullOrEmpty(family) && seenFamilies.Add(family))
+        finalPieces.Add(family);
     }
 
+    lines.Add("");
     lines.Add(
-        "Final pieces: " + finalCommands.Count
-        + "  (candidates: " + (commands?.Count ?? 0) + ")");
-    lines.Add(
-        IsViewport17WallAuthorityActive()
-            ? "ViewEdit draw = FINAL DRAW above"
-            : "ViewEdit draw = legacy/manual fallback");
-    lines.Add("Details = full trace");
+        "FINAL DRAW: "
+        + (finalPieces.Count == 0
+            ? "none"
+            : string.Join(", ", finalPieces)));
+    lines.Add("PIECES: " + finalPieces.Count);
+
     return string.Join("\n", lines);
   }
 
