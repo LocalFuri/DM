@@ -4690,7 +4690,37 @@ public class ViewportLayoutEditor : EditorWindow
     if (!anyActiveDmPiece)
       text.Append(" none");
 
+    if (graphics != null)
+    {
+      Texture2D rawLeftF1 = graphics.WallF1L;
+      Texture2D rawFrontF1 = graphics.FrontWallF1;
+      Texture2D rawRightF1 = graphics.WallF1R;
+      Texture2D routedFrontF1 = graphics.GetTexture(DungeonGraphicType.FrontWallF1);
+      Texture2D recoveredFrontF1 =
+          AssetDatabase.LoadAssetAtPath<Texture2D>(
+              "Assets/Art/Walls/Front_Wall_F1_RAW_160x111.png");
+
+      text.Append("\nRAW F1 ASSETS: L=")
+          .Append(DescribeTextureSize(rawLeftF1))
+          .Append("  C(raw)=")
+          .Append(DescribeTextureSize(rawFrontF1))
+          .Append("  R=")
+          .Append(DescribeTextureSize(rawRightF1))
+          .Append("  C(GetTexture)=")
+          .Append(DescribeTextureSize(routedFrontF1))
+          .Append("  RAW160(file)=")
+          .Append(DescribeTextureSize(recoveredFrontF1));
+    }
+
     return text.ToString();
+  }
+
+  private static string DescribeTextureSize(Texture2D texture)
+  {
+    if (texture == null)
+      return "null";
+
+    return texture.width + "x" + texture.height;
   }
 
   private Viewport17Inspection BuildViewport17Inspection()
