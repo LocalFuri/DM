@@ -4263,13 +4263,20 @@ public class ViewportLayoutEditor : EditorWindow
     string drawText = BuildBalancedDrawDiagnosticText(drawPieceNamesLeftToRight);
 
 
+    // CSBWin uses a fixed 21-cell viewport footprint. Show that source-backed
+    // lookup first so we can verify map rotation/coordinates without changing
+    // wall selection, visibility, graphics, positions, mirroring, or drawing.
+    string csbWin21Text = BuildCsbWin21Diagnostic();
+
     Viewport17Inspection inspection = BuildViewport17Inspection();
 
     string text;
     if (showViewport17DiagnosticDetails)
     {
       text =
-          "VIEWPORT-17 DETAILS  "
+          csbWin21Text
+          + "\n\n--------------------------------\n"
+          + "EXISTING VIEWPORT-17 DETAILS  "
           + previewX + "," + previewY + " " + previewFacing + "\n\n"
           + BuildViewport17ArrayDiagnostic(inspection)
           + "\n\n"
@@ -4286,12 +4293,12 @@ public class ViewportLayoutEditor : EditorWindow
           + (viewport17D3RightCalibrationPreview ? "ON" : "OFF")
           + "  " + GetViewport17D3RightCalibrationLabel()
           + " (candidate until visually verified)"
-          + "\n\nTOTAL EVALUATIONS: 14 map tiles + 3 D0 faces = 17"
+          + "\n\nEXISTING TOTAL: 14 map tiles + 3 D0 faces = 17"
           + "\n\nLEGACY " + drawText;
     }
     else
     {
-      text = BuildViewport17CompactDiagnostic(inspection);
+      text = csbWin21Text;
     }
 
     GUIStyle diagnosticStyle = new GUIStyle(EditorStyles.helpBox);
@@ -4482,6 +4489,208 @@ public class ViewportLayoutEditor : EditorWindow
     public Viewport17FaceEvaluation BackFace;
     public Viewport17FaceEvaluation LeftInnerFace;
     public Viewport17FaceEvaluation RightInnerFace;
+  }
+
+  // -------------------------------------------------------------------------
+  // CSBWin source-backed 21-cell viewport lookup.
+  //
+  // Viewport.cpp defines these exact relative X/depth arrays and processes
+  // userCellNum 0..20 in this order. X is right-positive in the player frame;
+  // depth is forward-positive. DIAGNOSTIC ONLY: no renderer state is changed.
+  // -------------------------------------------------------------------------
+  private static readonly int[] CsbWin21RelativeX =
+  {
+    -2, +2, -2, +2, -1, +1,  0, -1, +1,  0,
+    -2, +2, -1, +1,  0, -1, +1,  0, -1, +1,  0
+  };
+
+  private static readonly int[] CsbWin21RelativeDepth =
+  {
+     4,  4,  3,  3,  4,  4,  4,  3,  3,  3,
+     2,  2,  2,  2,  2,  1,  1,  1,  0,  0,  0
+  };
+
+  // Spatial display order only. CSBWin processing order remains 00 -> 20.
+  private static readonly int[][] CsbWin21SpatialRows =
+  {
+    new[] { 0, 4, 6, 5, 1 },
+    new[] { 2, 7, 9, 8, 3 },
+    new[] { 10, 12, 14, 13, 11 },
+    new[] { 15, 17, 16 },
+    new[] { 18, 20, 19 }
+  };
+
+  // Stone-column command summary from CSBWin Viewport.cpp pStdDrawCode.
+  // Bn = d.pWallBitmaps[n], Rn = d.wallRectangles[n]. This remains
+  // diagnostic-only; it does not select, enable, position, mirror, or draw walls.
+  private static readonly string[] CsbWin21CellNames =
+  {
+    "F4L2", "F4R2", "F3L2", "F3R2", "F4L1", "F4R1", "F4",
+    "F3L1", "F3R1", "F3", "F2L2", "F2R2", "F2L1", "F2R1", "F2",
+    "F1L1", "F1R1", "F1", "F0L1", "F0R1", "F0"
+  };
+
+  private static readonly string[] CsbWin21StoneRecipeByCell =
+  {
+    "NOP", "NOP", "B5/R13", "B6/R12", "OBJ", "OBJ", "OBJ",
+    "B4/R1", "B4/R2", "B4/R0", "NOP", "NOP", "B3/R4", "B3/R5", "B3/R3",
+    "B2/R7", "B2/R8", "B2/R6", "B1/R10", "B0/R11", "NO-WALL-BMP"
+  };
+
+  // Diagnostic translation only: fixed CSBWin wall roles to the existing
+  // original-Dungeon-Master ViewEdit piece names. Nothing here changes rendering.
+  private static readonly string[] CsbWin21ViewEditPieceByCell =
+  {
+    null, null, "LeftD3", "RightD3", null, null, null,
+    "LeftF3", "RightF3", "FrontF3", null, null, "LeftF2", "RightF2", "FrontF2",
+    "LeftF1", "RightF1", "FrontF1", "LeftF0", "RightF0", null
+  };
+
+  private List<Viewport17Cell> BuildCsbWin21Cells()
+  {
+    List<Viewport17Cell> cells = new List<Viewport17Cell>(21);
+    for (int i = 0; i < 21; i++)
+    {
+      cells.Add(
+          SampleViewport17Cell(
+              CsbWin21RelativeX[i],
+              CsbWin21RelativeDepth[i]));
+    }
+
+    return cells;
+  }
+
+  private static string GetCsbWin21LaneLabel(int localX)
+  {
+    if (localX == -2) return "L2";
+    if (localX == -1) return "L1";
+    if (localX == 0) return "C";
+    if (localX == 1) return "R1";
+    if (localX == 2) return "R2";
+    return localX.ToString();
+  }
+
+  private static string FormatCsbWin21Cell(int index, Viewport17Cell cell)
+  {
+    string indexText = index < 10 ? "0" + index : index.ToString();
+    return indexText
+        + " " + GetCsbWin21LaneLabel(cell.LocalX)
+        + "=" + FormatViewport17State(cell)
+        + "[" + cell.MapX + "," + cell.MapY + "]";
+  }
+
+  private string BuildCsbWin21Diagnostic()
+  {
+    List<Viewport17Cell> cells = BuildCsbWin21Cells();
+    if (cells.Count != 21)
+      return "CSBWIN 21-CELL LOOKUP: unavailable";
+
+    System.Text.StringBuilder text = new System.Text.StringBuilder();
+    text.Append("CSBWIN 21-CELL LOOKUP  ")
+        .Append(previewX)
+        .Append(",")
+        .Append(previewY)
+        .Append(" ")
+        .Append(previewFacing)
+        .Append("\n");
+
+    for (int row = 0; row < CsbWin21SpatialRows.Length; row++)
+    {
+      int[] indices = CsbWin21SpatialRows[row];
+      int depth = 4 - row;
+      text.Append("F").Append(depth).Append(": ");
+
+      for (int i = 0; i < indices.Length; i++)
+      {
+        if (i > 0)
+          text.Append("  ");
+
+        int index = indices[i];
+        text.Append(FormatCsbWin21Cell(index, cells[index]));
+      }
+
+      if (row + 1 < CsbWin21SpatialRows.Length)
+        text.Append("\n");
+    }
+
+    text.Append("\nDRAW ORDER: 00 -> 01 -> 02 -> ... -> 20");
+    text.Append("\nSTONE RECIPE:");
+    for (int row = 0; row < CsbWin21SpatialRows.Length; row++)
+    {
+      text.Append("\n  ");
+      int[] indices = CsbWin21SpatialRows[row];
+      for (int i = 0; i < indices.Length; i++)
+      {
+        if (i > 0)
+          text.Append("  ");
+
+        int index = indices[i];
+        string indexText = index < 10 ? "0" + index : index.ToString();
+        text.Append(indexText)
+            .Append(" ")
+            .Append(CsbWin21CellNames[index])
+            .Append("=")
+            .Append(CsbWin21StoneRecipeByCell[index]);
+      }
+    }
+
+    text.Append("\nACTIVE STONE DRAWS:");
+    bool anyActiveStoneDraw = false;
+    for (int index = 0; index < cells.Count; index++)
+    {
+      Viewport17Cell cell = cells[index];
+      string recipe = CsbWin21StoneRecipeByCell[index];
+
+      // Diagnostic only: a real wall cell whose Stone command is a wall bitmap blit.
+      // NOP, OBJ and NO-WALL-BMP entries deliberately do not appear here.
+      if (!cell.IsInside
+          || cell.State != Viewport17CellState.Wall
+          || string.IsNullOrEmpty(recipe)
+          || !recipe.StartsWith("B", System.StringComparison.Ordinal))
+        continue;
+
+      string indexText = index < 10 ? "0" + index : index.ToString();
+      text.Append(anyActiveStoneDraw ? "  " : " ")
+          .Append(indexText)
+          .Append(" ")
+          .Append(CsbWin21CellNames[index])
+          .Append("=")
+          .Append(recipe);
+      anyActiveStoneDraw = true;
+    }
+
+    if (!anyActiveStoneDraw)
+      text.Append(" none");
+
+    text.Append("\nACTIVE DM PIECES:");
+    bool anyActiveDmPiece = false;
+    for (int index = 0; index < cells.Count; index++)
+    {
+      Viewport17Cell cell = cells[index];
+      string recipe = CsbWin21StoneRecipeByCell[index];
+      string pieceName = CsbWin21ViewEditPieceByCell[index];
+
+      if (!cell.IsInside
+          || cell.State != Viewport17CellState.Wall
+          || string.IsNullOrEmpty(recipe)
+          || !recipe.StartsWith("B", System.StringComparison.Ordinal)
+          || string.IsNullOrEmpty(pieceName))
+        continue;
+
+      string indexText = index < 10 ? "0" + index : index.ToString();
+      text.Append(anyActiveDmPiece ? "  " : " ")
+          .Append(indexText)
+          .Append(" ")
+          .Append(CsbWin21CellNames[index])
+          .Append("->")
+          .Append(pieceName);
+      anyActiveDmPiece = true;
+    }
+
+    if (!anyActiveDmPiece)
+      text.Append(" none");
+
+    return text.ToString();
   }
 
   private Viewport17Inspection BuildViewport17Inspection()
