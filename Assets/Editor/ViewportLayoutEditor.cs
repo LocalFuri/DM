@@ -4560,6 +4560,20 @@ public class ViewportLayoutEditor : EditorWindow
     return cells;
   }
 
+  private static bool IsCsbWin21StoneWallDrawActive(
+      List<Viewport17Cell> cells, int index)
+  {
+    if (cells == null || index < 0 || index >= cells.Count)
+      return false;
+
+    Viewport17Cell cell = cells[index];
+    string recipe = CsbWin21StoneRecipeByCell[index];
+    return cell.IsInside
+        && cell.State == Viewport17CellState.Wall
+        && !string.IsNullOrEmpty(recipe)
+        && recipe.StartsWith("B", System.StringComparison.Ordinal);
+  }
+
   private static string GetCsbWin21LaneLabel(int localX)
   {
     if (localX == -2) return "L2";
@@ -4710,6 +4724,23 @@ public class ViewportLayoutEditor : EditorWindow
           .Append(DescribeTextureSize(routedFrontF1))
           .Append("  RAW160(file)=")
           .Append(DescribeTextureSize(recoveredFrontF1));
+
+      if (previewX == 5
+          && previewY == 2
+          && previewFacing == DungeonFacing.South)
+      {
+        text.Append("\nRAW160 TEST: (5,2) South -> FrontF1 160x111 at X=32");
+      }
+
+      if (previewX == 1
+          && previewY == 4
+          && previewFacing == DungeonFacing.South)
+      {
+        bool f1L1Active = IsCsbWin21StoneWallDrawActive(cells, 15);
+        text.Append("\nF1L1 EXPLICIT TEST: cell15=")
+            .Append(f1L1Active ? "ON" : "OFF")
+            .Append(" -> WallF1R crop 28..59 (32px), mirror=ON, X=0");
+      }
     }
 
     return text.ToString();
@@ -9568,6 +9599,11 @@ public class ViewportLayoutEditor : EditorWindow
           previewX == 1
           && previewY == 4
           && previewFacing == DungeonFacing.South;
+      List<Viewport17Cell> csbWin21ExplicitTestCells =
+          is14South ? BuildCsbWin21Cells() : null;
+      bool csbWin21ExplicitF1L1Active =
+          is14South
+          && IsCsbWin21StoneWallDrawActive(csbWin21ExplicitTestCells, 15);
       bool leftF0OverlapArmed = false;
       int leftF0OverlapX = 0;
       int leftF0OverlapY = 0;
@@ -9667,8 +9703,10 @@ public class ViewportLayoutEditor : EditorWindow
             viewport17WallAuthorityActive && IsNormalWallPiece(piece);
         bool viewport17Selected =
             viewport17NormalWall
-            && IsViewport17NormalWallSelected(
-                piece, viewport17FinalWallCommands);
+            && (is14South && IsWallF1LeftPiece(piece)
+                ? csbWin21ExplicitF1L1Active
+                : IsViewport17NormalWallSelected(
+                    piece, viewport17FinalWallCommands));
         bool shouldDraw = viewport17NormalWall
             ? viewport17Selected
             : ShouldDrawPieceAtPreviewPose(piece);
@@ -9971,6 +10009,50 @@ public class ViewportLayoutEditor : EditorWindow
               continue;
             }
 
+            // TEMPORARY RAW-F1 TEST ONLY: at (5,2) South, draw the recovered
+            // original 160x111 center source at X=32 instead of the old 224x111
+            // composite.  No wall selection, X/Y authority, or other pieces change.
+            if (previewX == 5
+                && previewY == 2
+                && previewFacing == DungeonFacing.South)
+            {
+              Texture2D raw160FrontF1 =
+                  AssetDatabase.LoadAssetAtPath<Texture2D>(
+                      "Assets/Art/Walls/Front_Wall_F1_RAW_160x111.png");
+
+              if (raw160FrontF1 != null
+                  && raw160FrontF1.width == 160
+                  && raw160FrontF1.height == 111)
+              {
+                const int raw160DestinationX = 32;
+
+                // The recovered raw file is the inverse of the center's flip
+                // used when the 224 composite was built.  Invert the old
+                // composite mirror flag so the visible center pixels stay in
+                // the same source orientation for this controlled test.
+                bool raw160Mirror = !liveFrontF1.Mirror;
+
+                BlitPieceIntoPreview(
+                    pixels,
+                    raw160FrontF1,
+                    raw160DestinationX,
+                    resolvedY,
+                    raw160Mirror);
+
+                LogIfOverlapsLeftF0(
+                    piece,
+                    piece.Graphic,
+                    raw160DestinationX,
+                    resolvedY,
+                    raw160FrontF1.width,
+                    raw160FrontF1.height);
+                continue;
+              }
+
+              Debug.LogError(
+                  "RAW160 F1 TEST: Assets/Art/Walls/Front_Wall_F1_RAW_160x111.png missing or not 160x111.");
+            }
+
             Texture2D f1Texture = graphics.GetFrontWallF1Texture(
                 StraightF1WallLogic.CompositeWidth);
             if (f1Texture == null)
@@ -10243,6 +10325,44 @@ public class ViewportLayoutEditor : EditorWindow
               pixels,
               resolvedY,
               f2Texture.height);
+          continue;
+        }
+
+        // TEMPORARY CONTROLLED TEST ONLY: at (1,4) South, cell 15 F1L1
+        // is drawn directly from the original 60x111 side-wall source.
+        if (is14South
+            && IsWallF1LeftPiece(piece)
+            && csbWin21ExplicitF1L1Active)
+        {
+          Texture2D f1L1Source = graphics.WallF1R;
+          if (f1L1Source != null
+              && f1L1Source.width == 60
+              && f1L1Source.height == 111)
+          {
+            const int f1L1DestinationX = 0;
+            const int f1L1SourceMinX = 28;
+            const int f1L1SourceMaxX = 59;
+            const bool f1L1Mirror = true;
+            BlitViewport17SourceStripPreview(
+                pixels,
+                f1L1Source,
+                f1L1SourceMinX,
+                f1L1SourceMaxX,
+                f1L1DestinationX,
+                resolvedY,
+                f1L1Mirror);
+            LogIfOverlapsLeftF0(
+                piece,
+                DungeonGraphicType.WallF1R,
+                f1L1DestinationX,
+                resolvedY,
+                f1L1SourceMaxX - f1L1SourceMinX + 1,
+                f1L1Source.height);
+            continue;
+          }
+
+          Debug.LogError(
+              "F1L1 EXPLICIT TEST: graphics.WallF1R missing or not 60x111.");
           continue;
         }
 
