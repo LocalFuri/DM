@@ -4560,20 +4560,6 @@ public class ViewportLayoutEditor : EditorWindow
     return cells;
   }
 
-  private static bool IsCsbWin21StoneWallDrawActive(
-      List<Viewport17Cell> cells, int index)
-  {
-    if (cells == null || index < 0 || index >= cells.Count)
-      return false;
-
-    Viewport17Cell cell = cells[index];
-    string recipe = CsbWin21StoneRecipeByCell[index];
-    return cell.IsInside
-        && cell.State == Viewport17CellState.Wall
-        && !string.IsNullOrEmpty(recipe)
-        && recipe.StartsWith("B", System.StringComparison.Ordinal);
-  }
-
   private static string GetCsbWin21LaneLabel(int localX)
   {
     if (localX == -2) return "L2";
@@ -4736,14 +4722,108 @@ public class ViewportLayoutEditor : EditorWindow
           && previewY == 4
           && previewFacing == DungeonFacing.South)
       {
-        bool f1L1Active = IsCsbWin21StoneWallDrawActive(cells, 15);
-        text.Append("\nF1L1 EXPLICIT TEST: cell15=")
-            .Append(f1L1Active ? "ON" : "OFF")
-            .Append(" -> WallF1R crop 28..59 (32px), mirror=ON, X=0");
+        text.Append("\nCSB21 FULL STACK TEST: 08 RightF3 -> 12 LeftF2 -> 13 RightF2 -> 15 LeftF1 -> 18 LeftF0 -> 19 RightF0");
       }
     }
 
     return text.ToString();
+  }
+
+  private ViewportPiece FindCsbWin21TestPiece(string family)
+  {
+    ViewportPiece piece = FindLayoutPieceByName(family);
+    if (piece != null)
+      return piece;
+
+    switch (family)
+    {
+      case "LeftF0": return FindLayoutPieceByName("Wall F0Left");
+      case "RightF0": return FindLayoutPieceByName("Wall F0Right");
+      case "LeftF1": return FindLayoutPieceByName("Wall F1Left");
+      case "RightF1": return FindLayoutPieceByName("Wall F1Right");
+      case "LeftF2": return FindLayoutPieceByName("Wall F2Left");
+      case "RightF2": return FindLayoutPieceByName("Wall F2Right");
+      case "LeftF3": return FindLayoutPieceByName("Wall F3Left");
+      case "RightF3": return FindLayoutPieceByName("Wall F3Right");
+      default: return null;
+    }
+  }
+
+  private void BlitCsbWin21FullStack14SouthTest(Color32[] pixels)
+  {
+    if (pixels == null || graphics == null)
+      return;
+
+    // Exact active Stone command order for (1,4) South from the verified
+    // CSBWin 21-cell diagnostic. Selection is CSB21-only for this test pose.
+    string[] families =
+    {
+      "RightF3", // 08 F3R1
+      "LeftF2",  // 12 F2L1
+      "RightF2", // 13 F2R1
+      "LeftF1",  // 15 F1L1
+      "LeftF0",  // 18 F0L1
+      "RightF0"  // 19 F0R1
+    };
+
+    for (int i = 0; i < families.Length; i++)
+    {
+      ViewportPiece piece = FindCsbWin21TestPiece(families[i]);
+      if (piece == null)
+        continue;
+
+      int x = piece.EffectiveX;
+      int y = piece.EffectiveY;
+      bool mirror = GetSideWallMirrorFromPose();
+
+      if (previewPositionOverrideByPiece.TryGetValue(
+              piece, out Vector2Int positionOverride))
+      {
+        x = positionOverride.x;
+        y = positionOverride.y;
+      }
+      else if (TryGetCanonicalReferenceXY(
+                   piece.Name, out int refX, out int refDisplayY)
+               || (TryGetSideWallCanonicalName(
+                       piece, out string canonicalName)
+                   && TryGetCanonicalReferenceXY(
+                       canonicalName, out refX, out refDisplayY)))
+      {
+        x = refX;
+        y = DisplayYToUnityY(
+            refDisplayY, GetPieceHeightForEditorY(piece));
+      }
+
+      if (previewMirrorOverrideByPiece.TryGetValue(
+              piece, out bool mirrorOverride))
+      {
+        mirror = mirrorOverride;
+      }
+
+      DungeonGraphicType drawGraphic = piece.Graphic;
+      if (IsWallF0LeftPiece(piece) && mirror)
+        drawGraphic = DungeonGraphicType.WallF0R;
+      else if (IsWallF0RightPiece(piece) && mirror)
+        drawGraphic = DungeonGraphicType.WallF0L;
+      else if (IsWallF1LeftPiece(piece) && mirror)
+        drawGraphic = DungeonGraphicType.WallF1R;
+      else if (IsWallF1RightPiece(piece) && mirror)
+        drawGraphic = DungeonGraphicType.WallF1L;
+      else if (IsWallF2LeftPiece(piece) && mirror)
+        drawGraphic = DungeonGraphicType.WallF2R;
+      else if (IsWallF2RightPiece(piece) && mirror)
+        drawGraphic = DungeonGraphicType.WallF2L;
+      else if (IsWallF3LeftPiece(piece) && mirror)
+        drawGraphic = DungeonGraphicType.WallF3R;
+      else if (IsWallF3RightPiece(piece) && mirror)
+        drawGraphic = DungeonGraphicType.WallF3L;
+
+      Texture2D texture = graphics.GetTexture(drawGraphic);
+      if (texture == null)
+        continue;
+
+      BlitPieceIntoPreview(pixels, texture, x, y, mirror);
+    }
   }
 
   private static string DescribeTextureSize(Texture2D texture)
@@ -9583,6 +9663,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Temporary pose for visibility/mirror only — never write the layout asset.
     DungeonMap poseMap = TryGetPreviewPoseMap();
+    bool csbWin21FullStack14SouthTest =
+        previewX == 1
+        && previewY == 4
+        && previewFacing == DungeonFacing.South;
     bool viewport17WallAuthorityActive = IsViewport17WallAuthorityActive();
     Viewport17Inspection viewport17Inspection = default;
     List<Viewport17RenderCommand> viewport17FinalWallCommands = null;
@@ -9599,11 +9683,6 @@ public class ViewportLayoutEditor : EditorWindow
           previewX == 1
           && previewY == 4
           && previewFacing == DungeonFacing.South;
-      List<Viewport17Cell> csbWin21ExplicitTestCells =
-          is14South ? BuildCsbWin21Cells() : null;
-      bool csbWin21ExplicitF1L1Active =
-          is14South
-          && IsCsbWin21StoneWallDrawActive(csbWin21ExplicitTestCells, 15);
       bool leftF0OverlapArmed = false;
       int leftF0OverlapX = 0;
       int leftF0OverlapY = 0;
@@ -9668,6 +9747,12 @@ public class ViewportLayoutEditor : EditorWindow
         if (IsNormalWallPiece(piece))
           piece = orderedNormalWalls[nextNormalWall++];
 
+        // Controlled full-stack test: at (1,4) South, do not mix any V17
+        // normal-wall pixels with the CSB21-selected command stack. Non-wall
+        // pieces (floor, ceiling, UI, etc.) continue through the old path.
+        if (csbWin21FullStack14SouthTest && IsNormalWallPiece(piece))
+          continue;
+
         if (previewDisableAllWalls
             && piece != null
             && !IsDisableWallsKeeper(piece)
@@ -9703,10 +9788,8 @@ public class ViewportLayoutEditor : EditorWindow
             viewport17WallAuthorityActive && IsNormalWallPiece(piece);
         bool viewport17Selected =
             viewport17NormalWall
-            && (is14South && IsWallF1LeftPiece(piece)
-                ? csbWin21ExplicitF1L1Active
-                : IsViewport17NormalWallSelected(
-                    piece, viewport17FinalWallCommands));
+            && IsViewport17NormalWallSelected(
+                piece, viewport17FinalWallCommands);
         bool shouldDraw = viewport17NormalWall
             ? viewport17Selected
             : ShouldDrawPieceAtPreviewPose(piece);
@@ -10328,44 +10411,6 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        // TEMPORARY CONTROLLED TEST ONLY: at (1,4) South, cell 15 F1L1
-        // is drawn directly from the original 60x111 side-wall source.
-        if (is14South
-            && IsWallF1LeftPiece(piece)
-            && csbWin21ExplicitF1L1Active)
-        {
-          Texture2D f1L1Source = graphics.WallF1R;
-          if (f1L1Source != null
-              && f1L1Source.width == 60
-              && f1L1Source.height == 111)
-          {
-            const int f1L1DestinationX = 0;
-            const int f1L1SourceMinX = 28;
-            const int f1L1SourceMaxX = 59;
-            const bool f1L1Mirror = true;
-            BlitViewport17SourceStripPreview(
-                pixels,
-                f1L1Source,
-                f1L1SourceMinX,
-                f1L1SourceMaxX,
-                f1L1DestinationX,
-                resolvedY,
-                f1L1Mirror);
-            LogIfOverlapsLeftF0(
-                piece,
-                DungeonGraphicType.WallF1R,
-                f1L1DestinationX,
-                resolvedY,
-                f1L1SourceMaxX - f1L1SourceMinX + 1,
-                f1L1Source.height);
-            continue;
-          }
-
-          Debug.LogError(
-              "F1L1 EXPLICIT TEST: graphics.WallF1R missing or not 60x111.");
-          continue;
-        }
-
         if (IsWallF0LeftPiece(piece) && mirror)
           drawGraphic = DungeonGraphicType.WallF0R;
         else if (IsWallF0RightPiece(piece) && mirror)
@@ -10727,7 +10772,12 @@ public class ViewportLayoutEditor : EditorWindow
       // Wall rendering is intentionally disabled. No special wall/door blits.
     }
 
-    if (viewport17WallAuthorityActive)
+    if (csbWin21FullStack14SouthTest)
+    {
+      BlitCsbWin21FullStack14SouthTest(pixels);
+    }
+
+    if (viewport17WallAuthorityActive && !csbWin21FullStack14SouthTest)
     {
       BlitViewport17FrontF3LeftLaneStrip(
           pixels,
@@ -10738,8 +10788,11 @@ public class ViewportLayoutEditor : EditorWindow
     // Stage 6E calibration overlay is intentionally LAST among wall pixels so
     // the selected A/B/C/D candidate can be visually inspected without altering legacy Enabled
     // states, render order, or stored ViewEdit data.
-    BlitViewport17D3LeftCalibrationCandidate(pixels);
-    BlitViewport17D3RightCalibrationCandidate(pixels);
+    if (!csbWin21FullStack14SouthTest)
+    {
+      BlitViewport17D3LeftCalibrationCandidate(pixels);
+      BlitViewport17D3RightCalibrationCandidate(pixels);
+    }
 
     DungeonBitmapFont bitmapFont = FindEditModeBitmapFont();
     if (bitmapFont != null)
