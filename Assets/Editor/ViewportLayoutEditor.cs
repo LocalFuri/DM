@@ -157,12 +157,12 @@ public class ViewportLayoutEditor : EditorWindow
 
   private bool blackDoorFrameLeftF3EnabledInitialized;
   private bool blackDoorFrameRightF3EnabledInitialized;
-  private bool blackDoorFrameLeftF3CardEnabled;
+  private bool blackDoorFrameLeftF3CardEnabled = true;
   private bool blackDoorFrameLeftF3CardMirror;
   private int blackDoorFrameLeftF3CardX;
   private int blackDoorFrameLeftF3CardY;
 
-  private bool blackDoorFrameRightF3CardEnabled;
+  private bool blackDoorFrameRightF3CardEnabled = true;
   private int blackDoorFrameRightF3CardX;
   private int blackDoorFrameRightF3CardY;
 
@@ -4725,21 +4725,37 @@ public class ViewportLayoutEditor : EditorWindow
         Viewport17Cell cell =
             FindViewport17Cell(inspection.Cells, localX, depth);
 
-        // Solid cells own a front face: in-map WALL and map-edge Outside.
-        // (0,5) West looks into Outside at D1 center, so FrontF1 must draw.
-        // Side-lane Outside fronts are still dropped when a D0 F0 blocks
-        // that side — (0,5) South RightF0 keeps D1-R Outside from becoming
-        // a FrontF1 right strip.
+        // A Front is the face of a solid cell that belongs to a front wall
+        // plane at this depth. Center-lane solids always own that plane
+        // (in-map WALL or map-edge Outside).
+        //
+        // A side-lane solid beside an OPEN center is the corridor wall, not
+        // that plane. The OPEN/SOLID join below already emits LeftF/RightF
+        // for that cell; emitting a Front as well would mark the side lane
+        // as having a nearer front and occlude deeper sides in that lane.
+        // Side-lane Front is kept only when the same-depth center is solid
+        // (one shared front wall spanning L/C/R).
         if (IsViewport17Solid(cell))
         {
-          surfaces.Add(new Viewport17Surface
+          bool sideLaneBesideOpenCenter = false;
+          if (localX != 0)
           {
-            Type = Viewport17SurfaceType.Front,
-            Depth = depth,
-            LocalX = localX,
-            PrimaryCell = cell,
-            AdjacentCell = default
-          });
+            Viewport17Cell centerCell =
+                FindViewport17Cell(inspection.Cells, 0, depth);
+            sideLaneBesideOpenCenter = !IsViewport17Solid(centerCell);
+          }
+
+          if (!sideLaneBesideOpenCenter)
+          {
+            surfaces.Add(new Viewport17Surface
+            {
+              Type = Viewport17SurfaceType.Front,
+              Depth = depth,
+              LocalX = localX,
+              PrimaryCell = cell,
+              AdjacentCell = default
+            });
+          }
         }
       }
 
@@ -5790,7 +5806,8 @@ public class ViewportLayoutEditor : EditorWindow
   // This pass performs geometry-only visibility reduction for diagnostics:
   //   * for each front lane (L/C/R), only the nearest real front wall survives;
   //   * a solid D0 inner face blocks all deeper geometry on that same side;
-  //   * a nearer front wall in a side lane blocks deeper side surfaces there.
+  //   * a nearer front wall in a side lane blocks deeper side surfaces there
+  //     (only real Fronts count; corridor side-walls are Side, not Front).
   //
   // A front composite may therefore survive with a smaller mask. Example:
   // D3 mask=LC plus a nearer D1 center wall -> final D3 mask=L.
@@ -8343,6 +8360,94 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  private static bool IsWallF0LeftPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Name == "Wall F0Left" || piece.Name == "LeftF0")
+      return true;
+
+    return piece.Graphic == DungeonGraphicType.WallF0L;
+  }
+
+  private static bool IsWallF0RightPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Name == "Wall F0Right" || piece.Name == "RightF0")
+      return true;
+
+    return piece.Graphic == DungeonGraphicType.WallF0R;
+  }
+
+  private static bool IsWallF1LeftPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Name == "Wall F1Left" || piece.Name == "LeftF1")
+      return true;
+
+    return piece.Graphic == DungeonGraphicType.WallF1L;
+  }
+
+  private static bool IsWallF1RightPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Name == "Wall F1Right" || piece.Name == "RightF1")
+      return true;
+
+    return piece.Graphic == DungeonGraphicType.WallF1R;
+  }
+
+  private static bool IsWallF2LeftPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Name == "Wall F2Left" || piece.Name == "LeftF2")
+      return true;
+
+    return piece.Graphic == DungeonGraphicType.WallF2L;
+  }
+
+  private static bool IsWallF2RightPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Name == "Wall F2Right" || piece.Name == "RightF2")
+      return true;
+
+    return piece.Graphic == DungeonGraphicType.WallF2R;
+  }
+
+  private static bool IsWallF3LeftPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Name == "Wall F3Left" || piece.Name == "LeftF3")
+      return true;
+
+    return piece.Graphic == DungeonGraphicType.WallF3L;
+  }
+
+  private static bool IsWallF3RightPiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    if (piece.Name == "Wall F3Right" || piece.Name == "RightF3")
+      return true;
+
+    return piece.Graphic == DungeonGraphicType.WallF3R;
+  }
+
   private static bool IsNormalWallPiece(ViewportPiece piece)
   {
     if (piece == null)
@@ -9480,10 +9585,10 @@ public class ViewportLayoutEditor : EditorWindow
         // Mirror flips source pixels only; it never changes X/Y.
         // V17 owns F0 dest/mirror from live overlay; do not apply the
         // canonical edge-of-map geometry restriction.
+        ResolvedNormalWallState liveF0 = default;
         if (viewport17WallAuthorityActive
             && (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
-            && TryGetResolvedNormalWallState(
-                piece, out ResolvedNormalWallState liveF0))
+            && TryGetResolvedNormalWallState(piece, out liveF0))
         {
           resolvedX = liveF0.X;
           resolvedY = liveF0.Y;
@@ -10737,7 +10842,7 @@ public class ViewportLayoutEditor : EditorWindow
     ViewportPiece leftF3 = FindLayoutPieceByName("Black Door Frame Left F3");
     // The 1,5 North exception defaults both F3 frames ON regardless of the
     // stored layout Enabled flag. A temporary ViewEdit toggle can override it.
-    bool leftEnabled = true;
+    bool leftEnabled = blackDoorFrameLeftF3CardEnabled;
     if (leftF3 != null
         && previewEnabledOverrideByPiece.TryGetValue(leftF3, out bool leftPreviewEnabled))
       leftEnabled = leftPreviewEnabled;
@@ -10756,7 +10861,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     ViewportPiece rightF3 = FindLayoutPieceByName("Black Door Frame Right F3");
     // Same rule for the right F3 frame: default ON, temporary toggle wins.
-    bool rightEnabled = true;
+    bool rightEnabled = blackDoorFrameRightF3CardEnabled;
     if (rightF3 != null
         && previewEnabledOverrideByPiece.TryGetValue(rightF3, out bool rightPreviewEnabled))
       rightEnabled = rightPreviewEnabled;
