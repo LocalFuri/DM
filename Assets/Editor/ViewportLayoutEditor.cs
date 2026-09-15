@@ -2418,8 +2418,11 @@ public class ViewportLayoutEditor : EditorWindow
       mirrorBefore = mirrorPreviewState.Mirror;
     }
 
-    if (!viewport17LiveFields
-        && normalWallMirrorPreview
+    // FrontF2 must remain manually mirrorable in ViewEdit even while the V17
+    // wall authority supplies its live state.  Keep showing the stationary-pose
+    // preview override so the Mirror checkbox does not snap back on repaint.
+    if (normalWallMirrorPreview
+        && (!viewport17LiveFields || IsFrontWallF2Card(piece))
         && previewMirrorOverrideByPiece.TryGetValue(piece, out bool previewMirror))
       mirrorBefore = previewMirror;
 
@@ -2611,8 +2614,12 @@ public class ViewportLayoutEditor : EditorWindow
           GetPieceHeightForEditorY(piece));
     }
 
+    // FrontF2 must remain manually movable in ViewEdit even while the V17
+    // wall authority supplies its geometry.  The manual position is a
+    // stationary-pose preview override and is cleared on pose change, just
+    // like the other ViewEdit test overrides.
     if (temporaryPositionPreview
-        && !viewport17LiveFields
+        && (!viewport17LiveFields || IsFrontWallF2Card(piece))
         && previewPositionOverrideByPiece.TryGetValue(piece, out Vector2Int previewPosition))
     {
       editX = previewPosition.x;
@@ -8469,6 +8476,17 @@ public class ViewportLayoutEditor : EditorWindow
               previewX,
               previewY,
               previewFacing);
+
+          // FrontF2 uses a special V17 blit path that reads state.Mirror
+          // directly. Apply the temporary ViewEdit Mirror override here so
+          // toggling Mirror changes the Game View immediately instead of
+          // being replaced by the V17 lateral mirror phase.
+          if (previewMirrorOverrideByPiece.TryGetValue(
+                  piece, out bool frontF2PreviewMirror))
+          {
+            state.Mirror = frontF2PreviewMirror;
+          }
+
           if (TryComputeViewport17InsetFrontLiveBlit(
                   finalCommands,
                   inspection,
@@ -8478,6 +8496,17 @@ public class ViewportLayoutEditor : EditorWindow
           {
             state.X = frontF2DestX;
             state.FrontF2Width = frontF2Width;
+          }
+
+          // ViewEdit X/Y is allowed to temporarily override the V17 live
+          // placement for FrontF2.  This is required for original-DM visual
+          // comparison (for example 1,5 West) and does not change the saved
+          // layout until Override Current Walls is used.
+          if (previewPositionOverrideByPiece.TryGetValue(
+                  piece, out Vector2Int frontF2PreviewPosition))
+          {
+            state.X = frontF2PreviewPosition.x;
+            state.Y = frontF2PreviewPosition.y;
           }
         }
 

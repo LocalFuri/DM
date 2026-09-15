@@ -5,7 +5,7 @@ namespace DM.Rendering
 {
   /// <summary>
   /// Front Wall F1 1:1 blit helpers + Floor/Ceiling environment phase.
-  /// Front F1 texture is the cached 224×111 composite from ExpandedF1WallTexture.
+  /// Front F1 texture is the authored 224×111 composite.
   /// </summary>
   public static class StraightF1WallLogic
   {
