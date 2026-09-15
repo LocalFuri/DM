@@ -90,6 +90,11 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private DungeonGraphics graphics;
   [System.NonSerialized]
+  private Texture2D cachedNativeFrontF2ReadableCopy;
+  private const string NativeFrontF2AssetPath =
+      "Assets/Art/Walls/Front_Wall_F2_RECOVERED_CENTER_106x74.png";
+
+  [System.NonSerialized]
   private Texture2D cachedNativeFrontF3ReadableCopy;
   private const string NativeFrontF3AssetPath =
       "Assets/Art/Walls/Front_Wall_F3_RAW_70x49.png";
@@ -453,6 +458,12 @@ public class ViewportLayoutEditor : EditorWindow
     SaveSessionPrefs();
 
     EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+
+    if (cachedNativeFrontF2ReadableCopy != null)
+    {
+      DestroyImmediate(cachedNativeFrontF2ReadableCopy);
+      cachedNativeFrontF2ReadableCopy = null;
+    }
 
     if (cachedNativeFrontF3ReadableCopy != null)
     {
@@ -9792,9 +9803,14 @@ public class ViewportLayoutEditor : EditorWindow
 
       int nextNormalWall = 0;
       bool viewport17NativeD3Drawn = false;
+      bool viewport17NativeD2Drawn = false;
       bool blockViewport17NativeD3ForBlackDoor =
           previewX == 1
           && (previewY == 4 || previewY == 5)
+          && previewFacing == DungeonFacing.North;
+      bool blockViewport17NativeD2ForBlackDoor =
+          previewX == 1
+          && (previewY == 3 || previewY == 4)
           && previewFacing == DungeonFacing.North;
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
@@ -9839,6 +9855,31 @@ public class ViewportLayoutEditor : EditorWindow
             && (IsWallF3LeftPiece(piece)
                 || IsFrontWallF3Card(piece)
                 || IsWallF3RightPiece(piece)))
+        {
+          continue;
+        }
+
+        // V17 F2 cutover: wait until painter order reaches depth 2, then draw
+        // the original DOS D2 L/C/R artwork once. This preserves all depth-3
+        // drawing behind it and all F1/F0 drawing in front of it.
+        if (viewport17WallAuthorityActive
+            && !viewport17NativeD2Drawn
+            && piece != null
+            && IsNormalWallPiece(piece)
+            && GetNormalWallRenderDepth(piece) == 2)
+        {
+          viewport17NativeD2Drawn = true;
+          if (!blockViewport17NativeD2ForBlackDoor)
+          {
+            BlitViewport17NativeD2Walls(pixels, viewport17Inspection);
+          }
+        }
+
+        if (viewport17WallAuthorityActive
+            && piece != null
+            && (IsWallF2LeftPiece(piece)
+                || IsFrontWallF2Card(piece)
+                || IsWallF2RightPiece(piece)))
         {
           continue;
         }
@@ -11620,6 +11661,50 @@ public class ViewportLayoutEditor : EditorWindow
     return false;
   }
 
+  private Texture2D GetReadableNativeFrontF2Texture()
+  {
+    Texture2D asset =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(NativeFrontF2AssetPath);
+
+    if (asset != null
+        && asset.width == 106
+        && asset.height == 74
+        && asset.isReadable)
+    {
+      return asset;
+    }
+
+    if (cachedNativeFrontF2ReadableCopy != null)
+      return cachedNativeFrontF2ReadableCopy;
+
+    string projectRoot = Path.GetDirectoryName(Application.dataPath);
+    string absolutePath = string.IsNullOrEmpty(projectRoot)
+        ? NativeFrontF2AssetPath
+        : Path.Combine(projectRoot, NativeFrontF2AssetPath);
+
+    if (!File.Exists(absolutePath))
+      return null;
+
+    byte[] pngBytes = File.ReadAllBytes(absolutePath);
+    Texture2D readableCopy =
+        new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "FrontF2_RAW_106x74_ReadablePreview";
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+
+    if (!readableCopy.LoadImage(pngBytes, false)
+        || readableCopy.width != 106
+        || readableCopy.height != 74)
+    {
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    cachedNativeFrontF2ReadableCopy = readableCopy;
+    return cachedNativeFrontF2ReadableCopy;
+  }
+
   private Texture2D GetReadableNativeFrontF3Texture()
   {
     Texture2D asset =
@@ -11662,6 +11747,79 @@ public class ViewportLayoutEditor : EditorWindow
 
     cachedNativeFrontF3ReadableCopy = readableCopy;
     return cachedNativeFrontF3ReadableCopy;
+  }
+
+  /// <summary>
+  /// V17 native-DOS D2 renderer. DOS GRAPHICS.DAT layout 696 places the
+  /// original D2 wall graphics at viewport X 0 / 59 / 146 and viewport Y 19.
+  /// The screen viewport starts at Y 33, so ViewEdit/Game display Y is 52.
+  /// As with D3, left and right are drawn first and the center is drawn last.
+  /// On the alternate wall phase the DOS engine swaps the side source and
+  /// flips it, while the center source is flipped in place.
+  /// </summary>
+  private void BlitViewport17NativeD2Walls(
+      Color32[] pixels,
+      Viewport17Inspection inspection)
+  {
+    if (pixels == null || graphics == null || inspection.Cells == null)
+      return;
+
+    Viewport17Cell leftCell =
+        FindViewport17Cell(inspection.Cells, -1, 2);
+    Viewport17Cell centerCell =
+        FindViewport17Cell(inspection.Cells, 0, 2);
+    Viewport17Cell rightCell =
+        FindViewport17Cell(inspection.Cells, 1, 2);
+
+    bool mirror = GetSideWallMirrorFromPose();
+    const int displayY = 52;
+    const int nativeHeight = 74;
+    int destinationY = DisplayYToUnityY(displayY, nativeHeight);
+
+    Texture2D leftSource = graphics.GetTexture(
+        mirror ? DungeonGraphicType.WallF2R : DungeonGraphicType.WallF2L);
+    Texture2D rightSource = graphics.GetTexture(
+        mirror ? DungeonGraphicType.WallF2L : DungeonGraphicType.WallF2R);
+
+    // DOS layout 696 zones 710/711: D2L at X=0, D2R at X=146.
+    if (IsViewport17Solid(leftCell)
+        && leftSource != null
+        && leftSource.width == 78
+        && leftSource.height == nativeHeight)
+    {
+      BlitPieceIntoPreview(
+          pixels, leftSource, 0, destinationY, mirror);
+    }
+
+    if (IsViewport17Solid(rightCell)
+        && rightSource != null
+        && rightSource.width == 78
+        && rightSource.height == nativeHeight)
+    {
+      BlitPieceIntoPreview(
+          pixels, rightSource, 146, destinationY, mirror);
+    }
+
+    // DOS layout 696 zone 709: D2C is centered at X=59. Draw it last so
+    // the native center artwork owns the overlap with the side graphics.
+    if (IsViewport17Solid(centerCell))
+    {
+      Texture2D centerSource = GetReadableNativeFrontF2Texture();
+
+      if (centerSource != null
+          && centerSource.width == 106
+          && centerSource.height == nativeHeight)
+      {
+        BlitPieceIntoPreview(
+            pixels, centerSource, 59, destinationY, mirror);
+      }
+      else
+      {
+        Debug.LogError(
+            "V17 native D2: Front_Wall_F2_RECOVERED_CENTER_106x74.png "
+            + "is missing or not 106x74.");
+      }
+    }
   }
 
   /// <summary>
