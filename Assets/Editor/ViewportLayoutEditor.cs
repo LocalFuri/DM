@@ -1918,8 +1918,8 @@ public class ViewportLayoutEditor : EditorWindow
   {
     // Front
     ("FrontF0", null, null),
-    ("FrontF1", 0, 42),
-    ("FrontF2", 0, 125),
+    ("FrontF1", 32, 42),
+    ("FrontF2", 59, 52),
     ("FrontF3", 77, 58),
     ("Front Wall F1", null, null),
     ("Front Wall F2", null, null),
@@ -1929,7 +1929,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("LeftF0", 0, 33),
     ("LeftF1", 0, 42),
     ("LeftF2", 0, 52),
-    ("LeftF3", 0, 58),
+    ("LeftF3", 7, 58),
     ("Wall F0Left", null, null),
     ("Wall F1Left", null, null),
     ("Wall F2Left", null, null),
@@ -1937,9 +1937,9 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Right
     ("RightF0", 191, 33),
-    ("RightF1", 165, 42),
-    ("RightF2", 147, 52),
-    ("RightF3", 141, 58),
+    ("RightF1", 164, 42),
+    ("RightF2", 146, 52),
+    ("RightF3", 134, 58),
     ("Wall F0Right", null, null),
     ("Wall F1Right", null, null),
     ("Wall F2Right", null, null),
@@ -5742,18 +5742,9 @@ public class ViewportLayoutEditor : EditorWindow
       out int x,
       out int displayY)
   {
-    // Viewport-17 uses one normalized coordinate convention: display Y is
-    // top-origin. Canonical table FrontF2 Y=125 is framebuffer Y, which is
-    // display Y=1, and that parks the 74px wall on the name bar. Original
-    // FrontF2 sits in the same dungeon band as FrontF1 (display Y=42):
-    // shorter wall, more floor. Verified against (0,5) East original.
-    if (pieceFamily == "FrontF2")
-    {
-      x = 0;
-      displayY = 42;
-      return true;
-    }
-
+    // Native DOS F1/F2/F3 coordinates are now the canonical ViewEdit
+    // references as well, so command diagnostics and cards use the same
+    // positions that the native blitters actually draw.
     return TryGetCanonicalReferenceXY(pieceFamily, out x, out displayY);
   }
 
@@ -8424,33 +8415,29 @@ public class ViewportLayoutEditor : EditorWindow
     List<Viewport17RenderCommand> finalCommands =
         BuildViewport17FinalDrawCommands(inspection);
 
-    // F3/D3 is native DOS artwork, not a single front composite.  The three
-    // main D3 lanes use their own 83 / 70 / 83px sources and positions.
+    // Native DOS D1/D2/D3 are drawn directly from the depth/lane cells.
+    // Keep ViewEdit live fields on exactly those same coordinates so Ref and
+    // Edit no longer show the old screenshot-composite positions.
+    Viewport17Cell d1LeftCell = FindViewport17Cell(inspection.Cells, -1, 1);
+    Viewport17Cell d1CenterCell = FindViewport17Cell(inspection.Cells, 0, 1);
+    Viewport17Cell d1RightCell = FindViewport17Cell(inspection.Cells, 1, 1);
+    Viewport17Cell d2LeftCell = FindViewport17Cell(inspection.Cells, -1, 2);
+    Viewport17Cell d2CenterCell = FindViewport17Cell(inspection.Cells, 0, 2);
+    Viewport17Cell d2RightCell = FindViewport17Cell(inspection.Cells, 1, 2);
     Viewport17Cell d3LeftCell = FindViewport17Cell(inspection.Cells, -1, 3);
     Viewport17Cell d3CenterCell = FindViewport17Cell(inspection.Cells, 0, 3);
     Viewport17Cell d3RightCell = FindViewport17Cell(inspection.Cells, 1, 3);
+
+    bool d1LeftSolid = IsViewport17Solid(d1LeftCell);
+    bool d1CenterSolid = IsViewport17Solid(d1CenterCell);
+    bool d1RightSolid = IsViewport17Solid(d1RightCell);
+    bool d2LeftSolid = IsViewport17Solid(d2LeftCell);
+    bool d2CenterSolid = IsViewport17Solid(d2CenterCell);
+    bool d2RightSolid = IsViewport17Solid(d2RightCell);
     bool d3LeftSolid = IsViewport17Solid(d3LeftCell);
     bool d3CenterSolid = IsViewport17Solid(d3CenterCell);
     bool d3RightSolid = IsViewport17Solid(d3RightCell);
-    bool d3Mirror = GetSideWallMirrorFromPose();
-
-    bool frontF2Center = false;
-    bool frontF1Center = false;
-    for (int i = 0; i < finalCommands.Count; i++)
-    {
-      Viewport17RenderCommand command = finalCommands[i];
-      if (!command.IsFrontComposite)
-        continue;
-
-      if (command.PieceFamily == "FrontF2")
-      {
-        frontF2Center = command.FrontCenter;
-      }
-      else if (command.PieceFamily == "FrontF1")
-      {
-        frontF1Center = command.FrontCenter;
-      }
-    }
+    bool nativeMirror = GetSideWallMirrorFromPose();
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -8471,12 +8458,77 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
+      // D1: 60 / 160 / 60 at X 0 / 32 / 164, display Y 42.
+      if (IsWallF1LeftPiece(piece))
+      {
+        state.Enabled = d1LeftSolid;
+        state.X = 0;
+        state.Y = DisplayYToUnityY(42, 111);
+        state.Mirror = nativeMirror;
+        resolvedNormalWallByPiece[piece] = state;
+        continue;
+      }
+
+      if (IsFrontWallF1Card(piece))
+      {
+        state.Enabled = d1CenterSolid;
+        state.X = 32;
+        state.Y = DisplayYToUnityY(42, 111);
+        state.Mirror = nativeMirror;
+        state.FrontF1Width = StraightF1WallLogic.CompositeWidth160;
+        resolvedNormalWallByPiece[piece] = state;
+        continue;
+      }
+
+      if (IsWallF1RightPiece(piece))
+      {
+        state.Enabled = d1RightSolid;
+        state.X = 164;
+        state.Y = DisplayYToUnityY(42, 111);
+        state.Mirror = nativeMirror;
+        resolvedNormalWallByPiece[piece] = state;
+        continue;
+      }
+
+      // D2: 78 / 106 / 78 at X 0 / 59 / 146, display Y 52.
+      if (IsWallF2LeftPiece(piece))
+      {
+        state.Enabled = d2LeftSolid;
+        state.X = 0;
+        state.Y = DisplayYToUnityY(52, 74);
+        state.Mirror = nativeMirror;
+        resolvedNormalWallByPiece[piece] = state;
+        continue;
+      }
+
+      if (IsFrontWallF2Card(piece))
+      {
+        state.Enabled = d2CenterSolid;
+        state.X = 59;
+        state.Y = DisplayYToUnityY(52, 74);
+        state.Mirror = nativeMirror;
+        state.FrontF2Width = 106;
+        resolvedNormalWallByPiece[piece] = state;
+        continue;
+      }
+
+      if (IsWallF2RightPiece(piece))
+      {
+        state.Enabled = d2RightSolid;
+        state.X = 146;
+        state.Y = DisplayYToUnityY(52, 74);
+        state.Mirror = nativeMirror;
+        resolvedNormalWallByPiece[piece] = state;
+        continue;
+      }
+
+      // D3: 83 / 70 / 83 at X 7 / 77 / 134, display Y 58.
       if (IsWallF3LeftPiece(piece))
       {
         state.Enabled = d3LeftSolid;
-        state.X = 0;
+        state.X = 7;
         state.Y = DisplayYToUnityY(58, 49);
-        state.Mirror = d3Mirror;
+        state.Mirror = nativeMirror;
         resolvedNormalWallByPiece[piece] = state;
         continue;
       }
@@ -8486,7 +8538,7 @@ public class ViewportLayoutEditor : EditorWindow
         state.Enabled = d3CenterSolid;
         state.X = 77;
         state.Y = DisplayYToUnityY(58, 49);
-        state.Mirror = d3Mirror;
+        state.Mirror = nativeMirror;
         resolvedNormalWallByPiece[piece] = state;
         continue;
       }
@@ -8494,90 +8546,25 @@ public class ViewportLayoutEditor : EditorWindow
       if (IsWallF3RightPiece(piece))
       {
         state.Enabled = d3RightSolid;
-        state.X = 141;
+        state.X = 134;
         state.Y = DisplayYToUnityY(58, 49);
-        state.Mirror = d3Mirror;
+        state.Mirror = nativeMirror;
         resolvedNormalWallByPiece[piece] = state;
         continue;
       }
 
-      if (IsFrontWallF2Card(piece))
-      {
-        state.Enabled = frontF2Center;
-        if (frontF2Center)
-        {
-          state.Y = DisplayYToUnityY(42, 74);
-          state.Mirror = GetFrontF2LateralMirrorPhase(
-              previewX,
-              previewY,
-              previewFacing);
-
-          // FrontF2 uses a special V17 blit path that reads state.Mirror
-          // directly. Apply the temporary ViewEdit Mirror override here so
-          // toggling Mirror changes the Game View immediately instead of
-          // being replaced by the V17 lateral mirror phase.
-          if (previewMirrorOverrideByPiece.TryGetValue(
-                  piece, out bool frontF2PreviewMirror))
-          {
-            state.Mirror = frontF2PreviewMirror;
-          }
-
-          if (TryComputeViewport17InsetFrontLiveBlit(
-                  finalCommands,
-                  inspection,
-                  "FrontF2",
-                  out int frontF2DestX,
-                  out int frontF2Width))
-          {
-            state.X = frontF2DestX;
-            state.FrontF2Width = frontF2Width;
-          }
-
-          // ViewEdit X/Y is allowed to temporarily override the V17 live
-          // placement for FrontF2.  This is required for original-DM visual
-          // comparison (for example 1,5 West) and does not change the saved
-          // layout until Override Current Walls is used.
-          if (previewPositionOverrideByPiece.TryGetValue(
-                  piece, out Vector2Int frontF2PreviewPosition))
-          {
-            state.X = frontF2PreviewPosition.x;
-            state.Y = frontF2PreviewPosition.y;
-          }
-        }
-
-        resolvedNormalWallByPiece[piece] = state;
-        continue;
-      }
-
-      if (IsFrontWallF1Card(piece))
-      {
-        state.Enabled = frontF1Center;
-        if (frontF1Center
-            && TryComputeViewport17InsetFrontLiveBlit(
-                finalCommands,
-                inspection,
-                "FrontF1",
-                out int frontF1DestX,
-                out int frontF1Width))
-        {
-          state.X = frontF1DestX;
-          state.FrontF1Width = frontF1Width;
-        }
-
-        resolvedNormalWallByPiece[piece] = state;
-        continue;
-      }
-
+      // F0 and the remaining non-native normal-wall families still use the
+      // V17 command selection exactly as before.
       state.Enabled = IsViewport17NormalWallSelected(piece, finalCommands);
       if (state.Enabled && IsWallF0RightPiece(piece))
       {
         state.X = 191;
-        state.Mirror = GetSideWallMirrorFromPose();
+        state.Mirror = nativeMirror;
       }
       if (state.Enabled && IsWallF0LeftPiece(piece))
       {
         state.X = 0;
-        state.Mirror = GetSideWallMirrorFromPose();
+        state.Mirror = nativeMirror;
       }
 
       resolvedNormalWallByPiece[piece] = state;
