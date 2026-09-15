@@ -92,17 +92,17 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private Texture2D cachedNativeFrontF1ReadableCopy;
   private const string NativeFrontF1AssetPath =
-      "Assets/Art/Walls/Front_Wall_F1_RAW_160x111.png";
+      DungeonGraphics.FrontWallF1NativeAssetPath;
 
   [System.NonSerialized]
   private Texture2D cachedNativeFrontF2ReadableCopy;
   private const string NativeFrontF2AssetPath =
-      "Assets/Art/Walls/Front_Wall_F2_RECOVERED_CENTER_106x74.png";
+      DungeonGraphics.FrontWallF2NativeAssetPath;
 
   [System.NonSerialized]
   private Texture2D cachedNativeFrontF3ReadableCopy;
   private const string NativeFrontF3AssetPath =
-      "Assets/Art/Walls/Front_Wall_F3_RAW_70x49.png";
+      DungeonGraphics.FrontWallF3NativeAssetPath;
   private Vector2 editorScroll;
   private bool scrollToBottomOnNextRepaint;
   private int lastPlayModeScrollX = int.MinValue;
@@ -185,7 +185,6 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D blackDoorF1SourceTexture;
   private Texture2D blackDoorF3SourceTexture;
   private Texture2D blackDoorF2SourceTexture;
-  private Texture2D frontWallF2_224ReferenceTexture;
   private Texture2D right2SSourceTexture;
 
   // Single source of truth for selection.
@@ -244,20 +243,6 @@ public class ViewportLayoutEditor : EditorWindow
   // only while the current X/Y/Facing is unchanged and are never persisted.
   private readonly Dictionary<ViewportPiece, int> previewFrontF1WidthOverrideByPiece =
       new Dictionary<ViewportPiece, int>();
-
-  // ViewEdit FrontF1 crop control for the current pose (live cache).
-  // Canonical storage is previewFrontF1CropByPose, keyed by X/Y/Facing.
-  private bool frontF1CropPreview;
-  private int frontF1CropStartXPreview;
-  private struct FrontF1CropPreviewState
-  {
-    public bool Enabled;
-    public int CropX;
-  }
-
-  private readonly Dictionary<string, FrontF1CropPreviewState>
-      previewFrontF1CropByPose =
-          new Dictionary<string, FrontF1CropPreviewState>();
 
   private struct FrontF1GeometryOverride
   {
@@ -3957,7 +3942,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     selectedPieceIndex = EditorPrefs.GetInt(PrefsSelectedPieceIndexKey, 0);
     ClampSelectedPieceIndex();
-    LoadFrontF1CropPreviewForCurrentPose();
   }
 
   private void SaveSessionPrefs()
@@ -5732,14 +5716,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (pieceFamily == "FrontF1")
     {
-      int f1Width = StraightF1WallLogic.NormalizeFrontWallF1Width(
-          piece.FrontWallF1Width);
-      Texture2D f1Texture = graphics.GetFrontWallF1Texture(f1Width);
-      if (f1Texture != null && f1Texture.width > 0)
-      {
-        width = f1Texture.width;
-        return true;
-      }
+      width = 160;
+      return true;
     }
 
     Texture2D texture = graphics.GetTexture(piece.Graphic);
@@ -6858,7 +6836,6 @@ public class ViewportLayoutEditor : EditorWindow
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
-    LoadFrontF1CropPreviewForCurrentPose();
 
     // A new pose always returns ViewEdit to the geometry-needed wall list.
     // The button therefore offers "Show all walls", and no Activ/search
@@ -6917,7 +6894,6 @@ public class ViewportLayoutEditor : EditorWindow
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
-    LoadFrontF1CropPreviewForCurrentPose();
 
     // A new pose always returns ViewEdit to the geometry-needed wall list.
     // The button therefore offers "Show all walls", and no Activ/search
@@ -7242,41 +7218,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     width = 0;
     return false;
-  }
-
-  private string CurrentPreviewPoseKey()
-  {
-    return previewX + "," + previewY + "," + previewFacing;
-  }
-
-  private void EnsureFrontF1Crop05SouthDefault()
-  {
-    string key05South = "0,5," + DungeonFacing.South;
-    if (previewFrontF1CropByPose.ContainsKey(key05South))
-      return;
-
-    previewFrontF1CropByPose[key05South] = new FrontF1CropPreviewState
-    {
-      Enabled = true,
-      CropX = 32
-    };
-  }
-  private void LoadFrontF1CropPreviewForCurrentPose()
-  {
-    EnsureFrontF1Crop05SouthDefault();
-    if (previewFrontF1CropByPose.TryGetValue(
-            CurrentPreviewPoseKey(), out FrontF1CropPreviewState state))
-    {
-      frontF1CropPreview = state.Enabled;
-      frontF1CropStartXPreview = Mathf.Clamp(
-          state.CropX,
-          0,
-          StraightF1WallLogic.CompositeWidth - 1);
-      return;
-    }
-
-    frontF1CropPreview = false;
-    frontF1CropStartXPreview = 0;
   }
 
   private static bool IsFrontWallF2Card(ViewportPiece piece)
@@ -9980,273 +9921,37 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
+        // Native-only fallback for FrontF1 when Viewport-17 authority is OFF.
+        // The production V17 path above already draws D1 L/R/C separately.
         if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
         {
-          int width = resolvedF1Width;
-          int frontF1TextureHeight = StraightF1WallLogic.CompositeHeight;
-
-          if (viewport17WallAuthorityActive)
-          {
-            if (!TryGetResolvedNormalWallState(
-                    piece, out ResolvedNormalWallState liveFrontF1)
-                || !liveFrontF1.Enabled)
-            {
-              continue;
-            }
-
-            Texture2D f1Texture = graphics.GetFrontWallF1Texture(
-                StraightF1WallLogic.CompositeWidth);
-            if (f1Texture == null)
-            {
-              Debug.LogError(
-                  "FrontF1 V17: required 224x111 source texture is missing.");
-              continue;
-            }
-
-            frontF1TextureHeight = f1Texture.height;
-            int destinationStartX = liveFrontF1.X;
-            int copyWidth = liveFrontF1.FrontF1Width > 0
-                ? liveFrontF1.FrontF1Width
-                : StraightF1WallLogic.CompositeWidth;
-            int sourceStartX = destinationStartX;
-
-            if (liveFrontF1.Mirror)
-            {
-              BlitFrontF1MirroredImageFromX(
-                  pixels,
-                  f1Texture,
-                  sourceStartX,
-                  destinationStartX,
-                  resolvedY,
-                  copyWidth);
-            }
-            else
-            {
-              BlitFrontF1CroppedPreview(
-                  pixels,
-                  f1Texture,
-                  sourceStartX,
-                  destinationStartX,
-                  resolvedY,
-                  false,
-                  copyWidth);
-            }
-
-            LogIfOverlapsLeftF0(
-                piece,
-                piece.Graphic,
-                destinationStartX,
-                resolvedY,
-                copyWidth,
-                f1Texture.height);
+          Texture2D f1Texture = GetReadableNativeFrontF1Texture();
+          if (f1Texture == null)
             continue;
-          }
 
-          if (TryGetCurrentRelativeViewportGeometry(out RelativeViewportGeometry currentGeometry)
-              && IsLeftD3ObliqueOpening(currentGeometry))
-          {
-            // LeftD3 composition: keep the left 32 screen pixels free for LeftD3.
-            // FrontF1 starts at source X=32 and is drawn at destination X=32.
-            Texture2D fullF1Texture =
-                graphics.GetFrontWallF1Texture(StraightF1WallLogic.CompositeWidth);
-            if (fullF1Texture == null)
-              continue;
-
-            frontF1TextureHeight = fullF1Texture.height;
-            const int leftD3FrontF1StartX = 32;
-
-            bool rightD3AlsoActive =
-                !currentGeometry.F0Left.IsWall
-                && !currentGeometry.F0Right.IsWall
-                && currentGeometry.F1Center.IsWall
-                && !currentGeometry.F1Right.IsWall;
-
-            int leftD3FrontF1CopyWidth =
-                rightD3AlsoActive
-                    ? StraightF1WallLogic.CompositeWidth160
-                    : StraightF1WallLogic.CompositeWidth191;
-
-            int leftD3FrontF1DestinationX = leftD3FrontF1StartX;
-            if (mirror)
-            {
-              BlitFrontF1MirroredImageFromX(
-                  pixels,
-                  fullF1Texture,
-                  leftD3FrontF1StartX,
-                  leftD3FrontF1DestinationX,
-                  resolvedY,
-                  leftD3FrontF1CopyWidth);
-            }
-            else
-            {
-              BlitFrontF1CroppedPreview(
-                  pixels,
-                  fullF1Texture,
-                  leftD3FrontF1StartX,
-                  leftD3FrontF1DestinationX,
-                  resolvedY,
-                  false,
-                  leftD3FrontF1CopyWidth);
-            }
-
-            LogIfOverlapsLeftF0(
-                piece,
-                piece.Graphic,
-                leftD3FrontF1DestinationX,
-                resolvedY,
-                leftD3FrontF1CopyWidth,
-                fullF1Texture.height);
-          }
-          else if (frontF1CropPreview)
-          {
-            Texture2D fullF1Texture =
-                graphics.GetFrontWallF1Texture(StraightF1WallLogic.CompositeWidth);
-            if (fullF1Texture == null)
-              continue;
-
-            frontF1TextureHeight = fullF1Texture.height;
-
-            // Crop X defines both the first source column and first screen column.
-            // Example: Crop X=32 -> source 32..223 -> screen 32..223.
-            // In Crop ON mode, normal X is not used; Y still uses resolvedY.
-            int cropStartX = Mathf.Clamp(
-                frontF1CropStartXPreview,
-                0,
-                StraightF1WallLogic.CompositeWidth - 1);
-            int cropDestinationX = cropStartX;
-            bool cropMirror = mirror;
-
-            int cropWidth = StraightF1WallLogic.CompositeWidth - cropStartX;
-
-            BlitFrontF1CroppedPreview(
-                pixels,
-                fullF1Texture,
-                cropStartX,
-                cropDestinationX,
-                resolvedY,
-                cropMirror);
-
-            LogIfOverlapsLeftF0(
-                piece,
-                piece.Graphic,
-                cropDestinationX,
-                resolvedY,
-                cropWidth,
-                fullF1Texture.height);
-          }
-          else
-          {
-            Texture2D f1Texture = graphics.GetFrontWallF1Texture(width);
-            if (f1Texture == null)
-              continue;
-
-            frontF1TextureHeight = f1Texture.height;
-
-            // Normal FrontF1 mode: use the resolved left-edge X exactly.
-            int f1DestX = resolvedX;
-
-            if (mirror && width < StraightF1WallLogic.CompositeWidth)
-            {
-              // A narrow mirrored FrontF1 must reflect the same columns it
-              // would draw unmirrored. Mirroring the full composite first and
-              // then copying keeps the selected window; passing the narrow
-              // width straight to the composite blit would instead sample the
-              // opposite end of the 224px source.
-              int mirroredSourceStartX =
-                  StraightF1WallLogic.CompositeWidth - width;
-
-              BlitFrontF1MirroredImageFromX(
-                  pixels,
-                  f1Texture,
-                  mirroredSourceStartX,
-                  f1DestX,
-                  resolvedY,
-                  width);
-            }
-            else
-            {
-              StraightF1WallLogic.BlitCompositeToBuffer(
-                  f1Texture,
-                  pixels,
-                  PreviewWidth,
-                  PreviewHeight,
-                  f1DestX,
-                  resolvedY,
-                  mirror,
-                  width);
-            }
-
-            LogIfOverlapsLeftF0(
-                piece,
-                piece.Graphic,
-                f1DestX,
-                resolvedY,
-                f1Texture.width,
-                f1Texture.height);
-          }
-          ClearFrontWallOverflowIntoUi(
+          BlitPieceIntoPreview(
               pixels,
+              f1Texture,
+              resolvedX,
               resolvedY,
-              frontF1TextureHeight);
+              mirror);
+          LogIfOverlapsLeftF0(
+              piece,
+              piece.Graphic,
+              resolvedX,
+              resolvedY,
+              f1Texture.width,
+              f1Texture.height);
           continue;
         }
 
+        // Native-only fallback for FrontF2 when Viewport-17 authority is OFF.
+        // The production V17 path above already draws D2 L/R/C separately.
         if (FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
         {
-          Texture2D f2Texture = GetFrontWallF2_224ReferenceTexture();
+          Texture2D f2Texture = GetReadableNativeFrontF2Texture();
           if (f2Texture == null)
             continue;
-
-          if (viewport17WallAuthorityActive)
-          {
-            if (!TryGetResolvedNormalWallState(
-                    piece, out ResolvedNormalWallState liveFrontF2)
-                || !liveFrontF2.Enabled)
-            {
-              continue;
-            }
-
-            int destinationStartX = liveFrontF2.X;
-            int copyWidth = liveFrontF2.FrontF2Width > 0
-                ? liveFrontF2.FrontF2Width
-                : StraightF1WallLogic.CompositeWidth;
-            int sourceStartX = destinationStartX;
-
-            if (liveFrontF2.Mirror)
-            {
-              BlitFrontF1MirroredImageFromX(
-                  pixels,
-                  f2Texture,
-                  sourceStartX,
-                  destinationStartX,
-                  liveFrontF2.Y,
-                  copyWidth);
-            }
-            else
-            {
-              BlitFrontF1CroppedPreview(
-                  pixels,
-                  f2Texture,
-                  sourceStartX,
-                  destinationStartX,
-                  liveFrontF2.Y,
-                  false,
-                  copyWidth);
-            }
-
-            LogIfOverlapsLeftF0(
-                piece,
-                piece.Graphic,
-                destinationStartX,
-                liveFrontF2.Y,
-                copyWidth,
-                f2Texture.height);
-            ClearFrontWallOverflowIntoUi(
-                pixels,
-                liveFrontF2.Y,
-                f2Texture.height);
-            continue;
-          }
 
           BlitPieceIntoPreview(
               pixels,
@@ -10260,11 +9965,6 @@ public class ViewportLayoutEditor : EditorWindow
               resolvedX,
               resolvedY,
               f2Texture.width,
-              f2Texture.height);
-
-          ClearFrontWallOverflowIntoUi(
-              pixels,
-              resolvedY,
               f2Texture.height);
           continue;
         }
@@ -10950,18 +10650,6 @@ public class ViewportLayoutEditor : EditorWindow
         true);
   }
 
-  private Texture2D GetFrontWallF2_224ReferenceTexture()
-  {
-    if (frontWallF2_224ReferenceTexture == null)
-    {
-      frontWallF2_224ReferenceTexture =
-          AssetDatabase.LoadAssetAtPath<Texture2D>(
-              "Assets/Art/Walls/Front Wall F2_224x74.png");
-    }
-
-    return frontWallF2_224ReferenceTexture;
-  }
-
   private Texture2D GetRight2STexture()
   {
     if (right2SSourceTexture == null)
@@ -11146,113 +10834,6 @@ public class ViewportLayoutEditor : EditorWindow
       int row = y * PreviewWidth;
       for (int x = 224; x < PreviewWidth; x++)
         pixels[row + x] = magenta;
-    }
-  }
-
-  // Mirror the complete 224x111 FrontF1 first, then copy from mirrored
-  // image X = mirroredSourceStartX through the last column.
-  // Destination start is independent and is not derived from source start.
-  private static void BlitFrontF1MirroredImageFromX(
-      Color32[] dest,
-      Texture2D source,
-      int mirroredSourceStartX,
-      int destinationStartX,
-      int destinationY,
-      int maxCopyWidth = int.MaxValue)
-  {
-    if (dest == null || source == null || !source.isReadable)
-      return;
-
-    int imageWidth = Mathf.Min(
-        source.width,
-        StraightF1WallLogic.CompositeWidth);
-    if (imageWidth <= 0)
-      return;
-
-    int lastImageX = imageWidth - 1;
-    mirroredSourceStartX = Mathf.Clamp(mirroredSourceStartX, 0, lastImageX);
-    int copyWidth = lastImageX - mirroredSourceStartX + 1;
-    copyWidth = Mathf.Min(copyWidth, maxCopyWidth);
-    if (copyWidth <= 0)
-      return;
-
-    Color32[] sourcePixels = source.GetPixels32();
-
-    for (int sourceY = 0; sourceY < source.height; sourceY++)
-    {
-      int targetY = destinationY + sourceY;
-      if (targetY < 0 || targetY >= PreviewHeight)
-        continue;
-
-      int sourceRow = sourceY * source.width;
-      int destRow = targetY * PreviewWidth;
-
-      for (int i = 0; i < copyWidth; i++)
-      {
-        int targetX = destinationStartX + i;
-        if (targetX < 0 || targetX >= StraightF1WallLogic.CompositeWidth)
-          continue;
-
-        int mirroredX = mirroredSourceStartX + i;
-        int originalX = lastImageX - mirroredX;
-        Color32 colour = sourcePixels[sourceRow + originalX];
-        colour.a = 255;
-        dest[destRow + targetX] = colour;
-      }
-    }
-  }
-
-  private static void BlitFrontF1CroppedPreview(
-      Color32[] dest,
-      Texture2D source,
-      int sourceStartX,
-      int destinationStartX,
-      int destinationY,
-      bool mirrorHorizontally,
-      int maxCopyWidth = int.MaxValue)
-  {
-    if (dest == null || source == null || !source.isReadable)
-      return;
-
-    sourceStartX = Mathf.Clamp(
-        sourceStartX,
-        0,
-        Mathf.Min(source.width, StraightF1WallLogic.CompositeWidth) - 1);
-    int sourceEndX = Mathf.Min(
-        source.width,
-        StraightF1WallLogic.CompositeWidth) - 1;
-    int copyWidth = sourceEndX - sourceStartX + 1;
-    copyWidth = Mathf.Min(copyWidth, maxCopyWidth);
-    if (copyWidth <= 0)
-      return;
-
-    Color32[] sourcePixels = source.GetPixels32();
-
-    for (int sourceY = 0; sourceY < source.height; sourceY++)
-    {
-      int targetY = destinationY + sourceY;
-      if (targetY < 0 || targetY >= PreviewHeight)
-        continue;
-
-      int sourceRow = sourceY * source.width;
-      int destRow = targetY * PreviewWidth;
-
-      for (int i = 0; i < copyWidth; i++)
-      {
-        int targetX = destinationStartX + i;
-        if (targetX < 0 || targetX >= StraightF1WallLogic.CompositeWidth)
-          continue;
-
-        // Crop controls the source/destination start.
-        // Mirror remains independent and reverses only the selected source strip.
-        int sourceX = mirrorHorizontally
-            ? sourceEndX - i
-            : sourceStartX + i;
-
-        Color32 colour = sourcePixels[sourceRow + sourceX];
-        colour.a = 255;
-        dest[destRow + targetX] = colour;
-      }
     }
   }
 
@@ -12121,23 +11702,14 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (IsFrontWallF1Card(piece))
     {
-      int width = StraightF1WallLogic.NormalizeFrontWallF1Width(
-          piece.FrontWallF1Width);
-      if (TryGetResolvedNormalWallState(
-              piece,
-              out ResolvedNormalWallState resolvedWall))
-      {
-        width = resolvedWall.FrontF1Width;
-      }
-
-      Texture2D f1Texture = graphics.GetFrontWallF1Texture(width);
+      Texture2D f1Texture = GetReadableNativeFrontF1Texture();
       if (f1Texture != null && f1Texture.height > 0)
         return f1Texture.height;
     }
 
     if (IsFrontWallF2Card(piece))
     {
-      Texture2D f2Texture = GetFrontWallF2_224ReferenceTexture();
+      Texture2D f2Texture = GetReadableNativeFrontF2Texture();
       if (f2Texture != null && f2Texture.height > 0)
         return f2Texture.height;
       return 74;

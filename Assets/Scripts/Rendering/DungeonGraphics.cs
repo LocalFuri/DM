@@ -37,22 +37,37 @@ namespace DM.Rendering
     public Texture2D WallF3L;
     public Texture2D WallF3R;
 
-    [Header("Front Walls")]
+    [Header("Front Walls - Native DOS Centers")]
     public Texture2D FrontWallF1;
     public Texture2D FrontWallF2;
     public Texture2D FrontWallF3;
 
-    public const string FrontWallF1_224AssetPath =
-        "Assets/Art/Walls/Front Wall F1_224x111.png";
+    public const string FrontWallF1NativeAssetPath =
+        "Assets/Art/Walls/Front_Wall_F1_RAW_160x111.png";
 
-    public const string FrontWallF3_141AssetPath =
-        "Assets/Art/Walls/Front Wall F3_141x49.png";
+    public const string FrontWallF2NativeAssetPath =
+        "Assets/Art/Walls/Front_Wall_F2_RECOVERED_CENTER_106x74.png";
+
+    public const string FrontWallF3NativeAssetPath =
+        "Assets/Art/Walls/Front_Wall_F3_RAW_70x49.png";
+
+    // Legacy public constant names are kept as compile-safe aliases for any
+    // older callers elsewhere in the project. They now resolve to the native
+    // center assets; no old composite PNG path remains in code.
+    [System.Obsolete("Use FrontWallF1NativeAssetPath.")]
+    public const string FrontWallF1_224AssetPath = FrontWallF1NativeAssetPath;
+
+    [System.Obsolete("Use FrontWallF3NativeAssetPath.")]
+    public const string FrontWallF3_141AssetPath = FrontWallF3NativeAssetPath;
 
     [System.NonSerialized]
-    private Texture2D cachedFrontWallF1_224;
+    private Texture2D cachedFrontWallF1Native;
 
     [System.NonSerialized]
-    private Texture2D cachedFrontWallF3_141;
+    private Texture2D cachedFrontWallF2Native;
+
+    [System.NonSerialized]
+    private Texture2D cachedFrontWallF3Native;
 
     [System.NonSerialized]
     private Texture2D cachedLeft2S;
@@ -123,10 +138,9 @@ namespace DM.Rendering
         case DungeonGraphicType.FrontWallF1:
         case DungeonGraphicType.FrontWallF1_A:
         case DungeonGraphicType.FrontWallF1_B:
-          return GetFrontWallF1Texture(
-              StraightF1WallLogic.CompositeWidth);
+          return GetFrontWallF1Texture(160);
         case DungeonGraphicType.FrontWallF2:
-          return FrontWallF2;
+          return GetFrontWallF2Texture(106);
         case DungeonGraphicType.FrontWallF3:
           return GetFrontWallF3Texture();
         case DungeonGraphicType.WallD3L2:
@@ -164,27 +178,72 @@ namespace DM.Rendering
       }
     }
 
+    // Compatibility signature retained for existing callers. Native F1 is
+    // always the original 160x111 center graphic; width expansion/composite
+    // generation is intentionally no longer performed here.
     public Texture2D GetFrontWallF1Texture(int width)
     {
-      if (cachedFrontWallF1_224 != null)
-        return cachedFrontWallF1_224;
-
-#if UNITY_EDITOR
-      cachedFrontWallF1_224 =
-          UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
-              FrontWallF1_224AssetPath);
-#endif
-      if (cachedFrontWallF1_224 != null)
-        return cachedFrontWallF1_224;
+      if (cachedFrontWallF1Native != null)
+        return cachedFrontWallF1Native;
 
       if (FrontWallF1 != null
-          && FrontWallF1.width == StraightF1WallLogic.CompositeWidth)
+          && FrontWallF1.width == 160
+          && FrontWallF1.height == 111)
       {
-        cachedFrontWallF1_224 = FrontWallF1;
-        return cachedFrontWallF1_224;
+        cachedFrontWallF1Native = FrontWallF1;
+        return cachedFrontWallF1Native;
       }
 
-      return FrontWallF1;
+#if UNITY_EDITOR
+      cachedFrontWallF1Native =
+          UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+              FrontWallF1NativeAssetPath);
+#endif
+      return cachedFrontWallF1Native;
+    }
+
+    // Compatibility signature retained for existing callers. Native F2 is
+    // always the original 106x74 center graphic.
+    public Texture2D GetFrontWallF2Texture(int width)
+    {
+      if (cachedFrontWallF2Native != null)
+        return cachedFrontWallF2Native;
+
+      if (FrontWallF2 != null
+          && FrontWallF2.width == 106
+          && FrontWallF2.height == 74)
+      {
+        cachedFrontWallF2Native = FrontWallF2;
+        return cachedFrontWallF2Native;
+      }
+
+#if UNITY_EDITOR
+      cachedFrontWallF2Native =
+          UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+              FrontWallF2NativeAssetPath);
+#endif
+      return cachedFrontWallF2Native;
+    }
+
+    public Texture2D GetFrontWallF3Texture()
+    {
+      if (cachedFrontWallF3Native != null)
+        return cachedFrontWallF3Native;
+
+      if (FrontWallF3 != null
+          && FrontWallF3.width == 70
+          && FrontWallF3.height == 49)
+      {
+        cachedFrontWallF3Native = FrontWallF3;
+        return cachedFrontWallF3Native;
+      }
+
+#if UNITY_EDITOR
+      cachedFrontWallF3Native =
+          UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+              FrontWallF3NativeAssetPath);
+#endif
+      return cachedFrontWallF3Native;
     }
 
     public Texture2D GetLeft2STexture()
@@ -201,61 +260,6 @@ namespace DM.Rendering
               Left2SAssetPath);
 #endif
       return cachedLeft2S != null ? cachedLeft2S : Left2S;
-    }
-
-    public Texture2D GetFrontWallF3Texture()
-    {
-      if (cachedFrontWallF3_141 != null
-          && cachedFrontWallF3_141.width == 141
-          && cachedFrontWallF3_141.height == 49)
-      {
-        return cachedFrontWallF3_141;
-      }
-
-#if UNITY_EDITOR
-      cachedFrontWallF3_141 =
-          UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
-              FrontWallF3_141AssetPath);
-#endif
-      if (cachedFrontWallF3_141 != null
-          && cachedFrontWallF3_141.width == 141
-          && cachedFrontWallF3_141.height == 49)
-      {
-        return cachedFrontWallF3_141;
-      }
-
-      cachedFrontWallF3_141 = null;
-      Debug.LogError(
-          "FrontWallF3 141x49 asset is missing/unavailable: "
-          + FrontWallF3_141AssetPath
-          + ". NO FALLBACK APPLIED.");
-      return null;
-    }
-
-    public Texture2D GetFrontWallF2Texture(int width)
-    {
-      int normalized = FrontWallF2Logic.Normalize(width);
-      if (normalized == FrontWallF2Logic.Width160)
-      {
-        Texture2D expanded160 = ExpandedF2WallTexture.BuildExpandedF2Wall160(
-            FrontWallF2);
-        if (expanded160 != null
-            && expanded160.width == FrontWallF2Logic.Width160)
-        {
-          return expanded160;
-        }
-
-        return FrontWallF2;
-      }
-
-      if (normalized == FrontWallF2Logic.Width131)
-      {
-        return ExpandedF2WallTexture.BuildExpandedF2Wall(
-            FrontWallF2,
-            WallF2R);
-      }
-
-      return FrontWallF2;
     }
   }
 }
