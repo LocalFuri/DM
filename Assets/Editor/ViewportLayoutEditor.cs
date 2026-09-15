@@ -89,6 +89,10 @@ public class ViewportLayoutEditor : EditorWindow
   private ViewportLayout layout;
   [System.NonSerialized]
   private DungeonGraphics graphics;
+  [System.NonSerialized]
+  private Texture2D cachedNativeFrontF3ReadableCopy;
+  private const string NativeFrontF3AssetPath =
+      "Assets/Art/Walls/Front_Wall_F3_RAW_70x49.png";
   private Vector2 editorScroll;
   private bool scrollToBottomOnNextRepaint;
   private int lastPlayModeScrollX = int.MinValue;
@@ -109,8 +113,8 @@ public class ViewportLayoutEditor : EditorWindow
   private bool useViewport17WallAuthority = true;
   private bool viewport17D3LeftCalibrationPreview;
   private bool viewport17D3RightCalibrationPreview;
-  // Stage 6P: D3 LEFT is fully locked from the original reference.
-  // Destination X=0..31, FrontF3 source X=64..95, displayY=58, Mirror OFF.
+  // Legacy Stage 6P calibration constants. V17 production rendering no longer
+  // uses the old 32px crop from the 141x49 FrontF3 composite.
   private const int Viewport17D3SideLockedSourceX = 64;
   private const bool Viewport17D3LeftLockedMirror = false;
   // D3 RIGHT is derived as the symmetric generic candidate: same 32px source
@@ -449,6 +453,13 @@ public class ViewportLayoutEditor : EditorWindow
     SaveSessionPrefs();
 
     EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+
+    if (cachedNativeFrontF3ReadableCopy != null)
+    {
+      DestroyImmediate(cachedNativeFrontF3ReadableCopy);
+      cachedNativeFrontF3ReadableCopy = null;
+    }
+
     RepaintGameViews();
   }
 
@@ -1893,7 +1904,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("FrontF0", null, null),
     ("FrontF1", 0, 42),
     ("FrontF2", 0, 125),
-    ("FrontF3", 7, 58),
+    ("FrontF3", 77, 58),
     ("Front Wall F1", null, null),
     ("Front Wall F2", null, null),
     ("Front Wall F3", null, null),
@@ -1902,7 +1913,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("LeftF0", 0, 33),
     ("LeftF1", 0, 42),
     ("LeftF2", 0, 52),
-    ("LeftF3", 5, 60),
+    ("LeftF3", 0, 58),
     ("Wall F0Left", null, null),
     ("Wall F1Left", null, null),
     ("Wall F2Left", null, null),
@@ -1912,7 +1923,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("RightF0", 191, 33),
     ("RightF1", 165, 42),
     ("RightF2", 147, 52),
-    ("RightF3", 136, 60),
+    ("RightF3", 141, 58),
     ("Wall F0Right", null, null),
     ("Wall F1Right", null, null),
     ("Wall F2Right", null, null),
@@ -7697,7 +7708,7 @@ public class ViewportLayoutEditor : EditorWindow
       out int y)
   {
     // V17 Game View dest is the card Ref. Live X/Y must not show red against
-    // an older family default (FrontF1 Ref 0, FrontF3 Ref 7, etc.).
+    // an older family default (for example old FrontF3 Ref 7).
     if (IsViewport17WallAuthorityActive()
         && TryGetResolvedNormalWallState(
             piece, out ResolvedNormalWallState liveDraw)
@@ -7898,9 +7909,9 @@ public class ViewportLayoutEditor : EditorWindow
       else if (IsFrontWallF3Card(piece))
       {
         enabled = frontF3;
-        x = 7;
+        x = 77;
         y = DisplayYToUnityY(58, GetPieceHeightForEditorY(piece));
-        mirror = false;
+        mirror = GetSideWallMirrorFromPose();
       }
       else if (IsWallF0LeftPiece(piece))
       {
@@ -8010,8 +8021,8 @@ public class ViewportLayoutEditor : EditorWindow
         }
         else
         {
-          x = 5;
-          y = DisplayYToUnityY(60, GetPieceHeightForEditorY(piece));
+          x = 0;
+          y = DisplayYToUnityY(58, GetPieceHeightForEditorY(piece));
         }
       }
       else if (IsWallF3RightPiece(piece))
@@ -8026,8 +8037,8 @@ public class ViewportLayoutEditor : EditorWindow
         }
         else
         {
-          x = 136;
-          y = DisplayYToUnityY(60, GetPieceHeightForEditorY(piece));
+          x = 141;
+          y = DisplayYToUnityY(58, GetPieceHeightForEditorY(piece));
         }
       }
       else if (piece.Name == "LeftS3")
@@ -8105,11 +8116,12 @@ public class ViewportLayoutEditor : EditorWindow
         y = verifiedPosition.y;
       }
 
-      // FrontF3 canonical X is authoritative over any older saved
-      // geometry-position override. The verified wall starts at screen X=7.
+      // Native DOS D3 center placement is authoritative over any older saved
+      // geometry-position override. FrontF3 is the raw 70px center at X=77.
       if (IsFrontWallF3Card(piece))
       {
-        x = 7;
+        x = 77;
+        y = DisplayYToUnityY(58, GetPieceHeightForEditorY(piece));
       }
 
       // RightD3 canonical position is authoritative over any older saved
@@ -8144,7 +8156,7 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (IsFrontWallF3Card(piece))
       {
-        mirror = false;
+        mirror = GetSideWallMirrorFromPose();
       }
 
       // FrontF1 mirror is pose-parity driven and must flip when moving one
@@ -8398,8 +8410,16 @@ public class ViewportLayoutEditor : EditorWindow
     List<Viewport17RenderCommand> finalCommands =
         BuildViewport17FinalDrawCommands(inspection);
 
-    bool frontF3Center = false;
-    bool frontF3LeftOnly = false;
+    // F3/D3 is native DOS artwork, not a single front composite.  The three
+    // main D3 lanes use their own 83 / 70 / 83px sources and positions.
+    Viewport17Cell d3LeftCell = FindViewport17Cell(inspection.Cells, -1, 3);
+    Viewport17Cell d3CenterCell = FindViewport17Cell(inspection.Cells, 0, 3);
+    Viewport17Cell d3RightCell = FindViewport17Cell(inspection.Cells, 1, 3);
+    bool d3LeftSolid = IsViewport17Solid(d3LeftCell);
+    bool d3CenterSolid = IsViewport17Solid(d3CenterCell);
+    bool d3RightSolid = IsViewport17Solid(d3RightCell);
+    bool d3Mirror = GetSideWallMirrorFromPose();
+
     bool frontF2Center = false;
     bool frontF1Center = false;
     for (int i = 0; i < finalCommands.Count; i++)
@@ -8408,12 +8428,7 @@ public class ViewportLayoutEditor : EditorWindow
       if (!command.IsFrontComposite)
         continue;
 
-      if (command.PieceFamily == "FrontF3")
-      {
-        frontF3Center = command.FrontCenter;
-        frontF3LeftOnly = command.FrontLeft && !command.FrontCenter;
-      }
-      else if (command.PieceFamily == "FrontF2")
+      if (command.PieceFamily == "FrontF2")
       {
         frontF2Center = command.FrontCenter;
       }
@@ -8442,26 +8457,32 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
+      if (IsWallF3LeftPiece(piece))
+      {
+        state.Enabled = d3LeftSolid;
+        state.X = 0;
+        state.Y = DisplayYToUnityY(58, 49);
+        state.Mirror = d3Mirror;
+        resolvedNormalWallByPiece[piece] = state;
+        continue;
+      }
+
       if (IsFrontWallF3Card(piece))
       {
-        if (frontF3Center)
-        {
-          state.Enabled = true;
-        }
-        else if (frontF3LeftOnly)
-        {
-          state.Enabled = true;
-          state.X = 0;
-          state.Y = DisplayYToUnityY(
-              58,
-              GetPieceHeightForEditorY(piece));
-          state.Mirror = false;
-        }
-        else
-        {
-          state.Enabled = false;
-        }
+        state.Enabled = d3CenterSolid;
+        state.X = 77;
+        state.Y = DisplayYToUnityY(58, 49);
+        state.Mirror = d3Mirror;
+        resolvedNormalWallByPiece[piece] = state;
+        continue;
+      }
 
+      if (IsWallF3RightPiece(piece))
+      {
+        state.Enabled = d3RightSolid;
+        state.X = 141;
+        state.Y = DisplayYToUnityY(58, 49);
+        state.Mirror = d3Mirror;
         resolvedNormalWallByPiece[piece] = state;
         continue;
       }
@@ -9770,6 +9791,11 @@ public class ViewportLayoutEditor : EditorWindow
               GetNormalWallRenderDepth(a)));
 
       int nextNormalWall = 0;
+      bool viewport17NativeD3Drawn = false;
+      bool blockViewport17NativeD3ForBlackDoor =
+          previewX == 1
+          && (previewY == 4 || previewY == 5)
+          && previewFacing == DungeonFacing.North;
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
         ViewportPiece piece = layout.Pieces[i];
@@ -9788,6 +9814,31 @@ public class ViewportLayoutEditor : EditorWindow
             && (!previewEnabledOverrideByPiece.TryGetValue(
                     piece, out bool manuallyEnabledAfterDisable)
                 || !manuallyEnabledAfterDisable))
+        {
+          continue;
+        }
+
+        // V17 F3 cutover: draw the original DOS D3 L/C/R artwork once, at
+        // the far-wall point in painter order, before any nearer wall can
+        // cover it.  The legacy 141x49 FrontF3 composite and the old F3
+        // side placements are suppressed below.
+        if (viewport17WallAuthorityActive
+            && !viewport17NativeD3Drawn
+            && piece != null
+            && IsNormalWallPiece(piece))
+        {
+          viewport17NativeD3Drawn = true;
+          if (!blockViewport17NativeD3ForBlackDoor)
+          {
+            BlitViewport17NativeD3Walls(pixels, viewport17Inspection);
+          }
+        }
+
+        if (viewport17WallAuthorityActive
+            && piece != null
+            && (IsWallF3LeftPiece(piece)
+                || IsFrontWallF3Card(piece)
+                || IsWallF3RightPiece(piece)))
         {
           continue;
         }
@@ -10806,12 +10857,11 @@ public class ViewportLayoutEditor : EditorWindow
       BlitCsbWin21FullStack14SouthTest(pixels);
     }
 
+    // Native D3 L/C/R is now drawn in the normal far-to-near wall pass.
+    // Do not re-apply the old 32px crop from the 141x49 FrontF3 composite.
     if (viewport17WallAuthorityActive && !csbWin21FullStack14SouthTest)
     {
-      BlitViewport17FrontF3LeftLaneStrip(
-          pixels,
-          viewport17Inspection,
-          viewport17FinalWallCommands);
+      // Intentionally empty: legacy FrontF3 strip path retired for V17.
     }
 
     // Stage 6E calibration overlay is intentionally LAST among wall pixels so
@@ -11568,6 +11618,120 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return false;
+  }
+
+  private Texture2D GetReadableNativeFrontF3Texture()
+  {
+    Texture2D asset =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(NativeFrontF3AssetPath);
+
+    if (asset != null
+        && asset.width == 70
+        && asset.height == 49
+        && asset.isReadable)
+    {
+      return asset;
+    }
+
+    if (cachedNativeFrontF3ReadableCopy != null)
+      return cachedNativeFrontF3ReadableCopy;
+
+    string projectRoot = Path.GetDirectoryName(Application.dataPath);
+    string absolutePath = string.IsNullOrEmpty(projectRoot)
+        ? NativeFrontF3AssetPath
+        : Path.Combine(projectRoot, NativeFrontF3AssetPath);
+
+    if (!File.Exists(absolutePath))
+      return null;
+
+    byte[] pngBytes = File.ReadAllBytes(absolutePath);
+    Texture2D readableCopy =
+        new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "FrontF3_RAW_70x49_ReadablePreview";
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+
+    if (!readableCopy.LoadImage(pngBytes, false)
+        || readableCopy.width != 70
+        || readableCopy.height != 49)
+    {
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    cachedNativeFrontF3ReadableCopy = readableCopy;
+    return cachedNativeFrontF3ReadableCopy;
+  }
+
+  /// <summary>
+  /// V17 native-DOS D3 renderer.  D3 is not one composite FrontF3 image:
+  /// left, center, and right use the original 83x49 / 70x49 / 83x49
+  /// graphics at display X 7 / 77 / 134 and display Y 58.  On the alternate
+  /// wall phase the original engine uses the opposite side source and flips
+  /// it; the center source is simply flipped.
+  /// </summary>
+  private void BlitViewport17NativeD3Walls(
+      Color32[] pixels,
+      Viewport17Inspection inspection)
+  {
+    if (pixels == null || graphics == null || inspection.Cells == null)
+      return;
+
+    Viewport17Cell leftCell =
+        FindViewport17Cell(inspection.Cells, -1, 3);
+    Viewport17Cell centerCell =
+        FindViewport17Cell(inspection.Cells, 0, 3);
+    Viewport17Cell rightCell =
+        FindViewport17Cell(inspection.Cells, 1, 3);
+
+    bool mirror = GetSideWallMirrorFromPose();
+    const int displayY = 58;
+    const int nativeHeight = 49;
+    int destinationY = DisplayYToUnityY(displayY, nativeHeight);
+
+    Texture2D leftSource = graphics.GetTexture(
+        mirror ? DungeonGraphicType.WallF3R : DungeonGraphicType.WallF3L);
+    Texture2D rightSource = graphics.GetTexture(
+        mirror ? DungeonGraphicType.WallF3L : DungeonGraphicType.WallF3R);
+
+    // Original DOS D3 placement: draw both side walls first, then the
+    // 70px center wall last so it covers the 13px overlap on each side.
+    if (IsViewport17Solid(leftCell)
+        && leftSource != null
+        && leftSource.width == 83
+        && leftSource.height == nativeHeight)
+    {
+      BlitPieceIntoPreview(
+          pixels, leftSource, 7, destinationY, mirror);
+    }
+
+    if (IsViewport17Solid(rightCell)
+        && rightSource != null
+        && rightSource.width == 83
+        && rightSource.height == nativeHeight)
+    {
+      BlitPieceIntoPreview(
+          pixels, rightSource, 134, destinationY, mirror);
+    }
+
+    if (IsViewport17Solid(centerCell))
+    {
+      Texture2D centerSource = GetReadableNativeFrontF3Texture();
+
+      if (centerSource != null
+          && centerSource.width == 70
+          && centerSource.height == nativeHeight)
+      {
+        BlitPieceIntoPreview(
+            pixels, centerSource, 77, destinationY, mirror);
+      }
+      else
+      {
+        Debug.LogError(
+            "V17 native D3: Front_Wall_F3_RAW_70x49.png is missing or not 70x49.");
+      }
+    }
   }
 
   // Production V17 blit for FrontF3 mask L without C: the D3-left front
