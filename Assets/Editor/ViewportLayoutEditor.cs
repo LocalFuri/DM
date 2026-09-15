@@ -90,6 +90,11 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private DungeonGraphics graphics;
   [System.NonSerialized]
+  private Texture2D cachedNativeFrontF1ReadableCopy;
+  private const string NativeFrontF1AssetPath =
+      "Assets/Art/Walls/Front_Wall_F1_RAW_160x111.png";
+
+  [System.NonSerialized]
   private Texture2D cachedNativeFrontF2ReadableCopy;
   private const string NativeFrontF2AssetPath =
       "Assets/Art/Walls/Front_Wall_F2_RECOVERED_CENTER_106x74.png";
@@ -4740,11 +4745,9 @@ public class ViewportLayoutEditor : EditorWindow
           .Append("  RAW160(file)=")
           .Append(DescribeTextureSize(recoveredFrontF1));
 
-      if (previewX == 5
-          && previewY == 2
-          && previewFacing == DungeonFacing.South)
+      if (useViewport17WallAuthority)
       {
-        text.Append("\nRAW160 TEST: (5,2) South -> FrontF1 160x111 at X=32");
+        text.Append("\nNATIVE D1: L/C/R=60/160/60  X=0/32/164  Y=42  order=L->R->C");
       }
 
       if (previewX == 1
@@ -9804,6 +9807,7 @@ public class ViewportLayoutEditor : EditorWindow
       int nextNormalWall = 0;
       bool viewport17NativeD3Drawn = false;
       bool viewport17NativeD2Drawn = false;
+      bool viewport17NativeD1Drawn = false;
       bool blockViewport17NativeD3ForBlackDoor =
           previewX == 1
           && (previewY == 4 || previewY == 5)
@@ -9811,6 +9815,10 @@ public class ViewportLayoutEditor : EditorWindow
       bool blockViewport17NativeD2ForBlackDoor =
           previewX == 1
           && (previewY == 3 || previewY == 4)
+          && previewFacing == DungeonFacing.North;
+      bool blockViewport17NativeD1ForBlackDoor =
+          previewX == 1
+          && previewY == 3
           && previewFacing == DungeonFacing.North;
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
@@ -9880,6 +9888,31 @@ public class ViewportLayoutEditor : EditorWindow
             && (IsWallF2LeftPiece(piece)
                 || IsFrontWallF2Card(piece)
                 || IsWallF2RightPiece(piece)))
+        {
+          continue;
+        }
+
+        // V17 F1 cutover: draw the original DOS D1 L/C/R artwork once when
+        // painter order reaches depth 1.  This replaces the old 224x111
+        // screenshot composite and the pose-specific (5,2) RAW160 test.
+        if (viewport17WallAuthorityActive
+            && !viewport17NativeD1Drawn
+            && piece != null
+            && IsNormalWallPiece(piece)
+            && GetNormalWallRenderDepth(piece) == 1)
+        {
+          viewport17NativeD1Drawn = true;
+          if (!blockViewport17NativeD1ForBlackDoor)
+          {
+            BlitViewport17NativeD1Walls(pixels, viewport17Inspection);
+          }
+        }
+
+        if (viewport17WallAuthorityActive
+            && piece != null
+            && (IsWallF1LeftPiece(piece)
+                || IsFrontWallF1Card(piece)
+                || IsWallF1RightPiece(piece)))
         {
           continue;
         }
@@ -10211,50 +10244,6 @@ public class ViewportLayoutEditor : EditorWindow
                 || !liveFrontF1.Enabled)
             {
               continue;
-            }
-
-            // TEMPORARY RAW-F1 TEST ONLY: at (5,2) South, draw the recovered
-            // original 160x111 center source at X=32 instead of the old 224x111
-            // composite.  No wall selection, X/Y authority, or other pieces change.
-            if (previewX == 5
-                && previewY == 2
-                && previewFacing == DungeonFacing.South)
-            {
-              Texture2D raw160FrontF1 =
-                  AssetDatabase.LoadAssetAtPath<Texture2D>(
-                      "Assets/Art/Walls/Front_Wall_F1_RAW_160x111.png");
-
-              if (raw160FrontF1 != null
-                  && raw160FrontF1.width == 160
-                  && raw160FrontF1.height == 111)
-              {
-                const int raw160DestinationX = 32;
-
-                // The recovered raw file is the inverse of the center's flip
-                // used when the 224 composite was built.  Invert the old
-                // composite mirror flag so the visible center pixels stay in
-                // the same source orientation for this controlled test.
-                bool raw160Mirror = !liveFrontF1.Mirror;
-
-                BlitPieceIntoPreview(
-                    pixels,
-                    raw160FrontF1,
-                    raw160DestinationX,
-                    resolvedY,
-                    raw160Mirror);
-
-                LogIfOverlapsLeftF0(
-                    piece,
-                    piece.Graphic,
-                    raw160DestinationX,
-                    resolvedY,
-                    raw160FrontF1.width,
-                    raw160FrontF1.height);
-                continue;
-              }
-
-              Debug.LogError(
-                  "RAW160 F1 TEST: Assets/Art/Walls/Front_Wall_F1_RAW_160x111.png missing or not 160x111.");
             }
 
             Texture2D f1Texture = graphics.GetFrontWallF1Texture(
@@ -11661,6 +11650,50 @@ public class ViewportLayoutEditor : EditorWindow
     return false;
   }
 
+  private Texture2D GetReadableNativeFrontF1Texture()
+  {
+    Texture2D asset =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(NativeFrontF1AssetPath);
+
+    if (asset != null
+        && asset.width == 160
+        && asset.height == 111
+        && asset.isReadable)
+    {
+      return asset;
+    }
+
+    if (cachedNativeFrontF1ReadableCopy != null)
+      return cachedNativeFrontF1ReadableCopy;
+
+    string projectRoot = Path.GetDirectoryName(Application.dataPath);
+    string absolutePath = string.IsNullOrEmpty(projectRoot)
+        ? NativeFrontF1AssetPath
+        : Path.Combine(projectRoot, NativeFrontF1AssetPath);
+
+    if (!File.Exists(absolutePath))
+      return null;
+
+    byte[] pngBytes = File.ReadAllBytes(absolutePath);
+    Texture2D readableCopy =
+        new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "FrontF1_RAW_160x111_ReadablePreview";
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+
+    if (!readableCopy.LoadImage(pngBytes, false)
+        || readableCopy.width != 160
+        || readableCopy.height != 111)
+    {
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    cachedNativeFrontF1ReadableCopy = readableCopy;
+    return cachedNativeFrontF1ReadableCopy;
+  }
+
   private Texture2D GetReadableNativeFrontF2Texture()
   {
     Texture2D asset =
@@ -11747,6 +11780,80 @@ public class ViewportLayoutEditor : EditorWindow
 
     cachedNativeFrontF3ReadableCopy = readableCopy;
     return cachedNativeFrontF3ReadableCopy;
+  }
+
+  /// <summary>
+  /// V17 native-DOS D1 renderer.  DOS draws D1L, D1R, then D1C.
+  /// Native geometry is 60x111 / 160x111 / 60x111 at viewport X
+  /// 0 / 32 / 164 and viewport Y 9 (Game/ViewEdit display Y 42).
+  /// The global Dungeon Master wall phase is (X + Y + facing) & 1:
+  /// on the alternate phase the side source is swapped and every selected
+  /// bitmap is flipped horizontally.  D1C is opaque and therefore drawn last.
+  /// </summary>
+  private void BlitViewport17NativeD1Walls(
+      Color32[] pixels,
+      Viewport17Inspection inspection)
+  {
+    if (pixels == null || graphics == null || inspection.Cells == null)
+      return;
+
+    Viewport17Cell leftCell =
+        FindViewport17Cell(inspection.Cells, -1, 1);
+    Viewport17Cell centerCell =
+        FindViewport17Cell(inspection.Cells, 0, 1);
+    Viewport17Cell rightCell =
+        FindViewport17Cell(inspection.Cells, 1, 1);
+
+    bool mirror = GetSideWallMirrorFromPose();
+    const int displayY = 42;
+    const int nativeHeight = 111;
+    int destinationY = DisplayYToUnityY(displayY, nativeHeight);
+
+    Texture2D leftSource = graphics.GetTexture(
+        mirror ? DungeonGraphicType.WallF1R : DungeonGraphicType.WallF1L);
+    Texture2D rightSource = graphics.GetTexture(
+        mirror ? DungeonGraphicType.WallF1L : DungeonGraphicType.WallF1R);
+
+    // DOS zones 713/714: D1L and D1R are full 60px native side walls.
+    // They overlap the center region and are intentionally drawn first.
+    if (IsViewport17Solid(leftCell)
+        && leftSource != null
+        && leftSource.width == 60
+        && leftSource.height == nativeHeight)
+    {
+      BlitPieceIntoPreview(
+          pixels, leftSource, 0, destinationY, mirror);
+    }
+
+    if (IsViewport17Solid(rightCell)
+        && rightSource != null
+        && rightSource.width == 60
+        && rightSource.height == nativeHeight)
+    {
+      BlitPieceIntoPreview(
+          pixels, rightSource, 164, destinationY, mirror);
+    }
+
+    // DOS zone 712: D1C is the original 160x111 center at X=32.
+    // Draw it last so it owns the 28px overlap with each side wall.
+    if (IsViewport17Solid(centerCell))
+    {
+      Texture2D centerSource = GetReadableNativeFrontF1Texture();
+
+      if (centerSource != null
+          && centerSource.width == 160
+          && centerSource.height == nativeHeight)
+      {
+        BlitPieceIntoPreview(
+            pixels, centerSource, 32, destinationY, mirror);
+      }
+      else
+      {
+        Debug.LogError(
+            "V17 native D1: Front_Wall_F1_RAW_160x111.png "
+            + "is missing or not 160x111.");
+      }
+    }
   }
 
   /// <summary>
