@@ -249,8 +249,6 @@ public class ViewportLayoutEditor : EditorWindow
   // Canonical storage is previewFrontF1CropByPose, keyed by X/Y/Facing.
   private bool frontF1CropPreview;
   private int frontF1CropStartXPreview;
-  private const bool FrontF1ReferenceCrop = false;
-
   private struct FrontF1CropPreviewState
   {
     public bool Enabled;
@@ -4750,112 +4748,9 @@ public class ViewportLayoutEditor : EditorWindow
         text.Append("\nNATIVE D1: L/C/R=60/160/60  X=0/32/164  Y=42  order=L->R->C");
       }
 
-      if (previewX == 1
-          && previewY == 4
-          && previewFacing == DungeonFacing.South)
-      {
-        text.Append("\nCSB21 FULL STACK TEST: 08 RightF3 -> 12 LeftF2 -> 13 RightF2 -> 15 LeftF1 -> 18 LeftF0 -> 19 RightF0");
-      }
     }
 
     return text.ToString();
-  }
-
-  private ViewportPiece FindCsbWin21TestPiece(string family)
-  {
-    ViewportPiece piece = FindLayoutPieceByName(family);
-    if (piece != null)
-      return piece;
-
-    switch (family)
-    {
-      case "LeftF0": return FindLayoutPieceByName("Wall F0Left");
-      case "RightF0": return FindLayoutPieceByName("Wall F0Right");
-      case "LeftF1": return FindLayoutPieceByName("Wall F1Left");
-      case "RightF1": return FindLayoutPieceByName("Wall F1Right");
-      case "LeftF2": return FindLayoutPieceByName("Wall F2Left");
-      case "RightF2": return FindLayoutPieceByName("Wall F2Right");
-      case "LeftF3": return FindLayoutPieceByName("Wall F3Left");
-      case "RightF3": return FindLayoutPieceByName("Wall F3Right");
-      default: return null;
-    }
-  }
-
-  private void BlitCsbWin21FullStack14SouthTest(Color32[] pixels)
-  {
-    if (pixels == null || graphics == null)
-      return;
-
-    // Exact active Stone command order for (1,4) South from the verified
-    // CSBWin 21-cell diagnostic. Selection is CSB21-only for this test pose.
-    string[] families =
-    {
-      "RightF3", // 08 F3R1
-      "LeftF2",  // 12 F2L1
-      "RightF2", // 13 F2R1
-      "LeftF1",  // 15 F1L1
-      "LeftF0",  // 18 F0L1
-      "RightF0"  // 19 F0R1
-    };
-
-    for (int i = 0; i < families.Length; i++)
-    {
-      ViewportPiece piece = FindCsbWin21TestPiece(families[i]);
-      if (piece == null)
-        continue;
-
-      int x = piece.EffectiveX;
-      int y = piece.EffectiveY;
-      bool mirror = GetSideWallMirrorFromPose();
-
-      if (previewPositionOverrideByPiece.TryGetValue(
-              piece, out Vector2Int positionOverride))
-      {
-        x = positionOverride.x;
-        y = positionOverride.y;
-      }
-      else if (TryGetCanonicalReferenceXY(
-                   piece.Name, out int refX, out int refDisplayY)
-               || (TryGetSideWallCanonicalName(
-                       piece, out string canonicalName)
-                   && TryGetCanonicalReferenceXY(
-                       canonicalName, out refX, out refDisplayY)))
-      {
-        x = refX;
-        y = DisplayYToUnityY(
-            refDisplayY, GetPieceHeightForEditorY(piece));
-      }
-
-      if (previewMirrorOverrideByPiece.TryGetValue(
-              piece, out bool mirrorOverride))
-      {
-        mirror = mirrorOverride;
-      }
-
-      DungeonGraphicType drawGraphic = piece.Graphic;
-      if (IsWallF0LeftPiece(piece) && mirror)
-        drawGraphic = DungeonGraphicType.WallF0R;
-      else if (IsWallF0RightPiece(piece) && mirror)
-        drawGraphic = DungeonGraphicType.WallF0L;
-      else if (IsWallF1LeftPiece(piece) && mirror)
-        drawGraphic = DungeonGraphicType.WallF1R;
-      else if (IsWallF1RightPiece(piece) && mirror)
-        drawGraphic = DungeonGraphicType.WallF1L;
-      else if (IsWallF2LeftPiece(piece) && mirror)
-        drawGraphic = DungeonGraphicType.WallF2R;
-      else if (IsWallF2RightPiece(piece) && mirror)
-        drawGraphic = DungeonGraphicType.WallF2L;
-      else if (IsWallF3LeftPiece(piece) && mirror)
-        drawGraphic = DungeonGraphicType.WallF3R;
-      else if (IsWallF3RightPiece(piece) && mirror)
-        drawGraphic = DungeonGraphicType.WallF3L;
-
-      Texture2D texture = graphics.GetTexture(drawGraphic);
-      if (texture == null)
-        continue;
-
-      BlitPieceIntoPreview(pixels, texture, x, y, mirror);
-    }
   }
 
   private static string DescribeTextureSize(Texture2D texture)
@@ -7366,20 +7261,6 @@ public class ViewportLayoutEditor : EditorWindow
       CropX = 32
     };
   }
-
-  private void SaveCurrentFrontF1CropPreview()
-  {
-    previewFrontF1CropByPose[CurrentPreviewPoseKey()] =
-        new FrontF1CropPreviewState
-        {
-          Enabled = frontF1CropPreview,
-          CropX = Mathf.Clamp(
-              frontF1CropStartXPreview,
-              0,
-              StraightF1WallLogic.CompositeWidth - 1)
-        };
-  }
-
   private void LoadFrontF1CropPreviewForCurrentPose()
   {
     EnsureFrontF1Crop05SouthDefault();
@@ -7451,40 +7332,6 @@ public class ViewportLayoutEditor : EditorWindow
     if (Application.isPlaying || layout == null)
       return;
 
-
-    ResetEditModeViewportLogCache();
-    DestroyEditModePreviewTextureOnly();
-    RefreshEditModePreview();
-    RepaintGameViews();
-    Repaint();
-  }
-
-  /// <summary>
-  /// F1 Width toggled: capture per-pose width, then refresh Edit Mode preview.
-  /// </summary>
-  private void ApplyFrontWallF1WidthChangeForCurrentPose()
-  {
-    if (Application.isPlaying || layout == null)
-      return;
-
-    EditorUtility.SetDirty(layout);
-
-    ResetEditModeViewportLogCache();
-    DestroyEditModePreviewTextureOnly();
-    RefreshEditModePreview();
-    RepaintGameViews();
-    Repaint();
-  }
-
-  /// <summary>
-  /// F2 Width toggled: capture per-pose width, then refresh Edit Mode preview.
-  /// </summary>
-  private void ApplyFrontWallF2WidthChangeForCurrentPose()
-  {
-    if (Application.isPlaying || layout == null)
-      return;
-
-    EditorUtility.SetDirty(layout);
 
     ResetEditModeViewportLogCache();
     DestroyEditModePreviewTextureOnly();
@@ -8319,82 +8166,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     ApplyTemporaryNormalWallPreviewOverrides();
     ApplyViewport17LiveDrawToResolvedWalls();
-  }
-
-  // Front dest/width from V17 occupancy, not from a map pose.
-  // Left 32px is LeftF0 or a FrontF3 L-only strip. Right 32px is RightF0,
-  // a FrontF3 R-only strip, or an open D1-right corridor (0,5 North).
-  // Both insets -> dest 32, width 160 (FrontF1 at 0,5 South/North/West;
-  // FrontF2 at 0,5 East between the same F0 pair).
-  private static bool TryComputeViewport17InsetFrontLiveBlit(
-      List<Viewport17RenderCommand> finalCommands,
-      Viewport17Inspection inspection,
-      string frontFamily,
-      out int destX,
-      out int width)
-  {
-    destX = 0;
-    width = StraightF1WallLogic.CompositeWidth;
-    if (finalCommands == null || string.IsNullOrEmpty(frontFamily))
-      return false;
-
-    bool hasLeftF0 = false;
-    bool hasRightF0 = false;
-    bool frontF3LeftOnly = false;
-    bool frontF3RightOnly = false;
-    bool frontCenter = false;
-    for (int i = 0; i < finalCommands.Count; i++)
-    {
-      Viewport17RenderCommand command = finalCommands[i];
-      if (command.PieceFamily == "LeftF0")
-        hasLeftF0 = true;
-      else if (command.PieceFamily == "RightF0")
-        hasRightF0 = true;
-
-      if (!command.IsFrontComposite)
-        continue;
-
-      if (command.PieceFamily == "FrontF3")
-      {
-        frontF3LeftOnly |= command.FrontLeft && !command.FrontCenter;
-        frontF3RightOnly |= command.FrontRight && !command.FrontCenter;
-      }
-      else if (command.PieceFamily == frontFamily)
-      {
-        frontCenter |= command.FrontCenter;
-      }
-    }
-
-    if (!frontCenter)
-      return false;
-
-    bool d1RightOpen = false;
-    if (inspection.Cells != null)
-    {
-      Viewport17Cell d1Right = FindViewport17Cell(inspection.Cells, 1, 1);
-      if (d1Right.LocalX == 1 && d1Right.Depth == 1)
-        d1RightOpen = d1Right.State == Viewport17CellState.Open;
-    }
-    bool leftInset = hasLeftF0 || frontF3LeftOnly;
-    bool rightInset = hasRightF0 || frontF3RightOnly || d1RightOpen;
-
-    if (leftInset && rightInset)
-    {
-      destX = 32;
-      width = StraightF1WallLogic.CompositeWidth160;
-    }
-    else if (leftInset)
-    {
-      destX = 32;
-      width = StraightF1WallLogic.CompositeWidth191;
-    }
-    else if (rightInset)
-    {
-      destX = 0;
-      width = StraightF1WallLogic.CompositeWidth191;
-    }
-
-    return true;
   }
 
   /// <summary>
@@ -9714,10 +9485,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Temporary pose for visibility/mirror only — never write the layout asset.
     DungeonMap poseMap = TryGetPreviewPoseMap();
-    bool csbWin21FullStack14SouthTest =
-        previewX == 1
-        && previewY == 4
-        && previewFacing == DungeonFacing.South;
     bool viewport17WallAuthorityActive = IsViewport17WallAuthorityActive();
     Viewport17Inspection viewport17Inspection = default;
     List<Viewport17RenderCommand> viewport17FinalWallCommands = null;
@@ -9812,12 +9579,6 @@ public class ViewportLayoutEditor : EditorWindow
         ViewportPiece piece = layout.Pieces[i];
         if (IsNormalWallPiece(piece))
           piece = orderedNormalWalls[nextNormalWall++];
-
-        // Controlled full-stack test: at (1,4) South, do not mix any V17
-        // normal-wall pixels with the CSB21-selected command stack. Non-wall
-        // pieces (floor, ceiling, UI, etc.) continue through the old path.
-        if (csbWin21FullStack14SouthTest && IsNormalWallPiece(piece))
-          continue;
 
         if (previewDisableAllWalls
             && piece != null
@@ -10869,26 +10630,12 @@ public class ViewportLayoutEditor : EditorWindow
       // Wall rendering is intentionally disabled. No special wall/door blits.
     }
 
-    if (csbWin21FullStack14SouthTest)
-    {
-      BlitCsbWin21FullStack14SouthTest(pixels);
-    }
+    // Native D3 L/C/R is drawn in the normal far-to-near wall pass.
 
-    // Native D3 L/C/R is now drawn in the normal far-to-near wall pass.
-    // Do not re-apply the old 32px crop from the 141x49 FrontF3 composite.
-    if (viewport17WallAuthorityActive && !csbWin21FullStack14SouthTest)
-    {
-      // Intentionally empty: legacy FrontF3 strip path retired for V17.
-    }
-
-    // Stage 6E calibration overlay is intentionally LAST among wall pixels so
-    // the selected A/B/C/D candidate can be visually inspected without altering legacy Enabled
-    // states, render order, or stored ViewEdit data.
-    if (!csbWin21FullStack14SouthTest)
-    {
-      BlitViewport17D3LeftCalibrationCandidate(pixels);
-      BlitViewport17D3RightCalibrationCandidate(pixels);
-    }
+    // Stage 6E calibration overlays remain diagnostics-only and draw only
+    // when their explicit test toggles are enabled.
+    BlitViewport17D3LeftCalibrationCandidate(pixels);
+    BlitViewport17D3RightCalibrationCandidate(pixels);
 
     DungeonBitmapFont bitmapFont = FindEditModeBitmapFont();
     if (bitmapFont != null)
@@ -11013,46 +10760,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     return null;
   }
-
-  private void BlitFrontWallF2_160ExtraStripIntoPreview(
-      Color32[] pixels,
-      DungeonMap poseMap)
-  {
-    if (layout == null || layout.Pieces == null || graphics == null)
-      return;
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (!ShouldDrawPieceAtPreviewPose(piece))
-        continue;
-
-      if (!FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
-        continue;
-
-      if (FrontWallF2Logic.Normalize(piece.FrontWallF2Width)
-          != FrontWallF2Logic.Width160)
-      {
-        continue;
-      }
-
-      Texture2D f2Texture =
-          graphics.GetFrontWallF2Texture(FrontWallF2Logic.Width160);
-      if (f2Texture == null || f2Texture.width != FrontWallF2Logic.Width160)
-        return;
-
-      FrontWallF2Logic.Blit160ExtraStripToBuffer(
-          f2Texture,
-          pixels,
-          PreviewWidth,
-          PreviewHeight,
-          piece.EffectiveX,
-          piece.EffectiveY,
-          GetPreviewMirror(piece, poseMap));
-      return;
-    }
-  }
-
   /// <summary>
   /// Edit Mode draw gate.
   /// There is no per-view/per-pose visibility store anymore.
@@ -11984,66 +11691,6 @@ public class ViewportLayoutEditor : EditorWindow
             "V17 native D3: Front_Wall_F3_RAW_70x49.png is missing or not 70x49.");
       }
     }
-  }
-
-  // Production V17 blit for FrontF3 mask L without C: the D3-left front
-  // face fills dest X 0..31 from the locked FrontF3 source window.
-  // LeftS3 is an 8px graphic and must not be used for this 32px corridor.
-  private void BlitViewport17FrontF3LeftLaneStrip(
-      Color32[] pixels,
-      Viewport17Inspection inspection,
-      List<Viewport17RenderCommand> finalCommands)
-  {
-    if (graphics == null || pixels == null || finalCommands == null)
-      return;
-
-    bool leftLaneOnly = false;
-    for (int i = 0; i < finalCommands.Count; i++)
-    {
-      Viewport17RenderCommand command = finalCommands[i];
-      if (command.PieceFamily != "FrontF3" || !command.IsFrontComposite)
-        continue;
-
-      if (command.FrontLeft && !command.FrontCenter)
-      {
-        leftLaneOnly = true;
-        break;
-      }
-    }
-
-    if (!leftLaneOnly)
-      return;
-
-    if (!TryBuildViewport17SingleFrontCalibrationCommand(
-            inspection, 3, -1, out Viewport17RenderCommand laneCommand))
-    {
-      return;
-    }
-
-    if (!laneCommand.HasBufferPlacement
-        || !laneCommand.HasSourceWindow
-        || !laneCommand.HasMirror)
-    {
-      return;
-    }
-
-    Texture2D source = graphics.GetTexture(DungeonGraphicType.FrontWallF3);
-    if (source == null || !source.isReadable)
-      return;
-
-    if (laneCommand.HasPieceWidth && source.width != laneCommand.PieceWidth)
-      return;
-    if (laneCommand.HasPieceMetrics && source.height != laneCommand.PieceHeight)
-      return;
-
-    BlitViewport17SourceStripPreview(
-        pixels,
-        source,
-        laneCommand.SourceMinX,
-        laneCommand.SourceMaxX,
-        laneCommand.BufferX,
-        laneCommand.BufferY,
-        laneCommand.Mirror);
   }
 
   private void BlitViewport17D3LeftCalibrationCandidate(Color32[] pixels)
