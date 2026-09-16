@@ -413,6 +413,12 @@ public class ViewportLayoutEditor : EditorWindow
   {
     titleContent = new GUIContent("ViewEdit");
     wantsMouseMove = true;
+
+    // Keep the large geometry trace out of the normal ViewEdit workflow.
+    // Diagnostics can still be opened explicitly from the toolbar.
+    showGeometryDiagnostics = false;
+    showViewport17DiagnosticDetails = false;
+
     RestorePersistedAssets();
     ReloadLayoutFromDisk();
     RestoreSessionPrefs();
@@ -4214,6 +4220,10 @@ public class ViewportLayoutEditor : EditorWindow
     // actual render/blit order.
     Dictionary<string, int> drawPieceXByName =
         new Dictionary<string, int>();
+    Dictionary<string, int> drawPieceDisplayYByName =
+        new Dictionary<string, int>();
+    Dictionary<string, bool> drawPieceMirrorByName =
+        new Dictionary<string, bool>();
     if (layout != null && layout.Pieces != null)
     {
       for (int i = 0; i < layout.Pieces.Count; i++)
@@ -4228,11 +4238,23 @@ public class ViewportLayoutEditor : EditorWindow
         if (IsBlackDoorEditorPiece(piece) && IsWallNeededForCurrentPose(piece))
         {
           int blackDoorX = piece.EffectiveX;
+          int blackDoorUnityY = piece.EffectiveY;
           if (previewPositionOverrideByPiece.TryGetValue(
                   piece, out Vector2Int blackDoorPosition))
           {
             blackDoorX = blackDoorPosition.x;
+            blackDoorUnityY = blackDoorPosition.y;
           }
+
+          bool blackDoorMirror = piece.MirrorHorizontally;
+          if (previewMirrorOverrideByPiece.TryGetValue(
+                  piece, out bool blackDoorPreviewMirror))
+          {
+            blackDoorMirror = blackDoorPreviewMirror;
+          }
+
+          int blackDoorDisplayY = UnityYToDisplayY(
+              blackDoorUnityY, GetPieceHeightForEditorY(piece));
 
           string blackDoorName = piece.Name ?? string.Empty;
           if (!string.IsNullOrEmpty(blackDoorName))
@@ -4242,6 +4264,8 @@ public class ViewportLayoutEditor : EditorWindow
                 || blackDoorX < existingBlackDoorX)
             {
               drawPieceXByName[blackDoorName] = blackDoorX;
+              drawPieceDisplayYByName[blackDoorName] = blackDoorDisplayY;
+              drawPieceMirrorByName[blackDoorName] = blackDoorMirror;
             }
           }
 
@@ -4267,16 +4291,30 @@ public class ViewportLayoutEditor : EditorWindow
         if (!string.IsNullOrEmpty(name))
         {
           int drawX = state.X;
+          int drawUnityY = state.Y;
           if (previewPositionOverrideByPiece.TryGetValue(
                   piece, out Vector2Int previewPosition))
           {
             drawX = previewPosition.x;
+            drawUnityY = previewPosition.y;
           }
+
+          bool drawMirror = state.Mirror;
+          if (previewMirrorOverrideByPiece.TryGetValue(
+                  piece, out bool previewMirror))
+          {
+            drawMirror = previewMirror;
+          }
+
+          int drawDisplayY = UnityYToDisplayY(
+              drawUnityY, GetPieceHeightForEditorY(piece));
 
           if (!drawPieceXByName.TryGetValue(name, out int existingX)
               || drawX < existingX)
           {
             drawPieceXByName[name] = drawX;
+            drawPieceDisplayYByName[name] = drawDisplayY;
+            drawPieceMirrorByName[name] = drawMirror;
           }
         }
       }
@@ -4301,16 +4339,14 @@ public class ViewportLayoutEditor : EditorWindow
     string drawText = BuildBalancedDrawDiagnosticText(drawPieceNamesLeftToRight);
 
 
-    // CSBWin uses a fixed 21-cell viewport footprint. Show that source-backed
-    // lookup first so we can verify map rotation/coordinates without changing
-    // wall selection, visibility, graphics, positions, mirroring, or drawing.
-    string csbWin21Text = BuildCsbWin21Diagnostic();
-
-    Viewport17Inspection inspection = BuildViewport17Inspection();
-
     string text;
     if (showViewport17DiagnosticDetails)
     {
+      // CSBWin uses a fixed 21-cell viewport footprint. Keep the complete
+      // source-backed trace behind Details so normal ViewEdit stays compact.
+      string csbWin21Text = BuildCsbWin21Diagnostic();
+      Viewport17Inspection inspection = BuildViewport17Inspection();
+
       text =
           csbWin21Text
           + "\n\n--------------------------------\n"
@@ -4336,7 +4372,39 @@ public class ViewportLayoutEditor : EditorWindow
     }
     else
     {
-      text = csbWin21Text;
+      List<string> compactEntries =
+          new List<string>(drawPieceNamesLeftToRight.Count);
+      for (int i = 0; i < drawPieceNamesLeftToRight.Count; i++)
+      {
+        string name = drawPieceNamesLeftToRight[i];
+        int x = drawPieceXByName.TryGetValue(name, out int storedX)
+            ? storedX
+            : 0;
+        int y = drawPieceDisplayYByName.TryGetValue(name, out int storedY)
+            ? storedY
+            : 0;
+        bool mirror = drawPieceMirrorByName.TryGetValue(
+            name, out bool storedMirror) && storedMirror;
+
+        compactEntries.Add(
+            name + " X" + x + "/Y" + y + " M" + (mirror ? "+" : "-"));
+      }
+
+      List<string> compactLines = new List<string>
+      {
+        "POSE " + previewX + "," + previewY + " "
+            + previewFacing.ToString().ToUpperInvariant()
+            + "   V17=" + (IsViewport17WallAuthorityActive() ? "ON" : "OFF")
+            + "   ACTIVE=" + compactEntries.Count
+      };
+
+      AppendWrappedDiagnosticEntries(
+          compactLines,
+          "WALLS: ",
+          compactEntries,
+          78);
+
+      text = string.Join("\n", compactLines);
     }
 
     GUIStyle diagnosticStyle = new GUIStyle(EditorStyles.helpBox);
@@ -6449,6 +6517,49 @@ public class ViewportLayoutEditor : EditorWindow
     lines.Add("PIECES: " + finalPieces.Count);
 
     return string.Join("\n", lines);
+  }
+
+  private static void AppendWrappedDiagnosticEntries(
+      List<string> lines,
+      string firstPrefix,
+      List<string> entries,
+      int maxCharactersPerLine)
+  {
+    if (lines == null)
+      return;
+
+    if (entries == null || entries.Count == 0)
+    {
+      lines.Add(firstPrefix + "none");
+      return;
+    }
+
+    string continuationPrefix = new string(' ', firstPrefix.Length);
+    string current = firstPrefix;
+
+    for (int i = 0; i < entries.Count; i++)
+    {
+      string separator = current.Length > firstPrefix.Length
+          && current.Trim().Length > 0
+          ? " | "
+          : string.Empty;
+      string candidate = current + separator + entries[i];
+
+      if (current.Trim().Length > 0
+          && current != firstPrefix
+          && candidate.Length > maxCharactersPerLine)
+      {
+        lines.Add(current);
+        current = continuationPrefix + entries[i];
+      }
+      else
+      {
+        current = candidate;
+      }
+    }
+
+    if (current.Trim().Length > 0)
+      lines.Add(current);
   }
 
   private static string BuildBalancedDrawDiagnosticText(List<string> names)
