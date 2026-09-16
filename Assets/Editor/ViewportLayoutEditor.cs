@@ -2364,11 +2364,11 @@ public class ViewportLayoutEditor : EditorWindow
       enabledBefore = enabledPreviewState.Enabled;
     }
 
-    // The Black Door F1 renderer suppresses the normal D1 wall set by default.
-    // Reflect that truth in these two inspection cards: unchecked until the
-    // user explicitly turns one on for a stationary-pose comparison.
+    // At the Black Door F1 pose the center FrontF1 is replaced by the door,
+    // but the normal LeftF1/RightF1 side walls are part of the automatic view.
+    // Manual ViewEdit overrides below can still turn either side off again.
     if (IsBlackDoorF1ManualSideWallCandidate(piece))
-      enabledBefore = false;
+      enabledBefore = true;
 
     bool viewport17LiveFields =
         IsViewport17WallAuthorityActive() && IsNormalWallPiece(piece);
@@ -8825,6 +8825,26 @@ public class ViewportLayoutEditor : EditorWindow
           piece.X = 63;
           piece.Y = DisplayYToUnityY(47, 88);
         }
+        else if (piece.Name == "LeftF1" || piece.Name == "Wall F1Left")
+        {
+          piece.Enabled = true;
+          if (resolvedNormalWallByPiece.TryGetValue(
+                  piece, out ResolvedNormalWallState leftF1State))
+          {
+            leftF1State.Enabled = true;
+            resolvedNormalWallByPiece[piece] = leftF1State;
+          }
+        }
+        else if (piece.Name == "RightF1" || piece.Name == "Wall F1Right")
+        {
+          piece.Enabled = true;
+          if (resolvedNormalWallByPiece.TryGetValue(
+                  piece, out ResolvedNormalWallState rightF1State))
+          {
+            rightF1State.Enabled = true;
+            resolvedNormalWallByPiece[piece] = rightF1State;
+          }
+        }
 
         // Black Door F1 occupies the front opening at (1,3) North.
         // Keep the normal FrontF2 wall disabled for this dedicated door view.
@@ -9610,11 +9630,13 @@ public class ViewportLayoutEditor : EditorWindow
           }
           else
           {
-            // Black Door F1 owns the automatic D1 opening. Still run a
-            // manual-only D1 pass so ViewEdit can explicitly enable/mirror
-            // LeftF1, FrontF1, or RightF1 without changing the default view.
+            // Black Door F1 owns the D1 center opening, but the original view
+            // still uses the normal LeftF1/RightF1 side walls around it.
+            // Draw those two side walls automatically; keep FrontF1 off so the
+            // dedicated door remains the center surface. ViewEdit overrides
+            // still apply last, so either side can be disabled/mirrored live.
             BlitViewport17NativeD1Walls(
-                pixels, viewport17Inspection, manualOnly: true);
+                pixels, viewport17Inspection, blackDoorSidesOnly: true);
           }
         }
 
@@ -11098,7 +11120,11 @@ public class ViewportLayoutEditor : EditorWindow
   /// ViewEdit-only manual controls for one V17 native wall image.
   /// Geometry/V17 supplies the default Enabled/Mirror state. While the pose
   /// remains stationary, an explicit checkbox click wins for that image only.
-  /// Disable Walls still blanks the lane unless it was explicitly re-enabled.
+  ///
+  /// Do not stop at the first family match: Black Door frame artwork can use
+  /// an F1-like graphic and therefore look like the same normal-wall family.
+  /// Instead, scan the real normal-wall cards and use whichever card actually
+  /// owns the temporary ViewEdit override.
   /// </summary>
   private void ApplyViewport17NativeManualControls(
       string pieceFamily,
@@ -11111,36 +11137,31 @@ public class ViewportLayoutEditor : EditorWindow
     if (layout == null || layout.Pieces == null)
       return;
 
-    ViewportPiece piece = null;
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece candidate = layout.Pieces[i];
-      if (candidate == null)
+      if (candidate == null || IsBlackDoorEditorPiece(candidate))
         continue;
 
-      if (string.Equals(
+      if (!string.Equals(
               GetViewport17NormalWallFamily(candidate),
               pieceFamily,
               System.StringComparison.Ordinal))
       {
-        piece = candidate;
-        break;
+        continue;
       }
-    }
 
-    if (piece == null)
-      return;
+      if (previewEnabledOverrideByPiece.TryGetValue(
+              candidate, out bool manualEnabled))
+      {
+        enabled = manualEnabled;
+      }
 
-    if (previewEnabledOverrideByPiece.TryGetValue(
-            piece, out bool manualEnabled))
-    {
-      enabled = manualEnabled;
-    }
-
-    if (previewMirrorOverrideByPiece.TryGetValue(
-            piece, out bool manualMirror))
-    {
-      mirror = manualMirror;
+      if (previewMirrorOverrideByPiece.TryGetValue(
+              candidate, out bool manualMirror))
+      {
+        mirror = manualMirror;
+      }
     }
   }
 
@@ -11155,7 +11176,8 @@ public class ViewportLayoutEditor : EditorWindow
   private void BlitViewport17NativeD1Walls(
       Color32[] pixels,
       Viewport17Inspection inspection,
-      bool manualOnly = false)
+      bool manualOnly = false,
+      bool blackDoorSidesOnly = false)
   {
     if (pixels == null || graphics == null || inspection.Cells == null)
       return;
@@ -11174,6 +11196,16 @@ public class ViewportLayoutEditor : EditorWindow
     bool leftEnabled = manualOnly ? false : IsViewport17Solid(leftCell);
     bool centerEnabled = manualOnly ? false : IsViewport17Solid(centerCell);
     bool rightEnabled = manualOnly ? false : IsViewport17Solid(rightCell);
+
+    // The Black Door F1 front view replaces only the D1 center wall. Its
+    // normal D1 side walls remain visible on both sides of the doorway.
+    if (blackDoorSidesOnly)
+    {
+      leftEnabled = true;
+      centerEnabled = false;
+      rightEnabled = true;
+    }
+
     bool leftMirror = sideMirror;
     bool centerMirror = GetFrontF1MirrorFromPose();
     bool rightMirror = sideMirror;
