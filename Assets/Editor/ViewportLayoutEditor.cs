@@ -1964,10 +1964,10 @@ public class ViewportLayoutEditor : EditorWindow
     ("BlackDoorF3", 88, 63),
     ("Black Door Frame Left F1", 44, 46),
     ("Black Door Frame Left F2", 64, 54),
-    ("Black Door Frame Left F3", 81, 102),
+    ("Black Door Frame Left F3", 79, 102),
     ("Black Door Frame Right F1", 154, 46),
     ("Black Door Frame Right F2", 140, 54),
-    ("Black Door Frame Right F3", 134, 102),
+    ("Black Door Frame Right F3", 132, 103),
   };
 
   /// <summary>
