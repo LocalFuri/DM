@@ -9649,7 +9649,11 @@ public class ViewportLayoutEditor : EditorWindow
       bool viewport17NativeD1Drawn = false;
       bool blockViewport17NativeD3ForBlackDoor =
           previewX == 1
-          && (previewY == 4 || previewY == 5)
+          && previewY == 5
+          && previewFacing == DungeonFacing.North;
+      bool suppressViewport17NativeD3CenterForBlackDoorF2 =
+          previewX == 1
+          && previewY == 4
           && previewFacing == DungeonFacing.North;
       bool blockViewport17NativeD2ForBlackDoor =
           previewX == 1
@@ -9687,7 +9691,12 @@ public class ViewportLayoutEditor : EditorWindow
           viewport17NativeD3Drawn = true;
           if (!blockViewport17NativeD3ForBlackDoor)
           {
-            BlitViewport17NativeD3Walls(pixels, viewport17Inspection);
+            // Black Door F2 replaces only the distant D3 center wall.
+            // Keep the normal D3 left/right side walls visible around it.
+            BlitViewport17NativeD3Walls(
+                pixels,
+                viewport17Inspection,
+                suppressCenter: suppressViewport17NativeD3CenterForBlackDoorF2);
           }
         }
 
@@ -11469,7 +11478,8 @@ public class ViewportLayoutEditor : EditorWindow
   /// </summary>
   private void BlitViewport17NativeD3Walls(
       Color32[] pixels,
-      Viewport17Inspection inspection)
+      Viewport17Inspection inspection,
+      bool suppressCenter = false)
   {
     if (pixels == null || graphics == null || inspection.Cells == null)
       return;
@@ -11488,6 +11498,12 @@ public class ViewportLayoutEditor : EditorWindow
     bool leftMirror = defaultMirror;
     bool centerMirror = defaultMirror;
     bool rightMirror = defaultMirror;
+
+    // Black Door F2 owns only the D3 center opening. The original view still
+    // uses the normal D3 side walls to the left and right of the doorway.
+    // Apply manual controls afterward so ViewEdit can still inspect FrontF3.
+    if (suppressCenter)
+      centerEnabled = false;
 
     ApplyViewport17NativeManualControls("LeftF3", ref leftEnabled, ref leftMirror);
     ApplyViewport17NativeManualControls("FrontF3", ref centerEnabled, ref centerMirror);
