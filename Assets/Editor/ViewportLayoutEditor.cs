@@ -7433,18 +7433,15 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Deterministic FrontF1 brick phase. The original front-wall phase is
-  /// lateral to the viewing direction: North/South uses player X, while
-  /// East/West uses player Y. Even lateral coordinates are mirrored.
-  /// Keep this shared with FrontF2 instead of deriving the front-wall phase
-  /// from the side-wall X+Y+facing phase.
+  /// Deterministic FrontF1 brick phase. Moving one map tile or turning 90
+  /// degrees flips the phase. Even (X + Y + facing) parity is mirrored.
+  /// FrontF2 keeps its separate lateral-coordinate phase.
   /// </summary>
   private bool GetFrontF1MirrorFromPose()
   {
-    return GetFrontF2LateralMirrorPhase(
-        previewX,
-        previewY,
-        previewFacing);
+    int parity =
+        (previewX + previewY + (int)previewFacing) & 1;
+    return parity == 0;
   }
 
   private static string BuildFrontF1GeometryKey(RelativeViewportGeometry g)
@@ -11119,8 +11116,8 @@ public class ViewportLayoutEditor : EditorWindow
   /// Native geometry is 60x111 / 160x111 / 60x111 at viewport X
   /// 0 / 32 / 164 and viewport Y 9 (Game/ViewEdit display Y 42).
   /// D1 side strips use the side-wall phase. The FrontF1 center uses the
-  /// lateral front-wall brick phase (North/South: player X; East/West:
-  /// player Y; even = mirrored). D1C is opaque and therefore drawn last.
+  /// full FrontF1 parity phase: even (X + Y + facing) = mirrored. D1C is
+  /// opaque and therefore drawn last.
   /// </summary>
   private void BlitViewport17NativeD1Walls(
       Color32[] pixels,
@@ -11137,7 +11134,7 @@ public class ViewportLayoutEditor : EditorWindow
         FindViewport17Cell(inspection.Cells, 1, 1);
 
     // Side-wall strips keep their side-wall phase, while the opaque center
-    // FrontF1 uses the front-wall lateral brick phase. These are independent
+    // FrontF1 uses the full X+Y+facing parity phase. These are independent
     // phases and must not be collapsed into one default mirror value.
     bool sideMirror = GetSideWallMirrorFromPose();
     bool leftEnabled = IsViewport17Solid(leftCell);
