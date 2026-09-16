@@ -9647,13 +9647,11 @@ public class ViewportLayoutEditor : EditorWindow
       bool viewport17NativeD3Drawn = false;
       bool viewport17NativeD2Drawn = false;
       bool viewport17NativeD1Drawn = false;
-      bool blockViewport17NativeD3ForBlackDoor =
+      // Black Door F2/F3 replaces only the D3 center wall. The original
+      // view still keeps the native D3 left/right side walls around the door.
+      bool suppressViewport17NativeD3CenterForBlackDoor =
           previewX == 1
-          && previewY == 5
-          && previewFacing == DungeonFacing.North;
-      bool suppressViewport17NativeD3CenterForBlackDoorF2 =
-          previewX == 1
-          && previewY == 4
+          && (previewY == 4 || previewY == 5)
           && previewFacing == DungeonFacing.North;
       bool blockViewport17NativeD2ForBlackDoor =
           previewX == 1
@@ -9693,15 +9691,12 @@ public class ViewportLayoutEditor : EditorWindow
             && IsNormalWallPiece(piece))
         {
           viewport17NativeD3Drawn = true;
-          if (!blockViewport17NativeD3ForBlackDoor)
-          {
-            // Black Door F2 replaces only the distant D3 center wall.
-            // Keep the normal D3 left/right side walls visible around it.
-            BlitViewport17NativeD3Walls(
-                pixels,
-                viewport17Inspection,
-                suppressCenter: suppressViewport17NativeD3CenterForBlackDoorF2);
-          }
+          // Black Door F2/F3 replaces only the D3 center wall. Keep the
+          // native D3 left/right side walls visible around the dedicated door.
+          BlitViewport17NativeD3Walls(
+              pixels,
+              viewport17Inspection,
+              suppressCenter: suppressViewport17NativeD3CenterForBlackDoor);
         }
 
         if (viewport17WallAuthorityActive
