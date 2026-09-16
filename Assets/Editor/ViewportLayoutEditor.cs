@@ -1024,6 +1024,13 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
     }
 
+    // At the Black Door F1 inspection pose the dedicated door renderer owns
+    // the default view, so the normal D1 side walls are intentionally OFF.
+    // Keep LeftF1/RightF1 visible in ViewEdit anyway so they can be manually
+    // enabled/mirrored for comparison without changing the automatic recipe.
+    if (IsBlackDoorF1ManualSideWallCandidate(piece))
+      return false;
+
     if (showOnlyWallsNeededForCurrentPose
         && (IsWallEditorPiece(piece) || IsBlackDoorEditorPiece(piece)))
     {
@@ -1403,6 +1410,11 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (showWallsActivFilter)
     {
+      // The Black Door F1 side-wall inspection cards default OFF, so the
+      // normal "Activ" filter would hide them before they could be enabled.
+      if (IsBlackDoorF1ManualSideWallCandidate(piece))
+        return true;
+
       if (MatchesShowWallsActivFilter(piece))
         return true;
 
@@ -2351,6 +2363,12 @@ public class ViewportLayoutEditor : EditorWindow
     {
       enabledBefore = enabledPreviewState.Enabled;
     }
+
+    // The Black Door F1 renderer suppresses the normal D1 wall set by default.
+    // Reflect that truth in these two inspection cards: unchecked until the
+    // user explicitly turns one on for a stationary-pose comparison.
+    if (IsBlackDoorF1ManualSideWallCandidate(piece))
+      enabledBefore = false;
 
     bool viewport17LiveFields =
         IsViewport17WallAuthorityActive() && IsNormalWallPiece(piece);
@@ -9590,6 +9608,14 @@ public class ViewportLayoutEditor : EditorWindow
           {
             BlitViewport17NativeD1Walls(pixels, viewport17Inspection);
           }
+          else
+          {
+            // Black Door F1 owns the automatic D1 opening. Still run a
+            // manual-only D1 pass so ViewEdit can explicitly enable/mirror
+            // LeftF1, FrontF1, or RightF1 without changing the default view.
+            BlitViewport17NativeD1Walls(
+                pixels, viewport17Inspection, manualOnly: true);
+          }
         }
 
         if (viewport17WallAuthorityActive
@@ -10567,6 +10593,13 @@ public class ViewportLayoutEditor : EditorWindow
         && previewFacing == DungeonFacing.North;
   }
 
+  private bool IsBlackDoorF1ManualSideWallCandidate(ViewportPiece piece)
+  {
+    return IsVerifiedBlackDoorF1Pose()
+        && piece != null
+        && (IsWallF1LeftPiece(piece) || IsWallF1RightPiece(piece));
+  }
+
   private bool IsBlackDoorF1PoseException(ViewportPiece piece)
   {
     if (piece == null || piece.Name != "BlackDoorF1")
@@ -11121,7 +11154,8 @@ public class ViewportLayoutEditor : EditorWindow
   /// </summary>
   private void BlitViewport17NativeD1Walls(
       Color32[] pixels,
-      Viewport17Inspection inspection)
+      Viewport17Inspection inspection,
+      bool manualOnly = false)
   {
     if (pixels == null || graphics == null || inspection.Cells == null)
       return;
@@ -11137,9 +11171,9 @@ public class ViewportLayoutEditor : EditorWindow
     // FrontF1 uses the full X+Y+facing parity phase. These are independent
     // phases and must not be collapsed into one default mirror value.
     bool sideMirror = GetSideWallMirrorFromPose();
-    bool leftEnabled = IsViewport17Solid(leftCell);
-    bool centerEnabled = IsViewport17Solid(centerCell);
-    bool rightEnabled = IsViewport17Solid(rightCell);
+    bool leftEnabled = manualOnly ? false : IsViewport17Solid(leftCell);
+    bool centerEnabled = manualOnly ? false : IsViewport17Solid(centerCell);
+    bool rightEnabled = manualOnly ? false : IsViewport17Solid(rightCell);
     bool leftMirror = sideMirror;
     bool centerMirror = GetFrontF1MirrorFromPose();
     bool rightMirror = sideMirror;
