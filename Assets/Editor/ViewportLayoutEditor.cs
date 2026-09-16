@@ -2364,11 +2364,12 @@ public class ViewportLayoutEditor : EditorWindow
       enabledBefore = false;
     }
 
-    if (!viewport17LiveFields
-        && usePreviewEnabledOverride
+    if (usePreviewEnabledOverride
         && previewEnabledOverrideByPiece.TryGetValue(
             piece, out bool manualPreviewEnabled))
     {
+      // A manual ViewEdit Enabled toggle must remain visible even while V17
+      // owns the automatic wall selection for this stationary pose.
       enabledBefore = manualPreviewEnabled;
     }
     else if (isBlackDoorF3FrameRequired)
@@ -2428,13 +2429,16 @@ public class ViewportLayoutEditor : EditorWindow
       mirrorBefore = mirrorPreviewState.Mirror;
     }
 
-    // FrontF2 must remain manually mirrorable in ViewEdit even while the V17
-    // wall authority supplies its live state.  Keep showing the stationary-pose
-    // preview override so the Mirror checkbox does not snap back on repaint.
+    // Every normal wall remains manually mirrorable in ViewEdit even while
+    // V17 supplies its automatic live state. Keep the stationary-pose preview
+    // override visible so the checkbox never snaps back on repaint.
     if (normalWallMirrorPreview
-        && (!viewport17LiveFields || IsFrontWallF2Card(piece))
         && previewMirrorOverrideByPiece.TryGetValue(piece, out bool previewMirror))
+    {
+      // Mirror is a per-image ViewEdit test. V17 still supplies the default,
+      // but once the user clicks the checkbox the manual value must stay put.
       mirrorBefore = previewMirror;
+    }
 
     GUILayout.Space(ToggleGroupGap);
     const string MirrorLabel = "Mirror";
@@ -6151,11 +6155,11 @@ public class ViewportLayoutEditor : EditorWindow
 
   private bool IsViewport17WallAuthorityActive()
   {
-    // Show-all-walls is the manual authoring escape hatch. It temporarily
-    // suspends Viewport-17 visibility authority so every wall can be edited.
+    // V17 owns the automatic/default wall decision whenever the V17 toggle is
+    // enabled. "Show all walls" is now list/UI-only: it must never change the
+    // dungeon view just because more ViewEdit cards are visible.
     return !Application.isPlaying
-        && useViewport17WallAuthority
-        && showOnlyWallsNeededForCurrentPose;
+        && useViewport17WallAuthority;
   }
 
   private HashSet<string> BuildViewport17FinalPieceFamilySet()
@@ -6371,7 +6375,7 @@ public class ViewportLayoutEditor : EditorWindow
         + "Only the nearest front wall per lane survives; D0 inner walls block deeper same-side geometry. "
         + "D1 CENTER +1px and the locked D3 LEFT source calibration remain preserved.");
     lines.Add(
-        "CUTOVER: when V17 Walls is ON (and Show all walls is OFF), FINAL DRAW owns normal-wall visibility in ViewEdit; legacy visibility rules are muted. FrontF3 mask L (no C) blits the locked 32px dest X 0..31 FrontF3 strip. Other placement/blit code remains temporarily in use.");
+        "CUTOVER: when V17 Walls is ON, FINAL DRAW owns automatic normal-wall visibility in ViewEdit; Show all walls changes only the card list. Legacy visibility rules are muted. FrontF3 mask L (no C) blits the locked 32px dest X 0..31 FrontF3 strip. Other placement/blit code remains temporarily in use.");
     return string.Join("\n", lines);
   }
 
@@ -6384,9 +6388,7 @@ public class ViewportLayoutEditor : EditorWindow
       "V17 WALLS: "
           + (IsViewport17WallAuthorityActive()
               ? "ENABLED  (legacy visibility muted)"
-              : useViewport17WallAuthority && !showOnlyWallsNeededForCurrentPose
-                  ? "SUSPENDED BY SHOW ALL WALLS"
-                  : "DISABLED")
+              : "DISABLED")
     };
 
     // Compact mode shows only the map truth plus the final wall decision.
@@ -6837,10 +6839,8 @@ public class ViewportLayoutEditor : EditorWindow
     previewY = newY;
     previewFacing = newFacing;
 
-    // A new pose always returns ViewEdit to the geometry-needed wall list.
-    // The button therefore offers "Show all walls", and no Activ/search
-    // filter can hide a wall required by the new view.
-    showOnlyWallsNeededForCurrentPose = true;
+    // Preserve the user's Needed/Show-All list mode across navigation.
+    // This is UI-only; V17 remains the automatic rendering authority.
     showWallsActivFilter = false;
     pieceSearchFamilyIndex = 0;
     pieceSearchText = string.Empty;
@@ -6895,10 +6895,8 @@ public class ViewportLayoutEditor : EditorWindow
     previewY = newY;
     previewFacing = newFacing;
 
-    // A new pose always returns ViewEdit to the geometry-needed wall list.
-    // The button therefore offers "Show all walls", and no Activ/search
-    // filter can hide a wall required by the new view.
-    showOnlyWallsNeededForCurrentPose = true;
+    // Preserve the user's Needed/Show-All list mode across navigation.
+    // This is UI-only; V17 remains the automatic rendering authority.
     showWallsActivFilter = false;
     pieceSearchFamilyIndex = 0;
     pieceSearchText = string.Empty;
@@ -9633,8 +9631,17 @@ public class ViewportLayoutEditor : EditorWindow
             viewport17NormalWall
             && IsViewport17NormalWallSelected(
                 piece, viewport17FinalWallCommands);
+        bool viewport17EffectiveSelected = viewport17Selected;
+        if (viewport17NormalWall
+            && previewEnabledOverrideByPiece.TryGetValue(
+                piece, out bool manualViewport17Enabled))
+        {
+          // V17 remains the automatic default, but ViewEdit may temporarily
+          // force any individual wall image ON or OFF for this stationary pose.
+          viewport17EffectiveSelected = manualViewport17Enabled;
+        }
         bool shouldDraw = viewport17NormalWall
-            ? viewport17Selected
+            ? viewport17EffectiveSelected
             : ShouldDrawPieceAtPreviewPose(piece);
         bool blackDoorF1Exception = IsBlackDoorF1PoseException(piece);
         bool blackDoorF2Exception = IsBlackDoorF2PoseException(piece);
@@ -9654,10 +9661,10 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (viewport17NormalWall)
         {
-          // Hard cutover gate: FINAL DRAW FROM VIEWPORT-17 is the sole
-          // visibility authority for normal walls. No legacy exception or
-          // manual Enabled override may resurrect an unselected wall here.
-          if (!viewport17Selected)
+          // FINAL DRAW FROM VIEWPORT-17 is the automatic visibility default.
+          // A ViewEdit Enabled click may temporarily override that one image
+          // so the user can inspect exactly what each wall contributes.
+          if (!viewport17EffectiveSelected)
             continue;
         }
         else if (!shouldDraw
@@ -9727,7 +9734,7 @@ public class ViewportLayoutEditor : EditorWindow
                 + resolvedWall.Enabled);
 
           bool resolvedEnabled = viewport17NormalWall
-              ? viewport17Selected
+              ? viewport17EffectiveSelected
               : resolvedWall.Enabled;
 
           if (!viewport17NormalWall)
@@ -11058,6 +11065,56 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
+  /// ViewEdit-only manual controls for one V17 native wall image.
+  /// Geometry/V17 supplies the default Enabled/Mirror state. While the pose
+  /// remains stationary, an explicit checkbox click wins for that image only.
+  /// Disable Walls still blanks the lane unless it was explicitly re-enabled.
+  /// </summary>
+  private void ApplyViewport17NativeManualControls(
+      string pieceFamily,
+      ref bool enabled,
+      ref bool mirror)
+  {
+    if (previewDisableAllWalls)
+      enabled = false;
+
+    if (layout == null || layout.Pieces == null)
+      return;
+
+    ViewportPiece piece = null;
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece candidate = layout.Pieces[i];
+      if (candidate == null)
+        continue;
+
+      if (string.Equals(
+              GetViewport17NormalWallFamily(candidate),
+              pieceFamily,
+              System.StringComparison.Ordinal))
+      {
+        piece = candidate;
+        break;
+      }
+    }
+
+    if (piece == null)
+      return;
+
+    if (previewEnabledOverrideByPiece.TryGetValue(
+            piece, out bool manualEnabled))
+    {
+      enabled = manualEnabled;
+    }
+
+    if (previewMirrorOverrideByPiece.TryGetValue(
+            piece, out bool manualMirror))
+    {
+      mirror = manualMirror;
+    }
+  }
+
+  /// <summary>
   /// V17 native-DOS D1 renderer.  DOS draws D1L, D1R, then D1C.
   /// Native geometry is 60x111 / 160x111 / 60x111 at viewport X
   /// 0 / 32 / 164 and viewport Y 9 (Game/ViewEdit display Y 42).
@@ -11079,39 +11136,50 @@ public class ViewportLayoutEditor : EditorWindow
     Viewport17Cell rightCell =
         FindViewport17Cell(inspection.Cells, 1, 1);
 
-    bool mirror = GetSideWallMirrorFromPose();
+    bool defaultMirror = GetSideWallMirrorFromPose();
+    bool leftEnabled = IsViewport17Solid(leftCell);
+    bool centerEnabled = IsViewport17Solid(centerCell);
+    bool rightEnabled = IsViewport17Solid(rightCell);
+    bool leftMirror = defaultMirror;
+    bool centerMirror = defaultMirror;
+    bool rightMirror = defaultMirror;
+
+    ApplyViewport17NativeManualControls("LeftF1", ref leftEnabled, ref leftMirror);
+    ApplyViewport17NativeManualControls("FrontF1", ref centerEnabled, ref centerMirror);
+    ApplyViewport17NativeManualControls("RightF1", ref rightEnabled, ref rightMirror);
+
     const int displayY = 42;
     const int nativeHeight = 111;
     int destinationY = DisplayYToUnityY(displayY, nativeHeight);
 
     Texture2D leftSource = graphics.GetTexture(
-        mirror ? DungeonGraphicType.WallF1R : DungeonGraphicType.WallF1L);
+        leftMirror ? DungeonGraphicType.WallF1R : DungeonGraphicType.WallF1L);
     Texture2D rightSource = graphics.GetTexture(
-        mirror ? DungeonGraphicType.WallF1L : DungeonGraphicType.WallF1R);
+        rightMirror ? DungeonGraphicType.WallF1L : DungeonGraphicType.WallF1R);
 
     // DOS zones 713/714: D1L and D1R are full 60px native side walls.
     // They overlap the center region and are intentionally drawn first.
-    if (IsViewport17Solid(leftCell)
+    if (leftEnabled
         && leftSource != null
         && leftSource.width == 60
         && leftSource.height == nativeHeight)
     {
       BlitPieceIntoPreview(
-          pixels, leftSource, 0, destinationY, mirror);
+          pixels, leftSource, 0, destinationY, leftMirror);
     }
 
-    if (IsViewport17Solid(rightCell)
+    if (rightEnabled
         && rightSource != null
         && rightSource.width == 60
         && rightSource.height == nativeHeight)
     {
       BlitPieceIntoPreview(
-          pixels, rightSource, 164, destinationY, mirror);
+          pixels, rightSource, 164, destinationY, rightMirror);
     }
 
     // DOS zone 712: D1C is the original 160x111 center at X=32.
     // Draw it last so it owns the 28px overlap with each side wall.
-    if (IsViewport17Solid(centerCell))
+    if (centerEnabled)
     {
       Texture2D centerSource = GetReadableNativeFrontF1Texture();
 
@@ -11120,7 +11188,7 @@ public class ViewportLayoutEditor : EditorWindow
           && centerSource.height == nativeHeight)
       {
         BlitPieceIntoPreview(
-            pixels, centerSource, 32, destinationY, mirror);
+            pixels, centerSource, 32, destinationY, centerMirror);
       }
       else
       {
@@ -11153,38 +11221,49 @@ public class ViewportLayoutEditor : EditorWindow
     Viewport17Cell rightCell =
         FindViewport17Cell(inspection.Cells, 1, 2);
 
-    bool mirror = GetSideWallMirrorFromPose();
+    bool defaultMirror = GetSideWallMirrorFromPose();
+    bool leftEnabled = IsViewport17Solid(leftCell);
+    bool centerEnabled = IsViewport17Solid(centerCell);
+    bool rightEnabled = IsViewport17Solid(rightCell);
+    bool leftMirror = defaultMirror;
+    bool centerMirror = defaultMirror;
+    bool rightMirror = defaultMirror;
+
+    ApplyViewport17NativeManualControls("LeftF2", ref leftEnabled, ref leftMirror);
+    ApplyViewport17NativeManualControls("FrontF2", ref centerEnabled, ref centerMirror);
+    ApplyViewport17NativeManualControls("RightF2", ref rightEnabled, ref rightMirror);
+
     const int displayY = 52;
     const int nativeHeight = 74;
     int destinationY = DisplayYToUnityY(displayY, nativeHeight);
 
     Texture2D leftSource = graphics.GetTexture(
-        mirror ? DungeonGraphicType.WallF2R : DungeonGraphicType.WallF2L);
+        leftMirror ? DungeonGraphicType.WallF2R : DungeonGraphicType.WallF2L);
     Texture2D rightSource = graphics.GetTexture(
-        mirror ? DungeonGraphicType.WallF2L : DungeonGraphicType.WallF2R);
+        rightMirror ? DungeonGraphicType.WallF2L : DungeonGraphicType.WallF2R);
 
     // DOS layout 696 zones 710/711: D2L at X=0, D2R at X=146.
-    if (IsViewport17Solid(leftCell)
+    if (leftEnabled
         && leftSource != null
         && leftSource.width == 78
         && leftSource.height == nativeHeight)
     {
       BlitPieceIntoPreview(
-          pixels, leftSource, 0, destinationY, mirror);
+          pixels, leftSource, 0, destinationY, leftMirror);
     }
 
-    if (IsViewport17Solid(rightCell)
+    if (rightEnabled
         && rightSource != null
         && rightSource.width == 78
         && rightSource.height == nativeHeight)
     {
       BlitPieceIntoPreview(
-          pixels, rightSource, 146, destinationY, mirror);
+          pixels, rightSource, 146, destinationY, rightMirror);
     }
 
     // DOS layout 696 zone 709: D2C is centered at X=59. Draw it last so
     // the native center artwork owns the overlap with the side graphics.
-    if (IsViewport17Solid(centerCell))
+    if (centerEnabled)
     {
       Texture2D centerSource = GetReadableNativeFrontF2Texture();
 
@@ -11193,7 +11272,7 @@ public class ViewportLayoutEditor : EditorWindow
           && centerSource.height == nativeHeight)
       {
         BlitPieceIntoPreview(
-            pixels, centerSource, 59, destinationY, mirror);
+            pixels, centerSource, 59, destinationY, centerMirror);
       }
       else
       {
@@ -11225,37 +11304,48 @@ public class ViewportLayoutEditor : EditorWindow
     Viewport17Cell rightCell =
         FindViewport17Cell(inspection.Cells, 1, 3);
 
-    bool mirror = GetSideWallMirrorFromPose();
+    bool defaultMirror = GetSideWallMirrorFromPose();
+    bool leftEnabled = IsViewport17Solid(leftCell);
+    bool centerEnabled = IsViewport17Solid(centerCell);
+    bool rightEnabled = IsViewport17Solid(rightCell);
+    bool leftMirror = defaultMirror;
+    bool centerMirror = defaultMirror;
+    bool rightMirror = defaultMirror;
+
+    ApplyViewport17NativeManualControls("LeftF3", ref leftEnabled, ref leftMirror);
+    ApplyViewport17NativeManualControls("FrontF3", ref centerEnabled, ref centerMirror);
+    ApplyViewport17NativeManualControls("RightF3", ref rightEnabled, ref rightMirror);
+
     const int displayY = 58;
     const int nativeHeight = 49;
     int destinationY = DisplayYToUnityY(displayY, nativeHeight);
 
     Texture2D leftSource = graphics.GetTexture(
-        mirror ? DungeonGraphicType.WallF3R : DungeonGraphicType.WallF3L);
+        leftMirror ? DungeonGraphicType.WallF3R : DungeonGraphicType.WallF3L);
     Texture2D rightSource = graphics.GetTexture(
-        mirror ? DungeonGraphicType.WallF3L : DungeonGraphicType.WallF3R);
+        rightMirror ? DungeonGraphicType.WallF3L : DungeonGraphicType.WallF3R);
 
     // Original DOS D3 placement: draw both side walls first, then the
     // 70px center wall last so it covers the 13px overlap on each side.
-    if (IsViewport17Solid(leftCell)
+    if (leftEnabled
         && leftSource != null
         && leftSource.width == 83
         && leftSource.height == nativeHeight)
     {
       BlitPieceIntoPreview(
-          pixels, leftSource, 7, destinationY, mirror);
+          pixels, leftSource, 7, destinationY, leftMirror);
     }
 
-    if (IsViewport17Solid(rightCell)
+    if (rightEnabled
         && rightSource != null
         && rightSource.width == 83
         && rightSource.height == nativeHeight)
     {
       BlitPieceIntoPreview(
-          pixels, rightSource, 134, destinationY, mirror);
+          pixels, rightSource, 134, destinationY, rightMirror);
     }
 
-    if (IsViewport17Solid(centerCell))
+    if (centerEnabled)
     {
       Texture2D centerSource = GetReadableNativeFrontF3Texture();
 
@@ -11264,7 +11354,7 @@ public class ViewportLayoutEditor : EditorWindow
           && centerSource.height == nativeHeight)
       {
         BlitPieceIntoPreview(
-            pixels, centerSource, 77, destinationY, mirror);
+            pixels, centerSource, 77, destinationY, centerMirror);
       }
       else
       {
@@ -11615,7 +11705,10 @@ public class ViewportLayoutEditor : EditorWindow
     if (Application.isPlaying)
       return;
 
-    ApplyCurrentPoseVisibilityToLayout();
+    // Enabled/Mirror/X/Y tests are a ViewEdit overlay only. Do NOT rebuild the
+    // automatic wall recipe here: after navigation that would switch away from
+    // the destination pose's normal navigation state and could change the
+    // default walls. Compose reads the temporary override dictionaries directly.
     ResetEditModeViewportLogCache();
     DestroyEditModePreviewTextureOnly();
     RefreshEditModePreview();
