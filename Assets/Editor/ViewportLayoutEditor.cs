@@ -7433,18 +7433,18 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Deterministic FrontF1 mirror phase.
-  /// Reference pose (1,3) South is Mirror OFF.
-  /// Moving one map tile OR turning 90 degrees flips the phase.
+  /// Deterministic FrontF1 brick phase. The original front-wall phase is
+  /// lateral to the viewing direction: North/South uses player X, while
+  /// East/West uses player Y. Even lateral coordinates are mirrored.
+  /// Keep this shared with FrontF2 instead of deriving the front-wall phase
+  /// from the side-wall X+Y+facing phase.
   /// </summary>
   private bool GetFrontF1MirrorFromPose()
   {
-    int referenceParity =
-        (1 + 3 + (int)DungeonFacing.South) & 1;
-    int currentParity =
-        (previewX + previewY + (int)previewFacing) & 1;
-
-    return currentParity != referenceParity;
+    return GetFrontF2LateralMirrorPhase(
+        previewX,
+        previewY,
+        previewFacing);
   }
 
   private static string BuildFrontF1GeometryKey(RelativeViewportGeometry g)
@@ -11118,9 +11118,9 @@ public class ViewportLayoutEditor : EditorWindow
   /// V17 native-DOS D1 renderer.  DOS draws D1L, D1R, then D1C.
   /// Native geometry is 60x111 / 160x111 / 60x111 at viewport X
   /// 0 / 32 / 164 and viewport Y 9 (Game/ViewEdit display Y 42).
-  /// The global Dungeon Master wall phase is (X + Y + facing) & 1:
-  /// on the alternate phase the side source is swapped and every selected
-  /// bitmap is flipped horizontally.  D1C is opaque and therefore drawn last.
+  /// D1 side strips use the side-wall phase. The FrontF1 center uses the
+  /// lateral front-wall brick phase (North/South: player X; East/West:
+  /// player Y; even = mirrored). D1C is opaque and therefore drawn last.
   /// </summary>
   private void BlitViewport17NativeD1Walls(
       Color32[] pixels,
@@ -11136,13 +11136,16 @@ public class ViewportLayoutEditor : EditorWindow
     Viewport17Cell rightCell =
         FindViewport17Cell(inspection.Cells, 1, 1);
 
-    bool defaultMirror = GetSideWallMirrorFromPose();
+    // Side-wall strips keep their side-wall phase, while the opaque center
+    // FrontF1 uses the front-wall lateral brick phase. These are independent
+    // phases and must not be collapsed into one default mirror value.
+    bool sideMirror = GetSideWallMirrorFromPose();
     bool leftEnabled = IsViewport17Solid(leftCell);
     bool centerEnabled = IsViewport17Solid(centerCell);
     bool rightEnabled = IsViewport17Solid(rightCell);
-    bool leftMirror = defaultMirror;
-    bool centerMirror = defaultMirror;
-    bool rightMirror = defaultMirror;
+    bool leftMirror = sideMirror;
+    bool centerMirror = GetFrontF1MirrorFromPose();
+    bool rightMirror = sideMirror;
 
     ApplyViewport17NativeManualControls("LeftF1", ref leftEnabled, ref leftMirror);
     ApplyViewport17NativeManualControls("FrontF1", ref centerEnabled, ref centerMirror);
