@@ -9657,7 +9657,11 @@ public class ViewportLayoutEditor : EditorWindow
           && previewFacing == DungeonFacing.North;
       bool blockViewport17NativeD2ForBlackDoor =
           previewX == 1
-          && (previewY == 3 || previewY == 4)
+          && previewY == 3
+          && previewFacing == DungeonFacing.North;
+      bool suppressViewport17NativeD2CenterForBlackDoorF2 =
+          previewX == 1
+          && previewY == 4
           && previewFacing == DungeonFacing.North;
       bool blockViewport17NativeD1ForBlackDoor =
           previewX == 1
@@ -9721,7 +9725,12 @@ public class ViewportLayoutEditor : EditorWindow
           viewport17NativeD2Drawn = true;
           if (!blockViewport17NativeD2ForBlackDoor)
           {
-            BlitViewport17NativeD2Walls(pixels, viewport17Inspection);
+            // Black Door F2 replaces only the D2 center wall. Keep the
+            // normal D2 left/right side walls visible around it.
+            BlitViewport17NativeD2Walls(
+                pixels,
+                viewport17Inspection,
+                suppressCenter: suppressViewport17NativeD2CenterForBlackDoorF2);
           }
         }
 
@@ -11395,7 +11404,8 @@ public class ViewportLayoutEditor : EditorWindow
   /// </summary>
   private void BlitViewport17NativeD2Walls(
       Color32[] pixels,
-      Viewport17Inspection inspection)
+      Viewport17Inspection inspection,
+      bool suppressCenter = false)
   {
     if (pixels == null || graphics == null || inspection.Cells == null)
       return;
@@ -11409,7 +11419,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     bool defaultMirror = GetSideWallMirrorFromPose();
     bool leftEnabled = IsViewport17Solid(leftCell);
-    bool centerEnabled = IsViewport17Solid(centerCell);
+    bool centerEnabled = IsViewport17Solid(centerCell) && !suppressCenter;
     bool rightEnabled = IsViewport17Solid(rightCell);
     bool leftMirror = defaultMirror;
     bool centerMirror = defaultMirror;
