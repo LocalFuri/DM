@@ -1428,6 +1428,13 @@ public class ViewportLayoutEditor : EditorWindow
       if (IsBlackDoorF1ManualSideWallCandidate(piece))
         return true;
 
+      // Keep a card listed while the user is testing it, even after they
+      // turn Enabled off, so they can turn it back on.
+      if (previewEnabledOverrideByPiece.ContainsKey(piece)
+          || previewMirrorOverrideByPiece.ContainsKey(piece)
+          || previewPositionOverrideByPiece.ContainsKey(piece))
+        return true;
+
       if (MatchesShowWallsActivFilter(piece))
         return true;
 
@@ -1472,13 +1479,29 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Show Walls Activ: every currently enabled wall piece, including FrontF1/F2/F3
-  /// by name or graphic. Ceiling and Floor are never included. Family and text
-  /// search are not applied.
+  /// Show Walls Activ: every wall image currently drawn (or selected to draw)
+  /// including FrontF1/F2/F3 by name or graphic. Ceiling and Floor are never
+  /// included. Family and text search are not applied.
   /// </summary>
-  private static bool MatchesShowWallsActivFilter(ViewportPiece piece)
+  private bool MatchesShowWallsActivFilter(ViewportPiece piece)
   {
-    if (piece == null || !piece.Enabled || IsFloorOrCeiling(piece))
+    if (piece == null || IsFloorOrCeiling(piece))
+      return false;
+
+    bool enabled = piece.Enabled;
+    if (TryGetResolvedNormalWallState(
+            piece, out ResolvedNormalWallState resolvedState))
+    {
+      enabled = resolvedState.Enabled;
+    }
+
+    if (previewEnabledOverrideByPiece.TryGetValue(
+            piece, out bool previewEnabled))
+    {
+      enabled = previewEnabled;
+    }
+
+    if (!enabled)
       return false;
 
     DungeonGraphicType graphic = piece.Graphic;
@@ -2659,7 +2682,7 @@ public class ViewportLayoutEditor : EditorWindow
         ref editX,
         snap,
         hasCanonicalRef && editX != canonicalRefX,
-        IsShowAllWallsPreview());
+        true);
     if (xChanged && editX != xBefore)
     {
       SelectPiece(index);
@@ -2685,7 +2708,7 @@ public class ViewportLayoutEditor : EditorWindow
         pieceHeightForY,
         snap,
         hasCanonicalRef && displayYForRef != canonicalRefY,
-        IsShowAllWallsPreview());
+        true);
     if (yChanged && editUnityY != yBefore)
     {
       SelectPiece(index);
@@ -6309,10 +6332,16 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      // FrontF1/F2/F3 ViewEdit cards are CENTER projections. A surviving
-      // front command with only L and/or R occupancy must not turn on the
-      // full center card. FrontF3 mask L (no C) is blitted as the locked
-      // 32px dest X 0..31 strip, not LeftS3 and not the center FrontF3 card.
+      // FrontF1/F2 ViewEdit cards are CENTER projections. Their L/R occupancy
+      // is drawn as the side-wall graphic, so only C selects the front card.
+      // FrontF3 is one native source image: a surviving L or R strip is still
+      // that FrontF3 image, so the FrontF3 card must stay selected/enabled.
+      if (family == "FrontF3")
+      {
+        return command.IsFrontComposite
+            && (command.FrontLeft || command.FrontCenter || command.FrontRight);
+      }
+
       if (isFrontFamily)
         return command.IsFrontComposite && command.FrontCenter;
 
@@ -9711,6 +9740,10 @@ public class ViewportLayoutEditor : EditorWindow
       viewport17Inspection = BuildViewport17Inspection();
       viewport17FinalWallCommands =
           BuildViewport17FinalDrawCommands(viewport17Inspection);
+      // Keep ViewEdit Enabled/X/Y/Mirror on the same values this compose
+      // is about to blit, including FrontF3 L/R strips.
+      ApplyViewport17LiveDrawToResolvedWalls();
+      ApplyTemporaryNormalWallPreviewOverrides();
     }
 
     if (layout != null && layout.Pieces != null)
