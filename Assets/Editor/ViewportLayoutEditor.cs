@@ -6231,17 +6231,39 @@ public class ViewportLayoutEditor : EditorWindow
   // BuildViewport17RenderCommands() deliberately emits far->near candidates.
   // This pass performs geometry-only visibility reduction:
   //   * for each front lane (L/C/R), only the nearest real front wall survives;
-  //   * a nearer center front hides farther side walls (those faces sit on
-  //     the corridor that the center wall just closed);
+  //   * a nearer center front hides farther INNER corridor sides (LeftF/RightF).
+  //     Those faces sit on the corridor the center wall just closed;
+  //   * OUTER D3 sides (LeftD3/RightD3) are the wall faces seen through the
+  //     32px left/right openings that a center FrontF1/F2 does not cover.
+  //     A center front must not hide them; only a nearer same-lane front does;
   //   * a nearer front in a side lane hides farther same-side surfaces;
   //   * D0 inner faces (LeftF0/RightF0) do NOT hide F1/F2/F3 corridor sides.
-  //     They occupy the near edge of the viewport; the receding sides remain
-  //     visible. Same 19-slot geometry always yields the same composition.
   //
   // A front composite may therefore survive with a smaller mask. Example:
   // D3 mask=LC plus a nearer D1 center wall -> final D3 mask=L.
   // No map coordinate or pose exception is used here.
   // -------------------------------------------------------------------------
+  private static bool IsViewport17OuterSideCommand(
+      Viewport17RenderCommand command)
+  {
+    if (command.PieceFamily == "LeftD3" || command.PieceFamily == "RightD3")
+      return true;
+
+    if (command.SurfaceType == Viewport17SurfaceType.LeftSide
+        && command.LocalX <= -2)
+    {
+      return true;
+    }
+
+    if (command.SurfaceType == Viewport17SurfaceType.RightSide
+        && command.LocalX >= 2)
+    {
+      return true;
+    }
+
+    return false;
+  }
+
   private static List<Viewport17RenderCommand> BuildViewport17FinalDrawCommands(
       Viewport17Inspection inspection)
   {
@@ -6298,19 +6320,22 @@ public class ViewportLayoutEditor : EditorWindow
 
       bool leftSide = command.SurfaceType == Viewport17SurfaceType.LeftSide;
       bool rightSide = command.SurfaceType == Viewport17SurfaceType.RightSide;
+      bool outerSide = IsViewport17OuterSideCommand(command);
 
       if (leftSide)
       {
-        if (nearestCenterFront < command.Depth)
-          continue;
         if (nearestLeftFront < command.Depth)
+          continue;
+        // Inner corridor sides sit behind a nearer center wall. Outer D3
+        // faces are drawn in the uncovered 32px side opening instead.
+        if (!outerSide && nearestCenterFront < command.Depth)
           continue;
       }
       else if (rightSide)
       {
-        if (nearestCenterFront < command.Depth)
-          continue;
         if (nearestRightFront < command.Depth)
+          continue;
+        if (!outerSide && nearestCenterFront < command.Depth)
           continue;
       }
 
@@ -6596,7 +6621,7 @@ public class ViewportLayoutEditor : EditorWindow
     lines.Add("");
     lines.Add(
         "STAGE 6S: front L/C/R occupancy is grouped into one FrontF command, then a generic lane-occlusion pass produces the FINAL DRAW diagnostic. "
-        + "Only the nearest front wall per lane survives. A nearer center front hides farther corridor side walls. D0 inner walls do not hide F1/F2/F3 sides. "
+        + "Only the nearest front wall per lane survives. A nearer center front hides farther inner corridor sides, not outer D3 faces in the 32px side openings. D0 inner walls do not hide F1/F2/F3 sides. "
         + "D1 CENTER +1px and the locked D3 LEFT source calibration remain preserved.");
     lines.Add(
         "CUTOVER: when V17 Walls is ON, FINAL DRAW owns automatic normal-wall visibility in ViewEdit; Show all walls changes only the card list. Legacy visibility rules are muted. FrontF3 mask L (no C) blits the locked 32px dest X 0..31 FrontF3 strip. Other placement/blit code remains temporarily in use.");
