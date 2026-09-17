@@ -4375,7 +4375,7 @@ public class ViewportLayoutEditor : EditorWindow
           + (viewport17D3RightCalibrationPreview ? "ON" : "OFF")
           + "  " + GetViewport17D3RightCalibrationLabel()
           + " (candidate until visually verified)"
-          + "\n\nEXISTING TOTAL: 14 map tiles + 3 D0 faces = 17"
+          + "\n\nEXISTING TOTAL: 16 map tiles + 3 D0 faces = 19"
           + "\n\nLEGACY " + drawText;
     }
     else
@@ -4430,9 +4430,9 @@ public class ViewportLayoutEditor : EditorWindow
   // ViewEdit Enabled state, wall-piece selection, DTerm data, X/Y positions,
   // graphics, mirror values, draw order, or Play Mode rendering.
   //
-  // 14 sampled map tiles:
+  // 16 sampled map tiles (19-slot viewport = 16 tiles + 3 D0 faces):
   //   D3: [-2,3] [-1,3] [0,3] [1,3] [2,3]
-  //   D2:        [-1,2] [0,2] [1,2]
+  //   D2: [-2,2] [-1,2] [0,2] [1,2] [2,2]
   //   D1:        [-1,1] [0,1] [1,1]
   //   D0:        [-1,0] [0,0] [1,0]
   //
@@ -4847,14 +4847,16 @@ public class ViewportLayoutEditor : EditorWindow
   {
     Viewport17Inspection inspection = new Viewport17Inspection
     {
-      Cells = new List<Viewport17Cell>(14)
+      Cells = new List<Viewport17Cell>(16)
     };
 
     // The order in the list is not used for visibility. Keeping rows in
     // near-to-far order makes the footprint definition easy to audit.
+    // D2/D3 include the outer LL/RR context cells so a corridor and an
+    // alcove classify as the same 19-slot geometry anywhere on the map.
     AddViewport17Row(inspection.Cells, 0, -1, 1);
     AddViewport17Row(inspection.Cells, 1, -1, 1);
-    AddViewport17Row(inspection.Cells, 2, -1, 1);
+    AddViewport17Row(inspection.Cells, 2, -2, 2);
     AddViewport17Row(inspection.Cells, 3, -2, 2);
 
     Viewport17Cell backProbe = SampleViewport17Cell(0, -1);
@@ -4896,6 +4898,34 @@ public class ViewportLayoutEditor : EditorWindow
   {
     for (int localX = minLocalX; localX <= maxLocalX; localX++)
       cells.Add(SampleViewport17Cell(localX, depth));
+  }
+
+  private static void GetViewport17RowLocalXBounds(
+      int depth,
+      out int minLocalX,
+      out int maxLocalX)
+  {
+    // D0/D1: L / C / R. D2/D3: LL / L / C / R / RR.
+    if (depth >= 2)
+    {
+      minLocalX = -2;
+      maxLocalX = 2;
+      return;
+    }
+
+    minLocalX = -1;
+    maxLocalX = 1;
+  }
+
+  private static bool IsViewport17DrawableSidePair(int depth, int leftLocalX)
+  {
+    // D2 outer cells are sampled for 19-slot classification, but CSBWin
+    // F2L2/F2R2 are NOP: they do not own a wall bitmap. D3 outer cells
+    // map to LeftD3/RightD3 and remain drawable.
+    if (depth < 3 && (leftLocalX <= -2 || leftLocalX >= 1))
+      return false;
+
+    return true;
   }
 
   private Viewport17Cell SampleViewport17Cell(int localX, int depth)
@@ -5002,15 +5032,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   private static string GetViewport17LaneLabel(int localX, int depth)
   {
-    if (depth == 3)
-    {
-      if (localX == -2) return "LL";
-      if (localX == -1) return "L";
-      if (localX == 0) return "C";
-      if (localX == 1) return "R";
-      if (localX == 2) return "RR";
-    }
-
+    if (localX == -2) return "LL";
+    if (localX == 2) return "RR";
     if (localX == -1) return "L";
     if (localX == 0) return depth == 0 ? "P" : "C";
     if (localX == 1) return "R";
@@ -5021,18 +5044,17 @@ public class ViewportLayoutEditor : EditorWindow
   private static string BuildViewport17ArrayDiagnostic(
       Viewport17Inspection inspection)
   {
-    if (inspection.Cells == null || inspection.Cells.Count != 14)
-      return "14 MAP TILE SAMPLES: unavailable";
+    if (inspection.Cells == null || inspection.Cells.Count != 16)
+      return "16 MAP TILE SAMPLES: unavailable";
 
     List<string> lines = new List<string>
     {
-      "14 MAP TILE SAMPLES:"
+      "16 MAP TILE SAMPLES (19-SLOT = 16 TILES + 3 D0 FACES):"
     };
 
     for (int depth = 3; depth >= 0; depth--)
     {
-      int minLocalX = depth == 3 ? -2 : -1;
-      int maxLocalX = depth == 3 ? 2 : 1;
+      GetViewport17RowLocalXBounds(depth, out int minLocalX, out int maxLocalX);
       List<string> row = new List<string>();
 
       for (int localX = minLocalX; localX <= maxLocalX; localX++)
@@ -5075,8 +5097,8 @@ public class ViewportLayoutEditor : EditorWindow
     if (inspection.Cells == null)
       return surfaces;
 
-    // Painter order: far to near. D3's LL/RR samples are context samples;
-    // only the three main lanes L/C/R create front-face candidates.
+    // Painter order: far to near. D2/D3 LL/RR samples classify outer
+    // context. Only the three main lanes L/C/R create front-face candidates.
     for (int depth = 3; depth >= 1; depth--)
     {
       for (int localX = -1; localX <= 1; localX++)
@@ -5119,11 +5141,14 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       // A side face exists at an OPEN/SOLID transition within the inspected
-      // row. At D3 the two extra LL/RR cells supply the outer context.
-      int minLocalX = depth == 3 ? -2 : -1;
-      int maxLocalX = depth == 3 ? 2 : 1;
+      // row. D2/D3 LL/RR cells supply outer context; only D3 outer
+      // transitions own LeftD3/RightD3 bitmaps.
+      GetViewport17RowLocalXBounds(depth, out int minLocalX, out int maxLocalX);
       for (int localX = minLocalX; localX < maxLocalX; localX++)
       {
+        if (!IsViewport17DrawableSidePair(depth, localX))
+          continue;
+
         Viewport17Cell leftCell =
             FindViewport17Cell(inspection.Cells, localX, depth);
         Viewport17Cell rightCell =
@@ -5161,7 +5186,7 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    // D0 BACK is one of the original 17 evaluations, but it is context for
+    // D0 BACK is one of the 19-slot evaluations, but it is context for
     // closure/lighting rather than a drawable viewport wall. LEFT/RIGHT INNER
     // remain drawable near-side face candidates.
     if (inspection.LeftInnerFace.IsSolid)
@@ -6147,11 +6172,14 @@ public class ViewportLayoutEditor : EditorWindow
   // Stage 6S: final draw decision from the generic Viewport-17 geometry.
   //
   // BuildViewport17RenderCommands() deliberately emits far->near candidates.
-  // This pass performs geometry-only visibility reduction for diagnostics:
+  // This pass performs geometry-only visibility reduction:
   //   * for each front lane (L/C/R), only the nearest real front wall survives;
-  //   * a solid D0 inner face blocks all deeper geometry on that same side;
-  //   * a nearer front wall in a side lane blocks deeper side surfaces there
-  //     (only real Fronts count; corridor side-walls are Side, not Front).
+  //   * a nearer center front hides farther side walls (those faces sit on
+  //     the corridor that the center wall just closed);
+  //   * a nearer front in a side lane hides farther same-side surfaces;
+  //   * D0 inner faces (LeftF0/RightF0) do NOT hide F1/F2/F3 corridor sides.
+  //     They occupy the near edge of the viewport; the receding sides remain
+  //     visible. Same 19-slot geometry always yields the same composition.
   //
   // A front composite may therefore survive with a smaller mask. Example:
   // D3 mask=LC plus a nearer D1 center wall -> final D3 mask=L.
@@ -6165,8 +6193,6 @@ public class ViewportLayoutEditor : EditorWindow
     List<Viewport17RenderCommand> finalCommands =
         new List<Viewport17RenderCommand>(candidates.Count);
 
-    bool d0LeftBlocked = false;
-    bool d0RightBlocked = false;
     int nearestLeftFront = int.MaxValue;
     int nearestCenterFront = int.MaxValue;
     int nearestRightFront = int.MaxValue;
@@ -6174,11 +6200,6 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < candidates.Count; i++)
     {
       Viewport17RenderCommand command = candidates[i];
-
-      if (command.PieceFamily == "LeftF0")
-        d0LeftBlocked = true;
-      else if (command.PieceFamily == "RightF0")
-        d0RightBlocked = true;
 
       if (!command.IsFrontComposite)
         continue;
@@ -6198,12 +6219,10 @@ public class ViewportLayoutEditor : EditorWindow
       if (command.IsFrontComposite)
       {
         bool keepLeft = command.FrontLeft
-            && !d0LeftBlocked
             && command.Depth == nearestLeftFront;
         bool keepCenter = command.FrontCenter
             && command.Depth == nearestCenterFront;
         bool keepRight = command.FrontRight
-            && !d0RightBlocked
             && command.Depth == nearestRightFront;
 
         if (!keepLeft && !keepCenter && !keepRight)
@@ -6225,21 +6244,21 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (leftSide)
       {
-        if (d0LeftBlocked)
+        if (nearestCenterFront < command.Depth)
           continue;
         if (nearestLeftFront < command.Depth)
           continue;
       }
       else if (rightSide)
       {
-        if (d0RightBlocked)
+        if (nearestCenterFront < command.Depth)
           continue;
         if (nearestRightFront < command.Depth)
           continue;
       }
 
-      // D0 inner commands themselves always survive; they are the nearest
-      // side boundary and are what caused the same-side blocking above.
+      // D0 inner commands always survive. They are the nearest side boundary
+      // and do not occlude the receding F1/F2/F3 corridor sides.
       command.Sequence = finalCommands.Count;
       finalCommands.Add(command);
     }
@@ -6520,7 +6539,7 @@ public class ViewportLayoutEditor : EditorWindow
     lines.Add("");
     lines.Add(
         "STAGE 6S: front L/C/R occupancy is grouped into one FrontF command, then a generic lane-occlusion pass produces the FINAL DRAW diagnostic. "
-        + "Only the nearest front wall per lane survives; D0 inner walls block deeper same-side geometry. "
+        + "Only the nearest front wall per lane survives. A nearer center front hides farther corridor side walls. D0 inner walls do not hide F1/F2/F3 sides. "
         + "D1 CENTER +1px and the locked D3 LEFT source calibration remain preserved.");
     lines.Add(
         "CUTOVER: when V17 Walls is ON, FINAL DRAW owns automatic normal-wall visibility in ViewEdit; Show all walls changes only the card list. Legacy visibility rules are muted. FrontF3 mask L (no C) blits the locked 32px dest X 0..31 FrontF3 strip. Other placement/blit code remains temporarily in use.");
@@ -6542,8 +6561,7 @@ public class ViewportLayoutEditor : EditorWindow
     // Compact mode shows only the map truth plus the final wall decision.
     for (int depth = 3; depth >= 0; depth--)
     {
-      int minLocalX = depth == 3 ? -2 : -1;
-      int maxLocalX = depth == 3 ? 2 : 1;
+      GetViewport17RowLocalXBounds(depth, out int minLocalX, out int maxLocalX);
       List<string> row = new List<string>();
 
       for (int localX = minLocalX; localX <= maxLocalX; localX++)
@@ -8537,9 +8555,8 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      // F0 and the remaining non-native normal-wall families still use the
-      // V17 command selection, but the same live Enabled/Mirror override used
-      // by Compose must also be reflected back into ViewEdit.
+      // F0, LeftD3, and RightD3 still use the V17 command selection. Live
+      // Enabled/X/Y/Mirror must match the same FINAL DRAW the blitters use.
       bool remainingEnabled =
           IsViewport17NormalWallSelected(piece, finalCommands);
       bool remainingMirror = state.Mirror;
@@ -8555,12 +8572,34 @@ public class ViewportLayoutEditor : EditorWindow
       if (state.Enabled && IsWallF0RightPiece(piece))
       {
         state.X = 191;
+        state.Y = DisplayYToUnityY(33, GetPieceHeightForEditorY(piece));
         if (!previewMirrorOverrideByPiece.ContainsKey(piece))
           state.Mirror = GetSideWallMirrorFromPose();
       }
       if (state.Enabled && IsWallF0LeftPiece(piece))
       {
         state.X = 0;
+        state.Y = DisplayYToUnityY(33, GetPieceHeightForEditorY(piece));
+        if (!previewMirrorOverrideByPiece.ContainsKey(piece))
+          state.Mirror = GetSideWallMirrorFromPose();
+      }
+      if (state.Enabled
+          && remainingFamily == "LeftD3"
+          && TryGetCanonicalReferenceXY("LeftD3", out int leftD3X, out int leftD3Y))
+      {
+        state.X = leftD3X;
+        state.Y = DisplayYToUnityY(
+            leftD3Y, GetPieceHeightForEditorY(piece));
+        if (!previewMirrorOverrideByPiece.ContainsKey(piece))
+          state.Mirror = GetSideWallMirrorFromPose();
+      }
+      if (state.Enabled
+          && remainingFamily == "RightD3"
+          && TryGetCanonicalReferenceXY("RightD3", out int rightD3X, out int rightD3Y))
+      {
+        state.X = rightD3X;
+        state.Y = DisplayYToUnityY(
+            rightD3Y, GetPieceHeightForEditorY(piece));
         if (!previewMirrorOverrideByPiece.ContainsKey(piece))
           state.Mirror = GetSideWallMirrorFromPose();
       }
@@ -10141,6 +10180,12 @@ public class ViewportLayoutEditor : EditorWindow
         {
           resolvedX = liveF0.X;
           resolvedY = liveF0.Y;
+          if (previewPositionOverrideByPiece.TryGetValue(
+                  piece, out Vector2Int f0Override))
+          {
+            resolvedX = f0Override.x;
+            resolvedY = f0Override.y;
+          }
           if (!previewMirrorOverrideByPiece.ContainsKey(piece))
             mirror = liveF0.Mirror;
         }
