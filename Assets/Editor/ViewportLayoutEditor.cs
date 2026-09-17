@@ -6338,6 +6338,54 @@ public class ViewportLayoutEditor : EditorWindow
     return false;
   }
 
+
+  private static bool HasViewport17FinalFamily(
+      List<Viewport17RenderCommand> finalCommands,
+      string pieceFamily)
+  {
+    if (finalCommands == null || string.IsNullOrEmpty(pieceFamily))
+      return false;
+
+    for (int i = 0; i < finalCommands.Count; i++)
+    {
+      if (string.Equals(
+              finalCommands[i].PieceFamily,
+              pieceFamily,
+              System.StringComparison.Ordinal))
+      {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private static void GetViewport17FinalFrontLanes(
+      List<Viewport17RenderCommand> finalCommands,
+      int depth,
+      out bool left,
+      out bool center,
+      out bool right)
+  {
+    left = false;
+    center = false;
+    right = false;
+
+    if (finalCommands == null)
+      return;
+
+    for (int i = 0; i < finalCommands.Count; i++)
+    {
+      Viewport17RenderCommand command = finalCommands[i];
+      if (!command.IsFrontComposite || command.Depth != depth)
+        continue;
+
+      left |= command.FrontLeft;
+      center |= command.FrontCenter;
+      right |= command.FrontRight;
+    }
+  }
+
   private static string FormatViewport17FinalDrawCommand(
       Viewport17RenderCommand command)
   {
@@ -8251,29 +8299,108 @@ public class ViewportLayoutEditor : EditorWindow
     List<Viewport17RenderCommand> finalCommands =
         BuildViewport17FinalDrawCommands(inspection);
 
-    // Native DOS D1/D2/D3 are drawn directly from the depth/lane cells.
-    // Keep ViewEdit live fields on exactly those same coordinates so Ref and
-    // Edit no longer show the old screenshot-composite positions.
-    Viewport17Cell d1LeftCell = FindViewport17Cell(inspection.Cells, -1, 1);
-    Viewport17Cell d1CenterCell = FindViewport17Cell(inspection.Cells, 0, 1);
-    Viewport17Cell d1RightCell = FindViewport17Cell(inspection.Cells, 1, 1);
-    Viewport17Cell d2LeftCell = FindViewport17Cell(inspection.Cells, -1, 2);
-    Viewport17Cell d2CenterCell = FindViewport17Cell(inspection.Cells, 0, 2);
-    Viewport17Cell d2RightCell = FindViewport17Cell(inspection.Cells, 1, 2);
-    Viewport17Cell d3LeftCell = FindViewport17Cell(inspection.Cells, -1, 3);
-    Viewport17Cell d3CenterCell = FindViewport17Cell(inspection.Cells, 0, 3);
-    Viewport17Cell d3RightCell = FindViewport17Cell(inspection.Cells, 1, 3);
+    // Use the same FINAL DRAW decisions as the native V17 blitters. ViewEdit
+    // must be a truthful report of what Compose actually draws, not a second
+    // approximation from the raw D1/D2/D3 cells.
+    GetViewport17FinalFrontLanes(
+        finalCommands, 1,
+        out bool d1FrontLeft, out bool d1FrontCenter, out bool d1FrontRight);
+    GetViewport17FinalFrontLanes(
+        finalCommands, 2,
+        out bool d2FrontLeft, out bool d2FrontCenter, out bool d2FrontRight);
+    GetViewport17FinalFrontLanes(
+        finalCommands, 3,
+        out bool d3FrontLeft, out bool d3FrontCenter, out bool d3FrontRight);
 
-    bool d1LeftSolid = IsViewport17Solid(d1LeftCell);
-    bool d1CenterSolid = IsViewport17Solid(d1CenterCell);
-    bool d1RightSolid = IsViewport17Solid(d1RightCell);
-    bool d2LeftSolid = IsViewport17Solid(d2LeftCell);
-    bool d2CenterSolid = IsViewport17Solid(d2CenterCell);
-    bool d2RightSolid = IsViewport17Solid(d2RightCell);
-    bool d3LeftSolid = IsViewport17Solid(d3LeftCell);
-    bool d3CenterSolid = IsViewport17Solid(d3CenterCell);
-    bool d3RightSolid = IsViewport17Solid(d3RightCell);
-    bool nativeMirror = GetSideWallMirrorFromPose();
+    bool d1LeftEnabled =
+        HasViewport17FinalFamily(finalCommands, "LeftF1") || d1FrontLeft;
+    bool d1CenterEnabled = d1FrontCenter;
+    bool d1RightEnabled =
+        HasViewport17FinalFamily(finalCommands, "RightF1") || d1FrontRight;
+
+    bool d2LeftEnabled =
+        HasViewport17FinalFamily(finalCommands, "LeftF2") || d2FrontLeft;
+    bool d2CenterEnabled = d2FrontCenter;
+    bool d2RightEnabled =
+        HasViewport17FinalFamily(finalCommands, "RightF2") || d2FrontRight;
+
+    bool d3LeftEnabled = HasViewport17FinalFamily(finalCommands, "LeftF3");
+    bool d3RightEnabled = HasViewport17FinalFamily(finalCommands, "RightF3");
+
+    // Mirror the Black Door suppression/side-wall rules used by Compose so
+    // the Enabled checkboxes and ACTIVE diagnostic remain truthful there too.
+    bool blackDoorF1Pose =
+        previewX == 1
+        && previewY == 3
+        && previewFacing == DungeonFacing.North;
+    bool blockD2ForBlackDoor = blackDoorF1Pose;
+    bool suppressD2CenterForBlackDoor =
+        previewX == 1
+        && previewY == 4
+        && previewFacing == DungeonFacing.North;
+    bool suppressD3CenterForBlackDoor =
+        previewX == 1
+        && (previewY == 4 || previewY == 5)
+        && previewFacing == DungeonFacing.North;
+
+    if (blackDoorF1Pose)
+    {
+      d1LeftEnabled = true;
+      d1CenterEnabled = false;
+      d1RightEnabled = true;
+    }
+
+    if (blockD2ForBlackDoor)
+    {
+      d2LeftEnabled = false;
+      d2CenterEnabled = false;
+      d2RightEnabled = false;
+    }
+    else if (suppressD2CenterForBlackDoor)
+    {
+      d2CenterEnabled = false;
+    }
+
+    if (suppressD3CenterForBlackDoor)
+      d3FrontCenter = false;
+
+    // Apply the exact same live ViewEdit overrides used by the native blitters.
+    // This keeps checkbox/mirror state synchronized even during manual tests.
+    bool d1LeftMirror = GetSideWallMirrorFromPose();
+    bool d1CenterMirror = GetFrontF1MirrorFromPose();
+    bool d1RightMirror = d1LeftMirror;
+    ApplyViewport17NativeManualControls(
+        "LeftF1", ref d1LeftEnabled, ref d1LeftMirror);
+    ApplyViewport17NativeManualControls(
+        "FrontF1", ref d1CenterEnabled, ref d1CenterMirror);
+    ApplyViewport17NativeManualControls(
+        "RightF1", ref d1RightEnabled, ref d1RightMirror);
+
+    bool d2LeftMirror = GetSideWallMirrorFromPose();
+    bool d2CenterMirror = d2LeftMirror;
+    bool d2RightMirror = d2LeftMirror;
+    ApplyViewport17NativeManualControls(
+        "LeftF2", ref d2LeftEnabled, ref d2LeftMirror);
+    ApplyViewport17NativeManualControls(
+        "FrontF2", ref d2CenterEnabled, ref d2CenterMirror);
+    ApplyViewport17NativeManualControls(
+        "RightF2", ref d2RightEnabled, ref d2RightMirror);
+
+    bool d3LeftMirror = GetSideWallMirrorFromPose();
+    bool d3RightMirror = d3LeftMirror;
+    bool d3FrontMirror = d3LeftMirror;
+    ApplyViewport17NativeManualControls(
+        "LeftF3", ref d3LeftEnabled, ref d3LeftMirror);
+    ApplyViewport17NativeManualControls(
+        "RightF3", ref d3RightEnabled, ref d3RightMirror);
+    ApplyViewport17NativeFrontF3ManualControls(
+        ref d3FrontLeft,
+        ref d3FrontCenter,
+        ref d3FrontRight,
+        ref d3FrontMirror);
+
+    bool d3FrontSourceEnabled =
+        d3FrontLeft || d3FrontCenter || d3FrontRight;
 
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -8297,20 +8424,20 @@ public class ViewportLayoutEditor : EditorWindow
       // D1: 60 / 160 / 60 at X 0 / 32 / 164, display Y 42.
       if (IsWallF1LeftPiece(piece))
       {
-        state.Enabled = d1LeftSolid;
+        state.Enabled = d1LeftEnabled;
         state.X = 0;
         state.Y = DisplayYToUnityY(42, 111);
-        state.Mirror = nativeMirror;
+        state.Mirror = d1LeftMirror;
         resolvedNormalWallByPiece[piece] = state;
         continue;
       }
 
       if (IsFrontWallF1Card(piece))
       {
-        state.Enabled = d1CenterSolid;
+        state.Enabled = d1CenterEnabled;
         state.X = 32;
         state.Y = DisplayYToUnityY(42, 111);
-        state.Mirror = nativeMirror;
+        state.Mirror = d1CenterMirror;
         state.FrontF1Width = StraightF1WallLogic.CompositeWidth160;
         resolvedNormalWallByPiece[piece] = state;
         continue;
@@ -8318,10 +8445,10 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (IsWallF1RightPiece(piece))
       {
-        state.Enabled = d1RightSolid;
+        state.Enabled = d1RightEnabled;
         state.X = 164;
         state.Y = DisplayYToUnityY(42, 111);
-        state.Mirror = nativeMirror;
+        state.Mirror = d1RightMirror;
         resolvedNormalWallByPiece[piece] = state;
         continue;
       }
@@ -8329,20 +8456,20 @@ public class ViewportLayoutEditor : EditorWindow
       // D2: 78 / 106 / 78 at X 0 / 59 / 146, display Y 52.
       if (IsWallF2LeftPiece(piece))
       {
-        state.Enabled = d2LeftSolid;
+        state.Enabled = d2LeftEnabled;
         state.X = 0;
         state.Y = DisplayYToUnityY(52, 74);
-        state.Mirror = nativeMirror;
+        state.Mirror = d2LeftMirror;
         resolvedNormalWallByPiece[piece] = state;
         continue;
       }
 
       if (IsFrontWallF2Card(piece))
       {
-        state.Enabled = d2CenterSolid;
+        state.Enabled = d2CenterEnabled;
         state.X = 59;
         state.Y = DisplayYToUnityY(52, 74);
-        state.Mirror = nativeMirror;
+        state.Mirror = d2CenterMirror;
         state.FrontF2Width = 106;
         resolvedNormalWallByPiece[piece] = state;
         continue;
@@ -8350,57 +8477,79 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (IsWallF2RightPiece(piece))
       {
-        state.Enabled = d2RightSolid;
+        state.Enabled = d2RightEnabled;
         state.X = 146;
         state.Y = DisplayYToUnityY(52, 74);
-        state.Mirror = nativeMirror;
+        state.Mirror = d2RightMirror;
         resolvedNormalWallByPiece[piece] = state;
         continue;
       }
 
-      // D3: 83 / 70 / 83 at X 7 / 77 / 134, display Y 58.
+      // D3 side walls are 83px at X 7 / 134. The FrontF3 card represents
+      // every draw from the native FrontF3 source: left 32px strip, center
+      // 70px image, or right 32px strip. This closes the old ViewEdit blind
+      // spot where a FrontF3 edge strip was visible in Game View but ACTIVE
+      // and the FrontF3 checkbox both said it was off.
       if (IsWallF3LeftPiece(piece))
       {
-        state.Enabled = d3LeftSolid;
+        state.Enabled = d3LeftEnabled;
         state.X = 7;
         state.Y = DisplayYToUnityY(58, 49);
-        state.Mirror = nativeMirror;
+        state.Mirror = d3LeftMirror;
         resolvedNormalWallByPiece[piece] = state;
         continue;
       }
 
       if (IsFrontWallF3Card(piece))
       {
-        state.Enabled = d3CenterSolid;
-        state.X = 77;
+        state.Enabled = d3FrontSourceEnabled;
+        state.X = d3FrontCenter
+            ? 77
+            : (d3FrontLeft ? 0 : (d3FrontRight ? 192 : 77));
         state.Y = DisplayYToUnityY(58, 49);
-        state.Mirror = nativeMirror;
+        state.Mirror = d3FrontCenter
+            ? d3FrontMirror
+            : (!d3FrontLeft && d3FrontRight);
         resolvedNormalWallByPiece[piece] = state;
         continue;
       }
 
       if (IsWallF3RightPiece(piece))
       {
-        state.Enabled = d3RightSolid;
+        state.Enabled = d3RightEnabled;
         state.X = 134;
         state.Y = DisplayYToUnityY(58, 49);
-        state.Mirror = nativeMirror;
+        state.Mirror = d3RightMirror;
         resolvedNormalWallByPiece[piece] = state;
         continue;
       }
 
       // F0 and the remaining non-native normal-wall families still use the
-      // V17 command selection exactly as before.
-      state.Enabled = IsViewport17NormalWallSelected(piece, finalCommands);
+      // V17 command selection, but the same live Enabled/Mirror override used
+      // by Compose must also be reflected back into ViewEdit.
+      bool remainingEnabled =
+          IsViewport17NormalWallSelected(piece, finalCommands);
+      bool remainingMirror = state.Mirror;
+      string remainingFamily = GetViewport17NormalWallFamily(piece);
+      if (!string.IsNullOrEmpty(remainingFamily))
+      {
+        ApplyViewport17NativeManualControls(
+            remainingFamily, ref remainingEnabled, ref remainingMirror);
+      }
+
+      state.Enabled = remainingEnabled;
+      state.Mirror = remainingMirror;
       if (state.Enabled && IsWallF0RightPiece(piece))
       {
         state.X = 191;
-        state.Mirror = nativeMirror;
+        if (!previewMirrorOverrideByPiece.ContainsKey(piece))
+          state.Mirror = GetSideWallMirrorFromPose();
       }
       if (state.Enabled && IsWallF0LeftPiece(piece))
       {
         state.X = 0;
-        state.Mirror = nativeMirror;
+        if (!previewMirrorOverrideByPiece.ContainsKey(piece))
+          state.Mirror = GetSideWallMirrorFromPose();
       }
 
       resolvedNormalWallByPiece[piece] = state;
@@ -9696,6 +9845,7 @@ public class ViewportLayoutEditor : EditorWindow
           BlitViewport17NativeD3Walls(
               pixels,
               viewport17Inspection,
+              viewport17FinalWallCommands,
               suppressCenter: suppressViewport17NativeD3CenterForBlackDoor);
         }
 
@@ -9725,6 +9875,7 @@ public class ViewportLayoutEditor : EditorWindow
             BlitViewport17NativeD2Walls(
                 pixels,
                 viewport17Inspection,
+                viewport17FinalWallCommands,
                 suppressCenter: suppressViewport17NativeD2CenterForBlackDoorF2);
           }
         }
@@ -9750,7 +9901,8 @@ public class ViewportLayoutEditor : EditorWindow
           viewport17NativeD1Drawn = true;
           if (!blockViewport17NativeD1ForBlackDoor)
           {
-            BlitViewport17NativeD1Walls(pixels, viewport17Inspection);
+            BlitViewport17NativeD1Walls(
+                pixels, viewport17Inspection, viewport17FinalWallCommands);
           }
           else
           {
@@ -9760,7 +9912,8 @@ public class ViewportLayoutEditor : EditorWindow
             // dedicated door remains the center surface. ViewEdit overrides
             // still apply last, so either side can be disabled/mirrored live.
             BlitViewport17NativeD1Walls(
-                pixels, viewport17Inspection, blackDoorSidesOnly: true);
+                pixels, viewport17Inspection, viewport17FinalWallCommands,
+                blackDoorSidesOnly: true);
           }
         }
 
@@ -11290,6 +11443,41 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
+  /// FrontF3 is one native source image that V17 may blit as a left 32px
+  /// strip, the 70px center, a right 32px strip, or a combination of them.
+  /// One ViewEdit FrontF3 checkbox therefore controls the whole source-image
+  /// draw. Disabling it suppresses every surviving FrontF3 lane. Enabling it
+  /// while geometry has no FrontF3 lane keeps the historical manual-test
+  /// behavior by showing the center image.
+  /// </summary>
+  private void ApplyViewport17NativeFrontF3ManualControls(
+      ref bool frontLeft,
+      ref bool frontCenter,
+      ref bool frontRight,
+      ref bool centerMirror)
+  {
+    bool hadAutomaticLane = frontLeft || frontCenter || frontRight;
+    bool sourceEnabled = hadAutomaticLane;
+
+    ApplyViewport17NativeManualControls(
+        "FrontF3", ref sourceEnabled, ref centerMirror);
+
+    if (!sourceEnabled)
+    {
+      frontLeft = false;
+      frontCenter = false;
+      frontRight = false;
+      return;
+    }
+
+    // Manual ON with no automatic lane remains a useful ViewEdit test: draw
+    // the native center image rather than inventing a left/right strip.
+    if (!hadAutomaticLane)
+      frontCenter = true;
+  }
+
+
+  /// <summary>
   /// V17 native-DOS D1 renderer.  DOS draws D1L, D1R, then D1C.
   /// Native geometry is 60x111 / 160x111 / 60x111 at viewport X
   /// 0 / 32 / 164 and viewport Y 9 (Game/ViewEdit display Y 42).
@@ -11300,6 +11488,7 @@ public class ViewportLayoutEditor : EditorWindow
   private void BlitViewport17NativeD1Walls(
       Color32[] pixels,
       Viewport17Inspection inspection,
+      List<Viewport17RenderCommand> finalCommands,
       bool manualOnly = false,
       bool blackDoorSidesOnly = false)
   {
@@ -11317,9 +11506,15 @@ public class ViewportLayoutEditor : EditorWindow
     // FrontF1 uses the full X+Y+facing parity phase. These are independent
     // phases and must not be collapsed into one default mirror value.
     bool sideMirror = GetSideWallMirrorFromPose();
-    bool leftEnabled = manualOnly ? false : IsViewport17Solid(leftCell);
-    bool centerEnabled = manualOnly ? false : IsViewport17Solid(centerCell);
-    bool rightEnabled = manualOnly ? false : IsViewport17Solid(rightCell);
+    GetViewport17FinalFrontLanes(
+        finalCommands, 1, out bool frontLeft, out bool frontCenter, out bool frontRight);
+    bool leftEnabled = manualOnly
+        ? false
+        : HasViewport17FinalFamily(finalCommands, "LeftF1") || frontLeft;
+    bool centerEnabled = manualOnly ? false : frontCenter;
+    bool rightEnabled = manualOnly
+        ? false
+        : HasViewport17FinalFamily(finalCommands, "RightF1") || frontRight;
 
     // The Black Door F1 front view replaces only the D1 center wall. Its
     // normal D1 side walls remain visible on both sides of the doorway.
@@ -11400,6 +11595,7 @@ public class ViewportLayoutEditor : EditorWindow
   private void BlitViewport17NativeD2Walls(
       Color32[] pixels,
       Viewport17Inspection inspection,
+      List<Viewport17RenderCommand> finalCommands,
       bool suppressCenter = false)
   {
     if (pixels == null || graphics == null || inspection.Cells == null)
@@ -11413,9 +11609,11 @@ public class ViewportLayoutEditor : EditorWindow
         FindViewport17Cell(inspection.Cells, 1, 2);
 
     bool defaultMirror = GetSideWallMirrorFromPose();
-    bool leftEnabled = IsViewport17Solid(leftCell);
-    bool centerEnabled = IsViewport17Solid(centerCell) && !suppressCenter;
-    bool rightEnabled = IsViewport17Solid(rightCell);
+    GetViewport17FinalFrontLanes(
+        finalCommands, 2, out bool frontLeft, out bool frontCenter, out bool frontRight);
+    bool leftEnabled = HasViewport17FinalFamily(finalCommands, "LeftF2") || frontLeft;
+    bool centerEnabled = frontCenter && !suppressCenter;
+    bool rightEnabled = HasViewport17FinalFamily(finalCommands, "RightF2") || frontRight;
     bool leftMirror = defaultMirror;
     bool centerMirror = defaultMirror;
     bool rightMirror = defaultMirror;
@@ -11484,6 +11682,7 @@ public class ViewportLayoutEditor : EditorWindow
   private void BlitViewport17NativeD3Walls(
       Color32[] pixels,
       Viewport17Inspection inspection,
+      List<Viewport17RenderCommand> finalCommands,
       bool suppressCenter = false)
   {
     if (pixels == null || graphics == null || inspection.Cells == null)
@@ -11497,22 +11696,23 @@ public class ViewportLayoutEditor : EditorWindow
         FindViewport17Cell(inspection.Cells, 1, 3);
 
     bool defaultMirror = GetSideWallMirrorFromPose();
-    bool leftEnabled = IsViewport17Solid(leftCell);
-    bool centerEnabled = IsViewport17Solid(centerCell);
-    bool rightEnabled = IsViewport17Solid(rightCell);
+    GetViewport17FinalFrontLanes(
+        finalCommands, 3, out bool frontLeft, out bool frontCenter, out bool frontRight);
+    bool leftEnabled = HasViewport17FinalFamily(finalCommands, "LeftF3");
+    bool rightEnabled = HasViewport17FinalFamily(finalCommands, "RightF3");
     bool leftMirror = defaultMirror;
     bool centerMirror = defaultMirror;
     bool rightMirror = defaultMirror;
 
     // Black Door F2 owns only the D3 center opening. The original view still
-    // uses the normal D3 side walls to the left and right of the doorway.
-    // Apply manual controls afterward so ViewEdit can still inspect FrontF3.
+    // uses surviving FrontF3 edge strips and normal D3 side walls around it.
     if (suppressCenter)
-      centerEnabled = false;
+      frontCenter = false;
 
     ApplyViewport17NativeManualControls("LeftF3", ref leftEnabled, ref leftMirror);
-    ApplyViewport17NativeManualControls("FrontF3", ref centerEnabled, ref centerMirror);
     ApplyViewport17NativeManualControls("RightF3", ref rightEnabled, ref rightMirror);
+    ApplyViewport17NativeFrontF3ManualControls(
+        ref frontLeft, ref frontCenter, ref frontRight, ref centerMirror);
 
     const int displayY = 58;
     const int nativeHeight = 49;
@@ -11543,9 +11743,33 @@ public class ViewportLayoutEditor : EditorWindow
           pixels, rightSource, 134, destinationY, rightMirror);
     }
 
-    if (centerEnabled)
+    // A surviving D3 FRONT left/right lane is a 32px edge strip, not a full
+    // LeftF3/RightF3 side wall. Use the locked last 32 pixels of the native
+    // 70px FrontF3 source, matching the old V17 lane calibration.
+    Texture2D frontSource = GetReadableNativeFrontF3Texture();
+    if (frontSource != null
+        && frontSource.width == 70
+        && frontSource.height == nativeHeight)
     {
-      Texture2D centerSource = GetReadableNativeFrontF3Texture();
+      const int stripWidth = 32;
+      int sourceStart = frontSource.width - stripWidth;
+      if (frontLeft)
+      {
+        BlitViewport17SourceStripPreview(
+            pixels, frontSource, sourceStart, frontSource.width - 1,
+            0, destinationY, false);
+      }
+      if (frontRight)
+      {
+        BlitViewport17SourceStripPreview(
+            pixels, frontSource, sourceStart, frontSource.width - 1,
+            192, destinationY, true);
+      }
+    }
+
+    if (frontCenter)
+    {
+      Texture2D centerSource = frontSource;
 
       if (centerSource != null
           && centerSource.width == 70
