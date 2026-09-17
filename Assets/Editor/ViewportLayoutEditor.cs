@@ -1047,6 +1047,11 @@ public class ViewportLayoutEditor : EditorWindow
           ? piece.Enabled
           : IsWallNeededForCurrentPose(piece);
 
+      // A ViewEdit Enabled click must keep the card listed so the user can
+      // toggle it back on. Geometry still owns the automatic default.
+      if (previewEnabledOverrideByPiece.ContainsKey(piece))
+        wallIsActive = true;
+
       if (!wallIsActive)
         return true;
     }
@@ -8388,7 +8393,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     bool d3LeftMirror = GetSideWallMirrorFromPose();
     bool d3RightMirror = d3LeftMirror;
-    bool d3FrontMirror = d3LeftMirror;
+    bool d3FrontMirror = GetViewport17FrontF3DefaultMirror(
+        d3FrontLeft, d3FrontCenter, d3FrontRight);
     ApplyViewport17NativeManualControls(
         "LeftF3", ref d3LeftEnabled, ref d3LeftMirror);
     ApplyViewport17NativeManualControls(
@@ -8507,9 +8513,7 @@ public class ViewportLayoutEditor : EditorWindow
             ? 77
             : (d3FrontLeft ? 0 : (d3FrontRight ? 192 : 77));
         state.Y = DisplayYToUnityY(58, 49);
-        state.Mirror = d3FrontCenter
-            ? d3FrontMirror
-            : (!d3FrontLeft && d3FrontRight);
+        state.Mirror = d3FrontMirror;
         resolvedNormalWallByPiece[piece] = state;
         continue;
       }
@@ -11443,6 +11447,23 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
+  /// Automatic FrontF3 source-image mirror before any ViewEdit override.
+  /// Center uses the pose brick phase. A surviving left-only strip stays
+  /// unmirrored (dest 0..31). A surviving right-only strip stays mirrored
+  /// (dest 192..223).
+  /// </summary>
+  private bool GetViewport17FrontF3DefaultMirror(
+      bool frontLeft,
+      bool frontCenter,
+      bool frontRight)
+  {
+    if (frontCenter)
+      return GetSideWallMirrorFromPose();
+
+    return !frontLeft && frontRight;
+  }
+
+  /// <summary>
   /// FrontF3 is one native source image that V17 may blit as a left 32px
   /// strip, the 70px center, a right 32px strip, or a combination of them.
   /// One ViewEdit FrontF3 checkbox therefore controls the whole source-image
@@ -11701,7 +11722,8 @@ public class ViewportLayoutEditor : EditorWindow
     bool leftEnabled = HasViewport17FinalFamily(finalCommands, "LeftF3");
     bool rightEnabled = HasViewport17FinalFamily(finalCommands, "RightF3");
     bool leftMirror = defaultMirror;
-    bool centerMirror = defaultMirror;
+    bool centerMirror = GetViewport17FrontF3DefaultMirror(
+        frontLeft, frontCenter, frontRight);
     bool rightMirror = defaultMirror;
 
     // Black Door F2 owns only the D3 center opening. The original view still
@@ -11757,13 +11779,13 @@ public class ViewportLayoutEditor : EditorWindow
       {
         BlitViewport17SourceStripPreview(
             pixels, frontSource, sourceStart, frontSource.width - 1,
-            0, destinationY, false);
+            0, destinationY, frontCenter ? false : centerMirror);
       }
       if (frontRight)
       {
         BlitViewport17SourceStripPreview(
             pixels, frontSource, sourceStart, frontSource.width - 1,
-            192, destinationY, true);
+            192, destinationY, frontCenter ? true : centerMirror);
       }
     }
 
