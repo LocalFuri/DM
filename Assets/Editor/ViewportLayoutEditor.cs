@@ -1049,7 +1049,9 @@ public class ViewportLayoutEditor : EditorWindow
 
       // A ViewEdit Enabled click must keep the card listed so the user can
       // toggle it back on. Geometry still owns the automatic default.
-      if (previewEnabledOverrideByPiece.ContainsKey(piece))
+      if (previewEnabledOverrideByPiece.ContainsKey(piece)
+          || previewMirrorOverrideByPiece.ContainsKey(piece)
+          || previewPositionOverrideByPiece.ContainsKey(piece))
         wallIsActive = true;
 
       if (!wallIsActive)
@@ -1768,12 +1770,9 @@ public class ViewportLayoutEditor : EditorWindow
         && current.button == 0
         && toggleRect.Contains(current.mousePosition))
     {
-      if (!isMirror || pieceEnabled)
-      {
-        value = !value;
-        GUI.changed = true;
-        current.Use();
-      }
+      value = !value;
+      GUI.changed = true;
+      current.Use();
     }
 
     // Shared Unity checkbox chrome. Colored fills are
@@ -1782,8 +1781,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     Color checkColor = new Color(0.2f, 1.0f, 0.2f);
     bool showChecked = value;
-    if (isMirror && !pieceEnabled)
-      showChecked = false;
     if (pieceEnabled && showChecked && isMirror)
     {
       EditorGUI.DrawRect(InsetToggleFillRect(toggleRect), new Color(1f, 140f / 255f, 0f));
@@ -2345,7 +2342,7 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent(EnabledLabel)).x;
     EditorGUIUtility.labelWidth = enabledLabelWidth;
 
-    bool normalWallEnabledPreview = IsNormalWallPiece(piece);
+    bool wallViewEditPreview = IsWallRenderingPiece(piece);
     bool isBlackDoorRightD3Exception =
         IsBlackDoorObliqueRightD3PoseException(piece);
     bool isBlackDoorF3Required =
@@ -2359,16 +2356,16 @@ public class ViewportLayoutEditor : EditorWindow
         && previewX == 1
         && previewY == 5
         && previewFacing == DungeonFacing.North;
-    bool wallRenderingPreview = IsWallRenderingPiece(piece);
+    bool wallRenderingPreview = wallViewEditPreview;
     bool usePreviewEnabledOverride =
-        normalWallEnabledPreview
+        wallViewEditPreview
         || isBlackDoorRightD3Exception
         || isBlackDoorF3Required
         || isBlackDoorF3FrameRequired
         || (previewDisableAllWalls && wallRenderingPreview);
 
     bool enabledBefore = piece.Enabled;
-    if (normalWallEnabledPreview
+    if (wallViewEditPreview
         && TryGetResolvedNormalWallState(
             piece, out ResolvedNormalWallState enabledPreviewState))
     {
@@ -2401,21 +2398,13 @@ public class ViewportLayoutEditor : EditorWindow
       // owns the automatic wall selection for this stationary pose.
       enabledBefore = manualPreviewEnabled;
     }
-    else if (isBlackDoorF3FrameRequired)
+    else if (isBlackDoorF3FrameRequired || isBlackDoorF3Required)
     {
-      // At (1,5) North the two F3 frame pieces default ON in ViewEdit.
-      // Their stored layout Enabled flag is not authoritative for this
-      // exception pose; an explicit ViewEdit toggle is stored in the
-      // temporary preview override above and can still turn either frame OFF.
+      // At (1,5) North BlackDoorF3 and its F3 frames default ON in ViewEdit.
+      // An explicit ViewEdit toggle is stored in the temporary preview
+      // override above and can still turn any of them OFF.
       enabledBefore = true;
     }
-
-    // BlackDoorF3 itself is a hard exception at (1,5) North and stays ON.
-    // The two F3 frame pieces default ON when this pose is entered, but their
-    // ViewEdit Enabled toggles remain authoritative so they can be tested
-    // individually without changing pose geometry.
-    if (isBlackDoorF3Required)
-      enabledBefore = true;
 
     bool enabledAfter = DrawMouseOnlyToggle(
         EnabledLabel,
@@ -2423,8 +2412,6 @@ public class ViewportLayoutEditor : EditorWindow
         enabledBefore,
         GUILayout.Width(enabledLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
-    if (isBlackDoorF3Required)
-      enabledAfter = true;
     bool nameOrEnabledChanged = EditorGUI.EndChangeCheck();
 
     if (usePreviewEnabledOverride
@@ -2441,15 +2428,10 @@ public class ViewportLayoutEditor : EditorWindow
       piece.Enabled = enabledAfter;
     }
 
-    bool effectiveEnabled =
-        usePreviewEnabledOverride
-        ? enabledAfter
-        : piece.Enabled;
-
-    // Normal-wall Mirror is a temporary ViewEdit override only. Geometry remains
+    // Wall Mirror is a temporary ViewEdit override only. Geometry remains
     // authoritative and the override is discarded as soon as the preview pose
-    // changes. Non-normal pieces retain their existing authored behavior.
-    bool normalWallMirrorPreview = IsNormalWallPiece(piece);
+    // changes.
+    bool normalWallMirrorPreview = wallViewEditPreview;
     bool mirrorBefore = piece.MirrorHorizontally;
     if (normalWallMirrorPreview
         && TryGetResolvedNormalWallState(
@@ -2458,7 +2440,7 @@ public class ViewportLayoutEditor : EditorWindow
       mirrorBefore = mirrorPreviewState.Mirror;
     }
 
-    // Every normal wall remains manually mirrorable in ViewEdit even while
+    // Every wall image remains manually mirrorable in ViewEdit even while
     // V17 supplies its automatic live state. Keep the stationary-pose preview
     // override visible so the checkbox never snaps back on repaint.
     if (normalWallMirrorPreview
@@ -2477,7 +2459,7 @@ public class ViewportLayoutEditor : EditorWindow
     bool mirrorAfter = DrawMouseOnlyToggle(
         MirrorLabel,
         mirrorBefore,
-        effectiveEnabled,
+        true,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = previousLabelWidth;
@@ -2627,7 +2609,7 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
 
-    bool normalWallPositionPreview = IsNormalWallPiece(piece);
+    bool normalWallPositionPreview = wallViewEditPreview;
     bool blackDoorF3PositionPreview =
         piece.Name == "BlackDoorF3"
         && previewX == 1
@@ -2638,7 +2620,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     int editX = piece.X;
     int editUnityY = piece.Y;
-    if (normalWallPositionPreview
+    if (temporaryPositionPreview
         && TryGetResolvedNormalWallState(piece, out ResolvedNormalWallState xyState))
     {
       editX = xyState.X;
@@ -2657,12 +2639,10 @@ public class ViewportLayoutEditor : EditorWindow
           GetPieceHeightForEditorY(piece));
     }
 
-    // FrontF2 must remain manually movable in ViewEdit even while the V17
-    // wall authority supplies its geometry.  The manual position is a
-    // stationary-pose preview override and is cleared on pose change, just
-    // like the other ViewEdit test overrides.
+    // Every wall image remains manually movable in ViewEdit even while V17
+    // supplies its geometry. The manual position is a stationary-pose preview
+    // override and is cleared on pose change, just like Enabled/Mirror.
     if (temporaryPositionPreview
-        && (!viewport17LiveFields || IsFrontWallF2Card(piece))
         && previewPositionOverrideByPiece.TryGetValue(piece, out Vector2Int previewPosition))
     {
       editX = previewPosition.x;
@@ -8282,14 +8262,14 @@ public class ViewportLayoutEditor : EditorWindow
       piece.MirrorHorizontally = poseMirror;
     }
 
-    ApplyTemporaryNormalWallPreviewOverrides();
     ApplyViewport17LiveDrawToResolvedWalls();
+    ApplyTemporaryNormalWallPreviewOverrides();
   }
 
   /// <summary>
-  /// When V17 Walls owns Game View, ViewEdit must show the same Enabled / X /
-  /// Y / Width / Mirror that Compose actually blits. This overlay is last so
-  /// it wins over the legacy recipe and over stationary-pose test overrides.
+  /// When V17 Walls owns Game View, ViewEdit shows the same Enabled / X /
+  /// Y / Width / Mirror that Compose actually blits. Stationary-pose ViewEdit
+  /// Enabled / Mirror / X/Y tests are applied afterward and still win.
   /// </summary>
   private void ApplyViewport17LiveDrawToResolvedWalls()
   {
@@ -8572,7 +8552,7 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece piece = layout.Pieces[i];
-      if (piece == null || !IsNormalWallPiece(piece))
+      if (piece == null || !IsWallRenderingPiece(piece))
         continue;
 
       bool hasEnabledOverride = previewEnabledOverrideByPiece.TryGetValue(
@@ -11447,6 +11427,58 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
+  /// ViewEdit X/Y test for one V17 wall family. Returns the card dest the
+  /// user set for this stationary pose, or false when geometry still owns dest.
+  /// </summary>
+  private bool TryGetViewport17FamilyPositionOverride(
+      string pieceFamily,
+      out int x,
+      out int y)
+  {
+    x = 0;
+    y = 0;
+    if (layout == null || layout.Pieces == null || string.IsNullOrEmpty(pieceFamily))
+      return false;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece candidate = layout.Pieces[i];
+      if (candidate == null || IsBlackDoorEditorPiece(candidate))
+        continue;
+
+      if (!string.Equals(
+              GetViewport17NormalWallFamily(candidate),
+              pieceFamily,
+              System.StringComparison.Ordinal))
+      {
+        continue;
+      }
+
+      if (previewPositionOverrideByPiece.TryGetValue(
+              candidate, out Vector2Int previewPosition))
+      {
+        x = previewPosition.x;
+        y = previewPosition.y;
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private void ApplyViewport17FamilyDestOverride(
+      string pieceFamily,
+      ref int destX,
+      ref int destY)
+  {
+    if (TryGetViewport17FamilyPositionOverride(pieceFamily, out int x, out int y))
+    {
+      destX = x;
+      destY = y;
+    }
+  }
+
+  /// <summary>
   /// Automatic FrontF3 source-image mirror before any ViewEdit override.
   /// Center uses the pose brick phase. A surviving left-only strip stays
   /// unmirrored (dest 0..31). A surviving right-only strip stays mirrored
@@ -11570,8 +11602,11 @@ public class ViewportLayoutEditor : EditorWindow
         && leftSource.width == 60
         && leftSource.height == nativeHeight)
     {
+      int leftX = 0;
+      int leftY = destinationY;
+      ApplyViewport17FamilyDestOverride("LeftF1", ref leftX, ref leftY);
       BlitPieceIntoPreview(
-          pixels, leftSource, 0, destinationY, leftMirror);
+          pixels, leftSource, leftX, leftY, leftMirror);
     }
 
     if (rightEnabled
@@ -11579,8 +11614,11 @@ public class ViewportLayoutEditor : EditorWindow
         && rightSource.width == 60
         && rightSource.height == nativeHeight)
     {
+      int rightX = 164;
+      int rightY = destinationY;
+      ApplyViewport17FamilyDestOverride("RightF1", ref rightX, ref rightY);
       BlitPieceIntoPreview(
-          pixels, rightSource, 164, destinationY, rightMirror);
+          pixels, rightSource, rightX, rightY, rightMirror);
     }
 
     // DOS zone 712: D1C is the original 160x111 center at X=32.
@@ -11593,8 +11631,11 @@ public class ViewportLayoutEditor : EditorWindow
           && centerSource.width == 160
           && centerSource.height == nativeHeight)
       {
+        int centerX = 32;
+        int centerY = destinationY;
+        ApplyViewport17FamilyDestOverride("FrontF1", ref centerX, ref centerY);
         BlitPieceIntoPreview(
-            pixels, centerSource, 32, destinationY, centerMirror);
+            pixels, centerSource, centerX, centerY, centerMirror);
       }
       else
       {
@@ -11658,8 +11699,11 @@ public class ViewportLayoutEditor : EditorWindow
         && leftSource.width == 78
         && leftSource.height == nativeHeight)
     {
+      int leftX = 0;
+      int leftY = destinationY;
+      ApplyViewport17FamilyDestOverride("LeftF2", ref leftX, ref leftY);
       BlitPieceIntoPreview(
-          pixels, leftSource, 0, destinationY, leftMirror);
+          pixels, leftSource, leftX, leftY, leftMirror);
     }
 
     if (rightEnabled
@@ -11667,8 +11711,11 @@ public class ViewportLayoutEditor : EditorWindow
         && rightSource.width == 78
         && rightSource.height == nativeHeight)
     {
+      int rightX = 146;
+      int rightY = destinationY;
+      ApplyViewport17FamilyDestOverride("RightF2", ref rightX, ref rightY);
       BlitPieceIntoPreview(
-          pixels, rightSource, 146, destinationY, rightMirror);
+          pixels, rightSource, rightX, rightY, rightMirror);
     }
 
     // DOS layout 696 zone 709: D2C is centered at X=59. Draw it last so
@@ -11681,8 +11728,11 @@ public class ViewportLayoutEditor : EditorWindow
           && centerSource.width == 106
           && centerSource.height == nativeHeight)
       {
+        int centerX = 59;
+        int centerY = destinationY;
+        ApplyViewport17FamilyDestOverride("FrontF2", ref centerX, ref centerY);
         BlitPieceIntoPreview(
-            pixels, centerSource, 59, destinationY, centerMirror);
+            pixels, centerSource, centerX, centerY, centerMirror);
       }
       else
       {
@@ -11752,8 +11802,11 @@ public class ViewportLayoutEditor : EditorWindow
         && leftSource.width == 83
         && leftSource.height == nativeHeight)
     {
+      int leftX = 7;
+      int leftY = destinationY;
+      ApplyViewport17FamilyDestOverride("LeftF3", ref leftX, ref leftY);
       BlitPieceIntoPreview(
-          pixels, leftSource, 7, destinationY, leftMirror);
+          pixels, leftSource, leftX, leftY, leftMirror);
     }
 
     if (rightEnabled
@@ -11761,14 +11814,32 @@ public class ViewportLayoutEditor : EditorWindow
         && rightSource.width == 83
         && rightSource.height == nativeHeight)
     {
+      int rightX = 134;
+      int rightY = destinationY;
+      ApplyViewport17FamilyDestOverride("RightF3", ref rightX, ref rightY);
       BlitPieceIntoPreview(
-          pixels, rightSource, 134, destinationY, rightMirror);
+          pixels, rightSource, rightX, rightY, rightMirror);
     }
 
     // A surviving D3 FRONT left/right lane is a 32px edge strip, not a full
     // LeftF3/RightF3 side wall. Use the locked last 32 pixels of the native
     // 70px FrontF3 source, matching the old V17 lane calibration.
     Texture2D frontSource = GetReadableNativeFrontF3Texture();
+    int frontLeftX = 0;
+    int frontRightX = 192;
+    int frontCenterX = 77;
+    int frontY = destinationY;
+    if (TryGetViewport17FamilyPositionOverride("FrontF3", out int frontOverrideX, out int frontOverrideY))
+    {
+      frontY = frontOverrideY;
+      if (frontCenter)
+        frontCenterX = frontOverrideX;
+      else if (frontLeft)
+        frontLeftX = frontOverrideX;
+      else if (frontRight)
+        frontRightX = frontOverrideX;
+    }
+
     if (frontSource != null
         && frontSource.width == 70
         && frontSource.height == nativeHeight)
@@ -11779,13 +11850,13 @@ public class ViewportLayoutEditor : EditorWindow
       {
         BlitViewport17SourceStripPreview(
             pixels, frontSource, sourceStart, frontSource.width - 1,
-            0, destinationY, frontCenter ? false : centerMirror);
+            frontLeftX, frontY, frontCenter ? false : centerMirror);
       }
       if (frontRight)
       {
         BlitViewport17SourceStripPreview(
             pixels, frontSource, sourceStart, frontSource.width - 1,
-            192, destinationY, frontCenter ? true : centerMirror);
+            frontRightX, frontY, frontCenter ? true : centerMirror);
       }
     }
 
@@ -11798,7 +11869,7 @@ public class ViewportLayoutEditor : EditorWindow
           && centerSource.height == nativeHeight)
       {
         BlitPieceIntoPreview(
-            pixels, centerSource, 77, destinationY, centerMirror);
+            pixels, centerSource, frontCenterX, frontY, centerMirror);
       }
       else
       {
