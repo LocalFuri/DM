@@ -5011,23 +5011,93 @@ public class ViewportLayoutEditor : EditorWindow
       int localX,
       int depth)
   {
-    if (cells != null)
+    TryFindViewport17Cell(cells, localX, depth, out Viewport17Cell cell);
+    return cell;
+  }
+
+  private static bool TryFindViewport17Cell(
+      List<Viewport17Cell> cells,
+      int localX,
+      int depth,
+      out Viewport17Cell cell)
+  {
+    cell = default;
+    if (cells == null)
+      return false;
+
+    for (int i = 0; i < cells.Count; i++)
     {
-      for (int i = 0; i < cells.Count; i++)
+      Viewport17Cell candidate = cells[i];
+      if (candidate.LocalX == localX && candidate.Depth == depth)
       {
-        Viewport17Cell cell = cells[i];
-        if (cell.LocalX == localX && cell.Depth == depth)
-          return cell;
+        cell = candidate;
+        return true;
       }
     }
 
-    return default;
+    return false;
   }
 
   private static bool IsViewport17Solid(Viewport17Cell cell)
   {
     return cell.State == Viewport17CellState.Wall
         || cell.State == Viewport17CellState.Outside;
+  }
+
+  private static bool IsViewport17LaneOpenAt(
+      Viewport17Inspection inspection,
+      int localX,
+      int depth)
+  {
+    if (depth < 0)
+      return true;
+
+    if (!TryFindViewport17Cell(inspection.Cells, localX, depth, out Viewport17Cell cell))
+      return true;
+
+    return !IsViewport17Solid(cell);
+  }
+
+  /// <summary>
+  /// Inner LeftF/RightF faces that nearer geometry already hides. Outer
+  /// LeftD3/RightD3 stay visible through the 32px side openings.
+  ///
+  /// An isolated bump (same-side lane open both nearer and farther) is not a
+  /// corridor face: drawing the full F1/F2 side graphic would cover the
+  /// see-through to deeper walls.
+  ///
+  /// A spanning D3 inner third is a visible join only when the same-side D2
+  /// wall continues into the front, or the distant front also occupies the
+  /// opposite inner lane. An alcove in front of a partial L/C or C/R wall is
+  /// a FRONT face, not LeftF3/RightF3.
+  /// </summary>
+  private static bool IsViewport17OccludedInnerSide(
+      Viewport17Inspection inspection,
+      Viewport17RenderCommand command)
+  {
+    int localX = command.LocalX < 0 ? -1 : 1;
+    int depth = command.Depth;
+    if (depth < 1)
+      return false;
+
+    bool nearerOpen = IsViewport17LaneOpenAt(inspection, localX, depth - 1);
+    bool fartherSampled = TryFindViewport17Cell(
+        inspection.Cells, localX, depth + 1, out Viewport17Cell fartherCell);
+    bool fartherOpen = fartherSampled && !IsViewport17Solid(fartherCell);
+    if (nearerOpen && fartherOpen)
+      return true;
+
+    if (depth == 3 && nearerOpen)
+    {
+      Viewport17Cell centerCell = FindViewport17Cell(inspection.Cells, 0, 3);
+      if (IsViewport17Solid(centerCell)
+          && IsViewport17LaneOpenAt(inspection, -localX, 3))
+      {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private static string FormatViewport17State(Viewport17Cell cell)
@@ -6241,7 +6311,12 @@ public class ViewportLayoutEditor : EditorWindow
   //     32px left/right openings that a center FrontF1/F2 does not cover.
   //     A center front must not hide them; only a nearer same-lane front does;
   //   * a nearer front in a side lane hides farther same-side surfaces;
-  //   * D0 inner faces (LeftF0/RightF0) do NOT hide F1/F2/F3 corridor sides.
+  //   * D0 inner faces (LeftF0/RightF0) do NOT hide F1/F2/F3 corridor sides;
+  //   * an isolated inner bump (same-side lane open nearer AND farther) is not
+  //     a corridor face; the full F1/F2 side graphic would hide deeper openings;
+  //   * a spanning D3 inner third is hidden when D2 on that side is an alcove
+  //     AND the distant front does not occupy the opposite inner lane. That
+  //     face is the FRONT of the D3 side cell, not LeftF3/RightF3.
   //
   // A front composite may therefore survive with a smaller mask. Example:
   // D3 mask=LC plus a nearer D1 center wall -> final D3 mask=L.
@@ -6334,12 +6409,16 @@ public class ViewportLayoutEditor : EditorWindow
         // faces are drawn in the uncovered 32px side opening instead.
         if (!outerSide && nearestCenterFront < command.Depth)
           continue;
+        if (!outerSide && IsViewport17OccludedInnerSide(inspection, command))
+          continue;
       }
       else if (rightSide)
       {
         if (nearestRightFront < command.Depth)
           continue;
         if (!outerSide && nearestCenterFront < command.Depth)
+          continue;
+        if (!outerSide && IsViewport17OccludedInnerSide(inspection, command))
           continue;
       }
 
@@ -8474,12 +8553,8 @@ public class ViewportLayoutEditor : EditorWindow
     bool d2RightEnabled =
         HasViewport17FinalFamily(finalCommands, "RightF2") || d2FrontRight;
 
-    bool d3LeftEnabled =
-        HasViewport17FinalFamily(finalCommands, "LeftF3")
-        || (d3FrontLeft && d3FrontCenter);
-    bool d3RightEnabled =
-        HasViewport17FinalFamily(finalCommands, "RightF3")
-        || (d3FrontRight && d3FrontCenter);
+    bool d3LeftEnabled = HasViewport17FinalFamily(finalCommands, "LeftF3");
+    bool d3RightEnabled = HasViewport17FinalFamily(finalCommands, "RightF3");
 
     // Mirror the Black Door suppression/side-wall rules used by Compose so
     // the Enabled checkboxes and ACTIVE diagnostic remain truthful there too.
@@ -11967,12 +12042,8 @@ public class ViewportLayoutEditor : EditorWindow
     bool defaultMirror = GetSideWallMirrorFromPose();
     GetViewport17FinalFrontLanes(
         finalCommands, 3, out bool frontLeft, out bool frontCenter, out bool frontRight);
-    bool leftEnabled =
-        HasViewport17FinalFamily(finalCommands, "LeftF3")
-        || (frontLeft && frontCenter);
-    bool rightEnabled =
-        HasViewport17FinalFamily(finalCommands, "RightF3")
-        || (frontRight && frontCenter);
+    bool leftEnabled = HasViewport17FinalFamily(finalCommands, "LeftF3");
+    bool rightEnabled = HasViewport17FinalFamily(finalCommands, "RightF3");
     bool leftMirror = defaultMirror;
     bool centerMirror = GetViewport17FrontF3DefaultMirror(
         frontLeft, frontCenter, frontRight);
