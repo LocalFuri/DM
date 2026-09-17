@@ -1,0 +1,7 @@
+**
+!Assets/
+!Assets/Editor/
+!Assets/Editor/ViewportLayoutEditor.cs
+!Assets/Data/
+!Assets/Data/Maps/
+!Assets/Data/Maps/HallOfChampions.json
