@@ -2258,6 +2258,35 @@ public class ViewportLayoutEditor : EditorWindow
             new[] { "Front Wall F1" },
             GUILayout.Width(135f));
       }
+      else if (IsFrontWallF2Card(piece))
+      {
+        if (piece.Graphic != DungeonGraphicType.FrontWallF2)
+        {
+          piece.Graphic = DungeonGraphicType.FrontWallF2;
+          GUI.changed = true;
+        }
+
+        EditorGUILayout.Popup(
+            0,
+            new[] { "Front Wall F2" },
+            GUILayout.Width(135f));
+      }
+      else if (IsFrontWallF3Card(piece))
+      {
+        // FrontF3 is the native 70x49 center (plus optional 32px L/R strips).
+        // An authored Front Wall F2 graphic on this card would show the wrong
+        // name and feed the wrong height into ViewEdit Y.
+        if (piece.Graphic != DungeonGraphicType.FrontWallF3)
+        {
+          piece.Graphic = DungeonGraphicType.FrontWallF3;
+          GUI.changed = true;
+        }
+
+        EditorGUILayout.Popup(
+            0,
+            new[] { "Front Wall F3" },
+            GUILayout.Width(135f));
+      }
       else
       {
         piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
@@ -5136,6 +5165,34 @@ public class ViewportLayoutEditor : EditorWindow
               PrimaryCell = cell,
               AdjacentCell = default
             });
+
+            // A solid side-lane cell on the same front plane is the left/right
+            // third of that wall (DOS D3: 83px LeftF3/RightF3 beside the 70px
+            // center). OPEN/SOLID transitions do not fire when L/C/R are all
+            // solid, so emit those side faces here. Corridor sides (solid
+            // beside an OPEN center) are already handled below.
+            if (localX < 0)
+            {
+              surfaces.Add(new Viewport17Surface
+              {
+                Type = Viewport17SurfaceType.LeftSide,
+                Depth = depth,
+                LocalX = localX,
+                PrimaryCell = cell,
+                AdjacentCell = FindViewport17Cell(inspection.Cells, 0, depth)
+              });
+            }
+            else if (localX > 0)
+            {
+              surfaces.Add(new Viewport17Surface
+              {
+                Type = Viewport17SurfaceType.RightSide,
+                Depth = depth,
+                LocalX = localX,
+                PrimaryCell = cell,
+                AdjacentCell = FindViewport17Cell(inspection.Cells, 0, depth)
+              });
+            }
           }
         }
       }
@@ -8356,8 +8413,12 @@ public class ViewportLayoutEditor : EditorWindow
     bool d2RightEnabled =
         HasViewport17FinalFamily(finalCommands, "RightF2") || d2FrontRight;
 
-    bool d3LeftEnabled = HasViewport17FinalFamily(finalCommands, "LeftF3");
-    bool d3RightEnabled = HasViewport17FinalFamily(finalCommands, "RightF3");
+    bool d3LeftEnabled =
+        HasViewport17FinalFamily(finalCommands, "LeftF3")
+        || (d3FrontLeft && d3FrontCenter);
+    bool d3RightEnabled =
+        HasViewport17FinalFamily(finalCommands, "RightF3")
+        || (d3FrontRight && d3FrontCenter);
 
     // Mirror the Black Door suppression/side-wall rules used by Compose so
     // the Enabled checkboxes and ACTIVE diagnostic remain truthful there too.
@@ -8536,12 +8597,14 @@ public class ViewportLayoutEditor : EditorWindow
       if (IsFrontWallF3Card(piece))
       {
         state.Enabled = d3FrontSourceEnabled;
+        state.Graphic = DungeonGraphicType.FrontWallF3;
         state.X = d3FrontCenter
             ? 77
             : (d3FrontLeft ? 0 : (d3FrontRight ? 192 : 77));
         state.Y = DisplayYToUnityY(58, 49);
         state.Mirror = d3FrontMirror;
         resolvedNormalWallByPiece[piece] = state;
+        piece.Graphic = DungeonGraphicType.FrontWallF3;
         continue;
       }
 
@@ -11847,8 +11910,12 @@ public class ViewportLayoutEditor : EditorWindow
     bool defaultMirror = GetSideWallMirrorFromPose();
     GetViewport17FinalFrontLanes(
         finalCommands, 3, out bool frontLeft, out bool frontCenter, out bool frontRight);
-    bool leftEnabled = HasViewport17FinalFamily(finalCommands, "LeftF3");
-    bool rightEnabled = HasViewport17FinalFamily(finalCommands, "RightF3");
+    bool leftEnabled =
+        HasViewport17FinalFamily(finalCommands, "LeftF3")
+        || (frontLeft && frontCenter);
+    bool rightEnabled =
+        HasViewport17FinalFamily(finalCommands, "RightF3")
+        || (frontRight && frontCenter);
     bool leftMirror = defaultMirror;
     bool centerMirror = GetViewport17FrontF3DefaultMirror(
         frontLeft, frontCenter, frontRight);
@@ -11899,9 +11966,10 @@ public class ViewportLayoutEditor : EditorWindow
           pixels, rightSource, rightX, rightY, rightMirror);
     }
 
-    // A surviving D3 FRONT left/right lane is a 32px edge strip, not a full
-    // LeftF3/RightF3 side wall. Use the locked last 32 pixels of the native
-    // 70px FrontF3 source, matching the old V17 lane calibration.
+    // A surviving D3 FRONT left/right lane without a center is a 32px edge
+    // strip, not a full LeftF3/RightF3 side wall. When the center is present,
+    // the 83px D3 side graphics already join the 70px center; drawing the
+    // edge strips would leave a black gap between X=32 and the center at 77.
     Texture2D frontSource = GetReadableNativeFrontF3Texture();
     int frontLeftX = 0;
     int frontRightX = 192;
@@ -11924,17 +11992,17 @@ public class ViewportLayoutEditor : EditorWindow
     {
       const int stripWidth = 32;
       int sourceStart = frontSource.width - stripWidth;
-      if (frontLeft)
+      if (frontLeft && !frontCenter)
       {
         BlitViewport17SourceStripPreview(
             pixels, frontSource, sourceStart, frontSource.width - 1,
-            frontLeftX, frontY, frontCenter ? false : centerMirror);
+            frontLeftX, frontY, centerMirror);
       }
-      if (frontRight)
+      if (frontRight && !frontCenter)
       {
         BlitViewport17SourceStripPreview(
             pixels, frontSource, sourceStart, frontSource.width - 1,
-            frontRightX, frontY, frontCenter ? true : centerMirror);
+            frontRightX, frontY, centerMirror);
       }
     }
 
@@ -12399,6 +12467,14 @@ public class ViewportLayoutEditor : EditorWindow
       if (f2Texture != null && f2Texture.height > 0)
         return f2Texture.height;
       return 74;
+    }
+
+    if (IsFrontWallF3Card(piece))
+    {
+      Texture2D f3Texture = GetReadableNativeFrontF3Texture();
+      if (f3Texture != null && f3Texture.height > 0)
+        return f3Texture.height;
+      return 49;
     }
 
     Texture2D texture = graphics.GetTexture(piece.Graphic);
