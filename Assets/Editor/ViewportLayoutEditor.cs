@@ -6155,9 +6155,13 @@ public class ViewportLayoutEditor : EditorWindow
       command.HasMirror = true;
       command.Mirror = GetSideWallMirrorFromPose();
     }
-    // Front-face mirror phase and LeftD3/RightD3 mirror stay PENDING until
-    // their geometry-driven rules are derived. No map-position exception is
-    // imported into the Viewport-17 engine.
+    else if (command.PieceFamily == "LeftD3"
+        || command.PieceFamily == "RightD3")
+    {
+      command.HasMirror = true;
+      command.Mirror = GetViewport17D3OuterMirror(
+          command.PieceFamily == "RightD3");
+    }
   }
 
   private static string FormatViewport17RenderCommand(
@@ -7685,6 +7689,38 @@ public class ViewportLayoutEditor : EditorWindow
     return GetSideWallMirrorFromPose();
   }
 
+  /// <summary>
+  /// LeftD3 / RightD3 orientation from viewing direction. Outer D3 uses the
+  /// FrontF1 brick phase (even X+Y+facing = mirrored), not the F0/F1 side-wall
+  /// phase. RightD3 is the opposite hand of the same source. A one-tile step
+  /// or 90-degree turn flips both. No map coordinate is stored.
+  /// </summary>
+  private bool GetViewport17D3OuterMirror(bool rightOuter)
+  {
+    bool leftPhase = GetFrontF1MirrorFromPose();
+    return rightOuter ? !leftPhase : leftPhase;
+  }
+
+  private static bool IsLeftD3Piece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    return piece.Name == "LeftD3"
+        || piece.Name == "Wall D3L2"
+        || piece.Graphic == DungeonGraphicType.WallD3L2;
+  }
+
+  private static bool IsRightD3Piece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    return piece.Name == "RightD3"
+        || piece.Name == "Wall D3R2"
+        || piece.Graphic == DungeonGraphicType.WallD3R2;
+  }
+
 
   private static bool IsViewEditGeometryWall(RelativeViewportCell cell)
   {
@@ -8147,7 +8183,7 @@ public class ViewportLayoutEditor : EditorWindow
         enabled = leftD3ObliqueOpening;
         x = HasLeftD3LeadingStripActiveTile() ? 0 : -8;
         y = piece.EffectiveY;
-        mirror = piece.MirrorHorizontally;
+        mirror = GetViewport17D3OuterMirror(false);
       }
       else if (piece.Name == "RightD3"
           || piece.Name == "Wall D3R2"
@@ -8158,7 +8194,7 @@ public class ViewportLayoutEditor : EditorWindow
         enabled = rightD3ObliqueOpening;
         x = piece.EffectiveX;
         y = piece.EffectiveY;
-        mirror = piece.MirrorHorizontally;
+        mirror = GetViewport17D3OuterMirror(true);
       }
       else
       {
@@ -8649,6 +8685,10 @@ public class ViewportLayoutEditor : EditorWindow
           IsViewport17NormalWallSelected(piece, finalCommands);
       bool remainingMirror = state.Mirror;
       string remainingFamily = GetViewport17NormalWallFamily(piece);
+      if (remainingFamily == "LeftD3")
+        remainingMirror = GetViewport17D3OuterMirror(false);
+      else if (remainingFamily == "RightD3")
+        remainingMirror = GetViewport17D3OuterMirror(true);
       if (!string.IsNullOrEmpty(remainingFamily))
       {
         ApplyViewport17NativeManualControls(
@@ -8679,7 +8719,7 @@ public class ViewportLayoutEditor : EditorWindow
         state.Y = DisplayYToUnityY(
             leftD3Y, GetPieceHeightForEditorY(piece));
         if (!previewMirrorOverrideByPiece.ContainsKey(piece))
-          state.Mirror = GetSideWallMirrorFromPose();
+          state.Mirror = GetViewport17D3OuterMirror(false);
       }
       if (state.Enabled
           && remainingFamily == "RightD3"
@@ -8689,7 +8729,7 @@ public class ViewportLayoutEditor : EditorWindow
         state.Y = DisplayYToUnityY(
             rightD3Y, GetPieceHeightForEditorY(piece));
         if (!previewMirrorOverrideByPiece.ContainsKey(piece))
-          state.Mirror = GetSideWallMirrorFromPose();
+          state.Mirror = GetViewport17D3OuterMirror(true);
       }
 
       resolvedNormalWallByPiece[piece] = state;
@@ -10491,28 +10531,13 @@ public class ViewportLayoutEditor : EditorWindow
           bool hasManualRightD3Mirror =
               previewMirrorOverrideByPiece.ContainsKey(piece);
 
-          // When RightD3 is being manually tested in ViewEdit, use the normal
-          // preview blit so the live X/Y and Mirror controls actually affect
-          // what is drawn. With no manual test active, preserve the existing
-          // D3R2 narrow-strip rendering exactly as before.
-          if (hasManualRightD3Position || hasManualRightD3Mirror)
-          {
-            BlitPieceIntoPreview(
-                pixels,
-                texture,
-                resolvedX,
-                resolvedY,
-                mirror);
-
-            LogIfOverlapsLeftF0(
-                piece,
-                drawGraphic,
-                resolvedX,
-                resolvedY,
-                texture.width,
-                texture.height);
-          }
-          else if (blackDoorObliqueRightD3Exception)
+          // ViewEdit Mirror / X / Y must drive the same blit as Game View.
+          // The old narrow-strip path ignored Mirror, so use the live
+          // resolved dest unless the Hall of Champions black-door exception
+          // still owns this draw.
+          if (blackDoorObliqueRightD3Exception
+              && !hasManualRightD3Position
+              && !hasManualRightD3Mirror)
           {
             // ViewEdit display position was measured as X=196, Y=58.
             // D3R2 is 49 px high, so bottom-up framebuffer Y is 200-58-49=93.
@@ -10533,18 +10558,18 @@ public class ViewportLayoutEditor : EditorWindow
           }
           else
           {
-            D3R2NarrowWidthTest.BlitToBuffer(
-                texture,
+            BlitPieceIntoPreview(
                 pixels,
-                PreviewWidth,
-                PreviewHeight,
-                piece.EffectiveX,
-                piece.EffectiveY);
+                texture,
+                resolvedX,
+                resolvedY,
+                mirror);
+
             LogIfOverlapsLeftF0(
                 piece,
                 drawGraphic,
-                piece.EffectiveX,
-                piece.EffectiveY,
+                resolvedX,
+                resolvedY,
                 texture.width,
                 texture.height);
           }
@@ -11269,8 +11294,9 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Preview-only mirror from the piece's authored MirrorHorizontally flag.
-  /// Does not write the layout asset or apply pose phase overrides.
+  /// Automatic preview mirror for walls that have a V17 geometry/pose rule.
+  /// LeftD3/RightD3 use the outer-D3 handedness plus pose phase. F0 uses the
+  /// side-wall phase. A ViewEdit checkbox override still wins later.
   /// </summary>
   private bool GetPreviewMirror(ViewportPiece piece, DungeonMap poseMap)
   {
@@ -11281,6 +11307,12 @@ public class ViewportLayoutEditor : EditorWindow
     // current imported orientation until their mirror rules are verified.
     if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
       return GetF0MirrorFromPose();
+
+    if (IsLeftD3Piece(piece))
+      return GetViewport17D3OuterMirror(false);
+
+    if (IsRightD3Piece(piece))
+      return GetViewport17D3OuterMirror(true);
 
     if (IsWallF1LeftPiece(piece)
         || IsWallF1RightPiece(piece)
