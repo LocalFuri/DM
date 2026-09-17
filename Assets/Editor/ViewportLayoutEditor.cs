@@ -5059,12 +5059,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Inner LeftF/RightF faces that nearer geometry already hides. Outer
-  /// LeftD3/RightD3 stay visible through the 32px side openings.
-  ///
-  /// An isolated bump (same-side lane open both nearer and farther) is not a
-  /// corridor face: drawing the full F1/F2 side graphic would cover the
-  /// see-through to deeper walls.
+  /// Inner LeftF/RightF faces that nearer geometry already hides.
   ///
   /// A spanning D3 inner third is a visible join only when the same-side D2
   /// wall continues into the front, or the distant front also occupies the
@@ -5077,24 +5072,85 @@ public class ViewportLayoutEditor : EditorWindow
   {
     int localX = command.LocalX < 0 ? -1 : 1;
     int depth = command.Depth;
-    if (depth < 1)
+    if (depth != 3)
       return false;
 
     bool nearerOpen = IsViewport17LaneOpenAt(inspection, localX, depth - 1);
-    bool fartherSampled = TryFindViewport17Cell(
-        inspection.Cells, localX, depth + 1, out Viewport17Cell fartherCell);
-    bool fartherOpen = fartherSampled && !IsViewport17Solid(fartherCell);
-    if (nearerOpen && fartherOpen)
-      return true;
+    if (!nearerOpen)
+      return false;
 
-    if (depth == 3 && nearerOpen)
+    Viewport17Cell centerCell = FindViewport17Cell(inspection.Cells, 0, 3);
+    return IsViewport17Solid(centerCell)
+        && IsViewport17LaneOpenAt(inspection, -localX, 3);
+  }
+
+  /// <summary>
+  /// Outer LeftD3/RightD3 occupy the uncovered 32px side opening. A nearer
+  /// same-side inner wall that actually survives FINAL DRAW (LeftF0/RightF0
+  /// or LeftF/RightF) already covers that band, so the outer D3 face is
+  /// hidden. A nearer CENTER front does not, because it leaves those 32px
+  /// open.
+  /// </summary>
+  private static bool IsViewport17OuterSideHiddenByNearerInner(
+      Viewport17Inspection inspection,
+      List<Viewport17RenderCommand> candidates,
+      Viewport17RenderCommand outerCommand,
+      int nearestLeftFront,
+      int nearestCenterFront,
+      int nearestRightFront)
+  {
+    bool left = outerCommand.LocalX < 0
+        || outerCommand.SurfaceType == Viewport17SurfaceType.LeftSide
+        || outerCommand.SurfaceType == Viewport17SurfaceType.LeftInner;
+
+    for (int i = 0; i < candidates.Count; i++)
     {
-      Viewport17Cell centerCell = FindViewport17Cell(inspection.Cells, 0, 3);
-      if (IsViewport17Solid(centerCell)
-          && IsViewport17LaneOpenAt(inspection, -localX, 3))
+      Viewport17RenderCommand command = candidates[i];
+      if (command.IsFrontComposite || command.Depth >= outerCommand.Depth)
+        continue;
+      if (IsViewport17OuterSideCommand(command))
+        continue;
+
+      bool sameSide = left
+          ? command.SurfaceType == Viewport17SurfaceType.LeftSide
+            || command.SurfaceType == Viewport17SurfaceType.LeftInner
+          : command.SurfaceType == Viewport17SurfaceType.RightSide
+            || command.SurfaceType == Viewport17SurfaceType.RightInner;
+      if (!sameSide)
+        continue;
+
+      if (left)
       {
-        return true;
+        if (nearestLeftFront < command.Depth)
+          continue;
+        if (command.SurfaceType != Viewport17SurfaceType.LeftInner
+            && nearestCenterFront < command.Depth)
+        {
+          continue;
+        }
+        if (command.SurfaceType == Viewport17SurfaceType.LeftSide
+            && IsViewport17OccludedInnerSide(inspection, command))
+        {
+          continue;
+        }
       }
+      else
+      {
+        if (nearestRightFront < command.Depth)
+          continue;
+        if (command.SurfaceType != Viewport17SurfaceType.RightInner
+            && nearestCenterFront < command.Depth)
+        {
+          continue;
+        }
+        if (command.SurfaceType == Viewport17SurfaceType.RightSide
+            && IsViewport17OccludedInnerSide(inspection, command))
+        {
+          continue;
+        }
+      }
+
+      return true;
     }
 
     return false;
@@ -6309,11 +6365,11 @@ public class ViewportLayoutEditor : EditorWindow
   //     Those faces sit on the corridor the center wall just closed;
   //   * OUTER D3 sides (LeftD3/RightD3) are the wall faces seen through the
   //     32px left/right openings that a center FrontF1/F2 does not cover.
-  //     A center front must not hide them; only a nearer same-lane front does;
+  //     A center front must not hide them; a nearer same-lane front does;
+  //     a surviving nearer same-side inner wall (F0/F1/F2) also hides them
+  //     because that graphic already covers the 32px band;
   //   * a nearer front in a side lane hides farther same-side surfaces;
   //   * D0 inner faces (LeftF0/RightF0) do NOT hide F1/F2/F3 corridor sides;
-  //   * an isolated inner bump (same-side lane open nearer AND farther) is not
-  //     a corridor face; the full F1/F2 side graphic would hide deeper openings;
   //   * a spanning D3 inner third is hidden when D2 on that side is an alcove
   //     AND the distant front does not occupy the opposite inner lane. That
   //     face is the FRONT of the D3 side cell, not LeftF3/RightF3.
@@ -6411,6 +6467,17 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         if (!outerSide && IsViewport17OccludedInnerSide(inspection, command))
           continue;
+        if (outerSide
+            && IsViewport17OuterSideHiddenByNearerInner(
+                inspection,
+                candidates,
+                command,
+                nearestLeftFront,
+                nearestCenterFront,
+                nearestRightFront))
+        {
+          continue;
+        }
       }
       else if (rightSide)
       {
@@ -6420,6 +6487,17 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         if (!outerSide && IsViewport17OccludedInnerSide(inspection, command))
           continue;
+        if (outerSide
+            && IsViewport17OuterSideHiddenByNearerInner(
+                inspection,
+                candidates,
+                command,
+                nearestLeftFront,
+                nearestCenterFront,
+                nearestRightFront))
+        {
+          continue;
+        }
       }
 
       // D0 inner commands always survive. They are the nearest side boundary
@@ -6704,7 +6782,7 @@ public class ViewportLayoutEditor : EditorWindow
     lines.Add("");
     lines.Add(
         "STAGE 6S: front L/C/R occupancy is grouped into one FrontF command, then a generic lane-occlusion pass produces the FINAL DRAW diagnostic. "
-        + "Only the nearest front wall per lane survives. A nearer center front hides farther inner corridor sides, not outer D3 faces in the 32px side openings. D0 inner walls do not hide F1/F2/F3 sides. "
+        + "Only the nearest front wall per lane survives. A nearer center front hides farther inner corridor sides, not outer D3 faces in the 32px side openings. A surviving nearer same-side inner wall does hide those outer D3 faces. D0 inner walls do not hide F1/F2/F3 sides. "
         + "D1 CENTER +1px and the locked D3 LEFT source calibration remain preserved.");
     lines.Add(
         "CUTOVER: when V17 Walls is ON, FINAL DRAW owns automatic normal-wall visibility in ViewEdit; Show all walls changes only the card list. Legacy visibility rules are muted. FrontF3 mask L (no C) blits the locked 32px dest X 0..31 FrontF3 strip. Other placement/blit code remains temporarily in use.");
