@@ -5345,6 +5345,11 @@ public class ViewportLayoutEditor : EditorWindow
         if (leftSolid)
         {
           // Solid geometry is on the LEFT side of an open passage.
+          // A solid CENTER's right face is FrontF, not LeftF into the
+          // adjacent open lane.
+          if (localX == 0)
+            continue;
+
           surfaces.Add(new Viewport17Surface
           {
             Type = Viewport17SurfaceType.LeftSide,
@@ -5357,6 +5362,11 @@ public class ViewportLayoutEditor : EditorWindow
         else
         {
           // Solid geometry is on the RIGHT side of an open passage.
+          // A solid CENTER's left face is FrontF, not RightF into the
+          // adjacent open lane.
+          if (localX + 1 == 0)
+            continue;
+
           surfaces.Add(new Viewport17Surface
           {
             Type = Viewport17SurfaceType.RightSide,
