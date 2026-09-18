@@ -8330,7 +8330,9 @@ public class ViewportLayoutEditor : EditorWindow
         y = DisplayYToUnityY(
             57,
             GetPieceHeightForEditorY(piece));
-        mirror = false;
+        mirror = piece.MirrorHorizontally;
+        if (previewMirrorOverrideByPiece.TryGetValue(piece, out bool leftS3Mirror))
+          mirror = leftS3Mirror;
       }
       else if (piece.Name == "RightS3")
       {
@@ -8456,7 +8458,10 @@ public class ViewportLayoutEditor : EditorWindow
         y = DisplayYToUnityY(
             57,
             GetPieceHeightForEditorY(piece));
-        mirror = false;
+        mirror = piece.MirrorHorizontally;
+        if (previewMirrorOverrideByPiece.TryGetValue(
+                piece, out bool leftS3MirrorAfter))
+          mirror = leftS3MirrorAfter;
       }
 
       ResolvedNormalWallState state = new ResolvedNormalWallState
