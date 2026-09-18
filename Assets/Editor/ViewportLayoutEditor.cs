@@ -10608,47 +10608,49 @@ public class ViewportLayoutEditor : EditorWindow
           }
         }
 
-        // LeftS3 / RightS3 mirror semantics are handed-source mirroring:
-        // Mirror ON does NOT flip the card's own artwork. It takes the
-        // corresponding opposite-side source, mirrors that source horizontally,
-        // and keeps the destination X/Y of the card being edited.
+        // LeftS3 / RightS3 use handed-source mirroring.  The ViewEdit Mirror
+        // checkbox is read directly here so no later resolver can replace it.
+        // LeftS3 Mirror ON = mirror the RIGHT S3 source and blit it at the
+        // LEFT S3 destination (normally X=0).  X/Y never swap sides.
         if (piece.Name == "LeftS3" || piece.Name == "RightS3")
         {
-          bool useOppositeSideSource = mirror;
-          Texture2D wall2STexture;
-          bool flipSourceHorizontally;
+          bool handedMirror = mirror;
+          if (previewMirrorOverrideByPiece.TryGetValue(
+                  piece, out bool manualS3Mirror))
+          {
+            handedMirror = manualS3Mirror;
+          }
 
+          Texture2D wallS3Texture;
           if (piece.Name == "LeftS3")
           {
-            wall2STexture = useOppositeSideSource
+            wallS3Texture = handedMirror
                 ? GetRight2STexture()
                 : graphics.GetTexture(DungeonGraphicType.Left2S);
-            flipSourceHorizontally = useOppositeSideSource;
           }
           else
           {
-            wall2STexture = useOppositeSideSource
+            wallS3Texture = handedMirror
                 ? graphics.GetTexture(DungeonGraphicType.Left2S)
                 : GetRight2STexture();
-            flipSourceHorizontally = useOppositeSideSource;
           }
 
-          if (wall2STexture == null)
+          if (wallS3Texture == null)
             continue;
 
           BlitPieceIntoPreview(
               pixels,
-              wall2STexture,
+              wallS3Texture,
               resolvedX,
               resolvedY,
-              flipSourceHorizontally);
+              handedMirror);
           LogIfOverlapsLeftF0(
               piece,
               piece.Graphic,
               resolvedX,
               resolvedY,
-              wall2STexture.width,
-              wall2STexture.height);
+              wallS3Texture.width,
+              wallS3Texture.height);
           continue;
         }
 
@@ -11188,10 +11190,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (IsNormalWallPiece(piece))
       return true;
 
+    // LeftS3 / RightS3 are ViewEdit wall cards even though they are not part
+    // of the normal V17 family classifier yet. Treat them as wall-rendering
+    // pieces so Enabled/Mirror use the same temporary stationary-pose preview
+    // override path as LeftF3/RightF3 instead of being reset by layout state.
+    string name = piece.Name ?? string.Empty;
+    if (name == "LeftS3" || name == "RightS3")
+      return true;
+
     if (piece.Graphic == DungeonGraphicType.BlackDoor)
       return true;
 
-    string name = piece.Name ?? string.Empty;
     return name.StartsWith("BlackDoor", System.StringComparison.Ordinal)
         || name.StartsWith("Black Door", System.StringComparison.Ordinal)
         || name.Contains("Wall");
@@ -11375,28 +11384,58 @@ public class ViewportLayoutEditor : EditorWindow
 
   private Texture2D GetRight2STexture()
   {
-    const string right2SAssetPath = "Assets/Art/Walls/Right2S.png";
+    const string preferredRight2SAssetPath = "Assets/Art/Walls/Right2S.png";
 
     if (right2SSourceTexture == null)
     {
       right2SSourceTexture =
-          AssetDatabase.LoadAssetAtPath<Texture2D>(right2SAssetPath);
+          AssetDatabase.LoadAssetAtPath<Texture2D>(preferredRight2SAssetPath);
+
+      // Keep the normal fixed path fast, but also tolerate an asset rename or
+      // extension change.  The source must be the actual RIGHT S3 artwork.
+      if (right2SSourceTexture == null)
+      {
+        string[] guids = AssetDatabase.FindAssets(
+            "Right2S t:Texture2D",
+            new[] { "Assets/Art/Walls" });
+        for (int i = 0; i < guids.Length; i++)
+        {
+          string candidatePath = AssetDatabase.GUIDToAssetPath(guids[i]);
+          Texture2D candidate =
+              AssetDatabase.LoadAssetAtPath<Texture2D>(candidatePath);
+          if (candidate != null
+              && string.Equals(
+                  candidate.name,
+                  "Right2S",
+                  System.StringComparison.OrdinalIgnoreCase))
+          {
+            right2SSourceTexture = candidate;
+            break;
+          }
+        }
+      }
     }
 
-    // The preview blitter uses GetPixels32(), so the source must be readable.
-    // Keep the imported asset when it is readable; otherwise load a temporary
-    // readable copy from the same PNG. This lets LeftS3 Mirror ON reliably use
-    // mirrored Right2S pixels at LeftS3's unchanged destination X/Y.
-    if (right2SSourceTexture != null && right2SSourceTexture.isReadable)
+    if (right2SSourceTexture == null)
+      return null;
+
+    if (right2SSourceTexture.isReadable)
       return right2SSourceTexture;
 
     if (cachedRight2SReadableCopy != null)
       return cachedRight2SReadableCopy;
 
+    // Preview blitting uses GetPixels32().  If Unity imported Right2S as
+    // non-readable, load a temporary CPU-readable copy from the exact asset
+    // path found above.  This does not modify the texture importer.
+    string assetPath = AssetDatabase.GetAssetPath(right2SSourceTexture);
+    if (string.IsNullOrEmpty(assetPath))
+      return null;
+
     string projectRoot = Path.GetDirectoryName(Application.dataPath);
     string absolutePath = string.IsNullOrEmpty(projectRoot)
-        ? right2SAssetPath
-        : Path.Combine(projectRoot, right2SAssetPath);
+        ? assetPath
+        : Path.Combine(projectRoot, assetPath);
 
     if (!File.Exists(absolutePath))
       return null;
