@@ -5762,6 +5762,36 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
+    // LeftS3 is the narrow far-left D3 strip when the left lane is open
+    // through D2 and D3 is a corridor wall (solid L beside open C).
+    if (IsViewport17LaneOpenAt(inspection, -1, 0)
+        && IsViewport17LaneOpenAt(inspection, -1, 1)
+        && IsViewport17LaneOpenAt(inspection, -1, 2)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
+        && !IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3)))
+    {
+      Viewport17Cell leftCell =
+          FindViewport17Cell(inspection.Cells, -1, 3);
+      Viewport17Cell centerCell =
+          FindViewport17Cell(inspection.Cells, 0, 3);
+      Viewport17Surface leftS3Surface = new Viewport17Surface
+      {
+        Type = Viewport17SurfaceType.LeftSide,
+        Depth = 3,
+        LocalX = -1,
+        PrimaryCell = leftCell,
+        AdjacentCell = centerCell
+      };
+      Viewport17RenderCommand leftS3Command =
+          CreateViewport17RenderCommand(
+              "LeftS3",
+              "LEFT S3 STRIP",
+              "LEFT",
+              leftS3Surface);
+      leftS3Command.Sequence = commands.Count;
+      commands.Add(leftS3Command);
+    }
+
     // D0 inner faces are nearest and therefore appended last.
     for (int i = 0; i < surfaces.Count; i++)
     {
@@ -6605,8 +6635,11 @@ public class ViewportLayoutEditor : EditorWindow
         || piece.Graphic == DungeonGraphicType.WallD3R2)
       return "RightD3";
 
-    // LeftS3 / RightS3 are special distance-3 strip families. Viewport-17 does not
-    // emit them, so they intentionally resolve to no selected family.
+    if (piece.Name == "LeftS3")
+      return "LeftS3";
+
+    // RightS3 is still a special distance-3 strip family. Viewport-17 does not
+    // emit it, so it intentionally resolves to no selected family.
     return string.Empty;
   }
 
@@ -8770,9 +8803,25 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      if (piece.Name == "LeftS3" || piece.Name == "RightS3")
+      if (piece.Name == "RightS3")
       {
         state.Enabled = false;
+        resolvedNormalWallByPiece[piece] = state;
+        continue;
+      }
+
+      if (piece.Name == "LeftS3")
+      {
+        bool leftS3Enabled =
+            HasViewport17FinalFamily(finalCommands, "LeftS3");
+        bool leftS3Mirror = GetSideWallMirrorFromPose();
+        ApplyViewport17NativeManualControls(
+            "LeftS3", ref leftS3Enabled, ref leftS3Mirror);
+        state.Enabled = leftS3Enabled;
+        state.X = 0;
+        state.Y = DisplayYToUnityY(
+            57, GetPieceHeightForEditorY(piece));
+        state.Mirror = leftS3Mirror;
         resolvedNormalWallByPiece[piece] = state;
         continue;
       }
@@ -11384,34 +11433,75 @@ public class ViewportLayoutEditor : EditorWindow
 
   private Texture2D GetRight2STexture()
   {
-    const string preferredRight2SAssetPath = "Assets/Art/Walls/Right2S.png";
-
     if (right2SSourceTexture == null)
     {
-      right2SSourceTexture =
-          AssetDatabase.LoadAssetAtPath<Texture2D>(preferredRight2SAssetPath);
+      // First use the actual RightS3 ViewEdit piece if it already has a real
+      // DungeonGraphicType assigned.  Older layout assets may still carry the
+      // source under RightS2 / Right2S naming.
+      ViewportPiece rightS3Piece = FindLayoutPieceByName("RightS3")
+          ?? FindLayoutPieceByName("RightS2")
+          ?? FindLayoutPieceByName("Right2S");
+      if (rightS3Piece != null
+          && rightS3Piece.Graphic != DungeonGraphicType.None
+          && graphics != null)
+      {
+        right2SSourceTexture = graphics.GetTexture(rightS3Piece.Graphic);
+      }
 
-      // Keep the normal fixed path fast, but also tolerate an asset rename or
-      // extension change.  The source must be the actual RIGHT S3 artwork.
+      // The right S3 source has existed under more than one filename during
+      // extraction/authoring.  Try the known spellings before doing a broader
+      // texture-name search.  This is preview-only and does not modify assets.
+      if (right2SSourceTexture == null)
+      {
+        string[] knownPaths =
+        {
+          "Assets/Art/Walls/Right2S.png",
+          "Assets/Art/Walls/Right 2S.png",
+          "Assets/Art/Walls/RightS2.png",
+          "Assets/Art/Walls/Right S2.png",
+          "Assets/Art/Walls/RightS3.png",
+          "Assets/Art/Walls/Right S3.png",
+          "Assets/Art/Walls/Right3S.png",
+          "Assets/Art/Walls/Right 3S.png"
+        };
+
+        for (int i = 0; i < knownPaths.Length; i++)
+        {
+          right2SSourceTexture =
+              AssetDatabase.LoadAssetAtPath<Texture2D>(knownPaths[i]);
+          if (right2SSourceTexture != null)
+            break;
+        }
+      }
+
       if (right2SSourceTexture == null)
       {
         string[] guids = AssetDatabase.FindAssets(
-            "Right2S t:Texture2D",
+            "t:Texture2D",
             new[] { "Assets/Art/Walls" });
         for (int i = 0; i < guids.Length; i++)
         {
           string candidatePath = AssetDatabase.GUIDToAssetPath(guids[i]);
           Texture2D candidate =
               AssetDatabase.LoadAssetAtPath<Texture2D>(candidatePath);
-          if (candidate != null
-              && string.Equals(
-                  candidate.name,
-                  "Right2S",
-                  System.StringComparison.OrdinalIgnoreCase))
-          {
-            right2SSourceTexture = candidate;
-            break;
-          }
+          if (candidate == null)
+            continue;
+
+          string normalizedName = (candidate.name ?? string.Empty)
+              .Replace(" ", string.Empty)
+              .Replace("_", string.Empty)
+              .Replace("-", string.Empty);
+
+          bool isRightS3Source =
+              string.Equals(normalizedName, "Right2S", System.StringComparison.OrdinalIgnoreCase)
+              || string.Equals(normalizedName, "RightS2", System.StringComparison.OrdinalIgnoreCase)
+              || string.Equals(normalizedName, "RightS3", System.StringComparison.OrdinalIgnoreCase)
+              || string.Equals(normalizedName, "Right3S", System.StringComparison.OrdinalIgnoreCase);
+          if (!isRightS3Source)
+            continue;
+
+          right2SSourceTexture = candidate;
+          break;
         }
       }
     }
@@ -11425,9 +11515,9 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedRight2SReadableCopy != null)
       return cachedRight2SReadableCopy;
 
-    // Preview blitting uses GetPixels32().  If Unity imported Right2S as
-    // non-readable, load a temporary CPU-readable copy from the exact asset
-    // path found above.  This does not modify the texture importer.
+    // Preview blitting uses GetPixels32().  If Unity imported the right S3
+    // source as non-readable, load a temporary CPU-readable copy from the
+    // exact asset path.  This does not modify the texture importer or asset.
     string assetPath = AssetDatabase.GetAssetPath(right2SSourceTexture);
     if (string.IsNullOrEmpty(assetPath))
       return null;
@@ -11443,7 +11533,7 @@ public class ViewportLayoutEditor : EditorWindow
     byte[] pngBytes = File.ReadAllBytes(absolutePath);
     Texture2D readableCopy =
         new Texture2D(2, 2, TextureFormat.RGBA32, false);
-    readableCopy.name = "Right2S_ReadablePreview";
+    readableCopy.name = "RightS3_ReadablePreview";
     readableCopy.filterMode = FilterMode.Point;
     readableCopy.wrapMode = TextureWrapMode.Clamp;
     readableCopy.hideFlags = HideFlags.HideAndDontSave;
