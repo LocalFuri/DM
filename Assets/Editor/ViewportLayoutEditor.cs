@@ -1421,7 +1421,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null)
       return false;
 
-    if (showWallsActivFilter)
+    if (showOnlyWallsNeededForCurrentPose && showWallsActivFilter)
     {
       // The Black Door F1 side-wall inspection cards default OFF, so the
       // normal "Activ" filter would hide them before they could be enabled.
@@ -6474,7 +6474,14 @@ public class ViewportLayoutEditor : EditorWindow
         // Inner corridor sides sit behind a nearer center wall. Outer D3
         // faces are drawn in the uncovered 32px side opening instead.
         if (!outerSide && nearestCenterFront < command.Depth)
-          continue;
+        {
+          bool d3CorridorSide =
+              command.Depth == 3
+              && !IsViewport17Solid(
+                  FindViewport17Cell(inspection.Cells, 0, 3));
+          if (!d3CorridorSide)
+            continue;
+        }
         if (!outerSide && IsViewport17OccludedInnerSide(inspection, command))
           continue;
         if (outerSide
@@ -6494,7 +6501,14 @@ public class ViewportLayoutEditor : EditorWindow
         if (nearestRightFront < command.Depth)
           continue;
         if (!outerSide && nearestCenterFront < command.Depth)
-          continue;
+        {
+          bool d3CorridorSide =
+              command.Depth == 3
+              && !IsViewport17Solid(
+                  FindViewport17Cell(inspection.Cells, 0, 3));
+          if (!d3CorridorSide)
+            continue;
+        }
         if (!outerSide && IsViewport17OccludedInnerSide(inspection, command))
           continue;
         if (outerSide
