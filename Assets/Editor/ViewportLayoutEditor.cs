@@ -186,6 +186,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D blackDoorF3SourceTexture;
   private Texture2D blackDoorF2SourceTexture;
   private Texture2D right2SSourceTexture;
+  [System.NonSerialized]
+  private Texture2D cachedRight2SReadableCopy;
 
   // Single source of truth for selection.
   private int selectedPieceIndex;
@@ -463,6 +465,12 @@ public class ViewportLayoutEditor : EditorWindow
     {
       DestroyImmediate(cachedNativeFrontF3ReadableCopy);
       cachedNativeFrontF3ReadableCopy = null;
+    }
+
+    if (cachedRight2SReadableCopy != null)
+    {
+      DestroyImmediate(cachedRight2SReadableCopy);
+      cachedRight2SReadableCopy = null;
     }
 
     RepaintGameViews();
@@ -10600,19 +10608,30 @@ public class ViewportLayoutEditor : EditorWindow
           }
         }
 
-        // LeftS3 / RightS3 must be handled before any generic front/side wall
-        // graphic path.  The opposite strip artwork is a source-image substitute
-        // only: X/Y always stay with the card being drawn, and Mirror=true
-        // must still flip the substituted source pixels.
+        // LeftS3 / RightS3 mirror semantics are handed-source mirroring:
+        // Mirror ON does NOT flip the card's own artwork. It takes the
+        // corresponding opposite-side source, mirrors that source horizontally,
+        // and keeps the destination X/Y of the card being edited.
         if (piece.Name == "LeftS3" || piece.Name == "RightS3")
         {
-          Texture2D wall2STexture = piece.Name == "LeftS3"
-              ? (mirror
-                  ? GetRight2STexture()
-                  : graphics.GetTexture(DungeonGraphicType.Left2S))
-              : (mirror
-                  ? graphics.GetTexture(DungeonGraphicType.Left2S)
-                  : GetRight2STexture());
+          bool useOppositeSideSource = mirror;
+          Texture2D wall2STexture;
+          bool flipSourceHorizontally;
+
+          if (piece.Name == "LeftS3")
+          {
+            wall2STexture = useOppositeSideSource
+                ? GetRight2STexture()
+                : graphics.GetTexture(DungeonGraphicType.Left2S);
+            flipSourceHorizontally = useOppositeSideSource;
+          }
+          else
+          {
+            wall2STexture = useOppositeSideSource
+                ? graphics.GetTexture(DungeonGraphicType.Left2S)
+                : GetRight2STexture();
+            flipSourceHorizontally = useOppositeSideSource;
+          }
 
           if (wall2STexture == null)
             continue;
@@ -10622,7 +10641,7 @@ public class ViewportLayoutEditor : EditorWindow
               wall2STexture,
               resolvedX,
               resolvedY,
-              mirror);
+              flipSourceHorizontally);
           LogIfOverlapsLeftF0(
               piece,
               piece.Graphic,
@@ -11356,14 +11375,48 @@ public class ViewportLayoutEditor : EditorWindow
 
   private Texture2D GetRight2STexture()
   {
+    const string right2SAssetPath = "Assets/Art/Walls/Right2S.png";
+
     if (right2SSourceTexture == null)
     {
       right2SSourceTexture =
-          AssetDatabase.LoadAssetAtPath<Texture2D>(
-              "Assets/Art/Walls/Right2S.png");
+          AssetDatabase.LoadAssetAtPath<Texture2D>(right2SAssetPath);
     }
 
-    return right2SSourceTexture;
+    // The preview blitter uses GetPixels32(), so the source must be readable.
+    // Keep the imported asset when it is readable; otherwise load a temporary
+    // readable copy from the same PNG. This lets LeftS3 Mirror ON reliably use
+    // mirrored Right2S pixels at LeftS3's unchanged destination X/Y.
+    if (right2SSourceTexture != null && right2SSourceTexture.isReadable)
+      return right2SSourceTexture;
+
+    if (cachedRight2SReadableCopy != null)
+      return cachedRight2SReadableCopy;
+
+    string projectRoot = Path.GetDirectoryName(Application.dataPath);
+    string absolutePath = string.IsNullOrEmpty(projectRoot)
+        ? right2SAssetPath
+        : Path.Combine(projectRoot, right2SAssetPath);
+
+    if (!File.Exists(absolutePath))
+      return null;
+
+    byte[] pngBytes = File.ReadAllBytes(absolutePath);
+    Texture2D readableCopy =
+        new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "Right2S_ReadablePreview";
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+
+    if (!readableCopy.LoadImage(pngBytes, false))
+    {
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    cachedRight2SReadableCopy = readableCopy;
+    return cachedRight2SReadableCopy;
   }
 
   private Texture2D GetBlackDoorFrameF3SourceTexture()
