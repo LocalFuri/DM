@@ -1037,6 +1037,12 @@ public class ViewportLayoutEditor : EditorWindow
     if (IsBlackDoorF1ManualSideWallCandidate(piece))
       return false;
 
+    // LeftS3 is a manual ViewEdit inspection card. Keep it reachable even
+    // when the current automatic V17/Needed state has the piece disabled, so
+    // Enabled and Mirror can be tested live for the stationary pose.
+    if (piece.Name == "LeftS3")
+      return false;
+
     if (showOnlyWallsNeededForCurrentPose
         && (IsWallEditorPiece(piece) || IsBlackDoorEditorPiece(piece)))
     {
@@ -1423,6 +1429,11 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (showOnlyWallsNeededForCurrentPose && showWallsActivFilter)
     {
+      // LeftS3 is intentionally kept available as a manual inspection card
+      // even while Activ is filtering out other disabled walls.
+      if (piece.Name == "LeftS3")
+        return true;
+
       // The Black Door F1 side-wall inspection cards default OFF, so the
       // normal "Activ" filter would hide them before they could be enabled.
       if (IsBlackDoorF1ManualSideWallCandidate(piece))
