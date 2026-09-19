@@ -10291,6 +10291,10 @@ public class ViewportLayoutEditor : EditorWindow
         if (IsNormalWallPiece(piece))
           piece = orderedNormalWalls[nextNormalWall++];
 
+        // DIAGNOSTIC: Champion Status Slot 4 is drawn once after composition.
+        if (piece != null && piece.Name == "Champion Status Slot 4")
+          continue;
+
         if (previewDisableAllWalls
             && piece != null
             && !IsDisableWallsKeeper(piece)
@@ -11193,6 +11197,28 @@ public class ViewportLayoutEditor : EditorWindow
           previewY,
           previewFacing
       );
+    }
+
+    // DIAGNOSTIC: blit Champion Status Slot 4 last so it sits on top of
+    // dungeon/walls and the right-HUD magenta restore. Slots 1–3 stay in
+    // the normal pass.
+    ViewportPiece championStatusSlot4 =
+        FindLayoutPieceByName("Champion Status Slot 4");
+    if (championStatusSlot4 != null && graphics != null)
+    {
+      Texture2D slot4Texture = graphics.GetTexture(
+          championStatusSlot4.Graphic != DungeonGraphicType.None
+              ? championStatusSlot4.Graphic
+              : DungeonGraphicType.ChampionStatusBackground);
+      if (slot4Texture != null)
+      {
+        BlitPieceIntoPreview(
+            pixels,
+            slot4Texture,
+            championStatusSlot4.EffectiveX,
+            championStatusSlot4.EffectiveY,
+            championStatusSlot4.MirrorHorizontally);
+      }
     }
 
     editModePreviewTexture.SetPixels32(pixels);
