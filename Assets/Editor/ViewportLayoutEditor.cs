@@ -7889,6 +7889,36 @@ public class ViewportLayoutEditor : EditorWindow
     return 141;
   }
 
+  private bool TryGetFrontF3PreviewEnabledOverride(out bool value)
+  {
+    foreach (KeyValuePair<ViewportPiece, bool> entry in previewEnabledOverrideByPiece)
+    {
+      if (entry.Key == null || !IsFrontWallF3Card(entry.Key))
+        continue;
+
+      value = entry.Value;
+      return true;
+    }
+
+    value = false;
+    return false;
+  }
+
+  private bool TryGetFrontF3PreviewMirrorOverride(out bool value)
+  {
+    foreach (KeyValuePair<ViewportPiece, bool> entry in previewMirrorOverrideByPiece)
+    {
+      if (entry.Key == null || !IsFrontWallF3Card(entry.Key))
+        continue;
+
+      value = entry.Value;
+      return true;
+    }
+
+    value = false;
+    return false;
+  }
+
   private bool TryGetFrontF3PreviewWidthOverride(out int width)
   {
     foreach (KeyValuePair<ViewportPiece, int> entry in previewFrontF3WidthOverrideByPiece)
@@ -8704,7 +8734,14 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (IsFrontWallF3Card(piece))
       {
-        mirror = GetSideWallMirrorFromPose();
+        if (previewMirrorOverrideByPiece.TryGetValue(
+                piece, out bool frontF3MirrorOverride))
+          mirror = frontF3MirrorOverride;
+        else
+          mirror = GetSideWallMirrorFromPose();
+        if (previewEnabledOverrideByPiece.TryGetValue(
+                piece, out bool frontF3EnabledOverride))
+          enabled = frontF3EnabledOverride;
       }
 
       // FrontF1 mirror is pose-parity driven and must flip when moving one
@@ -9107,7 +9144,6 @@ public class ViewportLayoutEditor : EditorWindow
       {
         bool d3LeftEdgeFrontGutter =
             IsViewport17D3LeftEdgeFrontGutter(inspection);
-        state.Enabled = d3FrontSourceEnabled;
         state.Graphic = DungeonGraphicType.FrontWallF3;
         state.X = d3LeftEdgeFrontGutter
             ? 0
@@ -9115,9 +9151,20 @@ public class ViewportLayoutEditor : EditorWindow
                 ? 77
                 : (d3FrontLeft ? 0 : (d3FrontRight ? 192 : 77)));
         state.Y = DisplayYToUnityY(58, 49);
-        state.Mirror = d3FrontMirror;
         if (d3LeftEdgeFrontGutter)
           state.FrontF3Width = NativeD3LeftF3DestX;
+        // Stationary ViewEdit Enabled/Mirror tests own these two fields.
+        // Geometry still supplies the default when no override exists.
+        if (previewEnabledOverrideByPiece.TryGetValue(
+                piece, out bool manualFrontF3Enabled))
+          state.Enabled = manualFrontF3Enabled;
+        else
+          state.Enabled = d3FrontSourceEnabled;
+        if (previewMirrorOverrideByPiece.TryGetValue(
+                piece, out bool manualFrontF3Mirror))
+          state.Mirror = manualFrontF3Mirror;
+        else
+          state.Mirror = d3FrontMirror;
         resolvedNormalWallByPiece[piece] = state;
         piece.Graphic = DungeonGraphicType.FrontWallF3;
         continue;
@@ -12327,6 +12374,13 @@ public class ViewportLayoutEditor : EditorWindow
 
     ApplyViewport17NativeManualControls(
         "FrontF3", ref sourceEnabled, ref centerMirror);
+
+    // FrontF3 card scan wins over family lookup so a stationary ViewEdit
+    // Enabled/Mirror click cannot be missed by V17 geometry rebuilds.
+    if (TryGetFrontF3PreviewEnabledOverride(out bool manualEnabled))
+      sourceEnabled = manualEnabled;
+    if (TryGetFrontF3PreviewMirrorOverride(out bool manualMirror))
+      centerMirror = manualMirror;
 
     if (!sourceEnabled)
     {
