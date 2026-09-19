@@ -11141,6 +11141,19 @@ public class ViewportLayoutEditor : EditorWindow
     BlitViewport17D3LeftCalibrationCandidate(pixels);
     BlitViewport17D3RightCalibrationCandidate(pixels);
 
+    // DIAGNOSTIC COMPOSITION STEP:
+    // After all dungeon/wall drawing, restore the entire right-side UI
+    // column to solid magenta. The framebuffer is 320x200 and the dungeon
+    // viewport owns X=0..223, so X=224..319 (96 px) is reserved for the HUD.
+    // This deliberately does not clip or alter any wall draw path; it simply
+    // paints the UI column last so we can verify the composition order.
+    for (int y = 0; y < PreviewHeight; y++)
+    {
+      int row = y * PreviewWidth;
+      for (int x = 224; x < PreviewWidth; x++)
+        pixels[row + x] = magenta;
+    }
+
     DungeonBitmapFont bitmapFont = FindEditModeBitmapFont();
     if (bitmapFont != null)
     {
