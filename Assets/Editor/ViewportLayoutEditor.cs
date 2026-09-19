@@ -1003,6 +1003,21 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
+  /// ViewEdit-only access to LeftF3 while manually matching (6,1) West.
+  /// This does not change V17 selection, drawing, or any stored Enabled state;
+  /// it only keeps the card reachable so its temporary Enabled/Mirror overrides
+  /// can be tested live at this stationary pose.
+  /// </summary>
+  private bool IsLeftF3ManualInspectionPose(ViewportPiece piece)
+  {
+    return !Application.isPlaying
+        && previewX == 6
+        && previewY == 1
+        && previewFacing == DungeonFacing.West
+        && IsWallF3LeftPiece(piece);
+  }
+
+  /// <summary>
   /// Muted investigation pieces stay in the layout asset but are not listed.
   /// Disabled pieces for the current pose are also omitted from ViewEdit.
   /// </summary>
@@ -1056,6 +1071,12 @@ public class ViewportLayoutEditor : EditorWindow
           Application.isPlaying
           ? piece.Enabled
           : IsWallNeededForCurrentPose(piece);
+
+      // (6,1) West: keep LeftF3 visible as a manual inspection card even
+      // when geometry resolves it OFF. The existing temporary override path
+      // below still owns Enabled/Mirror, so moving/turning clears the test.
+      if (IsLeftF3ManualInspectionPose(piece))
+        wallIsActive = true;
 
       // A ViewEdit Enabled click must keep the card listed so the user can
       // toggle it back on. Geometry still owns the automatic default.
@@ -1433,6 +1454,12 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (showOnlyWallsNeededForCurrentPose && showWallsActivFilter)
     {
+      // (6,1) West LeftF3 is a ViewEdit inspection card only. Keep it
+      // reachable even when V17 currently resolves it OFF, so Enabled and
+      // Mirror can be tested live without changing the geometry rule.
+      if (IsLeftF3ManualInspectionPose(piece))
+        return true;
+
       // LeftS3 is intentionally kept available as a manual inspection card
       // even while Activ is filtering out other disabled walls.
       if (piece.Name == "LeftS3")
