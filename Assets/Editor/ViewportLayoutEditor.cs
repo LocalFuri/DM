@@ -131,6 +131,10 @@ public class ViewportLayoutEditor : EditorWindow
   // window mirrored into destination X=192..223. It remains a candidate until
   // visually verified against an original-game D3 RIGHT case.
   private const bool Viewport17D3RightCandidateMirror = true;
+  // Native DOS LeftF3 destination X. The dest-X gutter to the left of this
+  // (X=0 .. NativeD3LeftF3DestX-1) is the visible FrontF3 sliver when an
+  // open left corridor meets a full D3 L+C+R plane behind a nearer center.
+  private const int NativeD3LeftF3DestX = 7;
   private string pieceSearchText = string.Empty;
   private bool openSearchPiecesPopup;
   private bool focusSearchPieces;
@@ -307,6 +311,7 @@ public class ViewportLayoutEditor : EditorWindow
     public bool Mirror;
     public int FrontF1Width;
     public int FrontF2Width;
+    public int FrontF3Width;
   }
 
   private static string lastLoggedF0DrawDiagnosticKey;
@@ -1014,21 +1019,6 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// ViewEdit-only access to LeftF3 while manually matching (6,1) West.
-  /// This does not change V17 selection, drawing, or any stored Enabled state;
-  /// it only keeps the card reachable so its temporary Enabled/Mirror overrides
-  /// can be tested live at this stationary pose.
-  /// </summary>
-  private bool IsLeftF3ManualInspectionPose(ViewportPiece piece)
-  {
-    return !Application.isPlaying
-        && previewX == 6
-        && previewY == 1
-        && previewFacing == DungeonFacing.West
-        && IsWallF3LeftPiece(piece);
-  }
-
-  /// <summary>
   /// Muted investigation pieces stay in the layout asset but are not listed.
   /// Disabled pieces for the current pose are also omitted from ViewEdit.
   /// </summary>
@@ -1082,12 +1072,6 @@ public class ViewportLayoutEditor : EditorWindow
           Application.isPlaying
           ? piece.Enabled
           : IsWallNeededForCurrentPose(piece);
-
-      // (6,1) West: keep LeftF3 visible as a manual inspection card even
-      // when geometry resolves it OFF. The existing temporary override path
-      // below still owns Enabled/Mirror, so moving/turning clears the test.
-      if (IsLeftF3ManualInspectionPose(piece))
-        wallIsActive = true;
 
       // A ViewEdit Enabled click must keep the card listed so the user can
       // toggle it back on. Geometry still owns the automatic default.
@@ -1465,12 +1449,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (showOnlyWallsNeededForCurrentPose && showWallsActivFilter)
     {
-      // (6,1) West LeftF3 is a ViewEdit inspection card only. Keep it
-      // reachable even when V17 currently resolves it OFF, so Enabled and
-      // Mirror can be tested live without changing the geometry rule.
-      if (IsLeftF3ManualInspectionPose(piece))
-        return true;
-
       // LeftS3 is intentionally kept available as a manual inspection card
       // even while Activ is filtering out other disabled walls.
       if (piece.Name == "LeftS3")
@@ -2694,6 +2672,13 @@ public class ViewportLayoutEditor : EditorWindow
       {
         frontF3Width = Mathf.Clamp(
             previewFrontF3Width, 1, Mathf.Max(1, fullFrontF3Width));
+      }
+      else if (TryGetResolvedNormalWallState(
+                   piece, out ResolvedNormalWallState resolvedFrontF3Width)
+               && resolvedFrontF3Width.FrontF3Width > 0)
+      {
+        frontF3Width = Mathf.Clamp(
+            resolvedFrontF3Width.FrontF3Width, 1, Mathf.Max(1, fullFrontF3Width));
       }
 
       EditorGUILayout.BeginHorizontal();
@@ -5151,6 +5136,37 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
+  /// Open left corridor through D0/D1/D2 into a full D3 L+C+R front plane,
+  /// with a nearer center front already occupying D1 or D2. Original DM then
+  /// exposes only the dest-X gutter left of native LeftF3: FrontF3 at X=0
+  /// with visible width NativeD3LeftF3DestX, then LeftF3 at that X. LeftS3
+  /// is not a side-wall continuation of this front plane.
+  /// </summary>
+  private static bool IsViewport17D3LeftEdgeFrontGutter(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null)
+      return false;
+
+    if (!IsViewport17LaneOpenAt(inspection, -1, 0)
+        || !IsViewport17LaneOpenAt(inspection, -1, 1)
+        || !IsViewport17LaneOpenAt(inspection, -1, 2))
+    {
+      return false;
+    }
+
+    if (!IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
+        || !IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
+        || !IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3)))
+    {
+      return false;
+    }
+
+    return !IsViewport17LaneOpenAt(inspection, 0, 1)
+        || !IsViewport17LaneOpenAt(inspection, 0, 2);
+  }
+
+  /// <summary>
   /// Inner LeftF/RightF faces that nearer geometry already hides.
   ///
   /// A spanning D3 inner third beside an open D2 side and a surviving D3
@@ -5860,7 +5876,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     // LeftS3 is the narrow far-left D3 strip when the left lane is open
     // through D2 and D3 L is a wall. Skip it when D3 is a full L+C+R
-    // front plane: FrontF3 then owns dest X=0..31, not LeftS3.
+    // front plane: that left edge is FrontF3 (32px strip, or the native
+    // LeftF3 dest-X gutter when a nearer center is present), not LeftS3.
     bool d3FullFrontPlane =
         IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
@@ -9079,7 +9096,7 @@ public class ViewportLayoutEditor : EditorWindow
       if (IsWallF3LeftPiece(piece))
       {
         state.Enabled = d3LeftEnabled;
-        state.X = 7;
+        state.X = NativeD3LeftF3DestX;
         state.Y = DisplayYToUnityY(58, 49);
         state.Mirror = d3LeftMirror;
         resolvedNormalWallByPiece[piece] = state;
@@ -9088,13 +9105,19 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (IsFrontWallF3Card(piece))
       {
+        bool d3LeftEdgeFrontGutter =
+            IsViewport17D3LeftEdgeFrontGutter(inspection);
         state.Enabled = d3FrontSourceEnabled;
         state.Graphic = DungeonGraphicType.FrontWallF3;
-        state.X = d3FrontCenter
-            ? 77
-            : (d3FrontLeft ? 0 : (d3FrontRight ? 192 : 77));
+        state.X = d3LeftEdgeFrontGutter
+            ? 0
+            : (d3FrontCenter
+                ? 77
+                : (d3FrontLeft ? 0 : (d3FrontRight ? 192 : 77)));
         state.Y = DisplayYToUnityY(58, 49);
         state.Mirror = d3FrontMirror;
+        if (d3LeftEdgeFrontGutter)
+          state.FrontF3Width = NativeD3LeftF3DestX;
         resolvedNormalWallByPiece[piece] = state;
         piece.Graphic = DungeonGraphicType.FrontWallF3;
         continue;
@@ -12592,7 +12615,7 @@ public class ViewportLayoutEditor : EditorWindow
         && leftSource.width == 83
         && leftSource.height == nativeHeight)
     {
-      int leftX = 7;
+      int leftX = NativeD3LeftF3DestX;
       int leftY = destinationY;
       ApplyViewport17FamilyDestOverride("LeftF3", ref leftX, ref leftY);
       BlitPieceIntoPreview(
@@ -12612,7 +12635,9 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // A surviving D3 FRONT left/right lane without a center is a 32px edge
-    // strip, not a full LeftF3/RightF3 side wall. When the center is present,
+    // strip, not a full LeftF3/RightF3 side wall. The open-left / full-D3 /
+    // nearer-center occupancy is the dest-X gutter instead (leftmost
+    // NativeD3LeftF3DestX of the 141x49 FrontF3). When the center is present,
     // the 83px D3 side graphics already join the 70px center; drawing the
     // edge strips would leave a black gap between X=32 and the center at 77.
     Texture2D frontSource = GetReadableNativeFrontF3Texture();
@@ -12677,13 +12702,42 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
+    bool leftFrontGutter =
+        IsViewport17D3LeftEdgeFrontGutter(inspection) && frontLeft;
+    if (leftFrontGutter)
+    {
+      Texture2D fullFrontF3Source =
+          graphics.GetTexture(DungeonGraphicType.FrontWallF3);
+      if (fullFrontF3Source != null
+          && fullFrontF3Source.height == nativeHeight
+          && fullFrontF3Source.width == GetFrontF3FullSourceWidthForViewEdit()
+          && fullFrontF3Source.isReadable)
+      {
+        int drawWidth = NativeD3LeftF3DestX;
+        int sourceMinX = centerMirror
+            ? fullFrontF3Source.width - drawWidth
+            : 0;
+        int sourceMaxX = centerMirror
+            ? fullFrontF3Source.width - 1
+            : drawWidth - 1;
+        BlitViewport17SourceStripPreview(
+            pixels,
+            fullFrontF3Source,
+            sourceMinX,
+            sourceMaxX,
+            frontLeftX,
+            frontY,
+            centerMirror);
+      }
+    }
+
     if (frontSource != null
         && frontSource.width == 70
         && frontSource.height == nativeHeight)
     {
       const int stripWidth = 32;
       int sourceStart = frontSource.width - stripWidth;
-      if (frontLeft && !frontCenter)
+      if (frontLeft && !frontCenter && !leftFrontGutter)
       {
         BlitViewport17SourceStripPreview(
             pixels, frontSource, sourceStart, frontSource.width - 1,
