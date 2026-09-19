@@ -2682,6 +2682,44 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
+    // FrontF3 gets its own Width row so the control cannot be pushed off
+    // the compact X/Y row in a narrow ViewEdit window. This is a temporary
+    // live preview crop only; V17 geometry and the authored layout stay intact.
+    if (IsFrontWallF3Card(piece))
+    {
+      int fullFrontF3Width = GetFrontF3FullSourceWidthForViewEdit();
+      int frontF3Width = fullFrontF3Width;
+      if (previewFrontF3WidthOverrideByPiece.TryGetValue(
+              piece, out int previewFrontF3Width))
+      {
+        frontF3Width = Mathf.Clamp(
+            previewFrontF3Width, 1, Mathf.Max(1, fullFrontF3Width));
+      }
+
+      EditorGUILayout.BeginHorizontal();
+      int frontF3WidthBefore = frontF3Width;
+      bool frontF3WidthChanged = DrawIntStepperInline(
+          "Width",
+          ref frontF3Width,
+          snap,
+          false,
+          true);
+      EditorGUILayout.LabelField(
+          $"Full {fullFrontF3Width}",
+          GUILayout.Width(60f));
+      EditorGUILayout.EndHorizontal();
+
+      frontF3Width = Mathf.Clamp(
+          frontF3Width, 1, Mathf.Max(1, fullFrontF3Width));
+
+      if (frontF3WidthChanged && frontF3Width != frontF3WidthBefore)
+      {
+        previewFrontF3WidthOverrideByPiece[piece] = frontF3Width;
+        previewFrontF3WidthChangedThisFrame = true;
+        RefreshTemporaryNormalWallPreview();
+      }
+    }
+
     EditorGUILayout.BeginHorizontal();
 
     if (hasFrontF1Width)
@@ -2711,37 +2749,6 @@ public class ViewportLayoutEditor : EditorWindow
       GUILayout.Space(4f);
     }
 
-    if (IsFrontWallF3Card(piece))
-    {
-      int fullFrontF3Width = GetFrontF3FullSourceWidthForViewEdit();
-      int frontF3Width = fullFrontF3Width;
-      if (previewFrontF3WidthOverrideByPiece.TryGetValue(
-              piece, out int previewFrontF3Width))
-      {
-        frontF3Width = Mathf.Clamp(
-            previewFrontF3Width, 1, Mathf.Max(1, fullFrontF3Width));
-      }
-
-      EditorGUILayout.LabelField("Width", GUILayout.Width(38f));
-      int frontF3WidthBefore = frontF3Width;
-      bool frontF3WidthChanged = DrawIntStepperInline(
-          string.Empty,
-          ref frontF3Width,
-          snap,
-          false,
-          true);
-      frontF3Width = Mathf.Clamp(
-          frontF3Width, 1, Mathf.Max(1, fullFrontF3Width));
-
-      if (frontF3WidthChanged && frontF3Width != frontF3WidthBefore)
-      {
-        previewFrontF3WidthOverrideByPiece[piece] = frontF3Width;
-        previewFrontF3WidthChangedThisFrame = true;
-        RefreshTemporaryNormalWallPreview();
-      }
-
-      GUILayout.Space(4f);
-    }
     float savedXyLabelWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
@@ -7859,15 +7866,9 @@ public class ViewportLayoutEditor : EditorWindow
 
   private int GetFrontF3FullSourceWidthForViewEdit()
   {
-    if (graphics != null)
-    {
-      Texture2D fullSource = graphics.GetTexture(DungeonGraphicType.FrontWallF3);
-      if (fullSource != null && fullSource.width > 0)
-        return fullSource.width;
-    }
-
-    // Original full FrontF3 artwork is 141x49. Keep ViewEdit useful while
-    // assets are temporarily unavailable during an editor reload.
+    // The authored/original FrontF3 artwork is 141x49. ViewEdit Width is
+    // intentionally expressed against that full source width, independent of
+    // the 70x49 native center texture used by the normal V17 compositor.
     return 141;
   }
 
