@@ -7950,17 +7950,28 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// LeftD3 / RightD3 orientation from viewing direction. Outer D3 uses the
-  /// FrontF1 brick phase (even X+Y+facing = mirrored), not the F0/F1 side-wall
-  /// phase. WallD3R2 is already the right-hand bitmap, so RightD3 uses the
-  /// same phase as LeftD3. A one-tile step or 90-degree turn flips both.
+  /// FrontF1 brick phase (even X+Y+facing = mirrored) unless a nearer left
+  /// F1 side wall is present. In that case RightD3 is the matching far-right
+  /// side face and uses the F0/F1 side-wall phase so the visible brick run
+  /// matches LeftF1. WallD3R2 is already the right-hand bitmap. LeftD3 stays
+  /// on FrontF1 phase. A one-tile step or 90-degree turn still flips both.
   /// No map coordinate is stored.
   /// </summary>
   private bool GetViewport17D3OuterMirror(bool rightOuter)
   {
-    // WallD3L2 / WallD3R2 are already handed sources. Both outer D3 faces
-    // share the FrontF1 brick phase; rightOuter does not invert it.
-    bool leftPhase = GetFrontF1MirrorFromPose();
-    return leftPhase;
+    // WallD3L2 / WallD3R2 are already handed sources. Default both outer D3
+    // faces to the FrontF1 brick phase.
+    bool frontPhase = GetFrontF1MirrorFromPose();
+    if (!rightOuter)
+      return frontPhase;
+
+    // D1-left solid means LeftF1 is the near-left side graphic. RightD3 must
+    // share that side-wall phase (the complement of FrontF1). An open D1-left
+    // keeps the FrontF1 phase, which is the verified (5,2) South case.
+    if (IsViewport17Solid(SampleViewport17Cell(-1, 1)))
+      return GetSideWallMirrorFromPose();
+
+    return frontPhase;
   }
 
   private static bool IsLeftD3Piece(ViewportPiece piece)
