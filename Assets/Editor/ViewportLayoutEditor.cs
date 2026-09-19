@@ -1038,17 +1038,13 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
     }
 
-    // At the Black Door F1 inspection pose the dedicated door renderer owns
-    // the default view, so the normal D1 side walls are intentionally OFF.
-    // Keep LeftF1/RightF1 visible in ViewEdit anyway so they can be manually
-    // enabled/mirrored for comparison without changing the automatic recipe.
-    if (IsBlackDoorF1ManualSideWallCandidate(piece))
-      return false;
-
-    // LeftS3 is a manual ViewEdit inspection card. Keep it reachable even
-    // when the current automatic V17/Needed state has the piece disabled, so
-    // Enabled and Mirror can be tested live for the stationary pose.
-    if (piece.Name == "LeftS3")
+    // Manual inspection cards may remain reachable only while the user is in
+    // Show All Walls mode on the current pose. In the normal geometry-filtered
+    // mode (including immediately after any pose change), disabled walls must
+    // not leak into the ViewEdit list.
+    if (!showOnlyWallsNeededForCurrentPose
+        && (IsBlackDoorF1ManualSideWallCandidate(piece)
+            || piece.Name == "LeftS3"))
       return false;
 
     if (showOnlyWallsNeededForCurrentPose
@@ -5734,9 +5730,18 @@ public class ViewportLayoutEditor : EditorWindow
             pieceFamily = "LeftF2";
           else if (depth == 3)
           {
-            bool outerD3 = surface.LocalX <= -2;
-            pieceFamily = outerD3 ? "LeftD3" : "LeftF3";
-            projection = outerD3 ? "OUTER D3" : "INNER D3";
+            // LeftF3 is the inner-left D3 third only. A right-lane join
+            // can emit LeftSide with LocalX >= 0; that is not LeftF3.
+            if (surface.LocalX <= -2)
+            {
+              pieceFamily = "LeftD3";
+              projection = "OUTER D3";
+            }
+            else if (surface.LocalX == -1)
+            {
+              pieceFamily = "LeftF3";
+              projection = "INNER D3";
+            }
           }
         }
         else if (surface.Type == Viewport17SurfaceType.RightSide)
@@ -5747,9 +5752,18 @@ public class ViewportLayoutEditor : EditorWindow
             pieceFamily = "RightF2";
           else if (depth == 3)
           {
-            bool outerD3 = surface.LocalX >= 2;
-            pieceFamily = outerD3 ? "RightD3" : "RightF3";
-            projection = outerD3 ? "OUTER D3" : "INNER D3";
+            // RightF3 is the inner-right D3 third only. A left-lane join
+            // can emit RightSide with LocalX <= 0; that is not RightF3.
+            if (surface.LocalX >= 2)
+            {
+              pieceFamily = "RightD3";
+              projection = "OUTER D3";
+            }
+            else if (surface.LocalX == 1)
+            {
+              pieceFamily = "RightF3";
+              projection = "INNER D3";
+            }
           }
         }
 
@@ -7375,8 +7389,10 @@ public class ViewportLayoutEditor : EditorWindow
     previewY = newY;
     previewFacing = newFacing;
 
-    // Preserve the user's Needed/Show-All list mode across navigation.
-    // This is UI-only; V17 remains the automatic rendering authority.
+    // A pose change always returns ViewEdit to the geometry-filtered list.
+    // "Show all walls" is a temporary inspection mode for the pose where the
+    // user enabled it; it must never carry into a different X/Y/Facing.
+    showOnlyWallsNeededForCurrentPose = true;
     showWallsActivFilter = false;
     pieceSearchFamilyIndex = 0;
     pieceSearchText = string.Empty;
@@ -7431,8 +7447,10 @@ public class ViewportLayoutEditor : EditorWindow
     previewY = newY;
     previewFacing = newFacing;
 
-    // Preserve the user's Needed/Show-All list mode across navigation.
-    // This is UI-only; V17 remains the automatic rendering authority.
+    // A pose change always returns ViewEdit to the geometry-filtered list.
+    // "Show all walls" is a temporary inspection mode for the pose where the
+    // user enabled it; it must never carry into a different X/Y/Facing.
+    showOnlyWallsNeededForCurrentPose = true;
     showWallsActivFilter = false;
     pieceSearchFamilyIndex = 0;
     pieceSearchText = string.Empty;
