@@ -6383,10 +6383,14 @@ public class ViewportLayoutEditor : EditorWindow
         || command.PieceFamily == "RightF1"
         || command.PieceFamily == "LeftF2"
         || command.PieceFamily == "RightF2"
-        || command.PieceFamily == "LeftF3"
         || command.PieceFamily == "RightF3";
 
-    if (ordinarySideFamily)
+    if (command.PieceFamily == "LeftF3")
+    {
+      command.HasMirror = true;
+      command.Mirror = GetViewport17LeftF3Mirror();
+    }
+    else if (ordinarySideFamily)
     {
       command.HasMirror = true;
       command.Mirror = GetSideWallMirrorFromPose();
@@ -8080,6 +8084,24 @@ public class ViewportLayoutEditor : EditorWindow
     return parity == 0;
   }
 
+  /// <summary>
+  /// LeftF3 on a full D3 L+C+R front plane is the left third of that front
+  /// wall, so it uses the FrontF1 brick phase. A partial D3 front keeps
+  /// LeftF3 on the F0/F1 side-wall phase.
+  /// </summary>
+  private bool GetViewport17LeftF3Mirror()
+  {
+    bool d3FullFrontPlane =
+        IsViewport17Solid(SampleViewport17Cell(-1, 3))
+        && IsViewport17Solid(SampleViewport17Cell(0, 3))
+        && IsViewport17Solid(SampleViewport17Cell(1, 3));
+
+    if (d3FullFrontPlane)
+      return GetFrontF1MirrorFromPose();
+
+    return GetSideWallMirrorFromPose();
+  }
+
   private static string BuildFrontF1GeometryKey(RelativeViewportGeometry g)
   {
     return (IsViewEditGeometryWall(g.F0Left) ? "W" : "O")
@@ -8858,8 +8880,8 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyViewport17NativeManualControls(
         "RightF2", ref d2RightEnabled, ref d2RightMirror);
 
-    bool d3LeftMirror = GetSideWallMirrorFromPose();
-    bool d3RightMirror = d3LeftMirror;
+    bool d3LeftMirror = GetViewport17LeftF3Mirror();
+    bool d3RightMirror = GetSideWallMirrorFromPose();
     bool d3FrontMirror = GetViewport17FrontF3DefaultMirror(
         d3FrontLeft, d3FrontCenter, d3FrontRight);
     ApplyViewport17NativeManualControls(
@@ -12464,7 +12486,7 @@ public class ViewportLayoutEditor : EditorWindow
         finalCommands, 3, out bool frontLeft, out bool frontCenter, out bool frontRight);
     bool leftEnabled = HasViewport17FinalFamily(finalCommands, "LeftF3");
     bool rightEnabled = HasViewport17FinalFamily(finalCommands, "RightF3");
-    bool leftMirror = defaultMirror;
+    bool leftMirror = GetViewport17LeftF3Mirror();
     bool centerMirror = GetViewport17FrontF3DefaultMirror(
         frontLeft, frontCenter, frontRight);
     bool rightMirror = defaultMirror;
