@@ -5782,10 +5782,14 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // LeftS3 is the narrow far-left D3 strip when the left lane is open
-    // through D2 and D3 L is a wall. D3 C may be an open corridor or a
-    // solid front; LeftF3 starts at X=7 in both cases, so dest 0..6 still
-    // needs this strip.
-    if (IsViewport17LaneOpenAt(inspection, -1, 0)
+    // through D2 and D3 L is a wall. Skip it when D3 is a full L+C+R
+    // front plane: FrontF3 then owns dest X=0..31, not LeftS3.
+    bool d3FullFrontPlane =
+        IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3));
+    if (!d3FullFrontPlane
+        && IsViewport17LaneOpenAt(inspection, -1, 0)
         && IsViewport17LaneOpenAt(inspection, -1, 1)
         && IsViewport17LaneOpenAt(inspection, -1, 2)
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3)))
@@ -6453,9 +6457,10 @@ public class ViewportLayoutEditor : EditorWindow
   //     center remains LeftF3/RightF3; opposite-lane openness does not hide it.
   //
   // A front composite may therefore survive with a smaller mask.
-  // D3 L/R occupancy is the spanning third of that front plane. When the
-  // D3 center is hidden by a nearer center front, those thirds remain as
-  // LeftF3/RightF3, not as leftover FrontF3 edge strips.
+  // Partial D3 L/R occupancy beside a hidden D3 center is LeftF3/RightF3,
+  // not leftover FrontF3 edge strips. A FULL D3 L+C+R front plane still
+  // owns its visible 32px L/R FrontF3 strips when that lane is open
+  // through nearer depths (nearest same-lane front is still D3).
   // No map coordinate or pose exception is used here.
   // -------------------------------------------------------------------------
   private static bool IsViewport17OuterSideCommand(
@@ -6519,10 +6524,14 @@ public class ViewportLayoutEditor : EditorWindow
         bool keepRight = command.FrontRight
             && command.Depth == nearestRightFront;
 
-        // A D3 spanning third beside a nearer center front is LeftF3/RightF3.
-        // Keeping leftover FrontF3 L/R occupancy would blit the 32px edge
-        // strips on top of those independent side-wall candidates.
-        if (command.Depth == 3 && !keepCenter)
+        // Partial D3 L/R beside a hidden D3 center is LeftF3/RightF3.
+        // A full D3 L+C+R front keeps its 32px L/R FrontF3 strips when
+        // that lane is still the nearest front (open through D1/D2).
+        bool fullD3Front = command.Depth == 3
+            && command.FrontLeft
+            && command.FrontCenter
+            && command.FrontRight;
+        if (command.Depth == 3 && !keepCenter && !fullD3Front)
         {
           keepLeft = false;
           keepRight = false;
