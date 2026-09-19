@@ -1987,7 +1987,7 @@ public class ViewportLayoutEditor : EditorWindow
     ("Wall F3Right", null, null),
 
     // LeftD3
-    ("LeftD3", 0, 54),
+    ("LeftD3", 0, 58),
     ("Wall D3L2", null, null),
 
     // RightD3
@@ -8446,7 +8446,9 @@ public class ViewportLayoutEditor : EditorWindow
         // tile shifts the piece 8 px left so the strip disappears.
         enabled = leftD3ObliqueOpening;
         x = HasLeftD3LeadingStripActiveTile() ? 0 : -8;
-        y = piece.EffectiveY;
+        y = DisplayYToUnityY(
+            58,
+            GetPieceHeightForEditorY(piece));
         mirror = GetViewport17D3OuterMirror(false);
       }
       else if (piece.Name == "RightD3"
@@ -8457,7 +8459,9 @@ public class ViewportLayoutEditor : EditorWindow
         // the existing RightD3 path; this rule decides only whether it is needed.
         enabled = rightD3ObliqueOpening;
         x = piece.EffectiveX;
-        y = piece.EffectiveY;
+        y = DisplayYToUnityY(
+            58,
+            GetPieceHeightForEditorY(piece));
         mirror = GetViewport17D3OuterMirror(true);
       }
       else
@@ -8516,14 +8520,18 @@ public class ViewportLayoutEditor : EditorWindow
             rightD3RefY, GetPieceHeightForEditorY(piece));
       }
 
-      // LeftD3 X is geometry-driven from the outer-left active/black map tile and
-      // stays authoritative even if an older saved position disagrees.
+      // LeftD3 X is geometry-driven from the outer-left active/black map tile.
+      // D3 Y is canonical and always 58 in top-down display space, regardless
+      // of older saved or geometry-specific position overrides.
       if ((piece.Name == "LeftD3"
               || piece.Name == "Wall D3L2"
               || piece.Graphic == DungeonGraphicType.WallD3L2)
           && enabled)
       {
         x = HasLeftD3LeadingStripActiveTile() ? 0 : -8;
+        y = DisplayYToUnityY(
+            58,
+            GetPieceHeightForEditorY(piece));
       }
 
       if (normalWallMirrorGeometryOverrides.TryGetValue(
