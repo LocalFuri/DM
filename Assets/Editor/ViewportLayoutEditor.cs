@@ -5098,6 +5098,12 @@ public class ViewportLayoutEditor : EditorWindow
     if (!nearerOpen)
       return false;
 
+    if (!IsViewport17LaneOpenAt(inspection, 0, 1)
+        || !IsViewport17LaneOpenAt(inspection, 0, 2))
+    {
+      return false;
+    }
+
     Viewport17Cell centerCell = FindViewport17Cell(inspection.Cells, 0, 3);
     return IsViewport17Solid(centerCell)
         && IsViewport17LaneOpenAt(inspection, -localX, 3);
@@ -6524,11 +6530,7 @@ public class ViewportLayoutEditor : EditorWindow
         // faces are drawn in the uncovered 32px side opening instead.
         if (!outerSide && nearestCenterFront < command.Depth)
         {
-          bool d3CorridorSide =
-              command.Depth == 3
-              && !IsViewport17Solid(
-                  FindViewport17Cell(inspection.Cells, 0, 3));
-          if (!d3CorridorSide)
+          if (command.Depth != 3)
             continue;
         }
         if (!outerSide && IsViewport17OccludedInnerSide(inspection, command))
@@ -6551,11 +6553,7 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         if (!outerSide && nearestCenterFront < command.Depth)
         {
-          bool d3CorridorSide =
-              command.Depth == 3
-              && !IsViewport17Solid(
-                  FindViewport17Cell(inspection.Cells, 0, 3));
-          if (!d3CorridorSide)
+          if (command.Depth != 3)
             continue;
         }
         if (!outerSide && IsViewport17OccludedInnerSide(inspection, command))
