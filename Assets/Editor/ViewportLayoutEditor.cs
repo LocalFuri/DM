@@ -246,6 +246,13 @@ public class ViewportLayoutEditor : EditorWindow
   private readonly Dictionary<ViewportPiece, int> previewFrontF1WidthOverrideByPiece =
       new Dictionary<ViewportPiece, int>();
 
+  // ViewEdit-only FrontF3 width override. FrontF3 is normally rendered by the
+  // V17 D3 lane compositor, so this is deliberately a temporary inspection
+  // control: touching Width draws exactly that many pixels from the full
+  // FrontF3 source at the live FrontF3 destination for the stationary pose.
+  private readonly Dictionary<ViewportPiece, int> previewFrontF3WidthOverrideByPiece =
+      new Dictionary<ViewportPiece, int>();
+
   private struct FrontF1GeometryOverride
   {
     public int X;
@@ -286,6 +293,7 @@ public class ViewportLayoutEditor : EditorWindow
           new Dictionary<ViewportPiece, DungeonGraphicType>();
   private bool previewMirrorChangedThisFrame;
   private bool previewFrontF1WidthChangedThisFrame;
+  private bool previewFrontF3WidthChangedThisFrame;
   private bool previewPositionChangedThisFrame;
   private bool previewEnabledChangedThisFrame;
   private bool previewGraphicChangedThisFrame;
@@ -645,6 +653,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewPositionOverrideByPiece.Clear();
     previewMirrorOverrideByPiece.Clear();
     previewFrontF1WidthOverrideByPiece.Clear();
+    previewFrontF3WidthOverrideByPiece.Clear();
     previewGraphicOverrideByPiece.Clear();
 
     // Keep the visually verified Black Door F1 layout authoritative.
@@ -965,12 +974,14 @@ public class ViewportLayoutEditor : EditorWindow
       if ((editorChanged || changed)
           && !previewMirrorChangedThisFrame
           && !previewFrontF1WidthChangedThisFrame
+          && !previewFrontF3WidthChangedThisFrame
           && !previewPositionChangedThisFrame
           && !previewEnabledChangedThisFrame
           && !previewGraphicChangedThisFrame)
         PersistChanges();
       previewMirrorChangedThisFrame = false;
       previewFrontF1WidthChangedThisFrame = false;
+      previewFrontF3WidthChangedThisFrame = false;
       previewPositionChangedThisFrame = false;
       previewEnabledChangedThisFrame = false;
       previewGraphicChangedThisFrame = false;
@@ -2694,6 +2705,38 @@ public class ViewportLayoutEditor : EditorWindow
       {
         previewFrontF1WidthOverrideByPiece[piece] = widthSelected;
         previewFrontF1WidthChangedThisFrame = true;
+        RefreshTemporaryNormalWallPreview();
+      }
+
+      GUILayout.Space(4f);
+    }
+
+    if (IsFrontWallF3Card(piece))
+    {
+      int fullFrontF3Width = GetFrontF3FullSourceWidthForViewEdit();
+      int frontF3Width = fullFrontF3Width;
+      if (previewFrontF3WidthOverrideByPiece.TryGetValue(
+              piece, out int previewFrontF3Width))
+      {
+        frontF3Width = Mathf.Clamp(
+            previewFrontF3Width, 1, Mathf.Max(1, fullFrontF3Width));
+      }
+
+      EditorGUILayout.LabelField("Width", GUILayout.Width(38f));
+      int frontF3WidthBefore = frontF3Width;
+      bool frontF3WidthChanged = DrawIntStepperInline(
+          string.Empty,
+          ref frontF3Width,
+          snap,
+          false,
+          true);
+      frontF3Width = Mathf.Clamp(
+          frontF3Width, 1, Mathf.Max(1, fullFrontF3Width));
+
+      if (frontF3WidthChanged && frontF3Width != frontF3WidthBefore)
+      {
+        previewFrontF3WidthOverrideByPiece[piece] = frontF3Width;
+        previewFrontF3WidthChangedThisFrame = true;
         RefreshTemporaryNormalWallPreview();
       }
 
@@ -7420,6 +7463,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
     previewMirrorOverrideByPiece.Clear();
     previewFrontF1WidthOverrideByPiece.Clear();
+    previewFrontF3WidthOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
     previewGraphicOverrideByPiece.Clear();
@@ -7478,6 +7522,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
     previewMirrorOverrideByPiece.Clear();
     previewFrontF1WidthOverrideByPiece.Clear();
+    previewFrontF3WidthOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
     previewGraphicOverrideByPiece.Clear();
@@ -7805,6 +7850,35 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
 
       width = StraightF1WallLogic.NormalizeFrontWallF1Width(entry.Value);
+      return true;
+    }
+
+    width = 0;
+    return false;
+  }
+
+  private int GetFrontF3FullSourceWidthForViewEdit()
+  {
+    if (graphics != null)
+    {
+      Texture2D fullSource = graphics.GetTexture(DungeonGraphicType.FrontWallF3);
+      if (fullSource != null && fullSource.width > 0)
+        return fullSource.width;
+    }
+
+    // Original full FrontF3 artwork is 141x49. Keep ViewEdit useful while
+    // assets are temporarily unavailable during an editor reload.
+    return 141;
+  }
+
+  private bool TryGetFrontF3PreviewWidthOverride(out int width)
+  {
+    foreach (KeyValuePair<ViewportPiece, int> entry in previewFrontF3WidthOverrideByPiece)
+    {
+      if (entry.Key == null || !IsFrontWallF3Card(entry.Key))
+        continue;
+
+      width = Mathf.Max(1, entry.Value);
       return true;
     }
 
@@ -12554,6 +12628,52 @@ public class ViewportLayoutEditor : EditorWindow
         frontLeftX = frontOverrideX;
       else if (frontRight)
         frontRightX = frontOverrideX;
+    }
+
+    // Temporary ViewEdit FrontF3 Width inspection. This path is active only
+    // after the user edits the Width field; untouched poses keep the normal
+    // V17 native D3 compositor byte-for-byte. The width is a crop of the full
+    // FrontF3 source, not a scaled image. Mirror behaves as if the complete
+    // source were mirrored first and then its leftmost N destination pixels
+    // were kept.
+    if ((frontLeft || frontCenter || frontRight)
+        && TryGetFrontF3PreviewWidthOverride(out int frontF3PreviewWidth))
+    {
+      Texture2D fullFrontF3Source =
+          graphics.GetTexture(DungeonGraphicType.FrontWallF3);
+      if (fullFrontF3Source == null
+          || fullFrontF3Source.height != nativeHeight
+          || !fullFrontF3Source.isReadable)
+      {
+        fullFrontF3Source = frontSource;
+      }
+
+      if (fullFrontF3Source != null
+          && fullFrontF3Source.height == nativeHeight
+          && fullFrontF3Source.isReadable)
+      {
+        int drawWidth = Mathf.Clamp(
+            frontF3PreviewWidth, 1, fullFrontF3Source.width);
+        int sourceMinX = centerMirror
+            ? fullFrontF3Source.width - drawWidth
+            : 0;
+        int sourceMaxX = centerMirror
+            ? fullFrontF3Source.width - 1
+            : drawWidth - 1;
+        int destinationX = frontCenter
+            ? frontCenterX
+            : (frontLeft ? frontLeftX : frontRightX);
+
+        BlitViewport17SourceStripPreview(
+            pixels,
+            fullFrontF3Source,
+            sourceMinX,
+            sourceMaxX,
+            destinationX,
+            frontY,
+            centerMirror);
+        return;
+      }
     }
 
     if (frontSource != null
