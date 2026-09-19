@@ -11,10 +11,10 @@ namespace DM.Rendering
     private const int GlyphAdvance = 8;
 
     /// <summary>
-    /// Tight debug spacing: ~1px gap between typical ink widths.
+    /// Debug spacing matches the 8px glyph cell so letters do not overlap.
     /// Does not affect HALK / player-name draws (those pass their own advance).
     /// </summary>
-    public const int DebugGlyphAdvance = 5;
+    public const int DebugGlyphAdvance = 8;
 
     /// <summary>8px glyph height for top-down → framebuffer Y conversion.</summary>
     public const int DebugGlyphHeight = GlyphSize;
@@ -136,7 +136,7 @@ namespace DM.Rendering
     }
 
     /// <summary>
-    /// Compact debug line (POS / facing). Uses DebugGlyphAdvance, not name spacing.
+    /// Compact debug line (map position / facing). Uses DebugGlyphAdvance, not name spacing.
     /// </summary>
     public void DrawDebugText(
         Color32[] destination,
@@ -188,11 +188,10 @@ namespace DM.Rendering
           - DebugGlyphHeight;
 
       string text =
-          "POS "
-          + posX
+          posX
           + ","
           + posY
-          + " / "
+          + " "
           + facing;
 
       DrawDebugText(
