@@ -6439,8 +6439,10 @@ public class ViewportLayoutEditor : EditorWindow
   //     AND the distant front does not occupy the opposite inner lane. That
   //     face is the FRONT of the D3 side cell, not LeftF3/RightF3.
   //
-  // A front composite may therefore survive with a smaller mask. Example:
-  // D3 mask=LC plus a nearer D1 center wall -> final D3 mask=L.
+  // A front composite may therefore survive with a smaller mask.
+  // D3 L/R occupancy is the spanning third of that front plane. When the
+  // D3 center is hidden by a nearer center front, those thirds remain as
+  // LeftF3/RightF3, not as leftover FrontF3 edge strips.
   // No map coordinate or pose exception is used here.
   // -------------------------------------------------------------------------
   private static bool IsViewport17OuterSideCommand(
@@ -6503,6 +6505,15 @@ public class ViewportLayoutEditor : EditorWindow
             && command.Depth == nearestCenterFront;
         bool keepRight = command.FrontRight
             && command.Depth == nearestRightFront;
+
+        // A D3 spanning third beside a nearer center front is LeftF3/RightF3.
+        // Keeping leftover FrontF3 L/R occupancy would blit the 32px edge
+        // strips on top of those independent side-wall candidates.
+        if (command.Depth == 3 && !keepCenter)
+        {
+          keepLeft = false;
+          keepRight = false;
+        }
 
         if (!keepLeft && !keepCenter && !keepRight)
           continue;
