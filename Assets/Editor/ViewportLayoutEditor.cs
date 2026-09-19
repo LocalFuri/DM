@@ -5768,12 +5768,13 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // LeftS3 is the narrow far-left D3 strip when the left lane is open
-    // through D2 and D3 is a corridor wall (solid L beside open C).
+    // through D2 and D3 L is a wall. D3 C may be an open corridor or a
+    // solid front; LeftF3 starts at X=7 in both cases, so dest 0..6 still
+    // needs this strip.
     if (IsViewport17LaneOpenAt(inspection, -1, 0)
         && IsViewport17LaneOpenAt(inspection, -1, 1)
         && IsViewport17LaneOpenAt(inspection, -1, 2)
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
-        && !IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3)))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3)))
     {
       Viewport17Cell leftCell =
           FindViewport17Cell(inspection.Cells, -1, 3);
@@ -7932,13 +7933,16 @@ public class ViewportLayoutEditor : EditorWindow
   /// <summary>
   /// LeftD3 / RightD3 orientation from viewing direction. Outer D3 uses the
   /// FrontF1 brick phase (even X+Y+facing = mirrored), not the F0/F1 side-wall
-  /// phase. RightD3 is the opposite hand of the same source. A one-tile step
-  /// or 90-degree turn flips both. No map coordinate is stored.
+  /// phase. WallD3R2 is already the right-hand bitmap, so RightD3 uses the
+  /// same phase as LeftD3. A one-tile step or 90-degree turn flips both.
+  /// No map coordinate is stored.
   /// </summary>
   private bool GetViewport17D3OuterMirror(bool rightOuter)
   {
+    // WallD3L2 / WallD3R2 are already handed sources. Both outer D3 faces
+    // share the FrontF1 brick phase; rightOuter does not invert it.
     bool leftPhase = GetFrontF1MirrorFromPose();
-    return rightOuter ? !leftPhase : leftPhase;
+    return leftPhase;
   }
 
   private static bool IsLeftD3Piece(ViewportPiece piece)
