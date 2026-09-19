@@ -5080,10 +5080,9 @@ public class ViewportLayoutEditor : EditorWindow
   /// <summary>
   /// Inner LeftF/RightF faces that nearer geometry already hides.
   ///
-  /// A spanning D3 inner third is a visible join only when the same-side D2
-  /// wall continues into the front, or the distant front also occupies the
-  /// opposite inner lane. An alcove in front of a partial L/C or C/R wall is
-  /// a FRONT face, not LeftF3/RightF3.
+  /// A spanning D3 inner third beside an open D2 side and a surviving D3
+  /// center FrontF3 is LeftF3/RightF3. The opposite D3 inner lane being
+  /// open does not hide that third.
   /// </summary>
   private static bool IsViewport17OccludedInnerSide(
       Viewport17Inspection inspection,
@@ -5104,9 +5103,9 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    Viewport17Cell centerCell = FindViewport17Cell(inspection.Cells, 0, 3);
-    return IsViewport17Solid(centerCell)
-        && IsViewport17LaneOpenAt(inspection, -localX, 3);
+    // Open D2 beside a surviving D3 center is why the spanning third is
+    // visible as LeftF3/RightF3. Opposite-lane openness must not drop it.
+    return false;
   }
 
   /// <summary>
@@ -6435,9 +6434,8 @@ public class ViewportLayoutEditor : EditorWindow
   //     because that graphic already covers the 32px band;
   //   * a nearer front in a side lane hides farther same-side surfaces;
   //   * D0 inner faces (LeftF0/RightF0) do NOT hide F1/F2/F3 corridor sides;
-  //   * a spanning D3 inner third is hidden when D2 on that side is an alcove
-  //     AND the distant front does not occupy the opposite inner lane. That
-  //     face is the FRONT of the D3 side cell, not LeftF3/RightF3.
+  //   * a spanning D3 inner third beside an open D2 side and a surviving D3
+  //     center remains LeftF3/RightF3; opposite-lane openness does not hide it.
   //
   // A front composite may therefore survive with a smaller mask.
   // D3 L/R occupancy is the spanning third of that front plane. When the
