@@ -33,6 +33,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Champions/Champion_Mirror_Side_16x35.png";
   private const string ChampionMirrorSideDistantAssetPath =
       "Assets/Art/Champions/Mirror_Side_15x15.png";
+  private const string ChampionMirrorRightD2AssetPath =
+      "Assets/Art/Champions/Mirror_Right_10x23.png";
   private const string ChampionMirrorFrontAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Front_48x43.png";
 
@@ -64,6 +66,15 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ChampionMirrorD2FrontY = 106;
   private const int ChampionMirrorD2FrontWidth = 29;
   private const int ChampionMirrorD2FrontHeight = 27;
+
+  // Original DOS Champion side mirror at D2 on the screen-right wall.
+  // Measured from the original 320x200 (9,5) South ELIJA view:
+  // screen top-left approximately (148,67), visible size 10x23, therefore
+  // framebuffer bottom-left Y = 200 - 67 - 23 = 110.
+  private const int ChampionMirrorD2RightX = 148;
+  private const int ChampionMirrorD2RightY = 110;
+  private const int ChampionMirrorD2RightWidth = 10;
+  private const int ChampionMirrorD2RightHeight = 23;
 
   // Original DOS narrow Champion mirror visible in the right-hand D3 oblique
   // slot (e.g. 10,4 South). This is an exact 15x15 original-game cutout
@@ -309,6 +320,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedChampionMirrorSideDistantTexture;
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorFrontTexture;
+  [System.NonSerialized]
+  private Texture2D cachedChampionMirrorRightD2Texture;
   private readonly Dictionary<string, Texture2D> cachedChampionPortraitTextures =
       new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
 
@@ -11843,6 +11856,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitChampionMirrorD1FramesIntoPreview(pixels);
     BlitChampionMirrorD1FrontIntoPreview(pixels);
     BlitChampionMirrorD2FrontIntoPreview(pixels);
+    BlitChampionMirrorD2RightIntoPreview(pixels);
     BlitChampionMirrorD3RightIntoPreview(pixels);
 
     // DIAGNOSTIC COMPOSITION STEP:
@@ -13803,6 +13817,83 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  private void BlitChampionMirrorD2RightIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewChampionMirrors == null
+        || previewChampionMirrors.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D rightMirror = GetChampionMirrorRightD2Texture();
+    if (rightMirror == null || !rightMirror.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    // A D2 side mirror is visible only if the center sight line stays open
+    // through D1 and D2. The decorated wall tile is one lane to screen-right
+    // of the D2 center tile.
+    int d1CenterX = previewX + forwardX;
+    int d1CenterY = previewY + forwardY;
+    int d2CenterX = previewX + forwardX * 2;
+    int d2CenterY = previewY + forwardY * 2;
+    if (!previewMiniMap.IsInside(d1CenterX, d1CenterY)
+        || previewMiniMap.GetTile(d1CenterX, d1CenterY).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(d2CenterX, d2CenterY)
+        || previewMiniMap.GetTile(d2CenterX, d2CenterY).Type == DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    int mirrorX = d2CenterX + rightX;
+    int mirrorY = d2CenterY + rightY;
+    if (!previewMiniMap.IsInside(mirrorX, mirrorY))
+      return;
+
+    // A screen-right side wall faces inward toward the corridor, which is
+    // TurnLeft(viewFacing). This matches ELIJA's (8,7) East mirror when the
+    // party is at (9,5) facing South.
+    string rightWallSide = FacingName(TurnPreviewFacingLeft(previewFacing));
+
+    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    {
+      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
+        continue;
+
+      if (mirror.x != mirrorX
+          || mirror.y != mirrorY
+          || !string.Equals(
+              mirror.wall,
+              rightWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      // Exact original-game 10x23 cutout. No scaling and no additional
+      // mirroring: Mirror_Right_10x23.png already contains the correct
+      // right-side perspective pixels.
+      BlitPieceIntoPreview(
+          pixels,
+          rightMirror,
+          ChampionMirrorD2RightX,
+          ChampionMirrorD2RightY,
+          false);
+      return;
+    }
+  }
+
   private void DarkenChampionMirrorD2InteriorHighlights(
       Color32[] pixels,
       int destX,
@@ -14072,6 +14163,47 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonFacing.West => DungeonFacing.East,
       _ => facing
     };
+  }
+
+  private Texture2D GetChampionMirrorRightD2Texture()
+  {
+    if (cachedChampionMirrorRightD2Texture != null)
+      return cachedChampionMirrorRightD2Texture;
+
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        ChampionMirrorRightD2AssetPath);
+    if (texture != null && texture.width == 10 && texture.height == 23)
+    {
+      cachedChampionMirrorRightD2Texture = texture;
+      return texture;
+    }
+
+    // Filename-independent fallback for the exact 10x23 right-side mirror.
+    string[] guids = AssetDatabase.FindAssets(
+        "t:Texture2D",
+        new[] { ChampionArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 10 || candidate.height != 23)
+        continue;
+
+      if (path.IndexOf(
+              "mirror",
+              System.StringComparison.OrdinalIgnoreCase) < 0
+          || path.IndexOf(
+              "right",
+              System.StringComparison.OrdinalIgnoreCase) < 0)
+      {
+        continue;
+      }
+
+      cachedChampionMirrorRightD2Texture = candidate;
+      return candidate;
+    }
+
+    return null;
   }
 
   private Texture2D GetChampionMirrorSideDistantTexture()
