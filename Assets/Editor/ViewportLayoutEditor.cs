@@ -27,6 +27,18 @@ public class ViewportLayoutEditor : EditorWindow
   private const string HallOfChampionsMapPath =
       "Assets/Data/Maps/HallOfChampions.json";
 
+  private const string ChampionArtFolder =
+      "Assets/Art/Champions";
+  private const string ChampionMirrorSideAssetPath =
+      "Assets/Art/Champions/Champion_Mirror_Side_16x35.png";
+
+  // Original DOS Champion side-mirror placement for the D1 corridor walls.
+  // Screen-space original top-left Y=64 for a 35px source becomes framebuffer
+  // bottom-left Y=101 in the 320x200 Texture2D.
+  private const int ChampionMirrorD1LeftX = 41;
+  private const int ChampionMirrorD1RightX = 167;
+  private const int ChampionMirrorD1Y = 101;
+
   private const string DefaultViewportLayoutPath =
       "Assets/Dungeon Master/ViewportLayout.asset";
 
@@ -224,6 +236,27 @@ public class ViewportLayoutEditor : EditorWindow
   private string previewMiniMapLoadError;
   private Vector2 previewMiniMapScroll;
   private bool previewMiniMapMuted;
+
+  [System.Serializable]
+  private sealed class ChampionMirrorMapRoot
+  {
+    public ChampionMirrorPlacement[] championMirrors;
+  }
+
+  [System.Serializable]
+  private sealed class ChampionMirrorPlacement
+  {
+    public string champion;
+    public int x;
+    public int y;
+    public string wall;
+  }
+
+  private ChampionMirrorPlacement[] previewChampionMirrors =
+      new ChampionMirrorPlacement[0];
+  [System.NonSerialized]
+  private Texture2D cachedChampionMirrorSideTexture;
+
   private string deterministicWallDiagnosticText;
   private Rect geometryDiagnosticRect;
 
@@ -7777,11 +7810,20 @@ public class ViewportLayoutEditor : EditorWindow
     {
       string json = File.ReadAllText(HallOfChampionsMapPath);
       previewMiniMap = DungeonMap.LoadFromJsonText(json);
+
+      ChampionMirrorMapRoot mirrorRoot =
+          JsonUtility.FromJson<ChampionMirrorMapRoot>(json);
+      previewChampionMirrors =
+          mirrorRoot != null && mirrorRoot.championMirrors != null
+              ? mirrorRoot.championMirrors
+              : new ChampionMirrorPlacement[0];
+
       previewMiniMapLoadError = null;
     }
     catch (System.Exception ex)
     {
       previewMiniMap = null;
+      previewChampionMirrors = new ChampionMirrorPlacement[0];
       previewMiniMapLoadError = ex.Message;
     }
   }
@@ -11492,6 +11534,12 @@ public class ViewportLayoutEditor : EditorWindow
     BlitViewport17D3LeftCalibrationCandidate(pixels);
     BlitViewport17D3RightCalibrationCandidate(pixels);
 
+    // Champion wall decorations sit on top of the completed wall surface.
+    // Stage 1 intentionally draws only the original 16x35 side mirror at
+    // the verified D1 left/right slots. Portrait/front-mirror composition is
+    // added after these two side positions are verified in Unity.
+    BlitChampionMirrorD1FramesIntoPreview(pixels);
+
     // DIAGNOSTIC COMPOSITION STEP:
     // After all dungeon/wall drawing, restore the entire right-side UI
     // column to solid magenta. The framebuffer is 320x200 and the dungeon
@@ -13111,6 +13159,137 @@ public class ViewportLayoutEditor : EditorWindow
         command.BufferX,
         command.BufferY,
         command.Mirror);
+  }
+
+  private void BlitChampionMirrorD1FramesIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewChampionMirrors == null
+        || previewChampionMirrors.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D sideMirror = GetChampionMirrorSideTexture();
+    if (sideMirror == null || !sideMirror.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    // A nearer front wall occludes both D1 side faces.
+    int frontX = previewX + forwardX;
+    int frontY = previewY + forwardY;
+    if (!previewMiniMap.IsInside(frontX, frontY)
+        || previewMiniMap.GetTile(frontX, frontY).Type == DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    int leftTileX = frontX - rightX;
+    int leftTileY = frontY - rightY;
+    int rightTileX = frontX + rightX;
+    int rightTileY = frontY + rightY;
+
+    string leftWallSide = FacingName(TurnPreviewFacingRight(previewFacing));
+    string rightWallSide = FacingName(TurnPreviewFacingLeft(previewFacing));
+
+    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    {
+      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
+        continue;
+
+      if (mirror.x == leftTileX
+          && mirror.y == leftTileY
+          && string.Equals(
+              mirror.wall,
+              leftWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        BlitPieceIntoPreview(
+            pixels,
+            sideMirror,
+            ChampionMirrorD1LeftX,
+            ChampionMirrorD1Y,
+            false);
+        continue;
+      }
+
+      if (mirror.x == rightTileX
+          && mirror.y == rightTileY
+          && string.Equals(
+              mirror.wall,
+              rightWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        BlitPieceIntoPreview(
+            pixels,
+            sideMirror,
+            ChampionMirrorD1RightX,
+            ChampionMirrorD1Y,
+            true);
+      }
+    }
+  }
+
+  private Texture2D GetChampionMirrorSideTexture()
+  {
+    if (cachedChampionMirrorSideTexture != null)
+      return cachedChampionMirrorSideTexture;
+
+    Texture2D texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(ChampionMirrorSideAssetPath);
+    if (texture != null && texture.width == 16 && texture.height == 35)
+    {
+      cachedChampionMirrorSideTexture = texture;
+      return texture;
+    }
+
+    // Filename-independent fallback: the original GRAPHICS.DAT contains one
+    // 16x35 Champion side-mirror image. This lets the project keep a slightly
+    // different filename without changing renderer code.
+    string[] guids = AssetDatabase.FindAssets(
+        "t:Texture2D",
+        new[] { ChampionArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 16 || candidate.height != 35)
+        continue;
+
+      if (path.IndexOf(
+              "mirror",
+              System.StringComparison.OrdinalIgnoreCase) < 0)
+      {
+        continue;
+      }
+
+      cachedChampionMirrorSideTexture = candidate;
+      return candidate;
+    }
+
+    return null;
+  }
+
+  private static string FacingName(DungeonFacing facing)
+  {
+    return facing switch
+    {
+      DungeonFacing.North => "North",
+      DungeonFacing.East => "East",
+      DungeonFacing.South => "South",
+      DungeonFacing.West => "West",
+      _ => string.Empty
+    };
   }
 
   private static void BlitPieceIntoPreview(
