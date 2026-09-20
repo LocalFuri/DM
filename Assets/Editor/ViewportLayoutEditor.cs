@@ -33,7 +33,7 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Champions/Champion_Mirror_Side_16x35.png";
   private const string ChampionMirrorSideDistantAssetPath =
       "Assets/Art/Champions/Mirror_Side_15x15.png";
-  private const string ChampionMirrorRightD2AssetPath =
+  private const string ChampionMirrorSideD2AssetPath =
       "Assets/Art/Champions/Mirror_Side_10x23.png";
   private const string ChampionMirrorFrontAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Front_48x43.png";
@@ -80,12 +80,11 @@ public class ViewportLayoutEditor : EditorWindow
   // Measured from the original 320x200 (9,5) South ELIJA view:
   // screen top-left approximately (148,67), visible size 10x23, therefore
   // framebuffer bottom-left Y = 200 - 67 - 23 = 110.
-  // The matching screen-left D2 slot uses the same 10x23 asset flipped.
   private const int ChampionMirrorD2LeftX = 66;
   private const int ChampionMirrorD2RightX = 148;
-  private const int ChampionMirrorD2RightY = 110;
-  private const int ChampionMirrorD2RightWidth = 10;
-  private const int ChampionMirrorD2RightHeight = 23;
+  private const int ChampionMirrorD2SideY = 110;
+  private const int ChampionMirrorD2SideWidth = 10;
+  private const int ChampionMirrorD2SideHeight = 23;
 
   // Original DOS narrow Champion mirror visible in the right-hand D3 oblique
   // slot (e.g. 10,4 South). This is an exact 15x15 original-game cutout
@@ -330,9 +329,9 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorSideDistantTexture;
   [System.NonSerialized]
-  private Texture2D cachedChampionMirrorFrontTexture;
+  private Texture2D cachedChampionMirrorSideD2Texture;
   [System.NonSerialized]
-  private Texture2D cachedChampionMirrorRightD2Texture;
+  private Texture2D cachedChampionMirrorFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorFrontF3Texture;
   private readonly Dictionary<string, Texture2D> cachedChampionPortraitTextures =
@@ -5391,6 +5390,29 @@ public class ViewportLayoutEditor : EditorWindow
   /// at viewport X=0..6; LeftF3 then starts at X=7. LeftS3 is not a side-wall
   /// continuation of this front plane.
   /// </summary>
+  /// <summary>
+  /// Verified original-DM RightD3 sliver geometry (7,11 South class).
+  /// A D0 right inner wall is present, while the center and right corridor
+  /// stay open through D2. At D3 the center terminates but the right lane
+  /// remains open. The outer RightD3 face must survive behind RightF0 and is
+  /// shifted to X=186; RightF0 starts at X=191, naturally leaving 5 pixels
+  /// (X=186..190) visible. Geometry only: no map-coordinate exception.
+  /// </summary>
+  private static bool IsViewport17RightD3F0Sliver(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null)
+      return false;
+
+    return IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 0))
+        && IsViewport17LaneOpenAt(inspection, 0, 1)
+        && IsViewport17LaneOpenAt(inspection, 1, 1)
+        && IsViewport17LaneOpenAt(inspection, 0, 2)
+        && IsViewport17LaneOpenAt(inspection, 1, 2)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
+        && IsViewport17LaneOpenAt(inspection, 1, 3);
+  }
+
   private static bool IsViewport17D3LeftEdgeFrontGutter(
       Viewport17Inspection inspection)
   {
@@ -7065,6 +7087,10 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
+      bool rightD3F0Sliver =
+          command.PieceFamily == "RightD3"
+          && IsViewport17RightD3F0Sliver(inspection);
+
       if (leftSide)
       {
         if (nearestLeftFront < command.Depth)
@@ -7102,6 +7128,7 @@ public class ViewportLayoutEditor : EditorWindow
         if (!outerSide && IsViewport17OccludedInnerSide(inspection, command))
           continue;
         if (outerSide
+            && !rightD3F0Sliver
             && IsViewport17OuterSideHiddenByNearerInner(
                 inspection,
                 candidates,
@@ -9702,7 +9729,12 @@ public class ViewportLayoutEditor : EditorWindow
           && remainingFamily == "RightD3"
           && TryGetCanonicalReferenceXY("RightD3", out int rightD3X, out int rightD3Y))
       {
-        state.X = rightD3X;
+        // In the verified RightD3-behind-RightF0 geometry, shift the full
+        // RightD3 bitmap four pixels left. RightF0 begins at X=191 and is
+        // drawn later, so only X=186..190 remains visible (exactly 5 px).
+        state.X = IsViewport17RightD3F0Sliver(inspection)
+            ? 186
+            : rightD3X;
         state.Y = DisplayYToUnityY(
             rightD3Y, GetPieceHeightForEditorY(piece));
         if (!previewMirrorOverrideByPiece.ContainsKey(piece))
@@ -13834,9 +13866,11 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void BlitChampionMirrorD3FrontIntoPreview(Color32[] pixels)
   {
+    // Load HallOfChampions.json (including championMirrors), but do not make
+    // the F3 decoration depend on the minimap tile classifier.  The mirror
+    // placement entry is the authoritative wall-decoration record.
     EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null
-        || previewChampionMirrors == null
+    if (previewChampionMirrors == null
         || previewChampionMirrors.Length == 0)
     {
       return;
@@ -13851,54 +13885,29 @@ public class ViewportLayoutEditor : EditorWindow
         out int forwardX,
         out int forwardY);
 
-    // D3 is visible only through open D1 and D2 center tiles.
-    int d1X = previewX + forwardX;
-    int d1Y = previewY + forwardY;
-    if (!previewMiniMap.IsInside(d1X, d1Y)
-        || previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall)
-    {
-      return;
-    }
-
-    int d2X = previewX + forwardX * 2;
-    int d2Y = previewY + forwardY * 2;
-    if (!previewMiniMap.IsInside(d2X, d2Y)
-        || previewMiniMap.GetTile(d2X, d2Y).Type == DungeonTileType.Wall)
-    {
-      return;
-    }
-
-    int d3X = previewX + forwardX * 3;
-    int d3Y = previewY + forwardY * 3;
-    if (!previewMiniMap.IsInside(d3X, d3Y)
-        || previewMiniMap.GetTile(d3X, d3Y).Type != DungeonTileType.Wall)
-    {
-      return;
-    }
-
-    string frontWallSide = FacingName(OppositePreviewFacing(previewFacing));
+    int expectedMirrorX = previewX + forwardX * 3;
+    int expectedMirrorY = previewY + forwardY * 3;
+    string expectedWallSide = FacingName(OppositePreviewFacing(previewFacing));
 
     for (int i = 0; i < previewChampionMirrors.Length; i++)
     {
       ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror == null
-          || string.IsNullOrEmpty(mirror.wall)
-          || string.IsNullOrEmpty(mirror.champion))
-      {
+      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
         continue;
-      }
 
-      if (mirror.x != d3X
-          || mirror.y != d3Y
+      // Generic F3-front test: the stored Champion-mirror wall is exactly
+      // three map cells in the viewing direction and faces back at the party.
+      // Example: 9,7 South -> SYRA mirror at 9,10 North.
+      if (mirror.x != expectedMirrorX
+          || mirror.y != expectedMirrorY
           || !string.Equals(
               mirror.wall,
-              frontWallSide,
+              expectedWallSide,
               System.StringComparison.OrdinalIgnoreCase))
       {
         continue;
       }
 
-      // Exact original-game 20x19 F3 front cutout. No scaling and no portrait.
       BlitPieceIntoPreview(
           pixels,
           frontMirror,
@@ -13919,7 +13928,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    Texture2D sideMirror = GetChampionMirrorRightD2Texture();
+    Texture2D sideMirror = GetChampionMirrorSideD2Texture();
     if (sideMirror == null || !sideMirror.isReadable)
       return;
 
@@ -13932,9 +13941,6 @@ public class ViewportLayoutEditor : EditorWindow
         out int rightX,
         out int rightY);
 
-    // A D2 side mirror is visible only if the center sight line stays open
-    // through D1 and D2. The decorated wall tile is one lane to screen-left
-    // of the D2 center tile.
     int d1CenterX = previewX + forwardX;
     int d1CenterY = previewY + forwardY;
     int d2CenterX = previewX + forwardX * 2;
@@ -13952,9 +13958,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (!previewMiniMap.IsInside(mirrorX, mirrorY))
       return;
 
-    // A screen-left side wall faces inward toward the corridor, which is
-    // TurnRight(viewFacing). This matches ELIJA's (8,7) East mirror when the
-    // party is at (9,9) facing North.
+    // Screen-left side walls face inward toward the corridor: TurnRight.
     string leftWallSide = FacingName(TurnPreviewFacingRight(previewFacing));
 
     for (int i = 0; i < previewChampionMirrors.Length; i++)
@@ -13973,12 +13977,12 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      // Same 10x23 side cutout as the right slot, flipped horizontally.
+      // Same exact 10x23 side asset as the right slot, mirrored horizontally.
       BlitPieceIntoPreview(
           pixels,
           sideMirror,
           ChampionMirrorD2LeftX,
-          ChampionMirrorD2RightY,
+          ChampionMirrorD2SideY,
           true);
       return;
     }
@@ -13994,7 +13998,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    Texture2D rightMirror = GetChampionMirrorRightD2Texture();
+    Texture2D rightMirror = GetChampionMirrorSideD2Texture();
     if (rightMirror == null || !rightMirror.isReadable)
       return;
 
@@ -14048,13 +14052,14 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      // Exact original-game 10x23 cutout. No scaling. Mirror_Side_10x23.png
-      // is the right-side perspective; draw it unflipped on the right.
+      // Exact original-game 10x23 cutout. No scaling and no additional
+      // mirroring: Mirror_Side_10x23.png contains the verified right-side crop
+      // right-side perspective pixels.
       BlitPieceIntoPreview(
           pixels,
           rightMirror,
           ChampionMirrorD2RightX,
-          ChampionMirrorD2RightY,
+          ChampionMirrorD2SideY,
           false);
       return;
     }
@@ -14199,6 +14204,42 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  private Texture2D GetChampionMirrorFrontF3Texture()
+  {
+    if (cachedChampionMirrorFrontF3Texture != null)
+      return cachedChampionMirrorFrontF3Texture;
+
+    Texture2D texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(ChampionMirrorFrontF3AssetPath);
+    if (texture != null && texture.width == 20 && texture.height == 19)
+    {
+      cachedChampionMirrorFrontF3Texture = texture;
+      return texture;
+    }
+
+    string[] guids = AssetDatabase.FindAssets(
+        "t:Texture2D",
+        new[] { ChampionArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 20 || candidate.height != 19)
+        continue;
+
+      if (path.IndexOf("mirror", System.StringComparison.OrdinalIgnoreCase) < 0
+          || path.IndexOf("frontf3", System.StringComparison.OrdinalIgnoreCase) < 0)
+      {
+        continue;
+      }
+
+      cachedChampionMirrorFrontF3Texture = candidate;
+      return candidate;
+    }
+
+    return null;
+  }
+
   private Texture2D GetChampionMirrorFrontTexture()
   {
     if (cachedChampionMirrorFrontTexture != null)
@@ -14331,57 +14372,16 @@ public class ViewportLayoutEditor : EditorWindow
     };
   }
 
-  private Texture2D GetChampionMirrorFrontF3Texture()
+  private Texture2D GetChampionMirrorSideD2Texture()
   {
-    if (cachedChampionMirrorFrontF3Texture != null)
-      return cachedChampionMirrorFrontF3Texture;
+    if (cachedChampionMirrorSideD2Texture != null)
+      return cachedChampionMirrorSideD2Texture;
 
     Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        ChampionMirrorFrontF3AssetPath);
-    if (texture != null && texture.width == 20 && texture.height == 19)
-    {
-      cachedChampionMirrorFrontF3Texture = texture;
-      return texture;
-    }
-
-    // Filename-independent fallback for the exact 20x19 F3 front mirror.
-    string[] guids = AssetDatabase.FindAssets(
-        "t:Texture2D",
-        new[] { ChampionArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 20 || candidate.height != 19)
-        continue;
-
-      if (path.IndexOf(
-              "mirror",
-              System.StringComparison.OrdinalIgnoreCase) < 0
-          || path.IndexOf(
-              "frontf3",
-              System.StringComparison.OrdinalIgnoreCase) < 0)
-      {
-        continue;
-      }
-
-      cachedChampionMirrorFrontF3Texture = candidate;
-      return candidate;
-    }
-
-    return null;
-  }
-
-  private Texture2D GetChampionMirrorRightD2Texture()
-  {
-    if (cachedChampionMirrorRightD2Texture != null)
-      return cachedChampionMirrorRightD2Texture;
-
-    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        ChampionMirrorRightD2AssetPath);
+        ChampionMirrorSideD2AssetPath);
     if (texture != null && texture.width == 10 && texture.height == 23)
     {
-      cachedChampionMirrorRightD2Texture = texture;
+      cachedChampionMirrorSideD2Texture = texture;
       return texture;
     }
 
@@ -14406,7 +14406,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      cachedChampionMirrorRightD2Texture = candidate;
+      cachedChampionMirrorSideD2Texture = candidate;
       return candidate;
     }
 
