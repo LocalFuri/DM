@@ -8905,35 +8905,6 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Temporary ViewEdit inspection at (6,1) West: disable LeftF3 so FrontF3
-  /// can be compared alone. Stored only in previewEnabledOverrideByPiece.
-  /// Pose/facing change already clears that dictionary. Not a V17 geometry rule.
-  /// </summary>
-  private void EnsureTemporary61WestFrontF3IsolationOverride()
-  {
-    if (Application.isPlaying)
-      return;
-    if (previewX != 6
-        || previewY != 1
-        || previewFacing != DungeonFacing.West)
-    {
-      return;
-    }
-
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null || !IsWallF3LeftPiece(piece))
-        continue;
-
-      previewEnabledOverrideByPiece[piece] = false;
-    }
-  }
-
-  /// <summary>
   /// When V17 Walls owns Game View, ViewEdit shows the same Enabled / X /
   /// Y / Width / Mirror that Compose actually blits. Stationary-pose ViewEdit
   /// Enabled / Mirror / X/Y tests are applied afterward and still win.
@@ -8946,8 +8917,6 @@ public class ViewportLayoutEditor : EditorWindow
     {
       return;
     }
-
-    EnsureTemporary61WestFrontF3IsolationOverride();
 
     Viewport17Inspection inspection = BuildViewport17Inspection();
     List<Viewport17RenderCommand> finalCommands =
@@ -12656,8 +12625,6 @@ public class ViewportLayoutEditor : EditorWindow
   {
     if (pixels == null || graphics == null || inspection.Cells == null)
       return;
-
-    EnsureTemporary61WestFrontF3IsolationOverride();
 
     Viewport17Cell leftCell =
         FindViewport17Cell(inspection.Cells, -1, 3);
