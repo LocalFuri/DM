@@ -11120,6 +11120,13 @@ public class ViewportLayoutEditor : EditorWindow
           drawGraphic = DungeonGraphicType.WallF3R;
         else if (IsWallF3RightPiece(piece) && mirror)
           drawGraphic = DungeonGraphicType.WallF3L;
+        // D3 uses the same handed-source mirror rule as every other left/right
+        // wall pair: Mirror ON selects the opposite-side bitmap and then
+        // horizontally mirrors it in place. Destination X/Y are unchanged.
+        else if (IsLeftD3Piece(piece) && mirror)
+          drawGraphic = DungeonGraphicType.WallD3R2;
+        else if (IsRightD3Piece(piece) && mirror)
+          drawGraphic = DungeonGraphicType.WallD3L2;
 
         Texture2D texture = graphics.GetTexture(drawGraphic);
 
