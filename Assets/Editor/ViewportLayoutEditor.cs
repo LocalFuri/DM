@@ -6514,6 +6514,28 @@ public class ViewportLayoutEditor : EditorWindow
           "canonical piece reference; display/buffer normalized";
     }
 
+    // Outer LeftD3 has two geometry-driven horizontal placements. When the
+    // leading D3 strip is visible it keeps the canonical X=0 placement. When
+    // that outer-left map tile is solid/non-active, the oblique bitmap is
+    // shifted 9 pixels left. This is the same distinction exposed in ViewEdit
+    // and keeps opening-at-D3 cases such as the verified 2,7 North geometry
+    // on their existing X=0 path.
+    if (command.PieceFamily == "LeftD3" && command.HasPieceMetrics)
+    {
+      int leftD3DisplayX = HasLeftD3LeadingStripActiveTile() ? 0 : -9;
+      int leftD3DisplayY = 58;
+      command.HasDisplayPlacement = true;
+      command.DisplayX = leftD3DisplayX;
+      command.DisplayY = leftD3DisplayY;
+      command.HasBufferPlacement = true;
+      command.BufferX = leftD3DisplayX;
+      command.BufferY = DisplayYToUnityY(
+          leftD3DisplayY,
+          command.PieceHeight);
+      command.ClipMode = "NONE";
+      command.SourceWindowMode = "FULL_SOURCE";
+    }
+
     bool ordinarySideFamily =
         command.PieceFamily == "LeftF0"
         || command.PieceFamily == "RightF0"
@@ -8182,21 +8204,26 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// LeftD3 / RightD3 orientation from viewing direction. Outer D3 uses the
-  /// FrontF1 brick phase (even X+Y+facing = mirrored) unless a nearer left
-  /// F1 side wall is present. In that case RightD3 is the matching far-right
-  /// side face and uses the F0/F1 side-wall phase so the visible brick run
-  /// matches LeftF1. WallD3R2 is already the right-hand bitmap. LeftD3 stays
-  /// on FrontF1 phase. A one-tile step or 90-degree turn still flips both.
-  /// No map coordinate is stored.
+  /// LeftD3 / RightD3 orientation from viewing direction. Outer D3 normally
+  /// uses the FrontF1 brick phase. For LeftD3, when the outer-left leading
+  /// strip is clipped away, the remaining visible face follows the side-wall
+  /// phase instead. This preserves the verified full-strip LeftD3 cases while
+  /// matching the clipped oblique-left geometry. RightD3 keeps its established
+  /// near-left-side rule. No map coordinate is stored.
   /// </summary>
   private bool GetViewport17D3OuterMirror(bool rightOuter)
   {
-    // WallD3L2 / WallD3R2 are already handed sources. Default both outer D3
-    // faces to the FrontF1 brick phase.
     bool frontPhase = GetFrontF1MirrorFromPose();
+
     if (!rightOuter)
+    {
+      // When the tiny leading LeftD3 strip is hidden outside the viewport,
+      // use the side-wall phase for the remaining visible oblique face.
+      if (!HasLeftD3LeadingStripActiveTile())
+        return GetSideWallMirrorFromPose();
+
       return frontPhase;
+    }
 
     // D1-left solid means LeftF1 is the near-left side graphic. RightD3 must
     // share that side-wall phase (the complement of FrontF1). An open D1-left
@@ -8705,9 +8732,9 @@ public class ViewportLayoutEditor : EditorWindow
         // Geometry-driven oblique left-side depth piece.
         // The first tiny leading strip is visible when the outer-left map tile
         // at 2-forward / 2-left is active/white. A black wall/non-existing
-        // tile shifts the piece 8 px left so the strip disappears.
+        // tile shifts the piece 9 px left so the strip disappears.
         enabled = leftD3ObliqueOpening;
-        x = HasLeftD3LeadingStripActiveTile() ? 0 : -8;
+        x = HasLeftD3LeadingStripActiveTile() ? 0 : -9;
         y = DisplayYToUnityY(
             58,
             GetPieceHeightForEditorY(piece));
@@ -8790,7 +8817,7 @@ public class ViewportLayoutEditor : EditorWindow
               || piece.Graphic == DungeonGraphicType.WallD3L2)
           && enabled)
       {
-        x = HasLeftD3LeadingStripActiveTile() ? 0 : -8;
+        x = HasLeftD3LeadingStripActiveTile() ? 0 : -9;
         y = DisplayYToUnityY(
             58,
             GetPieceHeightForEditorY(piece));
@@ -9301,12 +9328,13 @@ public class ViewportLayoutEditor : EditorWindow
           state.Mirror = GetSideWallMirrorFromPose();
       }
       if (state.Enabled
-          && remainingFamily == "LeftD3"
-          && TryGetCanonicalReferenceXY("LeftD3", out int leftD3X, out int leftD3Y))
+          && remainingFamily == "LeftD3")
       {
-        state.X = leftD3X;
+        // Match the actual V17 draw command: opening-at-D3 geometry keeps
+        // X=0, while the clipped oblique LeftD3 geometry uses X=-9.
+        state.X = HasLeftD3LeadingStripActiveTile() ? 0 : -9;
         state.Y = DisplayYToUnityY(
-            leftD3Y, GetPieceHeightForEditorY(piece));
+            58, GetPieceHeightForEditorY(piece));
         if (!previewMirrorOverrideByPiece.ContainsKey(piece))
           state.Mirror = GetViewport17D3OuterMirror(false);
       }
