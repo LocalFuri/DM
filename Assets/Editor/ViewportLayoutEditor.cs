@@ -169,6 +169,14 @@ public class ViewportLayoutEditor : EditorWindow
   private bool useViewport17WallAuthority = true;
   private bool viewport17D3LeftCalibrationPreview;
   private bool viewport17D3RightCalibrationPreview;
+
+  // Edit-mode Champion state calibration. The wall mirror remains present
+  // after a Champion has been resurrected/recruited; only the portrait is
+  // removed. This set lets ViewEdit verify that generic rendering rule now.
+  // When the gameplay party/recruitment state is wired into this renderer,
+  // IsPreviewChampionTaken() is the single hook to replace/extend.
+  private readonly HashSet<string> previewTakenChampionKeys =
+      new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
   // Legacy Stage 6P calibration constants. V17 production rendering no longer
   // uses the old 32px crop from the 141x49 FrontF3 composite.
   private const int Viewport17D3SideLockedSourceX = 64;
@@ -981,6 +989,33 @@ public class ViewportLayoutEditor : EditorWindow
 
       EditorGUILayout.EndHorizontal();
 
+      string currentFrontChampion;
+      if (TryGetCurrentD1FrontChampion(out currentFrontChampion))
+      {
+        string currentChampionKey = NormalizeChampionAssetKey(currentFrontChampion);
+        bool taken = previewTakenChampionKeys.Contains(currentChampionKey);
+
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Space(4f);
+        GUILayout.Label("Champion Mirror", EditorStyles.miniLabel, GUILayout.Width(96f));
+        bool newTaken = GUILayout.Toggle(
+            taken,
+            currentFrontChampion + " Taken",
+            EditorStyles.miniButton,
+            GUILayout.Width(130f));
+        if (newTaken != taken)
+        {
+          if (newTaken)
+            previewTakenChampionKeys.Add(currentChampionKey);
+          else
+            previewTakenChampionKeys.Remove(currentChampionKey);
+
+          RefreshEditModePreview();
+          RepaintGameViews();
+          Repaint();
+        }
+        EditorGUILayout.EndHorizontal();
+      }
 
       EditorGUILayout.BeginHorizontal();
       EditorGUILayout.PrefixLabel(
@@ -13551,6 +13586,65 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  private bool TryGetCurrentD1FrontChampion(out string championName)
+  {
+    championName = null;
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewChampionMirrors == null
+        || previewChampionMirrors.Length == 0)
+    {
+      return false;
+    }
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int frontX = previewX + forwardX;
+    int frontY = previewY + forwardY;
+    if (!previewMiniMap.IsInside(frontX, frontY)
+        || previewMiniMap.GetTile(frontX, frontY).Type != DungeonTileType.Wall)
+    {
+      return false;
+    }
+
+    string frontWallSide = FacingName(OppositePreviewFacing(previewFacing));
+    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    {
+      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror == null
+          || string.IsNullOrEmpty(mirror.wall)
+          || string.IsNullOrEmpty(mirror.champion))
+      {
+        continue;
+      }
+
+      if (mirror.x == frontX
+          && mirror.y == frontY
+          && string.Equals(
+              mirror.wall,
+              frontWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        championName = mirror.champion;
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private bool IsPreviewChampionTaken(string championName)
+  {
+    if (string.IsNullOrEmpty(championName))
+      return false;
+
+    string key = NormalizeChampionAssetKey(championName);
+    return previewTakenChampionKeys.Contains(key);
+  }
+
   private void BlitChampionMirrorD1FrontIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -13611,7 +13705,8 @@ public class ViewportLayoutEditor : EditorWindow
           false);
 
       Texture2D portrait = GetChampionPortraitTexture(mirror.champion);
-      if (portrait != null
+      if (!IsPreviewChampionTaken(mirror.champion)
+          && portrait != null
           && portrait.isReadable
           && portrait.width == 32
           && portrait.height == 29)
