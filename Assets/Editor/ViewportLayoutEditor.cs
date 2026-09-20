@@ -139,6 +139,12 @@ public class ViewportLayoutEditor : EditorWindow
   private const int NativeD3LeftF3DestX = 7;
   private const int NativeD3LeftFrontGutterWidth = NativeD3LeftF3DestX * 2;
   private const int NativeD3LeftFrontGutterX = -NativeD3LeftF3DestX;
+  // Verified 9,4-East-class right-edge gutter. RightF3 ends at X=216 and
+  // original DM exposes the first few pixels of the full 141px FrontF3
+  // source beyond it. Drawing the full source at X=216 (Mirror OFF) lets
+  // viewport clipping keep only X=216..223.
+  private const int NativeD3RightFrontGutterX = 216;
+  private const int NativeD3RightFrontGutterWidth = 141;
   private string pieceSearchText = string.Empty;
   private bool openSearchPiecesPopup;
   private bool focusSearchPieces;
@@ -5203,6 +5209,35 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
+  /// Open right corridor through D0/D1/D2 into a D3 right-lane wall while
+  /// the D3 center stays open and the outer-right D3 context is solid.
+  /// Original DM then exposes the tiny viewport-edge front face immediately
+  /// after RightF3. The verified recipe is the full 141px FrontF3 at X=216,
+  /// Y=58, Mirror OFF; viewport clipping leaves only the right-edge sliver.
+  /// This is the right-edge counterpart to the verified 6,1-West gutter, but
+  /// it intentionally uses the 9,4-East source/placement recipe.
+  /// </summary>
+  private static bool IsViewport17D3RightEdgeFrontGutter(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null)
+      return false;
+
+    if (!IsViewport17LaneOpenAt(inspection, 1, 0)
+        || !IsViewport17LaneOpenAt(inspection, 1, 1)
+        || !IsViewport17LaneOpenAt(inspection, 1, 2))
+    {
+      return false;
+    }
+
+    // The verified 9,4-East shape is a right-side termination, not a full
+    // D3 front plane: C remains open, R is solid, and RR is solid context.
+    return IsViewport17LaneOpenAt(inspection, 0, 3)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 2, 3));
+  }
+
+  /// <summary>
   /// Inner LeftF/RightF faces that nearer geometry already hides.
   ///
   /// A spanning D3 inner third beside an open D2 side and a surviving D3
@@ -9054,9 +9089,13 @@ public class ViewportLayoutEditor : EditorWindow
     // user-disableable like every other V17 wall draw.
     bool d3LeftEdgeFrontGutter =
         IsViewport17D3LeftEdgeFrontGutter(inspection);
+    bool d3RightEdgeFrontGutter =
+        IsViewport17D3RightEdgeFrontGutter(inspection);
     if (d3LeftEdgeFrontGutter)
         d3FrontLeft = true;
-    bool d3FrontMirror = d3LeftEdgeFrontGutter
+    if (d3RightEdgeFrontGutter)
+        d3FrontRight = true;
+    bool d3FrontMirror = (d3LeftEdgeFrontGutter || d3RightEdgeFrontGutter)
         ? false
         : GetViewport17FrontF3DefaultMirror(
             d3FrontLeft, d3FrontCenter, d3FrontRight);
@@ -9192,12 +9231,16 @@ public class ViewportLayoutEditor : EditorWindow
         state.Graphic = DungeonGraphicType.FrontWallF3;
         state.X = d3LeftEdgeFrontGutter
             ? NativeD3LeftFrontGutterX
-            : (d3FrontCenter
-                ? 77
-                : (d3FrontLeft ? 0 : (d3FrontRight ? 192 : 77)));
+            : (d3RightEdgeFrontGutter
+                ? NativeD3RightFrontGutterX
+                : (d3FrontCenter
+                    ? 77
+                    : (d3FrontLeft ? 0 : (d3FrontRight ? 192 : 77))));
         state.Y = DisplayYToUnityY(58, 49);
         if (d3LeftEdgeFrontGutter)
           state.FrontF3Width = NativeD3LeftFrontGutterWidth;
+        else if (d3RightEdgeFrontGutter)
+          state.FrontF3Width = NativeD3RightFrontGutterWidth;
         // Stationary ViewEdit Enabled/Mirror tests own these two fields.
         // Geometry still supplies the default when no override exists.
         if (previewEnabledOverrideByPiece.TryGetValue(
@@ -12704,9 +12747,13 @@ public class ViewportLayoutEditor : EditorWindow
     // seven-pixel FrontF3 sliver immediately left of LeftF3.
     bool automaticLeftFrontGutter =
         IsViewport17D3LeftEdgeFrontGutter(inspection);
+    bool automaticRightFrontGutter =
+        IsViewport17D3RightEdgeFrontGutter(inspection);
     if (automaticLeftFrontGutter)
         frontLeft = true;
-    bool centerMirror = automaticLeftFrontGutter
+    if (automaticRightFrontGutter)
+        frontRight = true;
+    bool centerMirror = (automaticLeftFrontGutter || automaticRightFrontGutter)
         ? false
         : GetViewport17FrontF3DefaultMirror(
             frontLeft, frontCenter, frontRight);
@@ -12765,9 +12812,10 @@ public class ViewportLayoutEditor : EditorWindow
     // the 83px D3 side graphics already join the 70px center; drawing the
     // edge strips would leave a black gap between X=32 and the center at 77.
     bool leftFrontGutter = automaticLeftFrontGutter && frontLeft;
+    bool rightFrontGutter = automaticRightFrontGutter && frontRight;
     Texture2D frontSource = GetReadableNativeFrontF3Texture();
     int frontLeftX = leftFrontGutter ? NativeD3LeftFrontGutterX : 0;
-    int frontRightX = 192;
+    int frontRightX = rightFrontGutter ? NativeD3RightFrontGutterX : 192;
     int frontCenterX = 77;
     int frontY = destinationY;
     if (TryGetViewport17FamilyPositionOverride("FrontF3", out int frontOverrideX, out int frontOverrideY))
@@ -12868,6 +12916,34 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
+    if (rightFrontGutter)
+    {
+      // Verified 9,4-East recipe: use the full authored 141x49 FrontF3 at
+      // X=216, Mirror OFF. The viewport clip keeps only the tiny right-edge
+      // sliver that continues immediately after RightF3. This is deliberately
+      // not RightS3: original-game comparison matches the FrontF3 source.
+      Texture2D rightGutterSource =
+          graphics.GetTexture(DungeonGraphicType.FrontWallF3);
+      if (rightGutterSource != null
+          && rightGutterSource.height == nativeHeight
+          && rightGutterSource.isReadable)
+      {
+        int drawWidth = Mathf.Min(
+            NativeD3RightFrontGutterWidth, rightGutterSource.width);
+        if (drawWidth > 0)
+        {
+          BlitViewport17SourceStripPreview(
+              pixels,
+              rightGutterSource,
+              0,
+              drawWidth - 1,
+              frontRightX,
+              frontY,
+              false);
+        }
+      }
+    }
+
     if (frontSource != null
         && frontSource.width == 70
         && frontSource.height == nativeHeight)
@@ -12880,7 +12956,7 @@ public class ViewportLayoutEditor : EditorWindow
             pixels, frontSource, sourceStart, frontSource.width - 1,
             frontLeftX, frontY, centerMirror);
       }
-      if (frontRight && !frontCenter)
+      if (frontRight && !frontCenter && !rightFrontGutter)
       {
         BlitViewport17SourceStripPreview(
             pixels, frontSource, sourceStart, frontSource.width - 1,
