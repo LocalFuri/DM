@@ -5249,6 +5249,25 @@ public class ViewportLayoutEditor : EditorWindow
     return !IsViewport17Solid(cell);
   }
 
+  private static bool IsViewport17LeftS3D2FrontEdge(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null)
+      return false;
+
+    // Verified at 10,5 East: the tiny far-left strip is LeftS3 even though
+    // the D3-left lane itself is open. It is the exposed left edge of a D2
+    // C+R front block seen through a completely open D1 span. This is a
+    // geometry class, not a pose exception.
+    return IsViewport17LaneOpenAt(inspection, -1, 0)
+        && IsViewport17LaneOpenAt(inspection, -1, 1)
+        && IsViewport17LaneOpenAt(inspection, 0, 1)
+        && IsViewport17LaneOpenAt(inspection, 1, 1)
+        && IsViewport17LaneOpenAt(inspection, -1, 2)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 2))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 2));
+  }
+
   /// <summary>
   /// Open left corridor through D0/D1/D2 into a full D3 L+C+R front plane,
   /// with a nearer center front already occupying D1 or D2. Original DM then
@@ -6018,36 +6037,44 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    // LeftS3 is the narrow far-left D3 strip when the left lane is open
-    // through D2 and D3 L is a wall. Skip it when D3 is a full L+C+R
-    // front plane: that left edge is FrontF3 (32px strip, or the native
-    // LeftF3 dest-X gutter when a nearer center is present), not LeftS3.
+    // LeftS3 has two verified geometry roles:
+    //   1) the narrow far-left D3 terminator strip (6,4 East class), and
+    //   2) the tiny exposed left edge of a D2 C+R front block behind a fully
+    //      open D1 span (10,5 East class).
+    // A full D3 L+C+R front plane still belongs to FrontF3/LeftF3, not LeftS3.
     bool d3FullFrontPlane =
         IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3));
-    if (!d3FullFrontPlane
+    bool leftS3D3Terminator =
+        !d3FullFrontPlane
         && IsViewport17LaneOpenAt(inspection, -1, 0)
         && IsViewport17LaneOpenAt(inspection, -1, 1)
         && IsViewport17LaneOpenAt(inspection, -1, 2)
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3)))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3));
+    bool leftS3D2FrontEdge = IsViewport17LeftS3D2FrontEdge(inspection);
+    if (leftS3D3Terminator || leftS3D2FrontEdge)
     {
-      Viewport17Cell leftCell =
-          FindViewport17Cell(inspection.Cells, -1, 3);
-      Viewport17Cell centerCell =
-          FindViewport17Cell(inspection.Cells, 0, 3);
+      Viewport17Cell primaryCell = leftS3D3Terminator
+          ? FindViewport17Cell(inspection.Cells, -1, 3)
+          : FindViewport17Cell(inspection.Cells, 0, 2);
+      Viewport17Cell adjacentCell = leftS3D3Terminator
+          ? FindViewport17Cell(inspection.Cells, 0, 3)
+          : FindViewport17Cell(inspection.Cells, -1, 2);
       Viewport17Surface leftS3Surface = new Viewport17Surface
       {
         Type = Viewport17SurfaceType.LeftSide,
         Depth = 3,
         LocalX = -1,
-        PrimaryCell = leftCell,
-        AdjacentCell = centerCell
+        PrimaryCell = primaryCell,
+        AdjacentCell = adjacentCell
       };
       Viewport17RenderCommand leftS3Command =
           CreateViewport17RenderCommand(
               "LeftS3",
-              "LEFT S3 STRIP",
+              leftS3D2FrontEdge
+                  ? "LEFT S3 D2 FRONT EDGE"
+                  : "LEFT S3 STRIP",
               "LEFT",
               leftS3Surface);
       leftS3Command.Sequence = commands.Count;
@@ -6818,6 +6845,17 @@ public class ViewportLayoutEditor : EditorWindow
       bool leftSide = command.SurfaceType == Viewport17SurfaceType.LeftSide;
       bool rightSide = command.SurfaceType == Viewport17SurfaceType.RightSide;
       bool outerSide = IsViewport17OuterSideCommand(command);
+
+      // The verified 10,5-East LeftS3 strip is the exposed edge of the D2
+      // C+R front block. A nearer center front at D2 is exactly what creates
+      // this sliver, so the normal inner-side occlusion rule must not remove it.
+      if (command.PieceFamily == "LeftS3"
+          && IsViewport17LeftS3D2FrontEdge(inspection))
+      {
+        command.Sequence = finalCommands.Count;
+        finalCommands.Add(command);
+        continue;
+      }
 
       if (leftSide)
       {
@@ -9242,9 +9280,13 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (piece.Name == "LeftS3")
       {
+        bool leftS3D2FrontEdge =
+            IsViewport17LeftS3D2FrontEdge(inspection);
         bool leftS3Enabled =
             HasViewport17FinalFamily(finalCommands, "LeftS3");
-        bool leftS3Mirror = GetSideWallMirrorFromPose();
+        bool leftS3Mirror = leftS3D2FrontEdge
+            ? false
+            : GetSideWallMirrorFromPose();
         ApplyViewport17NativeManualControls(
             "LeftS3", ref leftS3Enabled, ref leftS3Mirror);
         state.Enabled = leftS3Enabled;
