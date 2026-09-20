@@ -5394,9 +5394,9 @@ public class ViewportLayoutEditor : EditorWindow
   /// Verified original-DM RightD3 sliver geometry (7,11 South class).
   /// A D0 right inner wall is present, while the center and right corridor
   /// stay open through D2. At D3 the center terminates but the right lane
-  /// remains open. The outer RightD3 face must survive behind RightF0 and is
-  /// shifted to X=186; RightF0 starts at X=191, naturally leaving 5 pixels
-  /// (X=186..190) visible. Geometry only: no map-coordinate exception.
+  /// remains open. The outer RightD3 face must survive behind RightF0.
+  /// Manual original-DM calibration for this geometry is X=178, Y=58,
+  /// Mirror ON. Geometry only: no map-coordinate exception.
   /// </summary>
   private static bool IsViewport17RightD3F0Sliver(
       Viewport17Inspection inspection)
@@ -5518,6 +5518,31 @@ public class ViewportLayoutEditor : EditorWindow
         && IsWall(-1, 3)
         && IsWall(0, 3)
         && IsWall(1, 3);
+  }
+
+  /// <summary>
+  /// A D2 corridor side can remain visible through the 32px side opening of a
+  /// nearer D1 CENTER front wall. The side lane itself must still be open at
+  /// D1; the existing LeftF2/RightF2 command proves there is a D2 side face.
+  /// Verified original-DM example: (7,11) West keeps LeftF2 at X=0/Y=52
+  /// beside the nearer FrontF1 center. Geometry only; no pose exception.
+  /// </summary>
+  private static bool IsViewport17F2SideVisiblePastD1CenterFront(
+      Viewport17Inspection inspection,
+      Viewport17RenderCommand command)
+  {
+    if (inspection.Cells == null || command.Depth != 2)
+      return false;
+
+    bool leftF2 = command.PieceFamily == "LeftF2";
+    bool rightF2 = command.PieceFamily == "RightF2";
+    if (!leftF2 && !rightF2)
+      return false;
+
+    int sideLocalX = leftF2 ? -1 : 1;
+
+    return IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 1))
+        && IsViewport17LaneOpenAt(inspection, sideLocalX, 1);
   }
 
   /// <summary>
@@ -7099,7 +7124,9 @@ public class ViewportLayoutEditor : EditorWindow
         // faces are drawn in the uncovered 32px side opening instead.
         if (!outerSide && nearestCenterFront < command.Depth)
         {
-          if (command.Depth != 3)
+          bool f2VisiblePastD1Center =
+              IsViewport17F2SideVisiblePastD1CenterFront(inspection, command);
+          if (command.Depth != 3 && !f2VisiblePastD1Center)
             continue;
         }
         if (!outerSide && IsViewport17OccludedInnerSide(inspection, command))
@@ -7122,7 +7149,9 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         if (!outerSide && nearestCenterFront < command.Depth)
         {
-          if (command.Depth != 3)
+          bool f2VisiblePastD1Center =
+              IsViewport17F2SideVisiblePastD1CenterFront(inspection, command);
+          if (command.Depth != 3 && !f2VisiblePastD1Center)
             continue;
         }
         if (!outerSide && IsViewport17OccludedInnerSide(inspection, command))
@@ -9729,16 +9758,17 @@ public class ViewportLayoutEditor : EditorWindow
           && remainingFamily == "RightD3"
           && TryGetCanonicalReferenceXY("RightD3", out int rightD3X, out int rightD3Y))
       {
-        // In the verified RightD3-behind-RightF0 geometry, shift the full
-        // RightD3 bitmap four pixels left. RightF0 begins at X=191 and is
-        // drawn later, so only X=186..190 remains visible (exactly 5 px).
-        state.X = IsViewport17RightD3F0Sliver(inspection)
-            ? 186
-            : rightD3X;
+        // Verified original-DM calibration for the RightD3-behind-RightF0
+        // sliver geometry (7,11 South class): X=178, Y=58, Mirror ON.
+        // Keep this geometry-driven rather than pose-coordinate-specific.
+        bool rightD3F0Sliver = IsViewport17RightD3F0Sliver(inspection);
+        state.X = rightD3F0Sliver ? 178 : rightD3X;
         state.Y = DisplayYToUnityY(
             rightD3Y, GetPieceHeightForEditorY(piece));
         if (!previewMirrorOverrideByPiece.ContainsKey(piece))
-          state.Mirror = GetViewport17D3OuterMirror(true);
+          state.Mirror = rightD3F0Sliver
+              ? true
+              : GetViewport17D3OuterMirror(true);
       }
 
       resolvedNormalWallByPiece[piece] = state;
