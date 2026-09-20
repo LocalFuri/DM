@@ -191,6 +191,13 @@ public class ViewportLayoutEditor : EditorWindow
   // viewport clipping keep only X=216..223.
   private const int NativeD3RightFrontGutterX = 216;
   private const int NativeD3RightFrontGutterWidth = 141;
+
+  // Verified 10,5-West-class D3 right-front placement. The matching manual
+  // ViewEdit recipe uses the full authored FrontF3 source at X=185, Y=58,
+  // Mirror OFF. Keep the full 141px width; viewport clipping preserves only
+  // the visible part at the far-right edge exactly as in the verified view.
+  private const int NativeD3RightOpenSlitFrontX = 185;
+  private const int NativeD3RightOpenSlitFrontWidth = 141;
   private string pieceSearchText = string.Empty;
   private bool openSearchPiecesPopup;
   private bool focusSearchPieces;
@@ -2483,8 +2490,22 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       EditorGUIUtility.labelWidth = 0f;
-      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
-          GUIContent.none, piece.Graphic, GUILayout.Width(135f));
+      if (piece.Name == "RightS3")
+      {
+        // RightS3 uses its dedicated extracted source texture through
+        // GetRight2STexture().  There is no reliable DungeonGraphicType enum
+        // value for this source, so show the real source name instead of the
+        // misleading "None" enum popup.
+        EditorGUILayout.Popup(
+            0,
+            new[] { "Right S3" },
+            GUILayout.Width(135f));
+      }
+      else
+      {
+        piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
+            GUIContent.none, piece.Graphic, GUILayout.Width(135f));
+      }
 
       // Keep side-wall Enabled and Mirror on the same first row.
     }
@@ -2781,8 +2802,21 @@ public class ViewportLayoutEditor : EditorWindow
     {
       int fullFrontF3Width = GetFrontF3FullSourceWidthForViewEdit();
       int frontF3Width = fullFrontF3Width;
-      if (previewFrontF3WidthOverrideByPiece.TryGetValue(
-              piece, out int previewFrontF3Width))
+
+      // Verified 10,5-West-class automatic recipe is geometry-owned. Keep
+      // ViewEdit in lockstep with the full authored 141px FrontF3 width.
+      bool autoD3RightOpenSlitFront =
+          useViewport17WallAuthority && IsViewport17D3RightOpenSlitFront();
+      if (autoD3RightOpenSlitFront)
+      {
+        frontF3Width = Mathf.Clamp(
+            NativeD3RightOpenSlitFrontWidth,
+            1,
+            Mathf.Max(1, fullFrontF3Width));
+        previewFrontF3WidthOverrideByPiece[piece] = frontF3Width;
+      }
+      else if (previewFrontF3WidthOverrideByPiece.TryGetValue(
+                   piece, out int previewFrontF3Width))
       {
         frontF3Width = Mathf.Clamp(
             previewFrontF3Width, 1, Mathf.Max(1, fullFrontF3Width));
@@ -5268,6 +5302,26 @@ public class ViewportLayoutEditor : EditorWindow
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 2));
   }
 
+  private static bool IsViewport17RightS3D3FrontEdge(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null)
+      return false;
+
+    // Verified at 11,5 West: the tiny far-right strip is RightS3.  It is the
+    // exposed right edge of a D3 L+C front block while the right corridor lane
+    // remains open through D3.  D1-left may already be solid; that nearer left
+    // wall does not cover the far-right edge.  Geometry only, no pose exception.
+    return IsViewport17LaneOpenAt(inspection, 1, 0)
+        && IsViewport17LaneOpenAt(inspection, 1, 1)
+        && IsViewport17LaneOpenAt(inspection, 1, 2)
+        && IsViewport17LaneOpenAt(inspection, 1, 3)
+        && IsViewport17LaneOpenAt(inspection, 0, 1)
+        && IsViewport17LaneOpenAt(inspection, 0, 2)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3));
+  }
+
   /// <summary>
   /// Open left corridor through D0/D1/D2 into a full D3 L+C+R front plane,
   /// with a nearer center front already occupying D1 or D2. Original DM then
@@ -5327,6 +5381,60 @@ public class ViewportLayoutEditor : EditorWindow
     return IsViewport17LaneOpenAt(inspection, 0, 3)
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3))
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 2, 3));
+  }
+
+
+  /// <summary>
+  /// Verified 10,5-West-class right-front shape. D1 is open, D2 terminates
+  /// on L+C while the right lane remains open, and D3 is a full L+C+R front
+  /// plane. The verified manual FrontF3 placement is the full 141px source
+  /// at X=185, Y=58, Mirror OFF.
+  /// </summary>
+  private bool IsViewport17D3RightOpenSlitFront()
+  {
+    // Read the geometry directly from the minimap rather than relying on a
+    // previously built V17 inspection. This keeps the verified 10,5-West
+    // recipe authoritative in both Game View and ViewEdit after a script/domain
+    // reload, while remaining a coordinate-free geometry rule.
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return false;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    bool IsWall(int localX, int depth)
+    {
+      int mapX = previewX + forwardX * depth + rightX * localX;
+      int mapY = previewY + forwardY * depth + rightY * localX;
+      if (!previewMiniMap.IsInside(mapX, mapY))
+        return true;
+      return IsViewport17WallType(previewMiniMap.GetTile(mapX, mapY).Type);
+    }
+
+    bool IsOpen(int localX, int depth)
+    {
+      int mapX = previewX + forwardX * depth + rightX * localX;
+      int mapY = previewY + forwardY * depth + rightY * localX;
+      return previewMiniMap.IsInside(mapX, mapY)
+          && !IsViewport17WallType(previewMiniMap.GetTile(mapX, mapY).Type);
+    }
+
+    return IsOpen(-1, 1)
+        && IsOpen(0, 1)
+        && IsOpen(1, 1)
+        && IsWall(-1, 2)
+        && IsWall(0, 2)
+        && IsOpen(1, 2)
+        && IsWall(-1, 3)
+        && IsWall(0, 3)
+        && IsWall(1, 3);
   }
 
   /// <summary>
@@ -6079,6 +6187,34 @@ public class ViewportLayoutEditor : EditorWindow
               leftS3Surface);
       leftS3Command.Sequence = commands.Count;
       commands.Add(leftS3Command);
+    }
+
+    // RightS3 verified at 11,5 West: exposed far-right edge of a D3 L+C
+    // front block with the right lane still open.  This is the handed
+    // counterpart family and keeps its own X/Y/mirror controls in ViewEdit.
+    bool rightS3D3FrontEdge = IsViewport17RightS3D3FrontEdge(inspection);
+    if (rightS3D3FrontEdge)
+    {
+      Viewport17Cell primaryCell =
+          FindViewport17Cell(inspection.Cells, 0, 3);
+      Viewport17Cell adjacentCell =
+          FindViewport17Cell(inspection.Cells, 1, 3);
+      Viewport17Surface rightS3Surface = new Viewport17Surface
+      {
+        Type = Viewport17SurfaceType.RightSide,
+        Depth = 3,
+        LocalX = 1,
+        PrimaryCell = primaryCell,
+        AdjacentCell = adjacentCell
+      };
+      Viewport17RenderCommand rightS3Command =
+          CreateViewport17RenderCommand(
+              "RightS3",
+              "RIGHT S3 D3 FRONT EDGE",
+              "RIGHT",
+              rightS3Surface);
+      rightS3Command.Sequence = commands.Count;
+      commands.Add(rightS3Command);
     }
 
     // D0 inner faces are nearest and therefore appended last.
@@ -6857,6 +6993,17 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
+      // The verified 11,5-West RightS3 strip is the exposed edge of the D3
+      // L+C front block.  Preserve it before generic side occlusion removes
+      // the distant side command.
+      if (command.PieceFamily == "RightS3"
+          && IsViewport17RightS3D3FrontEdge(inspection))
+      {
+        command.Sequence = finalCommands.Count;
+        finalCommands.Add(command);
+        continue;
+      }
+
       if (leftSide)
       {
         if (nearestLeftFront < command.Depth)
@@ -6971,8 +7118,9 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece.Name == "LeftS3")
       return "LeftS3";
 
-    // RightS3 is still a special distance-3 strip family. Viewport-17 does not
-    // emit it, so it intentionally resolves to no selected family.
+    if (piece.Name == "RightS3")
+      return "RightS3";
+
     return string.Empty;
   }
 
@@ -8840,10 +8988,18 @@ public class ViewportLayoutEditor : EditorWindow
       }
       else if (piece.Name == "RightS3")
       {
+        // RightS3 is still manual-calibration only until its generic geometry
+        // rule is verified.  Give the card real S3-space defaults so X/Y can
+        // be tuned live in ViewEdit instead of showing the old placeholder
+        // X=0 / Y=199 values.
         enabled = false;
-        x = piece.EffectiveX;
-        y = piece.EffectiveY;
+        x = 216;
+        y = DisplayYToUnityY(
+            57,
+            GetPieceHeightForEditorY(piece));
         mirror = piece.MirrorHorizontally;
+        if (previewMirrorOverrideByPiece.TryGetValue(piece, out bool rightS3Mirror))
+          mirror = rightS3Mirror;
       }
       else if (piece.Name == "LeftD3"
           || piece.Name == "Wall D3L2"
@@ -9238,11 +9394,15 @@ public class ViewportLayoutEditor : EditorWindow
         IsViewport17D3LeftEdgeFrontGutter(inspection);
     bool d3RightEdgeFrontGutter =
         IsViewport17D3RightEdgeFrontGutter(inspection);
+    bool d3RightOpenSlitFront =
+        IsViewport17D3RightOpenSlitFront();
     if (d3LeftEdgeFrontGutter)
         d3FrontLeft = true;
-    if (d3RightEdgeFrontGutter)
+    if (d3RightEdgeFrontGutter || d3RightOpenSlitFront)
         d3FrontRight = true;
-    bool d3FrontMirror = (d3LeftEdgeFrontGutter || d3RightEdgeFrontGutter)
+    bool d3FrontMirror = (d3LeftEdgeFrontGutter
+        || d3RightEdgeFrontGutter
+        || d3RightOpenSlitFront)
         ? false
         : GetViewport17FrontF3DefaultMirror(
             d3FrontLeft, d3FrontCenter, d3FrontRight);
@@ -9273,7 +9433,18 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (piece.Name == "RightS3")
       {
-        state.Enabled = false;
+        bool rightS3Enabled =
+            HasViewport17FinalFamily(finalCommands, "RightS3");
+        bool rightS3Mirror = IsViewport17RightS3D3FrontEdge(inspection)
+            ? true
+            : GetSideWallMirrorFromPose();
+        ApplyViewport17NativeManualControls(
+            "RightS3", ref rightS3Enabled, ref rightS3Mirror);
+        state.Enabled = rightS3Enabled;
+        state.X = 216;
+        state.Y = DisplayYToUnityY(
+            57, GetPieceHeightForEditorY(piece));
+        state.Mirror = rightS3Mirror;
         resolvedNormalWallByPiece[piece] = state;
         continue;
       }
@@ -9380,15 +9551,19 @@ public class ViewportLayoutEditor : EditorWindow
       if (IsFrontWallF3Card(piece))
       {
         state.Graphic = DungeonGraphicType.FrontWallF3;
-        state.X = d3LeftEdgeFrontGutter
-            ? NativeD3LeftFrontGutterX
-            : (d3RightEdgeFrontGutter
-                ? NativeD3RightFrontGutterX
-                : (d3FrontCenter
-                    ? 77
-                    : (d3FrontLeft ? 0 : (d3FrontRight ? 192 : 77))));
+        state.X = d3RightOpenSlitFront
+            ? NativeD3RightOpenSlitFrontX
+            : (d3LeftEdgeFrontGutter
+                ? NativeD3LeftFrontGutterX
+                : (d3RightEdgeFrontGutter
+                    ? NativeD3RightFrontGutterX
+                    : (d3FrontCenter
+                        ? 77
+                        : (d3FrontLeft ? 0 : (d3FrontRight ? 192 : 77)))));
         state.Y = DisplayYToUnityY(58, 49);
-        if (d3LeftEdgeFrontGutter)
+        if (d3RightOpenSlitFront)
+          state.FrontF3Width = NativeD3RightOpenSlitFrontWidth;
+        else if (d3LeftEdgeFrontGutter)
           state.FrontF3Width = NativeD3LeftFrontGutterWidth;
         else if (d3RightEdgeFrontGutter)
           state.FrontF3Width = NativeD3RightFrontGutterWidth;
@@ -9562,6 +9737,17 @@ public class ViewportLayoutEditor : EditorWindow
       {
         state.FrontF3Width = Mathf.Clamp(
             previewFrontF3Width, 1, GetFrontF3FullSourceWidthForViewEdit());
+      }
+
+      // Keep the resolved card in lockstep with the verified automatic
+      // 10,5-West FrontF3 recipe (full authored width at X=185).
+      if (IsFrontWallF3Card(piece)
+          && useViewport17WallAuthority
+          && IsViewport17D3RightOpenSlitFront())
+      {
+        state.FrontF3Width = NativeD3RightOpenSlitFrontWidth;
+        previewFrontF3WidthOverrideByPiece[piece] =
+            NativeD3RightOpenSlitFrontWidth;
       }
 
       resolvedNormalWallByPiece[piece] = state;
@@ -12916,11 +13102,15 @@ public class ViewportLayoutEditor : EditorWindow
         IsViewport17D3LeftEdgeFrontGutter(inspection);
     bool automaticRightFrontGutter =
         IsViewport17D3RightEdgeFrontGutter(inspection);
+    bool automaticRightOpenSlitFront =
+        IsViewport17D3RightOpenSlitFront();
     if (automaticLeftFrontGutter)
         frontLeft = true;
-    if (automaticRightFrontGutter)
+    if (automaticRightFrontGutter || automaticRightOpenSlitFront)
         frontRight = true;
-    bool centerMirror = (automaticLeftFrontGutter || automaticRightFrontGutter)
+    bool centerMirror = (automaticLeftFrontGutter
+        || automaticRightFrontGutter
+        || automaticRightOpenSlitFront)
         ? false
         : GetViewport17FrontF3DefaultMirror(
             frontLeft, frontCenter, frontRight);
@@ -12980,9 +13170,12 @@ public class ViewportLayoutEditor : EditorWindow
     // edge strips would leave a black gap between X=32 and the center at 77.
     bool leftFrontGutter = automaticLeftFrontGutter && frontLeft;
     bool rightFrontGutter = automaticRightFrontGutter && frontRight;
+    bool rightOpenSlitFront = automaticRightOpenSlitFront && frontRight;
     Texture2D frontSource = GetReadableNativeFrontF3Texture();
     int frontLeftX = leftFrontGutter ? NativeD3LeftFrontGutterX : 0;
-    int frontRightX = rightFrontGutter ? NativeD3RightFrontGutterX : 192;
+    int frontRightX = rightOpenSlitFront
+        ? NativeD3RightOpenSlitFrontX
+        : (rightFrontGutter ? NativeD3RightFrontGutterX : 192);
     int frontCenterX = 77;
     int frontY = destinationY;
     if (TryGetViewport17FamilyPositionOverride("FrontF3", out int frontOverrideX, out int frontOverrideY))
@@ -13083,6 +13276,37 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
+    if (rightOpenSlitFront)
+    {
+      // Verified 10,5-West recipe: use the full authored 141px FrontF3 at
+      // X=185, Mirror OFF. Viewport clipping keeps only the visible far-right
+      // portion of the source, matching the manually verified ViewEdit values.
+      Texture2D slitSource =
+          graphics.GetTexture(DungeonGraphicType.FrontWallF3);
+      if (slitSource == null
+          || slitSource.height != nativeHeight
+          || slitSource.width < NativeD3RightOpenSlitFrontWidth
+          || !slitSource.isReadable)
+      {
+        slitSource = frontSource;
+      }
+
+      if (slitSource != null
+          && slitSource.height == nativeHeight
+          && slitSource.width >= NativeD3RightOpenSlitFrontWidth
+          && slitSource.isReadable)
+      {
+        BlitViewport17SourceStripPreview(
+            pixels,
+            slitSource,
+            0,
+            NativeD3RightOpenSlitFrontWidth - 1,
+            frontRightX,
+            frontY,
+            false);
+      }
+    }
+
     if (rightFrontGutter)
     {
       // Verified 9,4-East recipe: use the full authored 141x49 FrontF3 at
@@ -13123,7 +13347,10 @@ public class ViewportLayoutEditor : EditorWindow
             pixels, frontSource, sourceStart, frontSource.width - 1,
             frontLeftX, frontY, centerMirror);
       }
-      if (frontRight && !frontCenter && !rightFrontGutter)
+      if (frontRight
+          && !frontCenter
+          && !rightFrontGutter
+          && !rightOpenSlitFront)
       {
         BlitViewport17SourceStripPreview(
             pixels, frontSource, sourceStart, frontSource.width - 1,
@@ -14197,6 +14424,13 @@ public class ViewportLayoutEditor : EditorWindow
       if (f3Texture != null && f3Texture.height > 0)
         return f3Texture.height;
       return 49;
+    }
+
+    if (piece.Name == "RightS3")
+    {
+      Texture2D rightS3Texture = GetRight2STexture();
+      if (rightS3Texture != null && rightS3Texture.height > 0)
+        return rightS3Texture.height;
     }
 
     Texture2D texture = graphics.GetTexture(piece.Graphic);
