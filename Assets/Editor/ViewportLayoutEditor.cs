@@ -31,6 +31,20 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Champions";
   private const string ChampionMirrorSideAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Side_16x35.png";
+  private const string ChampionMirrorFrontAssetPath =
+      "Assets/Art/Champions/Champion_Mirror_Front_48x43.png";
+
+  // Original DOS Champion front-mirror placement for a D1 center wall.
+  // Measured from the original 320x200 (10,5) South ZED view:
+  // screen top-left = (88,62), source = 48x43, therefore framebuffer Y=95.
+  private const int ChampionMirrorD1FrontX = 88;
+  private const int ChampionMirrorD1FrontY = 95;
+
+  // The 32x29 Champion portrait occupies the mirror's inner opening.
+  // In the 48x43 source the opening is X=8..39, top Y=6..34.
+  // In framebuffer coordinates that is +8 from the frame bottom.
+  private const int ChampionPortraitD1FrontOffsetX = 8;
+  private const int ChampionPortraitD1FrontOffsetY = 8;
 
   // Original DOS Champion side-mirror placement for the D1 corridor walls.
   // Screen-space original top-left Y=64 for a 35px source becomes framebuffer
@@ -256,6 +270,10 @@ public class ViewportLayoutEditor : EditorWindow
       new ChampionMirrorPlacement[0];
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorSideTexture;
+  [System.NonSerialized]
+  private Texture2D cachedChampionMirrorFrontTexture;
+  private readonly Dictionary<string, Texture2D> cachedChampionPortraitTextures =
+      new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
 
   private string deterministicWallDiagnosticText;
   private Rect geometryDiagnosticRect;
@@ -11535,10 +11553,10 @@ public class ViewportLayoutEditor : EditorWindow
     BlitViewport17D3RightCalibrationCandidate(pixels);
 
     // Champion wall decorations sit on top of the completed wall surface.
-    // Stage 1 intentionally draws only the original 16x35 side mirror at
-    // the verified D1 left/right slots. Portrait/front-mirror composition is
-    // added after these two side positions are verified in Unity.
+    // D1 side faces use the original 16x35 mirror. A D1 front wall uses the
+    // original 48x43 frame plus the Champion's 32x29 portrait in its opening.
     BlitChampionMirrorD1FramesIntoPreview(pixels);
+    BlitChampionMirrorD1FrontIntoPreview(pixels);
 
     // DIAGNOSTIC COMPOSITION STEP:
     // After all dungeon/wall drawing, restore the entire right-side UI
@@ -13238,6 +13256,215 @@ public class ViewportLayoutEditor : EditorWindow
             true);
       }
     }
+  }
+
+  private void BlitChampionMirrorD1FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewChampionMirrors == null
+        || previewChampionMirrors.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D frontMirror = GetChampionMirrorFrontTexture();
+    if (frontMirror == null || !frontMirror.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int frontX = previewX + forwardX;
+    int frontY = previewY + forwardY;
+    if (!previewMiniMap.IsInside(frontX, frontY)
+        || previewMiniMap.GetTile(frontX, frontY).Type != DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    // The visible face of the wall directly in front of the party points back
+    // toward the party, i.e. opposite the viewing direction.
+    string frontWallSide = FacingName(OppositePreviewFacing(previewFacing));
+
+    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    {
+      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror == null
+          || string.IsNullOrEmpty(mirror.wall)
+          || string.IsNullOrEmpty(mirror.champion))
+      {
+        continue;
+      }
+
+      if (mirror.x != frontX
+          || mirror.y != frontY
+          || !string.Equals(
+              mirror.wall,
+              frontWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      // Frame first; the portrait then replaces the turquoise mirror opening.
+      BlitPieceIntoPreview(
+          pixels,
+          frontMirror,
+          ChampionMirrorD1FrontX,
+          ChampionMirrorD1FrontY,
+          false);
+
+      Texture2D portrait = GetChampionPortraitTexture(mirror.champion);
+      if (portrait != null
+          && portrait.isReadable
+          && portrait.width == 32
+          && portrait.height == 29)
+      {
+        BlitPieceIntoPreview(
+            pixels,
+            portrait,
+            ChampionMirrorD1FrontX + ChampionPortraitD1FrontOffsetX,
+            ChampionMirrorD1FrontY + ChampionPortraitD1FrontOffsetY,
+            false);
+      }
+
+      return;
+    }
+  }
+
+  private Texture2D GetChampionMirrorFrontTexture()
+  {
+    if (cachedChampionMirrorFrontTexture != null)
+      return cachedChampionMirrorFrontTexture;
+
+    Texture2D texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(ChampionMirrorFrontAssetPath);
+    if (texture != null && texture.width == 48 && texture.height == 43)
+    {
+      cachedChampionMirrorFrontTexture = texture;
+      return texture;
+    }
+
+    // Filename-independent fallback for the original 48x43 front mirror.
+    string[] guids = AssetDatabase.FindAssets(
+        "t:Texture2D",
+        new[] { ChampionArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 48 || candidate.height != 43)
+        continue;
+
+      if (path.IndexOf(
+              "mirror",
+              System.StringComparison.OrdinalIgnoreCase) < 0)
+      {
+        continue;
+      }
+
+      cachedChampionMirrorFrontTexture = candidate;
+      return candidate;
+    }
+
+    return null;
+  }
+
+  private Texture2D GetChampionPortraitTexture(string championName)
+  {
+    if (string.IsNullOrEmpty(championName))
+      return null;
+
+    string wantedKey = NormalizeChampionAssetKey(championName);
+    if (string.IsNullOrEmpty(wantedKey))
+      return null;
+
+    if (cachedChampionPortraitTextures.TryGetValue(
+            wantedKey,
+            out Texture2D cached))
+    {
+      return cached;
+    }
+
+    Texture2D folderMatch = null;
+    string[] guids = AssetDatabase.FindAssets(
+        "t:Texture2D",
+        new[] { ChampionArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      if (path.IndexOf(
+              "mirror",
+              System.StringComparison.OrdinalIgnoreCase) >= 0)
+      {
+        continue;
+      }
+
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 32 || candidate.height != 29)
+        continue;
+
+      string fileKey =
+          NormalizeChampionAssetKey(Path.GetFileNameWithoutExtension(path));
+      if (string.Equals(
+              fileKey,
+              wantedKey,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        cachedChampionPortraitTextures[wantedKey] = candidate;
+        return candidate;
+      }
+
+      string directory = Path.GetDirectoryName(path);
+      string folderName = string.IsNullOrEmpty(directory)
+          ? string.Empty
+          : Path.GetFileName(directory);
+      string folderKey = NormalizeChampionAssetKey(folderName);
+      if (folderMatch == null
+          && string.Equals(
+              folderKey,
+              wantedKey,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        folderMatch = candidate;
+      }
+    }
+
+    if (folderMatch != null)
+      cachedChampionPortraitTextures[wantedKey] = folderMatch;
+
+    return folderMatch;
+  }
+
+  private static string NormalizeChampionAssetKey(string value)
+  {
+    if (string.IsNullOrEmpty(value))
+      return string.Empty;
+
+    System.Text.StringBuilder builder = new System.Text.StringBuilder();
+    for (int i = 0; i < value.Length; i++)
+    {
+      char c = value[i];
+      if (char.IsLetterOrDigit(c))
+        builder.Append(char.ToUpperInvariant(c));
+    }
+
+    return builder.ToString();
+  }
+
+  private static DungeonFacing OppositePreviewFacing(DungeonFacing facing)
+  {
+    return facing switch
+    {
+      DungeonFacing.North => DungeonFacing.South,
+      DungeonFacing.East => DungeonFacing.West,
+      DungeonFacing.South => DungeonFacing.North,
+      DungeonFacing.West => DungeonFacing.East,
+      _ => facing
+    };
   }
 
   private Texture2D GetChampionMirrorSideTexture()
