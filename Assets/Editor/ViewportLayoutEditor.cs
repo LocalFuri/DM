@@ -134,7 +134,11 @@ public class ViewportLayoutEditor : EditorWindow
   // Native DOS LeftF3 destination X. The dest-X gutter to the left of this
   // (X=0 .. NativeD3LeftF3DestX-1) is the visible FrontF3 sliver when an
   // open left corridor meets a full D3 L+C+R plane behind a nearer center.
+  // Original-game comparison shows that this gutter uses a 14px FrontF3 crop
+  // starting at X=-7, so only source columns 7..13 remain visible at X=0..6.
   private const int NativeD3LeftF3DestX = 7;
+  private const int NativeD3LeftFrontGutterWidth = NativeD3LeftF3DestX * 2;
+  private const int NativeD3LeftFrontGutterX = -NativeD3LeftF3DestX;
   private string pieceSearchText = string.Empty;
   private bool openSearchPiecesPopup;
   private bool focusSearchPieces;
@@ -2503,6 +2507,37 @@ public class ViewportLayoutEditor : EditorWindow
       // ViewEdit-only stationary-pose test, identical in lifetime to X/Y/Mirror.
       // Geometry remains authoritative after X/Y/Facing changes.
       previewEnabledOverrideByPiece[piece] = enabledAfter;
+
+      // FrontF3 can legitimately have no automatic FINAL DRAW lane while the
+      // resolved ViewEdit card still describes a useful visible gutter (for
+      // example X=0, Width=7 at 6,1 West).  If the user manually enables the
+      // card, seed the temporary X/Y/Width/Mirror overrides from exactly the
+      // values currently shown in ViewEdit.  Otherwise the native D3 fallback
+      // would invent a 70px center draw at X=77, making the Enabled checkbox
+      // appear ineffective even though the card says X=0 / Width=7.
+      if (enabledAfter
+          && IsFrontWallF3Card(piece)
+          && TryGetResolvedNormalWallState(
+              piece, out ResolvedNormalWallState manualFrontF3State))
+      {
+        if (!previewPositionOverrideByPiece.ContainsKey(piece))
+        {
+          previewPositionOverrideByPiece[piece] = new Vector2Int(
+              manualFrontF3State.X, manualFrontF3State.Y);
+        }
+
+        if (!previewFrontF3WidthOverrideByPiece.ContainsKey(piece))
+        {
+          int manualFrontF3Width = manualFrontF3State.FrontF3Width > 0
+              ? manualFrontF3State.FrontF3Width
+              : GetFrontF3FullSourceWidthForViewEdit();
+          previewFrontF3WidthOverrideByPiece[piece] = manualFrontF3Width;
+        }
+
+        if (!previewMirrorOverrideByPiece.ContainsKey(piece))
+          previewMirrorOverrideByPiece[piece] = manualFrontF3State.Mirror;
+      }
+
       previewEnabledChangedThisFrame = true;
       RefreshTemporaryNormalWallPreview();
     }
@@ -5138,9 +5173,10 @@ public class ViewportLayoutEditor : EditorWindow
   /// <summary>
   /// Open left corridor through D0/D1/D2 into a full D3 L+C+R front plane,
   /// with a nearer center front already occupying D1 or D2. Original DM then
-  /// exposes only the dest-X gutter left of native LeftF3: FrontF3 at X=0
-  /// with visible width NativeD3LeftF3DestX, then LeftF3 at that X. LeftS3
-  /// is not a side-wall continuation of this front plane.
+  /// exposes only the dest-X gutter left of native LeftF3. The verified
+  /// FrontF3 recipe draws 14px at X=-7, leaving source columns 7..13 visible
+  /// at viewport X=0..6; LeftF3 then starts at X=7. LeftS3 is not a side-wall
+  /// continuation of this front plane.
   /// </summary>
   private static bool IsViewport17D3LeftEdgeFrontGutter(
       Viewport17Inspection inspection)
@@ -9011,8 +9047,19 @@ public class ViewportLayoutEditor : EditorWindow
 
     bool d3LeftMirror = GetViewport17LeftF3Mirror();
     bool d3RightMirror = GetSideWallMirrorFromPose();
-    bool d3FrontMirror = GetViewport17FrontF3DefaultMirror(
-        d3FrontLeft, d3FrontCenter, d3FrontRight);
+    // The 6,1-West class gutter is an extra FrontF3 sliver required by the
+    // D3 geometry even when the normal final-command occlusion pass has no
+    // surviving FrontF3 lane. Promote that gutter to a real FrontF3 lane
+    // before ViewEdit/manual controls are applied so it is both visible and
+    // user-disableable like every other V17 wall draw.
+    bool d3LeftEdgeFrontGutter =
+        IsViewport17D3LeftEdgeFrontGutter(inspection);
+    if (d3LeftEdgeFrontGutter)
+        d3FrontLeft = true;
+    bool d3FrontMirror = d3LeftEdgeFrontGutter
+        ? false
+        : GetViewport17FrontF3DefaultMirror(
+            d3FrontLeft, d3FrontCenter, d3FrontRight);
     ApplyViewport17NativeManualControls(
         "LeftF3", ref d3LeftEnabled, ref d3LeftMirror);
     ApplyViewport17NativeManualControls(
@@ -9142,17 +9189,15 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (IsFrontWallF3Card(piece))
       {
-        bool d3LeftEdgeFrontGutter =
-            IsViewport17D3LeftEdgeFrontGutter(inspection);
         state.Graphic = DungeonGraphicType.FrontWallF3;
         state.X = d3LeftEdgeFrontGutter
-            ? 0
+            ? NativeD3LeftFrontGutterX
             : (d3FrontCenter
                 ? 77
                 : (d3FrontLeft ? 0 : (d3FrontRight ? 192 : 77)));
         state.Y = DisplayYToUnityY(58, 49);
         if (d3LeftEdgeFrontGutter)
-          state.FrontF3Width = NativeD3LeftF3DestX;
+          state.FrontF3Width = NativeD3LeftFrontGutterWidth;
         // Stationary ViewEdit Enabled/Mirror tests own these two fields.
         // Geometry still supplies the default when no override exists.
         if (previewEnabledOverrideByPiece.TryGetValue(
@@ -9261,18 +9306,27 @@ public class ViewportLayoutEditor : EditorWindow
       bool hasGraphicOverride = previewGraphicOverrideByPiece.TryGetValue(
           piece, out DungeonGraphicType previewGraphic);
       bool hasWidthOverride = false;
+      bool hasFrontF3WidthOverride = false;
       int previewWidth = 0;
+      int previewFrontF3Width = 0;
       if (IsFrontWallF1Card(piece)
           && previewFrontF1WidthOverrideByPiece.TryGetValue(
               piece, out previewWidth))
       {
         hasWidthOverride = true;
       }
+      if (IsFrontWallF3Card(piece)
+          && previewFrontF3WidthOverrideByPiece.TryGetValue(
+              piece, out previewFrontF3Width))
+      {
+        hasFrontF3WidthOverride = true;
+      }
 
       if (!hasEnabledOverride
           && !hasPositionOverride
           && !hasMirrorOverride
           && !hasWidthOverride
+          && !hasFrontF3WidthOverride
           && !hasGraphicOverride)
       {
         continue;
@@ -9308,6 +9362,11 @@ public class ViewportLayoutEditor : EditorWindow
       {
         state.FrontF1Width =
             StraightF1WallLogic.NormalizeFrontWallF1Width(previewWidth);
+      }
+      if (hasFrontF3WidthOverride)
+      {
+        state.FrontF3Width = Mathf.Clamp(
+            previewFrontF3Width, 1, GetFrontF3FullSourceWidthForViewEdit());
       }
 
       resolvedNormalWallByPiece[piece] = state;
@@ -12639,8 +12698,18 @@ public class ViewportLayoutEditor : EditorWindow
     bool leftEnabled = HasViewport17FinalFamily(finalCommands, "LeftF3");
     bool rightEnabled = HasViewport17FinalFamily(finalCommands, "RightF3");
     bool leftMirror = GetViewport17LeftF3Mirror();
-    bool centerMirror = GetViewport17FrontF3DefaultMirror(
-        frontLeft, frontCenter, frontRight);
+    // This gutter is geometry-owned, not dependent on a surviving normal
+    // FrontF3 final command. At poses such as 6,1 West the normal occlusion
+    // pass removes the D3 front lane, but the original still exposes the
+    // seven-pixel FrontF3 sliver immediately left of LeftF3.
+    bool automaticLeftFrontGutter =
+        IsViewport17D3LeftEdgeFrontGutter(inspection);
+    if (automaticLeftFrontGutter)
+        frontLeft = true;
+    bool centerMirror = automaticLeftFrontGutter
+        ? false
+        : GetViewport17FrontF3DefaultMirror(
+            frontLeft, frontCenter, frontRight);
     bool rightMirror = defaultMirror;
 
     // Black Door F2 owns only the D3 center opening. The original view still
@@ -12690,12 +12759,14 @@ public class ViewportLayoutEditor : EditorWindow
 
     // A surviving D3 FRONT left/right lane without a center is a 32px edge
     // strip, not a full LeftF3/RightF3 side wall. The open-left / full-D3 /
-    // nearer-center occupancy is the dest-X gutter instead (leftmost
-    // NativeD3LeftF3DestX of the 141x49 FrontF3). When the center is present,
+    // nearer-center occupancy is the verified 7px gutter recipe instead:
+    // FrontF3 width 14 at X=-7, Mirror OFF, so source columns 7..13 appear at
+    // viewport X=0..6 before LeftF3 begins at X=7. When the center is present,
     // the 83px D3 side graphics already join the 70px center; drawing the
     // edge strips would leave a black gap between X=32 and the center at 77.
+    bool leftFrontGutter = automaticLeftFrontGutter && frontLeft;
     Texture2D frontSource = GetReadableNativeFrontF3Texture();
-    int frontLeftX = 0;
+    int frontLeftX = leftFrontGutter ? NativeD3LeftFrontGutterX : 0;
     int frontRightX = 192;
     int frontCenterX = 77;
     int frontY = destinationY;
@@ -12756,27 +12827,39 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    bool leftFrontGutter =
-        IsViewport17D3LeftEdgeFrontGutter(inspection) && frontLeft;
     if (leftFrontGutter)
     {
-      Texture2D fullFrontF3Source =
+      // Use the same source fallback as the live ViewEdit Width path.
+      // Some projects expose FrontWallF3 here as the native 70x49 source
+      // rather than the older 141x49 composite. Requiring exactly 141px
+      // made the automatic 6,1-West-class gutter silently draw nothing even
+      // though the identical manual Width=14 test worked. Any readable F3
+      // source that is at least 14px wide can supply this verified sliver.
+      Texture2D gutterSource =
           graphics.GetTexture(DungeonGraphicType.FrontWallF3);
-      if (fullFrontF3Source != null
-          && fullFrontF3Source.height == nativeHeight
-          && fullFrontF3Source.width == GetFrontF3FullSourceWidthForViewEdit()
-          && fullFrontF3Source.isReadable)
+      if (gutterSource == null
+          || gutterSource.height != nativeHeight
+          || gutterSource.width < NativeD3LeftFrontGutterWidth
+          || !gutterSource.isReadable)
       {
-        int drawWidth = NativeD3LeftF3DestX;
+        gutterSource = frontSource;
+      }
+
+      if (gutterSource != null
+          && gutterSource.height == nativeHeight
+          && gutterSource.width >= NativeD3LeftFrontGutterWidth
+          && gutterSource.isReadable)
+      {
+        int drawWidth = NativeD3LeftFrontGutterWidth;
         int sourceMinX = centerMirror
-            ? fullFrontF3Source.width - drawWidth
+            ? gutterSource.width - drawWidth
             : 0;
         int sourceMaxX = centerMirror
-            ? fullFrontF3Source.width - 1
+            ? gutterSource.width - 1
             : drawWidth - 1;
         BlitViewport17SourceStripPreview(
             pixels,
-            fullFrontF3Source,
+            gutterSource,
             sourceMinX,
             sourceMaxX,
             frontLeftX,
