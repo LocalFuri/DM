@@ -5362,6 +5362,31 @@ public class ViewportLayoutEditor : EditorWindow
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 2));
   }
 
+  /// <summary>
+  /// Verified original-DM LeftS3 full-D3-front edge geometry (7,13 East class).
+  /// The right side is closed at D0/D1, the center corridor remains open
+  /// through D2, and D3 is a full L+C+R front plane. Original DM exposes the
+  /// tiny LeftS3 strip at X=0/Y=57. This is a geometry rule, not a pose hack.
+  /// </summary>
+  private static bool IsViewport17LeftS3D3FullFrontEdge(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null)
+      return false;
+
+    return IsViewport17LaneOpenAt(inspection, -1, 0)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 0))
+        && IsViewport17LaneOpenAt(inspection, -1, 1)
+        && IsViewport17LaneOpenAt(inspection, 0, 1)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 1))
+        && IsViewport17LaneOpenAt(inspection, -1, 2)
+        && IsViewport17LaneOpenAt(inspection, 0, 2)
+        && IsViewport17LaneOpenAt(inspection, 1, 2)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3));
+  }
+
   private static bool IsViewport17RightS3D3FrontEdge(
       Viewport17Inspection inspection)
   {
@@ -6253,11 +6278,13 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    // LeftS3 has two verified geometry roles:
-    //   1) the narrow far-left D3 terminator strip (6,4 East class), and
+    // LeftS3 has three verified geometry roles:
+    //   1) the narrow far-left D3 terminator strip (6,4 East class),
     //   2) the tiny exposed left edge of a D2 C+R front block behind a fully
-    //      open D1 span (10,5 East class).
-    // A full D3 L+C+R front plane still belongs to FrontF3/LeftF3, not LeftS3.
+    //      open D1 span (10,5 East class), and
+    //   3) the tiny far-left edge beside a full D3 L+C+R front plane when the
+    //      right side is closed at D0/D1 but the center stays open through D2
+    //      (7,13 East class).
     bool d3FullFrontPlane =
         IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
@@ -6269,12 +6296,14 @@ public class ViewportLayoutEditor : EditorWindow
         && IsViewport17LaneOpenAt(inspection, -1, 2)
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3));
     bool leftS3D2FrontEdge = IsViewport17LeftS3D2FrontEdge(inspection);
-    if (leftS3D3Terminator || leftS3D2FrontEdge)
+    bool leftS3D3FullFrontEdge =
+        IsViewport17LeftS3D3FullFrontEdge(inspection);
+    if (leftS3D3Terminator || leftS3D2FrontEdge || leftS3D3FullFrontEdge)
     {
-      Viewport17Cell primaryCell = leftS3D3Terminator
+      Viewport17Cell primaryCell = leftS3D3Terminator || leftS3D3FullFrontEdge
           ? FindViewport17Cell(inspection.Cells, -1, 3)
           : FindViewport17Cell(inspection.Cells, 0, 2);
-      Viewport17Cell adjacentCell = leftS3D3Terminator
+      Viewport17Cell adjacentCell = leftS3D3Terminator || leftS3D3FullFrontEdge
           ? FindViewport17Cell(inspection.Cells, 0, 3)
           : FindViewport17Cell(inspection.Cells, -1, 2);
       Viewport17Surface leftS3Surface = new Viewport17Surface
@@ -6290,7 +6319,9 @@ public class ViewportLayoutEditor : EditorWindow
               "LeftS3",
               leftS3D2FrontEdge
                   ? "LEFT S3 D2 FRONT EDGE"
-                  : "LEFT S3 STRIP",
+                  : leftS3D3FullFrontEdge
+                      ? "LEFT S3 D3 FULL FRONT EDGE"
+                      : "LEFT S3 STRIP",
               "LEFT",
               leftS3Surface);
       leftS3Command.Sequence = commands.Count;
@@ -7094,7 +7125,8 @@ public class ViewportLayoutEditor : EditorWindow
       // C+R front block. A nearer center front at D2 is exactly what creates
       // this sliver, so the normal inner-side occlusion rule must not remove it.
       if (command.PieceFamily == "LeftS3"
-          && IsViewport17LeftS3D2FrontEdge(inspection))
+          && (IsViewport17LeftS3D2FrontEdge(inspection)
+              || IsViewport17LeftS3D3FullFrontEdge(inspection)))
       {
         command.Sequence = finalCommands.Count;
         finalCommands.Add(command);
@@ -9570,11 +9602,15 @@ public class ViewportLayoutEditor : EditorWindow
       {
         bool leftS3D2FrontEdge =
             IsViewport17LeftS3D2FrontEdge(inspection);
+        bool leftS3D3FullFrontEdge =
+            IsViewport17LeftS3D3FullFrontEdge(inspection);
         bool leftS3Enabled =
             HasViewport17FinalFamily(finalCommands, "LeftS3");
         bool leftS3Mirror = leftS3D2FrontEdge
             ? false
-            : GetSideWallMirrorFromPose();
+            : leftS3D3FullFrontEdge
+                ? true
+                : GetSideWallMirrorFromPose();
         ApplyViewport17NativeManualControls(
             "LeftS3", ref leftS3Enabled, ref leftS3Mirror);
         state.Enabled = leftS3Enabled;
