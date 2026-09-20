@@ -37,6 +37,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Champions/Mirror_Right_10x23.png";
   private const string ChampionMirrorFrontAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Front_48x43.png";
+  private const string ChampionMirrorFrontF3AssetPath =
+      "Assets/Art/Champions/Mirror_FrontF3_20x19.png";
 
   // Original DOS Champion front-mirror placement for a D1 center wall.
   // Measured from the original 320x200 (10,5) South ZED view:
@@ -66,6 +68,13 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ChampionMirrorD2FrontY = 106;
   private const int ChampionMirrorD2FrontWidth = 29;
   private const int ChampionMirrorD2FrontHeight = 27;
+
+  // Original DOS Champion front-mirror placement for a D3 center wall.
+  // Verified from the original (9,7) South SYRA view.
+  private const int ChampionMirrorD3FrontX = 102;
+  private const int ChampionMirrorD3FrontY = 114;
+  private const int ChampionMirrorD3FrontWidth = 20;
+  private const int ChampionMirrorD3FrontHeight = 19;
 
   // Original DOS Champion side mirror at D2 on the screen-right wall.
   // Measured from the original 320x200 (9,5) South ELIJA view:
@@ -322,6 +331,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedChampionMirrorFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorRightD2Texture;
+  [System.NonSerialized]
+  private Texture2D cachedChampionMirrorFrontF3Texture;
   private readonly Dictionary<string, Texture2D> cachedChampionPortraitTextures =
       new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
 
@@ -11856,6 +11867,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitChampionMirrorD1FramesIntoPreview(pixels);
     BlitChampionMirrorD1FrontIntoPreview(pixels);
     BlitChampionMirrorD2FrontIntoPreview(pixels);
+    BlitChampionMirrorD3FrontIntoPreview(pixels);
     BlitChampionMirrorD2RightIntoPreview(pixels);
     BlitChampionMirrorD3RightIntoPreview(pixels);
 
@@ -13817,6 +13829,83 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  private void BlitChampionMirrorD3FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewChampionMirrors == null
+        || previewChampionMirrors.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D frontMirror = GetChampionMirrorFrontF3Texture();
+    if (frontMirror == null || !frontMirror.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    // D3 is visible only through open D1 and D2 center tiles.
+    int d1X = previewX + forwardX;
+    int d1Y = previewY + forwardY;
+    if (!previewMiniMap.IsInside(d1X, d1Y)
+        || previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    int d2X = previewX + forwardX * 2;
+    int d2Y = previewY + forwardY * 2;
+    if (!previewMiniMap.IsInside(d2X, d2Y)
+        || previewMiniMap.GetTile(d2X, d2Y).Type == DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    int d3X = previewX + forwardX * 3;
+    int d3Y = previewY + forwardY * 3;
+    if (!previewMiniMap.IsInside(d3X, d3Y)
+        || previewMiniMap.GetTile(d3X, d3Y).Type != DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    string frontWallSide = FacingName(OppositePreviewFacing(previewFacing));
+
+    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    {
+      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror == null
+          || string.IsNullOrEmpty(mirror.wall)
+          || string.IsNullOrEmpty(mirror.champion))
+      {
+        continue;
+      }
+
+      if (mirror.x != d3X
+          || mirror.y != d3Y
+          || !string.Equals(
+              mirror.wall,
+              frontWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      // Exact original-game 20x19 F3 front cutout. No scaling and no portrait.
+      BlitPieceIntoPreview(
+          pixels,
+          frontMirror,
+          ChampionMirrorD3FrontX,
+          ChampionMirrorD3FrontY,
+          false);
+      return;
+    }
+  }
+
   private void BlitChampionMirrorD2RightIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -14163,6 +14252,47 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonFacing.West => DungeonFacing.East,
       _ => facing
     };
+  }
+
+  private Texture2D GetChampionMirrorFrontF3Texture()
+  {
+    if (cachedChampionMirrorFrontF3Texture != null)
+      return cachedChampionMirrorFrontF3Texture;
+
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        ChampionMirrorFrontF3AssetPath);
+    if (texture != null && texture.width == 20 && texture.height == 19)
+    {
+      cachedChampionMirrorFrontF3Texture = texture;
+      return texture;
+    }
+
+    // Filename-independent fallback for the exact 20x19 F3 front mirror.
+    string[] guids = AssetDatabase.FindAssets(
+        "t:Texture2D",
+        new[] { ChampionArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 20 || candidate.height != 19)
+        continue;
+
+      if (path.IndexOf(
+              "mirror",
+              System.StringComparison.OrdinalIgnoreCase) < 0
+          || path.IndexOf(
+              "frontf3",
+              System.StringComparison.OrdinalIgnoreCase) < 0)
+      {
+        continue;
+      }
+
+      cachedChampionMirrorFrontF3Texture = candidate;
+      return candidate;
+    }
+
+    return null;
   }
 
   private Texture2D GetChampionMirrorRightD2Texture()
