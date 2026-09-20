@@ -9,9 +9,9 @@
     "yDirection": "down"
   },
   "playerStart": {
-    "x": 1,
-    "y": 3,
-    "facing": "South"
+    "x": 6,
+    "y": 12,
+    "facing": "North"
   },
   "legend": {
     "#": "Wall",
@@ -23,6 +23,152 @@
     "F": "FalseWall",
     "?": "Special"
   },
+  "championMirrors": [
+    {
+      "champion": "DAROOU",
+      "x": 5,
+      "y": 13,
+      "wall": "East"
+    },
+    {
+      "champion": "HALK",
+      "x": 7,
+      "y": 8,
+      "wall": "South"
+    },
+    {
+      "champion": "WU TSE",
+      "x": 7,
+      "y": 14,
+      "wall": "North"
+    },
+    {
+      "champion": "AZIZI",
+      "x": 7,
+      "y": 17,
+      "wall": "North"
+    },
+    {
+      "champion": "LEIF",
+      "x": 8,
+      "y": 14,
+      "wall": "South"
+    },
+    {
+      "champion": "ELIJA",
+      "x": 8,
+      "y": 7,
+      "wall": "East"
+    },
+    {
+      "champion": "SYRA",
+      "x": 9,
+      "y": 10,
+      "wall": "North"
+    },
+    {
+      "champion": "TIGGY",
+      "x": 10,
+      "y": 13,
+      "wall": "West"
+    },
+    {
+      "champion": "IAIDO",
+      "x": 10,
+      "y": 3,
+      "wall": "South"
+    },
+    {
+      "champion": "ZED",
+      "x": 10,
+      "y": 6,
+      "wall": "North"
+    },
+    {
+      "champion": "GANDO",
+      "x": 11,
+      "y": 11,
+      "wall": "North"
+    },
+    {
+      "champion": "STAMM",
+      "x": 11,
+      "y": 16,
+      "wall": "North"
+    },
+    {
+      "champion": "LINFLAS",
+      "x": 12,
+      "y": 8,
+      "wall": "South"
+    },
+    {
+      "champion": "WUUF",
+      "x": 11,
+      "y": 13,
+      "wall": "East"
+    },
+    {
+      "champion": "LEYLA",
+      "x": 13,
+      "y": 11,
+      "wall": "South"
+    },
+    {
+      "champion": "MOPHUS",
+      "x": 14,
+      "y": 14,
+      "wall": "West"
+    },
+    {
+      "champion": "CHANI",
+      "x": 14,
+      "y": 2,
+      "wall": "South"
+    },
+    {
+      "champion": "BORIS",
+      "x": 14,
+      "y": 7,
+      "wall": "North"
+    },
+    {
+      "champion": "SONJA",
+      "x": 15,
+      "y": 12,
+      "wall": "West"
+    },
+    {
+      "champion": "HAWK",
+      "x": 16,
+      "y": 4,
+      "wall": "West"
+    },
+    {
+      "champion": "ALEX",
+      "x": 16,
+      "y": 7,
+      "wall": "South"
+    },
+    {
+      "champion": "HISSSSA",
+      "x": 16,
+      "y": 15,
+      "wall": "North"
+    },
+    {
+      "champion": "GOTHMOG",
+      "x": 16,
+      "y": 16,
+      "wall": "South"
+    },
+    {
+      "champion": "NABI",
+      "x": 17,
+      "y": 10,
+      "wall": "North"
+    }
+  ],
   "tiles": [
     [
       {
@@ -611,10 +757,10 @@
     [
       {
         "x": 0,
-        "y": 5,
+        "y": 4,
         "raw": 0,
         "hex": "00",
-        "type": "Floor",
+        "type": "Wall",
         "symbol": "#"
       },
       {
@@ -755,6 +901,14 @@
       }
     ],
     [
+      {
+        "x": 0,
+        "y": 5,
+        "raw": 32,
+        "hex": "20",
+        "type": "Floor",
+        "symbol": "."
+      },
       {
         "x": 1,
         "y": 5,
