@@ -53,6 +53,25 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ChampionMirrorD1RightX = 167;
   private const int ChampionMirrorD1Y = 101;
 
+  // Original DOS Champion front-mirror placement for a D2 center wall.
+  // Measured from the original 320x200 (10,4) South ZED view:
+  // screen top-left = (97,67), visible size = 29x27, therefore framebuffer
+  // bottom-left Y = 200 - 67 - 27 = 106. At D2 the original shows only
+  // the reduced mirror/frame; the Champion portrait is no longer drawn.
+  private const int ChampionMirrorD2FrontX = 97;
+  private const int ChampionMirrorD2FrontY = 106;
+  private const int ChampionMirrorD2FrontWidth = 29;
+  private const int ChampionMirrorD2FrontHeight = 27;
+
+  // Original DOS narrow Champion mirror visible in the right-hand D3 oblique
+  // slot (e.g. 10,4 South). Measured from the original 320x200 screenshot:
+  // colorful mirror bounds occupy screen X=194..208 and Y=69..83, therefore a
+  // 15x15 point-scaled draw at framebuffer Y = 200 - 69 - 15 = 116.
+  private const int ChampionMirrorD3RightX = 194;
+  private const int ChampionMirrorD3RightY = 116;
+  private const int ChampionMirrorD3RightWidth = 15;
+  private const int ChampionMirrorD3RightHeight = 15;
+
   private const string DefaultViewportLayoutPath =
       "Assets/Dungeon Master/ViewportLayout.asset";
 
@@ -11557,6 +11576,8 @@ public class ViewportLayoutEditor : EditorWindow
     // original 48x43 frame plus the Champion's 32x29 portrait in its opening.
     BlitChampionMirrorD1FramesIntoPreview(pixels);
     BlitChampionMirrorD1FrontIntoPreview(pixels);
+    BlitChampionMirrorD2FrontIntoPreview(pixels);
+    BlitChampionMirrorD3RightIntoPreview(pixels);
 
     // DIAGNOSTIC COMPOSITION STEP:
     // After all dungeon/wall drawing, restore the entire right-side UI
@@ -13331,6 +13352,225 @@ public class ViewportLayoutEditor : EditorWindow
             false);
       }
 
+      return;
+    }
+  }
+
+  private void BlitChampionMirrorD2FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewChampionMirrors == null
+        || previewChampionMirrors.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D frontMirror = GetChampionMirrorFrontTexture();
+    if (frontMirror == null || !frontMirror.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    // D2 is visible only through an open D1 center tile.
+    int d1X = previewX + forwardX;
+    int d1Y = previewY + forwardY;
+    if (!previewMiniMap.IsInside(d1X, d1Y)
+        || previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    int d2X = previewX + forwardX * 2;
+    int d2Y = previewY + forwardY * 2;
+    if (!previewMiniMap.IsInside(d2X, d2Y)
+        || previewMiniMap.GetTile(d2X, d2Y).Type != DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    string frontWallSide = FacingName(OppositePreviewFacing(previewFacing));
+
+    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    {
+      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror == null
+          || string.IsNullOrEmpty(mirror.wall)
+          || string.IsNullOrEmpty(mirror.champion))
+      {
+        continue;
+      }
+
+      if (mirror.x != d2X
+          || mirror.y != d2Y
+          || !string.Equals(
+              mirror.wall,
+              frontWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      // The original DOS F2 view reduces the 48x43 front mirror to 29x27.
+      // The Champion portrait is not drawn at this distance; only the mirror
+      // frame/opening remains visible. Use point-sampled scaling so original
+      // source pixels stay crisp.
+      BlitPieceScaledIntoPreview(
+          pixels,
+          frontMirror,
+          ChampionMirrorD2FrontX,
+          ChampionMirrorD2FrontY,
+          ChampionMirrorD2FrontWidth,
+          ChampionMirrorD2FrontHeight,
+          false);
+      DarkenChampionMirrorD2InteriorHighlights(
+          pixels,
+          ChampionMirrorD2FrontX,
+          ChampionMirrorD2FrontY,
+          ChampionMirrorD2FrontWidth,
+          ChampionMirrorD2FrontHeight);
+      return;
+    }
+  }
+
+  private void DarkenChampionMirrorD2InteriorHighlights(
+      Color32[] pixels,
+      int destX,
+      int destY,
+      int destWidth,
+      int destHeight)
+  {
+    if (pixels == null || pixels.Length != PreviewWidth * PreviewHeight)
+      return;
+
+    // The F2 mirror is already geometrically correct; this pass only nudges
+    // the bright neutral glass highlights slightly darker so the reduced view
+    // better matches the original DOS screenshot. Keep the brown frame and the
+    // saturated cyan strokes intact by affecting only bright, low-saturation
+    // pixels inside the scaled mirror's inner opening.
+    int insetLeft = 4;
+    int insetRight = 4;
+    int insetBottom = 4;
+    int insetTop = 4;
+
+    int minX = Mathf.Clamp(destX + insetLeft, 0, PreviewWidth);
+    int maxX = Mathf.Clamp(destX + destWidth - insetRight, 0, PreviewWidth);
+    int minY = Mathf.Clamp(destY + insetBottom, 0, PreviewHeight);
+    int maxY = Mathf.Clamp(destY + destHeight - insetTop, 0, PreviewHeight);
+
+    for (int y = minY; y < maxY; y++)
+    {
+      int row = y * PreviewWidth;
+      for (int x = minX; x < maxX; x++)
+      {
+        int index = row + x;
+        Color32 c = pixels[index];
+        if (c.a == 0)
+          continue;
+
+        int max = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+        int min = Mathf.Min(c.r, Mathf.Min(c.g, c.b));
+        int luminance = (c.r + c.g + c.b) / 3;
+
+        // Only tone down the whitish/gray reflective pixels.
+        if (luminance < 150 || max - min > 44)
+          continue;
+
+        c.r = (byte)((c.r * 86) / 100);
+        c.g = (byte)((c.g * 86) / 100);
+        c.b = (byte)((c.b * 86) / 100);
+        pixels[index] = c;
+      }
+    }
+  }
+
+  private void BlitChampionMirrorD3RightIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewChampionMirrors == null
+        || previewChampionMirrors.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D sideMirror = GetChampionMirrorSideTexture();
+    if (sideMirror == null || !sideMirror.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    // This distant oblique slot can remain visible even when the D2 CENTER
+    // is a wall (10,4 South is exactly that case). Visibility comes through
+    // the open screen-right side corridor, not through the center lane.
+    // Candidate mirror: three tiles forward and two tiles to screen-right.
+    int d1CenterX = previewX + forwardX;
+    int d1CenterY = previewY + forwardY;
+    int d1RightX = previewX + forwardX + rightX;
+    int d1RightY = previewY + forwardY + rightY;
+    int d2RightX = previewX + forwardX * 2 + rightX;
+    int d2RightY = previewY + forwardY * 2 + rightY;
+    int d3RightX = previewX + forwardX * 3 + rightX;
+    int d3RightY = previewY + forwardY * 3 + rightY;
+
+    if (!previewMiniMap.IsInside(d1CenterX, d1CenterY)
+        || previewMiniMap.GetTile(d1CenterX, d1CenterY).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(d1RightX, d1RightY)
+        || previewMiniMap.GetTile(d1RightX, d1RightY).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(d2RightX, d2RightY)
+        || previewMiniMap.GetTile(d2RightX, d2RightY).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(d3RightX, d3RightY)
+        || previewMiniMap.GetTile(d3RightX, d3RightY).Type == DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    int mirrorX = previewX + forwardX * 3 + rightX * 2;
+    int mirrorY = previewY + forwardY * 3 + rightY * 2;
+    if (!previewMiniMap.IsInside(mirrorX, mirrorY)
+        || previewMiniMap.GetTile(mirrorX, mirrorY).Type != DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    // Screen-right distant oblique walls show the face pointing inward toward
+    // the corridor, which corresponds to TurnLeft(viewFacing).
+    string rightWallSide = FacingName(TurnPreviewFacingLeft(previewFacing));
+
+    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    {
+      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
+        continue;
+
+      if (mirror.x != mirrorX
+          || mirror.y != mirrorY
+          || !string.Equals(
+              mirror.wall,
+              rightWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      BlitPieceScaledIntoPreview(
+          pixels,
+          sideMirror,
+          ChampionMirrorD3RightX,
+          ChampionMirrorD3RightY,
+          ChampionMirrorD3RightWidth,
+          ChampionMirrorD3RightHeight,
+          true);
       return;
     }
   }
