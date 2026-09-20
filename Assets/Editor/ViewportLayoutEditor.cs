@@ -31,6 +31,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Champions";
   private const string ChampionMirrorSideAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Side_16x35.png";
+  private const string ChampionMirrorSideDistantAssetPath =
+      "Assets/Art/Champions/Mirror_Side_15x15.png";
   private const string ChampionMirrorFrontAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Front_48x43.png";
 
@@ -64,13 +66,12 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ChampionMirrorD2FrontHeight = 27;
 
   // Original DOS narrow Champion mirror visible in the right-hand D3 oblique
-  // slot (e.g. 10,4 South). Measured from the original 320x200 screenshot:
-  // colorful mirror bounds occupy screen X=194..208 and Y=69..83, therefore a
-  // 15x15 point-scaled draw at framebuffer Y = 200 - 69 - 15 = 116.
+  // slot (e.g. 10,4 South). This is an exact 15x15 original-game cutout
+  // (Mirror_Side_15x15.png), so no scaling or mirroring is needed here.
+  // Original screenshot bounds: screen X=194..208, Y=69..83, therefore
+  // framebuffer bottom-left Y = 200 - 69 - 15 = 116.
   private const int ChampionMirrorD3RightX = 194;
   private const int ChampionMirrorD3RightY = 116;
-  private const int ChampionMirrorD3RightWidth = 15;
-  private const int ChampionMirrorD3RightHeight = 15;
 
   private const string DefaultViewportLayoutPath =
       "Assets/Dungeon Master/ViewportLayout.asset";
@@ -289,6 +290,8 @@ public class ViewportLayoutEditor : EditorWindow
       new ChampionMirrorPlacement[0];
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorSideTexture;
+  [System.NonSerialized]
+  private Texture2D cachedChampionMirrorSideDistantTexture;
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorFrontTexture;
   private readonly Dictionary<string, Texture2D> cachedChampionPortraitTextures =
@@ -13454,7 +13457,7 @@ public class ViewportLayoutEditor : EditorWindow
     int insetLeft = 4;
     int insetRight = 4;
     int insetBottom = 4;
-    int insetTop = 4;
+    int insetTop = 0;
 
     int minX = Mathf.Clamp(destX + insetLeft, 0, PreviewWidth);
     int maxX = Mathf.Clamp(destX + destWidth - insetRight, 0, PreviewWidth);
@@ -13497,7 +13500,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    Texture2D sideMirror = GetChampionMirrorSideTexture();
+    Texture2D sideMirror = GetChampionMirrorSideDistantTexture();
     if (sideMirror == null || !sideMirror.isReadable)
       return;
 
@@ -13563,14 +13566,14 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      BlitPieceScaledIntoPreview(
+      // Exact original 15x15 cutout: draw 1:1. The asset already contains
+      // the correct right-side perspective, so do not mirror it again.
+      BlitPieceIntoPreview(
           pixels,
           sideMirror,
           ChampionMirrorD3RightX,
           ChampionMirrorD3RightY,
-          ChampionMirrorD3RightWidth,
-          ChampionMirrorD3RightHeight,
-          true);
+          false);
       return;
     }
   }
@@ -13705,6 +13708,44 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonFacing.West => DungeonFacing.East,
       _ => facing
     };
+  }
+
+  private Texture2D GetChampionMirrorSideDistantTexture()
+  {
+    if (cachedChampionMirrorSideDistantTexture != null)
+      return cachedChampionMirrorSideDistantTexture;
+
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        ChampionMirrorSideDistantAssetPath);
+    if (texture != null && texture.width == 15 && texture.height == 15)
+    {
+      cachedChampionMirrorSideDistantTexture = texture;
+      return texture;
+    }
+
+    // Filename-independent fallback for the exact 15x15 distant side mirror.
+    string[] guids = AssetDatabase.FindAssets(
+        "t:Texture2D",
+        new[] { ChampionArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 15 || candidate.height != 15)
+        continue;
+
+      if (path.IndexOf(
+              "mirror",
+              System.StringComparison.OrdinalIgnoreCase) < 0)
+      {
+        continue;
+      }
+
+      cachedChampionMirrorSideDistantTexture = candidate;
+      return candidate;
+    }
+
+    return null;
   }
 
   private Texture2D GetChampionMirrorSideTexture()
