@@ -533,20 +533,40 @@ public class DungeonFeatureEditor : EditorWindow
 
   private void DrawOriginalWallOrnamentIcons(Rect mapRect)
   {
+    if (Event.current.type != EventType.Repaint)
+      return;
+
     EnsureOrnamentTexturesResolved();
+    DrawWallOrnamentIconList(mapRect, OriginalHallWallOrnaments);
+  }
 
-    for (int i = 0; i < OriginalHallWallOrnaments.Length; i++)
+  private void DrawWallOrnamentIconList(
+      Rect mapRect,
+      OriginalWallOrnamentMarker[] markers)
+  {
+    if (markers == null)
+      return;
+
+    Color previousGuiColor = GUI.color;
+    GUI.color = Color.white;
+
+    for (int i = 0; i < markers.Length; i++)
     {
-      OriginalWallOrnamentMarker marker = OriginalHallWallOrnaments[i];
+      OriginalWallOrnamentMarker marker = markers[i];
+      GetOrnamentIconCell(
+          marker,
+          out int iconCellX,
+          out int iconCellY,
+          out WallSide iconSide);
 
-      Rect cellRect = new Rect(
-          mapRect.x + marker.X * CellSize,
-          mapRect.y + marker.Y * CellSize,
+      Rect ornamentCellRect = new Rect(
+          mapRect.x + iconCellX * CellSize,
+          mapRect.y + iconCellY * CellSize,
           CellSize,
           CellSize);
 
       Texture2D texture = GetOrnamentMapIcon(marker.Type);
-      Rect iconRect = GetWallFaceIconRect(cellRect, marker.Side, 20f);
+      Rect iconRect = GetWallFaceIconRect(ornamentCellRect, iconSide, 24f);
 
       if (texture != null)
       {
@@ -560,6 +580,57 @@ public class DungeonFeatureEditor : EditorWindow
       {
         DrawMissingOrnamentFallback(iconRect, marker.Type);
       }
+    }
+
+    GUI.color = previousGuiColor;
+  }
+
+  private void GetOrnamentIconCell(
+      OriginalWallOrnamentMarker marker,
+      out int iconCellX,
+      out int iconCellY,
+      out WallSide iconSide)
+  {
+    iconCellX = marker.X;
+    iconCellY = marker.Y;
+    iconSide = marker.Side;
+
+    if (marker.WallTilePlacement)
+      return;
+
+    int wallCellX = marker.X;
+    int wallCellY = marker.Y;
+    WallSide wallFace = WallSide.South;
+    switch (marker.Side)
+    {
+      case WallSide.North:
+        wallCellY -= 1;
+        wallFace = WallSide.South;
+        break;
+
+      case WallSide.East:
+        wallCellX += 1;
+        wallFace = WallSide.West;
+        break;
+
+      case WallSide.South:
+        wallCellY += 1;
+        wallFace = WallSide.North;
+        break;
+
+      default:
+        wallCellX -= 1;
+        wallFace = WallSide.East;
+        break;
+    }
+
+    if (map != null
+        && map.IsInside(wallCellX, wallCellY)
+        && map.GetTile(wallCellX, wallCellY).Type == DungeonTileType.Wall)
+    {
+      iconCellX = wallCellX;
+      iconCellY = wallCellY;
+      iconSide = wallFace;
     }
   }
 
@@ -601,9 +672,15 @@ public class DungeonFeatureEditor : EditorWindow
 
     ornamentTexturesResolved = true;
 
-    hookMapIcon = FindBestOrnamentTexture("Hook");
-    woodRingMapIcon = FindBestOrnamentTexture("WoodRing");
-    slimeMapIcon = FindBestOrnamentTexture("Slime");
+    hookMapIcon = LoadOrnamentMapIcon(
+        "Assets/Art/Ornaments/Hook_Front_28x28.png",
+        "Hook");
+    woodRingMapIcon = LoadOrnamentMapIcon(
+        "Assets/Art/Ornaments/Wood_Ring_Front_28x26.png",
+        "WoodRing");
+    slimeMapIcon = LoadOrnamentMapIcon(
+        "Assets/Art/Ornaments/Slime_Front_22x16.png",
+        "Slime");
   }
 
   private Texture2D GetOrnamentMapIcon(string type)
@@ -622,6 +699,15 @@ public class DungeonFeatureEditor : EditorWindow
       default:
         return null;
     }
+  }
+
+  private static Texture2D LoadOrnamentMapIcon(string assetPath, string type)
+  {
+    Texture2D direct = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+    if (direct != null)
+      return direct;
+
+    return FindBestOrnamentTexture(type);
   }
 
   private static Texture2D FindBestOrnamentTexture(string type)
