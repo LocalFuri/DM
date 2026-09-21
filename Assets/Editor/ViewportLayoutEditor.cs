@@ -787,7 +787,28 @@ public class ViewportLayoutEditor : EditorWindow
   private void OnInspectorUpdate()
   {
     if (Application.isPlaying)
+    {
       Repaint();
+      return;
+    }
+
+    // Dungeon Features uses the existing preview X/Y EditorPrefs as a small
+    // editor-to-editor bridge. If another editor requests a different tile,
+    // apply it through the normal ViewEdit pose path so all geometry, walls,
+    // preview texture, and per-pose state are refreshed exactly as usual.
+    int requestedX = EditorPrefs.GetInt(PrefsPreviewXKey, previewX);
+    int requestedY = EditorPrefs.GetInt(PrefsPreviewYKey, previewY);
+
+    if (requestedX != previewX || requestedY != previewY)
+    {
+      SwitchPreviewPose(requestedX, requestedY, previewFacing);
+
+      // SwitchPreviewPose refuses non-enterable cells. In that case restore
+      // the shared prefs to the real ViewEdit pose so Dungeon Features snaps
+      // back to the valid highlighted tile instead of drifting out of sync.
+      if (previewX != requestedX || previewY != requestedY)
+        SaveSessionPrefs();
+    }
   }
 
   private void StoreAllNormalWallOverridesForCurrentGeometry()

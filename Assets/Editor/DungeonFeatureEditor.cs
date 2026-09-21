@@ -8,6 +8,13 @@ public class DungeonFeatureEditor : EditorWindow
   private const string HallOfChampionsMapPath =
       "Assets/Data/Maps/HallOfChampions.json";
 
+  // Shared ViewEdit preview pose. Dungeon Features reads these to follow
+  // ViewEdit and writes X/Y when the user clicks a map tile.
+  private const string ViewEditPreviewXKey =
+      "ViewportLayoutEditor.PreviewX";
+  private const string ViewEditPreviewYKey =
+      "ViewportLayoutEditor.PreviewY";
+
   private const float CellSize = 32f;
   private const float LabelLeftMargin = 28f;
   private const float LabelTopMargin = 20f;
@@ -110,6 +117,13 @@ public class DungeonFeatureEditor : EditorWindow
   private void OnEnable()
   {
     LoadMap();
+    SyncSelectionFromViewEdit();
+  }
+
+  private void OnInspectorUpdate()
+  {
+    if (SyncSelectionFromViewEdit())
+      Repaint();
   }
 
   private void LoadMap()
@@ -135,6 +149,29 @@ public class DungeonFeatureEditor : EditorWindow
       map = null;
       mapLoadError = ex.Message;
     }
+  }
+
+  private bool SyncSelectionFromViewEdit()
+  {
+    if (map == null
+        || !EditorPrefs.HasKey(ViewEditPreviewXKey)
+        || !EditorPrefs.HasKey(ViewEditPreviewYKey))
+    {
+      return false;
+    }
+
+    int viewEditX = EditorPrefs.GetInt(ViewEditPreviewXKey, selectedX);
+    int viewEditY = EditorPrefs.GetInt(ViewEditPreviewYKey, selectedY);
+
+    if (!map.IsInside(viewEditX, viewEditY))
+      return false;
+
+    if (selectedX == viewEditX && selectedY == viewEditY)
+      return false;
+
+    selectedX = viewEditX;
+    selectedY = viewEditY;
+    return true;
   }
 
   private void OnGUI()
@@ -622,6 +659,12 @@ public class DungeonFeatureEditor : EditorWindow
 
     selectedX = x;
     selectedY = y;
+
+    // Two-way pose sync: a map click requests the same X/Y in ViewEdit.
+    // Facing is intentionally left unchanged.
+    EditorPrefs.SetInt(ViewEditPreviewXKey, x);
+    EditorPrefs.SetInt(ViewEditPreviewYKey, y);
+
     current.Use();
     GUI.changed = true;
     Repaint();
