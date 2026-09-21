@@ -644,7 +644,9 @@ public class ViewportLayoutEditor : EditorWindow
   [MenuItem("Tools/ViewEdit &v")]
   public static void Open()
   {
-    GetWindow<ViewportLayoutEditor>("ViewEdit");
+    ViewportLayoutEditor window =
+        GetWindow<ViewportLayoutEditor>("ViewEdit");
+    window.Focus();
   }
 
   [InitializeOnLoadMethod]
@@ -986,8 +988,26 @@ public class ViewportLayoutEditor : EditorWindow
     Repaint();
   }
 
+  private bool HandleRightMouseWindowSwitch()
+  {
+    Event current = Event.current;
+    if (current == null
+        || current.type != EventType.MouseDown
+        || current.button != 1)
+    {
+      return false;
+    }
+
+    current.Use();
+    EditorApplication.delayCall += DungeonFeatureEditor.Open;
+    return true;
+  }
+
   private void OnGUI()
   {
+    if (HandleRightMouseWindowSwitch())
+      return;
+
     selectionChangedThisFrame = false;
 
     if (Application.isPlaying

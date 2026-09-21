@@ -145,6 +145,7 @@ public class DungeonFeatureEditor : EditorWindow
     DungeonFeatureEditor window =
         GetWindow<DungeonFeatureEditor>("Dungeon Features");
     window.minSize = new Vector2(1200f, 800f);
+    window.Focus();
   }
 
   private void OnEnable()
@@ -207,8 +208,26 @@ public class DungeonFeatureEditor : EditorWindow
     return true;
   }
 
+  private bool HandleRightMouseWindowSwitch()
+  {
+    Event current = Event.current;
+    if (current == null
+        || current.type != EventType.MouseDown
+        || current.button != 1)
+    {
+      return false;
+    }
+
+    current.Use();
+    EditorApplication.delayCall += ViewportLayoutEditor.Open;
+    return true;
+  }
+
   private void OnGUI()
   {
+    if (HandleRightMouseWindowSwitch())
+      return;
+
     Event current = Event.current;
     if (current.type == EventType.KeyDown
         && current.keyCode == KeyCode.Escape)
