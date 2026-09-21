@@ -481,7 +481,10 @@ public class DungeonFeatureEditor : EditorWindow
     {
       // Tight vertical stacking: use essentially the same visual spacing
       // the letters would have in normal horizontal text.
-      float lineHeight = 12f;
+      // Minimum practical vertical advance for the current 12px bold font.
+      // This makes the letters sit almost directly on top of each other
+      // without intentionally overlapping the glyphs.
+      float lineHeight = 9f;
       float charWidth = 20f;
       float totalHeight = marker.Champion.Length * lineHeight;
       float startY = labelCenter.y - totalHeight * 0.5f;
