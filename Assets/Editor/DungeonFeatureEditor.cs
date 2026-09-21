@@ -14,6 +14,8 @@ public class DungeonFeatureEditor : EditorWindow
       "ViewportLayoutEditor.PreviewX";
   private const string ViewEditPreviewYKey =
       "ViewportLayoutEditor.PreviewY";
+  private const string ViewEditPreviewFacingKey =
+      "ViewportLayoutEditor.PreviewFacing";
 
   private const float CellSize = 32f;
   private const float LabelLeftMargin = 28f;
@@ -138,6 +140,7 @@ public class DungeonFeatureEditor : EditorWindow
   private Vector2 mapScroll;
   private int selectedX = 1;
   private int selectedY = 2;
+  private DungeonFacing selectedFacing = DungeonFacing.North;
 
   [MenuItem("Tools/Dungeon Feature Editor &f")]
   public static void Open()
@@ -196,15 +199,24 @@ public class DungeonFeatureEditor : EditorWindow
 
     int viewEditX = EditorPrefs.GetInt(ViewEditPreviewXKey, selectedX);
     int viewEditY = EditorPrefs.GetInt(ViewEditPreviewYKey, selectedY);
+    DungeonFacing viewEditFacing = (DungeonFacing)EditorPrefs.GetInt(
+        ViewEditPreviewFacingKey,
+        (int)selectedFacing);
 
     if (!map.IsInside(viewEditX, viewEditY))
       return false;
 
-    if (selectedX == viewEditX && selectedY == viewEditY)
+    bool changed =
+        selectedX != viewEditX
+        || selectedY != viewEditY
+        || selectedFacing != viewEditFacing;
+
+    if (!changed)
       return false;
 
     selectedX = viewEditX;
     selectedY = viewEditY;
+    selectedFacing = viewEditFacing;
     return true;
   }
 
@@ -246,6 +258,16 @@ public class DungeonFeatureEditor : EditorWindow
           MessageType.Error);
       return;
     }
+
+    GUIStyle poseStyle = new GUIStyle(EditorStyles.boldLabel)
+    {
+      fontSize = 14
+    };
+
+    EditorGUILayout.LabelField(
+        $"{selectedX} X / Y {selectedY} {selectedFacing}",
+        poseStyle,
+        GUILayout.Height(20f));
 
     DrawMapGrid();
   }
