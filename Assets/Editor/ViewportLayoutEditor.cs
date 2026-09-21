@@ -800,16 +800,28 @@ public class ViewportLayoutEditor : EditorWindow
     // preview texture, and per-pose state are refreshed exactly as usual.
     int requestedX = EditorPrefs.GetInt(PrefsPreviewXKey, previewX);
     int requestedY = EditorPrefs.GetInt(PrefsPreviewYKey, previewY);
+    DungeonFacing requestedFacing = (DungeonFacing)EditorPrefs.GetInt(
+        PrefsPreviewFacingKey,
+        (int)previewFacing);
 
-    if (requestedX != previewX || requestedY != previewY)
+    if (requestedX != previewX
+        || requestedY != previewY
+        || requestedFacing != previewFacing)
     {
-      SwitchPreviewPose(requestedX, requestedY, previewFacing);
+      SwitchPreviewPose(
+          requestedX,
+          requestedY,
+          requestedFacing);
 
       // SwitchPreviewPose refuses non-enterable cells. In that case restore
       // the shared prefs to the real ViewEdit pose so Dungeon Features snaps
       // back to the valid highlighted tile instead of drifting out of sync.
-      if (previewX != requestedX || previewY != requestedY)
+      if (previewX != requestedX
+          || previewY != requestedY
+          || previewFacing != requestedFacing)
+      {
         SaveSessionPrefs();
+      }
     }
   }
 
@@ -4299,7 +4311,11 @@ public class ViewportLayoutEditor : EditorWindow
     if (pointerEvent != null)
     {
       pointerEvent.StopPropagation();
-      pointerEvent.PreventDefault();
+      UnityEngine.UIElements.VisualElement pointerTarget =
+          pointerEvent.currentTarget as UnityEngine.UIElements.VisualElement
+          ?? pointerEvent.target as UnityEngine.UIElements.VisualElement;
+      if (pointerTarget != null && pointerTarget.focusController != null)
+        pointerTarget.focusController.IgnoreEvent(pointerEvent);
     }
 
     gameView.Repaint();
