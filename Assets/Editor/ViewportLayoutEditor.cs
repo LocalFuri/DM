@@ -42,6 +42,20 @@ public class ViewportLayoutEditor : EditorWindow
   private const string ChampionMirrorFrontF3AssetPath =
       "Assets/Art/Champions/Mirror_FrontF3_20x19.png";
 
+  private const string OrnamentArtFolder =
+      "Assets/Art/Ornaments";
+  private const string HookFrontAssetPath =
+      "Assets/Art/Ornaments/Hook_Front_28x28.png";
+  private const string HookSideAssetPath =
+      "Assets/Art/Ornaments/Hook_Side_14x19.png";
+
+  // Original DOS Hook front placement on the wall immediately in front of
+  // the party. Measured from the supplied 320x200 original screenshot:
+  // source = 28x28, screen top-left ~= (98,72), therefore framebuffer
+  // bottom-left Y = 200 - 72 - 28 = 100.
+  private const int HookD1FrontX = 98;
+  private const int HookD1FrontY = 100;
+
   // Original DOS Champion front-mirror placement for a D1 center wall.
   // Measured from the original 320x200 (10,5) South ZED view:
   // screen top-left = (88,62), source = 48x43, therefore framebuffer Y=95.
@@ -328,6 +342,7 @@ public class ViewportLayoutEditor : EditorWindow
   private sealed class ChampionMirrorMapRoot
   {
     public ChampionMirrorPlacement[] championMirrors;
+    public WallOrnamentPlacement[] wallOrnaments;
   }
 
   [System.Serializable]
@@ -339,8 +354,37 @@ public class ViewportLayoutEditor : EditorWindow
     public string wall;
   }
 
+  [System.Serializable]
+  private sealed class WallOrnamentPlacement
+  {
+    public string type;
+    public int ornamentOrdinal;
+    public int x;
+    public int y;
+    public string wall;
+  }
+
+  // The richer DUNGEON.DAT extraction identifies the Hall of Champions Hook
+  // as OrnamentOrdinal 4 on tile/cell (6,9), North wall. Keep this one
+  // placement as a fallback until wallOrnaments is added to HallOfChampions.json.
+  // This is map content, not a camera-pose rendering exception.
+  private static readonly WallOrnamentPlacement[]
+      FallbackHallOfChampionsWallOrnaments =
+      {
+        new WallOrnamentPlacement
+        {
+          type = "Hook",
+          ornamentOrdinal = 4,
+          x = 6,
+          y = 9,
+          wall = "North"
+        }
+      };
+
   private ChampionMirrorPlacement[] previewChampionMirrors =
       new ChampionMirrorPlacement[0];
+  private WallOrnamentPlacement[] previewWallOrnaments =
+      FallbackHallOfChampionsWallOrnaments;
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorSideTexture;
   [System.NonSerialized]
@@ -353,6 +397,10 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedChampionMirrorFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorFrontF3Texture;
+  [System.NonSerialized]
+  private Texture2D cachedHookFrontTexture;
+  [System.NonSerialized]
+  private Texture2D cachedHookSideTexture;
   private readonly Dictionary<string, Texture2D> cachedChampionPortraitTextures =
       new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
 
@@ -8239,6 +8287,12 @@ public class ViewportLayoutEditor : EditorWindow
           mirrorRoot != null && mirrorRoot.championMirrors != null
               ? mirrorRoot.championMirrors
               : new ChampionMirrorPlacement[0];
+      previewWallOrnaments =
+          mirrorRoot != null
+              && mirrorRoot.wallOrnaments != null
+              && mirrorRoot.wallOrnaments.Length > 0
+              ? mirrorRoot.wallOrnaments
+              : FallbackHallOfChampionsWallOrnaments;
 
       previewMiniMapLoadError = null;
     }
@@ -8246,6 +8300,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       previewMiniMap = null;
       previewChampionMirrors = new ChampionMirrorPlacement[0];
+      previewWallOrnaments = FallbackHallOfChampionsWallOrnaments;
       previewMiniMapLoadError = ex.Message;
     }
   }
@@ -12028,6 +12083,10 @@ public class ViewportLayoutEditor : EditorWindow
     BlitChampionMirrorD3LeftIntoPreview(pixels);
     BlitChampionMirrorD3RightIntoPreview(pixels);
 
+    // Wall ornaments are a separate overlay layer above the wall geometry.
+    // First calibration: Hook on the wall immediately in front of the party.
+    BlitHookD1FrontIntoPreview(pixels);
+
     // DIAGNOSTIC COMPOSITION STEP:
     // After all dungeon/wall drawing, restore the entire right-side UI
     // column to solid magenta. The framebuffer is 320x200 and the dungeon
@@ -14780,6 +14839,161 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       cachedChampionMirrorSideTexture = candidate;
+      return candidate;
+    }
+
+    return null;
+  }
+
+  private void BlitHookD1FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D hookFront = GetHookFrontTexture();
+    if (hookFront == null || !hookFront.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    // A D1 front ornament is attached to the forward face of the party's
+    // current floor cell. The tile immediately beyond that face must be wall.
+    int wallTileX = previewX + forwardX;
+    int wallTileY = previewY + forwardY;
+    if (!previewMiniMap.IsInside(wallTileX, wallTileY)
+        || previewMiniMap.GetTile(wallTileX, wallTileY).Type
+            != DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    string viewedWallSide = FacingName(previewFacing);
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!IsHookOrnament(ornament))
+        continue;
+
+      if (ornament.x != previewX
+          || ornament.y != previewY
+          || !string.Equals(
+              ornament.wall,
+              viewedWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      BlitPieceIntoPreview(
+          pixels,
+          hookFront,
+          HookD1FrontX,
+          HookD1FrontY,
+          false);
+      return;
+    }
+  }
+
+  private static bool IsHookOrnament(WallOrnamentPlacement ornament)
+  {
+    if (ornament == null)
+      return false;
+
+    if (ornament.ornamentOrdinal == 4)
+      return true;
+
+    return string.Equals(
+        ornament.type,
+        "Hook",
+        System.StringComparison.OrdinalIgnoreCase);
+  }
+
+  private Texture2D GetHookFrontTexture()
+  {
+    if (cachedHookFrontTexture != null)
+      return cachedHookFrontTexture;
+
+    Texture2D texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(HookFrontAssetPath);
+    if (texture != null && texture.width == 28 && texture.height == 28)
+    {
+      cachedHookFrontTexture = texture;
+      return texture;
+    }
+
+    // Filename-independent fallback inside Assets/Art/Ornaments.
+    string[] guids = AssetDatabase.FindAssets(
+        "Hook t:Texture2D",
+        new[] { OrnamentArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 28 || candidate.height != 28)
+        continue;
+
+      if (path.IndexOf(
+              "hook",
+              System.StringComparison.OrdinalIgnoreCase) < 0
+          || path.IndexOf(
+              "front",
+              System.StringComparison.OrdinalIgnoreCase) < 0)
+      {
+        continue;
+      }
+
+      cachedHookFrontTexture = candidate;
+      return candidate;
+    }
+
+    return null;
+  }
+
+  // Loaded now so the same ornament pipeline is ready for the next side-view
+  // calibration. It is intentionally not drawn until we verify its X/Y.
+  private Texture2D GetHookSideTexture()
+  {
+    if (cachedHookSideTexture != null)
+      return cachedHookSideTexture;
+
+    Texture2D texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(HookSideAssetPath);
+    if (texture != null && texture.width == 14 && texture.height == 19)
+    {
+      cachedHookSideTexture = texture;
+      return texture;
+    }
+
+    string[] guids = AssetDatabase.FindAssets(
+        "Hook t:Texture2D",
+        new[] { OrnamentArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 14 || candidate.height != 19)
+        continue;
+
+      if (path.IndexOf(
+              "hook",
+              System.StringComparison.OrdinalIgnoreCase) < 0
+          || path.IndexOf(
+              "side",
+              System.StringComparison.OrdinalIgnoreCase) < 0)
+      {
+        continue;
+      }
+
+      cachedHookSideTexture = candidate;
       return candidate;
     }
 
