@@ -475,6 +475,43 @@ public class DungeonFeatureEditor : EditorWindow
     Color previousContentColor = GUI.contentColor;
     GUI.contentColor = ChampionNameColor;
 
+    // Tune champion labels one-by-one. Daroou is intentionally drawn as a
+    // narrow top-to-bottom column to the west of his mirror wall face.
+    if (marker.Champion == "Daroou")
+    {
+      // Tight vertical stacking: use essentially the same visual spacing
+      // the letters would have in normal horizontal text.
+      float lineHeight = 12f;
+      float charWidth = 20f;
+      float totalHeight = marker.Champion.Length * lineHeight;
+      float startY = labelCenter.y - totalHeight * 0.5f;
+
+      GUIStyle verticalStyle = new GUIStyle(nameStyle)
+      {
+        alignment = TextAnchor.MiddleCenter,
+        clipping = TextClipping.Overflow
+      };
+
+      for (int i = 0; i < marker.Champion.Length; i++)
+      {
+        string glyph = marker.Champion[i].ToString();
+        Vector2 glyphSize = verticalStyle.CalcSize(new GUIContent(glyph));
+        float width = Mathf.Max(charWidth, glyphSize.x);
+        float height = Mathf.Max(lineHeight, glyphSize.y);
+
+        Rect charRect = new Rect(
+            labelCenter.x - width * 0.5f,
+            startY + i * lineHeight + (lineHeight - height) * 0.5f,
+            width,
+            height);
+
+        GUI.Label(charRect, glyph, verticalStyle);
+      }
+
+      GUI.contentColor = previousContentColor;
+      return;
+    }
+
     if (labelFallsOnWalkableMap)
     {
       // When the outside label position is itself a walkable tile, keep the
