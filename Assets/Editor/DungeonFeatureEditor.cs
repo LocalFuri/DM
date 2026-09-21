@@ -507,16 +507,19 @@ public class DungeonFeatureEditor : EditorWindow
       return;
     }
 
-    // Hissssa / Gothmog: keep Y, put the whole name in column x=18,
-    // immediately to the right of the last accessible tile (x=17).
+    // Hissssa / Gothmog: column x=18, Y centered on the blue/yellow wall marker.
     if (marker.Champion == "Hissssa" || marker.Champion == "Gothmog")
     {
       Vector2 outsideSize = nameStyle.CalcSize(new GUIContent(marker.Champion));
       float outsideWidth = Mathf.Max(outsideSize.x, CellSize);
       float outsideHeight = Mathf.Max(outsideSize.y, 18f);
+      const float markerLineThickness = 3f;
+      float markerCenterY = marker.Side == WallSide.South
+          ? cellRect.yMax - markerLineThickness * 0.5f
+          : cellRect.y + markerLineThickness * 0.5f;
       Rect outsideNameRect = new Rect(
           mapRect.xMax,
-          labelCenter.y - outsideHeight * 0.5f,
+          markerCenterY - outsideHeight * 0.5f,
           outsideWidth,
           outsideHeight);
 
