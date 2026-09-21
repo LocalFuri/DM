@@ -475,10 +475,14 @@ public class DungeonFeatureEditor : EditorWindow
     Color previousContentColor = GUI.contentColor;
     GUI.contentColor = ChampionNameColor;
 
-    // Tiggy (East) and Wuuf (West) share one corridor row. Draw both
-    // horizontally in their outward tile: Tiggy starts at the top edge,
-    // Wuuf at the bottom edge.
-    if (marker.Champion == "Tiggy" || marker.Champion == "Wuuf")
+    // Corridor pairs that would otherwise fuse into one string:
+    // Tiggy/Wuuf and Wu Tse/Leif. Draw both horizontally in the outward
+    // tile: first name at the top edge, second name at the bottom edge.
+    bool pairTop =
+        marker.Champion == "Tiggy" || marker.Champion == "Wu Tse";
+    bool pairBottom =
+        marker.Champion == "Wuuf" || marker.Champion == "Leif";
+    if (pairTop || pairBottom)
     {
       Rect targetTileRect = new Rect(
           labelCenter.x - CellSize * 0.5f,
@@ -488,7 +492,7 @@ public class DungeonFeatureEditor : EditorWindow
 
       GUIStyle pairStyle = new GUIStyle(nameStyle)
       {
-        alignment = marker.Champion == "Tiggy"
+        alignment = pairTop
             ? TextAnchor.UpperCenter
             : TextAnchor.LowerCenter,
         clipping = TextClipping.Overflow
