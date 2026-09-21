@@ -358,26 +358,80 @@ public class ViewportLayoutEditor : EditorWindow
   private sealed class WallOrnamentPlacement
   {
     public string type;
+
+    // IMPORTANT: for explicit DUNGEON.DAT Sensor mechanisms this is the
+    // LEVEL-LOCAL 1-based wall ornament ordinal, not the global ornament ID.
+    // Hall of Champions local ordinal 4, for example, resolves through the
+    // level WallOrnate table to global source ID 6 = Wood Ring.
     public int ornamentOrdinal;
     public int x;
     public int y;
     public string wall;
+
+    // false: x/y are the passable cell carrying an explicit wall mechanism.
+    // true:  x/y are the solid wall tile itself and wall is that tile's
+    //        physical decorated face (the random-decoration CELLFLAG case).
+    public bool wallTilePlacement;
   }
 
-  // The richer DUNGEON.DAT extraction identifies the Hall of Champions Hook
-  // as OrnamentOrdinal 4 on tile/cell (6,9), North wall. Keep this one
-  // placement as a fallback until wallOrnaments is added to HallOfChampions.json.
-  // This is map content, not a camera-pose rendering exception.
+  // Hall of Champions level-local wall ornament table extracted from
+  // DUNGEON.DAT. OrnamentOrdinal is 1-based, so index = ordinal - 1.
+  // WallOrnate: 4, 33, 34, 6, 2, 59, 38, 46, 36, 43
+  // Relevant entries here:
+  //   local 1  -> global 4  = Hook
+  //   local 4  -> global 6  = Wood Ring
+  //   local 10 -> global 43 = Champion Mirror
+  private static readonly int[] HallOfChampionsWallOrnamentSourceIds =
+      { 4, 33, 34, 6, 2, 59, 38, 46, 36, 43 };
+
+  // Hall of Champions ornament fallback content currently covers the current
+  // D1 front cases already verified from the original data:
+  //
+  // 1) Explicit Sensor at passable cell (6,9), North, local ordinal 4.
+  //    The level WallOrnate table resolves that to global ID 6 = Wood Ring.
+  // 2) Random wall-decoration flag on solid wall tile (13,8), South face.
+  //    This one is the Hook seen from player pose (13,9) North.
+  //
+  // Neither entry is a camera-pose rendering exception; both describe map
+  // content and are projected by the ornament overlay renderer.
   private static readonly WallOrnamentPlacement[]
       FallbackHallOfChampionsWallOrnaments =
       {
         new WallOrnamentPlacement
         {
-          type = "Hook",
+          type = "WoodRing",
           ornamentOrdinal = 4,
           x = 6,
           y = 9,
-          wall = "North"
+          wall = "North",
+          wallTilePlacement = false
+        },
+        new WallOrnamentPlacement
+        {
+          type = "Hook",
+          ornamentOrdinal = -1,
+          x = 13,
+          y = 8,
+          wall = "South",
+          wallTilePlacement = true
+        },
+        new WallOrnamentPlacement
+        {
+          type = "WoodRing",
+          ornamentOrdinal = -1,
+          x = 3,
+          y = 4,
+          wall = "East",
+          wallTilePlacement = true
+        },
+        new WallOrnamentPlacement
+        {
+          type = "Slime",
+          ornamentOrdinal = -1,
+          x = 5,
+          y = 5,
+          wall = "West",
+          wallTilePlacement = true
         }
       };
 
@@ -401,6 +455,10 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedHookFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedHookSideTexture;
+  [System.NonSerialized]
+  private Texture2D cachedWoodRingFrontTexture;
+  [System.NonSerialized]
+  private Texture2D cachedSlimeFrontTexture;
   private readonly Dictionary<string, Texture2D> cachedChampionPortraitTextures =
       new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
 
@@ -4002,6 +4060,15 @@ public class ViewportLayoutEditor : EditorWindow
       KeyCode keyCode,
       EventModifiers modifiers)
   {
+    // Unity's GameView invokes editor-global callbacks for mouse events, but
+    // beforeEventProcessed is an additional early hook that runs before the
+    // GameView can consume the click. Use it as a fallback for Edit Mode.
+    if (type == EventType.MouseDown)
+    {
+      TryDispatchViewEditGameViewMouseNavigation();
+      return;
+    }
+
     if (type != EventType.KeyDown)
       return;
 
@@ -4013,7 +4080,267 @@ public class ViewportLayoutEditor : EditorWindow
 
   private static void HandleViewEditGlobalNavigationEvent()
   {
+    // Game View mouse clicks are delivered through the same editor-global
+    // event hook as our keyboard navigation. Handle the visible movement pad
+    // first; keyboard dispatch remains unchanged.
+    if (TryDispatchViewEditGameViewMouseNavigation())
+      return;
+
     TryDispatchViewEditGlobalNavigation();
+  }
+
+  private static bool TryDispatchViewEditGameViewMouseNavigation()
+  {
+    Event current = Event.current;
+    if (current == null
+        || current.type != EventType.MouseDown
+        || current.button != 0
+        || Application.isPlaying)
+    {
+      return false;
+    }
+
+    // GameView itself invokes EditorApplication.globalEventHandler from its
+    // OnGUI for mouse down/up. Resolve the GUIView that is CURRENTLY executing
+    // instead of depending on mouseOverWindow/focusedWindow, which can still
+    // refer to ViewEdit on the first click.
+    EditorWindow gameView = GetCurrentExecutingGameView();
+    if (gameView == null)
+      return false;
+
+    ViewportLayoutEditor window = FindOpenViewEditWindow();
+    if (window == null || window.layout == null)
+      return false;
+
+    if (!TryGetGameViewMousePixelPosition(
+            gameView,
+            current.mousePosition,
+            out Vector2 gamePixel,
+            out Vector2 targetSize))
+    {
+      return false;
+    }
+
+    if (!window.TryHandleMovementArrowsGameViewClick(gamePixel, targetSize))
+      return false;
+
+    current.Use();
+    gameView.Repaint();
+    return true;
+  }
+
+  /// <summary>
+  /// Returns the EditorWindow whose OnGUI is currently executing. This is the
+  /// reliable way to recognize a GameView click from globalEventHandler; the
+  /// focus/mouse-over properties may not yet have updated on the first click.
+  /// </summary>
+  private static EditorWindow GetCurrentExecutingGameView()
+  {
+    const BindingFlags flags =
+        BindingFlags.Static | BindingFlags.Instance
+        | BindingFlags.Public | BindingFlags.NonPublic;
+
+    System.Type guiViewType = typeof(EditorWindow).Assembly.GetType(
+        "UnityEditor.GUIView");
+    if (guiViewType != null)
+    {
+      PropertyInfo currentProperty = guiViewType.GetProperty("current", flags);
+      object currentGuiView = currentProperty != null
+          ? currentProperty.GetValue(null, null)
+          : null;
+
+      if (currentGuiView != null)
+      {
+        // A docked EditorWindow is hosted by HostView. Its internal
+        // actualView property is the GameView currently running OnGUI.
+        PropertyInfo actualViewProperty = null;
+        for (System.Type hostType = currentGuiView.GetType();
+             hostType != null && actualViewProperty == null;
+             hostType = hostType.BaseType)
+        {
+          actualViewProperty = hostType.GetProperty(
+              "actualView",
+              BindingFlags.Instance
+                  | BindingFlags.Public
+                  | BindingFlags.NonPublic
+                  | BindingFlags.DeclaredOnly);
+        }
+
+        EditorWindow actualView = actualViewProperty != null
+            ? actualViewProperty.GetValue(currentGuiView, null) as EditorWindow
+            : null;
+
+        if (actualView != null
+            && actualView.GetType().FullName == "UnityEditor.GameView")
+        {
+          return actualView;
+        }
+      }
+    }
+
+    // Compatibility fallbacks for editor layouts where GUIView.current cannot
+    // be resolved through reflection.
+    EditorWindow hovered = mouseOverWindow;
+    if (hovered != null
+        && hovered.GetType().FullName == "UnityEditor.GameView")
+    {
+      return hovered;
+    }
+
+    EditorWindow focused = focusedWindow;
+    if (focused != null
+        && focused.GetType().FullName == "UnityEditor.GameView")
+    {
+      return focused;
+    }
+
+    return null;
+  }
+
+  /// <summary>
+  /// Converts the GameView IMGUI mouse position directly into render-target
+  /// pixels. Unity's own GameView uses the same gameMouseOffset/gameMouseScale
+  /// conversion, so toolbar height, zoom, DPI and letterboxing are included.
+  /// </summary>
+  private static bool TryGetGameViewMousePixelPosition(
+      EditorWindow gameView,
+      Vector2 mousePosition,
+      out Vector2 gamePixel,
+      out Vector2 targetSize)
+  {
+    gamePixel = Vector2.zero;
+    targetSize = Vector2.zero;
+    if (gameView == null)
+      return false;
+
+    System.Type type = gameView.GetType();
+    const BindingFlags flags =
+        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+    PropertyInfo offsetProperty = type.GetProperty("gameMouseOffset", flags);
+    PropertyInfo scaleProperty = type.GetProperty("gameMouseScale", flags);
+    PropertyInfo targetSizeProperty = type.GetProperty("targetRenderSize", flags);
+
+    if (offsetProperty != null
+        && scaleProperty != null
+        && targetSizeProperty != null)
+    {
+      object offsetValue = offsetProperty.GetValue(gameView, null);
+      object scaleValue = scaleProperty.GetValue(gameView, null);
+      object sizeValue = targetSizeProperty.GetValue(gameView, null);
+
+      if (offsetValue is Vector2 mouseOffset
+          && sizeValue is Vector2 reflectedTargetSize
+          && reflectedTargetSize.x > 0f
+          && reflectedTargetSize.y > 0f)
+      {
+        float mouseScale;
+        try
+        {
+          mouseScale = System.Convert.ToSingle(scaleValue);
+        }
+        catch
+        {
+          mouseScale = 0f;
+        }
+
+        if (mouseScale > 0f)
+        {
+          Vector2 pixel = (mousePosition + mouseOffset) * mouseScale;
+          if (pixel.x >= 0f
+              && pixel.x < reflectedTargetSize.x
+              && pixel.y >= 0f
+              && pixel.y < reflectedTargetSize.y)
+          {
+            gamePixel = pixel;
+            targetSize = reflectedTargetSize;
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /// <summary>
+  /// Hit-tests the six movement buttons in the logical 320x200 framebuffer.
+  /// The movement pad is fixed UI chrome at X=233..319, Y=124..168 in the
+  /// Edit Mode presentation. Using framebuffer coordinates avoids all
+  /// RectTransform/canvas hierarchy ambiguity.
+  /// </summary>
+  private bool TryHandleMovementArrowsGameViewClick(
+      Vector2 gamePixelTopLeft,
+      Vector2 targetSize)
+  {
+    if (Application.isPlaying
+        || layout == null
+        || targetSize.x <= 0f
+        || targetSize.y <= 0f)
+    {
+      return false;
+    }
+
+    ViewportPiece arrowsPiece = FindMovementArrowsPiece();
+    Image arrows = FindMovementArrowsImage();
+    if (arrowsPiece == null
+        || !arrowsPiece.Enabled
+        || arrows == null
+        || !arrows.gameObject.activeInHierarchy)
+    {
+      return false;
+    }
+
+    // Convert whatever resolution/zoom the GameView currently renders to the
+    // exact logical coordinates used by our 320x200 preview texture.
+    float logicalX = gamePixelTopLeft.x * (320f / targetSize.x);
+    float logicalY = gamePixelTopLeft.y * (200f / targetSize.y);
+
+    const float arrowsX = 233f;
+    const float arrowsY = 124f;
+    const float arrowsWidth = 87f;
+    const float arrowsHeight = 45f;
+
+    if (logicalX < arrowsX
+        || logicalX >= arrowsX + arrowsWidth
+        || logicalY < arrowsY
+        || logicalY >= arrowsY + arrowsHeight)
+    {
+      return false;
+    }
+
+    int column = Mathf.Clamp(
+        Mathf.FloorToInt((logicalX - arrowsX) / (arrowsWidth / 3f)),
+        0,
+        2);
+    int rowFromTop = logicalY < arrowsY + arrowsHeight * 0.5f ? 0 : 1;
+    int button = rowFromTop * 3 + column;
+
+    switch (button)
+    {
+      case 0:
+        PreviewNavigateTurnLeft();
+        break;
+      case 1:
+        PreviewNavigateMoveForward();
+        break;
+      case 2:
+        PreviewNavigateTurnRight();
+        break;
+      case 3:
+        PreviewNavigateStrafeLeft();
+        break;
+      case 4:
+        PreviewNavigateMoveBackward();
+        break;
+      case 5:
+        PreviewNavigateStrafeRight();
+        break;
+      default:
+        return false;
+    }
+
+    return true;
   }
 
   private static bool IsViewEditNavigationKey(KeyCode keyCode)
@@ -7984,6 +8311,77 @@ public class ViewportLayoutEditor : EditorWindow
   {
     using (new EditorGUI.DisabledScope(Application.isPlaying || layout == null))
     {
+      Texture2D arrowsTexture = graphics != null
+          ? graphics.GetTexture(DungeonGraphicType.MovementArrows)
+          : null;
+
+      // Edit Mode only: draw the real Dungeon Master movement-arrow graphic
+      // and place six invisible hit regions directly over its 3x2 cells.
+      // Every mouse region calls the exact same navigation methods used by
+      // the existing keyboard/editor controls, so there is only one movement
+      // path to maintain.
+      if (arrowsTexture != null)
+      {
+        float drawWidth = Mathf.Min(96f, arrowsTexture.width);
+        float drawHeight = arrowsTexture.height * (drawWidth / arrowsTexture.width);
+        Rect padRect = GUILayoutUtility.GetRect(
+            drawWidth,
+            drawHeight,
+            GUILayout.Width(drawWidth),
+            GUILayout.Height(drawHeight));
+
+        GUI.DrawTexture(
+            padRect,
+            arrowsTexture,
+            ScaleMode.StretchToFill,
+            true);
+
+        float cellWidth = padRect.width / 3f;
+        float cellHeight = padRect.height / 2f;
+
+        Rect turnLeftRect = new Rect(
+            padRect.x, padRect.y, cellWidth, cellHeight);
+        Rect forwardRect = new Rect(
+            padRect.x + cellWidth, padRect.y, cellWidth, cellHeight);
+        Rect turnRightRect = new Rect(
+            padRect.x + cellWidth * 2f, padRect.y, cellWidth, cellHeight);
+        Rect strafeLeftRect = new Rect(
+            padRect.x, padRect.y + cellHeight, cellWidth, cellHeight);
+        Rect backwardRect = new Rect(
+            padRect.x + cellWidth, padRect.y + cellHeight, cellWidth, cellHeight);
+        Rect strafeRightRect = new Rect(
+            padRect.x + cellWidth * 2f,
+            padRect.y + cellHeight,
+            cellWidth,
+            cellHeight);
+
+        Event current = Event.current;
+        if (current.type == EventType.MouseDown
+            && current.button == 0
+            && padRect.Contains(current.mousePosition))
+        {
+          if (turnLeftRect.Contains(current.mousePosition))
+            PreviewNavigateTurnLeft();
+          else if (forwardRect.Contains(current.mousePosition))
+            PreviewNavigateMoveForward();
+          else if (turnRightRect.Contains(current.mousePosition))
+            PreviewNavigateTurnRight();
+          else if (strafeLeftRect.Contains(current.mousePosition))
+            PreviewNavigateStrafeLeft();
+          else if (backwardRect.Contains(current.mousePosition))
+            PreviewNavigateMoveBackward();
+          else if (strafeRightRect.Contains(current.mousePosition))
+            PreviewNavigateStrafeRight();
+
+          current.Use();
+          TryRefocusPreviewWindow();
+          Repaint();
+        }
+
+        return;
+      }
+
+      // Fallback only if the movement-arrow texture is unavailable.
       const float buttonWidth = 28f;
       const float buttonHeight = 22f;
 
@@ -12084,7 +12482,11 @@ public class ViewportLayoutEditor : EditorWindow
     BlitChampionMirrorD3RightIntoPreview(pixels);
 
     // Wall ornaments are a separate overlay layer above the wall geometry.
-    // First calibration: Hook on the wall immediately in front of the party.
+    // The Hall of Champions level-local ornament table is resolved before
+    // choosing the art: (6,9) North is Wood Ring, while (13,9) North sees a
+    // Hook generated by the random-decoration flag on wall tile (13,8).
+    BlitWoodRingD1FrontIntoPreview(pixels);
+    BlitSlimeD1FrontIntoPreview(pixels);
     BlitHookD1FrontIntoPreview(pixels);
 
     // DIAGNOSTIC COMPOSITION STEP:
@@ -14845,6 +15247,294 @@ public class ViewportLayoutEditor : EditorWindow
     return null;
   }
 
+  private static int ResolveHallOfChampionsWallOrnamentSourceId(
+      WallOrnamentPlacement ornament)
+  {
+    if (ornament == null || ornament.wallTilePlacement)
+      return -1;
+
+    int index = ornament.ornamentOrdinal - 1;
+    if (index < 0 || index >= HallOfChampionsWallOrnamentSourceIds.Length)
+      return -1;
+
+    return HallOfChampionsWallOrnamentSourceIds[index];
+  }
+
+  private void BlitWoodRingD1FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D woodRingFront = GetWoodRingFrontTexture();
+    if (woodRingFront == null || !woodRingFront.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int wallTileX = previewX + forwardX;
+    int wallTileY = previewY + forwardY;
+    if (!previewMiniMap.IsInside(wallTileX, wallTileY)
+        || previewMiniMap.GetTile(wallTileX, wallTileY).Type
+            != DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    string viewedWallSide = FacingName(previewFacing);
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!IsWoodRingOrnament(ornament))
+        continue;
+
+      bool placementMatches;
+      if (ornament.wallTilePlacement)
+      {
+        // Random wall-decoration bits belong to the solid wall tile itself.
+        string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+        placementMatches =
+            ornament.x == wallTileX
+            && ornament.y == wallTileY
+            && string.Equals(
+                ornament.wall,
+                visiblePhysicalWallFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        // Explicit mechanisms are stored on the passable cell and use the
+        // direction from that cell toward the wall boundary.
+        placementMatches =
+            ornament.x == previewX
+            && ornament.y == previewY
+            && string.Equals(
+                ornament.wall,
+                viewedWallSide,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (!placementMatches)
+        continue;
+
+      // Initial D1-front calibration uses the same original wall-center anchor
+      // as the verified 28x28 Hook: framebuffer center (112,114). Keeping the
+      // anchor independent of texture size lets the native Wood Ring PNG draw
+      // 1:1 without guessing or rescaling it. We can nudge X/Y after the first
+      // original-vs-Unity comparison if the source artwork requires it.
+      int x = 112 - (woodRingFront.width / 2);
+      int y = 114 - (woodRingFront.height / 2);
+
+      BlitPieceIntoPreview(
+          pixels,
+          woodRingFront,
+          x,
+          y,
+          false);
+      return;
+    }
+  }
+
+  private static bool IsWoodRingOrnament(WallOrnamentPlacement ornament)
+  {
+    if (ornament == null)
+      return false;
+
+    if (string.Equals(
+            ornament.type,
+            "WoodRing",
+            System.StringComparison.OrdinalIgnoreCase)
+        || string.Equals(
+            ornament.type,
+            "Wood Ring",
+            System.StringComparison.OrdinalIgnoreCase))
+    {
+      return true;
+    }
+
+    return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 6;
+  }
+
+  private Texture2D GetWoodRingFrontTexture()
+  {
+    if (cachedWoodRingFrontTexture != null)
+      return cachedWoodRingFrontTexture;
+
+    // Do not bake dimensions into the renderer. The original native source is
+    // used 1:1. Accept WoodRing_Front..., Wood_Ring_Front..., or equivalent.
+    string[] guids = AssetDatabase.FindAssets(
+        "t:Texture2D",
+        new[] { OrnamentArtFolder });
+
+    Texture2D fallback = null;
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      string lower = path.ToLowerInvariant();
+      bool isWoodRing =
+          lower.Contains("woodring")
+          || (lower.Contains("wood") && lower.Contains("ring"));
+      if (!isWoodRing)
+        continue;
+
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null)
+        continue;
+
+      if (lower.Contains("front"))
+      {
+        cachedWoodRingFrontTexture = candidate;
+        return candidate;
+      }
+
+      if (fallback == null && !lower.Contains("side"))
+        fallback = candidate;
+    }
+
+    cachedWoodRingFrontTexture = fallback;
+    return fallback;
+  }
+
+  private void BlitSlimeD1FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D slimeFront = GetSlimeFrontTexture();
+    if (slimeFront == null || !slimeFront.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int wallTileX = previewX + forwardX;
+    int wallTileY = previewY + forwardY;
+    if (!previewMiniMap.IsInside(wallTileX, wallTileY)
+        || previewMiniMap.GetTile(wallTileX, wallTileY).Type
+            != DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    string viewedWallSide = FacingName(previewFacing);
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!IsSlimeOrnament(ornament))
+        continue;
+
+      bool placementMatches;
+      if (ornament.wallTilePlacement)
+      {
+        string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+        placementMatches =
+            ornament.x == wallTileX
+            && ornament.y == wallTileY
+            && string.Equals(
+                ornament.wall,
+                visiblePhysicalWallFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        placementMatches =
+            ornament.x == previewX
+            && ornament.y == previewY
+            && string.Equals(
+                ornament.wall,
+                viewedWallSide,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (!placementMatches)
+        continue;
+
+      // Same D1 front wall-center anchor used by the verified Hook/Wood Ring.
+      // Native Slime front PNG is drawn 1:1.
+      // Original-vs-Unity comparison at (4,5) East showed the sprite shape
+      // and X position were already exact, but Unity was 59 screen pixels too
+      // high. Preview framebuffer Y runs opposite the screen direction here,
+      // so move the ornament anchor from Y=114 down to framebuffer Y=55.
+      int x = 112 - (slimeFront.width / 2);
+      int y = 55 - (slimeFront.height / 2);
+
+      BlitPieceIntoPreview(
+          pixels,
+          slimeFront,
+          x,
+          y,
+          false);
+      return;
+    }
+  }
+
+  private static bool IsSlimeOrnament(WallOrnamentPlacement ornament)
+  {
+    if (ornament == null)
+      return false;
+
+    if (string.Equals(
+            ornament.type,
+            "Slime",
+            System.StringComparison.OrdinalIgnoreCase))
+    {
+      return true;
+    }
+
+    return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 33;
+  }
+
+  private Texture2D GetSlimeFrontTexture()
+  {
+    if (cachedSlimeFrontTexture != null)
+      return cachedSlimeFrontTexture;
+
+    string[] guids = AssetDatabase.FindAssets(
+        "Slime t:Texture2D",
+        new[] { OrnamentArtFolder });
+
+    Texture2D fallback = null;
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      string lower = path.ToLowerInvariant();
+      if (!lower.Contains("slime"))
+        continue;
+
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null)
+        continue;
+
+      if (lower.Contains("front"))
+      {
+        cachedSlimeFrontTexture = candidate;
+        return candidate;
+      }
+
+      if (fallback == null && !lower.Contains("side"))
+        fallback = candidate;
+    }
+
+    cachedSlimeFrontTexture = fallback;
+    return fallback;
+  }
+
   private void BlitHookD1FrontIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -14864,8 +15554,9 @@ public class ViewportLayoutEditor : EditorWindow
         out int forwardX,
         out int forwardY);
 
-    // A D1 front ornament is attached to the forward face of the party's
-    // current floor cell. The tile immediately beyond that face must be wall.
+    // A D1 front ornament can come from either an explicit mechanism on the
+    // party's current passable cell or a decoration encoded on the solid wall
+    // tile itself. In both cases the tile immediately ahead must be wall.
     int wallTileX = previewX + forwardX;
     int wallTileY = previewY + forwardY;
     if (!previewMiniMap.IsInside(wallTileX, wallTileY)
@@ -14883,15 +15574,35 @@ public class ViewportLayoutEditor : EditorWindow
       if (!IsHookOrnament(ornament))
         continue;
 
-      if (ornament.x != previewX
-          || ornament.y != previewY
-          || !string.Equals(
-              ornament.wall,
-              viewedWallSide,
-              System.StringComparison.OrdinalIgnoreCase))
+      bool placementMatches;
+      if (ornament.wallTilePlacement)
       {
-        continue;
+        // Random wall-decoration bits belong to the solid wall tile. When the
+        // party looks North, for example, it sees that wall tile's South face.
+        string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+        placementMatches =
+            ornament.x == wallTileX
+            && ornament.y == wallTileY
+            && string.Equals(
+                ornament.wall,
+                visiblePhysicalWallFace,
+                System.StringComparison.OrdinalIgnoreCase);
       }
+      else
+      {
+        // Explicit mechanisms are stored on the passable cell and use the
+        // direction from that cell toward the wall boundary.
+        placementMatches =
+            ornament.x == previewX
+            && ornament.y == previewY
+            && string.Equals(
+                ornament.wall,
+                viewedWallSide,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (!placementMatches)
+        continue;
 
       BlitPieceIntoPreview(
           pixels,
@@ -14908,13 +15619,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (ornament == null)
       return false;
 
-    if (ornament.ornamentOrdinal == 4)
+    if (string.Equals(
+            ornament.type,
+            "Hook",
+            System.StringComparison.OrdinalIgnoreCase))
+    {
       return true;
+    }
 
-    return string.Equals(
-        ornament.type,
-        "Hook",
-        System.StringComparison.OrdinalIgnoreCase);
+    // Explicit Sensor ordinals are level-local. On Hall of Champions local
+    // ordinal 1 resolves to global wall ornament source ID 4 = Hook.
+    return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 4;
   }
 
   private Texture2D GetHookFrontTexture()
@@ -15008,6 +15723,18 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonFacing.East => "East",
       DungeonFacing.South => "South",
       DungeonFacing.West => "West",
+      _ => string.Empty
+    };
+  }
+
+  private static string OppositeFacingName(DungeonFacing facing)
+  {
+    return facing switch
+    {
+      DungeonFacing.North => "South",
+      DungeonFacing.East => "West",
+      DungeonFacing.South => "North",
+      DungeonFacing.West => "East",
       _ => string.Empty
     };
   }
