@@ -17,7 +17,6 @@ public class DungeonFeatureEditor : EditorWindow
   private const float OutsideFeatureVerticalMargin = 32f;
   // Virtual column just past the Hall of Champions map (x = 0..17).
   private const int OutsideNameColumnX = 18;
-  private const float InspectorWidth = 320f;
 
   private static readonly Color WallColor = new Color(0.22f, 0.22f, 0.22f);
   private static readonly Color FloorColor = new Color(0.78f, 0.78f, 0.78f);
@@ -159,19 +158,7 @@ public class DungeonFeatureEditor : EditorWindow
       return;
     }
 
-    EditorGUILayout.BeginHorizontal();
-
-    EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
     DrawMapGrid();
-    EditorGUILayout.EndVertical();
-
-    EditorGUILayout.BeginVertical(
-        GUILayout.Width(InspectorWidth),
-        GUILayout.ExpandHeight(true));
-    DrawSelectedTilePanel();
-    EditorGUILayout.EndVertical();
-
-    EditorGUILayout.EndHorizontal();
   }
 
   private void DrawMapGrid()
@@ -640,37 +627,4 @@ public class DungeonFeatureEditor : EditorWindow
     Repaint();
   }
 
-  private void DrawSelectedTilePanel()
-  {
-    EditorGUILayout.LabelField("Selected Tile", EditorStyles.boldLabel);
-    EditorGUILayout.Space();
-
-    EditorGUILayout.LabelField("Level", "0");
-    EditorGUILayout.LabelField("X", selectedX.ToString());
-    EditorGUILayout.LabelField("Y", selectedY.ToString());
-
-    if (!map.IsInside(selectedX, selectedY))
-    {
-      EditorGUILayout.HelpBox(
-          "Selected coordinate is outside the map.",
-          MessageType.Warning);
-      return;
-    }
-
-    DungeonTile tile = map.GetTile(selectedX, selectedY);
-
-    EditorGUILayout.LabelField("Gameplay Type", tile.Type.ToString());
-    EditorGUILayout.LabelField("Source Type", tile.SourceType.ToString());
-    EditorGUILayout.LabelField("Raw", tile.Raw.ToString());
-    EditorGUILayout.LabelField("Hex", tile.Raw.ToString("X2"));
-
-    if (tile.SourceType == DungeonSourceTileType.Stairs
-        && tile.TryGetStairsDirection(out bool isUp))
-    {
-      EditorGUILayout.LabelField(
-          "Stairs Direction",
-          isUp ? "Up" : "Down");
-    }
-
-  }
 }
