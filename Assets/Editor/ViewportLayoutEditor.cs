@@ -33,6 +33,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Champions/Champion_Mirror_Side_16x35.png";
   private const string ChampionMirrorSideDistantAssetPath =
       "Assets/Art/Champions/Mirror_Side_15x15.png";
+  private const string ChampionMirrorSideDistantLeftAssetPath =
+      "Assets/Art/Champions/Mirror_Side_7x15.png";
   private const string ChampionMirrorSideD2AssetPath =
       "Assets/Art/Champions/Mirror_Side_10x23.png";
   private const string ChampionMirrorFrontAssetPath =
@@ -98,6 +100,8 @@ public class ViewportLayoutEditor : EditorWindow
   // (Mirror_Side_15x15.png), so no scaling or mirroring is needed here.
   // Original screenshot bounds: screen X=194..208, Y=69..83, therefore
   // framebuffer bottom-left Y = 200 - 69 - 15 = 116.
+  private const int ChampionMirrorD3LeftX = 78;
+  private const int ChampionMirrorD3LeftY = 116;
   private const int ChampionMirrorD3RightX = 194;
   private const int ChampionMirrorD3RightY = 116;
 
@@ -341,6 +345,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedChampionMirrorSideTexture;
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorSideDistantTexture;
+  [System.NonSerialized]
+  private Texture2D cachedChampionMirrorSideDistantLeftTexture;
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorSideD2Texture;
   [System.NonSerialized]
@@ -2157,7 +2163,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Right
     ("RightF0", 191, 33),
-    ("RightF1", 165, 42),
+    ("RightF1", 164, 42),
     ("RightF2", 146, 52),
     ("RightF3", 134, 58),
     ("Wall F0Right", null, null),
@@ -5154,7 +5160,7 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (useViewport17WallAuthority)
       {
-        text.Append("\nNATIVE D1: L/C/R=60/160/60  X=0/32/165  Y=42  order=L->R->C");
+        text.Append("\nNATIVE D1: L/C/R=60/160/60  X=0/32/164  Y=42  order=L->R->C");
       }
 
     }
@@ -9663,7 +9669,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      // D1: 60 / 160 / 60 at X 0 / 32 / 165, display Y 42.
+      // D1: 60 / 160 / 60 at X 0 / 32 / 164, display Y 42.
       if (IsWallF1LeftPiece(piece))
       {
         state.Enabled = d1LeftEnabled;
@@ -9688,7 +9694,7 @@ public class ViewportLayoutEditor : EditorWindow
       if (IsWallF1RightPiece(piece))
       {
         state.Enabled = d1RightEnabled;
-        state.X = 165;
+        state.X = 164;
         state.Y = DisplayYToUnityY(42, 111);
         state.Mirror = d1RightMirror;
         resolvedNormalWallByPiece[piece] = state;
@@ -12019,6 +12025,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitChampionMirrorD3FrontIntoPreview(pixels);
     BlitChampionMirrorD2LeftIntoPreview(pixels);
     BlitChampionMirrorD2RightIntoPreview(pixels);
+    BlitChampionMirrorD3LeftIntoPreview(pixels);
     BlitChampionMirrorD3RightIntoPreview(pixels);
 
     // DIAGNOSTIC COMPOSITION STEP:
@@ -13066,7 +13073,7 @@ public class ViewportLayoutEditor : EditorWindow
   /// <summary>
   /// V17 native-DOS D1 renderer.  DOS draws D1L, D1R, then D1C.
   /// Native geometry is 60x111 / 160x111 / 60x111 at viewport X
-  /// 0 / 32 / 165 and viewport Y 9 (Game/ViewEdit display Y 42).
+  /// 0 / 32 / 164 and viewport Y 9 (Game/ViewEdit display Y 42).
   /// D1 side strips use the side-wall phase. The FrontF1 center uses the
   /// full FrontF1 parity phase: even (X + Y + facing) = mirrored. D1C is
   /// opaque and therefore drawn last.
@@ -13147,7 +13154,7 @@ public class ViewportLayoutEditor : EditorWindow
         && rightSource.width == 60
         && rightSource.height == nativeHeight)
     {
-      int rightX = 165;
+      int rightX = 164;
       int rightY = destinationY;
       ApplyViewport17FamilyDestOverride("RightF1", ref rightX, ref rightY);
       BlitPieceIntoPreview(
@@ -14259,6 +14266,93 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  private void BlitChampionMirrorD3LeftIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewChampionMirrors == null
+        || previewChampionMirrors.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D sideMirror = GetChampionMirrorSideDistantLeftTexture();
+    if (sideMirror == null || !sideMirror.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    // D3-left side ornament: the center corridor remains open through D3,
+    // while the screen-left side lane is open at D1/D2 and closes with the
+    // decorated wall at D3. This is the geometry visible at (12,9) West.
+    int d1CenterX = previewX + forwardX;
+    int d1CenterY = previewY + forwardY;
+    int d2CenterX = previewX + forwardX * 2;
+    int d2CenterY = previewY + forwardY * 2;
+    int d3CenterX = previewX + forwardX * 3;
+    int d3CenterY = previewY + forwardY * 3;
+    int d1LeftX = d1CenterX - rightX;
+    int d1LeftY = d1CenterY - rightY;
+    int d2LeftX = d2CenterX - rightX;
+    int d2LeftY = d2CenterY - rightY;
+    int mirrorX = d3CenterX - rightX;
+    int mirrorY = d3CenterY - rightY;
+
+    if (!previewMiniMap.IsInside(d1CenterX, d1CenterY)
+        || previewMiniMap.GetTile(d1CenterX, d1CenterY).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(d2CenterX, d2CenterY)
+        || previewMiniMap.GetTile(d2CenterX, d2CenterY).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(d3CenterX, d3CenterY)
+        || previewMiniMap.GetTile(d3CenterX, d3CenterY).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(d1LeftX, d1LeftY)
+        || previewMiniMap.GetTile(d1LeftX, d1LeftY).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(d2LeftX, d2LeftY)
+        || previewMiniMap.GetTile(d2LeftX, d2LeftY).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(mirrorX, mirrorY)
+        || previewMiniMap.GetTile(mirrorX, mirrorY).Type != DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    // Screen-left side walls face inward toward the corridor: TurnRight.
+    string leftWallSide = FacingName(TurnPreviewFacingRight(previewFacing));
+
+    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    {
+      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
+        continue;
+
+      if (mirror.x != mirrorX
+          || mirror.y != mirrorY
+          || !string.Equals(
+              mirror.wall,
+              leftWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      // Mirror_Side_7x15.png is the exact left D3 cutout from the original.
+      // Draw 1:1 at the measured DOS bounds: screen X=78..84, Y=69..83,
+      // which is framebuffer bottom-left (78,116). No runtime mirroring.
+      BlitPieceIntoPreview(
+          pixels,
+          sideMirror,
+          ChampionMirrorD3LeftX,
+          ChampionMirrorD3LeftY,
+          false);
+      return;
+    }
+  }
+
   private void BlitChampionMirrorD3RightIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -14550,6 +14644,64 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       cachedChampionMirrorSideD2Texture = candidate;
+      return candidate;
+    }
+
+    return null;
+  }
+
+  private Texture2D GetChampionMirrorSideDistantLeftTexture()
+  {
+    if (cachedChampionMirrorSideDistantLeftTexture != null)
+      return cachedChampionMirrorSideDistantLeftTexture;
+
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        ChampionMirrorSideDistantLeftAssetPath);
+    if (texture != null && texture.width == 7 && texture.height == 15)
+    {
+      cachedChampionMirrorSideDistantLeftTexture = texture;
+      return texture;
+    }
+
+    // Also accept the exact named asset anywhere below Assets. This keeps the
+    // renderer working if the 7x15 cutout is placed directly in Assets rather
+    // than in Assets/Art/Champions.
+    string[] exactGuids = AssetDatabase.FindAssets(
+        "Mirror_Side_7x15 t:Texture2D",
+        new[] { "Assets" });
+    for (int i = 0; i < exactGuids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(exactGuids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 7 || candidate.height != 15)
+        continue;
+
+      cachedChampionMirrorSideDistantLeftTexture = candidate;
+      return candidate;
+    }
+
+    // Final fallback: any 7x15 mirror-side texture in the Champion art folder.
+    string[] guids = AssetDatabase.FindAssets(
+        "t:Texture2D",
+        new[] { ChampionArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 7 || candidate.height != 15)
+        continue;
+
+      if (path.IndexOf(
+              "mirror",
+              System.StringComparison.OrdinalIgnoreCase) < 0
+          || path.IndexOf(
+              "side",
+              System.StringComparison.OrdinalIgnoreCase) < 0)
+      {
+        continue;
+      }
+
+      cachedChampionMirrorSideDistantLeftTexture = candidate;
       return candidate;
     }
 
