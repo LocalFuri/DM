@@ -21,13 +21,78 @@ public class DungeonFeatureEditor : EditorWindow
   private static readonly Color SelectionBorderColor =
       new Color(0.2f, 0.85f, 1f, 1f);
 
+  // Champion mirror map marker: cyan wall-face tick with a small yellow center.
+  private static readonly Color ChampionMirrorLineColor =
+      new Color(0.0f, 0.85f, 1.0f, 1f);
+  private static readonly Color ChampionMirrorDotColor =
+      new Color(1.0f, 0.9f, 0.0f, 1f);
+
+  private enum WallSide
+  {
+    North,
+    East,
+    South,
+    West
+  }
+
+  private sealed class ChampionMirrorMarker
+  {
+    public int X;
+    public int Y;
+    public WallSide Side;
+    public string Champion;
+
+    public ChampionMirrorMarker(
+        int x,
+        int y,
+        WallSide side,
+        string champion)
+    {
+      X = x;
+      Y = y;
+      Side = side;
+      Champion = champion;
+    }
+  }
+
+  // Hall of Champions mirror positions extracted from the original
+  // direction-aware level data. Direction is the wall face on which the
+  // champion portrait/mirror appears.
+  private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =
+  {
+    new ChampionMirrorMarker(10, 4, WallSide.North, "Iaido"),
+    new ChampionMirrorMarker(10, 5, WallSide.South, "Zed"),
+    new ChampionMirrorMarker(14, 3, WallSide.North, "Chani"),
+    new ChampionMirrorMarker(15, 4, WallSide.East, "Hawk"),
+    new ChampionMirrorMarker(14, 6, WallSide.South, "Boris"),
+    new ChampionMirrorMarker(16, 8, WallSide.North, "Alex"),
+    new ChampionMirrorMarker(17, 9, WallSide.South, "Nabi"),
+    new ChampionMirrorMarker(16, 14, WallSide.South, "Hissssa"),
+    new ChampionMirrorMarker(16, 17, WallSide.North, "Gothmog"),
+    new ChampionMirrorMarker(14, 12, WallSide.East, "Sonja"),
+    new ChampionMirrorMarker(13, 12, WallSide.West, "Leyla"),
+    new ChampionMirrorMarker(13, 14, WallSide.East, "Mophus"),
+    new ChampionMirrorMarker(12, 13, WallSide.West, "Wuuf"),
+    new ChampionMirrorMarker(11, 15, WallSide.South, "Stamm"),
+    new ChampionMirrorMarker(7, 16, WallSide.South, "Azizi"),
+    new ChampionMirrorMarker(8, 15, WallSide.North, "Leif"),
+    new ChampionMirrorMarker(9, 13, WallSide.East, "Tiggy"),
+    new ChampionMirrorMarker(7, 13, WallSide.South, "Wu Tse"),
+    new ChampionMirrorMarker(6, 13, WallSide.West, "Daroou"),
+    new ChampionMirrorMarker(7, 9, WallSide.North, "Halk"),
+    new ChampionMirrorMarker(9, 9, WallSide.South, "Syra"),
+    new ChampionMirrorMarker(11, 10, WallSide.South, "Gando"),
+    new ChampionMirrorMarker(12, 9, WallSide.North, "Linflas"),
+    new ChampionMirrorMarker(9, 7, WallSide.West, "Elija")
+  };
+
   private DungeonMap map;
   private string mapLoadError;
   private Vector2 mapScroll;
   private int selectedX = 1;
   private int selectedY = 2;
 
-  [MenuItem("Tools/Dungeon Feature Editor")]
+  [MenuItem("Tools/Dungeon Feature Editor &f")]
   public static void Open()
   {
     DungeonFeatureEditor window =
@@ -67,6 +132,15 @@ public class DungeonFeatureEditor : EditorWindow
 
   private void OnGUI()
   {
+    Event current = Event.current;
+    if (current.type == EventType.KeyDown
+        && current.keyCode == KeyCode.Escape)
+    {
+      current.Use();
+      Close();
+      return;
+    }
+
     if (map == null)
     {
       EditorGUILayout.HelpBox(
@@ -132,6 +206,7 @@ public class DungeonFeatureEditor : EditorWindow
       }
     }
 
+    DrawChampionMirrorMarkers(mapRect);
     HandleGridClick(mapRect);
 
     EditorGUILayout.EndScrollView();
@@ -227,6 +302,99 @@ public class DungeonFeatureEditor : EditorWindow
         SelectionBorderColor);
   }
 
+  private static void DrawChampionMirrorMarkers(Rect mapRect)
+  {
+    const float lineLength = 12f;
+    const float lineThickness = 3f;
+    const float dotSize = 4f;
+
+    for (int i = 0; i < ChampionMirrorMarkers.Length; i++)
+    {
+      ChampionMirrorMarker marker = ChampionMirrorMarkers[i];
+
+      Rect cellRect = new Rect(
+          mapRect.x + marker.X * CellSize,
+          mapRect.y + marker.Y * CellSize,
+          CellSize,
+          CellSize);
+
+      Rect lineRect;
+      Rect dotRect;
+
+      switch (marker.Side)
+      {
+        case WallSide.North:
+        {
+          float centerX = cellRect.center.x;
+          lineRect = new Rect(
+              centerX - lineLength * 0.5f,
+              cellRect.y,
+              lineLength,
+              lineThickness);
+          dotRect = new Rect(
+              centerX - dotSize * 0.5f,
+              cellRect.y - (dotSize - lineThickness) * 0.5f,
+              dotSize,
+              dotSize);
+          break;
+        }
+
+        case WallSide.East:
+        {
+          float centerY = cellRect.center.y;
+          lineRect = new Rect(
+              cellRect.xMax - lineThickness,
+              centerY - lineLength * 0.5f,
+              lineThickness,
+              lineLength);
+          dotRect = new Rect(
+              cellRect.xMax - lineThickness
+                  - (dotSize - lineThickness) * 0.5f,
+              centerY - dotSize * 0.5f,
+              dotSize,
+              dotSize);
+          break;
+        }
+
+        case WallSide.South:
+        {
+          float centerX = cellRect.center.x;
+          lineRect = new Rect(
+              centerX - lineLength * 0.5f,
+              cellRect.yMax - lineThickness,
+              lineLength,
+              lineThickness);
+          dotRect = new Rect(
+              centerX - dotSize * 0.5f,
+              cellRect.yMax - lineThickness
+                  - (dotSize - lineThickness) * 0.5f,
+              dotSize,
+              dotSize);
+          break;
+        }
+
+        default: // West
+        {
+          float centerY = cellRect.center.y;
+          lineRect = new Rect(
+              cellRect.x,
+              centerY - lineLength * 0.5f,
+              lineThickness,
+              lineLength);
+          dotRect = new Rect(
+              cellRect.x - (dotSize - lineThickness) * 0.5f,
+              centerY - dotSize * 0.5f,
+              dotSize,
+              dotSize);
+          break;
+        }
+      }
+
+      EditorGUI.DrawRect(lineRect, ChampionMirrorLineColor);
+      EditorGUI.DrawRect(dotRect, ChampionMirrorDotColor);
+    }
+  }
+
   private void HandleGridClick(Rect mapRect)
   {
     Event current = Event.current;
@@ -284,6 +452,21 @@ public class DungeonFeatureEditor : EditorWindow
 
     EditorGUILayout.Space();
     EditorGUILayout.LabelField("Features on this tile", EditorStyles.boldLabel);
-    EditorGUILayout.HelpBox("No authored features yet.", MessageType.Info);
+
+    bool foundChampionMirror = false;
+    for (int i = 0; i < ChampionMirrorMarkers.Length; i++)
+    {
+      ChampionMirrorMarker marker = ChampionMirrorMarkers[i];
+      if (marker.X != selectedX || marker.Y != selectedY)
+        continue;
+
+      foundChampionMirror = true;
+      EditorGUILayout.LabelField(
+          "Champion Mirror",
+          marker.Champion + " [" + marker.Side + "]");
+    }
+
+    if (!foundChampionMirror)
+      EditorGUILayout.HelpBox("No authored features yet.", MessageType.Info);
   }
 }
