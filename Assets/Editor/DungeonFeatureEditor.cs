@@ -43,12 +43,9 @@ public class DungeonFeatureEditor : EditorWindow
   private static readonly Color ChampionNameColor =
       new Color(0f, 1f, 0f, 1f);
 
-  // Hook wall ornaments: orange full-edge bar + white center dot.
-  private static readonly Color HookMarkerColor =
-      new Color(1f, 0.35f, 0f, 1f);
-  private static readonly Color HookDotColor =
-      new Color(1f, 1f, 1f, 1f);
-
+  // Fallback color used only when an ornament texture cannot be found.
+  private static readonly Color OrnamentFallbackColor =
+      new Color(1f, 0.55f, 0f, 1f);
 
   private enum WallSide
   {
@@ -81,30 +78,43 @@ public class DungeonFeatureEditor : EditorWindow
   // Hall of Champions mirror positions extracted from the original
   // direction-aware level data. Direction is the wall face on which the
   // champion portrait/mirror appears.
-  private sealed class HookMarker
+  private sealed class OriginalWallOrnamentMarker
   {
+    public string Type;
     public int X;
     public int Y;
     public WallSide Side;
+    public bool WallTilePlacement;
 
-    public HookMarker(int x, int y, WallSide side)
+    public OriginalWallOrnamentMarker(
+        string type,
+        int x,
+        int y,
+        WallSide side,
+        bool wallTilePlacement)
     {
+      Type = type;
       X = x;
       Y = y;
       Side = side;
+      WallTilePlacement = wallTilePlacement;
     }
   }
 
-  // Hall of Champions Hook wall faces.
-  // Kept explicit in the map editor so they always render and can be
-  // visually checked one-by-one against the original.
-  private static readonly HookMarker[] HookMarkers =
+  // Exact Hall of Champions originals already used by ViewEdit.
+  // This table is display-only in Dungeon Features; it does not edit or
+  // replace ViewportLayoutEditor's fallback placements.
+  private static readonly OriginalWallOrnamentMarker[]
+      OriginalHallWallOrnaments =
   {
-    new HookMarker(12, 6, WallSide.West),
-    new HookMarker(13, 8, WallSide.South),
-    new HookMarker(17, 11, WallSide.West),
-    new HookMarker(5, 15, WallSide.West),
-    new HookMarker(3, 16, WallSide.East),
+    new OriginalWallOrnamentMarker(
+        "WoodRing", 6, 9, WallSide.North, false),
+    new OriginalWallOrnamentMarker(
+        "Hook", 13, 8, WallSide.South, true),
+    new OriginalWallOrnamentMarker(
+        "WoodRing", 3, 4, WallSide.East, true),
+    new OriginalWallOrnamentMarker(
+        "Slime", 5, 5, WallSide.West, true)
   };
 
   private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =
@@ -142,6 +152,11 @@ public class DungeonFeatureEditor : EditorWindow
   private int selectedY = 2;
   private DungeonFacing selectedFacing = DungeonFacing.North;
 
+  private bool ornamentTexturesResolved;
+  private Texture2D hookMapIcon;
+  private Texture2D woodRingMapIcon;
+  private Texture2D slimeMapIcon;
+
   [MenuItem("Tools/Dungeon Feature Editor &f")]
   public static void Open()
   {
@@ -153,6 +168,11 @@ public class DungeonFeatureEditor : EditorWindow
 
   private void OnEnable()
   {
+    ornamentTexturesResolved = false;
+    hookMapIcon = null;
+    woodRingMapIcon = null;
+    slimeMapIcon = null;
+
     LoadMap();
     SyncSelectionFromViewEdit();
   }
@@ -321,7 +341,7 @@ public class DungeonFeatureEditor : EditorWindow
     }
 
     DrawChampionMirrorMarkers(mapRect);
-    DrawHookMarkers(mapRect);
+    DrawOriginalWallOrnamentIcons(mapRect);
     HandleGridClick(mapRect);
 
     EditorGUILayout.EndScrollView();
@@ -511,14 +531,13 @@ public class DungeonFeatureEditor : EditorWindow
     }
   }
 
-  private void DrawHookMarkers(Rect mapRect)
+  private void DrawOriginalWallOrnamentIcons(Rect mapRect)
   {
-    const float lineThickness = 3f;
-    const float dotSize = 4f;
+    EnsureOrnamentTexturesResolved();
 
-    for (int i = 0; i < HookMarkers.Length; i++)
+    for (int i = 0; i < OriginalHallWallOrnaments.Length; i++)
     {
-      HookMarker marker = HookMarkers[i];
+      OriginalWallOrnamentMarker marker = OriginalHallWallOrnaments[i];
 
       Rect cellRect = new Rect(
           mapRect.x + marker.X * CellSize,
@@ -526,77 +545,195 @@ public class DungeonFeatureEditor : EditorWindow
           CellSize,
           CellSize);
 
-      Rect lineRect;
-      Rect dotRect;
+      Texture2D texture = GetOrnamentMapIcon(marker.Type);
+      Rect iconRect = GetWallFaceIconRect(cellRect, marker.Side, 20f);
 
-      switch (marker.Side)
+      if (texture != null)
       {
-        case WallSide.North:
-        {
-          lineRect = new Rect(
-              cellRect.x,
-              cellRect.y,
-              cellRect.width,
-              lineThickness);
-          dotRect = new Rect(
-              cellRect.center.x - dotSize * 0.5f,
-              cellRect.y - (dotSize - lineThickness) * 0.5f,
-              dotSize,
-              dotSize);
-          break;
-        }
-
-        case WallSide.East:
-        {
-          lineRect = new Rect(
-              cellRect.xMax - lineThickness,
-              cellRect.y,
-              lineThickness,
-              cellRect.height);
-          dotRect = new Rect(
-              cellRect.xMax - lineThickness
-                  - (dotSize - lineThickness) * 0.5f,
-              cellRect.center.y - dotSize * 0.5f,
-              dotSize,
-              dotSize);
-          break;
-        }
-
-        case WallSide.South:
-        {
-          lineRect = new Rect(
-              cellRect.x,
-              cellRect.yMax - lineThickness,
-              cellRect.width,
-              lineThickness);
-          dotRect = new Rect(
-              cellRect.center.x - dotSize * 0.5f,
-              cellRect.yMax - lineThickness
-                  - (dotSize - lineThickness) * 0.5f,
-              dotSize,
-              dotSize);
-          break;
-        }
-
-        default: // West
-        {
-          lineRect = new Rect(
-              cellRect.x,
-              cellRect.y,
-              lineThickness,
-              cellRect.height);
-          dotRect = new Rect(
-              cellRect.x - (dotSize - lineThickness) * 0.5f,
-              cellRect.center.y - dotSize * 0.5f,
-              dotSize,
-              dotSize);
-          break;
-        }
+        GUI.DrawTexture(
+            iconRect,
+            texture,
+            ScaleMode.ScaleToFit,
+            true);
       }
-
-      EditorGUI.DrawRect(lineRect, HookMarkerColor);
-      EditorGUI.DrawRect(dotRect, HookDotColor);
+      else
+      {
+        DrawMissingOrnamentFallback(iconRect, marker.Type);
+      }
     }
+  }
+
+  private static Rect GetWallFaceIconRect(
+      Rect cellRect,
+      WallSide side,
+      float iconSize)
+  {
+    float x = cellRect.center.x - iconSize * 0.5f;
+    float y = cellRect.center.y - iconSize * 0.5f;
+    const float edgeInset = 1f;
+
+    switch (side)
+    {
+      case WallSide.North:
+        y = cellRect.y + edgeInset;
+        break;
+
+      case WallSide.East:
+        x = cellRect.xMax - iconSize - edgeInset;
+        break;
+
+      case WallSide.South:
+        y = cellRect.yMax - iconSize - edgeInset;
+        break;
+
+      case WallSide.West:
+        x = cellRect.x + edgeInset;
+        break;
+    }
+
+    return new Rect(x, y, iconSize, iconSize);
+  }
+
+  private void EnsureOrnamentTexturesResolved()
+  {
+    if (ornamentTexturesResolved)
+      return;
+
+    ornamentTexturesResolved = true;
+
+    hookMapIcon = FindBestOrnamentTexture("Hook");
+    woodRingMapIcon = FindBestOrnamentTexture("WoodRing");
+    slimeMapIcon = FindBestOrnamentTexture("Slime");
+  }
+
+  private Texture2D GetOrnamentMapIcon(string type)
+  {
+    switch (type)
+    {
+      case "Hook":
+        return hookMapIcon;
+
+      case "WoodRing":
+        return woodRingMapIcon;
+
+      case "Slime":
+        return slimeMapIcon;
+
+      default:
+        return null;
+    }
+  }
+
+  private static Texture2D FindBestOrnamentTexture(string type)
+  {
+    string[] folders = { "Assets/Art/Ornaments" };
+    string[] guids = AssetDatabase.FindAssets("t:Texture2D", folders);
+
+    Texture2D best = null;
+    int bestScore = int.MinValue;
+
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      string fileName =
+          Path.GetFileNameWithoutExtension(path).ToLowerInvariant();
+
+      int score = ScoreOrnamentTexture(type, fileName);
+      if (score < 0 || score <= bestScore)
+        continue;
+
+      Texture2D candidate =
+          AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null)
+        continue;
+
+      best = candidate;
+      bestScore = score;
+    }
+
+    return best;
+  }
+
+  private static int ScoreOrnamentTexture(
+      string type,
+      string lowerFileName)
+  {
+    if (string.IsNullOrEmpty(lowerFileName))
+      return -1;
+
+    string normalized =
+        lowerFileName
+            .Replace("_", string.Empty)
+            .Replace("-", string.Empty)
+            .Replace(" ", string.Empty);
+
+    int score = 0;
+
+    switch (type)
+    {
+      case "Hook":
+        if (!normalized.Contains("hook"))
+          return -1;
+        score += 100;
+        break;
+
+      case "WoodRing":
+        if (!(normalized.Contains("woodring")
+              || (normalized.Contains("wood")
+                  && normalized.Contains("ring"))))
+        {
+          return -1;
+        }
+
+        score += 100;
+        break;
+
+      case "Slime":
+        if (!normalized.Contains("slime"))
+          return -1;
+        score += 100;
+        break;
+
+      default:
+        return -1;
+    }
+
+    // Prefer the same frontal artwork used by the first-person renderer.
+    if (normalized.Contains("front"))
+      score += 50;
+
+    // Prefer a named original-size/front file over side/distance variants.
+    if (normalized.Contains("side"))
+      score -= 20;
+    if (normalized.Contains("f2"))
+      score -= 10;
+    if (normalized.Contains("f3"))
+      score -= 10;
+
+    return score;
+  }
+
+  private static void DrawMissingOrnamentFallback(
+      Rect iconRect,
+      string type)
+  {
+    EditorGUI.DrawRect(iconRect, OrnamentFallbackColor);
+
+    GUIStyle style = new GUIStyle(EditorStyles.miniBoldLabel)
+    {
+      alignment = TextAnchor.MiddleCenter,
+      clipping = TextClipping.Clip
+    };
+    style.normal.textColor = Color.black;
+
+    string text =
+        type == "WoodRing"
+            ? "WR"
+            : type == "Hook"
+                ? "H"
+                : "S";
+
+    GUI.Label(iconRect, text, style);
   }
 
   private static GUIStyle CreateChampionNameStyle()
