@@ -26,6 +26,8 @@ public class DungeonFeatureEditor : EditorWindow
       new Color(0.0f, 0.85f, 1.0f, 1f);
   private static readonly Color ChampionMirrorDotColor =
       new Color(1.0f, 0.9f, 0.0f, 1f);
+  private static readonly Color ChampionNameColor =
+      new Color(0.15f, 1.0f, 0.15f, 1f);
 
   private enum WallSide
   {
@@ -392,7 +394,65 @@ public class DungeonFeatureEditor : EditorWindow
 
       EditorGUI.DrawRect(lineRect, ChampionMirrorLineColor);
       EditorGUI.DrawRect(dotRect, ChampionMirrorDotColor);
+
+      DrawChampionName(cellRect, marker);
     }
+  }
+
+  private static void DrawChampionName(
+      Rect cellRect,
+      ChampionMirrorMarker marker)
+  {
+    if (marker == null || string.IsNullOrEmpty(marker.Champion))
+      return;
+
+    GUIStyle nameStyle = new GUIStyle(EditorStyles.miniBoldLabel)
+    {
+      alignment = TextAnchor.MiddleCenter,
+      fontSize = 8,
+      clipping = TextClipping.Overflow,
+      normal = { textColor = ChampionNameColor }
+    };
+
+    // Put the name on the NON-WALKABLE side of the mirror wall, i.e. one
+    // cell beyond the wall face. This keeps the walkable corridor readable
+    // and matches the visual idea used by the original/reference maps.
+    Rect nameRect = new Rect(
+        cellRect.x - 16f,
+        cellRect.y - 1f,
+        cellRect.width + 32f,
+        14f);
+
+    switch (marker.Side)
+    {
+      case WallSide.North:
+        nameRect.center = new Vector2(
+            cellRect.center.x,
+            cellRect.center.y - CellSize);
+        break;
+
+      case WallSide.East:
+        nameRect.center = new Vector2(
+            cellRect.center.x + CellSize,
+            cellRect.center.y);
+        break;
+
+      case WallSide.South:
+        nameRect.center = new Vector2(
+            cellRect.center.x,
+            cellRect.center.y + CellSize);
+        break;
+
+      default: // West
+        nameRect.center = new Vector2(
+            cellRect.center.x - CellSize,
+            cellRect.center.y);
+        break;
+    }
+
+    // Never suppress long names. Overflow is intentional so every champion
+    // remains visible even when the adjacent wall cell is narrow.
+    GUI.Label(nameRect, marker.Champion, nameStyle);
   }
 
   private void HandleGridClick(Rect mapRect)
