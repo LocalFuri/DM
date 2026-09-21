@@ -41,17 +41,12 @@ public class DungeonFeatureEditor : EditorWindow
   private static readonly Color ChampionNameColor =
       new Color(0f, 1f, 0f, 1f);
 
-  // Hook wall ornaments: orange full-edge bar + orange label.
+  // Hook wall ornaments: orange full-edge bar + white center dot.
   private static readonly Color HookMarkerColor =
       new Color(1f, 0.35f, 0f, 1f);
   private static readonly Color HookDotColor =
       new Color(1f, 1f, 1f, 1f);
 
-  // Hall of Champions deterministic random-wall-ornament parameters from
-  // the original dungeon data. Local random ornament ordinal 1 is Hook.
-  private const int HallRandomWallOrnamentCount = 4;
-  private const int HallOrnamentRandomSeed = 99;
-  private const int HookLocalRandomOrdinal = 1;
 
   private enum WallSide
   {
@@ -84,6 +79,32 @@ public class DungeonFeatureEditor : EditorWindow
   // Hall of Champions mirror positions extracted from the original
   // direction-aware level data. Direction is the wall face on which the
   // champion portrait/mirror appears.
+  private sealed class HookMarker
+  {
+    public int X;
+    public int Y;
+    public WallSide Side;
+
+    public HookMarker(int x, int y, WallSide side)
+    {
+      X = x;
+      Y = y;
+      Side = side;
+    }
+  }
+
+  // Hall of Champions Hook wall faces.
+  // Kept explicit in the map editor so they always render and can be
+  // visually checked one-by-one against the original.
+  private static readonly HookMarker[] HookMarkers =
+  {
+    new HookMarker(12, 6, WallSide.West),
+    new HookMarker(13, 8, WallSide.South),
+    new HookMarker(17, 11, WallSide.West),
+    new HookMarker(5, 15, WallSide.West),
+    new HookMarker(3, 16, WallSide.East),
+  };
+
   private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =
   {
     new ChampionMirrorMarker(10, 4, WallSide.North, "Iaido"),
@@ -454,233 +475,86 @@ public class DungeonFeatureEditor : EditorWindow
     const float lineThickness = 3f;
     const float dotSize = 4f;
 
-    GUIStyle hookStyle = new GUIStyle(GUI.skin.label)
+    for (int i = 0; i < HookMarkers.Length; i++)
     {
-      alignment = TextAnchor.MiddleCenter,
-      fontSize = 10,
-      fontStyle = FontStyle.Bold,
-      clipping = TextClipping.Overflow,
-      wordWrap = false,
-      padding = new RectOffset(0, 0, 0, 0),
-      margin = new RectOffset(0, 0, 0, 0)
-    };
+      HookMarker marker = HookMarkers[i];
 
-    hookStyle.normal.textColor = HookMarkerColor;
-    hookStyle.hover.textColor = HookMarkerColor;
-    hookStyle.active.textColor = HookMarkerColor;
-    hookStyle.focused.textColor = HookMarkerColor;
+      Rect cellRect = new Rect(
+          mapRect.x + marker.X * CellSize,
+          mapRect.y + marker.Y * CellSize,
+          CellSize,
+          CellSize);
 
-    for (int y = 0; y < map.Height; y++)
-    {
-      for (int x = 0; x < map.Width; x++)
+      Rect lineRect;
+      Rect dotRect;
+
+      switch (marker.Side)
       {
-        DungeonTile tile = map.GetTile(x, y);
-        if (tile == null || tile.Type != DungeonTileType.Wall)
-          continue;
+        case WallSide.North:
+        {
+          lineRect = new Rect(
+              cellRect.x,
+              cellRect.y,
+              cellRect.width,
+              lineThickness);
+          dotRect = new Rect(
+              cellRect.center.x - dotSize * 0.5f,
+              cellRect.y - (dotSize - lineThickness) * 0.5f,
+              dotSize,
+              dotSize);
+          break;
+        }
 
-        DrawHookFaceIfPresent(
-            mapRect, x, y, tile.Raw, WallSide.North,
-            lineThickness, dotSize, hookStyle);
-        DrawHookFaceIfPresent(
-            mapRect, x, y, tile.Raw, WallSide.East,
-            lineThickness, dotSize, hookStyle);
-        DrawHookFaceIfPresent(
-            mapRect, x, y, tile.Raw, WallSide.South,
-            lineThickness, dotSize, hookStyle);
-        DrawHookFaceIfPresent(
-            mapRect, x, y, tile.Raw, WallSide.West,
-            lineThickness, dotSize, hookStyle);
-      }
-    }
-  }
+        case WallSide.East:
+        {
+          lineRect = new Rect(
+              cellRect.xMax - lineThickness,
+              cellRect.y,
+              lineThickness,
+              cellRect.height);
+          dotRect = new Rect(
+              cellRect.xMax - lineThickness
+                  - (dotSize - lineThickness) * 0.5f,
+              cellRect.center.y - dotSize * 0.5f,
+              dotSize,
+              dotSize);
+          break;
+        }
 
-  private void DrawHookFaceIfPresent(
-      Rect mapRect,
-      int x,
-      int y,
-      int raw,
-      WallSide side,
-      float lineThickness,
-      float dotSize,
-      GUIStyle hookStyle)
-  {
-    int faceBit = GetRandomWallFaceBit(side);
-    if ((raw & faceBit) == 0)
-      return;
+        case WallSide.South:
+        {
+          lineRect = new Rect(
+              cellRect.x,
+              cellRect.yMax - lineThickness,
+              cellRect.width,
+              lineThickness);
+          dotRect = new Rect(
+              cellRect.center.x - dotSize * 0.5f,
+              cellRect.yMax - lineThickness
+                  - (dotSize - lineThickness) * 0.5f,
+              dotSize,
+              dotSize);
+          break;
+        }
 
-    int randomOrdinal = GetRandomWallOrnamentOrdinal(x, y, side);
-    if (randomOrdinal != HookLocalRandomOrdinal)
-      return;
-
-    Rect cellRect = new Rect(
-        mapRect.x + x * CellSize,
-        mapRect.y + y * CellSize,
-        CellSize,
-        CellSize);
-
-    Rect lineRect;
-    Rect dotRect;
-
-    switch (side)
-    {
-      case WallSide.North:
-      {
-        lineRect = new Rect(
-            cellRect.x,
-            cellRect.y,
-            cellRect.width,
-            lineThickness);
-        dotRect = new Rect(
-            cellRect.center.x - dotSize * 0.5f,
-            cellRect.y - (dotSize - lineThickness) * 0.5f,
-            dotSize,
-            dotSize);
-        break;
+        default: // West
+        {
+          lineRect = new Rect(
+              cellRect.x,
+              cellRect.y,
+              lineThickness,
+              cellRect.height);
+          dotRect = new Rect(
+              cellRect.x - (dotSize - lineThickness) * 0.5f,
+              cellRect.center.y - dotSize * 0.5f,
+              dotSize,
+              dotSize);
+          break;
+        }
       }
 
-      case WallSide.East:
-      {
-        lineRect = new Rect(
-            cellRect.xMax - lineThickness,
-            cellRect.y,
-            lineThickness,
-            cellRect.height);
-        dotRect = new Rect(
-            cellRect.xMax - lineThickness
-                - (dotSize - lineThickness) * 0.5f,
-            cellRect.center.y - dotSize * 0.5f,
-            dotSize,
-            dotSize);
-        break;
-      }
-
-      case WallSide.South:
-      {
-        lineRect = new Rect(
-            cellRect.x,
-            cellRect.yMax - lineThickness,
-            cellRect.width,
-            lineThickness);
-        dotRect = new Rect(
-            cellRect.center.x - dotSize * 0.5f,
-            cellRect.yMax - lineThickness
-                - (dotSize - lineThickness) * 0.5f,
-            dotSize,
-            dotSize);
-        break;
-      }
-
-      default: // West
-      {
-        lineRect = new Rect(
-            cellRect.x,
-            cellRect.y,
-            lineThickness,
-            cellRect.height);
-        dotRect = new Rect(
-            cellRect.x - (dotSize - lineThickness) * 0.5f,
-            cellRect.center.y - dotSize * 0.5f,
-            dotSize,
-            dotSize);
-        break;
-      }
-    }
-
-    EditorGUI.DrawRect(lineRect, HookMarkerColor);
-    EditorGUI.DrawRect(dotRect, HookDotColor);
-
-    Rect textRect = new Rect(
-        cellRect.x + 1f,
-        cellRect.y + 7f,
-        cellRect.width - 2f,
-        18f);
-
-    Color previousContentColor = GUI.contentColor;
-    GUI.contentColor = HookMarkerColor;
-    GUI.Label(textRect, "Hook", hookStyle);
-    GUI.contentColor = previousContentColor;
-  }
-
-  private int GetRandomWallOrnamentOrdinal(
-      int x,
-      int y,
-      WallSide side)
-  {
-    int directionFactor = GetRandomWallDirectionFactor(side);
-
-    int p1 =
-        2000
-        + (x << 5)
-        + (y + 1) * directionFactor;
-
-    int p2 =
-        3000
-        + map.Width
-        + map.Height; // Hall level = 0
-
-    int hash = OriginalWallOrnamentHash(
-        p1,
-        p2,
-        30,
-        HallOrnamentRandomSeed);
-
-    if (hash < HallRandomWallOrnamentCount)
-      return hash + 1;
-
-    return 0;
-  }
-
-  private static int OriginalWallOrnamentHash(
-      int p1,
-      int p2,
-      int modulus,
-      int sentinel)
-  {
-    // Reproduce the original 16-bit arithmetic used by Dungeon Master.
-    uint product = (uint)(ushort)p1 * 31417u;
-    ushort d0w = (ushort)product;
-
-    d0w = (ushort)((d0w >> 1) & 0x7fff);
-
-    uint p2Product = (uint)(ushort)p2 * 11u;
-    ushort d1w = (ushort)p2Product;
-
-    d0w = (ushort)(d0w + d1w);
-    d0w = (ushort)(d0w + sentinel);
-
-    short signed = unchecked((short)d0w);
-    d0w = (ushort)((signed >> 2) & 0x3fff);
-
-    return d0w % modulus;
-  }
-
-  private static int GetRandomWallFaceBit(WallSide side)
-  {
-    switch (side)
-    {
-      case WallSide.North:
-        return 8;
-      case WallSide.East:
-        return 4;
-      case WallSide.South:
-        return 2;
-      default: // West
-        return 1;
-    }
-  }
-
-  private static int GetRandomWallDirectionFactor(WallSide side)
-  {
-    switch (side)
-    {
-      case WallSide.North:
-        return 1;
-      case WallSide.East:
-        return 2;
-      case WallSide.South:
-        return 3;
-      default: // West
-        return 4;
+      EditorGUI.DrawRect(lineRect, HookMarkerColor);
+      EditorGUI.DrawRect(dotRect, HookDotColor);
     }
   }
 
