@@ -100,7 +100,7 @@ public class ViewportLayoutEditor : EditorWindow
   // (Mirror_Side_15x15.png), so no scaling or mirroring is needed here.
   // Original screenshot bounds: screen X=194..208, Y=69..83, therefore
   // framebuffer bottom-left Y = 200 - 69 - 15 = 116.
-  private const int ChampionMirrorD3LeftX = 78;
+  private const int ChampionMirrorD3LeftX = 80;
   private const int ChampionMirrorD3LeftY = 116;
   private const int ChampionMirrorD3RightX = 194;
   private const int ChampionMirrorD3RightY = 116;
@@ -14341,8 +14341,8 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       // Mirror_Side_7x15.png is the exact left D3 cutout from the original.
-      // Draw 1:1 at the measured DOS bounds: screen X=78..84, Y=69..83,
-      // which is framebuffer bottom-left (78,116). No runtime mirroring.
+      // Draw 1:1 at the measured DOS bounds: screen X=80..86, Y=69..83,
+      // which is framebuffer bottom-left (80,116). No runtime mirroring.
       BlitPieceIntoPreview(
           pixels,
           sideMirror,
