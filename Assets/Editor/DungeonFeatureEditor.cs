@@ -475,9 +475,9 @@ public class DungeonFeatureEditor : EditorWindow
     Color previousContentColor = GUI.contentColor;
     GUI.contentColor = ChampionNameColor;
 
-    // Tune champion labels one-by-one. Daroou is intentionally drawn as a
-    // narrow top-to-bottom column to the west of his mirror wall face.
-    if (marker.Champion == "Daroou")
+    // Tune champion labels one-by-one. Daroou and Mophus are intentionally
+    // drawn as narrow top-to-bottom columns beside their mirror wall faces.
+    if (marker.Champion == "Daroou" || marker.Champion == "Mophus")
     {
       // Tight vertical stacking: use essentially the same visual spacing
       // the letters would have in normal horizontal text.
@@ -487,7 +487,14 @@ public class DungeonFeatureEditor : EditorWindow
       float lineHeight = 9f;
       float charWidth = 20f;
       float totalHeight = marker.Champion.Length * lineHeight;
-      float startY = labelCenter.y - totalHeight * 0.5f;
+
+      // Daroou stays centered as verified. Mophus starts at the top of the
+      // black tile immediately east of its wall marker, so the first letter
+      // M begins inside that black tile and the remaining letters continue
+      // downward from there.
+      float startY = marker.Champion == "Mophus"
+          ? cellRect.y + 1f
+          : labelCenter.y - totalHeight * 0.5f;
 
       GUIStyle verticalStyle = new GUIStyle(nameStyle)
       {
