@@ -475,6 +475,30 @@ public class DungeonFeatureEditor : EditorWindow
     Color previousContentColor = GUI.contentColor;
     GUI.contentColor = ChampionNameColor;
 
+    // Tiggy (East) and Wuuf (West) share one corridor row. Draw both
+    // horizontally in their outward tile: Tiggy starts at the top edge,
+    // Wuuf at the bottom edge.
+    if (marker.Champion == "Tiggy" || marker.Champion == "Wuuf")
+    {
+      Rect targetTileRect = new Rect(
+          labelCenter.x - CellSize * 0.5f,
+          labelCenter.y - CellSize * 0.5f,
+          CellSize,
+          CellSize);
+
+      GUIStyle pairStyle = new GUIStyle(nameStyle)
+      {
+        alignment = marker.Champion == "Tiggy"
+            ? TextAnchor.UpperCenter
+            : TextAnchor.LowerCenter,
+        clipping = TextClipping.Overflow
+      };
+
+      GUI.Label(targetTileRect, marker.Champion, pairStyle);
+      GUI.contentColor = previousContentColor;
+      return;
+    }
+
     // Tune champion labels one-by-one. Daroou and Mophus are intentionally
     // drawn as narrow top-to-bottom columns beside their mirror wall faces.
     if (marker.Champion == "Daroou" || marker.Champion == "Mophus")
@@ -628,23 +652,5 @@ public class DungeonFeatureEditor : EditorWindow
           isUp ? "Up" : "Down");
     }
 
-    EditorGUILayout.Space();
-    EditorGUILayout.LabelField("Features on this tile", EditorStyles.boldLabel);
-
-    bool foundChampionMirror = false;
-    for (int i = 0; i < ChampionMirrorMarkers.Length; i++)
-    {
-      ChampionMirrorMarker marker = ChampionMirrorMarkers[i];
-      if (marker.X != selectedX || marker.Y != selectedY)
-        continue;
-
-      foundChampionMirror = true;
-      EditorGUILayout.LabelField(
-          "Champion Mirror",
-          marker.Champion + " [" + marker.Side + "]");
-    }
-
-    if (!foundChampionMirror)
-      EditorGUILayout.HelpBox("No authored features yet.", MessageType.Info);
   }
 }
