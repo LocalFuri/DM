@@ -11,6 +11,10 @@ public class DungeonFeatureEditor : EditorWindow
   private const float CellSize = 32f;
   private const float LabelLeftMargin = 28f;
   private const float LabelTopMargin = 20f;
+  // Extra vertical canvas above/below the map for labels that are drawn
+  // outside a wall face. This also keeps y=0 and y=31 labels fully visible
+  // on 32-row dungeon levels.
+  private const float OutsideFeatureVerticalMargin = 32f;
   private const float InspectorWidth = 320f;
 
   private static readonly Color WallColor = new Color(0.22f, 0.22f, 0.22f);
@@ -21,13 +25,13 @@ public class DungeonFeatureEditor : EditorWindow
   private static readonly Color SelectionBorderColor =
       new Color(0.2f, 0.85f, 1f, 1f);
 
-  // Champion mirror map marker: cyan wall-face tick with a small yellow center.
+  // Champion mirror map marker: full-edge blue wall-face bar with a small yellow center.
   private static readonly Color ChampionMirrorLineColor =
-      new Color(0.0f, 0.85f, 1.0f, 1f);
+      new Color(0.0f, 0.0f, 1.0f, 1f);
   private static readonly Color ChampionMirrorDotColor =
       new Color(1.0f, 0.9f, 0.0f, 1f);
   private static readonly Color ChampionNameColor =
-      new Color(0.15f, 1.0f, 0.15f, 1f);
+      new Color(0f, 1f, 0f, 1f);
 
   private enum WallSide
   {
@@ -173,7 +177,11 @@ public class DungeonFeatureEditor : EditorWindow
     float mapPixelWidth = map.Width * CellSize;
     float mapPixelHeight = map.Height * CellSize;
     float contentWidth = LabelLeftMargin + mapPixelWidth;
-    float contentHeight = LabelTopMargin + mapPixelHeight;
+    float contentHeight =
+        LabelTopMargin
+        + OutsideFeatureVerticalMargin
+        + mapPixelHeight
+        + OutsideFeatureVerticalMargin;
 
     mapScroll = EditorGUILayout.BeginScrollView(mapScroll);
 
@@ -186,7 +194,7 @@ public class DungeonFeatureEditor : EditorWindow
 
     Rect mapRect = new Rect(
         contentRect.x + LabelLeftMargin,
-        contentRect.y + LabelTopMargin,
+        contentRect.y + LabelTopMargin + OutsideFeatureVerticalMargin,
         mapPixelWidth,
         mapPixelHeight
     );
@@ -304,9 +312,8 @@ public class DungeonFeatureEditor : EditorWindow
         SelectionBorderColor);
   }
 
-  private static void DrawChampionMirrorMarkers(Rect mapRect)
+  private void DrawChampionMirrorMarkers(Rect mapRect)
   {
-    const float lineLength = 12f;
     const float lineThickness = 3f;
     const float dotSize = 4f;
 
@@ -329,9 +336,9 @@ public class DungeonFeatureEditor : EditorWindow
         {
           float centerX = cellRect.center.x;
           lineRect = new Rect(
-              centerX - lineLength * 0.5f,
+              cellRect.x,
               cellRect.y,
-              lineLength,
+              cellRect.width,
               lineThickness);
           dotRect = new Rect(
               centerX - dotSize * 0.5f,
@@ -346,9 +353,9 @@ public class DungeonFeatureEditor : EditorWindow
           float centerY = cellRect.center.y;
           lineRect = new Rect(
               cellRect.xMax - lineThickness,
-              centerY - lineLength * 0.5f,
+              cellRect.y,
               lineThickness,
-              lineLength);
+              cellRect.height);
           dotRect = new Rect(
               cellRect.xMax - lineThickness
                   - (dotSize - lineThickness) * 0.5f,
@@ -362,9 +369,9 @@ public class DungeonFeatureEditor : EditorWindow
         {
           float centerX = cellRect.center.x;
           lineRect = new Rect(
-              centerX - lineLength * 0.5f,
+              cellRect.x,
               cellRect.yMax - lineThickness,
-              lineLength,
+              cellRect.width,
               lineThickness);
           dotRect = new Rect(
               centerX - dotSize * 0.5f,
@@ -380,9 +387,9 @@ public class DungeonFeatureEditor : EditorWindow
           float centerY = cellRect.center.y;
           lineRect = new Rect(
               cellRect.x,
-              centerY - lineLength * 0.5f,
+              cellRect.y,
               lineThickness,
-              lineLength);
+              cellRect.height);
           dotRect = new Rect(
               cellRect.x - (dotSize - lineThickness) * 0.5f,
               centerY - dotSize * 0.5f,
@@ -399,60 +406,124 @@ public class DungeonFeatureEditor : EditorWindow
     }
   }
 
-  private static void DrawChampionName(
+  private static GUIStyle CreateChampionNameStyle()
+  {
+    GUIStyle nameStyle = new GUIStyle(GUI.skin.label)
+    {
+      alignment = TextAnchor.MiddleCenter,
+      fontSize = 12,
+      fontStyle = FontStyle.Bold,
+      clipping = TextClipping.Overflow,
+      wordWrap = false,
+      padding = new RectOffset(0, 0, 0, 0),
+      margin = new RectOffset(0, 0, 0, 0)
+    };
+
+    Color textColor = new Color(0f, 1f, 0f, 1f);
+    nameStyle.normal.textColor = textColor;
+    nameStyle.hover.textColor = textColor;
+    nameStyle.active.textColor = textColor;
+    nameStyle.focused.textColor = textColor;
+    nameStyle.onNormal.textColor = textColor;
+    nameStyle.onHover.textColor = textColor;
+    nameStyle.onActive.textColor = textColor;
+    nameStyle.onFocused.textColor = textColor;
+    return nameStyle;
+  }
+
+  private void DrawChampionName(
       Rect cellRect,
       ChampionMirrorMarker marker)
   {
     if (marker == null || string.IsNullOrEmpty(marker.Champion))
       return;
 
-    GUIStyle nameStyle = new GUIStyle(EditorStyles.miniBoldLabel)
-    {
-      alignment = TextAnchor.MiddleCenter,
-      fontSize = 8,
-      clipping = TextClipping.Overflow,
-      normal = { textColor = ChampionNameColor }
-    };
+    GUIStyle nameStyle = CreateChampionNameStyle();
 
-    // Put the name on the NON-WALKABLE side of the mirror wall, i.e. one
-    // cell beyond the wall face. This keeps the walkable corridor readable
-    // and matches the visual idea used by the original/reference maps.
-    Rect nameRect = new Rect(
-        cellRect.x - 16f,
-        cellRect.y - 1f,
-        cellRect.width + 32f,
-        14f);
+    int nameCellX = marker.X;
+    int nameCellY = marker.Y;
 
+    Vector2 labelCenter = cellRect.center;
     switch (marker.Side)
     {
       case WallSide.North:
-        nameRect.center = new Vector2(
-            cellRect.center.x,
-            cellRect.center.y - CellSize);
+        nameCellY -= 1;
+        labelCenter.y -= CellSize;
         break;
 
       case WallSide.East:
-        nameRect.center = new Vector2(
-            cellRect.center.x + CellSize,
-            cellRect.center.y);
+        nameCellX += 1;
+        labelCenter.x += CellSize;
         break;
 
       case WallSide.South:
-        nameRect.center = new Vector2(
-            cellRect.center.x,
-            cellRect.center.y + CellSize);
+        nameCellY += 1;
+        labelCenter.y += CellSize;
         break;
 
       default: // West
-        nameRect.center = new Vector2(
-            cellRect.center.x - CellSize,
-            cellRect.center.y);
+        nameCellX -= 1;
+        labelCenter.x -= CellSize;
         break;
     }
 
-    // Never suppress long names. Overflow is intentional so every champion
-    // remains visible even when the adjacent wall cell is narrow.
+    bool labelFallsOnWalkableMap =
+        map != null
+        && map.IsInside(nameCellX, nameCellY)
+        && map.GetTile(nameCellX, nameCellY).Type != DungeonTileType.Wall;
+
+    Color previousContentColor = GUI.contentColor;
+    GUI.contentColor = ChampionNameColor;
+
+    if (labelFallsOnWalkableMap)
+    {
+      // When the outside label position is itself a walkable tile, keep the
+      // corridor as clear as possible by drawing the name vertically:
+      // one character per row, top-to-bottom, centered around that tile.
+      float lineHeight = 18f;
+      float charWidth = 20f;
+      float totalHeight = marker.Champion.Length * lineHeight;
+      float startY = labelCenter.y - totalHeight * 0.5f;
+
+      GUIStyle verticalStyle = new GUIStyle(nameStyle)
+      {
+        alignment = TextAnchor.MiddleCenter,
+        clipping = TextClipping.Overflow
+      };
+
+      for (int i = 0; i < marker.Champion.Length; i++)
+      {
+        string glyph = marker.Champion[i].ToString();
+        Vector2 glyphSize = verticalStyle.CalcSize(new GUIContent(glyph));
+        float width = Mathf.Max(charWidth, glyphSize.x);
+        float height = Mathf.Max(lineHeight, glyphSize.y);
+
+        Rect charRect = new Rect(
+            labelCenter.x - width * 0.5f,
+            startY + i * lineHeight + (lineHeight - height) * 0.5f,
+            width,
+            height);
+
+        GUI.Label(charRect, glyph, verticalStyle);
+      }
+
+      GUI.contentColor = previousContentColor;
+      return;
+    }
+
+    // Normal case: the name sits one cell beyond the mirror wall and can use
+    // a horizontal label because that space is non-walkable/outside the map.
+    Vector2 nameSize = nameStyle.CalcSize(new GUIContent(marker.Champion));
+    float nameWidth = Mathf.Max(128f, nameSize.x + 4f);
+    float nameHeight = Mathf.Max(18f, nameSize.y + 2f);
+    Rect nameRect = new Rect(
+        labelCenter.x - nameWidth * 0.5f,
+        labelCenter.y - nameHeight * 0.5f,
+        nameWidth,
+        nameHeight);
+
     GUI.Label(nameRect, marker.Champion, nameStyle);
+    GUI.contentColor = previousContentColor;
   }
 
   private void HandleGridClick(Rect mapRect)
