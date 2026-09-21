@@ -15,6 +15,8 @@ public class DungeonFeatureEditor : EditorWindow
   // outside a wall face. This also keeps y=0 and y=31 labels fully visible
   // on 32-row dungeon levels.
   private const float OutsideFeatureVerticalMargin = 32f;
+  // Virtual column just past the Hall of Champions map (x = 0..17).
+  private const int OutsideNameColumnX = 18;
   private const float InspectorWidth = 320f;
 
   private static readonly Color WallColor = new Color(0.22f, 0.22f, 0.22f);
@@ -176,7 +178,9 @@ public class DungeonFeatureEditor : EditorWindow
   {
     float mapPixelWidth = map.Width * CellSize;
     float mapPixelHeight = map.Height * CellSize;
-    float contentWidth = LabelLeftMargin + mapPixelWidth;
+    float contentWidth =
+        LabelLeftMargin
+        + Mathf.Max(map.Width, OutsideNameColumnX + 2) * CellSize;
     float contentHeight =
         LabelTopMargin
         + OutsideFeatureVerticalMargin
@@ -188,6 +192,8 @@ public class DungeonFeatureEditor : EditorWindow
     Rect contentRect = GUILayoutUtility.GetRect(
         contentWidth,
         contentHeight,
+        GUILayout.Width(contentWidth),
+        GUILayout.Height(contentHeight),
         GUILayout.ExpandWidth(false),
         GUILayout.ExpandHeight(false)
     );
@@ -402,7 +408,7 @@ public class DungeonFeatureEditor : EditorWindow
       EditorGUI.DrawRect(lineRect, ChampionMirrorLineColor);
       EditorGUI.DrawRect(dotRect, ChampionMirrorDotColor);
 
-      DrawChampionName(cellRect, marker);
+      DrawChampionName(mapRect, cellRect, marker);
     }
   }
 
@@ -432,6 +438,7 @@ public class DungeonFeatureEditor : EditorWindow
   }
 
   private void DrawChampionName(
+      Rect mapRect,
       Rect cellRect,
       ChampionMirrorMarker marker)
   {
@@ -475,9 +482,6 @@ public class DungeonFeatureEditor : EditorWindow
     Color previousContentColor = GUI.contentColor;
     GUI.contentColor = ChampionNameColor;
 
-    // Corridor pairs that would otherwise fuse into one string:
-    // Tiggy/Wuuf and Wu Tse/Leif. Draw both horizontally in the outward
-    // tile: first name at the top edge, second name at the bottom edge.
     bool pairTop =
         marker.Champion == "Tiggy" || marker.Champion == "Wu Tse";
     bool pairBottom =
@@ -503,28 +507,40 @@ public class DungeonFeatureEditor : EditorWindow
       return;
     }
 
-    // Tune champion labels one-by-one. Daroou and Mophus are intentionally
-    // drawn as narrow top-to-bottom columns beside their mirror wall faces.
+    // Hissssa / Gothmog: keep Y, put the whole name in column x=18,
+    // immediately to the right of the last accessible tile (x=17).
+    if (marker.Champion == "Hissssa" || marker.Champion == "Gothmog")
+    {
+      Vector2 outsideSize = nameStyle.CalcSize(new GUIContent(marker.Champion));
+      float outsideWidth = Mathf.Max(outsideSize.x, CellSize);
+      float outsideHeight = Mathf.Max(outsideSize.y, 18f);
+      Rect outsideNameRect = new Rect(
+          mapRect.xMax,
+          labelCenter.y - outsideHeight * 0.5f,
+          outsideWidth,
+          outsideHeight);
+
+      GUIStyle outsideStyle = new GUIStyle(nameStyle)
+      {
+        alignment = TextAnchor.MiddleLeft,
+        clipping = TextClipping.Overflow
+      };
+
+      GUI.Label(outsideNameRect, marker.Champion, outsideStyle);
+      GUI.contentColor = previousContentColor;
+      return;
+    }
+
     if (marker.Champion == "Daroou" || marker.Champion == "Mophus")
     {
-      // Tight vertical stacking: use essentially the same visual spacing
-      // the letters would have in normal horizontal text.
-      // Minimum practical vertical advance for the current 12px bold font.
-      // This makes the letters sit almost directly on top of each other
-      // without intentionally overlapping the glyphs.
-      float lineHeight = 9f;
-      float charWidth = 20f;
-      float totalHeight = marker.Champion.Length * lineHeight;
-
-      // Daroou stays centered as verified. Mophus starts at the top of the
-      // black tile immediately east of its wall marker, so the first letter
-      // M begins inside that black tile and the remaining letters continue
-      // downward from there.
-      float startY = marker.Champion == "Mophus"
+      float stackedLineHeight = 9f;
+      float stackedCharWidth = 20f;
+      float stackedTotalHeight = marker.Champion.Length * stackedLineHeight;
+      float stackedStartY = marker.Champion == "Mophus"
           ? cellRect.y + 1f
-          : labelCenter.y - totalHeight * 0.5f;
+          : labelCenter.y - stackedTotalHeight * 0.5f;
 
-      GUIStyle verticalStyle = new GUIStyle(nameStyle)
+      GUIStyle stackedStyle = new GUIStyle(nameStyle)
       {
         alignment = TextAnchor.MiddleCenter,
         clipping = TextClipping.Overflow
@@ -533,17 +549,18 @@ public class DungeonFeatureEditor : EditorWindow
       for (int i = 0; i < marker.Champion.Length; i++)
       {
         string glyph = marker.Champion[i].ToString();
-        Vector2 glyphSize = verticalStyle.CalcSize(new GUIContent(glyph));
-        float width = Mathf.Max(charWidth, glyphSize.x);
-        float height = Mathf.Max(lineHeight, glyphSize.y);
+        Vector2 glyphSize = stackedStyle.CalcSize(new GUIContent(glyph));
+        float glyphWidth = Mathf.Max(stackedCharWidth, glyphSize.x);
+        float glyphHeight = Mathf.Max(stackedLineHeight, glyphSize.y);
 
-        Rect charRect = new Rect(
-            labelCenter.x - width * 0.5f,
-            startY + i * lineHeight + (lineHeight - height) * 0.5f,
-            width,
-            height);
+        Rect glyphRect = new Rect(
+            labelCenter.x - glyphWidth * 0.5f,
+            stackedStartY + i * stackedLineHeight
+                + (stackedLineHeight - glyphHeight) * 0.5f,
+            glyphWidth,
+            glyphHeight);
 
-        GUI.Label(charRect, glyph, verticalStyle);
+        GUI.Label(glyphRect, glyph, stackedStyle);
       }
 
       GUI.contentColor = previousContentColor;
@@ -552,15 +569,12 @@ public class DungeonFeatureEditor : EditorWindow
 
     if (labelFallsOnWalkableMap)
     {
-      // When the outside label position is itself a walkable tile, keep the
-      // corridor as clear as possible by drawing the name vertically:
-      // one character per row, top-to-bottom, centered around that tile.
-      float lineHeight = 18f;
-      float charWidth = 20f;
-      float totalHeight = marker.Champion.Length * lineHeight;
-      float startY = labelCenter.y - totalHeight * 0.5f;
+      float walkableLineHeight = 18f;
+      float walkableCharWidth = 20f;
+      float walkableTotalHeight = marker.Champion.Length * walkableLineHeight;
+      float walkableStartY = labelCenter.y - walkableTotalHeight * 0.5f;
 
-      GUIStyle verticalStyle = new GUIStyle(nameStyle)
+      GUIStyle walkableStyle = new GUIStyle(nameStyle)
       {
         alignment = TextAnchor.MiddleCenter,
         clipping = TextClipping.Overflow
@@ -569,25 +583,24 @@ public class DungeonFeatureEditor : EditorWindow
       for (int i = 0; i < marker.Champion.Length; i++)
       {
         string glyph = marker.Champion[i].ToString();
-        Vector2 glyphSize = verticalStyle.CalcSize(new GUIContent(glyph));
-        float width = Mathf.Max(charWidth, glyphSize.x);
-        float height = Mathf.Max(lineHeight, glyphSize.y);
+        Vector2 glyphSize = walkableStyle.CalcSize(new GUIContent(glyph));
+        float glyphWidth = Mathf.Max(walkableCharWidth, glyphSize.x);
+        float glyphHeight = Mathf.Max(walkableLineHeight, glyphSize.y);
 
-        Rect charRect = new Rect(
-            labelCenter.x - width * 0.5f,
-            startY + i * lineHeight + (lineHeight - height) * 0.5f,
-            width,
-            height);
+        Rect glyphRect = new Rect(
+            labelCenter.x - glyphWidth * 0.5f,
+            walkableStartY + i * walkableLineHeight
+                + (walkableLineHeight - glyphHeight) * 0.5f,
+            glyphWidth,
+            glyphHeight);
 
-        GUI.Label(charRect, glyph, verticalStyle);
+        GUI.Label(glyphRect, glyph, walkableStyle);
       }
 
       GUI.contentColor = previousContentColor;
       return;
     }
 
-    // Normal case: the name sits one cell beyond the mirror wall and can use
-    // a horizontal label because that space is non-walkable/outside the map.
     Vector2 nameSize = nameStyle.CalcSize(new GUIContent(marker.Champion));
     float nameWidth = Mathf.Max(128f, nameSize.x + 4f);
     float nameHeight = Mathf.Max(18f, nameSize.y + 2f);
