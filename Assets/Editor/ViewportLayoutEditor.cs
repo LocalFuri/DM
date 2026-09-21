@@ -64,7 +64,14 @@ public class ViewportLayoutEditor : EditorWindow
   // screen top-left = (97,67), visible size = 29x27, therefore framebuffer
   // bottom-left Y = 200 - 67 - 27 = 106. At D2 the original shows only
   // the reduced mirror/frame; the Champion portrait is no longer drawn.
+  // D2 front-facing Champion mirrors use the same 29x27 point-scaled frame
+  // in all three projected lanes. The lateral lanes are mostly outside the
+  // 224px dungeon viewport: at X=-10 only source columns 10..28 remain, and
+  // at X=205 only source columns 0..18 remain. This exactly matches the
+  // original clipped 19px-wide mirror visible at (10,9) South on D2-left.
+  private const int ChampionMirrorD2FrontLeftX = -10;
   private const int ChampionMirrorD2FrontX = 97;
+  private const int ChampionMirrorD2FrontRightX = 205;
   private const int ChampionMirrorD2FrontY = 106;
   private const int ChampionMirrorD2FrontWidth = 29;
   private const int ChampionMirrorD2FrontHeight = 27;
@@ -227,6 +234,12 @@ public class ViewportLayoutEditor : EditorWindow
   // the visible part at the far-right edge exactly as in the verified view.
   private const int NativeD3RightOpenSlitFrontX = 185;
   private const int NativeD3RightOpenSlitFrontWidth = 141;
+  // RightD3 horizontal calibrations for two geometry-only sliver classes.
+  // 7,11-South: the D3 center terminates while the right lane stays open.
+  // 9,9-East: center/right stay open through D3 and the outer-right D3 wall
+  // remains visible behind the nearer RightF0.
+  private const int NativeD3RightF0SliverX = 178;
+  private const int NativeD3RightOuterCorridorSliverX = 180;
   private string pieceSearchText = string.Empty;
   private bool openSearchPiecesPopup;
   private bool focusSearchPieces;
@@ -2144,7 +2157,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Right
     ("RightF0", 191, 33),
-    ("RightF1", 164, 42),
+    ("RightF1", 165, 42),
     ("RightF2", 146, 52),
     ("RightF3", 134, 58),
     ("Wall F0Right", null, null),
@@ -5141,7 +5154,7 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (useViewport17WallAuthority)
       {
-        text.Append("\nNATIVE D1: L/C/R=60/160/60  X=0/32/164  Y=42  order=L->R->C");
+        text.Append("\nNATIVE D1: L/C/R=60/160/60  X=0/32/165  Y=42  order=L->R->C");
       }
 
     }
@@ -5436,6 +5449,30 @@ public class ViewportLayoutEditor : EditorWindow
         && IsViewport17LaneOpenAt(inspection, 1, 2)
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
         && IsViewport17LaneOpenAt(inspection, 1, 3);
+  }
+
+  /// <summary>
+  /// Verified original-DM outer-corridor RightD3 sliver geometry
+  /// (9,9 East class). A nearer RightF0 exists, but the center/right corridor
+  /// remains open through D3 while the outer-right context wall continues at
+  /// D2/D3. Original DM still exposes the far-right D3 oblique face behind
+  /// RightF0. Manual calibration is X=180, Y=58, Mirror ON. Geometry only.
+  /// </summary>
+  private static bool IsViewport17RightD3OuterCorridorSliver(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null)
+      return false;
+
+    return IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 0))
+        && IsViewport17LaneOpenAt(inspection, 0, 1)
+        && IsViewport17LaneOpenAt(inspection, 1, 1)
+        && IsViewport17LaneOpenAt(inspection, 0, 2)
+        && IsViewport17LaneOpenAt(inspection, 1, 2)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 2, 2))
+        && IsViewport17LaneOpenAt(inspection, 0, 3)
+        && IsViewport17LaneOpenAt(inspection, 1, 3)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 2, 3));
   }
 
   private static bool IsViewport17D3LeftEdgeFrontGutter(
@@ -7147,6 +7184,9 @@ public class ViewportLayoutEditor : EditorWindow
       bool rightD3F0Sliver =
           command.PieceFamily == "RightD3"
           && IsViewport17RightD3F0Sliver(inspection);
+      bool rightD3OuterCorridorSliver =
+          command.PieceFamily == "RightD3"
+          && IsViewport17RightD3OuterCorridorSliver(inspection);
 
       if (leftSide)
       {
@@ -7190,6 +7230,7 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         if (outerSide
             && !rightD3F0Sliver
+            && !rightD3OuterCorridorSliver
             && IsViewport17OuterSideHiddenByNearerInner(
                 inspection,
                 candidates,
@@ -9622,7 +9663,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      // D1: 60 / 160 / 60 at X 0 / 32 / 164, display Y 42.
+      // D1: 60 / 160 / 60 at X 0 / 32 / 165, display Y 42.
       if (IsWallF1LeftPiece(piece))
       {
         state.Enabled = d1LeftEnabled;
@@ -9647,7 +9688,7 @@ public class ViewportLayoutEditor : EditorWindow
       if (IsWallF1RightPiece(piece))
       {
         state.Enabled = d1RightEnabled;
-        state.X = 164;
+        state.X = 165;
         state.Y = DisplayYToUnityY(42, 111);
         state.Mirror = d1RightMirror;
         resolvedNormalWallByPiece[piece] = state;
@@ -9794,15 +9835,23 @@ public class ViewportLayoutEditor : EditorWindow
           && remainingFamily == "RightD3"
           && TryGetCanonicalReferenceXY("RightD3", out int rightD3X, out int rightD3Y))
       {
-        // Verified original-DM calibration for the RightD3-behind-RightF0
-        // sliver geometry (7,11 South class): X=178, Y=58, Mirror ON.
-        // Keep this geometry-driven rather than pose-coordinate-specific.
+        // Two verified RightD3-behind-RightF0 sliver classes use their own
+        // horizontal calibration while remaining geometry-driven:
+        //   center terminates at D3 -> X=178 (7,11 South class)
+        //   center/right stay open to D3 outer wall -> X=180 (9,9 East class)
+        // Both use Y=58 and Mirror ON in the original.
         bool rightD3F0Sliver = IsViewport17RightD3F0Sliver(inspection);
-        state.X = rightD3F0Sliver ? 178 : rightD3X;
+        bool rightD3OuterCorridorSliver =
+            IsViewport17RightD3OuterCorridorSliver(inspection);
+        state.X = rightD3F0Sliver
+            ? NativeD3RightF0SliverX
+            : rightD3OuterCorridorSliver
+                ? NativeD3RightOuterCorridorSliverX
+                : rightD3X;
         state.Y = DisplayYToUnityY(
             rightD3Y, GetPieceHeightForEditorY(piece));
         if (!previewMirrorOverrideByPiece.ContainsKey(piece))
-          state.Mirror = rightD3F0Sliver
+          state.Mirror = rightD3F0Sliver || rightD3OuterCorridorSliver
               ? true
               : GetViewport17D3OuterMirror(true);
       }
@@ -13017,7 +13066,7 @@ public class ViewportLayoutEditor : EditorWindow
   /// <summary>
   /// V17 native-DOS D1 renderer.  DOS draws D1L, D1R, then D1C.
   /// Native geometry is 60x111 / 160x111 / 60x111 at viewport X
-  /// 0 / 32 / 164 and viewport Y 9 (Game/ViewEdit display Y 42).
+  /// 0 / 32 / 165 and viewport Y 9 (Game/ViewEdit display Y 42).
   /// D1 side strips use the side-wall phase. The FrontF1 center uses the
   /// full FrontF1 parity phase: even (X + Y + facing) = mirrored. D1C is
   /// opaque and therefore drawn last.
@@ -13098,7 +13147,7 @@ public class ViewportLayoutEditor : EditorWindow
         && rightSource.width == 60
         && rightSource.height == nativeHeight)
     {
-      int rightX = 164;
+      int rightX = 165;
       int rightY = destinationY;
       ApplyViewport17FamilyDestOverride("RightF1", ref rightX, ref rightY);
       BlitPieceIntoPreview(
@@ -13868,65 +13917,93 @@ public class ViewportLayoutEditor : EditorWindow
         previewFacing,
         out int forwardX,
         out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
 
-    // D2 is visible only through an open D1 center tile.
-    int d1X = previewX + forwardX;
-    int d1Y = previewY + forwardY;
-    if (!previewMiniMap.IsInside(d1X, d1Y)
-        || previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall)
-    {
-      return;
-    }
-
-    int d2X = previewX + forwardX * 2;
-    int d2Y = previewY + forwardY * 2;
-    if (!previewMiniMap.IsInside(d2X, d2Y)
-        || previewMiniMap.GetTile(d2X, d2Y).Type != DungeonTileType.Wall)
+    // All D2 front lanes are seen through the open D1 center. Lateral D2
+    // mirrors additionally require their matching D1 side lane to be open;
+    // otherwise that nearer wall occludes the decoration.
+    int d1CenterX = previewX + forwardX;
+    int d1CenterY = previewY + forwardY;
+    if (!previewMiniMap.IsInside(d1CenterX, d1CenterY)
+        || previewMiniMap.GetTile(d1CenterX, d1CenterY).Type == DungeonTileType.Wall)
     {
       return;
     }
 
     string frontWallSide = FacingName(OppositePreviewFacing(previewFacing));
 
-    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    // localLane -1/0/+1 = screen-left / center / screen-right. The original
+    // DOS projection clips the two lateral 29px frames at the viewport edges.
+    for (int localLane = -1; localLane <= 1; localLane++)
     {
-      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror == null
-          || string.IsNullOrEmpty(mirror.wall)
-          || string.IsNullOrEmpty(mirror.champion))
+      if (localLane != 0)
+      {
+        int d1LaneX = d1CenterX + rightX * localLane;
+        int d1LaneY = d1CenterY + rightY * localLane;
+        if (!previewMiniMap.IsInside(d1LaneX, d1LaneY)
+            || previewMiniMap.GetTile(d1LaneX, d1LaneY).Type == DungeonTileType.Wall)
+        {
+          continue;
+        }
+      }
+
+      int d2X = previewX + forwardX * 2 + rightX * localLane;
+      int d2Y = previewY + forwardY * 2 + rightY * localLane;
+      if (!previewMiniMap.IsInside(d2X, d2Y)
+          || previewMiniMap.GetTile(d2X, d2Y).Type != DungeonTileType.Wall)
       {
         continue;
       }
 
-      if (mirror.x != d2X
-          || mirror.y != d2Y
-          || !string.Equals(
-              mirror.wall,
-              frontWallSide,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        continue;
-      }
+      int destinationX = localLane < 0
+          ? ChampionMirrorD2FrontLeftX
+          : localLane > 0
+              ? ChampionMirrorD2FrontRightX
+              : ChampionMirrorD2FrontX;
 
-      // The original DOS F2 view reduces the 48x43 front mirror to 29x27.
-      // The Champion portrait is not drawn at this distance; only the mirror
-      // frame/opening remains visible. Use point-sampled scaling so original
-      // source pixels stay crisp.
-      BlitPieceScaledIntoPreview(
-          pixels,
-          frontMirror,
-          ChampionMirrorD2FrontX,
-          ChampionMirrorD2FrontY,
-          ChampionMirrorD2FrontWidth,
-          ChampionMirrorD2FrontHeight,
-          false);
-      DarkenChampionMirrorD2InteriorHighlights(
-          pixels,
-          ChampionMirrorD2FrontX,
-          ChampionMirrorD2FrontY,
-          ChampionMirrorD2FrontWidth,
-          ChampionMirrorD2FrontHeight);
-      return;
+      for (int i = 0; i < previewChampionMirrors.Length; i++)
+      {
+        ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+        if (mirror == null
+            || string.IsNullOrEmpty(mirror.wall)
+            || string.IsNullOrEmpty(mirror.champion))
+        {
+          continue;
+        }
+
+        if (mirror.x != d2X
+            || mirror.y != d2Y
+            || !string.Equals(
+                mirror.wall,
+                frontWallSide,
+                System.StringComparison.OrdinalIgnoreCase))
+        {
+          continue;
+        }
+
+        // The original DOS F2 view reduces the 48x43 front mirror to 29x27.
+        // No Champion portrait is drawn at this distance. Point sampling keeps
+        // the original source pixels crisp, while BlitPieceScaledIntoPreview
+        // clips the lateral lanes naturally to dungeon X=0..223.
+        BlitPieceScaledIntoPreview(
+            pixels,
+            frontMirror,
+            destinationX,
+            ChampionMirrorD2FrontY,
+            ChampionMirrorD2FrontWidth,
+            ChampionMirrorD2FrontHeight,
+            false);
+        DarkenChampionMirrorD2InteriorHighlights(
+            pixels,
+            destinationX,
+            ChampionMirrorD2FrontY,
+            ChampionMirrorD2FrontWidth,
+            ChampionMirrorD2FrontHeight);
+        break;
+      }
     }
   }
 
