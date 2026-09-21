@@ -273,6 +273,13 @@ public class ViewportLayoutEditor : EditorWindow
   private static readonly EditorApplication.CallbackFunction
       ViewEditGlobalNavHandler = HandleViewEditGlobalNavigationEvent;
   private static System.Delegate s_viewEditBeforeEventProcessedHandler;
+  private static readonly UnityEngine.UIElements.EventCallback<
+      UnityEngine.UIElements.PointerDownEvent>
+      GameViewPointerDownHandler = HandleGameViewPointerDown;
+  private static EditorWindow s_hookedGameView;
+  private static bool s_gameViewPointerCallbackAdded;
+  private static bool s_gameViewPointerUpdateAdded;
+  private static double s_lastGameViewClickTime;
 
   // BlackDoorF1 layout Enabled is initialized once for the verified 1,3 North pose.
   // After initialization, the visible BlackDoorF1 checkbox remains authoritative.
@@ -3942,6 +3949,13 @@ public class ViewportLayoutEditor : EditorWindow
 
     AddViewEditGlobalEventHandler(ViewEditGlobalNavHandler);
     AddViewEditBeforeEventProcessedHandler();
+    if (!s_gameViewPointerUpdateAdded)
+    {
+      EditorApplication.update += EnsureGameViewPointerHook;
+      s_gameViewPointerUpdateAdded = true;
+    }
+
+    EnsureGameViewPointerHook();
     s_viewEditGlobalNavCallbackAdded = true;
   }
 
@@ -3957,6 +3971,13 @@ public class ViewportLayoutEditor : EditorWindow
 
     RemoveViewEditGlobalEventHandler(ViewEditGlobalNavHandler);
     RemoveViewEditBeforeEventProcessedHandler();
+    if (s_gameViewPointerUpdateAdded)
+    {
+      EditorApplication.update -= EnsureGameViewPointerHook;
+      s_gameViewPointerUpdateAdded = false;
+    }
+
+    RemoveGameViewPointerHook();
     s_viewEditGlobalNavCallbackAdded = false;
   }
 
@@ -4060,15 +4081,6 @@ public class ViewportLayoutEditor : EditorWindow
       KeyCode keyCode,
       EventModifiers modifiers)
   {
-    // Unity's GameView invokes editor-global callbacks for mouse events, but
-    // beforeEventProcessed is an additional early hook that runs before the
-    // GameView can consume the click. Use it as a fallback for Edit Mode.
-    if (type == EventType.MouseDown)
-    {
-      TryDispatchViewEditGameViewMouseNavigation();
-      return;
-    }
-
     if (type != EventType.KeyDown)
       return;
 
@@ -4080,16 +4092,19 @@ public class ViewportLayoutEditor : EditorWindow
 
   private static void HandleViewEditGlobalNavigationEvent()
   {
-    // Game View mouse clicks are delivered through the same editor-global
-    // event hook as our keyboard navigation. Handle the visible movement pad
-    // first; keyboard dispatch remains unchanged.
-    if (TryDispatchViewEditGameViewMouseNavigation())
+    // GameView.OnGUI invokes globalEventHandler for MouseDown/MouseUp.
+    // Keyboard dispatch is unchanged and still uses this same callback.
+    if (TryDispatchViewEditGameViewOnGuiMouse())
       return;
 
     TryDispatchViewEditGlobalNavigation();
   }
 
-  private static bool TryDispatchViewEditGameViewMouseNavigation()
+  /// <summary>
+  /// GameView.OnGUI mouse path. Unity 6 still draws Game View through IMGUI
+  /// OnGUI, which invokes globalEventHandler for left-button down.
+  /// </summary>
+  private static bool TryDispatchViewEditGameViewOnGuiMouse()
   {
     Event current = Event.current;
     if (current == null
@@ -4100,39 +4115,160 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    // GameView itself invokes EditorApplication.globalEventHandler from its
-    // OnGUI for mouse down/up. Resolve the GUIView that is CURRENTLY executing
-    // instead of depending on mouseOverWindow/focusedWindow, which can still
-    // refer to ViewEdit on the first click.
     EditorWindow gameView = GetCurrentExecutingGameView();
     if (gameView == null)
+      return false;
+
+    return DispatchGameViewMovementClick(
+        gameView,
+        current.mousePosition,
+        current,
+        null);
+  }
+
+  private static void EnsureGameViewPointerHook()
+  {
+    if (Application.isPlaying || s_viewEditGlobalNavOwners <= 0)
+    {
+      RemoveGameViewPointerHook();
+      return;
+    }
+
+    EditorWindow gameView = FindGameViewWindow();
+    if (gameView == s_hookedGameView && s_gameViewPointerCallbackAdded)
+      return;
+
+    RemoveGameViewPointerHook();
+    if (gameView == null)
+      return;
+
+    UnityEngine.UIElements.VisualElement root = gameView.rootVisualElement;
+    if (root == null)
+      return;
+
+    root.RegisterCallback(
+        GameViewPointerDownHandler,
+        UnityEngine.UIElements.TrickleDown.TrickleDown);
+    s_hookedGameView = gameView;
+    s_gameViewPointerCallbackAdded = true;
+  }
+
+  private static void RemoveGameViewPointerHook()
+  {
+    if (s_gameViewPointerCallbackAdded && s_hookedGameView != null)
+    {
+      UnityEngine.UIElements.VisualElement root =
+          s_hookedGameView.rootVisualElement;
+      if (root != null)
+      {
+        root.UnregisterCallback(
+            GameViewPointerDownHandler,
+            UnityEngine.UIElements.TrickleDown.TrickleDown);
+      }
+    }
+
+    s_hookedGameView = null;
+    s_gameViewPointerCallbackAdded = false;
+  }
+
+  private static void HandleGameViewPointerDown(
+      UnityEngine.UIElements.PointerDownEvent evt)
+  {
+    if (evt == null || evt.button != 0 || Application.isPlaying)
+      return;
+
+    EditorWindow gameView = s_hookedGameView;
+    if (gameView == null)
+      gameView = FindGameViewWindow();
+    if (gameView == null)
+      return;
+
+    DispatchGameViewMovementClick(
+        gameView,
+        evt.position,
+        null,
+        evt);
+  }
+
+  private static EditorWindow FindGameViewWindow()
+  {
+    EditorWindow[] windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
+    if (windows == null)
+      return null;
+
+    for (int i = 0; i < windows.Length; i++)
+    {
+      EditorWindow window = windows[i];
+      if (window != null && window.GetType().FullName == "UnityEditor.GameView")
+        return window;
+    }
+
+    return null;
+  }
+
+  /// <summary>
+  /// Shared Game View click dispatch for both UITK PointerDown and GameView
+  /// OnGUI / globalEventHandler. Logs every left click, then hit-tests the
+  /// 320x200 movement pad.
+  /// </summary>
+  private static bool DispatchGameViewMovementClick(
+      EditorWindow gameView,
+      Vector2 windowMouse,
+      Event imguiEvent,
+      UnityEngine.UIElements.PointerDownEvent pointerEvent)
+  {
+    double now = EditorApplication.timeSinceStartup;
+    if (now - s_lastGameViewClickTime < 0.05)
       return false;
 
     ViewportLayoutEditor window = FindOpenViewEditWindow();
     if (window == null || window.layout == null)
       return false;
 
-    if (!TryGetGameViewMousePixelPosition(
-            gameView,
-            current.mousePosition,
-            out Vector2 gamePixel,
-            out Vector2 targetSize))
-    {
+    bool hasLogical = window.TryGetLogical320x200FromGameView(
+        gameView,
+        windowMouse,
+        out Vector2 logical);
+
+    string region = "none";
+    if (hasLogical)
+      region = GetMovementArrowRegionName(logical.x, logical.y);
+
+    Debug.Log(
+        "GAMEVIEW CLICK screen=("
+            + windowMouse.x.ToString("0.#")
+            + ","
+            + windowMouse.y.ToString("0.#")
+            + ") logical=("
+            + (hasLogical ? logical.x.ToString("0.#") : "-1")
+            + ","
+            + (hasLogical ? logical.y.ToString("0.#") : "-1")
+            + ") region="
+            + region);
+
+    if (region == "none")
       return false;
+
+    s_lastGameViewClickTime = now;
+    window.InvokeMovementArrowRegion(region);
+
+    if (imguiEvent != null)
+      imguiEvent.Use();
+
+    if (pointerEvent != null)
+    {
+      pointerEvent.StopPropagation();
+      pointerEvent.PreventDefault();
     }
 
-    if (!window.TryHandleMovementArrowsGameViewClick(gamePixel, targetSize))
-      return false;
-
-    current.Use();
     gameView.Repaint();
+    window.Repaint();
+    RepaintGameViews();
     return true;
   }
 
   /// <summary>
-  /// Returns the EditorWindow whose OnGUI is currently executing. This is the
-  /// reliable way to recognize a GameView click from globalEventHandler; the
-  /// focus/mouse-over properties may not yet have updated on the first click.
+  /// Returns the EditorWindow whose OnGUI is currently executing.
   /// </summary>
   private static EditorWindow GetCurrentExecutingGameView()
   {
@@ -4151,8 +4287,6 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (currentGuiView != null)
       {
-        // A docked EditorWindow is hosted by HostView. Its internal
-        // actualView property is the GameView currently running OnGUI.
         PropertyInfo actualViewProperty = null;
         for (System.Type hostType = currentGuiView.GetType();
              hostType != null && actualViewProperty == null;
@@ -4178,8 +4312,6 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    // Compatibility fallbacks for editor layouts where GUIView.current cannot
-    // be resolved through reflection.
     EditorWindow hovered = mouseOverWindow;
     if (hovered != null
         && hovered.GetType().FullName == "UnityEditor.GameView")
@@ -4198,11 +4330,10 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Converts the GameView IMGUI mouse position directly into render-target
-  /// pixels. Unity's own GameView uses the same gameMouseOffset/gameMouseScale
-  /// conversion, so toolbar height, zoom, DPI and letterboxing are included.
+  /// Unity's own GameView conversion: window mouse -> camera render pixels.
+  /// Does not require the point to be inside the target, so a miss still logs.
   /// </summary>
-  private static bool TryGetGameViewMousePixelPosition(
+  private static bool TryGetGameViewRenderMouse(
       EditorWindow gameView,
       Vector2 mousePosition,
       out Vector2 gamePixel,
@@ -4221,81 +4352,76 @@ public class ViewportLayoutEditor : EditorWindow
     PropertyInfo scaleProperty = type.GetProperty("gameMouseScale", flags);
     PropertyInfo targetSizeProperty = type.GetProperty("targetRenderSize", flags);
 
-    if (offsetProperty != null
-        && scaleProperty != null
-        && targetSizeProperty != null)
+    if (offsetProperty == null
+        || scaleProperty == null
+        || targetSizeProperty == null)
     {
-      object offsetValue = offsetProperty.GetValue(gameView, null);
-      object scaleValue = scaleProperty.GetValue(gameView, null);
-      object sizeValue = targetSizeProperty.GetValue(gameView, null);
-
-      if (offsetValue is Vector2 mouseOffset
-          && sizeValue is Vector2 reflectedTargetSize
-          && reflectedTargetSize.x > 0f
-          && reflectedTargetSize.y > 0f)
-      {
-        float mouseScale;
-        try
-        {
-          mouseScale = System.Convert.ToSingle(scaleValue);
-        }
-        catch
-        {
-          mouseScale = 0f;
-        }
-
-        if (mouseScale > 0f)
-        {
-          Vector2 pixel = (mousePosition + mouseOffset) * mouseScale;
-          if (pixel.x >= 0f
-              && pixel.x < reflectedTargetSize.x
-              && pixel.y >= 0f
-              && pixel.y < reflectedTargetSize.y)
-          {
-            gamePixel = pixel;
-            targetSize = reflectedTargetSize;
-            return true;
-          }
-        }
-      }
+      return false;
     }
 
-    return false;
+    object offsetValue = offsetProperty.GetValue(gameView, null);
+    object scaleValue = scaleProperty.GetValue(gameView, null);
+    object sizeValue = targetSizeProperty.GetValue(gameView, null);
+
+    if (!(offsetValue is Vector2 mouseOffset)
+        || !(sizeValue is Vector2 reflectedTargetSize)
+        || reflectedTargetSize.x <= 0f
+        || reflectedTargetSize.y <= 0f)
+    {
+      return false;
+    }
+
+    float mouseScale;
+    try
+    {
+      mouseScale = System.Convert.ToSingle(scaleValue);
+    }
+    catch
+    {
+      mouseScale = 0f;
+    }
+
+    if (mouseScale <= 0f)
+      return false;
+
+    gamePixel = (mousePosition + mouseOffset) * mouseScale;
+    targetSize = reflectedTargetSize;
+    return true;
   }
 
   /// <summary>
-  /// Hit-tests the six movement buttons in the logical 320x200 framebuffer.
-  /// The movement pad is fixed UI chrome at X=233..319, Y=124..168 in the
-  /// Edit Mode presentation. Using framebuffer coordinates avoids all
-  /// RectTransform/canvas hierarchy ambiguity.
+  /// Maps a Game View window click onto the Edit Mode 320x200 GameplayRoot.
+  /// Uses Unity's GameView render-pixel conversion, then the live centered
+  /// 320x200 rect already applied in Edit Mode.
   /// </summary>
-  private bool TryHandleMovementArrowsGameViewClick(
-      Vector2 gamePixelTopLeft,
-      Vector2 targetSize)
+  private bool TryGetLogical320x200FromGameView(
+      EditorWindow gameView,
+      Vector2 windowMouse,
+      out Vector2 logical)
   {
-    if (Application.isPlaying
-        || layout == null
-        || targetSize.x <= 0f
-        || targetSize.y <= 0f)
+    logical = new Vector2(-1f, -1f);
+    if (gameView == null)
+      return false;
+
+    if (!TryGetGameViewRenderMouse(
+            gameView,
+            windowMouse,
+            out Vector2 gamePixel,
+            out Vector2 targetSize))
     {
       return false;
     }
 
-    ViewportPiece arrowsPiece = FindMovementArrowsPiece();
-    Image arrows = FindMovementArrowsImage();
-    if (arrowsPiece == null
-        || !arrowsPiece.Enabled
-        || arrows == null
-        || !arrows.gameObject.activeInHierarchy)
-    {
-      return false;
-    }
+    // Edit Mode forces GameplayRoot to a centered 320x200 ConstantPixelSize
+    // canvas. Camera pixels therefore contain that 320x200 frame with equal
+    // letterboxing; Unity's gameMouseOffset already removed toolbar/zoom.
+    logical.x = gamePixel.x - (targetSize.x - PreviewWidth) * 0.5f;
+    logical.y = gamePixel.y - (targetSize.y - PreviewHeight) * 0.5f;
+    return true;
+  }
 
-    // Convert whatever resolution/zoom the GameView currently renders to the
-    // exact logical coordinates used by our 320x200 preview texture.
-    float logicalX = gamePixelTopLeft.x * (320f / targetSize.x);
-    float logicalY = gamePixelTopLeft.y * (200f / targetSize.y);
-
+  private static string GetMovementArrowRegionName(float logicalX, float logicalY)
+  {
     const float arrowsX = 233f;
     const float arrowsY = 124f;
     const float arrowsWidth = 87f;
@@ -4306,7 +4432,7 @@ public class ViewportLayoutEditor : EditorWindow
         || logicalY < arrowsY
         || logicalY >= arrowsY + arrowsHeight)
     {
-      return false;
+      return "none";
     }
 
     int column = Mathf.Clamp(
@@ -4319,28 +4445,45 @@ public class ViewportLayoutEditor : EditorWindow
     switch (button)
     {
       case 0:
+        return "turn-left";
+      case 1:
+        return "move-forward";
+      case 2:
+        return "turn-right";
+      case 3:
+        return "strafe-left";
+      case 4:
+        return "move-backward";
+      case 5:
+        return "strafe-right";
+      default:
+        return "none";
+    }
+  }
+
+  private void InvokeMovementArrowRegion(string region)
+  {
+    switch (region)
+    {
+      case "turn-left":
         PreviewNavigateTurnLeft();
         break;
-      case 1:
-        PreviewNavigateMoveForward();
-        break;
-      case 2:
+      case "turn-right":
         PreviewNavigateTurnRight();
         break;
-      case 3:
-        PreviewNavigateStrafeLeft();
+      case "move-forward":
+        PreviewNavigateMoveForward();
         break;
-      case 4:
+      case "move-backward":
         PreviewNavigateMoveBackward();
         break;
-      case 5:
+      case "strafe-left":
+        PreviewNavigateStrafeLeft();
+        break;
+      case "strafe-right":
         PreviewNavigateStrafeRight();
         break;
-      default:
-        return false;
     }
-
-    return true;
   }
 
   private static bool IsViewEditNavigationKey(KeyCode keyCode)
