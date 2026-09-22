@@ -107,8 +107,10 @@ public class DungeonFeatureEditor : EditorWindow
   private static readonly OriginalWallOrnamentMarker[]
       OriginalHallWallOrnaments =
   {
+    // Sensor is seen from passable (6,9) North. Place the icon on the
+    // solid wall immediately north: (6,8) South face.
     new OriginalWallOrnamentMarker(
-        "WoodRing", 6, 9, WallSide.North, false),
+        "WoodRing", 6, 8, WallSide.South, true),
     new OriginalWallOrnamentMarker(
         "Hook", 13, 8, WallSide.South, true),
     new OriginalWallOrnamentMarker(

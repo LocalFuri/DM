@@ -409,8 +409,10 @@ public class ViewportLayoutEditor : EditorWindow
   // Hall of Champions ornament fallback content currently covers the current
   // D1 front cases already verified from the original data:
   //
-  // 1) Explicit Sensor at passable cell (6,9), North, local ordinal 4.
-  //    The level WallOrnate table resolves that to global ID 6 = Wood Ring.
+  // 1) Explicit Sensor seen from passable cell (6,9), North, local ordinal 4.
+  //    For map/editor placement we normalize it onto the physical solid wall
+  //    tile immediately north: (6,8), South face. The level WallOrnate table
+  //    resolves local ordinal 4 to global ID 6 = Wood Ring.
   // 2) Random wall-decoration flag on solid wall tile (13,8), South face.
   //    This one is the Hook seen from player pose (13,9) North.
   //
@@ -424,9 +426,9 @@ public class ViewportLayoutEditor : EditorWindow
           type = "WoodRing",
           ornamentOrdinal = 4,
           x = 6,
-          y = 9,
-          wall = "North",
-          wallTilePlacement = false
+          y = 8,
+          wall = "South",
+          wallTilePlacement = true
         },
         new WallOrnamentPlacement
         {
