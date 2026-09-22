@@ -128,6 +128,12 @@ namespace DM.Rendering
     private int viewHeight;
 
     private DungeonMap currentMap;
+    private HallWallOrnamentPlacement[] hallWallOrnaments;
+
+    // Original DOS D1-front wall-center (same Hook/Wood Ring anchor).
+    // Grate_Front_32x28: X = 112 - 16, Y = 114 - 14.
+    private const int GrateD1FrontX = 96;
+    private const int GrateD1FrontY = 100;
     private bool frameDirty = true;
 
     private bool entranceDoorOpening;
@@ -1205,6 +1211,7 @@ namespace DM.Rendering
     public void Render(DungeonMap map)
     {
       currentMap = map;
+      hallWallOrnaments = HallOfChampionsWallOrnaments.Build(map);
       frameDirty = true;
     }
 
@@ -1405,6 +1412,12 @@ namespace DM.Rendering
 
       if (!showEntranceScreen)
       {
+        TryBlitD1FrontGrate();
+        TrackFrontF1LaterDraw("TryBlitD1FrontGrate");
+      }
+
+      if (!showEntranceScreen)
+      {
         TryDrawHeroPortraitOverlay();
         TrackFrontF1LaterDraw("TryDrawHeroPortraitOverlay");
       }
@@ -1430,6 +1443,56 @@ namespace DM.Rendering
       LogViewportStateIfChanged();
 
       ApplyFrameBuffer();
+    }
+
+    private void TryBlitD1FrontGrate()
+    {
+      if (currentMap == null
+          || graphics == null
+          || framePixels == null
+          || hallWallOrnaments == null
+          || hallWallOrnaments.Length == 0)
+      {
+        return;
+      }
+
+      Texture2D grateFront = graphics.GetGrateFrontTexture();
+      if (grateFront == null || !grateFront.isReadable)
+        return;
+
+      DungeonMap.GetForwardOffset(
+          currentMap.PlayerFacing,
+          out int forwardX,
+          out int forwardY);
+
+      int wallTileX = currentMap.PlayerX + forwardX;
+      int wallTileY = currentMap.PlayerY + forwardY;
+      if (!IsWallTile(wallTileX, wallTileY))
+        return;
+
+      for (int i = 0; i < hallWallOrnaments.Length; i++)
+      {
+        HallWallOrnamentPlacement ornament = hallWallOrnaments[i];
+        if (!HallOfChampionsWallOrnaments.IsType(ornament, "Grate"))
+          continue;
+
+        if (!HallOfChampionsWallOrnaments.MatchesD1Front(
+            ornament,
+            currentMap.PlayerX,
+            currentMap.PlayerY,
+            currentMap.PlayerFacing,
+            wallTileX,
+            wallTileY))
+        {
+          continue;
+        }
+
+        Blit(
+            grateFront,
+            GrateD1FrontX,
+            GrateD1FrontY + dungeonDrawOffsetY);
+        return;
+      }
     }
 
     private void DrawComparisonModeDebugInfo()

@@ -47,6 +47,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments";
   private const string HookFrontAssetPath =
       "Assets/Art/Ornaments/Hook_Front_28x28.png";
+  private const string GrateFrontAssetPath =
+      "Assets/Art/Ornaments/Grate_Front_32x28.png";
   private const string HookSideAssetPath =
       "Assets/Art/Ornaments/Hook_Side_16x19.png";
   private const string WoodRingSide2AssetPath =
@@ -64,6 +66,11 @@ public class ViewportLayoutEditor : EditorWindow
   // bottom-left Y = 200 - 72 - 28 = 100.
   private const int HookD1FrontX = 98;
   private const int HookD1FrontY = 100;
+
+  // Grate_Front_32x28 uses the same D1 wall-center as Hook/Wood Ring
+  // (112,114): X = 112 - 16, Y = 114 - 14.
+  private const int GrateD1FrontX = 96;
+  private const int GrateD1FrontY = 100;
 
   // Original DOS coordinate-set-0 D1 side placement (Hook / Wood Ring family).
   // The original D1 side box is 16x19 at left screen X=48 (right = 224-48-16).
@@ -564,6 +571,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedChampionMirrorFrontF3Texture;
   [System.NonSerialized]
   private Texture2D cachedHookFrontTexture;
+  [System.NonSerialized]
+  private Texture2D cachedGrateFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedHookSideTexture;
   [System.NonSerialized]
@@ -12975,6 +12984,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitWoodRingD1FrontIntoPreview(pixels);
     BlitSlimeD1FrontIntoPreview(pixels);
     BlitHookD1FrontIntoPreview(pixels);
+    BlitGrateD1FrontIntoPreview(pixels);
 
     // DIAGNOSTIC COMPOSITION STEP:
     // After all dungeon/wall drawing, restore the entire right-side UI
@@ -17341,6 +17351,135 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return null;
+  }
+
+  private void BlitGrateD1FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D grateFront = GetGrateFrontTexture();
+    if (grateFront == null || !grateFront.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int wallTileX = previewX + forwardX;
+    int wallTileY = previewY + forwardY;
+    if (!previewMiniMap.IsInside(wallTileX, wallTileY)
+        || previewMiniMap.GetTile(wallTileX, wallTileY).Type
+            != DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    string viewedWallSide = FacingName(previewFacing);
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!IsGrateOrnament(ornament))
+        continue;
+
+      bool placementMatches;
+      if (ornament.wallTilePlacement)
+      {
+        string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+        placementMatches =
+            ornament.x == wallTileX
+            && ornament.y == wallTileY
+            && string.Equals(
+                ornament.wall,
+                visiblePhysicalWallFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        placementMatches =
+            ornament.x == previewX
+            && ornament.y == previewY
+            && string.Equals(
+                ornament.wall,
+                viewedWallSide,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (!placementMatches)
+        continue;
+
+      BlitPieceIntoPreview(
+          pixels,
+          grateFront,
+          GrateD1FrontX,
+          GrateD1FrontY,
+          false);
+      return;
+    }
+  }
+
+  private static bool IsGrateOrnament(WallOrnamentPlacement ornament)
+  {
+    if (ornament == null)
+      return false;
+
+    if (string.Equals(
+            ornament.type,
+            "Grate",
+            System.StringComparison.OrdinalIgnoreCase))
+    {
+      return true;
+    }
+
+    // Hall of Champions local ordinal 3 -> global source ID 34 = Grate.
+    return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 34;
+  }
+
+  private Texture2D GetGrateFrontTexture()
+  {
+    if (cachedGrateFrontTexture != null)
+      return cachedGrateFrontTexture;
+
+    Texture2D texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(GrateFrontAssetPath);
+    if (texture != null && texture.width == 32 && texture.height == 28)
+    {
+      cachedGrateFrontTexture = texture;
+      return texture;
+    }
+
+    string[] guids = AssetDatabase.FindAssets(
+        "Grate t:Texture2D",
+        new[] { OrnamentArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 32 || candidate.height != 28)
+        continue;
+
+      if (path.IndexOf(
+              "grate",
+              System.StringComparison.OrdinalIgnoreCase) < 0
+          || path.IndexOf(
+              "front",
+              System.StringComparison.OrdinalIgnoreCase) < 0)
+      {
+        continue;
+      }
+
+      cachedGrateFrontTexture = candidate;
+      return candidate;
+    }
+
+    return texture;
   }
 
   private static string FacingName(DungeonFacing facing)

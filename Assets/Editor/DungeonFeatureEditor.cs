@@ -135,6 +135,28 @@ public class DungeonFeatureEditor : EditorWindow
         "Hook", 3, 16, WallSide.East, true)
   };
 
+  // Hall of Champions Grate appearances from Dungeon Master's random
+  // wall-ornament hash (local ordinal 3 -> Grate). The JSON/raw bits
+  // store each grate on an impassable wall tile; dungeon logic shows
+  // it from the next walkable cell looking at that wall. (12,3) North
+  // therefore appears at (12,4) North. Display-only Grate_Front_32x28.
+  private static readonly OriginalWallOrnamentMarker[]
+      OriginalHallRandomGrates =
+  {
+    new OriginalWallOrnamentMarker(
+        "Grate", 12, 4, WallSide.North, false),
+    new OriginalWallOrnamentMarker(
+        "Grate", 13, 5, WallSide.West, false),
+    new OriginalWallOrnamentMarker(
+        "Grate", 15, 8, WallSide.West, false),
+    new OriginalWallOrnamentMarker(
+        "Grate", 13, 9, WallSide.South, false),
+    new OriginalWallOrnamentMarker(
+        "Grate", 1, 13, WallSide.West, false),
+    new OriginalWallOrnamentMarker(
+        "Grate", 15, 15, WallSide.East, false)
+  };
+
   private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =
   {
     new ChampionMirrorMarker(10, 4, WallSide.North, "Iaido"),
@@ -174,6 +196,7 @@ public class DungeonFeatureEditor : EditorWindow
   private Texture2D hookMapIcon;
   private Texture2D woodRingMapIcon;
   private Texture2D slimeMapIcon;
+  private Texture2D grateMapIcon;
 
   [MenuItem("Tools/Dungeon Feature Editor &f")]
   public static void Open()
@@ -190,6 +213,7 @@ public class DungeonFeatureEditor : EditorWindow
     hookMapIcon = null;
     woodRingMapIcon = null;
     slimeMapIcon = null;
+    grateMapIcon = null;
 
     LoadMap();
     SyncSelectionFromViewEdit();
@@ -555,6 +579,7 @@ public class DungeonFeatureEditor : EditorWindow
 
     DrawWallOrnamentIconList(mapRect, OriginalHallWallOrnaments);
     DrawWallOrnamentIconList(mapRect, OriginalHallRandomHooks);
+    DrawWallOrnamentIconList(mapRect, OriginalHallRandomGrates);
   }
 
   private void DrawWallOrnamentIconList(
@@ -633,6 +658,7 @@ public class DungeonFeatureEditor : EditorWindow
     hookMapIcon = FindBestOrnamentTexture("Hook");
     woodRingMapIcon = FindBestOrnamentTexture("WoodRing");
     slimeMapIcon = FindBestOrnamentTexture("Slime");
+    grateMapIcon = FindBestOrnamentTexture("Grate");
   }
 
   private Texture2D GetOrnamentMapIcon(string type)
@@ -647,6 +673,9 @@ public class DungeonFeatureEditor : EditorWindow
 
       case "Slime":
         return slimeMapIcon;
+
+      case "Grate":
+        return grateMapIcon;
 
       default:
         return null;
@@ -723,6 +752,14 @@ public class DungeonFeatureEditor : EditorWindow
         score += 100;
         break;
 
+      case "Grate":
+        if (!normalized.Contains("grate"))
+          return -1;
+        score += 100;
+        if (normalized.Contains("32x28") || normalized.Contains("3228"))
+          score += 25;
+        break;
+
       default:
         return -1;
     }
@@ -760,7 +797,9 @@ public class DungeonFeatureEditor : EditorWindow
             ? "WR"
             : type == "Hook"
                 ? "H"
-                : "S";
+                : type == "Grate"
+                    ? "G"
+                    : "S";
 
     GUI.Label(iconRect, text, style);
   }
@@ -987,6 +1026,14 @@ public class DungeonFeatureEditor : EditorWindow
     }
 
     if (marker == null)
+    {
+      marker = FindWallOrnamentAtTile(
+          OriginalHallRandomGrates,
+          tileX,
+          tileY);
+    }
+
+    if (marker == null)
       return false;
 
     int targetX = marker.X;
@@ -998,32 +1045,13 @@ public class DungeonFeatureEditor : EditorWindow
       // Mechanism is stored on the walkable cell itself.
       targetFacing = WallSideToFacing(marker.Side);
     }
-    else
+    else if (!TryWalkableViewPoseForWallTile(
+        marker,
+        out targetX,
+        out targetY,
+        out targetFacing))
     {
-      // Ornament is on a solid wall tile. Stand on the adjacent walkable
-      // cell on that face and look back toward the wall.
-      switch (marker.Side)
-      {
-        case WallSide.North:
-          targetY -= 1;
-          targetFacing = DungeonFacing.South;
-          break;
-
-        case WallSide.East:
-          targetX += 1;
-          targetFacing = DungeonFacing.West;
-          break;
-
-        case WallSide.South:
-          targetY += 1;
-          targetFacing = DungeonFacing.North;
-          break;
-
-        default: // West
-          targetX -= 1;
-          targetFacing = DungeonFacing.East;
-          break;
-      }
+      return false;
     }
 
     if (!map.IsInside(targetX, targetY)
@@ -1043,6 +1071,88 @@ public class DungeonFeatureEditor : EditorWindow
         (int)targetFacing);
 
     return true;
+  }
+
+  private bool TryWalkableViewPoseForWallTile(
+      OriginalWallOrnamentMarker marker,
+      out int targetX,
+      out int targetY,
+      out DungeonFacing targetFacing)
+  {
+    targetX = marker.X;
+    targetY = marker.Y;
+    targetFacing = WallSideToFacing(marker.Side);
+
+    int sideX;
+    int sideY;
+    WallSideOffset(marker.Side, out sideX, out sideY);
+
+    // Physical-face convention: stand on the neighbor in Side and look back.
+    int physicalX = marker.X + sideX;
+    int physicalY = marker.Y + sideY;
+    DungeonFacing lookBack = OppositeFacing(WallSideToFacing(marker.Side));
+    if (map.IsInside(physicalX, physicalY) && map.CanEnter(physicalX, physicalY))
+    {
+      targetX = physicalX;
+      targetY = physicalY;
+      targetFacing = lookBack;
+      return true;
+    }
+
+    // JSON/sensor-on-wall convention: Side is the look direction, so the
+    // walkable cell is behind the camera. (12,3) North views from (12,4).
+    int viewX = marker.X - sideX;
+    int viewY = marker.Y - sideY;
+    if (map.IsInside(viewX, viewY) && map.CanEnter(viewX, viewY))
+    {
+      targetX = viewX;
+      targetY = viewY;
+      targetFacing = WallSideToFacing(marker.Side);
+      return true;
+    }
+
+    return false;
+  }
+
+  private static void WallSideOffset(
+      WallSide side,
+      out int dx,
+      out int dy)
+  {
+    switch (side)
+    {
+      case WallSide.North:
+        dx = 0;
+        dy = -1;
+        return;
+      case WallSide.East:
+        dx = 1;
+        dy = 0;
+        return;
+      case WallSide.South:
+        dx = 0;
+        dy = 1;
+        return;
+      default:
+        dx = -1;
+        dy = 0;
+        return;
+    }
+  }
+
+  private static DungeonFacing OppositeFacing(DungeonFacing facing)
+  {
+    switch (facing)
+    {
+      case DungeonFacing.North:
+        return DungeonFacing.South;
+      case DungeonFacing.East:
+        return DungeonFacing.West;
+      case DungeonFacing.South:
+        return DungeonFacing.North;
+      default:
+        return DungeonFacing.East;
+    }
   }
 
   private static OriginalWallOrnamentMarker FindWallOrnamentAtTile(

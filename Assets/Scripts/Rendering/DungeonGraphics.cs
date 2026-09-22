@@ -98,6 +98,15 @@ namespace DM.Rendering
     public Texture2D TorchHolder;
     public Texture2D WallOrnament;
 
+    [Header("Wall Ornaments")]
+    public Texture2D GrateFront;
+
+    public const string GrateFrontAssetPath =
+        "Assets/Art/Ornaments/Grate_Front_32x28.png";
+
+    [System.NonSerialized]
+    private Texture2D cachedGrateFront;
+
     [Header("Interface")]
     public Texture2D ChampionStatusBackground;
 
@@ -244,6 +253,27 @@ namespace DM.Rendering
               FrontWallF3NativeAssetPath);
 #endif
       return cachedFrontWallF3Native;
+    }
+
+    public Texture2D GetGrateFrontTexture()
+    {
+      if (cachedGrateFront != null)
+        return cachedGrateFront;
+
+      if (GrateFront != null
+          && GrateFront.width == 32
+          && GrateFront.height == 28)
+      {
+        cachedGrateFront = GrateFront;
+        return cachedGrateFront;
+      }
+
+#if UNITY_EDITOR
+      cachedGrateFront =
+          UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(
+              GrateFrontAssetPath);
+#endif
+      return cachedGrateFront != null ? cachedGrateFront : GrateFront;
     }
 
     public Texture2D GetLeft2STexture()
