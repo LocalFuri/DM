@@ -163,14 +163,22 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ChampionMirrorD2SideWidth = 10;
   private const int ChampionMirrorD2SideHeight = 23;
 
-  // Original DOS narrow Champion mirror visible in the left-hand D3 corridor
-  // slot. Verified from the (9,9) East original: Mirror_Side_7x15.png is an
-  // exact pixel match at screen X=78..84, Y=69..83. Framebuffer bottom-left
-  // Y = 200 - 69 - 15 = 116. The 15x15 cutout is the right-hand D3 slot.
+  // Original DOS D3-left F3 corridor slot. Verified from (9,9) East LINFLAS:
+  // Mirror_Side_7x15.png is an exact pixel match at screen X=78..84, Y=69..83.
+  // Framebuffer Y = 200 - 69 - 15 = 116. The matching F3-right slot mirrors
+  // around the 224px dungeon viewport: 224 - 78 - 7 = 139.
   private const int ChampionMirrorD3LeftX = 78;
   private const int ChampionMirrorD3LeftY = 116;
+  private const int ChampionMirrorD3RightF3X = 139;
+  private const int ChampionMirrorD3RightF3Y = 116;
+
+  // Original DOS D3R2 oblique slot (e.g. 10,4 South). Exact 15x15 cutout
+  // (Mirror_Side_15x15.png) at screen X=194..208, Y=69..83, framebuffer Y=116.
+  // The matching D3L2 slot mirrors around the 224px viewport: 224-194-15=15.
   private const int ChampionMirrorD3RightX = 194;
   private const int ChampionMirrorD3RightY = 116;
+  private const int ChampionMirrorD3LeftL2X = 15;
+  private const int ChampionMirrorD3LeftL2Y = 116;
 
   private const string DefaultViewportLayoutPath =
       "Assets/Dungeon Master/ViewportLayout.asset";
@@ -15177,6 +15185,67 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  private bool PreviewTileIsOpen(int x, int y)
+  {
+    return previewMiniMap != null
+        && previewMiniMap.IsInside(x, y)
+        && previewMiniMap.GetTile(x, y).Type != DungeonTileType.Wall;
+  }
+
+  private bool PreviewTileIsWall(int x, int y)
+  {
+    return previewMiniMap != null
+        && previewMiniMap.IsInside(x, y)
+        && previewMiniMap.GetTile(x, y).Type == DungeonTileType.Wall;
+  }
+
+  private bool TryBlitMatchingChampionMirror(
+      Color32[] pixels,
+      Texture2D texture,
+      int tileX,
+      int tileY,
+      string wallSide,
+      int destX,
+      int destY,
+      bool mirrorHorizontally)
+  {
+    if (pixels == null
+        || texture == null
+        || !texture.isReadable
+        || previewChampionMirrors == null
+        || string.IsNullOrEmpty(wallSide))
+    {
+      return false;
+    }
+
+    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    {
+      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
+        continue;
+
+      if (mirror.x != tileX
+          || mirror.y != tileY
+          || !string.Equals(
+              mirror.wall,
+              wallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      BlitPieceIntoPreview(
+          pixels,
+          texture,
+          destX,
+          destY,
+          mirrorHorizontally);
+      return true;
+    }
+
+    return false;
+  }
+
   private void BlitChampionMirrorD3LeftIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -15187,9 +15256,8 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    Texture2D sideMirror = GetChampionMirrorSideDistantLeftTexture();
-    if (sideMirror == null || !sideMirror.isReadable)
-      return;
+    Texture2D f3Left = GetChampionMirrorSideDistantLeftTexture();
+    Texture2D l2 = GetChampionMirrorSideDistantTexture();
 
     DungeonMap.GetForwardOffset(
         previewFacing,
@@ -15200,61 +15268,61 @@ public class ViewportLayoutEditor : EditorWindow
         out int rightX,
         out int rightY);
 
-    // D3-left side ornament: the center corridor remains open through D3,
-    // and the decorated wall sits at D3-left. D1/D2 left may be walls
-    // (straight corridor, as at (9,9) East / LINFLAS) or open side-lane
-    // cells (alcove, as at (12,9) West). Either way the D3-left face stays
-    // visible on the far left wall strip.
+    string leftWallSide = FacingName(TurnPreviewFacingRight(previewFacing));
+
     int d1CenterX = previewX + forwardX;
     int d1CenterY = previewY + forwardY;
     int d2CenterX = previewX + forwardX * 2;
     int d2CenterY = previewY + forwardY * 2;
     int d3CenterX = previewX + forwardX * 3;
     int d3CenterY = previewY + forwardY * 3;
-    int mirrorX = d3CenterX - rightX;
-    int mirrorY = d3CenterY - rightY;
 
-    if (!previewMiniMap.IsInside(d1CenterX, d1CenterY)
-        || previewMiniMap.GetTile(d1CenterX, d1CenterY).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d2CenterX, d2CenterY)
-        || previewMiniMap.GetTile(d2CenterX, d2CenterY).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d3CenterX, d3CenterY)
-        || previewMiniMap.GetTile(d3CenterX, d3CenterY).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(mirrorX, mirrorY)
-        || previewMiniMap.GetTile(mirrorX, mirrorY).Type != DungeonTileType.Wall)
+    // F3-left corridor/alcove: center line open through D3, decorated wall
+    // is one lane left of D3. D1/D2 left may be walls (9,9 East LINFLAS) or
+    // open (12,9 West SYRA). Native 7x15, unmirrored.
+    int f3LeftX = d3CenterX - rightX;
+    int f3LeftY = d3CenterY - rightY;
+    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
+        && PreviewTileIsOpen(d2CenterX, d2CenterY)
+        && PreviewTileIsOpen(d3CenterX, d3CenterY)
+        && PreviewTileIsWall(f3LeftX, f3LeftY))
     {
-      return;
-    }
-
-    // Screen-left side walls face inward toward the corridor: TurnRight.
-    string leftWallSide = FacingName(TurnPreviewFacingRight(previewFacing));
-
-    for (int i = 0; i < previewChampionMirrors.Length; i++)
-    {
-      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
-        continue;
-
-      if (mirror.x != mirrorX
-          || mirror.y != mirrorY
-          || !string.Equals(
-              mirror.wall,
-              leftWallSide,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        continue;
-      }
-
-      // Mirror_Side_7x15.png is the exact left D3 cutout from the original.
-      // Draw 1:1 at the measured DOS bounds: screen X=78..84, Y=69..83,
-      // which is framebuffer bottom-left (78,116). No runtime mirroring.
-      BlitPieceIntoPreview(
+      TryBlitMatchingChampionMirror(
           pixels,
-          sideMirror,
+          f3Left,
+          f3LeftX,
+          f3LeftY,
+          leftWallSide,
           ChampionMirrorD3LeftX,
           ChampionMirrorD3LeftY,
           false);
-      return;
+    }
+
+    // D3L2 oblique: sight through the open left side-lane, decorated wall
+    // two lanes left of D3. Mirror_Side_15x15.png mirrored into the left slot.
+    int d1LeftX = d1CenterX - rightX;
+    int d1LeftY = d1CenterY - rightY;
+    int d2LeftX = d2CenterX - rightX;
+    int d2LeftY = d2CenterY - rightY;
+    int d3LeftX = d3CenterX - rightX;
+    int d3LeftY = d3CenterY - rightY;
+    int l2X = d3CenterX - rightX * 2;
+    int l2Y = d3CenterY - rightY * 2;
+    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
+        && PreviewTileIsOpen(d1LeftX, d1LeftY)
+        && PreviewTileIsOpen(d2LeftX, d2LeftY)
+        && PreviewTileIsOpen(d3LeftX, d3LeftY)
+        && PreviewTileIsWall(l2X, l2Y))
+    {
+      TryBlitMatchingChampionMirror(
+          pixels,
+          l2,
+          l2X,
+          l2Y,
+          leftWallSide,
+          ChampionMirrorD3LeftL2X,
+          ChampionMirrorD3LeftL2Y,
+          true);
     }
   }
 
@@ -15268,9 +15336,8 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    Texture2D sideMirror = GetChampionMirrorSideDistantTexture();
-    if (sideMirror == null || !sideMirror.isReadable)
-      return;
+    Texture2D f3LeftCutout = GetChampionMirrorSideDistantLeftTexture();
+    Texture2D r2 = GetChampionMirrorSideDistantTexture();
 
     DungeonMap.GetForwardOffset(
         previewFacing,
@@ -15281,68 +15348,60 @@ public class ViewportLayoutEditor : EditorWindow
         out int rightX,
         out int rightY);
 
-    // This distant oblique slot can remain visible even when the D2 CENTER
-    // is a wall (10,4 South is exactly that case). Visibility comes through
-    // the open screen-right side corridor, not through the center lane.
-    // Candidate mirror: three tiles forward and two tiles to screen-right.
-    int d1CenterX = previewX + forwardX;
-    int d1CenterY = previewY + forwardY;
-    int d1RightX = previewX + forwardX + rightX;
-    int d1RightY = previewY + forwardY + rightY;
-    int d2RightX = previewX + forwardX * 2 + rightX;
-    int d2RightY = previewY + forwardY * 2 + rightY;
-    int d3RightX = previewX + forwardX * 3 + rightX;
-    int d3RightY = previewY + forwardY * 3 + rightY;
-
-    if (!previewMiniMap.IsInside(d1CenterX, d1CenterY)
-        || previewMiniMap.GetTile(d1CenterX, d1CenterY).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d1RightX, d1RightY)
-        || previewMiniMap.GetTile(d1RightX, d1RightY).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d2RightX, d2RightY)
-        || previewMiniMap.GetTile(d2RightX, d2RightY).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d3RightX, d3RightY)
-        || previewMiniMap.GetTile(d3RightX, d3RightY).Type == DungeonTileType.Wall)
-    {
-      return;
-    }
-
-    int mirrorX = previewX + forwardX * 3 + rightX * 2;
-    int mirrorY = previewY + forwardY * 3 + rightY * 2;
-    if (!previewMiniMap.IsInside(mirrorX, mirrorY)
-        || previewMiniMap.GetTile(mirrorX, mirrorY).Type != DungeonTileType.Wall)
-    {
-      return;
-    }
-
-    // Screen-right distant oblique walls show the face pointing inward toward
-    // the corridor, which corresponds to TurnLeft(viewFacing).
     string rightWallSide = FacingName(TurnPreviewFacingLeft(previewFacing));
 
-    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    int d1CenterX = previewX + forwardX;
+    int d1CenterY = previewY + forwardY;
+    int d2CenterX = previewX + forwardX * 2;
+    int d2CenterY = previewY + forwardY * 2;
+    int d3CenterX = previewX + forwardX * 3;
+    int d3CenterY = previewY + forwardY * 3;
+
+    // F3-right corridor/alcove: center line open through D3, decorated wall
+    // is one lane right of D3. Same 7x15 cutout as F3-left, mirrored.
+    int f3RightX = d3CenterX + rightX;
+    int f3RightY = d3CenterY + rightY;
+    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
+        && PreviewTileIsOpen(d2CenterX, d2CenterY)
+        && PreviewTileIsOpen(d3CenterX, d3CenterY)
+        && PreviewTileIsWall(f3RightX, f3RightY))
     {
-      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
-        continue;
-
-      if (mirror.x != mirrorX
-          || mirror.y != mirrorY
-          || !string.Equals(
-              mirror.wall,
-              rightWallSide,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        continue;
-      }
-
-      // Exact original 15x15 cutout: draw 1:1. The asset already contains
-      // the correct right-side perspective, so do not mirror it again.
-      BlitPieceIntoPreview(
+      TryBlitMatchingChampionMirror(
           pixels,
-          sideMirror,
+          f3LeftCutout,
+          f3RightX,
+          f3RightY,
+          rightWallSide,
+          ChampionMirrorD3RightF3X,
+          ChampionMirrorD3RightF3Y,
+          true);
+    }
+
+    // D3R2 oblique: sight through the open right side-lane, decorated wall
+    // two lanes right of D3. Native 15x15, unmirrored.
+    int d1RightX = d1CenterX + rightX;
+    int d1RightY = d1CenterY + rightY;
+    int d2RightX = d2CenterX + rightX;
+    int d2RightY = d2CenterY + rightY;
+    int d3RightX = d3CenterX + rightX;
+    int d3RightY = d3CenterY + rightY;
+    int r2X = d3CenterX + rightX * 2;
+    int r2Y = d3CenterY + rightY * 2;
+    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
+        && PreviewTileIsOpen(d1RightX, d1RightY)
+        && PreviewTileIsOpen(d2RightX, d2RightY)
+        && PreviewTileIsOpen(d3RightX, d3RightY)
+        && PreviewTileIsWall(r2X, r2Y))
+    {
+      TryBlitMatchingChampionMirror(
+          pixels,
+          r2,
+          r2X,
+          r2Y,
+          rightWallSide,
           ChampionMirrorD3RightX,
           ChampionMirrorD3RightY,
           false);
-      return;
     }
   }
 
