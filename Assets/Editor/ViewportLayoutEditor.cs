@@ -163,12 +163,11 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ChampionMirrorD2SideWidth = 10;
   private const int ChampionMirrorD2SideHeight = 23;
 
-  // Original DOS narrow Champion mirror visible in the right-hand D3 oblique
-  // slot (e.g. 10,4 South). This is an exact 15x15 original-game cutout
-  // (Mirror_Side_15x15.png), so no scaling or mirroring is needed here.
-  // Original screenshot bounds: screen X=194..208, Y=69..83, therefore
-  // framebuffer bottom-left Y = 200 - 69 - 15 = 116.
-  private const int ChampionMirrorD3LeftX = 80;
+  // Original DOS narrow Champion mirror visible in the left-hand D3 corridor
+  // slot. Verified from the (9,9) East original: Mirror_Side_7x15.png is an
+  // exact pixel match at screen X=78..84, Y=69..83. Framebuffer bottom-left
+  // Y = 200 - 69 - 15 = 116. The 15x15 cutout is the right-hand D3 slot.
+  private const int ChampionMirrorD3LeftX = 78;
   private const int ChampionMirrorD3LeftY = 116;
   private const int ChampionMirrorD3RightX = 194;
   private const int ChampionMirrorD3RightY = 116;
@@ -15202,18 +15201,16 @@ public class ViewportLayoutEditor : EditorWindow
         out int rightY);
 
     // D3-left side ornament: the center corridor remains open through D3,
-    // while the screen-left side lane is open at D1/D2 and closes with the
-    // decorated wall at D3. This is the geometry visible at (12,9) West.
+    // and the decorated wall sits at D3-left. D1/D2 left may be walls
+    // (straight corridor, as at (9,9) East / LINFLAS) or open side-lane
+    // cells (alcove, as at (12,9) West). Either way the D3-left face stays
+    // visible on the far left wall strip.
     int d1CenterX = previewX + forwardX;
     int d1CenterY = previewY + forwardY;
     int d2CenterX = previewX + forwardX * 2;
     int d2CenterY = previewY + forwardY * 2;
     int d3CenterX = previewX + forwardX * 3;
     int d3CenterY = previewY + forwardY * 3;
-    int d1LeftX = d1CenterX - rightX;
-    int d1LeftY = d1CenterY - rightY;
-    int d2LeftX = d2CenterX - rightX;
-    int d2LeftY = d2CenterY - rightY;
     int mirrorX = d3CenterX - rightX;
     int mirrorY = d3CenterY - rightY;
 
@@ -15223,10 +15220,6 @@ public class ViewportLayoutEditor : EditorWindow
         || previewMiniMap.GetTile(d2CenterX, d2CenterY).Type == DungeonTileType.Wall
         || !previewMiniMap.IsInside(d3CenterX, d3CenterY)
         || previewMiniMap.GetTile(d3CenterX, d3CenterY).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d1LeftX, d1LeftY)
-        || previewMiniMap.GetTile(d1LeftX, d1LeftY).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d2LeftX, d2LeftY)
-        || previewMiniMap.GetTile(d2LeftX, d2LeftY).Type == DungeonTileType.Wall
         || !previewMiniMap.IsInside(mirrorX, mirrorY)
         || previewMiniMap.GetTile(mirrorX, mirrorY).Type != DungeonTileType.Wall)
     {
@@ -15253,8 +15246,8 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       // Mirror_Side_7x15.png is the exact left D3 cutout from the original.
-      // Draw 1:1 at the measured DOS bounds: screen X=80..86, Y=69..83,
-      // which is framebuffer bottom-left (80,116). No runtime mirroring.
+      // Draw 1:1 at the measured DOS bounds: screen X=78..84, Y=69..83,
+      // which is framebuffer bottom-left (78,116). No runtime mirroring.
       BlitPieceIntoPreview(
           pixels,
           sideMirror,
