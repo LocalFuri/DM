@@ -54,7 +54,7 @@ public class ViewportLayoutEditor : EditorWindow
   private const string WoodRingSide3AssetPath =
       "Assets/Art/Ornaments/Wood_Ring_Side_3x5.png";
   private const string SlimeSide2AssetPath =
-      "Assets/Art/Ornaments/Slime_Side_16x10.png";
+      "Assets/Art/Ornaments/Slime_Side_4x3.png";
 
   // Original DOS Hook front placement on the wall immediately in front of
   // the party. Measured from the supplied 320x200 original screenshot:
@@ -81,14 +81,15 @@ public class ViewportLayoutEditor : EditorWindow
   private const int WoodRingD2SideRightX = 153;
   private const int WoodRingD2SideY = 117;
 
-  // Original DOS D2 side Slime placement. In the supplied (4,6) North
-  // original screenshot the mirrored right-wall Slime_Side_16x10 sprite
-  // starts at screen top-left (161,127). The matching left-side slot is
-  // mirrored around the 224px dungeon viewport: 224 - 161 - 16 = 47.
-  // Framebuffer Y = 200 - 127 - 10 = 63.
-  private const int SlimeD2SideLeftX = 47;
-  private const int SlimeD2SideRightX = 161;
-  private const int SlimeD2SideY = 63;
+  // Original DOS D2 side Slime placement. The supplied (4,7) North original
+  // uses native Slime_Side_4x3.png as an exact right-wall crop: five green
+  // pixels at screen top-left (154,114). Framebuffer Y = 200 - 114 - 3 = 83.
+  // Left slot mirrors around the 224px dungeon viewport: 224 - 154 - 4 = 66.
+  // The 4x3 PNG is already the right-wall facing, so only the left slot is
+  // mirrored.
+  private const int SlimeD2SideLeftX = 66;
+  private const int SlimeD2SideRightX = 154;
+  private const int SlimeD2SideY = 83;
 
   // Original DOS Wood Ring distant side placement at D3. The supplied native
   // Wood_Ring_Side_3x5.png is an exact pixel match in the original
@@ -16093,7 +16094,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     Texture2D exact = AssetDatabase.LoadAssetAtPath<Texture2D>(
         SlimeSide2AssetPath);
-    if (exact != null && exact.width == 16 && exact.height == 10)
+    if (exact != null && exact.width == 4 && exact.height == 3)
     {
       cachedSlimeSide2Texture = exact;
       return exact;
@@ -16111,8 +16112,8 @@ public class ViewportLayoutEditor : EditorWindow
 
       Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
       if (candidate != null
-          && candidate.width == 16
-          && candidate.height == 10)
+          && candidate.width == 4
+          && candidate.height == 3)
       {
         cachedSlimeSide2Texture = candidate;
         return candidate;
@@ -16135,8 +16136,8 @@ public class ViewportLayoutEditor : EditorWindow
     Texture2D side2 = GetSlimeSide2Texture();
     if (side2 == null
         || !side2.isReadable
-        || side2.width != 16
-        || side2.height != 10)
+        || side2.width != 4
+        || side2.height != 3)
     {
       return;
     }
@@ -16245,7 +16246,7 @@ public class ViewportLayoutEditor : EditorWindow
             side2,
             SlimeD2SideLeftX,
             SlimeD2SideY,
-            false);
+            true);
         leftDrawn = true;
       }
 
@@ -16256,7 +16257,7 @@ public class ViewportLayoutEditor : EditorWindow
             side2,
             SlimeD2SideRightX,
             SlimeD2SideY,
-            true);
+            false);
         rightDrawn = true;
       }
 
@@ -16979,8 +16980,44 @@ public class ViewportLayoutEditor : EditorWindow
       int destHeight,
       bool mirrorHorizontally = false)
   {
-    if (!source.isReadable || destWidth <= 0 || destHeight <= 0)
+    if (source == null)
       return;
+
+    BlitPieceScaledIntoPreview(
+        dest,
+        source,
+        destinationX,
+        destinationY,
+        destWidth,
+        destHeight,
+        mirrorHorizontally,
+        0,
+        0,
+        source.width,
+        source.height);
+  }
+
+  private static void BlitPieceScaledIntoPreview(
+      Color32[] dest,
+      Texture2D source,
+      int destinationX,
+      int destinationY,
+      int destWidth,
+      int destHeight,
+      bool mirrorHorizontally,
+      int sourceX,
+      int sourceY,
+      int sourceWidth,
+      int sourceHeight)
+  {
+    if (!source.isReadable
+        || destWidth <= 0
+        || destHeight <= 0
+        || sourceWidth <= 0
+        || sourceHeight <= 0)
+    {
+      return;
+    }
 
     Color32[] sourcePixels = source.GetPixels32();
 
@@ -16990,20 +17027,25 @@ public class ViewportLayoutEditor : EditorWindow
       if (targetY < 0 || targetY >= PreviewHeight)
         continue;
 
-      int sourceY = destRow * source.height / destHeight;
+      int sampleY = sourceY + destRow * sourceHeight / destHeight;
+      if (sampleY < 0 || sampleY >= source.height)
+        continue;
 
       for (int destCol = 0; destCol < destWidth; destCol++)
       {
-        int sampleX = destCol * source.width / destWidth;
-        if (mirrorHorizontally)
-          sampleX = source.width - 1 - sampleX;
+        int offsetX = destCol * sourceWidth / destWidth;
+        int sampleX = mirrorHorizontally
+            ? sourceX + sourceWidth - 1 - offsetX
+            : sourceX + offsetX;
+        if (sampleX < 0 || sampleX >= source.width)
+          continue;
 
         int targetX = destinationX + destCol;
         if (targetX < 0 || targetX >= PreviewWidth)
           continue;
 
         Color32 sourceColour =
-            sourcePixels[sourceY * source.width + sampleX];
+            sourcePixels[sampleY * source.width + sampleX];
         if (sourceColour.a == 0)
           continue;
 
