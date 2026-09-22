@@ -70,44 +70,50 @@ public class ViewportLayoutEditor : EditorWindow
   // so it is centered by one pixel inside that box:
   // left screen X = 49, right screen X = 161, screen top Y = 74.
   // Texture2D framebuffer coordinates are bottom-left, so Y = 200 - 74 - 19.
+  // Dungeon viewport is X=0..223. Every left/right wall-ornament pair is the
+  // same sprite mirrored around that width: rightX = 224 - leftX - spriteWidth.
+  private const int DungeonViewportWidth = 224;
+
   private const int HookD1SideLeftX = 49;
-  private const int HookD1SideRightX = 161;
+  private const int HookD1SideRightX =
+      DungeonViewportWidth - HookD1SideLeftX - 14;
   private const int HookD1SideY = 107;
   private const int WoodRingD1SideY = 108;
 
   // Original DOS D1 side Slime placement. In the supplied (4,6) North
   // original screenshot the mirrored right-wall Slime_Side_16x10 sprite
-  // is an exact pixel match at screen top-left (161,127). Left slot:
-  // 224 - 161 - 16 = 47. Framebuffer Y = 200 - 127 - 10 = 63.
+  // is an exact pixel match at screen top-left (161,127). Left slot is
+  // that same 16px box mirrored. Framebuffer Y = 200 - 127 - 10 = 63.
   private const int SlimeD1SideLeftX = 47;
-  private const int SlimeD1SideRightX = 161;
+  private const int SlimeD1SideRightX =
+      DungeonViewportWidth - SlimeD1SideLeftX - 16;
   private const int SlimeD1SideY = 63;
 
   // Original DOS Wood Ring side2 placement at D2. The supplied native
   // Wood_Ring_Side2_5x10.png matches the original (4,6) North screenshot
-  // exactly at screen top-left (66,73). The right slot is its horizontal
-  // viewport mirror: 224 - 66 - 5 = 153. Framebuffer Y = 200 - 73 - 10.
+  // exactly at screen top-left (66,73). Framebuffer Y = 200 - 73 - 10.
   private const int WoodRingD2SideLeftX = 66;
-  private const int WoodRingD2SideRightX = 153;
+  private const int WoodRingD2SideRightX =
+      DungeonViewportWidth - WoodRingD2SideLeftX - 5;
   private const int WoodRingD2SideY = 117;
 
   // Original DOS D2 side Slime placement. The supplied (4,7) North original
-  // uses native Slime_Side_4x3.png as an exact right-wall crop: five green
-  // pixels at screen top-left (154,114). Framebuffer Y = 200 - 114 - 3 = 83.
-  // Left slot mirrors around the 224px dungeon viewport: 224 - 154 - 4 = 66.
-  // The 4x3 PNG is already the right-wall facing, so only the left slot is
-  // mirrored.
+  // uses native Slime_Side_4x3.png as an exact right-wall crop at screen
+  // top-left (154,114). Store the mirrored left slot; the 4x3 PNG is already
+  // the right-wall facing, so only the left blit is flipped.
+  // Framebuffer Y = 200 - 114 - 3 = 83.
   private const int SlimeD2SideLeftX = 66;
-  private const int SlimeD2SideRightX = 154;
+  private const int SlimeD2SideRightX =
+      DungeonViewportWidth - SlimeD2SideLeftX - 4;
   private const int SlimeD2SideY = 83;
 
   // Original DOS Wood Ring distant side placement at D3. The supplied native
   // Wood_Ring_Side_3x5.png is an exact pixel match in the original
   // (4,7) North screenshot at screen top-left (82,73).
-  // Right slot mirrors around the 224px dungeon viewport:
-  // 224 - 82 - 3 = 139. Framebuffer Y = 200 - 73 - 5 = 122.
+  // Framebuffer Y = 200 - 73 - 5 = 122.
   private const int WoodRingD3SideLeftX = 82;
-  private const int WoodRingD3SideRightX = 139;
+  private const int WoodRingD3SideRightX =
+      DungeonViewportWidth - WoodRingD3SideLeftX - 3;
   private const int WoodRingD3SideY = 122;
 
   // Original DOS Champion front-mirror placement for a D1 center wall.
@@ -126,7 +132,8 @@ public class ViewportLayoutEditor : EditorWindow
   // Screen-space original top-left Y=64 for a 35px source becomes framebuffer
   // bottom-left Y=101 in the 320x200 Texture2D.
   private const int ChampionMirrorD1LeftX = 41;
-  private const int ChampionMirrorD1RightX = 167;
+  private const int ChampionMirrorD1RightX =
+      DungeonViewportWidth - ChampionMirrorD1LeftX - 16;
   private const int ChampionMirrorD1Y = 101;
 
   // Original DOS Champion front-mirror placement for a D2 center wall.
@@ -158,28 +165,29 @@ public class ViewportLayoutEditor : EditorWindow
   // screen top-left approximately (148,67), visible size 10x23, therefore
   // framebuffer bottom-left Y = 200 - 67 - 23 = 110.
   private const int ChampionMirrorD2LeftX = 66;
-  private const int ChampionMirrorD2RightX = 148;
+  private const int ChampionMirrorD2RightX =
+      DungeonViewportWidth - ChampionMirrorD2LeftX - 10;
   private const int ChampionMirrorD2SideY = 110;
   private const int ChampionMirrorD2SideWidth = 10;
   private const int ChampionMirrorD2SideHeight = 23;
 
   // Original DOS D3-left F3 corridor slot. Verified from (9,9) East LINFLAS:
   // Mirror_Side_7x15.png matches screen X=78..84, Y=69..83, then nudged
-  // +2px right. Framebuffer Y = 200 - 69 - 15 = 116. F3-right is the
-  // viewport mirror of that same slot, also +2px: 224 - 78 - 7 + 2 = 141.
+  // +2px toward corridor center. Framebuffer Y = 200 - 69 - 15 = 116.
+  // F3-right is only the viewport mirror of that left slot (not another +2).
   private const int ChampionMirrorD3LeftX = 80;
   private const int ChampionMirrorD3LeftY = 116;
-  private const int ChampionMirrorD3RightF3X = 141;
-  private const int ChampionMirrorD3RightF3Y = 116;
+  private const int ChampionMirrorD3RightF3X =
+      DungeonViewportWidth - ChampionMirrorD3LeftX - 7;
+  private const int ChampionMirrorD3RightF3Y = ChampionMirrorD3LeftY;
 
-  // Original DOS D3R2 oblique slot (e.g. 10,4 South). Exact 15x15 cutout
-  // (Mirror_Side_15x15.png) at screen X=194..208, Y=69..83, then +2px right.
-  // Framebuffer Y=116. D3L2 is the viewport mirror of that slot, also +2px:
-  // 224 - 194 - 15 + 2 = 17.
-  private const int ChampionMirrorD3RightX = 196;
-  private const int ChampionMirrorD3RightY = 116;
+  // Original DOS D3L2/D3R2 oblique slots. 15x15 native on the right; left is
+  // that sprite mirrored. Same +2 center-nudge as F3-left, then mirror.
   private const int ChampionMirrorD3LeftL2X = 17;
   private const int ChampionMirrorD3LeftL2Y = 116;
+  private const int ChampionMirrorD3RightX =
+      DungeonViewportWidth - ChampionMirrorD3LeftL2X - 15;
+  private const int ChampionMirrorD3RightY = ChampionMirrorD3LeftL2Y;
 
   private const string DefaultViewportLayoutPath =
       "Assets/Dungeon Master/ViewportLayout.asset";
