@@ -164,20 +164,21 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ChampionMirrorD2SideHeight = 23;
 
   // Original DOS D3-left F3 corridor slot. Verified from (9,9) East LINFLAS:
-  // Mirror_Side_7x15.png is an exact pixel match at screen X=78..84, Y=69..83.
-  // Framebuffer Y = 200 - 69 - 15 = 116. The matching F3-right slot mirrors
-  // around the 224px dungeon viewport: 224 - 78 - 7 = 139.
-  private const int ChampionMirrorD3LeftX = 78;
+  // Mirror_Side_7x15.png matches screen X=78..84, Y=69..83, then nudged
+  // +2px right. Framebuffer Y = 200 - 69 - 15 = 116. F3-right is the
+  // viewport mirror of that same slot, also +2px: 224 - 78 - 7 + 2 = 141.
+  private const int ChampionMirrorD3LeftX = 80;
   private const int ChampionMirrorD3LeftY = 116;
-  private const int ChampionMirrorD3RightF3X = 139;
+  private const int ChampionMirrorD3RightF3X = 141;
   private const int ChampionMirrorD3RightF3Y = 116;
 
   // Original DOS D3R2 oblique slot (e.g. 10,4 South). Exact 15x15 cutout
-  // (Mirror_Side_15x15.png) at screen X=194..208, Y=69..83, framebuffer Y=116.
-  // The matching D3L2 slot mirrors around the 224px viewport: 224-194-15=15.
-  private const int ChampionMirrorD3RightX = 194;
+  // (Mirror_Side_15x15.png) at screen X=194..208, Y=69..83, then +2px right.
+  // Framebuffer Y=116. D3L2 is the viewport mirror of that slot, also +2px:
+  // 224 - 194 - 15 + 2 = 17.
+  private const int ChampionMirrorD3RightX = 196;
   private const int ChampionMirrorD3RightY = 116;
-  private const int ChampionMirrorD3LeftL2X = 15;
+  private const int ChampionMirrorD3LeftL2X = 17;
   private const int ChampionMirrorD3LeftL2Y = 116;
 
   private const string DefaultViewportLayoutPath =
