@@ -53,6 +53,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Wood_Ring_Side2_5x10.png";
   private const string WoodRingSide3AssetPath =
       "Assets/Art/Ornaments/Wood_Ring_Side_3x5.png";
+  private const string SlimeSide1AssetPath =
+      "Assets/Art/Ornaments/Slime_Side_16x10.png";
   private const string SlimeSide2AssetPath =
       "Assets/Art/Ornaments/Slime_Side_4x3.png";
 
@@ -72,6 +74,14 @@ public class ViewportLayoutEditor : EditorWindow
   private const int HookD1SideRightX = 161;
   private const int HookD1SideY = 107;
   private const int WoodRingD1SideY = 108;
+
+  // Original DOS D1 side Slime placement. In the supplied (4,6) North
+  // original screenshot the mirrored right-wall Slime_Side_16x10 sprite
+  // is an exact pixel match at screen top-left (161,127). Left slot:
+  // 224 - 161 - 16 = 47. Framebuffer Y = 200 - 127 - 10 = 63.
+  private const int SlimeD1SideLeftX = 47;
+  private const int SlimeD1SideRightX = 161;
+  private const int SlimeD1SideY = 63;
 
   // Original DOS Wood Ring side2 placement at D2. The supplied native
   // Wood_Ring_Side2_5x10.png matches the original (4,6) North screenshot
@@ -532,6 +542,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedWoodRingSide3Texture;
   [System.NonSerialized]
   private Texture2D cachedSlimeFrontTexture;
+  [System.NonSerialized]
+  private Texture2D cachedSlimeSide1Texture;
   [System.NonSerialized]
   private Texture2D cachedSlimeSide2Texture;
   private readonly Dictionary<string, Texture2D> cachedChampionPortraitTextures =
@@ -12923,6 +12935,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitSlimeD2SidesIntoPreview(pixels);
     BlitWoodRingD2SidesIntoPreview(pixels);
     BlitHookStyleD1SidesIntoPreview(pixels);
+    BlitSlimeD1SidesIntoPreview(pixels);
     BlitWoodRingD1FrontIntoPreview(pixels);
     BlitSlimeD1FrontIntoPreview(pixels);
     BlitHookD1FrontIntoPreview(pixels);
@@ -16087,6 +16100,42 @@ public class ViewportLayoutEditor : EditorWindow
     return fallback;
   }
 
+  private Texture2D GetSlimeSide1Texture()
+  {
+    if (cachedSlimeSide1Texture != null)
+      return cachedSlimeSide1Texture;
+
+    Texture2D exact = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        SlimeSide1AssetPath);
+    if (exact != null && exact.width == 16 && exact.height == 10)
+    {
+      cachedSlimeSide1Texture = exact;
+      return exact;
+    }
+
+    string[] guids = AssetDatabase.FindAssets(
+        "Slime t:Texture2D",
+        new[] { OrnamentArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
+      string lower = assetPath.ToLowerInvariant();
+      if (!lower.Contains("slime") || !lower.Contains("side"))
+        continue;
+
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+      if (candidate != null
+          && candidate.width == 16
+          && candidate.height == 10)
+      {
+        cachedSlimeSide1Texture = candidate;
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
   private Texture2D GetSlimeSide2Texture()
   {
     if (cachedSlimeSide2Texture != null)
@@ -16121,6 +16170,143 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return null;
+  }
+
+  private void BlitSlimeD1SidesIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D side1 = GetSlimeSide1Texture();
+    if (side1 == null
+        || !side1.isReadable
+        || side1.width != 16
+        || side1.height != 10)
+    {
+      return;
+    }
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int frontX = previewX + forwardX;
+    int frontY = previewY + forwardY;
+    if (!previewMiniMap.IsInside(frontX, frontY)
+        || previewMiniMap.GetTile(frontX, frontY).Type == DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    int leftWallTileX = frontX - rightX;
+    int leftWallTileY = frontY - rightY;
+    int rightWallTileX = frontX + rightX;
+    int rightWallTileY = frontY + rightY;
+
+    bool leftWallExists =
+        previewMiniMap.IsInside(leftWallTileX, leftWallTileY)
+        && previewMiniMap.GetTile(leftWallTileX, leftWallTileY).Type
+            == DungeonTileType.Wall;
+    bool rightWallExists =
+        previewMiniMap.IsInside(rightWallTileX, rightWallTileY)
+        && previewMiniMap.GetTile(rightWallTileX, rightWallTileY).Type
+            == DungeonTileType.Wall;
+
+    string leftPhysicalFace =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+    string rightPhysicalFace =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+
+    string leftBoundaryDirection =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string rightBoundaryDirection =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+
+    bool leftDrawn = false;
+    bool rightDrawn = false;
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!IsSlimeOrnament(ornament))
+        continue;
+
+      bool matchesLeft;
+      bool matchesRight;
+      if (ornament.wallTilePlacement)
+      {
+        matchesLeft =
+            leftWallExists
+            && ornament.x == leftWallTileX
+            && ornament.y == leftWallTileY
+            && string.Equals(
+                ornament.wall,
+                leftPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase);
+        matchesRight =
+            rightWallExists
+            && ornament.x == rightWallTileX
+            && ornament.y == rightWallTileY
+            && string.Equals(
+                ornament.wall,
+                rightPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        matchesLeft =
+            leftWallExists
+            && ornament.x == frontX
+            && ornament.y == frontY
+            && string.Equals(
+                ornament.wall,
+                leftBoundaryDirection,
+                System.StringComparison.OrdinalIgnoreCase);
+        matchesRight =
+            rightWallExists
+            && ornament.x == frontX
+            && ornament.y == frontY
+            && string.Equals(
+                ornament.wall,
+                rightBoundaryDirection,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (matchesLeft && !leftDrawn)
+      {
+        BlitPieceIntoPreview(
+            pixels,
+            side1,
+            SlimeD1SideLeftX,
+            SlimeD1SideY,
+            false);
+        leftDrawn = true;
+      }
+
+      if (matchesRight && !rightDrawn)
+      {
+        BlitPieceIntoPreview(
+            pixels,
+            side1,
+            SlimeD1SideRightX,
+            SlimeD1SideY,
+            true);
+        rightDrawn = true;
+      }
+
+      if (leftDrawn && rightDrawn)
+        return;
+    }
   }
 
   private void BlitSlimeD2SidesIntoPreview(Color32[] pixels)
