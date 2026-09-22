@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using DM.Dungeon;
 using DM.Rendering;
 using UnityEditor;
@@ -390,6 +391,20 @@ public class ViewportLayoutEditor : EditorWindow
   //   local 10 -> global 43 = Champion Mirror
   private static readonly int[] HallOfChampionsWallOrnamentSourceIds =
       { 4, 33, 34, 6, 2, 59, 38, 46, 36, 43 };
+
+  // Original Hall of Champions random wall-ornament rules. The low four bits
+  // of a wall tile allow a random ornament independently on its physical
+  // West/South/East/North faces. Only the first four level-local WallOrnate
+  // entries participate in the random selection. The original engine uses a
+  // deterministic 16-bit hash with dungeon seed/sentinel 99 and modulo 30.
+  private const int HallOfChampionsRandomWallOrnamentCount = 4;
+  private const int HallOfChampionsRandomOrnamentModulo = 30;
+  private const int HallOfChampionsDungeonSeed = 99;
+
+  private static readonly Regex HallOfChampionsRawWallTileRegex =
+      new Regex(
+          @"\{\s*""x""\s*:\s*(?<x>-?\d+)\s*,\s*""y""\s*:\s*(?<y>-?\d+)\s*,\s*""raw""\s*:\s*(?<raw>\d+)\s*,[^{}]*?""type""\s*:\s*""Wall""",
+          RegexOptions.CultureInvariant);
 
   // Hall of Champions ornament fallback content currently covers the current
   // D1 front cases already verified from the original data:
@@ -8862,6 +8877,175 @@ public class ViewportLayoutEditor : EditorWindow
     NavigatePreviewPoseOnly(nextX, nextY, previewFacing);
   }
 
+  private static WallOrnamentPlacement[] BuildHallOfChampionsWallOrnaments(
+      string json,
+      WallOrnamentPlacement[] explicitOrnaments)
+  {
+    List<WallOrnamentPlacement> resolved =
+        new List<WallOrnamentPlacement>();
+
+    // Preserve any explicit map records. The current JSON has none, so the
+    // fallback keeps the verified Sensor at (6,9) North plus the three older
+    // random-decoration samples as safety references. Generated random faces
+    // are de-duplicated against those samples below.
+    WallOrnamentPlacement[] baseOrnaments =
+        explicitOrnaments != null && explicitOrnaments.Length > 0
+            ? explicitOrnaments
+            : FallbackHallOfChampionsWallOrnaments;
+    for (int i = 0; i < baseOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = baseOrnaments[i];
+      if (ornament != null)
+        resolved.Add(ornament);
+    }
+
+    if (string.IsNullOrEmpty(json))
+      return resolved.ToArray();
+
+    MatchCollection matches = HallOfChampionsRawWallTileRegex.Matches(json);
+    for (int i = 0; i < matches.Count; i++)
+    {
+      Match match = matches[i];
+      if (!int.TryParse(match.Groups["x"].Value, out int x)
+          || !int.TryParse(match.Groups["y"].Value, out int y)
+          || !int.TryParse(match.Groups["raw"].Value, out int raw))
+      {
+        continue;
+      }
+
+      // DUNGEON.DAT wall flag order:
+      // bit 0 = West, bit 1 = South, bit 2 = East, bit 3 = North.
+      TryAddHallOfChampionsRandomWallOrnament(
+          resolved, x, y, raw, 0x01, "West", 4);
+      TryAddHallOfChampionsRandomWallOrnament(
+          resolved, x, y, raw, 0x02, "South", 3);
+      TryAddHallOfChampionsRandomWallOrnament(
+          resolved, x, y, raw, 0x04, "East", 2);
+      TryAddHallOfChampionsRandomWallOrnament(
+          resolved, x, y, raw, 0x08, "North", 1);
+    }
+
+    return resolved.ToArray();
+  }
+
+  private static void TryAddHallOfChampionsRandomWallOrnament(
+      List<WallOrnamentPlacement> resolved,
+      int x,
+      int y,
+      int raw,
+      int faceMask,
+      string physicalWallFace,
+      int faceFactor)
+  {
+    if ((raw & faceMask) == 0)
+      return;
+
+    int ordinal = ResolveHallOfChampionsRandomWallOrnamentOrdinal(
+        x,
+        y,
+        faceFactor);
+    if (ordinal <= 0)
+      return;
+
+    string type = HallOfChampionsRandomWallOrnamentType(ordinal);
+    if (string.IsNullOrEmpty(type))
+      return;
+
+    for (int i = 0; i < resolved.Count; i++)
+    {
+      WallOrnamentPlacement existing = resolved[i];
+      if (existing == null || !existing.wallTilePlacement)
+        continue;
+
+      if (existing.x == x
+          && existing.y == y
+          && string.Equals(
+              existing.wall,
+              physicalWallFace,
+              System.StringComparison.OrdinalIgnoreCase)
+          && string.Equals(
+              existing.type,
+              type,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        return;
+      }
+    }
+
+    resolved.Add(
+        new WallOrnamentPlacement
+        {
+          type = type,
+          ornamentOrdinal = ordinal,
+          x = x,
+          y = y,
+          wall = physicalWallFace,
+          wallTilePlacement = true
+        });
+  }
+
+  private static int ResolveHallOfChampionsRandomWallOrnamentOrdinal(
+      int mapX,
+      int mapY,
+      int physicalFaceFactor)
+  {
+    // ReDMCSB/CSBwin random wall-decoration input for one physical wall face:
+    // P1 = 2000 + (x << 5) + ((y + 1) * faceFactor)
+    // P2 = 3000 + (level << 6) + width + height
+    // Hall of Champions: level=0, width=18, height=19.
+    int value1 = 2000 + (mapX << 5) + ((mapY + 1) * physicalFaceFactor);
+    int value2 = 3000 + 18 + 19;
+    int index = HallOfChampionsRandomOrnamentHash(
+        value1,
+        value2,
+        HallOfChampionsRandomOrnamentModulo);
+
+    return index < HallOfChampionsRandomWallOrnamentCount
+        ? index + 1
+        : 0;
+  }
+
+  private static int HallOfChampionsRandomOrnamentHash(
+      int value1,
+      int value2,
+      int modulo)
+  {
+    if (modulo <= 0)
+      return 0;
+
+    unchecked
+    {
+      // Preserve the original 68000-era 16-bit truncation at every word step.
+      uint d0Long = (uint)(ushort)value1 * 31417u;
+      ushort d0Word = (ushort)d0Long;
+      d0Word = (ushort)((d0Word >> 1) & 0x7FFF);
+
+      uint d1Long = (uint)(ushort)value2 * 11u;
+      d0Word = (ushort)(d0Word + (ushort)d1Long);
+      d0Word = (ushort)(d0Word + HallOfChampionsDungeonSeed);
+      d0Word = (ushort)((d0Word >> 2) & 0x3FFF);
+
+      return d0Word % modulo;
+    }
+  }
+
+  private static string HallOfChampionsRandomWallOrnamentType(int ordinal)
+  {
+    switch (ordinal)
+    {
+      case 1:
+        return "Hook";
+      case 2:
+        return "Slime";
+      case 3:
+        return "Grate";
+      case 4:
+        return "WoodRing";
+      default:
+        return null;
+    }
+  }
+
   private void EnsurePreviewMiniMapLoaded()
   {
     if (previewMiniMap != null)
@@ -8885,12 +9069,9 @@ public class ViewportLayoutEditor : EditorWindow
           mirrorRoot != null && mirrorRoot.championMirrors != null
               ? mirrorRoot.championMirrors
               : new ChampionMirrorPlacement[0];
-      previewWallOrnaments =
-          mirrorRoot != null
-              && mirrorRoot.wallOrnaments != null
-              && mirrorRoot.wallOrnaments.Length > 0
-              ? mirrorRoot.wallOrnaments
-              : FallbackHallOfChampionsWallOrnaments;
+      previewWallOrnaments = BuildHallOfChampionsWallOrnaments(
+          json,
+          mirrorRoot != null ? mirrorRoot.wallOrnaments : null);
 
       previewMiniMapLoadError = null;
     }
