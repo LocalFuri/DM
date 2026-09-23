@@ -1222,6 +1222,140 @@ public class DungeonFeatureEditor : EditorWindow
     }
   }
 
+  private bool TryFacingForEnteredCell(
+      int x,
+      int y,
+      out DungeonFacing facing)
+  {
+    if (TryChampionMirrorFacing(x, y, out facing))
+      return true;
+
+    if (TryAdjacentOrnamentFacing(x, y, out facing))
+      return true;
+
+    if (TryAdjacentStairsFacing(x, y, out facing))
+      return true;
+
+    facing = selectedFacing;
+    return false;
+  }
+
+  private bool TryChampionMirrorFacing(
+      int x,
+      int y,
+      out DungeonFacing facing)
+  {
+    for (int i = 0; i < ChampionMirrorMarkers.Length; i++)
+    {
+      ChampionMirrorMarker marker = ChampionMirrorMarkers[i];
+      if (marker != null && marker.X == x && marker.Y == y)
+      {
+        facing = WallSideToFacing(marker.Side);
+        return true;
+      }
+    }
+
+    facing = selectedFacing;
+    return false;
+  }
+
+  // Search North, East, South, then West. The ornament side is the wall
+  // face that looks back at the entered cell.
+  private bool TryAdjacentOrnamentFacing(
+      int x,
+      int y,
+      out DungeonFacing facing)
+  {
+    if (HasOrnamentFace(x, y - 1, WallSide.South))
+    {
+      facing = DungeonFacing.North;
+      return true;
+    }
+
+    if (HasOrnamentFace(x + 1, y, WallSide.West))
+    {
+      facing = DungeonFacing.East;
+      return true;
+    }
+
+    if (HasOrnamentFace(x, y + 1, WallSide.North))
+    {
+      facing = DungeonFacing.South;
+      return true;
+    }
+
+    if (HasOrnamentFace(x - 1, y, WallSide.East))
+    {
+      facing = DungeonFacing.West;
+      return true;
+    }
+
+    facing = selectedFacing;
+    return false;
+  }
+
+  private bool TryAdjacentStairsFacing(
+      int x,
+      int y,
+      out DungeonFacing facing)
+  {
+    if (IsUpOrDownStairs(x, y - 1))
+    {
+      facing = DungeonFacing.North;
+      return true;
+    }
+
+    if (IsUpOrDownStairs(x + 1, y))
+    {
+      facing = DungeonFacing.East;
+      return true;
+    }
+
+    if (IsUpOrDownStairs(x, y + 1))
+    {
+      facing = DungeonFacing.South;
+      return true;
+    }
+
+    if (IsUpOrDownStairs(x - 1, y))
+    {
+      facing = DungeonFacing.West;
+      return true;
+    }
+
+    facing = selectedFacing;
+    return false;
+  }
+
+  private bool HasOrnamentFace(int wallX, int wallY, WallSide side)
+  {
+    if (resolvedWallOrnaments == null)
+      return false;
+
+    for (int i = 0; i < resolvedWallOrnaments.Length; i++)
+    {
+      OriginalWallOrnamentMarker marker = resolvedWallOrnaments[i];
+      if (marker != null
+          && marker.X == wallX
+          && marker.Y == wallY
+          && marker.Side == side)
+      {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private bool IsUpOrDownStairs(int x, int y)
+  {
+    if (map == null || !map.IsInside(x, y))
+      return false;
+
+    DungeonTile tile = map.GetTile(x, y);
+    return tile != null && tile.TryGetStairsDirection(out _);
+  }
+
   private void HandleGridClick(Rect mapRect)
   {
     Event current = Event.current;
@@ -1249,7 +1383,12 @@ public class DungeonFeatureEditor : EditorWindow
     selectedX = x;
     selectedY = y;
 
-    // Normal map click: move ViewEdit to the clicked tile and keep facing.
+    if (map.CanEnter(x, y)
+        && TryFacingForEnteredCell(x, y, out DungeonFacing enteredFacing))
+    {
+      selectedFacing = enteredFacing;
+    }
+
     EditorPrefs.SetInt(ViewEditPreviewXKey, x);
     EditorPrefs.SetInt(ViewEditPreviewYKey, y);
     EditorPrefs.SetInt(
