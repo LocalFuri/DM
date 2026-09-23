@@ -6181,6 +6181,28 @@ public class ViewportLayoutEditor : EditorWindow
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3));
   }
 
+  /// <summary>
+  /// Verified original-DM LeftS3 strip beside an open left corridor and a
+  /// D3 center front (17,8 West class). The left lane stays open through D3,
+  /// so this is not the D3-left terminator. The center stays open through D2
+  /// and closes at D3. Original DM still draws the 8px strip at X=0, Y=57.
+  /// Geometry only.
+  /// </summary>
+  private static bool IsViewport17LeftS3OpenLeftD3CenterFront(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null)
+      return false;
+
+    return IsViewport17LaneOpenAt(inspection, -1, 0)
+        && IsViewport17LaneOpenAt(inspection, -1, 1)
+        && IsViewport17LaneOpenAt(inspection, -1, 2)
+        && IsViewport17LaneOpenAt(inspection, -1, 3)
+        && IsViewport17LaneOpenAt(inspection, 0, 1)
+        && IsViewport17LaneOpenAt(inspection, 0, 2)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3));
+  }
+
   private static bool IsViewport17RightS3D3FrontEdge(
       Viewport17Inspection inspection)
   {
@@ -7102,7 +7124,9 @@ public class ViewportLayoutEditor : EditorWindow
     //      open D1 span (10,5 East class), and
     //   3) the tiny far-left edge beside a full D3 L+C+R front plane when the
     //      right side is closed at D0/D1 but the center stays open through D2
-    //      (7,13 East class).
+    //      (7,13 East class), and
+    //   4) the same 8px strip when the left lane stays open through D3 and
+    //      the center closes on a D3 front wall (17,8 West class).
     bool d3FullFrontPlane =
         IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
@@ -7116,11 +7140,18 @@ public class ViewportLayoutEditor : EditorWindow
     bool leftS3D2FrontEdge = IsViewport17LeftS3D2FrontEdge(inspection);
     bool leftS3D3FullFrontEdge =
         IsViewport17LeftS3D3FullFrontEdge(inspection);
-    if (leftS3D3Terminator || leftS3D2FrontEdge || leftS3D3FullFrontEdge)
+    bool leftS3OpenLeftD3CenterFront =
+        IsViewport17LeftS3OpenLeftD3CenterFront(inspection);
+    if (leftS3D3Terminator
+        || leftS3D2FrontEdge
+        || leftS3D3FullFrontEdge
+        || leftS3OpenLeftD3CenterFront)
     {
       Viewport17Cell primaryCell = leftS3D3Terminator || leftS3D3FullFrontEdge
           ? FindViewport17Cell(inspection.Cells, -1, 3)
-          : FindViewport17Cell(inspection.Cells, 0, 2);
+          : leftS3OpenLeftD3CenterFront
+              ? FindViewport17Cell(inspection.Cells, 0, 3)
+              : FindViewport17Cell(inspection.Cells, 0, 2);
       Viewport17Cell adjacentCell = leftS3D3Terminator || leftS3D3FullFrontEdge
           ? FindViewport17Cell(inspection.Cells, 0, 3)
           : FindViewport17Cell(inspection.Cells, -1, 2);
@@ -7139,7 +7170,9 @@ public class ViewportLayoutEditor : EditorWindow
                   ? "LEFT S3 D2 FRONT EDGE"
                   : leftS3D3FullFrontEdge
                       ? "LEFT S3 D3 FULL FRONT EDGE"
-                      : "LEFT S3 STRIP",
+                      : leftS3OpenLeftD3CenterFront
+                          ? "LEFT S3 OPEN LEFT D3 CENTER"
+                          : "LEFT S3 STRIP",
               "LEFT",
               leftS3Surface);
       leftS3Command.Sequence = commands.Count;
@@ -7944,7 +7977,8 @@ public class ViewportLayoutEditor : EditorWindow
       // this sliver, so the normal inner-side occlusion rule must not remove it.
       if (command.PieceFamily == "LeftS3"
           && (IsViewport17LeftS3D2FrontEdge(inspection)
-              || IsViewport17LeftS3D3FullFrontEdge(inspection)))
+              || IsViewport17LeftS3D3FullFrontEdge(inspection)
+              || IsViewport17LeftS3OpenLeftD3CenterFront(inspection)))
       {
         command.Sequence = finalCommands.Count;
         finalCommands.Add(command);
@@ -10670,9 +10704,11 @@ public class ViewportLayoutEditor : EditorWindow
             IsViewport17LeftS3D2FrontEdge(inspection);
         bool leftS3D3FullFrontEdge =
             IsViewport17LeftS3D3FullFrontEdge(inspection);
+        bool leftS3OpenLeftD3CenterFront =
+            IsViewport17LeftS3OpenLeftD3CenterFront(inspection);
         bool leftS3Enabled =
             HasViewport17FinalFamily(finalCommands, "LeftS3");
-        bool leftS3Mirror = leftS3D2FrontEdge
+        bool leftS3Mirror = leftS3D2FrontEdge || leftS3OpenLeftD3CenterFront
             ? false
             : leftS3D3FullFrontEdge
                 ? true
