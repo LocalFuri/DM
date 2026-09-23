@@ -372,7 +372,6 @@ public class ViewportLayoutEditor : EditorWindow
   // Existing placement/blit code is intentionally retained during cutover.
   private bool useViewport17WallAuthority = true;
   private bool viewport17D3LeftCalibrationPreview;
-  private bool viewport17D3RightCalibrationPreview;
 
   // Edit-mode Champion state calibration. The wall mirror remains present
   // after a Champion has been resurrected/recruited; only the portrait is
@@ -1346,11 +1345,9 @@ public class ViewportLayoutEditor : EditorWindow
       {
         showGeometryDiagnostics = diagnosticsPressed;
         if (!showGeometryDiagnostics
-            && (viewport17D3LeftCalibrationPreview
-                || viewport17D3RightCalibrationPreview))
+            && viewport17D3LeftCalibrationPreview)
         {
           viewport17D3LeftCalibrationPreview = false;
-          viewport17D3RightCalibrationPreview = false;
           RefreshEditModePreview();
         }
         Repaint();
@@ -1384,18 +1381,6 @@ public class ViewportLayoutEditor : EditorWindow
 
       GUILayout.Label("Src X 64", GUILayout.Width(48f));
       GUILayout.Label("M OFF", EditorStyles.miniLabel, GUILayout.Width(34f));
-
-      bool d3RightTestPressed = GUILayout.Toggle(
-          viewport17D3RightCalibrationPreview,
-          "D3R Test",
-          EditorStyles.miniButton,
-          GUILayout.Width(65f));
-      if (d3RightTestPressed != viewport17D3RightCalibrationPreview)
-      {
-        viewport17D3RightCalibrationPreview = d3RightTestPressed;
-        RefreshEditModePreview();
-        Repaint();
-      }
 
       EditorGUILayout.EndHorizontal();
 
@@ -5224,8 +5209,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // Keep the two ViewEdit toolbar rows approximately the same width.
-    // "Show all walls" used to start row 2, which pushed D3R Test too far
-    // to the right. Moving it here keeps all calibration controls visible.
+    // Keep "Show all walls" in this row so the controls stay compact.
     if (GUILayout.Button(
             showOnlyWallsNeededForCurrentPose
                 ? "Show all walls"
@@ -5479,10 +5463,6 @@ public class ViewportLayoutEditor : EditorWindow
           + (viewport17D3LeftCalibrationPreview ? "ON" : "OFF")
           + "  " + GetViewport17D3LeftCalibrationLabel()
           + " (LOCKED)"
-          + "\nD3 RIGHT SYMMETRY PREVIEW: "
-          + (viewport17D3RightCalibrationPreview ? "ON" : "OFF")
-          + "  " + GetViewport17D3RightCalibrationLabel()
-          + " (candidate until visually verified)"
           + "\n\nEXISTING TOTAL: 16 map tiles + 3 D0 faces = 19"
           + "\n\nLEGACY " + drawText;
     }
@@ -7239,13 +7219,6 @@ public class ViewportLayoutEditor : EditorWindow
     int sourceStart = Viewport17D3SideLockedSourceX;
     return "sourceX=" + sourceStart + ".." + (sourceStart + 31)
         + " destX=0..31 mirror=OFF";
-  }
-
-  private string GetViewport17D3RightCalibrationLabel()
-  {
-    int sourceStart = Viewport17D3SideLockedSourceX;
-    return "sourceX=" + sourceStart + ".." + (sourceStart + 31)
-        + " destX=192..223 mirror=ON";
   }
 
   private bool TryGetViewport17FrontProjectionSlot(
@@ -13066,10 +13039,9 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Native D3 L/C/R is drawn in the normal far-to-near wall pass.
 
-    // Stage 6E calibration overlays remain diagnostics-only and draw only
-    // when their explicit test toggles are enabled.
+    // Stage 6E D3-left calibration overlay remains diagnostics-only and draws
+    // only when its explicit test toggle is enabled.
     BlitViewport17D3LeftCalibrationCandidate(pixels);
-    BlitViewport17D3RightCalibrationCandidate(pixels);
 
     // Champion wall decorations sit on top of the completed wall surface.
     // D1 side faces use the original 16x35 mirror. A D1 front wall uses the
@@ -14708,54 +14680,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Stage 6Q: D3L Test remains a single-lane calibration overlay even though
     // production image decisions now group front L/C/R into one composition.
-    BlitViewport17SourceStripPreview(
-        pixels,
-        source,
-        command.SourceMinX,
-        command.SourceMaxX,
-        command.BufferX,
-        command.BufferY,
-        command.Mirror);
-  }
-
-  // Stage 6P: visual verification hook for the symmetric generic D3 RIGHT
-  // candidate. It uses the same locked 32px FrontF3 source window as D3 LEFT,
-  // mirrored into the rightmost 32 pixels of the 224px dungeon viewport.
-  // It only draws when the current Viewport-17 geometry actually produces a
-  // D3 RIGHT FRONT command. No map-position special case is used.
-  private void BlitViewport17D3RightCalibrationCandidate(Color32[] pixels)
-  {
-    if (!showGeometryDiagnostics
-        || !viewport17D3RightCalibrationPreview
-        || graphics == null
-        || pixels == null)
-    {
-      return;
-    }
-
-    Viewport17Inspection inspection = BuildViewport17Inspection();
-    if (!TryBuildViewport17SingleFrontCalibrationCommand(
-            inspection, 3, 1, out Viewport17RenderCommand command))
-    {
-      return;
-    }
-
-    if (!command.HasBufferPlacement
-        || !command.HasSourceWindow
-        || !command.HasMirror)
-    {
-      return;
-    }
-
-    Texture2D source = graphics.GetTexture(DungeonGraphicType.FrontWallF3);
-    if (source == null || !source.isReadable)
-      return;
-
-    if (command.HasPieceWidth && source.width != command.PieceWidth)
-      return;
-    if (command.HasPieceMetrics && source.height != command.PieceHeight)
-      return;
-
     BlitViewport17SourceStripPreview(
         pixels,
         source,
