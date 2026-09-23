@@ -51,6 +51,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Grate_Front_32x28.png";
   private const string GrateFront2AssetPath =
       "Assets/Art/Ornaments/Grate_Front2_21x13.png";
+  private const string GrateFront3AssetPath =
+      "Assets/Art/Ornaments/Grate_Front3_14x9.png";
   private const string GrateSide1AssetPath =
       "Assets/Art/Ornaments/Grate_Side1_16x19.png";
   private const string GrateSide2AssetPath =
@@ -92,6 +94,13 @@ public class ViewportLayoutEditor : EditorWindow
   // Framebuffer Y = 200 - 113 - 13 = 74.
   private const int GrateD2FrontX = 102;
   private const int GrateD2FrontY = 74;
+
+  // Original DOS Grate front at distance 3. In the supplied (17,8) West
+  // screenshot Grate_Front3_14x9.png is an exact pixel match at screen
+  // top-left (105,99). The wall is three steps ahead, (14,8) East.
+  // Framebuffer Y = 200 - 99 - 9 = 92.
+  private const int GrateD3FrontX = 105;
+  private const int GrateD3FrontY = 92;
 
   // Original DOS Grate D1 side placement. In the supplied (14,9) West
   // original screenshot Grate_Side1_16x19.png occupies the left D1 side
@@ -629,6 +638,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedGrateFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedGrateFront2Texture;
+  [System.NonSerialized]
+  private Texture2D cachedGrateFront3Texture;
   [System.NonSerialized]
   private Texture2D cachedGrateSide1Texture;
   [System.NonSerialized]
@@ -13053,6 +13064,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitWoodRingD1FrontIntoPreview(pixels);
     BlitSlimeD1FrontIntoPreview(pixels);
     BlitHookD1FrontIntoPreview(pixels);
+    BlitGrateD3FrontIntoPreview(pixels);
     BlitGrateD2FrontIntoPreview(pixels);
     BlitGrateD1FrontIntoPreview(pixels);
 
@@ -18022,6 +18034,126 @@ public class ViewportLayoutEditor : EditorWindow
 
       cachedGrateSide1Texture = candidate;
       return candidate;
+    }
+
+    return null;
+  }
+
+  private void BlitGrateD3FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D grateFront = GetGrateFront3Texture();
+    if (grateFront == null
+        || !grateFront.isReadable
+        || grateFront.width != 14
+        || grateFront.height != 9)
+    {
+      return;
+    }
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    // F3 front is the wall three steps ahead, seen through open D1 and D2.
+    int d1X = previewX + forwardX;
+    int d1Y = previewY + forwardY;
+    int d2X = previewX + forwardX * 2;
+    int d2Y = previewY + forwardY * 2;
+    int wallTileX = previewX + forwardX * 3;
+    int wallTileY = previewY + forwardY * 3;
+    if (!previewMiniMap.IsInside(d1X, d1Y)
+        || previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(d2X, d2Y)
+        || previewMiniMap.GetTile(d2X, d2Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(wallTileX, wallTileY)
+        || previewMiniMap.GetTile(wallTileX, wallTileY).Type
+            != DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    string viewedWallSide = FacingName(previewFacing);
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!IsGrateOrnament(ornament))
+        continue;
+
+      bool placementMatches;
+      if (ornament.wallTilePlacement)
+      {
+        string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+        placementMatches =
+            ornament.x == wallTileX
+            && ornament.y == wallTileY
+            && string.Equals(
+                ornament.wall,
+                visiblePhysicalWallFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        placementMatches =
+            ornament.x == d2X
+            && ornament.y == d2Y
+            && string.Equals(
+                ornament.wall,
+                viewedWallSide,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (!placementMatches)
+        continue;
+
+      BlitPieceIntoPreview(
+          pixels,
+          grateFront,
+          GrateD3FrontX,
+          GrateD3FrontY,
+          false);
+      return;
+    }
+  }
+
+  private Texture2D GetGrateFront3Texture()
+  {
+    if (cachedGrateFront3Texture != null)
+      return cachedGrateFront3Texture;
+
+    Texture2D texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(GrateFront3AssetPath);
+    if (texture != null && texture.width == 14 && texture.height == 9)
+    {
+      cachedGrateFront3Texture = texture;
+      return texture;
+    }
+
+    string[] guids = AssetDatabase.FindAssets(
+        "Grate t:Texture2D",
+        new[] { OrnamentArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      string lower = path.ToLowerInvariant();
+      if (!lower.Contains("grate") || !lower.Contains("front3"))
+        continue;
+
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate != null && candidate.width == 14 && candidate.height == 9)
+      {
+        cachedGrateFront3Texture = candidate;
+        return candidate;
+      }
     }
 
     return null;
