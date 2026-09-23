@@ -371,7 +371,6 @@ public class ViewportLayoutEditor : EditorWindow
   // in the file but are muted so we can compare/refine safely before deletion.
   // Existing placement/blit code is intentionally retained during cutover.
   private bool useViewport17WallAuthority = true;
-  private bool viewport17D3LeftCalibrationPreview;
 
   // Edit-mode Champion state calibration. The wall mirror remains present
   // after a Champion has been resurrected/recruited; only the portrait is
@@ -1344,12 +1343,6 @@ public class ViewportLayoutEditor : EditorWindow
       if (diagnosticsPressed != showGeometryDiagnostics)
       {
         showGeometryDiagnostics = diagnosticsPressed;
-        if (!showGeometryDiagnostics
-            && viewport17D3LeftCalibrationPreview)
-        {
-          viewport17D3LeftCalibrationPreview = false;
-          RefreshEditModePreview();
-        }
         Repaint();
       }
 
@@ -1366,21 +1359,6 @@ public class ViewportLayoutEditor : EditorWindow
           Repaint();
         }
       }
-
-      bool d3LeftTestPressed = GUILayout.Toggle(
-          viewport17D3LeftCalibrationPreview,
-          "D3L Test",
-          EditorStyles.miniButton,
-          GUILayout.Width(65f));
-      if (d3LeftTestPressed != viewport17D3LeftCalibrationPreview)
-      {
-        viewport17D3LeftCalibrationPreview = d3LeftTestPressed;
-        RefreshEditModePreview();
-        Repaint();
-      }
-
-      GUILayout.Label("Src X 64", GUILayout.Width(48f));
-      GUILayout.Label("M OFF", EditorStyles.miniLabel, GUILayout.Width(34f));
 
       EditorGUILayout.EndHorizontal();
 
@@ -5459,10 +5437,6 @@ public class ViewportLayoutEditor : EditorWindow
           + BuildViewport17SurfaceDiagnostic(inspection)
           + "\n\n"
           + BuildViewport17RenderCommandDiagnostic(inspection)
-          + "\n\nD3 LEFT CALIBRATION PREVIEW: "
-          + (viewport17D3LeftCalibrationPreview ? "ON" : "OFF")
-          + "  " + GetViewport17D3LeftCalibrationLabel()
-          + " (LOCKED)"
           + "\n\nEXISTING TOTAL: 16 map tiles + 3 D0 faces = 19"
           + "\n\nLEGACY " + drawText;
     }
@@ -7212,13 +7186,6 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return commands;
-  }
-
-  private string GetViewport17D3LeftCalibrationLabel()
-  {
-    int sourceStart = Viewport17D3SideLockedSourceX;
-    return "sourceX=" + sourceStart + ".." + (sourceStart + 31)
-        + " destX=0..31 mirror=OFF";
   }
 
   private bool TryGetViewport17FrontProjectionSlot(
@@ -13039,10 +13006,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Native D3 L/C/R is drawn in the normal far-to-near wall pass.
 
-    // Stage 6E D3-left calibration overlay remains diagnostics-only and draws
-    // only when its explicit test toggle is enabled.
-    BlitViewport17D3LeftCalibrationCandidate(pixels);
-
     // Champion wall decorations sit on top of the completed wall surface.
     // D1 side faces use the original 16x35 mirror. A D1 front wall uses the
     // original 48x43 frame plus the Champion's 32x29 portrait in its opening.
@@ -13785,45 +13748,6 @@ public class ViewportLayoutEditor : EditorWindow
         dest[destRow + targetX] = colour;
       }
     }
-  }
-
-  // Stage 6P: isolated visual verification hook for the generic D3 LEFT
-  // locked 32px source-window calibration. This does not replace the legacy renderer.
-  // When D3L Test is ON, the current Viewport-17 D3 LEFT source window is blitted LAST
-  // so its source-window/brick pattern can be compared directly in Game View.
-  // The method is map-independent: it only draws when the current 17-sample
-  // geometry actually produces a D3 LEFT FRONT command.
-  private bool TryBuildViewport17SingleFrontCalibrationCommand(
-      Viewport17Inspection inspection,
-      int depth,
-      int localX,
-      out Viewport17RenderCommand command)
-  {
-    command = default;
-    List<Viewport17Surface> surfaces =
-        BuildViewport17SurfaceCandidates(inspection);
-
-    for (int i = 0; i < surfaces.Count; i++)
-    {
-      Viewport17Surface surface = surfaces[i];
-      if (surface.Type != Viewport17SurfaceType.Front
-          || surface.Depth != depth
-          || surface.LocalX != localX)
-      {
-        continue;
-      }
-
-      command = CreateViewport17RenderCommand(
-          "FrontF" + depth,
-          GetViewport17SurfaceLaneLabel(localX),
-          GetViewport17SurfaceLaneLabel(localX),
-          surface);
-      command.Sequence = 0;
-      ResolveViewport17RenderCommandStage6(ref command);
-      return true;
-    }
-
-    return false;
   }
 
   private Texture2D GetReadableNativeFrontF1Texture()
@@ -14641,53 +14565,6 @@ public class ViewportLayoutEditor : EditorWindow
             "V17 native D3: Front_Wall_F3_RAW_70x49.png is missing or not 70x49.");
       }
     }
-  }
-
-  private void BlitViewport17D3LeftCalibrationCandidate(Color32[] pixels)
-  {
-    if (!showGeometryDiagnostics
-        || !viewport17D3LeftCalibrationPreview
-        || graphics == null
-        || pixels == null)
-    {
-      return;
-    }
-
-    Viewport17Inspection inspection = BuildViewport17Inspection();
-    if (!TryBuildViewport17SingleFrontCalibrationCommand(
-            inspection, 3, -1, out Viewport17RenderCommand command))
-    {
-      return;
-    }
-
-    if (!command.HasBufferPlacement
-        || !command.HasSourceWindow
-        || !command.HasMirror)
-    {
-      return;
-    }
-
-    Texture2D source = graphics.GetTexture(DungeonGraphicType.FrontWallF3);
-    if (source == null || !source.isReadable)
-      return;
-
-    // Calibration candidates expect the native FrontF3 geometry. Refuse to
-    // silently test a different source geometry; diagnostics remain truth.
-    if (command.HasPieceWidth && source.width != command.PieceWidth)
-      return;
-    if (command.HasPieceMetrics && source.height != command.PieceHeight)
-      return;
-
-    // Stage 6Q: D3L Test remains a single-lane calibration overlay even though
-    // production image decisions now group front L/C/R into one composition.
-    BlitViewport17SourceStripPreview(
-        pixels,
-        source,
-        command.SourceMinX,
-        command.SourceMaxX,
-        command.BufferX,
-        command.BufferY,
-        command.Mirror);
   }
 
   private void BlitChampionMirrorD1FramesIntoPreview(Color32[] pixels)
