@@ -49,6 +49,10 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Hook_Front_28x28.png";
   private const string GrateFrontAssetPath =
       "Assets/Art/Ornaments/Grate_Front_32x28.png";
+  private const string GrateSide1AssetPath =
+      "Assets/Art/Ornaments/Grate_Side1_16x19.png";
+  private const string GrateSide2AssetPath =
+      "Assets/Art/Ornaments/Grate_Side2_6x11.png";
   private const string HookSideAssetPath =
       "Assets/Art/Ornaments/Hook_Side_16x19.png";
   private const string WoodRingSide2AssetPath =
@@ -73,6 +77,24 @@ public class ViewportLayoutEditor : EditorWindow
   // bottom-left Y = 200 - 125 - 28 = 47.
   private const int GrateD1FrontX = 96;
   private const int GrateD1FrontY = 47;
+
+  // Original DOS Grate D1 side placement. In the supplied (14,9) West
+  // original screenshot Grate_Side1_16x19.png occupies the left D1 side
+  // slot with framebuffer bottom-left X=47, Y=63. The right slot is the
+  // exact dungeon-viewport mirror of the same 16x19 sprite.
+  private const int GrateD1SideLeftX = 47;
+  private const int GrateD1SideRightX =
+      224 - GrateD1SideLeftX - 16;
+  private const int GrateD1SideY = 63;
+
+  // Original DOS Grate D2 side placement. In the supplied (15,9) West
+  // original screenshot Grate_Side2_6x11.png occupies the left D2 side
+  // slot at screen top-left (66,106). Texture2D framebuffer Y is therefore
+  // 200 - 106 - 11 = 83. The right slot is the exact 224px viewport mirror.
+  private const int GrateD2SideLeftX = 66;
+  private const int GrateD2SideRightX =
+      DungeonViewportWidth - GrateD2SideLeftX - 6;
+  private const int GrateD2SideY = 83;
 
   // Original DOS coordinate-set-0 D1 side placement (Hook / Wood Ring family).
   // The original D1 side box is 16x19 at left screen X=48 (right = 224-48-16).
@@ -575,6 +597,10 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedHookFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedGrateFrontTexture;
+  [System.NonSerialized]
+  private Texture2D cachedGrateSide1Texture;
+  [System.NonSerialized]
+  private Texture2D cachedGrateSide2Texture;
   [System.NonSerialized]
   private Texture2D cachedHookSideTexture;
   [System.NonSerialized]
@@ -12981,7 +13007,9 @@ public class ViewportLayoutEditor : EditorWindow
     BlitSlimeD2SidesIntoPreview(pixels);
     BlitWoodRingD2SidesIntoPreview(pixels);
     BlitHookD2SidesIntoPreview(pixels);
+    BlitGrateD2SidesIntoPreview(pixels);
     BlitHookStyleD1SidesIntoPreview(pixels);
+    BlitGrateD1SidesIntoPreview(pixels);
     BlitSlimeD1SidesIntoPreview(pixels);
     BlitWoodRingD1FrontIntoPreview(pixels);
     BlitSlimeD1FrontIntoPreview(pixels);
@@ -17349,6 +17377,355 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       cachedHookSideTexture = candidate;
+      return candidate;
+    }
+
+    return null;
+  }
+
+  private void BlitGrateD2SidesIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D side2 = GetGrateSide2Texture();
+    if (side2 == null
+        || !side2.isReadable
+        || side2.width != 6
+        || side2.height != 11)
+    {
+      return;
+    }
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    // D2 side faces are visible only through open D1 and D2 center cells.
+    int d1CenterX = previewX + forwardX;
+    int d1CenterY = previewY + forwardY;
+    int d2CenterX = previewX + forwardX * 2;
+    int d2CenterY = previewY + forwardY * 2;
+    if (!previewMiniMap.IsInside(d1CenterX, d1CenterY)
+        || previewMiniMap.GetTile(d1CenterX, d1CenterY).Type
+            == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(d2CenterX, d2CenterY)
+        || previewMiniMap.GetTile(d2CenterX, d2CenterY).Type
+            == DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    int leftWallTileX = d2CenterX - rightX;
+    int leftWallTileY = d2CenterY - rightY;
+    int rightWallTileX = d2CenterX + rightX;
+    int rightWallTileY = d2CenterY + rightY;
+
+    bool leftWallExists =
+        previewMiniMap.IsInside(leftWallTileX, leftWallTileY)
+        && previewMiniMap.GetTile(leftWallTileX, leftWallTileY).Type
+            == DungeonTileType.Wall;
+    bool rightWallExists =
+        previewMiniMap.IsInside(rightWallTileX, rightWallTileY)
+        && previewMiniMap.GetTile(rightWallTileX, rightWallTileY).Type
+            == DungeonTileType.Wall;
+
+    string leftPhysicalFace =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+    string rightPhysicalFace =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string leftBoundaryDirection =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string rightBoundaryDirection =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+
+    bool leftDrawn = false;
+    bool rightDrawn = false;
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!IsGrateOrnament(ornament))
+        continue;
+
+      bool matchesLeft;
+      bool matchesRight;
+      if (ornament.wallTilePlacement)
+      {
+        matchesLeft =
+            leftWallExists
+            && ornament.x == leftWallTileX
+            && ornament.y == leftWallTileY
+            && string.Equals(
+                ornament.wall,
+                leftPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase);
+        matchesRight =
+            rightWallExists
+            && ornament.x == rightWallTileX
+            && ornament.y == rightWallTileY
+            && string.Equals(
+                ornament.wall,
+                rightPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        matchesLeft =
+            leftWallExists
+            && ornament.x == d2CenterX
+            && ornament.y == d2CenterY
+            && string.Equals(
+                ornament.wall,
+                leftBoundaryDirection,
+                System.StringComparison.OrdinalIgnoreCase);
+        matchesRight =
+            rightWallExists
+            && ornament.x == d2CenterX
+            && ornament.y == d2CenterY
+            && string.Equals(
+                ornament.wall,
+                rightBoundaryDirection,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (matchesLeft && !leftDrawn)
+      {
+        // Native Side2 art is the left-wall perspective.
+        BlitPieceIntoPreview(
+            pixels,
+            side2,
+            GrateD2SideLeftX,
+            GrateD2SideY,
+            false);
+        leftDrawn = true;
+      }
+
+      if (matchesRight && !rightDrawn)
+      {
+        BlitPieceIntoPreview(
+            pixels,
+            side2,
+            GrateD2SideRightX,
+            GrateD2SideY,
+            true);
+        rightDrawn = true;
+      }
+
+      if (leftDrawn && rightDrawn)
+        return;
+    }
+  }
+
+  private Texture2D GetGrateSide2Texture()
+  {
+    if (cachedGrateSide2Texture != null)
+      return cachedGrateSide2Texture;
+
+    Texture2D texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(GrateSide2AssetPath);
+    if (texture != null && texture.width == 6 && texture.height == 11)
+    {
+      cachedGrateSide2Texture = texture;
+      return texture;
+    }
+
+    string[] guids = AssetDatabase.FindAssets(
+        "Grate t:Texture2D",
+        new[] { OrnamentArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 6 || candidate.height != 11)
+        continue;
+
+      string lower = path.ToLowerInvariant();
+      if (!lower.Contains("grate") || !lower.Contains("side2"))
+        continue;
+
+      cachedGrateSide2Texture = candidate;
+      return candidate;
+    }
+
+    return null;
+  }
+
+  private void BlitGrateD1SidesIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D side1 = GetGrateSide1Texture();
+    if (side1 == null
+        || !side1.isReadable
+        || side1.width != 16
+        || side1.height != 19)
+    {
+      return;
+    }
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    // D1 side faces are visible only when the square directly ahead is open.
+    int frontX = previewX + forwardX;
+    int frontY = previewY + forwardY;
+    if (!previewMiniMap.IsInside(frontX, frontY)
+        || previewMiniMap.GetTile(frontX, frontY).Type == DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    int leftWallTileX = frontX - rightX;
+    int leftWallTileY = frontY - rightY;
+    int rightWallTileX = frontX + rightX;
+    int rightWallTileY = frontY + rightY;
+
+    bool leftWallExists =
+        previewMiniMap.IsInside(leftWallTileX, leftWallTileY)
+        && previewMiniMap.GetTile(leftWallTileX, leftWallTileY).Type
+            == DungeonTileType.Wall;
+    bool rightWallExists =
+        previewMiniMap.IsInside(rightWallTileX, rightWallTileY)
+        && previewMiniMap.GetTile(rightWallTileX, rightWallTileY).Type
+            == DungeonTileType.Wall;
+
+    string leftPhysicalFace =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+    string rightPhysicalFace =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string leftBoundaryDirection =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string rightBoundaryDirection =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+
+    bool leftDrawn = false;
+    bool rightDrawn = false;
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!IsGrateOrnament(ornament))
+        continue;
+
+      bool matchesLeft;
+      bool matchesRight;
+      if (ornament.wallTilePlacement)
+      {
+        matchesLeft =
+            leftWallExists
+            && ornament.x == leftWallTileX
+            && ornament.y == leftWallTileY
+            && string.Equals(
+                ornament.wall,
+                leftPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase);
+        matchesRight =
+            rightWallExists
+            && ornament.x == rightWallTileX
+            && ornament.y == rightWallTileY
+            && string.Equals(
+                ornament.wall,
+                rightPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        matchesLeft =
+            leftWallExists
+            && ornament.x == frontX
+            && ornament.y == frontY
+            && string.Equals(
+                ornament.wall,
+                leftBoundaryDirection,
+                System.StringComparison.OrdinalIgnoreCase);
+        matchesRight =
+            rightWallExists
+            && ornament.x == frontX
+            && ornament.y == frontY
+            && string.Equals(
+                ornament.wall,
+                rightBoundaryDirection,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (matchesLeft && !leftDrawn)
+      {
+        BlitPieceIntoPreview(
+            pixels,
+            side1,
+            GrateD1SideLeftX,
+            GrateD1SideY,
+            false);
+        leftDrawn = true;
+      }
+
+      if (matchesRight && !rightDrawn)
+      {
+        BlitPieceIntoPreview(
+            pixels,
+            side1,
+            GrateD1SideRightX,
+            GrateD1SideY,
+            true);
+        rightDrawn = true;
+      }
+
+      if (leftDrawn && rightDrawn)
+        return;
+    }
+  }
+
+  private Texture2D GetGrateSide1Texture()
+  {
+    if (cachedGrateSide1Texture != null)
+      return cachedGrateSide1Texture;
+
+    Texture2D texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(GrateSide1AssetPath);
+    if (texture != null && texture.width == 16 && texture.height == 19)
+    {
+      cachedGrateSide1Texture = texture;
+      return texture;
+    }
+
+    string[] guids = AssetDatabase.FindAssets(
+        "Grate t:Texture2D",
+        new[] { OrnamentArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 16 || candidate.height != 19)
+        continue;
+
+      string lower = path.ToLowerInvariant();
+      if (!lower.Contains("grate") || !lower.Contains("side1"))
+        continue;
+
+      cachedGrateSide1Texture = candidate;
       return candidate;
     }
 
