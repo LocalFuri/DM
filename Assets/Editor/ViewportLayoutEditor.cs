@@ -67,10 +67,12 @@ public class ViewportLayoutEditor : EditorWindow
   private const int HookD1FrontX = 98;
   private const int HookD1FrontY = 100;
 
-  // Grate_Front_32x28 uses the same D1 wall-center as Hook/Wood Ring
-  // (112,114): X = 112 - 16, Y = 114 - 14.
+  // Original DOS Grate front placement on the wall immediately in front of
+  // the party. Measured from the supplied 320x200 original screenshot:
+  // source = 32x28, screen top-left = (96,125), therefore framebuffer
+  // bottom-left Y = 200 - 125 - 28 = 47.
   private const int GrateD1FrontX = 96;
-  private const int GrateD1FrontY = 100;
+  private const int GrateD1FrontY = 47;
 
   // Original DOS coordinate-set-0 D1 side placement (Hook / Wood Ring family).
   // The original D1 side box is 16x19 at left screen X=48 (right = 224-48-16).
