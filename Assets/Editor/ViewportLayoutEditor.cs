@@ -57,6 +57,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Hook_Side_16x19.png";
   private const string HookSide2AssetPath =
       "Assets/Art/Ornaments/Hook_Side2_5x10.png";
+  private const string HookSide3AssetPath =
+      "Assets/Art/Ornaments/Hook_Side3_5x10.png";
   private const string WoodRingSide2AssetPath =
       "Assets/Art/Ornaments/Wood_Ring_Side2_5x10.png";
   private const string WoodRingSide3AssetPath =
@@ -156,7 +158,9 @@ public class ViewportLayoutEditor : EditorWindow
   // right-wall crop from player pose (15,9) West (wall tile (13,8) South),
   // so the right slot is unflipped and the left slot is mirrored. Left X and
   // framebuffer Y match the Wood Ring D2 column (screen top-left 73). Right X
-  // is the 224px viewport mirror. Hook D3 still point-scales Hook_Side_16x19.
+  // is the 224px viewport mirror.
+  // Hook D3 blits native Hook_Side3_5x10.png 1:1. The file is 3x5 and is also
+  // a right-wall crop, placed in the Wood Ring D3 box. Same mirror rule.
   private const int HookD2SideWidth = 6;
   private const int HookD2SideHeight = 10;
   private const int HookD2SideLeftX = WoodRingD2SideLeftX;
@@ -610,6 +614,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedHookSideTexture;
   [System.NonSerialized]
   private Texture2D cachedHookSide2Texture;
+  [System.NonSerialized]
+  private Texture2D cachedHookSide3Texture;
   [System.NonSerialized]
   private Texture2D cachedWoodRingFrontTexture;
   [System.NonSerialized]
@@ -16921,14 +16927,13 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    bool useNativeSide2 = distance == 2;
-    Texture2D side = useNativeSide2
-        ? GetHookSide2Texture()
-        : GetHookSideTexture();
-    if (side == null || !side.isReadable)
-      return;
-    if (useNativeSide2
-        && (side.width != destWidth || side.height != destHeight))
+    Texture2D side = distance == 3
+        ? GetHookSide3Texture()
+        : GetHookSide2Texture();
+    if (side == null
+        || !side.isReadable
+        || side.width != destWidth
+        || side.height != destHeight)
     {
       return;
     }
@@ -17027,54 +17032,24 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (matchesLeft && !leftDrawn)
       {
-        // Hook_Side2 is the right-wall crop, so the left slot is mirrored.
-        if (useNativeSide2)
-        {
-          BlitPieceIntoPreview(
-              pixels,
-              side,
-              leftX,
-              y,
-              true);
-        }
-        else
-        {
-          BlitPieceScaledIntoPreview(
-              pixels,
-              side,
-              leftX,
-              y,
-              destWidth,
-              destHeight,
-              false);
-        }
-
+        // Supplied D2/D3 art is the right-wall crop, so the left slot is mirrored.
+        BlitPieceIntoPreview(
+            pixels,
+            side,
+            leftX,
+            y,
+            true);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        if (useNativeSide2)
-        {
-          BlitPieceIntoPreview(
-              pixels,
-              side,
-              rightX,
-              y,
-              false);
-        }
-        else
-        {
-          BlitPieceScaledIntoPreview(
-              pixels,
-              side,
-              rightX,
-              y,
-              destWidth,
-              destHeight,
-              true);
-        }
-
+        BlitPieceIntoPreview(
+            pixels,
+            side,
+            rightX,
+            y,
+            false);
         rightDrawn = true;
       }
 
@@ -17452,6 +17427,40 @@ public class ViewportLayoutEditor : EditorWindow
       if (candidate != null && candidate.width == 6 && candidate.height == 10)
       {
         cachedHookSide2Texture = candidate;
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  private Texture2D GetHookSide3Texture()
+  {
+    if (cachedHookSide3Texture != null)
+      return cachedHookSide3Texture;
+
+    Texture2D exact = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        HookSide3AssetPath);
+    if (exact != null && exact.width == 3 && exact.height == 5)
+    {
+      cachedHookSide3Texture = exact;
+      return exact;
+    }
+
+    string[] guids = AssetDatabase.FindAssets(
+        "Hook t:Texture2D",
+        new[] { OrnamentArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      string lower = path.ToLowerInvariant();
+      if (!lower.Contains("hook") || !lower.Contains("side3"))
+        continue;
+
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate != null && candidate.width == 3 && candidate.height == 5)
+      {
+        cachedHookSide3Texture = candidate;
         return candidate;
       }
     }
