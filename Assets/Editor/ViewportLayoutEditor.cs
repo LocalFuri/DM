@@ -55,6 +55,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Grate_Side2_6x11.png";
   private const string HookSideAssetPath =
       "Assets/Art/Ornaments/Hook_Side_16x19.png";
+  private const string HookSide2AssetPath =
+      "Assets/Art/Ornaments/Hook_Side2_5x10.png";
   private const string WoodRingSide2AssetPath =
       "Assets/Art/Ornaments/Wood_Ring_Side2_5x10.png";
   private const string WoodRingSide3AssetPath =
@@ -150,9 +152,12 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonViewportWidth - WoodRingD3SideLeftX - 3;
   private const int WoodRingD3SideY = 122;
 
-  // Hook D2/D3 point-scale native Hook_Side_16x19.png into the verified Wood
-  // Ring side boxes (5x10 at D2, 3x5 at D3). Right X is the viewport mirror.
-  private const int HookD2SideWidth = 5;
+  // Hook D2 blits native Hook_Side2_5x10.png 1:1. The file is 6x10 and is the
+  // right-wall crop from player pose (15,9) West (wall tile (13,8) South),
+  // so the right slot is unflipped and the left slot is mirrored. Left X and
+  // framebuffer Y match the Wood Ring D2 column (screen top-left 73). Right X
+  // is the 224px viewport mirror. Hook D3 still point-scales Hook_Side_16x19.
+  private const int HookD2SideWidth = 6;
   private const int HookD2SideHeight = 10;
   private const int HookD2SideLeftX = WoodRingD2SideLeftX;
   private const int HookD2SideRightX =
@@ -603,6 +608,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedGrateSide2Texture;
   [System.NonSerialized]
   private Texture2D cachedHookSideTexture;
+  [System.NonSerialized]
+  private Texture2D cachedHookSide2Texture;
   [System.NonSerialized]
   private Texture2D cachedWoodRingFrontTexture;
   [System.NonSerialized]
@@ -16914,9 +16921,17 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    Texture2D side = GetHookSideTexture();
+    bool useNativeSide2 = distance == 2;
+    Texture2D side = useNativeSide2
+        ? GetHookSide2Texture()
+        : GetHookSideTexture();
     if (side == null || !side.isReadable)
       return;
+    if (useNativeSide2
+        && (side.width != destWidth || side.height != destHeight))
+    {
+      return;
+    }
 
     DungeonMap.GetForwardOffset(
         previewFacing,
@@ -17012,27 +17027,54 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (matchesLeft && !leftDrawn)
       {
-        BlitPieceScaledIntoPreview(
-            pixels,
-            side,
-            leftX,
-            y,
-            destWidth,
-            destHeight,
-            false);
+        // Hook_Side2 is the right-wall crop, so the left slot is mirrored.
+        if (useNativeSide2)
+        {
+          BlitPieceIntoPreview(
+              pixels,
+              side,
+              leftX,
+              y,
+              true);
+        }
+        else
+        {
+          BlitPieceScaledIntoPreview(
+              pixels,
+              side,
+              leftX,
+              y,
+              destWidth,
+              destHeight,
+              false);
+        }
+
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        BlitPieceScaledIntoPreview(
-            pixels,
-            side,
-            rightX,
-            y,
-            destWidth,
-            destHeight,
-            true);
+        if (useNativeSide2)
+        {
+          BlitPieceIntoPreview(
+              pixels,
+              side,
+              rightX,
+              y,
+              false);
+        }
+        else
+        {
+          BlitPieceScaledIntoPreview(
+              pixels,
+              side,
+              rightX,
+              y,
+              destWidth,
+              destHeight,
+              true);
+        }
+
         rightDrawn = true;
       }
 
@@ -17378,6 +17420,40 @@ public class ViewportLayoutEditor : EditorWindow
 
       cachedHookSideTexture = candidate;
       return candidate;
+    }
+
+    return null;
+  }
+
+  private Texture2D GetHookSide2Texture()
+  {
+    if (cachedHookSide2Texture != null)
+      return cachedHookSide2Texture;
+
+    Texture2D exact = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        HookSide2AssetPath);
+    if (exact != null && exact.width == 6 && exact.height == 10)
+    {
+      cachedHookSide2Texture = exact;
+      return exact;
+    }
+
+    string[] guids = AssetDatabase.FindAssets(
+        "Hook t:Texture2D",
+        new[] { OrnamentArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      string lower = path.ToLowerInvariant();
+      if (!lower.Contains("hook") || !lower.Contains("side2"))
+        continue;
+
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate != null && candidate.width == 6 && candidate.height == 10)
+      {
+        cachedHookSide2Texture = candidate;
+        return candidate;
+      }
     }
 
     return null;
