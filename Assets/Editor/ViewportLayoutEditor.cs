@@ -1697,31 +1697,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (showOnlyWallsNeededForCurrentPose && showWallsActivFilter)
     {
-      // LeftS3 is intentionally kept available as a manual inspection card
-      // even while Activ is filtering out other disabled walls.
-      if (piece.Name == "LeftS3")
-        return true;
-
-      // The Black Door F1 side-wall inspection cards default OFF, so the
-      // normal "Activ" filter would hide them before they could be enabled.
-      if (IsBlackDoorF1ManualSideWallCandidate(piece))
-        return true;
-
-      // Keep a card listed while the user is testing it, even after they
-      // turn Enabled off, so they can turn it back on.
-      if (previewEnabledOverrideByPiece.ContainsKey(piece)
-          || previewMirrorOverrideByPiece.ContainsKey(piece)
-          || previewPositionOverrideByPiece.ContainsKey(piece))
-        return true;
-
-      if (MatchesShowWallsActivFilter(piece))
-        return true;
-
-      // Pose changes force Activ on. Activ only matches enabled normal walls,
-      // so needed Black Door cards would be dropped after the Needed check.
-      return showOnlyWallsNeededForCurrentPose
-          && IsBlackDoorEditorPiece(piece)
-          && IsWallNeededForCurrentPose(piece);
+      // Strict active-wall view: only the wall images the loaded map
+      // actually selects for this pose. Manual test cards, disabled
+      // pieces, and the default-visible fallback stay out of the list.
+      return MatchesShowWallsActivFilter(piece);
     }
 
     string search = (pieceSearchText ?? string.Empty).Trim();
@@ -1758,59 +1737,28 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Show Walls Activ: every wall image currently drawn (or selected to draw)
-  /// including FrontF1/F2/F3 by name or graphic. Ceiling and Floor are never
-  /// included. Family and text search are not applied.
+  /// Show Walls Activ: only wall images the loaded map's current view has
+  /// resolved as enabled. Ceiling, Floor, and unmatched catalog images are
+  /// excluded. Family and text search are not applied.
   /// </summary>
   private bool MatchesShowWallsActivFilter(ViewportPiece piece)
   {
     if (piece == null || IsFloorOrCeiling(piece))
       return false;
 
-    bool enabled = piece.Enabled;
-    if (TryGetResolvedNormalWallState(
-            piece, out ResolvedNormalWallState resolvedState))
-    {
-      enabled = resolvedState.Enabled;
-    }
+    if (IsBlackDoorEditorPiece(piece))
+      return IsWallNeededForCurrentPose(piece);
 
-    if (previewEnabledOverrideByPiece.TryGetValue(
-            piece, out bool previewEnabled))
-    {
-      enabled = previewEnabled;
-    }
-
-    if (!enabled)
+    if (!IsWallEditorPiece(piece) && !IsNormalWallPiece(piece))
       return false;
 
-    DungeonGraphicType graphic = piece.Graphic;
-    if (graphic == DungeonGraphicType.FrontWallF1
-        || graphic == DungeonGraphicType.FrontWallF1_A
-        || graphic == DungeonGraphicType.FrontWallF1_B
-        || graphic == DungeonGraphicType.FrontWallF2
-        || graphic == DungeonGraphicType.FrontWallF3
-        || graphic == DungeonGraphicType.WallF0L
-        || graphic == DungeonGraphicType.WallF0R
-        || graphic == DungeonGraphicType.WallF1L
-        || graphic == DungeonGraphicType.WallF1R
-        || graphic == DungeonGraphicType.WallF2L
-        || graphic == DungeonGraphicType.WallF2R
-        || graphic == DungeonGraphicType.WallF3L
-        || graphic == DungeonGraphicType.WallF3R)
+    if (!TryGetResolvedNormalWallState(
+            piece, out ResolvedNormalWallState resolvedState))
     {
-      return true;
+      return false;
     }
 
-    string name = piece.Name ?? string.Empty;
-    return name.StartsWith("FrontF", System.StringComparison.Ordinal)
-        || name.StartsWith("Front Wall F", System.StringComparison.Ordinal)
-        || name.StartsWith("LeftF", System.StringComparison.Ordinal)
-        || name.StartsWith("RightF", System.StringComparison.Ordinal)
-        || name.StartsWith("Wall F", System.StringComparison.Ordinal)
-        || name == "LeftD3"
-        || name == "RightD3"
-        || name == "LeftS3"
-        || name == "RightS3";
+    return resolvedState.Enabled;
   }
 
   /// <summary>
@@ -4893,7 +4841,20 @@ public class ViewportLayoutEditor : EditorWindow
 
     GUILayout.Space(8f);
     if (GUILayout.Button("Show Walls Activ", GUILayout.Width(120f)))
-      showWallsActivFilter = !showWallsActivFilter;
+    {
+      // This is an action, not a toggle: always return ViewEdit to the
+      // current-pose wall list and then keep only the wall images that the
+      // loaded map selects for this view. This must also work after
+      // "Show all walls" inspection mode was enabled.
+      showOnlyWallsNeededForCurrentPose = true;
+      showWallsActivFilter = true;
+      pieceSearchFamilyIndex = 0;
+      pieceSearchText = string.Empty;
+      editorScroll = Vector2.zero;
+      GUI.FocusControl(null);
+      RefreshEditModePreview();
+      Repaint();
+    }
     if (GUILayout.Button("Disable Walls", GUILayout.Width(100f)))
     {
       DisableWallsKeepChrome();
