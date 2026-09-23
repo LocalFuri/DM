@@ -710,31 +710,6 @@ public class ViewportLayoutEditor : EditorWindow
   private readonly Dictionary<ViewportPiece, int> previewFrontF3WidthOverrideByPiece =
       new Dictionary<ViewportPiece, int>();
 
-  private struct FrontF1GeometryOverride
-  {
-    public int X;
-    public int Y;
-    public int Width;
-  }
-
-  // Verified FrontF1 values keyed by relative minimap geometry, not absolute map pose.
-  // These survive movement/turning within the current editor session.
-  private static readonly Dictionary<string, FrontF1GeometryOverride>
-      frontF1GeometryOverrides =
-          new Dictionary<string, FrontF1GeometryOverride>();
-
-  // Verified Enabled state for any normal wall, keyed by relative minimap
-  // geometry + piece identity. This is independent of absolute map X/Y/Facing.
-  private static readonly Dictionary<string, bool> normalWallEnabledGeometryOverrides =
-      new Dictionary<string, bool>();
-
-  // Verified X/Y and Mirror for any normal wall, keyed by relative minimap
-  // geometry + piece identity. These are independent of absolute map position.
-  private static readonly Dictionary<string, Vector2Int> normalWallPositionGeometryOverrides =
-      new Dictionary<string, Vector2Int>();
-  private static readonly Dictionary<string, bool> normalWallMirrorGeometryOverrides =
-      new Dictionary<string, bool>();
-
   // ViewEdit-only normal-wall X/Y overrides. Like the temporary Mirror test,
   // these affect only the stationary preview pose and are discarded whenever
   // X/Y/Facing changes. They are never written to the layout asset/pose store.
@@ -1023,181 +998,6 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  private void StoreAllNormalWallOverridesForCurrentGeometry()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null)
-      return;
-
-    RelativeViewportGeometry geometry =
-        RelativeViewportGeometry.Calculate(
-            previewMiniMap,
-            previewX,
-            previewY,
-            previewFacing);
-
-    string frontF1GeometryKey = BuildFrontF1GeometryKey(geometry);
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null || !IsNormalWallPiece(piece))
-        continue;
-
-      ResolvedNormalWallState state;
-      bool hasResolved =
-          resolvedNormalWallByPiece.TryGetValue(piece, out state);
-
-      bool enabled = hasResolved ? state.Enabled : piece.Enabled;
-      if (previewEnabledOverrideByPiece.TryGetValue(
-              piece, out bool previewEnabled))
-      {
-        enabled = previewEnabled;
-      }
-      else if (IsFrontWallF1Card(piece)
-          && TryGetFrontF1PreviewEnabledOverride(out previewEnabled))
-      {
-        enabled = previewEnabled;
-      }
-
-      int x = hasResolved ? state.X : piece.EffectiveX;
-      int y = hasResolved ? state.Y : piece.EffectiveY;
-      if (IsFrontWallF1Card(piece)
-          && TryGetFrontF1PreviewPositionOverride(
-              piece, out Vector2Int previewPosition))
-      {
-        x = previewPosition.x;
-        y = previewPosition.y;
-      }
-      else if (previewPositionOverrideByPiece.TryGetValue(
-              piece, out previewPosition))
-      {
-        x = previewPosition.x;
-        y = previewPosition.y;
-      }
-
-      bool mirror = hasResolved ? state.Mirror : piece.MirrorHorizontally;
-      if (IsFrontWallF1Card(piece)
-          && TryGetFrontF1PreviewMirrorOverride(
-              piece, out bool previewMirror))
-      {
-        mirror = previewMirror;
-      }
-      else if (previewMirrorOverrideByPiece.TryGetValue(
-              piece, out previewMirror))
-      {
-        mirror = previewMirror;
-      }
-
-      DungeonGraphicType graphic =
-          hasResolved ? state.Graphic : piece.Graphic;
-
-      int frontWallF1Width = 0;
-      if (IsFrontWallF1Card(piece))
-      {
-        frontWallF1Width = hasResolved
-            ? state.FrontF1Width
-            : piece.FrontWallF1Width;
-        if (TryGetFrontF1PreviewWidthOverride(
-                piece, out int previewWidth))
-        {
-          frontWallF1Width = previewWidth;
-        }
-
-        frontWallF1Width =
-            StraightF1WallLogic.NormalizeFrontWallF1Width(frontWallF1Width);
-      }
-
-      int frontWallF2Width = 0;
-      if (IsFrontWallF2Card(piece))
-      {
-        frontWallF2Width = hasResolved
-            ? state.FrontF2Width
-            : piece.FrontWallF2Width;
-      }
-
-      string geometryPieceKey =
-          BuildNormalWallEnabledGeometryKey(geometry, piece);
-
-      normalWallEnabledGeometryOverrides[geometryPieceKey] = enabled;
-      normalWallPositionGeometryOverrides[geometryPieceKey] =
-          new Vector2Int(x, y);
-      normalWallMirrorGeometryOverrides[geometryPieceKey] = mirror;
-
-      if (IsFrontWallF1Card(piece))
-      {
-        frontF1GeometryOverrides[frontF1GeometryKey] =
-            new FrontF1GeometryOverride
-            {
-              X = x,
-              Y = y,
-              Width = frontWallF1Width
-            };
-      }
-
-    }
-
-    // The current geometry is now committed. Discard only the temporary
-    // stationary-pose tests; the geometry overrides above become authoritative.
-    previewEnabledOverrideByPiece.Clear();
-    previewPositionOverrideByPiece.Clear();
-    previewMirrorOverrideByPiece.Clear();
-    previewFrontF1WidthOverrideByPiece.Clear();
-    previewFrontF3WidthOverrideByPiece.Clear();
-    previewGraphicOverrideByPiece.Clear();
-
-    // Keep the visually verified Black Door F1 layout authoritative.
-    // These are the accepted working reference values for 1,3 North.
-    if (IsVerifiedBlackDoorF1Pose())
-    {
-      ViewportPiece leftFrame =
-          FindLayoutPieceByName("Black Door Frame Left F1");
-      if (leftFrame != null)
-      {
-        leftFrame.X = 44;
-        leftFrame.Y = DisplayYToUnityY(46, 94);
-      }
-
-      ViewportPiece rightFrame =
-          FindLayoutPieceByName("Black Door Frame Right F1");
-      if (rightFrame != null)
-      {
-        rightFrame.X = 154;
-        rightFrame.Y = DisplayYToUnityY(46, 94);
-      }
-
-      ViewportPiece frontDoor =
-          FindLayoutPieceByName("BlackDoorF1");
-      if (frontDoor != null)
-      {
-        frontDoor.X = 63;
-        frontDoor.Y = DisplayYToUnityY(47, 88);
-      }
-
-      ViewportPiece rightF1 =
-          FindLayoutPieceByName("RightF1");
-      if (rightF1 == null)
-        rightF1 = FindLayoutPieceByName("Wall F1Right");
-      if (rightF1 != null)
-      {
-        rightF1.X = 165;
-        rightF1.Y = DisplayYToUnityY(
-            42,
-            GetPieceHeightForEditorY(rightF1));
-      }
-    }
-
-    ApplyCurrentPoseVisibilityToLayout();
-    ResetEditModeViewportLogCache();
-    DestroyEditModePreviewTextureOnly();
-    RefreshEditModePreview();
-    RepaintGameViews();
-    Repaint();
-  }
-
   private bool HandleRightMouseWindowSwitch()
   {
     Event current = Event.current;
@@ -1298,14 +1098,6 @@ public class ViewportLayoutEditor : EditorWindow
       DrawSnapToolbar();
 
       EditorGUILayout.BeginHorizontal();
-
-      if (GUILayout.Button(
-              "Override Current Walls",
-              GUILayout.Width(150f)))
-      {
-        StoreAllNormalWallOverridesForCurrentGeometry();
-        GUI.FocusControl(null);
-      }
 
       GUIStyle viewport17AuthorityStyle = new GUIStyle(EditorStyles.miniButton);
       Color viewport17AuthorityTextColor = useViewport17WallAuthority
@@ -9779,36 +9571,6 @@ public class ViewportLayoutEditor : EditorWindow
     return GetSideWallMirrorFromPose();
   }
 
-  private static string BuildFrontF1GeometryKey(RelativeViewportGeometry g)
-  {
-    return (IsViewEditGeometryWall(g.F0Left) ? "W" : "O")
-        + (IsViewEditGeometryWall(g.F0Right) ? "W" : "O")
-        + "|"
-        + (IsViewEditGeometryWall(g.F1Left) ? "W" : "O")
-        + (IsViewEditGeometryWall(g.F1Center) ? "W" : "O")
-        + (IsViewEditGeometryWall(g.F1Right) ? "W" : "O")
-        + "|"
-        + (IsViewEditGeometryWall(g.F2Left) ? "W" : "O")
-        + (IsViewEditGeometryWall(g.F2Center) ? "W" : "O")
-        + (IsViewEditGeometryWall(g.F2Right) ? "W" : "O")
-        + "|"
-        + (IsViewEditGeometryWall(g.F3Left) ? "W" : "O")
-        + (IsViewEditGeometryWall(g.F3Center) ? "W" : "O")
-        + (IsViewEditGeometryWall(g.F3Right) ? "W" : "O");
-  }
-
-  private static string BuildNormalWallEnabledGeometryKey(
-      RelativeViewportGeometry g,
-      ViewportPiece piece)
-  {
-    string pieceId = piece != null
-        ? (!string.IsNullOrEmpty(piece.Name)
-            ? piece.Name
-            : piece.Graphic.ToString())
-        : "<null>";
-    return BuildFrontF1GeometryKey(g) + "|" + pieceId;
-  }
-
   private bool TryGetCurrentRelativeViewportGeometry(out RelativeViewportGeometry geometry)
   {
     geometry = default;
@@ -9885,8 +9647,6 @@ public class ViewportLayoutEditor : EditorWindow
             previewX,
             previewY,
             previewFacing);
-
-    string frontF1GeometryKey = BuildFrontF1GeometryKey(g);
 
     bool frontF1 =
         IsViewEditGeometryWall(g.F1Center);
@@ -9998,19 +9758,6 @@ public class ViewportLayoutEditor : EditorWindow
         x = (leftF0 && rightF0)
             ? 0
             : frontF1Width == StraightF1WallLogic.CompositeWidth ? 0 : 32;
-
-        // The current canonical recipe owns FrontF1 at a solid F0-left/F0-right view.
-        // Do not let the legacy FrontF1 geometry-position store restore X=32 here.
-        if (!(leftF0 && rightF0)
-            && frontF1GeometryOverrides.TryGetValue(
-                frontF1GeometryKey, out FrontF1GeometryOverride verifiedF1))
-        {
-          x = verifiedF1.X;
-          y = verifiedF1.Y;
-          frontF1Width =
-              StraightF1WallLogic.NormalizeFrontWallF1Width(
-                  verifiedF1.Width);
-        }
 
         // D3 oblique views keep their occupancy-specific FrontF1 anchor.
         // LeftD3 needs the first 32 screen pixels free, so FrontF1 starts at X=32.
@@ -10223,46 +9970,21 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      string normalWallGeometryKey =
-          BuildNormalWallEnabledGeometryKey(g, piece);
-
-      if (!IsFrontWallF2Card(piece)
-          && normalWallEnabledGeometryOverrides.TryGetValue(
-              normalWallGeometryKey,
-              out bool verifiedEnabled))
-      {
-        enabled = verifiedEnabled;
-      }
-
-      // Exposed-left LeftF3 visibility is geometry authority. Older saved
-      // Enabled overrides must not suppress the required side F3 piece.
+      // Exposed-left LeftF3 visibility is geometry authority.
       if (leftLaneF3 && IsWallF3LeftPiece(piece))
       {
         enabled = true;
       }
 
-      // FrontF1 at a solid F0-left/F0-right view is now canonical recipe-owned.
-      // The legacy normal-wall position store contains X=32 for this geometry;
-      // bypass it so it cannot override the verified X=0 reference.
-      if (!(IsFrontWallF1Card(piece) && leftF0 && rightF0)
-          && normalWallPositionGeometryOverrides.TryGetValue(
-              normalWallGeometryKey,
-              out Vector2Int verifiedPosition))
-      {
-        x = verifiedPosition.x;
-        y = verifiedPosition.y;
-      }
-
-      // Native DOS D3 center placement is authoritative over any older saved
-      // geometry-position override. FrontF3 is the raw 70px center at X=77.
+      // Native DOS D3 center placement is authoritative.
+      // FrontF3 is the raw 70px center at X=77.
       if (IsFrontWallF3Card(piece))
       {
         x = 77;
         y = DisplayYToUnityY(58, GetPieceHeightForEditorY(piece));
       }
 
-      // RightD3 canonical position is authoritative over any older saved
-      // geometry-position override. Ref Y is top-down display space.
+      // RightD3 canonical position is authoritative. Ref Y is top-down display space.
       if ((piece.Name == "RightD3"
               || piece.Name == "Wall D3R2"
               || piece.Graphic == DungeonGraphicType.WallD3R2)
@@ -10275,8 +9997,7 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       // LeftD3 X is geometry-driven from the outer-left active/black map tile.
-      // D3 Y is canonical and always 58 in top-down display space, regardless
-      // of older saved or geometry-specific position overrides.
+      // D3 Y is canonical and always 58 in top-down display space.
       if ((piece.Name == "LeftD3"
               || piece.Name == "Wall D3L2"
               || piece.Graphic == DungeonGraphicType.WallD3L2)
@@ -10286,13 +10007,6 @@ public class ViewportLayoutEditor : EditorWindow
         y = DisplayYToUnityY(
             58,
             GetPieceHeightForEditorY(piece));
-      }
-
-      if (normalWallMirrorGeometryOverrides.TryGetValue(
-              normalWallGeometryKey,
-              out bool verifiedMirror))
-      {
-        mirror = verifiedMirror;
       }
 
       if (IsFrontWallF3Card(piece))
@@ -10386,13 +10100,8 @@ public class ViewportLayoutEditor : EditorWindow
       piece.MirrorHorizontally = frontF1Mirror;
     }
 
-    // legacy store application disabled: canonical/recipe logic is now authoritative.
-
-    // ApplyPersistedlegacy storeWallRows(frontF1GeometryKey);
-    // LeftF0 mirror is deterministic from the current pose. older stored geometry can contain
-    // the mirror value from a previously verified geometry, so restore the
-    // current pose value after geometry resolution. A temporary manual ViewEdit mirror
-    // override is applied later and can still win for testing.
+    // LeftF0 mirror is deterministic from the current pose. A temporary manual
+    // ViewEdit mirror override is applied later and can still win for testing.
     bool leftF0PoseMirror = GetSideWallMirrorFromPose();
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -10442,9 +10151,8 @@ public class ViewportLayoutEditor : EditorWindow
         previewPositionOverrideByPiece.Remove(piece);
     }
 
-    // Older stored geometry may contain an FrontF1 Mirror value. FrontF1 mirror is
-    // pose-parity driven, so restore the pose value after geometry resolution is applied.
-    // Temporary ViewEdit mirror overrides are applied afterward and still win.
+    // FrontF1 mirror is pose-parity driven. Temporary ViewEdit mirror
+    // overrides are applied afterward and still win.
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece piece = layout.Pieces[i];
@@ -12496,7 +12204,7 @@ public class ViewportLayoutEditor : EditorWindow
         }
 
         // Temporary ViewEdit tests always win over canonical / pose
-        // mirror for this stationary preview. Override Current Walls commits.
+        // mirror for this stationary preview.
         if (!viewport17NormalWall
             && previewEnabledOverrideByPiece.TryGetValue(
                 piece, out bool livePreviewEnabled)
