@@ -14541,24 +14541,19 @@ public class ViewportLayoutEditor : EditorWindow
     BlitPuddleFloor(
         pixels, f3X, f3Y, PuddleF3AssetPath, ref cachedPuddleF3Texture,
         PuddleF3ScreenTop, true, 0, false);
-    BlitPuddleFloor(
-        pixels, f2X - rightX, f2Y - rightY, PuddleS2AssetPath,
-        ref cachedPuddleS2Texture, PuddleS2ScreenTop, false,
-        PuddleS2LeftScreenX, false);
-    BlitPuddleFloor(
-        pixels, f2X + rightX, f2Y + rightY, PuddleS2AssetPath,
-        ref cachedPuddleS2Texture, PuddleS2ScreenTop, false,
-        PuddleS2LeftScreenX, true);
-    BlitPuddleFloor(
-        pixels, f2X, f2Y, PuddleF2AssetPath, ref cachedPuddleF2Texture,
-        PuddleF2ScreenTop, true, 0, false);
-    // D1 side floor ornaments are visible only through the corresponding
-    // immediate side opening. A solid F0 side wall hides the diagonal D1
-    // floor tile completely (for example (17,16) South -> puddle (16,17)).
+
+    // Side-floor puddles must have an unobstructed same-side sight line.
+    // D1 side tiles need the adjacent F0 side open. D2 side tiles need both
+    // the adjacent F0 side and the F1 side cell open; otherwise a nearer side
+    // wall hides the floor ornament behind it.
     int f0LeftX = previewX - rightX;
     int f0LeftY = previewY - rightY;
     int f0RightX = previewX + rightX;
     int f0RightY = previewY + rightY;
+    int f1LeftX = f1X - rightX;
+    int f1LeftY = f1Y - rightY;
+    int f1RightX = f1X + rightX;
+    int f1RightY = f1Y + rightY;
 
     bool f0LeftOpen =
         previewMiniMap.IsInside(f0LeftX, f0LeftY)
@@ -14566,6 +14561,32 @@ public class ViewportLayoutEditor : EditorWindow
     bool f0RightOpen =
         previewMiniMap.IsInside(f0RightX, f0RightY)
         && previewMiniMap.GetTile(f0RightX, f0RightY).Type != DungeonTileType.Wall;
+    bool f1LeftOpen =
+        previewMiniMap.IsInside(f1LeftX, f1LeftY)
+        && previewMiniMap.GetTile(f1LeftX, f1LeftY).Type != DungeonTileType.Wall;
+    bool f1RightOpen =
+        previewMiniMap.IsInside(f1RightX, f1RightY)
+        && previewMiniMap.GetTile(f1RightX, f1RightY).Type != DungeonTileType.Wall;
+
+    if (f0LeftOpen && f1LeftOpen)
+    {
+      BlitPuddleFloor(
+          pixels, f2X - rightX, f2Y - rightY, PuddleS2AssetPath,
+          ref cachedPuddleS2Texture, PuddleS2ScreenTop, false,
+          PuddleS2LeftScreenX, false);
+    }
+
+    if (f0RightOpen && f1RightOpen)
+    {
+      BlitPuddleFloor(
+          pixels, f2X + rightX, f2Y + rightY, PuddleS2AssetPath,
+          ref cachedPuddleS2Texture, PuddleS2ScreenTop, false,
+          PuddleS2LeftScreenX, true);
+    }
+
+    BlitPuddleFloor(
+        pixels, f2X, f2Y, PuddleF2AssetPath, ref cachedPuddleF2Texture,
+        PuddleF2ScreenTop, true, 0, false);
 
     if (f0LeftOpen)
     {
