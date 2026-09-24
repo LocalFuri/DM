@@ -85,11 +85,11 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Puddle_S2.png";
 
   // Blue floor puddle. Hall of Champions floors with raw 56 (hex 38) carry it.
-  // (17,17) West looks at that floor one tile ahead, (16,17), so the original
-  // uses Puddle_F1 centered in the 224px dungeon view. Screen top is measured
-  // downward from the top of the 320x200 frame; farther and side slots use
-  // the same puddle moved toward the vanishing point.
-  private const int PuddleF1ScreenTop = 124;
+  // (17,17) West looks at that floor one tile ahead, (16,17). Puddle_F1 is
+  // 50x15 and centered in the 224px view, so its left edge is X=87. Compared
+  // with the original 320x200 shot, the visible blue (source rows 4-14) must
+  // land on screen rows 135-145, which is screen top 131.
+  private const int PuddleF1ScreenTop = 131;
   private const int PuddleF2ScreenTop = 108;
   private const int PuddleF3ScreenTop = 94;
   private const int PuddleS1ScreenTop = 114;
