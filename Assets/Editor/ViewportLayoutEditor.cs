@@ -362,11 +362,6 @@ public class ViewportLayoutEditor : EditorWindow
   private bool showWallsActivFilter;
   private bool showOnlyWallsNeededForCurrentPose;
   private bool previewDisableAllWalls;
-  // Stage 6T cutover switch. When ON, the generic Viewport-17 FINAL DRAW
-  // owns normal-wall visibility in ViewEdit. Legacy wall-selection rules stay
-  // in the file but are muted so we can compare/refine safely before deletion.
-  // Existing placement/blit code is intentionally retained during cutover.
-  private bool useViewport17WallAuthority = true;
 
   // Edit-mode Champion state calibration. The wall mirror remains present
   // after a Champion has been resurrected/recruited; only the portrait is
@@ -2855,8 +2850,7 @@ public class ViewportLayoutEditor : EditorWindow
 
       // Verified 10,5-West-class automatic recipe is geometry-owned. Keep
       // ViewEdit in lockstep with the full authored 141px FrontF3 width.
-      bool autoD3RightOpenSlitFront =
-          useViewport17WallAuthority && IsViewport17D3RightOpenSlitFront();
+      bool autoD3RightOpenSlitFront = IsViewport17D3RightOpenSlitFront();
       if (autoD3RightOpenSlitFront)
       {
         frontF3Width = Mathf.Clamp(
@@ -4852,34 +4846,6 @@ public class ViewportLayoutEditor : EditorWindow
       showWallsActivFilter = false;
       RefreshEditModePreview();
       RepaintGameViews();
-      Repaint();
-    }
-
-    GUIStyle viewport17AuthorityStyle = new GUIStyle(EditorStyles.miniButton);
-    Color viewport17AuthorityTextColor = useViewport17WallAuthority
-        ? Color.green
-        : Color.white;
-    viewport17AuthorityStyle.normal.textColor = viewport17AuthorityTextColor;
-    viewport17AuthorityStyle.hover.textColor = viewport17AuthorityTextColor;
-    viewport17AuthorityStyle.active.textColor = viewport17AuthorityTextColor;
-    viewport17AuthorityStyle.focused.textColor = viewport17AuthorityTextColor;
-    viewport17AuthorityStyle.onNormal.textColor = viewport17AuthorityTextColor;
-    viewport17AuthorityStyle.onHover.textColor = viewport17AuthorityTextColor;
-    viewport17AuthorityStyle.onActive.textColor = viewport17AuthorityTextColor;
-    viewport17AuthorityStyle.onFocused.textColor = viewport17AuthorityTextColor;
-
-    string viewport17AuthorityLabel = useViewport17WallAuthority
-        ? "V17 Walls=enabled"
-        : "V17 Walls=disabled";
-    bool viewport17AuthorityPressed = GUILayout.Toggle(
-        useViewport17WallAuthority,
-        viewport17AuthorityLabel,
-        viewport17AuthorityStyle,
-        GUILayout.Width(126f));
-    if (viewport17AuthorityPressed != useViewport17WallAuthority)
-    {
-      useViewport17WallAuthority = viewport17AuthorityPressed;
-      RefreshEditModePreview();
       Repaint();
     }
 
@@ -6966,11 +6932,9 @@ public class ViewportLayoutEditor : EditorWindow
 
   private bool IsViewport17WallAuthorityActive()
   {
-    // V17 owns the automatic/default wall decision whenever the V17 toggle is
-    // enabled. "Show all walls" is now list/UI-only: it must never change the
-    // dungeon view just because more ViewEdit cards are visible.
-    return !Application.isPlaying
-        && useViewport17WallAuthority;
+    // Viewport 17 owns the automatic wall decision in edit mode. All Walls
+    // only changes which cards are listed; it must not change the dungeon view.
+    return !Application.isPlaying;
   }
 
   private HashSet<string> BuildViewport17FinalPieceFamilySet()
@@ -9428,7 +9392,6 @@ public class ViewportLayoutEditor : EditorWindow
       // Keep the resolved card in lockstep with the verified automatic
       // 10,5-West FrontF3 recipe (full authored width at X=185).
       if (IsFrontWallF3Card(piece)
-          && useViewport17WallAuthority
           && IsViewport17D3RightOpenSlitFront())
       {
         state.FrontF3Width = NativeD3RightOpenSlitFrontWidth;
