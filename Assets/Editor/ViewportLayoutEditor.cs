@@ -49,12 +49,12 @@ public class ViewportLayoutEditor : EditorWindow
   private const string OrnamentArtFolder =
       "Assets/Art/Ornaments";
 
-  // Original DOS Hall of Champions VI Altar: native 96x56 graphic at
-  // screen top-left (64,64), i.e. framebuffer bottom-left (64,80).
+  // Original DOS Hall of Champions VI Altar: native 96x56 graphic.
+  // Adjusted 5 px down: screen top-left (64,69), framebuffer bottom-left (64,75).
   // The texture is located by name/dimensions so either
   // Altar_of_Vi_96,56.png or Altar_of_Vi_96x56.png works.
   private const int ViAltarD1FrontX = 64;
-  private const int ViAltarD1FrontY = 80;
+  private const int ViAltarD1FrontY = 75;
   private const string HookFrontAssetPath =
       "Assets/Art/Ornaments/Hook_Front_28x28.png";
   private const string GrateFrontAssetPath =
