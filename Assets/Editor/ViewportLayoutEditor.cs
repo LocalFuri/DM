@@ -3985,6 +3985,14 @@ public class ViewportLayoutEditor : EditorWindow
     if (type != EventType.KeyDown)
       return;
 
+    // Fast Game View zoom shortcut: Alt + Numpad Plus => exact 3x.
+    if (keyCode == KeyCode.KeypadPlus
+        && (modifiers & EventModifiers.Alt) != 0)
+    {
+      SetGameViewZoomScale(3f);
+      return;
+    }
+
     if (!IsViewEditNavigationKey(keyCode))
       return;
 
@@ -3994,11 +4002,69 @@ public class ViewportLayoutEditor : EditorWindow
   private static void HandleViewEditGlobalNavigationEvent()
   {
     // GameView.OnGUI invokes globalEventHandler for MouseDown/MouseUp.
-    // Keyboard dispatch is unchanged and still uses this same callback.
     if (TryDispatchViewEditGameViewOnGuiMouse())
       return;
 
+    Event current = Event.current;
+    if (current != null
+        && current.type == EventType.KeyDown
+        && current.keyCode == KeyCode.KeypadPlus
+        && current.alt)
+    {
+      SetGameViewZoomScale(3f);
+      current.Use();
+      return;
+    }
+
     TryDispatchViewEditGlobalNavigation();
+  }
+
+  /// <summary>
+  /// Set the Unity Game View zoom slider to an exact scale. Unity 6 keeps
+  /// the public UI on an internal ZoomableArea, so use GameView.SnapZoom
+  /// when available and fall back to its private scale field.
+  /// </summary>
+  private static void SetGameViewZoomScale(float scale)
+  {
+    if (scale <= 0f)
+      return;
+
+    EditorWindow gameView = FindGameViewWindow();
+    if (gameView == null)
+      return;
+
+    System.Type gameViewType = gameView.GetType();
+
+    MethodInfo snapZoom = gameViewType.GetMethod(
+        "SnapZoom",
+        BindingFlags.Instance | BindingFlags.NonPublic,
+        null,
+        new[] { typeof(float) },
+        null);
+    if (snapZoom != null)
+    {
+      snapZoom.Invoke(gameView, new object[] { scale });
+      gameView.Repaint();
+      return;
+    }
+
+    FieldInfo zoomAreaField = gameViewType.GetField(
+        "m_ZoomArea",
+        BindingFlags.Instance | BindingFlags.NonPublic);
+    object zoomArea = zoomAreaField != null
+        ? zoomAreaField.GetValue(gameView)
+        : null;
+    if (zoomArea == null)
+      return;
+
+    FieldInfo scaleField = zoomArea.GetType().GetField(
+        "m_Scale",
+        BindingFlags.Instance | BindingFlags.NonPublic);
+    if (scaleField == null)
+      return;
+
+    scaleField.SetValue(zoomArea, Vector2.one * scale);
+    gameView.Repaint();
   }
 
   /// <summary>
