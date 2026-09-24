@@ -75,6 +75,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Slime_Side_4x3.png";
   private const string PuddleF1AssetPath =
       "Assets/Art/Ornaments/Puddle_F1.png";
+  private const string PuddleF1SideAssetPath =
+      "Assets/Art/Ornaments/Puddle_F1_Side_9x7.png";
   private const string PuddleF2AssetPath =
       "Assets/Art/Ornaments/Puddle_F2.png";
   private const string PuddleF3AssetPath =
@@ -86,11 +88,10 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Blue floor puddle. Hall of Champions puddles are resolved from the
   // original deterministic random floor-ornament rule (local ordinal 2).
-  // Puddle_F1 is also the authoritative D1 graphic for center/left/right.
-  // Original (17,16) West shows the D1-left puddle as only the last 8 pixels
-  // of the 50px source, clipped against the left edge of the 224px viewport.
+  // Puddle_F1 is the D1 center graphic. D1-left/right use the dedicated
+  // Puddle_F1_Side_9x7 source; the left placement keeps the verified +1 px
+  // right / +1 px up adjustment from the original comparison.
   private const int PuddleF1ScreenTop = 132;
-  private const int PuddleF1SideVisibleWidth = 8;
   private const int PuddleF2ScreenTop = 108;
   private const int PuddleF3ScreenTop = 94;
   private const int PuddleS2ScreenTop = 102;
@@ -682,6 +683,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedSlimeSide2Texture;
   [System.NonSerialized]
   private Texture2D cachedPuddleF1Texture;
+  private Texture2D cachedPuddleF1SideTexture;
   [System.NonSerialized]
   private Texture2D cachedPuddleF2Texture;
   [System.NonSerialized]
@@ -14510,8 +14512,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// Blue puddles resolved from the original Hall of Champions random floor-ornament rule.
-  /// D1 center/left/right all use Puddle_F1; D1 sides are edge-clipped to
-  /// match the original perspective. D2 side slots still use Puddle_S2.
+  /// D1 center uses Puddle_F1; D1 left/right use Puddle_F1_Side_9x7.
+  /// D2 side slots still use Puddle_S2.
   /// Farther puddles are drawn first.
   /// </summary>
   private void BlitPuddlesIntoPreview(Color32[] pixels)
@@ -14573,16 +14575,15 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     Texture2D texture = GetPuddleTexture(
-        PuddleF1AssetPath,
-        ref cachedPuddleF1Texture);
+        PuddleF1SideAssetPath,
+        ref cachedPuddleF1SideTexture);
     if (texture == null || !texture.isReadable || texture.width <= 0)
       return;
 
-    int visibleWidth = Mathf.Min(PuddleF1SideVisibleWidth, texture.width);
     int x = rightSide
-        ? DungeonViewportWidth - visibleWidth
-        : visibleWidth - texture.width;
-    int y = PreviewHeight - PuddleF1ScreenTop - texture.height;
+        ? DungeonViewportWidth - texture.width
+        : 0;
+    int y = PreviewHeight - PuddleF1ScreenTop - texture.height + 1;
 
     BlitPieceIntoPreview(pixels, texture, x, y, rightSide);
   }
