@@ -86,15 +86,13 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Blue floor puddle. Hall of Champions puddles are resolved from the
   // original deterministic random floor-ornament rule (local ordinal 2).
-  // (17,17) West looks at puddle tile (16,17). Puddle_F1 is
-  // 50x15 and centered in the 224px view, so its left edge is X=87. Compared
-  // with the original 320x200 shot, the visible blue (source rows 4-14)
-  // lands on screen rows 136-146, which is screen top 132.
+  // Puddle_F1 is also the authoritative D1 graphic for center/left/right.
+  // Original (17,16) West shows the D1-left puddle as only the last 8 pixels
+  // of the 50px source, clipped against the left edge of the 224px viewport.
   private const int PuddleF1ScreenTop = 132;
+  private const int PuddleF1SideVisibleWidth = 8;
   private const int PuddleF2ScreenTop = 108;
   private const int PuddleF3ScreenTop = 94;
-  private const int PuddleS1ScreenTop = 114;
-  private const int PuddleS1LeftScreenX = 40;
   private const int PuddleS2ScreenTop = 102;
   private const int PuddleS2LeftScreenX = 66;
 
@@ -14512,8 +14510,9 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// Blue puddles resolved from the original Hall of Champions random floor-ornament rule.
-  /// Front slots use Puddle_F1/F2/F3. Side slots use Puddle_S1/S2, mirrored
-  /// on the right. Farther puddles are drawn first.
+  /// D1 center/left/right all use Puddle_F1; D1 sides are edge-clipped to
+  /// match the original perspective. D2 side slots still use Puddle_S2.
+  /// Farther puddles are drawn first.
   /// </summary>
   private void BlitPuddlesIntoPreview(Color32[] pixels)
   {
@@ -14551,17 +14550,41 @@ public class ViewportLayoutEditor : EditorWindow
     BlitPuddleFloor(
         pixels, f2X, f2Y, PuddleF2AssetPath, ref cachedPuddleF2Texture,
         PuddleF2ScreenTop, true, 0, false);
-    BlitPuddleFloor(
-        pixels, f1X - rightX, f1Y - rightY, PuddleS1AssetPath,
-        ref cachedPuddleS1Texture, PuddleS1ScreenTop, false,
-        PuddleS1LeftScreenX, false);
-    BlitPuddleFloor(
-        pixels, f1X + rightX, f1Y + rightY, PuddleS1AssetPath,
-        ref cachedPuddleS1Texture, PuddleS1ScreenTop, false,
-        PuddleS1LeftScreenX, true);
+    BlitPuddleF1Side(
+        pixels, f1X - rightX, f1Y - rightY, false);
+    BlitPuddleF1Side(
+        pixels, f1X + rightX, f1Y + rightY, true);
     BlitPuddleFloor(
         pixels, f1X, f1Y, PuddleF1AssetPath, ref cachedPuddleF1Texture,
         PuddleF1ScreenTop, true, 0, false);
+  }
+
+
+  private void BlitPuddleF1Side(
+      Color32[] pixels,
+      int mapX,
+      int mapY,
+      bool rightSide)
+  {
+    if (!previewMiniMap.IsInside(mapX, mapY)
+        || !IsPreviewPuddleFloor(mapX, mapY))
+    {
+      return;
+    }
+
+    Texture2D texture = GetPuddleTexture(
+        PuddleF1AssetPath,
+        ref cachedPuddleF1Texture);
+    if (texture == null || !texture.isReadable || texture.width <= 0)
+      return;
+
+    int visibleWidth = Mathf.Min(PuddleF1SideVisibleWidth, texture.width);
+    int x = rightSide
+        ? DungeonViewportWidth - visibleWidth
+        : visibleWidth - texture.width;
+    int y = PreviewHeight - PuddleF1ScreenTop - texture.height;
+
+    BlitPieceIntoPreview(pixels, texture, x, y, rightSide);
   }
 
   private void BlitPuddleFloor(
