@@ -55,6 +55,14 @@ public class ViewportLayoutEditor : EditorWindow
   // Altar_of_Vi_96,56.png or Altar_of_Vi_96x56.png works.
   private const int ViAltarD1FrontX = 64;
   private const int ViAltarD1FrontY = 75;
+
+  // Original DOS VI Altar distance-scaled front graphics.
+  // F2 screenshot crop: top-left screen (80,71), framebuffer bottom-left (80,92).
+  private const int ViAltarD2FrontX = 80;
+  private const int ViAltarD2FrontY = 92;
+  // F3 screenshot crop: top-left screen (91,75), framebuffer bottom-left (91,106).
+  private const int ViAltarD3FrontX = 91;
+  private const int ViAltarD3FrontY = 106;
   private const string HookFrontAssetPath =
       "Assets/Art/Ornaments/Hook_Front_28x28.png";
   private const string GrateFrontAssetPath =
@@ -659,6 +667,10 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedChampionMirrorFrontF3Texture;
   [System.NonSerialized]
   private Texture2D cachedViAltarFrontTexture;
+  [System.NonSerialized]
+  private Texture2D cachedViAltarF2FrontTexture;
+  [System.NonSerialized]
+  private Texture2D cachedViAltarF3FrontTexture;
   [System.NonSerialized]
   private Texture2D cachedHookFrontTexture;
   [System.NonSerialized]
@@ -3985,12 +3997,20 @@ public class ViewportLayoutEditor : EditorWindow
     if (type != EventType.KeyDown)
       return;
 
-    // Fast Game View zoom shortcut: Alt + Numpad Plus => exact 3x.
-    if (keyCode == KeyCode.KeypadPlus
-        && (modifiers & EventModifiers.Alt) != 0)
+    // Fast Game View zoom shortcuts.
+    if ((modifiers & EventModifiers.Alt) != 0)
     {
-      SetGameViewZoomScale(3f);
-      return;
+      if (keyCode == KeyCode.KeypadPlus)
+      {
+        SetGameViewZoomScale(3f);
+        return;
+      }
+
+      if (keyCode == KeyCode.KeypadMinus)
+      {
+        SetGameViewZoomScale(1f);
+        return;
+      }
     }
 
     if (!IsViewEditNavigationKey(keyCode))
@@ -4008,12 +4028,21 @@ public class ViewportLayoutEditor : EditorWindow
     Event current = Event.current;
     if (current != null
         && current.type == EventType.KeyDown
-        && current.keyCode == KeyCode.KeypadPlus
         && current.alt)
     {
-      SetGameViewZoomScale(3f);
-      current.Use();
-      return;
+      if (current.keyCode == KeyCode.KeypadPlus)
+      {
+        SetGameViewZoomScale(3f);
+        current.Use();
+        return;
+      }
+
+      if (current.keyCode == KeyCode.KeypadMinus)
+      {
+        SetGameViewZoomScale(1f);
+        current.Use();
+        return;
+      }
     }
 
     TryDispatchViewEditGlobalNavigation();
@@ -11588,9 +11617,10 @@ public class ViewportLayoutEditor : EditorWindow
     BlitChampionMirrorD3RightIntoPreview(pixels);
 
     // Wall ornaments are a separate overlay layer above the wall geometry.
-    // VI Altar is now driven by the all-level placement database. The first
-    // live validation is the Hall of Champions altar at wall (4,18) North,
-    // seen from player pose (4,17) South.
+    // VI Altar is driven by the all-level placement database and uses the
+    // original distance-scaled front graphics at F1/F2/F3.
+    BlitViAltarD3FrontIntoPreview(pixels);
+    BlitViAltarD2FrontIntoPreview(pixels);
     BlitViAltarD1FrontIntoPreview(pixels);
 
     // The Hall of Champions level-local ornament table is resolved before
@@ -14877,6 +14907,148 @@ public class ViewportLayoutEditor : EditorWindow
     return cache;
   }
 
+
+  private void BlitViAltarD2FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D altar = GetViAltarF2FrontTexture();
+    if (altar == null || !altar.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int nearX = previewX + forwardX;
+    int nearY = previewY + forwardY;
+    int wallTileX = previewX + forwardX * 2;
+    int wallTileY = previewY + forwardY * 2;
+    if (!previewMiniMap.IsInside(nearX, nearY)
+        || previewMiniMap.GetTile(nearX, nearY).Type
+            == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(wallTileX, wallTileY)
+        || previewMiniMap.GetTile(wallTileX, wallTileY).Type
+            != DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    string visiblePhysicalWallFace =
+        OppositeFacingName(previewFacing);
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament == null
+          || !string.Equals(
+              ornament.type,
+              "ViAltar",
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      if (ornament.x != wallTileX
+          || ornament.y != wallTileY
+          || !string.Equals(
+              ornament.wall,
+              visiblePhysicalWallFace,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      BlitPieceIntoPreview(
+          pixels,
+          altar,
+          ViAltarD2FrontX,
+          ViAltarD2FrontY,
+          false);
+      return;
+    }
+  }
+
+  private void BlitViAltarD3FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D altar = GetViAltarF3FrontTexture();
+    if (altar == null || !altar.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int near1X = previewX + forwardX;
+    int near1Y = previewY + forwardY;
+    int near2X = previewX + forwardX * 2;
+    int near2Y = previewY + forwardY * 2;
+    int wallTileX = previewX + forwardX * 3;
+    int wallTileY = previewY + forwardY * 3;
+    if (!previewMiniMap.IsInside(near1X, near1Y)
+        || previewMiniMap.GetTile(near1X, near1Y).Type
+            == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(near2X, near2Y)
+        || previewMiniMap.GetTile(near2X, near2Y).Type
+            == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(wallTileX, wallTileY)
+        || previewMiniMap.GetTile(wallTileX, wallTileY).Type
+            != DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    string visiblePhysicalWallFace =
+        OppositeFacingName(previewFacing);
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament == null
+          || !string.Equals(
+              ornament.type,
+              "ViAltar",
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      if (ornament.x != wallTileX
+          || ornament.y != wallTileY
+          || !string.Equals(
+              ornament.wall,
+              visiblePhysicalWallFace,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      BlitPieceIntoPreview(
+          pixels,
+          altar,
+          ViAltarD3FrontX,
+          ViAltarD3FrontY,
+          false);
+      return;
+    }
+  }
+
   private void BlitViAltarD1FrontIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -14980,6 +15152,78 @@ public class ViewportLayoutEditor : EditorWindow
 
     cachedViAltarFrontTexture = best;
     return cachedViAltarFrontTexture;
+  }
+
+
+  private Texture2D GetViAltarF2FrontTexture()
+  {
+    if (cachedViAltarF2FrontTexture != null)
+      return cachedViAltarF2FrontTexture;
+
+    cachedViAltarF2FrontTexture =
+        FindViAltarTexture(63, 37, "f2");
+    return cachedViAltarF2FrontTexture;
+  }
+
+  private Texture2D GetViAltarF3FrontTexture()
+  {
+    if (cachedViAltarF3FrontTexture != null)
+      return cachedViAltarF3FrontTexture;
+
+    cachedViAltarF3FrontTexture =
+        FindViAltarTexture(42, 19, "f3");
+    return cachedViAltarF3FrontTexture;
+  }
+
+  private Texture2D FindViAltarTexture(
+      int width,
+      int height,
+      string distanceTag)
+  {
+    string[] guids = AssetDatabase.FindAssets(
+        "t:Texture2D",
+        new[] { "Assets" });
+
+    Texture2D best = null;
+    int bestScore = int.MinValue;
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      Texture2D candidate =
+          AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null
+          || candidate.width != width
+          || candidate.height != height)
+      {
+        continue;
+      }
+
+      string lower = Path.GetFileNameWithoutExtension(path)
+          .ToLowerInvariant();
+      if (!lower.Contains("altar") || !lower.Contains("vi"))
+        continue;
+
+      int score = 100;
+      if (lower.Contains("altar_of_vi")) score += 50;
+      if (!string.IsNullOrEmpty(distanceTag)
+          && lower.Contains(distanceTag))
+      {
+        score += 100;
+      }
+
+      string sizeX = width.ToString() + "x" + height.ToString();
+      string sizeComma = width.ToString() + "," + height.ToString();
+      if (lower.Contains(sizeX) || lower.Contains(sizeComma))
+        score += 25;
+
+      if (score <= bestScore)
+        continue;
+
+      best = candidate;
+      bestScore = score;
+    }
+
+    return best;
   }
 
   private void BlitSlimeD1FrontIntoPreview(Color32[] pixels)
