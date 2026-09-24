@@ -14552,10 +14552,32 @@ public class ViewportLayoutEditor : EditorWindow
     BlitPuddleFloor(
         pixels, f2X, f2Y, PuddleF2AssetPath, ref cachedPuddleF2Texture,
         PuddleF2ScreenTop, true, 0, false);
-    BlitPuddleF1Side(
-        pixels, f1X - rightX, f1Y - rightY, false);
-    BlitPuddleF1Side(
-        pixels, f1X + rightX, f1Y + rightY, true);
+    // D1 side floor ornaments are visible only through the corresponding
+    // immediate side opening. A solid F0 side wall hides the diagonal D1
+    // floor tile completely (for example (17,16) South -> puddle (16,17)).
+    int f0LeftX = previewX - rightX;
+    int f0LeftY = previewY - rightY;
+    int f0RightX = previewX + rightX;
+    int f0RightY = previewY + rightY;
+
+    bool f0LeftOpen =
+        previewMiniMap.IsInside(f0LeftX, f0LeftY)
+        && previewMiniMap.GetTile(f0LeftX, f0LeftY).Type != DungeonTileType.Wall;
+    bool f0RightOpen =
+        previewMiniMap.IsInside(f0RightX, f0RightY)
+        && previewMiniMap.GetTile(f0RightX, f0RightY).Type != DungeonTileType.Wall;
+
+    if (f0LeftOpen)
+    {
+      BlitPuddleF1Side(
+          pixels, f1X - rightX, f1Y - rightY, false);
+    }
+
+    if (f0RightOpen)
+    {
+      BlitPuddleF1Side(
+          pixels, f1X + rightX, f1Y + rightY, true);
+    }
     BlitPuddleFloor(
         pixels, f1X, f1Y, PuddleF1AssetPath, ref cachedPuddleF1Texture,
         PuddleF1ScreenTop, true, 0, false);
