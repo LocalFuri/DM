@@ -4840,24 +4840,23 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     GUILayout.Space(8f);
-    if (GUILayout.Button("Show Walls Activ", GUILayout.Width(120f)))
+    // Caption is the next action. Hide blanks every wall. Show clears that
+    // blank before refresh so the current pose's needed walls come back in
+    // both the viewport and the ViewEdit list.
+    if (GUILayout.Button(
+            previewDisableAllWalls ? "Show Walls" : "Hide Walls",
+            GUILayout.Width(90f)))
     {
-      // This is an action, not a toggle: always return ViewEdit to the
-      // current-pose wall list and then keep only the wall images that the
-      // loaded map selects for this view. This must also work after
-      // "Show all walls" inspection mode was enabled.
-      showOnlyWallsNeededForCurrentPose = true;
-      showWallsActivFilter = true;
-      pieceSearchFamilyIndex = 0;
-      pieceSearchText = string.Empty;
-      editorScroll = Vector2.zero;
-      GUI.FocusControl(null);
-      RefreshEditModePreview();
-      Repaint();
-    }
-    if (GUILayout.Button("Disable Walls", GUILayout.Width(100f)))
-    {
-      DisableWallsKeepChrome();
+      if (previewDisableAllWalls)
+      {
+        previewDisableAllWalls = false;
+        showOnlyWallsNeededForCurrentPose = true;
+      }
+      else
+      {
+        DisableWallsKeepChrome();
+      }
+
       RefreshEditModePreview();
       RepaintGameViews();
       Repaint();
@@ -4870,27 +4869,6 @@ public class ViewportLayoutEditor : EditorWindow
             GUILayout.Width(72f)))
     {
       previewMiniMapMuted = !previewMiniMapMuted;
-      Repaint();
-    }
-
-    // Keep the two ViewEdit toolbar rows approximately the same width.
-    // Keep "Show all walls" in this row so the controls stay compact.
-    if (GUILayout.Button(
-            showOnlyWallsNeededForCurrentPose
-                ? "Show all walls"
-                : "Show all Walls we Need",
-            GUILayout.Width(130f)))
-    {
-      showOnlyWallsNeededForCurrentPose =
-          !showOnlyWallsNeededForCurrentPose;
-
-      if (!showOnlyWallsNeededForCurrentPose)
-        showWallsActivFilter = false;
-
-      pieceSearchFamilyIndex = 0;
-      pieceSearchText = string.Empty;
-      editorScroll = Vector2.zero;
-      GUI.FocusControl(null);
       Repaint();
     }
 
