@@ -8,6 +8,9 @@ public class DungeonFeatureEditor : EditorWindow
 {
   private const string HallOfChampionsMapPath =
       "Assets/Data/Maps/HallOfChampions.json";
+  private const string DungeonFeaturePlacementsPath =
+      "Assets/Data/Features/DungeonFeaturePlacements.json";
+  private const int PreviewDungeonLevel = 0;
   private const string PuddleF1AssetPath =
       "Assets/Art/Ornaments/Puddle_F1.png";
 
@@ -156,6 +159,7 @@ public class DungeonFeatureEditor : EditorWindow
   private DungeonFacing selectedFacing = DungeonFacing.North;
 
   private bool ornamentTexturesResolved;
+  private Texture2D viAltarMapIcon;
   private Texture2D hookMapIcon;
   private Texture2D woodRingMapIcon;
   private Texture2D slimeMapIcon;
@@ -174,6 +178,7 @@ public class DungeonFeatureEditor : EditorWindow
   private void OnEnable()
   {
     ornamentTexturesResolved = false;
+    viAltarMapIcon = null;
     hookMapIcon = null;
     woodRingMapIcon = null;
     slimeMapIcon = null;
@@ -205,8 +210,11 @@ public class DungeonFeatureEditor : EditorWindow
     {
       string json = File.ReadAllText(HallOfChampionsMapPath);
       map = DungeonMap.LoadFromJsonText(json);
-      resolvedWallOrnaments = BuildGreyWallOrnaments(map);
-      BuildHallOfChampionsPuddleFloors(map, resolvedPuddleFloors);
+      if (!LoadResolvedFeaturesFromDatabase())
+      {
+        resolvedWallOrnaments = BuildGreyWallOrnaments(map);
+        BuildHallOfChampionsPuddleFloors(map, resolvedPuddleFloors);
+      }
       selectedX = 1;
       selectedY = 2;
     }
@@ -585,6 +593,115 @@ public class DungeonFeatureEditor : EditorWindow
     }
   }
 
+  /// <summary>
+  /// Populates Dungeon Features from the generated all-level placement
+  /// database. Level 0 is used while the editor is still displaying the Hall
+  /// of Champions map. Champion mirrors remain on their dedicated overlay.
+  /// </summary>
+  private bool LoadResolvedFeaturesFromDatabase()
+  {
+    if (!File.Exists(DungeonFeaturePlacementsPath))
+      return false;
+
+    try
+    {
+      DungeonFeaturePlacementDatabase database =
+          DungeonFeaturePlacementDatabase.LoadFromFile(
+              DungeonFeaturePlacementsPath);
+      if (database == null || database.ornamentPlacements == null)
+        return false;
+
+      List<OriginalWallOrnamentMarker> wallMarkers =
+          new List<OriginalWallOrnamentMarker>();
+      resolvedPuddleFloors.Clear();
+
+      for (int i = 0; i < database.ornamentPlacements.Length; i++)
+      {
+        DungeonOrnamentPlacement placement =
+            database.ornamentPlacements[i];
+        if (placement == null
+            || placement.level != PreviewDungeonLevel
+            || placement.resolved == null
+            || string.IsNullOrEmpty(placement.resolved.type))
+        {
+          continue;
+        }
+
+        if (string.Equals(
+                placement.domain,
+                "Floor",
+                System.StringComparison.OrdinalIgnoreCase))
+        {
+          if (string.Equals(
+                  placement.resolved.type,
+                  "Puddle",
+                  System.StringComparison.OrdinalIgnoreCase))
+          {
+            resolvedPuddleFloors.Add(
+                PackFloorFeatureTile(
+                    placement.normalisedX,
+                    placement.normalisedY));
+          }
+          continue;
+        }
+
+        if (!string.Equals(
+                placement.domain,
+                "Wall",
+                System.StringComparison.OrdinalIgnoreCase))
+        {
+          continue;
+        }
+
+        // Champion mirrors already have their own blue/yellow wall marker and
+        // green champion-name labels in this editor.
+        if (string.Equals(
+                placement.resolved.type,
+                "ChampionMirror",
+                System.StringComparison.OrdinalIgnoreCase))
+        {
+          continue;
+        }
+
+        if (!TryParseWallSide(
+                placement.normalisedFace,
+                out WallSide side))
+        {
+          continue;
+        }
+
+        wallMarkers.Add(
+            new OriginalWallOrnamentMarker(
+                NormaliseDatabaseFeatureType(placement.resolved.type),
+                placement.normalisedX,
+                placement.normalisedY,
+                side,
+                true));
+      }
+
+      resolvedWallOrnaments = wallMarkers.ToArray();
+      return true;
+    }
+    catch (System.Exception ex)
+    {
+      Debug.LogWarning(
+          "Dungeon Features database load failed; using Hall fallback: "
+          + ex.Message);
+      return false;
+    }
+  }
+
+  private static string NormaliseDatabaseFeatureType(string type)
+  {
+    if (string.Equals(
+            type,
+            "WallGrate",
+            System.StringComparison.OrdinalIgnoreCase))
+      return "Grate";
+
+    return type;
+  }
+
   private static void BuildHallOfChampionsPuddleFloors(
       DungeonMap map,
       HashSet<int> destination)
@@ -730,6 +847,17 @@ public class DungeonFeatureEditor : EditorWindow
 
   private static bool TryParseWallSide(string wall, out WallSide side)
   {
+    if (!string.IsNullOrEmpty(wall) && wall.Length == 1)
+    {
+      switch (char.ToUpperInvariant(wall[0]))
+      {
+        case 'N': side = WallSide.North; return true;
+        case 'E': side = WallSide.East; return true;
+        case 'S': side = WallSide.South; return true;
+        case 'W': side = WallSide.West; return true;
+      }
+    }
+
     if (string.Equals(
             wall,
             "North",
@@ -843,6 +971,7 @@ public class DungeonFeatureEditor : EditorWindow
 
     ornamentTexturesResolved = true;
 
+    viAltarMapIcon = FindBestOrnamentTexture("ViAltar");
     hookMapIcon = FindBestOrnamentTexture("Hook");
     woodRingMapIcon = FindBestOrnamentTexture("WoodRing");
     slimeMapIcon = FindBestOrnamentTexture("Slime");
@@ -855,6 +984,9 @@ public class DungeonFeatureEditor : EditorWindow
   {
     switch (type)
     {
+      case "ViAltar":
+        return viAltarMapIcon;
+
       case "Hook":
         return hookMapIcon;
 
@@ -874,7 +1006,9 @@ public class DungeonFeatureEditor : EditorWindow
 
   private static Texture2D FindBestOrnamentTexture(string type)
   {
-    string[] folders = { "Assets/Art/Ornaments" };
+    string[] folders = type == "ViAltar"
+        ? new[] { "Assets" }
+        : new[] { "Assets/Art/Ornaments" };
     string[] guids = AssetDatabase.FindAssets("t:Texture2D", folders);
 
     Texture2D best = null;
@@ -919,6 +1053,14 @@ public class DungeonFeatureEditor : EditorWindow
 
     switch (type)
     {
+      case "ViAltar":
+        if (!(normalized.Contains("altar") && normalized.Contains("vi")))
+          return -1;
+        score += 100;
+        if (normalized.Contains("96x56") || normalized.Contains("9656"))
+          score += 25;
+        break;
+
       case "Hook":
         if (!normalized.Contains("hook"))
           return -1;
@@ -982,14 +1124,21 @@ public class DungeonFeatureEditor : EditorWindow
     };
     style.normal.textColor = Color.black;
 
-    string text =
-        type == "WoodRing"
-            ? "WR"
-            : type == "Hook"
-                ? "H"
-                : type == "Grate"
-                    ? "G"
-                    : "S";
+    string text;
+    if (type == "ViAltar")
+      text = "VI";
+    else if (type == "WoodRing")
+      text = "WR";
+    else if (type == "Hook")
+      text = "H";
+    else if (type == "Grate")
+      text = "G";
+    else if (type == "Slime")
+      text = "S";
+    else
+      text = string.IsNullOrEmpty(type)
+          ? "?"
+          : type.Substring(0, Mathf.Min(2, type.Length)).ToUpperInvariant();
 
     GUI.Label(iconRect, text, style);
   }
