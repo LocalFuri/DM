@@ -8,6 +8,16 @@ public class DungeonFeatureEditor : EditorWindow
 {
   private const string HallOfChampionsMapPath =
       "Assets/Data/Maps/HallOfChampions.json";
+  private const string PuddleF1AssetPath =
+      "Assets/Art/Ornaments/Puddle_F1.png";
+
+  // Hall of Champions uses three random floor ornaments. The level-local
+  // FloorOrnate table is Moss, Puddle, Floor Crack for ordinals 1..3.
+  // Puddles therefore resolve from random floor ornament ordinal 2.
+  private const int HallOfChampionsRandomFloorOrnamentCount = 3;
+  private const int HallOfChampionsPuddleFloorOrnamentOrdinal = 2;
+  private const int HallOfChampionsRandomOrnamentModulo = 30;
+  private const int HallOfChampionsDungeonSeed = 99;
 
   // Shared ViewEdit preview pose. Dungeon Features reads these to follow
   // ViewEdit and writes X/Y when the user clicks a map tile.
@@ -108,6 +118,7 @@ public class DungeonFeatureEditor : EditorWindow
   // (6,8) South is not a random face bit, so it is added explicitly.
   private OriginalWallOrnamentMarker[] resolvedWallOrnaments =
       new OriginalWallOrnamentMarker[0];
+  private readonly HashSet<int> resolvedPuddleFloors = new HashSet<int>();
 
   private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =
   {
@@ -149,6 +160,7 @@ public class DungeonFeatureEditor : EditorWindow
   private Texture2D woodRingMapIcon;
   private Texture2D slimeMapIcon;
   private Texture2D grateMapIcon;
+  private Texture2D puddleMapIcon;
 
   [MenuItem("Tools/Dungeon Feature Editor &f")]
   public static void Open()
@@ -166,6 +178,7 @@ public class DungeonFeatureEditor : EditorWindow
     woodRingMapIcon = null;
     slimeMapIcon = null;
     grateMapIcon = null;
+    puddleMapIcon = null;
 
     LoadMap();
     SyncSelectionFromViewEdit();
@@ -193,6 +206,7 @@ public class DungeonFeatureEditor : EditorWindow
       string json = File.ReadAllText(HallOfChampionsMapPath);
       map = DungeonMap.LoadFromJsonText(json);
       resolvedWallOrnaments = BuildGreyWallOrnaments(map);
+      BuildHallOfChampionsPuddleFloors(map, resolvedPuddleFloors);
       selectedX = 1;
       selectedY = 2;
     }
@@ -200,6 +214,7 @@ public class DungeonFeatureEditor : EditorWindow
     {
       map = null;
       resolvedWallOrnaments = new OriginalWallOrnamentMarker[0];
+      resolvedPuddleFloors.Clear();
       mapLoadError = ex.Message;
     }
   }
@@ -336,6 +351,7 @@ public class DungeonFeatureEditor : EditorWindow
       }
     }
 
+    DrawPuddleFloorIcons(mapRect);
     DrawChampionMirrorMarkers(mapRect);
     DrawOriginalWallOrnamentIcons(mapRect);
     HandleGridClick(mapRect);
@@ -527,6 +543,128 @@ public class DungeonFeatureEditor : EditorWindow
     }
   }
 
+  private void DrawPuddleFloorIcons(Rect mapRect)
+  {
+    if (resolvedPuddleFloors.Count == 0)
+      return;
+
+    EnsureOrnamentTexturesResolved();
+
+    const float iconInset = 3f;
+    for (int y = 0; y < map.Height; y++)
+    {
+      for (int x = 0; x < map.Width; x++)
+      {
+        if (!resolvedPuddleFloors.Contains(PackFloorFeatureTile(x, y)))
+          continue;
+
+        Rect cellRect = new Rect(
+            mapRect.x + x * CellSize,
+            mapRect.y + y * CellSize,
+            CellSize,
+            CellSize);
+        Rect iconRect = new Rect(
+            cellRect.x + iconInset,
+            cellRect.y + iconInset,
+            cellRect.width - iconInset * 2f,
+            cellRect.height - iconInset * 2f);
+
+        if (puddleMapIcon != null)
+        {
+          GUI.DrawTexture(
+              iconRect,
+              puddleMapIcon,
+              ScaleMode.ScaleToFit,
+              true);
+        }
+        else
+        {
+          DrawMissingFloorOrnamentFallback(iconRect, "P");
+        }
+      }
+    }
+  }
+
+  private static void BuildHallOfChampionsPuddleFloors(
+      DungeonMap map,
+      HashSet<int> destination)
+  {
+    destination.Clear();
+    if (map == null)
+      return;
+
+    int value2 = 3000 + map.Width + map.Height;
+
+    for (int y = 0; y < map.Height; y++)
+    {
+      for (int x = 0; x < map.Width; x++)
+      {
+        DungeonTile tile = map.GetTile(x, y);
+        if (tile == null
+            || tile.SourceType != DungeonSourceTileType.Floor
+            || (tile.Raw & 0x08) == 0)
+        {
+          continue;
+        }
+
+        int randomIndex = HallOfChampionsRandomOrnamentHash(
+            2000 + (x << 5) + y,
+            value2,
+            HallOfChampionsRandomOrnamentModulo);
+
+        if (randomIndex >= HallOfChampionsRandomFloorOrnamentCount)
+          continue;
+
+        int ordinal = randomIndex + 1;
+        if (ordinal == HallOfChampionsPuddleFloorOrnamentOrdinal)
+          destination.Add(PackFloorFeatureTile(x, y));
+      }
+    }
+  }
+
+  private static int HallOfChampionsRandomOrnamentHash(
+      int value1,
+      int value2,
+      int modulo)
+  {
+    if (modulo <= 0)
+      return 0;
+
+    unchecked
+    {
+      uint d0Long = (uint)(ushort)value1 * 31417u;
+      ushort d0Word = (ushort)d0Long;
+      d0Word = (ushort)((d0Word >> 1) & 0x7FFF);
+
+      uint d1Long = (uint)(ushort)value2 * 11u;
+      d0Word = (ushort)(d0Word + (ushort)d1Long);
+      d0Word = (ushort)(d0Word + HallOfChampionsDungeonSeed);
+      d0Word = (ushort)((d0Word >> 2) & 0x3FFF);
+
+      return d0Word % modulo;
+    }
+  }
+
+  private static int PackFloorFeatureTile(int x, int y)
+  {
+    return (y << 8) | (x & 0xFF);
+  }
+
+  private static void DrawMissingFloorOrnamentFallback(
+      Rect iconRect,
+      string text)
+  {
+    EditorGUI.DrawRect(iconRect, OrnamentFallbackColor);
+
+    GUIStyle style = new GUIStyle(EditorStyles.miniBoldLabel)
+    {
+      alignment = TextAnchor.MiddleCenter,
+      clipping = TextClipping.Clip
+    };
+    style.normal.textColor = Color.black;
+    GUI.Label(iconRect, text, style);
+  }
+
   private void DrawOriginalWallOrnamentIcons(Rect mapRect)
   {
     EnsureOrnamentTexturesResolved();
@@ -709,6 +847,8 @@ public class DungeonFeatureEditor : EditorWindow
     woodRingMapIcon = FindBestOrnamentTexture("WoodRing");
     slimeMapIcon = FindBestOrnamentTexture("Slime");
     grateMapIcon = FindBestOrnamentTexture("Grate");
+    puddleMapIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        PuddleF1AssetPath);
   }
 
   private Texture2D GetOrnamentMapIcon(string type)

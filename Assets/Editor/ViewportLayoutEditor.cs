@@ -84,8 +84,9 @@ public class ViewportLayoutEditor : EditorWindow
   private const string PuddleS2AssetPath =
       "Assets/Art/Ornaments/Puddle_S2.png";
 
-  // Blue floor puddle. Hall of Champions floors with raw 56 (hex 38) carry it.
-  // (17,17) West looks at that floor one tile ahead, (16,17). Puddle_F1 is
+  // Blue floor puddle. Hall of Champions puddles are resolved from the
+  // original deterministic random floor-ornament rule (local ordinal 2).
+  // (17,17) West looks at puddle tile (16,17). Puddle_F1 is
   // 50x15 and centered in the 224px view, so its left edge is X=87. Compared
   // with the original 320x200 shot, the visible blue (source rows 4-14)
   // lands on screen rows 136-146, which is screen top 132.
@@ -567,13 +568,10 @@ public class ViewportLayoutEditor : EditorWindow
   // entries participate in the random selection. The original engine uses a
   // deterministic 16-bit hash with dungeon seed/sentinel 99 and modulo 30.
   private const int HallOfChampionsRandomWallOrnamentCount = 4;
+  private const int HallOfChampionsRandomFloorOrnamentCount = 3;
+  private const int HallOfChampionsPuddleFloorOrnamentOrdinal = 2;
   private const int HallOfChampionsRandomOrnamentModulo = 30;
   private const int HallOfChampionsDungeonSeed = 99;
-
-  private static readonly Regex HallOfChampionsPuddleFloorRegex =
-      new Regex(
-          @"\{\s*""x""\s*:\s*(?<x>-?\d+)\s*,\s*""y""\s*:\s*(?<y>-?\d+)\s*,\s*""raw""\s*:\s*56\b",
-          RegexOptions.CultureInvariant);
 
   private static readonly Regex HallOfChampionsRawWallTileRegex =
       new Regex(
@@ -7795,7 +7793,7 @@ public class ViewportLayoutEditor : EditorWindow
       previewWallOrnaments = BuildHallOfChampionsWallOrnaments(
           json,
           mirrorRoot != null ? mirrorRoot.wallOrnaments : null);
-      LoadPreviewPuddleFloors(json);
+      LoadPreviewPuddleFloors();
 
       previewMiniMapLoadError = null;
     }
@@ -14463,23 +14461,42 @@ public class ViewportLayoutEditor : EditorWindow
     return null;
   }
 
-  private void LoadPreviewPuddleFloors(string json)
+  private void LoadPreviewPuddleFloors()
   {
     previewPuddleFloors.Clear();
-    if (string.IsNullOrEmpty(json))
+    if (previewMiniMap == null)
       return;
 
-    MatchCollection matches = HallOfChampionsPuddleFloorRegex.Matches(json);
-    for (int i = 0; i < matches.Count; i++)
-    {
-      Match match = matches[i];
-      if (!int.TryParse(match.Groups["x"].Value, out int x)
-          || !int.TryParse(match.Groups["y"].Value, out int y))
-      {
-        continue;
-      }
+    // Original engine corridor rule:
+    // randomIndex = Hash(2000 + x*32 + y,
+    //                    3000 + level*64 + width + height, 30).
+    // If randomIndex < RandomFloorOrnamentCount, ordinal = index + 1.
+    // Hall of Champions local floor-ornament ordinal 2 is Puddle.
+    int value2 = 3000 + previewMiniMap.Width + previewMiniMap.Height;
 
-      previewPuddleFloors.Add(PackPreviewTile(x, y));
+    for (int y = 0; y < previewMiniMap.Height; y++)
+    {
+      for (int x = 0; x < previewMiniMap.Width; x++)
+      {
+        DungeonTile tile = previewMiniMap.GetTile(x, y);
+        if (tile == null
+            || tile.SourceType != DungeonSourceTileType.Floor
+            || (tile.Raw & 0x08) == 0)
+        {
+          continue;
+        }
+
+        int randomIndex = HallOfChampionsRandomOrnamentHash(
+            2000 + (x << 5) + y,
+            value2,
+            HallOfChampionsRandomOrnamentModulo);
+        if (randomIndex >= HallOfChampionsRandomFloorOrnamentCount)
+          continue;
+
+        int ordinal = randomIndex + 1;
+        if (ordinal == HallOfChampionsPuddleFloorOrnamentOrdinal)
+          previewPuddleFloors.Add(PackPreviewTile(x, y));
+      }
     }
   }
 
@@ -14494,7 +14511,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Blue puddle on Hall of Champions floors whose raw value is 56.
+  /// Blue puddles resolved from the original Hall of Champions random floor-ornament rule.
   /// Front slots use Puddle_F1/F2/F3. Side slots use Puddle_S1/S2, mirrored
   /// on the right. Farther puddles are drawn first.
   /// </summary>
