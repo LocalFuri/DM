@@ -1080,38 +1080,6 @@ public class ViewportLayoutEditor : EditorWindow
 
       DrawSnapToolbar();
 
-      EditorGUILayout.BeginHorizontal();
-
-      GUIStyle viewport17AuthorityStyle = new GUIStyle(EditorStyles.miniButton);
-      Color viewport17AuthorityTextColor = useViewport17WallAuthority
-          ? Color.green
-          : Color.white;
-      viewport17AuthorityStyle.normal.textColor = viewport17AuthorityTextColor;
-      viewport17AuthorityStyle.hover.textColor = viewport17AuthorityTextColor;
-      viewport17AuthorityStyle.active.textColor = viewport17AuthorityTextColor;
-      viewport17AuthorityStyle.focused.textColor = viewport17AuthorityTextColor;
-      viewport17AuthorityStyle.onNormal.textColor = viewport17AuthorityTextColor;
-      viewport17AuthorityStyle.onHover.textColor = viewport17AuthorityTextColor;
-      viewport17AuthorityStyle.onActive.textColor = viewport17AuthorityTextColor;
-      viewport17AuthorityStyle.onFocused.textColor = viewport17AuthorityTextColor;
-
-      string viewport17AuthorityLabel = useViewport17WallAuthority
-          ? "V17 Walls=enabled"
-          : "V17 Walls=disabled";
-      bool viewport17AuthorityPressed = GUILayout.Toggle(
-          useViewport17WallAuthority,
-          viewport17AuthorityLabel,
-          viewport17AuthorityStyle,
-          GUILayout.Width(126f));
-      if (viewport17AuthorityPressed != useViewport17WallAuthority)
-      {
-        useViewport17WallAuthority = viewport17AuthorityPressed;
-        RefreshEditModePreview();
-        Repaint();
-      }
-
-      EditorGUILayout.EndHorizontal();
-
       string currentFrontChampion;
       if (TryGetCurrentD1FrontChampion(out currentFrontChampion))
       {
@@ -4869,6 +4837,49 @@ public class ViewportLayoutEditor : EditorWindow
             GUILayout.Width(72f)))
     {
       previewMiniMapMuted = !previewMiniMapMuted;
+      Repaint();
+    }
+
+    EditorGUILayout.EndHorizontal();
+
+    // Lists every wall card so a wrong view can be corrected. Show Walls, or
+    // a pose change, returns the list to only the walls that view needs.
+    EditorGUILayout.BeginHorizontal();
+    if (GUILayout.Button("All Walls", GUILayout.Width(90f)))
+    {
+      previewDisableAllWalls = false;
+      showOnlyWallsNeededForCurrentPose = false;
+      showWallsActivFilter = false;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+
+    GUIStyle viewport17AuthorityStyle = new GUIStyle(EditorStyles.miniButton);
+    Color viewport17AuthorityTextColor = useViewport17WallAuthority
+        ? Color.green
+        : Color.white;
+    viewport17AuthorityStyle.normal.textColor = viewport17AuthorityTextColor;
+    viewport17AuthorityStyle.hover.textColor = viewport17AuthorityTextColor;
+    viewport17AuthorityStyle.active.textColor = viewport17AuthorityTextColor;
+    viewport17AuthorityStyle.focused.textColor = viewport17AuthorityTextColor;
+    viewport17AuthorityStyle.onNormal.textColor = viewport17AuthorityTextColor;
+    viewport17AuthorityStyle.onHover.textColor = viewport17AuthorityTextColor;
+    viewport17AuthorityStyle.onActive.textColor = viewport17AuthorityTextColor;
+    viewport17AuthorityStyle.onFocused.textColor = viewport17AuthorityTextColor;
+
+    string viewport17AuthorityLabel = useViewport17WallAuthority
+        ? "V17 Walls=enabled"
+        : "V17 Walls=disabled";
+    bool viewport17AuthorityPressed = GUILayout.Toggle(
+        useViewport17WallAuthority,
+        viewport17AuthorityLabel,
+        viewport17AuthorityStyle,
+        GUILayout.Width(126f));
+    if (viewport17AuthorityPressed != useViewport17WallAuthority)
+    {
+      useViewport17WallAuthority = viewport17AuthorityPressed;
+      RefreshEditModePreview();
       Repaint();
     }
 
