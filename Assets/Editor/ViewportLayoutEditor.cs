@@ -73,6 +73,29 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Slime_Side_16x10.png";
   private const string SlimeSide2AssetPath =
       "Assets/Art/Ornaments/Slime_Side_4x3.png";
+  private const string PuddleF1AssetPath =
+      "Assets/Art/Ornaments/Puddle_F1.png";
+  private const string PuddleF2AssetPath =
+      "Assets/Art/Ornaments/Puddle_F2.png";
+  private const string PuddleF3AssetPath =
+      "Assets/Art/Ornaments/Puddle_F3.png";
+  private const string PuddleS1AssetPath =
+      "Assets/Art/Ornaments/Puddle_S1.png";
+  private const string PuddleS2AssetPath =
+      "Assets/Art/Ornaments/Puddle_S2.png";
+
+  // Blue floor puddle. Hall of Champions floors with raw 56 (hex 38) carry it.
+  // (17,17) West looks at that floor one tile ahead, (16,17), so the original
+  // uses Puddle_F1 centered in the 224px dungeon view. Screen top is measured
+  // downward from the top of the 320x200 frame; farther and side slots use
+  // the same puddle moved toward the vanishing point.
+  private const int PuddleF1ScreenTop = 124;
+  private const int PuddleF2ScreenTop = 108;
+  private const int PuddleF3ScreenTop = 94;
+  private const int PuddleS1ScreenTop = 114;
+  private const int PuddleS1LeftScreenX = 40;
+  private const int PuddleS2ScreenTop = 102;
+  private const int PuddleS2LeftScreenX = 66;
 
   // Original DOS Hook front placement on the wall immediately in front of
   // the party. Measured from the supplied 320x200 original screenshot:
@@ -547,6 +570,11 @@ public class ViewportLayoutEditor : EditorWindow
   private const int HallOfChampionsRandomOrnamentModulo = 30;
   private const int HallOfChampionsDungeonSeed = 99;
 
+  private static readonly Regex HallOfChampionsPuddleFloorRegex =
+      new Regex(
+          @"\{\s*""x""\s*:\s*(?<x>-?\d+)\s*,\s*""y""\s*:\s*(?<y>-?\d+)\s*,\s*""raw""\s*:\s*56\b",
+          RegexOptions.CultureInvariant);
+
   private static readonly Regex HallOfChampionsRawWallTileRegex =
       new Regex(
           @"\{\s*""x""\s*:\s*(?<x>-?\d+)\s*,\s*""y""\s*:\s*(?<y>-?\d+)\s*,\s*""raw""\s*:\s*(?<raw>\d+)\s*,[^{}]*?""type""\s*:\s*""Wall""",
@@ -609,6 +637,7 @@ public class ViewportLayoutEditor : EditorWindow
       new ChampionMirrorPlacement[0];
   private WallOrnamentPlacement[] previewWallOrnaments =
       FallbackHallOfChampionsWallOrnaments;
+  private readonly HashSet<int> previewPuddleFloors = new HashSet<int>();
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorSideTexture;
   [System.NonSerialized]
@@ -655,6 +684,16 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedSlimeSide1Texture;
   [System.NonSerialized]
   private Texture2D cachedSlimeSide2Texture;
+  [System.NonSerialized]
+  private Texture2D cachedPuddleF1Texture;
+  [System.NonSerialized]
+  private Texture2D cachedPuddleF2Texture;
+  [System.NonSerialized]
+  private Texture2D cachedPuddleF3Texture;
+  [System.NonSerialized]
+  private Texture2D cachedPuddleS1Texture;
+  [System.NonSerialized]
+  private Texture2D cachedPuddleS2Texture;
   private readonly Dictionary<string, Texture2D> cachedChampionPortraitTextures =
       new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
 
@@ -7756,6 +7795,7 @@ public class ViewportLayoutEditor : EditorWindow
       previewWallOrnaments = BuildHallOfChampionsWallOrnaments(
           json,
           mirrorRoot != null ? mirrorRoot.wallOrnaments : null);
+      LoadPreviewPuddleFloors(json);
 
       previewMiniMapLoadError = null;
     }
@@ -7764,6 +7804,7 @@ public class ViewportLayoutEditor : EditorWindow
       previewMiniMap = null;
       previewChampionMirrors = new ChampionMirrorPlacement[0];
       previewWallOrnaments = FallbackHallOfChampionsWallOrnaments;
+      previewPuddleFloors.Clear();
       previewMiniMapLoadError = ex.Message;
     }
   }
@@ -11446,6 +11487,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Native D3 L/C/R is drawn in the normal far-to-near wall pass.
 
+    // Floor puddles sit on the completed floor, under wall ornaments.
+    // (17,17) West draws Puddle_F1 on the floor one tile ahead.
+    BlitPuddlesIntoPreview(pixels);
+
     // Champion wall decorations sit on top of the completed wall surface.
     // D1 side faces use the original 16x35 mirror. A D1 front wall uses the
     // original 48x43 frame plus the Champion's 32x29 portrait in its opening.
@@ -14416,6 +14461,130 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return null;
+  }
+
+  private void LoadPreviewPuddleFloors(string json)
+  {
+    previewPuddleFloors.Clear();
+    if (string.IsNullOrEmpty(json))
+      return;
+
+    MatchCollection matches = HallOfChampionsPuddleFloorRegex.Matches(json);
+    for (int i = 0; i < matches.Count; i++)
+    {
+      Match match = matches[i];
+      if (!int.TryParse(match.Groups["x"].Value, out int x)
+          || !int.TryParse(match.Groups["y"].Value, out int y))
+      {
+        continue;
+      }
+
+      previewPuddleFloors.Add(PackPreviewTile(x, y));
+    }
+  }
+
+  private static int PackPreviewTile(int x, int y)
+  {
+    return (y << 8) | (x & 0xFF);
+  }
+
+  private bool IsPreviewPuddleFloor(int x, int y)
+  {
+    return previewPuddleFloors.Contains(PackPreviewTile(x, y));
+  }
+
+  /// <summary>
+  /// Blue puddle on Hall of Champions floors whose raw value is 56.
+  /// Front slots use Puddle_F1/F2/F3. Side slots use Puddle_S1/S2, mirrored
+  /// on the right. Farther puddles are drawn first.
+  /// </summary>
+  private void BlitPuddlesIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || previewPuddleFloors.Count == 0)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int f1X = previewX + forwardX;
+    int f1Y = previewY + forwardY;
+    int f2X = previewX + forwardX * 2;
+    int f2Y = previewY + forwardY * 2;
+    int f3X = previewX + forwardX * 3;
+    int f3Y = previewY + forwardY * 3;
+
+    BlitPuddleFloor(
+        pixels, f3X, f3Y, PuddleF3AssetPath, ref cachedPuddleF3Texture,
+        PuddleF3ScreenTop, true, 0, false);
+    BlitPuddleFloor(
+        pixels, f2X - rightX, f2Y - rightY, PuddleS2AssetPath,
+        ref cachedPuddleS2Texture, PuddleS2ScreenTop, false,
+        PuddleS2LeftScreenX, false);
+    BlitPuddleFloor(
+        pixels, f2X + rightX, f2Y + rightY, PuddleS2AssetPath,
+        ref cachedPuddleS2Texture, PuddleS2ScreenTop, false,
+        PuddleS2LeftScreenX, true);
+    BlitPuddleFloor(
+        pixels, f2X, f2Y, PuddleF2AssetPath, ref cachedPuddleF2Texture,
+        PuddleF2ScreenTop, true, 0, false);
+    BlitPuddleFloor(
+        pixels, f1X - rightX, f1Y - rightY, PuddleS1AssetPath,
+        ref cachedPuddleS1Texture, PuddleS1ScreenTop, false,
+        PuddleS1LeftScreenX, false);
+    BlitPuddleFloor(
+        pixels, f1X + rightX, f1Y + rightY, PuddleS1AssetPath,
+        ref cachedPuddleS1Texture, PuddleS1ScreenTop, false,
+        PuddleS1LeftScreenX, true);
+    BlitPuddleFloor(
+        pixels, f1X, f1Y, PuddleF1AssetPath, ref cachedPuddleF1Texture,
+        PuddleF1ScreenTop, true, 0, false);
+  }
+
+  private void BlitPuddleFloor(
+      Color32[] pixels,
+      int mapX,
+      int mapY,
+      string assetPath,
+      ref Texture2D cache,
+      int screenTop,
+      bool centerInViewport,
+      int leftScreenX,
+      bool mirror)
+  {
+    if (!previewMiniMap.IsInside(mapX, mapY)
+        || !IsPreviewPuddleFloor(mapX, mapY))
+    {
+      return;
+    }
+
+    Texture2D texture = GetPuddleTexture(assetPath, ref cache);
+    if (texture == null || !texture.isReadable || texture.width <= 0)
+      return;
+
+    int x = centerInViewport
+        ? (DungeonViewportWidth - texture.width) / 2
+        : leftScreenX;
+    if (mirror)
+      x = DungeonViewportWidth - leftScreenX - texture.width;
+
+    int y = PreviewHeight - screenTop - texture.height;
+    BlitPieceIntoPreview(pixels, texture, x, y, mirror);
+  }
+
+  private Texture2D GetPuddleTexture(string assetPath, ref Texture2D cache)
+  {
+    if (cache != null)
+      return cache;
+
+    cache = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+    return cache;
   }
 
   private void BlitSlimeD1FrontIntoPreview(Color32[] pixels)
