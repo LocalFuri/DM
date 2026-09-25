@@ -11802,8 +11802,10 @@ public class ViewportLayoutEditor : EditorWindow
     BlitGrateD2FrontIntoPreview(pixels);
     BlitGrateD1FrontIntoPreview(pixels);
 
-    // Original DM lighting affects only the 224x136 dungeon viewport.
-    // The HUD/right UI is deliberately excluded. Stage 1 is a no-op.
+    // Apply the selected original-DM light palette to the completed dungeon
+    // scene before any HUD/debug redraws.  This is a pure in-place colour
+    // remap of the already composed 224x136 dungeon viewport; it does not
+    // resize, crop, move, or blit the framebuffer.
     ApplyDungeonViewportLightPalette(pixels, previewDungeonLightStage);
 
     // DIAGNOSTIC: redraw Champion Status Slot 4 once on top of the normal
@@ -11888,15 +11890,29 @@ public class ViewportLayoutEditor : EditorWindow
     Color32[] brightPalette = DungeonViewportLightPalettes[0];
     Color32[] targetPalette = DungeonViewportLightPalettes[stageIndex];
 
-    int maxY = Mathf.Min(DungeonViewportHeight, PreviewHeight);
+    // The visible 224x136 dungeon view is screen X=0..223, Y=33..168.
+    // Texture2D/preview-buffer Y uses a bottom-left origin, so that becomes
+    // framebuffer Y=31..166 inclusive.
+    const int dungeonScreenTop = 33;
+    int minY = Mathf.Max(
+        0,
+        PreviewHeight - dungeonScreenTop - DungeonViewportHeight);
+    int maxYExclusive = Mathf.Min(
+        PreviewHeight,
+        minY + DungeonViewportHeight);
     int maxX = Mathf.Min(DungeonViewportWidth, PreviewWidth);
-    for (int y = 0; y < maxY; y++)
+
+    for (int y = minY; y < maxYExclusive; y++)
     {
       int row = y * PreviewWidth;
       for (int x = 0; x < maxX; x++)
       {
         int pixelOffset = row + x;
         Color32 source = pixels[pixelOffset];
+
+        if (source.a == 0
+            || (source.r == 255 && source.g == 0 && source.b == 255))
+          continue;
 
         // The original renderer kept a 4-bit colour index and changed only
         // the active 16-colour viewport palette. Our Unity framebuffer is
