@@ -179,6 +179,128 @@ public class ViewportLayoutEditor : EditorWindow
   // Dungeon viewport is X=0..223. Every left/right wall-ornament pair is the
   // same sprite mirrored around that width: rightX = 224 - leftX - spriteWidth.
   private const int DungeonViewportWidth = 224;
+  private const int DungeonViewportHeight = 136;
+
+  // Original Dungeon Master / CSBwin viewport lighting palettes.
+  // Six discrete 16-colour states, decoded from asciidump.txt.
+  // Stage 1 is full light; Stage 6 is the darkest no-light state.
+  private static readonly Color32[][] DungeonViewportLightPalettes =
+  {
+    new[]
+    {
+      new Color32(0, 0, 0, 255),
+      new Color32(109, 109, 109, 255),
+      new Color32(146, 146, 146, 255),
+      new Color32(109, 36, 0, 255),
+      new Color32(0, 219, 219, 255),
+      new Color32(146, 73, 0, 255),
+      new Color32(0, 146, 0, 255),
+      new Color32(0, 219, 0, 255),
+      new Color32(255, 0, 0, 255),
+      new Color32(255, 182, 0, 255),
+      new Color32(219, 146, 109, 255),
+      new Color32(255, 255, 0, 255),
+      new Color32(73, 73, 73, 255),
+      new Color32(182, 182, 182, 255),
+      new Color32(0, 0, 255, 255),
+      new Color32(255, 255, 255, 255)
+    },
+    new[]
+    {
+      new Color32(0, 0, 0, 255),
+      new Color32(73, 73, 73, 255),
+      new Color32(109, 109, 109, 255),
+      new Color32(109, 36, 0, 255),
+      new Color32(0, 219, 219, 255),
+      new Color32(146, 36, 0, 255),
+      new Color32(0, 109, 0, 255),
+      new Color32(0, 182, 0, 255),
+      new Color32(219, 0, 0, 255),
+      new Color32(219, 146, 0, 255),
+      new Color32(182, 109, 73, 255),
+      new Color32(255, 219, 0, 255),
+      new Color32(36, 36, 36, 255),
+      new Color32(146, 146, 146, 255),
+      new Color32(0, 0, 219, 255),
+      new Color32(219, 219, 219, 255)
+    },
+    new[]
+    {
+      new Color32(0, 0, 0, 255),
+      new Color32(36, 36, 36, 255),
+      new Color32(73, 73, 73, 255),
+      new Color32(73, 36, 0, 255),
+      new Color32(0, 219, 219, 255),
+      new Color32(109, 36, 0, 255),
+      new Color32(0, 73, 0, 255),
+      new Color32(0, 146, 0, 255),
+      new Color32(182, 0, 0, 255),
+      new Color32(182, 109, 0, 255),
+      new Color32(146, 73, 36, 255),
+      new Color32(255, 182, 0, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(109, 109, 109, 255),
+      new Color32(0, 0, 182, 255),
+      new Color32(182, 182, 182, 255)
+    },
+    new[]
+    {
+      new Color32(0, 0, 0, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(36, 36, 36, 255),
+      new Color32(36, 0, 0, 255),
+      new Color32(0, 219, 219, 255),
+      new Color32(73, 36, 0, 255),
+      new Color32(0, 36, 0, 255),
+      new Color32(0, 109, 0, 255),
+      new Color32(146, 0, 0, 255),
+      new Color32(146, 73, 0, 255),
+      new Color32(109, 36, 0, 255),
+      new Color32(219, 146, 0, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(73, 73, 73, 255),
+      new Color32(0, 0, 146, 255),
+      new Color32(146, 146, 146, 255)
+    },
+    new[]
+    {
+      new Color32(0, 0, 0, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(0, 219, 219, 255),
+      new Color32(36, 0, 0, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(0, 73, 0, 255),
+      new Color32(109, 0, 0, 255),
+      new Color32(109, 36, 0, 255),
+      new Color32(73, 0, 0, 255),
+      new Color32(182, 109, 0, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(36, 36, 36, 255),
+      new Color32(0, 0, 109, 255),
+      new Color32(109, 109, 109, 255)
+    },
+    new[]
+    {
+      new Color32(0, 0, 0, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(0, 219, 219, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(0, 36, 0, 255),
+      new Color32(73, 0, 0, 255),
+      new Color32(73, 0, 0, 255),
+      new Color32(36, 0, 0, 255),
+      new Color32(109, 73, 0, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(0, 0, 0, 255),
+      new Color32(0, 0, 73, 255),
+      new Color32(73, 73, 73, 255)
+    }
+  };
 
   private const int HookD1SideLeftX = 48;
   private const int HookD1SideRightX =
@@ -672,6 +794,11 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private Texture2D cachedViAltarF3FrontTexture;
   [System.NonSerialized]
+  private Texture2D cachedViAltarGeneratedF2TestTexture;
+  [System.NonSerialized]
+  private bool previewUseGeneratedViAltarF2;
+  private int previewDungeonLightStage = 1;
+  [System.NonSerialized]
   private Texture2D cachedHookFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedGrateFrontTexture;
@@ -958,6 +1085,12 @@ public class ViewportLayoutEditor : EditorWindow
     {
       DestroyImmediate(cachedRight2SReadableCopy);
       cachedRight2SReadableCopy = null;
+    }
+
+    if (cachedViAltarGeneratedF2TestTexture != null)
+    {
+      DestroyImmediate(cachedViAltarGeneratedF2TestTexture);
+      cachedViAltarGeneratedF2TestTexture = null;
     }
 
     RepaintGameViews();
@@ -4988,6 +5121,32 @@ public class ViewportLayoutEditor : EditorWindow
       previewDisableAllWalls = false;
       showOnlyWallsNeededForCurrentPose = false;
       showWallsActivFilter = false;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+
+    GUILayout.Space(8f);
+    string altarF2TestCaption = previewUseGeneratedViAltarF2
+        ? "Altar F2: 21/32"
+        : "Altar F2: Crop";
+    if (GUILayout.Button(altarF2TestCaption, GUILayout.Width(118f)))
+    {
+      previewUseGeneratedViAltarF2 = !previewUseGeneratedViAltarF2;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+
+    GUILayout.Space(8f);
+    int selectedLightStage = GUILayout.Toolbar(
+        previewDungeonLightStage - 1,
+        new[] { "L1", "L2", "L3", "L4", "L5", "L6" },
+        GUILayout.Width(174f));
+    int requestedLightStage = selectedLightStage + 1;
+    if (requestedLightStage != previewDungeonLightStage)
+    {
+      previewDungeonLightStage = requestedLightStage;
       RefreshEditModePreview();
       RepaintGameViews();
       Repaint();
@@ -11643,18 +11802,9 @@ public class ViewportLayoutEditor : EditorWindow
     BlitGrateD2FrontIntoPreview(pixels);
     BlitGrateD1FrontIntoPreview(pixels);
 
-    // DIAGNOSTIC COMPOSITION STEP:
-    // After all dungeon/wall drawing, restore the entire right-side UI
-    // column to solid magenta. The framebuffer is 320x200 and the dungeon
-    // viewport owns X=0..223, so X=224..319 (96 px) is reserved for the HUD.
-    // This deliberately does not clip or alter any wall draw path; it simply
-    // paints the UI column last so we can verify the composition order.
-    for (int y = 0; y < PreviewHeight; y++)
-    {
-      int row = y * PreviewWidth;
-      for (int x = 224; x < PreviewWidth; x++)
-        pixels[row + x] = magenta;
-    }
+    // Original DM lighting affects only the 224x136 dungeon viewport.
+    // The HUD/right UI is deliberately excluded. Stage 1 is a no-op.
+    ApplyDungeonViewportLightPalette(pixels, previewDungeonLightStage);
 
     // DIAGNOSTIC: redraw Champion Status Slot 4 once on top of the normal
     // composition, before pose/debug text. Slots 1–3 are not redrawn.
@@ -11722,6 +11872,61 @@ public class ViewportLayoutEditor : EditorWindow
 
     editModePreviewTexture.SetPixels32(pixels);
     editModePreviewTexture.Apply(false);
+  }
+
+  private static void ApplyDungeonViewportLightPalette(
+      Color32[] pixels,
+      int stage)
+  {
+    if (pixels == null || pixels.Length < PreviewWidth * PreviewHeight)
+      return;
+
+    int stageIndex = Mathf.Clamp(stage, 1, 6) - 1;
+    if (stageIndex == 0)
+      return;
+
+    Color32[] brightPalette = DungeonViewportLightPalettes[0];
+    Color32[] targetPalette = DungeonViewportLightPalettes[stageIndex];
+
+    int maxY = Mathf.Min(DungeonViewportHeight, PreviewHeight);
+    int maxX = Mathf.Min(DungeonViewportWidth, PreviewWidth);
+    for (int y = 0; y < maxY; y++)
+    {
+      int row = y * PreviewWidth;
+      for (int x = 0; x < maxX; x++)
+      {
+        int pixelOffset = row + x;
+        Color32 source = pixels[pixelOffset];
+
+        // The original renderer kept a 4-bit colour index and changed only
+        // the active 16-colour viewport palette. Our Unity framebuffer is
+        // RGBA, so recover the most likely Stage-1 DM palette index first,
+        // then emit the colour at the same index from the requested stage.
+        // Nearest-colour matching is intentional: screenshot-derived PNGs
+        // and converted Atari colours can differ by one RGB quantisation step.
+        int bestPaletteIndex = 0;
+        int bestDistance = int.MaxValue;
+        for (int paletteIndex = 0; paletteIndex < 16; paletteIndex++)
+        {
+          Color32 candidate = brightPalette[paletteIndex];
+          int dr = source.r - candidate.r;
+          int dg = source.g - candidate.g;
+          int db = source.b - candidate.b;
+          int distance = dr * dr + dg * dg + db * db;
+          if (distance >= bestDistance)
+            continue;
+
+          bestDistance = distance;
+          bestPaletteIndex = paletteIndex;
+          if (distance == 0)
+            break;
+        }
+
+        Color32 mapped = targetPalette[bestPaletteIndex];
+        mapped.a = source.a;
+        pixels[pixelOffset] = mapped;
+      }
+    }
   }
 
   private static string lastEditModeViewportLogMessage;
@@ -14918,7 +15123,9 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    Texture2D altar = GetViAltarF2FrontTexture();
+    Texture2D altar = previewUseGeneratedViAltarF2
+        ? GetViAltarGeneratedF2TestTexture()
+        : GetViAltarF2FrontTexture();
     if (altar == null || !altar.isReadable)
       return;
 
@@ -15154,6 +15361,65 @@ public class ViewportLayoutEditor : EditorWindow
     return cachedViAltarFrontTexture;
   }
 
+
+  /// <summary>
+  /// Temporary VI Altar F2 scaling experiment. Builds a 63x37 texture from
+  /// the native 96x56 F1 source using the documented 21/32 distance scale.
+  /// This is deliberately isolated behind the ViewEdit test button so it does
+  /// not replace the captured F2 asset until the pixels are visually verified.
+  /// </summary>
+  private Texture2D GetViAltarGeneratedF2TestTexture()
+  {
+    if (cachedViAltarGeneratedF2TestTexture != null)
+      return cachedViAltarGeneratedF2TestTexture;
+
+    Texture2D source = GetViAltarFrontTexture();
+    if (source == null || !source.isReadable)
+      return null;
+
+    const int targetWidth = 63;
+    const int targetHeight = 37;
+    const int scaleNumerator = 21;
+    const int scaleDenominator = 32;
+
+    Color32[] sourcePixels = source.GetPixels32();
+    Color32[] targetPixels = new Color32[targetWidth * targetHeight];
+
+    for (int y = 0; y < targetHeight; y++)
+    {
+      // Center-sampled fixed-point 21/32 shrink. The +denominator/2 term
+      // selects the source pixel nearest the center of each destination sample
+      // while keeping all arithmetic integer/DM-friendly.
+      int sourceY =
+          (y * scaleDenominator + scaleDenominator / 2)
+          / scaleNumerator;
+      sourceY = Mathf.Clamp(sourceY, 0, source.height - 1);
+
+      for (int x = 0; x < targetWidth; x++)
+      {
+        int sourceX =
+            (x * scaleDenominator + scaleDenominator / 2)
+            / scaleNumerator;
+        sourceX = Mathf.Clamp(sourceX, 0, source.width - 1);
+        targetPixels[y * targetWidth + x] =
+            sourcePixels[sourceY * source.width + sourceX];
+      }
+    }
+
+    Texture2D generated = new Texture2D(
+        targetWidth,
+        targetHeight,
+        TextureFormat.RGBA32,
+        false);
+    generated.name = "VI Altar F2 21-32 Test";
+    generated.filterMode = FilterMode.Point;
+    generated.wrapMode = TextureWrapMode.Clamp;
+    generated.SetPixels32(targetPixels);
+    generated.Apply(false, false);
+
+    cachedViAltarGeneratedF2TestTexture = generated;
+    return cachedViAltarGeneratedF2TestTexture;
+  }
 
   private Texture2D GetViAltarF2FrontTexture()
   {
