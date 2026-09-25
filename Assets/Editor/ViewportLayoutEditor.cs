@@ -795,6 +795,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedViAltarF3FrontTexture;
   [System.NonSerialized]
   private Texture2D cachedViAltarGeneratedF2TestTexture;
+  private Texture2D cachedViAltarGeneratedF3TestTexture;
   [System.NonSerialized]
   private bool previewUseGeneratedViAltarF2;
   private int previewDungeonLightStage = 1;
@@ -1091,6 +1092,11 @@ public class ViewportLayoutEditor : EditorWindow
     {
       DestroyImmediate(cachedViAltarGeneratedF2TestTexture);
       cachedViAltarGeneratedF2TestTexture = null;
+    }
+    if (cachedViAltarGeneratedF3TestTexture != null)
+    {
+      DestroyImmediate(cachedViAltarGeneratedF3TestTexture);
+      cachedViAltarGeneratedF3TestTexture = null;
     }
 
     RepaintGameViews();
@@ -5128,9 +5134,9 @@ public class ViewportLayoutEditor : EditorWindow
 
     GUILayout.Space(8f);
     string altarF2TestCaption = previewUseGeneratedViAltarF2
-        ? "Altar F2: 21/32"
-        : "Altar F2: Crop";
-    if (GUILayout.Button(altarF2TestCaption, GUILayout.Width(118f)))
+        ? "Altar F2/F3: Generated"
+        : "Altar F2/F3: Captured";
+    if (GUILayout.Button(altarF2TestCaption, GUILayout.Width(150f)))
     {
       previewUseGeneratedViAltarF2 = !previewUseGeneratedViAltarF2;
       RefreshEditModePreview();
@@ -15209,7 +15215,9 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    Texture2D altar = GetViAltarF3FrontTexture();
+    Texture2D altar = previewUseGeneratedViAltarF2
+        ? GetViAltarGeneratedF3TestTexture()
+        : GetViAltarF3FrontTexture();
     if (altar == null || !altar.isReadable)
       return;
 
@@ -15422,12 +15430,17 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
+    // Distance shading is local to the ornament, not a global viewport
+    // light change. F2 uses the next darker DM palette while the rest of
+    // the 224x136 dungeon view stays at the selected global light stage.
+    ApplyDungeonPaletteToPixelArray(targetPixels, 2);
+
     Texture2D generated = new Texture2D(
         targetWidth,
         targetHeight,
         TextureFormat.RGBA32,
         false);
-    generated.name = "VI Altar F2 21-32 Test";
+    generated.name = "VI Altar F2 21-32 Distance Test";
     generated.filterMode = FilterMode.Point;
     generated.wrapMode = TextureWrapMode.Clamp;
     generated.SetPixels32(targetPixels);
@@ -15435,6 +15448,127 @@ public class ViewportLayoutEditor : EditorWindow
 
     cachedViAltarGeneratedF2TestTexture = generated;
     return cachedViAltarGeneratedF2TestTexture;
+  }
+
+
+  /// <summary>
+  /// Temporary VI Altar F3 scaling experiment. Builds the full 42x25
+  /// 14/32 result from the native 96x56 F1 source, applies the next
+  /// distance palette step, then keeps the center 42x19 rows because the
+  /// alcove masks the upper/lower part of the scaled ornament at F3.
+  /// </summary>
+  private Texture2D GetViAltarGeneratedF3TestTexture()
+  {
+    if (cachedViAltarGeneratedF3TestTexture != null)
+      return cachedViAltarGeneratedF3TestTexture;
+
+    Texture2D source = GetViAltarFrontTexture();
+    if (source == null || !source.isReadable)
+      return null;
+
+    const int fullWidth = 42;
+    const int fullHeight = 25;
+    const int visibleHeight = 19;
+    const int scaleNumerator = 14;
+    const int scaleDenominator = 32;
+
+    Color32[] sourcePixels = source.GetPixels32();
+    Color32[] fullPixels = new Color32[fullWidth * fullHeight];
+
+    for (int y = 0; y < fullHeight; y++)
+    {
+      int sourceY =
+          (y * scaleDenominator + scaleDenominator / 2)
+          / scaleNumerator;
+      sourceY = Mathf.Clamp(sourceY, 0, source.height - 1);
+
+      for (int x = 0; x < fullWidth; x++)
+      {
+        int sourceX =
+            (x * scaleDenominator + scaleDenominator / 2)
+            / scaleNumerator;
+        sourceX = Mathf.Clamp(sourceX, 0, source.width - 1);
+        fullPixels[y * fullWidth + x] =
+            sourcePixels[sourceY * source.width + sourceX];
+      }
+    }
+
+    // F3 uses one further local distance-palette step than F2.
+    ApplyDungeonPaletteToPixelArray(fullPixels, 3);
+
+    // The full 14/32 geometry is 42x25, but the F3 alcove masks 3 rows
+    // at both top and bottom, leaving the observed 42x19 visible ornament.
+    const int cropBottom = 3;
+    Color32[] visiblePixels = new Color32[fullWidth * visibleHeight];
+    for (int y = 0; y < visibleHeight; y++)
+    {
+      int sourceRow = (y + cropBottom) * fullWidth;
+      int targetRow = y * fullWidth;
+      System.Array.Copy(
+          fullPixels,
+          sourceRow,
+          visiblePixels,
+          targetRow,
+          fullWidth);
+    }
+
+    Texture2D generated = new Texture2D(
+        fullWidth,
+        visibleHeight,
+        TextureFormat.RGBA32,
+        false);
+    generated.name = "VI Altar F3 14-32 Test";
+    generated.filterMode = FilterMode.Point;
+    generated.wrapMode = TextureWrapMode.Clamp;
+    generated.SetPixels32(visiblePixels);
+    generated.Apply(false, false);
+
+    cachedViAltarGeneratedF3TestTexture = generated;
+    return cachedViAltarGeneratedF3TestTexture;
+  }
+
+  private static void ApplyDungeonPaletteToPixelArray(
+      Color32[] pixels,
+      int targetStage)
+  {
+    if (pixels == null || pixels.Length == 0)
+      return;
+
+    int stageIndex = Mathf.Clamp(targetStage, 1, 6) - 1;
+    if (stageIndex == 0)
+      return;
+
+    Color32[] brightPalette = DungeonViewportLightPalettes[0];
+    Color32[] targetPalette = DungeonViewportLightPalettes[stageIndex];
+
+    for (int i = 0; i < pixels.Length; i++)
+    {
+      Color32 source = pixels[i];
+      if (source.a == 0)
+        continue;
+
+      int bestPaletteIndex = 0;
+      int bestDistance = int.MaxValue;
+      for (int paletteIndex = 0; paletteIndex < 16; paletteIndex++)
+      {
+        Color32 candidate = brightPalette[paletteIndex];
+        int dr = source.r - candidate.r;
+        int dg = source.g - candidate.g;
+        int db = source.b - candidate.b;
+        int distance = dr * dr + dg * dg + db * db;
+        if (distance >= bestDistance)
+          continue;
+
+        bestDistance = distance;
+        bestPaletteIndex = paletteIndex;
+        if (distance == 0)
+          break;
+      }
+
+      Color32 mapped = targetPalette[bestPaletteIndex];
+      mapped.a = source.a;
+      pixels[i] = mapped;
+    }
   }
 
   private Texture2D GetViAltarF2FrontTexture()
