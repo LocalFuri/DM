@@ -14923,20 +14923,18 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedWoodRingSide3Texture != null)
       return cachedWoodRingSide3Texture;
 
-    Texture2D source = GetWoodRingSideTexture();
-    if (source == null || !source.isReadable)
-      return null;
+    // As with Side2, the distant Wood Ring side view is original authored
+    // distance artwork. Shrinking the F1 side extract cannot reproduce the
+    // exact 3x5 shape seen at (4,7) North.
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        "Assets/Art/Ornaments/Wood_Ring_Side3_3x5.png");
+    if (texture != null && texture.width == 3 && texture.height == 5)
+    {
+      cachedWoodRingSide3Texture = texture;
+      return texture;
+    }
 
-    Texture2D ring = CropWallDecorationToOpaqueBounds(source);
-    cachedWoodRingSide3Texture = GenerateDmScaledWallDecoration(
-        ring,
-        3,
-        5,
-        WallOrnamentFarColorMap,
-        "Wood Ring Side F3 Generated from F1");
-    if (ring != source)
-      DestroyImmediate(ring);
-    return cachedWoodRingSide3Texture;
+    return null;
   }
 
   /// <summary>
