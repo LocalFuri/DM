@@ -5134,8 +5134,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     GUILayout.Space(8f);
     string altarF2TestCaption = previewUseGeneratedViAltarF2
-        ? "Altar F2/F3: Generated"
-        : "Altar F2/F3: Captured";
+        ? "Rendering is activ"
+        : "Captured is activ";
     if (GUILayout.Button(altarF2TestCaption, GUILayout.Width(150f)))
     {
       previewUseGeneratedViAltarF2 = !previewUseGeneratedViAltarF2;
