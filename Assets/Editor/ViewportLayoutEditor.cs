@@ -60,9 +60,17 @@ public class ViewportLayoutEditor : EditorWindow
   // F2 screenshot crop: top-left screen (80,71), framebuffer bottom-left (80,92).
   private const int ViAltarD2FrontX = 80;
   private const int ViAltarD2FrontY = 92;
+  // Original-DM visual target for generated F2.
+  // Use the verified original screenshot crop position, not the CSBwin rectangle.
+  private const int ViAltarD2GeneratedFrontX = 80;
+  private const int ViAltarD2GeneratedFrontY = 92;
   // F3 screenshot crop: top-left screen (91,75), framebuffer bottom-left (91,106).
   private const int ViAltarD3FrontX = 91;
   private const int ViAltarD3FrontY = 106;
+  // Original-DM visual target for generated F3.
+  // Use the verified original screenshot crop position, not the CSBwin rectangle.
+  private const int ViAltarD3GeneratedFrontX = 91;
+  private const int ViAltarD3GeneratedFrontY = 105;
   private const string HookFrontAssetPath =
       "Assets/Art/Ornaments/Hook_Front_28x28.png";
   private const string GrateFrontAssetPath =
@@ -791,13 +799,19 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedViAltarFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedViAltarF2FrontTexture;
+  private string cachedViAltarF2FrontAssetPath;
+  private long cachedViAltarF2FrontWriteTicks = long.MinValue;
   [System.NonSerialized]
   private Texture2D cachedViAltarF3FrontTexture;
+  private string cachedViAltarF3FrontAssetPath;
+  private long cachedViAltarF3FrontWriteTicks = long.MinValue;
   [System.NonSerialized]
   private Texture2D cachedViAltarGeneratedF2TestTexture;
   private Texture2D cachedViAltarGeneratedF3TestTexture;
   [System.NonSerialized]
-  private bool previewUseGeneratedViAltarF2;
+  // Default workflow: use generated/rendered distance graphics.
+  // Captured assets remain available only as an optional comparison aid.
+  private bool previewUseGeneratedViAltarF2 = true;
   private int previewDungeonLightStage = 1;
   [System.NonSerialized]
   private Texture2D cachedHookFrontTexture;
@@ -15198,8 +15212,12 @@ public class ViewportLayoutEditor : EditorWindow
       BlitPieceIntoPreview(
           pixels,
           altar,
-          ViAltarD2FrontX,
-          ViAltarD2FrontY,
+          previewUseGeneratedViAltarF2
+              ? ViAltarD2GeneratedFrontX
+              : ViAltarD2FrontX,
+          previewUseGeneratedViAltarF2
+              ? ViAltarD2GeneratedFrontY
+              : ViAltarD2FrontY,
           false);
       return;
     }
@@ -15273,8 +15291,12 @@ public class ViewportLayoutEditor : EditorWindow
       BlitPieceIntoPreview(
           pixels,
           altar,
-          ViAltarD3FrontX,
-          ViAltarD3FrontY,
+          previewUseGeneratedViAltarF2
+              ? ViAltarD3GeneratedFrontX
+              : ViAltarD3FrontX,
+          previewUseGeneratedViAltarF2
+              ? ViAltarD3GeneratedFrontY
+              : ViAltarD3FrontY,
           false);
       return;
     }
@@ -15386,11 +15408,29 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
 
+  // Original CSBwin wall-decoration colour maps from GRAPHICS.DAT graphic 0x22e.
+  // Values in the file are stored as 0,10,20,...150; dividing by ten yields
+  // the final 4-bit palette index selected by ShrinkBLT.
+  private static readonly byte[] ViAltarMediumColorMap =
+  {
+    0, 12, 1, 3,
+    4, 3, 6, 7,
+    5, 9, 10, 11,
+    0, 2, 14, 13
+  };
+
+  private static readonly byte[] ViAltarFarColorMap =
+  {
+    0, 0, 12, 3,
+    4, 3, 0, 6,
+    3, 9, 10, 11,
+    0, 1, 0, 2
+  };
+
   /// <summary>
-  /// Temporary VI Altar F2 scaling experiment. Builds a 63x37 texture from
-  /// the native 96x56 F1 source using the documented 21/32 distance scale.
-  /// This is deliberately isolated behind the ViewEdit test button so it does
-  /// not replace the captured F2 asset until the pixels are visually verified.
+  /// VI Altar F2 generated from the original full-size F1 altar.
+  /// Captured mode uses the authored 63x37 F2 PNG, while Rendering mode
+  /// starts from the 96x56 F1 source and generates F2 independently.
   /// </summary>
   private Texture2D GetViAltarGeneratedF2TestTexture()
   {
@@ -15401,61 +15441,20 @@ public class ViewportLayoutEditor : EditorWindow
     if (source == null || !source.isReadable)
       return null;
 
-    const int targetWidth = 63;
-    const int targetHeight = 37;
-    const int scaleNumerator = 21;
-    const int scaleDenominator = 32;
-
-    Color32[] sourcePixels = source.GetPixels32();
-    Color32[] targetPixels = new Color32[targetWidth * targetHeight];
-
-    for (int y = 0; y < targetHeight; y++)
-    {
-      // Center-sampled fixed-point 21/32 shrink. The +denominator/2 term
-      // selects the source pixel nearest the center of each destination sample
-      // while keeping all arithmetic integer/DM-friendly.
-      int sourceY =
-          (y * scaleDenominator + scaleDenominator / 2)
-          / scaleNumerator;
-      sourceY = Mathf.Clamp(sourceY, 0, source.height - 1);
-
-      for (int x = 0; x < targetWidth; x++)
-      {
-        int sourceX =
-            (x * scaleDenominator + scaleDenominator / 2)
-            / scaleNumerator;
-        sourceX = Mathf.Clamp(sourceX, 0, source.width - 1);
-        targetPixels[y * targetWidth + x] =
-            sourcePixels[sourceY * source.width + sourceX];
-      }
-    }
-
-    // Distance shading is local to the ornament, not a global viewport
-    // light change. F2 uses the next darker DM palette while the rest of
-    // the 224x136 dungeon view stays at the selected global light stage.
-    ApplyDungeonPaletteToPixelArray(targetPixels, 2);
-
-    Texture2D generated = new Texture2D(
-        targetWidth,
-        targetHeight,
-        TextureFormat.RGBA32,
-        false);
-    generated.name = "VI Altar F2 21-32 Distance Test";
-    generated.filterMode = FilterMode.Point;
-    generated.wrapMode = TextureWrapMode.Clamp;
-    generated.SetPixels32(targetPixels);
-    generated.Apply(false, false);
-
-    cachedViAltarGeneratedF2TestTexture = generated;
+    cachedViAltarGeneratedF2TestTexture =
+        GenerateDmScaledWallDecoration(
+            source,
+            63,
+            37,
+            ViAltarMediumColorMap,
+            "VI Altar F2 Generated from F1");
     return cachedViAltarGeneratedF2TestTexture;
   }
 
-
   /// <summary>
-  /// Temporary VI Altar F3 scaling experiment. Builds the full 42x25
-  /// 14/32 result from the native 96x56 F1 source, applies the next
-  /// distance palette step, then keeps the center 42x19 rows because the
-  /// alcove masks the upper/lower part of the scaled ornament at F3.
+  /// VI Altar F3 original-DM comparison test.
+  /// Generate F3 directly from the full-size F1 altar and compare a
+  /// 42x24 result against the original screenshot.
   /// </summary>
   private Texture2D GetViAltarGeneratedF3TestTexture()
   {
@@ -15466,116 +15465,359 @@ public class ViewportLayoutEditor : EditorWindow
     if (source == null || !source.isReadable)
       return null;
 
-    const int fullWidth = 42;
-    const int fullHeight = 25;
-    const int visibleHeight = 19;
-    const int scaleNumerator = 14;
-    const int scaleDenominator = 32;
-
-    Color32[] sourcePixels = source.GetPixels32();
-    Color32[] fullPixels = new Color32[fullWidth * fullHeight];
-
-    for (int y = 0; y < fullHeight; y++)
-    {
-      int sourceY =
-          (y * scaleDenominator + scaleDenominator / 2)
-          / scaleNumerator;
-      sourceY = Mathf.Clamp(sourceY, 0, source.height - 1);
-
-      for (int x = 0; x < fullWidth; x++)
-      {
-        int sourceX =
-            (x * scaleDenominator + scaleDenominator / 2)
-            / scaleNumerator;
-        sourceX = Mathf.Clamp(sourceX, 0, source.width - 1);
-        fullPixels[y * fullWidth + x] =
-            sourcePixels[sourceY * source.width + sourceX];
-      }
-    }
-
-    // F3 uses one further local distance-palette step than F2.
-    ApplyDungeonPaletteToPixelArray(fullPixels, 3);
-
-    // The full 14/32 geometry is 42x25, but the F3 alcove masks 3 rows
-    // at both top and bottom, leaving the observed 42x19 visible ornament.
-    const int cropBottom = 3;
-    Color32[] visiblePixels = new Color32[fullWidth * visibleHeight];
-    for (int y = 0; y < visibleHeight; y++)
-    {
-      int sourceRow = (y + cropBottom) * fullWidth;
-      int targetRow = y * fullWidth;
-      System.Array.Copy(
-          fullPixels,
-          sourceRow,
-          visiblePixels,
-          targetRow,
-          fullWidth);
-    }
-
-    Texture2D generated = new Texture2D(
-        fullWidth,
-        visibleHeight,
-        TextureFormat.RGBA32,
-        false);
-    generated.name = "VI Altar F3 14-32 Test";
-    generated.filterMode = FilterMode.Point;
-    generated.wrapMode = TextureWrapMode.Clamp;
-    generated.SetPixels32(visiblePixels);
-    generated.Apply(false, false);
-
-    cachedViAltarGeneratedF3TestTexture = generated;
+    cachedViAltarGeneratedF3TestTexture =
+        GenerateDmScaledWallDecoration(
+            source,
+            42,
+            24,
+            ViAltarFarColorMap,
+            "VI Altar F3 Generated from F1 42x24");
     return cachedViAltarGeneratedF3TestTexture;
   }
 
-  private static void ApplyDungeonPaletteToPixelArray(
-      Color32[] pixels,
-      int targetStage)
+  /// <summary>
+  /// Applies a Dungeon Master distance colour map to an already-sized wall
+  /// decoration. Pixel positions are preserved 1:1; there is no scaling.
+  /// </summary>
+  private static Texture2D ApplyDmWallDecorationColorMap(
+      Texture2D source,
+      byte[] colorMap,
+      string textureName)
   {
-    if (pixels == null || pixels.Length == 0)
-      return;
-
-    int stageIndex = Mathf.Clamp(targetStage, 1, 6) - 1;
-    if (stageIndex == 0)
-      return;
-
-    Color32[] brightPalette = DungeonViewportLightPalettes[0];
-    Color32[] targetPalette = DungeonViewportLightPalettes[stageIndex];
-
-    for (int i = 0; i < pixels.Length; i++)
+    if (source == null
+        || !source.isReadable
+        || colorMap == null
+        || colorMap.Length < 16)
     {
-      Color32 source = pixels[i];
-      if (source.a == 0)
-        continue;
+      return null;
+    }
 
-      int bestPaletteIndex = 0;
-      int bestDistance = int.MaxValue;
-      for (int paletteIndex = 0; paletteIndex < 16; paletteIndex++)
+    Color32[] sourcePixels = source.GetPixels32();
+    Color32[] targetPixels = new Color32[sourcePixels.Length];
+    Color32[] brightPalette = DungeonViewportLightPalettes[0];
+
+    for (int i = 0; i < sourcePixels.Length; i++)
+    {
+      Color32 sourcePixel = sourcePixels[i];
+      if (sourcePixel.a == 0)
       {
-        Color32 candidate = brightPalette[paletteIndex];
-        int dr = source.r - candidate.r;
-        int dg = source.g - candidate.g;
-        int db = source.b - candidate.b;
-        int distance = dr * dr + dg * dg + db * db;
-        if (distance >= bestDistance)
-          continue;
-
-        bestDistance = distance;
-        bestPaletteIndex = paletteIndex;
-        if (distance == 0)
-          break;
+        targetPixels[i] = new Color32(0, 0, 0, 0);
+        continue;
       }
 
-      Color32 mapped = targetPalette[bestPaletteIndex];
-      mapped.a = source.a;
-      pixels[i] = mapped;
+      int sourcePaletteIndex = FindExactViAltarDmPaletteIndexOrNearest(
+          sourcePixel,
+          brightPalette);
+      int mappedPaletteIndex = colorMap[sourcePaletteIndex];
+      mappedPaletteIndex = Mathf.Clamp(mappedPaletteIndex, 0, 15);
+
+      // Original wall-decoration blit uses palette index 10 as transparent.
+      if (mappedPaletteIndex == 10)
+      {
+        targetPixels[i] = new Color32(0, 0, 0, 0);
+        continue;
+      }
+
+      Color32 mapped = brightPalette[mappedPaletteIndex];
+      mapped.a = sourcePixel.a;
+      targetPixels[i] = mapped;
     }
+
+    Texture2D generated = new Texture2D(
+        source.width,
+        source.height,
+        TextureFormat.RGBA32,
+        false);
+    generated.name = textureName;
+    generated.filterMode = FilterMode.Point;
+    generated.wrapMode = TextureWrapMode.Clamp;
+    generated.SetPixels32(targetPixels);
+    generated.Apply(false, false);
+    return generated;
+  }
+
+
+  /// <summary>
+  /// Unity-friendly port of CSBwin Graphics.cpp ShrinkBLT for an already
+  /// unpacked RGBA source texture. The original routine samples a 4-bit
+  /// planar bitmap with 16.16 fixed-point stepping. We reproduce the exact
+  /// source-coordinate sequence and colour-map lookup, then emulate the
+  /// original wall-decoration blit transparency key (palette index 10).
+  /// </summary>
+  private static Texture2D GenerateDmScaledWallDecoration(
+      Texture2D source,
+      int targetWidth,
+      int targetHeight,
+      byte[] colorMap,
+      string textureName)
+  {
+    if (source == null
+        || !source.isReadable
+        || targetWidth <= 0
+        || targetHeight <= 0
+        || colorMap == null
+        || colorMap.Length < 16)
+    {
+      return null;
+    }
+
+    Color32[] sourcePixels = source.GetPixels32();
+    Color32[] targetPixels = new Color32[targetWidth * targetHeight];
+
+    // CSBwin ShrinkBLT:
+    // step = (((sourceSize << 10) / destinationSize) << 6)
+    //      = floor(sourceSize * 65536 / destinationSize)
+    // start = step/2 + 0x7fff
+    // The integer source coordinate is the upper 16 bits of the accumulator.
+    int stepX = ((source.width << 10) / targetWidth) << 6;
+    int stepY = ((source.height << 10) / targetHeight) << 6;
+    int startX = (stepX >> 1) + 0x7fff;
+    int startY = (stepY >> 1) + 0x7fff;
+
+    Color32[] brightPalette = DungeonViewportLightPalettes[0];
+
+    for (int y = 0; y < targetHeight; y++)
+    {
+      int sourceY = (startY + y * stepY) >> 16;
+      sourceY = Mathf.Clamp(sourceY, 0, source.height - 1);
+      int sourceRow = sourceY * source.width;
+      int targetRow = y * targetWidth;
+
+      for (int x = 0; x < targetWidth; x++)
+      {
+        int sourceX = (startX + x * stepX) >> 16;
+        sourceX = Mathf.Clamp(sourceX, 0, source.width - 1);
+
+        Color32 sourcePixel = sourcePixels[sourceRow + sourceX];
+        if (sourcePixel.a == 0)
+        {
+          targetPixels[targetRow + x] = new Color32(0, 0, 0, 0);
+          continue;
+        }
+
+        int sourcePaletteIndex = FindExactViAltarDmPaletteIndexOrNearest(
+            sourcePixel,
+            brightPalette);
+        int mappedPaletteIndex = colorMap[sourcePaletteIndex];
+        mappedPaletteIndex = Mathf.Clamp(mappedPaletteIndex, 0, 15);
+
+        // CSBwin DrawWallDecoration() does not blit the ShrinkBLT result
+        // opaquely. It calls TAG0088b2(..., transparentColor: 10).
+        // Therefore palette index 10 in the distance-scaled bitmap is a
+        // transparency key and must reveal the wall behind the ornament.
+        if (mappedPaletteIndex == 10)
+        {
+          targetPixels[targetRow + x] = new Color32(0, 0, 0, 0);
+          continue;
+        }
+
+        Color32 mapped = brightPalette[mappedPaletteIndex];
+        mapped.a = sourcePixel.a;
+        targetPixels[targetRow + x] = mapped;
+      }
+    }
+
+    Texture2D generated = new Texture2D(
+        targetWidth,
+        targetHeight,
+        TextureFormat.RGBA32,
+        false);
+    generated.name = textureName;
+    generated.filterMode = FilterMode.Point;
+    generated.wrapMode = TextureWrapMode.Clamp;
+    generated.SetPixels32(targetPixels);
+    generated.Apply(false, false);
+    return generated;
+  }
+
+  /// <summary>
+  /// The VI Altar 96x56 source PNG uses a small fixed subset of the original
+  /// DM stage-1 palette. Reconstruct those palette indices explicitly instead
+  /// of re-guessing them with nearest-RGB matching. This removes the last
+  /// approximation before ShrinkBLT for the altar test path.
+  /// </summary>
+  private static int FindExactViAltarDmPaletteIndexOrNearest(
+      Color32 source,
+      Color32[] palette)
+  {
+    if (TryGetExactViAltarDmPaletteIndex(source, out int exactPaletteIndex))
+      return exactPaletteIndex;
+
+    return FindNearestDmPaletteIndexFallback(source, palette);
+  }
+
+  private static bool TryGetExactViAltarDmPaletteIndex(
+      Color32 source,
+      out int paletteIndex)
+  {
+    // Ignore alpha for the source-palette lookup. Imported textures may carry
+    // alpha 254 on some opaque pixels, but their RGB still identifies the
+    // exact original DM palette colour.
+    int rgb = (source.r << 16) | (source.g << 8) | source.b;
+    switch (rgb)
+    {
+      case (0 << 16) | (0 << 8) | 0:
+        paletteIndex = 0;
+        return true;
+      case (109 << 16) | (109 << 8) | 109:
+        paletteIndex = 1;
+        return true;
+      case (146 << 16) | (146 << 8) | 146:
+        paletteIndex = 2;
+        return true;
+      case (0 << 16) | (146 << 8) | 0:
+        paletteIndex = 6;
+        return true;
+      case (0 << 16) | (219 << 8) | 0:
+        paletteIndex = 7;
+        return true;
+      case (255 << 16) | (0 << 8) | 0:
+        paletteIndex = 8;
+        return true;
+      case (219 << 16) | (146 << 8) | 109:
+        paletteIndex = 10;
+        return true;
+      case (255 << 16) | (255 << 8) | 0:
+        paletteIndex = 11;
+        return true;
+      case (73 << 16) | (73 << 8) | 73:
+        paletteIndex = 12;
+        return true;
+      case (182 << 16) | (182 << 8) | 182:
+        paletteIndex = 13;
+        return true;
+      case (255 << 16) | (255 << 8) | 255:
+        paletteIndex = 15;
+        return true;
+      default:
+        paletteIndex = 0;
+        return false;
+    }
+  }
+
+  private static int FindNearestDmPaletteIndexFallback(
+      Color32 source,
+      Color32[] palette)
+  {
+    int bestPaletteIndex = 0;
+    int bestDistance = int.MaxValue;
+
+    for (int paletteIndex = 0; paletteIndex < 16; paletteIndex++)
+    {
+      Color32 candidate = palette[paletteIndex];
+      int dr = source.r - candidate.r;
+      int dg = source.g - candidate.g;
+      int db = source.b - candidate.b;
+      int distance = dr * dr + dg * dg + db * db;
+      if (distance >= bestDistance)
+        continue;
+
+      bestDistance = distance;
+      bestPaletteIndex = paletteIndex;
+      if (distance == 0)
+        break;
+    }
+
+    return bestPaletteIndex;
   }
 
   private Texture2D GetViAltarF2FrontTexture()
   {
-    if (cachedViAltarF2FrontTexture != null)
-      return cachedViAltarF2FrontTexture;
+    // CAPTURED mode must show the PNG that is physically on disk.
+    // Do not trust Unity's already-imported Texture2D here: while testing,
+    // an overwritten PNG can otherwise appear to remain the old image.
+    //
+    // If duplicate exact filenames exist, choose the most recently modified
+    // one. This makes the file the user just overwrote win deterministically.
+    const string exactFileName = "Altar_of_Vi_F2_63x37";
 
+    string[] guids = AssetDatabase.FindAssets(
+        exactFileName + " t:Texture2D",
+        new[] { "Assets" });
+
+    string selectedAssetPath = null;
+    string selectedDiskPath = null;
+    long selectedWriteTicks = long.MinValue;
+
+    DirectoryInfo projectRootInfo = Directory.GetParent(Application.dataPath);
+    string projectRoot = projectRootInfo != null
+        ? projectRootInfo.FullName
+        : string.Empty;
+
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
+      if (!string.Equals(
+              Path.GetFileNameWithoutExtension(assetPath),
+              exactFileName,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      string diskPath = Path.Combine(
+          projectRoot,
+          assetPath.Replace('/', Path.DirectorySeparatorChar));
+
+      if (!File.Exists(diskPath))
+        continue;
+
+      long writeTicks = File.GetLastWriteTimeUtc(diskPath).Ticks;
+      if (selectedAssetPath != null && writeTicks <= selectedWriteTicks)
+        continue;
+
+      selectedAssetPath = assetPath;
+      selectedDiskPath = diskPath;
+      selectedWriteTicks = writeTicks;
+    }
+
+    if (selectedDiskPath != null)
+    {
+      bool needsReload =
+          cachedViAltarF2FrontTexture == null
+          || !string.Equals(
+              cachedViAltarF2FrontAssetPath,
+              selectedAssetPath,
+              System.StringComparison.OrdinalIgnoreCase)
+          || cachedViAltarF2FrontWriteTicks != selectedWriteTicks;
+
+      if (needsReload)
+      {
+        byte[] pngBytes = File.ReadAllBytes(selectedDiskPath);
+        Texture2D raw = new Texture2D(
+            2,
+            2,
+            TextureFormat.RGBA32,
+            false);
+        raw.name = "CAPTURED " + exactFileName;
+        raw.filterMode = FilterMode.Point;
+        raw.wrapMode = TextureWrapMode.Clamp;
+
+        if (ImageConversion.LoadImage(raw, pngBytes, false)
+            && raw.width == 63
+            && raw.height == 37)
+        {
+          if (cachedViAltarF2FrontTexture != null
+              && cachedViAltarF2FrontTexture.name.StartsWith("CAPTURED "))
+          {
+            DestroyImmediate(cachedViAltarF2FrontTexture);
+          }
+
+          cachedViAltarF2FrontTexture = raw;
+          cachedViAltarF2FrontAssetPath = selectedAssetPath;
+          cachedViAltarF2FrontWriteTicks = selectedWriteTicks;
+        }
+        else
+        {
+          DestroyImmediate(raw);
+        }
+      }
+
+      if (cachedViAltarF2FrontTexture != null)
+        return cachedViAltarF2FrontTexture;
+    }
+
+    // Fallback only if the exact PNG cannot be read directly.
     cachedViAltarF2FrontTexture =
         FindViAltarTexture(63, 37, "f2");
     return cachedViAltarF2FrontTexture;
@@ -15583,9 +15825,97 @@ public class ViewportLayoutEditor : EditorWindow
 
   private Texture2D GetViAltarF3FrontTexture()
   {
-    if (cachedViAltarF3FrontTexture != null)
-      return cachedViAltarF3FrontTexture;
+    // CAPTURED mode must show the exact authored F3 PNG on disk.
+    // We now test the explicit 42x19 authored asset.
+    const string exactFileName = "Altar_of_Vi_F3_42x19";
 
+    string[] guids = AssetDatabase.FindAssets(
+        exactFileName + " t:Texture2D",
+        new[] { "Assets" });
+
+    string selectedAssetPath = null;
+    string selectedDiskPath = null;
+    long selectedWriteTicks = long.MinValue;
+
+    DirectoryInfo projectRootInfo = Directory.GetParent(Application.dataPath);
+    string projectRoot = projectRootInfo != null
+        ? projectRootInfo.FullName
+        : string.Empty;
+
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
+      if (!string.Equals(
+              Path.GetFileNameWithoutExtension(assetPath),
+              exactFileName,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      string diskPath = Path.Combine(
+          projectRoot,
+          assetPath.Replace('/', Path.DirectorySeparatorChar));
+
+      if (!File.Exists(diskPath))
+        continue;
+
+      long writeTicks = File.GetLastWriteTimeUtc(diskPath).Ticks;
+      if (selectedAssetPath != null && writeTicks <= selectedWriteTicks)
+        continue;
+
+      selectedAssetPath = assetPath;
+      selectedDiskPath = diskPath;
+      selectedWriteTicks = writeTicks;
+    }
+
+    if (selectedDiskPath != null)
+    {
+      bool needsReload =
+          cachedViAltarF3FrontTexture == null
+          || !string.Equals(
+              cachedViAltarF3FrontAssetPath,
+              selectedAssetPath,
+              System.StringComparison.OrdinalIgnoreCase)
+          || cachedViAltarF3FrontWriteTicks != selectedWriteTicks;
+
+      if (needsReload)
+      {
+        byte[] pngBytes = File.ReadAllBytes(selectedDiskPath);
+        Texture2D raw = new Texture2D(
+            2,
+            2,
+            TextureFormat.RGBA32,
+            false);
+        raw.name = "CAPTURED " + exactFileName;
+        raw.filterMode = FilterMode.Point;
+        raw.wrapMode = TextureWrapMode.Clamp;
+
+        if (ImageConversion.LoadImage(raw, pngBytes, false)
+            && raw.width == 42
+            && raw.height == 19)
+        {
+          if (cachedViAltarF3FrontTexture != null
+              && cachedViAltarF3FrontTexture.name.StartsWith("CAPTURED "))
+          {
+            DestroyImmediate(cachedViAltarF3FrontTexture);
+          }
+
+          cachedViAltarF3FrontTexture = raw;
+          cachedViAltarF3FrontAssetPath = selectedAssetPath;
+          cachedViAltarF3FrontWriteTicks = selectedWriteTicks;
+        }
+        else
+        {
+          DestroyImmediate(raw);
+        }
+      }
+
+      if (cachedViAltarF3FrontTexture != null)
+        return cachedViAltarF3FrontTexture;
+    }
+
+    // Fallback only if the exact 42x19 PNG cannot be read directly.
     cachedViAltarF3FrontTexture =
         FindViAltarTexture(42, 19, "f3");
     return cachedViAltarF3FrontTexture;
