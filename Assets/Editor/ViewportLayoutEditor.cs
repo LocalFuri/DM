@@ -14942,12 +14942,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (source == null || !source.isReadable)
       return null;
 
+    // The F1 side extract is wider than the ring. Empty columns must not
+    // enter the shrink, or the ring collapses to the left of the F2 slot.
+    Texture2D ring = CropWallDecorationToOpaqueBounds(source);
     cachedWoodRingSide2Texture = GenerateDmScaledWallDecoration(
-        source,
+        ring,
         5,
         10,
         WallOrnamentMediumColorMap,
         "Wood Ring Side F2 Generated from F1");
+    if (ring != source)
+      DestroyImmediate(ring);
     return cachedWoodRingSide2Texture;
   }
 
@@ -14960,12 +14965,15 @@ public class ViewportLayoutEditor : EditorWindow
     if (source == null || !source.isReadable)
       return null;
 
+    Texture2D ring = CropWallDecorationToOpaqueBounds(source);
     cachedWoodRingSide3Texture = GenerateDmScaledWallDecoration(
-        source,
+        ring,
         3,
         5,
         WallOrnamentFarColorMap,
         "Wood Ring Side F3 Generated from F1");
+    if (ring != source)
+      DestroyImmediate(ring);
     return cachedWoodRingSide3Texture;
   }
 
@@ -15883,6 +15891,68 @@ public class ViewportLayoutEditor : EditorWindow
   /// source-coordinate sequence and colour-map lookup, then emulate the
   /// original wall-decoration blit transparency key (palette index 10).
   /// </summary>
+  private static Texture2D CropWallDecorationToOpaqueBounds(Texture2D source)
+  {
+    if (source == null || !source.isReadable)
+      return source;
+
+    Color32[] pixels = source.GetPixels32();
+    int width = source.width;
+    int height = source.height;
+    int minX = width;
+    int minY = height;
+    int maxX = -1;
+    int maxY = -1;
+
+    for (int y = 0; y < height; y++)
+    {
+      int row = y * width;
+      for (int x = 0; x < width; x++)
+      {
+        if (pixels[row + x].a == 0)
+          continue;
+
+        if (x < minX)
+          minX = x;
+        if (x > maxX)
+          maxX = x;
+        if (y < minY)
+          minY = y;
+        if (y > maxY)
+          maxY = y;
+      }
+    }
+
+    if (maxX < minX || maxY < minY)
+      return source;
+
+    int cropWidth = maxX - minX + 1;
+    int cropHeight = maxY - minY + 1;
+    if (cropWidth == width && cropHeight == height)
+      return source;
+
+    Color32[] croppedPixels = new Color32[cropWidth * cropHeight];
+    for (int y = 0; y < cropHeight; y++)
+    {
+      int sourceRow = (minY + y) * width + minX;
+      int targetRow = y * cropWidth;
+      for (int x = 0; x < cropWidth; x++)
+        croppedPixels[targetRow + x] = pixels[sourceRow + x];
+    }
+
+    Texture2D cropped = new Texture2D(
+        cropWidth,
+        cropHeight,
+        TextureFormat.RGBA32,
+        false);
+    cropped.name = source.name + " Opaque";
+    cropped.filterMode = FilterMode.Point;
+    cropped.wrapMode = TextureWrapMode.Clamp;
+    cropped.SetPixels32(croppedPixels);
+    cropped.Apply(false, false);
+    return cropped;
+  }
+
   private static Texture2D GenerateDmScaledWallDecoration(
       Texture2D source,
       int targetWidth,
