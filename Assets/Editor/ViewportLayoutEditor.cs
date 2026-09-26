@@ -185,6 +185,16 @@ public class ViewportLayoutEditor : EditorWindow
   // Dungeon viewport is X=0..223. Every left/right wall-ornament pair is the
   // same sprite mirrored around that width: rightX = 224 - leftX - spriteWidth.
   private const int DungeonViewportWidth = 224;
+
+  // Front view of the Hall/level staircase when a Stairs tile is one cell
+  // directly ahead. The 152x92 source was cropped from the original at
+  // dungeon-view X=36, Y=44. The dungeon viewport begins at full-screen Y=33,
+  // so full preview display Y is 77 and framebuffer Y is 31.
+  private const string StairsDownF1AssetPath =
+      "Assets/Art/Walls/Stairs/Stairs_Down_F1_152x92.png";
+  private const int StairsDownF1X = 36;
+  private const int StairsDownF1DisplayY = 77;
+
   private const int DungeonViewportHeight = 136;
 
   // Original Dungeon Master / CSBwin viewport lighting palettes.
@@ -11789,6 +11799,11 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Native D3 L/C/R is drawn in the normal far-to-near wall pass.
 
+    // Stairs are map geometry, not wall ornaments. If the cell directly
+    // ahead is a Stairs tile, draw the original F1 stairs front over the
+    // completed corridor geometry. No Hall coordinate is hardcoded here.
+    BlitStairsDownF1IntoPreview(pixels);
+
     // Floor puddles sit on the completed floor, under wall ornaments.
     // (17,17) West draws Puddle_F1 on the floor one tile ahead.
     BlitPuddlesIntoPreview(pixels);
@@ -15102,11 +15117,52 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Blue puddles resolved from the original Hall of Champions random floor-ornament rule.
-  /// D1 center uses Puddle_F1; D1 left/right use Puddle_F1_Side_9x7.
-  /// D2 side slots still use Puddle_S2.
-  /// Farther puddles are drawn first.
+  /// Down-stairs front when the cell one step ahead is a stairs tile
+  /// whose raw direction bit is down.
   /// </summary>
+  private void BlitStairsDownF1IntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (pixels == null || previewMiniMap == null)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int stairsX = previewX + forwardX;
+    int stairsY = previewY + forwardY;
+
+    if (!previewMiniMap.IsInside(stairsX, stairsY)
+        || !previewMiniMap.GetTile(stairsX, stairsY)
+            .TryGetStairsDirection(out bool stairsUp)
+        || stairsUp)
+    {
+      return;
+    }
+
+    Texture2D stairs = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        StairsDownF1AssetPath);
+    if (stairs == null
+        || stairs.width != 152
+        || stairs.height != 92
+        || !stairs.isReadable)
+    {
+      return;
+    }
+
+    int destinationY =
+        DisplayYToUnityY(StairsDownF1DisplayY, stairs.height);
+
+    BlitPieceIntoPreview(
+        pixels,
+        stairs,
+        StairsDownF1X,
+        destinationY,
+        false);
+  }
+
   private void BlitPuddlesIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
