@@ -193,7 +193,7 @@ public class ViewportLayoutEditor : EditorWindow
   private const string StairsDownF1AssetPath =
       "Assets/Art/Walls/Stairs/Stairs_Down_F1_152x92.png";
   private const int StairsDownF1X = 36;
-  private const int StairsDownF1DisplayY = 77;
+  private const int StairsDownF1DisplayY = 49;
 
   private const int DungeonViewportHeight = 136;
 
