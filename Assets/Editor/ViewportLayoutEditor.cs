@@ -13759,7 +13759,7 @@ public class ViewportLayoutEditor : EditorWindow
         // F1 48x43 -> generated F2 29x27 -> Medium distance palette.
         // The generated texture is already scaled and darkened, so draw it 1:1.
         // Lateral lanes are still clipped naturally by the 224px dungeon viewport.
-        BlitPieceIntoPreview(
+        BlitWallOrnamentIntoPreview(
             pixels,
             frontMirror,
             destinationX,
@@ -13814,7 +13814,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      BlitPieceIntoPreview(
+      BlitWallOrnamentIntoPreview(
           pixels,
           frontMirror,
           ChampionMirrorD3FrontX,
@@ -15581,6 +15581,50 @@ public class ViewportLayoutEditor : EditorWindow
         slot.height,
         colorMap,
         textureName);
+  }
+
+  private static void BlitWallOrnamentIntoPreview(
+      Color32[] dest,
+      Texture2D source,
+      int destinationX,
+      int destinationY,
+      bool mirrorHorizontally = false,
+      string unreadableDiagnostic = null)
+  {
+    if (source == null || !source.isReadable)
+    {
+      if (!string.IsNullOrEmpty(unreadableDiagnostic))
+        Debug.Log(unreadableDiagnostic);
+      return;
+    }
+
+    Color32[] sourcePixels = source.GetPixels32();
+
+    for (int sourceY = 0; sourceY < source.height; sourceY++)
+    {
+      int targetY = destinationY + sourceY;
+      if (targetY < 0 || targetY >= PreviewHeight)
+        continue;
+
+      for (int column = 0; column < source.width; column++)
+      {
+        int sourceX = mirrorHorizontally
+            ? source.width - 1 - column
+            : column;
+        int targetX = destinationX + column;
+
+        // Generic dungeon-wall rule: never paint into the HUD/right UI area.
+        if (targetX < 0 || targetX >= DungeonViewportWidth)
+          continue;
+
+        Color32 sourceColour =
+            sourcePixels[sourceY * source.width + sourceX];
+        if (sourceColour.a == 0)
+          continue;
+
+        dest[targetY * PreviewWidth + targetX] = sourceColour;
+      }
+    }
   }
 
   /// <summary>
