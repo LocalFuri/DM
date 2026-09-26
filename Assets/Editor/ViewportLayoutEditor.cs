@@ -142,6 +142,16 @@ public class ViewportLayoutEditor : EditorWindow
   private const int HookD1FrontX = 98;
   private const int HookD1FrontY = 100;
 
+  // Hook / coordinate-set-0 front at distance 2.
+  // The original slot is 22x18 for a 32x28 source. Our Hook_Front_28x28
+  // asset is the tight crop of that source (2 transparent columns removed
+  // on each side), so its visible F2 result is 19x18 and starts one pixel
+  // inside the original slot.
+  private const int HookD2FrontX = 103;
+  private const int HookD2FrontY = 108;
+  private const int HookD2FrontWidth = 19;
+  private const int HookD2FrontHeight = 18;
+
   // Original DOS Grate front placement on the wall immediately in front of
   // the party. Measured from the supplied 320x200 original screenshot:
   // source = 32x28, screen top-left = (96,125), therefore framebuffer
@@ -835,6 +845,8 @@ public class ViewportLayoutEditor : EditorWindow
   private int previewDungeonLightStage = 1;
   [System.NonSerialized]
   private Texture2D cachedHookFrontTexture;
+  [System.NonSerialized]
+  private Texture2D cachedHookGeneratedF2FrontTexture;
   [System.NonSerialized]
   private Texture2D cachedGrateFrontTexture;
   [System.NonSerialized]
@@ -11859,6 +11871,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitSlimeD1SidesIntoPreview(pixels);
     BlitWoodRingD1FrontIntoPreview(pixels);
     BlitSlimeD1FrontIntoPreview(pixels);
+    BlitHookD2FrontIntoPreview(pixels);
     BlitHookD1FrontIntoPreview(pixels);
     BlitGrateD3FrontIntoPreview(pixels);
     BlitGrateD2FrontIntoPreview(pixels);
@@ -15564,6 +15577,21 @@ public class ViewportLayoutEditor : EditorWindow
               ChampionMirrorD3FrontX,
               ChampionMirrorD3FrontY));
 
+
+  // Generic wall-ornament coordinate profile: Hook front.
+  // F2 is generated from the single 28x28 F1 source.
+  private static readonly WallOrnamentCoordinateSet HookFrontWallOrnamentSet =
+      new WallOrnamentCoordinateSet(
+          new WallOrnamentDepthSlot(
+              28, 28, HookD1FrontX, HookD1FrontY),
+          new WallOrnamentDepthSlot(
+              HookD2FrontWidth,
+              HookD2FrontHeight,
+              HookD2FrontX,
+              HookD2FrontY),
+          new WallOrnamentDepthSlot(
+              0, 0, 0, 0));
+
   /// <summary>
   /// Shared generated wall-ornament path.
   /// The source art stays ornament-specific, but the scaling/palette algorithm
@@ -17390,6 +17418,88 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  private void BlitHookD2FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D hookFront = GetHookGeneratedF2FrontTexture();
+    if (hookFront == null || !hookFront.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int d1X = previewX + forwardX;
+    int d1Y = previewY + forwardY;
+    int wallTileX = previewX + forwardX * 2;
+    int wallTileY = previewY + forwardY * 2;
+
+    // The authoritative ornament database already tells us that the feature
+    // belongs to a wall face. For F2 projection we only need an open D1 view
+    // corridor and the ornament's normalized D2 position. Do not require the
+    // minimap tile classifier to also call the D2 coordinate a Wall; that extra
+    // gate can incorrectly hide valid wall ornaments.
+    if (!previewMiniMap.IsInside(d1X, d1Y)
+        || previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(wallTileX, wallTileY))
+    {
+      return;
+    }
+
+    string viewedWallSide = FacingName(previewFacing);
+    string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!IsHookOrnament(ornament))
+        continue;
+
+      bool placementMatches;
+      if (ornament.wallTilePlacement)
+      {
+        placementMatches =
+            ornament.x == wallTileX
+            && ornament.y == wallTileY
+            && string.Equals(
+                ornament.wall,
+                visiblePhysicalWallFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        // Explicit mechanisms at F2 are stored on the open cell one step
+        // before the decorated wall boundary.
+        placementMatches =
+            ornament.x == d1X
+            && ornament.y == d1Y
+            && string.Equals(
+                ornament.wall,
+                viewedWallSide,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (!placementMatches)
+        continue;
+
+      BlitWallOrnamentIntoPreview(
+          pixels,
+          hookFront,
+          HookFrontWallOrnamentSet.f2.x,
+          HookFrontWallOrnamentSet.f2.y,
+          false);
+      return;
+    }
+  }
+
   private void BlitHookD1FrontIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -17485,6 +17595,25 @@ public class ViewportLayoutEditor : EditorWindow
     // Explicit Sensor ordinals are level-local. On Hall of Champions local
     // ordinal 1 resolves to global wall ornament source ID 4 = Hook.
     return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 4;
+  }
+
+  private Texture2D GetHookGeneratedF2FrontTexture()
+  {
+    if (cachedHookGeneratedF2FrontTexture != null)
+      return cachedHookGeneratedF2FrontTexture;
+
+    Texture2D source = GetHookFrontTexture();
+    if (source == null || !source.isReadable)
+      return null;
+
+    cachedHookGeneratedF2FrontTexture =
+        GenerateWallOrnamentForDepth(
+            source,
+            HookFrontWallOrnamentSet.f2,
+            WallOrnamentMediumColorMap,
+            "Hook F2 Generated from F1");
+
+    return cachedHookGeneratedF2FrontTexture;
   }
 
   private Texture2D GetHookFrontTexture()
