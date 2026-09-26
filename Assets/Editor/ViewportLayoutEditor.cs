@@ -35,16 +35,10 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Champions";
   private const string ChampionMirrorSideAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Side_16x35.png";
-  private const string ChampionMirrorSideDistantAssetPath =
-      "Assets/Art/Champions/Mirror_Side_15x15.png";
   private const string ChampionMirrorSideDistantLeftAssetPath =
       "Assets/Art/Champions/Mirror_Side_7x15.png";
-  private const string ChampionMirrorSideD2AssetPath =
-      "Assets/Art/Champions/Mirror_Side_10x23.png";
   private const string ChampionMirrorFrontAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Front_48x43.png";
-  private const string ChampionMirrorFrontF3AssetPath =
-      "Assets/Art/Champions/Mirror_FrontF3_20x19.png";
 
   private const string OrnamentArtFolder =
       "Assets/Art/Ornaments";
@@ -56,19 +50,10 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ViAltarD1FrontX = 64;
   private const int ViAltarD1FrontY = 75;
 
-  // Original DOS VI Altar distance-scaled front graphics.
-  // F2 screenshot crop: top-left screen (80,71), framebuffer bottom-left (80,92).
-  private const int ViAltarD2FrontX = 80;
-  private const int ViAltarD2FrontY = 92;
-  // Original-DM visual target for generated F2.
-  // Use the verified original screenshot crop position, not the CSBwin rectangle.
+  // F2 and F3 are scaled from the 96x56 F1 graphic. These are the
+  // measured destination slots, not separate captured pictures.
   private const int ViAltarD2GeneratedFrontX = 80;
   private const int ViAltarD2GeneratedFrontY = 92;
-  // F3 screenshot crop: top-left screen (91,75), framebuffer bottom-left (91,106).
-  private const int ViAltarD3FrontX = 91;
-  private const int ViAltarD3FrontY = 106;
-  // Original-DM visual target for generated F3.
-  // Use the verified original screenshot crop position, not the CSBwin rectangle.
   private const int ViAltarD3GeneratedFrontX = 91;
   private const int ViAltarD3GeneratedFrontY = 105;
 
@@ -87,30 +72,12 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Hook_Front_28x28.png";
   private const string GrateFrontAssetPath =
       "Assets/Art/Ornaments/Grate_Front_32x28.png";
-  private const string GrateFront2AssetPath =
-      "Assets/Art/Ornaments/Grate_Front2_21x13.png";
-  private const string GrateFront3AssetPath =
-      "Assets/Art/Ornaments/Grate_Front3_14x9.png";
   private const string GrateSide1AssetPath =
       "Assets/Art/Ornaments/Grate_Side1_16x19.png";
-  private const string GrateSide2AssetPath =
-      "Assets/Art/Ornaments/Grate_Side2_6x11.png";
-  private const string GrateSide3AssetPath =
-      "Assets/Art/Ornaments/Grate_Side3_4x4.png";
   private const string HookSideAssetPath =
       "Assets/Art/Ornaments/Hook_Side_16x19.png";
-  private const string HookSide2AssetPath =
-      "Assets/Art/Ornaments/Hook_Side2_5x10.png";
-  private const string HookSide3AssetPath =
-      "Assets/Art/Ornaments/Hook_Side3_5x10.png";
-  private const string WoodRingSide2AssetPath =
-      "Assets/Art/Ornaments/Wood_Ring_Side2_5x10.png";
-  private const string WoodRingSide3AssetPath =
-      "Assets/Art/Ornaments/Wood_Ring_Side_3x5.png";
   private const string SlimeSide1AssetPath =
       "Assets/Art/Ornaments/Slime_Side_16x10.png";
-  private const string SlimeSide2AssetPath =
-      "Assets/Art/Ornaments/Slime_Side_4x3.png";
   private const string PuddleF1AssetPath =
       "Assets/Art/Ornaments/Puddle_F1.png";
   private const string PuddleF1SideAssetPath =
@@ -822,25 +789,13 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private Texture2D cachedViAltarFrontTexture;
   [System.NonSerialized]
-  private Texture2D cachedViAltarF2FrontTexture;
-  private string cachedViAltarF2FrontAssetPath;
-  private long cachedViAltarF2FrontWriteTicks = long.MinValue;
-  [System.NonSerialized]
-  private Texture2D cachedViAltarF3FrontTexture;
-  private string cachedViAltarF3FrontAssetPath;
-  private long cachedViAltarF3FrontWriteTicks = long.MinValue;
-  [System.NonSerialized]
   private Texture2D cachedViAltarGeneratedF2TestTexture;
   private Texture2D cachedViAltarGeneratedF3TestTexture;
   private Texture2D cachedViAltarEngineF2TestTexture;
   private Texture2D cachedViAltarEngineF3TestTexture;
-  [System.NonSerialized]
-  // Default workflow: use generated/rendered distance graphics.
-  // Captured assets remain available only as an optional comparison aid.
-  private bool previewUseGeneratedViAltarF2 = true;
 
   // Separate ViewEdit test. Builds F2/F3 from the 96x56 extract at the
-  // original wall-ornament slot sizes (64x37 and 48x27, F3 drawn 47 wide).
+  // engine slot sizes instead of the measured 63x37 and 42x24 slots.
   private bool previewUseEngineViAltarSlots;
   private int previewDungeonLightStage = 1;
   [System.NonSerialized]
@@ -867,6 +822,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedHookSide3Texture;
   [System.NonSerialized]
   private Texture2D cachedWoodRingFrontTexture;
+  [System.NonSerialized]
+  private Texture2D cachedWoodRingGeneratedF2FrontTexture;
   [System.NonSerialized]
   private Texture2D cachedWoodRingSideTexture;
   [System.NonSerialized]
@@ -5183,18 +5140,6 @@ public class ViewportLayoutEditor : EditorWindow
       previewDisableAllWalls = false;
       showOnlyWallsNeededForCurrentPose = false;
       showWallsActivFilter = false;
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
-    }
-
-    GUILayout.Space(8f);
-    string altarF2TestCaption = previewUseGeneratedViAltarF2
-        ? "Rendering is activ"
-        : "Captured is activ";
-    if (GUILayout.Button(altarF2TestCaption, GUILayout.Width(150f)))
-    {
-      previewUseGeneratedViAltarF2 = !previewUseGeneratedViAltarF2;
       RefreshEditModePreview();
       RepaintGameViews();
       Repaint();
@@ -11869,6 +11814,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitHookStyleD1SidesIntoPreview(pixels);
     BlitGrateD1SidesIntoPreview(pixels);
     BlitSlimeD1SidesIntoPreview(pixels);
+    BlitWoodRingD2FrontIntoPreview(pixels);
     BlitWoodRingD1FrontIntoPreview(pixels);
     BlitSlimeD1FrontIntoPreview(pixels);
     BlitHookD2FrontIntoPreview(pixels);
@@ -14279,35 +14225,16 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedChampionMirrorFrontF3Texture != null)
       return cachedChampionMirrorFrontF3Texture;
 
-    Texture2D texture =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(ChampionMirrorFrontF3AssetPath);
-    if (texture != null && texture.width == 20 && texture.height == 19)
-    {
-      cachedChampionMirrorFrontF3Texture = texture;
-      return texture;
-    }
+    Texture2D source = GetChampionMirrorFrontTexture();
+    if (source == null || !source.isReadable)
+      return null;
 
-    string[] guids = AssetDatabase.FindAssets(
-        "t:Texture2D",
-        new[] { ChampionArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 20 || candidate.height != 19)
-        continue;
-
-      if (path.IndexOf("mirror", System.StringComparison.OrdinalIgnoreCase) < 0
-          || path.IndexOf("frontf3", System.StringComparison.OrdinalIgnoreCase) < 0)
-      {
-        continue;
-      }
-
-      cachedChampionMirrorFrontF3Texture = candidate;
-      return candidate;
-    }
-
-    return null;
+    cachedChampionMirrorFrontF3Texture = GenerateWallOrnamentForDepth(
+        source,
+        ChampionMirrorFrontWallOrnamentSet.f3,
+        WallOrnamentFarColorMap,
+        "Champion Mirror F3 Generated from F1");
+    return cachedChampionMirrorFrontF3Texture;
   }
 
   private Texture2D GetChampionMirrorFrontTexture()
@@ -14447,40 +14374,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedChampionMirrorSideD2Texture != null)
       return cachedChampionMirrorSideD2Texture;
 
-    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        ChampionMirrorSideD2AssetPath);
-    if (texture != null && texture.width == 10 && texture.height == 23)
-    {
-      cachedChampionMirrorSideD2Texture = texture;
-      return texture;
-    }
+    Texture2D source = GetChampionMirrorSideTexture();
+    if (source == null || !source.isReadable)
+      return null;
 
-    // Filename-independent fallback for the exact 10x23 side mirror.
-    string[] guids = AssetDatabase.FindAssets(
-        "t:Texture2D",
-        new[] { ChampionArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 10 || candidate.height != 23)
-        continue;
-
-      if (path.IndexOf(
-              "mirror",
-              System.StringComparison.OrdinalIgnoreCase) < 0
-          || path.IndexOf(
-              "side",
-              System.StringComparison.OrdinalIgnoreCase) < 0)
-      {
-        continue;
-      }
-
-      cachedChampionMirrorSideD2Texture = candidate;
-      return candidate;
-    }
-
-    return null;
+    cachedChampionMirrorSideD2Texture = GenerateDmScaledWallDecoration(
+        source,
+        10,
+        23,
+        WallOrnamentMediumColorMap,
+        "Champion Mirror Side F2 Generated from F1");
+    return cachedChampionMirrorSideD2Texture;
   }
 
   private Texture2D GetChampionMirrorSideDistantLeftTexture()
@@ -14546,37 +14450,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedChampionMirrorSideDistantTexture != null)
       return cachedChampionMirrorSideDistantTexture;
 
-    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        ChampionMirrorSideDistantAssetPath);
-    if (texture != null && texture.width == 15 && texture.height == 15)
-    {
-      cachedChampionMirrorSideDistantTexture = texture;
-      return texture;
-    }
+    Texture2D source = GetChampionMirrorSideTexture();
+    if (source == null || !source.isReadable)
+      return null;
 
-    // Filename-independent fallback for the exact 15x15 distant side mirror.
-    string[] guids = AssetDatabase.FindAssets(
-        "t:Texture2D",
-        new[] { ChampionArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 15 || candidate.height != 15)
-        continue;
-
-      if (path.IndexOf(
-              "mirror",
-              System.StringComparison.OrdinalIgnoreCase) < 0)
-      {
-        continue;
-      }
-
-      cachedChampionMirrorSideDistantTexture = candidate;
-      return candidate;
-    }
-
-    return null;
+    cachedChampionMirrorSideDistantTexture = GenerateDmScaledWallDecoration(
+        source,
+        15,
+        15,
+        WallOrnamentFarColorMap,
+        "Champion Mirror Side F3 Generated from F1");
+    return cachedChampionMirrorSideDistantTexture;
   }
 
   private Texture2D GetChampionMirrorSideTexture()
@@ -14630,6 +14514,100 @@ public class ViewportLayoutEditor : EditorWindow
       return -1;
 
     return HallOfChampionsWallOrnamentSourceIds[index];
+  }
+
+  private void BlitWoodRingD2FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D woodRingFront = GetWoodRingGeneratedF2FrontTexture();
+    if (woodRingFront == null || !woodRingFront.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int d1X = previewX + forwardX;
+    int d1Y = previewY + forwardY;
+    int wallTileX = previewX + forwardX * 2;
+    int wallTileY = previewY + forwardY * 2;
+    if (!previewMiniMap.IsInside(d1X, d1Y)
+        || previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(wallTileX, wallTileY))
+    {
+      return;
+    }
+
+    string viewedWallSide = FacingName(previewFacing);
+    string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!IsWoodRingOrnament(ornament))
+        continue;
+
+      bool placementMatches;
+      if (ornament.wallTilePlacement)
+      {
+        placementMatches =
+            ornament.x == wallTileX
+            && ornament.y == wallTileY
+            && string.Equals(
+                ornament.wall,
+                visiblePhysicalWallFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        placementMatches =
+            ornament.x == d1X
+            && ornament.y == d1Y
+            && string.Equals(
+                ornament.wall,
+                viewedWallSide,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (!placementMatches)
+        continue;
+
+      // Wood Ring shares coordinate set 0 with the Hook, so the F2 front
+      // uses that same measured slot.
+      BlitWallOrnamentIntoPreview(
+          pixels,
+          woodRingFront,
+          HookFrontWallOrnamentSet.f2.x,
+          HookFrontWallOrnamentSet.f2.y,
+          false);
+      return;
+    }
+  }
+
+  private Texture2D GetWoodRingGeneratedF2FrontTexture()
+  {
+    if (cachedWoodRingGeneratedF2FrontTexture != null)
+      return cachedWoodRingGeneratedF2FrontTexture;
+
+    Texture2D source = GetWoodRingFrontTexture();
+    if (source == null || !source.isReadable)
+      return null;
+
+    cachedWoodRingGeneratedF2FrontTexture = GenerateDmScaledWallDecoration(
+        source,
+        HookFrontWallOrnamentSet.f2.width,
+        HookFrontWallOrnamentSet.f2.height,
+        WallOrnamentMediumColorMap,
+        "Wood Ring F2 Generated from F1");
+    return cachedWoodRingGeneratedF2FrontTexture;
   }
 
   private void BlitWoodRingD1FrontIntoPreview(Color32[] pixels)
@@ -14818,37 +14796,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedWoodRingSide2Texture != null)
       return cachedWoodRingSide2Texture;
 
-    Texture2D exact = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        WoodRingSide2AssetPath);
-    if (exact != null && exact.width == 5 && exact.height == 10)
-    {
-      cachedWoodRingSide2Texture = exact;
-      return exact;
-    }
+    Texture2D source = GetWoodRingSideTexture();
+    if (source == null || !source.isReadable)
+      return null;
 
-    // Filename-tolerant fallback, still requiring the native 5x10 Side2 art.
-    string[] guids = AssetDatabase.FindAssets(
-        "t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      string lower = path.ToLowerInvariant();
-      bool isWoodRing =
-          lower.Contains("woodring")
-          || (lower.Contains("wood") && lower.Contains("ring"));
-      if (!isWoodRing || !lower.Contains("side2"))
-        continue;
-
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate != null && candidate.width == 5 && candidate.height == 10)
-      {
-        cachedWoodRingSide2Texture = candidate;
-        return candidate;
-      }
-    }
-
-    return null;
+    cachedWoodRingSide2Texture = GenerateDmScaledWallDecoration(
+        source,
+        5,
+        10,
+        WallOrnamentMediumColorMap,
+        "Wood Ring Side F2 Generated from F1");
+    return cachedWoodRingSide2Texture;
   }
 
   private Texture2D GetWoodRingSide3Texture()
@@ -14856,37 +14814,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedWoodRingSide3Texture != null)
       return cachedWoodRingSide3Texture;
 
-    Texture2D exact = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        WoodRingSide3AssetPath);
-    if (exact != null && exact.width == 3 && exact.height == 5)
-    {
-      cachedWoodRingSide3Texture = exact;
-      return exact;
-    }
+    Texture2D source = GetWoodRingSideTexture();
+    if (source == null || !source.isReadable)
+      return null;
 
-    // Filename-tolerant fallback: still require native 3x5 Wood Ring side art.
-    string[] guids = AssetDatabase.FindAssets(
-        "t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      string lower = path.ToLowerInvariant();
-      bool isWoodRing =
-          lower.Contains("woodring")
-          || (lower.Contains("wood") && lower.Contains("ring"));
-      if (!isWoodRing || !lower.Contains("side"))
-        continue;
-
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate != null && candidate.width == 3 && candidate.height == 5)
-      {
-        cachedWoodRingSide3Texture = candidate;
-        return candidate;
-      }
-    }
-
-    return null;
+    cachedWoodRingSide3Texture = GenerateDmScaledWallDecoration(
+        source,
+        3,
+        5,
+        WallOrnamentFarColorMap,
+        "Wood Ring Side F3 Generated from F1");
+    return cachedWoodRingSide3Texture;
   }
 
   /// <summary>
@@ -15227,9 +15165,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     Texture2D altar = previewUseEngineViAltarSlots
         ? GetViAltarEngineF2TestTexture()
-        : previewUseGeneratedViAltarF2
-            ? GetViAltarGeneratedF2TestTexture()
-            : GetViAltarF2FrontTexture();
+        : GetViAltarGeneratedF2TestTexture();
     if (altar == null || !altar.isReadable)
       return;
 
@@ -15279,14 +15215,10 @@ public class ViewportLayoutEditor : EditorWindow
 
       int altarX = previewUseEngineViAltarSlots
           ? ViAltarEngineF2FrontX
-          : previewUseGeneratedViAltarF2
-              ? ViAltarWallOrnamentSet.f2.x
-              : ViAltarD2FrontX;
+          : ViAltarWallOrnamentSet.f2.x;
       int altarY = previewUseEngineViAltarSlots
           ? ViAltarEngineF2FrontY
-          : previewUseGeneratedViAltarF2
-              ? ViAltarWallOrnamentSet.f2.y
-              : ViAltarD2FrontY;
+          : ViAltarWallOrnamentSet.f2.y;
       BlitPieceIntoPreview(
           pixels,
           altar,
@@ -15309,9 +15241,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     Texture2D altar = previewUseEngineViAltarSlots
         ? GetViAltarEngineF3TestTexture()
-        : previewUseGeneratedViAltarF2
-            ? GetViAltarGeneratedF3TestTexture()
-            : GetViAltarF3FrontTexture();
+        : GetViAltarGeneratedF3TestTexture();
     if (altar == null || !altar.isReadable)
       return;
 
@@ -15366,14 +15296,10 @@ public class ViewportLayoutEditor : EditorWindow
 
       int altarX = previewUseEngineViAltarSlots
           ? ViAltarEngineF3FrontX
-          : previewUseGeneratedViAltarF2
-              ? ViAltarWallOrnamentSet.f3.x
-              : ViAltarD3FrontX;
+          : ViAltarWallOrnamentSet.f3.x;
       int altarY = previewUseEngineViAltarSlots
           ? ViAltarEngineF3FrontY
-          : previewUseGeneratedViAltarF2
-              ? ViAltarWallOrnamentSet.f3.y
-              : ViAltarD3FrontY;
+          : ViAltarWallOrnamentSet.f3.y;
       BlitPieceIntoPreview(
           pixels,
           altar,
@@ -15656,9 +15582,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// VI Altar F2 generated from the original full-size F1 altar.
-  /// Captured mode uses the authored 63x37 F2 PNG, while Rendering mode
-  /// starts from the 96x56 F1 source and generates F2 independently.
+  /// VI Altar F2 scaled from the 96x56 F1 altar with the medium colour map.
   /// </summary>
   private Texture2D GetViAltarGeneratedF2TestTexture()
   {
@@ -16047,257 +15971,6 @@ public class ViewportLayoutEditor : EditorWindow
     return bestPaletteIndex;
   }
 
-  private Texture2D GetViAltarF2FrontTexture()
-  {
-    // CAPTURED mode must show the PNG that is physically on disk.
-    // Do not trust Unity's already-imported Texture2D here: while testing,
-    // an overwritten PNG can otherwise appear to remain the old image.
-    //
-    // If duplicate exact filenames exist, choose the most recently modified
-    // one. This makes the file the user just overwrote win deterministically.
-    const string exactFileName = "Altar_of_Vi_F2_63x37";
-
-    string[] guids = AssetDatabase.FindAssets(
-        exactFileName + " t:Texture2D",
-        new[] { "Assets" });
-
-    string selectedAssetPath = null;
-    string selectedDiskPath = null;
-    long selectedWriteTicks = long.MinValue;
-
-    DirectoryInfo projectRootInfo = Directory.GetParent(Application.dataPath);
-    string projectRoot = projectRootInfo != null
-        ? projectRootInfo.FullName
-        : string.Empty;
-
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
-      if (!string.Equals(
-              Path.GetFileNameWithoutExtension(assetPath),
-              exactFileName,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        continue;
-      }
-
-      string diskPath = Path.Combine(
-          projectRoot,
-          assetPath.Replace('/', Path.DirectorySeparatorChar));
-
-      if (!File.Exists(diskPath))
-        continue;
-
-      long writeTicks = File.GetLastWriteTimeUtc(diskPath).Ticks;
-      if (selectedAssetPath != null && writeTicks <= selectedWriteTicks)
-        continue;
-
-      selectedAssetPath = assetPath;
-      selectedDiskPath = diskPath;
-      selectedWriteTicks = writeTicks;
-    }
-
-    if (selectedDiskPath != null)
-    {
-      bool needsReload =
-          cachedViAltarF2FrontTexture == null
-          || !string.Equals(
-              cachedViAltarF2FrontAssetPath,
-              selectedAssetPath,
-              System.StringComparison.OrdinalIgnoreCase)
-          || cachedViAltarF2FrontWriteTicks != selectedWriteTicks;
-
-      if (needsReload)
-      {
-        byte[] pngBytes = File.ReadAllBytes(selectedDiskPath);
-        Texture2D raw = new Texture2D(
-            2,
-            2,
-            TextureFormat.RGBA32,
-            false);
-        raw.name = "CAPTURED " + exactFileName;
-        raw.filterMode = FilterMode.Point;
-        raw.wrapMode = TextureWrapMode.Clamp;
-
-        if (ImageConversion.LoadImage(raw, pngBytes, false)
-            && raw.width == 63
-            && raw.height == 37)
-        {
-          if (cachedViAltarF2FrontTexture != null
-              && cachedViAltarF2FrontTexture.name.StartsWith("CAPTURED "))
-          {
-            DestroyImmediate(cachedViAltarF2FrontTexture);
-          }
-
-          cachedViAltarF2FrontTexture = raw;
-          cachedViAltarF2FrontAssetPath = selectedAssetPath;
-          cachedViAltarF2FrontWriteTicks = selectedWriteTicks;
-        }
-        else
-        {
-          DestroyImmediate(raw);
-        }
-      }
-
-      if (cachedViAltarF2FrontTexture != null)
-        return cachedViAltarF2FrontTexture;
-    }
-
-    // Fallback only if the exact PNG cannot be read directly.
-    cachedViAltarF2FrontTexture =
-        FindViAltarTexture(63, 37, "f2");
-    return cachedViAltarF2FrontTexture;
-  }
-
-  private Texture2D GetViAltarF3FrontTexture()
-  {
-    // CAPTURED mode must show the exact authored F3 PNG on disk.
-    // We now test the explicit 42x19 authored asset.
-    const string exactFileName = "Altar_of_Vi_F3_42x19";
-
-    string[] guids = AssetDatabase.FindAssets(
-        exactFileName + " t:Texture2D",
-        new[] { "Assets" });
-
-    string selectedAssetPath = null;
-    string selectedDiskPath = null;
-    long selectedWriteTicks = long.MinValue;
-
-    DirectoryInfo projectRootInfo = Directory.GetParent(Application.dataPath);
-    string projectRoot = projectRootInfo != null
-        ? projectRootInfo.FullName
-        : string.Empty;
-
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
-      if (!string.Equals(
-              Path.GetFileNameWithoutExtension(assetPath),
-              exactFileName,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        continue;
-      }
-
-      string diskPath = Path.Combine(
-          projectRoot,
-          assetPath.Replace('/', Path.DirectorySeparatorChar));
-
-      if (!File.Exists(diskPath))
-        continue;
-
-      long writeTicks = File.GetLastWriteTimeUtc(diskPath).Ticks;
-      if (selectedAssetPath != null && writeTicks <= selectedWriteTicks)
-        continue;
-
-      selectedAssetPath = assetPath;
-      selectedDiskPath = diskPath;
-      selectedWriteTicks = writeTicks;
-    }
-
-    if (selectedDiskPath != null)
-    {
-      bool needsReload =
-          cachedViAltarF3FrontTexture == null
-          || !string.Equals(
-              cachedViAltarF3FrontAssetPath,
-              selectedAssetPath,
-              System.StringComparison.OrdinalIgnoreCase)
-          || cachedViAltarF3FrontWriteTicks != selectedWriteTicks;
-
-      if (needsReload)
-      {
-        byte[] pngBytes = File.ReadAllBytes(selectedDiskPath);
-        Texture2D raw = new Texture2D(
-            2,
-            2,
-            TextureFormat.RGBA32,
-            false);
-        raw.name = "CAPTURED " + exactFileName;
-        raw.filterMode = FilterMode.Point;
-        raw.wrapMode = TextureWrapMode.Clamp;
-
-        if (ImageConversion.LoadImage(raw, pngBytes, false)
-            && raw.width == 42
-            && raw.height == 19)
-        {
-          if (cachedViAltarF3FrontTexture != null
-              && cachedViAltarF3FrontTexture.name.StartsWith("CAPTURED "))
-          {
-            DestroyImmediate(cachedViAltarF3FrontTexture);
-          }
-
-          cachedViAltarF3FrontTexture = raw;
-          cachedViAltarF3FrontAssetPath = selectedAssetPath;
-          cachedViAltarF3FrontWriteTicks = selectedWriteTicks;
-        }
-        else
-        {
-          DestroyImmediate(raw);
-        }
-      }
-
-      if (cachedViAltarF3FrontTexture != null)
-        return cachedViAltarF3FrontTexture;
-    }
-
-    // Fallback only if the exact 42x19 PNG cannot be read directly.
-    cachedViAltarF3FrontTexture =
-        FindViAltarTexture(42, 19, "f3");
-    return cachedViAltarF3FrontTexture;
-  }
-
-  private Texture2D FindViAltarTexture(
-      int width,
-      int height,
-      string distanceTag)
-  {
-    string[] guids = AssetDatabase.FindAssets(
-        "t:Texture2D",
-        new[] { "Assets" });
-
-    Texture2D best = null;
-    int bestScore = int.MinValue;
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate =
-          AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null
-          || candidate.width != width
-          || candidate.height != height)
-      {
-        continue;
-      }
-
-      string lower = Path.GetFileNameWithoutExtension(path)
-          .ToLowerInvariant();
-      if (!lower.Contains("altar") || !lower.Contains("vi"))
-        continue;
-
-      int score = 100;
-      if (lower.Contains("altar_of_vi")) score += 50;
-      if (!string.IsNullOrEmpty(distanceTag)
-          && lower.Contains(distanceTag))
-      {
-        score += 100;
-      }
-
-      string sizeX = width.ToString() + "x" + height.ToString();
-      string sizeComma = width.ToString() + "," + height.ToString();
-      if (lower.Contains(sizeX) || lower.Contains(sizeComma))
-        score += 25;
-
-      if (score <= bestScore)
-        continue;
-
-      best = candidate;
-      bestScore = score;
-    }
-
-    return best;
-  }
-
   private void BlitSlimeD1FrontIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -16471,35 +16144,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedSlimeSide2Texture != null)
       return cachedSlimeSide2Texture;
 
-    Texture2D exact = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        SlimeSide2AssetPath);
-    if (exact != null && exact.width == 4 && exact.height == 3)
-    {
-      cachedSlimeSide2Texture = exact;
-      return exact;
-    }
+    Texture2D source = GetSlimeSide1Texture();
+    if (source == null || !source.isReadable)
+      return null;
 
-    string[] guids = AssetDatabase.FindAssets(
-        "Slime t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
-      string lower = assetPath.ToLowerInvariant();
-      if (!lower.Contains("slime") || !lower.Contains("side"))
-        continue;
-
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
-      if (candidate != null
-          && candidate.width == 4
-          && candidate.height == 3)
-      {
-        cachedSlimeSide2Texture = candidate;
-        return candidate;
-      }
-    }
-
-    return null;
+    cachedSlimeSide2Texture = GenerateDmScaledWallDecoration(
+        source,
+        4,
+        3,
+        WallOrnamentMediumColorMap,
+        "Slime Side F2 Generated from F1");
+    return cachedSlimeSide2Texture;
   }
 
   private void BlitSlimeD1SidesIntoPreview(Color32[] pixels)
@@ -17702,33 +17357,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedHookSide2Texture != null)
       return cachedHookSide2Texture;
 
-    Texture2D exact = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        HookSide2AssetPath);
-    if (exact != null && exact.width == 6 && exact.height == 10)
-    {
-      cachedHookSide2Texture = exact;
-      return exact;
-    }
+    Texture2D source = GetHookSideTexture();
+    if (source == null || !source.isReadable)
+      return null;
 
-    string[] guids = AssetDatabase.FindAssets(
-        "Hook t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      string lower = path.ToLowerInvariant();
-      if (!lower.Contains("hook") || !lower.Contains("side2"))
-        continue;
-
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate != null && candidate.width == 6 && candidate.height == 10)
-      {
-        cachedHookSide2Texture = candidate;
-        return candidate;
-      }
-    }
-
-    return null;
+    cachedHookSide2Texture = GenerateDmScaledWallDecoration(
+        source,
+        HookD2SideWidth,
+        HookD2SideHeight,
+        WallOrnamentMediumColorMap,
+        "Hook Side F2 Generated from F1");
+    return cachedHookSide2Texture;
   }
 
   private Texture2D GetHookSide3Texture()
@@ -17736,33 +17375,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedHookSide3Texture != null)
       return cachedHookSide3Texture;
 
-    Texture2D exact = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        HookSide3AssetPath);
-    if (exact != null && exact.width == 3 && exact.height == 5)
-    {
-      cachedHookSide3Texture = exact;
-      return exact;
-    }
+    Texture2D source = GetHookSideTexture();
+    if (source == null || !source.isReadable)
+      return null;
 
-    string[] guids = AssetDatabase.FindAssets(
-        "Hook t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      string lower = path.ToLowerInvariant();
-      if (!lower.Contains("hook") || !lower.Contains("side3"))
-        continue;
-
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate != null && candidate.width == 3 && candidate.height == 5)
-      {
-        cachedHookSide3Texture = candidate;
-        return candidate;
-      }
-    }
-
-    return null;
+    cachedHookSide3Texture = GenerateDmScaledWallDecoration(
+        source,
+        HookD3SideWidth,
+        HookD3SideHeight,
+        WallOrnamentFarColorMap,
+        "Hook Side F3 Generated from F1");
+    return cachedHookSide3Texture;
   }
 
   private void BlitGrateD3SidesIntoPreview(Color32[] pixels)
@@ -17919,33 +17542,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedGrateSide3Texture != null)
       return cachedGrateSide3Texture;
 
-    Texture2D texture =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(GrateSide3AssetPath);
-    if (texture != null && texture.width == 4 && texture.height == 4)
-    {
-      cachedGrateSide3Texture = texture;
-      return texture;
-    }
+    Texture2D source = GetGrateSide1Texture();
+    if (source == null || !source.isReadable)
+      return null;
 
-    string[] guids = AssetDatabase.FindAssets(
-        "Grate t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 4 || candidate.height != 4)
-        continue;
-
-      string lower = path.ToLowerInvariant();
-      if (!lower.Contains("grate") || !lower.Contains("side3"))
-        continue;
-
-      cachedGrateSide3Texture = candidate;
-      return candidate;
-    }
-
-    return null;
+    cachedGrateSide3Texture = GenerateDmScaledWallDecoration(
+        source,
+        4,
+        4,
+        WallOrnamentFarColorMap,
+        "Grate Side F3 Generated from F1");
+    return cachedGrateSide3Texture;
   }
 
   private void BlitGrateD2SidesIntoPreview(Color32[] pixels)
@@ -18097,33 +17704,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedGrateSide2Texture != null)
       return cachedGrateSide2Texture;
 
-    Texture2D texture =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(GrateSide2AssetPath);
-    if (texture != null && texture.width == 6 && texture.height == 11)
-    {
-      cachedGrateSide2Texture = texture;
-      return texture;
-    }
+    Texture2D source = GetGrateSide1Texture();
+    if (source == null || !source.isReadable)
+      return null;
 
-    string[] guids = AssetDatabase.FindAssets(
-        "Grate t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 6 || candidate.height != 11)
-        continue;
-
-      string lower = path.ToLowerInvariant();
-      if (!lower.Contains("grate") || !lower.Contains("side2"))
-        continue;
-
-      cachedGrateSide2Texture = candidate;
-      return candidate;
-    }
-
-    return null;
+    cachedGrateSide2Texture = GenerateDmScaledWallDecoration(
+        source,
+        6,
+        11,
+        WallOrnamentMediumColorMap,
+        "Grate Side F2 Generated from F1");
+    return cachedGrateSide2Texture;
   }
 
   private void BlitGrateD1SidesIntoPreview(Color32[] pixels)
@@ -18388,33 +17979,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedGrateFront3Texture != null)
       return cachedGrateFront3Texture;
 
-    Texture2D texture =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(GrateFront3AssetPath);
-    if (texture != null && texture.width == 14 && texture.height == 9)
-    {
-      cachedGrateFront3Texture = texture;
-      return texture;
-    }
+    Texture2D source = GetGrateFrontTexture();
+    if (source == null || !source.isReadable)
+      return null;
 
-    string[] guids = AssetDatabase.FindAssets(
-        "Grate t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      string lower = path.ToLowerInvariant();
-      if (!lower.Contains("grate") || !lower.Contains("front3"))
-        continue;
-
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate != null && candidate.width == 14 && candidate.height == 9)
-      {
-        cachedGrateFront3Texture = candidate;
-        return candidate;
-      }
-    }
-
-    return null;
+    cachedGrateFront3Texture = GenerateDmScaledWallDecoration(
+        source,
+        14,
+        9,
+        WallOrnamentFarColorMap,
+        "Grate F3 Generated from F1");
+    return cachedGrateFront3Texture;
   }
 
   private void BlitGrateD2FrontIntoPreview(Color32[] pixels)
@@ -18504,33 +18079,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedGrateFront2Texture != null)
       return cachedGrateFront2Texture;
 
-    Texture2D texture =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(GrateFront2AssetPath);
-    if (texture != null && texture.width == 21 && texture.height == 13)
-    {
-      cachedGrateFront2Texture = texture;
-      return texture;
-    }
+    Texture2D source = GetGrateFrontTexture();
+    if (source == null || !source.isReadable)
+      return null;
 
-    string[] guids = AssetDatabase.FindAssets(
-        "Grate t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      string lower = path.ToLowerInvariant();
-      if (!lower.Contains("grate") || !lower.Contains("front2"))
-        continue;
-
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate != null && candidate.width == 21 && candidate.height == 13)
-      {
-        cachedGrateFront2Texture = candidate;
-        return candidate;
-      }
-    }
-
-    return null;
+    cachedGrateFront2Texture = GenerateDmScaledWallDecoration(
+        source,
+        21,
+        13,
+        WallOrnamentMediumColorMap,
+        "Grate F2 Generated from F1");
+    return cachedGrateFront2Texture;
   }
 
   private void BlitGrateD1FrontIntoPreview(Color32[] pixels)
