@@ -806,6 +806,8 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorFrontTexture;
   [System.NonSerialized]
+  private Texture2D cachedChampionMirrorGeneratedF2Texture;
+  [System.NonSerialized]
   private Texture2D cachedChampionMirrorFrontF3Texture;
   [System.NonSerialized]
   private Texture2D cachedViAltarFrontTexture;
@@ -13678,7 +13680,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    Texture2D frontMirror = GetChampionMirrorFrontTexture();
+    Texture2D frontMirror = GetChampionMirrorGeneratedF2Texture();
     if (frontMirror == null || !frontMirror.isReadable)
       return;
 
@@ -13753,24 +13755,16 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        // The original DOS F2 view reduces the 48x43 front mirror to 29x27.
-        // No Champion portrait is drawn at this distance. Point sampling keeps
-        // the original source pixels crisp, while BlitPieceScaledIntoPreview
-        // clips the lateral lanes naturally to dungeon X=0..223.
-        BlitPieceScaledIntoPreview(
+        // Generic wall-ornament path:
+        // F1 48x43 -> generated F2 29x27 -> Medium distance palette.
+        // The generated texture is already scaled and darkened, so draw it 1:1.
+        // Lateral lanes are still clipped naturally by the 224px dungeon viewport.
+        BlitPieceIntoPreview(
             pixels,
             frontMirror,
             destinationX,
-            ChampionMirrorD2FrontY,
-            ChampionMirrorD2FrontWidth,
-            ChampionMirrorD2FrontHeight,
+            ChampionMirrorFrontWallOrnamentSet.f2.y,
             false);
-        DarkenChampionMirrorD2InteriorHighlights(
-            pixels,
-            destinationX,
-            ChampionMirrorD2FrontY,
-            ChampionMirrorD2FrontWidth,
-            ChampionMirrorD2FrontHeight);
         break;
       }
     }
@@ -14246,6 +14240,25 @@ public class ViewportLayoutEditor : EditorWindow
           ChampionMirrorD3RightY,
           false);
     }
+  }
+
+  private Texture2D GetChampionMirrorGeneratedF2Texture()
+  {
+    if (cachedChampionMirrorGeneratedF2Texture != null)
+      return cachedChampionMirrorGeneratedF2Texture;
+
+    Texture2D source = GetChampionMirrorFrontTexture();
+    if (source == null || !source.isReadable)
+      return null;
+
+    cachedChampionMirrorGeneratedF2Texture =
+        GenerateWallOrnamentForDepth(
+            source,
+            ChampionMirrorFrontWallOrnamentSet.f2,
+            WallOrnamentMediumColorMap,
+            "Champion Mirror F2 Generated from F1");
+
+    return cachedChampionMirrorGeneratedF2Texture;
   }
 
   private Texture2D GetChampionMirrorFrontF3Texture()
@@ -15530,6 +15543,26 @@ public class ViewportLayoutEditor : EditorWindow
               63, 37, ViAltarD2GeneratedFrontX, ViAltarD2GeneratedFrontY),
           new WallOrnamentDepthSlot(
               42, 24, ViAltarD3GeneratedFrontX, ViAltarD3GeneratedFrontY));
+
+
+  // Generic wall-ornament coordinate profile: Champion Mirror front.
+  // F2 is the first non-altar validation of the shared renderer.
+  // F3 is recorded here for the next test, but its existing path is left
+  // untouched in this change.
+  private static readonly WallOrnamentCoordinateSet ChampionMirrorFrontWallOrnamentSet =
+      new WallOrnamentCoordinateSet(
+          new WallOrnamentDepthSlot(
+              48, 43, ChampionMirrorD1FrontX, ChampionMirrorD1FrontY),
+          new WallOrnamentDepthSlot(
+              ChampionMirrorD2FrontWidth,
+              ChampionMirrorD2FrontHeight,
+              ChampionMirrorD2FrontX,
+              ChampionMirrorD2FrontY),
+          new WallOrnamentDepthSlot(
+              ChampionMirrorD3FrontWidth,
+              ChampionMirrorD3FrontHeight,
+              ChampionMirrorD3FrontX,
+              ChampionMirrorD3FrontY));
 
   /// <summary>
   /// Shared generated wall-ornament path.
