@@ -15213,10 +15213,10 @@ public class ViewportLayoutEditor : EditorWindow
           pixels,
           altar,
           previewUseGeneratedViAltarF2
-              ? ViAltarD2GeneratedFrontX
+              ? ViAltarWallOrnamentSet.f2.x
               : ViAltarD2FrontX,
           previewUseGeneratedViAltarF2
-              ? ViAltarD2GeneratedFrontY
+              ? ViAltarWallOrnamentSet.f2.y
               : ViAltarD2FrontY,
           false);
       return;
@@ -15292,10 +15292,10 @@ public class ViewportLayoutEditor : EditorWindow
           pixels,
           altar,
           previewUseGeneratedViAltarF2
-              ? ViAltarD3GeneratedFrontX
+              ? ViAltarWallOrnamentSet.f3.x
               : ViAltarD3FrontX,
           previewUseGeneratedViAltarF2
-              ? ViAltarD3GeneratedFrontY
+              ? ViAltarWallOrnamentSet.f3.y
               : ViAltarD3FrontY,
           false);
       return;
@@ -15408,10 +15408,12 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
 
-  // Original CSBwin wall-decoration colour maps from GRAPHICS.DAT graphic 0x22e.
-  // Values in the file are stored as 0,10,20,...150; dividing by ten yields
-  // the final 4-bit palette index selected by ShrinkBLT.
-  private static readonly byte[] ViAltarMediumColorMap =
+  // Original Dungeon Master wall-ornament distance colour maps recovered
+  // from the wall-decoration data. These maps are shared by the generic
+  // wall-ornament renderer; the ornament's coordinate set supplies the target
+  // rectangle, while the depth selects Medium (F2) or Far (F3).
+  // Stored values 0,10,20,...150 become final 4-bit palette indices / 10.
+  private static readonly byte[] WallOrnamentMediumColorMap =
   {
     0, 12, 1, 3,
     4, 3, 6, 7,
@@ -15419,13 +15421,78 @@ public class ViewportLayoutEditor : EditorWindow
     0, 2, 14, 13
   };
 
-  private static readonly byte[] ViAltarFarColorMap =
+  private static readonly byte[] WallOrnamentFarColorMap =
   {
     0, 0, 12, 3,
     4, 3, 0, 6,
     3, 9, 10, 11,
     0, 1, 0, 2
   };
+
+  private struct WallOrnamentDepthSlot
+  {
+    public int width;
+    public int height;
+    public int x;
+    public int y;
+
+    public WallOrnamentDepthSlot(int width, int height, int x, int y)
+    {
+      this.width = width;
+      this.height = height;
+      this.x = x;
+      this.y = y;
+    }
+  }
+
+  private struct WallOrnamentCoordinateSet
+  {
+    public WallOrnamentDepthSlot f1;
+    public WallOrnamentDepthSlot f2;
+    public WallOrnamentDepthSlot f3;
+
+    public WallOrnamentCoordinateSet(
+        WallOrnamentDepthSlot f1,
+        WallOrnamentDepthSlot f2,
+        WallOrnamentDepthSlot f3)
+    {
+      this.f1 = f1;
+      this.f2 = f2;
+      this.f3 = f3;
+    }
+  }
+
+  // First generic coordinate-set profile: VI Altar.
+  // These are the currently visually verified/tuned original-DM targets.
+  // Adding another wall ornament should mean defining another coordinate set,
+  // not adding another scaling algorithm.
+  private static readonly WallOrnamentCoordinateSet ViAltarWallOrnamentSet =
+      new WallOrnamentCoordinateSet(
+          new WallOrnamentDepthSlot(
+              96, 56, ViAltarD1FrontX, ViAltarD1FrontY),
+          new WallOrnamentDepthSlot(
+              63, 37, ViAltarD2GeneratedFrontX, ViAltarD2GeneratedFrontY),
+          new WallOrnamentDepthSlot(
+              42, 24, ViAltarD3GeneratedFrontX, ViAltarD3GeneratedFrontY));
+
+  /// <summary>
+  /// Shared generated wall-ornament path.
+  /// The source art stays ornament-specific, but the scaling/palette algorithm
+  /// is common. The coordinate set supplies the depth-specific destination size.
+  /// </summary>
+  private static Texture2D GenerateWallOrnamentForDepth(
+      Texture2D source,
+      WallOrnamentDepthSlot slot,
+      byte[] colorMap,
+      string textureName)
+  {
+    return GenerateDmScaledWallDecoration(
+        source,
+        slot.width,
+        slot.height,
+        colorMap,
+        textureName);
+  }
 
   /// <summary>
   /// VI Altar F2 generated from the original full-size F1 altar.
@@ -15442,11 +15509,10 @@ public class ViewportLayoutEditor : EditorWindow
       return null;
 
     cachedViAltarGeneratedF2TestTexture =
-        GenerateDmScaledWallDecoration(
+        GenerateWallOrnamentForDepth(
             source,
-            63,
-            37,
-            ViAltarMediumColorMap,
+            ViAltarWallOrnamentSet.f2,
+            WallOrnamentMediumColorMap,
             "VI Altar F2 Generated from F1");
     return cachedViAltarGeneratedF2TestTexture;
   }
@@ -15466,11 +15532,10 @@ public class ViewportLayoutEditor : EditorWindow
       return null;
 
     cachedViAltarGeneratedF3TestTexture =
-        GenerateDmScaledWallDecoration(
+        GenerateWallOrnamentForDepth(
             source,
-            42,
-            24,
-            ViAltarFarColorMap,
+            ViAltarWallOrnamentSet.f3,
+            WallOrnamentFarColorMap,
             "VI Altar F3 Generated from F1 42x24");
     return cachedViAltarGeneratedF3TestTexture;
   }
@@ -15505,7 +15570,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      int sourcePaletteIndex = FindExactViAltarDmPaletteIndexOrNearest(
+      int sourcePaletteIndex = FindExactDmPaletteIndexOrNearest(
           sourcePixel,
           brightPalette);
       int mappedPaletteIndex = colorMap[sourcePaletteIndex];
@@ -15595,7 +15660,7 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        int sourcePaletteIndex = FindExactViAltarDmPaletteIndexOrNearest(
+        int sourcePaletteIndex = FindExactDmPaletteIndexOrNearest(
             sourcePixel,
             brightPalette);
         int mappedPaletteIndex = colorMap[sourcePaletteIndex];
@@ -15631,22 +15696,21 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// The VI Altar 96x56 source PNG uses a small fixed subset of the original
-  /// DM stage-1 palette. Reconstruct those palette indices explicitly instead
-  /// of re-guessing them with nearest-RGB matching. This removes the last
-  /// approximation before ShrinkBLT for the altar test path.
+  /// Recover exact original DM palette indices whenever the RGBA source pixel
+  /// matches a known stage-1 palette colour. This is shared by generated wall
+  /// ornaments; nearest-colour matching is only a fallback for unexpected RGBs.
   /// </summary>
-  private static int FindExactViAltarDmPaletteIndexOrNearest(
+  private static int FindExactDmPaletteIndexOrNearest(
       Color32 source,
       Color32[] palette)
   {
-    if (TryGetExactViAltarDmPaletteIndex(source, out int exactPaletteIndex))
+    if (TryGetExactDmPaletteIndex(source, out int exactPaletteIndex))
       return exactPaletteIndex;
 
     return FindNearestDmPaletteIndexFallback(source, palette);
   }
 
-  private static bool TryGetExactViAltarDmPaletteIndex(
+  private static bool TryGetExactDmPaletteIndex(
       Color32 source,
       out int paletteIndex)
   {
