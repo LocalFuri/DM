@@ -11528,7 +11528,11 @@ public class ViewportLayoutEditor : EditorWindow
           }
           else
           {
-            BlitPieceIntoPreview(
+            // Same dungeon-column clip as the native wall blit. A D3 side
+            // placed beside a nearer front wall must not paint past X=223
+            // into the UI column. The visible window is whatever the nearer
+            // wall leaves open.
+            BlitDungeonWallPieceIntoPreview(
                 pixels,
                 texture,
                 resolvedX,
@@ -11773,13 +11777,26 @@ public class ViewportLayoutEditor : EditorWindow
           leftF0OverlapH = texture.height;
         }
 
-        BlitPieceIntoPreview(
-            pixels,
-            texture,
-            resolvedX,
-            resolvedY,
-            mirror,
-            leftF0UnreadableLog);
+        if (IsNormalWallPiece(piece))
+        {
+          BlitDungeonWallPieceIntoPreview(
+              pixels,
+              texture,
+              resolvedX,
+              resolvedY,
+              mirror,
+              leftF0UnreadableLog);
+        }
+        else
+        {
+          BlitPieceIntoPreview(
+              pixels,
+              texture,
+              resolvedX,
+              resolvedY,
+              mirror,
+              leftF0UnreadableLog);
+        }
 
         if (!isLeftF0Diag)
         {
