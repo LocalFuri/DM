@@ -5452,7 +5452,10 @@ public class ViewportLayoutEditor : EditorWindow
     // D2/D3 include the outer LL/RR context cells so a corridor and an
     // alcove classify as the same 19-slot geometry anywhere on the map.
     AddViewport17Row(inspection.Cells, 0, -1, 1);
-    AddViewport17Row(inspection.Cells, 1, -1, 1);
+    // D1 includes the cells just outside L/R. An open side lane whose outer
+    // neighbor is a wall still has a LeftF1/RightF1 face in the 32px opening
+    // beside a D1 center front. Front candidates stay on L/C/R.
+    AddViewport17Row(inspection.Cells, 1, -2, 2);
     AddViewport17Row(inspection.Cells, 2, -2, 2);
     AddViewport17Row(inspection.Cells, 3, -2, 2);
 
@@ -5502,8 +5505,9 @@ public class ViewportLayoutEditor : EditorWindow
       out int minLocalX,
       out int maxLocalX)
   {
-    // D0/D1: L / C / R. D2/D3: LL / L / C / R / RR.
-    if (depth >= 2)
+    // D0: L / C / R. D1 side joins also include the cell just outside L/R.
+    // D2/D3: LL / L / C / R / RR.
+    if (depth >= 1)
     {
       minLocalX = -2;
       maxLocalX = 2;
@@ -5516,10 +5520,14 @@ public class ViewportLayoutEditor : EditorWindow
 
   private static bool IsViewport17DrawableSidePair(int depth, int leftLocalX)
   {
-    // D2 outer cells are sampled for 19-slot classification, but CSBWin
-    // F2L2/F2R2 are NOP: they do not own a wall bitmap. D3 outer cells
-    // map to LeftD3/RightD3 and remain drawable.
-    if (depth < 3 && (leftLocalX <= -2 || leftLocalX >= 1))
+    // D2 outer cells are sampled for classification, but CSBWin F2L2/F2R2
+    // are NOP: they do not own a wall bitmap. D3 outer cells map to
+    // LeftD3/RightD3 and remain drawable. D1 does own LeftF1/RightF1 for
+    // the join between the side lane and the cell just outside it.
+    if (depth == 2 && (leftLocalX <= -2 || leftLocalX >= 1))
+      return false;
+
+    if (depth < 1 && (leftLocalX <= -2 || leftLocalX >= 1))
       return false;
 
     return true;
@@ -6096,6 +6104,15 @@ public class ViewportLayoutEditor : EditorWindow
         bool leftSolid = IsViewport17Solid(leftCell);
         bool rightSolid = IsViewport17Solid(rightCell);
         if (leftSolid == rightSolid)
+          continue;
+
+        // D1 outer join: only the wall just outside an open side lane.
+        // The opposite face points away from the corridor and is not LeftF1
+        // or RightF1. Depth-1 piece families are chosen by side, so a
+        // reversed join would name the wrong wall.
+        if (depth == 1 && localX == -2 && !(leftSolid && !rightSolid))
+          continue;
+        if (depth == 1 && localX == 1 && !(!leftSolid && rightSolid))
           continue;
 
         if (leftSolid)
@@ -12594,7 +12611,7 @@ public class ViewportLayoutEditor : EditorWindow
       for (int i = 0; i < copyWidth; i++)
       {
         int targetX = destinationStartX + i;
-        if (targetX < 0 || targetX >= StraightF1WallLogic.CompositeWidth)
+        if (targetX < 0 || targetX >= DungeonViewportWidth)
           continue;
 
         int sourceX = mirrorHorizontally
@@ -12975,7 +12992,7 @@ public class ViewportLayoutEditor : EditorWindow
       int leftX = 0;
       int leftY = destinationY;
       ApplyViewport17FamilyDestOverride("LeftF1", ref leftX, ref leftY);
-      BlitPieceIntoPreview(
+      BlitDungeonWallPieceIntoPreview(
           pixels, leftSource, leftX, leftY, leftMirror);
     }
 
@@ -12987,7 +13004,7 @@ public class ViewportLayoutEditor : EditorWindow
       int rightX = 164;
       int rightY = destinationY;
       ApplyViewport17FamilyDestOverride("RightF1", ref rightX, ref rightY);
-      BlitPieceIntoPreview(
+      BlitDungeonWallPieceIntoPreview(
           pixels, rightSource, rightX, rightY, rightMirror);
     }
 
@@ -13004,7 +13021,7 @@ public class ViewportLayoutEditor : EditorWindow
         int centerX = 32;
         int centerY = destinationY;
         ApplyViewport17FamilyDestOverride("FrontF1", ref centerX, ref centerY);
-        BlitPieceIntoPreview(
+        BlitDungeonWallPieceIntoPreview(
             pixels, centerSource, centerX, centerY, centerMirror);
       }
       else
@@ -13072,7 +13089,7 @@ public class ViewportLayoutEditor : EditorWindow
       int leftX = 0;
       int leftY = destinationY;
       ApplyViewport17FamilyDestOverride("LeftF2", ref leftX, ref leftY);
-      BlitPieceIntoPreview(
+      BlitDungeonWallPieceIntoPreview(
           pixels, leftSource, leftX, leftY, leftMirror);
     }
 
@@ -13084,7 +13101,7 @@ public class ViewportLayoutEditor : EditorWindow
       int rightX = 146;
       int rightY = destinationY;
       ApplyViewport17FamilyDestOverride("RightF2", ref rightX, ref rightY);
-      BlitPieceIntoPreview(
+      BlitDungeonWallPieceIntoPreview(
           pixels, rightSource, rightX, rightY, rightMirror);
     }
 
@@ -13101,7 +13118,7 @@ public class ViewportLayoutEditor : EditorWindow
         int centerX = 59;
         int centerY = destinationY;
         ApplyViewport17FamilyDestOverride("FrontF2", ref centerX, ref centerY);
-        BlitPieceIntoPreview(
+        BlitDungeonWallPieceIntoPreview(
             pixels, centerSource, centerX, centerY, centerMirror);
       }
       else
@@ -13193,7 +13210,7 @@ public class ViewportLayoutEditor : EditorWindow
       int leftX = NativeD3LeftF3DestX;
       int leftY = destinationY;
       ApplyViewport17FamilyDestOverride("LeftF3", ref leftX, ref leftY);
-      BlitPieceIntoPreview(
+      BlitDungeonWallPieceIntoPreview(
           pixels, leftSource, leftX, leftY, leftMirror);
     }
 
@@ -13205,7 +13222,7 @@ public class ViewportLayoutEditor : EditorWindow
       int rightX = 134;
       int rightY = destinationY;
       ApplyViewport17FamilyDestOverride("RightF3", ref rightX, ref rightY);
-      BlitPieceIntoPreview(
+      BlitDungeonWallPieceIntoPreview(
           pixels, rightSource, rightX, rightY, rightMirror);
     }
 
@@ -13414,7 +13431,7 @@ public class ViewportLayoutEditor : EditorWindow
           && centerSource.width == 70
           && centerSource.height == nativeHeight)
       {
-        BlitPieceIntoPreview(
+        BlitDungeonWallPieceIntoPreview(
             pixels, centerSource, frontCenterX, frontY, centerMirror);
       }
       else
@@ -18354,6 +18371,50 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonFacing.West => "East",
       _ => string.Empty
     };
+  }
+
+  private static void BlitDungeonWallPieceIntoPreview(
+      Color32[] dest,
+      Texture2D source,
+      int destinationX,
+      int destinationY,
+      bool mirrorHorizontally = false,
+      string unreadableDiagnostic = null)
+  {
+    if (source == null || !source.isReadable)
+    {
+      if (!string.IsNullOrEmpty(unreadableDiagnostic))
+        Debug.Log(unreadableDiagnostic);
+      return;
+    }
+
+    Color32[] sourcePixels = source.GetPixels32();
+
+    for (int sourceY = 0; sourceY < source.height; sourceY++)
+    {
+      int targetY = destinationY + sourceY;
+      if (targetY < 0 || targetY >= PreviewHeight)
+        continue;
+
+      for (int column = 0; column < source.width; column++)
+      {
+        int sourceX = mirrorHorizontally
+            ? source.width - 1 - column
+            : column;
+        int targetX = destinationX + column;
+
+        // Dungeon wall geometry must never paint into the 96px UI column.
+        if (targetX < 0 || targetX >= DungeonViewportWidth)
+          continue;
+
+        Color32 sourceColour =
+            sourcePixels[sourceY * source.width + sourceX];
+        if (sourceColour.a == 0)
+          continue;
+
+        dest[targetY * PreviewWidth + targetX] = sourceColour;
+      }
+    }
   }
 
   private static void BlitPieceIntoPreview(
