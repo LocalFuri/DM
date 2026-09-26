@@ -71,6 +71,18 @@ public class ViewportLayoutEditor : EditorWindow
   // Use the verified original screenshot crop position, not the CSBwin rectangle.
   private const int ViAltarD3GeneratedFrontX = 91;
   private const int ViAltarD3GeneratedFrontY = 105;
+
+  // Engine-slot test sizes. F2 is the original 64x37 center slot.
+  // F3 uses the measured 42x24 slot that matches the original crop.
+  // Framebuffer Y is bottom-left in the 200-tall preview.
+  private const int ViAltarEngineF2Width = 64;
+  private const int ViAltarEngineF2Height = 37;
+  private const int ViAltarEngineF2FrontX = 80;
+  private const int ViAltarEngineF2FrontY = 93;
+  private const int ViAltarEngineF3Width = 42;
+  private const int ViAltarEngineF3Height = 24;
+  private const int ViAltarEngineF3FrontX = 91;
+  private const int ViAltarEngineF3FrontY = 105;
   private const string HookFrontAssetPath =
       "Assets/Art/Ornaments/Hook_Front_28x28.png";
   private const string GrateFrontAssetPath =
@@ -808,10 +820,16 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private Texture2D cachedViAltarGeneratedF2TestTexture;
   private Texture2D cachedViAltarGeneratedF3TestTexture;
+  private Texture2D cachedViAltarEngineF2TestTexture;
+  private Texture2D cachedViAltarEngineF3TestTexture;
   [System.NonSerialized]
   // Default workflow: use generated/rendered distance graphics.
   // Captured assets remain available only as an optional comparison aid.
   private bool previewUseGeneratedViAltarF2 = true;
+
+  // Separate ViewEdit test. Builds F2/F3 from the 96x56 extract at the
+  // original wall-ornament slot sizes (64x37 and 48x27, F3 drawn 47 wide).
+  private bool previewUseEngineViAltarSlots;
   private int previewDungeonLightStage = 1;
   [System.NonSerialized]
   private Texture2D cachedHookFrontTexture;
@@ -1111,6 +1129,16 @@ public class ViewportLayoutEditor : EditorWindow
     {
       DestroyImmediate(cachedViAltarGeneratedF3TestTexture);
       cachedViAltarGeneratedF3TestTexture = null;
+    }
+    if (cachedViAltarEngineF2TestTexture != null)
+    {
+      DestroyImmediate(cachedViAltarEngineF2TestTexture);
+      cachedViAltarEngineF2TestTexture = null;
+    }
+    if (cachedViAltarEngineF3TestTexture != null)
+    {
+      DestroyImmediate(cachedViAltarEngineF3TestTexture);
+      cachedViAltarEngineF3TestTexture = null;
     }
 
     RepaintGameViews();
@@ -5153,6 +5181,18 @@ public class ViewportLayoutEditor : EditorWindow
     if (GUILayout.Button(altarF2TestCaption, GUILayout.Width(150f)))
     {
       previewUseGeneratedViAltarF2 = !previewUseGeneratedViAltarF2;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+
+    GUILayout.Space(8f);
+    string engineAltarCaption = previewUseEngineViAltarSlots
+        ? "Engine Slots On"
+        : "Engine Slots";
+    if (GUILayout.Button(engineAltarCaption, GUILayout.Width(118f)))
+    {
+      previewUseEngineViAltarSlots = !previewUseEngineViAltarSlots;
       RefreshEditModePreview();
       RepaintGameViews();
       Repaint();
@@ -15159,9 +15199,11 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    Texture2D altar = previewUseGeneratedViAltarF2
-        ? GetViAltarGeneratedF2TestTexture()
-        : GetViAltarF2FrontTexture();
+    Texture2D altar = previewUseEngineViAltarSlots
+        ? GetViAltarEngineF2TestTexture()
+        : previewUseGeneratedViAltarF2
+            ? GetViAltarGeneratedF2TestTexture()
+            : GetViAltarF2FrontTexture();
     if (altar == null || !altar.isReadable)
       return;
 
@@ -15209,15 +15251,21 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
+      int altarX = previewUseEngineViAltarSlots
+          ? ViAltarEngineF2FrontX
+          : previewUseGeneratedViAltarF2
+              ? ViAltarWallOrnamentSet.f2.x
+              : ViAltarD2FrontX;
+      int altarY = previewUseEngineViAltarSlots
+          ? ViAltarEngineF2FrontY
+          : previewUseGeneratedViAltarF2
+              ? ViAltarWallOrnamentSet.f2.y
+              : ViAltarD2FrontY;
       BlitPieceIntoPreview(
           pixels,
           altar,
-          previewUseGeneratedViAltarF2
-              ? ViAltarWallOrnamentSet.f2.x
-              : ViAltarD2FrontX,
-          previewUseGeneratedViAltarF2
-              ? ViAltarWallOrnamentSet.f2.y
-              : ViAltarD2FrontY,
+          altarX,
+          altarY,
           false);
       return;
     }
@@ -15233,9 +15281,11 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    Texture2D altar = previewUseGeneratedViAltarF2
-        ? GetViAltarGeneratedF3TestTexture()
-        : GetViAltarF3FrontTexture();
+    Texture2D altar = previewUseEngineViAltarSlots
+        ? GetViAltarEngineF3TestTexture()
+        : previewUseGeneratedViAltarF2
+            ? GetViAltarGeneratedF3TestTexture()
+            : GetViAltarF3FrontTexture();
     if (altar == null || !altar.isReadable)
       return;
 
@@ -15288,15 +15338,21 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
+      int altarX = previewUseEngineViAltarSlots
+          ? ViAltarEngineF3FrontX
+          : previewUseGeneratedViAltarF2
+              ? ViAltarWallOrnamentSet.f3.x
+              : ViAltarD3FrontX;
+      int altarY = previewUseEngineViAltarSlots
+          ? ViAltarEngineF3FrontY
+          : previewUseGeneratedViAltarF2
+              ? ViAltarWallOrnamentSet.f3.y
+              : ViAltarD3FrontY;
       BlitPieceIntoPreview(
           pixels,
           altar,
-          previewUseGeneratedViAltarF2
-              ? ViAltarWallOrnamentSet.f3.x
-              : ViAltarD3FrontX,
-          previewUseGeneratedViAltarF2
-              ? ViAltarWallOrnamentSet.f3.y
-              : ViAltarD3FrontY,
+          altarX,
+          altarY,
           false);
       return;
     }
@@ -15541,6 +15597,50 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
+  /// ViewEdit test. Shrinks the 96x56 extract into the original F2 slot,
+  /// 64x37, with the medium-distance colour map.
+  /// </summary>
+  private Texture2D GetViAltarEngineF2TestTexture()
+  {
+    if (cachedViAltarEngineF2TestTexture != null)
+      return cachedViAltarEngineF2TestTexture;
+
+    Texture2D source = GetViAltarFrontTexture();
+    if (source == null || !source.isReadable)
+      return null;
+
+    cachedViAltarEngineF2TestTexture = GenerateDmScaledWallDecoration(
+        source,
+        ViAltarEngineF2Width,
+        ViAltarEngineF2Height,
+        WallOrnamentMediumColorMap,
+        "VI Altar Engine F2 64x37");
+    return cachedViAltarEngineF2TestTexture;
+  }
+
+  /// <summary>
+  /// ViewEdit test. Shrinks the 96x56 extract into the measured F3 slot,
+  /// 42x24, with the far-distance colour map.
+  /// </summary>
+  private Texture2D GetViAltarEngineF3TestTexture()
+  {
+    if (cachedViAltarEngineF3TestTexture != null)
+      return cachedViAltarEngineF3TestTexture;
+
+    Texture2D source = GetViAltarFrontTexture();
+    if (source == null || !source.isReadable)
+      return null;
+
+    cachedViAltarEngineF3TestTexture = GenerateDmScaledWallDecoration(
+        source,
+        ViAltarEngineF3Width,
+        ViAltarEngineF3Height,
+        WallOrnamentFarColorMap,
+        "VI Altar Engine F3 42x24");
+    return cachedViAltarEngineF3TestTexture;
+  }
+
+  /// <summary>
   /// Applies a Dungeon Master distance colour map to an already-sized wall
   /// decoration. Pixel positions are preserved 1:1; there is no scaling.
   /// </summary>
@@ -15632,12 +15732,16 @@ public class ViewportLayoutEditor : EditorWindow
     // CSBwin ShrinkBLT:
     // step = (((sourceSize << 10) / destinationSize) << 6)
     //      = floor(sourceSize * 65536 / destinationSize)
-    // start = step/2 + 0x7fff
     // The integer source coordinate is the upper 16 bits of the accumulator.
+    // F2 keeps the rounded start (step/2 + 0x7fff). F3 uses step/2 alone:
+    // the extra round pulls in the gray highlight row (which the far map
+    // turns black) and the green pixels beside the yellow gems.
     int stepX = ((source.width << 10) / targetWidth) << 6;
     int stepY = ((source.height << 10) / targetHeight) << 6;
-    int startX = (stepX >> 1) + 0x7fff;
-    int startY = (stepY >> 1) + 0x7fff;
+    bool farDistance = ReferenceEquals(colorMap, WallOrnamentFarColorMap);
+    int roundBias = farDistance ? 0 : 0x7fff;
+    int startX = (stepX >> 1) + roundBias;
+    int startY = (stepY >> 1) + roundBias;
 
     Color32[] brightPalette = DungeonViewportLightPalettes[0];
 
@@ -15682,6 +15786,9 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
+    if (farDistance)
+      MatchFarTopRowBlackToNeighbors(targetPixels, targetWidth, targetHeight);
+
     Texture2D generated = new Texture2D(
         targetWidth,
         targetHeight,
@@ -15693,6 +15800,56 @@ public class ViewportLayoutEditor : EditorWindow
     generated.SetPixels32(targetPixels);
     generated.Apply(false, false);
     return generated;
+  }
+
+  /// <summary>
+  /// The far-distance map turns a few gray samples on the top edge black.
+  /// Those pixels should keep the colour of the other pixels on that row.
+  /// A fully black top row is cleared so the wall colour shows through.
+  /// </summary>
+  private static void MatchFarTopRowBlackToNeighbors(
+      Color32[] pixels,
+      int width,
+      int height)
+  {
+    int row = (height - 1) * width;
+    for (int x = 0; x < width; x++)
+    {
+      Color32 pixel = pixels[row + x];
+      if (pixel.a == 0 || pixel.r != 0 || pixel.g != 0 || pixel.b != 0)
+        continue;
+
+      bool found = false;
+      Color32 replacement = pixel;
+      for (int distance = 1; distance < width; distance++)
+      {
+        int left = x - distance;
+        if (left >= 0 && IsOpaqueNonBlack(pixels[row + left]))
+        {
+          replacement = pixels[row + left];
+          found = true;
+          break;
+        }
+
+        int right = x + distance;
+        if (right < width && IsOpaqueNonBlack(pixels[row + right]))
+        {
+          replacement = pixels[row + right];
+          found = true;
+          break;
+        }
+      }
+
+      pixels[row + x] = found
+          ? replacement
+          : new Color32(0, 0, 0, 0);
+    }
+  }
+
+  private static bool IsOpaqueNonBlack(Color32 pixel)
+  {
+    return pixel.a != 0
+        && (pixel.r != 0 || pixel.g != 0 || pixel.b != 0);
   }
 
   /// <summary>
