@@ -119,6 +119,15 @@ public class ViewportLayoutEditor : EditorWindow
   private const int HookD2FrontWidth = 19;
   private const int HookD2FrontHeight = 18;
 
+  // Coordinate-set-0 front at distance 3. The original box is 16x12.
+  // The 28-wide F1 crop drops one pixel on each side, so the drawn
+  // result is 14x12. Screen top-left (105, 75), framebuffer bottom-left
+  // Y = 200 - 75 - 12 = 113.
+  private const int HookD3FrontX = 105;
+  private const int HookD3FrontY = 113;
+  private const int HookD3FrontWidth = 14;
+  private const int HookD3FrontHeight = 12;
+
   // Original DOS Grate front placement on the wall immediately in front of
   // the party. Measured from the supplied 320x200 original screenshot:
   // source = 32x28, screen top-left = (96,125), therefore framebuffer
@@ -824,6 +833,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedWoodRingFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedWoodRingGeneratedF2FrontTexture;
+  [System.NonSerialized]
+  private Texture2D cachedWoodRingGeneratedF3FrontTexture;
   [System.NonSerialized]
   private Texture2D cachedWoodRingSideTexture;
   [System.NonSerialized]
@@ -11814,6 +11825,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitHookStyleD1SidesIntoPreview(pixels);
     BlitGrateD1SidesIntoPreview(pixels);
     BlitSlimeD1SidesIntoPreview(pixels);
+    BlitWoodRingD3FrontIntoPreview(pixels);
     BlitWoodRingD2FrontIntoPreview(pixels);
     BlitWoodRingD1FrontIntoPreview(pixels);
     BlitSlimeD1FrontIntoPreview(pixels);
@@ -14516,6 +14528,102 @@ public class ViewportLayoutEditor : EditorWindow
     return HallOfChampionsWallOrnamentSourceIds[index];
   }
 
+  private void BlitWoodRingD3FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D woodRingFront = GetWoodRingGeneratedF3FrontTexture();
+    if (woodRingFront == null || !woodRingFront.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int d1X = previewX + forwardX;
+    int d1Y = previewY + forwardY;
+    int d2X = previewX + forwardX * 2;
+    int d2Y = previewY + forwardY * 2;
+    int wallTileX = previewX + forwardX * 3;
+    int wallTileY = previewY + forwardY * 3;
+    if (!previewMiniMap.IsInside(d1X, d1Y)
+        || previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(d2X, d2Y)
+        || previewMiniMap.GetTile(d2X, d2Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(wallTileX, wallTileY))
+    {
+      return;
+    }
+
+    string viewedWallSide = FacingName(previewFacing);
+    string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!IsWoodRingOrnament(ornament))
+        continue;
+
+      bool placementMatches;
+      if (ornament.wallTilePlacement)
+      {
+        placementMatches =
+            ornament.x == wallTileX
+            && ornament.y == wallTileY
+            && string.Equals(
+                ornament.wall,
+                visiblePhysicalWallFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        placementMatches =
+            ornament.x == d2X
+            && ornament.y == d2Y
+            && string.Equals(
+                ornament.wall,
+                viewedWallSide,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (!placementMatches)
+        continue;
+
+      BlitWallOrnamentIntoPreview(
+          pixels,
+          woodRingFront,
+          HookFrontWallOrnamentSet.f3.x,
+          HookFrontWallOrnamentSet.f3.y,
+          false);
+      return;
+    }
+  }
+
+  private Texture2D GetWoodRingGeneratedF3FrontTexture()
+  {
+    if (cachedWoodRingGeneratedF3FrontTexture != null)
+      return cachedWoodRingGeneratedF3FrontTexture;
+
+    Texture2D source = GetWoodRingFrontTexture();
+    if (source == null || !source.isReadable)
+      return null;
+
+    cachedWoodRingGeneratedF3FrontTexture = GenerateDmScaledWallDecoration(
+        source,
+        HookFrontWallOrnamentSet.f3.width,
+        HookFrontWallOrnamentSet.f3.height,
+        WallOrnamentFarColorMap,
+        "Wood Ring F3 Generated from F1");
+    return cachedWoodRingGeneratedF3FrontTexture;
+  }
+
   private void BlitWoodRingD2FrontIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -15516,7 +15624,10 @@ public class ViewportLayoutEditor : EditorWindow
               HookD2FrontX,
               HookD2FrontY),
           new WallOrnamentDepthSlot(
-              0, 0, 0, 0));
+              HookD3FrontWidth,
+              HookD3FrontHeight,
+              HookD3FrontX,
+              HookD3FrontY));
 
   /// <summary>
   /// Shared generated wall-ornament path.
