@@ -1997,9 +1997,6 @@ public class ViewportLayoutEditor : EditorWindow
     if (IsFrontWallF1Card(piece))
       return f1CenterWall;
 
-    if (IsFrontWallF2Card(piece))
-      return false;
-
     if (IsFrontWallF3Card(piece))
     {
       if (IsDoorF2FrontView())
@@ -12263,12 +12260,18 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Native D3 L/C/R is drawn in the normal far-to-near wall pass.
 
-    // Manual isolated-composition path for Door F2 frame pieces.
-    // At the real (1,4) North F2-door pose they were already drawn in the
-    // dedicated door layering block above. Everywhere else they default OFF
-    // and appear only when ViewEdit explicitly enables them.
-    if (!IsDoorF2FrontView())
+    // Final F2 door layering.
+    // The earlier dedicated F2 composition occurs inside the far-to-near wall
+    // pass, where native LeftF2/RightF2 can paint over the frame edges later.
+    // Recompose the F2 door here after all walls: frames first, then door.
+    if (IsDoorF2FrontView())
     {
+      BlitBlackDoorF2FramesIntoPreview(pixels);
+      BlitBlackDoorF2DoorIntoPreview(pixels);
+    }
+    else
+    {
+      // Outside a real F2 door view, keep the existing isolated ViewEdit path.
       BlitBlackDoorF2FramesIntoPreview(pixels);
     }
 
@@ -12844,6 +12847,21 @@ public class ViewportLayoutEditor : EditorWindow
     if (texture != null)
       return texture;
 
+    // The F2 frame file is "Door Frame_Left_18x65.png" (space), while the
+    // F1/F3 frames use "Door_Frame_Left_*.png". Accept both spellings.
+    string spacedPath = preferredPath.Replace(
+        "Door_Frame_Left_",
+        "Door Frame_Left_");
+    if (!string.Equals(
+            spacedPath,
+            preferredPath,
+            System.StringComparison.Ordinal))
+    {
+      texture = AssetDatabase.LoadAssetAtPath<Texture2D>(spacedPath);
+      if (texture != null)
+        return texture;
+    }
+
     // Git/reset history has used both the new generic filename and the older
     // "Black Door Frame_Left_*" filename for the exact same door-frame art.
     // Accept either physical filename; internal ViewEdit piece names stay
@@ -13066,6 +13084,49 @@ public class ViewportLayoutEditor : EditorWindow
           rightY,
           rightMirror);
     }
+  }
+
+  private void BlitBlackDoorF2DoorIntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || !IsDoorF2FrontView())
+      return;
+
+    ViewportPiece carrier = FindLayoutPieceByName("BlackDoorF1");
+    ViewportPiece doorF2 = FindLayoutPieceByName("BlackDoorF2");
+    Texture2D f2Source = GetBlackDoorF2SourceTexture();
+    if (f2Source == null)
+      return;
+
+    int f2DoorX = carrier != null ? carrier.ResolvedBlackDoorF2X : 0;
+    int f2DoorY = carrier != null ? carrier.ResolvedBlackDoorF2Y : 0;
+    bool f2DoorMirror = blackDoorF2CardMirror;
+
+    if (doorF2 != null)
+    {
+      f2DoorX = doorF2.X;
+      f2DoorY = doorF2.Y;
+      f2DoorMirror = doorF2.MirrorHorizontally;
+
+      if (previewPositionOverrideByPiece.TryGetValue(
+              doorF2, out Vector2Int f2DoorOverride))
+      {
+        f2DoorX = f2DoorOverride.x;
+        f2DoorY = f2DoorOverride.y;
+      }
+
+      if (previewMirrorOverrideByPiece.TryGetValue(
+              doorF2, out bool f2DoorMirrorOverride))
+      {
+        f2DoorMirror = f2DoorMirrorOverride;
+      }
+    }
+
+    BlitPieceIntoPreview(
+        pixels,
+        f2Source,
+        f2DoorX,
+        f2DoorY,
+        f2DoorMirror);
   }
 
   private void BlitBlackDoorF3FramesIntoPreview(Color32[] pixels)
