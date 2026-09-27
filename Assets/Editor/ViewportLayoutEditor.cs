@@ -712,6 +712,8 @@ public class ViewportLayoutEditor : EditorWindow
   private int previewDungeonLevel = PreviewDungeonLevel;
   private string previewLevelJumpText = string.Empty;
   private DungeonMap previewMiniMap;
+  private readonly HashSet<Vector2Int> previewDoorTiles =
+      new HashSet<Vector2Int>();
   private string previewMiniMapLoadError;
   private Vector2 previewMiniMapScroll;
   private bool previewMiniMapMuted;
@@ -772,6 +774,11 @@ public class ViewportLayoutEditor : EditorWindow
   private const int HallOfChampionsPuddleFloorOrnamentOrdinal = 2;
   private const int HallOfChampionsRandomOrnamentModulo = 30;
   private const int HallOfChampionsDungeonSeed = 99;
+
+  private static readonly Regex DoorTileRegex =
+      new Regex(
+          @"\{\s*""x""\s*:\s*(?<x>-?\d+)\s*,\s*""y""\s*:\s*(?<y>-?\d+)\s*,[^{}]*?""type""\s*:\s*""Door""",
+          RegexOptions.Compiled);
 
   private static readonly Regex HallOfChampionsRawWallTileRegex =
       new Regex(
@@ -1811,6 +1818,30 @@ public class ViewportLayoutEditor : EditorWindow
     return SampleViewport17Cell(0, 1).IsStairsDown;
   }
 
+  /// <summary>
+  /// Generic player-relative center-door test. Depth 1 = F1, 2 = F2, 3 = F3.
+  /// No absolute map coordinate or facing is involved.
+  /// </summary>
+  private bool IsDoorAtViewportCenterDepth(int depth)
+  {
+    if (depth < 1)
+      return false;
+
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return false;
+
+    Viewport17Cell cell = SampleViewport17Cell(0, depth);
+    return cell.IsInside
+        && previewDoorTiles.Contains(new Vector2Int(cell.MapX, cell.MapY));
+  }
+
+  private bool IsDoorF1FrontView()
+  {
+    return IsDoorAtViewportCenterDepth(1);
+  }
+
+
   private bool IsWallNeededForCurrentPose(ViewportPiece piece)
   {
     if (piece == null)
@@ -1824,11 +1855,9 @@ public class ViewportLayoutEditor : EditorWindow
 
     string name = piece.Name ?? string.Empty;
 
-    // At the verified Black Door F1 pose, the door occupies the front opening.
-    // The normal FrontF2 wall is therefore not a needed piece for this view.
-    if (previewX == 1
-        && previewY == 3
-        && previewFacing == DungeonFacing.North
+    // A door directly ahead occupies the F1 center opening, so the normal
+    // FrontF2 wall behind it is not needed. Player-relative; no map coordinate.
+    if (IsDoorF1FrontView()
         && (IsFrontWallF2Card(piece)
             || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)))
     {
@@ -1850,15 +1879,15 @@ public class ViewportLayoutEditor : EditorWindow
     // dedicated door-pose rules were ever reached.
     if (IsBlackDoorEditorPiece(piece))
     {
+      if (IsDoorF1FrontView())
+      {
+        return name == "Black Door Frame Left F1"
+            || name == "Black Door Frame Right F1"
+            || name == "BlackDoorF1";
+      }
+
       if (previewX == 1 && previewFacing == DungeonFacing.North)
       {
-        if (previewY == 3)
-        {
-          return name == "Black Door Frame Left F1"
-              || name == "Black Door Frame Right F1"
-              || name == "BlackDoorF1";
-        }
-
         if (previewY == 4)
         {
           return name == "Black Door Frame Left F2"
@@ -3061,7 +3090,7 @@ public class ViewportLayoutEditor : EditorWindow
       enabledBefore = enabledPreviewState.Enabled;
     }
 
-    // At the Black Door F1 pose the center FrontF1 is replaced by the door,
+    // When a door is directly ahead at F1 the center FrontF1 is replaced by the door,
     // but the normal LeftF1/RightF1 side walls are part of the automatic view.
     // Manual ViewEdit overrides below can still turn either side off again.
     if (IsBlackDoorF1ManualSideWallCandidate(piece))
@@ -8730,6 +8759,27 @@ public class ViewportLayoutEditor : EditorWindow
     do { } while (false);
   }
 
+  private void LoadPreviewDoorTilesFromJson(string json)
+  {
+    previewDoorTiles.Clear();
+
+    if (string.IsNullOrEmpty(json))
+      return;
+
+    MatchCollection matches = DoorTileRegex.Matches(json);
+    for (int i = 0; i < matches.Count; i++)
+    {
+      Match match = matches[i];
+      if (!int.TryParse(match.Groups["x"].Value, out int x)
+          || !int.TryParse(match.Groups["y"].Value, out int y))
+      {
+        continue;
+      }
+
+      previewDoorTiles.Add(new Vector2Int(x, y));
+    }
+  }
+
   private bool TryLoadPreviewLevel(int level)
   {
     if (level < 0 || level >= PreviewLevelMapPaths.Length)
@@ -8744,11 +8794,14 @@ public class ViewportLayoutEditor : EditorWindow
 
     DungeonMap previousMap = previewMiniMap;
     int previousLevel = previewDungeonLevel;
+    HashSet<Vector2Int> previousDoorTiles =
+        new HashSet<Vector2Int>(previewDoorTiles);
 
     try
     {
       string json = File.ReadAllText(path);
       previewMiniMap = DungeonMap.LoadFromJsonText(json);
+      LoadPreviewDoorTilesFromJson(json);
       previewDungeonLevel = level;
 
       ChampionMirrorMapRoot mirrorRoot =
@@ -8783,6 +8836,10 @@ public class ViewportLayoutEditor : EditorWindow
     {
       previewMiniMap = previousMap;
       previewDungeonLevel = previousLevel;
+      previewDoorTiles.Clear();
+      foreach (Vector2Int doorTile in previousDoorTiles)
+        previewDoorTiles.Add(doorTile);
+
       if (previewMiniMap == null)
       {
         previewChampionMirrors = new ChampionMirrorPlacement[0];
@@ -9968,10 +10025,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Mirror the Black Door suppression/side-wall rules used by Compose so
     // the Enabled checkboxes and ACTIVE diagnostic remain truthful there too.
-    bool blackDoorF1Pose =
-        previewX == 1
-        && previewY == 3
-        && previewFacing == DungeonFacing.North;
+    bool blackDoorF1Pose = IsDoorF1FrontView();
     bool blockD2ForBlackDoor = blackDoorF1Pose;
     bool suppressD2CenterForBlackDoor =
         previewX == 1
@@ -10773,48 +10827,9 @@ public class ViewportLayoutEditor : EditorWindow
     if (layout == null || layout.Pieces == null)
       return;
 
-    if (previewFacing != DungeonFacing.North || previewX != 1)
-      return;
-
-    if (previewY == 4)
-    {
-      // Initialize the ViewEdit F2 card once for this editor session.
-      // Do not force it back on every preview compose, otherwise the
-      // user's Enabled toggle is immediately overwritten.
-      if (!blackDoorF2CardInitialized)
-      {
-        blackDoorF2CardEnabled = true;
-        blackDoorF2CardInitialized = true;
-      }
-      blackDoorFrameLeftF3CardEnabled = false;
-      blackDoorFrameRightF3CardEnabled = false;
-
-      for (int i = 0; i < layout.Pieces.Count; i++)
-      {
-        ViewportPiece piece = layout.Pieces[i];
-        if (piece == null)
-          continue;
-
-        if (piece.Name == "Black Door Frame Left F2"
-            || piece.Name == "Black Door Frame Right F2")
-        {
-          piece.Enabled = true;
-        }
-
-        // Black Door F2 occupies the front view at (1,4) North. Any normal
-        // FrontF3 card/graphic must stay disabled so it cannot appear behind
-        // the dedicated door view.
-        if (IsFrontWallF3Card(piece)
-            || piece.Graphic == DungeonGraphicType.FrontWallF3)
-        {
-          piece.Enabled = false;
-        }
-      }
-
-      return;
-    }
-
-    if (previewY == 3)
+    // F1 is geometry-driven: any Door tile directly ahead uses the verified
+    // F1 door composition. F2/F3 remain legacy coordinate exceptions for now.
+    if (IsDoorF1FrontView())
     {
       blackDoorF2CardEnabled = false;
       blackDoorF2CardInitialized = true;
@@ -10823,7 +10838,7 @@ public class ViewportLayoutEditor : EditorWindow
       blackDoorFrameLeftF3CardEnabled = false;
       blackDoorFrameRightF3CardEnabled = false;
 
-      // Verified Black Door F1 layout for the 1,3 North front-door view.
+      // Verified F1 door layout, now selected by a relative door-at-F1 test.
       // Display coordinates:
       //   Left frame  X=44  Y=46
       //   Right frame X=154 Y=46
@@ -10888,7 +10903,7 @@ public class ViewportLayoutEditor : EditorWindow
           }
         }
 
-        // Black Door F1 occupies the front opening at (1,3) North.
+        // An F1 door occupies the center opening.
         // Keep the normal FrontF2 wall disabled for this dedicated door view.
         if (IsFrontWallF2Card(piece)
             || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
@@ -10899,6 +10914,48 @@ public class ViewportLayoutEditor : EditorWindow
 
       return;
     }
+
+    if (previewFacing != DungeonFacing.North || previewX != 1)
+      return;
+
+    if (previewY == 4)
+    {
+      // Initialize the ViewEdit F2 card once for this editor session.
+      // Do not force it back on every preview compose, otherwise the
+      // user's Enabled toggle is immediately overwritten.
+      if (!blackDoorF2CardInitialized)
+      {
+        blackDoorF2CardEnabled = true;
+        blackDoorF2CardInitialized = true;
+      }
+      blackDoorFrameLeftF3CardEnabled = false;
+      blackDoorFrameRightF3CardEnabled = false;
+
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (piece == null)
+          continue;
+
+        if (piece.Name == "Black Door Frame Left F2"
+            || piece.Name == "Black Door Frame Right F2")
+        {
+          piece.Enabled = true;
+        }
+
+        // Black Door F2 occupies the front view at (1,4) North. Any normal
+        // FrontF3 card/graphic must stay disabled so it cannot appear behind
+        // the dedicated door view.
+        if (IsFrontWallF3Card(piece)
+            || piece.Graphic == DungeonGraphicType.FrontWallF3)
+        {
+          piece.Enabled = false;
+        }
+      }
+
+      return;
+    }
+
 
     if (previewY != 5)
       return;
@@ -11545,17 +11602,13 @@ public class ViewportLayoutEditor : EditorWindow
           && (previewY == 4 || previewY == 5)
           && previewFacing == DungeonFacing.North;
       bool blockViewport17NativeD2ForBlackDoor =
-          previewX == 1
-          && previewY == 3
-          && previewFacing == DungeonFacing.North;
+          IsDoorF1FrontView();
       bool suppressViewport17NativeD2CenterForBlackDoorF2 =
           previewX == 1
           && previewY == 4
           && previewFacing == DungeonFacing.North;
       bool blockViewport17NativeD1ForBlackDoor =
-          previewX == 1
-          && previewY == 3
-          && previewFacing == DungeonFacing.North;
+          IsDoorF1FrontView();
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
         ViewportPiece piece = layout.Pieces[i];
@@ -11744,22 +11797,18 @@ public class ViewportLayoutEditor : EditorWindow
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
           continue;
 
-        // Door F1 frame pieces are explicitly drawn immediately after
-        // the door below, so skip their normal list-order draw at this pose.
-        if (previewX == 1
-            && previewY == 3
-            && previewFacing == DungeonFacing.North
+        // F1 door frames are drawn by the dedicated F1 door composition,
+        // not in normal list order.
+        if (IsDoorF1FrontView()
             && (piece.Name == "Black Door Frame Left F1"
                 || piece.Name == "Black Door Frame Right F1"))
         {
           continue;
         }
 
-        // (1,3) North Black Door F1 occupies the center opening.
-        // Do not draw the normal FrontF2 wall through the door.
-        if (previewX == 1
-            && previewY == 3
-            && previewFacing == DungeonFacing.North
+        // A door directly ahead occupies the F1 center opening.
+        // Do not draw the normal FrontF2 wall through it.
+        if (IsDoorF1FrontView()
             && (IsFrontWallF2Card(piece)
                 || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)))
         {
@@ -12671,14 +12720,12 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// (1,3) North Black Door F1 front view.
-  /// Uses the dedicated 96x88 source texture and does not write pose data.
+  /// F1 door front view selected from the relative center tile.
+  /// Uses the existing verified 96x88 door composition.
   /// </summary>
   private bool IsVerifiedBlackDoorF1Pose()
   {
-    return previewX == 1
-        && previewY == 3
-        && previewFacing == DungeonFacing.North;
+    return IsDoorF1FrontView();
   }
 
   private bool IsBlackDoorF1ManualSideWallCandidate(ViewportPiece piece)
@@ -12693,9 +12740,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null || piece.Name != "BlackDoorF1")
       return false;
 
-    return previewX == 1
-        && previewY == 3
-        && previewFacing == DungeonFacing.North;
+    return IsDoorF1FrontView();
   }
 
   /// <summary>
