@@ -961,6 +961,11 @@ public class ViewportLayoutEditor : EditorWindow
   // X/Y/Facing changes. They are never written to the layout asset/pose store.
   private readonly Dictionary<ViewportPiece, Vector2Int> previewPositionOverrideByPiece =
       new Dictionary<ViewportPiece, Vector2Int>();
+  // Snapshot of the automatic/code Ref X/Y shown when the user first edits
+  // a piece at the current pose. Manual X/Y changes must never move Ref X/Y.
+  // Values are display/top-origin coordinates and are cleared on pose change.
+  private readonly Dictionary<ViewportPiece, Vector2Int> previewPositionReferenceByPiece =
+      new Dictionary<ViewportPiece, Vector2Int>();
 
   // ViewEdit-only Enabled override for exception pieces. This lets the user hide
   // an automatically active exception without fighting the exception rule.
@@ -3340,8 +3345,13 @@ public class ViewportLayoutEditor : EditorWindow
         && previewX == 1
         && previewY == 5
         && previewFacing == DungeonFacing.North;
+    bool blackDoorF3FramePositionPreview =
+        piece.Name == "Black Door Frame Left F3"
+        || piece.Name == "Black Door Frame Right F3";
     bool temporaryPositionPreview =
-        normalWallPositionPreview || blackDoorF3PositionPreview;
+        normalWallPositionPreview
+        || blackDoorF3PositionPreview
+        || blackDoorF3FramePositionPreview;
 
     int editX = piece.X;
     int editUnityY = piece.Y;
@@ -3390,6 +3400,13 @@ public class ViewportLayoutEditor : EditorWindow
       SelectPiece(index);
       if (temporaryPositionPreview)
       {
+        if (hasCanonicalRef
+            && !previewPositionReferenceByPiece.ContainsKey(piece))
+        {
+          previewPositionReferenceByPiece[piece] =
+              new Vector2Int(canonicalRefX, canonicalRefY);
+        }
+
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
 
         previewPositionChangedThisFrame = true;
@@ -3416,6 +3433,13 @@ public class ViewportLayoutEditor : EditorWindow
       SelectPiece(index);
       if (temporaryPositionPreview)
       {
+        if (hasCanonicalRef
+            && !previewPositionReferenceByPiece.ContainsKey(piece))
+        {
+          previewPositionReferenceByPiece[piece] =
+              new Vector2Int(canonicalRefX, canonicalRefY);
+        }
+
         previewPositionOverrideByPiece[piece] = new Vector2Int(editX, editUnityY);
         previewPositionChangedThisFrame = true;
         RefreshTemporaryNormalWallPreview();
@@ -5383,16 +5407,16 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.EndHorizontal();
 
-    // Lists every wall card so a wrong view can be corrected. Show Walls, or
-    // a pose change, returns the list to only the walls that view needs.
+    // Lists every wall card for manual composition/testing. This button is
+    // LIST-ONLY: it must never change what is currently rendered. In
+    // particular, after Hide Walls the viewport stays blank and the user can
+    // enable individual pieces one by one from the expanded ViewEdit list.
+    // Show Walls, or a pose change, returns the list to the normal pose view.
     EditorGUILayout.BeginHorizontal();
     if (GUILayout.Button("All Walls", GUILayout.Width(90f)))
     {
-      previewDisableAllWalls = false;
       showOnlyWallsNeededForCurrentPose = false;
       showWallsActivFilter = false;
-      RefreshEditModePreview();
-      RepaintGameViews();
       Repaint();
     }
 
@@ -8153,6 +8177,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewFrontF1WidthOverrideByPiece.Clear();
     previewFrontF3WidthOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
+    previewPositionReferenceByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
     previewGraphicOverrideByPiece.Clear();
     previewDisableAllWalls = false;
@@ -8217,6 +8242,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewFrontF1WidthOverrideByPiece.Clear();
     previewFrontF3WidthOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
+    previewPositionReferenceByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
     previewGraphicOverrideByPiece.Clear();
     previewDisableAllWalls = false;
@@ -8546,6 +8572,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewFrontF1WidthOverrideByPiece.Clear();
     previewFrontF3WidthOverrideByPiece.Clear();
     previewPositionOverrideByPiece.Clear();
+    previewPositionReferenceByPiece.Clear();
     previewEnabledOverrideByPiece.Clear();
     previewGraphicOverrideByPiece.Clear();
     previewDisableAllWalls = false;
@@ -9242,6 +9269,15 @@ public class ViewportLayoutEditor : EditorWindow
       out int x,
       out int y)
   {
+    if (piece != null
+        && previewPositionReferenceByPiece.TryGetValue(
+            piece, out Vector2Int frozenReference))
+    {
+      x = frozenReference.x;
+      y = frozenReference.y;
+      return true;
+    }
+
     // V17 Game View dest is the card Ref. Live X/Y must not show red against
     // an older family default (for example old FrontF3 Ref 7).
     if (IsViewport17WallAuthorityActive()
@@ -12345,6 +12381,17 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Native D3 L/C/R is drawn in the normal far-to-near wall pass.
 
+    // Manual isolated-composition path for Black Door F3 frame pieces.
+    // At the real (1,5) North F3-door pose they were already drawn in the
+    // dedicated door layering block above. Everywhere else they default OFF
+    // and appear only when ViewEdit explicitly enables them.
+    if (!(previewX == 1
+          && previewY == 5
+          && previewFacing == DungeonFacing.North))
+    {
+      BlitBlackDoorF3FramesIntoPreview(pixels);
+    }
+
     // Stairs are map geometry, not wall ornaments. If the cell directly
     // ahead is a Stairs tile, draw the original F1 stairs front over the
     // completed corridor geometry. No Hall coordinate is hardcoded here.
@@ -12987,57 +13034,96 @@ public class ViewportLayoutEditor : EditorWindow
   /// </summary>
   private void BlitBlackDoorF3FramesIntoPreview(Color32[] pixels)
   {
-    if (previewX != 1
-        || previewY != 5
-        || previewFacing != DungeonFacing.North)
-    {
+    if (pixels == null)
       return;
-    }
 
     Texture2D source = GetBlackDoorFrameF3SourceTexture();
     if (source == null)
       return;
 
-    // Exact Black Door F3 exception: the two frame cards default ON at
-    // (1,5) North, but their ViewEdit Enabled toggles can temporarily hide
-    // either side for visual checking.
-    ViewportPiece leftF3 = FindLayoutPieceByName("Black Door Frame Left F3");
-    // The 1,5 North exception defaults both F3 frames ON regardless of the
-    // stored layout Enabled flag. A temporary ViewEdit toggle can override it.
-    bool leftEnabled = blackDoorFrameLeftF3CardEnabled;
-    if (leftF3 != null
-        && previewEnabledOverrideByPiece.TryGetValue(leftF3, out bool leftPreviewEnabled))
-      leftEnabled = leftPreviewEnabled;
+    bool automaticF3DoorPose =
+        previewX == 1
+        && previewY == 5
+        && previewFacing == DungeonFacing.North;
 
-    if (leftEnabled)
+    ViewportPiece leftF3 =
+        FindLayoutPieceByName("Black Door Frame Left F3");
+    ViewportPiece rightF3 =
+        FindLayoutPieceByName("Black Door Frame Right F3");
+
+    // Outside the real F3 Black Door pose both frame pieces default OFF, but
+    // ViewEdit may explicitly enable them for isolated composition/testing.
+    bool leftEnabled =
+        automaticF3DoorPose && blackDoorFrameLeftF3CardEnabled;
+    bool rightEnabled =
+        automaticF3DoorPose && blackDoorFrameRightF3CardEnabled;
+
+    if (leftF3 != null
+        && previewEnabledOverrideByPiece.TryGetValue(
+            leftF3, out bool leftPreviewEnabled))
     {
-      int leftX = leftF3 != null ? leftF3.X : blackDoorFrameLeftF3CardX;
-      int leftY = leftF3 != null ? leftF3.Y : blackDoorFrameLeftF3CardY;
+      leftEnabled = leftPreviewEnabled;
+    }
+
+    if (rightF3 != null
+        && previewEnabledOverrideByPiece.TryGetValue(
+            rightF3, out bool rightPreviewEnabled))
+    {
+      rightEnabled = rightPreviewEnabled;
+    }
+
+    if (leftEnabled && leftF3 != null)
+    {
+      int leftX = leftF3.X;
+      int leftY = leftF3.Y;
+      bool leftMirror = blackDoorFrameLeftF3CardMirror;
+
+      if (previewPositionOverrideByPiece.TryGetValue(
+              leftF3, out Vector2Int leftPosition))
+      {
+        leftX = leftPosition.x;
+        leftY = leftPosition.y;
+      }
+
+      if (previewMirrorOverrideByPiece.TryGetValue(
+              leftF3, out bool leftMirrorOverride))
+      {
+        leftMirror = leftMirrorOverride;
+      }
+
       BlitPieceIntoPreview(
           pixels,
           source,
           leftX,
           leftY,
-          blackDoorFrameLeftF3CardMirror);
+          leftMirror);
     }
 
-    ViewportPiece rightF3 = FindLayoutPieceByName("Black Door Frame Right F3");
-    // Same rule for the right F3 frame: default ON, temporary toggle wins.
-    bool rightEnabled = blackDoorFrameRightF3CardEnabled;
-    if (rightF3 != null
-        && previewEnabledOverrideByPiece.TryGetValue(rightF3, out bool rightPreviewEnabled))
-      rightEnabled = rightPreviewEnabled;
-
-    if (rightEnabled)
+    if (rightEnabled && rightF3 != null)
     {
-      int rightX = rightF3 != null ? rightF3.X : blackDoorFrameRightF3CardX;
-      int rightY = rightF3 != null ? rightF3.Y : blackDoorFrameRightF3CardY;
+      int rightX = rightF3.X;
+      int rightY = rightF3.Y;
+      bool rightMirror = true;
+
+      if (previewPositionOverrideByPiece.TryGetValue(
+              rightF3, out Vector2Int rightPosition))
+      {
+        rightX = rightPosition.x;
+        rightY = rightPosition.y;
+      }
+
+      if (previewMirrorOverrideByPiece.TryGetValue(
+              rightF3, out bool rightMirrorOverride))
+      {
+        rightMirror = rightMirrorOverride;
+      }
+
       BlitPieceIntoPreview(
           pixels,
           source,
           rightX,
           rightY,
-          true);
+          rightMirror);
     }
   }
 
