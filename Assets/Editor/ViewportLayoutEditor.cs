@@ -973,6 +973,8 @@ public class ViewportLayoutEditor : EditorWindow
     public int FrontF3Width;
   }
 
+  private static string lastLoggedF0DrawDiagnosticKey;
+
   // Temporary 320×200 presentation (restored on close / Play Mode).
   private bool presentationOverrideActive;
   private bool canvasScalerStateSaved;
@@ -4033,17 +4035,26 @@ public class ViewportLayoutEditor : EditorWindow
     if (!s_viewEditGlobalNavDispatch && focusedWindow != this)
       return;
 
-    // Arrow keys are dedicated to ViewEdit navigation. Up/Down use absolute
-    // map directions rather than player-facing-relative forward/back:
-    // Up = North, Down = South. Do not trust stale editingTextField focus.
-    int worldDy;
+    // Arrow keys are dedicated to ViewEdit navigation. Up moves in the
+    // direction of the green facing triangle; Down moves exactly opposite it.
+    // Do not trust stale editingTextField focus.
+    int worldDx = 0;
+    int worldDy = 0;
     switch (current.keyCode)
     {
       case KeyCode.UpArrow:
-        worldDy = -1; // absolute map North (JSON Y decreases upward)
+        DungeonMap.GetForwardOffset(
+            previewFacing,
+            out worldDx,
+            out worldDy);
         break;
       case KeyCode.DownArrow:
-        worldDy = 1; // absolute map South (JSON Y increases downward)
+        DungeonMap.GetForwardOffset(
+            previewFacing,
+            out worldDx,
+            out worldDy);
+        worldDx = -worldDx;
+        worldDy = -worldDy;
         break;
       default:
         return;
@@ -4055,7 +4066,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap == null)
       return;
 
-    int nextX = previewX;
+    int nextX = previewX + worldDx;
     int nextY = previewY + worldDy;
 
     if (!previewMiniMap.CanEnter(nextX, nextY))
@@ -11788,6 +11799,27 @@ public class ViewportLayoutEditor : EditorWindow
                 piece, out int livePreviewWidth))
         {
           resolvedF1Width = livePreviewWidth;
+        }
+
+        if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
+        {
+          string f0DrawDiagnosticKey =
+              previewX + "," + previewY + "," + previewFacing
+              + "|" + piece.Name
+              + "|" + resolvedX
+              + "|" + resolvedY
+              + "|" + mirror;
+          if (lastLoggedF0DrawDiagnosticKey != f0DrawDiagnosticKey)
+          {
+            lastLoggedF0DrawDiagnosticKey = f0DrawDiagnosticKey;
+            Debug.Log(
+                "F0 DRAW | "
+                + previewX + "," + previewY + " " + previewFacing.ToString().ToUpperInvariant()
+                + " | " + piece.Name
+                + " | X=" + resolvedX
+                + " | Y=" + resolvedY
+                + " | mirror=" + (mirror ? "ON" : "OFF"));
+          }
         }
 
         // LeftS3 / RightS3 use handed-source mirroring.  The ViewEdit Mirror
