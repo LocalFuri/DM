@@ -7731,17 +7731,12 @@ public class ViewportLayoutEditor : EditorWindow
 
         string marker = null;
         Color markerColor = Color.black;
+        bool drawFacingTriangle = false;
 
         if (x == previewX && y == previewY)
         {
-          switch (previewFacing)
-          {
-            case DungeonFacing.North: marker = "▲"; break;
-            case DungeonFacing.East: marker = "▶"; break;
-            case DungeonFacing.South: marker = "▼"; break;
-            case DungeonFacing.West: marker = "◀"; break;
-          }
-          markerColor = new Color(1f, 0.75f, 0f, 1f);
+          drawFacingTriangle = true;
+          markerColor = new Color(0f, 1f, 0f, 1f);
         }
         else if (tile != null && tile.TryGetStairsDirection(out bool stairsUp))
         {
@@ -7754,7 +7749,11 @@ public class ViewportLayoutEditor : EditorWindow
           markerColor = Color.red;
         }
 
-        if (!string.IsNullOrEmpty(marker))
+        if (drawFacingTriangle)
+        {
+          DrawPreviewFacingTriangle(fillRect, previewFacing, markerColor);
+        }
+        else if (!string.IsNullOrEmpty(marker))
         {
           Color saved = GUI.contentColor;
           GUI.contentColor = markerColor;
@@ -7774,6 +7773,64 @@ public class ViewportLayoutEditor : EditorWindow
         }
       }
     }
+  }
+
+  private static void DrawPreviewFacingTriangle(
+      Rect fillRect,
+      DungeonFacing facing,
+      Color color)
+  {
+    float pad = Mathf.Max(1.5f, Mathf.Min(fillRect.width, fillRect.height) * 0.16f);
+    float left = fillRect.x + pad;
+    float right = fillRect.xMax - pad;
+    float top = fillRect.y + pad;
+    float bottom = fillRect.yMax - pad;
+    float centerX = fillRect.center.x;
+    float centerY = fillRect.center.y;
+
+    Vector3[] points;
+    switch (facing)
+    {
+      case DungeonFacing.North:
+        points = new[]
+        {
+          new Vector3(centerX, top, 0f),
+          new Vector3(right, bottom, 0f),
+          new Vector3(left, bottom, 0f)
+        };
+        break;
+      case DungeonFacing.East:
+        points = new[]
+        {
+          new Vector3(right, centerY, 0f),
+          new Vector3(left, top, 0f),
+          new Vector3(left, bottom, 0f)
+        };
+        break;
+      case DungeonFacing.South:
+        points = new[]
+        {
+          new Vector3(centerX, bottom, 0f),
+          new Vector3(left, top, 0f),
+          new Vector3(right, top, 0f)
+        };
+        break;
+      default: // West
+        points = new[]
+        {
+          new Vector3(left, centerY, 0f),
+          new Vector3(right, bottom, 0f),
+          new Vector3(right, top, 0f)
+        };
+        break;
+    }
+
+    Handles.BeginGUI();
+    Color previousColor = Handles.color;
+    Handles.color = color;
+    Handles.DrawAAConvexPolygon(points);
+    Handles.color = previousColor;
+    Handles.EndGUI();
   }
 
   private void DrawPreviewNavigationPad()
