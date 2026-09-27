@@ -1282,12 +1282,9 @@ public class ViewportLayoutEditor : EditorWindow
       HandlePreviewStrafeKeyboard();
     }
 
-    editorScroll = EditorGUILayout.BeginScrollView(editorScroll);
-
     if (layout == null)
     {
       EditorGUILayout.HelpBox("Select a ViewportLayout asset.", MessageType.Info);
-      EditorGUILayout.EndScrollView();
       return;
     }
 
@@ -1309,7 +1306,12 @@ public class ViewportLayoutEditor : EditorWindow
 
     ClampSelectedPieceIndex();
 
+    // Keep the complete minimap outside the controls scroll area. The map is
+    // always visible as one fixed ViewEdit header; only the wall/feature rows
+    // below it scroll when the window eventually needs more vertical room.
     DrawMapPosePreviewControls();
+
+    editorScroll = EditorGUILayout.BeginScrollView(editorScroll);
 
     // Run the global ViewEdit right-click action only after DrawPreviewMiniMap
     // has had a chance to consume a right-click inside the minimap. This keeps
@@ -7585,40 +7587,157 @@ public class ViewportLayoutEditor : EditorWindow
     // Keep minimap arrow on the same previewFacing as viewport + Console.
     previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
 
-    EditorGUILayout.BeginHorizontal();
+    // The minimap owns the full ViewEdit width. Do not reserve space for the
+    // old 3x2 movement pad; keyboard and Game View navigation remain active.
+    // Giving DungeonMiniMapGui all available width also prevents the map from
+    // being artificially clipped by the old fixed 300 px column.
+    EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
 
-    EditorGUILayout.BeginVertical(GUILayout.Width(300f));
-
-    DungeonMiniMapGui.InteractionResult interaction = default;
-    previewMiniMapScroll = DungeonMiniMapGui.Draw(
-        previewMiniMap,
-        previewX,
-        previewY,
-        previewFacing,
-        previewMiniMapScroll,
-        interactive: true,
-        out interaction
-    );
+    DrawPreviewMiniMapWithoutScrollbars();
 
     EditorGUILayout.EndVertical();
+  }
 
-    // Keep the compact 3×2 movement pad directly beside the minimap.
-    EditorGUILayout.BeginVertical(GUILayout.Width(96f));
-    DrawPreviewNavigationPad();
-    EditorGUILayout.EndVertical();
+  private void DrawPreviewMiniMapWithoutScrollbars()
+  {
+    if (previewMiniMap == null)
+      return;
 
-    EditorGUILayout.EndHorizontal();
+    // ViewEdit map overview is deliberately non-scrollable. Keep every map
+    // cell visible at once; scrolling is reserved for the wall/feature editor
+    // controls below the overview.
+    const float CellSize = 14f;
+    const float AxisSize = 18f;
 
-    if (interaction.HasHover
-        && Event.current.type == EventType.MouseMove)
+    float gridWidth = previewMiniMap.Width * CellSize;
+    float gridHeight = previewMiniMap.Height * CellSize;
+    float totalWidth = AxisSize + gridWidth;
+    float totalHeight = AxisSize + gridHeight;
+
+    Rect outer = GUILayoutUtility.GetRect(
+        totalWidth,
+        totalHeight,
+        GUILayout.Width(totalWidth),
+        GUILayout.Height(totalHeight),
+        GUILayout.ExpandWidth(false),
+        GUILayout.ExpandHeight(false));
+
+    Rect grid = new Rect(
+        outer.x + AxisSize,
+        outer.y + AxisSize,
+        gridWidth,
+        gridHeight);
+
+    GUIStyle axisStyle = new GUIStyle(EditorStyles.miniLabel)
     {
-      Repaint();
+      alignment = TextAnchor.MiddleCenter,
+      fontSize = 9,
+      clipping = TextClipping.Overflow
+    };
+
+    GUIStyle cellTextStyle = new GUIStyle(EditorStyles.miniBoldLabel)
+    {
+      alignment = TextAnchor.MiddleCenter,
+      fontSize = 9,
+      clipping = TextClipping.Clip
+    };
+
+    for (int x = 0; x < previewMiniMap.Width; x++)
+    {
+      GUI.Label(
+          new Rect(
+              grid.x + x * CellSize,
+              outer.y,
+              CellSize,
+              AxisSize),
+          x.ToString(),
+          axisStyle);
     }
 
-    if (interaction.ClickedOpenTile)
-      ApplyPreviewPoseFromMiniMapClick(
-          interaction.ClickX,
-          interaction.ClickY);
+    for (int y = 0; y < previewMiniMap.Height; y++)
+    {
+      GUI.Label(
+          new Rect(
+              outer.x,
+              grid.y + y * CellSize,
+              AxisSize,
+              CellSize),
+          y.ToString(),
+          axisStyle);
+    }
+
+    Event current = Event.current;
+
+    for (int y = 0; y < previewMiniMap.Height; y++)
+    {
+      for (int x = 0; x < previewMiniMap.Width; x++)
+      {
+        Rect cellRect = new Rect(
+            grid.x + x * CellSize,
+            grid.y + y * CellSize,
+            CellSize,
+            CellSize);
+
+        DungeonTile tile = previewMiniMap.GetTile(x, y);
+        bool wall = tile == null || tile.Type == DungeonTileType.Wall;
+
+        EditorGUI.DrawRect(cellRect, new Color(0.07f, 0.07f, 0.07f, 1f));
+        Rect fillRect = new Rect(
+            cellRect.x + 1f,
+            cellRect.y + 1f,
+            cellRect.width - 2f,
+            cellRect.height - 2f);
+        EditorGUI.DrawRect(
+            fillRect,
+            wall
+                ? new Color(0.22f, 0.22f, 0.22f, 1f)
+                : new Color(0.78f, 0.78f, 0.78f, 1f));
+
+        string marker = null;
+        Color markerColor = Color.black;
+
+        if (x == previewX && y == previewY)
+        {
+          switch (previewFacing)
+          {
+            case DungeonFacing.North: marker = "▲"; break;
+            case DungeonFacing.East: marker = "▶"; break;
+            case DungeonFacing.South: marker = "▼"; break;
+            case DungeonFacing.West: marker = "◀"; break;
+          }
+          markerColor = new Color(1f, 0.75f, 0f, 1f);
+        }
+        else if (tile != null && tile.TryGetStairsDirection(out bool stairsUp))
+        {
+          marker = stairsUp ? "U" : "D";
+          markerColor = stairsUp ? Color.blue : new Color(0.65f, 0f, 0f, 1f);
+        }
+        else if (x == previewMiniMap.EntranceX && y == previewMiniMap.EntranceY)
+        {
+          marker = "E";
+          markerColor = Color.red;
+        }
+
+        if (!string.IsNullOrEmpty(marker))
+        {
+          Color saved = GUI.contentColor;
+          GUI.contentColor = markerColor;
+          GUI.Label(cellRect, marker, cellTextStyle);
+          GUI.contentColor = saved;
+        }
+
+        if (current.type == EventType.MouseDown
+            && current.button == 0
+            && cellRect.Contains(current.mousePosition)
+            && previewMiniMap.CanEnter(x, y))
+        {
+          ApplyPreviewPoseFromMiniMapClick(x, y);
+          current.Use();
+          GUI.changed = true;
+          Repaint();
+        }
+      }
+    }
   }
 
   private void DrawPreviewNavigationPad()
