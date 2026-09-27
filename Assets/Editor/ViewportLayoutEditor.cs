@@ -570,6 +570,19 @@ public class ViewportLayoutEditor : EditorWindow
   private bool showOnlyWallsNeededForCurrentPose;
   private bool previewDisableAllWalls;
 
+  // A wall card that the user touches in ViewEdit stays listed for the whole
+  // current pose, even if its Enabled toggle is turned OFF and geometry would
+  // otherwise remove it from the needed-walls list. Store the V17 family name
+  // so alias cards such as RightD3 / Wall D3R2 and LeftD3 / Wall D3L2 share
+  // the same sticky row state. The set is discarded automatically on any
+  // X/Y/facing/level change.
+  private readonly HashSet<string> previewStickyVisibleWallFamilies =
+      new HashSet<string>(System.StringComparer.Ordinal);
+  private int previewStickyPoseLevel = int.MinValue;
+  private int previewStickyPoseX = int.MinValue;
+  private int previewStickyPoseY = int.MinValue;
+  private DungeonFacing previewStickyPoseFacing = (DungeonFacing)(-1);
+
   // Edit-mode Champion state calibration. The wall mirror remains present
   // after a Champion has been resurrected/recruited; only the portrait is
   // removed. This set lets ViewEdit verify that generic rendering rule now.
@@ -1505,6 +1518,53 @@ public class ViewportLayoutEditor : EditorWindow
   /// Muted investigation pieces stay in the layout asset but are not listed.
   /// Disabled pieces for the current pose are also omitted from ViewEdit.
   /// </summary>
+  private void EnsurePreviewStickyWallPose()
+  {
+    if (previewStickyPoseLevel == previewDungeonLevel
+        && previewStickyPoseX == previewX
+        && previewStickyPoseY == previewY
+        && previewStickyPoseFacing == previewFacing)
+    {
+      return;
+    }
+
+    previewStickyVisibleWallFamilies.Clear();
+    previewStickyPoseLevel = previewDungeonLevel;
+    previewStickyPoseX = previewX;
+    previewStickyPoseY = previewY;
+    previewStickyPoseFacing = previewFacing;
+  }
+
+  private void KeepWallCardVisibleForCurrentPose(ViewportPiece piece)
+  {
+    if (piece == null)
+      return;
+
+    EnsurePreviewStickyWallPose();
+
+    string family = GetViewport17NormalWallFamily(piece);
+    if (string.IsNullOrEmpty(family))
+      family = piece.Name ?? string.Empty;
+
+    if (!string.IsNullOrEmpty(family))
+      previewStickyVisibleWallFamilies.Add(family);
+  }
+
+  private bool IsWallCardStickyVisibleForCurrentPose(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    EnsurePreviewStickyWallPose();
+
+    string family = GetViewport17NormalWallFamily(piece);
+    if (string.IsNullOrEmpty(family))
+      family = piece.Name ?? string.Empty;
+
+    return !string.IsNullOrEmpty(family)
+        && previewStickyVisibleWallFamilies.Contains(family);
+  }
+
   private bool IsHiddenFromEditorPieceList(ViewportPiece piece)
   {
     if (piece == null || piece.Name == null)
@@ -1587,7 +1647,8 @@ public class ViewportLayoutEditor : EditorWindow
       // change, so the card naturally disappears/resets when leaving the pose.
       if (HasPreviewEnabledOverrideForPieceOrFamily(piece)
           || previewMirrorOverrideByPiece.ContainsKey(piece)
-          || previewPositionOverrideByPiece.ContainsKey(piece))
+          || previewPositionOverrideByPiece.ContainsKey(piece)
+          || IsWallCardStickyVisibleForCurrentPose(piece))
       {
         wallIsActive = true;
       }
@@ -1992,10 +2053,13 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (showOnlyWallsNeededForCurrentPose && showWallsActivFilter)
     {
-      // Strict active-wall view: only the wall images the loaded map
-      // actually selects for this pose. Manual test cards, disabled
-      // pieces, and the default-visible fallback stay out of the list.
-      return MatchesShowWallsActivFilter(piece);
+      // Active-wall view normally follows the current resolved draw set.
+      // Exception: once the user touches a wall card at this pose, keep that
+      // card/family visible even after Enabled is turned OFF so it can be
+      // switched back ON. This is especially important for LeftD3/RightD3,
+      // whose visible card can be backed by Wall D3L2/Wall D3R2 aliases.
+      return IsWallCardStickyVisibleForCurrentPose(piece)
+          || MatchesShowWallsActivFilter(piece);
     }
 
     string search = (pieceSearchText ?? string.Empty).Trim();
@@ -2907,8 +2971,6 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUIUtility.labelWidth = enabledLabelWidth;
 
     bool wallViewEditPreview = IsWallRenderingPiece(piece);
-    bool isBlackDoorRightD3Exception =
-        IsBlackDoorObliqueRightD3PoseException(piece);
     bool isBlackDoorF3Required =
         piece.Name == "BlackDoorF3"
         && previewX == 1
@@ -2923,7 +2985,6 @@ public class ViewportLayoutEditor : EditorWindow
     bool wallRenderingPreview = wallViewEditPreview;
     bool usePreviewEnabledOverride =
         wallViewEditPreview
-        || isBlackDoorRightD3Exception
         || isBlackDoorF3Required
         || isBlackDoorF3FrameRequired
         || (previewDisableAllWalls && wallRenderingPreview);
@@ -2984,6 +3045,7 @@ public class ViewportLayoutEditor : EditorWindow
       // ViewEdit-only stationary-pose test, identical in lifetime to X/Y/Mirror.
       // Geometry remains authoritative after X/Y/Facing changes.
       previewEnabledOverrideByPiece[piece] = enabledAfter;
+      KeepWallCardVisibleForCurrentPose(piece);
 
       // FrontF3 can legitimately have no automatic FINAL DRAW lane while the
       // resolved ViewEdit card still describes a useful visible gutter (for
@@ -8993,35 +9055,8 @@ public class ViewportLayoutEditor : EditorWindow
     // wall recipe. This routine previously existed but was never called.
     ApplyBlackDoorEnabledFromPoseException();
 
-    // Exception layer: the Hall of Champions oblique RightD3 starts enabled so
-    // ViewEdit reflects what is actually rendered. The user may temporarily
-    // disable it with the Enabled checkbox for visual testing.
-    EnableBlackDoorObliqueRightD3ForCurrentPose();
   }
 
-  private void EnableBlackDoorObliqueRightD3ForCurrentPose()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    if (previewX != 0
-        || previewY != 5
-        || previewFacing != DungeonFacing.North)
-      return;
-
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (piece.Name != "Wall D3R2" && piece.Name != "RightD3")
-        continue;
-
-      piece.Enabled = true;
-      return;
-    }
-  }
 
   /// <summary>
   /// Stage-1 automatic wall resolver.
@@ -11617,12 +11652,6 @@ public class ViewportLayoutEditor : EditorWindow
         bool blackDoorF1Exception = IsBlackDoorF1PoseException(piece);
         bool blackDoorF2Exception = IsBlackDoorF2PoseException(piece);
         bool blackDoorF3Exception = IsBlackDoorF3PoseException(piece);
-        bool blackDoorObliqueRightD3Exception =
-            IsBlackDoorObliqueRightD3PoseException(piece)
-            && (!previewEnabledOverrideByPiece.TryGetValue(
-                    piece, out bool manualExceptionEnabled)
-                || manualExceptionEnabled);
-
         bool manualNormalWallEnabledForDraw =
             !viewport17NormalWall
             && IsNormalWallPiece(piece)
@@ -11642,8 +11671,7 @@ public class ViewportLayoutEditor : EditorWindow
             && !manualNormalWallEnabledForDraw
             && !blackDoorF1Exception
             && !blackDoorF2Exception
-            && !blackDoorF3Exception
-            && !blackDoorObliqueRightD3Exception)
+            && !blackDoorF3Exception)
         {
           continue;
         }
@@ -12007,53 +12035,22 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (D3R2NarrowWidthTest.ShouldReplace(piece.Graphic))
         {
-          bool hasManualRightD3Position =
-              previewPositionOverrideByPiece.ContainsKey(piece);
-          bool hasManualRightD3Mirror =
-              previewMirrorOverrideByPiece.ContainsKey(piece);
+          // No coordinate-specific (0,5) North RightD3 draw. Use the same
+          // resolved V17/manual destination and mirror as every other D3 wall.
+          BlitPieceIntoPreview(
+              pixels,
+              texture,
+              resolvedX,
+              resolvedY,
+              mirror);
 
-          // ViewEdit Mirror / X / Y must drive the same blit as Game View.
-          // The old narrow-strip path ignored Mirror, so use the live
-          // resolved dest unless the Hall of Champions black-door exception
-          // still owns this draw.
-          if (blackDoorObliqueRightD3Exception
-              && !hasManualRightD3Position
-              && !hasManualRightD3Mirror)
-          {
-            // ViewEdit display position was measured as X=196, Y=58.
-            // D3R2 is 49 px high, so bottom-up framebuffer Y is 200-58-49=93.
-            D3R2NarrowWidthTest.BlitToBuffer(
-                texture,
-                pixels,
-                PreviewWidth,
-                PreviewHeight,
-                196,
-                93);
-            LogIfOverlapsLeftF0(
-                piece,
-                drawGraphic,
-                196,
-                93,
-                texture.width,
-                texture.height);
-          }
-          else
-          {
-            BlitPieceIntoPreview(
-                pixels,
-                texture,
-                resolvedX,
-                resolvedY,
-                mirror);
-
-            LogIfOverlapsLeftF0(
-                piece,
-                drawGraphic,
-                resolvedX,
-                resolvedY,
-                texture.width,
-                texture.height);
-          }
+          LogIfOverlapsLeftF0(
+              piece,
+              drawGraphic,
+              resolvedX,
+              resolvedY,
+              texture.width,
+              texture.height);
           continue;
         }
 
@@ -12780,23 +12777,6 @@ public class ViewportLayoutEditor : EditorWindow
         && previewFacing == DungeonFacing.North;
   }
 
-  /// <summary>
-  /// Unique Hall of Champions oblique Black Door side view.
-  /// Preview-only: never changes layout X/Y, pose offsets, mirror flags, or the
-  /// existing (1,5) North Black Door F3 setup.
-  /// </summary>
-  private bool IsBlackDoorObliqueRightD3PoseException(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    if (piece.Name != "Wall D3R2" && piece.Name != "RightD3")
-      return false;
-
-    return previewX == 0
-        && previewY == 5
-        && previewFacing == DungeonFacing.North;
-  }
 
   /// <summary>
   /// (0,5) North only: draw the Black Door right F3 frame at its measured
