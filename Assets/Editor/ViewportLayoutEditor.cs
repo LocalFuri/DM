@@ -11651,6 +11651,11 @@ public class ViewportLayoutEditor : EditorWindow
               viewport17Inspection,
               viewport17FinalWallCommands,
               suppressCenter: suppressViewport17NativeD3CenterForBlackDoor);
+
+          // A door at relative (+1, 3) belongs to this same far D3 painter
+          // stage. Draw the complete far-slot door/frame now and let the
+          // ordinary D2/D1 geometry drawn later occlude it naturally.
+          BlitDoorF3RightObliqueAtD3Stage(pixels);
         }
 
         if (viewport17WallAuthorityActive
@@ -11658,13 +11663,6 @@ public class ViewportLayoutEditor : EditorWindow
             && (IsWallF3LeftPiece(piece)
                 || IsFrontWallF3Card(piece)
                 || IsWallF3RightPiece(piece)))
-        {
-          continue;
-        }
-
-        if (IsDoorF3RightObliqueView()
-            && piece != null
-            && IsWallF3RightPiece(piece))
         {
           continue;
         }
@@ -12336,16 +12334,11 @@ public class ViewportLayoutEditor : EditorWindow
       BlitBlackDoorF2FramesIntoPreview(pixels);
     }
 
-    // Dedicated D3-right oblique door composite from the verified original
-    // three-part stack. This is player-relative geometry, not a map-coordinate
-    // exception.
-    if (IsDoorF3RightObliqueView())
+    // F3 front/oblique automatic doors are already painted at their proper
+    // depth. Outside those automatic views, keep the isolated ViewEdit frame
+    // path available for manual inspection.
+    if (!IsDoorF3FrontView() && !IsDoorF3RightObliqueView())
     {
-      BlitDoorF3RightObliqueIntoPreview(pixels);
-    }
-    else if (!IsDoorF3FrontView())
-    {
-      // Manual isolated-composition path for F3 frame pieces everywhere else.
       BlitBlackDoorF3FramesIntoPreview(pixels);
     }
 
@@ -13201,55 +13194,36 @@ public class ViewportLayoutEditor : EditorWindow
         f2DoorMirror);
   }
 
-  private void BlitDoorF3RightObliqueIntoPreview(Color32[] pixels)
+  private void BlitDoorF3RightObliqueAtD3Stage(Color32[] pixels)
   {
     if (pixels == null || !IsDoorF3RightObliqueView())
       return;
 
-    // (0,5) North class: the door is one lane to the right, so the
-    // straight-ahead refs (door X=88, frame X=132) fall on FrontF1.
-    // Anchor this stack to RightD3's verified X. Display Y stays the
-    // piece's own reference and is converted to framebuffer Y.
-    //   dark pixels | frame | RightD3
-    if (!TryGetCanonicalReferenceXY(
-            "RightD3", out int rightD3X, out _))
-    {
-      return;
-    }
-
-    Texture2D frame = LoadDoorFrameTexture(
-        "Assets/Art/Walls/Door_Frame_Left_10x42.png",
-        "Door_Frame_Left_10x42");
-    int frameX = frame != null ? rightD3X - frame.width : rightD3X;
-    const int darkWidth = 4;
-    int darkX = frameX - darkWidth;
+    // Minimap/relative-geometry rule:
+    // relative (+1, 3) is a Door, so render the normal extracted F3 door and
+    // the mirrored right F3 frame at the FAR D3 stage. Do not pre-crop a
+    // 4-pixel strip and do not redraw anything after nearer walls.
+    //
+    // The later D2/D1 painter passes decide what remains visible.
 
     Texture2D door = GetBlackDoorF3SourceTexture();
     if (door != null
-        && door.isReadable
-        && door.width >= darkWidth
         && TryGetCanonicalReferenceXY(
-            "BlackDoorF3", out _, out int doorDisplayY))
+            "BlackDoorF3", out int doorX, out int doorDisplayY))
     {
-      int sourceX = door.width - darkWidth;
-      BlitPieceScaledIntoPreview(
+      BlitPieceIntoPreview(
           pixels,
           door,
-          darkX,
+          doorX,
           DisplayYToUnityY(doorDisplayY, door.height),
-          darkWidth,
-          door.height,
-          false,
-          sourceX,
-          0,
-          darkWidth,
-          door.height);
+          false);
     }
 
+    Texture2D frame = GetBlackDoorFrameF3SourceTexture();
     if (frame != null
         && TryGetCanonicalReferenceXY(
             "Black Door Frame Right F3",
-            out _,
+            out int frameX,
             out int frameDisplayY))
     {
       BlitPieceIntoPreview(
@@ -14050,6 +14024,11 @@ public class ViewportLayoutEditor : EditorWindow
         finalCommands, 3, out bool frontLeft, out bool frontCenter, out bool frontRight);
     bool leftEnabled = HasViewport17FinalFamily(finalCommands, "LeftF3");
     bool rightEnabled = HasViewport17FinalFamily(finalCommands, "RightF3");
+
+    // Relative (+1,3) is the D3-right cell. If it is a Door, that slot is
+    // owned by the door compositor rather than the ordinary RightF3 wall.
+    if (IsDoorF3RightObliqueView())
+      rightEnabled = false;
     bool leftMirror = GetViewport17LeftF3Mirror();
     // This gutter is geometry-owned, not dependent on a surviving normal
     // FrontF3 final command. At poses such as 6,1 West the normal occlusion
