@@ -973,8 +973,6 @@ public class ViewportLayoutEditor : EditorWindow
     public int FrontF3Width;
   }
 
-  private static string lastLoggedF0DrawDiagnosticKey;
-
   // Temporary 320×200 presentation (restored on close / Play Mode).
   private bool presentationOverrideActive;
   private bool canvasScalerStateSaved;
@@ -11790,27 +11788,6 @@ public class ViewportLayoutEditor : EditorWindow
                 piece, out int livePreviewWidth))
         {
           resolvedF1Width = livePreviewWidth;
-        }
-
-        if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
-        {
-          string f0DrawDiagnosticKey =
-              previewX + "," + previewY + "," + previewFacing
-              + "|" + piece.Name
-              + "|" + resolvedX
-              + "|" + resolvedY
-              + "|" + mirror;
-          if (lastLoggedF0DrawDiagnosticKey != f0DrawDiagnosticKey)
-          {
-            lastLoggedF0DrawDiagnosticKey = f0DrawDiagnosticKey;
-            Debug.Log(
-                "F0 DRAW | "
-                + previewX + "," + previewY + " " + previewFacing.ToString().ToUpperInvariant()
-                + " | " + piece.Name
-                + " | X=" + resolvedX
-                + " | Y=" + resolvedY
-                + " | mirror=" + (mirror ? "ON" : "OFF"));
-          }
         }
 
         // LeftS3 / RightS3 use handed-source mirroring.  The ViewEdit Mirror
