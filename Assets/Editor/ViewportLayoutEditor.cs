@@ -1946,20 +1946,15 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (name == "RightD3" || name == "Wall D3R2")
     {
-      // Normal RightD3 visibility comes from the minimap resolver. Keep the
-      // existing Black Door oblique exception as a separate exception layer.
+      // RightD3 visibility is geometry-driven only. If the generic resolver
+      // has no state for this piece, it is not needed at the current pose.
       if (TryGetResolvedNormalWallState(
               piece, out ResolvedNormalWallState rightD3State))
       {
         return rightD3State.Enabled;
       }
 
-      bool blackDoorOblique =
-          previewX == 0
-          && previewY == 5
-          && previewFacing == DungeonFacing.North;
-
-      return blackDoorOblique;
+      return false;
     }
 
     // Other Black Door cards are hidden unless one of the exact views above needs them.
@@ -11480,42 +11475,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (layout != null && layout.Pieces != null)
     {
-      bool is14South =
-          previewX == 1
-          && previewY == 4
-          && previewFacing == DungeonFacing.South;
-      bool leftF0OverlapArmed = false;
-      int leftF0OverlapX = 0;
-      int leftF0OverlapY = 0;
-      int leftF0OverlapW = 0;
-      int leftF0OverlapH = 0;
-
-      void LogIfOverlapsLeftF0(
-          ViewportPiece laterPiece,
-          DungeonGraphicType laterGraphic,
-          int laterX,
-          int laterY,
-          int laterW,
-          int laterH)
-      {
-        if (!leftF0OverlapArmed
-            || laterPiece == null
-            || IsWallF0LeftPiece(laterPiece)
-            || laterW <= 0
-            || laterH <= 0)
-          return;
-
-        bool overlaps =
-            laterX < leftF0OverlapX + leftF0OverlapW
-            && laterX + laterW > leftF0OverlapX
-            && laterY < leftF0OverlapY + leftF0OverlapH
-            && laterY + laterH > leftF0OverlapY;
-        if (!overlaps)
-          return;
-
-        do { } while (false);
-      }
-
       // Draw normal walls by physical depth (far -> near) without changing
       // layout.Pieces itself. Non-wall pieces keep their original slots/order.
       List<ViewportPiece> orderedNormalWalls = new List<ViewportPiece>();
@@ -11688,7 +11647,6 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        bool isLeftF0Diag = is14South && IsWallF0LeftPiece(piece);
         bool viewport17NormalWall =
             viewport17WallAuthorityActive && IsNormalWallPiece(piece);
         bool viewport17Selected =
@@ -11792,8 +11750,6 @@ public class ViewportLayoutEditor : EditorWindow
                 piece,
                 out ResolvedNormalWallState resolvedWall))
         {
-          if (isLeftF0Diag)
-            do { } while (false);
 
           bool resolvedEnabled = viewport17NormalWall
               ? viewport17EffectiveSelected
@@ -11826,8 +11782,6 @@ public class ViewportLayoutEditor : EditorWindow
           if (previewGraphicOverrideByPiece.TryGetValue(
                   piece, out DungeonGraphicType previewGraphic))
             drawGraphic = previewGraphic;
-          if (isLeftF0Diag)
-            do { } while (false);
           if (!IsWallF0LeftPiece(piece) && !IsWallF0RightPiece(piece)
               && !IsWallF1LeftPiece(piece) && !IsWallF1RightPiece(piece)
               && !IsWallF2LeftPiece(piece) && !IsWallF2RightPiece(piece)
@@ -11993,13 +11947,6 @@ public class ViewportLayoutEditor : EditorWindow
               resolvedX,
               resolvedY,
               handedMirror);
-          LogIfOverlapsLeftF0(
-              piece,
-              piece.Graphic,
-              resolvedX,
-              resolvedY,
-              wallS3Texture.width,
-              wallS3Texture.height);
           continue;
         }
 
@@ -12017,13 +11964,6 @@ public class ViewportLayoutEditor : EditorWindow
               resolvedX,
               resolvedY,
               mirror);
-          LogIfOverlapsLeftF0(
-              piece,
-              piece.Graphic,
-              resolvedX,
-              resolvedY,
-              f1Texture.width,
-              f1Texture.height);
           continue;
         }
 
@@ -12041,13 +11981,6 @@ public class ViewportLayoutEditor : EditorWindow
               resolvedX,
               resolvedY,
               mirror);
-          LogIfOverlapsLeftF0(
-              piece,
-              piece.Graphic,
-              resolvedX,
-              resolvedY,
-              f2Texture.width,
-              f2Texture.height);
           continue;
         }
 
@@ -12077,17 +12010,6 @@ public class ViewportLayoutEditor : EditorWindow
 
         Texture2D texture = graphics.GetTexture(drawGraphic);
 
-                if (isLeftF0Diag)
-        {
-          if (texture == null)
-          {
-            do { } while (false);
-          }
-          else
-          {
-            do { } while (false);
-          }
-        }
         if (texture == null)
           continue;
 
@@ -12102,13 +12024,6 @@ public class ViewportLayoutEditor : EditorWindow
               resolvedY,
               mirror);
 
-          LogIfOverlapsLeftF0(
-              piece,
-              drawGraphic,
-              resolvedX,
-              resolvedY,
-              texture.width,
-              texture.height);
           continue;
         }
 
@@ -12122,13 +12037,6 @@ public class ViewportLayoutEditor : EditorWindow
               piece.EffectiveX,
               piece.EffectiveY,
               mirror);
-          LogIfOverlapsLeftF0(
-              piece,
-              drawGraphic,
-              piece.EffectiveX,
-              piece.EffectiveY,
-              texture.width,
-              texture.height);
           continue;
         }
 
@@ -12218,13 +12126,6 @@ public class ViewportLayoutEditor : EditorWindow
                   piece.EffectiveX,
                   piece.EffectiveY,
                   mirror);
-              LogIfOverlapsLeftF0(
-                  piece,
-                  drawGraphic,
-                  piece.EffectiveX,
-                  piece.EffectiveY,
-                  f1DoorSource.width,
-                  f1DoorSource.height);
             }
           }
 
@@ -12272,13 +12173,6 @@ public class ViewportLayoutEditor : EditorWindow
                 f2DoorX,
                 f2DoorY,
                 f2DoorMirror);
-            LogIfOverlapsLeftF0(
-                doorF2 ?? piece,
-                drawGraphic,
-                f2DoorX,
-                f2DoorY,
-                f2Source.width,
-                f2Source.height);
           }
           continue;
         }
@@ -12316,27 +12210,8 @@ public class ViewportLayoutEditor : EditorWindow
                 f3X,
                 f3Y,
                 mirror);
-            LogIfOverlapsLeftF0(
-                piece,
-                drawGraphic,
-                f3X,
-                f3Y,
-                f3Source.width,
-                f3Source.height);
           }
           continue;
-        }
-
-        string leftF0UnreadableLog = null;
-        if (isLeftF0Diag)
-        {
-          do { } while (false);
-          leftF0UnreadableLog = "LEFTF0 BLIT EXIT isReadable=false";
-          leftF0OverlapArmed = true;
-          leftF0OverlapX = resolvedX;
-          leftF0OverlapY = resolvedY;
-          leftF0OverlapW = texture.width;
-          leftF0OverlapH = texture.height;
         }
 
         BlitPieceIntoPreview(
@@ -12344,19 +12219,7 @@ public class ViewportLayoutEditor : EditorWindow
             texture,
             resolvedX,
             resolvedY,
-            mirror,
-            leftF0UnreadableLog);
-
-        if (!isLeftF0Diag)
-        {
-          LogIfOverlapsLeftF0(
-              piece,
-              drawGraphic,
-              resolvedX,
-              resolvedY,
-              texture.width,
-              texture.height);
-        }
+            mirror);
 
         if (piece.Graphic == DungeonGraphicType.FrontWallF3)
         {
