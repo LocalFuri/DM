@@ -48,6 +48,8 @@ public class DungeonFeatureEditor : EditorWindow
       new Color(0.35f, 0.75f, 1f, 0.35f);
   private static readonly Color SelectionBorderColor =
       new Color(0.2f, 0.85f, 1f, 1f);
+  private static readonly Color StairDownTileColor =
+      new Color(0f, 1f, 0f, 1f);
 
   // Champion mirror map marker: full-edge blue wall-face bar with a small yellow center.
   private static readonly Color ChampionMirrorLineColor =
@@ -580,6 +582,13 @@ public class DungeonFeatureEditor : EditorWindow
             mapRect.y + y * CellSize,
             CellSize,
             CellSize);
+
+        Rect stairFillRect = new Rect(
+            cellRect.x + 1f,
+            cellRect.y + 1f,
+            cellRect.width - 2f,
+            cellRect.height - 2f);
+        EditorGUI.DrawRect(stairFillRect, StairDownTileColor);
 
         Rect iconRect = new Rect(
             cellRect.x + iconInset,
