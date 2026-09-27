@@ -165,6 +165,7 @@ public class DungeonFeatureEditor : EditorWindow
   private Texture2D slimeMapIcon;
   private Texture2D grateMapIcon;
   private Texture2D puddleMapIcon;
+  private Texture2D stairDownMapIcon;
 
   [MenuItem("Tools/Dungeon Feature Editor &f")]
   public static void Open()
@@ -184,6 +185,7 @@ public class DungeonFeatureEditor : EditorWindow
     slimeMapIcon = null;
     grateMapIcon = null;
     puddleMapIcon = null;
+    stairDownMapIcon = null;
 
     LoadMap();
     SyncSelectionFromViewEdit();
@@ -359,6 +361,7 @@ public class DungeonFeatureEditor : EditorWindow
       }
     }
 
+    DrawStairDownIcons(mapRect);
     DrawPuddleFloorIcons(mapRect);
     DrawChampionMirrorMarkers(mapRect);
     DrawOriginalWallOrnamentIcons(mapRect);
@@ -548,6 +551,55 @@ public class DungeonFeatureEditor : EditorWindow
       EditorGUI.DrawRect(dotRect, ChampionMirrorDotColor);
 
       DrawChampionName(mapRect, cellRect, marker);
+    }
+  }
+
+  private void DrawStairDownIcons(Rect mapRect)
+  {
+    if (map == null)
+      return;
+
+    EnsureOrnamentTexturesResolved();
+
+    const float iconInset = 3f;
+
+    for (int y = 0; y < map.Height; y++)
+    {
+      for (int x = 0; x < map.Width; x++)
+      {
+        DungeonTile tile = map.GetTile(x, y);
+        if (tile == null
+            || !tile.TryGetStairsDirection(out bool stairsUp)
+            || stairsUp)
+        {
+          continue;
+        }
+
+        Rect cellRect = new Rect(
+            mapRect.x + x * CellSize,
+            mapRect.y + y * CellSize,
+            CellSize,
+            CellSize);
+
+        Rect iconRect = new Rect(
+            cellRect.x + iconInset,
+            cellRect.y + iconInset,
+            cellRect.width - iconInset * 2f,
+            cellRect.height - iconInset * 2f);
+
+        if (stairDownMapIcon != null)
+        {
+          GUI.DrawTexture(
+              iconRect,
+              stairDownMapIcon,
+              ScaleMode.ScaleToFit,
+              true);
+        }
+        else
+        {
+          DrawMissingFloorOrnamentFallback(iconRect, "D");
+        }
+      }
     }
   }
 
@@ -978,6 +1030,7 @@ public class DungeonFeatureEditor : EditorWindow
     grateMapIcon = FindBestOrnamentTexture("Grate");
     puddleMapIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(
         PuddleF1AssetPath);
+    stairDownMapIcon = FindExactTextureByName("Stair_Down_Icon");
   }
 
   private Texture2D GetOrnamentMapIcon(string type)
@@ -1002,6 +1055,34 @@ public class DungeonFeatureEditor : EditorWindow
       default:
         return null;
     }
+  }
+
+  private static Texture2D FindExactTextureByName(string assetName)
+  {
+    if (string.IsNullOrEmpty(assetName))
+      return null;
+
+    string[] guids = AssetDatabase.FindAssets(
+        assetName + " t:Texture2D",
+        new[] { "Assets" });
+
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      if (!string.Equals(
+              Path.GetFileNameWithoutExtension(path),
+              assetName,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (texture != null)
+        return texture;
+    }
+
+    return null;
   }
 
   private static Texture2D FindBestOrnamentTexture(string type)
