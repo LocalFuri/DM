@@ -3989,9 +3989,9 @@ public class ViewportLayoutEditor : EditorWindow
     if (!s_viewEditGlobalNavDispatch && focusedWindow != this)
       return;
 
-    if (EditorGUIUtility.editingTextField)
-      return;
-
+    // ViewEdit reserves the arrow keys for navigation. Unity can leave
+    // editingTextField true after an IntField/TextField commit, which made
+    // arrow movement appear stuck. Do not let stale field focus block arrows.
     int strafeSign;
     switch (current.keyCode)
     {
@@ -4037,17 +4037,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (!s_viewEditGlobalNavDispatch && focusedWindow != this)
       return;
 
-    if (EditorGUIUtility.editingTextField)
-      return;
-
-    int moveSign;
+    // Arrow keys are dedicated to ViewEdit navigation. Up/Down use absolute
+    // map directions rather than player-facing-relative forward/back:
+    // Up = North, Down = South. Do not trust stale editingTextField focus.
+    int worldDy;
     switch (current.keyCode)
     {
       case KeyCode.UpArrow:
-        moveSign = 1; // forward relative to facing
+        worldDy = -1; // absolute map North (JSON Y decreases upward)
         break;
       case KeyCode.DownArrow:
-        moveSign = -1; // backward relative to facing
+        worldDy = 1; // absolute map South (JSON Y increases downward)
         break;
       default:
         return;
@@ -4059,13 +4059,8 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap == null)
       return;
 
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-
-    int nextX = previewX + forwardX * moveSign;
-    int nextY = previewY + forwardY * moveSign;
+    int nextX = previewX;
+    int nextY = previewY + worldDy;
 
     if (!previewMiniMap.CanEnter(nextX, nextY))
       return;
@@ -4799,13 +4794,9 @@ public class ViewportLayoutEditor : EditorWindow
     if (Application.isPlaying)
       return;
 
-    // Arrow movement should still respect active text/numeric input, but
-    // Delete/PageDown are reserved for ViewEdit turning and must always pass.
-    bool isFacingKey =
-        current.keyCode == KeyCode.Delete
-        || current.keyCode == KeyCode.PageDown;
-    if (!isFacingKey && IsEditorTextOrNumericInputActive())
-      return;
+    // All six navigation keys are reserved for ViewEdit. Do not block the
+    // arrows on IMGUI/UI Toolkit text-focus state: that state can remain stale
+    // after editing a field and was the cause of apparently dead Up/Down keys.
 
     ViewportLayoutEditor window = FindOpenViewEditWindow();
     if (window == null || window.layout == null)
