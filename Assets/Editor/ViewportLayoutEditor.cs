@@ -13206,79 +13206,58 @@ public class ViewportLayoutEditor : EditorWindow
     if (pixels == null || !IsDoorF3RightObliqueView())
       return;
 
-    // Canonical Ref X is framebuffer X. Canonical Ref Y is the top-down
-    // display top. BlitPieceIntoPreview takes that X and a bottom-up
-    // framebuffer Y from DisplayYToUnityY. RightD3 is not drawn here;
-    // the wall resolver already places it at Ref X=190, display Y=58.
-    Texture2D door = GetBlackDoorF3SourceTexture();
-    if (door != null
-        && door.isReadable
-        && door.width >= 4
-        && TryGetCanonicalReferenceXY(
-            "BlackDoorF3", out int doorRefX, out int doorDisplayY))
+    // (0,5) North class: the door is one lane to the right, so the
+    // straight-ahead refs (door X=88, frame X=132) fall on FrontF1.
+    // Anchor this stack to RightD3's verified X. Display Y stays the
+    // piece's own reference and is converted to framebuffer Y.
+    //   dark pixels | frame | RightD3
+    if (!TryGetCanonicalReferenceXY(
+            "RightD3", out int rightD3X, out _))
     {
-      int crop = 4;
-      int sourceX = door.width - crop;
-      int doorX = doorRefX + sourceX;
-      int doorY = DisplayYToUnityY(doorDisplayY, door.height);
-      ViewportPiece doorPiece = FindLayoutPieceByName("BlackDoorF3");
-      if (doorPiece != null
-          && previewPositionOverrideByPiece.TryGetValue(
-              doorPiece, out Vector2Int doorOverride))
-      {
-        doorX = doorOverride.x + sourceX;
-        doorY = doorOverride.y;
-      }
-
-      BlitPieceScaledIntoPreview(
-          pixels,
-          door,
-          doorX,
-          doorY,
-          crop,
-          door.height,
-          false,
-          sourceX,
-          0,
-          crop,
-          door.height);
+      return;
     }
 
     Texture2D frame = LoadDoorFrameTexture(
         "Assets/Art/Walls/Door_Frame_Left_10x42.png",
         "Door_Frame_Left_10x42");
+    int frameX = frame != null ? rightD3X - frame.width : rightD3X;
+    const int darkWidth = 4;
+    int darkX = frameX - darkWidth;
+
+    Texture2D door = GetBlackDoorF3SourceTexture();
+    if (door != null
+        && door.isReadable
+        && door.width >= darkWidth
+        && TryGetCanonicalReferenceXY(
+            "BlackDoorF3", out _, out int doorDisplayY))
+    {
+      int sourceX = door.width - darkWidth;
+      BlitPieceScaledIntoPreview(
+          pixels,
+          door,
+          darkX,
+          DisplayYToUnityY(doorDisplayY, door.height),
+          darkWidth,
+          door.height,
+          false,
+          sourceX,
+          0,
+          darkWidth,
+          door.height);
+    }
+
     if (frame != null
         && TryGetCanonicalReferenceXY(
             "Black Door Frame Right F3",
-            out int frameRefX,
+            out _,
             out int frameDisplayY))
     {
-      int frameX = frameRefX;
-      int frameY = DisplayYToUnityY(frameDisplayY, frame.height);
-      bool frameMirror = true;
-      ViewportPiece framePiece =
-          FindLayoutPieceByName("Black Door Frame Right F3");
-      if (framePiece != null
-          && previewPositionOverrideByPiece.TryGetValue(
-              framePiece, out Vector2Int frameOverride))
-      {
-        frameX = frameOverride.x;
-        frameY = frameOverride.y;
-      }
-
-      if (framePiece != null
-          && previewMirrorOverrideByPiece.TryGetValue(
-              framePiece, out bool frameMirrorOverride))
-      {
-        frameMirror = frameMirrorOverride;
-      }
-
       BlitPieceIntoPreview(
           pixels,
           frame,
           frameX,
-          frameY,
-          frameMirror);
+          DisplayYToUnityY(frameDisplayY, frame.height),
+          true);
     }
   }
 
