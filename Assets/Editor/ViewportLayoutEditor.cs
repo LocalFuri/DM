@@ -12210,43 +12210,9 @@ public class ViewportLayoutEditor : EditorWindow
         // 63×59 1:1 last so it covers overlapping inner frame pixels.
         if (blackDoorF2Exception)
         {
-          // 1,4 North: draw the special F2 left/right frame parts first,
-          // then draw the dedicated front F2 door over them.
-          ViewportPiece leftF2Frame =
-              FindLayoutPieceByName("Black Door Frame Left F2");
-          if (leftF2Frame != null && leftF2Frame.Enabled)
-          {
-            Texture2D leftF2FrameSource =
-                AssetDatabase.LoadAssetAtPath<Texture2D>(
-                    "Assets/Art/Walls/Black Door Frame_Left_18x65.png");
-            if (leftF2FrameSource != null)
-            {
-              BlitPieceIntoPreview(
-                  pixels,
-                  leftF2FrameSource,
-                  leftF2Frame.EffectiveX,
-                  leftF2Frame.EffectiveY,
-                  leftF2Frame.MirrorHorizontally);
-            }
-          }
-
-          ViewportPiece rightF2Frame =
-              FindLayoutPieceByName("Black Door Frame Right F2");
-          if (rightF2Frame != null && rightF2Frame.Enabled)
-          {
-            Texture2D rightF2FrameSource =
-                AssetDatabase.LoadAssetAtPath<Texture2D>(
-                    "Assets/Art/Walls/Black Door Frame_Left_18x65.png");
-            if (rightF2FrameSource != null)
-            {
-              BlitPieceIntoPreview(
-                  pixels,
-                  rightF2FrameSource,
-                  rightF2Frame.EffectiveX,
-                  rightF2Frame.EffectiveY,
-                  true);
-            }
-          }
+          // Draw the two F2 frame pieces through the same live ViewEdit path
+          // used by isolated composition, then place the front door over them.
+          BlitBlackDoorF2FramesIntoPreview(pixels);
 
           // Dedicated front F2 door. At the verified (1,4) North
           // exception pose the door is mandatory; do not gate it on the
@@ -12380,6 +12346,17 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // Native D3 L/C/R is drawn in the normal far-to-near wall pass.
+
+    // Manual isolated-composition path for Black Door F2 frame pieces.
+    // At the real (1,4) North F2-door pose they were already drawn in the
+    // dedicated door layering block above. Everywhere else they default OFF
+    // and appear only when ViewEdit explicitly enables them.
+    if (!(previewX == 1
+          && previewY == 4
+          && previewFacing == DungeonFacing.North))
+    {
+      BlitBlackDoorF2FramesIntoPreview(pixels);
+    }
 
     // Manual isolated-composition path for Black Door F3 frame pieces.
     // At the real (1,5) North F3-door pose they were already drawn in the
@@ -13032,6 +13009,101 @@ public class ViewportLayoutEditor : EditorWindow
   /// (1,5) North Black Door F3 frames. Same 10×42 left source; right is
   /// mirrored. Not wall-geometry pieces. Does not write pose data.
   /// </summary>
+  private void BlitBlackDoorF2FramesIntoPreview(Color32[] pixels)
+  {
+    if (pixels == null)
+      return;
+
+    Texture2D source =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(
+            "Assets/Art/Walls/Black Door Frame_Left_18x65.png");
+    if (source == null)
+      return;
+
+    bool automaticF2DoorPose =
+        previewX == 1
+        && previewY == 4
+        && previewFacing == DungeonFacing.North;
+
+    ViewportPiece leftF2 =
+        FindLayoutPieceByName("Black Door Frame Left F2");
+    ViewportPiece rightF2 =
+        FindLayoutPieceByName("Black Door Frame Right F2");
+
+    // Outside the real F2 Black Door pose both frame pieces default OFF.
+    // In isolated-composition mode ViewEdit may explicitly enable either one.
+    bool leftEnabled = automaticF2DoorPose && leftF2 != null && leftF2.Enabled;
+    bool rightEnabled = automaticF2DoorPose && rightF2 != null && rightF2.Enabled;
+
+    if (leftF2 != null
+        && previewEnabledOverrideByPiece.TryGetValue(
+            leftF2, out bool leftPreviewEnabled))
+    {
+      leftEnabled = leftPreviewEnabled;
+    }
+
+    if (rightF2 != null
+        && previewEnabledOverrideByPiece.TryGetValue(
+            rightF2, out bool rightPreviewEnabled))
+    {
+      rightEnabled = rightPreviewEnabled;
+    }
+
+    if (leftEnabled && leftF2 != null)
+    {
+      int leftX = leftF2.X;
+      int leftY = leftF2.Y;
+      bool leftMirror = leftF2.MirrorHorizontally;
+
+      if (previewPositionOverrideByPiece.TryGetValue(
+              leftF2, out Vector2Int leftPosition))
+      {
+        leftX = leftPosition.x;
+        leftY = leftPosition.y;
+      }
+
+      if (previewMirrorOverrideByPiece.TryGetValue(
+              leftF2, out bool leftMirrorOverride))
+      {
+        leftMirror = leftMirrorOverride;
+      }
+
+      BlitPieceIntoPreview(
+          pixels,
+          source,
+          leftX,
+          leftY,
+          leftMirror);
+    }
+
+    if (rightEnabled && rightF2 != null)
+    {
+      int rightX = rightF2.X;
+      int rightY = rightF2.Y;
+      bool rightMirror = true;
+
+      if (previewPositionOverrideByPiece.TryGetValue(
+              rightF2, out Vector2Int rightPosition))
+      {
+        rightX = rightPosition.x;
+        rightY = rightPosition.y;
+      }
+
+      if (previewMirrorOverrideByPiece.TryGetValue(
+              rightF2, out bool rightMirrorOverride))
+      {
+        rightMirror = rightMirrorOverride;
+      }
+
+      BlitPieceIntoPreview(
+          pixels,
+          source,
+          rightX,
+          rightY,
+          rightMirror);
+    }
+  }
+
   private void BlitBlackDoorF3FramesIntoPreview(Color32[] pixels)
   {
     if (pixels == null)
