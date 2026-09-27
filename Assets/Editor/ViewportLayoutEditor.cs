@@ -950,6 +950,8 @@ public class ViewportLayoutEditor : EditorWindow
     public int FrontF3Width;
   }
 
+  private static string lastLoggedF0DrawDiagnosticKey;
+
   // Temporary 320×200 presentation (restored on close / Play Mode).
   private bool presentationOverrideActive;
   private bool canvasScalerStateSaved;
@@ -7737,6 +7739,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewEnabledOverrideByPiece.Clear();
     previewGraphicOverrideByPiece.Clear();
     previewDisableAllWalls = false;
+    ResetStairsDownF1PreviewControls();
 
     previewX = newX;
     previewY = newY;
@@ -7796,6 +7799,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewEnabledOverrideByPiece.Clear();
     previewGraphicOverrideByPiece.Clear();
     previewDisableAllWalls = false;
+    ResetStairsDownF1PreviewControls();
 
     previewX = newX;
     previewY = newY;
@@ -11336,6 +11340,27 @@ public class ViewportLayoutEditor : EditorWindow
                 piece, out int livePreviewWidth))
         {
           resolvedF1Width = livePreviewWidth;
+        }
+
+        if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
+        {
+          string f0DrawDiagnosticKey =
+              previewX + "," + previewY + "," + previewFacing
+              + "|" + piece.Name
+              + "|" + resolvedX
+              + "|" + resolvedY
+              + "|" + mirror;
+          if (lastLoggedF0DrawDiagnosticKey != f0DrawDiagnosticKey)
+          {
+            lastLoggedF0DrawDiagnosticKey = f0DrawDiagnosticKey;
+            Debug.Log(
+                "F0 DRAW | "
+                + previewX + "," + previewY + " " + previewFacing.ToString().ToUpperInvariant()
+                + " | " + piece.Name
+                + " | X=" + resolvedX
+                + " | Y=" + resolvedY
+                + " | mirror=" + (mirror ? "ON" : "OFF"));
+          }
         }
 
         // LeftS3 / RightS3 use handed-source mirroring.  The ViewEdit Mirror
@@ -15104,6 +15129,16 @@ public class ViewportLayoutEditor : EditorWindow
     return previewPuddleFloors.Contains(PackPreviewTile(x, y));
   }
 
+
+  private void ResetStairsDownF1PreviewControls()
+  {
+    // Match wall preview behavior: edits in ViewEdit are temporary for the
+    // current pose only. Leaving the pose restores the code-assigned defaults.
+    stairsDownF1PreviewEnabled = true;
+    stairsDownF1PreviewX = StairsDownF1X;
+    stairsDownF1PreviewDisplayY = StairsDownF1DisplayY;
+  }
+
   private bool IsStairsDownF1NeededForCurrentPose()
   {
     EnsurePreviewMiniMapLoaded();
@@ -15129,17 +15164,10 @@ public class ViewportLayoutEditor : EditorWindow
     if (!IsStairsDownF1NeededForCurrentPose())
       return;
 
-    GUIStyle stairsLabelStyle = new GUIStyle(EditorStyles.boldLabel);
-    Color magenta = Color.magenta;
-    stairsLabelStyle.normal.textColor = magenta;
-    stairsLabelStyle.hover.textColor = magenta;
-    stairsLabelStyle.focused.textColor = magenta;
-    stairsLabelStyle.active.textColor = magenta;
-
     EditorGUILayout.BeginHorizontal();
-    GUILayout.Label(
+    EditorGUILayout.LabelField(
         "Stairs Down",
-        stairsLabelStyle,
+        GetPieceFamilyHeaderStyle(Color.magenta),
         GUILayout.Width(110f));
 
     float savedLabelWidth = EditorGUIUtility.labelWidth;
