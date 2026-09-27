@@ -3989,17 +3989,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (!s_viewEditGlobalNavDispatch && focusedWindow != this)
       return;
 
-    // ViewEdit reserves the arrow keys for navigation. Unity can leave
-    // editingTextField true after an IntField/TextField commit, which made
-    // arrow movement appear stuck. Do not let stale field focus block arrows.
-    int strafeSign;
+    // ViewEdit reserves the arrow keys for navigation. Left/Right use
+    // absolute map directions rather than player-facing-relative strafe:
+    // Left = West, Right = East. Do not trust stale editingTextField focus.
+    int worldDx;
     switch (current.keyCode)
     {
       case KeyCode.LeftArrow:
-        strafeSign = -1; // left relative to facing
+        worldDx = -1; // absolute map West
         break;
       case KeyCode.RightArrow:
-        strafeSign = 1; // right relative to facing
+        worldDx = 1; // absolute map East
         break;
       default:
         return;
@@ -4011,16 +4011,14 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap == null)
       return;
 
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
+    int nextX = previewX + worldDx;
+    int nextY = previewY;
 
-    int nextX = previewX + rightX * strafeSign;
-    int nextY = previewY + rightY * strafeSign;
-
-    if (!previewMiniMap.CanEnter(nextX, nextY))
+    if (!previewMiniMap.IsInside(nextX, nextY)
+        || !previewMiniMap.CanEnter(nextX, nextY))
+    {
       return;
+    }
 
     // Keep Preview Facing unchanged.
     SwitchPreviewPose(nextX, nextY, previewFacing);
@@ -7820,6 +7818,18 @@ public class ViewportLayoutEditor : EditorWindow
     Color previousColor = Handles.color;
     Handles.color = color;
     Handles.DrawAAConvexPolygon(points);
+
+    Vector3[] outlinePoints = new[]
+    {
+      points[0],
+      points[1],
+      points[2],
+      points[0]
+    };
+
+    Handles.color = new Color(1f, 0f, 0f, 1f);
+    Handles.DrawAAPolyLine(1.0f, outlinePoints);
+
     Handles.color = previousColor;
     Handles.EndGUI();
   }
