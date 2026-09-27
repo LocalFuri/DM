@@ -1538,13 +1538,28 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
     }
 
-    // Black Door cards are pose-area list items only. Show All Walls still
-    // hides them outside the existing Black Door views. Stored values and
-    // render logic are not changed.
-    if (IsBlackDoorEditorPiece(piece)
-        && !IsWallNeededForCurrentPose(piece))
+    // Black Door handling in ViewEdit:
+    // - In normal/needed-only mode, show only Black Door pieces required by
+    //   the current pose.
+    // - In All Walls mode, expose the Black Door FRAME wall components so
+    //   oblique/side scenes can be inspected and adjusted manually.
+    // - Keep the solid BlackDoorF1/F2/F3 front images out of All Walls; they
+    //   remain available only in their actual front-door poses.
+    if (IsBlackDoorEditorPiece(piece))
     {
-      return true;
+      bool blackDoorFrontImage = IsBlackDoorFrontImagePiece(piece);
+
+      if (!showOnlyWallsNeededForCurrentPose)
+      {
+        if (blackDoorFrontImage)
+          return true;
+        // Frame components stay available in All Walls, including after a
+        // temporary Enabled=OFF click at the current pose.
+      }
+      else if (!IsWallNeededForCurrentPose(piece))
+      {
+        return true;
+      }
     }
 
     // Manual inspection cards may remain reachable only while the user is in
@@ -1566,12 +1581,16 @@ public class ViewportLayoutEditor : EditorWindow
           ? piece.Enabled
           : IsWallNeededForCurrentPose(piece);
 
-      // A ViewEdit Enabled click must keep the card listed so the user can
-      // toggle it back on. Geometry still owns the automatic default.
+      // Any temporary ViewEdit interaction with a piece must keep its card
+      // visible for the rest of the current pose, even when Enabled was turned
+      // OFF. The temporary override dictionaries are cleared on pose/facing
+      // change, so the card naturally disappears/resets when leaving the pose.
       if (HasPreviewEnabledOverrideForPieceOrFamily(piece)
           || previewMirrorOverrideByPiece.ContainsKey(piece)
           || previewPositionOverrideByPiece.ContainsKey(piece))
+      {
         wallIsActive = true;
+      }
 
       if (!wallIsActive)
         return true;
@@ -1643,6 +1662,17 @@ public class ViewportLayoutEditor : EditorWindow
         || name == "Black Door Frame Left F2"
         || name == "Black Door Frame Right F2"
         || name == "BlackDoorF1";
+  }
+
+  private static bool IsBlackDoorFrontImagePiece(ViewportPiece piece)
+  {
+    if (piece == null)
+      return false;
+
+    string name = piece.Name ?? string.Empty;
+    return name == "BlackDoorF1"
+        || name == "BlackDoorF2"
+        || name == "BlackDoorF3";
   }
 
   private static bool IsBlackDoorEditorPiece(ViewportPiece piece)
