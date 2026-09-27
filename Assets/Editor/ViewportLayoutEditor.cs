@@ -2971,6 +2971,16 @@ public class ViewportLayoutEditor : EditorWindow
     // changes.
     bool normalWallMirrorPreview = wallViewEditPreview;
     bool mirrorBefore = piece.MirrorHorizontally;
+
+    // The Black Door F1 right frame is rendered from the same left-frame
+    // source mirrored horizontally. Reflect that real automatic default in
+    // ViewEdit instead of showing Mirror OFF while the renderer uses ON.
+    if (IsVerifiedBlackDoorF1Pose()
+        && piece.Name == "Black Door Frame Right F1")
+    {
+      mirrorBefore = true;
+    }
+
     if (normalWallMirrorPreview
         && TryGetResolvedNormalWallState(
             piece, out ResolvedNormalWallState mirrorPreviewState))
@@ -11624,26 +11634,63 @@ public class ViewportLayoutEditor : EditorWindow
 
           ViewportPiece leftFramePiece =
               FindLayoutPieceByName("Black Door Frame Left F1");
-          if (leftFrameSource != null && leftFramePiece != null && leftFramePiece.Enabled)
+          if (leftFrameSource != null && leftFramePiece != null)
           {
-            BlitPieceIntoPreview(
-                pixels,
-                leftFrameSource,
-                leftFramePiece.EffectiveX,
-                leftFramePiece.EffectiveY,
-                leftFramePiece.MirrorHorizontally);
+            bool leftFrameEnabled = leftFramePiece.Enabled;
+            if (previewEnabledOverrideByPiece.TryGetValue(
+                    leftFramePiece, out bool leftFrameEnabledOverride))
+            {
+              leftFrameEnabled = leftFrameEnabledOverride;
+            }
+
+            bool leftFrameMirror = leftFramePiece.MirrorHorizontally;
+            if (previewMirrorOverrideByPiece.TryGetValue(
+                    leftFramePiece, out bool leftFrameMirrorOverride))
+            {
+              leftFrameMirror = leftFrameMirrorOverride;
+            }
+
+            if (leftFrameEnabled)
+            {
+              BlitPieceIntoPreview(
+                  pixels,
+                  leftFrameSource,
+                  leftFramePiece.EffectiveX,
+                  leftFramePiece.EffectiveY,
+                  leftFrameMirror);
+            }
           }
 
           ViewportPiece rightFramePiece =
               FindLayoutPieceByName("Black Door Frame Right F1");
-          if (leftFrameSource != null && rightFramePiece != null && rightFramePiece.Enabled)
+          if (leftFrameSource != null && rightFramePiece != null)
           {
-            BlitPieceIntoPreview(
-                pixels,
-                leftFrameSource,
-                rightFramePiece.EffectiveX,
-                rightFramePiece.EffectiveY,
-                true);
+            bool rightFrameEnabled = rightFramePiece.Enabled;
+            if (previewEnabledOverrideByPiece.TryGetValue(
+                    rightFramePiece, out bool rightFrameEnabledOverride))
+            {
+              rightFrameEnabled = rightFrameEnabledOverride;
+            }
+
+            // Automatic F1 right-frame default is mirrored because both sides
+            // use the same extracted left-frame source. A ViewEdit Mirror click
+            // temporarily overrides only this stationary pose.
+            bool rightFrameMirror = true;
+            if (previewMirrorOverrideByPiece.TryGetValue(
+                    rightFramePiece, out bool rightFrameMirrorOverride))
+            {
+              rightFrameMirror = rightFrameMirrorOverride;
+            }
+
+            if (rightFrameEnabled)
+            {
+              BlitPieceIntoPreview(
+                  pixels,
+                  leftFrameSource,
+                  rightFramePiece.EffectiveX,
+                  rightFramePiece.EffectiveY,
+                  rightFrameMirror);
+            }
           }
 
           if (piece.Enabled)
