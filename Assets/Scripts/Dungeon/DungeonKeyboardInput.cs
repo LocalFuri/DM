@@ -79,20 +79,14 @@ namespace DM.Dungeon
 
       if (moved)
       {
-        PlayerWallBumpFeedback.ResetWallHitLog();
         dungeonRenderer.RequestRedraw();
         DetectChampionInFront();
-      }
-      else
-      {
-        PlayerWallBumpFeedback.ReportIfBlockedMove(localX, localY);
       }
     }
 
     private void TurnLeft()
     {
       map.TurnLeft();
-      PlayerWallBumpFeedback.ResetWallHitLog();
 
       dungeonRenderer.RequestRedraw();
       DetectChampionInFront();
@@ -101,7 +95,6 @@ namespace DM.Dungeon
     private void TurnRight()
     {
       map.TurnRight();
-      PlayerWallBumpFeedback.ResetWallHitLog();
 
       dungeonRenderer.RequestRedraw();
       DetectChampionInFront();

@@ -193,7 +193,7 @@ public class ViewportLayoutEditor : EditorWindow
   private const string StairsDownF1AssetPath =
       "Assets/Art/Walls/Stairs/Stairs_Down_F1_152x92.png";
   private const int StairsDownF1X = 36;
-  private const int StairsDownF1DisplayY = 49;
+  private const int StairsDownF1DisplayY = 50;
 
   // ViewEdit controls for the down-stairs overlay. These are intentionally
   // editor-preview values (like the live wall controls) so the sprite can be
@@ -950,8 +950,6 @@ public class ViewportLayoutEditor : EditorWindow
     public int FrontF3Width;
   }
 
-  private static string lastLoggedF0DrawDiagnosticKey;
-
   // Temporary 320×200 presentation (restored on close / Play Mode).
   private bool presentationOverrideActive;
   private bool canvasScalerStateSaved;
@@ -1531,7 +1529,7 @@ public class ViewportLayoutEditor : EditorWindow
 
       // A ViewEdit Enabled click must keep the card listed so the user can
       // toggle it back on. Geometry still owns the automatic default.
-      if (previewEnabledOverrideByPiece.ContainsKey(piece)
+      if (HasPreviewEnabledOverrideForPieceOrFamily(piece)
           || previewMirrorOverrideByPiece.ContainsKey(piece)
           || previewPositionOverrideByPiece.ContainsKey(piece))
         wallIsActive = true;
@@ -2868,7 +2866,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     if (usePreviewEnabledOverride
-        && previewEnabledOverrideByPiece.TryGetValue(
+        && TryGetPreviewEnabledOverrideForPieceOrFamily(
             piece, out bool manualPreviewEnabled))
     {
       // A manual ViewEdit Enabled toggle must remain visible even while V17
@@ -3955,10 +3953,7 @@ public class ViewportLayoutEditor : EditorWindow
     int nextY = previewY + rightY * strafeSign;
 
     if (!previewMiniMap.CanEnter(nextX, nextY))
-    {
-      PlayerWallBumpFeedback.ReportIfBlockedMove(strafeSign, 0);
       return;
-    }
 
     // Keep Preview Facing unchanged.
     SwitchPreviewPose(nextX, nextY, previewFacing);
@@ -4006,10 +4001,7 @@ public class ViewportLayoutEditor : EditorWindow
     int nextY = previewY + forwardY * moveSign;
 
     if (!previewMiniMap.CanEnter(nextX, nextY))
-    {
-      PlayerWallBumpFeedback.ReportIfBlockedMove(0, moveSign);
       return;
-    }
 
     SwitchPreviewPose(nextX, nextY, previewFacing);
     if (!s_viewEditGlobalNavDispatch)
@@ -4388,8 +4380,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// Shared Game View click dispatch for both UITK PointerDown and GameView
-  /// OnGUI / globalEventHandler. Logs every left click, then hit-tests the
-  /// 320x200 movement pad.
+  /// OnGUI / globalEventHandler. Hit-tests the 320x200 movement pad.
   /// </summary>
   private static bool DispatchGameViewMovementClick(
       EditorWindow gameView,
@@ -4413,18 +4404,6 @@ public class ViewportLayoutEditor : EditorWindow
     string region = "none";
     if (hasLogical)
       region = GetMovementArrowRegionName(logical.x, logical.y);
-
-    Debug.Log(
-        "GAMEVIEW CLICK screen=("
-            + windowMouse.x.ToString("0.#")
-            + ","
-            + windowMouse.y.ToString("0.#")
-            + ") logical=("
-            + (hasLogical ? logical.x.ToString("0.#") : "-1")
-            + ","
-            + (hasLogical ? logical.y.ToString("0.#") : "-1")
-            + ") region="
-            + region);
 
     if (region == "none")
       return false;
@@ -7755,7 +7734,6 @@ public class ViewportLayoutEditor : EditorWindow
     editorScroll = Vector2.zero;
 
     SaveSessionPrefs();
-    PlayerWallBumpFeedback.ResetWallHitLog();
 
     if (previewMiniMap != null)
       previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
@@ -7815,7 +7793,6 @@ public class ViewportLayoutEditor : EditorWindow
     editorScroll = Vector2.zero;
 
     SaveSessionPrefs();
-    PlayerWallBumpFeedback.ResetWallHitLog();
 
     if (previewMiniMap != null)
       previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
@@ -7909,10 +7886,7 @@ public class ViewportLayoutEditor : EditorWindow
     int nextY = previewY + forwardY * localY + rightY * localX;
 
     if (!previewMiniMap.CanEnter(nextX, nextY))
-    {
-      PlayerWallBumpFeedback.ReportIfBlockedMove(localX, localY);
       return;
-    }
 
     NavigatePreviewPoseOnly(nextX, nextY, previewFacing);
   }
@@ -11342,27 +11316,6 @@ public class ViewportLayoutEditor : EditorWindow
           resolvedF1Width = livePreviewWidth;
         }
 
-        if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
-        {
-          string f0DrawDiagnosticKey =
-              previewX + "," + previewY + "," + previewFacing
-              + "|" + piece.Name
-              + "|" + resolvedX
-              + "|" + resolvedY
-              + "|" + mirror;
-          if (lastLoggedF0DrawDiagnosticKey != f0DrawDiagnosticKey)
-          {
-            lastLoggedF0DrawDiagnosticKey = f0DrawDiagnosticKey;
-            Debug.Log(
-                "F0 DRAW | "
-                + previewX + "," + previewY + " " + previewFacing.ToString().ToUpperInvariant()
-                + " | " + piece.Name
-                + " | X=" + resolvedX
-                + " | Y=" + resolvedY
-                + " | mirror=" + (mirror ? "ON" : "OFF"));
-          }
-        }
-
         // LeftS3 / RightS3 use handed-source mirroring.  The ViewEdit Mirror
         // checkbox is read directly here so no later resolver can replace it.
         // LeftS3 Mirror ON = mirror the RIGHT S3 source and blit it at the
@@ -12778,6 +12731,51 @@ public class ViewportLayoutEditor : EditorWindow
   /// Instead, scan the real normal-wall cards and use whichever card actually
   /// owns the temporary ViewEdit override.
   /// </summary>
+  /// <summary>
+  /// Reads a temporary ViewEdit Enabled override by the exact card first, then
+  /// by its normal-wall family. The family fallback is important for FrontF2:
+  /// its native D2 preview can rebuild/resolve the card while staying on the
+  /// same pose, but the user's temporary checkbox state must remain attached to
+  /// the visible FrontF2 row until navigation changes the pose.
+  /// </summary>
+  private bool TryGetPreviewEnabledOverrideForPieceOrFamily(
+      ViewportPiece piece, out bool enabled)
+  {
+    enabled = false;
+    if (piece == null)
+      return false;
+
+    if (previewEnabledOverrideByPiece.TryGetValue(piece, out enabled))
+      return true;
+
+    string family = GetViewport17NormalWallFamily(piece);
+    if (string.IsNullOrEmpty(family))
+      return false;
+
+    foreach (KeyValuePair<ViewportPiece, bool> entry in previewEnabledOverrideByPiece)
+    {
+      ViewportPiece overriddenPiece = entry.Key;
+      if (overriddenPiece == null || IsBlackDoorEditorPiece(overriddenPiece))
+        continue;
+
+      if (string.Equals(
+              GetViewport17NormalWallFamily(overriddenPiece),
+              family,
+              System.StringComparison.Ordinal))
+      {
+        enabled = entry.Value;
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private bool HasPreviewEnabledOverrideForPieceOrFamily(ViewportPiece piece)
+  {
+    return TryGetPreviewEnabledOverrideForPieceOrFamily(piece, out _);
+  }
+
   private void ApplyViewport17NativeManualControls(
       string pieceFamily,
       ref bool enabled,
@@ -12803,7 +12801,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      if (previewEnabledOverrideByPiece.TryGetValue(
+      if (TryGetPreviewEnabledOverrideForPieceOrFamily(
               candidate, out bool manualEnabled))
       {
         enabled = manualEnabled;
