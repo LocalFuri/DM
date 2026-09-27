@@ -1501,10 +1501,10 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
     }
 
-    // Hall of Champions stairs-down view: FrontF2 is physically replaced by
-    // the stairs at (3,15) West. It is not a comparison card for this pose,
-    // so keep it out of ViewEdit as well as out of the renderer.
-    if (IsFrontF2SuppressedByStairsDownForCurrentPose()
+    // Generic stairs-down rule: when the near-center relative cell is a
+    // down-stair, FrontF2 is replaced by the stair opening and is not a
+    // comparison card for this pose.
+    if (IsViewport17NearCenterStairsDown()
         && (IsFrontWallF2Card(piece)
             || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)))
     {
@@ -1635,14 +1635,15 @@ public class ViewportLayoutEditor : EditorWindow
         || name == "Black Door Frame Right F3";
   }
 
-  private bool IsFrontF2SuppressedByStairsDownForCurrentPose()
+  private bool IsViewport17NearCenterStairsDown()
   {
-    // Hall of Champions stairs-down view: at (3,15) West the visible down
-    // stairs occupy the FrontF2 center band, so the normal FrontF2 wall must
-    // not be drawn underneath.
-    return previewX == 3
-        && previewY == 15
-        && previewFacing == DungeonFacing.West;
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return false;
+
+    // Generic relative-cell rule: a down-stair directly ahead occupies the
+    // D2 center opening. Map coordinates never participate in this decision.
+    return SampleViewport17Cell(0, 1).IsStairsDown;
   }
 
   private bool IsWallNeededForCurrentPose(ViewportPiece piece)
@@ -1669,9 +1670,9 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    // Hall of Champions stairs-down view: at (3,15) West the stairs occupy
-    // the FrontF2 center band, so the normal FrontF2 wall is not needed.
-    if (IsFrontF2SuppressedByStairsDownForCurrentPose()
+    // Generic stairs-down rule: a down-stair in the near-center relative
+    // cell occupies the FrontF2 center band, so FrontF2 is not needed.
+    if (IsViewport17NearCenterStairsDown()
         && (IsFrontWallF2Card(piece)
             || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)))
     {
@@ -5327,6 +5328,9 @@ public class ViewportLayoutEditor : EditorWindow
     public int MapY;
     public bool IsInside;
     public DungeonTileType Type;
+    public bool HasStairs;
+    public bool StairsUp;
+    public bool IsStairsDown;
     public Viewport17CellState State;
   }
 
@@ -5585,11 +5589,15 @@ public class ViewportLayoutEditor : EditorWindow
     bool isInside = previewMiniMap != null && previewMiniMap.IsInside(mapX, mapY);
 
     DungeonTileType tileType = default;
+    bool hasStairs = false;
+    bool stairsUp = false;
     Viewport17CellState state = Viewport17CellState.Outside;
 
     if (isInside)
     {
-      tileType = previewMiniMap.GetTile(mapX, mapY).Type;
+      var tile = previewMiniMap.GetTile(mapX, mapY);
+      tileType = tile.Type;
+      hasStairs = tile.TryGetStairsDirection(out stairsUp);
       state = IsViewport17WallType(tileType)
           ? Viewport17CellState.Wall
           : Viewport17CellState.Open;
@@ -5603,6 +5611,9 @@ public class ViewportLayoutEditor : EditorWindow
       MapY = mapY,
       IsInside = isInside,
       Type = tileType,
+      HasStairs = hasStairs,
+      StairsUp = stairsUp,
+      IsStairsDown = hasStairs && !stairsUp,
       State = state
     };
   }
@@ -11035,8 +11046,7 @@ public class ViewportLayoutEditor : EditorWindow
                 viewport17Inspection,
                 viewport17FinalWallCommands,
                 suppressCenter:
-                    suppressViewport17NativeD2CenterForBlackDoorF2
-                    || IsFrontF2SuppressedByStairsDownForCurrentPose());
+                    suppressViewport17NativeD2CenterForBlackDoorF2);
           }
         }
 
@@ -11191,9 +11201,9 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        // Hall of Champions stairs-down view: at (3,15) West the down-stairs
-        // occupy the FrontF2 band, so do not draw the normal FrontF2 wall.
-        if (IsFrontF2SuppressedByStairsDownForCurrentPose()
+        // Generic stairs-down rule: a down-stair in the near-center relative
+        // cell occupies the FrontF2 band, so do not draw FrontF2 here.
+        if (IsViewport17NearCenterStairsDown()
             && (IsFrontWallF2Card(piece)
                 || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)))
         {
@@ -13155,6 +13165,14 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyViewport17NativeManualControls("LeftF2", ref leftEnabled, ref leftMirror);
     ApplyViewport17NativeManualControls("FrontF2", ref centerEnabled, ref centerMirror);
     ApplyViewport17NativeManualControls("RightF2", ref rightEnabled, ref rightMirror);
+
+    // Cell-property authority wins over a temporary FrontF2 manual override.
+    // A down-stair directly ahead replaces only the D2 center wall; the D2
+    // left/right walls remain available at the edges of the stair opening.
+    Viewport17Cell nearCenterCell =
+        FindViewport17Cell(inspection.Cells, 0, 1);
+    if (nearCenterCell.IsStairsDown)
+      centerEnabled = false;
 
     const int displayY = 52;
     const int nativeHeight = 74;
