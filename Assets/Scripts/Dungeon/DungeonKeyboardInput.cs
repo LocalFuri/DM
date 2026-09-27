@@ -11,19 +11,27 @@ namespace DM.Dungeon
     private DungeonMap map;
     private DungeonRenderer dungeonRenderer;
     private HeroRecruitmentPanel heroRecruitmentPanel;
+    private GameBootstrap gameBootstrap;
 
     public DungeonMap Map => map;
 
     public void Initialize(
         DungeonMap dungeonMap,
         DungeonRenderer renderer,
-        HeroRecruitmentPanel recruitmentPanel)
+        HeroRecruitmentPanel recruitmentPanel,
+        GameBootstrap bootstrap = null)
     {
       map = dungeonMap;
       dungeonRenderer = renderer;
       heroRecruitmentPanel = recruitmentPanel;
+      gameBootstrap = bootstrap;
 
       DetectChampionInFront();
+    }
+
+    public void SetMap(DungeonMap dungeonMap)
+    {
+      map = dungeonMap;
     }
 
     private void Update()
@@ -79,6 +87,15 @@ namespace DM.Dungeon
 
       if (moved)
       {
+        if (gameBootstrap != null
+            && gameBootstrap.TryTransitionOnCurrentTile(
+                map,
+                out DungeonMap transitionedMap))
+        {
+          map = transitionedMap;
+          return;
+        }
+
         dungeonRenderer.RequestRedraw();
         DetectChampionInFront();
       }

@@ -27,9 +27,18 @@ public class ViewportLayoutEditor : EditorWindow
 
   private const string HallOfChampionsMapPath =
       "Assets/Data/Maps/HallOfChampions.json";
+  private const string Level1MapPath =
+      "Assets/Data/Maps/DungeonMaster_Level01.json";
+  private static readonly string[] PreviewLevelMapPaths =
+  {
+    HallOfChampionsMapPath,
+    Level1MapPath
+  };
   private const string DungeonFeaturePlacementsPath =
       "Assets/Data/Features/DungeonFeaturePlacements.json";
   private const int PreviewDungeonLevel = 0;
+  private const string PrefsPreviewLevelKey =
+      "ViewportLayoutEditor.PreviewLevel";
 
   private const string ChampionArtFolder =
       "Assets/Art/Champions";
@@ -673,6 +682,7 @@ public class ViewportLayoutEditor : EditorWindow
   private int previewX;
   private int previewY;
   private DungeonFacing previewFacing = DungeonFacing.South;
+  private int previewDungeonLevel = PreviewDungeonLevel;
   private DungeonMap previewMiniMap;
   private string previewMiniMapLoadError;
   private Vector2 previewMiniMapScroll;
@@ -5012,6 +5022,12 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void RestoreSessionPrefs()
   {
+    int savedLevel = EditorPrefs.GetInt(
+        PrefsPreviewLevelKey,
+        PreviewDungeonLevel);
+    if (savedLevel >= 0 && savedLevel < PreviewLevelMapPaths.Length)
+      previewDungeonLevel = savedLevel;
+
     EnsurePreviewMiniMapLoaded();
 
     bool hasSavedPose =
@@ -5054,6 +5070,7 @@ public class ViewportLayoutEditor : EditorWindow
     EditorPrefs.SetInt(PrefsPreviewXKey, previewX);
     EditorPrefs.SetInt(PrefsPreviewYKey, previewY);
     EditorPrefs.SetInt(PrefsPreviewFacingKey, (int)previewFacing);
+    EditorPrefs.SetInt(PrefsPreviewLevelKey, previewDungeonLevel);
     EditorPrefs.SetInt(PrefsSelectedPieceIndexKey, selectedPieceIndex);
   }
 
@@ -7761,6 +7778,8 @@ public class ViewportLayoutEditor : EditorWindow
     if (newX == previewX && newY == previewY && newFacing == previewFacing)
       return;
 
+    bool positionChanged = newX != previewX || newY != previewY;
+
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap != null && !previewMiniMap.CanEnter(newX, newY))
       return;
@@ -7803,6 +7822,9 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap != null)
       previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
 
+    if (positionChanged)
+      TryPreviewStairsTransition();
+
     ApplyCurrentPoseVisibilityToLayout();
 
     // Full cache reset so Console must emit the new previewFacing.
@@ -7824,6 +7846,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (newX == previewX && newY == previewY && newFacing == previewFacing)
       return;
+
+    bool positionChanged = newX != previewX || newY != previewY;
 
     // Any manual Mirror test belongs only to the pose we are leaving.
     // Restore the checkbox itself to the geometry result before changing pose,
@@ -7861,6 +7885,9 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (previewMiniMap != null)
       previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
+
+    if (positionChanged)
+      TryPreviewStairsTransition();
 
     ApplyPoseVisibilityForNavigationOnly();
 
@@ -8130,17 +8157,100 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap != null)
       return;
 
-    if (!File.Exists(HallOfChampionsMapPath))
+    TryLoadPreviewLevel(previewDungeonLevel);
+  }
+
+  /// <summary>
+  /// Edit-mode movement uses the same stair rule as GameBootstrap:
+  /// a down stair loads the next level, an up stair loads the previous
+  /// level, and arrival is the nearest opposite stair. No map coordinate
+  /// is special-cased.
+  /// </summary>
+  private void TryPreviewStairsTransition()
+  {
+    if (previewMiniMap == null
+        || !previewMiniMap.TryGetStairsAtPlayer(out bool stairsUp))
     {
-      previewMiniMapLoadError =
-          "Map not found at " + HallOfChampionsMapPath;
       return;
     }
 
+    int targetLevel = stairsUp
+        ? previewDungeonLevel - 1
+        : previewDungeonLevel + 1;
+    if (targetLevel < 0 || targetLevel >= PreviewLevelMapPaths.Length)
+    {
+      Debug.LogWarning(
+          "ViewEdit: Player stepped on "
+          + (stairsUp ? "stairs up" : "stairs down")
+          + " at level " + previewDungeonLevel
+          + " (" + previewX + "," + previewY + "), "
+          + "but level " + targetLevel + " has no preview map.");
+      return;
+    }
+
+    int sourceX = previewX;
+    int sourceY = previewY;
+    DungeonFacing sourceFacing = previewFacing;
+    DungeonMap sourceMap = previewMiniMap;
+    int sourceLevel = previewDungeonLevel;
+
+    if (!TryLoadPreviewLevel(targetLevel))
+    {
+      previewMiniMap = sourceMap;
+      previewDungeonLevel = sourceLevel;
+      return;
+    }
+
+    bool targetStairsUp = !stairsUp;
+    if (previewMiniMap.TryFindStairs(
+            targetStairsUp,
+            sourceX,
+            sourceY,
+            out int targetX,
+            out int targetY))
+    {
+      previewX = targetX;
+      previewY = targetY;
+      previewFacing = sourceFacing;
+    }
+    else
+    {
+      Debug.LogWarning(
+          "ViewEdit: Level " + targetLevel + " has no "
+          + (targetStairsUp ? "stairs up" : "stairs down")
+          + " tile. Using that map's playerStart instead.");
+      previewX = previewMiniMap.PlayerX;
+      previewY = previewMiniMap.PlayerY;
+      previewFacing = previewMiniMap.PlayerFacing;
+    }
+
+    previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
+    Debug.Log(
+        "Dungeon level transition: now on level " + previewDungeonLevel
+        + " at (" + previewX + "," + previewY + ") facing "
+        + previewFacing + ".");
+  }
+
+  private bool TryLoadPreviewLevel(int level)
+  {
+    if (level < 0 || level >= PreviewLevelMapPaths.Length)
+      return false;
+
+    string path = PreviewLevelMapPaths[level];
+    if (!File.Exists(path))
+    {
+      previewMiniMapLoadError = "Map not found at " + path;
+      return false;
+    }
+
+    DungeonMap previousMap = previewMiniMap;
+    int previousLevel = previewDungeonLevel;
+
     try
     {
-      string json = File.ReadAllText(HallOfChampionsMapPath);
+      string json = File.ReadAllText(path);
       previewMiniMap = DungeonMap.LoadFromJsonText(json);
+      previewDungeonLevel = level;
 
       ChampionMirrorMapRoot mirrorRoot =
           JsonUtility.FromJson<ChampionMirrorMapRoot>(json);
@@ -8148,28 +8258,44 @@ public class ViewportLayoutEditor : EditorWindow
           mirrorRoot != null && mirrorRoot.championMirrors != null
               ? mirrorRoot.championMirrors
               : new ChampionMirrorPlacement[0];
-      // Prefer the new all-level feature database. It resolves the local
-      // ornament ordinals from DUNGEON.DAT and normalises explicit/random
-      // wall ornaments onto the physical wall tile and face. Keep the old
-      // Hall-of-Champions builders only as a safety fallback.
+      // Prefer the all-level feature database for the loaded level.
+      // Hall-of-Champions builders remain the Level 0 fallback.
       bool loadedFeatureDatabase = LoadPreviewFeaturesFromDatabase();
       if (!loadedFeatureDatabase)
       {
-        previewWallOrnaments = BuildHallOfChampionsWallOrnaments(
-            json,
-            mirrorRoot != null ? mirrorRoot.wallOrnaments : null);
-        LoadPreviewPuddleFloors();
+        if (level == PreviewDungeonLevel)
+        {
+          previewWallOrnaments = BuildHallOfChampionsWallOrnaments(
+              json,
+              mirrorRoot != null ? mirrorRoot.wallOrnaments : null);
+          LoadPreviewPuddleFloors();
+        }
+        else
+        {
+          previewWallOrnaments = new WallOrnamentPlacement[0];
+          previewPuddleFloors.Clear();
+        }
       }
 
       previewMiniMapLoadError = null;
+      return true;
     }
     catch (System.Exception ex)
     {
-      previewMiniMap = null;
-      previewChampionMirrors = new ChampionMirrorPlacement[0];
-      previewWallOrnaments = FallbackHallOfChampionsWallOrnaments;
-      previewPuddleFloors.Clear();
+      previewMiniMap = previousMap;
+      previewDungeonLevel = previousLevel;
+      if (previewMiniMap == null)
+      {
+        previewChampionMirrors = new ChampionMirrorPlacement[0];
+        previewWallOrnaments = FallbackHallOfChampionsWallOrnaments;
+        previewPuddleFloors.Clear();
+      }
+
       previewMiniMapLoadError = ex.Message;
+      Debug.LogWarning(
+          "ViewEdit: Could not load preview level " + level
+          + " from " + path + ": " + ex.Message);
+      return false;
     }
   }
 
@@ -15131,7 +15257,7 @@ public class ViewportLayoutEditor : EditorWindow
         DungeonOrnamentPlacement placement =
             database.ornamentPlacements[i];
         if (placement == null
-            || placement.level != PreviewDungeonLevel
+            || placement.level != previewDungeonLevel
             || placement.resolved == null
             || string.IsNullOrEmpty(placement.resolved.type))
         {

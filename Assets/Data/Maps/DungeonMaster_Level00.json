@@ -1,0 +1,6038 @@
+{
+  "source_file": "\\\\next\\users$\\m.adolph\\Sonstiges\\DM\\Maps\\DUNGEON.DAT",
+  "source_size_bytes": 33357,
+  "level": 0,
+  "header": {
+    "OrnamentRandomSeed": 99,
+    "RawMapDataByteCount": 12283,
+    "MapCount": 14,
+    "TextDataWordCount": 1749,
+    "InitialPartyLocation": 2145,
+    "SquareFirstThingCount": 1679,
+    "ThingCount": [
+      170,
+      179,
+      125,
+      684,
+      182,
+      107,
+      121,
+      35,
+      56,
+      12,
+      280,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "map_info": {
+    "RawMapDataByteOffset": 0,
+    "aUnreferenced": 0,
+    "bUnreferenced": 0,
+    "OffsetMapX": 0,
+    "OffsetMapY": 0,
+    "Height": 18,
+    "Width": 17,
+    "Level": 0,
+    "RandomFloorOrnamentCount": 3,
+    "FloorOrnamentCount": 4,
+    "RandomWallOrnamentCount": 4,
+    "WallOrnamentCount": 10,
+    "Difficulty": 0,
+    "Unreferenced": 0,
+    "CreatureTypeCount": 0,
+    "DoorOrnamentCount": 1,
+    "DoorSet1": 1,
+    "DoorSet0": 0,
+    "WallSet": 0,
+    "FloorSet": 0,
+    "rawWidthHeightLevel": 37952,
+    "rawOrnamentCnt": 13386,
+    "rawCreatureDoorExp": 1,
+    "rawGfxSets": 4096
+  },
+  "tile_grid": [
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      16,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      16,
+      0,
+      0,
+      2,
+      6,
+      32,
+      1,
+      0,
+      176,
+      16,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      156,
+      0,
+      4,
+      40,
+      40,
+      40,
+      3,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      16,
+      0,
+      0,
+      0
+    ],
+    [
+      4,
+      176,
+      0,
+      4,
+      40,
+      13,
+      40,
+      40,
+      32,
+      3,
+      16,
+      2,
+      6,
+      32,
+      48,
+      32,
+      0,
+      0
+    ],
+    [
+      0,
+      48,
+      0,
+      4,
+      40,
+      5,
+      32,
+      13,
+      32,
+      32,
+      48,
+      32,
+      32,
+      32,
+      32,
+      48,
+      16,
+      0
+    ],
+    [
+      32,
+      32,
+      0,
+      4,
+      40,
+      1,
+      8,
+      0,
+      16,
+      32,
+      48,
+      32,
+      13,
+      40,
+      32,
+      32,
+      3,
+      2
+    ],
+    [
+      0,
+      40,
+      0,
+      6,
+      40,
+      1,
+      0,
+      0,
+      0,
+      32,
+      16,
+      32,
+      5,
+      40,
+      48,
+      32,
+      32,
+      32
+    ],
+    [
+      0,
+      32,
+      40,
+      40,
+      40,
+      1,
+      0,
+      0,
+      16,
+      48,
+      32,
+      32,
+      1,
+      8,
+      16,
+      32,
+      16,
+      32
+    ],
+    [
+      0,
+      8,
+      0,
+      8,
+      10,
+      0,
+      0,
+      16,
+      0,
+      32,
+      0,
+      0,
+      16,
+      2,
+      6,
+      32,
+      48,
+      32
+    ],
+    [
+      0,
+      0,
+      0,
+      20,
+      56,
+      148,
+      48,
+      48,
+      32,
+      48,
+      32,
+      32,
+      48,
+      32,
+      32,
+      32,
+      32,
+      48
+    ],
+    [
+      0,
+      2,
+      2,
+      4,
+      40,
+      3,
+      0,
+      32,
+      0,
+      16,
+      32,
+      48,
+      32,
+      13,
+      32,
+      13,
+      32,
+      25
+    ],
+    [
+      4,
+      40,
+      56,
+      5,
+      40,
+      56,
+      6,
+      32,
+      3,
+      2,
+      8,
+      16,
+      0,
+      16,
+      32,
+      5,
+      32,
+      1
+    ],
+    [
+      4,
+      40,
+      56,
+      5,
+      40,
+      13,
+      32,
+      32,
+      32,
+      32,
+      1,
+      0,
+      0,
+      48,
+      48,
+      16,
+      32,
+      1
+    ],
+    [
+      4,
+      40,
+      56,
+      5,
+      40,
+      16,
+      48,
+      48,
+      32,
+      48,
+      16,
+      16,
+      48,
+      32,
+      32,
+      1,
+      40,
+      0
+    ],
+    [
+      0,
+      156,
+      8,
+      16,
+      40,
+      5,
+      32,
+      16,
+      16,
+      32,
+      7,
+      32,
+      32,
+      48,
+      16,
+      40,
+      56,
+      40
+    ],
+    [
+      6,
+      40,
+      1,
+      96,
+      56,
+      5,
+      32,
+      32,
+      48,
+      32,
+      32,
+      48,
+      32,
+      0,
+      0,
+      40,
+      29,
+      40
+    ],
+    [
+      56,
+      40,
+      3,
+      6,
+      40,
+      5,
+      32,
+      48,
+      32,
+      32,
+      9,
+      16,
+      0,
+      0,
+      0,
+      40,
+      16,
+      40
+    ],
+    [
+      12,
+      40,
+      40,
+      40,
+      40,
+      17,
+      0,
+      16,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      40,
+      56,
+      40
+    ],
+    [
+      0,
+      8,
+      8,
+      8,
+      24,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  ],
+  "located_things": [
+    {
+      "x": 0,
+      "y": 16,
+      "cell": 3,
+      "dir": "W",
+      "type": "Junk",
+      "thing": {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 30
+      }
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "cell": 2,
+      "dir": "S",
+      "type": "Sensor",
+      "thing": {
+        "Next": 65534,
+        "Type_Data": 0,
+        "OrnamentOrdinal": 6,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 1,
+        "TargetMapX": 1,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "cell": 0,
+      "dir": "N",
+      "type": "Door",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "MeleeDestructible": 0,
+        "MagicDestructible": 0,
+        "Button": 0,
+        "Vertical": 0,
+        "OrnamentOrdinal": 1,
+        "Type": 0
+      }
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "cell": 0,
+      "dir": "N",
+      "type": "Teleporter",
+      "thing": {
+        "Next": 3604,
+        "Audible": 0,
+        "Scope": 3,
+        "AbsoluteRotation": 1,
+        "Rotation": 0,
+        "TargetMapY": 1,
+        "TargetMapX": 9,
+        "TargetMapIndex": 0,
+        "Unreferenced": 0
+      }
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 3602,
+        "Type_Data": 3464,
+        "OrnamentOrdinal": 0,
+        "LocalEffect": 0,
+        "Value": 8,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 1,
+        "aUnreferenced": 0,
+        "TargetMapY": 3,
+        "TargetMapX": 1,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 65534,
+        "Type_Data": 3464,
+        "OrnamentOrdinal": 0,
+        "LocalEffect": 0,
+        "Value": 2,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 1,
+        "aUnreferenced": 0,
+        "TargetMapY": 2,
+        "TargetMapX": 1,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 2079,
+        "Type_Data": 3464,
+        "OrnamentOrdinal": 0,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 1,
+        "aUnreferenced": 0,
+        "TargetMapY": 4,
+        "TargetMapX": 1,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 539,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 1,
+      "y": 14,
+      "cell": 0,
+      "dir": "N",
+      "type": "Door",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "MeleeDestructible": 0,
+        "MagicDestructible": 0,
+        "Button": 1,
+        "Vertical": 1,
+        "OrnamentOrdinal": 0,
+        "Type": 1
+      }
+    },
+    {
+      "x": 2,
+      "y": 11,
+      "cell": 1,
+      "dir": "E",
+      "type": "Junk",
+      "thing": {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 29
+      }
+    },
+    {
+      "x": 2,
+      "y": 12,
+      "cell": 1,
+      "dir": "E",
+      "type": "Junk",
+      "thing": {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 32
+      }
+    },
+    {
+      "x": 2,
+      "y": 13,
+      "cell": 2,
+      "dir": "S",
+      "type": "Junk",
+      "thing": {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 31
+      }
+    },
+    {
+      "x": 3,
+      "y": 9,
+      "cell": 1,
+      "dir": "E",
+      "type": "Sensor",
+      "thing": {
+        "Next": 65534,
+        "Type_Data": 0,
+        "OrnamentOrdinal": 9,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 9,
+        "TargetMapX": 3,
+        "TargetCell": 1,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 3,
+      "y": 14,
+      "cell": 1,
+      "dir": "E",
+      "type": "Sensor",
+      "thing": {
+        "Next": 19463,
+        "Type_Data": 0,
+        "OrnamentOrdinal": 7,
+        "LocalEffect": 1,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "Multiple": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 3,
+      "y": 14,
+      "cell": 1,
+      "dir": "E",
+      "type": "Sensor",
+      "thing": {
+        "Next": 21603,
+        "Type_Data": 525,
+        "OrnamentOrdinal": 8,
+        "LocalEffect": 1,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "Multiple": 1,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 3,
+      "y": 14,
+      "cell": 1,
+      "dir": "E",
+      "type": "Weapon",
+      "thing": {
+        "Next": 65534,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 15,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 2
+      }
+    },
+    {
+      "x": 4,
+      "y": 9,
+      "cell": 0,
+      "dir": "N",
+      "type": "Junk",
+      "thing": {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 29
+      }
+    },
+    {
+      "x": 4,
+      "y": 15,
+      "cell": 0,
+      "dir": "N",
+      "type": "Junk",
+      "thing": {
+        "Next": 23552,
+        "ChargeCount": 3,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 1
+      }
+    },
+    {
+      "x": 4,
+      "y": 15,
+      "cell": 1,
+      "dir": "E",
+      "type": "Scroll",
+      "thing": {
+        "Next": 65534,
+        "Closed": 1,
+        "TextStringThingIndex": 33
+      }
+    },
+    {
+      "x": 4,
+      "y": 18,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 7200,
+        "Type_Data": 0,
+        "OrnamentOrdinal": 5,
+        "LocalEffect": 1,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "Multiple": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 4,
+      "y": 18,
+      "cell": 0,
+      "dir": "N",
+      "type": "Scroll",
+      "thing": {
+        "Next": 65534,
+        "Closed": 1,
+        "TextStringThingIndex": 121
+      }
+    },
+    {
+      "x": 5,
+      "y": 9,
+      "cell": 0,
+      "dir": "N",
+      "type": "Door",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "MeleeDestructible": 0,
+        "MagicDestructible": 0,
+        "Button": 0,
+        "Vertical": 1,
+        "OrnamentOrdinal": 0,
+        "Type": 0
+      }
+    },
+    {
+      "x": 5,
+      "y": 11,
+      "cell": 1,
+      "dir": "E",
+      "type": "Junk",
+      "thing": {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 31
+      }
+    },
+    {
+      "x": 5,
+      "y": 13,
+      "cell": 1,
+      "dir": "E",
+      "type": "Sensor",
+      "thing": {
+        "Next": 65534,
+        "Type_Data": 3071,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 13,
+        "TargetMapX": 5,
+        "TargetCell": 1,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 5,
+      "y": 17,
+      "cell": 3,
+      "dir": "W",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 1548,
+        "Unreferenced": 0,
+        "Visible": 1
+      }
+    },
+    {
+      "x": 6,
+      "y": 9,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 65534,
+        "Type_Data": 3,
+        "OrnamentOrdinal": 4,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 1,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 9,
+        "TargetMapX": 5,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 6,
+      "y": 13,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 0,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 7,
+      "y": 8,
+      "cell": 2,
+      "dir": "S",
+      "type": "Sensor",
+      "thing": {
+        "Next": 38912,
+        "Type_Data": 255,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 8,
+        "TargetMapX": 7,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 7,
+      "y": 8,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 38913,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      }
+    },
+    {
+      "x": 7,
+      "y": 8,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 37976,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 2
+      }
+    },
+    {
+      "x": 7,
+      "y": 8,
+      "cell": 2,
+      "dir": "S",
+      "type": "Weapon",
+      "thing": {
+        "Next": 39027,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 23
+      }
+    },
+    {
+      "x": 7,
+      "y": 8,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 25
+      }
+    },
+    {
+      "x": 7,
+      "y": 9,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 19,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 7,
+      "y": 13,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 41,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 7,
+      "y": 14,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 6146,
+        "Type_Data": 1407,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 14,
+        "TargetMapX": 7,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 7,
+      "y": 14,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 6147,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 10
+      }
+    },
+    {
+      "x": 7,
+      "y": 14,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 6148,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 11
+      }
+    },
+    {
+      "x": 7,
+      "y": 14,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 5121,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      }
+    },
+    {
+      "x": 7,
+      "y": 14,
+      "cell": 0,
+      "dir": "N",
+      "type": "Weapon",
+      "thing": {
+        "Next": 5122,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 32
+      }
+    },
+    {
+      "x": 7,
+      "y": 14,
+      "cell": 0,
+      "dir": "N",
+      "type": "Weapon",
+      "thing": {
+        "Next": 5123,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 32
+      }
+    },
+    {
+      "x": 7,
+      "y": 14,
+      "cell": 0,
+      "dir": "N",
+      "type": "Weapon",
+      "thing": {
+        "Next": 65534,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 32
+      }
+    },
+    {
+      "x": 7,
+      "y": 16,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 64,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 7,
+      "y": 17,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 6149,
+        "Type_Data": 1791,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 17,
+        "TargetMapX": 7,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 7,
+      "y": 17,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 6150,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 2
+      }
+    },
+    {
+      "x": 7,
+      "y": 17,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 5124,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 29
+      }
+    },
+    {
+      "x": 7,
+      "y": 17,
+      "cell": 0,
+      "dir": "N",
+      "type": "Weapon",
+      "thing": {
+        "Next": 5125,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 8
+      }
+    },
+    {
+      "x": 7,
+      "y": 17,
+      "cell": 0,
+      "dir": "N",
+      "type": "Weapon",
+      "thing": {
+        "Next": 6250,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 8
+      }
+    },
+    {
+      "x": 7,
+      "y": 17,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 57
+      }
+    },
+    {
+      "x": 8,
+      "y": 5,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 85,
+        "Unreferenced": 0,
+        "Visible": 1
+      }
+    },
+    {
+      "x": 8,
+      "y": 7,
+      "cell": 1,
+      "dir": "E",
+      "type": "Sensor",
+      "thing": {
+        "Next": 22535,
+        "Type_Data": 127,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 7,
+        "TargetMapX": 8,
+        "TargetCell": 1,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 8,
+      "y": 7,
+      "cell": 1,
+      "dir": "E",
+      "type": "Armour",
+      "thing": {
+        "Next": 26624,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      }
+    },
+    {
+      "x": 8,
+      "y": 7,
+      "cell": 1,
+      "dir": "E",
+      "type": "Junk",
+      "thing": {
+        "Next": 22536,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 42
+      }
+    },
+    {
+      "x": 8,
+      "y": 7,
+      "cell": 1,
+      "dir": "E",
+      "type": "Armour",
+      "thing": {
+        "Next": 22537,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 5
+      }
+    },
+    {
+      "x": 8,
+      "y": 7,
+      "cell": 1,
+      "dir": "E",
+      "type": "Armour",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 6
+      }
+    },
+    {
+      "x": 8,
+      "y": 14,
+      "cell": 2,
+      "dir": "S",
+      "type": "Sensor",
+      "thing": {
+        "Next": 38922,
+        "Type_Data": 1279,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 14,
+        "TargetMapX": 8,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 8,
+      "y": 14,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 38923,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 16
+      }
+    },
+    {
+      "x": 8,
+      "y": 14,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 38924,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 17
+      }
+    },
+    {
+      "x": 8,
+      "y": 14,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 4
+      }
+    },
+    {
+      "x": 8,
+      "y": 15,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 91,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 9,
+      "y": 0,
+      "cell": 2,
+      "dir": "S",
+      "type": "Sensor",
+      "thing": {
+        "Next": 65534,
+        "Type_Data": 10,
+        "OrnamentOrdinal": 6,
+        "LocalEffect": 1,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "Multiple": 120,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 9,
+      "y": 1,
+      "cell": 0,
+      "dir": "N",
+      "type": "Teleporter",
+      "thing": {
+        "Next": 2166,
+        "Audible": 0,
+        "Scope": 3,
+        "AbsoluteRotation": 1,
+        "Rotation": 0,
+        "TargetMapY": 1,
+        "TargetMapX": 9,
+        "TargetMapIndex": 0,
+        "Unreferenced": 0
+      }
+    },
+    {
+      "x": 9,
+      "y": 1,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 3725,
+        "TextDataWordOffset": 1627,
+        "Unreferenced": 0,
+        "Visible": 1
+      }
+    },
+    {
+      "x": 9,
+      "y": 1,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 3722,
+        "Type_Data": 131,
+        "OrnamentOrdinal": 0,
+        "LocalEffect": 0,
+        "Value": 0,
+        "Audible": 0,
+        "RevertEffect": 1,
+        "Effect": 3,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 1,
+        "TargetMapX": 9,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 9,
+      "y": 1,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 65534,
+        "Type_Data": 1,
+        "OrnamentOrdinal": 0,
+        "LocalEffect": 0,
+        "Value": 15,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 1,
+        "TargetMapX": 10,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 9,
+      "y": 7,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 112,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 9,
+      "y": 9,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 136,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 9,
+      "y": 10,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 10420,
+        "Type_Data": 383,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 10,
+        "TargetMapX": 9,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 9,
+      "y": 10,
+      "cell": 0,
+      "dir": "N",
+      "type": "Junk",
+      "thing": {
+        "Next": 6158,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 29
+      }
+    },
+    {
+      "x": 9,
+      "y": 10,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 6159,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 13
+      }
+    },
+    {
+      "x": 9,
+      "y": 10,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 11
+      }
+    },
+    {
+      "x": 9,
+      "y": 13,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 159,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 10,
+      "y": 1,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 3723,
+        "Type_Data": 2181,
+        "OrnamentOrdinal": 0,
+        "LocalEffect": 0,
+        "Value": 15,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 0,
+        "TargetMapX": 9,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 10,
+      "y": 1,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 65534,
+        "Type_Data": 2181,
+        "OrnamentOrdinal": 0,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 1,
+        "TargetMapX": 10,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 10,
+      "y": 3,
+      "cell": 2,
+      "dir": "S",
+      "type": "Sensor",
+      "thing": {
+        "Next": 38928,
+        "Type_Data": 1919,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 3,
+        "TargetMapX": 10,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 10,
+      "y": 3,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 38929,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 21
+      }
+    },
+    {
+      "x": 10,
+      "y": 3,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 37894,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 22
+      }
+    },
+    {
+      "x": 10,
+      "y": 3,
+      "cell": 2,
+      "dir": "S",
+      "type": "Weapon",
+      "thing": {
+        "Next": 65534,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 13
+      }
+    },
+    {
+      "x": 10,
+      "y": 4,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 179,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 10,
+      "y": 5,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 202,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 10,
+      "y": 6,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 6162,
+        "Type_Data": 639,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 6,
+        "TargetMapX": 10,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 10,
+      "y": 6,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 6163,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 32
+      }
+    },
+    {
+      "x": 10,
+      "y": 6,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 5209,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 19
+      }
+    },
+    {
+      "x": 10,
+      "y": 6,
+      "cell": 0,
+      "dir": "N",
+      "type": "Weapon",
+      "thing": {
+        "Next": 6260,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 15,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 2
+      }
+    },
+    {
+      "x": 10,
+      "y": 6,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 37
+      }
+    },
+    {
+      "x": 10,
+      "y": 13,
+      "cell": 3,
+      "dir": "W",
+      "type": "Sensor",
+      "thing": {
+        "Next": 55318,
+        "Type_Data": 2431,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 13,
+        "TargetMapX": 10,
+        "TargetCell": 3,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 10,
+      "y": 13,
+      "cell": 3,
+      "dir": "W",
+      "type": "Armour",
+      "thing": {
+        "Next": 55319,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 9
+      }
+    },
+    {
+      "x": 10,
+      "y": 13,
+      "cell": 3,
+      "dir": "W",
+      "type": "Armour",
+      "thing": {
+        "Next": 54279,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      }
+    },
+    {
+      "x": 10,
+      "y": 13,
+      "cell": 3,
+      "dir": "W",
+      "type": "Weapon",
+      "thing": {
+        "Next": 55309,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 15,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 35
+      }
+    },
+    {
+      "x": 10,
+      "y": 13,
+      "cell": 3,
+      "dir": "W",
+      "type": "Armour",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 12
+      }
+    },
+    {
+      "x": 11,
+      "y": 10,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 225,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 11,
+      "y": 11,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 6169,
+        "Type_Data": 2047,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 11,
+        "TargetMapX": 11,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 11,
+      "y": 11,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 6170,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 16
+      }
+    },
+    {
+      "x": 11,
+      "y": 11,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 6171,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 19
+      }
+    },
+    {
+      "x": 11,
+      "y": 11,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 5128,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 4
+      }
+    },
+    {
+      "x": 11,
+      "y": 11,
+      "cell": 0,
+      "dir": "N",
+      "type": "Weapon",
+      "thing": {
+        "Next": 5129,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 31
+      }
+    },
+    {
+      "x": 11,
+      "y": 11,
+      "cell": 0,
+      "dir": "N",
+      "type": "Weapon",
+      "thing": {
+        "Next": 65534,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 31
+      }
+    },
+    {
+      "x": 11,
+      "y": 13,
+      "cell": 1,
+      "dir": "E",
+      "type": "Sensor",
+      "thing": {
+        "Next": 22556,
+        "Type_Data": 2943,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 13,
+        "TargetMapX": 11,
+        "TargetCell": 1,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 11,
+      "y": 13,
+      "cell": 1,
+      "dir": "E",
+      "type": "Armour",
+      "thing": {
+        "Next": 24597,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 16
+      }
+    },
+    {
+      "x": 11,
+      "y": 13,
+      "cell": 1,
+      "dir": "E",
+      "type": "Potion",
+      "thing": {
+        "Next": 65534,
+        "DoNotDiscard": 1,
+        "Type": 20,
+        "Power": 0
+      }
+    },
+    {
+      "x": 11,
+      "y": 15,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 259,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 11,
+      "y": 16,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 5130,
+        "Type_Data": 2175,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 16,
+        "TargetMapX": 11,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 11,
+      "y": 16,
+      "cell": 0,
+      "dir": "N",
+      "type": "Weapon",
+      "thing": {
+        "Next": 6173,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 18
+      }
+    },
+    {
+      "x": 11,
+      "y": 16,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 6174,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 20
+      }
+    },
+    {
+      "x": 11,
+      "y": 16,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 6175,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 17
+      }
+    },
+    {
+      "x": 11,
+      "y": 16,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 18
+      }
+    },
+    {
+      "x": 12,
+      "y": 8,
+      "cell": 2,
+      "dir": "S",
+      "type": "Sensor",
+      "thing": {
+        "Next": 38944,
+        "Type_Data": 1663,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 8,
+        "TargetMapX": 12,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 12,
+      "y": 8,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 38945,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 13
+      }
+    },
+    {
+      "x": 12,
+      "y": 8,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 38946,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 14
+      }
+    },
+    {
+      "x": 12,
+      "y": 8,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 37899,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 15
+      }
+    },
+    {
+      "x": 12,
+      "y": 8,
+      "cell": 2,
+      "dir": "S",
+      "type": "Weapon",
+      "thing": {
+        "Next": 65534,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 25
+      }
+    },
+    {
+      "x": 12,
+      "y": 9,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 281,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 12,
+      "y": 13,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 300,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 13,
+      "y": 11,
+      "cell": 2,
+      "dir": "S",
+      "type": "Sensor",
+      "thing": {
+        "Next": 38947,
+        "Type_Data": 2303,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 11,
+        "TargetMapX": 13,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 13,
+      "y": 11,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 38948,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 17
+      }
+    },
+    {
+      "x": 13,
+      "y": 11,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 38949,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 10
+      }
+    },
+    {
+      "x": 13,
+      "y": 11,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 43009,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 4
+      }
+    },
+    {
+      "x": 13,
+      "y": 11,
+      "cell": 2,
+      "dir": "S",
+      "type": "Junk",
+      "thing": {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 45
+      }
+    },
+    {
+      "x": 13,
+      "y": 12,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 320,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 13,
+      "y": 14,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 342,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 14,
+      "y": 2,
+      "cell": 2,
+      "dir": "S",
+      "type": "Sensor",
+      "thing": {
+        "Next": 38950,
+        "Type_Data": 767,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 2,
+        "TargetMapX": 14,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 14,
+      "y": 2,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 38951,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 12
+      }
+    },
+    {
+      "x": 14,
+      "y": 2,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 43010,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 10
+      }
+    },
+    {
+      "x": 14,
+      "y": 2,
+      "cell": 2,
+      "dir": "S",
+      "type": "Junk",
+      "thing": {
+        "Next": 38952,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 39
+      }
+    },
+    {
+      "x": 14,
+      "y": 2,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      }
+    },
+    {
+      "x": 14,
+      "y": 3,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 364,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 14,
+      "y": 6,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 388,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 14,
+      "y": 7,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 6185,
+        "Type_Data": 1023,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 7,
+        "TargetMapX": 14,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 14,
+      "y": 7,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 6186,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 20
+      }
+    },
+    {
+      "x": 14,
+      "y": 7,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 6187,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 17
+      }
+    },
+    {
+      "x": 14,
+      "y": 7,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 10243,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 4
+      }
+    },
+    {
+      "x": 14,
+      "y": 7,
+      "cell": 0,
+      "dir": "N",
+      "type": "Junk",
+      "thing": {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 46
+      }
+    },
+    {
+      "x": 14,
+      "y": 12,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 412,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 14,
+      "y": 14,
+      "cell": 3,
+      "dir": "W",
+      "type": "Sensor",
+      "thing": {
+        "Next": 55340,
+        "Type_Data": 1151,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 14,
+        "TargetMapX": 14,
+        "TargetCell": 3,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 14,
+      "y": 14,
+      "cell": 3,
+      "dir": "W",
+      "type": "Armour",
+      "thing": {
+        "Next": 55341,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 5
+      }
+    },
+    {
+      "x": 14,
+      "y": 14,
+      "cell": 3,
+      "dir": "W",
+      "type": "Armour",
+      "thing": {
+        "Next": 59396,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 6
+      }
+    },
+    {
+      "x": 14,
+      "y": 14,
+      "cell": 3,
+      "dir": "W",
+      "type": "Junk",
+      "thing": {
+        "Next": 59397,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 31
+      }
+    },
+    {
+      "x": 14,
+      "y": 14,
+      "cell": 3,
+      "dir": "W",
+      "type": "Junk",
+      "thing": {
+        "Next": 55342,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 32
+      }
+    },
+    {
+      "x": 14,
+      "y": 14,
+      "cell": 3,
+      "dir": "W",
+      "type": "Armour",
+      "thing": {
+        "Next": 59398,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      }
+    },
+    {
+      "x": 14,
+      "y": 14,
+      "cell": 3,
+      "dir": "W",
+      "type": "Junk",
+      "thing": {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 29
+      }
+    },
+    {
+      "x": 15,
+      "y": 4,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 434,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 15,
+      "y": 12,
+      "cell": 3,
+      "dir": "W",
+      "type": "Sensor",
+      "thing": {
+        "Next": 55343,
+        "Type_Data": 2559,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 12,
+        "TargetMapX": 15,
+        "TargetCell": 3,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 15,
+      "y": 12,
+      "cell": 3,
+      "dir": "W",
+      "type": "Armour",
+      "thing": {
+        "Next": 59399,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 12
+      }
+    },
+    {
+      "x": 15,
+      "y": 12,
+      "cell": 3,
+      "dir": "W",
+      "type": "Junk",
+      "thing": {
+        "Next": 55344,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 48
+      }
+    },
+    {
+      "x": 15,
+      "y": 12,
+      "cell": 3,
+      "dir": "W",
+      "type": "Armour",
+      "thing": {
+        "Next": 54284,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      }
+    },
+    {
+      "x": 15,
+      "y": 12,
+      "cell": 3,
+      "dir": "W",
+      "type": "Weapon",
+      "thing": {
+        "Next": 55401,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 10
+      }
+    },
+    {
+      "x": 15,
+      "y": 12,
+      "cell": 3,
+      "dir": "W",
+      "type": "Armour",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 57
+      }
+    },
+    {
+      "x": 16,
+      "y": 4,
+      "cell": 3,
+      "dir": "W",
+      "type": "Sensor",
+      "thing": {
+        "Next": 55345,
+        "Type_Data": 895,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 4,
+        "TargetMapX": 16,
+        "TargetCell": 3,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 16,
+      "y": 4,
+      "cell": 3,
+      "dir": "W",
+      "type": "Armour",
+      "thing": {
+        "Next": 55346,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 17
+      }
+    },
+    {
+      "x": 16,
+      "y": 4,
+      "cell": 3,
+      "dir": "W",
+      "type": "Armour",
+      "thing": {
+        "Next": 55347,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 18
+      }
+    },
+    {
+      "x": 16,
+      "y": 4,
+      "cell": 3,
+      "dir": "W",
+      "type": "Armour",
+      "thing": {
+        "Next": 54285,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 16
+      }
+    },
+    {
+      "x": 16,
+      "y": 4,
+      "cell": 3,
+      "dir": "W",
+      "type": "Weapon",
+      "thing": {
+        "Next": 54286,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 27
+      }
+    },
+    {
+      "x": 16,
+      "y": 4,
+      "cell": 3,
+      "dir": "W",
+      "type": "Weapon",
+      "thing": {
+        "Next": 65534,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 27
+      }
+    },
+    {
+      "x": 16,
+      "y": 7,
+      "cell": 2,
+      "dir": "S",
+      "type": "Sensor",
+      "thing": {
+        "Next": 38964,
+        "Type_Data": 1535,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 7,
+        "TargetMapX": 16,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 16,
+      "y": 7,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 38965,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 16
+      }
+    },
+    {
+      "x": 16,
+      "y": 7,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 38932,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 18
+      }
+    },
+    {
+      "x": 16,
+      "y": 7,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 37942,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 17
+      }
+    },
+    {
+      "x": 16,
+      "y": 7,
+      "cell": 2,
+      "dir": "S",
+      "type": "Weapon",
+      "thing": {
+        "Next": 65534,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 29
+      }
+    },
+    {
+      "x": 16,
+      "y": 8,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 456,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 16,
+      "y": 14,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 1289,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 16,
+      "y": 15,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 65534,
+        "Type_Data": 511,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 15,
+        "TargetMapX": 16,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 16,
+      "y": 16,
+      "cell": 2,
+      "dir": "S",
+      "type": "Sensor",
+      "thing": {
+        "Next": 39030,
+        "Type_Data": 2815,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 16,
+        "TargetMapX": 16,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 16,
+      "y": 16,
+      "cell": 2,
+      "dir": "S",
+      "type": "Armour",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 1
+      }
+    },
+    {
+      "x": 16,
+      "y": 17,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 1313,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 17,
+      "y": 9,
+      "cell": 0,
+      "dir": "N",
+      "type": "TextString",
+      "thing": {
+        "Next": 65534,
+        "TextDataWordOffset": 1383,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    },
+    {
+      "x": 17,
+      "y": 10,
+      "cell": 0,
+      "dir": "N",
+      "type": "Sensor",
+      "thing": {
+        "Next": 5171,
+        "Type_Data": 2687,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 1,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "Multiple": 0,
+        "bUnreferenced": 0
+      }
+    },
+    {
+      "x": 17,
+      "y": 10,
+      "cell": 0,
+      "dir": "N",
+      "type": "Weapon",
+      "thing": {
+        "Next": 6214,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 34
+      }
+    },
+    {
+      "x": 17,
+      "y": 10,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 6263,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 20
+      }
+    },
+    {
+      "x": 17,
+      "y": 10,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 6264,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 19
+      }
+    },
+    {
+      "x": 17,
+      "y": 10,
+      "cell": 0,
+      "dir": "N",
+      "type": "Armour",
+      "thing": {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      }
+    }
+  ],
+  "things_grouped_by_type": {
+    "Junk": [
+      {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 30
+      },
+      {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 29
+      },
+      {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 32
+      },
+      {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 31
+      },
+      {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 29
+      },
+      {
+        "Next": 23552,
+        "ChargeCount": 3,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 1
+      },
+      {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 31
+      },
+      {
+        "Next": 22536,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 42
+      },
+      {
+        "Next": 6158,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 29
+      },
+      {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 45
+      },
+      {
+        "Next": 38952,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 39
+      },
+      {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 46
+      },
+      {
+        "Next": 59397,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 31
+      },
+      {
+        "Next": 55342,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 32
+      },
+      {
+        "Next": 65534,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 29
+      },
+      {
+        "Next": 55344,
+        "ChargeCount": 0,
+        "Unreferenced": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 48
+      }
+    ],
+    "Sensor": [
+      {
+        "Next": 65534,
+        "Type_Data": 0,
+        "OrnamentOrdinal": 6,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 1,
+        "TargetMapX": 1,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 3602,
+        "Type_Data": 3464,
+        "OrnamentOrdinal": 0,
+        "LocalEffect": 0,
+        "Value": 8,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 1,
+        "aUnreferenced": 0,
+        "TargetMapY": 3,
+        "TargetMapX": 1,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 65534,
+        "Type_Data": 3464,
+        "OrnamentOrdinal": 0,
+        "LocalEffect": 0,
+        "Value": 2,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 1,
+        "aUnreferenced": 0,
+        "TargetMapY": 2,
+        "TargetMapX": 1,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 2079,
+        "Type_Data": 3464,
+        "OrnamentOrdinal": 0,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 1,
+        "aUnreferenced": 0,
+        "TargetMapY": 4,
+        "TargetMapX": 1,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 65534,
+        "Type_Data": 0,
+        "OrnamentOrdinal": 9,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 9,
+        "TargetMapX": 3,
+        "TargetCell": 1,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 19463,
+        "Type_Data": 0,
+        "OrnamentOrdinal": 7,
+        "LocalEffect": 1,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "Multiple": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 21603,
+        "Type_Data": 525,
+        "OrnamentOrdinal": 8,
+        "LocalEffect": 1,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "Multiple": 1,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 7200,
+        "Type_Data": 0,
+        "OrnamentOrdinal": 5,
+        "LocalEffect": 1,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "Multiple": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 65534,
+        "Type_Data": 3071,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 13,
+        "TargetMapX": 5,
+        "TargetCell": 1,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 65534,
+        "Type_Data": 3,
+        "OrnamentOrdinal": 4,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 1,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 9,
+        "TargetMapX": 5,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 38912,
+        "Type_Data": 255,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 8,
+        "TargetMapX": 7,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 6146,
+        "Type_Data": 1407,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 14,
+        "TargetMapX": 7,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 6149,
+        "Type_Data": 1791,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 17,
+        "TargetMapX": 7,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 22535,
+        "Type_Data": 127,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 7,
+        "TargetMapX": 8,
+        "TargetCell": 1,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 38922,
+        "Type_Data": 1279,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 14,
+        "TargetMapX": 8,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 65534,
+        "Type_Data": 10,
+        "OrnamentOrdinal": 6,
+        "LocalEffect": 1,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "Multiple": 120,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 3722,
+        "Type_Data": 131,
+        "OrnamentOrdinal": 0,
+        "LocalEffect": 0,
+        "Value": 0,
+        "Audible": 0,
+        "RevertEffect": 1,
+        "Effect": 3,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 1,
+        "TargetMapX": 9,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 65534,
+        "Type_Data": 1,
+        "OrnamentOrdinal": 0,
+        "LocalEffect": 0,
+        "Value": 15,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 1,
+        "TargetMapX": 10,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 10420,
+        "Type_Data": 383,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 10,
+        "TargetMapX": 9,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 3723,
+        "Type_Data": 2181,
+        "OrnamentOrdinal": 0,
+        "LocalEffect": 0,
+        "Value": 15,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 0,
+        "TargetMapX": 9,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 65534,
+        "Type_Data": 2181,
+        "OrnamentOrdinal": 0,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 1,
+        "TargetMapX": 10,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 38928,
+        "Type_Data": 1919,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 3,
+        "TargetMapX": 10,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 6162,
+        "Type_Data": 639,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 6,
+        "TargetMapX": 10,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 55318,
+        "Type_Data": 2431,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 13,
+        "TargetMapX": 10,
+        "TargetCell": 3,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 6169,
+        "Type_Data": 2047,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 11,
+        "TargetMapX": 11,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 22556,
+        "Type_Data": 2943,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 13,
+        "TargetMapX": 11,
+        "TargetCell": 1,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 5130,
+        "Type_Data": 2175,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 16,
+        "TargetMapX": 11,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 38944,
+        "Type_Data": 1663,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 8,
+        "TargetMapX": 12,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 38947,
+        "Type_Data": 2303,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 11,
+        "TargetMapX": 13,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 38950,
+        "Type_Data": 767,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 2,
+        "TargetMapX": 14,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 6185,
+        "Type_Data": 1023,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 7,
+        "TargetMapX": 14,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 55340,
+        "Type_Data": 1151,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 14,
+        "TargetMapX": 14,
+        "TargetCell": 3,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 55343,
+        "Type_Data": 2559,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 12,
+        "TargetMapX": 15,
+        "TargetCell": 3,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 55345,
+        "Type_Data": 895,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 4,
+        "TargetMapX": 16,
+        "TargetCell": 3,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 38964,
+        "Type_Data": 1535,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 7,
+        "TargetMapX": 16,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 65534,
+        "Type_Data": 511,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 15,
+        "TargetMapX": 16,
+        "TargetCell": 0,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 39030,
+        "Type_Data": 2815,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 0,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "TargetMapY": 16,
+        "TargetMapX": 16,
+        "TargetCell": 2,
+        "bUnreferenced": 0
+      },
+      {
+        "Next": 5171,
+        "Type_Data": 2687,
+        "OrnamentOrdinal": 10,
+        "LocalEffect": 1,
+        "Value": 1,
+        "Audible": 0,
+        "RevertEffect": 0,
+        "Effect": 0,
+        "OnceOnly": 0,
+        "aUnreferenced": 0,
+        "Multiple": 0,
+        "bUnreferenced": 0
+      }
+    ],
+    "Door": [
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "MeleeDestructible": 0,
+        "MagicDestructible": 0,
+        "Button": 0,
+        "Vertical": 0,
+        "OrnamentOrdinal": 1,
+        "Type": 0
+      },
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "MeleeDestructible": 0,
+        "MagicDestructible": 0,
+        "Button": 1,
+        "Vertical": 1,
+        "OrnamentOrdinal": 0,
+        "Type": 1
+      },
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "MeleeDestructible": 0,
+        "MagicDestructible": 0,
+        "Button": 0,
+        "Vertical": 1,
+        "OrnamentOrdinal": 0,
+        "Type": 0
+      }
+    ],
+    "Teleporter": [
+      {
+        "Next": 3604,
+        "Audible": 0,
+        "Scope": 3,
+        "AbsoluteRotation": 1,
+        "Rotation": 0,
+        "TargetMapY": 1,
+        "TargetMapX": 9,
+        "TargetMapIndex": 0,
+        "Unreferenced": 0
+      },
+      {
+        "Next": 2166,
+        "Audible": 0,
+        "Scope": 3,
+        "AbsoluteRotation": 1,
+        "Rotation": 0,
+        "TargetMapY": 1,
+        "TargetMapX": 9,
+        "TargetMapIndex": 0,
+        "Unreferenced": 0
+      }
+    ],
+    "TextString": [
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 539,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 1548,
+        "Unreferenced": 0,
+        "Visible": 1
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 0,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 19,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 41,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 64,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 85,
+        "Unreferenced": 0,
+        "Visible": 1
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 91,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 3725,
+        "TextDataWordOffset": 1627,
+        "Unreferenced": 0,
+        "Visible": 1
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 112,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 136,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 159,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 179,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 202,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 225,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 259,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 281,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 300,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 320,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 342,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 364,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 388,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 412,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 434,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 456,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 1289,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 1313,
+        "Unreferenced": 0,
+        "Visible": 0
+      },
+      {
+        "Next": 65534,
+        "TextDataWordOffset": 1383,
+        "Unreferenced": 0,
+        "Visible": 0
+      }
+    ],
+    "Weapon": [
+      {
+        "Next": 65534,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 15,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 2
+      },
+      {
+        "Next": 39027,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 23
+      },
+      {
+        "Next": 5122,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 32
+      },
+      {
+        "Next": 5123,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 32
+      },
+      {
+        "Next": 65534,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 32
+      },
+      {
+        "Next": 5125,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 8
+      },
+      {
+        "Next": 6250,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 8
+      },
+      {
+        "Next": 65534,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 13
+      },
+      {
+        "Next": 6260,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 15,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 2
+      },
+      {
+        "Next": 55309,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 15,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 35
+      },
+      {
+        "Next": 5129,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 31
+      },
+      {
+        "Next": 65534,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 31
+      },
+      {
+        "Next": 6173,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 18
+      },
+      {
+        "Next": 65534,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 25
+      },
+      {
+        "Next": 55401,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 10
+      },
+      {
+        "Next": 54286,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 27
+      },
+      {
+        "Next": 65534,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 27
+      },
+      {
+        "Next": 65534,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 29
+      },
+      {
+        "Next": 6214,
+        "Lit": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Poisoned": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 34
+      }
+    ],
+    "Scroll": [
+      {
+        "Next": 65534,
+        "Closed": 1,
+        "TextStringThingIndex": 33
+      },
+      {
+        "Next": 65534,
+        "Closed": 1,
+        "TextStringThingIndex": 121
+      }
+    ],
+    "Armour": [
+      {
+        "Next": 38913,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      },
+      {
+        "Next": 37976,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 2
+      },
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 25
+      },
+      {
+        "Next": 6147,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 10
+      },
+      {
+        "Next": 6148,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 11
+      },
+      {
+        "Next": 5121,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      },
+      {
+        "Next": 6150,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 2
+      },
+      {
+        "Next": 5124,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 29
+      },
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 57
+      },
+      {
+        "Next": 26624,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      },
+      {
+        "Next": 22537,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 5
+      },
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 6
+      },
+      {
+        "Next": 38923,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 16
+      },
+      {
+        "Next": 38924,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 17
+      },
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 4
+      },
+      {
+        "Next": 6159,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 13
+      },
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 11
+      },
+      {
+        "Next": 38929,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 21
+      },
+      {
+        "Next": 37894,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 22
+      },
+      {
+        "Next": 6163,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 32
+      },
+      {
+        "Next": 5209,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 19
+      },
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 37
+      },
+      {
+        "Next": 55319,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 9
+      },
+      {
+        "Next": 54279,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      },
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 12
+      },
+      {
+        "Next": 6170,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 16
+      },
+      {
+        "Next": 6171,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 19
+      },
+      {
+        "Next": 5128,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 4
+      },
+      {
+        "Next": 24597,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 16
+      },
+      {
+        "Next": 6174,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 20
+      },
+      {
+        "Next": 6175,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 17
+      },
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 18
+      },
+      {
+        "Next": 38945,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 13
+      },
+      {
+        "Next": 38946,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 14
+      },
+      {
+        "Next": 37899,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 15
+      },
+      {
+        "Next": 38948,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 17
+      },
+      {
+        "Next": 38949,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 10
+      },
+      {
+        "Next": 43009,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 4
+      },
+      {
+        "Next": 38951,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 12
+      },
+      {
+        "Next": 43010,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 10
+      },
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      },
+      {
+        "Next": 6186,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 20
+      },
+      {
+        "Next": 6187,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 17
+      },
+      {
+        "Next": 10243,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 4
+      },
+      {
+        "Next": 55341,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 5
+      },
+      {
+        "Next": 59396,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 6
+      },
+      {
+        "Next": 59398,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      },
+      {
+        "Next": 59399,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 12
+      },
+      {
+        "Next": 54284,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      },
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 57
+      },
+      {
+        "Next": 55346,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 17
+      },
+      {
+        "Next": 55347,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 18
+      },
+      {
+        "Next": 54285,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 16
+      },
+      {
+        "Next": 38965,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 16
+      },
+      {
+        "Next": 38932,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 18
+      },
+      {
+        "Next": 37942,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 17
+      },
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 1
+      },
+      {
+        "Next": 6263,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 20
+      },
+      {
+        "Next": 6264,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 19
+      },
+      {
+        "Next": 65534,
+        "Unreferenced": 0,
+        "Broken": 0,
+        "ChargeCount": 0,
+        "Cursed": 0,
+        "DoNotDiscard": 1,
+        "Type": 3
+      }
+    ],
+    "Potion": [
+      {
+        "Next": 65534,
+        "DoNotDiscard": 1,
+        "Type": 20,
+        "Power": 0
+      }
+    ]
+  },
+  "champions": [
+    {
+      "name": "DAROOU",
+      "title": "",
+      "gender": "M",
+      "Health": 100,
+      "Stamina": 650,
+      "Mana": 6,
+      "Luck": 35,
+      "Strength": 50,
+      "Dexterity": 30,
+      "Wisdom": 35,
+      "Vitality": 45,
+      "AntiMagic": 30,
+      "AntiFire": 45,
+      "Fighter": [
+        3,
+        0,
+        3,
+        0
+      ],
+      "Ninja": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Priest": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Wizard": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "x": 6,
+      "y": 13,
+      "dir": "N"
+    },
+    {
+      "name": "HALK",
+      "title": "THE BARBARIAN",
+      "gender": "M",
+      "Health": 90,
+      "Stamina": 750,
+      "Mana": 0,
+      "Luck": 40,
+      "Strength": 55,
+      "Dexterity": 43,
+      "Wisdom": 30,
+      "Vitality": 46,
+      "AntiMagic": 38,
+      "AntiFire": 48,
+      "Fighter": [
+        4,
+        0,
+        4,
+        0
+      ],
+      "Ninja": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Priest": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Wizard": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x": 7,
+      "y": 9,
+      "dir": "N"
+    },
+    {
+      "name": "WU TSE",
+      "title": "SON OF HEAVEN",
+      "gender": "F",
+      "Health": 45,
+      "Stamina": 470,
+      "Mana": 20,
+      "Luck": 40,
+      "Strength": 38,
+      "Dexterity": 35,
+      "Wisdom": 53,
+      "Vitality": 45,
+      "AntiMagic": 47,
+      "AntiFire": 40,
+      "Fighter": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Ninja": [
+        1,
+        2,
+        0,
+        3
+      ],
+      "Priest": [
+        2,
+        1,
+        4,
+        3
+      ],
+      "Wizard": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x": 7,
+      "y": 13,
+      "dir": "N"
+    },
+    {
+      "name": "AZIZI",
+      "title": "JOHARI",
+      "gender": "F",
+      "Health": 61,
+      "Stamina": 770,
+      "Mana": 7,
+      "Luck": 47,
+      "Strength": 47,
+      "Dexterity": 48,
+      "Wisdom": 42,
+      "Vitality": 45,
+      "AntiMagic": 30,
+      "AntiFire": 35,
+      "Fighter": [
+        2,
+        1,
+        3,
+        0
+      ],
+      "Ninja": [
+        2,
+        2,
+        3,
+        3
+      ],
+      "Priest": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Wizard": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x": 7,
+      "y": 16,
+      "dir": "N"
+    },
+    {
+      "name": "LEIF",
+      "title": "THE VALIANT",
+      "gender": "M",
+      "Health": 75,
+      "Stamina": 700,
+      "Mana": 7,
+      "Luck": 35,
+      "Strength": 46,
+      "Dexterity": 40,
+      "Wisdom": 39,
+      "Vitality": 50,
+      "AntiMagic": 45,
+      "AntiFire": 45,
+      "Fighter": [
+        3,
+        2,
+        2,
+        0
+      ],
+      "Ninja": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Priest": [
+        0,
+        2,
+        1,
+        1
+      ],
+      "Wizard": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x": 8,
+      "y": 15,
+      "dir": "N"
+    },
+    {
+      "name": "ELIJA",
+      "title": "LION OF YAITOPYA",
+      "gender": "M",
+      "Health": 60,
+      "Stamina": 580,
+      "Mana": 22,
+      "Luck": 50,
+      "Strength": 42,
+      "Dexterity": 40,
+      "Wisdom": 42,
+      "Vitality": 36,
+      "AntiMagic": 53,
+      "AntiFire": 40,
+      "Fighter": [
+        1,
+        1,
+        2,
+        0
+      ],
+      "Ninja": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Priest": [
+        2,
+        1,
+        4,
+        2
+      ],
+      "Wizard": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x": 9,
+      "y": 7,
+      "dir": "N"
+    },
+    {
+      "name": "SYRA",
+      "title": "CHILD OF NATURE",
+      "gender": "F",
+      "Health": 53,
+      "Stamina": 720,
+      "Mana": 15,
+      "Luck": 55,
+      "Strength": 38,
+      "Dexterity": 35,
+      "Wisdom": 43,
+      "Vitality": 45,
+      "AntiMagic": 42,
+      "AntiFire": 40,
+      "Fighter": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Ninja": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Priest": [
+        0,
+        3,
+        1,
+        1
+      ],
+      "Wizard": [
+        0,
+        2,
+        3,
+        3
+      ],
+      "x": 9,
+      "y": 9,
+      "dir": "N"
+    },
+    {
+      "name": "TIGGY",
+      "title": "TAMAL",
+      "gender": "F",
+      "Health": 25,
+      "Stamina": 450,
+      "Mana": 35,
+      "Luck": 45,
+      "Strength": 30,
+      "Dexterity": 45,
+      "Wisdom": 50,
+      "Vitality": 35,
+      "AntiMagic": 59,
+      "AntiFire": 40,
+      "Fighter": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Ninja": [
+        1,
+        3,
+        1,
+        1
+      ],
+      "Priest": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "Wizard": [
+        2,
+        3,
+        3,
+        2
+      ],
+      "x": 9,
+      "y": 13,
+      "dir": "N"
+    },
+    {
+      "name": "IAIDO",
+      "title": "RUYITO CHIBURI",
+      "gender": "M",
+      "Health": 48,
+      "Stamina": 650,
+      "Mana": 11,
+      "Luck": 40,
+      "Strength": 43,
+      "Dexterity": 55,
+      "Wisdom": 40,
+      "Vitality": 35,
+      "AntiMagic": 45,
+      "AntiFire": 50,
+      "Fighter": [
+        2,
+        3,
+        0,
+        2
+      ],
+      "Ninja": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Priest": [
+        1,
+        1,
+        1,
+        2
+      ],
+      "Wizard": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x": 10,
+      "y": 4,
+      "dir": "N"
+    },
+    {
+      "name": "ZED",
+      "title": "DUKE OF BANVILLE",
+      "gender": "M",
+      "Health": 60,
+      "Stamina": 600,
+      "Mana": 10,
+      "Luck": 58,
+      "Strength": 40,
+      "Dexterity": 40,
+      "Wisdom": 40,
+      "Vitality": 50,
+      "AntiMagic": 40,
+      "AntiFire": 40,
+      "Fighter": [
+        2,
+        1,
+        1,
+        2
+      ],
+      "Ninja": [
+        2,
+        1,
+        2,
+        1
+      ],
+      "Priest": [
+        1,
+        2,
+        1,
+        1
+      ],
+      "Wizard": [
+        1,
+        2,
+        1,
+        1
+      ],
+      "x": 10,
+      "y": 5,
+      "dir": "N"
+    },
+    {
+      "name": "GANDO",
+      "title": "THURFOOT",
+      "gender": "M",
+      "Health": 39,
+      "Stamina": 630,
+      "Mana": 26,
+      "Luck": 50,
+      "Strength": 39,
+      "Dexterity": 45,
+      "Wisdom": 47,
+      "Vitality": 33,
+      "AntiMagic": 48,
+      "AntiFire": 43,
+      "Fighter": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Ninja": [
+        3,
+        0,
+        2,
+        3
+      ],
+      "Priest": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Wizard": [
+        1,
+        2,
+        1,
+        2
+      ],
+      "x": 11,
+      "y": 10,
+      "dir": "N"
+    },
+    {
+      "name": "STAMM",
+      "title": "BLADECASTER",
+      "gender": "M",
+      "Health": 75,
+      "Stamina": 800,
+      "Mana": 0,
+      "Luck": 35,
+      "Strength": 52,
+      "Dexterity": 43,
+      "Wisdom": 35,
+      "Vitality": 50,
+      "AntiMagic": 35,
+      "AntiFire": 55,
+      "Fighter": [
+        3,
+        4,
+        2,
+        2
+      ],
+      "Ninja": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Priest": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Wizard": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x": 11,
+      "y": 15,
+      "dir": "N"
+    },
+    {
+      "name": "LINFLAS",
+      "title": "",
+      "gender": "M",
+      "Health": 65,
+      "Stamina": 500,
+      "Mana": 12,
+      "Luck": 45,
+      "Strength": 45,
+      "Dexterity": 45,
+      "Wisdom": 47,
+      "Vitality": 35,
+      "AntiMagic": 50,
+      "AntiFire": 35,
+      "Fighter": [
+        0,
+        1,
+        2,
+        4
+      ],
+      "Ninja": [
+        0,
+        0,
+        1,
+        0
+      ],
+      "Priest": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "Wizard": [
+        0,
+        1,
+        2,
+        2
+      ],
+      "x": 12,
+      "y": 9,
+      "dir": "N"
+    },
+    {
+      "name": "WUUF",
+      "title": "THE BIKA",
+      "gender": "F",
+      "Health": 40,
+      "Stamina": 500,
+      "Mana": 30,
+      "Luck": 60,
+      "Strength": 33,
+      "Dexterity": 57,
+      "Wisdom": 45,
+      "Vitality": 40,
+      "AntiMagic": 35,
+      "AntiFire": 40,
+      "Fighter": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Ninja": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "Priest": [
+        0,
+        3,
+        2,
+        1
+      ],
+      "Wizard": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x": 12,
+      "y": 13,
+      "dir": "N"
+    },
+    {
+      "name": "LEYLA",
+      "title": "SHADOWSEEK",
+      "gender": "F",
+      "Health": 48,
+      "Stamina": 600,
+      "Mana": 3,
+      "Luck": 50,
+      "Strength": 40,
+      "Dexterity": 53,
+      "Wisdom": 45,
+      "Vitality": 47,
+      "AntiMagic": 45,
+      "AntiFire": 35,
+      "Fighter": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Ninja": [
+        3,
+        3,
+        3,
+        4
+      ],
+      "Priest": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Wizard": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x": 13,
+      "y": 12,
+      "dir": "N"
+    },
+    {
+      "name": "MOPHUS",
+      "title": "THE HEALER",
+      "gender": "M",
+      "Health": 55,
+      "Stamina": 550,
+      "Mana": 19,
+      "Luck": 40,
+      "Strength": 42,
+      "Dexterity": 35,
+      "Wisdom": 40,
+      "Vitality": 48,
+      "AntiMagic": 40,
+      "AntiFire": 45,
+      "Fighter": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Ninja": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Priest": [
+        2,
+        4,
+        3,
+        2
+      ],
+      "Wizard": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x": 13,
+      "y": 14,
+      "dir": "N"
+    },
+    {
+      "name": "CHANI",
+      "title": "SAYYADINA SIHAYA",
+      "gender": "F",
+      "Health": 47,
+      "Stamina": 670,
+      "Mana": 17,
+      "Luck": 57,
+      "Strength": 37,
+      "Dexterity": 47,
+      "Wisdom": 57,
+      "Vitality": 37,
+      "AntiMagic": 47,
+      "AntiFire": 37,
+      "Fighter": [
+        1,
+        3,
+        0,
+        2
+      ],
+      "Ninja": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Priest": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Wizard": [
+        3,
+        2,
+        3,
+        1
+      ],
+      "x": 14,
+      "y": 3,
+      "dir": "N"
+    },
+    {
+      "name": "BORIS",
+      "title": "WIZARD OF BALDOR",
+      "gender": "M",
+      "Health": 35,
+      "Stamina": 650,
+      "Mana": 28,
+      "Luck": 25,
+      "Strength": 35,
+      "Dexterity": 45,
+      "Wisdom": 55,
+      "Vitality": 40,
+      "AntiMagic": 45,
+      "AntiFire": 40,
+      "Fighter": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Ninja": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "Priest": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Wizard": [
+        2,
+        3,
+        3,
+        3
+      ],
+      "x": 14,
+      "y": 6,
+      "dir": "N"
+    },
+    {
+      "name": "SONJA",
+      "title": "SHE DEVIL",
+      "gender": "F",
+      "Health": 65,
+      "Stamina": 700,
+      "Mana": 2,
+      "Luck": 40,
+      "Strength": 54,
+      "Dexterity": 45,
+      "Wisdom": 39,
+      "Vitality": 49,
+      "AntiMagic": 40,
+      "AntiFire": 40,
+      "Fighter": [
+        3,
+        4,
+        2,
+        3
+      ],
+      "Ninja": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Priest": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Wizard": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x": 14,
+      "y": 12,
+      "dir": "N"
+    },
+    {
+      "name": "HAWK",
+      "title": "THE FEARLESS",
+      "gender": "M",
+      "Health": 70,
+      "Stamina": 850,
+      "Mana": 10,
+      "Luck": 40,
+      "Strength": 45,
+      "Dexterity": 35,
+      "Wisdom": 38,
+      "Vitality": 55,
+      "AntiMagic": 35,
+      "AntiFire": 35,
+      "Fighter": [
+        2,
+        0,
+        0,
+        2
+      ],
+      "Ninja": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Priest": [
+        0,
+        3,
+        0,
+        3
+      ],
+      "Wizard": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x": 15,
+      "y": 4,
+      "dir": "N"
+    },
+    {
+      "name": "ALEX",
+      "title": "ANDER",
+      "gender": "M",
+      "Health": 50,
+      "Stamina": 570,
+      "Mana": 13,
+      "Luck": 47,
+      "Strength": 44,
+      "Dexterity": 55,
+      "Wisdom": 45,
+      "Vitality": 40,
+      "AntiMagic": 35,
+      "AntiFire": 40,
+      "Fighter": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Ninja": [
+        3,
+        2,
+        3,
+        2
+      ],
+      "Priest": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Wizard": [
+        2,
+        2,
+        1,
+        2
+      ],
+      "x": 16,
+      "y": 8,
+      "dir": "N"
+    },
+    {
+      "name": "HISSSSA",
+      "title": "LIZAR OF MAKAN",
+      "gender": "M",
+      "Health": 80,
+      "Stamina": 610,
+      "Mana": 5,
+      "Luck": 40,
+      "Strength": 58,
+      "Dexterity": 48,
+      "Wisdom": 35,
+      "Vitality": 35,
+      "AntiMagic": 43,
+      "AntiFire": 55,
+      "Fighter": [
+        4,
+        3,
+        0,
+        0
+      ],
+      "Ninja": [
+        0,
+        3,
+        1,
+        0
+      ],
+      "Priest": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Wizard": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x": 16,
+      "y": 14,
+      "dir": "N"
+    },
+    {
+      "name": "GOTHMOG",
+      "title": "",
+      "gender": "M",
+      "Health": 60,
+      "Stamina": 550,
+      "Mana": 18,
+      "Luck": 30,
+      "Strength": 40,
+      "Dexterity": 35,
+      "Wisdom": 48,
+      "Vitality": 34,
+      "AntiMagic": 50,
+      "AntiFire": 59,
+      "Fighter": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Ninja": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Priest": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Wizard": [
+        4,
+        3,
+        2,
+        2
+      ],
+      "x": 16,
+      "y": 17,
+      "dir": "N"
+    },
+    {
+      "name": "NABI",
+      "title": "THE PROPHET",
+      "gender": "M",
+      "Health": 55,
+      "Stamina": 650,
+      "Mana": 13,
+      "Luck": 40,
+      "Strength": 41,
+      "Dexterity": 36,
+      "Wisdom": 45,
+      "Vitality": 45,
+      "AntiMagic": 55,
+      "AntiFire": 55,
+      "Fighter": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Ninja": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "Priest": [
+        1,
+        1,
+        4,
+        2
+      ],
+      "Wizard": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "x": 17,
+      "y": 9,
+      "dir": "N"
+    }
+  ]
+}

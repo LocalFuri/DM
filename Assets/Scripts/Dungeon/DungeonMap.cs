@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
@@ -79,6 +81,10 @@ namespace DM.Dungeon
           || header.width <= 0
           || header.height <= 0)
       {
+        DungeonMap rawGridMap = TryLoadRawTileGridMap(json);
+        if (rawGridMap != null)
+          return rawGridMap;
+
         throw new InvalidOperationException(
             "Map JSON is missing a valid width/height."
         );
@@ -132,6 +138,55 @@ namespace DM.Dungeon
       PlayerX = nextX;
       PlayerY = nextY;
       return true;
+    }
+
+    public bool TryGetStairsAtPlayer(out bool isUp)
+    {
+      isUp = false;
+
+      if (!IsInside(PlayerX, PlayerY))
+        return false;
+
+      DungeonTile tile = GetTile(PlayerX, PlayerY);
+      return tile != null && tile.TryGetStairsDirection(out isUp);
+    }
+
+    public bool TryFindStairs(
+        bool isUp,
+        int preferredX,
+        int preferredY,
+        out int stairsX,
+        out int stairsY)
+    {
+      stairsX = -1;
+      stairsY = -1;
+      int bestDistance = int.MaxValue;
+
+      for (int y = 0; y < Height; y++)
+      {
+        for (int x = 0; x < Width; x++)
+        {
+          DungeonTile tile = GetTile(x, y);
+          if (tile == null
+              || !tile.TryGetStairsDirection(out bool tileIsUp)
+              || tileIsUp != isUp)
+          {
+            continue;
+          }
+
+          int distance =
+              Mathf.Abs(x - preferredX) + Mathf.Abs(y - preferredY);
+
+          if (distance >= bestDistance)
+            continue;
+
+          bestDistance = distance;
+          stairsX = x;
+          stairsY = y;
+        }
+      }
+
+      return stairsX >= 0 && stairsY >= 0;
     }
 
     public void TurnLeft()
@@ -252,6 +307,208 @@ namespace DM.Dungeon
       }
 
       return result;
+    }
+
+    // DUNGEON.DAT exports store an integer tile_grid instead of the
+    // Hall width/height/tiles objects. Each cell is the original raw byte.
+    // Bits 7-5 are the tile type, matching the Hall JSON "raw" field.
+    private static DungeonMap TryLoadRawTileGridMap(string json)
+    {
+      List<int[]> rows = TryParseTileGrid(json);
+      if (rows == null || rows.Count == 0 || rows[0].Length == 0)
+        return null;
+
+      int height = rows.Count;
+      int width = 0;
+      for (int y = 0; y < rows.Count; y++)
+      {
+        if (rows[y].Length > width)
+          width = rows[y].Length;
+      }
+
+      int level = TryReadTopLevelInt(json, "level");
+      string mapName = level > 0 ? "Level " + level : "Dungeon Level";
+      DungeonMap map = new DungeonMap(mapName, width, height);
+
+      for (int y = 0; y < height; y++)
+      {
+        int[] row = rows[y];
+        for (int x = 0; x < width; x++)
+        {
+          int raw = x < row.Length ? row[x] : 0;
+          string typeName = RawTileTypeName(raw);
+          map._tiles[x, y] = new DungeonTile
+          {
+            Type = ConvertTileType(typeName),
+            SourceType = ParseSourceType(typeName),
+            Raw = raw
+          };
+        }
+      }
+
+      if (!TryFindEnterableStart(map, out int startX, out int startY))
+      {
+        throw new InvalidOperationException(
+            "DungeonMap: raw tile grid has no enterable tile."
+        );
+      }
+
+      map.SetPlayerStart(startX, startY, DungeonFacing.North);
+      map.StartX = startX;
+      map.StartY = startY;
+      map.StartFacing = DungeonFacing.North;
+      return map;
+    }
+
+    private static bool TryFindEnterableStart(
+        DungeonMap map,
+        out int startX,
+        out int startY)
+    {
+      startX = 0;
+      startY = 0;
+      int fallbackX = -1;
+      int fallbackY = -1;
+
+      for (int y = 0; y < map.Height; y++)
+      {
+        for (int x = 0; x < map.Width; x++)
+        {
+          if (!map.CanEnter(x, y))
+            continue;
+
+          if (fallbackX < 0)
+          {
+            fallbackX = x;
+            fallbackY = y;
+          }
+
+          DungeonTile tile = map._tiles[x, y];
+          if (tile != null && tile.TryGetStairsDirection(out _))
+          {
+            startX = x;
+            startY = y;
+            return true;
+          }
+        }
+      }
+
+      if (fallbackX < 0)
+        return false;
+
+      startX = fallbackX;
+      startY = fallbackY;
+      return true;
+    }
+
+    private static string RawTileTypeName(int raw)
+    {
+      switch ((raw >> 5) & 7)
+      {
+        case 0: return "Wall";
+        case 1: return "Floor";
+        case 2: return "Pit";
+        case 3: return "Stairs";
+        case 4: return "Door";
+        case 5: return "Teleporter";
+        case 6: return "FalseWall";
+        default: return "Unknown";
+      }
+    }
+
+    private static int TryReadTopLevelInt(string json, string fieldName)
+    {
+      string token = "\"" + fieldName + "\"";
+      int key = json.IndexOf(token, StringComparison.Ordinal);
+      if (key < 0)
+        return 0;
+
+      int colon = json.IndexOf(':', key + token.Length);
+      if (colon < 0)
+        return 0;
+
+      int i = colon + 1;
+      while (i < json.Length && char.IsWhiteSpace(json[i]))
+        i++;
+
+      int start = i;
+      if (i < json.Length && json[i] == '-')
+        i++;
+      while (i < json.Length && char.IsDigit(json[i]))
+        i++;
+      if (i == start || (json[start] == '-' && i == start + 1))
+        return 0;
+
+      return int.Parse(
+          json.Substring(start, i - start),
+          CultureInfo.InvariantCulture);
+    }
+
+    private static List<int[]> TryParseTileGrid(string json)
+    {
+      int key = json.IndexOf("\"tile_grid\"", StringComparison.Ordinal);
+      if (key < 0)
+        return null;
+
+      int start = json.IndexOf('[', key);
+      if (start < 0)
+        return null;
+
+      List<int[]> rows = new List<int[]>();
+      int i = start + 1;
+      int length = json.Length;
+      while (i < length)
+      {
+        while (i < length && char.IsWhiteSpace(json[i]))
+          i++;
+        if (i >= length)
+          return null;
+        if (json[i] == ']')
+          return rows;
+        if (json[i] == ',')
+        {
+          i++;
+          continue;
+        }
+        if (json[i] != '[')
+          return null;
+
+        i++;
+        List<int> row = new List<int>();
+        while (i < length)
+        {
+          while (i < length && char.IsWhiteSpace(json[i]))
+            i++;
+          if (i >= length)
+            return null;
+          if (json[i] == ']')
+          {
+            i++;
+            break;
+          }
+          if (json[i] == ',')
+          {
+            i++;
+            continue;
+          }
+
+          int numStart = i;
+          if (json[i] == '-')
+            i++;
+          while (i < length && char.IsDigit(json[i]))
+            i++;
+          if (i == numStart || (json[numStart] == '-' && i == numStart + 1))
+            return null;
+
+          row.Add(int.Parse(
+              json.Substring(numStart, i - numStart),
+              CultureInfo.InvariantCulture));
+        }
+
+        rows.Add(row.ToArray());
+      }
+
+      return null;
     }
 
     private void LoadTiles(string json)
