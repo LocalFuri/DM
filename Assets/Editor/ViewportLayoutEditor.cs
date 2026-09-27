@@ -11664,8 +11664,7 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (IsDoorF3RightObliqueView()
             && piece != null
-            && (IsWallF3RightPiece(piece)
-                || IsRightD3Piece(piece)))
+            && IsWallF3RightPiece(piece))
         {
           continue;
         }
@@ -13207,53 +13206,79 @@ public class ViewportLayoutEditor : EditorWindow
     if (pixels == null || !IsDoorF3RightObliqueView())
       return;
 
-    // Verified original-DM three-part D3-right oblique stack:
-    // 1) only the four dark right-edge columns of BlackDoorF3,
-    // 2) the mirrored F3 right door frame,
-    // 3) mirrored Wall D3R2.
+    // Canonical Ref X is framebuffer X. Canonical Ref Y is the top-down
+    // display top. BlitPieceIntoPreview takes that X and a bottom-up
+    // framebuffer Y from DisplayYToUnityY. RightD3 is not drawn here;
+    // the wall resolver already places it at Ref X=190, display Y=58.
     Texture2D door = GetBlackDoorF3SourceTexture();
-    if (door != null && door.isReadable && door.width >= 44)
+    if (door != null
+        && door.isReadable
+        && door.width >= 4
+        && TryGetCanonicalReferenceXY(
+            "BlackDoorF3", out int doorRefX, out int doorDisplayY))
     {
-      // BlackDoorF3 is 45px wide at X=88. Only source columns 40..43
-      // survive visibly here, landing at framebuffer X=128..131.
+      int crop = 4;
+      int sourceX = door.width - crop;
+      int doorX = doorRefX + sourceX;
+      int doorY = DisplayYToUnityY(doorDisplayY, door.height);
+      ViewportPiece doorPiece = FindLayoutPieceByName("BlackDoorF3");
+      if (doorPiece != null
+          && previewPositionOverrideByPiece.TryGetValue(
+              doorPiece, out Vector2Int doorOverride))
+      {
+        doorX = doorOverride.x + sourceX;
+        doorY = doorOverride.y;
+      }
+
       BlitPieceScaledIntoPreview(
           pixels,
           door,
-          128,
-          63,
-          4,
+          doorX,
+          doorY,
+          crop,
           door.height,
           false,
-          40,
+          sourceX,
           0,
-          4,
+          crop,
           door.height);
     }
 
     Texture2D frame = LoadDoorFrameTexture(
         "Assets/Art/Walls/Door_Frame_Left_10x42.png",
         "Door_Frame_Left_10x42");
-    if (frame != null)
+    if (frame != null
+        && TryGetCanonicalReferenceXY(
+            "Black Door Frame Right F3",
+            out int frameRefX,
+            out int frameDisplayY))
     {
+      int frameX = frameRefX;
+      int frameY = DisplayYToUnityY(frameDisplayY, frame.height);
+      bool frameMirror = true;
+      ViewportPiece framePiece =
+          FindLayoutPieceByName("Black Door Frame Right F3");
+      if (framePiece != null
+          && previewPositionOverrideByPiece.TryGetValue(
+              framePiece, out Vector2Int frameOverride))
+      {
+        frameX = frameOverride.x;
+        frameY = frameOverride.y;
+      }
+
+      if (framePiece != null
+          && previewMirrorOverrideByPiece.TryGetValue(
+              framePiece, out bool frameMirrorOverride))
+      {
+        frameMirror = frameMirrorOverride;
+      }
+
       BlitPieceIntoPreview(
           pixels,
           frame,
-          132,
-          103,
-          true);
-    }
-
-    Texture2D rightD3 = graphics != null
-        ? graphics.GetTexture(DungeonGraphicType.WallD3R2)
-        : null;
-    if (rightD3 != null)
-    {
-      BlitPieceIntoPreview(
-          pixels,
-          rightD3,
-          190,
-          58,
-          true);
+          frameX,
+          frameY,
+          frameMirror);
     }
   }
 
