@@ -10,7 +10,8 @@ public class DungeonFeatureEditor : EditorWindow
       "Assets/Data/Maps/HallOfChampions.json";
   private const string DungeonFeaturePlacementsPath =
       "Assets/Data/Features/DungeonFeaturePlacements.json";
-  private const int PreviewDungeonLevel = 0;
+  private const int HallOfChampionsLevel = 0;
+  private const int MaxDungeonLevel = 13;
   private const string PuddleF1AssetPath =
       "Assets/Art/Ornaments/Puddle_F1.png";
 
@@ -30,6 +31,8 @@ public class DungeonFeatureEditor : EditorWindow
       "ViewportLayoutEditor.PreviewY";
   private const string ViewEditPreviewFacingKey =
       "ViewportLayoutEditor.PreviewFacing";
+  private const string ViewEditPreviewLevelKey =
+      "ViewportLayoutEditor.PreviewLevel";
 
   private const float CellSize = 32f;
   private const float LabelLeftMargin = 28f;
@@ -159,6 +162,7 @@ public class DungeonFeatureEditor : EditorWindow
   private int selectedX = 1;
   private int selectedY = 2;
   private DungeonFacing selectedFacing = DungeonFacing.North;
+  private int currentDungeonLevel = HallOfChampionsLevel;
 
   private bool ornamentTexturesResolved;
   private Texture2D viAltarMapIcon;
@@ -189,45 +193,102 @@ public class DungeonFeatureEditor : EditorWindow
     puddleMapIcon = null;
     stairDownMapIcon = null;
 
-    LoadMap();
+    currentDungeonLevel = Mathf.Clamp(
+        EditorPrefs.GetInt(
+            ViewEditPreviewLevelKey,
+            HallOfChampionsLevel),
+        HallOfChampionsLevel,
+        MaxDungeonLevel);
+
+    LoadMapForLevel(currentDungeonLevel);
     SyncSelectionFromViewEdit();
   }
 
   private void OnInspectorUpdate()
   {
-    if (SyncSelectionFromViewEdit())
+    bool changed = SyncLevelFromViewEdit();
+    changed |= SyncSelectionFromViewEdit();
+    if (changed)
       Repaint();
   }
 
-  private void LoadMap()
+  private static string GetMapPathForLevel(int level)
   {
-    map = null;
-    mapLoadError = null;
+    if (level == HallOfChampionsLevel)
+      return HallOfChampionsMapPath;
 
-    if (!File.Exists(HallOfChampionsMapPath))
+    return $"Assets/Data/Maps/DungeonMaster_Level{level:00}.json";
+  }
+
+  private bool SyncLevelFromViewEdit()
+  {
+    int requestedLevel = Mathf.Clamp(
+        EditorPrefs.GetInt(
+            ViewEditPreviewLevelKey,
+            currentDungeonLevel),
+        HallOfChampionsLevel,
+        MaxDungeonLevel);
+
+    if (requestedLevel == currentDungeonLevel)
+      return false;
+
+    if (!LoadMapForLevel(requestedLevel))
+      return false;
+
+    return true;
+  }
+
+  private bool LoadMapForLevel(int level)
+  {
+    string mapPath = GetMapPathForLevel(level);
+    if (!File.Exists(mapPath))
     {
-      mapLoadError = "Map not found at " + HallOfChampionsMapPath;
-      return;
+      mapLoadError = "Map not found at " + mapPath;
+      return false;
     }
+
+    DungeonMap previousMap = map;
+    int previousLevel = currentDungeonLevel;
 
     try
     {
-      string json = File.ReadAllText(HallOfChampionsMapPath);
-      map = DungeonMap.LoadFromJsonText(json);
+      string json = File.ReadAllText(mapPath);
+      DungeonMap loadedMap = DungeonMap.LoadFromJsonText(json);
+
+      map = loadedMap;
+      currentDungeonLevel = level;
+      mapLoadError = null;
+
+      resolvedWallOrnaments = new OriginalWallOrnamentMarker[0];
+      resolvedPuddleFloors.Clear();
+
       if (!LoadResolvedFeaturesFromDatabase())
       {
-        resolvedWallOrnaments = BuildGreyWallOrnaments(map);
-        BuildHallOfChampionsPuddleFloors(map, resolvedPuddleFloors);
+        if (level == HallOfChampionsLevel)
+        {
+          resolvedWallOrnaments = BuildGreyWallOrnaments(map);
+          BuildHallOfChampionsPuddleFloors(map, resolvedPuddleFloors);
+        }
       }
-      selectedX = 1;
-      selectedY = 2;
+
+      // The shared pose is applied immediately after this load. Use the map's
+      // own start only as a safe temporary value while the level changes.
+      selectedX = map.StartX;
+      selectedY = map.StartY;
+      selectedFacing = map.StartFacing;
+      return true;
     }
     catch (System.Exception ex)
     {
-      map = null;
+      map = previousMap;
+      currentDungeonLevel = previousLevel;
       resolvedWallOrnaments = new OriginalWallOrnamentMarker[0];
       resolvedPuddleFloors.Clear();
       mapLoadError = ex.Message;
+      Debug.LogWarning(
+          "Dungeon Features: Could not load level " + level
+          + " from " + mapPath + ": " + ex.Message);
+      return false;
     }
   }
 
@@ -464,6 +525,11 @@ public class DungeonFeatureEditor : EditorWindow
 
   private void DrawChampionMirrorMarkers(Rect mapRect)
   {
+    // Champion mirrors/names are Hall-of-Champions-only. Other dungeon levels
+    // use the all-level feature placement database without this overlay.
+    if (currentDungeonLevel != HallOfChampionsLevel)
+      return;
+
     const float lineThickness = 3f;
     const float dotSize = 4f;
 
@@ -656,8 +722,8 @@ public class DungeonFeatureEditor : EditorWindow
 
   /// <summary>
   /// Populates Dungeon Features from the generated all-level placement
-  /// database. Level 0 is used while the editor is still displaying the Hall
-  /// of Champions map. Champion mirrors remain on their dedicated overlay.
+  /// database for the same active level that ViewEdit is displaying.
+  /// Champion mirrors remain a dedicated Hall-of-Champions overlay.
   /// </summary>
   private bool LoadResolvedFeaturesFromDatabase()
   {
@@ -681,7 +747,7 @@ public class DungeonFeatureEditor : EditorWindow
         DungeonOrnamentPlacement placement =
             database.ornamentPlacements[i];
         if (placement == null
-            || placement.level != PreviewDungeonLevel
+            || placement.level != currentDungeonLevel
             || placement.resolved == null
             || string.IsNullOrEmpty(placement.resolved.type))
         {
@@ -1477,6 +1543,7 @@ public class DungeonFeatureEditor : EditorWindow
     selectedY = targetY;
     selectedFacing = targetFacing;
 
+    EditorPrefs.SetInt(ViewEditPreviewLevelKey, currentDungeonLevel);
     EditorPrefs.SetInt(ViewEditPreviewXKey, targetX);
     EditorPrefs.SetInt(ViewEditPreviewYKey, targetY);
     EditorPrefs.SetInt(
@@ -1768,6 +1835,7 @@ public class DungeonFeatureEditor : EditorWindow
       selectedFacing = enteredFacing;
     }
 
+    EditorPrefs.SetInt(ViewEditPreviewLevelKey, currentDungeonLevel);
     EditorPrefs.SetInt(ViewEditPreviewXKey, x);
     EditorPrefs.SetInt(ViewEditPreviewYKey, y);
     EditorPrefs.SetInt(
