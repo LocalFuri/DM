@@ -1862,6 +1862,21 @@ public class ViewportLayoutEditor : EditorWindow
     return IsDoorAtViewportCenterDepth(3);
   }
 
+  /// <summary>
+  /// Generic player-relative D3-right oblique door test. The door occupies
+  /// the cell one lane to the right and three cells forward from the party.
+  /// </summary>
+  private bool IsDoorF3RightObliqueView()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return false;
+
+    Viewport17Cell cell = SampleViewport17Cell(1, 3);
+    return cell.IsInside
+        && previewDoorTiles.Contains(new Vector2Int(cell.MapX, cell.MapY));
+  }
+
 
   private bool IsWallNeededForCurrentPose(ViewportPiece piece)
   {
@@ -1918,6 +1933,12 @@ public class ViewportLayoutEditor : EditorWindow
       {
         return name == "Black Door Frame Left F3"
             || name == "Black Door Frame Right F3"
+            || name == "BlackDoorF3";
+      }
+
+      if (IsDoorF3RightObliqueView())
+      {
+        return name == "Black Door Frame Right F3"
             || name == "BlackDoorF3";
       }
 
@@ -11641,6 +11662,14 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
+        if (IsDoorF3RightObliqueView()
+            && piece != null
+            && (IsWallF3RightPiece(piece)
+                || IsRightD3Piece(piece)))
+        {
+          continue;
+        }
+
         // V17 F2 cutover: wait until painter order reaches depth 2, then draw
         // the original DOS D2 L/C/R artwork once. This preserves all depth-3
         // drawing behind it and all F1/F0 drawing in front of it.
@@ -12308,12 +12337,16 @@ public class ViewportLayoutEditor : EditorWindow
       BlitBlackDoorF2FramesIntoPreview(pixels);
     }
 
-    // Manual isolated-composition path for Door F3 frame pieces.
-    // At a real F3-door front view they were already drawn in the
-    // dedicated door layering block above. Everywhere else they default OFF
-    // and appear only when ViewEdit explicitly enables them.
-    if (!IsDoorF3FrontView())
+    // Dedicated D3-right oblique door composite from the verified original
+    // three-part stack. This is player-relative geometry, not a map-coordinate
+    // exception.
+    if (IsDoorF3RightObliqueView())
     {
+      BlitDoorF3RightObliqueIntoPreview(pixels);
+    }
+    else if (!IsDoorF3FrontView())
+    {
+      // Manual isolated-composition path for F3 frame pieces everywhere else.
       BlitBlackDoorF3FramesIntoPreview(pixels);
     }
 
@@ -13167,6 +13200,61 @@ public class ViewportLayoutEditor : EditorWindow
         f2DoorX,
         f2DoorY,
         f2DoorMirror);
+  }
+
+  private void BlitDoorF3RightObliqueIntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || !IsDoorF3RightObliqueView())
+      return;
+
+    // Verified original-DM three-part D3-right oblique stack:
+    // 1) only the four dark right-edge columns of BlackDoorF3,
+    // 2) the mirrored F3 right door frame,
+    // 3) mirrored Wall D3R2.
+    Texture2D door = GetBlackDoorF3SourceTexture();
+    if (door != null && door.isReadable && door.width >= 44)
+    {
+      // BlackDoorF3 is 45px wide at X=88. Only source columns 40..43
+      // survive visibly here, landing at framebuffer X=128..131.
+      BlitPieceScaledIntoPreview(
+          pixels,
+          door,
+          128,
+          63,
+          4,
+          door.height,
+          false,
+          40,
+          0,
+          4,
+          door.height);
+    }
+
+    Texture2D frame = LoadDoorFrameTexture(
+        "Assets/Art/Walls/Door_Frame_Left_10x42.png",
+        "Door_Frame_Left_10x42");
+    if (frame != null)
+    {
+      BlitPieceIntoPreview(
+          pixels,
+          frame,
+          132,
+          103,
+          true);
+    }
+
+    Texture2D rightD3 = graphics != null
+        ? graphics.GetTexture(DungeonGraphicType.WallD3R2)
+        : null;
+    if (rightD3 != null)
+    {
+      BlitPieceIntoPreview(
+          pixels,
+          rightD3,
+          190,
+          58,
+          true);
+    }
   }
 
   private void BlitBlackDoorF3FramesIntoPreview(Color32[] pixels)
