@@ -24,15 +24,27 @@ public class ViewportLayoutEditor : EditorWindow
       "ViewportLayoutEditor.SelectedPieceIndex";
   private const string SearchPiecesControlName =
       "ViewportLayoutEditor.SearchPieces";
+  private const string PreviewLevelJumpControlName =
+      "ViewportLayoutEditor.PreviewLevelJump";
 
   private const string HallOfChampionsMapPath =
       "Assets/Data/Maps/HallOfChampions.json";
-  private const string Level1MapPath =
-      "Assets/Data/Maps/DungeonMaster_Level01.json";
   private static readonly string[] PreviewLevelMapPaths =
   {
     HallOfChampionsMapPath,
-    Level1MapPath
+    "Assets/Data/Maps/DungeonMaster_Level01.json",
+    "Assets/Data/Maps/DungeonMaster_Level02.json",
+    "Assets/Data/Maps/DungeonMaster_Level03.json",
+    "Assets/Data/Maps/DungeonMaster_Level04.json",
+    "Assets/Data/Maps/DungeonMaster_Level05.json",
+    "Assets/Data/Maps/DungeonMaster_Level06.json",
+    "Assets/Data/Maps/DungeonMaster_Level07.json",
+    "Assets/Data/Maps/DungeonMaster_Level08.json",
+    "Assets/Data/Maps/DungeonMaster_Level09.json",
+    "Assets/Data/Maps/DungeonMaster_Level10.json",
+    "Assets/Data/Maps/DungeonMaster_Level11.json",
+    "Assets/Data/Maps/DungeonMaster_Level12.json",
+    "Assets/Data/Maps/DungeonMaster_Level13.json"
   };
   private const string DungeonFeaturePlacementsPath =
       "Assets/Data/Features/DungeonFeaturePlacements.json";
@@ -683,6 +695,7 @@ public class ViewportLayoutEditor : EditorWindow
   private int previewY;
   private DungeonFacing previewFacing = DungeonFacing.South;
   private int previewDungeonLevel = PreviewDungeonLevel;
+  private string previewLevelJumpText = string.Empty;
   private DungeonMap previewMiniMap;
   private string previewMiniMapLoadError;
   private Vector2 previewMiniMapScroll;
@@ -5215,6 +5228,29 @@ public class ViewportLayoutEditor : EditorWindow
       Repaint();
     }
 
+    GUILayout.Space(6f);
+    GUILayout.Label("Map", GUILayout.Width(28f));
+
+    int displayedLevel = previewDungeonLevel;
+    if (!string.IsNullOrEmpty(previewLevelJumpText))
+      int.TryParse(previewLevelJumpText, out displayedLevel);
+
+    GUI.SetNextControlName(PreviewLevelJumpControlName);
+    EditorGUI.BeginChangeCheck();
+    int requestedLevel = EditorGUILayout.DelayedIntField(
+        displayedLevel,
+        GUILayout.Width(34f));
+    if (EditorGUI.EndChangeCheck())
+    {
+      requestedLevel = Mathf.Clamp(
+          requestedLevel,
+          0,
+          PreviewLevelMapPaths.Length - 1);
+      previewLevelJumpText = requestedLevel.ToString();
+      TryJumpToPreviewLevelFromField();
+      GUI.FocusControl(null);
+    }
+
     EditorGUILayout.EndHorizontal();
 
     // Lists every wall card so a wrong view can be corrected. Show Walls, or
@@ -7685,8 +7721,8 @@ public class ViewportLayoutEditor : EditorWindow
         Rect fillRect = new Rect(
             cellRect.x + 1f,
             cellRect.y + 1f,
-            cellRect.width - 2f,
-            cellRect.height - 2f);
+            cellRect.width - 1f,
+            cellRect.height - 1f);
         EditorGUI.DrawRect(
             fillRect,
             wall
@@ -8271,6 +8307,67 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  private void TryJumpToPreviewLevelFromField()
+  {
+    if (!int.TryParse(previewLevelJumpText, out int requestedLevel))
+    {
+      previewLevelJumpText = previewDungeonLevel.ToString();
+      return;
+    }
+
+    requestedLevel = Mathf.Clamp(
+        requestedLevel,
+        0,
+        PreviewLevelMapPaths.Length - 1);
+
+    if (!TryLoadPreviewLevel(requestedLevel))
+    {
+      previewLevelJumpText = previewDungeonLevel.ToString();
+      return;
+    }
+
+    // Direct map jumps enter the level at that map's authored/default start.
+    // Stair-to-stair travel keeps using TryPreviewStairsTransition instead.
+    previewX = previewMiniMap.PlayerX;
+    previewY = previewMiniMap.PlayerY;
+    previewFacing = previewMiniMap.PlayerFacing;
+    previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
+
+    foreach (ViewportPiece overriddenPiece in previewMirrorOverrideByPiece.Keys)
+    {
+      if (overriddenPiece != null
+          && resolvedNormalWallByPiece.TryGetValue(
+              overriddenPiece, out ResolvedNormalWallState resolvedState))
+      {
+        overriddenPiece.MirrorHorizontally = resolvedState.Mirror;
+      }
+    }
+
+    previewMirrorOverrideByPiece.Clear();
+    previewFrontF1WidthOverrideByPiece.Clear();
+    previewFrontF3WidthOverrideByPiece.Clear();
+    previewPositionOverrideByPiece.Clear();
+    previewEnabledOverrideByPiece.Clear();
+    previewGraphicOverrideByPiece.Clear();
+    previewDisableAllWalls = false;
+    ResetStairsDownF1PreviewControls();
+
+    showOnlyWallsNeededForCurrentPose = true;
+    showWallsActivFilter = false;
+    pieceSearchFamilyIndex = 0;
+    pieceSearchText = string.Empty;
+    editorScroll = Vector2.zero;
+    previewLevelJumpText = previewDungeonLevel.ToString();
+
+    SaveSessionPrefs();
+    ApplyPoseVisibilityForNavigationOnly();
+    ResetEditModeViewportLogCache();
+    RefreshEditModePreview();
+    RepaintGameViews();
+    GUI.changed = true;
+    Repaint();
+  }
+
   private void EnsurePreviewMiniMapLoaded()
   {
     if (previewMiniMap != null)
@@ -8344,6 +8441,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
+    previewLevelJumpText = previewDungeonLevel.ToString();
     Debug.Log(
         "Dungeon level transition: now on level " + previewDungeonLevel
         + " at (" + previewX + "," + previewY + ") facing "

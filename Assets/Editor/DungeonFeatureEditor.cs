@@ -487,8 +487,8 @@ public class DungeonFeatureEditor : EditorWindow
     Rect fillRect = new Rect(
         cellRect.x + 1f,
         cellRect.y + 1f,
-        cellRect.width - 2f,
-        cellRect.height - 2f
+        cellRect.width - 1f,
+        cellRect.height - 1f
     );
 
     Color fillColor = tile.Type == DungeonTileType.Wall
