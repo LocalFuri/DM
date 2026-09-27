@@ -12078,6 +12078,51 @@ public class ViewportLayoutEditor : EditorWindow
         else if (IsRightD3Piece(piece) && mirror)
           drawGraphic = DungeonGraphicType.WallD3L2;
 
+        // F2 door view: frames already blitted in kit order; BlackDoorF2
+        // 63×59 1:1 last so it covers overlapping inner frame pixels.
+        if (blackDoorF2Exception)
+        {
+          // Draw the two F2 frame pieces through the same live ViewEdit path
+          // used by isolated composition, then place the front door over them.
+          BlitBlackDoorF2FramesIntoPreview(pixels);
+
+          // Dedicated front F2 door. At the verified F2 door view
+          // exception pose the door is mandatory; do not gate it on the
+          // stored Enabled flag.
+          ViewportPiece doorF2 = FindLayoutPieceByName("BlackDoorF2");
+          Texture2D f2Source = GetBlackDoorF2SourceTexture();
+          if (f2Source != null)
+          {
+            int f2DoorX = piece.ResolvedBlackDoorF2X;
+            int f2DoorY = piece.ResolvedBlackDoorF2Y;
+            bool f2DoorMirror = blackDoorF2CardMirror;
+
+            // If a real BlackDoorF2 card exists, keep its live ViewEdit
+            // position/mirror values. A temporary position override wins.
+            if (doorF2 != null)
+            {
+              f2DoorX = doorF2.X;
+              f2DoorY = doorF2.Y;
+              f2DoorMirror = doorF2.MirrorHorizontally;
+
+              if (previewPositionOverrideByPiece.TryGetValue(
+                      doorF2, out Vector2Int f2DoorOverride))
+              {
+                f2DoorX = f2DoorOverride.x;
+                f2DoorY = f2DoorOverride.y;
+              }
+            }
+
+            BlitPieceIntoPreview(
+                pixels,
+                f2Source,
+                f2DoorX,
+                f2DoorY,
+                f2DoorMirror);
+          }
+          continue;
+        }
+
         Texture2D texture = graphics.GetTexture(drawGraphic);
 
         if (texture == null)
@@ -12199,51 +12244,6 @@ public class ViewportLayoutEditor : EditorWindow
             }
           }
 
-          continue;
-        }
-
-        // F2 door view: frames already blitted in kit order; BlackDoorF2
-        // 63×59 1:1 last so it covers overlapping inner frame pixels.
-        if (blackDoorF2Exception)
-        {
-          // Draw the two F2 frame pieces through the same live ViewEdit path
-          // used by isolated composition, then place the front door over them.
-          BlitBlackDoorF2FramesIntoPreview(pixels);
-
-          // Dedicated front F2 door. At the verified F2 door view
-          // exception pose the door is mandatory; do not gate it on the
-          // stored Enabled flag.
-          ViewportPiece doorF2 = FindLayoutPieceByName("BlackDoorF2");
-          Texture2D f2Source = GetBlackDoorF2SourceTexture();
-          if (f2Source != null)
-          {
-            int f2DoorX = piece.ResolvedBlackDoorF2X;
-            int f2DoorY = piece.ResolvedBlackDoorF2Y;
-            bool f2DoorMirror = blackDoorF2CardMirror;
-
-            // If a real BlackDoorF2 card exists, keep its live ViewEdit
-            // position/mirror values. A temporary position override wins.
-            if (doorF2 != null)
-            {
-              f2DoorX = doorF2.X;
-              f2DoorY = doorF2.Y;
-              f2DoorMirror = doorF2.MirrorHorizontally;
-
-              if (previewPositionOverrideByPiece.TryGetValue(
-                      doorF2, out Vector2Int f2DoorOverride))
-              {
-                f2DoorX = f2DoorOverride.x;
-                f2DoorY = f2DoorOverride.y;
-              }
-            }
-
-            BlitPieceIntoPreview(
-                pixels,
-                f2Source,
-                f2DoorX,
-                f2DoorY,
-                f2DoorMirror);
-          }
           continue;
         }
 
