@@ -195,6 +195,13 @@ public class ViewportLayoutEditor : EditorWindow
   private const int StairsDownF1X = 36;
   private const int StairsDownF1DisplayY = 49;
 
+  // ViewEdit controls for the down-stairs overlay. These are intentionally
+  // editor-preview values (like the live wall controls) so the sprite can be
+  // enabled/disabled and aligned without changing the map data.
+  [SerializeField] private bool stairsDownF1PreviewEnabled = true;
+  [SerializeField] private int stairsDownF1PreviewX = StairsDownF1X;
+  [SerializeField] private int stairsDownF1PreviewDisplayY = StairsDownF1DisplayY;
+
   private const int DungeonViewportHeight = 136;
 
   // Original Dungeon Master / CSBwin viewport lighting palettes.
@@ -943,8 +950,6 @@ public class ViewportLayoutEditor : EditorWindow
     public int FrontF3Width;
   }
 
-  private static string lastLoggedF0DrawDiagnosticKey;
-
   // Temporary 320×200 presentation (restored on close / Play Mode).
   private bool presentationOverrideActive;
   private bool canvasScalerStateSaved;
@@ -1419,6 +1424,10 @@ public class ViewportLayoutEditor : EditorWindow
         bool isSelected = i == selectedPieceIndex;
         DrawPieceCard(i, piece, isSelected, ref changed);
       }
+
+      // Map geometry controls are listed immediately below the wall images
+      // needed by the current pose. Start with the down-stairs F1 overlay.
+      DrawStairsDownF1ControlRow();
 
       bool editorChanged = EditorGUI.EndChangeCheck();
       if ((editorChanged || changed)
@@ -11329,27 +11338,6 @@ public class ViewportLayoutEditor : EditorWindow
           resolvedF1Width = livePreviewWidth;
         }
 
-        if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
-        {
-          string f0DrawDiagnosticKey =
-              previewX + "," + previewY + "," + previewFacing
-              + "|" + piece.Name
-              + "|" + resolvedX
-              + "|" + resolvedY
-              + "|" + mirror;
-          if (lastLoggedF0DrawDiagnosticKey != f0DrawDiagnosticKey)
-          {
-            lastLoggedF0DrawDiagnosticKey = f0DrawDiagnosticKey;
-            Debug.Log(
-                "F0 DRAW | "
-                + previewX + "," + previewY + " " + previewFacing.ToString().ToUpperInvariant()
-                + " | " + piece.Name
-                + " | X=" + resolvedX
-                + " | Y=" + resolvedY
-                + " | mirror=" + (mirror ? "ON" : "OFF"));
-          }
-        }
-
         // LeftS3 / RightS3 use handed-source mirroring.  The ViewEdit Mirror
         // checkbox is read directly here so no later resolver can replace it.
         // LeftS3 Mirror ON = mirror the RIGHT S3 source and blit it at the
@@ -15116,15 +15104,11 @@ public class ViewportLayoutEditor : EditorWindow
     return previewPuddleFloors.Contains(PackPreviewTile(x, y));
   }
 
-  /// <summary>
-  /// Down-stairs front when the cell one step ahead is a stairs tile
-  /// whose raw direction bit is down.
-  /// </summary>
-  private void BlitStairsDownF1IntoPreview(Color32[] pixels)
+  private bool IsStairsDownF1NeededForCurrentPose()
   {
     EnsurePreviewMiniMapLoaded();
-    if (pixels == null || previewMiniMap == null)
-      return;
+    if (previewMiniMap == null)
+      return false;
 
     DungeonMap.GetForwardOffset(
         previewFacing,
@@ -15134,10 +15118,112 @@ public class ViewportLayoutEditor : EditorWindow
     int stairsX = previewX + forwardX;
     int stairsY = previewY + forwardY;
 
-    if (!previewMiniMap.IsInside(stairsX, stairsY)
-        || !previewMiniMap.GetTile(stairsX, stairsY)
+    return previewMiniMap.IsInside(stairsX, stairsY)
+        && previewMiniMap.GetTile(stairsX, stairsY)
             .TryGetStairsDirection(out bool stairsUp)
-        || stairsUp)
+        && !stairsUp;
+  }
+
+  private void DrawStairsDownF1ControlRow()
+  {
+    if (!IsStairsDownF1NeededForCurrentPose())
+      return;
+
+    GUIStyle stairsLabelStyle = new GUIStyle(EditorStyles.boldLabel);
+    Color magenta = Color.magenta;
+    stairsLabelStyle.normal.textColor = magenta;
+    stairsLabelStyle.hover.textColor = magenta;
+    stairsLabelStyle.focused.textColor = magenta;
+    stairsLabelStyle.active.textColor = magenta;
+
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label(
+        "Stairs Down",
+        stairsLabelStyle,
+        GUILayout.Width(110f));
+
+    float savedLabelWidth = EditorGUIUtility.labelWidth;
+    const float ToggleBoxWidth = 18f;
+    const string EnabledLabel = "Enabled";
+    float enabledLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent(EnabledLabel)).x;
+    EditorGUIUtility.labelWidth = enabledLabelWidth;
+
+    bool enabledBefore = stairsDownF1PreviewEnabled;
+    bool enabledAfter = DrawMouseOnlyToggle(
+        EnabledLabel,
+        enabledBefore,
+        enabledBefore,
+        GUILayout.Width(enabledLabelWidth + ToggleBoxWidth),
+        GUILayout.ExpandWidth(false));
+
+    GUILayout.Space(10f);
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
+
+    int xBefore = stairsDownF1PreviewX;
+    int editX = xBefore;
+    bool xChanged = DrawIntStepperInline(
+        "X",
+        ref editX,
+        snap,
+        false,
+        true);
+
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    int displayYBefore = stairsDownF1PreviewDisplayY;
+    int editUnityY = DisplayYToUnityY(displayYBefore, 92);
+    bool yChanged = DrawTopDownYStepperInline(
+        ref editUnityY,
+        92,
+        snap,
+        false,
+        true);
+    int displayYAfter = UnityYToDisplayY(editUnityY, 92);
+
+    EditorGUIUtility.labelWidth = savedLabelWidth;
+    EditorGUILayout.EndHorizontal();
+
+    bool controlChanged = false;
+    if (enabledAfter != enabledBefore)
+    {
+      stairsDownF1PreviewEnabled = enabledAfter;
+      previewEnabledChangedThisFrame = true;
+      controlChanged = true;
+    }
+
+    if (xChanged && editX != xBefore)
+    {
+      stairsDownF1PreviewX = editX;
+      previewPositionChangedThisFrame = true;
+      controlChanged = true;
+    }
+
+    if (yChanged && displayYAfter != displayYBefore)
+    {
+      stairsDownF1PreviewDisplayY = displayYAfter;
+      previewPositionChangedThisFrame = true;
+      controlChanged = true;
+    }
+
+    if (controlChanged)
+    {
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+  }
+
+  /// <summary>
+  /// Down-stairs front when the cell one step ahead is a stairs tile
+  /// whose raw direction bit is down.
+  /// </summary>
+  private void BlitStairsDownF1IntoPreview(Color32[] pixels)
+  {
+    if (pixels == null
+        || !stairsDownF1PreviewEnabled
+        || !IsStairsDownF1NeededForCurrentPose())
     {
       return;
     }
@@ -15153,12 +15239,12 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     int destinationY =
-        DisplayYToUnityY(StairsDownF1DisplayY, stairs.height);
+        DisplayYToUnityY(stairsDownF1PreviewDisplayY, stairs.height);
 
     BlitPieceIntoPreview(
         pixels,
         stairs,
-        StairsDownF1X,
+        stairsDownF1PreviewX,
         destinationY,
         false);
   }
