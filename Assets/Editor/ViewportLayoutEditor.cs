@@ -2548,7 +2548,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     // 2S (ViewEdit list only; no geometry yet)
     ("LeftS3", 0, 57),
-    ("RightS3", null, null),
+    ("RightS3", 216, 57),
 
     // Black Door
     ("BlackDoorF1", 63, 47),
@@ -2701,6 +2701,23 @@ public class ViewportLayoutEditor : EditorWindow
     SetCanonicalReferenceXY(piece.Name, x, y);
   }
 
+  private static string GetViewEditDisplayName(ViewportPiece piece)
+  {
+    if (piece == null)
+      return string.Empty;
+
+    switch (piece.Name)
+    {
+      case "Black Door Frame Left F1": return "Door Frame Left F1";
+      case "Black Door Frame Right F1": return "Door Frame Right F1";
+      case "Black Door Frame Left F2": return "Door Frame Left F2";
+      case "Black Door Frame Right F2": return "Door Frame Right F2";
+      case "Black Door Frame Left F3": return "Door Frame Left F3";
+      case "Black Door Frame Right F3": return "Door Frame Right F3";
+      default: return piece.Name ?? string.Empty;
+    }
+  }
+
   private bool IsShowAllWallsPreview()
   {
     return !Application.isPlaying && !showOnlyWallsNeededForCurrentPose;
@@ -2774,7 +2791,8 @@ public class ViewportLayoutEditor : EditorWindow
         && !compactSideWallHeader)
     {
       EditorGUILayout.BeginHorizontal();
-      string headerText = isSelected ? $"▶ {piece.Name}" : piece.Name;
+      string displayName = GetViewEditDisplayName(piece);
+      string headerText = isSelected ? $"▶ {displayName}" : displayName;
       if (TryGetPieceFamilyLabelColor(piece, out Color familyColor))
       {
         EditorGUILayout.LabelField(
@@ -2793,7 +2811,8 @@ public class ViewportLayoutEditor : EditorWindow
     float savedNameLabelWidth = EditorGUIUtility.labelWidth;
     if (compactFrontWallHeader || compactBlackDoorFrontHeader)
     {
-      string headerText = isSelected ? $"▶ {piece.Name}" : piece.Name;
+      string displayName = GetViewEditDisplayName(piece);
+      string headerText = isSelected ? $"▶ {displayName}" : displayName;
       if (TryGetPieceFamilyLabelColor(piece, out Color familyColor))
       {
         EditorGUILayout.LabelField(
@@ -2866,7 +2885,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
     else if (compactBlackDoorF1FrameHeader)
     {
-      string headerText = isSelected ? $"▶ {piece.Name}" : piece.Name;
+      string displayName = GetViewEditDisplayName(piece);
+      string headerText = isSelected ? $"▶ {displayName}" : displayName;
       if (TryGetPieceFamilyLabelColor(piece, out Color familyColor))
       {
         EditorGUILayout.LabelField(
@@ -2892,7 +2912,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
     else if (compactD3Header)
     {
-      string headerText = isSelected ? $"▶ {piece.Name}" : piece.Name;
+      string displayName = GetViewEditDisplayName(piece);
+      string headerText = isSelected ? $"▶ {displayName}" : displayName;
       if (TryGetPieceFamilyLabelColor(piece, out Color familyColor))
       {
         EditorGUILayout.LabelField(
@@ -2919,7 +2940,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
     else if (compactSideWallHeader)
     {
-      string headerText = isSelected ? $"▶ {piece.Name}" : piece.Name;
+      string displayName = GetViewEditDisplayName(piece);
+      string headerText = isSelected ? $"▶ {displayName}" : displayName;
       if (TryGetPieceFamilyLabelColor(piece, out Color familyColor))
       {
         EditorGUILayout.LabelField(
@@ -11722,7 +11744,7 @@ public class ViewportLayoutEditor : EditorWindow
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
           continue;
 
-        // Black Door F1 frame pieces are explicitly drawn immediately after
+        // Door F1 frame pieces are explicitly drawn immediately after
         // the door below, so skip their normal list-order draw at this pose.
         if (previewX == 1
             && previewY == 3
@@ -12125,7 +12147,9 @@ public class ViewportLayoutEditor : EditorWindow
               FindLayoutPieceByName("Black Door Frame Left F1");
           if (leftFrameSource != null && leftFramePiece != null)
           {
-            bool leftFrameEnabled = leftFramePiece.Enabled;
+            // The real F1 door always has its frame. Stored layout Enabled
+            // must not suppress it; a temporary ViewEdit toggle may.
+            bool leftFrameEnabled = true;
             if (previewEnabledOverrideByPiece.TryGetValue(
                     leftFramePiece, out bool leftFrameEnabledOverride))
             {
@@ -12154,7 +12178,8 @@ public class ViewportLayoutEditor : EditorWindow
               FindLayoutPieceByName("Black Door Frame Right F1");
           if (leftFrameSource != null && rightFramePiece != null)
           {
-            bool rightFrameEnabled = rightFramePiece.Enabled;
+            // Same mandatory automatic default for the right F1 frame.
+            bool rightFrameEnabled = true;
             if (previewEnabledOverrideByPiece.TryGetValue(
                     rightFramePiece, out bool rightFrameEnabledOverride))
             {
@@ -12347,7 +12372,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Native D3 L/C/R is drawn in the normal far-to-near wall pass.
 
-    // Manual isolated-composition path for Black Door F2 frame pieces.
+    // Manual isolated-composition path for Door F2 frame pieces.
     // At the real (1,4) North F2-door pose they were already drawn in the
     // dedicated door layering block above. Everywhere else they default OFF
     // and appear only when ViewEdit explicitly enables them.
@@ -12358,7 +12383,7 @@ public class ViewportLayoutEditor : EditorWindow
       BlitBlackDoorF2FramesIntoPreview(pixels);
     }
 
-    // Manual isolated-composition path for Black Door F3 frame pieces.
+    // Manual isolated-composition path for Door F3 frame pieces.
     // At the real (1,5) North F3-door pose they were already drawn in the
     // dedicated door layering block above. Everywhere else they default OFF
     // and appear only when ViewEdit explicitly enables them.
@@ -12950,11 +12975,50 @@ public class ViewportLayoutEditor : EditorWindow
     if (blackDoorFrameF3SourceTexture == null)
     {
       blackDoorFrameF3SourceTexture =
-          AssetDatabase.LoadAssetAtPath<Texture2D>(
-              "Assets/Art/Walls/Black Door Frame_Left_10x42.png");
+          LoadDoorFrameTexture(
+              "Assets/Art/Walls/Door_Frame_Left_10x42.png",
+              "Door_Frame_Left_10x42");
     }
 
     return blackDoorFrameF3SourceTexture;
+  }
+
+  private static Texture2D LoadDoorFrameTexture(
+      string preferredPath,
+      string assetBaseName)
+  {
+    Texture2D texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(preferredPath);
+    if (texture != null)
+      return texture;
+
+    // Fallback for renamed/moved assets: locate the texture by its actual
+    // filename in the Unity AssetDatabase. This keeps the renderer working
+    // if the generic Door_Frame asset was moved within Assets.
+    string[] guids =
+        AssetDatabase.FindAssets(assetBaseName + " t:Texture2D");
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      if (string.IsNullOrEmpty(path))
+        continue;
+
+      string fileName =
+          System.IO.Path.GetFileNameWithoutExtension(path);
+      if (!string.Equals(
+              fileName,
+              assetBaseName,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (texture != null)
+        return texture;
+    }
+
+    return null;
   }
 
   private Texture2D GetBlackDoorFrameLeftF1SourceTexture()
@@ -12962,8 +13026,9 @@ public class ViewportLayoutEditor : EditorWindow
     if (blackDoorFrameLeftF1SourceTexture == null)
     {
       blackDoorFrameLeftF1SourceTexture =
-          AssetDatabase.LoadAssetAtPath<Texture2D>(
-              "Assets/Art/Walls/Black Door Frame_Left_25x94.png");
+          LoadDoorFrameTexture(
+              "Assets/Art/Walls/Door_Frame_Left_25x94.png",
+              "Door_Frame_Left_25x94");
     }
 
     return blackDoorFrameLeftF1SourceTexture;
@@ -13006,7 +13071,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// (1,5) North Black Door F3 frames. Same 10×42 left source; right is
+  /// (1,5) North Door F3 frames. Same 10×42 left source; right is
   /// mirrored. Not wall-geometry pieces. Does not write pose data.
   /// </summary>
   private void BlitBlackDoorF2FramesIntoPreview(Color32[] pixels)
@@ -13015,8 +13080,9 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     Texture2D source =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(
-            "Assets/Art/Walls/Black Door Frame_Left_18x65.png");
+        LoadDoorFrameTexture(
+            "Assets/Art/Walls/Door_Frame_Left_18x65.png",
+            "Door_Frame_Left_18x65");
     if (source == null)
       return;
 
@@ -13032,8 +13098,11 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Outside the real F2 Black Door pose both frame pieces default OFF.
     // In isolated-composition mode ViewEdit may explicitly enable either one.
-    bool leftEnabled = automaticF2DoorPose && leftF2 != null && leftF2.Enabled;
-    bool rightEnabled = automaticF2DoorPose && rightF2 != null && rightF2.Enabled;
+    // A real F2 door always has both frame sides. Stored layout Enabled
+    // must not suppress the automatic door composition; manual ViewEdit
+    // Enabled overrides still win below.
+    bool leftEnabled = automaticF2DoorPose && leftF2 != null;
+    bool rightEnabled = automaticF2DoorPose && rightF2 != null;
 
     if (leftF2 != null
         && previewEnabledOverrideByPiece.TryGetValue(
