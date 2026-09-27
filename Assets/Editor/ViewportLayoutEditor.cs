@@ -1000,8 +1000,6 @@ public class ViewportLayoutEditor : EditorWindow
     public int FrontF3Width;
   }
 
-  private static string lastLoggedF0DrawDiagnosticKey;
-
   // Temporary 320×200 presentation (restored on close / Play Mode).
   private bool presentationOverrideActive;
   private bool canvasScalerStateSaved;
@@ -4664,8 +4662,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// Shared Game View click dispatch for both UITK PointerDown and GameView
-  /// OnGUI / globalEventHandler. Logs every left click, then hit-tests the
-  /// 320x200 movement pad.
+  /// OnGUI / globalEventHandler. Hit-tests the 320x200 movement pad.
   /// </summary>
   private static bool DispatchGameViewMovementClick(
       EditorWindow gameView,
@@ -4689,8 +4686,6 @@ public class ViewportLayoutEditor : EditorWindow
     string region = "none";
     if (hasLogical)
       region = GetMovementArrowRegionName(logical.x, logical.y);
-
-    do { } while (false);
 
     if (region == "none")
       return false;
@@ -8352,35 +8347,13 @@ public class ViewportLayoutEditor : EditorWindow
     if (positionChanged)
       TryPreviewStairsTransition();
 
-    ApplyPoseVisibilityForNavigationOnly();
+    // Initialize every entered pose through the normal authoritative wall/door renderer.
+    ApplyCurrentPoseVisibilityToLayout();
 
     ResetEditModeViewportLogCache();
     RefreshEditModePreview();
     GUI.changed = true;
     Repaint();
-  }
-
-  /// <summary>
-  /// Navigation preview keeps map/minimap geometry active, but deliberately
-  /// renders no normal walls or Black Door pieces.
-  /// </summary>
-  private void ApplyPoseVisibilityForNavigationOnly()
-  {
-    if (layout == null)
-      return;
-
-    // No per-view/per-pose storage exists anymore.
-    // Every preview pose starts from the same non-pose defaults, then applies
-    // only deterministic runtime/editor rules.
-    ApplyUnknownPoseDefaultsToLayout();
-    EnsureChampionStatusSlotsEnabled();
-    ApplyCeilingMirrorFromPose();
-    ApplyFloorMirrorReferenceOverride();
-
-    // CHATGPT_BUILD_F1_MINIMAP_ALGORITHM_STAGE1_20260830_AA
-    // Stage 1: automatic F0/F1 wall assembly from minimap only.
-    // F2/F3/D3/Black Door remain disabled until F1 is verified.
-    ApplyF1MinimapWallRecipe();
   }
 
   private void PreviewNavigateTurnLeft()
@@ -8669,7 +8642,8 @@ public class ViewportLayoutEditor : EditorWindow
     previewLevelJumpText = previewDungeonLevel.ToString();
 
     SaveSessionPrefs();
-    ApplyPoseVisibilityForNavigationOnly();
+    // Initialize every entered pose through the normal authoritative wall/door renderer.
+    ApplyCurrentPoseVisibilityToLayout();
     ResetEditModeViewportLogCache();
     RefreshEditModePreview();
     RepaintGameViews();
@@ -8751,7 +8725,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
     previewLevelJumpText = previewDungeonLevel.ToString();
-    do { } while (false);
   }
 
   private void LoadPreviewDoorTilesFromJson(string json)
@@ -11964,21 +11937,6 @@ public class ViewportLayoutEditor : EditorWindow
                 piece, out int livePreviewWidth))
         {
           resolvedF1Width = livePreviewWidth;
-        }
-
-        if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
-        {
-          string f0DrawDiagnosticKey =
-              previewX + "," + previewY + "," + previewFacing
-              + "|" + piece.Name
-              + "|" + resolvedX
-              + "|" + resolvedY
-              + "|" + mirror;
-          if (lastLoggedF0DrawDiagnosticKey != f0DrawDiagnosticKey)
-          {
-            lastLoggedF0DrawDiagnosticKey = f0DrawDiagnosticKey;
-            do { } while (false);
-          }
         }
 
         // LeftS3 / RightS3 use handed-source mirroring.  The ViewEdit Mirror
@@ -16581,15 +16539,10 @@ public class ViewportLayoutEditor : EditorWindow
       Texture2D source,
       int destinationX,
       int destinationY,
-      bool mirrorHorizontally = false,
-      string unreadableDiagnostic = null)
+      bool mirrorHorizontally = false)
   {
     if (source == null || !source.isReadable)
-    {
-      if (!string.IsNullOrEmpty(unreadableDiagnostic))
-        do { } while (false);
       return;
-    }
 
     Color32[] sourcePixels = source.GetPixels32();
 
@@ -19352,15 +19305,10 @@ public class ViewportLayoutEditor : EditorWindow
       Texture2D source,
       int destinationX,
       int destinationY,
-      bool mirrorHorizontally = false,
-      string unreadableDiagnostic = null)
+      bool mirrorHorizontally = false)
   {
     if (!source.isReadable)
-    {
-      if (!string.IsNullOrEmpty(unreadableDiagnostic))
-        do { } while (false);
       return;
-    }
 
     Color32[] sourcePixels = source.GetPixels32();
 
