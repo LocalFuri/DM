@@ -12912,30 +12912,55 @@ public class ViewportLayoutEditor : EditorWindow
     if (texture != null)
       return texture;
 
-    // Fallback for renamed/moved assets: locate the texture by its actual
-    // filename in the Unity AssetDatabase. This keeps the renderer working
-    // if the generic Door_Frame asset was moved within Assets.
-    string[] guids =
-        AssetDatabase.FindAssets(assetBaseName + " t:Texture2D");
-    for (int i = 0; i < guids.Length; i++)
+    // Git/reset history has used both the new generic filename and the older
+    // "Black Door Frame_Left_*" filename for the exact same door-frame art.
+    // Accept either physical filename; internal ViewEdit piece names stay
+    // unchanged for layout compatibility.
+    string legacyBaseName =
+        assetBaseName.Replace(
+            "Door_Frame_Left_",
+            "Black Door Frame_Left_");
+    string legacyPath =
+        "Assets/Art/Walls/" + legacyBaseName + ".png";
+
+    texture = AssetDatabase.LoadAssetAtPath<Texture2D>(legacyPath);
+    if (texture != null)
+      return texture;
+
+    // Fallback for renamed/moved assets: locate either exact filename in the
+    // Unity AssetDatabase.
+    string[] searchNames =
     {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      if (string.IsNullOrEmpty(path))
-        continue;
+      assetBaseName,
+      legacyBaseName
+    };
 
-      string fileName =
-          System.IO.Path.GetFileNameWithoutExtension(path);
-      if (!string.Equals(
-              fileName,
-              assetBaseName,
-              System.StringComparison.OrdinalIgnoreCase))
+    for (int n = 0; n < searchNames.Length; n++)
+    {
+      string searchName = searchNames[n];
+      string[] guids =
+          AssetDatabase.FindAssets(searchName + " t:Texture2D");
+
+      for (int i = 0; i < guids.Length; i++)
       {
-        continue;
-      }
+        string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+        if (string.IsNullOrEmpty(path))
+          continue;
 
-      texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (texture != null)
-        return texture;
+        string fileName =
+            System.IO.Path.GetFileNameWithoutExtension(path);
+        if (!string.Equals(
+                fileName,
+                searchName,
+                System.StringComparison.OrdinalIgnoreCase))
+        {
+          continue;
+        }
+
+        texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        if (texture != null)
+          return texture;
+      }
     }
 
     return null;
