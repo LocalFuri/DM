@@ -368,12 +368,60 @@ public class DungeonFeatureEditor : EditorWindow
       fontSize = 14
     };
 
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label("Map", GUILayout.Width(28f));
+
+    if (GUILayout.Button("<", GUILayout.Width(24f)))
+      SetDungeonLevelFromUi(currentDungeonLevel - 1);
+
+    EditorGUI.BeginChangeCheck();
+    int requestedLevel = EditorGUILayout.DelayedIntField(
+        currentDungeonLevel,
+        GUILayout.Width(34f));
+    if (EditorGUI.EndChangeCheck())
+    {
+      SetDungeonLevelFromUi(requestedLevel);
+      GUI.FocusControl(null);
+    }
+
+    if (GUILayout.Button(">", GUILayout.Width(24f)))
+      SetDungeonLevelFromUi(currentDungeonLevel + 1);
+
+    GUILayout.FlexibleSpace();
+    EditorGUILayout.EndHorizontal();
+
     EditorGUILayout.LabelField(
         $"{selectedX} X / Y {selectedY} {selectedFacing}",
         poseStyle,
         GUILayout.Height(20f));
 
     DrawMapGrid();
+  }
+
+  private void SetDungeonLevelFromUi(int requestedLevel)
+  {
+    requestedLevel = Mathf.Clamp(
+        requestedLevel,
+        HallOfChampionsLevel,
+        MaxDungeonLevel);
+
+    if (requestedLevel == currentDungeonLevel)
+      return;
+
+    if (!LoadMapForLevel(requestedLevel) || map == null)
+      return;
+
+    // LoadMapForLevel seeds the selection from the new map's authored start.
+    // Publish the whole pose so ViewEdit can switch level and land on the same
+    // tile/facing instead of retaining coordinates from the previous map.
+    EditorPrefs.SetInt(ViewEditPreviewLevelKey, currentDungeonLevel);
+    EditorPrefs.SetInt(ViewEditPreviewXKey, selectedX);
+    EditorPrefs.SetInt(ViewEditPreviewYKey, selectedY);
+    EditorPrefs.SetInt(
+        ViewEditPreviewFacingKey,
+        (int)selectedFacing);
+
+    Repaint();
   }
 
   private void DrawMapGrid()
@@ -487,8 +535,8 @@ public class DungeonFeatureEditor : EditorWindow
     Rect fillRect = new Rect(
         cellRect.x + 1f,
         cellRect.y + 1f,
-        cellRect.width - 1f,
-        cellRect.height - 1f
+        cellRect.width - 2f,
+        cellRect.height - 2f
     );
 
     Color fillColor = tile.Type == DungeonTileType.Wall

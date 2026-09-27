@@ -1281,6 +1281,19 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
+    // Dungeon Features shares level/X/Y/facing through EditorPrefs. Apply a
+    // requested level first so the following pose sync runs against the correct
+    // map instead of the map from the previous level.
+    int requestedLevel = Mathf.Clamp(
+        EditorPrefs.GetInt(PrefsPreviewLevelKey, previewDungeonLevel),
+        0,
+        PreviewLevelMapPaths.Length - 1);
+    if (requestedLevel != previewDungeonLevel)
+    {
+      previewLevelJumpText = requestedLevel.ToString();
+      TryJumpToPreviewLevelFromField();
+    }
+
     // Dungeon Features uses the existing preview X/Y EditorPrefs as a small
     // editor-to-editor bridge. If another editor requests a different tile,
     // apply it through the normal ViewEdit pose path so all geometry, walls,
@@ -5464,6 +5477,16 @@ public class ViewportLayoutEditor : EditorWindow
     if (!string.IsNullOrEmpty(previewLevelJumpText))
       int.TryParse(previewLevelJumpText, out displayedLevel);
 
+    if (GUILayout.Button("<", GUILayout.Width(24f)))
+    {
+      previewLevelJumpText = Mathf.Clamp(
+          previewDungeonLevel - 1,
+          0,
+          PreviewLevelMapPaths.Length - 1).ToString();
+      TryJumpToPreviewLevelFromField();
+      GUI.FocusControl(null);
+    }
+
     GUI.SetNextControlName(PreviewLevelJumpControlName);
     EditorGUI.BeginChangeCheck();
     int requestedLevel = EditorGUILayout.DelayedIntField(
@@ -5476,6 +5499,16 @@ public class ViewportLayoutEditor : EditorWindow
           0,
           PreviewLevelMapPaths.Length - 1);
       previewLevelJumpText = requestedLevel.ToString();
+      TryJumpToPreviewLevelFromField();
+      GUI.FocusControl(null);
+    }
+
+    if (GUILayout.Button(">", GUILayout.Width(24f)))
+    {
+      previewLevelJumpText = Mathf.Clamp(
+          previewDungeonLevel + 1,
+          0,
+          PreviewLevelMapPaths.Length - 1).ToString();
       TryJumpToPreviewLevelFromField();
       GUI.FocusControl(null);
     }
