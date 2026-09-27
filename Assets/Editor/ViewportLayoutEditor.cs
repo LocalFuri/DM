@@ -1846,6 +1846,11 @@ public class ViewportLayoutEditor : EditorWindow
     return IsDoorAtViewportCenterDepth(2);
   }
 
+  private bool IsDoorF3FrontView()
+  {
+    return IsDoorAtViewportCenterDepth(3);
+  }
+
 
   private bool IsWallNeededForCurrentPose(ViewportPiece piece)
   {
@@ -1898,14 +1903,11 @@ public class ViewportLayoutEditor : EditorWindow
             || name == "BlackDoorF2";
       }
 
-      if (previewX == 1 && previewFacing == DungeonFacing.North)
+      if (IsDoorF3FrontView())
       {
-        if (previewY == 5)
-        {
-          return name == "Black Door Frame Left F3"
-              || name == "Black Door Frame Right F3"
-              || name == "BlackDoorF3";
-        }
+        return name == "Black Door Frame Left F3"
+            || name == "Black Door Frame Right F3"
+            || name == "BlackDoorF3";
       }
 
       return false;
@@ -3067,15 +3069,11 @@ public class ViewportLayoutEditor : EditorWindow
     bool wallViewEditPreview = IsWallRenderingPiece(piece);
     bool isBlackDoorF3Required =
         piece.Name == "BlackDoorF3"
-        && previewX == 1
-        && previewY == 5
-        && previewFacing == DungeonFacing.North;
+        && IsDoorF3FrontView();
     bool isBlackDoorF3FrameRequired =
         (piece.Name == "Black Door Frame Left F3"
          || piece.Name == "Black Door Frame Right F3")
-        && previewX == 1
-        && previewY == 5
-        && previewFacing == DungeonFacing.North;
+        && IsDoorF3FrontView();
     bool wallRenderingPreview = wallViewEditPreview;
     bool usePreviewEnabledOverride =
         wallViewEditPreview
@@ -3431,9 +3429,7 @@ public class ViewportLayoutEditor : EditorWindow
     bool normalWallPositionPreview = wallViewEditPreview;
     bool blackDoorF3PositionPreview =
         piece.Name == "BlackDoorF3"
-        && previewX == 1
-        && previewY == 5
-        && previewFacing == DungeonFacing.North;
+        && IsDoorF3FrontView();
     bool blackDoorF3FramePositionPreview =
         piece.Name == "Black Door Frame Left F3"
         || piece.Name == "Black Door Frame Right F3";
@@ -3561,8 +3557,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece.Name == "BlackDoorF1")
     {
       bool showBlackDoorF2EditorCards = IsDoorF2FrontView();
-      bool showBlackDoorF3EditorCards =
-          previewX == 1 && previewY == 5 && previewFacing == DungeonFacing.North;
+      bool showBlackDoorF3EditorCards = IsDoorF3FrontView();
 
       if (showBlackDoorF2EditorCards)
       {
@@ -10031,9 +10026,7 @@ public class ViewportLayoutEditor : EditorWindow
         IsDoorF2FrontView();
     bool suppressD3CenterForBlackDoor =
         IsDoorF2FrontView()
-        || (previewX == 1
-            && previewY == 5
-            && previewFacing == DungeonFacing.North);
+        || IsDoorF3FrontView();
 
     if (blackDoorF1Pose)
     {
@@ -10952,12 +10945,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    if (previewFacing != DungeonFacing.North || previewX != 1)
-      return;
-
-
-
-    if (previewY != 5)
+    if (!IsDoorF3FrontView())
       return;
 
     blackDoorF2CardEnabled = false;
@@ -10989,7 +10977,7 @@ public class ViewportLayoutEditor : EditorWindow
       blackDoorFrameRightF3EnabledInitialized = true;
     }
 
-    // Black Door F3 occupies the front view at (1,5) North. Keep any
+    // A Door at F3 occupies the center front view. Keep any
     // normal FrontF3 card/graphic disabled so it cannot render behind it.
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
@@ -11599,9 +11587,7 @@ public class ViewportLayoutEditor : EditorWindow
       // view still keeps the native D3 left/right side walls around the door.
       bool suppressViewport17NativeD3CenterForBlackDoor =
           IsDoorF2FrontView()
-          || (previewX == 1
-              && previewY == 5
-              && previewFacing == DungeonFacing.North);
+          || IsDoorF3FrontView();
       bool blockViewport17NativeD2ForBlackDoor =
           IsDoorF1FrontView();
       bool suppressViewport17NativeD2CenterForBlackDoorF2 =
@@ -11728,12 +11714,8 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        // A Door at F2, or the still-legacy F3 Black Door pose, replaces
-        // the normal FrontF3 center wall.
-        if ((IsDoorF2FrontView()
-             || (previewX == 1
-                 && previewY == 5
-                 && previewFacing == DungeonFacing.North))
+        // A Door at F2 or F3 replaces the normal FrontF3 center wall.
+        if ((IsDoorF2FrontView() || IsDoorF3FrontView())
             && piece != null
             && (IsFrontWallF3Card(piece)
                 || piece.Graphic == DungeonGraphicType.FrontWallF3))
@@ -12265,7 +12247,7 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        // (1,5) North: F3 frames first, then BlackDoorF3 45×39 1:1 on top.
+        // F3 door view: frames first, then BlackDoorF3 45×39 1:1 on top.
         if (blackDoorF3Exception)
         {
           BlitBlackDoorF3FramesIntoPreview(pixels);
@@ -12274,7 +12256,7 @@ public class ViewportLayoutEditor : EditorWindow
           int f3X = doorF3 != null ? doorF3.X : blackDoorF3CardX;
           int f3Y = doorF3 != null ? doorF3.Y : blackDoorF3CardY;
 
-          // Exact 1,5 North exception: start from canonical Ref X/Y.
+          // F3 front-door view: start from canonical Ref X/Y.
           // A live ViewEdit position override wins so the card remains editable.
           if (f3Source != null
               && TryGetCanonicalReferenceXY("BlackDoorF3", out int f3RefX, out int f3RefY))
@@ -12333,12 +12315,10 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // Manual isolated-composition path for Door F3 frame pieces.
-    // At the real (1,5) North F3-door pose they were already drawn in the
+    // At a real F3-door front view they were already drawn in the
     // dedicated door layering block above. Everywhere else they default OFF
     // and appear only when ViewEdit explicitly enables them.
-    if (!(previewX == 1
-          && previewY == 5
-          && previewFacing == DungeonFacing.North))
+    if (!IsDoorF3FrontView())
     {
       BlitBlackDoorF3FramesIntoPreview(pixels);
     }
@@ -12752,8 +12732,8 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// (1,5) North Black Door F3 size exception. Draw may run even when the
-  /// normal Black Door Enabled flag is off. Does not write pose data.
+  /// F3 door front view. Draw may run even when the normal door Enabled flag
+  /// is off. Selection is relative geometry only: Door at center depth 3.
   /// </summary>
   private bool IsBlackDoorF3PoseException(ViewportPiece piece)
   {
@@ -12763,9 +12743,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece.Graphic != DungeonGraphicType.BlackDoor)
       return false;
 
-    return previewX == 1
-        && previewY == 5
-        && previewFacing == DungeonFacing.North;
+    return IsDoorF3FrontView();
   }
 
 
@@ -13121,17 +13099,14 @@ public class ViewportLayoutEditor : EditorWindow
     if (source == null)
       return;
 
-    bool automaticF3DoorPose =
-        previewX == 1
-        && previewY == 5
-        && previewFacing == DungeonFacing.North;
+    bool automaticF3DoorPose = IsDoorF3FrontView();
 
     ViewportPiece leftF3 =
         FindLayoutPieceByName("Black Door Frame Left F3");
     ViewportPiece rightF3 =
         FindLayoutPieceByName("Black Door Frame Right F3");
 
-    // Outside the real F3 Black Door pose both frame pieces default OFF, but
+    // Outside an F3 door front view both frame pieces default OFF, but
     // ViewEdit may explicitly enable them for isolated composition/testing.
     bool leftEnabled =
         automaticF3DoorPose && blackDoorFrameLeftF3CardEnabled;
