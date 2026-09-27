@@ -1105,6 +1105,39 @@ public class ViewportLayoutEditor : EditorWindow
     Open();
   }
 
+  private void ReapplyCurrentPoseToWallRendererAfterReload()
+  {
+    if (this == null || Application.isPlaying)
+      return;
+
+    // A script/domain reload must return the current saved X/Y/Facing to the
+    // automatic wall renderer, never to a temporary Hide Walls / manual test.
+    previewEnabledOverrideByPiece.Clear();
+    previewMirrorOverrideByPiece.Clear();
+    previewPositionOverrideByPiece.Clear();
+    previewFrontF1WidthOverrideByPiece.Clear();
+    previewFrontF3WidthOverrideByPiece.Clear();
+    previewGraphicOverrideByPiece.Clear();
+    previewDisableAllWalls = false;
+
+    showOnlyWallsNeededForCurrentPose = true;
+    showWallsActivFilter = true;
+
+    ReloadLayoutFromDisk();
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap != null)
+      previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
+
+    CaptureNormalWallBaselinesFromLayout();
+    ApplyCurrentPoseVisibilityToLayout();
+
+    ResetEditModeViewportLogCache();
+    DestroyEditModePreviewTextureOnly();
+    RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
+  }
+
   private void OnEnable()
   {
     titleContent = new GUIContent("ViewEdit");
@@ -1123,6 +1156,13 @@ public class ViewportLayoutEditor : EditorWindow
     // Force a fresh compose from the current pose's Enabled flags.
     DestroyEditModePreviewTextureOnly();
     RefreshEditModePreview();
+
+    // Domain reload can invoke OnEnable before the editor hierarchy/assets are
+    // fully restored. Re-run the CURRENT saved pose one editor tick later so
+    // the wall renderer is always authoritative after code changes.
+    EditorApplication.delayCall -= ReapplyCurrentPoseToWallRendererAfterReload;
+    EditorApplication.delayCall += ReapplyCurrentPoseToWallRendererAfterReload;
+
     if (!hookedViewEditGlobalNavigation)
     {
       RegisterViewEditGlobalNavigation();
@@ -1132,6 +1172,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnDisable()
   {
+    EditorApplication.delayCall -= ReapplyCurrentPoseToWallRendererAfterReload;
+
     if (hookedViewEditGlobalNavigation)
     {
       UnregisterViewEditGlobalNavigation();
