@@ -624,6 +624,8 @@ public class ViewportLayoutEditor : EditorWindow
   private static int s_viewEditGlobalNavOwners;
   private static bool s_viewEditGlobalNavCallbackAdded;
   private static bool s_viewEditGlobalNavDispatch;
+  private static KeyCode s_lastPreprocessedTurnKey = KeyCode.None;
+  private static double s_lastPreprocessedTurnTime = -1.0;
   private static readonly EditorApplication.CallbackFunction
       ViewEditGlobalNavHandler = HandleViewEditGlobalNavigationEvent;
   private static System.Delegate s_viewEditBeforeEventProcessedHandler;
@@ -4261,6 +4263,20 @@ public class ViewportLayoutEditor : EditorWindow
     if (!IsViewEditNavigationKey(keyCode))
       return;
 
+    // Delete/PageDown can be consumed by the currently focused IMGUI/UI Toolkit
+    // control before ViewEdit's normal OnGUI handler sees them. Dispatch these
+    // turn keys directly from GUIView.beforeEventProcessed, which runs before
+    // the focused control gets a chance to swallow the key.
+    if (keyCode == KeyCode.Delete || keyCode == KeyCode.PageDown)
+    {
+      if (TryDispatchViewEditTurnKeyDirect(keyCode))
+      {
+        s_lastPreprocessedTurnKey = keyCode;
+        s_lastPreprocessedTurnTime = EditorApplication.timeSinceStartup;
+      }
+      return;
+    }
+
     TryDispatchViewEditGlobalNavigation();
   }
 
@@ -4475,17 +4491,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (hasLogical)
       region = GetMovementArrowRegionName(logical.x, logical.y);
 
-    Debug.Log(
-        "GAMEVIEW CLICK screen=("
-            + windowMouse.x.ToString("0.#")
-            + ","
-            + windowMouse.y.ToString("0.#")
-            + ") logical=("
-            + (hasLogical ? logical.x.ToString("0.#") : "-1")
-            + ","
-            + (hasLogical ? logical.y.ToString("0.#") : "-1")
-            + ") region="
-            + region);
+    do { } while (false);
 
     if (region == "none")
       return false;
@@ -4789,6 +4795,32 @@ public class ViewportLayoutEditor : EditorWindow
     return false;
   }
 
+  private static bool TryDispatchViewEditTurnKeyDirect(KeyCode keyCode)
+  {
+    if (Application.isPlaying)
+      return false;
+
+    ViewportLayoutEditor window = FindOpenViewEditWindow();
+    if (window == null || window.layout == null)
+      return false;
+
+    switch (keyCode)
+    {
+      case KeyCode.Delete:
+        window.PreviewNavigateTurnLeft();
+        break;
+      case KeyCode.PageDown:
+        window.PreviewNavigateTurnRight();
+        break;
+      default:
+        return false;
+    }
+
+    window.TryRefocusPreviewWindow();
+    window.Repaint();
+    return true;
+  }
+
   private static void TryDispatchViewEditGlobalNavigation()
   {
     Event current = Event.current;
@@ -4800,6 +4832,14 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (Application.isPlaying)
       return;
+
+    if ((current.keyCode == KeyCode.Delete || current.keyCode == KeyCode.PageDown)
+        && current.keyCode == s_lastPreprocessedTurnKey
+        && EditorApplication.timeSinceStartup - s_lastPreprocessedTurnTime < 0.1)
+    {
+      current.Use();
+      return;
+    }
 
     // All six navigation keys are reserved for ViewEdit. Do not block the
     // arrows on IMGUI/UI Toolkit text-focus state: that state can remain stale
@@ -8509,10 +8549,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
     previewLevelJumpText = previewDungeonLevel.ToString();
-    Debug.Log(
-        "Dungeon level transition: now on level " + previewDungeonLevel
-        + " at (" + previewX + "," + previewY + ") facing "
-        + previewFacing + ".");
+    do { } while (false);
   }
 
   private bool TryLoadPreviewLevel(int level)
@@ -11353,15 +11390,7 @@ public class ViewportLayoutEditor : EditorWindow
         if (!overlaps)
           return;
 
-        Debug.Log(
-            "LEFTF0 OVERLAP | "
-            + laterPiece.Name
-            + " | "
-            + laterGraphic
-            + " | X=" + laterX
-            + " Y=" + laterY
-            + " | "
-            + laterW + "x" + laterH);
+        do { } while (false);
       }
 
       // Draw normal walls by physical depth (far -> near) without changing
@@ -11648,11 +11677,7 @@ public class ViewportLayoutEditor : EditorWindow
                 out ResolvedNormalWallState resolvedWall))
         {
           if (isLeftF0Diag)
-            Debug.Log(
-                "LEFTF0 DIAG | "
-                + piece.Name
-                + " | resolvedWall.Enabled="
-                + resolvedWall.Enabled);
+            do { } while (false);
 
           bool resolvedEnabled = viewport17NormalWall
               ? viewport17EffectiveSelected
@@ -11686,7 +11711,7 @@ public class ViewportLayoutEditor : EditorWindow
                   piece, out DungeonGraphicType previewGraphic))
             drawGraphic = previewGraphic;
           if (isLeftF0Diag)
-            Debug.Log("LEFTF0 DIAG | drawGraphic=" + drawGraphic);
+            do { } while (false);
           if (!IsWallF0LeftPiece(piece) && !IsWallF0RightPiece(piece)
               && !IsWallF1LeftPiece(piece) && !IsWallF1RightPiece(piece)
               && !IsWallF2LeftPiece(piece) && !IsWallF2RightPiece(piece)
@@ -11812,13 +11837,7 @@ public class ViewportLayoutEditor : EditorWindow
           if (lastLoggedF0DrawDiagnosticKey != f0DrawDiagnosticKey)
           {
             lastLoggedF0DrawDiagnosticKey = f0DrawDiagnosticKey;
-            Debug.Log(
-                "F0 DRAW | "
-                + previewX + "," + previewY + " " + previewFacing.ToString().ToUpperInvariant()
-                + " | " + piece.Name
-                + " | X=" + resolvedX
-                + " | Y=" + resolvedY
-                + " | mirror=" + (mirror ? "ON" : "OFF"));
+            do { } while (false);
           }
         }
 
@@ -11946,14 +11965,11 @@ public class ViewportLayoutEditor : EditorWindow
         {
           if (texture == null)
           {
-            Debug.Log("LEFTF0 DIAG | texture=null");
+            do { } while (false);
           }
           else
           {
-            Debug.Log(
-                "LEFTF0 DIAG | texture="
-                + texture.width + "x" + texture.height
-                + " | isReadable=" + texture.isReadable);
+            do { } while (false);
           }
         }
         if (texture == null)
@@ -12260,13 +12276,7 @@ public class ViewportLayoutEditor : EditorWindow
         string leftF0UnreadableLog = null;
         if (isLeftF0Diag)
         {
-          Debug.Log(
-              "LEFTF0 BLIT CALLED | X="
-              + resolvedX
-              + " Y="
-              + resolvedY
-              + " | mirror="
-              + (mirror ? "ON" : "OFF"));
+          do { } while (false);
           leftF0UnreadableLog = "LEFTF0 BLIT EXIT isReadable=false";
           leftF0OverlapArmed = true;
           leftF0OverlapX = resolvedX;
@@ -16380,7 +16390,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (source == null || !source.isReadable)
     {
       if (!string.IsNullOrEmpty(unreadableDiagnostic))
-        Debug.Log(unreadableDiagnostic);
+        do { } while (false);
       return;
     }
 
@@ -19151,7 +19161,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (!source.isReadable)
     {
       if (!string.IsNullOrEmpty(unreadableDiagnostic))
-        Debug.Log(unreadableDiagnostic);
+        do { } while (false);
       return;
     }
 
