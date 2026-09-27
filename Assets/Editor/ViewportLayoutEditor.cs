@@ -19399,7 +19399,11 @@ public class ViewportLayoutEditor : EditorWindow
             ? source.width - 1 - column
             : column;
         int targetX = destinationX + column;
-        if (targetX < 0 || targetX >= PreviewWidth)
+
+        // Dungeon/map graphics are clipped to the original 224-pixel viewport.
+        // Right-side walls may extend geometrically past X=223, but they must
+        // never paint into the HUD / magenta border at X>=224.
+        if (targetX < 0 || targetX >= DungeonViewportWidth)
           continue;
 
         Color32 sourceColour =
@@ -19482,7 +19486,9 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
 
         int targetX = destinationX + destCol;
-        if (targetX < 0 || targetX >= PreviewWidth)
+
+        // Scaled dungeon/map graphics obey the same hard X=224 viewport clip.
+        if (targetX < 0 || targetX >= DungeonViewportWidth)
           continue;
 
         Color32 sourceColour =
