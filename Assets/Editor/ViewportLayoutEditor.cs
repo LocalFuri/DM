@@ -950,6 +950,8 @@ public class ViewportLayoutEditor : EditorWindow
     public int FrontF3Width;
   }
 
+  private static string lastLoggedF0DrawDiagnosticKey;
+
   // Temporary 320×200 presentation (restored on close / Play Mode).
   private bool presentationOverrideActive;
   private bool canvasScalerStateSaved;
@@ -1499,6 +1501,16 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
     }
 
+    // Hall of Champions stairs-down view: FrontF2 is physically replaced by
+    // the stairs at (3,15) West. It is not a comparison card for this pose,
+    // so keep it out of ViewEdit as well as out of the renderer.
+    if (IsFrontF2SuppressedByStairsDownForCurrentPose()
+        && (IsFrontWallF2Card(piece)
+            || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)))
+    {
+      return true;
+    }
+
     // Black Door cards are pose-area list items only. Show All Walls still
     // hides them outside the existing Black Door views. Stored values and
     // render logic are not changed.
@@ -1623,6 +1635,16 @@ public class ViewportLayoutEditor : EditorWindow
         || name == "Black Door Frame Right F3";
   }
 
+  private bool IsFrontF2SuppressedByStairsDownForCurrentPose()
+  {
+    // Hall of Champions stairs-down view: at (3,15) West the visible down
+    // stairs occupy the FrontF2 center band, so the normal FrontF2 wall must
+    // not be drawn underneath.
+    return previewX == 3
+        && previewY == 15
+        && previewFacing == DungeonFacing.West;
+  }
+
   private bool IsWallNeededForCurrentPose(ViewportPiece piece)
   {
     if (piece == null)
@@ -1641,6 +1663,15 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewX == 1
         && previewY == 3
         && previewFacing == DungeonFacing.North
+        && (IsFrontWallF2Card(piece)
+            || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)))
+    {
+      return false;
+    }
+
+    // Hall of Champions stairs-down view: at (3,15) West the stairs occupy
+    // the FrontF2 center band, so the normal FrontF2 wall is not needed.
+    if (IsFrontF2SuppressedByStairsDownForCurrentPose()
         && (IsFrontWallF2Card(piece)
             || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)))
     {
@@ -4380,7 +4411,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   /// <summary>
   /// Shared Game View click dispatch for both UITK PointerDown and GameView
-  /// OnGUI / globalEventHandler. Hit-tests the 320x200 movement pad.
+  /// OnGUI / globalEventHandler. Logs every left click, then hit-tests the
+  /// 320x200 movement pad.
   /// </summary>
   private static bool DispatchGameViewMovementClick(
       EditorWindow gameView,
@@ -4404,6 +4436,18 @@ public class ViewportLayoutEditor : EditorWindow
     string region = "none";
     if (hasLogical)
       region = GetMovementArrowRegionName(logical.x, logical.y);
+
+    Debug.Log(
+        "GAMEVIEW CLICK screen=("
+            + windowMouse.x.ToString("0.#")
+            + ","
+            + windowMouse.y.ToString("0.#")
+            + ") logical=("
+            + (hasLogical ? logical.x.ToString("0.#") : "-1")
+            + ","
+            + (hasLogical ? logical.y.ToString("0.#") : "-1")
+            + ") region="
+            + region);
 
     if (region == "none")
       return false;
@@ -10990,7 +11034,9 @@ public class ViewportLayoutEditor : EditorWindow
                 pixels,
                 viewport17Inspection,
                 viewport17FinalWallCommands,
-                suppressCenter: suppressViewport17NativeD2CenterForBlackDoorF2);
+                suppressCenter:
+                    suppressViewport17NativeD2CenterForBlackDoorF2
+                    || IsFrontF2SuppressedByStairsDownForCurrentPose());
           }
         }
 
@@ -11139,6 +11185,15 @@ public class ViewportLayoutEditor : EditorWindow
         if (previewX == 1
             && previewY == 3
             && previewFacing == DungeonFacing.North
+            && (IsFrontWallF2Card(piece)
+                || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)))
+        {
+          continue;
+        }
+
+        // Hall of Champions stairs-down view: at (3,15) West the down-stairs
+        // occupy the FrontF2 band, so do not draw the normal FrontF2 wall.
+        if (IsFrontF2SuppressedByStairsDownForCurrentPose()
             && (IsFrontWallF2Card(piece)
                 || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)))
         {
@@ -11314,6 +11369,27 @@ public class ViewportLayoutEditor : EditorWindow
                 piece, out int livePreviewWidth))
         {
           resolvedF1Width = livePreviewWidth;
+        }
+
+        if (IsWallF0LeftPiece(piece) || IsWallF0RightPiece(piece))
+        {
+          string f0DrawDiagnosticKey =
+              previewX + "," + previewY + "," + previewFacing
+              + "|" + piece.Name
+              + "|" + resolvedX
+              + "|" + resolvedY
+              + "|" + mirror;
+          if (lastLoggedF0DrawDiagnosticKey != f0DrawDiagnosticKey)
+          {
+            lastLoggedF0DrawDiagnosticKey = f0DrawDiagnosticKey;
+            Debug.Log(
+                "F0 DRAW | "
+                + previewX + "," + previewY + " " + previewFacing.ToString().ToUpperInvariant()
+                + " | " + piece.Name
+                + " | X=" + resolvedX
+                + " | Y=" + resolvedY
+                + " | mirror=" + (mirror ? "ON" : "OFF"));
+          }
         }
 
         // LeftS3 / RightS3 use handed-source mirroring.  The ViewEdit Mirror
