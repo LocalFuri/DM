@@ -12705,32 +12705,6 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
 
-  /// <summary>
-  /// (0,5) North only: draw the Black Door right F3 frame at its measured
-  /// oblique position. This is completely separate from the locked (1,5) North
-  /// F3 frame path and does not mutate the hidden frame piece.
-  /// </summary>
-  private void BlitBlackDoorObliqueRightF3FrameIntoPreview(Color32[] pixels)
-  {
-    if (previewX != 0
-        || previewY != 5
-        || previewFacing != DungeonFacing.North)
-    {
-      return;
-    }
-
-    Texture2D source = GetBlackDoorFrameF3SourceTexture();
-    if (source == null)
-      return;
-
-    BlitPieceIntoPreview(
-        pixels,
-        source,
-        195,
-        98,
-        true);
-  }
-
   private Texture2D GetRight2STexture()
   {
     if (right2SSourceTexture == null)
