@@ -13040,7 +13040,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Outside a real F2 door view both frame pieces default OFF.
     // In isolated-composition mode ViewEdit may explicitly enable either one.
-    // A real F2 door always has both frame sides. Stored layout Enabled
+    // Any F2 door always has both frame sides. Stored layout Enabled
     // must not suppress the automatic door composition; manual ViewEdit
     // Enabled overrides still win below.
     bool leftEnabled = automaticF2DoorPose && leftF2 != null;
@@ -13062,9 +13062,19 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (leftEnabled && leftF2 != null)
     {
-      int leftX = leftF2.X;
-      int leftY = leftF2.Y;
-      bool leftMirror = leftF2.MirrorHorizontally;
+      // Generic F2-door frame defaults.
+      int leftX = 64;
+      int leftY = DisplayYToUnityY(54, source.height);
+      bool leftMirror = false;
+
+      if (TryGetCanonicalReferenceXY(
+              "Black Door Frame Left F2",
+              out int leftRefX,
+              out int leftRefY))
+      {
+        leftX = leftRefX;
+        leftY = DisplayYToUnityY(leftRefY, source.height);
+      }
 
       if (previewPositionOverrideByPiece.TryGetValue(
               leftF2, out Vector2Int leftPosition))
@@ -13089,9 +13099,20 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (rightEnabled && rightF2 != null)
     {
-      int rightX = rightF2.X;
-      int rightY = rightF2.Y;
+      // Generic F2-door frame defaults. The right side uses the same left
+      // source mirrored horizontally.
+      int rightX = 140;
+      int rightY = DisplayYToUnityY(54, source.height);
       bool rightMirror = true;
+
+      if (TryGetCanonicalReferenceXY(
+              "Black Door Frame Right F2",
+              out int rightRefX,
+              out int rightRefY))
+      {
+        rightX = rightRefX;
+        rightY = DisplayYToUnityY(rightRefY, source.height);
+      }
 
       if (previewPositionOverrideByPiece.TryGetValue(
               rightF2, out Vector2Int rightPosition))
