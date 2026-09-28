@@ -49,6 +49,12 @@ public class ViewportLayoutEditor : EditorWindow
   private const string DungeonFeaturePlacementsPath =
       "Assets/Data/Features/DungeonFeaturePlacements.json";
   private const int PreviewDungeonLevel = 0;
+
+  // Hall of Champions special entrance Black Door. Regular Door tiles elsewhere
+  // in the map must never select the Black Door renderer.
+  private const int HallOfChampionsBlackDoorX = 1;
+  private const int HallOfChampionsBlackDoorY = 2;
+
   private const string PrefsPreviewLevelKey =
       "ViewportLayoutEditor.PreviewLevel";
 
@@ -1832,8 +1838,22 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Generic player-relative center-door test. Depth 1 = F1, 2 = F2, 3 = F3.
-  /// No absolute map coordinate or facing is involved.
+  /// True only for the Hall of Champions special entrance Black Door.
+  /// Regular Door tiles elsewhere must use their normal door renderer and must
+  /// never activate the BlackDoorF1/F2/F3 family.
+  /// </summary>
+  private bool IsHallOfChampionsBlackDoorCell(Viewport17Cell cell)
+  {
+    return cell.IsInside
+        && previewDungeonLevel == PreviewDungeonLevel
+        && cell.MapX == HallOfChampionsBlackDoorX
+        && cell.MapY == HallOfChampionsBlackDoorY
+        && previewDoorTiles.Contains(new Vector2Int(cell.MapX, cell.MapY));
+  }
+
+  /// <summary>
+  /// Player-relative center test for the special Black Door.
+  /// Depth 1 = F1, 2 = F2, 3 = F3.
   /// </summary>
   private bool IsDoorAtViewportCenterDepth(int depth)
   {
@@ -1844,9 +1864,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap == null)
       return false;
 
-    Viewport17Cell cell = SampleViewport17Cell(0, depth);
-    return cell.IsInside
-        && previewDoorTiles.Contains(new Vector2Int(cell.MapX, cell.MapY));
+    return IsHallOfChampionsBlackDoorCell(SampleViewport17Cell(0, depth));
   }
 
   private bool IsDoorF1FrontView()
@@ -1865,8 +1883,8 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Generic player-relative D3-right oblique door test. The door occupies
-  /// the cell one lane to the right and three cells forward from the party.
+  /// Player-relative D3-right oblique test for the special Black Door.
+  /// It occupies the cell one lane right and three cells forward.
   /// </summary>
   private bool IsDoorF3RightObliqueView()
   {
@@ -1874,9 +1892,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap == null)
       return false;
 
-    Viewport17Cell cell = SampleViewport17Cell(1, 3);
-    return cell.IsInside
-        && previewDoorTiles.Contains(new Vector2Int(cell.MapX, cell.MapY));
+    return IsHallOfChampionsBlackDoorCell(SampleViewport17Cell(1, 3));
   }
 
 
@@ -1892,6 +1908,9 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
 
     string name = piece.Name ?? string.Empty;
+    bool doorAtF1 = IsDoorF1FrontView();
+    bool doorAtF2 = IsDoorF2FrontView();
+    bool doorAtF3 = IsDoorF3FrontView();
 
     // A door directly ahead occupies the F1 center opening, so the normal
     // FrontF2 wall behind it is not needed. Player-relative; no map coordinate.
@@ -1917,21 +1936,21 @@ public class ViewportLayoutEditor : EditorWindow
     // dedicated door-pose rules were ever reached.
     if (IsBlackDoorEditorPiece(piece))
     {
-      if (IsDoorF1FrontView())
+      if (doorAtF1)
       {
         return name == "Black Door Frame Left F1"
             || name == "Black Door Frame Right F1"
             || name == "BlackDoorF1";
       }
 
-      if (IsDoorF2FrontView())
+      if (doorAtF2)
       {
         return name == "Black Door Frame Left F2"
             || name == "Black Door Frame Right F2"
             || name == "BlackDoorF2";
       }
 
-      if (IsDoorF3FrontView())
+      if (doorAtF3)
       {
         return name == "Black Door Frame Left F3"
             || name == "Black Door Frame Right F3"
@@ -10845,8 +10864,61 @@ public class ViewportLayoutEditor : EditorWindow
     if (layout == null || layout.Pieces == null)
       return;
 
-    // F1 is geometry-driven: any Door tile directly ahead uses the verified
-    // F1 door composition. F2/F3 remain legacy coordinate exceptions for now.
+    bool doorAtF1 = IsDoorF1FrontView();
+    bool doorAtF2 = IsDoorF2FrontView();
+    bool doorAtF3 = IsDoorF3FrontView();
+
+    // Black Door state is pose-local. A door piece enabled in one valid view
+    // must never leak into an unrelated map pose (for example 4,9 East).
+    // Clear every distance family that is not required by the current pose
+    // before applying the matching F1/F2/F3 composition below.
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece == null)
+        continue;
+
+      if (!doorAtF1
+          && (piece.Name == "BlackDoorF1"
+              || piece.Name == "Black Door Frame Left F1"
+              || piece.Name == "Black Door Frame Right F1"))
+      {
+        piece.Enabled = false;
+      }
+
+      if (!doorAtF2
+          && (piece.Name == "BlackDoorF2"
+              || piece.Name == "Black Door Frame Left F2"
+              || piece.Name == "Black Door Frame Right F2"))
+      {
+        piece.Enabled = false;
+      }
+
+      if (!doorAtF3
+          && (piece.Name == "BlackDoorF3"
+              || piece.Name == "Black Door Frame Left F3"
+              || piece.Name == "Black Door Frame Right F3"))
+      {
+        piece.Enabled = false;
+      }
+    }
+
+    if (!doorAtF2)
+    {
+      blackDoorF2CardEnabled = false;
+      blackDoorF2CardInitialized = false;
+    }
+
+    if (!doorAtF3)
+    {
+      blackDoorF3CardEnabled = false;
+      blackDoorF3CardInitialized = false;
+      blackDoorFrameLeftF3CardEnabled = false;
+      blackDoorFrameRightF3CardEnabled = false;
+    }
+
+    // Only the Hall of Champions special entrance Black Door may activate this
+    // renderer. Ordinary Door tiles elsewhere are deliberately excluded.
     if (IsDoorF1FrontView())
     {
       blackDoorF2CardEnabled = false;
@@ -10971,7 +11043,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    if (!IsDoorF3FrontView())
+    if (!doorAtF3)
       return;
 
     blackDoorF2CardEnabled = false;
@@ -11066,6 +11138,8 @@ public class ViewportLayoutEditor : EditorWindow
           || piece.Name == "BlackDoorF3"
           || piece.Name == "Black Door Frame Left F1"
           || piece.Name == "Black Door Frame Right F1"
+          || piece.Name == "Black Door Frame Left F2"
+          || piece.Name == "Black Door Frame Right F2"
           || piece.Name == "Black Door Frame Left F3"
           || piece.Name == "Black Door Frame Right F3")
         continue;
@@ -12186,9 +12260,9 @@ public class ViewportLayoutEditor : EditorWindow
               FindLayoutPieceByName("Black Door Frame Left F1");
           if (leftFrameSource != null && leftFramePiece != null)
           {
-            // The real F1 door always has its frame. Stored layout Enabled
-            // must not suppress it; a temporary ViewEdit toggle may.
-            bool leftFrameEnabled = true;
+            // Render state must respect the pose-resolved Enabled state.
+            // A temporary ViewEdit toggle may still override it for this pose.
+            bool leftFrameEnabled = leftFramePiece.Enabled;
             if (previewEnabledOverrideByPiece.TryGetValue(
                     leftFramePiece, out bool leftFrameEnabledOverride))
             {
@@ -12217,8 +12291,8 @@ public class ViewportLayoutEditor : EditorWindow
               FindLayoutPieceByName("Black Door Frame Right F1");
           if (leftFrameSource != null && rightFramePiece != null)
           {
-            // Same mandatory automatic default for the right F1 frame.
-            bool rightFrameEnabled = true;
+            // Same rule for the right F1 frame: never draw a disabled piece.
+            bool rightFrameEnabled = rightFramePiece.Enabled;
             if (previewEnabledOverrideByPiece.TryGetValue(
                     rightFramePiece, out bool rightFrameEnabledOverride))
             {
@@ -12330,19 +12404,11 @@ public class ViewportLayoutEditor : EditorWindow
       BlitBlackDoorF2FramesIntoPreview(pixels);
       BlitBlackDoorF2DoorIntoPreview(pixels);
     }
-    else
-    {
-      // Outside a real F2 door view, keep the existing isolated ViewEdit path.
-      BlitBlackDoorF2FramesIntoPreview(pixels);
-    }
 
-    // F3 front/oblique automatic doors are already painted at their proper
-    // depth. Outside those automatic views, keep the isolated ViewEdit frame
-    // path available for manual inspection.
-    if (!IsDoorF3FrontView() && !IsDoorF3RightObliqueView())
-    {
-      BlitBlackDoorF3FramesIntoPreview(pixels);
-    }
+    // Black Door frames are map geometry. Never paint isolated F2/F3 frame
+    // pieces in an unrelated pose: without a Door tile at the matching
+    // relative depth/lane there is no door and therefore no frame/pillar.
+    // F3 front/oblique doors are painted only by their valid depth-stage paths.
 
     // Stairs are map geometry, not wall ornaments. If the cell directly
     // ahead is a Stairs tile, draw the original F1 stairs front over the
@@ -12674,6 +12740,8 @@ public class ViewportLayoutEditor : EditorWindow
           || piece.Name == "BlackDoorF3"
           || piece.Name == "Black Door Frame Left F1"
           || piece.Name == "Black Door Frame Right F1"
+          || piece.Name == "Black Door Frame Left F2"
+          || piece.Name == "Black Door Frame Right F2"
           || piece.Name == "Black Door Frame Left F3"
           || piece.Name == "Black Door Frame Right F3")
         continue;
@@ -13049,19 +13117,19 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     bool automaticF2DoorPose = IsDoorF2FrontView();
+    if (!automaticF2DoorPose)
+      return;
 
     ViewportPiece leftF2 =
         FindLayoutPieceByName("Black Door Frame Left F2");
     ViewportPiece rightF2 =
         FindLayoutPieceByName("Black Door Frame Right F2");
 
-    // Outside a real F2 door view both frame pieces default OFF.
-    // In isolated-composition mode ViewEdit may explicitly enable either one.
-    // Any F2 door always has both frame sides. Stored layout Enabled
-    // must not suppress the automatic door composition; manual ViewEdit
-    // Enabled overrides still win below.
-    bool leftEnabled = automaticF2DoorPose && leftF2 != null;
-    bool rightEnabled = automaticF2DoorPose && rightF2 != null;
+    // No special Black Door pose = no Black Door frame. In a valid pose the
+    // pose-resolved piece.Enabled state is authoritative; a temporary ViewEdit
+    // override may still change it for comparison.
+    bool leftEnabled = automaticF2DoorPose && leftF2 != null && leftF2.Enabled;
+    bool rightEnabled = automaticF2DoorPose && rightF2 != null && rightF2.Enabled;
 
     if (leftF2 != null
         && previewEnabledOverrideByPiece.TryGetValue(
@@ -13247,18 +13315,26 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     bool automaticF3DoorPose = IsDoorF3FrontView();
+    if (!automaticF3DoorPose)
+      return;
 
     ViewportPiece leftF3 =
         FindLayoutPieceByName("Black Door Frame Left F3");
     ViewportPiece rightF3 =
         FindLayoutPieceByName("Black Door Frame Right F3");
 
-    // Outside an F3 door front view both frame pieces default OFF, but
-    // ViewEdit may explicitly enable them for isolated composition/testing.
+    // No special Black Door pose = no Black Door frame. In a valid pose,
+    // both the card state and the pose-resolved piece.Enabled state must agree.
     bool leftEnabled =
-        automaticF3DoorPose && blackDoorFrameLeftF3CardEnabled;
+        automaticF3DoorPose
+        && leftF3 != null
+        && leftF3.Enabled
+        && blackDoorFrameLeftF3CardEnabled;
     bool rightEnabled =
-        automaticF3DoorPose && blackDoorFrameRightF3CardEnabled;
+        automaticF3DoorPose
+        && rightF3 != null
+        && rightF3.Enabled
+        && blackDoorFrameRightF3CardEnabled;
 
     if (leftF3 != null
         && previewEnabledOverrideByPiece.TryGetValue(
