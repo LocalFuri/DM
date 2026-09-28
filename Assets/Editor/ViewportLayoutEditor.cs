@@ -443,6 +443,12 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ChampionMirrorD0RightX = 185;
   private const int ChampionMirrorD0RightY = ChampionMirrorD3FrontY;
 
+  // Temporary ViewEdit calibration for the F0-right Champion Mirror projection.
+  // These values are pose-local inspection controls and reset when the pose changes.
+  private int championMirrorD0RightPreviewX = ChampionMirrorD0RightX;
+  private int championMirrorD0RightPreviewVisibleWidth = 7;
+  private bool championMirrorD0RightPreviewMirror;
+
   // Original DOS Champion front-mirror placement for a D2 center wall.
   // Measured from the original 320x200 (10,4) South ZED view:
   // screen top-left = (97,67), visible size = 29x27, therefore framebuffer
@@ -14502,21 +14508,23 @@ public class ViewportLayoutEditor : EditorWindow
       if (TryGetCanonicalReferenceXY("RightF0", out int rightF0X, out _))
         clipX = rightF0X;
 
-      int visibleWidth = clipX - ChampionMirrorD0RightX + 1;
-      if (visibleWidth <= 0)
+      int geometricVisibleWidth = clipX - championMirrorD0RightPreviewX + 1;
+      if (geometricVisibleWidth <= 0)
         return;
 
-      if (visibleWidth > frontF3Mirror.width)
-        visibleWidth = frontF3Mirror.width;
+      int visibleWidth = Mathf.Clamp(
+          championMirrorD0RightPreviewVisibleWidth,
+          1,
+          Mathf.Min(frontF3Mirror.width, geometricVisibleWidth));
 
       BlitPieceScaledIntoPreview(
           pixels,
           frontF3Mirror,
-          ChampionMirrorD0RightX,
+          championMirrorD0RightPreviewX,
           ChampionMirrorD0RightY,
           visibleWidth,
           frontF3Mirror.height,
-          false,
+          championMirrorD0RightPreviewMirror,
           0,
           0,
           visibleWidth,
@@ -16216,6 +16224,9 @@ public class ViewportLayoutEditor : EditorWindow
     stairsDownF1PreviewEnabled = true;
     stairsDownF1PreviewX = StairsDownF1X;
     stairsDownF1PreviewDisplayY = StairsDownF1DisplayY;
+    championMirrorD0RightPreviewX = ChampionMirrorD0RightX;
+    championMirrorD0RightPreviewVisibleWidth = 7;
+    championMirrorD0RightPreviewMirror = false;
     previewDisabledFeatureKeys.Clear();
   }
 
@@ -16352,6 +16363,61 @@ public class ViewportLayoutEditor : EditorWindow
     Repaint();
   }
 
+  private bool IsCurrentPoseF0RightChampionMirror(ChampionMirrorPlacement mirror)
+  {
+    if (mirror == null || string.IsNullOrEmpty(mirror.wall))
+      return false;
+
+    DungeonMap.GetRightOffset(previewFacing, out int rightX, out int rightY);
+    int expectedX = previewX + rightX;
+    int expectedY = previewY + rightY;
+    return mirror.x == expectedX
+        && mirror.y == expectedY
+        && string.Equals(
+            mirror.wall,
+            FacingName(previewFacing),
+            System.StringComparison.OrdinalIgnoreCase);
+  }
+
+  private void DrawChampionMirrorF0RightCalibrationRow(ChampionMirrorPlacement mirror)
+  {
+    if (!IsCurrentPoseF0RightChampionMirror(mirror))
+      return;
+
+    EditorGUILayout.BeginHorizontal();
+
+    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
+    style.normal.textColor = new Color(1f, 0.5f, 0.1f);
+    GUILayout.Label("F0R Mirror Cal", style, GUILayout.Width(110f));
+
+    int x = championMirrorD0RightPreviewX;
+    bool xChanged = DrawIntStepperInline(
+        "X", ref x, snap, x != ChampionMirrorD0RightX, true);
+
+    int width = championMirrorD0RightPreviewVisibleWidth;
+    bool widthChanged = DrawIntStepperInline(
+        "W", ref width, 1, width != 7, true);
+    width = Mathf.Clamp(width, 1, ChampionMirrorD3FrontWidth);
+
+    GUILayout.Space(8f);
+    bool mirrorBefore = championMirrorD0RightPreviewMirror;
+    bool mirrorAfter = EditorGUILayout.ToggleLeft(
+        "Mirror", mirrorBefore, GUILayout.Width(70f));
+
+    EditorGUILayout.EndHorizontal();
+
+    if (!xChanged && !widthChanged && mirrorAfter == mirrorBefore)
+      return;
+
+    championMirrorD0RightPreviewX = x;
+    championMirrorD0RightPreviewVisibleWidth = width;
+    championMirrorD0RightPreviewMirror = mirrorAfter;
+    previewPositionChangedThisFrame = true;
+    RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
+  }
+
   private void DrawCurrentPoseFeatureRows()
   {
     EnsurePreviewMiniMapLoaded();
@@ -16381,6 +16447,8 @@ public class ViewportLayoutEditor : EditorWindow
             name,
             key,
             new Color(0.15f, 0.85f, 1f));
+
+        DrawChampionMirrorF0RightCalibrationRow(mirror);
       }
     }
 
