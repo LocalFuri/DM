@@ -56,6 +56,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Champions";
   private const string ChampionMirrorSideAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Side_16x35.png";
+  private const string ChampionMirrorSideD2AssetPath =
+      "Assets/Art/Champions/Mirror_Side_10x23.png";
   private const string ChampionMirrorSideDistantLeftAssetPath =
       "Assets/Art/Champions/Mirror_Side_7x15.png";
   private const string ChampionMirrorFrontAssetPath =
@@ -4273,13 +4275,13 @@ public class ViewportLayoutEditor : EditorWindow
     switch (current.keyCode)
     {
       case KeyCode.UpArrow:
-        GetPreviewFacingForwardOffset(
+        DungeonMap.GetForwardOffset(
             previewFacing,
             out worldDx,
             out worldDy);
         break;
       case KeyCode.DownArrow:
-        GetPreviewFacingForwardOffset(
+        DungeonMap.GetForwardOffset(
             previewFacing,
             out worldDx,
             out worldDy);
@@ -5196,37 +5198,6 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return null;
-  }
-
-  /// <summary>
-  /// Editor navigation mapping for the green facing triangle. Map Y increases
-  /// downward: North = Y-1, East = X+1, South = Y+1, West = X-1.
-  /// Keeping this explicit makes Up always follow the triangle and Down use
-  /// the exact opposite map direction.
-  /// </summary>
-  private static void GetPreviewFacingForwardOffset(
-      DungeonFacing facing,
-      out int dx,
-      out int dy)
-  {
-    dx = 0;
-    dy = 0;
-
-    switch (facing)
-    {
-      case DungeonFacing.North:
-        dy = -1;
-        break;
-      case DungeonFacing.East:
-        dx = 1;
-        break;
-      case DungeonFacing.South:
-        dy = 1;
-        break;
-      case DungeonFacing.West:
-        dx = -1;
-        break;
-    }
   }
 
   private static DungeonFacing TurnPreviewFacingLeft(DungeonFacing facing)
@@ -8483,7 +8454,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap == null)
       return;
 
-    GetPreviewFacingForwardOffset(
+    DungeonMap.GetForwardOffset(
         previewFacing,
         out int forwardX,
         out int forwardY);
@@ -15305,6 +15276,44 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedChampionMirrorSideD2Texture != null)
       return cachedChampionMirrorSideD2Texture;
 
+    // Prefer the exact original-game 10x23 cutout when it exists.
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        ChampionMirrorSideD2AssetPath);
+    if (texture != null && texture.width == 10 && texture.height == 23)
+    {
+      cachedChampionMirrorSideD2Texture = texture;
+      return texture;
+    }
+
+    // Filename-independent fallback: accept any 10x23 mirror-side texture in
+    // the Champion art folder, so the project can keep a slightly different
+    // filename without renderer-code changes.
+    string[] exactGuids = AssetDatabase.FindAssets(
+        "t:Texture2D",
+        new[] { ChampionArtFolder });
+    for (int i = 0; i < exactGuids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(exactGuids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null || candidate.width != 10 || candidate.height != 23)
+        continue;
+
+      if (path.IndexOf(
+              "mirror",
+              System.StringComparison.OrdinalIgnoreCase) < 0
+          || path.IndexOf(
+              "side",
+              System.StringComparison.OrdinalIgnoreCase) < 0)
+      {
+        continue;
+      }
+
+      cachedChampionMirrorSideD2Texture = candidate;
+      return candidate;
+    }
+
+    // Final fallback: generate the F2 cutout from the 16x35 source if the
+    // dedicated 10x23 reference asset is not present yet.
     Texture2D source = GetChampionMirrorSideTexture();
     if (source == null || !source.isReadable)
       return null;
