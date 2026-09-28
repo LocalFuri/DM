@@ -62,10 +62,6 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Champions";
   private const string ChampionMirrorSideAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Side_16x35.png";
-  private const string ChampionMirrorSideD2AssetPath =
-      "Assets/Art/Champions/Mirror_Side_10x23.png";
-  private const string ChampionMirrorSideDistantLeftAssetPath =
-      "Assets/Art/Champions/Mirror_Side_7x15.png";
   private const string ChampionMirrorFrontAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Front_48x43.png";
 
@@ -438,6 +434,14 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ChampionMirrorD1RightX =
       DungeonViewportWidth - ChampionMirrorD1LeftX - 16;
   private const int ChampionMirrorD1Y = 101;
+
+  // D0/F0 screen-right Champion mirror. Same 16x35 side graphic and vertical
+  // anchor as the D1 side face (screen top Y=64, framebuffer Y=101), at X=185.
+  // The peeking edge is the unmirrored left of that graphic: the thick frame,
+  // then the blue pane. RightF0's canonical X is the last column of that
+  // strip (185..191 inclusive). Columns past it stay the wall.
+  private const int ChampionMirrorD0RightX = 185;
+  private const int ChampionMirrorD0RightY = ChampionMirrorD1Y;
 
   // Original DOS Champion front-mirror placement for a D2 center wall.
   // Measured from the original 320x200 (10,4) South ZED view:
@@ -855,6 +859,12 @@ public class ViewportLayoutEditor : EditorWindow
   private WallOrnamentPlacement[] previewWallOrnaments =
       FallbackHallOfChampionsWallOrnaments;
   private readonly HashSet<int> previewPuddleFloors = new HashSet<int>();
+
+  // Temporary per-pose ViewEdit feature visibility overrides. These are never
+  // written to map/JSON data. Leaving the current pose clears the set so every
+  // feature returns to the renderer's code-assigned default state.
+  private readonly HashSet<string> previewDisabledFeatureKeys =
+      new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorSideTexture;
   [System.NonSerialized]
@@ -1544,9 +1554,10 @@ public class ViewportLayoutEditor : EditorWindow
         DrawPieceCard(i, piece, isSelected, ref changed);
       }
 
-      // Map geometry controls are listed immediately below the wall images
-      // needed by the current pose. Start with the down-stairs F1 overlay.
-      DrawStairsDownF1ControlRow();
+      // Non-wall map features are always listed directly below the wall rows
+      // for the current pose. X/Y come first and the temporary Enabled switch
+      // stays on the far right, so ViewEdit can be used as a visual checklist.
+      DrawCurrentPoseFeatureRows();
 
       bool editorChanged = EditorGUI.EndChangeCheck();
       if ((editorChanged || changed)
@@ -12544,6 +12555,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitPuddlesIntoPreview(pixels);
 
     // Champion wall decorations.
+    BlitChampionMirrorD0RightIntoPreview(pixels);
     BlitChampionMirrorD1FramesIntoPreview(pixels);
     BlitChampionMirrorD1FrontIntoPreview(pixels);
     BlitChampionMirrorD2FrontIntoPreview(pixels);
@@ -14429,6 +14441,87 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  private void BlitChampionMirrorD0RightIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewChampionMirrors == null
+        || previewChampionMirrors.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D sideMirror = GetChampionMirrorSideTexture();
+    if (sideMirror == null || !sideMirror.isReadable)
+      return;
+
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    // D0/F0-right is the wall tile immediately beside the party, not one
+    // cell forward.  The stored wall face is parallel to the current facing.
+    // Example: (9,6) North sees ZED at (10,6), wall North.
+    int mirrorX = previewX + rightX;
+    int mirrorY = previewY + rightY;
+    if (!previewMiniMap.IsInside(mirrorX, mirrorY)
+        || previewMiniMap.GetTile(mirrorX, mirrorY).Type != DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    string expectedWallSide = FacingName(previewFacing);
+    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    {
+      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
+        continue;
+      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
+        continue;
+
+      if (mirror.x != mirrorX
+          || mirror.y != mirrorY
+          || !string.Equals(
+              mirror.wall,
+              expectedWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      // Unmirrored left edge of the 16x35. RightF0's canonical X is included:
+      // the original sliver is thick frame, blue, then one frame column on
+      // that boundary. Everything to the right of it remains the wall.
+      int clipX = DungeonViewportWidth - 1;
+      if (TryGetCanonicalReferenceXY("RightF0", out int rightF0X, out _))
+        clipX = rightF0X;
+
+      int visibleWidth = clipX - ChampionMirrorD0RightX + 1;
+      if (visibleWidth <= 0)
+        return;
+
+      if (visibleWidth > sideMirror.width)
+        visibleWidth = sideMirror.width;
+
+      BlitPieceScaledIntoPreview(
+          pixels,
+          sideMirror,
+          ChampionMirrorD0RightX,
+          ChampionMirrorD0RightY,
+          visibleWidth,
+          sideMirror.height,
+          false,
+          0,
+          0,
+          visibleWidth,
+          sideMirror.height);
+      return;
+    }
+  }
+
   private void BlitChampionMirrorD1FramesIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -14472,6 +14565,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewChampionMirrors.Length; i++)
     {
       ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
+        continue;
       if (mirror == null || string.IsNullOrEmpty(mirror.wall))
         continue;
 
@@ -14536,6 +14633,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewChampionMirrors.Length; i++)
     {
       ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
+        continue;
       if (mirror == null
           || string.IsNullOrEmpty(mirror.wall)
           || string.IsNullOrEmpty(mirror.champion))
@@ -14601,6 +14702,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewChampionMirrors.Length; i++)
     {
       ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
+        continue;
       if (mirror == null
           || string.IsNullOrEmpty(mirror.wall)
           || string.IsNullOrEmpty(mirror.champion))
@@ -14713,6 +14818,10 @@ public class ViewportLayoutEditor : EditorWindow
       for (int i = 0; i < previewChampionMirrors.Length; i++)
       {
         ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
+        continue;
         if (mirror == null
             || string.IsNullOrEmpty(mirror.wall)
             || string.IsNullOrEmpty(mirror.champion))
@@ -14773,6 +14882,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewChampionMirrors.Length; i++)
     {
       ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
+        continue;
       if (mirror == null || string.IsNullOrEmpty(mirror.wall))
         continue;
 
@@ -14845,6 +14958,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewChampionMirrors.Length; i++)
     {
       ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
+        continue;
       if (mirror == null || string.IsNullOrEmpty(mirror.wall))
         continue;
 
@@ -14858,7 +14975,7 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      // Same exact 10x23 side asset as the right slot, mirrored horizontally.
+      // Same code-generated 10x23 D2 side projection as the right slot, mirrored horizontally.
       BlitPieceIntoPreview(
           pixels,
           sideMirror,
@@ -14920,6 +15037,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewChampionMirrors.Length; i++)
     {
       ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
+        continue;
       if (mirror == null || string.IsNullOrEmpty(mirror.wall))
         continue;
 
@@ -14933,9 +15054,8 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      // Exact original-game 10x23 cutout. No scaling and no additional
-      // mirroring: Mirror_Side_10x23.png contains the verified right-side crop
-      // right-side perspective pixels.
+      // Code-generated 10x23 D2 side projection from the original 16x35 S1 source.
+      // No additional scaling occurs at blit time.
       BlitPieceIntoPreview(
           pixels,
           rightMirror,
@@ -15033,6 +15153,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewChampionMirrors.Length; i++)
     {
       ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
+        continue;
       if (mirror == null || string.IsNullOrEmpty(mirror.wall))
         continue;
 
@@ -15091,7 +15215,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     // F3-left corridor/alcove: center line open through D3, decorated wall
     // is one lane left of D3. D1/D2 left may be walls (9,9 East LINFLAS) or
-    // open (12,9 West SYRA). Native 7x15, unmirrored.
+    // open (12,9 West SYRA). Code-generated 7x15 from S1, unmirrored.
     int f3LeftX = d3CenterX - rightX;
     int f3LeftY = d3CenterY - rightY;
     if (PreviewTileIsOpen(d1CenterX, d1CenterY)
@@ -15111,7 +15235,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // D3L2 oblique: sight through the open left side-lane, decorated wall
-    // two lanes left of D3. Mirror_Side_15x15.png mirrored into the left slot.
+    // two lanes left of D3. Code-generated 15x15 D3 oblique projection mirrored into the left slot.
     int d1LeftX = d1CenterX - rightX;
     int d1LeftY = d1CenterY - rightY;
     int d2LeftX = d2CenterX - rightX;
@@ -15170,7 +15294,7 @@ public class ViewportLayoutEditor : EditorWindow
     int d3CenterY = previewY + forwardY * 3;
 
     // F3-right corridor/alcove: center line open through D3, decorated wall
-    // is one lane right of D3. Same 7x15 cutout as F3-left, mirrored.
+    // is one lane right of D3. Same code-generated 7x15 D3 projection as F3-left, mirrored.
     int f3RightX = d3CenterX + rightX;
     int f3RightY = d3CenterY + rightY;
     if (PreviewTileIsOpen(d1CenterX, d1CenterY)
@@ -15190,7 +15314,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // D3R2 oblique: sight through the open right side-lane, decorated wall
-    // two lanes right of D3. Native 15x15, unmirrored.
+    // two lanes right of D3. Code-generated 15x15 D3 oblique projection, unmirrored.
     int d1RightX = d1CenterX + rightX;
     int d1RightY = d1CenterY + rightY;
     int d2RightX = d2CenterX + rightX;
@@ -15390,54 +15514,19 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedChampionMirrorSideD2Texture != null)
       return cachedChampionMirrorSideD2Texture;
 
-    // Prefer the exact original-game 10x23 cutout when it exists.
-    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        ChampionMirrorSideD2AssetPath);
-    if (texture != null && texture.width == 10 && texture.height == 23)
-    {
-      cachedChampionMirrorSideD2Texture = texture;
-      return texture;
-    }
-
-    // Filename-independent fallback: accept any 10x23 mirror-side texture in
-    // the Champion art folder, so the project can keep a slightly different
-    // filename without renderer-code changes.
-    string[] exactGuids = AssetDatabase.FindAssets(
-        "t:Texture2D",
-        new[] { ChampionArtFolder });
-    for (int i = 0; i < exactGuids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(exactGuids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 10 || candidate.height != 23)
-        continue;
-
-      if (path.IndexOf(
-              "mirror",
-              System.StringComparison.OrdinalIgnoreCase) < 0
-          || path.IndexOf(
-              "side",
-              System.StringComparison.OrdinalIgnoreCase) < 0)
-      {
-        continue;
-      }
-
-      cachedChampionMirrorSideD2Texture = candidate;
-      return candidate;
-    }
-
-    // Final fallback: generate the F2 cutout from the 16x35 source if the
-    // dedicated 10x23 reference asset is not present yet.
+    // Champion mirrors have only two original source graphics: front F1 and
+    // side S1.  D2/D3 variants are generated at runtime/editor-preview time;
+    // never load hand-copied GIMP distance PNGs here.
     Texture2D source = GetChampionMirrorSideTexture();
     if (source == null || !source.isReadable)
       return null;
 
     cachedChampionMirrorSideD2Texture = GenerateDmScaledWallDecoration(
         source,
-        10,
-        23,
+        ChampionMirrorD2SideWidth,
+        ChampionMirrorD2SideHeight,
         WallOrnamentMediumColorMap,
-        "Champion Mirror Side F2 Generated from F1");
+        "Champion Mirror Side D2 Generated from S1");
     return cachedChampionMirrorSideD2Texture;
   }
 
@@ -15446,57 +15535,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedChampionMirrorSideDistantLeftTexture != null)
       return cachedChampionMirrorSideDistantLeftTexture;
 
-    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        ChampionMirrorSideDistantLeftAssetPath);
-    if (texture != null && texture.width == 7 && texture.height == 15)
-    {
-      cachedChampionMirrorSideDistantLeftTexture = texture;
-      return texture;
-    }
+    Texture2D source = GetChampionMirrorSideTexture();
+    if (source == null || !source.isReadable)
+      return null;
 
-    // Also accept the exact named asset anywhere below Assets. This keeps the
-    // renderer working if the 7x15 cutout is placed directly in Assets rather
-    // than in Assets/Art/Champions.
-    string[] exactGuids = AssetDatabase.FindAssets(
-        "Mirror_Side_7x15 t:Texture2D",
-        new[] { "Assets" });
-    for (int i = 0; i < exactGuids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(exactGuids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 7 || candidate.height != 15)
-        continue;
-
-      cachedChampionMirrorSideDistantLeftTexture = candidate;
-      return candidate;
-    }
-
-    // Final fallback: any 7x15 mirror-side texture in the Champion art folder.
-    string[] guids = AssetDatabase.FindAssets(
-        "t:Texture2D",
-        new[] { ChampionArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 7 || candidate.height != 15)
-        continue;
-
-      if (path.IndexOf(
-              "mirror",
-              System.StringComparison.OrdinalIgnoreCase) < 0
-          || path.IndexOf(
-              "side",
-              System.StringComparison.OrdinalIgnoreCase) < 0)
-      {
-        continue;
-      }
-
-      cachedChampionMirrorSideDistantLeftTexture = candidate;
-      return candidate;
-    }
-
-    return null;
+    cachedChampionMirrorSideDistantLeftTexture = GenerateDmScaledWallDecoration(
+        source,
+        7,
+        15,
+        WallOrnamentFarColorMap,
+        "Champion Mirror Side D3 Generated from S1");
+    return cachedChampionMirrorSideDistantLeftTexture;
   }
 
   private Texture2D GetChampionMirrorSideDistantTexture()
@@ -15610,6 +15659,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsWoodRingOrnament(ornament))
         continue;
 
@@ -15702,6 +15755,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsWoodRingOrnament(ornament))
         continue;
 
@@ -15793,6 +15850,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsWoodRingOrnament(ornament))
         continue;
 
@@ -16140,7 +16201,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   private bool IsPreviewPuddleFloor(int x, int y)
   {
-    return previewPuddleFloors.Contains(PackPreviewTile(x, y));
+    return previewPuddleFloors.Contains(PackPreviewTile(x, y))
+        && IsPreviewFeatureEnabled(MakePreviewFeatureKey("Puddle", x, y, null));
   }
 
 
@@ -16151,6 +16213,7 @@ public class ViewportLayoutEditor : EditorWindow
     stairsDownF1PreviewEnabled = true;
     stairsDownF1PreviewX = StairsDownF1X;
     stairsDownF1PreviewDisplayY = StairsDownF1DisplayY;
+    previewDisabledFeatureKeys.Clear();
   }
 
   private bool IsStairsDownF1NeededForCurrentPose()
@@ -16170,7 +16233,246 @@ public class ViewportLayoutEditor : EditorWindow
     return previewMiniMap.IsInside(stairsX, stairsY)
         && previewMiniMap.GetTile(stairsX, stairsY)
             .TryGetStairsDirection(out bool stairsUp)
-        && !stairsUp;
+        && !stairsUp
+        && IsPreviewFeatureEnabled(
+            MakePreviewFeatureKey("StairsDown", stairsX, stairsY, null));
+  }
+
+  private static string MakePreviewFeatureKey(
+      string family,
+      int mapX,
+      int mapY,
+      string wall)
+  {
+    return (family ?? string.Empty)
+        + ":" + mapX
+        + ":" + mapY
+        + ":" + (wall ?? string.Empty);
+  }
+
+  private bool IsPreviewFeatureEnabled(string key)
+  {
+    return string.IsNullOrEmpty(key)
+        || !previewDisabledFeatureKeys.Contains(key);
+  }
+
+  private void SetPreviewFeatureEnabled(string key, bool enabled)
+  {
+    if (string.IsNullOrEmpty(key))
+      return;
+
+    if (enabled)
+      previewDisabledFeatureKeys.Remove(key);
+    else
+      previewDisabledFeatureKeys.Add(key);
+  }
+
+  private bool IsMapCellInCurrentFeatureCone(int mapX, int mapY)
+  {
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int dx = mapX - previewX;
+    int dy = mapY - previewY;
+    int depth = dx * forwardX + dy * forwardY;
+    int lane = dx * rightX + dy * rightY;
+
+    // ViewEdit's current wall renderer reaches through D3 and also uses the
+    // immediate left/right F0 cells. Keep the feature checklist to that same
+    // local neighbourhood; exact rendering/occlusion remains owned by each
+    // feature renderer.
+    if (depth < 0 || depth > 3)
+      return false;
+
+    int maxLane = depth == 0 ? 1 : depth;
+    return Mathf.Abs(lane) <= Mathf.Max(1, maxLane);
+  }
+
+  private void DrawFeatureChecklistRow(
+      int mapX,
+      int mapY,
+      string displayName,
+      string key,
+      Color labelColor)
+  {
+    EditorGUILayout.BeginHorizontal();
+
+    float savedLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    using (new EditorGUI.DisabledScope(true))
+    {
+      EditorGUILayout.IntField("X", mapX, GUILayout.Width(66f));
+      EditorGUIUtility.labelWidth =
+          EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+      EditorGUILayout.IntField("Y", mapY, GUILayout.Width(66f));
+    }
+
+    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
+    featureStyle.normal.textColor = labelColor;
+    featureStyle.hover.textColor = labelColor;
+    featureStyle.focused.textColor = labelColor;
+    GUILayout.Label(displayName, featureStyle, GUILayout.MinWidth(110f));
+
+    GUILayout.FlexibleSpace();
+
+    const string EnabledLabel = "Enabled";
+    const float ToggleBoxWidth = 18f;
+    float enabledLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent(EnabledLabel)).x;
+    EditorGUIUtility.labelWidth = enabledLabelWidth;
+
+    bool enabledBefore = IsPreviewFeatureEnabled(key);
+    bool enabledAfter = DrawMouseOnlyToggle(
+        EnabledLabel,
+        enabledBefore,
+        enabledBefore,
+        GUILayout.Width(enabledLabelWidth + ToggleBoxWidth),
+        GUILayout.ExpandWidth(false));
+
+    EditorGUIUtility.labelWidth = savedLabelWidth;
+    EditorGUILayout.EndHorizontal();
+
+    if (enabledAfter == enabledBefore)
+      return;
+
+    SetPreviewFeatureEnabled(key, enabledAfter);
+    previewEnabledChangedThisFrame = true;
+    RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
+  }
+
+  private void DrawCurrentPoseFeatureRows()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return;
+
+    // Champion Mirrors.
+    if (previewChampionMirrors != null)
+    {
+      for (int i = 0; i < previewChampionMirrors.Length; i++)
+      {
+        ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+        if (mirror == null || !IsMapCellInCurrentFeatureCone(mirror.x, mirror.y))
+          continue;
+
+        string key = MakePreviewFeatureKey(
+            "ChampionMirror", mirror.x, mirror.y, mirror.wall);
+        string name = string.IsNullOrEmpty(mirror.champion)
+            ? "Champion Mirror"
+            : "Champion Mirror - " + mirror.champion;
+        if (!string.IsNullOrEmpty(mirror.wall))
+          name += " (" + mirror.wall + ")";
+
+        DrawFeatureChecklistRow(
+            mirror.x,
+            mirror.y,
+            name,
+            key,
+            new Color(0.15f, 0.85f, 1f));
+      }
+    }
+
+    // Ordinary wall ornaments.
+    if (previewWallOrnaments != null)
+    {
+      for (int i = 0; i < previewWallOrnaments.Length; i++)
+      {
+        WallOrnamentPlacement ornament = previewWallOrnaments[i];
+        if (ornament == null || !IsMapCellInCurrentFeatureCone(ornament.x, ornament.y))
+          continue;
+
+        string key = MakePreviewFeatureKey(
+            "Ornament", ornament.x, ornament.y, ornament.wall);
+        string name = string.IsNullOrEmpty(ornament.type)
+            ? "Ornament"
+            : ornament.type;
+        if (!string.IsNullOrEmpty(ornament.wall))
+          name += " (" + ornament.wall + ")";
+
+        DrawFeatureChecklistRow(
+            ornament.x,
+            ornament.y,
+            name,
+            key,
+            new Color(1f, 0.65f, 0.1f));
+      }
+    }
+
+    // Floor puddles are ornaments too, but they are stored separately from
+    // wallOrnaments in the parsed map data.
+    for (int depth = 0; depth <= 3; depth++)
+    {
+      int maxLane = depth == 0 ? 1 : Mathf.Max(1, depth);
+      DungeonMap.GetForwardOffset(
+          previewFacing,
+          out int forwardX,
+          out int forwardY);
+      DungeonMap.GetRightOffset(
+          previewFacing,
+          out int rightX,
+          out int rightY);
+
+      for (int lane = -maxLane; lane <= maxLane; lane++)
+      {
+        int x = previewX + forwardX * depth + rightX * lane;
+        int y = previewY + forwardY * depth + rightY * lane;
+        if (!previewMiniMap.IsInside(x, y)
+            || !previewPuddleFloors.Contains(PackPreviewTile(x, y)))
+          continue;
+
+        string key = MakePreviewFeatureKey("Puddle", x, y, null);
+        DrawFeatureChecklistRow(
+            x,
+            y,
+            "Puddle",
+            key,
+            new Color(0.3f, 0.75f, 1f));
+      }
+    }
+
+    // Stairs Up / Down in the same current-view neighbourhood.
+    for (int depth = 0; depth <= 3; depth++)
+    {
+      int maxLane = depth == 0 ? 1 : Mathf.Max(1, depth);
+      DungeonMap.GetForwardOffset(
+          previewFacing,
+          out int forwardX,
+          out int forwardY);
+      DungeonMap.GetRightOffset(
+          previewFacing,
+          out int rightX,
+          out int rightY);
+
+      for (int lane = -maxLane; lane <= maxLane; lane++)
+      {
+        int x = previewX + forwardX * depth + rightX * lane;
+        int y = previewY + forwardY * depth + rightY * lane;
+        if (!previewMiniMap.IsInside(x, y))
+          continue;
+
+        DungeonTile tile = previewMiniMap.GetTile(x, y);
+        if (tile == null || !tile.TryGetStairsDirection(out bool stairsUp))
+          continue;
+
+        string family = stairsUp ? "StairsUp" : "StairsDown";
+        string key = MakePreviewFeatureKey(family, x, y, null);
+        DrawFeatureChecklistRow(
+            x,
+            y,
+            stairsUp ? "Stairs Up" : "Stairs Down",
+            key,
+            stairsUp ? new Color(0.25f, 0.6f, 1f) : Color.magenta);
+      }
+    }
   }
 
   private void DrawStairsDownF1ControlRow()
@@ -16488,6 +16790,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (ornament == null
           || !string.Equals(
               ornament.type,
@@ -16569,6 +16875,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (ornament == null
           || !string.Equals(
               ornament.type,
@@ -16638,6 +16948,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (ornament == null
           || !string.Equals(
               ornament.type,
@@ -17359,6 +17673,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsSlimeOrnament(ornament))
         continue;
 
@@ -17578,6 +17896,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsSlimeOrnament(ornament))
         continue;
 
@@ -17721,6 +18043,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsSlimeOrnament(ornament))
         continue;
 
@@ -17871,6 +18197,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsWoodRingOrnament(ornament))
         continue;
 
@@ -18018,6 +18348,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsWoodRingOrnament(ornament))
         continue;
 
@@ -18192,6 +18526,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsHookOrnament(ornament))
         continue;
 
@@ -18325,6 +18663,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (ornament == null)
         continue;
 
@@ -18470,6 +18812,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsHookOrnament(ornament))
         continue;
 
@@ -18546,6 +18892,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsHookOrnament(ornament))
         continue;
 
@@ -18820,6 +19170,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsGrateOrnament(ornament))
         continue;
 
@@ -18982,6 +19336,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsGrateOrnament(ornament))
         continue;
 
@@ -19138,6 +19496,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsGrateOrnament(ornament))
         continue;
 
@@ -19290,6 +19652,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsGrateOrnament(ornament))
         continue;
 
@@ -19390,6 +19756,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsGrateOrnament(ornament))
         continue;
 
@@ -19480,6 +19850,10 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
       if (!IsGrateOrnament(ornament))
         continue;
 
