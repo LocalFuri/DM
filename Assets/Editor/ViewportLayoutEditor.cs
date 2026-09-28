@@ -4273,13 +4273,13 @@ public class ViewportLayoutEditor : EditorWindow
     switch (current.keyCode)
     {
       case KeyCode.UpArrow:
-        DungeonMap.GetForwardOffset(
+        GetPreviewFacingForwardOffset(
             previewFacing,
             out worldDx,
             out worldDy);
         break;
       case KeyCode.DownArrow:
-        DungeonMap.GetForwardOffset(
+        GetPreviewFacingForwardOffset(
             previewFacing,
             out worldDx,
             out worldDy);
@@ -5196,6 +5196,37 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return null;
+  }
+
+  /// <summary>
+  /// Editor navigation mapping for the green facing triangle. Map Y increases
+  /// downward: North = Y-1, East = X+1, South = Y+1, West = X-1.
+  /// Keeping this explicit makes Up always follow the triangle and Down use
+  /// the exact opposite map direction.
+  /// </summary>
+  private static void GetPreviewFacingForwardOffset(
+      DungeonFacing facing,
+      out int dx,
+      out int dy)
+  {
+    dx = 0;
+    dy = 0;
+
+    switch (facing)
+    {
+      case DungeonFacing.North:
+        dy = -1;
+        break;
+      case DungeonFacing.East:
+        dx = 1;
+        break;
+      case DungeonFacing.South:
+        dy = 1;
+        break;
+      case DungeonFacing.West:
+        dx = -1;
+        break;
+    }
   }
 
   private static DungeonFacing TurnPreviewFacingLeft(DungeonFacing facing)
@@ -8452,7 +8483,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap == null)
       return;
 
-    DungeonMap.GetForwardOffset(
+    GetPreviewFacingForwardOffset(
         previewFacing,
         out int forwardX,
         out int forwardY);
