@@ -645,6 +645,10 @@ public class ViewportLayoutEditor : EditorWindow
   private static int s_viewEditGlobalNavOwners;
   private static bool s_viewEditGlobalNavCallbackAdded;
   private static bool s_viewEditGlobalNavDispatch;
+  // End/PageDown are dispatched before the focused Unity control sees the
+  // key. While that turn is in progress, never repaint GameView explicitly:
+  // Unity can transfer EditorWindow focus during GameView.Repaint().
+  private static bool s_viewEditDirectTurnDispatch;
   private static KeyCode s_lastPreprocessedTurnKey = KeyCode.None;
   private static double s_lastPreprocessedTurnTime = -1.0;
   private static readonly EditorApplication.CallbackFunction
@@ -2457,7 +2461,7 @@ public class ViewportLayoutEditor : EditorWindow
   /// <summary>
   /// Piece-card checkbox that toggles only from mouse clicks. Keyboard
   /// events are ignored and the control is not allowed to keep focus, so
-  /// Delete/Page Down/arrows/Space cannot change Enabled or Mirror.
+  /// End/Page Down/arrows/Space cannot change Enabled or Mirror.
   /// </summary>
   private static bool DrawMouseOnlyToggle(
       string label,
@@ -2510,7 +2514,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // This custom toggle never takes keyboard focus, preserving ViewEdit's
-    // Delete/Page Down/arrows/Space navigation behavior.
+    // End/Page Down/arrows/Space navigation behavior.
     return value;
   }
 
@@ -4202,14 +4206,16 @@ public class ViewportLayoutEditor : EditorWindow
     if (!s_viewEditGlobalNavDispatch && focusedWindow != this)
       return;
 
-    // Delete/PageDown are reserved ViewEdit turn keys. Do not let a stale
+    // End/PageDown are reserved ViewEdit turn keys. Do not let a stale
     // TextField/DelayedIntField focus block direction changes.
     DungeonFacing nextFacing;
     KeyCode key = current.keyCode;
     switch (key)
     {
-      case KeyCode.Delete:
-        nextFacing = TurnPreviewFacingLeft(previewFacing);
+      case KeyCode.End:
+        // Absolute west. End does not send Unity's Delete command, so the
+        // focused window keeps the keyboard.
+        nextFacing = DungeonFacing.West;
         break;
       case KeyCode.PageDown:
         nextFacing = TurnPreviewFacingRight(previewFacing);
@@ -4222,13 +4228,13 @@ public class ViewportLayoutEditor : EditorWindow
     {
       // Preserve Preview X / Preview Y; only facing changes.
       SwitchPreviewPose(previewX, previewY, nextFacing);
-      if (!s_viewEditGlobalNavDispatch)
+      // End must not refocus the window. Game View repaint and Focus()
+      // were trading the keyboard after this key.
+      if (!s_viewEditGlobalNavDispatch && key != KeyCode.End)
         TryRefocusPreviewWindow();
     }
 
     current.Use();
-    if (key == KeyCode.Delete)
-      GUI.FocusControl(null);
   }
 
   private void HandlePreviewStrafeKeyboard()
@@ -4330,21 +4336,23 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void TryRefocusPreviewWindow()
   {
+    // Refocus synchronously. Do not enqueue delayCall focus requests: repeated
+    // navigation used to accumulate callbacks and make ViewEdit/GameView trade
+    // focus after End/PageDown.
+    EditorApplication.delayCall -= RestoreViewEditKeyboardFocus;
     GUI.FocusControl(null);
+    GUIUtility.keyboardControl = 0;
     Focus();
-    EditorApplication.delayCall += RestoreViewEditKeyboardFocus;
   }
 
   /// <summary>
-  /// One-shot: Game View repaint after preview refresh can steal EditorWindow
-  /// focus. Restore ViewEdit unless a text/numeric field is being edited.
+  /// Compatibility cleanup for callbacks queued by an older script domain.
+  /// New navigation does not schedule this method.
   /// </summary>
   private void RestoreViewEditKeyboardFocus()
   {
-    if (this == null)
-      return;
-
-    if (EditorGUIUtility.editingTextField)
+    EditorApplication.delayCall -= RestoreViewEditKeyboardFocus;
+    if (this == null || EditorGUIUtility.editingTextField)
       return;
 
     Focus();
@@ -4512,16 +4520,23 @@ public class ViewportLayoutEditor : EditorWindow
     if (!IsViewEditNavigationKey(keyCode))
       return;
 
-    // Delete/PageDown can be consumed by the currently focused IMGUI/UI Toolkit
+    // End/PageDown can be consumed by the currently focused IMGUI/UI Toolkit
     // control before ViewEdit's normal OnGUI handler sees them. Dispatch these
     // turn keys directly from GUIView.beforeEventProcessed, which runs before
     // the focused control gets a chance to swallow the key.
-    if (keyCode == KeyCode.Delete || keyCode == KeyCode.PageDown)
+    if (keyCode == KeyCode.End || keyCode == KeyCode.PageDown)
     {
       if (TryDispatchViewEditTurnKeyDirect(keyCode))
       {
         s_lastPreprocessedTurnKey = keyCode;
         s_lastPreprocessedTurnTime = EditorApplication.timeSinceStartup;
+        Event current = Event.current;
+        if (current != null
+            && current.type == EventType.KeyDown
+            && current.keyCode == keyCode)
+        {
+          current.Use();
+        }
       }
       return;
     }
@@ -4991,7 +5006,7 @@ public class ViewportLayoutEditor : EditorWindow
       case KeyCode.DownArrow:
       case KeyCode.LeftArrow:
       case KeyCode.RightArrow:
-      case KeyCode.Delete:
+      case KeyCode.End:
       case KeyCode.PageDown:
         return true;
       default:
@@ -5050,19 +5065,28 @@ public class ViewportLayoutEditor : EditorWindow
     if (window == null || window.layout == null)
       return false;
 
-    switch (keyCode)
+    // Do not call Focus(), FocusControl, or keyboardControl = 0. The key is
+    // consumed below so a text field cannot also act on it.
+    s_viewEditDirectTurnDispatch = true;
+    try
     {
-      case KeyCode.Delete:
-        window.PreviewNavigateTurnLeft();
-        break;
-      case KeyCode.PageDown:
-        window.PreviewNavigateTurnRight();
-        break;
-      default:
-        return false;
+      switch (keyCode)
+      {
+        case KeyCode.End:
+          window.PreviewNavigateFaceWest();
+          break;
+        case KeyCode.PageDown:
+          window.PreviewNavigateTurnRight();
+          break;
+        default:
+          return false;
+      }
+    }
+    finally
+    {
+      s_viewEditDirectTurnDispatch = false;
     }
 
-    window.TryRefocusPreviewWindow();
     window.Repaint();
     return true;
   }
@@ -5079,7 +5103,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (Application.isPlaying)
       return;
 
-    if ((current.keyCode == KeyCode.Delete || current.keyCode == KeyCode.PageDown)
+    if ((current.keyCode == KeyCode.End || current.keyCode == KeyCode.PageDown)
         && current.keyCode == s_lastPreprocessedTurnKey
         && EditorApplication.timeSinceStartup - s_lastPreprocessedTurnTime < 0.1)
     {
@@ -5651,6 +5675,12 @@ public class ViewportLayoutEditor : EditorWindow
 
   private static void RepaintGameViews()
   {
+    // During direct End/PageDown handling, an explicit GameView.Repaint()
+    // can steal EditorWindow focus before the key event finishes. The preview
+    // texture is already updated, so let GameView repaint naturally.
+    if (s_viewEditDirectTurnDispatch)
+      return;
+
     EditorWindow[] windows =
         Resources.FindObjectsOfTypeAll<EditorWindow>();
 
@@ -8434,6 +8464,14 @@ public class ViewportLayoutEditor : EditorWindow
         previewX,
         previewY,
         TurnPreviewFacingLeft(previewFacing));
+  }
+
+  private void PreviewNavigateFaceWest()
+  {
+    NavigatePreviewPoseOnly(
+        previewX,
+        previewY,
+        DungeonFacing.West);
   }
 
   private void PreviewNavigateTurnRight()
