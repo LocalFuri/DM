@@ -435,13 +435,13 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonViewportWidth - ChampionMirrorD1LeftX - 16;
   private const int ChampionMirrorD1Y = 101;
 
-  // D0/F0 screen-right Champion mirror. Same 16x35 side graphic and vertical
-  // anchor as the D1 side face (screen top Y=64, framebuffer Y=101), at X=185.
-  // The peeking edge is the unmirrored left of that graphic: the thick frame,
-  // then the blue pane. RightF0's canonical X is the last column of that
-  // strip (185..191 inclusive). Columns past it stay the wall.
+  // D0/F0 screen-right Champion mirror. The original uses the FRONT mirror
+  // perspective family here, generated from the 48x43 F1 source at F3 size,
+  // then clipped by the near RightF0 wall. Keep the horizontal anchor at the
+  // measured original position; the vertical anchor uses the generated F3
+  // front-mirror slot.
   private const int ChampionMirrorD0RightX = 185;
-  private const int ChampionMirrorD0RightY = ChampionMirrorD1Y;
+  private const int ChampionMirrorD0RightY = ChampionMirrorD3FrontY;
 
   // Original DOS Champion front-mirror placement for a D2 center wall.
   // Measured from the original 320x200 (10,4) South ZED view:
@@ -14451,8 +14451,11 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    Texture2D sideMirror = GetChampionMirrorSideTexture();
-    if (sideMirror == null || !sideMirror.isReadable)
+    // This F0-right glimpse uses the FRONT mirror perspective family, not
+    // the native side/S1 artwork. Generate the distant front image from the
+    // original 48x43 F1 source, then let the near RightF0 geometry clip it.
+    Texture2D frontF3Mirror = GetChampionMirrorFrontF3Texture();
+    if (frontF3Mirror == null || !frontF3Mirror.isReadable)
       return;
 
     DungeonMap.GetRightOffset(
@@ -14492,9 +14495,9 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      // Unmirrored left edge of the 16x35. RightF0's canonical X is included:
-      // the original sliver is thick frame, blue, then one frame column on
-      // that boundary. Everything to the right of it remains the wall.
+      // Use the generated FRONT-F3 image. Only the portion left of the near
+      // RightF0 boundary is visible; this is geometric clipping, not a
+      // hand-authored distance sprite or a crop from the side/S1 image.
       int clipX = DungeonViewportWidth - 1;
       if (TryGetCanonicalReferenceXY("RightF0", out int rightF0X, out _))
         clipX = rightF0X;
@@ -14503,21 +14506,21 @@ public class ViewportLayoutEditor : EditorWindow
       if (visibleWidth <= 0)
         return;
 
-      if (visibleWidth > sideMirror.width)
-        visibleWidth = sideMirror.width;
+      if (visibleWidth > frontF3Mirror.width)
+        visibleWidth = frontF3Mirror.width;
 
       BlitPieceScaledIntoPreview(
           pixels,
-          sideMirror,
+          frontF3Mirror,
           ChampionMirrorD0RightX,
           ChampionMirrorD0RightY,
           visibleWidth,
-          sideMirror.height,
+          frontF3Mirror.height,
           false,
           0,
           0,
           visibleWidth,
-          sideMirror.height);
+          frontF3Mirror.height);
       return;
     }
   }
