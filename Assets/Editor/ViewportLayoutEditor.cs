@@ -9032,8 +9032,18 @@ public class ViewportLayoutEditor : EditorWindow
   /// </summary>
   private void TryPreviewStairsTransition()
   {
+    // Read the stair state directly from the tile at ViewEdit's current
+    // preview coordinates. Do not depend on DungeonMap's internal player
+    // state being synchronized before the transition check.
     if (previewMiniMap == null
-        || !previewMiniMap.TryGetStairsAtPlayer(out bool stairsUp))
+        || !previewMiniMap.IsInside(previewX, previewY))
+    {
+      return;
+    }
+
+    DungeonTile currentTile = previewMiniMap.GetTile(previewX, previewY);
+    if (currentTile == null
+        || !currentTile.TryGetStairsDirection(out bool stairsUp))
     {
       return;
     }
