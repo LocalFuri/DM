@@ -2542,6 +2542,64 @@ public class ViewportLayoutEditor : EditorWindow
     return value;
   }
 
+  /// <summary>
+  /// Compact mouse-only toggle for feature rows. The checkbox is placed
+  /// immediately after its caption instead of using Unity's global prefix
+  /// label width. This keeps rows visually tight: Enabled [ ] Mirror [ ].
+  /// </summary>
+  private static bool DrawCompactMouseOnlyToggle(
+      string label,
+      bool value,
+      bool isMirror)
+  {
+    float labelWidth = EditorStyles.label.CalcSize(new GUIContent(label)).x;
+    GUILayout.Label(label, GUILayout.Width(labelWidth));
+
+    Rect toggleRect = GUILayoutUtility.GetRect(
+        16f,
+        EditorGUIUtility.singleLineHeight,
+        GUILayout.Width(16f),
+        GUILayout.ExpandWidth(false));
+
+    Event current = Event.current;
+    if (current != null
+        && current.type == EventType.MouseDown
+        && current.button == 0
+        && toggleRect.Contains(current.mousePosition))
+    {
+      value = !value;
+      GUI.changed = true;
+      current.Use();
+    }
+
+    GUI.Toggle(toggleRect, false, GUIContent.none, EditorStyles.toggle);
+
+    if (value)
+    {
+      Color checkColor = new Color(0.2f, 1.0f, 0.2f);
+      if (isMirror)
+      {
+        EditorGUI.DrawRect(
+            InsetToggleFillRect(toggleRect),
+            new Color(1f, 140f / 255f, 0f));
+        checkColor = Color.black;
+      }
+
+      GUIStyle checkStyle = new GUIStyle(EditorStyles.label)
+      {
+        alignment = TextAnchor.MiddleCenter,
+        fontStyle = FontStyle.Bold,
+        fontSize = 13,
+        padding = new RectOffset(0, 0, 0, 1)
+      };
+      checkStyle.normal.textColor = checkColor;
+      GUI.Label(toggleRect, "✓", checkStyle);
+    }
+
+    GUILayout.Space(6f);
+    return value;
+  }
+
   private static Rect InsetToggleFillRect(Rect toggleRect)
   {
     const float inset = 2f;
@@ -16661,19 +16719,15 @@ public class ViewportLayoutEditor : EditorWindow
         GUILayout.Width(FeatureDescriptionWidth));
 
     bool enabledBefore = IsPreviewFeatureEnabled(key);
-    bool enabledAfter = DrawMouseOnlyToggle(
+    bool enabledAfter = DrawCompactMouseOnlyToggle(
         "Enabled",
         enabledBefore,
-        enabledBefore,
-        GUILayout.Width(72f),
-        GUILayout.ExpandWidth(false));
+        false);
 
-    bool mirrorAfter = DrawMouseOnlyToggle(
-        "Mirrored",
+    bool mirrorAfter = DrawCompactMouseOnlyToggle(
+        "Mirror",
         mirrorValue,
-        mirrorValue,
-        GUILayout.Width(78f),
-        GUILayout.ExpandWidth(false));
+        true);
 
     EditorGUILayout.EndHorizontal();
 
