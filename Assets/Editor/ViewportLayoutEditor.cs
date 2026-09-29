@@ -871,6 +871,13 @@ public class ViewportLayoutEditor : EditorWindow
   // feature returns to the renderer's code-assigned default state.
   private readonly HashSet<string> previewDisabledFeatureKeys =
       new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+  // Temporary per-pose ViewEdit overrides for non-wall feature render placement.
+  // Keys are the same stable feature keys used by Enabled. They are cleared
+  // whenever the pose changes, so these are calibration/inspection controls only.
+  private readonly Dictionary<string, Vector2Int> previewFeaturePositionOverrides =
+      new Dictionary<string, Vector2Int>(System.StringComparer.OrdinalIgnoreCase);
+  private readonly Dictionary<string, bool> previewFeatureMirrorOverrides =
+      new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorSideTexture;
   [System.NonSerialized]
@@ -14508,7 +14515,15 @@ public class ViewportLayoutEditor : EditorWindow
       if (TryGetCanonicalReferenceXY("RightF0", out int rightF0X, out _))
         clipX = rightF0X;
 
-      int geometricVisibleWidth = clipX - championMirrorD0RightPreviewX + 1;
+      string featureKey = MakePreviewFeatureKey(
+          "ChampionMirror", mirror.x, mirror.y, mirror.wall);
+      int renderX = championMirrorD0RightPreviewX;
+      int renderY = ChampionMirrorD0RightY;
+      bool renderMirror = championMirrorD0RightPreviewMirror;
+      ApplyPreviewFeatureRenderOverrides(
+          featureKey, ref renderX, ref renderY, ref renderMirror);
+
+      int geometricVisibleWidth = clipX - renderX + 1;
       if (geometricVisibleWidth <= 0)
         return;
 
@@ -14520,11 +14535,11 @@ public class ViewportLayoutEditor : EditorWindow
       BlitPieceScaledIntoPreview(
           pixels,
           frontF3Mirror,
-          championMirrorD0RightPreviewX,
-          ChampionMirrorD0RightY,
+          renderX,
+          renderY,
           visibleWidth,
           frontF3Mirror.height,
-          championMirrorD0RightPreviewMirror,
+          renderMirror,
           0,
           0,
           visibleWidth,
@@ -14590,12 +14605,19 @@ public class ViewportLayoutEditor : EditorWindow
               leftWallSide,
               System.StringComparison.OrdinalIgnoreCase))
       {
+        string featureKey = MakePreviewFeatureKey(
+            "ChampionMirror", mirror.x, mirror.y, mirror.wall);
+        int renderX = ChampionMirrorD1LeftX;
+        int renderY = ChampionMirrorD1Y;
+        bool renderMirror = false;
+        ApplyPreviewFeatureRenderOverrides(
+            featureKey, ref renderX, ref renderY, ref renderMirror);
         BlitPieceIntoPreview(
             pixels,
             sideMirror,
-            ChampionMirrorD1LeftX,
-            ChampionMirrorD1Y,
-            false);
+            renderX,
+            renderY,
+            renderMirror);
         continue;
       }
 
@@ -14606,12 +14628,19 @@ public class ViewportLayoutEditor : EditorWindow
               rightWallSide,
               System.StringComparison.OrdinalIgnoreCase))
       {
+        string featureKey = MakePreviewFeatureKey(
+            "ChampionMirror", mirror.x, mirror.y, mirror.wall);
+        int renderX = ChampionMirrorD1RightX;
+        int renderY = ChampionMirrorD1Y;
+        bool renderMirror = true;
+        ApplyPreviewFeatureRenderOverrides(
+            featureKey, ref renderX, ref renderY, ref renderMirror);
         BlitPieceIntoPreview(
             pixels,
             sideMirror,
-            ChampionMirrorD1RightX,
-            ChampionMirrorD1Y,
-            true);
+            renderX,
+            renderY,
+            renderMirror);
       }
     }
   }
@@ -14735,12 +14764,20 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       // Frame first; the portrait then replaces the turquoise mirror opening.
+      string featureKey = MakePreviewFeatureKey(
+          "ChampionMirror", mirror.x, mirror.y, mirror.wall);
+      int renderX = ChampionMirrorD1FrontX;
+      int renderY = ChampionMirrorD1FrontY;
+      bool renderMirror = false;
+      ApplyPreviewFeatureRenderOverrides(
+          featureKey, ref renderX, ref renderY, ref renderMirror);
+
       BlitPieceIntoPreview(
           pixels,
           frontMirror,
-          ChampionMirrorD1FrontX,
-          ChampionMirrorD1FrontY,
-          false);
+          renderX,
+          renderY,
+          renderMirror);
 
       Texture2D portrait = GetChampionPortraitTexture(mirror.champion);
       if (!IsPreviewChampionTaken(mirror.champion)
@@ -14752,9 +14789,9 @@ public class ViewportLayoutEditor : EditorWindow
         BlitPieceIntoPreview(
             pixels,
             portrait,
-            ChampionMirrorD1FrontX + ChampionPortraitD1FrontOffsetX,
-            ChampionMirrorD1FrontY + ChampionPortraitD1FrontOffsetY,
-            false);
+            renderX + ChampionPortraitD1FrontOffsetX,
+            renderY + ChampionPortraitD1FrontOffsetY,
+            renderMirror);
       }
 
       return;
@@ -14854,12 +14891,19 @@ public class ViewportLayoutEditor : EditorWindow
         // F1 48x43 -> generated F2 29x27 -> Medium distance palette.
         // The generated texture is already scaled and darkened, so draw it 1:1.
         // Lateral lanes are still clipped naturally by the 224px dungeon viewport.
+        string featureKey = MakePreviewFeatureKey(
+            "ChampionMirror", mirror.x, mirror.y, mirror.wall);
+        int renderX = destinationX;
+        int renderY = ChampionMirrorFrontWallOrnamentSet.f2.y;
+        bool renderMirror = false;
+        ApplyPreviewFeatureRenderOverrides(
+            featureKey, ref renderX, ref renderY, ref renderMirror);
         BlitWallOrnamentIntoPreview(
             pixels,
             frontMirror,
-            destinationX,
-            ChampionMirrorFrontWallOrnamentSet.f2.y,
-            false);
+            renderX,
+            renderY,
+            renderMirror);
         break;
       }
     }
@@ -14913,12 +14957,19 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
+      string featureKey = MakePreviewFeatureKey(
+          "ChampionMirror", mirror.x, mirror.y, mirror.wall);
+      int renderX = ChampionMirrorD3FrontX;
+      int renderY = ChampionMirrorD3FrontY;
+      bool renderMirror = false;
+      ApplyPreviewFeatureRenderOverrides(
+          featureKey, ref renderX, ref renderY, ref renderMirror);
       BlitWallOrnamentIntoPreview(
           pixels,
           frontMirror,
-          ChampionMirrorD3FrontX,
-          ChampionMirrorD3FrontY,
-          false);
+          renderX,
+          renderY,
+          renderMirror);
       return;
     }
   }
@@ -14987,12 +15038,19 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       // Same code-generated 10x23 D2 side projection as the right slot, mirrored horizontally.
+      string featureKey = MakePreviewFeatureKey(
+          "ChampionMirror", mirror.x, mirror.y, mirror.wall);
+      int renderX = ChampionMirrorD2LeftX;
+      int renderY = ChampionMirrorD2SideY;
+      bool renderMirror = true;
+      ApplyPreviewFeatureRenderOverrides(
+          featureKey, ref renderX, ref renderY, ref renderMirror);
       BlitPieceIntoPreview(
           pixels,
           sideMirror,
-          ChampionMirrorD2LeftX,
-          ChampionMirrorD2SideY,
-          true);
+          renderX,
+          renderY,
+          renderMirror);
       return;
     }
   }
@@ -15067,12 +15125,19 @@ public class ViewportLayoutEditor : EditorWindow
 
       // Code-generated 10x23 D2 side projection from the original 16x35 S1 source.
       // No additional scaling occurs at blit time.
+      string featureKey = MakePreviewFeatureKey(
+          "ChampionMirror", mirror.x, mirror.y, mirror.wall);
+      int renderX = ChampionMirrorD2RightX;
+      int renderY = ChampionMirrorD2SideY;
+      bool renderMirror = false;
+      ApplyPreviewFeatureRenderOverrides(
+          featureKey, ref renderX, ref renderY, ref renderMirror);
       BlitPieceIntoPreview(
           pixels,
           rightMirror,
-          ChampionMirrorD2RightX,
-          ChampionMirrorD2SideY,
-          false);
+          renderX,
+          renderY,
+          renderMirror);
       return;
     }
   }
@@ -15181,12 +15246,19 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
+      string featureKey = MakePreviewFeatureKey(
+          "ChampionMirror", mirror.x, mirror.y, mirror.wall);
+      int renderX = destX;
+      int renderY = destY;
+      bool renderMirror = mirrorHorizontally;
+      ApplyPreviewFeatureRenderOverrides(
+          featureKey, ref renderX, ref renderY, ref renderMirror);
       BlitPieceIntoPreview(
           pixels,
           texture,
-          destX,
-          destY,
-          mirrorHorizontally);
+          renderX,
+          renderY,
+          renderMirror);
       return true;
     }
 
@@ -16228,6 +16300,8 @@ public class ViewportLayoutEditor : EditorWindow
     championMirrorD0RightPreviewVisibleWidth = 7;
     championMirrorD0RightPreviewMirror = false;
     previewDisabledFeatureKeys.Clear();
+    previewFeaturePositionOverrides.Clear();
+    previewFeatureMirrorOverrides.Clear();
   }
 
   private bool IsStairsDownF1NeededForCurrentPose()
@@ -16281,6 +16355,358 @@ public class ViewportLayoutEditor : EditorWindow
       previewDisabledFeatureKeys.Add(key);
   }
 
+  private void ApplyPreviewFeatureRenderOverrides(
+      string key,
+      ref int x,
+      ref int y,
+      ref bool mirror)
+  {
+    if (string.IsNullOrEmpty(key))
+      return;
+
+    if (previewFeaturePositionOverrides.TryGetValue(key, out Vector2Int pos))
+    {
+      x = pos.x;
+      y = pos.y;
+    }
+
+    if (previewFeatureMirrorOverrides.TryGetValue(key, out bool mirrorOverride))
+      mirror = mirrorOverride;
+  }
+
+  private bool TryGetChampionMirrorViewProjection(
+      ChampionMirrorPlacement mirror,
+      out int renderX,
+      out int renderY,
+      out bool renderMirror)
+  {
+    renderX = 0;
+    renderY = 0;
+    renderMirror = false;
+
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || mirror == null
+        || string.IsNullOrEmpty(mirror.wall))
+    {
+      return false;
+    }
+
+    DungeonMap.GetForwardOffset(previewFacing, out int forwardX, out int forwardY);
+    DungeonMap.GetRightOffset(previewFacing, out int rightX, out int rightY);
+
+    string frontWallSide = FacingName(OppositePreviewFacing(previewFacing));
+    string leftWallSide = FacingName(TurnPreviewFacingRight(previewFacing));
+    string rightWallSide = FacingName(TurnPreviewFacingLeft(previewFacing));
+    string parallelWallSide = FacingName(previewFacing);
+
+    int d1CenterX = previewX + forwardX;
+    int d1CenterY = previewY + forwardY;
+    int d2CenterX = previewX + forwardX * 2;
+    int d2CenterY = previewY + forwardY * 2;
+    int d3CenterX = previewX + forwardX * 3;
+    int d3CenterY = previewY + forwardY * 3;
+
+    // F0-right glimpse.
+    int f0RightX = previewX + rightX;
+    int f0RightY = previewY + rightY;
+    if (mirror.x == f0RightX
+        && mirror.y == f0RightY
+        && string.Equals(mirror.wall, parallelWallSide, System.StringComparison.OrdinalIgnoreCase)
+        && PreviewTileIsWall(f0RightX, f0RightY))
+    {
+      renderX = championMirrorD0RightPreviewX;
+      renderY = ChampionMirrorD0RightY;
+      renderMirror = championMirrorD0RightPreviewMirror;
+      return true;
+    }
+
+    // D1 front.
+    if (mirror.x == d1CenterX
+        && mirror.y == d1CenterY
+        && string.Equals(mirror.wall, frontWallSide, System.StringComparison.OrdinalIgnoreCase)
+        && PreviewTileIsWall(d1CenterX, d1CenterY))
+    {
+      renderX = ChampionMirrorD1FrontX;
+      renderY = ChampionMirrorD1FrontY;
+      renderMirror = false;
+      return true;
+    }
+
+    // D1 side frames require an open D1 center.
+    if (PreviewTileIsOpen(d1CenterX, d1CenterY))
+    {
+      int d1LeftX = d1CenterX - rightX;
+      int d1LeftY = d1CenterY - rightY;
+      if (mirror.x == d1LeftX
+          && mirror.y == d1LeftY
+          && string.Equals(mirror.wall, leftWallSide, System.StringComparison.OrdinalIgnoreCase))
+      {
+        renderX = ChampionMirrorD1LeftX;
+        renderY = ChampionMirrorD1Y;
+        renderMirror = false;
+        return true;
+      }
+
+      int d1RightX = d1CenterX + rightX;
+      int d1RightY = d1CenterY + rightY;
+      if (mirror.x == d1RightX
+          && mirror.y == d1RightY
+          && string.Equals(mirror.wall, rightWallSide, System.StringComparison.OrdinalIgnoreCase))
+      {
+        renderX = ChampionMirrorD1RightX;
+        renderY = ChampionMirrorD1Y;
+        renderMirror = true;
+        return true;
+      }
+    }
+
+    // D2 front lanes use an open D1 center, and lateral lanes also need the
+    // corresponding D1 side lane open.
+    if (PreviewTileIsOpen(d1CenterX, d1CenterY))
+    {
+      for (int lane = -1; lane <= 1; lane++)
+      {
+        if (lane != 0)
+        {
+          int d1LaneX = d1CenterX + rightX * lane;
+          int d1LaneY = d1CenterY + rightY * lane;
+          if (!PreviewTileIsOpen(d1LaneX, d1LaneY))
+            continue;
+        }
+
+        int d2X = d2CenterX + rightX * lane;
+        int d2Y = d2CenterY + rightY * lane;
+        if (mirror.x == d2X
+            && mirror.y == d2Y
+            && string.Equals(mirror.wall, frontWallSide, System.StringComparison.OrdinalIgnoreCase)
+            && PreviewTileIsWall(d2X, d2Y))
+        {
+          renderX = lane < 0
+              ? ChampionMirrorD2FrontLeftX
+              : lane > 0
+                  ? ChampionMirrorD2FrontRightX
+                  : ChampionMirrorD2FrontX;
+          renderY = ChampionMirrorFrontWallOrnamentSet.f2.y;
+          renderMirror = false;
+          return true;
+        }
+      }
+    }
+
+    // D2 side mirrors require the center sight line to stay open through D2.
+    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
+        && PreviewTileIsOpen(d2CenterX, d2CenterY))
+    {
+      int d2LeftX = d2CenterX - rightX;
+      int d2LeftY = d2CenterY - rightY;
+      if (mirror.x == d2LeftX
+          && mirror.y == d2LeftY
+          && string.Equals(mirror.wall, leftWallSide, System.StringComparison.OrdinalIgnoreCase))
+      {
+        renderX = ChampionMirrorD2LeftX;
+        renderY = ChampionMirrorD2SideY;
+        renderMirror = true;
+        return true;
+      }
+
+      int d2RightX = d2CenterX + rightX;
+      int d2RightY = d2CenterY + rightY;
+      if (mirror.x == d2RightX
+          && mirror.y == d2RightY
+          && string.Equals(mirror.wall, rightWallSide, System.StringComparison.OrdinalIgnoreCase))
+      {
+        renderX = ChampionMirrorD2RightX;
+        renderY = ChampionMirrorD2SideY;
+        renderMirror = false;
+        return true;
+      }
+    }
+
+    // D3 front center.
+    if (mirror.x == d3CenterX
+        && mirror.y == d3CenterY
+        && string.Equals(mirror.wall, frontWallSide, System.StringComparison.OrdinalIgnoreCase))
+    {
+      renderX = ChampionMirrorD3FrontX;
+      renderY = ChampionMirrorD3FrontY;
+      renderMirror = false;
+      return true;
+    }
+
+    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
+        && PreviewTileIsOpen(d2CenterX, d2CenterY)
+        && PreviewTileIsOpen(d3CenterX, d3CenterY))
+    {
+      int d3LeftX = d3CenterX - rightX;
+      int d3LeftY = d3CenterY - rightY;
+      if (mirror.x == d3LeftX
+          && mirror.y == d3LeftY
+          && string.Equals(mirror.wall, leftWallSide, System.StringComparison.OrdinalIgnoreCase)
+          && PreviewTileIsWall(d3LeftX, d3LeftY))
+      {
+        renderX = ChampionMirrorD3LeftX;
+        renderY = ChampionMirrorD3LeftY;
+        renderMirror = false;
+        return true;
+      }
+
+      int d3RightX = d3CenterX + rightX;
+      int d3RightY = d3CenterY + rightY;
+      if (mirror.x == d3RightX
+          && mirror.y == d3RightY
+          && string.Equals(mirror.wall, rightWallSide, System.StringComparison.OrdinalIgnoreCase)
+          && PreviewTileIsWall(d3RightX, d3RightY))
+      {
+        renderX = ChampionMirrorD3RightF3X;
+        renderY = ChampionMirrorD3RightF3Y;
+        renderMirror = true;
+        return true;
+      }
+    }
+
+    // D3 second side lane / oblique projections.
+    int d1LeftOpenX = d1CenterX - rightX;
+    int d1LeftOpenY = d1CenterY - rightY;
+    int d2LeftOpenX = d2CenterX - rightX;
+    int d2LeftOpenY = d2CenterY - rightY;
+    int d3LeftOpenX = d3CenterX - rightX;
+    int d3LeftOpenY = d3CenterY - rightY;
+    int d3L2X = d3CenterX - rightX * 2;
+    int d3L2Y = d3CenterY - rightY * 2;
+    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
+        && PreviewTileIsOpen(d1LeftOpenX, d1LeftOpenY)
+        && PreviewTileIsOpen(d2LeftOpenX, d2LeftOpenY)
+        && PreviewTileIsOpen(d3LeftOpenX, d3LeftOpenY)
+        && PreviewTileIsWall(d3L2X, d3L2Y)
+        && mirror.x == d3L2X
+        && mirror.y == d3L2Y
+        && string.Equals(mirror.wall, leftWallSide, System.StringComparison.OrdinalIgnoreCase))
+    {
+      renderX = ChampionMirrorD3LeftL2X;
+      renderY = ChampionMirrorD3LeftL2Y;
+      renderMirror = true;
+      return true;
+    }
+
+    int d1RightOpenX = d1CenterX + rightX;
+    int d1RightOpenY = d1CenterY + rightY;
+    int d2RightOpenX = d2CenterX + rightX;
+    int d2RightOpenY = d2CenterY + rightY;
+    int d3RightOpenX = d3CenterX + rightX;
+    int d3RightOpenY = d3CenterY + rightY;
+    int d3R2X = d3CenterX + rightX * 2;
+    int d3R2Y = d3CenterY + rightY * 2;
+    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
+        && PreviewTileIsOpen(d1RightOpenX, d1RightOpenY)
+        && PreviewTileIsOpen(d2RightOpenX, d2RightOpenY)
+        && PreviewTileIsOpen(d3RightOpenX, d3RightOpenY)
+        && PreviewTileIsWall(d3R2X, d3R2Y)
+        && mirror.x == d3R2X
+        && mirror.y == d3R2Y
+        && string.Equals(mirror.wall, rightWallSide, System.StringComparison.OrdinalIgnoreCase))
+    {
+      renderX = ChampionMirrorD3RightX;
+      renderY = ChampionMirrorD3RightY;
+      renderMirror = false;
+      return true;
+    }
+
+    return false;
+  }
+
+  private bool DrawChampionMirrorFeatureRow(ChampionMirrorPlacement mirror)
+  {
+    if (!TryGetChampionMirrorViewProjection(
+            mirror, out int defaultX, out int defaultY, out bool defaultMirror))
+    {
+      return false;
+    }
+
+    string key = MakePreviewFeatureKey(
+        "ChampionMirror", mirror.x, mirror.y, mirror.wall);
+    int x = defaultX;
+    int y = defaultY;
+    bool mirrorValue = defaultMirror;
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirrorValue);
+
+    string name = string.IsNullOrEmpty(mirror.champion)
+        ? "Champion Mirror"
+        : "Champion Mirror - " + mirror.champion;
+    if (!string.IsNullOrEmpty(mirror.wall))
+      name += " (" + mirror.wall + ")";
+
+    EditorGUILayout.BeginHorizontal();
+
+    bool xChanged = DrawIntStepperInline("X", ref x, 1, x != defaultX, true);
+    bool yChanged = DrawIntStepperInline("Y", ref y, 1, y != defaultY, true);
+
+    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
+    Color labelColor = new Color(0.15f, 0.85f, 1f);
+    featureStyle.normal.textColor = labelColor;
+    featureStyle.hover.textColor = labelColor;
+    featureStyle.focused.textColor = labelColor;
+    const float FeatureDescriptionWidth = 230f;
+    GUILayout.Label(
+        name,
+        featureStyle,
+        GUILayout.Width(FeatureDescriptionWidth));
+
+    bool mirrorAfter = DrawMouseOnlyToggle(
+        "Mirror",
+        mirrorValue,
+        mirrorValue,
+        GUILayout.Width(70f),
+        GUILayout.ExpandWidth(false));
+
+    bool enabledBefore = IsPreviewFeatureEnabled(key);
+    bool enabledAfter = DrawMouseOnlyToggle(
+        "Enabled",
+        enabledBefore,
+        enabledBefore,
+        GUILayout.Width(72f),
+        GUILayout.ExpandWidth(false));
+
+    EditorGUILayout.EndHorizontal();
+
+    bool changed = false;
+    if (xChanged || yChanged)
+    {
+      if (x == defaultX && y == defaultY)
+        previewFeaturePositionOverrides.Remove(key);
+      else
+        previewFeaturePositionOverrides[key] = new Vector2Int(x, y);
+      previewPositionChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (mirrorAfter != mirrorValue)
+    {
+      if (mirrorAfter == defaultMirror)
+        previewFeatureMirrorOverrides.Remove(key);
+      else
+        previewFeatureMirrorOverrides[key] = mirrorAfter;
+      previewMirrorChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (enabledAfter != enabledBefore)
+    {
+      SetPreviewFeatureEnabled(key, enabledAfter);
+      previewEnabledChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (changed)
+    {
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+
+    return true;
+  }
+
   private bool IsMapCellInCurrentFeatureCone(int mapX, int mapY)
   {
     DungeonMap.GetForwardOffset(
@@ -16322,19 +16748,26 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     using (new EditorGUI.DisabledScope(true))
     {
-      EditorGUILayout.IntField("X", mapX, GUILayout.Width(66f));
+      // Map coordinates are only two digits in the current dungeon maps.
+      // Keep these fields compact so the feature name and controls stay close.
+      EditorGUILayout.IntField("X", mapX, GUILayout.Width(48f));
       EditorGUIUtility.labelWidth =
           EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-      EditorGUILayout.IntField("Y", mapY, GUILayout.Width(66f));
+      EditorGUILayout.IntField("Y", mapY, GUILayout.Width(48f));
     }
 
     GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
     featureStyle.normal.textColor = labelColor;
     featureStyle.hover.textColor = labelColor;
     featureStyle.focused.textColor = labelColor;
-    GUILayout.Label(displayName, featureStyle, GUILayout.MinWidth(110f));
-
-    GUILayout.FlexibleSpace();
+    // Use one fixed description column so every Enabled checkbox starts
+    // immediately to the right of the longest feature description instead of
+    // being pushed to the far right edge of the ViewEdit window.
+    const float FeatureDescriptionWidth = 230f;
+    GUILayout.Label(
+        displayName,
+        featureStyle,
+        GUILayout.Width(FeatureDescriptionWidth));
 
     const string EnabledLabel = "Enabled";
     const float ToggleBoxWidth = 18f;
@@ -16424,31 +16857,18 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap == null)
       return;
 
-    // Champion Mirrors.
+    // Champion Mirrors. Only rows that correspond to a mirror projection the
+    // renderer can actually draw for this pose are shown. X/Y are framebuffer
+    // coordinates (not map coordinates) and are temporary per-pose controls.
     if (previewChampionMirrors != null)
     {
       for (int i = 0; i < previewChampionMirrors.Length; i++)
       {
         ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-        if (mirror == null || !IsMapCellInCurrentFeatureCone(mirror.x, mirror.y))
+        if (mirror == null)
           continue;
 
-        string key = MakePreviewFeatureKey(
-            "ChampionMirror", mirror.x, mirror.y, mirror.wall);
-        string name = string.IsNullOrEmpty(mirror.champion)
-            ? "Champion Mirror"
-            : "Champion Mirror - " + mirror.champion;
-        if (!string.IsNullOrEmpty(mirror.wall))
-          name += " (" + mirror.wall + ")";
-
-        DrawFeatureChecklistRow(
-            mirror.x,
-            mirror.y,
-            name,
-            key,
-            new Color(0.15f, 0.85f, 1f));
-
-        DrawChampionMirrorF0RightCalibrationRow(mirror);
+        DrawChampionMirrorFeatureRow(mirror);
       }
     }
 
