@@ -16631,33 +16631,34 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirrorValue);
 
     string name = string.IsNullOrEmpty(mirror.champion)
-        ? "Champion Mirror"
-        : "Champion Mirror - " + mirror.champion;
+        ? "ChampMirror"
+        : "ChampMirror - " + mirror.champion;
     if (!string.IsNullOrEmpty(mirror.wall))
       name += " (" + mirror.wall + ")";
 
     EditorGUILayout.BeginHorizontal();
 
-    bool xChanged = DrawIntStepperInline("X", ref x, 1, x != defaultX, true);
-    bool yChanged = DrawIntStepperInline("Y", ref y, 1, y != defaultY, true);
+    // Champion-mirror rows use direct X/Y edit fields only. The +/- stepper
+    // buttons used by wall calibration are unnecessary here and consume too
+    // much horizontal space.
+    EditorGUI.BeginChangeCheck();
+    x = DrawDelayedIntFieldMaybeRed("X", x, x != defaultX, true);
+    bool xChanged = EditorGUI.EndChangeCheck();
+
+    EditorGUI.BeginChangeCheck();
+    y = DrawDelayedIntFieldMaybeRed("Y", y, y != defaultY, true);
+    bool yChanged = EditorGUI.EndChangeCheck();
 
     GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
     Color labelColor = new Color(0.15f, 0.85f, 1f);
     featureStyle.normal.textColor = labelColor;
     featureStyle.hover.textColor = labelColor;
     featureStyle.focused.textColor = labelColor;
-    const float FeatureDescriptionWidth = 230f;
+    const float FeatureDescriptionWidth = 210f;
     GUILayout.Label(
         name,
         featureStyle,
         GUILayout.Width(FeatureDescriptionWidth));
-
-    bool mirrorAfter = DrawMouseOnlyToggle(
-        "Mirror",
-        mirrorValue,
-        mirrorValue,
-        GUILayout.Width(70f),
-        GUILayout.ExpandWidth(false));
 
     bool enabledBefore = IsPreviewFeatureEnabled(key);
     bool enabledAfter = DrawMouseOnlyToggle(
@@ -16665,6 +16666,13 @@ public class ViewportLayoutEditor : EditorWindow
         enabledBefore,
         enabledBefore,
         GUILayout.Width(72f),
+        GUILayout.ExpandWidth(false));
+
+    bool mirrorAfter = DrawMouseOnlyToggle(
+        "Mirrored",
+        mirrorValue,
+        mirrorValue,
+        GUILayout.Width(78f),
         GUILayout.ExpandWidth(false));
 
     EditorGUILayout.EndHorizontal();
