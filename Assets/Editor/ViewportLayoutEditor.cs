@@ -494,8 +494,9 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonViewportWidth - ChampionMirrorD3LeftX - 7;
   private const int ChampionMirrorD3RightF3Y = ChampionMirrorD3LeftY;
 
-  // Original DOS D3L2/D3R2 oblique slots. 15x15 native on the right; left is
-  // that sprite mirrored. Same +2 center-nudge as F3-left, then mirror.
+  // Original DOS D3L2/D3R2 oblique slots. All Champion side-mirror source
+  // artwork is now stored in canonical LEFT orientation. The right slot mirrors
+  // the source at render time. Same +2 center-nudge as F3-left, then mirror.
   private const int ChampionMirrorD3LeftL2X = 17;
   private const int ChampionMirrorD3LeftL2Y = 116;
   private const int ChampionMirrorD3RightX =
@@ -15269,12 +15270,13 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      // Same code-generated 10x23 D2 side projection as the right slot, mirrored horizontally.
+      // All Champion side-mirror source artwork is canonical LEFT orientation.
+      // Screen-left therefore uses the generated D2 projection as-is.
       string featureKey = MakePreviewFeatureKey(
           "ChampionMirror", mirror.x, mirror.y, mirror.wall);
       int renderX = ChampionMirrorD2LeftX;
       int renderY = ChampionMirrorD2SideY;
-      bool renderMirror = true;
+      bool renderMirror = false;
       ApplyPreviewFeatureRenderOverrides(
           featureKey, ref renderX, ref renderY, ref renderMirror);
       BlitPieceIntoPreview(
@@ -15355,13 +15357,13 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      // Code-generated 10x23 D2 side projection from the original 16x35 S1 source.
-      // No additional scaling occurs at blit time.
+      // Code-generated 10x23 D2 side projection from the canonical LEFT-oriented
+      // 16x35 S1 source. Screen-right must mirror that source horizontally.
       string featureKey = MakePreviewFeatureKey(
           "ChampionMirror", mirror.x, mirror.y, mirror.wall);
       int renderX = ChampionMirrorD2RightX;
       int renderY = ChampionMirrorD2SideY;
-      bool renderMirror = false;
+      bool renderMirror = true;
       ApplyPreviewFeatureRenderOverrides(
           featureKey, ref renderX, ref renderY, ref renderMirror);
       BlitPieceIntoPreview(
@@ -15550,7 +15552,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // D3L2 oblique: sight through the open left side-lane, decorated wall
-    // two lanes left of D3. Code-generated 15x15 D3 oblique projection mirrored into the left slot.
+    // two lanes left of D3. The 15x15 source is canonical LEFT orientation,
+    // so the screen-left slot uses it as-is.
     int d1LeftX = d1CenterX - rightX;
     int d1LeftY = d1CenterY - rightY;
     int d2LeftX = d2CenterX - rightX;
@@ -15573,7 +15576,7 @@ public class ViewportLayoutEditor : EditorWindow
           leftWallSide,
           ChampionMirrorD3LeftL2X,
           ChampionMirrorD3LeftL2Y,
-          true);
+          false);
     }
   }
 
@@ -15629,7 +15632,8 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // D3R2 oblique: sight through the open right side-lane, decorated wall
-    // two lanes right of D3. Code-generated 15x15 D3 oblique projection, unmirrored.
+    // two lanes right of D3. The 15x15 source is canonical LEFT orientation,
+    // so the screen-right slot is mirrored horizontally.
     int d1RightX = d1CenterX + rightX;
     int d1RightY = d1CenterY + rightY;
     int d2RightX = d2CenterX + rightX;
@@ -15652,7 +15656,7 @@ public class ViewportLayoutEditor : EditorWindow
           rightWallSide,
           ChampionMirrorD3RightX,
           ChampionMirrorD3RightY,
-          false);
+          true);
     }
   }
 
@@ -16738,7 +16742,7 @@ public class ViewportLayoutEditor : EditorWindow
       {
         renderX = ChampionMirrorD2LeftX;
         renderY = ChampionMirrorD2SideY;
-        renderMirror = true;
+        renderMirror = false;
         return true;
       }
 
@@ -16750,7 +16754,7 @@ public class ViewportLayoutEditor : EditorWindow
       {
         renderX = ChampionMirrorD2RightX;
         renderY = ChampionMirrorD2SideY;
-        renderMirror = false;
+        renderMirror = true;
         return true;
       }
     }
@@ -16817,7 +16821,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       renderX = ChampionMirrorD3LeftL2X;
       renderY = ChampionMirrorD3LeftL2Y;
-      renderMirror = true;
+      renderMirror = false;
       return true;
     }
 
@@ -16840,7 +16844,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       renderX = ChampionMirrorD3RightX;
       renderY = ChampionMirrorD3RightY;
-      renderMirror = false;
+      renderMirror = true;
       return true;
     }
 
