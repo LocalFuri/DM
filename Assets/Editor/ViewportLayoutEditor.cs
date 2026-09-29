@@ -97,8 +97,10 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Same-tile F0-forward calibration for pose (5,11) facing East. Keep these
   // as render-only values while deriving the generic floor-item projection.
-  private int breadF0ForwardPreviewX = 99;
-  private int breadF0ForwardPreviewScreenTop = 152;
+  [System.NonSerialized]
+  private int breadF0LeftPreviewX = 50;
+  [System.NonSerialized]
+  private int breadF0LeftPreviewScreenTop = 152;
 
   // Original DOS Hall of Champions VI Altar: native 96x56 graphic.
   // Adjusted 5 px down: screen top-left (64,69), framebuffer bottom-left (64,75).
@@ -17888,7 +17890,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  private bool TryGetLevel0BreadF0ForwardProjection()
+  private bool TryGetLevel0BreadF0LeftProjection()
   {
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null || previewDungeonLevel != 0)
@@ -17898,15 +17900,8 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
 
     // Bread is stored in absolute sub-square E. At the requested calibration
-    // pose (5,11) facing East, E is the party's FORWARD F0 sub-square.
-    int itemDx = 1;
-    int itemDy = 0;
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-
-    return itemDx == forwardX && itemDy == forwardY;
+    // pose (5,11) facing East, the original DOS reference places this E cell in the LEFT F0 floor slot.
+    return previewFacing == DungeonFacing.East;
   }
 
   private string GetLevel0BreadFeatureKey()
@@ -17928,7 +17923,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void BlitLevel0BreadCalibrationIntoPreview(Color32[] pixels)
   {
-    if (pixels == null || !TryGetLevel0BreadF0ForwardProjection())
+    if (pixels == null || !TryGetLevel0BreadF0LeftProjection())
       return;
 
     string key = GetLevel0BreadFeatureKey();
@@ -17939,18 +17934,18 @@ public class ViewportLayoutEditor : EditorWindow
     if (bread == null || !bread.isReadable || bread.width <= 0 || bread.height <= 0)
       return;
 
-    int y = PreviewHeight - breadF0ForwardPreviewScreenTop - bread.height;
+    int y = PreviewHeight - breadF0LeftPreviewScreenTop - bread.height;
     BlitPieceIntoPreview(
         pixels,
         bread,
-        breadF0ForwardPreviewX,
+        breadF0LeftPreviewX,
         y,
         false);
   }
 
   private void DrawLevel0BreadCalibrationRow()
   {
-    if (!TryGetLevel0BreadF0ForwardProjection())
+    if (!TryGetLevel0BreadF0LeftProjection())
       return;
 
     string key = GetLevel0BreadFeatureKey();
@@ -17975,7 +17970,7 @@ public class ViewportLayoutEditor : EditorWindow
     featureStyle.hover.textColor = labelColor;
     featureStyle.focused.textColor = labelColor;
     GUILayout.Label(
-        "Bread [E] - F0 Forward",
+        "Bread [E] - F0 Left",
         featureStyle,
         GUILayout.Width(210f));
 
@@ -17989,8 +17984,8 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.BeginHorizontal();
     GUILayout.Space(98f);
-    int px = breadF0ForwardPreviewX;
-    int top = breadF0ForwardPreviewScreenTop;
+    int px = breadF0LeftPreviewX;
+    int top = breadF0LeftPreviewScreenTop;
     bool pxChanged = DrawIntStepperInline(
         "PX", ref px, 1, px != 99, true);
     bool topChanged = DrawIntStepperInline(
@@ -18004,15 +17999,15 @@ public class ViewportLayoutEditor : EditorWindow
       previewEnabledChangedThisFrame = true;
       changed = true;
     }
-    if (pxChanged && px != breadF0ForwardPreviewX)
+    if (pxChanged && px != breadF0LeftPreviewX)
     {
-      breadF0ForwardPreviewX = px;
+      breadF0LeftPreviewX = px;
       previewPositionChangedThisFrame = true;
       changed = true;
     }
-    if (topChanged && top != breadF0ForwardPreviewScreenTop)
+    if (topChanged && top != breadF0LeftPreviewScreenTop)
     {
-      breadF0ForwardPreviewScreenTop = top;
+      breadF0LeftPreviewScreenTop = top;
       previewPositionChangedThisFrame = true;
       changed = true;
     }
