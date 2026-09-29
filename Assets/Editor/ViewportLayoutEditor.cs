@@ -1119,6 +1119,172 @@ public class ViewportLayoutEditor : EditorWindow
     EditorApplication.CallbackFunction handler = HandleInspectorRightClickOpen;
     RemoveViewEditGlobalEventHandler(handler);
     AddViewEditGlobalEventHandler(handler);
+
+    // When ViewEdit and Dungeon Features are both open, a right-click anywhere
+    // inside the Dungeon Features editor closes Dungeon Features.  Keep this
+    // in ViewportLayoutEditor.cs so no DungeonFeatureEditor source change is
+    // required.
+    EditorApplication.CallbackFunction closeDungeonFeaturesHandler =
+        HandleDungeonFeaturesRightClickClose;
+    RemoveViewEditGlobalEventHandler(closeDungeonFeaturesHandler);
+    AddViewEditGlobalEventHandler(closeDungeonFeaturesHandler);
+
+    // Unity 6 can host Dungeon Features and ViewEdit as separate editor panes.
+    // A global IMGUI event cannot reliably tell which pane received the click,
+    // so also hook Dungeon Features' own UI Toolkit root directly.
+    EditorApplication.update -= EnsureDungeonFeaturesRightClickHook;
+    EditorApplication.update += EnsureDungeonFeaturesRightClickHook;
+  }
+
+  private static readonly UnityEngine.UIElements.EventCallback<
+      UnityEngine.UIElements.PointerDownEvent>
+      DungeonFeaturesPointerDownHandler = HandleDungeonFeaturesPointerDown;
+  private static EditorWindow s_hookedDungeonFeaturesWindow;
+
+  private static void EnsureDungeonFeaturesRightClickHook()
+  {
+    if (!HasOpenInstances<ViewportLayoutEditor>())
+    {
+      RemoveDungeonFeaturesRightClickHook();
+      return;
+    }
+
+    EditorWindow target = null;
+    EditorWindow[] windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
+    for (int i = 0; i < windows.Length; ++i)
+    {
+      if (IsDungeonFeaturesWindow(windows[i]))
+      {
+        target = windows[i];
+        break;
+      }
+    }
+
+    if (target == s_hookedDungeonFeaturesWindow)
+      return;
+
+    RemoveDungeonFeaturesRightClickHook();
+    if (target == null || target.rootVisualElement == null)
+      return;
+
+    target.rootVisualElement.RegisterCallback(
+        DungeonFeaturesPointerDownHandler,
+        UnityEngine.UIElements.TrickleDown.TrickleDown);
+    s_hookedDungeonFeaturesWindow = target;
+  }
+
+  private static void RemoveDungeonFeaturesRightClickHook()
+  {
+    if (s_hookedDungeonFeaturesWindow != null
+        && s_hookedDungeonFeaturesWindow.rootVisualElement != null)
+    {
+      s_hookedDungeonFeaturesWindow.rootVisualElement.UnregisterCallback(
+          DungeonFeaturesPointerDownHandler,
+          UnityEngine.UIElements.TrickleDown.TrickleDown);
+    }
+    s_hookedDungeonFeaturesWindow = null;
+  }
+
+  private static void HandleDungeonFeaturesPointerDown(
+      UnityEngine.UIElements.PointerDownEvent evt)
+  {
+    if (evt == null || evt.button != 1
+        || !HasOpenInstances<ViewportLayoutEditor>())
+      return;
+
+    EditorWindow target = s_hookedDungeonFeaturesWindow;
+    if (target == null || !IsDungeonFeaturesWindow(target))
+      return;
+
+    // This callback is registered on Dungeon Features itself, so reaching here
+    // proves the RMB press occurred in the LEFT Dungeon Features pane.
+    evt.StopImmediatePropagation();
+    evt.PreventDefault();
+    EditorApplication.delayCall += () =>
+    {
+      if (target != null)
+        target.Close();
+      if (s_hookedDungeonFeaturesWindow == target)
+        s_hookedDungeonFeaturesWindow = null;
+    };
+  }
+
+  private static void HandleDungeonFeaturesRightClickClose()
+  {
+    if (!HasOpenInstances<ViewportLayoutEditor>())
+      return;
+
+    Event current = Event.current;
+    if (current == null)
+      return;
+
+    // Unity can turn the RMB event into ContextClick (or Used) before the
+    // global handler sees it.  rawType keeps the original mouse event.
+    bool rightClick = current.button == 1
+        && (current.type == EventType.MouseDown
+            || current.rawType == EventType.MouseDown
+            || current.type == EventType.ContextClick
+            || current.rawType == EventType.ContextClick);
+    if (!rightClick)
+      return;
+
+    EditorWindow dungeonFeatures = null;
+
+    // Fast path: Unity normally reports the window under the pointer here.
+    EditorWindow hovered = mouseOverWindow;
+    if (IsDungeonFeaturesWindow(hovered))
+    {
+      dungeonFeatures = hovered;
+    }
+    else
+    {
+      // Unity 6 does not always populate mouseOverWindow for a global RMB
+      // event.  Fall back to the real screen-space mouse position and test
+      // every open editor window titled Dungeon Features.
+      Vector2 screenMouse = GUIUtility.GUIToScreenPoint(current.mousePosition);
+      EditorWindow[] windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
+      for (int i = 0; i < windows.Length; ++i)
+      {
+        EditorWindow candidate = windows[i];
+        if (!IsDungeonFeaturesWindow(candidate))
+          continue;
+
+        if (candidate.position.Contains(screenMouse))
+        {
+          dungeonFeatures = candidate;
+          break;
+        }
+      }
+    }
+
+    if (dungeonFeatures == null)
+      return;
+
+    current.Use();
+    EditorWindow windowToClose = dungeonFeatures;
+    EditorApplication.delayCall += () =>
+    {
+      if (windowToClose != null)
+        windowToClose.Close();
+    };
+  }
+
+  private static bool IsDungeonFeaturesWindow(EditorWindow window)
+  {
+    if (window == null)
+      return false;
+
+    string typeName = window.GetType().Name;
+    string title = window.titleContent != null
+        ? window.titleContent.text
+        : string.Empty;
+
+    return string.Equals(typeName, "DungeonFeatureEditor",
+               System.StringComparison.Ordinal)
+        || typeName.IndexOf("DungeonFeature",
+               System.StringComparison.OrdinalIgnoreCase) >= 0
+        || string.Equals(title, "Dungeon Features",
+               System.StringComparison.Ordinal);
   }
 
   private static void HandleInspectorRightClickOpen()
@@ -4580,6 +4746,15 @@ public class ViewportLayoutEditor : EditorWindow
       KeyCode keyCode,
       EventModifiers modifiers)
   {
+    // GUIView.beforeEventProcessed runs before the receiving editor pane can
+    // consume the event.  Use it for Dungeon Features RMB-close as well, so
+    // it still works when ViewEdit is the front/overlapping window.
+    if (type == EventType.MouseDown)
+    {
+      if (TryCloseDungeonFeaturesFromPreprocessedMouse())
+        return;
+    }
+
     if (type != EventType.KeyDown)
       return;
 
@@ -4639,6 +4814,53 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     TryDispatchViewEditGlobalNavigation();
+  }
+
+
+  private static bool TryCloseDungeonFeaturesFromPreprocessedMouse()
+  {
+    if (!HasOpenInstances<ViewportLayoutEditor>())
+      return false;
+
+    Event current = Event.current;
+    if (current == null || current.button != 1)
+      return false;
+
+    // At this stage mousePosition is local to whichever GUIView received the
+    // physical click.  GUIToScreenPoint converts it to one common coordinate
+    // space, independent of which floating editor window is on top.
+    Vector2 screenMouse = GUIUtility.GUIToScreenPoint(current.mousePosition);
+
+    EditorWindow target = null;
+    EditorWindow[] windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
+    for (int i = 0; i < windows.Length; ++i)
+    {
+      EditorWindow candidate = windows[i];
+      if (!IsDungeonFeaturesWindow(candidate))
+        continue;
+
+      if (candidate.position.Contains(screenMouse))
+      {
+        target = candidate;
+        break;
+      }
+    }
+
+    if (target == null)
+      return false;
+
+    // Swallow the RMB so ViewEdit does not also perform its own right-click
+    // action when it happens to be the front window over this screen area.
+    current.Use();
+    EditorWindow windowToClose = target;
+    EditorApplication.delayCall += () =>
+    {
+      if (windowToClose != null)
+        windowToClose.Close();
+      if (s_hookedDungeonFeaturesWindow == windowToClose)
+        s_hookedDungeonFeaturesWindow = null;
+    };
+    return true;
   }
 
   private static void HandleViewEditGlobalNavigationEvent()
