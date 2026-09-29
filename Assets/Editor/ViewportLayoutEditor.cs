@@ -16696,16 +16696,20 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.BeginHorizontal();
 
-    // Champion-mirror rows use direct X/Y edit fields only. The +/- stepper
-    // buttons used by wall calibration are unnecessary here and consume too
-    // much horizontal space.
-    EditorGUI.BeginChangeCheck();
-    x = DrawDelayedIntFieldMaybeRed("X", x, x != defaultX, true);
-    bool xChanged = EditorGUI.EndChangeCheck();
-
-    EditorGUI.BeginChangeCheck();
-    y = DrawDelayedIntFieldMaybeRed("Y", y, y != defaultY, true);
-    bool yChanged = EditorGUI.EndChangeCheck();
+    // Show the Champion Mirror's dungeon-map coordinates here, not its
+    // framebuffer/pixel render position.  These coordinates identify the
+    // physical mirror placement and are intentionally read-only in ViewEdit.
+    float savedLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    using (new EditorGUI.DisabledScope(true))
+    {
+      EditorGUILayout.IntField("X", mirror.x, GUILayout.Width(48f));
+      EditorGUIUtility.labelWidth =
+          EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+      EditorGUILayout.IntField("Y", mirror.y, GUILayout.Width(48f));
+    }
+    EditorGUIUtility.labelWidth = savedLabelWidth;
 
     GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
     Color labelColor = new Color(0.15f, 0.85f, 1f);
@@ -16732,15 +16736,6 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.EndHorizontal();
 
     bool changed = false;
-    if (xChanged || yChanged)
-    {
-      if (x == defaultX && y == defaultY)
-        previewFeaturePositionOverrides.Remove(key);
-      else
-        previewFeaturePositionOverrides[key] = new Vector2Int(x, y);
-      previewPositionChangedThisFrame = true;
-      changed = true;
-    }
 
     if (mirrorAfter != mirrorValue)
     {
