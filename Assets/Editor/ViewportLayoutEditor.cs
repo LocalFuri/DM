@@ -16916,7 +16916,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Champion Mirrors. Only rows that correspond to a mirror projection the
     // renderer can actually draw for this pose are shown. X/Y are framebuffer
-    // coordinates (not map coordinates) and are temporary per-pose controls.
+    // map coordinates and are temporary per-pose identifiers.
     if (previewChampionMirrors != null)
     {
       for (int i = 0; i < previewChampionMirrors.Length; i++)
@@ -16937,6 +16937,40 @@ public class ViewportLayoutEditor : EditorWindow
         WallOrnamentPlacement ornament = previewWallOrnaments[i];
         if (ornament == null || !IsMapCellInCurrentFeatureCone(ornament.x, ornament.y))
           continue;
+
+        // Champion Mirrors have their own dedicated ViewEdit row above.
+        // Do not also show the generic wall-ornament entry for the same
+        // physical mirror, otherwise ViewEdit contains two redundant rows.
+        if (!string.IsNullOrEmpty(ornament.type)
+            && ornament.type.IndexOf(
+                "ChampionMirror",
+                System.StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+          bool hasDedicatedMirror = false;
+          if (previewChampionMirrors != null)
+          {
+            for (int m = 0; m < previewChampionMirrors.Length; m++)
+            {
+              ChampionMirrorPlacement mirror = previewChampionMirrors[m];
+              if (mirror == null)
+                continue;
+
+              if (mirror.x == ornament.x
+                  && mirror.y == ornament.y
+                  && string.Equals(
+                      mirror.wall,
+                      ornament.wall,
+                      System.StringComparison.OrdinalIgnoreCase))
+              {
+                hasDedicatedMirror = true;
+                break;
+              }
+            }
+          }
+
+          if (hasDedicatedMirror)
+            continue;
+        }
 
         string key = MakePreviewFeatureKey(
             "Ornament", ornament.x, ornament.y, ornament.wall);
