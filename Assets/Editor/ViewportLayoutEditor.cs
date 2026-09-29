@@ -86,6 +86,20 @@ public class ViewportLayoutEditor : EditorWindow
   private int appleF0RightPreviewX = 150;
   private int appleF0RightPreviewScreenTop = 152;
 
+  // Second loose-floor-item calibration. Original Level 0 DUNGEON.DAT places
+  // Bread at map (5,11), sub-square E. Bread_27x16 is the ground/world
+  // artwork; Bread_16x16 is inventory/icon only.
+  private const string BreadGroundAssetPath =
+      "Assets/Art/Items/Bread_27x16.png";
+  private const int Level0BreadTestX = 5;
+  private const int Level0BreadTestY = 11;
+  private const string Level0BreadTestCell = "E";
+
+  // Same-tile F0-forward calibration for pose (5,11) facing East. Keep these
+  // as render-only values while deriving the generic floor-item projection.
+  private int breadF0ForwardPreviewX = 99;
+  private int breadF0ForwardPreviewScreenTop = 152;
+
   // Original DOS Hall of Champions VI Altar: native 96x56 graphic.
   // Adjusted 5 px down: screen top-left (64,69), framebuffer bottom-left (64,75).
   // The texture is located by name/dimensions so either
@@ -976,6 +990,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedPuddleS2Texture;
   [System.NonSerialized]
   private Texture2D cachedAppleGroundTexture;
+  [System.NonSerialized]
+  private Texture2D cachedBreadGroundTexture;
   private readonly Dictionary<string, Texture2D> cachedChampionPortraitTextures =
       new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
 
@@ -12829,6 +12845,7 @@ public class ViewportLayoutEditor : EditorWindow
     // Floor features first, so wall-mounted artwork can sit above them.
     BlitPuddlesIntoPreview(pixels);
     BlitLevel0AppleCalibrationIntoPreview(pixels);
+    BlitLevel0BreadCalibrationIntoPreview(pixels);
 
     // Champion wall decorations.
     BlitChampionMirrorD0RightIntoPreview(pixels);
@@ -17404,8 +17421,9 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap == null)
       return;
 
-    // First loose-item calibration from the original Level 0 DUNGEON.DAT.
+    // Loose-item calibrations from the original Level 0 DUNGEON.DAT.
     DrawLevel0AppleCalibrationRow();
+    DrawLevel0BreadCalibrationRow();
 
     // Champion Mirrors. Only rows that correspond to a mirror projection the
     // renderer can actually draw for this pose are shown. X/Y are framebuffer
@@ -17860,6 +17878,143 @@ public class ViewportLayoutEditor : EditorWindow
         previewPositionChangedThisFrame = true;
         changed = true;
       }
+    }
+
+    if (changed)
+    {
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+  }
+
+  private bool TryGetLevel0BreadF0ForwardProjection()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || previewDungeonLevel != 0)
+      return false;
+
+    if (previewX != Level0BreadTestX || previewY != Level0BreadTestY)
+      return false;
+
+    // Bread is stored in absolute sub-square E. At the requested calibration
+    // pose (5,11) facing East, E is the party's FORWARD F0 sub-square.
+    int itemDx = 1;
+    int itemDy = 0;
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    return itemDx == forwardX && itemDy == forwardY;
+  }
+
+  private string GetLevel0BreadFeatureKey()
+  {
+    return MakePreviewFeatureKey(
+        "Item-Bread",
+        Level0BreadTestX,
+        Level0BreadTestY,
+        Level0BreadTestCell);
+  }
+
+  private Texture2D GetLevel0BreadCalibrationTexture()
+  {
+    if (cachedBreadGroundTexture == null)
+      cachedBreadGroundTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(
+          BreadGroundAssetPath);
+    return cachedBreadGroundTexture;
+  }
+
+  private void BlitLevel0BreadCalibrationIntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || !TryGetLevel0BreadF0ForwardProjection())
+      return;
+
+    string key = GetLevel0BreadFeatureKey();
+    if (!IsPreviewFeatureEnabled(key))
+      return;
+
+    Texture2D bread = GetLevel0BreadCalibrationTexture();
+    if (bread == null || !bread.isReadable || bread.width <= 0 || bread.height <= 0)
+      return;
+
+    int y = PreviewHeight - breadF0ForwardPreviewScreenTop - bread.height;
+    BlitPieceIntoPreview(
+        pixels,
+        bread,
+        breadF0ForwardPreviewX,
+        y,
+        false);
+  }
+
+  private void DrawLevel0BreadCalibrationRow()
+  {
+    if (!TryGetLevel0BreadF0ForwardProjection())
+      return;
+
+    string key = GetLevel0BreadFeatureKey();
+
+    EditorGUILayout.BeginHorizontal();
+
+    float savedLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    using (new EditorGUI.DisabledScope(true))
+    {
+      EditorGUILayout.IntField("X", Level0BreadTestX, GUILayout.Width(48f));
+      EditorGUIUtility.labelWidth =
+          EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+      EditorGUILayout.IntField("Y", Level0BreadTestY, GUILayout.Width(48f));
+    }
+    EditorGUIUtility.labelWidth = savedLabelWidth;
+
+    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
+    Color labelColor = new Color(0.95f, 0.55f, 0.10f);
+    featureStyle.normal.textColor = labelColor;
+    featureStyle.hover.textColor = labelColor;
+    featureStyle.focused.textColor = labelColor;
+    GUILayout.Label(
+        "Bread [E] - F0 Forward",
+        featureStyle,
+        GUILayout.Width(210f));
+
+    bool enabledBefore = IsPreviewFeatureEnabled(key);
+    bool enabledAfter = DrawCompactMouseOnlyToggle(
+        "Enabled",
+        enabledBefore,
+        false);
+
+    EditorGUILayout.EndHorizontal();
+
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Space(98f);
+    int px = breadF0ForwardPreviewX;
+    int top = breadF0ForwardPreviewScreenTop;
+    bool pxChanged = DrawIntStepperInline(
+        "PX", ref px, 1, px != 99, true);
+    bool topChanged = DrawIntStepperInline(
+        "Top", ref top, 1, top != 152, true);
+    EditorGUILayout.EndHorizontal();
+
+    bool changed = false;
+    if (enabledAfter != enabledBefore)
+    {
+      SetPreviewFeatureEnabled(key, enabledAfter);
+      previewEnabledChangedThisFrame = true;
+      changed = true;
+    }
+    if (pxChanged && px != breadF0ForwardPreviewX)
+    {
+      breadF0ForwardPreviewX = px;
+      previewPositionChangedThisFrame = true;
+      changed = true;
+    }
+    if (topChanged && top != breadF0ForwardPreviewScreenTop)
+    {
+      breadF0ForwardPreviewScreenTop = top;
+      previewPositionChangedThisFrame = true;
+      changed = true;
     }
 
     if (changed)
