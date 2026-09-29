@@ -100,7 +100,7 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private int breadF0LeftPreviewX = 50;
   [System.NonSerialized]
-  private int breadF0LeftPreviewScreenTop = 152;
+  private int breadF0LeftPreviewScreenTop = 150;
 
   // Original DOS Hall of Champions VI Altar: native 96x56 graphic.
   // Adjusted 5 px down: screen top-left (64,69), framebuffer bottom-left (64,75).
