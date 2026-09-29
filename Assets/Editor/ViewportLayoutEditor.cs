@@ -68,6 +68,24 @@ public class ViewportLayoutEditor : EditorWindow
   private const string OrnamentArtFolder =
       "Assets/Art/Ornaments";
 
+  // First loose-floor-item calibration. The original Level 0 DUNGEON.DAT
+  // places an Apple at map (4,9), sub-square N. Apple_19x13 is the
+  // authoritative ground/world artwork; Apple_16x16 is inventory-only.
+  private const string AppleGroundAssetPath =
+      "Assets/Art/Items/Apple_19x13.png";
+  private const int Level0AppleTestX = 4;
+  private const int Level0AppleTestY = 9;
+  private const string Level0AppleTestCell = "N";
+
+  // Initial loose-floor-item calibration slots. X/Y are deliberately isolated
+  // from the authoritative DUNGEON.DAT map coordinates so we can tune screen
+  // projection without ever moving the object in map space. The original DOS
+  // reference shows the 19x13 Apple artwork on the floor.
+  private int appleF1PreviewX = 104;
+  private int appleF1PreviewScreenTop = 144;
+  private int appleF0RightPreviewX = 150;
+  private int appleF0RightPreviewScreenTop = 152;
+
   // Original DOS Hall of Champions VI Altar: native 96x56 graphic.
   // Adjusted 5 px down: screen top-left (64,69), framebuffer bottom-left (64,75).
   // The texture is located by name/dimensions so either
@@ -956,6 +974,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedPuddleS1Texture;
   [System.NonSerialized]
   private Texture2D cachedPuddleS2Texture;
+  [System.NonSerialized]
+  private Texture2D cachedAppleGroundTexture;
   private readonly Dictionary<string, Texture2D> cachedChampionPortraitTextures =
       new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
 
@@ -12808,6 +12828,7 @@ public class ViewportLayoutEditor : EditorWindow
   {
     // Floor features first, so wall-mounted artwork can sit above them.
     BlitPuddlesIntoPreview(pixels);
+    BlitLevel0AppleCalibrationIntoPreview(pixels);
 
     // Champion wall decorations.
     BlitChampionMirrorD0RightIntoPreview(pixels);
@@ -17383,6 +17404,9 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap == null)
       return;
 
+    // First loose-item calibration from the original Level 0 DUNGEON.DAT.
+    DrawLevel0AppleCalibrationRow();
+
     // Champion Mirrors. Only rows that correspond to a mirror projection the
     // renderer can actually draw for this pose are shown. X/Y are framebuffer
     // map coordinates and are temporary per-pose identifiers.
@@ -17650,6 +17674,200 @@ public class ViewportLayoutEditor : EditorWindow
         stairsDownF1PreviewX,
         destinationY,
         false);
+  }
+
+  private bool TryGetLevel0AppleF1Projection()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || previewDungeonLevel != 0)
+      return false;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    // Clean center F1 case: the Apple tile is exactly one step ahead.
+    return previewX + forwardX == Level0AppleTestX
+        && previewY + forwardY == Level0AppleTestY;
+  }
+
+  private bool TryGetLevel0AppleF0RightProjection()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || previewDungeonLevel != 0)
+      return false;
+
+    // F0 means the item is on the party's current map tile. The original
+    // object record is (4,9) N. Convert that absolute sub-square direction
+    // into a direction relative to the current facing. At (4,9) facing West,
+    // North is the party's RIGHT sub-square, matching the original screenshot.
+    if (previewX != Level0AppleTestX || previewY != Level0AppleTestY)
+      return false;
+
+    int itemDx = 0;
+    int itemDy = -1; // absolute N sub-square
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    return itemDx == rightX && itemDy == rightY;
+  }
+
+  private string GetLevel0AppleFeatureKey()
+  {
+    return MakePreviewFeatureKey(
+        "Item-Apple",
+        Level0AppleTestX,
+        Level0AppleTestY,
+        Level0AppleTestCell);
+  }
+
+  private Texture2D GetLevel0AppleCalibrationTexture()
+  {
+    if (cachedAppleGroundTexture == null)
+      cachedAppleGroundTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(
+          AppleGroundAssetPath);
+    return cachedAppleGroundTexture;
+  }
+
+  private void BlitLevel0AppleCalibrationIntoPreview(Color32[] pixels)
+  {
+    if (pixels == null)
+      return;
+
+    bool isF0Right = TryGetLevel0AppleF0RightProjection();
+    bool isF1 = TryGetLevel0AppleF1Projection();
+    if (!isF0Right && !isF1)
+      return;
+
+    string key = GetLevel0AppleFeatureKey();
+    if (!IsPreviewFeatureEnabled(key))
+      return;
+
+    Texture2D apple = GetLevel0AppleCalibrationTexture();
+    if (apple == null || !apple.isReadable || apple.width <= 0 || apple.height <= 0)
+      return;
+
+    int x = isF0Right ? appleF0RightPreviewX : appleF1PreviewX;
+    int top = isF0Right
+        ? appleF0RightPreviewScreenTop
+        : appleF1PreviewScreenTop;
+    int y = PreviewHeight - top - apple.height;
+
+    BlitPieceIntoPreview(
+        pixels,
+        apple,
+        x,
+        y,
+        false);
+  }
+
+  private void DrawLevel0AppleCalibrationRow()
+  {
+    bool isF0Right = TryGetLevel0AppleF0RightProjection();
+    bool isF1 = TryGetLevel0AppleF1Projection();
+    if (!isF0Right && !isF1)
+      return;
+
+    string key = GetLevel0AppleFeatureKey();
+
+    EditorGUILayout.BeginHorizontal();
+
+    float savedLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    using (new EditorGUI.DisabledScope(true))
+    {
+      EditorGUILayout.IntField("X", Level0AppleTestX, GUILayout.Width(48f));
+      EditorGUIUtility.labelWidth =
+          EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+      EditorGUILayout.IntField("Y", Level0AppleTestY, GUILayout.Width(48f));
+    }
+    EditorGUIUtility.labelWidth = savedLabelWidth;
+
+    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
+    Color labelColor = new Color(0.95f, 0.25f, 0.15f);
+    featureStyle.normal.textColor = labelColor;
+    featureStyle.hover.textColor = labelColor;
+    featureStyle.focused.textColor = labelColor;
+    string projectionLabel = isF0Right
+        ? "Apple [N] - F0 Right"
+        : "Apple [N] - F1 Center";
+    GUILayout.Label(
+        projectionLabel,
+        featureStyle,
+        GUILayout.Width(210f));
+
+    bool enabledBefore = IsPreviewFeatureEnabled(key);
+    bool enabledAfter = DrawCompactMouseOnlyToggle(
+        "Enabled",
+        enabledBefore,
+        false);
+
+    EditorGUILayout.EndHorizontal();
+
+    // One compact calibration row below the map-data row. These are render
+    // pixels only; the authoritative map X/Y/N above never changes.
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Space(98f);
+    int defaultX = isF0Right ? 150 : 104;
+    int defaultTop = isF0Right ? 152 : 144;
+    int px = isF0Right ? appleF0RightPreviewX : appleF1PreviewX;
+    int top = isF0Right
+        ? appleF0RightPreviewScreenTop
+        : appleF1PreviewScreenTop;
+    bool pxChanged = DrawIntStepperInline(
+        "PX", ref px, 1, px != defaultX, true);
+    bool topChanged = DrawIntStepperInline(
+        "Top", ref top, 1, top != defaultTop, true);
+    EditorGUILayout.EndHorizontal();
+
+    bool changed = false;
+    if (enabledAfter != enabledBefore)
+    {
+      SetPreviewFeatureEnabled(key, enabledAfter);
+      previewEnabledChangedThisFrame = true;
+      changed = true;
+    }
+    if (pxChanged)
+    {
+      if (isF0Right && px != appleF0RightPreviewX)
+      {
+        appleF0RightPreviewX = px;
+        previewPositionChangedThisFrame = true;
+        changed = true;
+      }
+      else if (isF1 && px != appleF1PreviewX)
+      {
+        appleF1PreviewX = px;
+        previewPositionChangedThisFrame = true;
+        changed = true;
+      }
+    }
+    if (topChanged)
+    {
+      if (isF0Right && top != appleF0RightPreviewScreenTop)
+      {
+        appleF0RightPreviewScreenTop = top;
+        previewPositionChangedThisFrame = true;
+        changed = true;
+      }
+      else if (isF1 && top != appleF1PreviewScreenTop)
+      {
+        appleF1PreviewScreenTop = top;
+        previewPositionChangedThisFrame = true;
+        changed = true;
+      }
+    }
+
+    if (changed)
+    {
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
   }
 
   private void BlitPuddlesIntoPreview(Color32[] pixels)
