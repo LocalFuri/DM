@@ -8778,7 +8778,22 @@ public class ViewportLayoutEditor : EditorWindow
     int nextX = previewX + forwardX * localY + rightX * localX;
     int nextY = previewY + forwardY * localY + rightY * localX;
 
-    if (!previewMiniMap.CanEnter(nextX, nextY))
+    // Stairs are traversable transition tiles in ViewEdit. DungeonMap.CanEnter
+    // may reject the raw stairs tile because it is not an ordinary Floor tile,
+    // so explicitly allow a tile that carries stairs geometry. The destination
+    // pose is entered first; NavigatePreviewPoseOnly then calls
+    // TryPreviewStairsTransition(), which loads the adjacent dungeon level.
+    bool canEnterDestination = previewMiniMap.CanEnter(nextX, nextY);
+    if (!canEnterDestination)
+    {
+      DungeonTile destinationTile = previewMiniMap.IsInside(nextX, nextY)
+          ? previewMiniMap.GetTile(nextX, nextY)
+          : null;
+      canEnterDestination = destinationTile != null
+          && destinationTile.TryGetStairsDirection(out _);
+    }
+
+    if (!canEnterDestination)
       return;
 
     NavigatePreviewPoseOnly(nextX, nextY, previewFacing);
