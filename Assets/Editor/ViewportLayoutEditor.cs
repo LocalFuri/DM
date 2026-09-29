@@ -4390,9 +4390,9 @@ public class ViewportLayoutEditor : EditorWindow
     switch (key)
     {
       case KeyCode.End:
-        // Absolute west. End does not send Unity's Delete command, so the
-        // focused window keeps the keyboard.
-        nextFacing = DungeonFacing.West;
+        // End is the ViewEdit LEFT-TURN key. Turn 90 degrees left relative
+        // to the current facing; do not force an absolute map direction.
+        nextFacing = TurnPreviewFacingLeft(previewFacing);
         break;
       case KeyCode.PageDown:
         nextFacing = TurnPreviewFacingRight(previewFacing);
@@ -5330,7 +5330,7 @@ public class ViewportLayoutEditor : EditorWindow
       switch (keyCode)
       {
         case KeyCode.End:
-          window.PreviewNavigateFaceWest();
+          window.PreviewNavigateTurnLeft();
           break;
         case KeyCode.PageDown:
           window.PreviewNavigateTurnRight();
@@ -5387,6 +5387,26 @@ public class ViewportLayoutEditor : EditorWindow
     {
       s_viewEditGlobalNavDispatch = false;
     }
+  }
+
+  // Unity's focused IMGUI/UI Toolkit control can consume End before the
+  // normal ViewEdit event paths see it. Register End with Unity's Shortcut
+  // Manager as a final editor-level route so End always means TURN LEFT
+  // while ViewEdit is open.
+  [UnityEditor.ShortcutManagement.Shortcut(
+      "Dungeon Master/ViewEdit Turn Left",
+      KeyCode.End)]
+  private static void ViewEditTurnLeftShortcut()
+  {
+    if (Application.isPlaying)
+      return;
+
+    ViewportLayoutEditor window = FindOpenViewEditWindow();
+    if (window == null || window.layout == null)
+      return;
+
+    window.PreviewNavigateTurnLeft();
+    window.Repaint();
   }
 
   private static ViewportLayoutEditor FindOpenViewEditWindow()
@@ -8721,14 +8741,6 @@ public class ViewportLayoutEditor : EditorWindow
         previewX,
         previewY,
         TurnPreviewFacingLeft(previewFacing));
-  }
-
-  private void PreviewNavigateFaceWest()
-  {
-    NavigatePreviewPoseOnly(
-        previewX,
-        previewY,
-        DungeonFacing.West);
   }
 
   private void PreviewNavigateTurnRight()
