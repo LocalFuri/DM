@@ -4423,39 +4423,25 @@ public class ViewportLayoutEditor : EditorWindow
     if (!s_viewEditGlobalNavDispatch && focusedWindow != this)
       return;
 
-    // ViewEdit reserves the arrow keys for navigation. Left/Right use
-    // absolute map directions rather than player-facing-relative strafe:
-    // Left = West, Right = East. Do not trust stale editingTextField focus.
-    int worldDx;
+    // ViewEdit reserves Left/Right for player-facing-relative strafe.
+    // Left moves 90 degrees to the left of the direction arrow; Right moves
+    // 90 degrees to its right. Preview Facing itself does not change.
+    int localX;
     switch (current.keyCode)
     {
       case KeyCode.LeftArrow:
-        worldDx = -1; // absolute map West
+        localX = -1;
         break;
       case KeyCode.RightArrow:
-        worldDx = 1; // absolute map East
+        localX = 1;
         break;
       default:
         return;
     }
 
     current.Use();
+    TryPreviewNavigateRelative(localX, 0);
 
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null)
-      return;
-
-    int nextX = previewX + worldDx;
-    int nextY = previewY;
-
-    if (!previewMiniMap.IsInside(nextX, nextY)
-        || !previewMiniMap.CanEnter(nextX, nextY))
-    {
-      return;
-    }
-
-    // Keep Preview Facing unchanged.
-    SwitchPreviewPose(nextX, nextY, previewFacing);
     if (!s_viewEditGlobalNavDispatch)
       TryRefocusPreviewWindow();
   }
