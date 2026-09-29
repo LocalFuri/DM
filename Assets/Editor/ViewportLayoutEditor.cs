@@ -4457,42 +4457,23 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Arrow keys are dedicated to ViewEdit navigation. Up moves in the
     // direction of the green facing triangle; Down moves exactly opposite it.
-    // Do not trust stale editingTextField focus.
-    int worldDx = 0;
-    int worldDy = 0;
+    // Both go through TryPreviewNavigateRelative so a stair destination is
+    // accepted the same way as the on-screen pad.
+    int localY;
     switch (current.keyCode)
     {
       case KeyCode.UpArrow:
-        DungeonMap.GetForwardOffset(
-            previewFacing,
-            out worldDx,
-            out worldDy);
+        localY = 1;
         break;
       case KeyCode.DownArrow:
-        DungeonMap.GetForwardOffset(
-            previewFacing,
-            out worldDx,
-            out worldDy);
-        worldDx = -worldDx;
-        worldDy = -worldDy;
+        localY = -1;
         break;
       default:
         return;
     }
 
     current.Use();
-
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null)
-      return;
-
-    int nextX = previewX + worldDx;
-    int nextY = previewY + worldDy;
-
-    if (!previewMiniMap.CanEnter(nextX, nextY))
-      return;
-
-    SwitchPreviewPose(nextX, nextY, previewFacing);
+    TryPreviewNavigateRelative(0, localY);
     if (!s_viewEditGlobalNavDispatch)
       TryRefocusPreviewWindow();
   }
@@ -9115,6 +9096,11 @@ public class ViewportLayoutEditor : EditorWindow
 
     previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
     previewLevelJumpText = previewDungeonLevel.ToString();
+
+    // NavigatePreviewPoseOnly saves the source-level stair tile before this
+    // transition. Persist the loaded level and arrival tile now, or the next
+    // EditorPrefs sync sends the preview back to Level 0.
+    SaveSessionPrefs();
   }
 
   private void LoadPreviewDoorTilesFromJson(string json)
