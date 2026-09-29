@@ -4584,6 +4584,21 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     // Fast Game View zoom shortcuts.
+    // Ctrl + Numpad+ toggles the Game View between 100% and 300%.
+    if ((modifiers & EventModifiers.Control) != 0
+        && keyCode == KeyCode.KeypadPlus)
+    {
+      ToggleGameViewZoom100To300();
+      Event current = Event.current;
+      if (current != null
+          && current.type == EventType.KeyDown
+          && current.keyCode == keyCode)
+      {
+        current.Use();
+      }
+      return;
+    }
+
     if ((modifiers & EventModifiers.Alt) != 0)
     {
       if (keyCode == KeyCode.KeypadPlus)
@@ -4635,6 +4650,16 @@ public class ViewportLayoutEditor : EditorWindow
     Event current = Event.current;
     if (current != null
         && current.type == EventType.KeyDown
+        && current.control
+        && current.keyCode == KeyCode.KeypadPlus)
+    {
+      ToggleGameViewZoom100To300();
+      current.Use();
+      return;
+    }
+
+    if (current != null
+        && current.type == EventType.KeyDown
         && current.alt)
     {
       if (current.keyCode == KeyCode.KeypadPlus)
@@ -4653,6 +4678,60 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     TryDispatchViewEditGlobalNavigation();
+  }
+
+  private static double s_lastGameViewZoomToggleTime = -1.0;
+
+  /// <summary>
+  /// Ctrl + Numpad+ toggles Game View zoom between 100% (1x) and 300% (3x).
+  /// The tiny debounce prevents Unity's two editor event paths from toggling
+  /// the same physical key press twice.
+  /// </summary>
+  private static void ToggleGameViewZoom100To300()
+  {
+    double now = EditorApplication.timeSinceStartup;
+    if (s_lastGameViewZoomToggleTime >= 0.0
+        && now - s_lastGameViewZoomToggleTime < 0.08)
+    {
+      return;
+    }
+
+    s_lastGameViewZoomToggleTime = now;
+
+    float currentScale = GetGameViewZoomScale();
+    float targetScale = currentScale >= 2f ? 1f : 3f;
+    SetGameViewZoomScale(targetScale);
+  }
+
+  private static float GetGameViewZoomScale()
+  {
+    EditorWindow gameView = FindGameViewWindow();
+    if (gameView == null)
+      return 1f;
+
+    System.Type gameViewType = gameView.GetType();
+    FieldInfo zoomAreaField = gameViewType.GetField(
+        "m_ZoomArea",
+        BindingFlags.Instance | BindingFlags.NonPublic);
+    object zoomArea = zoomAreaField != null
+        ? zoomAreaField.GetValue(gameView)
+        : null;
+    if (zoomArea == null)
+      return 1f;
+
+    FieldInfo scaleField = zoomArea.GetType().GetField(
+        "m_Scale",
+        BindingFlags.Instance | BindingFlags.NonPublic);
+    if (scaleField == null)
+      return 1f;
+
+    object value = scaleField.GetValue(zoomArea);
+    if (value is Vector2 scale)
+      return scale.x;
+    if (value is float scalar)
+      return scalar;
+
+    return 1f;
   }
 
   /// <summary>
