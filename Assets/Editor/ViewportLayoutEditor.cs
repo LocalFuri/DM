@@ -16673,6 +16673,284 @@ public class ViewportLayoutEditor : EditorWindow
     return false;
   }
 
+  private bool TryGetGrateViewProjection(
+      WallOrnamentPlacement ornament,
+      out string projectionName,
+      out bool renderMirror)
+  {
+    projectionName = null;
+    renderMirror = false;
+    if (!IsGrateOrnament(ornament) || previewMiniMap == null)
+      return false;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    string viewedWallSide = FacingName(previewFacing);
+    string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+
+    // Front F1.
+    int d1X = previewX + forwardX;
+    int d1Y = previewY + forwardY;
+    if (previewMiniMap.IsInside(d1X, d1Y)
+        && previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall)
+    {
+      bool match = ornament.wallTilePlacement
+          ? ornament.x == d1X
+              && ornament.y == d1Y
+              && string.Equals(
+                  ornament.wall,
+                  visiblePhysicalWallFace,
+                  System.StringComparison.OrdinalIgnoreCase)
+          : ornament.x == previewX
+              && ornament.y == previewY
+              && string.Equals(
+                  ornament.wall,
+                  viewedWallSide,
+                  System.StringComparison.OrdinalIgnoreCase);
+      if (match)
+      {
+        projectionName = "Grate - Front F1";
+        renderMirror = false;
+        return true;
+      }
+    }
+
+    // Front F2.
+    int d2X = previewX + forwardX * 2;
+    int d2Y = previewY + forwardY * 2;
+    if (previewMiniMap.IsInside(d1X, d1Y)
+        && previewMiniMap.GetTile(d1X, d1Y).Type != DungeonTileType.Wall
+        && previewMiniMap.IsInside(d2X, d2Y)
+        && previewMiniMap.GetTile(d2X, d2Y).Type == DungeonTileType.Wall)
+    {
+      bool match = ornament.wallTilePlacement
+          ? ornament.x == d2X
+              && ornament.y == d2Y
+              && string.Equals(
+                  ornament.wall,
+                  visiblePhysicalWallFace,
+                  System.StringComparison.OrdinalIgnoreCase)
+          : ornament.x == d1X
+              && ornament.y == d1Y
+              && string.Equals(
+                  ornament.wall,
+                  viewedWallSide,
+                  System.StringComparison.OrdinalIgnoreCase);
+      if (match)
+      {
+        projectionName = "Grate - Front F2";
+        renderMirror = false;
+        return true;
+      }
+    }
+
+    // Front F3.
+    int d3X = previewX + forwardX * 3;
+    int d3Y = previewY + forwardY * 3;
+    if (previewMiniMap.IsInside(d1X, d1Y)
+        && previewMiniMap.GetTile(d1X, d1Y).Type != DungeonTileType.Wall
+        && previewMiniMap.IsInside(d2X, d2Y)
+        && previewMiniMap.GetTile(d2X, d2Y).Type != DungeonTileType.Wall
+        && previewMiniMap.IsInside(d3X, d3Y)
+        && previewMiniMap.GetTile(d3X, d3Y).Type == DungeonTileType.Wall)
+    {
+      bool match = ornament.wallTilePlacement
+          ? ornament.x == d3X
+              && ornament.y == d3Y
+              && string.Equals(
+                  ornament.wall,
+                  visiblePhysicalWallFace,
+                  System.StringComparison.OrdinalIgnoreCase)
+          : ornament.x == d2X
+              && ornament.y == d2Y
+              && string.Equals(
+                  ornament.wall,
+                  viewedWallSide,
+                  System.StringComparison.OrdinalIgnoreCase);
+      if (match)
+      {
+        projectionName = "Grate - Front F3";
+        renderMirror = false;
+        return true;
+      }
+    }
+
+    string leftPhysicalFace =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+    string rightPhysicalFace =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string leftBoundaryDirection =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string rightBoundaryDirection =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+
+    // Side projections at D1..D3. These intentionally use the same geometry
+    // tests as the grate renderer so ViewEdit lists only an image that can
+    // actually be drawn in the current pose.
+    for (int depth = 1; depth <= 3; depth++)
+    {
+      bool corridorOpen = true;
+      for (int step = 1; step <= depth; step++)
+      {
+        int cx = previewX + forwardX * step;
+        int cy = previewY + forwardY * step;
+        if (!previewMiniMap.IsInside(cx, cy)
+            || previewMiniMap.GetTile(cx, cy).Type == DungeonTileType.Wall)
+        {
+          corridorOpen = false;
+          break;
+        }
+      }
+      if (!corridorOpen)
+        continue;
+
+      int centerX = previewX + forwardX * depth;
+      int centerY = previewY + forwardY * depth;
+      int leftWallX = centerX - rightX;
+      int leftWallY = centerY - rightY;
+      int rightWallX = centerX + rightX;
+      int rightWallY = centerY + rightY;
+
+      bool leftWallExists =
+          previewMiniMap.IsInside(leftWallX, leftWallY)
+          && previewMiniMap.GetTile(leftWallX, leftWallY).Type
+              == DungeonTileType.Wall;
+      bool rightWallExists =
+          previewMiniMap.IsInside(rightWallX, rightWallY)
+          && previewMiniMap.GetTile(rightWallX, rightWallY).Type
+              == DungeonTileType.Wall;
+
+      bool matchesLeft = ornament.wallTilePlacement
+          ? leftWallExists
+              && ornament.x == leftWallX
+              && ornament.y == leftWallY
+              && string.Equals(
+                  ornament.wall,
+                  leftPhysicalFace,
+                  System.StringComparison.OrdinalIgnoreCase)
+          : leftWallExists
+              && ornament.x == centerX
+              && ornament.y == centerY
+              && string.Equals(
+                  ornament.wall,
+                  leftBoundaryDirection,
+                  System.StringComparison.OrdinalIgnoreCase);
+
+      if (matchesLeft)
+      {
+        projectionName = "Grate - Side" + depth;
+        renderMirror = false;
+        return true;
+      }
+
+      bool matchesRight = ornament.wallTilePlacement
+          ? rightWallExists
+              && ornament.x == rightWallX
+              && ornament.y == rightWallY
+              && string.Equals(
+                  ornament.wall,
+                  rightPhysicalFace,
+                  System.StringComparison.OrdinalIgnoreCase)
+          : rightWallExists
+              && ornament.x == centerX
+              && ornament.y == centerY
+              && string.Equals(
+                  ornament.wall,
+                  rightBoundaryDirection,
+                  System.StringComparison.OrdinalIgnoreCase);
+
+      if (matchesRight)
+      {
+        projectionName = "Grate - Side" + depth;
+        renderMirror = true;
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private bool DrawGrateFeatureRow(WallOrnamentPlacement ornament)
+  {
+    if (!TryGetGrateViewProjection(
+            ornament, out string projectionName, out bool defaultMirror))
+    {
+      return false;
+    }
+
+    string key = MakePreviewFeatureKey(
+        "Ornament", ornament.x, ornament.y, ornament.wall);
+    bool mirrorValue = defaultMirror;
+    if (previewFeatureMirrorOverrides.TryGetValue(key, out bool mirrorOverride))
+      mirrorValue = mirrorOverride;
+
+    string name = projectionName + " (" + FacingName(previewFacing) + ")";
+
+    EditorGUILayout.BeginHorizontal();
+
+    float savedLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    using (new EditorGUI.DisabledScope(true))
+    {
+      EditorGUILayout.IntField("X", previewX, GUILayout.Width(48f));
+      EditorGUIUtility.labelWidth =
+          EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+      EditorGUILayout.IntField("Y", previewY, GUILayout.Width(48f));
+    }
+    EditorGUIUtility.labelWidth = savedLabelWidth;
+
+    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
+    Color labelColor = new Color(1f, 0.65f, 0.1f);
+    featureStyle.normal.textColor = labelColor;
+    featureStyle.hover.textColor = labelColor;
+    featureStyle.focused.textColor = labelColor;
+    const float FeatureDescriptionWidth = 210f;
+    GUILayout.Label(name, featureStyle, GUILayout.Width(FeatureDescriptionWidth));
+
+    bool enabledBefore = IsPreviewFeatureEnabled(key);
+    bool enabledAfter = DrawCompactMouseOnlyToggle(
+        "Enabled", enabledBefore, false);
+    bool mirrorAfter = DrawCompactMouseOnlyToggle(
+        "Mirror", mirrorValue, true);
+
+    EditorGUILayout.EndHorizontal();
+
+    bool changed = false;
+    if (mirrorAfter != mirrorValue)
+    {
+      if (mirrorAfter == defaultMirror)
+        previewFeatureMirrorOverrides.Remove(key);
+      else
+        previewFeatureMirrorOverrides[key] = mirrorAfter;
+      previewMirrorChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (enabledAfter != enabledBefore)
+    {
+      SetPreviewFeatureEnabled(key, enabledAfter);
+      previewEnabledChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (changed)
+    {
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+
+    return true;
+  }
+
   private bool DrawChampionMirrorFeatureRow(ChampionMirrorPlacement mirror)
   {
     if (!TryGetChampionMirrorViewProjection(
@@ -16820,7 +17098,11 @@ public class ViewportLayoutEditor : EditorWindow
     // Use one fixed description column so every Enabled checkbox starts
     // immediately to the right of the longest feature description instead of
     // being pushed to the far right edge of the ViewEdit window.
-    const float FeatureDescriptionWidth = 230f;
+    // Keep every ornament/feature description in the same fixed-width
+    // column as the dedicated Champion Mirror and Grate rows. This makes
+    // the Enabled column line up vertically for Hook/Wood Ring/Slime/etc.,
+    // and any Mirror control starts in the same column immediately after it.
+    const float FeatureDescriptionWidth = 210f;
     GUILayout.Label(
         displayName,
         featureStyle,
@@ -16937,6 +17219,14 @@ public class ViewportLayoutEditor : EditorWindow
         WallOrnamentPlacement ornament = previewWallOrnaments[i];
         if (ornament == null || !IsMapCellInCurrentFeatureCone(ornament.x, ornament.y))
           continue;
+
+        // Grates have their own rendered-projection ViewEdit row. Only show
+        // the grate if this exact ornament is actually drawable in this pose.
+        if (IsGrateOrnament(ornament))
+        {
+          DrawGrateFeatureRow(ornament);
+          continue;
+        }
 
         // Champion Mirrors have their own dedicated ViewEdit row above.
         // Do not also show the generic wall-ornament entry for the same
@@ -19808,7 +20098,7 @@ public class ViewportLayoutEditor : EditorWindow
             side3,
             GrateD3SideLeftX,
             GrateD3SideY,
-            false);
+            GetPreviewFeatureMirrorValue(ornament, false));
         leftDrawn = true;
       }
 
@@ -19819,7 +20109,7 @@ public class ViewportLayoutEditor : EditorWindow
             side3,
             GrateD3SideRightX,
             GrateD3SideY,
-            true);
+            GetPreviewFeatureMirrorValue(ornament, true));
         rightDrawn = true;
       }
 
@@ -19974,7 +20264,7 @@ public class ViewportLayoutEditor : EditorWindow
             side2,
             GrateD2SideLeftX,
             GrateD2SideY,
-            false);
+            GetPreviewFeatureMirrorValue(ornament, false));
         leftDrawn = true;
       }
 
@@ -19985,7 +20275,7 @@ public class ViewportLayoutEditor : EditorWindow
             side2,
             GrateD2SideRightX,
             GrateD2SideY,
-            true);
+            GetPreviewFeatureMirrorValue(ornament, true));
         rightDrawn = true;
       }
 
@@ -20133,7 +20423,7 @@ public class ViewportLayoutEditor : EditorWindow
             side1,
             GrateD1SideLeftX,
             GrateD1SideY,
-            false);
+            GetPreviewFeatureMirrorValue(ornament, false));
         leftDrawn = true;
       }
 
@@ -20144,7 +20434,7 @@ public class ViewportLayoutEditor : EditorWindow
             side1,
             GrateD1SideRightX,
             GrateD1SideY,
-            true);
+            GetPreviewFeatureMirrorValue(ornament, true));
         rightDrawn = true;
       }
 
@@ -20272,7 +20562,7 @@ public class ViewportLayoutEditor : EditorWindow
           grateFront,
           GrateD3FrontX,
           GrateD3FrontY,
-          false);
+          GetPreviewFeatureMirrorValue(ornament, false));
       return;
     }
   }
@@ -20376,7 +20666,7 @@ public class ViewportLayoutEditor : EditorWindow
           grateFront,
           GrateD2FrontX,
           GrateD2FrontY,
-          false);
+          GetPreviewFeatureMirrorValue(ornament, false));
       return;
     }
   }
@@ -20470,9 +20760,23 @@ public class ViewportLayoutEditor : EditorWindow
           grateFront,
           GrateD1FrontX,
           GrateD1FrontY,
-          false);
+          GetPreviewFeatureMirrorValue(ornament, false));
       return;
     }
+  }
+
+  private bool GetPreviewFeatureMirrorValue(
+      WallOrnamentPlacement ornament,
+      bool defaultMirror)
+  {
+    if (ornament == null)
+      return defaultMirror;
+
+    string key = MakePreviewFeatureKey(
+        "Ornament", ornament.x, ornament.y, ornament.wall);
+    return previewFeatureMirrorOverrides.TryGetValue(key, out bool value)
+        ? value
+        : defaultMirror;
   }
 
   private static bool IsGrateOrnament(WallOrnamentPlacement ornament)
