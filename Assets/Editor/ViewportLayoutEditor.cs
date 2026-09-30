@@ -85,6 +85,10 @@ public class ViewportLayoutEditor : EditorWindow
   private int appleF1PreviewScreenTop = 144;
   private int appleF0RightPreviewX = 150;
   private int appleF0RightPreviewScreenTop = 152;
+  // Same-tile front sub-square. From the original 4,9 North reference the
+  // native 19x13 apple begins at approximately X=56, screen-top=150.
+  private int appleF0FrontPreviewX = 56;
+  private int appleF0FrontPreviewScreenTop = 150;
 
   // Second loose-floor-item calibration. Original Level 0 DUNGEON.DAT places
   // Bread at map (5,11), sub-square E. Bread_27x16 is the ground/world
@@ -18102,6 +18106,27 @@ public class ViewportLayoutEditor : EditorWindow
     return itemDx == rightX && itemDy == rightY;
   }
 
+  private bool TryGetLevel0AppleF0FrontProjection()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || previewDungeonLevel != 0)
+      return false;
+
+    // Same-tile item: rotate its absolute N sub-square into view space.
+    // When facing North, absolute N is the party's FRONT sub-square.
+    if (previewX != Level0AppleTestX || previewY != Level0AppleTestY)
+      return false;
+
+    int itemDx = 0;
+    int itemDy = -1; // absolute N sub-square
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    return itemDx == forwardX && itemDy == forwardY;
+  }
+
   private string GetLevel0AppleFeatureKey()
   {
     return MakePreviewFeatureKey(
@@ -18125,8 +18150,9 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     bool isF0Right = TryGetLevel0AppleF0RightProjection();
+    bool isF0Front = TryGetLevel0AppleF0FrontProjection();
     bool isF1 = TryGetLevel0AppleF1Projection();
-    if (!isF0Right && !isF1)
+    if (!isF0Right && !isF0Front && !isF1)
       return;
 
     string key = GetLevel0AppleFeatureKey();
@@ -18137,10 +18163,12 @@ public class ViewportLayoutEditor : EditorWindow
     if (apple == null || !apple.isReadable || apple.width <= 0 || apple.height <= 0)
       return;
 
-    int x = isF0Right ? appleF0RightPreviewX : appleF1PreviewX;
+    int x = isF0Right
+        ? appleF0RightPreviewX
+        : (isF0Front ? appleF0FrontPreviewX : appleF1PreviewX);
     int top = isF0Right
         ? appleF0RightPreviewScreenTop
-        : appleF1PreviewScreenTop;
+        : (isF0Front ? appleF0FrontPreviewScreenTop : appleF1PreviewScreenTop);
     int y = PreviewHeight - top - apple.height;
 
     BlitPieceIntoPreview(
@@ -18154,8 +18182,9 @@ public class ViewportLayoutEditor : EditorWindow
   private void DrawLevel0AppleCalibrationRow()
   {
     bool isF0Right = TryGetLevel0AppleF0RightProjection();
+    bool isF0Front = TryGetLevel0AppleF0FrontProjection();
     bool isF1 = TryGetLevel0AppleF1Projection();
-    if (!isF0Right && !isF1)
+    if (!isF0Right && !isF0Front && !isF1)
       return;
 
     string key = GetLevel0AppleFeatureKey();
