@@ -83,8 +83,11 @@ public class ViewportLayoutEditor : EditorWindow
   // reference shows the 19x13 Apple artwork on the floor.
   private int appleF1PreviewX = 104;
   private int appleF1PreviewScreenTop = 144;
-  private int appleF0RightPreviewX = 150;
-  private int appleF0RightPreviewScreenTop = 152;
+  // Verified against the original DOS view at pose (4,9) West.  Keep this
+  // as the generic F0-right floor-item anchor calibration, not a pose-specific
+  // drawing exception.
+  private int appleF0RightPreviewX = 151;
+  private int appleF0RightPreviewScreenTop = 150;
 
   // Second loose-floor-item calibration. Original Level 0 DUNGEON.DAT places
   // Bread at map (5,11), sub-square E. Bread_27x16 is the ground/world
@@ -17832,8 +17835,8 @@ public class ViewportLayoutEditor : EditorWindow
     // pixels only; the authoritative map X/Y/N above never changes.
     EditorGUILayout.BeginHorizontal();
     GUILayout.Space(98f);
-    int defaultX = isF0Right ? 150 : 104;
-    int defaultTop = isF0Right ? 152 : 144;
+    int defaultX = isF0Right ? 151 : 104;
+    int defaultTop = isF0Right ? 150 : 144;
     int px = isF0Right ? appleF0RightPreviewX : appleF1PreviewX;
     int top = isF0Right
         ? appleF0RightPreviewScreenTop
