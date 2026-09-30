@@ -688,6 +688,8 @@ public class ViewportLayoutEditor : EditorWindow
   private GUIStyle searchPiecesLabelStyle;
   private GUIStyle pieceFamilyHeaderStyle;
   private int snap = 1;
+  private bool fitWidthToContent;
+  private float fittedContentRight;
 
   private bool hookedViewEditGlobalNavigation;
 
@@ -1156,9 +1158,9 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Open ViewEdit on top of the Inspector. GetWindow restores the last saved
-  /// rect, which is the full 1920x1080 display, so the Inspector rect is
-  /// applied again after Unity finishes showing the window.
+  /// Open ViewEdit over the Inspector, only as wide as the widest row.
+  /// GetWindow restores the last saved rect, which is the full 1920x1080
+  /// display, so the content width is applied again after Unity shows it.
   /// </summary>
   private static void OpenCoveringInspector(Rect inspectorRect)
   {
@@ -1174,14 +1176,163 @@ public class ViewportLayoutEditor : EditorWindow
 
     ViewportLayoutEditor window =
         GetWindow<ViewportLayoutEditor>("ViewEdit");
-    CoverInspector(window, inspectorRect);
+    window.fitWidthToContent = true;
+    window.fittedContentRight = 0f;
+    Rect contentRect = ContentRectOverInspector(window, inspectorRect);
+    CoverInspector(window, contentRect);
 
-    Rect capturedRect = inspectorRect;
+    Rect capturedInspector = inspectorRect;
     EditorApplication.delayCall += () =>
     {
-      CoverInspector(window, capturedRect);
-      EditorApplication.delayCall += () => CoverInspector(window, capturedRect);
+      if (window == null)
+        return;
+
+      Rect again = ContentRectOverInspector(window, capturedInspector);
+      CoverInspector(window, again);
+      EditorApplication.delayCall += () =>
+      {
+        if (window == null)
+          return;
+
+        CoverInspector(window, ContentRectOverInspector(window, capturedInspector));
+      };
     };
+  }
+
+  /// <summary>
+  /// Keep the Inspector's vertical span. Horizontally, fit the widest
+  /// ViewEdit row and right-align to the Inspector so the game view is not
+  /// resized to 1920.
+  /// </summary>
+  private static Rect ContentRectOverInspector(
+      ViewportLayoutEditor window,
+      Rect inspectorRect)
+  {
+    float width = window != null
+        ? window.MeasureViewEditContentWidth()
+        : 560f;
+    float x = inspectorRect.xMax - width;
+    if (x < 0f)
+      x = inspectorRect.x;
+
+    return new Rect(x, inspectorRect.y, width, inspectorRect.height);
+  }
+
+  /// <summary>
+  /// Width of the widest fixed ViewEdit row, including the minimap and the
+  /// help-box padding around a piece card. Rows use fixed control widths, so
+  /// this is the window width that shows every control without a horizontal
+  /// scrollbar.
+  /// </summary>
+  private float MeasureViewEditContentWidth()
+  {
+    float enabledWidth =
+        EditorStyles.label.CalcSize(new GUIContent("Enabled")).x + 18f;
+    float mirrorWidth =
+        EditorStyles.label.CalcSize(new GUIContent("Mirror")).x + 18f;
+
+    // Black Door frame header: 180 name + 135 graphic + Enabled + Mirror.
+    float frameHeader =
+        180f + 135f + enabledWidth + 10f + mirrorWidth + 10f;
+
+    // FrontF1 row: Width popup + X stepper + Y stepper + Ref.
+    const float StepperWidth = 12f + 36f + 36f + 36f;
+    float frontF1Row =
+        38f + 52f + 4f + StepperWidth + StepperWidth + 10f + 125f;
+
+    // Second Snap toolbar: All Walls, algorithm toggle, L1–L6.
+    float toolbarRow = 90f + 8f + 140f + 8f + 174f;
+
+    float featureRow = 48f + 48f + 210f + enabledWidth;
+
+    float mapWidth = 0f;
+    if (previewMiniMap != null && !previewMiniMapMuted)
+      mapWidth = 18f + previewMiniMap.Width * 14f;
+
+    float content = Mathf.Max(
+        frameHeader,
+        frontF1Row,
+        toolbarRow,
+        featureRow,
+        mapWidth);
+
+    RectOffset helpPad = EditorStyles.helpBox.padding;
+    RectOffset helpMargin = EditorStyles.helpBox.margin;
+    // Help-box chrome, gaps between fixed-width controls, and the vertical
+    // scrollbar that appears once the piece list is taller than the window.
+    float chrome = helpPad.left + helpPad.right
+        + helpMargin.left + helpMargin.right
+        + 40f
+        + 16f;
+    return content + chrome;
+  }
+
+  private void NoteContentRight()
+  {
+    if (Event.current == null)
+      return;
+
+    NoteContentRight(GUILayoutUtility.GetLastRect());
+  }
+
+  /// <summary>
+  /// Record the right edge of a fixed-width control. Expanded groups report
+  /// the whole window, which is the empty area that should not set the width.
+  /// </summary>
+  private void NoteContentRight(Rect rect)
+  {
+    if (!fitWidthToContent
+        || Event.current == null
+        || Event.current.type != EventType.Repaint)
+    {
+      return;
+    }
+
+    if (rect.width < 1f || rect.xMax < 1f)
+      return;
+
+    if (rect.xMax >= position.width - 4f && rect.width > position.width * 0.85f)
+      return;
+
+    if (rect.xMax > fittedContentRight)
+      fittedContentRight = rect.xMax;
+  }
+
+  private void FinishContentWidthFit()
+  {
+    if (!fitWidthToContent
+        || Event.current == null
+        || Event.current.type != EventType.Repaint
+        || fittedContentRight < 100f)
+    {
+      return;
+    }
+
+    fitWidthToContent = false;
+    float contentRight = fittedContentRight;
+    EditorApplication.delayCall += () => ApplyFittedContentWidth(contentRight);
+  }
+
+  private void ApplyFittedContentWidth(float contentRight)
+  {
+    if (this == null)
+      return;
+
+    float pad = EditorStyles.helpBox.padding.right
+        + EditorStyles.helpBox.margin.right
+        + 8f;
+    float width = Mathf.Ceil(contentRight + pad);
+    Rect current = position;
+    if (width < 1f || Mathf.Abs(current.width - width) < 2f)
+      return;
+
+    if (maximized)
+      maximized = false;
+
+    if (minSize.x > width)
+      minSize = new Vector2(width, Mathf.Min(minSize.y, current.height));
+
+    position = new Rect(current.x, current.y, width, current.height);
   }
 
   private static void CoverInspector(EditorWindow window, Rect inspectorRect)
@@ -1693,6 +1844,9 @@ public class ViewportLayoutEditor : EditorWindow
     // Keep the complete minimap outside the controls scroll area. The map is
     // always visible as one fixed ViewEdit header; only the wall/feature rows
     // below it scroll when the window eventually needs more vertical room.
+    if (fitWidthToContent && Event.current.type == EventType.Repaint)
+      fittedContentRight = 0f;
+
     DrawMapPosePreviewControls();
 
     editorScroll = EditorGUILayout.BeginScrollView(editorScroll);
@@ -1871,6 +2025,8 @@ public class ViewportLayoutEditor : EditorWindow
       RefreshEditModePreview();
       Repaint();
     }
+
+    FinishContentWidthFit();
   }
 
   /// <summary>
@@ -3615,6 +3771,7 @@ public class ViewportLayoutEditor : EditorWindow
         true,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
+    NoteContentRight();
     EditorGUIUtility.labelWidth = previousLabelWidth;
     GUILayout.Space(ToggleGroupGap);
 
@@ -3629,6 +3786,7 @@ public class ViewportLayoutEditor : EditorWindow
       EditorGUILayout.LabelField(
           refLabel,
           GUILayout.ExpandWidth(false));
+      NoteContentRight();
     }
 
     EditorGUILayout.EndHorizontal();
@@ -3944,6 +4102,7 @@ public class ViewportLayoutEditor : EditorWindow
           refLabel,
           GUILayout.Width(125f),
           GUILayout.ExpandWidth(false));
+      NoteContentRight();
     }
 
     EditorGUILayout.EndHorizontal();
@@ -5986,6 +6145,7 @@ public class ViewportLayoutEditor : EditorWindow
       GUI.FocusControl(null);
     }
 
+    NoteContentRight();
     EditorGUILayout.EndHorizontal();
 
     // Lists every wall card for manual composition/testing. This button is
@@ -6018,6 +6178,7 @@ public class ViewportLayoutEditor : EditorWindow
         previewDungeonLightStage - 1,
         new[] { "L1", "L2", "L3", "L4", "L5", "L6" },
         GUILayout.Width(174f));
+    NoteContentRight();
     int requestedLightStage = selectedLightStage + 1;
     if (requestedLightStage != previewDungeonLightStage)
     {
@@ -8398,6 +8559,7 @@ public class ViewportLayoutEditor : EditorWindow
         GUILayout.Height(totalHeight),
         GUILayout.ExpandWidth(false),
         GUILayout.ExpandHeight(false));
+    NoteContentRight(outer);
 
     Rect grid = new Rect(
         outer.x + AxisSize,
@@ -17473,6 +17635,7 @@ public class ViewportLayoutEditor : EditorWindow
         enabledBefore,
         GUILayout.Width(enabledLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
+    NoteContentRight();
 
     EditorGUIUtility.labelWidth = savedLabelWidth;
     EditorGUILayout.EndHorizontal();
