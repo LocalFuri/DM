@@ -20566,7 +20566,7 @@ public class ViewportLayoutEditor : EditorWindow
       // Keep the native F1 artwork 1:1. The vertical anchor is shared by all
       // Manacles F1 placements and can be pixel-calibrated from the original.
       int destinationX = (DungeonViewportWidth - manacles.width) / 2;
-      const int destinationY = 75;
+      const int destinationY = 77;
       BlitWallOrnamentIntoPreview(
           pixels,
           manacles,
