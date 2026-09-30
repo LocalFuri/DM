@@ -83,11 +83,8 @@ public class ViewportLayoutEditor : EditorWindow
   // reference shows the 19x13 Apple artwork on the floor.
   private int appleF1PreviewX = 104;
   private int appleF1PreviewScreenTop = 144;
-  // Verified against the original DOS view at pose (4,9) West.  Keep this
-  // as the generic F0-right floor-item anchor calibration, not a pose-specific
-  // drawing exception.
-  private int appleF0RightPreviewX = 151;
-  private int appleF0RightPreviewScreenTop = 150;
+  private int appleF0RightPreviewX = 150;
+  private int appleF0RightPreviewScreenTop = 152;
 
   // Second loose-floor-item calibration. Original Level 0 DUNGEON.DAT places
   // Bread at map (5,11), sub-square E. Bread_27x16 is the ground/world
@@ -97,6 +94,10 @@ public class ViewportLayoutEditor : EditorWindow
   private const int Level0BreadTestX = 5;
   private const int Level0BreadTestY = 11;
   private const string Level0BreadTestCell = "E";
+
+  // Compact read-only X/Y boxes for floor-item rows in ViewEdit. Sized for
+  // a single visible digit so ground items do not waste horizontal space.
+  private const float FloorItemMapCoordFieldWidth = 28f;
 
   // Same-tile F0-forward calibration for pose (5,11) facing East. Keep these
   // as render-only values while deriving the generic floor-item projection.
@@ -17803,10 +17804,10 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     using (new EditorGUI.DisabledScope(true))
     {
-      EditorGUILayout.IntField("X", Level0AppleTestX, GUILayout.Width(48f));
+      EditorGUILayout.IntField("X", Level0AppleTestX, GUILayout.Width(FloorItemMapCoordFieldWidth));
       EditorGUIUtility.labelWidth =
           EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-      EditorGUILayout.IntField("Y", Level0AppleTestY, GUILayout.Width(48f));
+      EditorGUILayout.IntField("Y", Level0AppleTestY, GUILayout.Width(FloorItemMapCoordFieldWidth));
     }
     EditorGUIUtility.labelWidth = savedLabelWidth;
 
@@ -17835,8 +17836,8 @@ public class ViewportLayoutEditor : EditorWindow
     // pixels only; the authoritative map X/Y/N above never changes.
     EditorGUILayout.BeginHorizontal();
     GUILayout.Space(98f);
-    int defaultX = isF0Right ? 151 : 104;
-    int defaultTop = isF0Right ? 150 : 144;
+    int defaultX = isF0Right ? 150 : 104;
+    int defaultTop = isF0Right ? 152 : 144;
     int px = isF0Right ? appleF0RightPreviewX : appleF1PreviewX;
     int top = isF0Right
         ? appleF0RightPreviewScreenTop
@@ -17960,10 +17961,10 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     using (new EditorGUI.DisabledScope(true))
     {
-      EditorGUILayout.IntField("X", Level0BreadTestX, GUILayout.Width(48f));
+      EditorGUILayout.IntField("X", Level0BreadTestX, GUILayout.Width(FloorItemMapCoordFieldWidth));
       EditorGUIUtility.labelWidth =
           EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-      EditorGUILayout.IntField("Y", Level0BreadTestY, GUILayout.Width(48f));
+      EditorGUILayout.IntField("Y", Level0BreadTestY, GUILayout.Width(FloorItemMapCoordFieldWidth));
     }
     EditorGUIUtility.labelWidth = savedLabelWidth;
 
