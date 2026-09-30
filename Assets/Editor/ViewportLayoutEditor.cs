@@ -17789,33 +17789,58 @@ public class ViewportLayoutEditor : EditorWindow
         string key = MakePreviewFeatureKey(
             "Ornament", ornament.x, ornament.y, ornament.wall);
 
-        // A wall-tile ornament directly in front of the party is stored on
-        // the solid wall cell and its physical face (for example 3,9 East
-        // when the party is at 4,9 West). ViewEdit should describe what the
-        // player is looking at, not expose that storage convention. Keep the
-        // real ornament coordinates in the key/renderer, but show direct-front
-        // Manacles at the current pose coordinates and facing.
+        // A Manacles row should exist only when the Manacles are actually
+        // visible in the current pose. This mirrors BlitManaclesD1FrontIntoPreview:
+        // wall-tile Manacles must be on the wall cell directly in front of the
+        // party and on the physical wall face visible from the current facing.
+        //
+        // Example:
+        //   pose 4,9 West  -> wall storage 3,9 East -> visible as F1
+        //   pose 4,9 North -> same Manacles are not on the front wall -> hidden
+        //
+        // ViewEdit displays viewpoint coordinates/facing rather than the
+        // underlying storage-wall coordinates.
         int displayMapX = ornament.x;
         int displayMapY = ornament.y;
         string displayWall = ornament.wall;
-        if (IsManaclesOrnament(ornament) && ornament.wallTilePlacement)
+        if (IsManaclesOrnament(ornament))
         {
           DungeonMap.GetForwardOffset(
               previewFacing,
               out int manaclesForwardX,
               out int manaclesForwardY);
-          int directFrontWallX = previewX + manaclesForwardX;
-          int directFrontWallY = previewY + manaclesForwardY;
-          if (ornament.x == directFrontWallX
-              && ornament.y == directFrontWallY
-              && string.Equals(
-                  ornament.wall,
-                  OppositeFacingName(previewFacing),
-                  System.StringComparison.OrdinalIgnoreCase))
+
+          if (ornament.wallTilePlacement)
           {
+            int directFrontWallX = previewX + manaclesForwardX;
+            int directFrontWallY = previewY + manaclesForwardY;
+            bool visibleInCurrentPose =
+                ornament.x == directFrontWallX
+                && ornament.y == directFrontWallY
+                && string.Equals(
+                    ornament.wall,
+                    OppositeFacingName(previewFacing),
+                    System.StringComparison.OrdinalIgnoreCase);
+
+            if (!visibleInCurrentPose)
+              continue;
+
             displayMapX = previewX;
             displayMapY = previewY;
             displayWall = FacingName(previewFacing);
+          }
+          else
+          {
+            bool visibleInCurrentPose =
+                ornament.x == previewX
+                && ornament.y == previewY
+                && string.Equals(
+                    ornament.wall,
+                    FacingName(previewFacing),
+                    System.StringComparison.OrdinalIgnoreCase);
+
+            if (!visibleInCurrentPose)
+              continue;
           }
         }
 
@@ -17836,7 +17861,7 @@ public class ViewportLayoutEditor : EditorWindow
                 FacingName(previewFacing),
                 System.StringComparison.OrdinalIgnoreCase))
         {
-          name += " / Front1";
+          name += " / F1";
         }
 
         DrawFeatureChecklistRow(
@@ -18159,7 +18184,7 @@ public class ViewportLayoutEditor : EditorWindow
     // Keep the already pixel-matched draw anchor unchanged; this is a UI
     // classification/label correction only.
     string projectionLabel =
-        "Apple (" + FacingName(previewFacing) + ") + F1 Front";
+        "Apple(" + FacingName(previewFacing) + " / F1)";
     GUILayout.Label(
         projectionLabel,
         featureStyle,
