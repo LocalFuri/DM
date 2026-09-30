@@ -1151,9 +1151,134 @@ public class ViewportLayoutEditor : EditorWindow
   [MenuItem("Tools/ViewEdit &v")]
   public static void Open()
   {
+    EditorWindow inspector = FindInspectorWindow();
+    OpenCoveringInspector(inspector != null ? inspector.position : default);
+  }
+
+  /// <summary>
+  /// Open ViewEdit on top of the Inspector. GetWindow restores the last saved
+  /// rect, which is the full 1920x1080 display, so the Inspector rect is
+  /// applied again after Unity finishes showing the window.
+  /// </summary>
+  private static void OpenCoveringInspector(Rect inspectorRect)
+  {
+    if (inspectorRect.width < 1f || inspectorRect.height < 1f)
+    {
+      EditorWindow inspector = FindInspectorWindow();
+      if (inspector != null)
+        inspectorRect = inspector.position;
+    }
+
+    if (inspectorRect.width < 1f || inspectorRect.height < 1f)
+      inspectorRect = new Rect(80f, 80f, 420f, 640f);
+
     ViewportLayoutEditor window =
         GetWindow<ViewportLayoutEditor>("ViewEdit");
+    CoverInspector(window, inspectorRect);
+
+    Rect capturedRect = inspectorRect;
+    EditorApplication.delayCall += () =>
+    {
+      CoverInspector(window, capturedRect);
+      EditorApplication.delayCall += () => CoverInspector(window, capturedRect);
+    };
+  }
+
+  private static void CoverInspector(EditorWindow window, Rect inspectorRect)
+  {
+    if (window == null || inspectorRect.width < 1f || inspectorRect.height < 1f)
+      return;
+
+    UndockIfShared(window);
+
+    if (window.maximized)
+      window.maximized = false;
+
+    Vector2 min = window.minSize;
+    if (min.x > inspectorRect.width || min.y > inspectorRect.height)
+    {
+      window.minSize = new Vector2(
+          Mathf.Min(min.x, inspectorRect.width),
+          Mathf.Min(min.y, inspectorRect.height));
+    }
+
+    window.position = inspectorRect;
     window.Focus();
+  }
+
+  /// <summary>
+  /// A pane shared with other tabs must be pulled out before its rect is set,
+  /// otherwise the position write resizes that whole dock.
+  /// </summary>
+  private static void UndockIfShared(EditorWindow window)
+  {
+    object parent = GetEditorWindowParent(window);
+    if (parent == null)
+      return;
+
+    BindingFlags flags =
+        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+    FieldInfo panesField = parent.GetType().GetField("m_Panes", flags);
+    System.Collections.IList panes = panesField != null
+        ? panesField.GetValue(parent) as System.Collections.IList
+        : null;
+    if (panes == null || panes.Count <= 1)
+      return;
+
+    MethodInfo removeTab = parent.GetType().GetMethod(
+        "RemoveTab",
+        flags,
+        null,
+        new System.Type[] { typeof(EditorWindow), typeof(bool) },
+        null);
+    if (removeTab == null)
+      return;
+
+    removeTab.Invoke(parent, new object[] { window, true });
+    window.Show();
+  }
+
+  private static object GetEditorWindowParent(EditorWindow window)
+  {
+    if (window == null)
+      return null;
+
+    FieldInfo parentField = typeof(EditorWindow).GetField(
+        "m_Parent",
+        BindingFlags.Instance | BindingFlags.NonPublic);
+    if (parentField == null)
+      return null;
+
+    return parentField.GetValue(window);
+  }
+
+  private static EditorWindow FindInspectorWindow()
+  {
+    if (IsInspectorWindow(mouseOverWindow))
+      return mouseOverWindow;
+
+    EditorWindow[] windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
+    EditorWindow fallback = null;
+    for (int i = 0; i < windows.Length; ++i)
+    {
+      EditorWindow candidate = windows[i];
+      if (!IsInspectorWindow(candidate))
+        continue;
+
+      if (candidate.hasFocus)
+        return candidate;
+
+      if (fallback == null)
+        fallback = candidate;
+    }
+
+    return fallback;
+  }
+
+  private static bool IsInspectorWindow(EditorWindow window)
+  {
+    return window != null
+        && window.GetType().FullName == "UnityEditor.InspectorWindow";
   }
 
   [InitializeOnLoadMethod]
@@ -1255,9 +1380,6 @@ public class ViewportLayoutEditor : EditorWindow
 
   private static void HandleInspectorRightClickOpen()
   {
-    if (HasOpenInstances<ViewportLayoutEditor>())
-      return;
-
     Event current = Event.current;
     if (current == null
         || current.type != EventType.MouseDown
@@ -1267,14 +1389,11 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     EditorWindow hovered = mouseOverWindow;
-    if (hovered == null
-        || hovered.GetType().FullName != "UnityEditor.InspectorWindow")
-    {
+    if (!IsInspectorWindow(hovered))
       return;
-    }
 
     current.Use();
-    Open();
+    OpenCoveringInspector(hovered.position);
   }
 
   private void ReapplyCurrentPoseToWallRendererAfterReload()
@@ -17832,62 +17951,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.EndHorizontal();
 
-    // One compact calibration row below the map-data row. These are render
-    // pixels only; the authoritative map X/Y/N above never changes.
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.Space(98f);
-    int defaultX = isF0Right ? 150 : 104;
-    int defaultTop = isF0Right ? 152 : 144;
-    int px = isF0Right ? appleF0RightPreviewX : appleF1PreviewX;
-    int top = isF0Right
-        ? appleF0RightPreviewScreenTop
-        : appleF1PreviewScreenTop;
-    bool pxChanged = DrawIntStepperInline(
-        "PX", ref px, 1, px != defaultX, true);
-    bool topChanged = DrawIntStepperInline(
-        "Top", ref top, 1, top != defaultTop, true);
-    EditorGUILayout.EndHorizontal();
-
-    bool changed = false;
     if (enabledAfter != enabledBefore)
     {
       SetPreviewFeatureEnabled(key, enabledAfter);
       previewEnabledChangedThisFrame = true;
-      changed = true;
-    }
-    if (pxChanged)
-    {
-      if (isF0Right && px != appleF0RightPreviewX)
-      {
-        appleF0RightPreviewX = px;
-        previewPositionChangedThisFrame = true;
-        changed = true;
-      }
-      else if (isF1 && px != appleF1PreviewX)
-      {
-        appleF1PreviewX = px;
-        previewPositionChangedThisFrame = true;
-        changed = true;
-      }
-    }
-    if (topChanged)
-    {
-      if (isF0Right && top != appleF0RightPreviewScreenTop)
-      {
-        appleF0RightPreviewScreenTop = top;
-        previewPositionChangedThisFrame = true;
-        changed = true;
-      }
-      else if (isF1 && top != appleF1PreviewScreenTop)
-      {
-        appleF1PreviewScreenTop = top;
-        previewPositionChangedThisFrame = true;
-        changed = true;
-      }
-    }
-
-    if (changed)
-    {
       RefreshEditModePreview();
       RepaintGameViews();
       Repaint();
@@ -17986,38 +18053,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.EndHorizontal();
 
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.Space(98f);
-    int px = breadF0LeftPreviewX;
-    int top = breadF0LeftPreviewScreenTop;
-    bool pxChanged = DrawIntStepperInline(
-        "PX", ref px, 1, px != 99, true);
-    bool topChanged = DrawIntStepperInline(
-        "Top", ref top, 1, top != 152, true);
-    EditorGUILayout.EndHorizontal();
-
-    bool changed = false;
     if (enabledAfter != enabledBefore)
     {
       SetPreviewFeatureEnabled(key, enabledAfter);
       previewEnabledChangedThisFrame = true;
-      changed = true;
-    }
-    if (pxChanged && px != breadF0LeftPreviewX)
-    {
-      breadF0LeftPreviewX = px;
-      previewPositionChangedThisFrame = true;
-      changed = true;
-    }
-    if (topChanged && top != breadF0LeftPreviewScreenTop)
-    {
-      breadF0LeftPreviewScreenTop = top;
-      previewPositionChangedThisFrame = true;
-      changed = true;
-    }
-
-    if (changed)
-    {
       RefreshEditModePreview();
       RepaintGameViews();
       Repaint();
