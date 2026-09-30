@@ -17804,25 +17804,29 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // Floor puddles are ornaments too, but they are stored separately from
-    // wallOrnaments in the parsed map data.
-    for (int depth = 0; depth <= 3; depth++)
-    {
-      int maxLane = depth == 0 ? 1 : Mathf.Max(1, depth);
-      DungeonMap.GetForwardOffset(
-          previewFacing,
-          out int forwardX,
-          out int forwardY);
-      DungeonMap.GetRightOffset(
-          previewFacing,
-          out int rightX,
-          out int rightY);
+    // wallOrnaments in the parsed map data. Only list projections that the
+    // puddle renderer can actually draw in the current pose. In particular,
+    // there is no F0 puddle projection, so a puddle beside/under the player
+    // must not appear in ViewEdit just because it is nearby on the map.
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int puddleForwardX,
+        out int puddleForwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int puddleRightX,
+        out int puddleRightY);
 
-      for (int lane = -maxLane; lane <= maxLane; lane++)
+    for (int depth = 1; depth <= 3; depth++)
+    {
+      int minLane = depth == 3 ? 0 : -1;
+      int maxLane = depth == 3 ? 0 : 1;
+
+      for (int lane = minLane; lane <= maxLane; lane++)
       {
-        int x = previewX + forwardX * depth + rightX * lane;
-        int y = previewY + forwardY * depth + rightY * lane;
-        if (!previewMiniMap.IsInside(x, y)
-            || !previewPuddleFloors.Contains(PackPreviewTile(x, y)))
+        int x = previewX + puddleForwardX * depth + puddleRightX * lane;
+        int y = previewY + puddleForwardY * depth + puddleRightY * lane;
+        if (!IsPuddleProjectionVisibleInCurrentPose(x, y, depth, lane))
           continue;
 
         string key = MakePreviewFeatureKey("Puddle", x, y, null);
@@ -18231,6 +18235,53 @@ public class ViewportLayoutEditor : EditorWindow
       RepaintGameViews();
       Repaint();
     }
+  }
+
+  private bool IsPuddleProjectionVisibleInCurrentPose(
+      int mapX,
+      int mapY,
+      int depth,
+      int lane)
+  {
+    if (previewMiniMap == null
+        || !previewMiniMap.IsInside(mapX, mapY)
+        || !previewPuddleFloors.Contains(PackPreviewTile(mapX, mapY)))
+      return false;
+
+    // The renderer has center projections at F1/F2/F3. Side projections only
+    // exist at F1/F2, and use the same near-side occlusion tests as the draw
+    // pass.
+    if (lane == 0)
+      return depth >= 1 && depth <= 3;
+
+    if (Mathf.Abs(lane) != 1 || depth < 1 || depth > 2)
+      return false;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int side = lane < 0 ? -1 : 1;
+    int f0SideX = previewX + rightX * side;
+    int f0SideY = previewY + rightY * side;
+    bool f0SideOpen =
+        previewMiniMap.IsInside(f0SideX, f0SideY)
+        && previewMiniMap.GetTile(f0SideX, f0SideY).Type != DungeonTileType.Wall;
+    if (!f0SideOpen)
+      return false;
+
+    if (depth == 1)
+      return true;
+
+    int f1SideX = previewX + forwardX + rightX * side;
+    int f1SideY = previewY + forwardY + rightY * side;
+    return previewMiniMap.IsInside(f1SideX, f1SideY)
+        && previewMiniMap.GetTile(f1SideX, f1SideY).Type != DungeonTileType.Wall;
   }
 
   private void BlitPuddlesIntoPreview(Color32[] pixels)
