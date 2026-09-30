@@ -1264,7 +1264,7 @@ public class ViewportLayoutEditor : EditorWindow
         + helpMargin.left + helpMargin.right
         + 40f
         + 16f;
-    return content + chrome;
+    return content + chrome - 50f;
   }
 
   private void NoteContentRight()
@@ -1321,7 +1321,7 @@ public class ViewportLayoutEditor : EditorWindow
     float pad = EditorStyles.helpBox.padding.right
         + EditorStyles.helpBox.margin.right
         + 8f;
-    float width = Mathf.Ceil(contentRight + pad);
+    float width = Mathf.Ceil(contentRight + pad) - 50f;
     Rect current = position;
     if (width < 1f || Mathf.Abs(current.width - width) < 2f)
       return;
