@@ -92,12 +92,14 @@ public class ViewportLayoutEditor : EditorWindow
 
   // F2 is generated from the single authoritative F1 ground sprite.
   // Floor-item perspective is steeper than the wall-piece F1->F2 ratio.
-  // Calibrated against the original 5,9 West screenshot: Apple_19x13 is
-  // reduced to 9x6 and moved farther into the corridor.
-  private const int AppleF2Width = 9;
-  private const int AppleF2Height = 6;
-  private int appleF2PreviewX = 136;
-  private int appleF2PreviewScreenTop = 124;
+  // Measured on the original 320x200 5,9 West screenshot: the destination
+  // rectangle is 10x7 at framebuffer X=136, screen-top Y=124.
+  // These are consts so an already-open ViewEdit window cannot keep an
+  // older serialized X/Y (the F1 slot was 104,144 at native 19x13).
+  private const int AppleF2Width = 10;
+  private const int AppleF2Height = 7;
+  private const int AppleF2PreviewX = 136;
+  private const int AppleF2PreviewScreenTop = 124;
 
   // Second loose-floor-item calibration. Original Level 0 DUNGEON.DAT places
   // Bread at map (5,11), sub-square E. Bread_27x16 is the ground/world
@@ -18175,15 +18177,40 @@ public class ViewportLayoutEditor : EditorWindow
     if (isF2)
     {
       // Generate the farther F2 view from the one F1 source image.
-      int y = PreviewHeight - appleF2PreviewScreenTop - AppleF2Height;
+      // Screen-top 124 in a 200-tall bottom-origin buffer:
+      // internal Y = 200 - 124 - 7 = 69. The blitter then writes
+      // rows 69..75, whose top screen row is 124.
+      int y = PreviewHeight - AppleF2PreviewScreenTop - AppleF2Height;
+      if (previewX == 5
+          && previewY == 9
+          && previewFacing == DungeonFacing.West)
+      {
+        Debug.Log(
+            "APPLE F2 source=" + apple.width + "x" + apple.height
+            + " destX=" + AppleF2PreviewX
+            + " destTop=" + AppleF2PreviewScreenTop
+            + " destYInternal=" + y
+            + " destW=" + AppleF2Width
+            + " destH=" + AppleF2Height
+            + " f0Right=" + isF0Right
+            + " f0Front=" + isF0Front);
+      }
+
       BlitPieceScaledIntoPreview(
           pixels,
           apple,
-          appleF2PreviewX,
+          AppleF2PreviewX,
           y,
           AppleF2Width,
           AppleF2Height,
           false);
+      DrawFramebufferRectOutline(
+          pixels,
+          AppleF2PreviewX,
+          y,
+          AppleF2Width,
+          AppleF2Height,
+          new Color32(0, 255, 255, 255));
       return;
     }
 
@@ -21975,6 +22002,46 @@ public class ViewportLayoutEditor : EditorWindow
         dest[targetY * PreviewWidth + targetX] = sourceColour;
       }
     }
+  }
+
+  /// <summary>
+  /// Temporary 1-pixel outline of a bottom-origin destination rectangle.
+  /// Used to see the exact Apple F2 10x7 bounds in the 320x200 framebuffer.
+  /// </summary>
+  private static void DrawFramebufferRectOutline(
+      Color32[] dest,
+      int x,
+      int y,
+      int width,
+      int height,
+      Color32 color)
+  {
+    if (dest == null || width <= 0 || height <= 0)
+      return;
+
+    for (int col = 0; col < width; col++)
+    {
+      PlotFramebufferPixel(dest, x + col, y, color);
+      PlotFramebufferPixel(dest, x + col, y + height - 1, color);
+    }
+
+    for (int row = 0; row < height; row++)
+    {
+      PlotFramebufferPixel(dest, x, y + row, color);
+      PlotFramebufferPixel(dest, x + width - 1, y + row, color);
+    }
+  }
+
+  private static void PlotFramebufferPixel(
+      Color32[] dest,
+      int x,
+      int y,
+      Color32 color)
+  {
+    if (x < 0 || x >= DungeonViewportWidth || y < 0 || y >= PreviewHeight)
+      return;
+
+    dest[y * PreviewWidth + x] = color;
   }
 
   private static void BlitPieceScaledIntoPreview(
