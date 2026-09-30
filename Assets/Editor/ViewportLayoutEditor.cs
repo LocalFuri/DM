@@ -17597,12 +17597,13 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     using (new EditorGUI.DisabledScope(true))
     {
-      // Map coordinates are only two digits in the current dungeon maps.
-      // Keep these fields compact so the feature name and controls stay close.
-      EditorGUILayout.IntField("X", mapX, GUILayout.Width(48f));
+      // Keep map-coordinate fields at the same minimum width used by
+      // loose floor items (Apple/Bread). This left-aligns the feature
+      // descriptions and the Enabled column across all item rows.
+      EditorGUILayout.IntField("X", mapX, GUILayout.Width(FloorItemMapCoordFieldWidth));
       EditorGUIUtility.labelWidth =
           EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-      EditorGUILayout.IntField("Y", mapY, GUILayout.Width(48f));
+      EditorGUILayout.IntField("Y", mapY, GUILayout.Width(FloorItemMapCoordFieldWidth));
     }
 
     GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
