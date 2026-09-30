@@ -17788,15 +17788,46 @@ public class ViewportLayoutEditor : EditorWindow
 
         string key = MakePreviewFeatureKey(
             "Ornament", ornament.x, ornament.y, ornament.wall);
+
+        // A wall-tile ornament directly in front of the party is stored on
+        // the solid wall cell and its physical face (for example 3,9 East
+        // when the party is at 4,9 West). ViewEdit should describe what the
+        // player is looking at, not expose that storage convention. Keep the
+        // real ornament coordinates in the key/renderer, but show direct-front
+        // Manacles at the current pose coordinates and facing.
+        int displayMapX = ornament.x;
+        int displayMapY = ornament.y;
+        string displayWall = ornament.wall;
+        if (IsManaclesOrnament(ornament) && ornament.wallTilePlacement)
+        {
+          DungeonMap.GetForwardOffset(
+              previewFacing,
+              out int manaclesForwardX,
+              out int manaclesForwardY);
+          int directFrontWallX = previewX + manaclesForwardX;
+          int directFrontWallY = previewY + manaclesForwardY;
+          if (ornament.x == directFrontWallX
+              && ornament.y == directFrontWallY
+              && string.Equals(
+                  ornament.wall,
+                  OppositeFacingName(previewFacing),
+                  System.StringComparison.OrdinalIgnoreCase))
+          {
+            displayMapX = previewX;
+            displayMapY = previewY;
+            displayWall = FacingName(previewFacing);
+          }
+        }
+
         string name = string.IsNullOrEmpty(ornament.type)
             ? "Ornament"
             : ornament.type;
-        if (!string.IsNullOrEmpty(ornament.wall))
-          name += " (" + ornament.wall + ")";
+        if (!string.IsNullOrEmpty(displayWall))
+          name += " (" + displayWall + ")";
 
         DrawFeatureChecklistRow(
-            ornament.x,
-            ornament.y,
+            displayMapX,
+            displayMapY,
             name,
             key,
             new Color(1f, 0.65f, 0.1f));
