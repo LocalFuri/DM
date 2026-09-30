@@ -17825,6 +17825,20 @@ public class ViewportLayoutEditor : EditorWindow
         if (!string.IsNullOrEmpty(displayWall))
           name += " (" + displayWall + ")";
 
+        // ViewEdit labels use the current-view depth classification. A
+        // directly viewed Manacles wall ornament is F1. Keep the underlying
+        // storage-wall lookup hidden from the UI.
+        if (IsManaclesOrnament(ornament)
+            && displayMapX == previewX
+            && displayMapY == previewY
+            && string.Equals(
+                displayWall,
+                FacingName(previewFacing),
+                System.StringComparison.OrdinalIgnoreCase))
+        {
+          name += " / Front1";
+        }
+
         DrawFeatureChecklistRow(
             displayMapX,
             displayMapY,
@@ -18140,9 +18154,12 @@ public class ViewportLayoutEditor : EditorWindow
     featureStyle.normal.textColor = labelColor;
     featureStyle.hover.textColor = labelColor;
     featureStyle.focused.textColor = labelColor;
-    string projectionLabel = isF0Right
-        ? "Apple [N] - F0 Right"
-        : "Apple [N] - F1 Center";
+    // The ViewEdit row describes the apple using the current minimap/view
+    // geometry. At the verified 4,9 West pose this is the F1 Front item view.
+    // Keep the already pixel-matched draw anchor unchanged; this is a UI
+    // classification/label correction only.
+    string projectionLabel =
+        "Apple (" + FacingName(previewFacing) + ") + F1 Front";
     GUILayout.Label(
         projectionLabel,
         featureStyle,
