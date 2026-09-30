@@ -133,6 +133,8 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ViAltarEngineF3FrontY = 105;
   private const string HookFrontAssetPath =
       "Assets/Art/Ornaments/Hook_Front_28x28.png";
+  private const string ManaclesF1AssetPath =
+      "Assets/Art/Ornaments/Manacles_F1.png";
   private const string GrateFrontAssetPath =
       "Assets/Art/Ornaments/Grate_Front_32x28.png";
   private const string GrateSide1AssetPath =
@@ -947,6 +949,7 @@ public class ViewportLayoutEditor : EditorWindow
   private int previewDungeonLightStage = 1;
   [System.NonSerialized]
   private Texture2D cachedHookFrontTexture;
+  private Texture2D cachedManaclesF1Texture;
   [System.NonSerialized]
   private Texture2D cachedHookGeneratedF2FrontTexture;
   [System.NonSerialized]
@@ -13166,6 +13169,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitWoodRingD3FrontIntoPreview(pixels);
     BlitWoodRingD2FrontIntoPreview(pixels);
     BlitWoodRingD1FrontIntoPreview(pixels);
+    BlitManaclesD1FrontIntoPreview(pixels);
     BlitSlimeD1FrontIntoPreview(pixels);
     BlitHookD2FrontIntoPreview(pixels);
     BlitHookD1FrontIntoPreview(pixels);
@@ -20490,6 +20494,137 @@ public class ViewportLayoutEditor : EditorWindow
           false);
       return;
     }
+  }
+
+  private void BlitManaclesD1FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D manacles = GetManaclesF1Texture();
+    if (manacles == null || !manacles.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int wallTileX = previewX + forwardX;
+    int wallTileY = previewY + forwardY;
+    if (!previewMiniMap.IsInside(wallTileX, wallTileY)
+        || previewMiniMap.GetTile(wallTileX, wallTileY).Type
+            != DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    string viewedWallSide = FacingName(previewFacing);
+    string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
+      if (!IsManaclesOrnament(ornament))
+        continue;
+
+      bool placementMatches;
+      if (ornament.wallTilePlacement)
+      {
+        placementMatches =
+            ornament.x == wallTileX
+            && ornament.y == wallTileY
+            && string.Equals(
+                ornament.wall,
+                visiblePhysicalWallFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        placementMatches =
+            ornament.x == previewX
+            && ornament.y == previewY
+            && string.Equals(
+                ornament.wall,
+                viewedWallSide,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (!placementMatches)
+        continue;
+
+      // D1/front wall ornaments are centered on the 224px dungeon viewport.
+      // Keep the native F1 artwork 1:1. The vertical anchor is shared by all
+      // Manacles F1 placements and can be pixel-calibrated from the original.
+      int destinationX = (DungeonViewportWidth - manacles.width) / 2;
+      const int destinationY = 74;
+      BlitWallOrnamentIntoPreview(
+          pixels,
+          manacles,
+          destinationX,
+          destinationY,
+          false);
+      return;
+    }
+  }
+
+  private static bool IsManaclesOrnament(WallOrnamentPlacement ornament)
+  {
+    return ornament != null
+        && !string.IsNullOrEmpty(ornament.type)
+        && ornament.type.IndexOf(
+            "Manacles",
+            System.StringComparison.OrdinalIgnoreCase) >= 0;
+  }
+
+  private Texture2D GetManaclesF1Texture()
+  {
+    if (cachedManaclesF1Texture != null)
+      return cachedManaclesF1Texture;
+
+    Texture2D exact =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(ManaclesF1AssetPath);
+    if (exact != null)
+    {
+      cachedManaclesF1Texture = exact;
+      return exact;
+    }
+
+    // Filename-independent fallback in the ornament folder.
+    string[] guids = AssetDatabase.FindAssets(
+        "Manacles t:Texture2D",
+        new[] { OrnamentArtFolder });
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (candidate == null)
+        continue;
+
+      if (path.IndexOf(
+              "manacles",
+              System.StringComparison.OrdinalIgnoreCase) < 0
+          || path.IndexOf(
+              "f1",
+              System.StringComparison.OrdinalIgnoreCase) < 0)
+      {
+        continue;
+      }
+
+      cachedManaclesF1Texture = candidate;
+      return candidate;
+    }
+
+    return null;
   }
 
   private void BlitHookD1FrontIntoPreview(Color32[] pixels)
