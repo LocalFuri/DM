@@ -1758,7 +1758,9 @@ public class ViewportLayoutEditor : EditorWindow
           GUILayout.Width(78f));
 
       bool guiChangedBeforeSearch = GUI.changed;
-      Rect searchPiecesPopupRect = EditorGUILayout.GetControlRect();
+      Rect searchPiecesPopupRect = EditorGUILayout.GetControlRect(
+          GUILayout.Width(135f),
+          GUILayout.ExpandWidth(false));
       Event searchEvent = Event.current;
       if (searchEvent.type == EventType.MouseDown
           && searchEvent.button == 0
