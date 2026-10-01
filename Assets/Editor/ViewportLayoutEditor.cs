@@ -167,6 +167,15 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Hook_Front_28x28.png";
   private const string ManaclesF1AssetPath =
       "Assets/Art/Ornaments/Manacles_F1.png";
+
+  // F2 manacles are generated from the 92x52 F1 source.
+  // Measured on the original (5,9) West view: centered on the 224px
+  // viewport, screen top-left (83, 76), so framebuffer bottom-left
+  // Y = 200 - 76 - 31 = 93.
+  private const int ManaclesD2FrontX = 83;
+  private const int ManaclesD2FrontY = 93;
+  private const int ManaclesD2FrontWidth = 58;
+  private const int ManaclesD2FrontHeight = 31;
   private const string GrateFrontAssetPath =
       "Assets/Art/Ornaments/Grate_Front_32x28.png";
   private const string GrateSide1AssetPath =
@@ -982,6 +991,8 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private Texture2D cachedHookFrontTexture;
   private Texture2D cachedManaclesF1Texture;
+  [System.NonSerialized]
+  private Texture2D cachedManaclesGeneratedF2FrontTexture;
   [System.NonSerialized]
   private Texture2D cachedHookGeneratedF2FrontTexture;
   [System.NonSerialized]
@@ -13171,6 +13182,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitWoodRingD3FrontIntoPreview(pixels);
     BlitWoodRingD2FrontIntoPreview(pixels);
     BlitWoodRingD1FrontIntoPreview(pixels);
+    BlitManaclesD2FrontIntoPreview(pixels);
     BlitManaclesD1FrontIntoPreview(pixels);
     BlitSlimeD1FrontIntoPreview(pixels);
     BlitHookD2FrontIntoPreview(pixels);
@@ -17805,6 +17817,7 @@ public class ViewportLayoutEditor : EditorWindow
         int displayMapX = ornament.x;
         int displayMapY = ornament.y;
         string displayWall = ornament.wall;
+        string manaclesDepthLabel = null;
         if (IsManaclesOrnament(ornament))
         {
           DungeonMap.GetForwardOffset(
@@ -17816,20 +17829,38 @@ public class ViewportLayoutEditor : EditorWindow
           {
             int directFrontWallX = previewX + manaclesForwardX;
             int directFrontWallY = previewY + manaclesForwardY;
-            bool visibleInCurrentPose =
+            int f2FrontWallX = previewX + manaclesForwardX * 2;
+            int f2FrontWallY = previewY + manaclesForwardY * 2;
+            string visibleFace = OppositeFacingName(previewFacing);
+            bool visibleAsF1 =
                 ornament.x == directFrontWallX
                 && ornament.y == directFrontWallY
                 && string.Equals(
                     ornament.wall,
-                    OppositeFacingName(previewFacing),
+                    visibleFace,
+                    System.StringComparison.OrdinalIgnoreCase);
+            bool d1Open =
+                previewMiniMap != null
+                && previewMiniMap.IsInside(directFrontWallX, directFrontWallY)
+                && previewMiniMap.GetTile(
+                    directFrontWallX, directFrontWallY).Type
+                    != DungeonTileType.Wall;
+            bool visibleAsF2 =
+                d1Open
+                && ornament.x == f2FrontWallX
+                && ornament.y == f2FrontWallY
+                && string.Equals(
+                    ornament.wall,
+                    visibleFace,
                     System.StringComparison.OrdinalIgnoreCase);
 
-            if (!visibleInCurrentPose)
+            if (!visibleAsF1 && !visibleAsF2)
               continue;
 
             displayMapX = previewX;
             displayMapY = previewY;
             displayWall = FacingName(previewFacing);
+            manaclesDepthLabel = visibleAsF2 ? " / F2" : " / F1";
           }
           else
           {
@@ -17852,10 +17883,11 @@ public class ViewportLayoutEditor : EditorWindow
         if (!string.IsNullOrEmpty(displayWall))
           name += " (" + displayWall + ")";
 
-        // ViewEdit labels use the current-view depth classification. A
-        // directly viewed Manacles wall ornament is F1. Keep the underlying
-        // storage-wall lookup hidden from the UI.
-        if (IsManaclesOrnament(ornament)
+        // ViewEdit labels use the current-view depth classification.
+        // F1 is the wall one step ahead; F2 is two steps ahead.
+        if (manaclesDepthLabel != null)
+          name += manaclesDepthLabel;
+        else if (IsManaclesOrnament(ornament)
             && displayMapX == previewX
             && displayMapY == previewY
             && string.Equals(
@@ -20808,6 +20840,105 @@ public class ViewportLayoutEditor : EditorWindow
           false);
       return;
     }
+  }
+
+  private void BlitManaclesD2FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D manacles = GetManaclesGeneratedF2FrontTexture();
+    if (manacles == null || !manacles.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int d1X = previewX + forwardX;
+    int d1Y = previewY + forwardY;
+    int wallTileX = previewX + forwardX * 2;
+    int wallTileY = previewY + forwardY * 2;
+
+    // F2 manacles are on the wall two steps ahead. The one-step cell must
+    // stay open or the nearer wall hides them.
+    if (!previewMiniMap.IsInside(d1X, d1Y)
+        || previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(wallTileX, wallTileY))
+    {
+      return;
+    }
+
+    string viewedWallSide = FacingName(previewFacing);
+    string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
+      if (!IsManaclesOrnament(ornament))
+        continue;
+
+      bool placementMatches;
+      if (ornament.wallTilePlacement)
+      {
+        placementMatches =
+            ornament.x == wallTileX
+            && ornament.y == wallTileY
+            && string.Equals(
+                ornament.wall,
+                visiblePhysicalWallFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        placementMatches =
+            ornament.x == d1X
+            && ornament.y == d1Y
+            && string.Equals(
+                ornament.wall,
+                viewedWallSide,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (!placementMatches)
+        continue;
+
+      BlitWallOrnamentIntoPreview(
+          pixels,
+          manacles,
+          ManaclesD2FrontX,
+          ManaclesD2FrontY,
+          false);
+      return;
+    }
+  }
+
+  private Texture2D GetManaclesGeneratedF2FrontTexture()
+  {
+    if (cachedManaclesGeneratedF2FrontTexture != null)
+      return cachedManaclesGeneratedF2FrontTexture;
+
+    Texture2D source = GetManaclesF1Texture();
+    if (source == null || !source.isReadable)
+      return null;
+
+    cachedManaclesGeneratedF2FrontTexture = GenerateDmScaledWallDecoration(
+        source,
+        ManaclesD2FrontWidth,
+        ManaclesD2FrontHeight,
+        WallOrnamentMediumColorMap,
+        "Manacles F2 Generated from F1");
+    return cachedManaclesGeneratedF2FrontTexture;
   }
 
   private void BlitManaclesD1FrontIntoPreview(Color32[] pixels)
