@@ -171,12 +171,13 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Manacles_S1.png";
 
   // D1 side manacles use the native 32x42 S1 graphic 1:1.
-  // Measured on the original (4,10) North left wall: screen top-left
-  // (28, 74), framebuffer bottom-left Y = 200 - 74 - 42 = 84.
+  // Measured on the original (4,10) North left wall, then shifted
+  // +2 px on X: screen top-left (30, 74), framebuffer bottom-left
+  // Y = 200 - 74 - 42 = 84.
   // The right slot mirrors that across the 224px viewport.
   private const int ManaclesD1SideWidth = 32;
   private const int ManaclesD1SideHeight = 42;
-  private const int ManaclesD1SideLeftX = 28;
+  private const int ManaclesD1SideLeftX = 30;
   private const int ManaclesD1SideRightX =
       DungeonViewportWidth - ManaclesD1SideLeftX - ManaclesD1SideWidth;
   private const int ManaclesD1SideY = 84;
