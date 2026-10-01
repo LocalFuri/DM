@@ -138,6 +138,13 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private int breadF0LeftPreviewScreenTop = 150;
 
+  // Same-tile F0 right slot. Stored sub-square E at (5,11) facing North
+  // projects here. Measured from that original: X=141, screen top Y=150.
+  [System.NonSerialized]
+  private int breadF0RightPreviewX = 141;
+  [System.NonSerialized]
+  private int breadF0RightPreviewScreenTop = 150;
+
   // Original DOS Hall of Champions VI Altar: native 96x56 graphic.
   // Adjusted 5 px down: screen top-left (64,69), framebuffer bottom-left (64,75).
   // The texture is located by name/dimensions so either
@@ -18551,8 +18558,9 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  private bool TryGetLevel0BreadF0LeftProjection()
+  private bool TryGetLevel0BreadF0Side(out bool isRight)
   {
+    isRight = false;
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null || previewDungeonLevel != 0)
       return false;
@@ -18560,9 +18568,48 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewX != Level0BreadTestX || previewY != Level0BreadTestY)
       return false;
 
-    // Bread is stored in absolute sub-square E. At the requested calibration
-    // pose (5,11) facing East, the original DOS reference places this E cell in the LEFT F0 floor slot.
-    return previewFacing == DungeonFacing.East;
+    if (!TryGetFloorItemSubSquareOffset(
+            Level0BreadTestCell,
+            out int itemOffsetX,
+            out int itemOffsetY))
+    {
+      return false;
+    }
+
+    // Same screen-right basis as the apple. Stored E is the north-east
+    // corner, so facing East projects left and facing North projects right.
+    int screenRightX;
+    int screenRightY;
+    switch (previewFacing)
+    {
+      case DungeonFacing.North:
+        screenRightX = 1;
+        screenRightY = 0;
+        break;
+      case DungeonFacing.East:
+        screenRightX = 0;
+        screenRightY = 1;
+        break;
+      case DungeonFacing.South:
+        screenRightX = -1;
+        screenRightY = 0;
+        break;
+      case DungeonFacing.West:
+        screenRightX = 0;
+        screenRightY = -1;
+        break;
+      default:
+        return false;
+    }
+
+    int lateral =
+        itemOffsetX * screenRightX
+        + itemOffsetY * screenRightY;
+    if (lateral == 0)
+      return false;
+
+    isRight = lateral > 0;
+    return true;
   }
 
   private string GetLevel0BreadFeatureKey()
@@ -18584,7 +18631,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void BlitLevel0BreadCalibrationIntoPreview(Color32[] pixels)
   {
-    if (pixels == null || !TryGetLevel0BreadF0LeftProjection())
+    if (pixels == null || !TryGetLevel0BreadF0Side(out bool isRight))
       return;
 
     string key = GetLevel0BreadFeatureKey();
@@ -18595,18 +18642,22 @@ public class ViewportLayoutEditor : EditorWindow
     if (bread == null || !bread.isReadable || bread.width <= 0 || bread.height <= 0)
       return;
 
-    int y = PreviewHeight - breadF0LeftPreviewScreenTop - bread.height;
+    int x = isRight ? breadF0RightPreviewX : breadF0LeftPreviewX;
+    int top = isRight
+        ? breadF0RightPreviewScreenTop
+        : breadF0LeftPreviewScreenTop;
+    int y = PreviewHeight - top - bread.height;
     BlitPieceIntoPreview(
         pixels,
         bread,
-        breadF0LeftPreviewX,
+        x,
         y,
         false);
   }
 
   private void DrawLevel0BreadCalibrationRow()
   {
-    if (!TryGetLevel0BreadF0LeftProjection())
+    if (!TryGetLevel0BreadF0Side(out bool isRight))
       return;
 
     string key = GetLevel0BreadFeatureKey();
@@ -18631,7 +18682,7 @@ public class ViewportLayoutEditor : EditorWindow
     featureStyle.hover.textColor = labelColor;
     featureStyle.focused.textColor = labelColor;
     GUILayout.Label(
-        "Bread [E] - F0 Left",
+        "Bread [E] - F0 " + (isRight ? "Right" : "Left"),
         featureStyle,
         GUILayout.Width(210f));
 
