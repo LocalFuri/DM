@@ -167,6 +167,19 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Hook_Front_28x28.png";
   private const string ManaclesF1AssetPath =
       "Assets/Art/Ornaments/Manacles_F1.png";
+  private const string ManaclesS1AssetPath =
+      "Assets/Art/Ornaments/Manacles_S1.png";
+
+  // D1 side manacles use the native 32x42 S1 graphic 1:1.
+  // Measured on the original (4,10) North left wall: screen top-left
+  // (28, 74), framebuffer bottom-left Y = 200 - 74 - 42 = 84.
+  // The right slot mirrors that across the 224px viewport.
+  private const int ManaclesD1SideWidth = 32;
+  private const int ManaclesD1SideHeight = 42;
+  private const int ManaclesD1SideLeftX = 28;
+  private const int ManaclesD1SideRightX =
+      DungeonViewportWidth - ManaclesD1SideLeftX - ManaclesD1SideWidth;
+  private const int ManaclesD1SideY = 84;
 
   // F2 manacles are generated from the 92x52 F1 source.
   // Measured on the original (5,9) West view: centered on the 224px
@@ -999,6 +1012,8 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private Texture2D cachedHookFrontTexture;
   private Texture2D cachedManaclesF1Texture;
+  [System.NonSerialized]
+  private Texture2D cachedManaclesS1Texture;
   [System.NonSerialized]
   private Texture2D cachedManaclesGeneratedF2FrontTexture;
   [System.NonSerialized]
@@ -13187,6 +13202,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitHookD2SidesIntoPreview(pixels);
     BlitGrateD2SidesIntoPreview(pixels);
     BlitHookStyleD1SidesIntoPreview(pixels);
+    BlitManaclesD1SidesIntoPreview(pixels);
     BlitGrateD1SidesIntoPreview(pixels);
     BlitSlimeD1SidesIntoPreview(pixels);
     BlitWoodRingD3FrontIntoPreview(pixels);
@@ -17881,15 +17897,45 @@ public class ViewportLayoutEditor : EditorWindow
                     visibleFace,
                     System.StringComparison.OrdinalIgnoreCase);
 
-            if (!visibleAsF1 && !visibleAsF2 && !visibleAsF3)
+            bool visibleAsS1 = false;
+            if (!visibleAsF1 && !visibleAsF2 && !visibleAsF3 && d1Open)
+            {
+              DungeonMap.GetRightOffset(
+                  previewFacing,
+                  out int manaclesRightX,
+                  out int manaclesRightY);
+              int leftWallX = directFrontWallX - manaclesRightX;
+              int leftWallY = directFrontWallY - manaclesRightY;
+              int rightWallX = directFrontWallX + manaclesRightX;
+              int rightWallY = directFrontWallY + manaclesRightY;
+              string leftFace = FacingName(TurnPreviewFacingRight(previewFacing));
+              string rightFace = FacingName(TurnPreviewFacingLeft(previewFacing));
+              visibleAsS1 =
+                  (ornament.x == leftWallX
+                      && ornament.y == leftWallY
+                      && string.Equals(
+                          ornament.wall,
+                          leftFace,
+                          System.StringComparison.OrdinalIgnoreCase))
+                  || (ornament.x == rightWallX
+                      && ornament.y == rightWallY
+                      && string.Equals(
+                          ornament.wall,
+                          rightFace,
+                          System.StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!visibleAsF1 && !visibleAsF2 && !visibleAsF3 && !visibleAsS1)
               continue;
 
             displayMapX = previewX;
             displayMapY = previewY;
             displayWall = FacingName(previewFacing);
-            manaclesDepthLabel = visibleAsF1
-                ? " / F1"
-                : visibleAsF2 ? " / F2" : " / F3";
+            manaclesDepthLabel = visibleAsS1
+                ? " / S1"
+                : visibleAsF1
+                    ? " / F1"
+                    : visibleAsF2 ? " / F2" : " / F3";
           }
           else
           {
@@ -20869,6 +20915,159 @@ public class ViewportLayoutEditor : EditorWindow
           false);
       return;
     }
+  }
+
+  private void BlitManaclesD1SidesIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D side = GetManaclesS1Texture();
+    if (side == null || !side.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int frontX = previewX + forwardX;
+    int frontY = previewY + forwardY;
+    if (!previewMiniMap.IsInside(frontX, frontY)
+        || previewMiniMap.GetTile(frontX, frontY).Type == DungeonTileType.Wall)
+    {
+      return;
+    }
+
+    int leftWallTileX = frontX - rightX;
+    int leftWallTileY = frontY - rightY;
+    int rightWallTileX = frontX + rightX;
+    int rightWallTileY = frontY + rightY;
+
+    bool leftWallExists =
+        previewMiniMap.IsInside(leftWallTileX, leftWallTileY)
+        && previewMiniMap.GetTile(leftWallTileX, leftWallTileY).Type
+            == DungeonTileType.Wall;
+    bool rightWallExists =
+        previewMiniMap.IsInside(rightWallTileX, rightWallTileY)
+        && previewMiniMap.GetTile(rightWallTileX, rightWallTileY).Type
+            == DungeonTileType.Wall;
+
+    string leftPhysicalFace =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+    string rightPhysicalFace =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string leftBoundaryDirection =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string rightBoundaryDirection =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+
+    bool leftDrawn = false;
+    bool rightDrawn = false;
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
+      if (!IsManaclesOrnament(ornament))
+        continue;
+
+      bool matchesLeft;
+      bool matchesRight;
+      if (ornament.wallTilePlacement)
+      {
+        matchesLeft =
+            leftWallExists
+            && ornament.x == leftWallTileX
+            && ornament.y == leftWallTileY
+            && string.Equals(
+                ornament.wall,
+                leftPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase);
+        matchesRight =
+            rightWallExists
+            && ornament.x == rightWallTileX
+            && ornament.y == rightWallTileY
+            && string.Equals(
+                ornament.wall,
+                rightPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        matchesLeft =
+            leftWallExists
+            && ornament.x == frontX
+            && ornament.y == frontY
+            && string.Equals(
+                ornament.wall,
+                leftBoundaryDirection,
+                System.StringComparison.OrdinalIgnoreCase);
+        matchesRight =
+            rightWallExists
+            && ornament.x == frontX
+            && ornament.y == frontY
+            && string.Equals(
+                ornament.wall,
+                rightBoundaryDirection,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (matchesLeft && !leftDrawn)
+      {
+        BlitPieceIntoPreview(
+            pixels,
+            side,
+            ManaclesD1SideLeftX,
+            ManaclesD1SideY,
+            false);
+        leftDrawn = true;
+      }
+
+      if (matchesRight && !rightDrawn)
+      {
+        BlitPieceIntoPreview(
+            pixels,
+            side,
+            ManaclesD1SideRightX,
+            ManaclesD1SideY,
+            true);
+        rightDrawn = true;
+      }
+
+      if (leftDrawn && rightDrawn)
+        return;
+    }
+  }
+
+  private Texture2D GetManaclesS1Texture()
+  {
+    if (cachedManaclesS1Texture != null)
+      return cachedManaclesS1Texture;
+
+    Texture2D texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(ManaclesS1AssetPath);
+    if (texture != null
+        && texture.width == ManaclesD1SideWidth
+        && texture.height == ManaclesD1SideHeight)
+    {
+      cachedManaclesS1Texture = texture;
+      return texture;
+    }
+
+    return null;
   }
 
   private void BlitManaclesD3FrontIntoPreview(Color32[] pixels)
