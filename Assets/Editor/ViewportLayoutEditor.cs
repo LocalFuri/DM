@@ -145,6 +145,20 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private int breadF0RightPreviewScreenTop = 150;
 
+  // One-tile-ahead bread. Measured on the original (4,11) East view:
+  // stored E projects left, X=72, screen top Y=121, size 17x10.
+  // Right-hand is the 224px mirror: 224 - 72 - 17 = 135.
+  private const int BreadF2Width = 17;
+  private const int BreadF2Height = 10;
+  [System.NonSerialized]
+  private int breadF2LeftPreviewX = 72;
+  [System.NonSerialized]
+  private int breadF2LeftPreviewScreenTop = 121;
+  [System.NonSerialized]
+  private int breadF2RightPreviewX = 135;
+  [System.NonSerialized]
+  private int breadF2RightPreviewScreenTop = 121;
+
   // Original DOS Hall of Champions VI Altar: native 96x56 graphic.
   // Adjusted 5 px down: screen top-left (64,69), framebuffer bottom-left (64,75).
   // The texture is located by name/dimensions so either
@@ -18558,6 +18572,66 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  private bool TryGetLevel0BreadF2Projection()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || previewDungeonLevel != 0)
+      return false;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    return previewX + forwardX == Level0BreadTestX
+        && previewY + forwardY == Level0BreadTestY;
+  }
+
+  private bool TryGetLevel0BreadRelativeSide(out bool isRight)
+  {
+    isRight = false;
+    if (!TryGetFloorItemSubSquareOffset(
+            Level0BreadTestCell,
+            out int itemOffsetX,
+            out int itemOffsetY))
+    {
+      return false;
+    }
+
+    int screenRightX;
+    int screenRightY;
+    switch (previewFacing)
+    {
+      case DungeonFacing.North:
+        screenRightX = 1;
+        screenRightY = 0;
+        break;
+      case DungeonFacing.East:
+        screenRightX = 0;
+        screenRightY = 1;
+        break;
+      case DungeonFacing.South:
+        screenRightX = -1;
+        screenRightY = 0;
+        break;
+      case DungeonFacing.West:
+        screenRightX = 0;
+        screenRightY = -1;
+        break;
+      default:
+        return false;
+    }
+
+    int lateral =
+        itemOffsetX * screenRightX
+        + itemOffsetY * screenRightY;
+    if (lateral == 0)
+      return false;
+
+    isRight = lateral > 0;
+    return true;
+  }
+
   private bool TryGetLevel0BreadF0Side(out bool isRight)
   {
     isRight = false;
@@ -18649,7 +18723,12 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void BlitLevel0BreadCalibrationIntoPreview(Color32[] pixels)
   {
-    if (pixels == null || !TryGetLevel0BreadF0Side(out bool isRight))
+    if (pixels == null)
+      return;
+
+    bool isF2 = TryGetLevel0BreadF2Projection();
+    bool isF0 = TryGetLevel0BreadF0Side(out bool isF0Right);
+    if (!isF2 && !isF0)
       return;
 
     string key = GetLevel0BreadFeatureKey();
@@ -18660,6 +18739,29 @@ public class ViewportLayoutEditor : EditorWindow
     if (bread == null || !bread.isReadable || bread.width <= 0 || bread.height <= 0)
       return;
 
+    if (isF2)
+    {
+      if (!TryGetLevel0BreadRelativeSide(out bool isF2Right))
+        return;
+
+      int f2X = isF2Right ? breadF2RightPreviewX : breadF2LeftPreviewX;
+      int f2Top = isF2Right
+          ? breadF2RightPreviewScreenTop
+          : breadF2LeftPreviewScreenTop;
+      int f2Y = PreviewHeight - f2Top - BreadF2Height;
+      BlitPieceScaledIntoPreview(
+          pixels,
+          bread,
+          f2X,
+          f2Y,
+          BreadF2Width,
+          BreadF2Height,
+          false,
+          colorMap: WallOrnamentMediumColorMap);
+      return;
+    }
+
+    bool isRight = isF0Right;
     int x = isRight ? breadF0RightPreviewX : breadF0LeftPreviewX;
     int top = isRight
         ? breadF0RightPreviewScreenTop
@@ -18675,8 +18777,14 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void DrawLevel0BreadCalibrationRow()
   {
-    if (!TryGetLevel0BreadF0Side(out bool isRight))
+    bool isF2 = TryGetLevel0BreadF2Projection();
+    bool isF0 = TryGetLevel0BreadF0Side(out bool isF0Right);
+    if (!isF2 && !isF0)
       return;
+    bool isRight = isF2
+        ? TryGetLevel0BreadRelativeSide(out bool isF2Right) && isF2Right
+        : isF0Right;
+    string depthLabel = isF2 ? "F2" : "F0";
 
     string key = GetLevel0BreadFeatureKey();
 
@@ -18700,7 +18808,7 @@ public class ViewportLayoutEditor : EditorWindow
     featureStyle.hover.textColor = labelColor;
     featureStyle.focused.textColor = labelColor;
     GUILayout.Label(
-        "Bread [E] - F0 " + (isRight ? "Right" : "Left"),
+        "Bread [E] - " + depthLabel + " " + (isRight ? "Right" : "Left"),
         featureStyle,
         GUILayout.Width(210f));
 
