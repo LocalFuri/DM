@@ -108,6 +108,16 @@ public class ViewportLayoutEditor : EditorWindow
   private int appleF2LeftPreviewX = 76;
   private int appleF2LeftPreviewScreenTop = 124;
 
+  // F3 is two map steps ahead, generated from the same Apple_19x13 source.
+  // Measured on the original (4,11) North viewport: left edge X=89,
+  // screen top Y=106, size 6x5. Right-hand is the mirror of that slot.
+  private const int AppleF3Width = 6;
+  private const int AppleF3Height = 5;
+  private int appleF3LeftPreviewX = 89;
+  private int appleF3LeftPreviewScreenTop = 106;
+  private int appleF3RightPreviewX = 129;
+  private int appleF3RightPreviewScreenTop = 106;
+
   // Second loose-floor-item calibration. Original Level 0 DUNGEON.DAT places
   // Bread at map (5,11), sub-square E. Bread_27x16 is the ground/world
   // artwork; Bread_16x16 is inventory/icon only.
@@ -18073,6 +18083,22 @@ public class ViewportLayoutEditor : EditorWindow
         && previewY + forwardY == Level0AppleTestY;
   }
 
+  private bool TryGetLevel0AppleF3Projection()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || previewDungeonLevel != 0)
+      return false;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    // F3 means the Apple tile is exactly two map steps ahead.
+    return previewX + forwardX * 2 == Level0AppleTestX
+        && previewY + forwardY * 2 == Level0AppleTestY;
+  }
+
   private static bool TryGetFloorItemSubSquareOffset(
       string cell,
       out int offsetX,
@@ -18112,12 +18138,9 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  private bool TryGetLevel0AppleF2RelativeSide(out bool isRight)
+  private bool TryGetLevel0AppleRelativeSide(out bool isRight)
   {
     isRight = false;
-
-    if (!TryGetLevel0AppleF2Projection())
-      return false;
 
     if (!TryGetFloorItemSubSquareOffset(
             Level0AppleTestCell,
@@ -18235,7 +18258,8 @@ public class ViewportLayoutEditor : EditorWindow
     bool isF0Right = TryGetLevel0AppleF0RightProjection();
     bool isF0Front = TryGetLevel0AppleF0FrontProjection();
     bool isF2 = TryGetLevel0AppleF2Projection();
-    if (!isF0Right && !isF0Front && !isF2)
+    bool isF3 = TryGetLevel0AppleF3Projection();
+    if (!isF0Right && !isF0Front && !isF2 && !isF3)
       return;
 
     string key = GetLevel0AppleFeatureKey();
@@ -18248,13 +18272,35 @@ public class ViewportLayoutEditor : EditorWindow
 
     int x;
     int top;
-    if (isF2)
+    if (isF3 || isF2)
     {
-      // Generate the farther F2 view from the one source image. Resolve the
+      // Generate the farther view from the one source image. Resolve the
       // stored N/E/S/W corner slot against the current facing before choosing
-      // the screen lane.
-      if (!TryGetLevel0AppleF2RelativeSide(out bool isRight))
+      // the screen lane. F3 is two steps ahead; F2 is one step ahead.
+      if (!TryGetLevel0AppleRelativeSide(out bool isRight))
         return;
+
+      if (isF3)
+      {
+        x = isRight
+            ? appleF3RightPreviewX
+            : appleF3LeftPreviewX;
+        top = isRight
+            ? appleF3RightPreviewScreenTop
+            : appleF3LeftPreviewScreenTop;
+        int yF3 = PreviewHeight - top - AppleF3Height;
+        BlitPieceScaledIntoPreview(
+            pixels,
+            apple,
+            x,
+            yF3,
+            AppleF3Width,
+            AppleF3Height,
+            false,
+            skipCyanTransparencyKey: true,
+            colorMap: WallOrnamentFarColorMap);
+        return;
+      }
 
       x = isRight
           ? appleF2RightPreviewX
@@ -18298,7 +18344,8 @@ public class ViewportLayoutEditor : EditorWindow
     bool isF0Right = TryGetLevel0AppleF0RightProjection();
     bool isF0Front = TryGetLevel0AppleF0FrontProjection();
     bool isF2 = TryGetLevel0AppleF2Projection();
-    if (!isF0Right && !isF0Front && !isF2)
+    bool isF3 = TryGetLevel0AppleF3Projection();
+    if (!isF0Right && !isF0Front && !isF2 && !isF3)
       return;
 
     string key = GetLevel0AppleFeatureKey();
@@ -18327,7 +18374,7 @@ public class ViewportLayoutEditor : EditorWindow
     // Keep the already pixel-matched draw anchor unchanged; this is a UI
     // classification/label correction only.
     string projectionLabel =
-        "Apple(" + FacingName(previewFacing) + (isF2 ? " / F2)" : " / F1)");
+        "Apple(" + FacingName(previewFacing) + (isF3 ? " / F3)" : isF2 ? " / F2)" : " / F1)");
     GUILayout.Label(
         projectionLabel,
         featureStyle,
