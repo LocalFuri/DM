@@ -183,11 +183,12 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ManaclesD1SideY = 84;
 
   // D2 side manacles are scaled from Manacles_S1 with the medium palette.
-  // Measured on the original (4,11) North left wall: screen top-left
-  // (55, 73), size 20x26, framebuffer bottom-left Y = 200 - 73 - 26 = 101.
+  // Measured on the original (4,11) North left wall, then shifted
+  // +2 px on X: screen top-left (57, 73), size 20x26, framebuffer
+  // bottom-left Y = 200 - 73 - 26 = 101.
   private const int ManaclesD2SideWidth = 20;
   private const int ManaclesD2SideHeight = 26;
-  private const int ManaclesD2SideLeftX = 55;
+  private const int ManaclesD2SideLeftX = 57;
   private const int ManaclesD2SideRightX =
       DungeonViewportWidth - ManaclesD2SideLeftX - ManaclesD2SideWidth;
   private const int ManaclesD2SideY = 101;
