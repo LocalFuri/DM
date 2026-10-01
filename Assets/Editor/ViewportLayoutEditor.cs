@@ -182,6 +182,16 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonViewportWidth - ManaclesD1SideLeftX - ManaclesD1SideWidth;
   private const int ManaclesD1SideY = 84;
 
+  // D2 side manacles are scaled from Manacles_S1 with the medium palette.
+  // Measured on the original (4,11) North left wall: screen top-left
+  // (55, 73), size 20x26, framebuffer bottom-left Y = 200 - 73 - 26 = 101.
+  private const int ManaclesD2SideWidth = 20;
+  private const int ManaclesD2SideHeight = 26;
+  private const int ManaclesD2SideLeftX = 55;
+  private const int ManaclesD2SideRightX =
+      DungeonViewportWidth - ManaclesD2SideLeftX - ManaclesD2SideWidth;
+  private const int ManaclesD2SideY = 101;
+
   // F2 manacles are generated from the 92x52 F1 source.
   // Measured on the original (5,9) West view: centered on the 224px
   // viewport, screen top-left (83, 76), so framebuffer bottom-left
@@ -1015,6 +1025,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedManaclesF1Texture;
   [System.NonSerialized]
   private Texture2D cachedManaclesS1Texture;
+  [System.NonSerialized]
+  private Texture2D cachedManaclesGeneratedD2SideTexture;
   [System.NonSerialized]
   private Texture2D cachedManaclesGeneratedF2FrontTexture;
   [System.NonSerialized]
@@ -13203,6 +13215,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitHookD2SidesIntoPreview(pixels);
     BlitGrateD2SidesIntoPreview(pixels);
     BlitHookStyleD1SidesIntoPreview(pixels);
+    BlitManaclesD2SidesIntoPreview(pixels);
     BlitManaclesD1SidesIntoPreview(pixels);
     BlitGrateD1SidesIntoPreview(pixels);
     BlitSlimeD1SidesIntoPreview(pixels);
@@ -17926,7 +17939,36 @@ public class ViewportLayoutEditor : EditorWindow
                           System.StringComparison.OrdinalIgnoreCase));
             }
 
-            if (!visibleAsF1 && !visibleAsF2 && !visibleAsF3 && !visibleAsS1)
+            bool visibleAsS2 = false;
+            if (!visibleAsF1 && !visibleAsF2 && !visibleAsF3 && !visibleAsS1 && d2Open)
+            {
+              DungeonMap.GetRightOffset(
+                  previewFacing,
+                  out int manaclesRightX,
+                  out int manaclesRightY);
+              int leftWallX = f2FrontWallX - manaclesRightX;
+              int leftWallY = f2FrontWallY - manaclesRightY;
+              int rightWallX = f2FrontWallX + manaclesRightX;
+              int rightWallY = f2FrontWallY + manaclesRightY;
+              string leftFace = FacingName(TurnPreviewFacingRight(previewFacing));
+              string rightFace = FacingName(TurnPreviewFacingLeft(previewFacing));
+              visibleAsS2 =
+                  (ornament.x == leftWallX
+                      && ornament.y == leftWallY
+                      && string.Equals(
+                          ornament.wall,
+                          leftFace,
+                          System.StringComparison.OrdinalIgnoreCase))
+                  || (ornament.x == rightWallX
+                      && ornament.y == rightWallY
+                      && string.Equals(
+                          ornament.wall,
+                          rightFace,
+                          System.StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!visibleAsF1 && !visibleAsF2 && !visibleAsF3
+                && !visibleAsS1 && !visibleAsS2)
               continue;
 
             displayMapX = previewX;
@@ -17934,9 +17976,11 @@ public class ViewportLayoutEditor : EditorWindow
             displayWall = FacingName(previewFacing);
             manaclesDepthLabel = visibleAsS1
                 ? " / S1"
-                : visibleAsF1
-                    ? " / F1"
-                    : visibleAsF2 ? " / F2" : " / F3";
+                : visibleAsS2
+                    ? " / S2"
+                    : visibleAsF1
+                        ? " / F1"
+                        : visibleAsF2 ? " / F2" : " / F3";
           }
           else
           {
@@ -20916,6 +20960,210 @@ public class ViewportLayoutEditor : EditorWindow
           false);
       return;
     }
+  }
+
+  private void BlitManaclesD2SidesIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D side = GetManaclesGeneratedD2SideTexture();
+    if (side == null || !side.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int d1X = previewX + forwardX;
+    int d1Y = previewY + forwardY;
+    int d2X = previewX + forwardX * 2;
+    int d2Y = previewY + forwardY * 2;
+    if (!PreviewTileIsOpen(d1X, d1Y) || !PreviewTileIsOpen(d2X, d2Y))
+      return;
+
+    int leftWallTileX = d2X - rightX;
+    int leftWallTileY = d2Y - rightY;
+    int rightWallTileX = d2X + rightX;
+    int rightWallTileY = d2Y + rightY;
+    bool leftWallExists = PreviewTileIsWall(leftWallTileX, leftWallTileY);
+    bool rightWallExists = PreviewTileIsWall(rightWallTileX, rightWallTileY);
+
+    string leftPhysicalFace =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+    string rightPhysicalFace =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+
+    bool leftDrawn = false;
+    bool rightDrawn = false;
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
+      if (!IsManaclesOrnament(ornament) || !ornament.wallTilePlacement)
+        continue;
+
+      bool matchesLeft =
+          leftWallExists
+          && ornament.x == leftWallTileX
+          && ornament.y == leftWallTileY
+          && string.Equals(
+              ornament.wall,
+              leftPhysicalFace,
+              System.StringComparison.OrdinalIgnoreCase);
+      bool matchesRight =
+          rightWallExists
+          && ornament.x == rightWallTileX
+          && ornament.y == rightWallTileY
+          && string.Equals(
+              ornament.wall,
+              rightPhysicalFace,
+              System.StringComparison.OrdinalIgnoreCase);
+
+      if (matchesLeft && !leftDrawn)
+      {
+        BlitPieceIntoPreview(
+            pixels,
+            side,
+            ManaclesD2SideLeftX,
+            ManaclesD2SideY,
+            false);
+        leftDrawn = true;
+      }
+
+      if (matchesRight && !rightDrawn)
+      {
+        BlitPieceIntoPreview(
+            pixels,
+            side,
+            ManaclesD2SideRightX,
+            ManaclesD2SideY,
+            true);
+        rightDrawn = true;
+      }
+
+      if (leftDrawn && rightDrawn)
+        return;
+    }
+  }
+
+  private Texture2D GetManaclesGeneratedD2SideTexture()
+  {
+    if (cachedManaclesGeneratedD2SideTexture != null)
+      return cachedManaclesGeneratedD2SideTexture;
+
+    Texture2D source = GetManaclesS1Texture();
+    if (source == null || !source.isReadable)
+      return null;
+
+    cachedManaclesGeneratedD2SideTexture = GenerateManaclesSideScaled(
+        source,
+        ManaclesD2SideWidth,
+        ManaclesD2SideHeight,
+        "Manacles S2 Generated from S1");
+    return cachedManaclesGeneratedD2SideTexture;
+  }
+
+  // The shared wall-ornament shrink remaps this side graphic's metal greys
+  // onto wall greys and samples through the chains, so the D2 shackles
+  // draw as separate specks. Cover each destination pixel with the opaque
+  // source colour that actually occupies that cell and keep the S1 palette.
+  private static Texture2D GenerateManaclesSideScaled(
+      Texture2D source,
+      int targetWidth,
+      int targetHeight,
+      string textureName)
+  {
+    if (source == null
+        || !source.isReadable
+        || targetWidth <= 0
+        || targetHeight <= 0)
+    {
+      return null;
+    }
+
+    Color32[] sourcePixels = source.GetPixels32();
+    Color32[] targetPixels = new Color32[targetWidth * targetHeight];
+    Color32[] palette = DungeonViewportLightPalettes[0];
+    int sourceWidth = source.width;
+    int sourceHeight = source.height;
+
+    for (int y = 0; y < targetHeight; y++)
+    {
+      int sourceY0 = y * sourceHeight / targetHeight;
+      int sourceY1 = (y + 1) * sourceHeight / targetHeight;
+      if (sourceY1 <= sourceY0)
+        sourceY1 = sourceY0 + 1;
+
+      for (int x = 0; x < targetWidth; x++)
+      {
+        int sourceX0 = x * sourceWidth / targetWidth;
+        int sourceX1 = (x + 1) * sourceWidth / targetWidth;
+        if (sourceX1 <= sourceX0)
+          sourceX1 = sourceX0 + 1;
+
+        int[] counts = new int[16];
+        int bestIndex = -1;
+        int bestCount = 0;
+        for (int sourceY = sourceY0; sourceY < sourceY1; sourceY++)
+        {
+          int sourceRow = sourceY * sourceWidth;
+          for (int sourceX = sourceX0; sourceX < sourceX1; sourceX++)
+          {
+            Color32 sourcePixel = sourcePixels[sourceRow + sourceX];
+            if (sourcePixel.a == 0)
+              continue;
+
+            int paletteIndex = FindExactDmPaletteIndexOrNearest(
+                sourcePixel,
+                palette);
+            counts[paletteIndex]++;
+            if (counts[paletteIndex] <= bestCount)
+              continue;
+
+            bestCount = counts[paletteIndex];
+            bestIndex = paletteIndex;
+          }
+        }
+
+        int destination = y * targetWidth + x;
+        if (bestIndex < 0)
+        {
+          targetPixels[destination] = new Color32(0, 0, 0, 0);
+          continue;
+        }
+
+        Color32 mapped = palette[bestIndex];
+        mapped.a = 255;
+        targetPixels[destination] = mapped;
+      }
+    }
+
+    Texture2D generated = new Texture2D(
+        targetWidth,
+        targetHeight,
+        TextureFormat.RGBA32,
+        false);
+    generated.name = textureName;
+    generated.filterMode = FilterMode.Point;
+    generated.wrapMode = TextureWrapMode.Clamp;
+    generated.SetPixels32(targetPixels);
+    generated.Apply(false, false);
+    return generated;
   }
 
   private void BlitManaclesD1SidesIntoPreview(Color32[] pixels)
