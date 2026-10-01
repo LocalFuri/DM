@@ -94,8 +94,8 @@ public class ViewportLayoutEditor : EditorWindow
   // Floor-item perspective is steeper than the wall-piece F1->F2 ratio.
   // Calibrated against the original 5,9 West screenshot: Apple_19x13 is
   // reduced to 9x6 and moved farther into the corridor.
-  private const int AppleF2Width = 10;
-  private const int AppleF2Height = 7;
+  private const int AppleF2Width = 12;
+  private const int AppleF2Height = 8;
   private int appleF2PreviewX = 136;
   private int appleF2PreviewScreenTop = 124;
 
