@@ -18576,31 +18576,49 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    // Same screen-right basis as the apple. Stored E is the north-east
-    // corner, so facing East projects left and facing North projects right.
+    // Same screen basis as the apple. Stored E is the north-east corner.
+    // The F0 floor only shows the front half of the current square, so a
+    // corner behind the party (South and West for this E slot) is hidden.
+    // Facing East projects front-left; facing North projects front-right.
+    int forwardX;
+    int forwardY;
     int screenRightX;
     int screenRightY;
     switch (previewFacing)
     {
       case DungeonFacing.North:
+        forwardX = 0;
+        forwardY = -1;
         screenRightX = 1;
         screenRightY = 0;
         break;
       case DungeonFacing.East:
+        forwardX = 1;
+        forwardY = 0;
         screenRightX = 0;
         screenRightY = 1;
         break;
       case DungeonFacing.South:
+        forwardX = 0;
+        forwardY = 1;
         screenRightX = -1;
         screenRightY = 0;
         break;
       case DungeonFacing.West:
+        forwardX = -1;
+        forwardY = 0;
         screenRightX = 0;
         screenRightY = -1;
         break;
       default:
         return false;
     }
+
+    int ahead =
+        itemOffsetX * forwardX
+        + itemOffsetY * forwardY;
+    if (ahead <= 0)
+      return false;
 
     int lateral =
         itemOffsetX * screenRightX
