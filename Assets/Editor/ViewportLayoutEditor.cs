@@ -96,8 +96,17 @@ public class ViewportLayoutEditor : EditorWindow
   // reduced to 9x6 and moved farther into the corridor.
   private const int AppleF2Width = 12;
   private const int AppleF2Height = 8;
-  private int appleF2PreviewX = 136;
-  private int appleF2PreviewScreenTop = 124;
+
+  // One-tile-ahead item sub-square projection.
+  // Right-hand is verified from (5,9) West. The same N corner slot projects
+  // left-hand when viewed from (4,10) North.
+  private int appleF2RightPreviewX = 136;
+  private int appleF2RightPreviewScreenTop = 124;
+
+  // Mirror the verified right-hand F2 slot across the 224px dungeon viewport:
+  // 224 - 136 - 12 = 76.
+  private int appleF2LeftPreviewX = 76;
+  private int appleF2LeftPreviewScreenTop = 124;
 
   // Second loose-floor-item calibration. Original Level 0 DUNGEON.DAT places
   // Bread at map (5,11), sub-square E. Bread_27x16 is the ground/world
@@ -13095,36 +13104,6 @@ public class ViewportLayoutEditor : EditorWindow
     DungeonBitmapFont bitmapFont = FindEditModeBitmapFont();
     if (bitmapFont != null)
     {
-      // First hero-name frame: 43×7 inside Champion Status Slot 1
-      // (layout X=0,Y=171). Lighter band is texture top → FB Y 193..199.
-      const int frameX = 0;
-      const int frameY = 193;
-      const int frameWidth = 43;
-      const int frameHeight = 7;
-      const int localX = -1;
-      const int localY = 0;
-      const int championNameAdvance = 6;
-
-      Color32 halkGold = new Color32(255, 182, 0, 255);
-
-      bitmapFont.DrawText(
-          pixels,
-          PreviewWidth,
-          PreviewHeight,
-          "HALK",
-          frameX + localX,
-          frameY + localY,
-          halkGold,
-          frameX,
-          frameY,
-          frameWidth,
-          frameHeight,
-          championNameAdvance
-      );
-    }
-
-    if (bitmapFont != null)
-    {
       bitmapFont.DrawPoseDebugText(
           pixels,
           PreviewWidth,
@@ -18087,9 +18066,104 @@ public class ViewportLayoutEditor : EditorWindow
         out int forwardX,
         out int forwardY);
 
-    // Center F2 case: the Apple tile is exactly one step ahead.
+    // F2 means the Apple tile is exactly one map step ahead. The item's
+    // sub-square is resolved separately into Front/Right/Back/Left relative
+    // to the current facing; do not collapse every facing into one X/Y slot.
     return previewX + forwardX == Level0AppleTestX
         && previewY + forwardY == Level0AppleTestY;
+  }
+
+  private static bool TryGetFloorItemSubSquareOffset(
+      string cell,
+      out int offsetX,
+      out int offsetY)
+  {
+    // Dungeon Master floor-item N/E/S/W positions are four CORNER slots,
+    // not four center-edge vectors. With map Y increasing south:
+    //
+    // N = north-west, E = north-east, S = south-east, W = south-west.
+    //
+    // This explains the verified Apple observations:
+    //   facing West  -> N projects to screen-right
+    //   facing North -> N projects to screen-left.
+    offsetX = 0;
+    offsetY = 0;
+
+    switch ((cell ?? string.Empty).ToUpperInvariant())
+    {
+      case "N":
+        offsetX = -1;
+        offsetY = -1;
+        return true;
+      case "E":
+        offsetX = 1;
+        offsetY = -1;
+        return true;
+      case "S":
+        offsetX = 1;
+        offsetY = 1;
+        return true;
+      case "W":
+        offsetX = -1;
+        offsetY = 1;
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private bool TryGetLevel0AppleF2RelativeSide(out bool isRight)
+  {
+    isRight = false;
+
+    if (!TryGetLevel0AppleF2Projection())
+      return false;
+
+    if (!TryGetFloorItemSubSquareOffset(
+            Level0AppleTestCell,
+            out int itemOffsetX,
+            out int itemOffsetY))
+    {
+      return false;
+    }
+
+    // Resolve the player's screen-right direction explicitly instead of using
+    // DungeonMap.GetRightOffset here. Floor-item corner projection is screen
+    // geometry, and this explicit cardinal mapping avoids inheriting any map
+    // navigation convention/sign differences.
+    int screenRightX;
+    int screenRightY;
+    switch (previewFacing)
+    {
+      case DungeonFacing.North:
+        screenRightX = 1;
+        screenRightY = 0;
+        break;
+      case DungeonFacing.East:
+        screenRightX = 0;
+        screenRightY = 1;
+        break;
+      case DungeonFacing.South:
+        screenRightX = -1;
+        screenRightY = 0;
+        break;
+      case DungeonFacing.West:
+        screenRightX = 0;
+        screenRightY = -1;
+        break;
+      default:
+        return false;
+    }
+
+    // Project the stored corner slot onto the player's horizontal screen axis.
+    int lateral =
+        itemOffsetX * screenRightX
+        + itemOffsetY * screenRightY;
+    if (lateral == 0)
+      return false;
+
+    isRight = lateral > 0;
+    return true;
   }
 
   private bool TryGetLevel0AppleF0RightProjection()
@@ -18172,14 +18246,28 @@ public class ViewportLayoutEditor : EditorWindow
     if (apple == null || !apple.isReadable || apple.width <= 0 || apple.height <= 0)
       return;
 
+    int x;
+    int top;
     if (isF2)
     {
-      // Generate the farther F2 view from the one F1 source image.
-      int y = PreviewHeight - appleF2PreviewScreenTop - AppleF2Height;
+      // Generate the farther F2 view from the one source image. Resolve the
+      // stored N/E/S/W corner slot against the current facing before choosing
+      // the screen lane.
+      if (!TryGetLevel0AppleF2RelativeSide(out bool isRight))
+        return;
+
+      x = isRight
+          ? appleF2RightPreviewX
+          : appleF2LeftPreviewX;
+      top = isRight
+          ? appleF2RightPreviewScreenTop
+          : appleF2LeftPreviewScreenTop;
+
+      int y = PreviewHeight - top - AppleF2Height;
       BlitPieceScaledIntoPreview(
           pixels,
           apple,
-          appleF2PreviewX,
+          x,
           y,
           AppleF2Width,
           AppleF2Height,
@@ -18189,10 +18277,10 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    int x = isF0Right
+    x = isF0Right
         ? appleF0RightPreviewX
         : appleF0FrontPreviewX;
-    int top = isF0Right
+    top = isF0Right
         ? appleF0RightPreviewScreenTop
         : appleF0FrontPreviewScreenTop;
     int yF1 = PreviewHeight - top - apple.height;
