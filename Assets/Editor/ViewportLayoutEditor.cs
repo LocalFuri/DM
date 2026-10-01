@@ -18184,7 +18184,8 @@ public class ViewportLayoutEditor : EditorWindow
           AppleF2Width,
           AppleF2Height,
           false,
-          skipCyanTransparencyKey: true);
+          skipCyanTransparencyKey: true,
+          colorMap: WallOrnamentMediumColorMap);
       return;
     }
 
@@ -21986,7 +21987,8 @@ public class ViewportLayoutEditor : EditorWindow
       int destWidth,
       int destHeight,
       bool mirrorHorizontally = false,
-      bool skipCyanTransparencyKey = false)
+      bool skipCyanTransparencyKey = false,
+      byte[] colorMap = null)
   {
     if (source == null)
       return;
@@ -22003,7 +22005,8 @@ public class ViewportLayoutEditor : EditorWindow
         0,
         source.width,
         source.height,
-        skipCyanTransparencyKey);
+        skipCyanTransparencyKey,
+        colorMap);
   }
 
   private static void BlitPieceScaledIntoPreview(
@@ -22018,7 +22021,8 @@ public class ViewportLayoutEditor : EditorWindow
       int sourceY,
       int sourceWidth,
       int sourceHeight,
-      bool skipCyanTransparencyKey = false)
+      bool skipCyanTransparencyKey = false,
+      byte[] colorMap = null)
   {
     if (!source.isReadable
         || destWidth <= 0
@@ -22071,6 +22075,19 @@ public class ViewportLayoutEditor : EditorWindow
             && sourceColour.b == 255)
         {
           continue;
+        }
+
+        // Optional Dungeon Master distance-palette remap. The F2 apple uses
+        // the recovered Medium map, which turns the bright source red into
+        // the darker brown/orange seen in the original DOS F2 view.
+        if (colorMap != null && colorMap.Length >= 16)
+        {
+          Color32[] brightPalette = DungeonViewportLightPalettes[0];
+          int sourcePaletteIndex =
+              FindExactDmPaletteIndexOrNearest(sourceColour, brightPalette);
+          int mappedPaletteIndex =
+              Mathf.Clamp(colorMap[sourcePaletteIndex], 0, 15);
+          sourceColour = brightPalette[mappedPaletteIndex];
         }
 
         dest[targetY * PreviewWidth + targetX] = sourceColour;
