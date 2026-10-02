@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using DM.Dungeon;
 using DM.Rendering;
@@ -130,6 +131,10 @@ public class ViewportLayoutEditor : EditorWindow
   // Compact read-only X/Y boxes for floor-item rows in ViewEdit. Sized for
   // a single visible digit so ground items do not waste horizontal space.
   private const float FloorItemMapCoordFieldWidth = 28f;
+
+  // Shared description column for Champion Mirror and the ornament rows
+  // under it, so Enabled starts on the same x for every feature row.
+  private const float FeatureDescriptionWidth = 210f;
 
   // Same-tile F0-forward calibration for pose (5,11) facing East. Keep these
   // as render-only values while deriving the generic floor-item projection.
@@ -1353,9 +1358,103 @@ public class ViewportLayoutEditor : EditorWindow
     if (x < 0f)
       x = inspectorRect.x;
 
-    // ViewEdit is always pinned to the top edge of the Unity editor.
-    return new Rect(x, 0f, width, inspectorRect.height);
+    // ViewEdit always spans the full monitor height: top Y = 0 and the
+    // bottom edge at the monitor maximum. Keep only the fitted content width.
+    return new Rect(x, 0f, width, GetViewEditMonitorHeight());
   }
+
+  /// <summary>
+  /// Return the real desktop-monitor height used by a floating Unity editor
+  /// window. Screen.currentResolution is intentionally not used here: inside
+  /// the editor it can describe the Game display / a scaled resolution and can
+  /// therefore leave ViewEdit short of the physical monitor bottom.
+  /// </summary>
+  private static float GetViewEditMonitorHeight()
+  {
+#if UNITY_EDITOR_WIN
+    // Unity editor windows use desktop screen coordinates on Windows. Query the
+    // monitor containing the centre of ViewEdit and use the monitor rectangle,
+    // not the work area, so Y=0 + height reaches the true bottom of the screen.
+    ViewportLayoutEditor existing =
+        Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>().FirstOrDefault();
+
+    Rect r = existing != null ? existing.position : new Rect(0f, 0f, 1f, 1f);
+    POINT pt = new POINT
+    {
+      x = Mathf.RoundToInt(r.x + Mathf.Max(1f, r.width) * 0.5f),
+      y = Mathf.RoundToInt(r.y + Mathf.Max(1f, r.height) * 0.5f)
+    };
+
+    System.IntPtr monitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+    if (monitor != System.IntPtr.Zero)
+    {
+      MONITORINFO info = new MONITORINFO();
+      info.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
+      if (GetMonitorInfo(monitor, ref info))
+      {
+        int monitorHeight = info.rcMonitor.bottom - info.rcMonitor.top;
+        if (monitorHeight > 0)
+          return monitorHeight;
+      }
+    }
+
+    int systemHeight = GetSystemMetrics(SM_CYSCREEN);
+    if (systemHeight > 0)
+      return systemHeight;
+#endif
+
+    if (Screen.currentResolution.height > 0)
+      return Screen.currentResolution.height;
+
+    ViewportLayoutEditor fallback =
+        Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>().FirstOrDefault();
+    if (fallback != null && fallback.position.height > 1f)
+      return fallback.position.height;
+
+    return 1080f;
+  }
+
+#if UNITY_EDITOR_WIN
+  private const uint MONITOR_DEFAULTTONEAREST = 2;
+  private const int SM_CYSCREEN = 1;
+
+  [StructLayout(LayoutKind.Sequential)]
+  private struct POINT
+  {
+    public int x;
+    public int y;
+  }
+
+  [StructLayout(LayoutKind.Sequential)]
+  private struct RECT
+  {
+    public int left;
+    public int top;
+    public int right;
+    public int bottom;
+  }
+
+  [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+  private struct MONITORINFO
+  {
+    public int cbSize;
+    public RECT rcMonitor;
+    public RECT rcWork;
+    public uint dwFlags;
+  }
+
+  [DllImport("user32.dll")]
+  private static extern System.IntPtr MonitorFromPoint(
+      POINT pt, uint dwFlags);
+
+  [DllImport("user32.dll", CharSet = CharSet.Auto)]
+  [return: MarshalAs(UnmanagedType.Bool)]
+  private static extern bool GetMonitorInfo(
+      System.IntPtr hMonitor, ref MONITORINFO lpmi);
+
+  [DllImport("user32.dll")]
+  private static extern int GetSystemMetrics(int nIndex);
+#endif
 
   /// <summary>
   /// Width of the widest fixed ViewEdit row, including the minimap and the
@@ -1969,15 +2068,19 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnGUI()
   {
-    // Keep ViewEdit pinned to the top of the Unity editor even if Unity restores
-    // an older floating-window position or the user drags the window downward.
+    // Keep ViewEdit pinned to the full monitor height even if Unity restores an
+    // older floating-window position or the user drags/resizes the window.
+    // Top is always Y=0 and bottom is always the monitor maximum.
     Rect currentWindowRect = position;
-    if (!maximized && Mathf.Abs(currentWindowRect.y) > 0.01f)
+    float monitorHeight = GetViewEditMonitorHeight();
+    if (!maximized
+        && (Mathf.Abs(currentWindowRect.y) > 0.01f
+            || Mathf.Abs(currentWindowRect.height - monitorHeight) > 0.5f))
       position = new Rect(
           currentWindowRect.x,
           0f,
           currentWindowRect.width,
-          currentWindowRect.height);
+          monitorHeight);
 
     if (HandleViewEditDoubleClick())
       return;
@@ -17637,6 +17740,42 @@ public class ViewportLayoutEditor : EditorWindow
     return true;
   }
 
+  private void DrawReadOnlyFeatureMapFields(int mapX, int mapY)
+  {
+    // Same minimum width as loose floor items. This left-aligns the feature
+    // descriptions and the Enabled column across Champion Mirror, Wood Ring,
+    // Slime, and the other ornament rows.
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    using (new EditorGUI.DisabledScope(true))
+    {
+      EditorGUILayout.IntField(
+          "X", mapX, GUILayout.Width(FloorItemMapCoordFieldWidth));
+      EditorGUIUtility.labelWidth =
+          EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+      EditorGUILayout.IntField(
+          "Y", mapY, GUILayout.Width(FloorItemMapCoordFieldWidth));
+    }
+  }
+
+  private bool DrawFeatureEnabledToggle(bool enabledBefore)
+  {
+    const string EnabledLabel = "Enabled";
+    const float ToggleBoxWidth = 18f;
+    float enabledLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent(EnabledLabel)).x;
+    EditorGUIUtility.labelWidth = enabledLabelWidth;
+
+    bool enabledAfter = DrawMouseOnlyToggle(
+        EnabledLabel,
+        enabledBefore,
+        enabledBefore,
+        GUILayout.Width(enabledLabelWidth + ToggleBoxWidth),
+        GUILayout.ExpandWidth(false));
+    NoteContentRight();
+    return enabledAfter;
+  }
+
   private bool DrawChampionMirrorFeatureRow(ChampionMirrorPlacement mirror)
   {
     if (!TryGetChampionMirrorViewProjection(
@@ -17660,43 +17799,37 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.BeginHorizontal();
 
-    // Show the Champion Mirror's dungeon-map coordinates here, not its
-    // framebuffer/pixel render position.  These coordinates identify the
-    // physical mirror placement and are intentionally read-only in ViewEdit.
     float savedLabelWidth = EditorGUIUtility.labelWidth;
-    EditorGUIUtility.labelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    using (new EditorGUI.DisabledScope(true))
-    {
-      EditorGUILayout.IntField("X", mirror.x, GUILayout.Width(48f));
-      EditorGUIUtility.labelWidth =
-          EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-      EditorGUILayout.IntField("Y", mirror.y, GUILayout.Width(48f));
-    }
-    EditorGUIUtility.labelWidth = savedLabelWidth;
+    DrawReadOnlyFeatureMapFields(mirror.x, mirror.y);
 
     GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
     Color labelColor = new Color(0.15f, 0.85f, 1f);
     featureStyle.normal.textColor = labelColor;
     featureStyle.hover.textColor = labelColor;
     featureStyle.focused.textColor = labelColor;
-    const float FeatureDescriptionWidth = 210f;
     GUILayout.Label(
         name,
         featureStyle,
         GUILayout.Width(FeatureDescriptionWidth));
 
     bool enabledBefore = IsPreviewFeatureEnabled(key);
-    bool enabledAfter = DrawCompactMouseOnlyToggle(
-        "Enabled",
-        enabledBefore,
-        false);
+    bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
 
-    bool mirrorAfter = DrawCompactMouseOnlyToggle(
-        "Mirror",
+    // Champion mirrors additionally expose Mirror immediately after Enabled.
+    const string MirrorLabel = "Mirror";
+    float mirrorLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
+    EditorGUIUtility.labelWidth = mirrorLabelWidth;
+    const float ToggleBoxWidth = 18f;
+    bool mirrorAfter = DrawMouseOnlyToggle(
+        MirrorLabel,
         mirrorValue,
-        true);
+        enabledAfter,
+        GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
+        GUILayout.ExpandWidth(false));
+    NoteContentRight();
 
+    EditorGUIUtility.labelWidth = savedLabelWidth;
     EditorGUILayout.EndHorizontal();
 
     bool changed = false;
@@ -17765,50 +17898,19 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.BeginHorizontal();
 
     float savedLabelWidth = EditorGUIUtility.labelWidth;
-    EditorGUIUtility.labelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    using (new EditorGUI.DisabledScope(true))
-    {
-      // Keep map-coordinate fields at the same minimum width used by
-      // loose floor items (Apple/Bread). This left-aligns the feature
-      // descriptions and the Enabled column across all item rows.
-      EditorGUILayout.IntField("X", mapX, GUILayout.Width(FloorItemMapCoordFieldWidth));
-      EditorGUIUtility.labelWidth =
-          EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-      EditorGUILayout.IntField("Y", mapY, GUILayout.Width(FloorItemMapCoordFieldWidth));
-    }
+    DrawReadOnlyFeatureMapFields(mapX, mapY);
 
     GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
     featureStyle.normal.textColor = labelColor;
     featureStyle.hover.textColor = labelColor;
     featureStyle.focused.textColor = labelColor;
-    // Use one fixed description column so every Enabled checkbox starts
-    // immediately to the right of the longest feature description instead of
-    // being pushed to the far right edge of the ViewEdit window.
-    // Keep every ornament/feature description in the same fixed-width
-    // column as the dedicated Champion Mirror and Grate rows. This makes
-    // the Enabled column line up vertically for Hook/Wood Ring/Slime/etc.,
-    // and any Mirror control starts in the same column immediately after it.
-    const float FeatureDescriptionWidth = 210f;
     GUILayout.Label(
         displayName,
         featureStyle,
         GUILayout.Width(FeatureDescriptionWidth));
 
-    const string EnabledLabel = "Enabled";
-    const float ToggleBoxWidth = 18f;
-    float enabledLabelWidth =
-        EditorStyles.label.CalcSize(new GUIContent(EnabledLabel)).x;
-    EditorGUIUtility.labelWidth = enabledLabelWidth;
-
     bool enabledBefore = IsPreviewFeatureEnabled(key);
-    bool enabledAfter = DrawMouseOnlyToggle(
-        EnabledLabel,
-        enabledBefore,
-        enabledBefore,
-        GUILayout.Width(enabledLabelWidth + ToggleBoxWidth),
-        GUILayout.ExpandWidth(false));
-    NoteContentRight();
+    bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
 
     EditorGUIUtility.labelWidth = savedLabelWidth;
     EditorGUILayout.EndHorizontal();
