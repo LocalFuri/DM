@@ -1375,8 +1375,7 @@ public class ViewportLayoutEditor : EditorWindow
     // Unity editor windows use desktop screen coordinates on Windows. Query the
     // monitor containing the centre of ViewEdit and use the monitor rectangle,
     // not the work area, so Y=0 + height reaches the true bottom of the screen.
-    ViewportLayoutEditor existing =
-        Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>().FirstOrDefault();
+    ViewportLayoutEditor existing = FindOpenViewEditWindow();
 
     Rect r = existing != null ? existing.position : new Rect(0f, 0f, 1f, 1f);
     POINT pt = new POINT
@@ -1406,8 +1405,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (Screen.currentResolution.height > 0)
       return Screen.currentResolution.height;
 
-    ViewportLayoutEditor fallback =
-        Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>().FirstOrDefault();
+    ViewportLayoutEditor fallback = FindOpenViewEditWindow();
     if (fallback != null && fallback.position.height > 1f)
       return fallback.position.height;
 
