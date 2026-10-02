@@ -170,6 +170,8 @@ public class ViewportLayoutEditor : EditorWindow
   // Altar_of_Vi_96,56.png or Altar_of_Vi_96x56.png works.
   private const int ViAltarD1FrontX = 64;
   private const int ViAltarD1FrontY = 75;
+  private const int ViAltarS1RightX = 171;
+  private const int ViAltarS1Y = 50;
 
   // F2 and F3 are scaled from the 96x56 F1 graphic. These are the
   // measured destination slots, not separate captured pictures.
@@ -1069,6 +1071,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedChampionMirrorFrontF3Texture;
   [System.NonSerialized]
   private Texture2D cachedViAltarFrontTexture;
+  private Texture2D cachedViAltarS1Texture;
   [System.NonSerialized]
   private Texture2D cachedViAltarGeneratedF2TestTexture;
   private Texture2D cachedViAltarGeneratedF3TestTexture;
@@ -13445,6 +13448,10 @@ public class ViewportLayoutEditor : EditorWindow
     BlitGrateD3FrontIntoPreview(pixels);
     BlitGrateD2FrontIntoPreview(pixels);
     BlitGrateD1FrontIntoPreview(pixels);
+
+    // Absolute final overlay for the verified original pose 3,17 East.
+    // This is intentionally last so no other feature can cover it.
+    BlitViAltarS1RightAt317EastIntoPreview(pixels);
   }
 
   private static void ApplyDungeonViewportLightPalette(
@@ -17065,6 +17072,15 @@ public class ViewportLayoutEditor : EditorWindow
             System.StringComparison.OrdinalIgnoreCase))
       return "Grate";
 
+    // The placement database uses AltarOfVi, while the live altar renderers
+    // use ViAltar as their canonical type name. Normalise the database name
+    // here so D1/D2/D3 all see the same type.
+    if (string.Equals(
+            type,
+            "AltarOfVi",
+            System.StringComparison.OrdinalIgnoreCase))
+      return "ViAltar";
+
     return type;
   }
 
@@ -17978,6 +17994,97 @@ public class ViewportLayoutEditor : EditorWindow
     Repaint();
   }
 
+  private bool IsViAltarOrnament(WallOrnamentPlacement ornament)
+  {
+    return ornament != null
+        && (string.Equals(ornament.type, "ViAltar", System.StringComparison.OrdinalIgnoreCase)
+            || string.Equals(ornament.type, "AltarOfVi", System.StringComparison.OrdinalIgnoreCase));
+  }
+
+  private bool DrawViAltarS1CalibrationRow(WallOrnamentPlacement ornament)
+  {
+    if (!IsViAltarOrnament(ornament)
+        || previewX != 3
+        || previewY != 17
+        || previewFacing != DungeonFacing.East)
+    {
+      return false;
+    }
+
+    string key = MakePreviewFeatureKey(
+        "Ornament", ornament.x, ornament.y, ornament.wall);
+
+    int x = ViAltarS1RightX;
+    int y = ViAltarS1Y;
+    bool mirror = false;
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+
+    EditorGUILayout.BeginHorizontal();
+    float savedLabelWidth = EditorGUIUtility.labelWidth;
+
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    int editX = x;
+    bool xChanged = DrawIntStepperInline(
+        "X", ref editX, snap, false, true);
+
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    int editY = y;
+    bool yChanged = DrawIntStepperInline(
+        "Y", ref editY, snap, false, true);
+
+    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
+    Color labelColor = new Color(1f, 0.65f, 0.1f);
+    featureStyle.normal.textColor = labelColor;
+    featureStyle.hover.textColor = labelColor;
+    featureStyle.focused.textColor = labelColor;
+    string name = "ViAltar";
+    if (!string.IsNullOrEmpty(ornament.wall))
+      name += " (" + ornament.wall + ")";
+    GUILayout.Label(
+        name,
+        featureStyle,
+        GUILayout.Width(FeatureDescriptionWidth));
+
+    bool enabledBefore = IsPreviewFeatureEnabled(key);
+    bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
+
+    EditorGUIUtility.labelWidth = savedLabelWidth;
+    EditorGUILayout.EndHorizontal();
+
+    bool changed = false;
+    if (xChanged && editX != x)
+    {
+      previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      previewPositionChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (yChanged && editY != y)
+    {
+      previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      previewPositionChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (enabledAfter != enabledBefore)
+    {
+      SetPreviewFeatureEnabled(key, enabledAfter);
+      previewEnabledChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (changed)
+    {
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+
+    return true;
+  }
+
   private void DrawCurrentPoseFeatureRows()
   {
     EnsurePreviewMiniMapLoaded();
@@ -18009,6 +18116,13 @@ public class ViewportLayoutEditor : EditorWindow
       {
         WallOrnamentPlacement ornament = previewWallOrnaments[i];
         if (ornament == null || !IsMapCellInCurrentFeatureCone(ornament.x, ornament.y))
+          continue;
+
+        // The verified 3,17 East Vi Altar S1 view has its own temporary
+        // render-position calibration row.  It consumes the same per-pose
+        // override dictionary as the renderer, so X/Y changes are immediate
+        // and reset automatically when the pose changes.
+        if (DrawViAltarS1CalibrationRow(ornament))
           continue;
 
         // Grates have their own rendered-projection ViewEdit row. Only show
@@ -18931,6 +19045,75 @@ public class ViewportLayoutEditor : EditorWindow
     return cache;
   }
 
+
+  private Texture2D GetViAltarS1Texture()
+  {
+    if (cachedViAltarS1Texture != null)
+      return cachedViAltarS1Texture;
+
+    const string exactPath =
+        "Assets/Art/Ornaments/Altar_of_Vi_S1_20x48.png";
+
+    TextureImporter importer =
+        AssetImporter.GetAtPath(exactPath) as TextureImporter;
+    if (importer != null && !importer.isReadable)
+    {
+      importer.isReadable = true;
+      importer.SaveAndReimport();
+    }
+
+    cachedViAltarS1Texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(exactPath);
+    return cachedViAltarS1Texture;
+  }
+
+  private void BlitViAltarS1RightAt317EastIntoPreview(Color32[] pixels)
+  {
+    if (previewX != 3 || previewY != 17 || previewFacing != DungeonFacing.East)
+      return;
+
+    Texture2D altar = GetViAltarS1Texture();
+    if (altar == null || !altar.isReadable)
+      return;
+
+    int x = ViAltarS1RightX;
+    int y = ViAltarS1Y;
+    bool mirror = false;
+    string key = null;
+
+    if (previewWallOrnaments != null)
+    {
+      for (int i = 0; i < previewWallOrnaments.Length; i++)
+      {
+        WallOrnamentPlacement ornament = previewWallOrnaments[i];
+        if (!IsViAltarOrnament(ornament))
+          continue;
+
+        if (ornament.x == 4
+            && ornament.y == 18
+            && string.Equals(ornament.wall, "North", System.StringComparison.OrdinalIgnoreCase))
+        {
+          key = MakePreviewFeatureKey(
+              "Ornament", ornament.x, ornament.y, ornament.wall);
+          break;
+        }
+      }
+    }
+
+    if (!string.IsNullOrEmpty(key))
+    {
+      if (!IsPreviewFeatureEnabled(key))
+        return;
+      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+    }
+
+    BlitPieceIntoPreview(
+        pixels,
+        altar,
+        x,
+        y,
+        mirror);
+  }
 
   private void BlitViAltarD2FrontIntoPreview(Color32[] pixels)
   {
