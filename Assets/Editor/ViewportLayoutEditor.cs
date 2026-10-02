@@ -914,6 +914,38 @@ public class ViewportLayoutEditor : EditorWindow
     public bool wallTilePlacement;
   }
 
+  [System.Serializable]
+  private sealed class FloorItemPlacement
+  {
+    public string type;
+    public int x;
+    public int y;
+    public string cell;
+  }
+
+  // Loose items are map-space records. Rendering never keys off a player
+  // pose; it projects each record from its absolute map X/Y and sub-square
+  // against the current preview position/facing. Add future items here (or
+  // replace this source with parsed DUNGEON.DAT data) without adding pose
+  // exceptions to the renderer.
+  private static readonly FloorItemPlacement[] HallOfChampionsFloorItems =
+  {
+    new FloorItemPlacement
+    {
+      type = "Apple",
+      x = Level0AppleTestX,
+      y = Level0AppleTestY,
+      cell = Level0AppleTestCell
+    },
+    new FloorItemPlacement
+    {
+      type = "Bread",
+      x = Level0BreadTestX,
+      y = Level0BreadTestY,
+      cell = Level0BreadTestCell
+    }
+  };
+
   // Hall of Champions level-local wall ornament table extracted from
   // DUNGEON.DAT. OrnamentOrdinal is 1-based, so index = ordinal - 1.
   // WallOrnate: 4, 33, 34, 6, 2, 59, 38, 46, 36, 43
@@ -13209,8 +13241,7 @@ public class ViewportLayoutEditor : EditorWindow
   {
     // Floor features first, so wall-mounted artwork can sit above them.
     BlitPuddlesIntoPreview(pixels);
-    BlitLevel0AppleCalibrationIntoPreview(pixels);
-    BlitLevel0BreadCalibrationIntoPreview(pixels);
+    BlitFloorItemsIntoPreview(pixels);
 
     // Champion wall decorations.
     BlitChampionMirrorD0RightIntoPreview(pixels);
@@ -17794,8 +17825,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     // Loose-item calibrations from the original Level 0 DUNGEON.DAT.
-    DrawLevel0AppleCalibrationRow();
-    DrawLevel0BreadCalibrationRow();
+    DrawFloorItemRows();
 
     // Champion Mirrors. Only rows that correspond to a mirror projection the
     // renderer can actually draw for this pose are shown. X/Y are framebuffer
@@ -18239,38 +18269,11 @@ public class ViewportLayoutEditor : EditorWindow
         false);
   }
 
-  private bool TryGetLevel0AppleF2Projection()
+  private enum FloorItemDepth
   {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null || previewDungeonLevel != 0)
-      return false;
-
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-
-    // F2 means the Apple tile is exactly one map step ahead. The item's
-    // sub-square is resolved separately into Front/Right/Back/Left relative
-    // to the current facing; do not collapse every facing into one X/Y slot.
-    return previewX + forwardX == Level0AppleTestX
-        && previewY + forwardY == Level0AppleTestY;
-  }
-
-  private bool TryGetLevel0AppleF3Projection()
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null || previewDungeonLevel != 0)
-      return false;
-
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-
-    // F3 means the Apple tile is exactly two map steps ahead.
-    return previewX + forwardX * 2 == Level0AppleTestX
-        && previewY + forwardY * 2 == Level0AppleTestY;
+    SameTile = 0,
+    OneAhead = 1,
+    TwoAhead = 2
   }
 
   private static bool TryGetFloorItemSubSquareOffset(
@@ -18278,555 +18281,263 @@ public class ViewportLayoutEditor : EditorWindow
       out int offsetX,
       out int offsetY)
   {
-    // Dungeon Master floor-item N/E/S/W positions are four CORNER slots,
-    // not four center-edge vectors. With map Y increasing south:
-    //
-    // N = north-west, E = north-east, S = south-east, W = south-west.
-    //
-    // This explains the verified Apple observations:
-    //   facing West  -> N projects to screen-right
-    //   facing North -> N projects to screen-left.
+    // Dungeon Master N/E/S/W floor-item positions are corner slots.
+    // Map Y increases south: N=NW, E=NE, S=SE, W=SW.
     offsetX = 0;
     offsetY = 0;
-
     switch ((cell ?? string.Empty).ToUpperInvariant())
     {
-      case "N":
-        offsetX = -1;
-        offsetY = -1;
-        return true;
-      case "E":
-        offsetX = 1;
-        offsetY = -1;
-        return true;
-      case "S":
-        offsetX = 1;
-        offsetY = 1;
-        return true;
-      case "W":
-        offsetX = -1;
-        offsetY = 1;
-        return true;
-      default:
-        return false;
+      case "N": offsetX = -1; offsetY = -1; return true;
+      case "E": offsetX =  1; offsetY = -1; return true;
+      case "S": offsetX =  1; offsetY =  1; return true;
+      case "W": offsetX = -1; offsetY =  1; return true;
+      default: return false;
     }
   }
 
-  private bool TryGetLevel0AppleRelativeSide(out bool isRight)
+  private static void GetFloorItemViewBasis(
+      DungeonFacing facing,
+      out int forwardX,
+      out int forwardY,
+      out int rightX,
+      out int rightY)
   {
-    isRight = false;
-
-    if (!TryGetFloorItemSubSquareOffset(
-            Level0AppleTestCell,
-            out int itemOffsetX,
-            out int itemOffsetY))
-    {
-      return false;
-    }
-
-    // Resolve the player's screen-right direction explicitly instead of using
-    // DungeonMap.GetRightOffset here. Floor-item corner projection is screen
-    // geometry, and this explicit cardinal mapping avoids inheriting any map
-    // navigation convention/sign differences.
-    int screenRightX;
-    int screenRightY;
-    switch (previewFacing)
+    switch (facing)
     {
       case DungeonFacing.North:
-        screenRightX = 1;
-        screenRightY = 0;
-        break;
+        forwardX = 0; forwardY = -1; rightX = 1; rightY = 0; break;
       case DungeonFacing.East:
-        screenRightX = 0;
-        screenRightY = 1;
-        break;
+        forwardX = 1; forwardY = 0; rightX = 0; rightY = 1; break;
       case DungeonFacing.South:
-        screenRightX = -1;
-        screenRightY = 0;
-        break;
-      case DungeonFacing.West:
-        screenRightX = 0;
-        screenRightY = -1;
-        break;
-      default:
-        return false;
+        forwardX = 0; forwardY = 1; rightX = -1; rightY = 0; break;
+      default: // West
+        forwardX = -1; forwardY = 0; rightX = 0; rightY = -1; break;
     }
-
-    // Project the stored corner slot onto the player's horizontal screen axis.
-    int lateral =
-        itemOffsetX * screenRightX
-        + itemOffsetY * screenRightY;
-    if (lateral == 0)
-      return false;
-
-    isRight = lateral > 0;
-    return true;
   }
 
-  private bool TryGetLevel0AppleF0RightProjection()
+  private FloorItemPlacement[] GetCurrentFloorItems()
   {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null || previewDungeonLevel != 0)
+    return previewDungeonLevel == 0
+        ? HallOfChampionsFloorItems
+        : new FloorItemPlacement[0];
+  }
+
+  private bool TryProjectFloorItem(
+      FloorItemPlacement item,
+      out FloorItemDepth depth,
+      out bool isRight)
+  {
+    depth = FloorItemDepth.SameTile;
+    isRight = false;
+    if (item == null || previewMiniMap == null)
       return false;
 
-    // F0 means the item is on the party's current map tile. The original
-    // object record is (4,9) N. Convert that absolute sub-square direction
-    // into a direction relative to the current facing. At (4,9) facing West,
-    // North is the party's RIGHT sub-square, matching the original screenshot.
-    if (previewX != Level0AppleTestX || previewY != Level0AppleTestY)
-      return false;
-
-    int itemDx = 0;
-    int itemDy = -1; // absolute N sub-square
-    DungeonMap.GetRightOffset(
+    GetFloorItemViewBasis(
         previewFacing,
+        out int forwardX,
+        out int forwardY,
         out int rightX,
         out int rightY);
 
-    return itemDx == rightX && itemDy == rightY;
-  }
+    int dx = item.x - previewX;
+    int dy = item.y - previewY;
+    int forwardDistance = dx * forwardX + dy * forwardY;
+    int lateralTileDistance = dx * rightX + dy * rightY;
 
-  private bool TryGetLevel0AppleF0FrontProjection()
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null || previewDungeonLevel != 0)
+    // This pass handles the center corridor tile at the current square and
+    // the next two map squares. Side-tile floor items can be added later as
+    // a separate occlusion-aware projection, without coordinate hardcodes.
+    if (lateralTileDistance != 0 || forwardDistance < 0 || forwardDistance > 2)
       return false;
 
-    // Same-tile item: rotate its absolute N sub-square into view space.
-    // When facing North, absolute N is the party's FRONT sub-square.
-    if (previewX != Level0AppleTestX || previewY != Level0AppleTestY)
+    if (!TryGetFloorItemSubSquareOffset(
+            item.cell,
+            out int cornerX,
+            out int cornerY))
       return false;
 
-    int itemDx = 0;
-    int itemDy = -1; // absolute N sub-square
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
+    int cornerAhead = cornerX * forwardX + cornerY * forwardY;
+    int cornerLateral = cornerX * rightX + cornerY * rightY;
 
-    return itemDx == forwardX && itemDy == forwardY;
+    // On the party's own square only the front half of the floor is visible.
+    if (forwardDistance == 0 && cornerAhead <= 0)
+      return false;
+    if (cornerLateral == 0)
+      return false;
+
+    isRight = cornerLateral > 0;
+    depth = forwardDistance == 0
+        ? FloorItemDepth.SameTile
+        : forwardDistance == 1
+            ? FloorItemDepth.OneAhead
+            : FloorItemDepth.TwoAhead;
+    return true;
   }
 
-  private string GetLevel0AppleFeatureKey()
+  private string GetFloorItemFeatureKey(FloorItemPlacement item)
   {
     return MakePreviewFeatureKey(
-        "Item-Apple",
-        Level0AppleTestX,
-        Level0AppleTestY,
-        Level0AppleTestCell);
+        "Item-" + item.type,
+        item.x,
+        item.y,
+        item.cell);
   }
 
-  private Texture2D GetLevel0AppleCalibrationTexture()
+  private Texture2D GetFloorItemTexture(FloorItemPlacement item)
   {
-    if (cachedAppleGroundTexture == null)
-      cachedAppleGroundTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(
-          AppleGroundAssetPath);
-    return cachedAppleGroundTexture;
+    if (item == null)
+      return null;
+
+    if (string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase))
+    {
+      if (cachedAppleGroundTexture == null)
+        cachedAppleGroundTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(AppleGroundAssetPath);
+      return cachedAppleGroundTexture;
+    }
+
+    if (string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase))
+    {
+      if (cachedBreadGroundTexture == null)
+        cachedBreadGroundTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(BreadGroundAssetPath);
+      return cachedBreadGroundTexture;
+    }
+
+    return null;
   }
 
-  private void BlitLevel0AppleCalibrationIntoPreview(Color32[] pixels)
+  private void BlitFloorItemsIntoPreview(Color32[] pixels)
   {
     if (pixels == null)
       return;
 
-    bool isF0Right = TryGetLevel0AppleF0RightProjection();
-    bool isF0Front = TryGetLevel0AppleF0FrontProjection();
-    bool isF2 = TryGetLevel0AppleF2Projection();
-    bool isF3 = TryGetLevel0AppleF3Projection();
-    if (!isF0Right && !isF0Front && !isF2 && !isF3)
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
       return;
 
-    string key = GetLevel0AppleFeatureKey();
-    if (!IsPreviewFeatureEnabled(key))
-      return;
-
-    Texture2D apple = GetLevel0AppleCalibrationTexture();
-    if (apple == null || !apple.isReadable || apple.width <= 0 || apple.height <= 0)
-      return;
-
-    int x;
-    int top;
-    if (isF3 || isF2)
+    FloorItemPlacement[] items = GetCurrentFloorItems();
+    for (int i = 0; i < items.Length; i++)
     {
-      // Generate the farther view from the one source image. Resolve the
-      // stored N/E/S/W corner slot against the current facing before choosing
-      // the screen lane. F3 is two steps ahead; F2 is one step ahead.
-      if (!TryGetLevel0AppleRelativeSide(out bool isRight))
-        return;
+      FloorItemPlacement item = items[i];
+      if (!TryProjectFloorItem(item, out FloorItemDepth depth, out bool isRight))
+        continue;
+      if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(item)))
+        continue;
 
-      if (isF3)
+      Texture2D texture = GetFloorItemTexture(item);
+      if (texture == null || !texture.isReadable || texture.width <= 0 || texture.height <= 0)
+        continue;
+
+      BlitProjectedFloorItem(pixels, item, texture, depth, isRight);
+    }
+  }
+
+  private void BlitProjectedFloorItem(
+      Color32[] pixels,
+      FloorItemPlacement item,
+      Texture2D texture,
+      FloorItemDepth depth,
+      bool isRight)
+  {
+    bool apple = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
+    bool bread = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
+    if (!apple && !bread)
+      return;
+
+    if (depth == FloorItemDepth.SameTile)
+    {
+      int x = apple
+          ? (isRight ? appleF0RightPreviewX : appleF0FrontPreviewX)
+          : (isRight ? breadF0RightPreviewX : breadF0LeftPreviewX);
+      int top = apple
+          ? (isRight ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop)
+          : (isRight ? breadF0RightPreviewScreenTop : breadF0LeftPreviewScreenTop);
+      BlitPieceIntoPreview(pixels, texture, x, PreviewHeight - top - texture.height, false);
+      return;
+    }
+
+    if (depth == FloorItemDepth.OneAhead)
+    {
+      int width = apple ? AppleF2Width : BreadF2Width;
+      int height = apple ? AppleF2Height : BreadF2Height;
+      int x = apple
+          ? (isRight ? appleF2RightPreviewX : appleF2LeftPreviewX)
+          : (isRight ? breadF2RightPreviewX : breadF2LeftPreviewX);
+      int top = apple
+          ? (isRight ? appleF2RightPreviewScreenTop : appleF2LeftPreviewScreenTop)
+          : (isRight ? breadF2RightPreviewScreenTop : breadF2LeftPreviewScreenTop);
+      BlitPieceScaledIntoPreview(
+          pixels, texture, x, PreviewHeight - top - height, width, height, false,
+          skipCyanTransparencyKey: apple,
+          colorMap: WallOrnamentMediumColorMap);
+      return;
+    }
+
+    // F3 is calibrated from the Apple source today. Keep the generic map
+    // projection active, but do not invent an unverified Bread F3 pixel slot.
+    if (!apple)
+      return;
+
+    int f3X = isRight ? appleF3RightPreviewX : appleF3LeftPreviewX;
+    int f3Top = isRight ? appleF3RightPreviewScreenTop : appleF3LeftPreviewScreenTop;
+    BlitPieceScaledIntoPreview(
+        pixels, texture, f3X, PreviewHeight - f3Top - AppleF3Height,
+        AppleF3Width, AppleF3Height, false,
+        skipCyanTransparencyKey: true,
+        colorMap: WallOrnamentFarColorMap);
+  }
+
+  private void DrawFloorItemRows()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return;
+
+    FloorItemPlacement[] items = GetCurrentFloorItems();
+    for (int i = 0; i < items.Length; i++)
+    {
+      FloorItemPlacement item = items[i];
+      if (!TryProjectFloorItem(item, out FloorItemDepth depth, out bool isRight))
+        continue;
+
+      // Bread F3 has no verified pixel calibration yet, so it is not drawn
+      // and should not appear as an active ViewEdit feature row.
+      if (depth == FloorItemDepth.TwoAhead
+          && string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase))
+        continue;
+
+      string key = GetFloorItemFeatureKey(item);
+      EditorGUILayout.BeginHorizontal();
+
+      float savedLabelWidth = EditorGUIUtility.labelWidth;
+      EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+      using (new EditorGUI.DisabledScope(true))
       {
-        x = isRight
-            ? appleF3RightPreviewX
-            : appleF3LeftPreviewX;
-        top = isRight
-            ? appleF3RightPreviewScreenTop
-            : appleF3LeftPreviewScreenTop;
-        int yF3 = PreviewHeight - top - AppleF3Height;
-        BlitPieceScaledIntoPreview(
-            pixels,
-            apple,
-            x,
-            yF3,
-            AppleF3Width,
-            AppleF3Height,
-            false,
-            skipCyanTransparencyKey: true,
-            colorMap: WallOrnamentFarColorMap);
-        return;
+        EditorGUILayout.IntField("X", item.x, GUILayout.Width(FloorItemMapCoordFieldWidth));
+        EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+        EditorGUILayout.IntField("Y", item.y, GUILayout.Width(FloorItemMapCoordFieldWidth));
       }
+      EditorGUIUtility.labelWidth = savedLabelWidth;
 
-      x = isRight
-          ? appleF2RightPreviewX
-          : appleF2LeftPreviewX;
-      top = isRight
-          ? appleF2RightPreviewScreenTop
-          : appleF2LeftPreviewScreenTop;
+      string depthLabel = depth == FloorItemDepth.SameTile
+          ? "F1"
+          : depth == FloorItemDepth.OneAhead ? "F2" : "F3";
+      GUILayout.Label(
+          item.type + " [" + item.cell + "] - " + depthLabel + " " + (isRight ? "Right" : "Left"),
+          EditorStyles.boldLabel,
+          GUILayout.Width(210f));
 
-      int y = PreviewHeight - top - AppleF2Height;
-      BlitPieceScaledIntoPreview(
-          pixels,
-          apple,
-          x,
-          y,
-          AppleF2Width,
-          AppleF2Height,
-          false,
-          skipCyanTransparencyKey: true,
-          colorMap: WallOrnamentMediumColorMap);
-      return;
-    }
+      bool enabledBefore = IsPreviewFeatureEnabled(key);
+      bool enabledAfter = DrawCompactMouseOnlyToggle("Enabled", enabledBefore, false);
+      EditorGUILayout.EndHorizontal();
 
-    x = isF0Right
-        ? appleF0RightPreviewX
-        : appleF0FrontPreviewX;
-    top = isF0Right
-        ? appleF0RightPreviewScreenTop
-        : appleF0FrontPreviewScreenTop;
-    int yF1 = PreviewHeight - top - apple.height;
-
-    BlitPieceIntoPreview(
-        pixels,
-        apple,
-        x,
-        yF1,
-        false);
-  }
-
-  private void DrawLevel0AppleCalibrationRow()
-  {
-    bool isF0Right = TryGetLevel0AppleF0RightProjection();
-    bool isF0Front = TryGetLevel0AppleF0FrontProjection();
-    bool isF2 = TryGetLevel0AppleF2Projection();
-    bool isF3 = TryGetLevel0AppleF3Projection();
-    if (!isF0Right && !isF0Front && !isF2 && !isF3)
-      return;
-
-    string key = GetLevel0AppleFeatureKey();
-
-    EditorGUILayout.BeginHorizontal();
-
-    float savedLabelWidth = EditorGUIUtility.labelWidth;
-    EditorGUIUtility.labelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    using (new EditorGUI.DisabledScope(true))
-    {
-      EditorGUILayout.IntField("X", Level0AppleTestX, GUILayout.Width(FloorItemMapCoordFieldWidth));
-      EditorGUIUtility.labelWidth =
-          EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-      EditorGUILayout.IntField("Y", Level0AppleTestY, GUILayout.Width(FloorItemMapCoordFieldWidth));
-    }
-    EditorGUIUtility.labelWidth = savedLabelWidth;
-
-    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
-    Color labelColor = new Color(0.95f, 0.25f, 0.15f);
-    featureStyle.normal.textColor = labelColor;
-    featureStyle.hover.textColor = labelColor;
-    featureStyle.focused.textColor = labelColor;
-    // The ViewEdit row describes the apple using the current minimap/view
-    // geometry. At the verified 4,9 West pose this is the F1 Front item view.
-    // Keep the already pixel-matched draw anchor unchanged; this is a UI
-    // classification/label correction only.
-    string projectionLabel =
-        "Apple(" + FacingName(previewFacing) + (isF3 ? " / F3)" : isF2 ? " / F2)" : " / F1)");
-    GUILayout.Label(
-        projectionLabel,
-        featureStyle,
-        GUILayout.Width(210f));
-
-    bool enabledBefore = IsPreviewFeatureEnabled(key);
-    bool enabledAfter = DrawCompactMouseOnlyToggle(
-        "Enabled",
-        enabledBefore,
-        false);
-
-    EditorGUILayout.EndHorizontal();
-
-    if (enabledAfter != enabledBefore)
-    {
-      SetPreviewFeatureEnabled(key, enabledAfter);
-      previewEnabledChangedThisFrame = true;
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
-    }
-  }
-
-  private bool TryGetLevel0BreadF2Projection()
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null || previewDungeonLevel != 0)
-      return false;
-
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-
-    return previewX + forwardX == Level0BreadTestX
-        && previewY + forwardY == Level0BreadTestY;
-  }
-
-  private bool TryGetLevel0BreadRelativeSide(out bool isRight)
-  {
-    isRight = false;
-    if (!TryGetFloorItemSubSquareOffset(
-            Level0BreadTestCell,
-            out int itemOffsetX,
-            out int itemOffsetY))
-    {
-      return false;
-    }
-
-    int screenRightX;
-    int screenRightY;
-    switch (previewFacing)
-    {
-      case DungeonFacing.North:
-        screenRightX = 1;
-        screenRightY = 0;
-        break;
-      case DungeonFacing.East:
-        screenRightX = 0;
-        screenRightY = 1;
-        break;
-      case DungeonFacing.South:
-        screenRightX = -1;
-        screenRightY = 0;
-        break;
-      case DungeonFacing.West:
-        screenRightX = 0;
-        screenRightY = -1;
-        break;
-      default:
-        return false;
-    }
-
-    int lateral =
-        itemOffsetX * screenRightX
-        + itemOffsetY * screenRightY;
-    if (lateral == 0)
-      return false;
-
-    isRight = lateral > 0;
-    return true;
-  }
-
-  private bool TryGetLevel0BreadF0Side(out bool isRight)
-  {
-    isRight = false;
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null || previewDungeonLevel != 0)
-      return false;
-
-    if (previewX != Level0BreadTestX || previewY != Level0BreadTestY)
-      return false;
-
-    if (!TryGetFloorItemSubSquareOffset(
-            Level0BreadTestCell,
-            out int itemOffsetX,
-            out int itemOffsetY))
-    {
-      return false;
-    }
-
-    // Same screen basis as the apple. Stored E is the north-east corner.
-    // The F0 floor only shows the front half of the current square, so a
-    // corner behind the party (South and West for this E slot) is hidden.
-    // Facing East projects front-left; facing North projects front-right.
-    int forwardX;
-    int forwardY;
-    int screenRightX;
-    int screenRightY;
-    switch (previewFacing)
-    {
-      case DungeonFacing.North:
-        forwardX = 0;
-        forwardY = -1;
-        screenRightX = 1;
-        screenRightY = 0;
-        break;
-      case DungeonFacing.East:
-        forwardX = 1;
-        forwardY = 0;
-        screenRightX = 0;
-        screenRightY = 1;
-        break;
-      case DungeonFacing.South:
-        forwardX = 0;
-        forwardY = 1;
-        screenRightX = -1;
-        screenRightY = 0;
-        break;
-      case DungeonFacing.West:
-        forwardX = -1;
-        forwardY = 0;
-        screenRightX = 0;
-        screenRightY = -1;
-        break;
-      default:
-        return false;
-    }
-
-    int ahead =
-        itemOffsetX * forwardX
-        + itemOffsetY * forwardY;
-    if (ahead <= 0)
-      return false;
-
-    int lateral =
-        itemOffsetX * screenRightX
-        + itemOffsetY * screenRightY;
-    if (lateral == 0)
-      return false;
-
-    isRight = lateral > 0;
-    return true;
-  }
-
-  private string GetLevel0BreadFeatureKey()
-  {
-    return MakePreviewFeatureKey(
-        "Item-Bread",
-        Level0BreadTestX,
-        Level0BreadTestY,
-        Level0BreadTestCell);
-  }
-
-  private Texture2D GetLevel0BreadCalibrationTexture()
-  {
-    if (cachedBreadGroundTexture == null)
-      cachedBreadGroundTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(
-          BreadGroundAssetPath);
-    return cachedBreadGroundTexture;
-  }
-
-  private void BlitLevel0BreadCalibrationIntoPreview(Color32[] pixels)
-  {
-    if (pixels == null)
-      return;
-
-    bool isF2 = TryGetLevel0BreadF2Projection();
-    bool isF0 = TryGetLevel0BreadF0Side(out bool isF0Right);
-    if (!isF2 && !isF0)
-      return;
-
-    string key = GetLevel0BreadFeatureKey();
-    if (!IsPreviewFeatureEnabled(key))
-      return;
-
-    Texture2D bread = GetLevel0BreadCalibrationTexture();
-    if (bread == null || !bread.isReadable || bread.width <= 0 || bread.height <= 0)
-      return;
-
-    if (isF2)
-    {
-      if (!TryGetLevel0BreadRelativeSide(out bool isF2Right))
-        return;
-
-      int f2X = isF2Right ? breadF2RightPreviewX : breadF2LeftPreviewX;
-      int f2Top = isF2Right
-          ? breadF2RightPreviewScreenTop
-          : breadF2LeftPreviewScreenTop;
-      int f2Y = PreviewHeight - f2Top - BreadF2Height;
-      BlitPieceScaledIntoPreview(
-          pixels,
-          bread,
-          f2X,
-          f2Y,
-          BreadF2Width,
-          BreadF2Height,
-          false,
-          colorMap: WallOrnamentMediumColorMap);
-      return;
-    }
-
-    bool isRight = isF0Right;
-    int x = isRight ? breadF0RightPreviewX : breadF0LeftPreviewX;
-    int top = isRight
-        ? breadF0RightPreviewScreenTop
-        : breadF0LeftPreviewScreenTop;
-    int y = PreviewHeight - top - bread.height;
-    BlitPieceIntoPreview(
-        pixels,
-        bread,
-        x,
-        y,
-        false);
-  }
-
-  private void DrawLevel0BreadCalibrationRow()
-  {
-    bool isF2 = TryGetLevel0BreadF2Projection();
-    bool isF0 = TryGetLevel0BreadF0Side(out bool isF0Right);
-    if (!isF2 && !isF0)
-      return;
-    bool isRight = isF2
-        ? TryGetLevel0BreadRelativeSide(out bool isF2Right) && isF2Right
-        : isF0Right;
-    string depthLabel = isF2 ? "F2" : "F0";
-
-    string key = GetLevel0BreadFeatureKey();
-
-    EditorGUILayout.BeginHorizontal();
-
-    float savedLabelWidth = EditorGUIUtility.labelWidth;
-    EditorGUIUtility.labelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    using (new EditorGUI.DisabledScope(true))
-    {
-      EditorGUILayout.IntField("X", Level0BreadTestX, GUILayout.Width(FloorItemMapCoordFieldWidth));
-      EditorGUIUtility.labelWidth =
-          EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-      EditorGUILayout.IntField("Y", Level0BreadTestY, GUILayout.Width(FloorItemMapCoordFieldWidth));
-    }
-    EditorGUIUtility.labelWidth = savedLabelWidth;
-
-    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
-    Color labelColor = new Color(0.95f, 0.55f, 0.10f);
-    featureStyle.normal.textColor = labelColor;
-    featureStyle.hover.textColor = labelColor;
-    featureStyle.focused.textColor = labelColor;
-    GUILayout.Label(
-        "Bread [E] - " + depthLabel + " " + (isRight ? "Right" : "Left"),
-        featureStyle,
-        GUILayout.Width(210f));
-
-    bool enabledBefore = IsPreviewFeatureEnabled(key);
-    bool enabledAfter = DrawCompactMouseOnlyToggle(
-        "Enabled",
-        enabledBefore,
-        false);
-
-    EditorGUILayout.EndHorizontal();
-
-    if (enabledAfter != enabledBefore)
-    {
-      SetPreviewFeatureEnabled(key, enabledAfter);
-      previewEnabledChangedThisFrame = true;
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
+      if (enabledAfter != enabledBefore)
+      {
+        SetPreviewFeatureEnabled(key, enabledAfter);
+        previewEnabledChangedThisFrame = true;
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
     }
   }
 
