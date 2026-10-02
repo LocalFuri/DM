@@ -18552,11 +18552,30 @@ public class ViewportLayoutEditor : EditorWindow
         || !previewPuddleFloors.Contains(PackPreviewTile(mapX, mapY)))
       return false;
 
-    // The renderer has center projections at F1/F2/F3. Side projections only
-    // exist at F1/F2, and use the same near-side occlusion tests as the draw
-    // pass.
+    // The renderer has center projections at F1/F2/F3. A center puddle is
+    // visible only while every nearer center tile stays open. This prevents a
+    // floor ornament at D2/D3 from being drawn through a nearer front wall
+    // (for example 7,10 West: the 4,10 puddle is behind the front wall).
     if (lane == 0)
-      return depth >= 1 && depth <= 3;
+    {
+      if (depth < 1 || depth > 3)
+        return false;
+
+      DungeonMap.GetForwardOffset(
+          previewFacing,
+          out int centerForwardX,
+          out int centerForwardY);
+
+      for (int nearerDepth = 1; nearerDepth < depth; nearerDepth++)
+      {
+        int nearerX = previewX + centerForwardX * nearerDepth;
+        int nearerY = previewY + centerForwardY * nearerDepth;
+        if (!PreviewTileIsOpen(nearerX, nearerY))
+          return false;
+      }
+
+      return true;
+    }
 
     if (Mathf.Abs(lane) != 1 || depth < 1 || depth > 2)
       return false;
@@ -18610,9 +18629,12 @@ public class ViewportLayoutEditor : EditorWindow
     int f3X = previewX + forwardX * 3;
     int f3Y = previewY + forwardY * 3;
 
-    BlitPuddleFloor(
-        pixels, f3X, f3Y, PuddleF3AssetPath, ref cachedPuddleF3Texture,
-        PuddleF3ScreenTop, true, 0, false);
+    if (IsPuddleProjectionVisibleInCurrentPose(f3X, f3Y, 3, 0))
+    {
+      BlitPuddleFloor(
+          pixels, f3X, f3Y, PuddleF3AssetPath, ref cachedPuddleF3Texture,
+          PuddleF3ScreenTop, true, 0, false);
+    }
 
     // Side-floor puddles must have an unobstructed same-side sight line.
     // D1 side tiles need the adjacent F0 side open. D2 side tiles need both
@@ -18656,9 +18678,12 @@ public class ViewportLayoutEditor : EditorWindow
           PuddleS2LeftScreenX, true);
     }
 
-    BlitPuddleFloor(
-        pixels, f2X, f2Y, PuddleF2AssetPath, ref cachedPuddleF2Texture,
-        PuddleF2ScreenTop, true, 0, false);
+    if (IsPuddleProjectionVisibleInCurrentPose(f2X, f2Y, 2, 0))
+    {
+      BlitPuddleFloor(
+          pixels, f2X, f2Y, PuddleF2AssetPath, ref cachedPuddleF2Texture,
+          PuddleF2ScreenTop, true, 0, false);
+    }
 
     if (f0LeftOpen)
     {
@@ -18671,9 +18696,12 @@ public class ViewportLayoutEditor : EditorWindow
       BlitPuddleF1Side(
           pixels, f1X + rightX, f1Y + rightY, true);
     }
-    BlitPuddleFloor(
-        pixels, f1X, f1Y, PuddleF1AssetPath, ref cachedPuddleF1Texture,
-        PuddleF1ScreenTop, true, 0, false);
+    if (IsPuddleProjectionVisibleInCurrentPose(f1X, f1Y, 1, 0))
+    {
+      BlitPuddleFloor(
+          pixels, f1X, f1Y, PuddleF1AssetPath, ref cachedPuddleF1Texture,
+          PuddleF1ScreenTop, true, 0, false);
+    }
   }
 
 
