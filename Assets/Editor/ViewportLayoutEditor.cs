@@ -1948,8 +1948,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Right-clicking anywhere inside ViewEdit hides the minimap. The map can
-  /// be restored with the existing Show Map button in the Snap toolbar.
+  /// Right-clicking anywhere inside ViewEdit toggles the minimap on/off.
   /// </summary>
   private bool HandleViewEditRightClick()
   {
@@ -1961,7 +1960,7 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    previewMiniMapMuted = true;
+    previewMiniMapMuted = !previewMiniMapMuted;
     current.Use();
     Repaint();
     return true;
