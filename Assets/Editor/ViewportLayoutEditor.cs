@@ -1353,7 +1353,8 @@ public class ViewportLayoutEditor : EditorWindow
     if (x < 0f)
       x = inspectorRect.x;
 
-    return new Rect(x, inspectorRect.y, width, inspectorRect.height);
+    // ViewEdit is always pinned to the top edge of the Unity editor.
+    return new Rect(x, 0f, width, inspectorRect.height);
   }
 
   /// <summary>
@@ -1968,6 +1969,16 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnGUI()
   {
+    // Keep ViewEdit pinned to the top of the Unity editor even if Unity restores
+    // an older floating-window position or the user drags the window downward.
+    Rect currentWindowRect = position;
+    if (!maximized && Mathf.Abs(currentWindowRect.y) > 0.01f)
+      position = new Rect(
+          currentWindowRect.x,
+          0f,
+          currentWindowRect.width,
+          currentWindowRect.height);
+
     if (HandleViewEditDoubleClick())
       return;
 
