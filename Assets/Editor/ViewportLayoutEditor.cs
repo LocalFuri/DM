@@ -1947,6 +1947,10 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  /// <summary>
+  /// Right-clicking anywhere inside ViewEdit hides the minimap. The map can
+  /// be restored with the existing Show Map button in the Snap toolbar.
+  /// </summary>
   private bool HandleViewEditRightClick()
   {
     Event current = Event.current;
@@ -1957,13 +1961,9 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    // Overlap: the click is inside Dungeon Features' screen rect, so close
-    // that window and do not open it again on this same click.
-    if (TryCloseDungeonFeaturesUnderMouse())
-      return true;
-
+    previewMiniMapMuted = true;
     current.Use();
-    EditorApplication.delayCall += DungeonFeatureEditor.Open;
+    Repaint();
     return true;
   }
 
