@@ -1900,6 +1900,53 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  /// <summary>
+  /// Double-clicking anywhere in ViewEdit opens Dungeon Features and maximizes
+  /// that editor window. A single left-click keeps its existing behaviour for
+  /// ViewEdit controls.
+  /// </summary>
+  private bool HandleViewEditDoubleClick()
+  {
+    Event current = Event.current;
+    if (current == null
+        || current.type != EventType.MouseDown
+        || current.button != 0
+        || current.clickCount < 2)
+    {
+      return false;
+    }
+
+    current.Use();
+    EditorApplication.delayCall += OpenDungeonFeaturesMaximized;
+    return true;
+  }
+
+  private static void OpenDungeonFeaturesMaximized()
+  {
+    DungeonFeatureEditor.Open();
+
+    // DungeonFeatureEditor.Open may create/show the window at the end of this
+    // editor update. Maximize it on the next update after Unity has attached
+    // the new window to its host view.
+    EditorApplication.delayCall += MaximizeDungeonFeaturesWindow;
+  }
+
+  private static void MaximizeDungeonFeaturesWindow()
+  {
+    EditorWindow[] windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
+    for (int i = 0; i < windows.Length; ++i)
+    {
+      EditorWindow candidate = windows[i];
+      if (!IsDungeonFeaturesWindow(candidate))
+        continue;
+
+      candidate.Focus();
+      if (!candidate.maximized)
+        candidate.maximized = true;
+      return;
+    }
+  }
+
   private bool HandleViewEditRightClick()
   {
     Event current = Event.current;
@@ -1922,6 +1969,9 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnGUI()
   {
+    if (HandleViewEditDoubleClick())
+      return;
+
     if (HandleViewEditRightClick())
       return;
 
