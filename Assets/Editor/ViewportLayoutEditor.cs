@@ -18085,6 +18085,135 @@ public class ViewportLayoutEditor : EditorWindow
     return true;
   }
 
+
+  private bool IsHookProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
+  {
+    if (!IsHookOrnament(ornament) || previewMiniMap == null)
+      return false;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    string viewedWallSide = FacingName(previewFacing);
+    string visibleFrontFace = OppositeFacingName(previewFacing);
+
+    // F1 front.
+    int f1X = previewX + forwardX;
+    int f1Y = previewY + forwardY;
+    if (PreviewTileIsWall(f1X, f1Y))
+    {
+      if (ornament.wallTilePlacement)
+      {
+        if (ornament.x == f1X
+            && ornament.y == f1Y
+            && string.Equals(ornament.wall, visibleFrontFace,
+                System.StringComparison.OrdinalIgnoreCase))
+          return true;
+      }
+      else if (ornament.x == previewX
+          && ornament.y == previewY
+          && string.Equals(ornament.wall, viewedWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        return true;
+      }
+    }
+
+    // F2 front.
+    int f2X = previewX + forwardX * 2;
+    int f2Y = previewY + forwardY * 2;
+    bool d1Open = PreviewTileIsOpen(f1X, f1Y);
+    if (d1Open && previewMiniMap.IsInside(f2X, f2Y))
+    {
+      if (ornament.wallTilePlacement)
+      {
+        if (ornament.x == f2X
+            && ornament.y == f2Y
+            && string.Equals(ornament.wall, visibleFrontFace,
+                System.StringComparison.OrdinalIgnoreCase))
+          return true;
+      }
+      else if (ornament.x == f1X
+          && ornament.y == f1Y
+          && string.Equals(ornament.wall, viewedWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        return true;
+      }
+    }
+
+    // Side projections S1/S2/S3. These exactly mirror the Hook side renderer:
+    // at each depth only the immediate left/right wall beside the lane center
+    // can carry the visible side hook.
+    for (int distance = 1; distance <= 3; distance++)
+    {
+      bool corridorOpen = true;
+      for (int d = 1; d <= distance; d++)
+      {
+        int cx = previewX + forwardX * d;
+        int cy = previewY + forwardY * d;
+        if (!PreviewTileIsOpen(cx, cy))
+        {
+          corridorOpen = false;
+          break;
+        }
+      }
+      if (!corridorOpen)
+        continue;
+
+      int centerX = previewX + forwardX * distance;
+      int centerY = previewY + forwardY * distance;
+      int leftWallX = centerX - rightX;
+      int leftWallY = centerY - rightY;
+      int rightWallX = centerX + rightX;
+      int rightWallY = centerY + rightY;
+
+      string leftPhysicalFace =
+          FacingName(TurnPreviewFacingRight(previewFacing));
+      string rightPhysicalFace =
+          FacingName(TurnPreviewFacingLeft(previewFacing));
+      string leftBoundaryDirection =
+          FacingName(TurnPreviewFacingLeft(previewFacing));
+      string rightBoundaryDirection =
+          FacingName(TurnPreviewFacingRight(previewFacing));
+
+      if (ornament.wallTilePlacement)
+      {
+        if (PreviewTileIsWall(leftWallX, leftWallY)
+            && ornament.x == leftWallX
+            && ornament.y == leftWallY
+            && string.Equals(ornament.wall, leftPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase))
+          return true;
+
+        if (PreviewTileIsWall(rightWallX, rightWallY)
+            && ornament.x == rightWallX
+            && ornament.y == rightWallY
+            && string.Equals(ornament.wall, rightPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase))
+          return true;
+      }
+      else
+      {
+        if (ornament.x == centerX
+            && ornament.y == centerY
+            && (string.Equals(ornament.wall, leftBoundaryDirection,
+                    System.StringComparison.OrdinalIgnoreCase)
+                || string.Equals(ornament.wall, rightBoundaryDirection,
+                    System.StringComparison.OrdinalIgnoreCase)))
+          return true;
+      }
+    }
+
+    return false;
+  }
+
   private void DrawCurrentPoseFeatureRows()
   {
     EnsurePreviewMiniMapLoaded();
@@ -18124,6 +18253,16 @@ public class ViewportLayoutEditor : EditorWindow
         // and reset automatically when the pose changes.
         if (DrawViAltarS1CalibrationRow(ornament))
           continue;
+
+        // Hooks must obey the exact same front/side projection geometry as
+        // the renderer.  The broad feature cone also contains outer cells
+        // that are not valid Hook projection slots (for example 5,15 West
+        // from pose 3,17 East), so those must not become ViewEdit rows.
+        if (IsHookOrnament(ornament)
+            && !IsHookProjectionVisibleInCurrentPose(ornament))
+        {
+          continue;
+        }
 
         // Grates have their own rendered-projection ViewEdit row. Only show
         // the grate if this exact ornament is actually drawable in this pose.
