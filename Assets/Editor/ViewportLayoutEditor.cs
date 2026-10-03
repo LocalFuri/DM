@@ -2002,17 +2002,17 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Double-clicking anywhere in ViewEdit opens Dungeon Features and maximizes
-  /// that editor window. A single left-click keeps its existing behaviour for
-  /// ViewEdit controls.
+  /// Pressing the rear thumb/side mouse button (XButton1 / IMGUI button 3)
+  /// anywhere in ViewEdit opens Dungeon Features and maximizes that editor
+  /// window. The previous left-button double-click shortcut is intentionally
+  /// disabled.
   /// </summary>
-  private bool HandleViewEditDoubleClick()
+  private bool HandleViewEditRearMouseButton()
   {
     Event current = Event.current;
     if (current == null
         || current.type != EventType.MouseDown
-        || current.button != 0
-        || current.clickCount < 2)
+        || current.button != 3)
     {
       return false;
     }
@@ -2083,7 +2083,7 @@ public class ViewportLayoutEditor : EditorWindow
           currentWindowRect.width,
           monitorHeight);
 
-    if (HandleViewEditDoubleClick())
+    if (HandleViewEditRearMouseButton())
       return;
 
     if (HandleViewEditRightClick())
