@@ -18100,6 +18100,7 @@ public class ViewportLayoutEditor : EditorWindow
       anchorX = centerX;
       anchorY = centerY;
       viewFacing = FacingName(previewFacing);
+      // Verified S1 orientation: opposite-side projection uses the stored S1 asset.
       defaultMirror = false;
       return true;
     }
@@ -18125,6 +18126,7 @@ public class ViewportLayoutEditor : EditorWindow
       anchorX = centerX;
       anchorY = centerY;
       viewFacing = FacingName(previewFacing);
+      // Verified S1 reference: 3,17 East / altar 4,17 must render mirrored.
       defaultMirror = true;
       return true;
     }
@@ -18428,6 +18430,8 @@ public class ViewportLayoutEditor : EditorWindow
       anchorX = centerX;
       anchorY = centerY;
       viewFacing = FacingName(previewFacing);
+      // Verified S2 reference orientation: at 2,17 facing East, the
+      // Vi Altar at 4,17 is drawn exactly as stored (Mirror OFF).
       defaultMirror = false;
       return true;
     }
@@ -18449,6 +18453,7 @@ public class ViewportLayoutEditor : EditorWindow
       anchorX = centerX;
       anchorY = centerY;
       viewFacing = FacingName(previewFacing);
+      // Opposite side uses the horizontally flipped S2 reference.
       defaultMirror = true;
       return true;
     }
