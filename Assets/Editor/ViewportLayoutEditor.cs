@@ -17688,8 +17688,12 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
+    // Calibration key represents the wall projection actually visible from
+    // pose 3,17 East: the S1 Vi Altar on the East-facing wall at 4,17.
+    // Do not label/key this row from the ornament storage cell because that
+    // can differ from the wall geometry currently being rendered.
     string key = MakePreviewFeatureKey(
-        "Ornament", ornament.x, ornament.y, ornament.wall);
+        "ViAltarS1", 4, 17, "East");
     bool mirrorValue = defaultMirror;
     if (previewFeatureMirrorOverrides.TryGetValue(key, out bool mirrorOverride))
       mirrorValue = mirrorOverride;
@@ -18011,8 +18015,11 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
+    // Use the visible S1 wall geometry as the calibration identity.
+    // At player pose 3,17 East, one step forward is tile 4,17 and the
+    // visible Vi Altar projection is on its East-facing wall.
     string key = MakePreviewFeatureKey(
-        "Ornament", ornament.x, ornament.y, ornament.wall);
+        "ViAltarS1", 4, 17, "East");
 
     int x = ViAltarS1RightX;
     int y = ViAltarS1Y;
@@ -18027,10 +18034,11 @@ public class ViewportLayoutEditor : EditorWindow
     featureStyle.normal.textColor = labelColor;
     featureStyle.hover.textColor = labelColor;
     featureStyle.focused.textColor = labelColor;
+    const string ViAltarLabel = "ViAltar S1 4,17 East";
     float featureLabelWidth =
-        featureStyle.CalcSize(new GUIContent("ViAltar (North)")).x;
+        featureStyle.CalcSize(new GUIContent(ViAltarLabel)).x;
     GUILayout.Label(
-        "ViAltar (North)",
+        ViAltarLabel,
         featureStyle,
         GUILayout.Width(featureLabelWidth));
 
@@ -19240,33 +19248,12 @@ public class ViewportLayoutEditor : EditorWindow
     int x = ViAltarS1RightX;
     int y = ViAltarS1Y;
     bool mirror = false;
-    string key = null;
-
-    if (previewWallOrnaments != null)
-    {
-      for (int i = 0; i < previewWallOrnaments.Length; i++)
-      {
-        WallOrnamentPlacement ornament = previewWallOrnaments[i];
-        if (!IsViAltarOrnament(ornament))
-          continue;
-
-        if (ornament.x == 4
-            && ornament.y == 18
-            && string.Equals(ornament.wall, "North", System.StringComparison.OrdinalIgnoreCase))
-        {
-          key = MakePreviewFeatureKey(
-              "Ornament", ornament.x, ornament.y, ornament.wall);
-          break;
-        }
-      }
-    }
-
-    if (!string.IsNullOrEmpty(key))
-    {
-      if (!IsPreviewFeatureEnabled(key))
-        return;
-      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
-    }
+    // Use the same visible-projection key as ViewEdit. At pose 3,17 East
+    // the S1 altar is the East-facing wall projection at 4,17.
+    string key = MakePreviewFeatureKey("ViAltarS1", 4, 17, "East");
+    if (!IsPreviewFeatureEnabled(key))
+      return;
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
 
     BlitPieceIntoPreview(
         pixels,
