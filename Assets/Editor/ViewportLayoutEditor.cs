@@ -18022,6 +18022,34 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.BeginHorizontal();
     float savedLabelWidth = EditorGUIUtility.labelWidth;
 
+    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
+    Color labelColor = Color.yellow;
+    featureStyle.normal.textColor = labelColor;
+    featureStyle.hover.textColor = labelColor;
+    featureStyle.focused.textColor = labelColor;
+    float featureLabelWidth =
+        featureStyle.CalcSize(new GUIContent("ViAltar (North)")).x;
+    GUILayout.Label(
+        "ViAltar (North)",
+        featureStyle,
+        GUILayout.Width(featureLabelWidth));
+
+    bool enabledBefore = IsPreviewFeatureEnabled(key);
+    bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
+
+    const string MirrorLabel = "Mirror";
+    const float ToggleBoxWidth = 18f;
+    float mirrorLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
+    EditorGUIUtility.labelWidth = mirrorLabelWidth;
+    bool mirrorAfter = DrawMouseOnlyToggle(
+        MirrorLabel,
+        mirror,
+        enabledAfter,
+        GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
+        GUILayout.ExpandWidth(false));
+    NoteContentRight();
+
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int editX = x;
@@ -18033,22 +18061,6 @@ public class ViewportLayoutEditor : EditorWindow
     int editY = y;
     bool yChanged = DrawIntStepperInline(
         "Y", ref editY, snap, false, true);
-
-    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
-    Color labelColor = new Color(1f, 0.65f, 0.1f);
-    featureStyle.normal.textColor = labelColor;
-    featureStyle.hover.textColor = labelColor;
-    featureStyle.focused.textColor = labelColor;
-    string name = "ViAltar";
-    if (!string.IsNullOrEmpty(ornament.wall))
-      name += " (" + ornament.wall + ")";
-    GUILayout.Label(
-        name,
-        featureStyle,
-        GUILayout.Width(FeatureDescriptionWidth));
-
-    bool enabledBefore = IsPreviewFeatureEnabled(key);
-    bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
 
     EditorGUIUtility.labelWidth = savedLabelWidth;
     EditorGUILayout.EndHorizontal();
@@ -18065,6 +18077,16 @@ public class ViewportLayoutEditor : EditorWindow
     {
       previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
       previewPositionChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (mirrorAfter != mirror)
+    {
+      if (!mirrorAfter)
+        previewFeatureMirrorOverrides.Remove(key);
+      else
+        previewFeatureMirrorOverrides[key] = mirrorAfter;
+      previewMirrorChangedThisFrame = true;
       changed = true;
     }
 
