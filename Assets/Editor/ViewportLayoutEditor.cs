@@ -181,6 +181,14 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ViAltarS2RightX = 148;
   private const int ViAltarS2Y = 98;
 
+  // Vi Altar S3 uses the exact 4x11 reference crop from the original.
+  // Verified reference pose: player 1,17 East, projection anchor 4,17 East.
+  // Original-screen top-left is X=140, Y=81, so framebuffer Y is 108.
+  private const string ViAltarS3AssetPath =
+      "Assets/Art/Ornaments/Altar_of_Vi_S3_Ref_4x11.png";
+  private const int ViAltarS3RightX = 140;
+  private const int ViAltarS3Y = 108;
+
   // F2 and F3 are scaled from the 96x56 F1 graphic. These are the
   // measured destination slots, not separate captured pictures.
   private const int ViAltarD2GeneratedFrontX = 80;
@@ -1081,6 +1089,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedViAltarFrontTexture;
   private Texture2D cachedViAltarS1Texture;
   private Texture2D cachedViAltarS2Texture;
+  private Texture2D cachedViAltarS3Texture;
   [System.NonSerialized]
   private Texture2D cachedViAltarGeneratedF2TestTexture;
   private Texture2D cachedViAltarGeneratedF3TestTexture;
@@ -1915,6 +1924,7 @@ public class ViewportLayoutEditor : EditorWindow
       cachedViAltarEngineF3TestTexture = null;
     }
     cachedViAltarS2Texture = null;
+    cachedViAltarS3Texture = null;
 
     RepaintGameViews();
   }
@@ -13459,7 +13469,8 @@ public class ViewportLayoutEditor : EditorWindow
     BlitGrateD2FrontIntoPreview(pixels);
     BlitGrateD1FrontIntoPreview(pixels);
 
-    // Vi Altar side projections. Draw S2 first, then nearer S1.
+    // Vi Altar side projections. Draw far-to-near.
+    BlitViAltarS3IntoPreview(pixels);
     BlitViAltarS2IntoPreview(pixels);
     BlitViAltarS1IntoPreview(pixels);
   }
@@ -18121,6 +18132,231 @@ public class ViewportLayoutEditor : EditorWindow
     return false;
   }
 
+  private bool TryGetViAltarS3Projection(
+      WallOrnamentPlacement ornament,
+      out int anchorX,
+      out int anchorY,
+      out string viewFacing,
+      out bool defaultMirror)
+  {
+    anchorX = 0;
+    anchorY = 0;
+    viewFacing = null;
+    defaultMirror = false;
+
+    if (!IsViAltarOrnament(ornament) || previewMiniMap == null)
+      return false;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    // S3 is the third side projection. All three center corridor tiles must
+    // remain open before the side wall at distance three can be visible.
+    for (int distance = 1; distance <= 3; distance++)
+    {
+      int openX = previewX + forwardX * distance;
+      int openY = previewY + forwardY * distance;
+      if (!previewMiniMap.IsInside(openX, openY)
+          || previewMiniMap.GetTile(openX, openY).Type == DungeonTileType.Wall)
+      {
+        return false;
+      }
+    }
+
+    int centerX = previewX + forwardX * 3;
+    int centerY = previewY + forwardY * 3;
+    int leftWallX = centerX - rightX;
+    int leftWallY = centerY - rightY;
+    int rightWallX = centerX + rightX;
+    int rightWallY = centerY + rightY;
+
+    bool leftWallExists =
+        previewMiniMap.IsInside(leftWallX, leftWallY)
+        && previewMiniMap.GetTile(leftWallX, leftWallY).Type
+            == DungeonTileType.Wall;
+    bool rightWallExists =
+        previewMiniMap.IsInside(rightWallX, rightWallY)
+        && previewMiniMap.GetTile(rightWallX, rightWallY).Type
+            == DungeonTileType.Wall;
+
+    string leftPhysicalFace =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+    string rightPhysicalFace =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string leftBoundaryDirection =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string rightBoundaryDirection =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+
+    bool matchesLeft = ornament.wallTilePlacement
+        ? leftWallExists
+            && ornament.x == leftWallX
+            && ornament.y == leftWallY
+            && string.Equals(
+                ornament.wall,
+                leftPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase)
+        : leftWallExists
+            && ornament.x == centerX
+            && ornament.y == centerY
+            && string.Equals(
+                ornament.wall,
+                leftBoundaryDirection,
+                System.StringComparison.OrdinalIgnoreCase);
+
+    if (matchesLeft)
+    {
+      anchorX = centerX;
+      anchorY = centerY;
+      viewFacing = FacingName(previewFacing);
+      defaultMirror = false;
+      return true;
+    }
+
+    bool matchesRight = ornament.wallTilePlacement
+        ? rightWallExists
+            && ornament.x == rightWallX
+            && ornament.y == rightWallY
+            && string.Equals(
+                ornament.wall,
+                rightPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase)
+        : rightWallExists
+            && ornament.x == centerX
+            && ornament.y == centerY
+            && string.Equals(
+                ornament.wall,
+                rightBoundaryDirection,
+                System.StringComparison.OrdinalIgnoreCase);
+
+    if (matchesRight)
+    {
+      anchorX = centerX;
+      anchorY = centerY;
+      viewFacing = FacingName(previewFacing);
+      defaultMirror = true;
+      return true;
+    }
+
+    return false;
+  }
+
+  private bool DrawViAltarS3CalibrationRow(WallOrnamentPlacement ornament)
+  {
+    if (!TryGetViAltarS3Projection(
+            ornament,
+            out int anchorX,
+            out int anchorY,
+            out string viewFacing,
+            out bool defaultMirror))
+    {
+      return false;
+    }
+
+    string key = MakePreviewFeatureKey(
+        "ViAltarS3", anchorX, anchorY, viewFacing);
+
+    int x = ViAltarS3RightX;
+    int y = ViAltarS3Y;
+    bool mirror = defaultMirror;
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+
+    EditorGUILayout.BeginHorizontal();
+    float savedLabelWidth = EditorGUIUtility.labelWidth;
+
+    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
+    Color labelColor = Color.yellow;
+    featureStyle.normal.textColor = labelColor;
+    featureStyle.hover.textColor = labelColor;
+    featureStyle.focused.textColor = labelColor;
+    string viAltarLabel =
+        "ViAltar S3 " + anchorX + "," + anchorY + " " + viewFacing;
+    float featureLabelWidth =
+        featureStyle.CalcSize(new GUIContent(viAltarLabel)).x;
+    GUILayout.Label(
+        viAltarLabel,
+        featureStyle,
+        GUILayout.Width(featureLabelWidth));
+
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    int editX = x;
+    bool xChanged = DrawIntStepperInline(
+        "X", ref editX, snap, false, true, 24f, 24f);
+
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    int editY = y;
+    bool yChanged = DrawIntStepperInline(
+        "Y", ref editY, snap, false, true, 24f, 24f);
+
+    bool enabledBefore = IsPreviewFeatureEnabled(key);
+    bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
+
+    const string MirrorLabel = "Mirror";
+    const float ToggleBoxWidth = 18f;
+    float mirrorLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
+    EditorGUIUtility.labelWidth = mirrorLabelWidth;
+    bool mirrorAfter = DrawMouseOnlyToggle(
+        MirrorLabel,
+        mirror,
+        enabledAfter,
+        GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
+        GUILayout.ExpandWidth(false));
+    NoteContentRight();
+
+    EditorGUIUtility.labelWidth = savedLabelWidth;
+    EditorGUILayout.EndHorizontal();
+
+    bool changed = false;
+    if (xChanged && editX != x)
+    {
+      previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      previewPositionChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (yChanged && editY != y)
+    {
+      previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      previewPositionChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (mirrorAfter != mirror)
+    {
+      if (mirrorAfter == defaultMirror)
+        previewFeatureMirrorOverrides.Remove(key);
+      else
+        previewFeatureMirrorOverrides[key] = mirrorAfter;
+      previewMirrorChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (enabledAfter != enabledBefore)
+    {
+      SetPreviewFeatureEnabled(key, enabledAfter);
+      previewEnabledChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (changed)
+    {
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+
+    return true;
+  }
+
   private bool TryGetViAltarS2Projection(
       WallOrnamentPlacement ornament,
       out int anchorX,
@@ -18720,6 +18956,8 @@ public class ViewportLayoutEditor : EditorWindow
 
         // Vi Altar side projections use exact geometry before the broad
         // feature-cone filter.
+        if (DrawViAltarS3CalibrationRow(ornament))
+          continue;
         if (DrawViAltarS2CalibrationRow(ornament))
           continue;
         if (DrawViAltarS1CalibrationRow(ornament))
@@ -19688,6 +19926,87 @@ public class ViewportLayoutEditor : EditorWindow
     cachedViAltarS1Texture =
         AssetDatabase.LoadAssetAtPath<Texture2D>(exactPath);
     return cachedViAltarS1Texture;
+  }
+
+  private Texture2D GetViAltarS3Texture()
+  {
+    if (cachedViAltarS3Texture != null)
+      return cachedViAltarS3Texture;
+
+    TextureImporter importer =
+        AssetImporter.GetAtPath(ViAltarS3AssetPath) as TextureImporter;
+    if (importer != null)
+    {
+      bool changed = false;
+      if (!importer.isReadable)
+      {
+        importer.isReadable = true;
+        changed = true;
+      }
+      if (importer.filterMode != FilterMode.Point)
+      {
+        importer.filterMode = FilterMode.Point;
+        changed = true;
+      }
+      if (importer.mipmapEnabled)
+      {
+        importer.mipmapEnabled = false;
+        changed = true;
+      }
+      if (changed)
+        importer.SaveAndReimport();
+    }
+
+    cachedViAltarS3Texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(ViAltarS3AssetPath);
+    if (cachedViAltarS3Texture != null)
+    {
+      cachedViAltarS3Texture.filterMode = FilterMode.Point;
+      cachedViAltarS3Texture.wrapMode = TextureWrapMode.Clamp;
+    }
+    return cachedViAltarS3Texture;
+  }
+
+  private void BlitViAltarS3IntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D altar = GetViAltarS3Texture();
+    if (altar == null || !altar.isReadable)
+      return;
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!TryGetViAltarS3Projection(
+              ornament,
+              out int anchorX,
+              out int anchorY,
+              out string viewFacing,
+              out bool defaultMirror))
+      {
+        continue;
+      }
+
+      string key = MakePreviewFeatureKey(
+          "ViAltarS3", anchorX, anchorY, viewFacing);
+      if (!IsPreviewFeatureEnabled(key))
+        continue;
+
+      int x = ViAltarS3RightX;
+      int y = ViAltarS3Y;
+      bool mirror = defaultMirror;
+      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+
+      // Direct 1:1 blit of the verified 4x11 S3 reference asset.
+      BlitPieceIntoPreview(pixels, altar, x, y, mirror);
+    }
   }
 
   private Texture2D GetViAltarS2Texture()
