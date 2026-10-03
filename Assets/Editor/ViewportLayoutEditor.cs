@@ -18034,6 +18034,18 @@ public class ViewportLayoutEditor : EditorWindow
         featureStyle,
         GUILayout.Width(featureLabelWidth));
 
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    int editX = x;
+    bool xChanged = DrawIntStepperInline(
+        "X", ref editX, snap, false, true);
+
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    int editY = y;
+    bool yChanged = DrawIntStepperInline(
+        "Y", ref editY, snap, false, true);
+
     bool enabledBefore = IsPreviewFeatureEnabled(key);
     bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
 
@@ -18049,18 +18061,6 @@ public class ViewportLayoutEditor : EditorWindow
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
     NoteContentRight();
-
-    EditorGUIUtility.labelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    int editX = x;
-    bool xChanged = DrawIntStepperInline(
-        "X", ref editX, snap, false, true);
-
-    EditorGUIUtility.labelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-    int editY = y;
-    bool yChanged = DrawIntStepperInline(
-        "Y", ref editY, snap, false, true);
 
     EditorGUIUtility.labelWidth = savedLabelWidth;
     EditorGUILayout.EndHorizontal();
