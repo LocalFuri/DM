@@ -18038,13 +18038,13 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int editX = x;
     bool xChanged = DrawIntStepperInline(
-        "X", ref editX, snap, false, true);
+        "X", ref editX, snap, false, true, 24f);
 
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     int editY = y;
     bool yChanged = DrawIntStepperInline(
-        "Y", ref editY, snap, false, true);
+        "Y", ref editY, snap, false, true, 24f);
 
     bool enabledBefore = IsPreviewFeatureEnabled(key);
     bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
@@ -23440,7 +23440,8 @@ public class ViewportLayoutEditor : EditorWindow
       ref int value,
       int step,
       bool valueDiffersFromRef = false,
-      bool immediate = false)
+      bool immediate = false,
+      float buttonWidth = 36f)
   {
     EditorGUI.BeginChangeCheck();
     value = DrawDelayedIntFieldMaybeRed(
@@ -23448,13 +23449,13 @@ public class ViewportLayoutEditor : EditorWindow
 
     bool changed = EditorGUI.EndChangeCheck();
 
-    if (GUILayout.Button($"-{step}", GUILayout.Width(36f)))
+    if (GUILayout.Button($"-{step}", GUILayout.Width(buttonWidth)))
     {
       value -= step;
       changed = true;
     }
 
-    if (GUILayout.Button($"+{step}", GUILayout.Width(36f)))
+    if (GUILayout.Button($"+{step}", GUILayout.Width(buttonWidth)))
     {
       value += step;
       changed = true;
