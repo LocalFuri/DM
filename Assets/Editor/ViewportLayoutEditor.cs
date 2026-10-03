@@ -380,12 +380,30 @@ public class ViewportLayoutEditor : EditorWindow
   private const int StairsDownF1X = 36;
   private const int StairsDownF1DisplayY = 50;
 
+  // Original DOS near-right wall when a down-stairs tile is immediately to
+  // the player's right. The source is an exact 32x91 crop from the original
+  // 320x200 frame at screen X=192, top Y=33. It replaces normal RightF0.
+  private const string StairsDownRightD1AssetPath =
+      "Assets/Art/Walls/Stairs/Stairs_Down_Front_D1_32x91.png";
+  private const int StairsDownRightD1X = 192;
+  private const int StairsDownRightD1DisplayY = 33;
+  // This crop lives inside the 224x136 dungeon viewport, not the full
+  // 320x200 output. topY 33 with height 91 => framebuffer Y 12.
+  private const int StairsDownRightD1FramebufferY = 12;
+
   // ViewEdit controls for the down-stairs overlay. These are intentionally
   // editor-preview values (like the live wall controls) so the sprite can be
   // enabled/disabled and aligned without changing the map data.
   [SerializeField] private bool stairsDownF1PreviewEnabled = true;
   [SerializeField] private int stairsDownF1PreviewX = StairsDownF1X;
   [SerializeField] private int stairsDownF1PreviewDisplayY = StairsDownF1DisplayY;
+
+  // Dynamic geometry can change which wall card is authoritative without the
+  // player pose changing (for example after a script/domain reload). Keep a
+  // tiny signature so ViewEdit rebuilds instead of continuing to show the
+  // wall list from the previous renderer version.
+  private bool dynamicGeometrySignatureInitialized;
+  private bool cachedStairsDownRightD1Active;
 
   private const int DungeonViewportHeight = 136;
 
@@ -1065,6 +1083,12 @@ public class ViewportLayoutEditor : EditorWindow
   // written to map/JSON data. Leaving the current pose clears the set so every
   // feature returns to the renderer's code-assigned default state.
   private readonly HashSet<string> previewDisabledFeatureKeys =
+      new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+  // Temporary per-pose manual renderer selection for stairs reference images.
+  // The ordinary Enabled checkbox remains the feature visibility control;
+  // this separate set answers only whether ViewEdit should force the exact
+  // stairs wall reference asset for that visible stairs row.
+  private readonly HashSet<string> previewForcedStairsDownImageKeys =
       new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
   // Temporary per-pose ViewEdit overrides for non-wall feature render placement.
   // Keys are the same stable feature keys used by Enabled. They are cleared
@@ -1820,6 +1844,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewFrontF3WidthOverrideByPiece.Clear();
     previewGraphicOverrideByPiece.Clear();
     previewDisableAllWalls = false;
+    dynamicGeometrySignatureInitialized = false;
 
     showOnlyWallsNeededForCurrentPose = true;
     showWallsActivFilter = true;
@@ -1971,6 +1996,35 @@ public class ViewportLayoutEditor : EditorWindow
       RepaintGameViews();
   }
 
+  private void RefreshViewEditIfDynamicGeometryChanged()
+  {
+    if (Application.isPlaying)
+      return;
+
+    bool stairsDownRightD1Active =
+        IsStairsDownRightD1ForCurrentPose();
+
+    if (dynamicGeometrySignatureInitialized
+        && cachedStairsDownRightD1Active == stairsDownRightD1Active)
+    {
+      return;
+    }
+
+    dynamicGeometrySignatureInitialized = true;
+    cachedStairsDownRightD1Active = stairsDownRightD1Active;
+
+    // Rebuild the wall visibility/list and the 320x200 preview from the same
+    // current renderer state. This is especially important after recompiles:
+    // the pose did not change, so the normal pose-change refresh would never
+    // run and ViewEdit could otherwise keep stale RightF0 geometry.
+    ApplyCurrentPoseVisibilityToLayout();
+    ResetEditModeViewportLogCache();
+    DestroyEditModePreviewTextureOnly();
+    RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
+  }
+
   private void OnInspectorUpdate()
   {
     if (Application.isPlaying)
@@ -1978,6 +2032,8 @@ public class ViewportLayoutEditor : EditorWindow
       Repaint();
       return;
     }
+
+    RefreshViewEditIfDynamicGeometryChanged();
 
     // Dungeon Features shares level/X/Y/facing through EditorPrefs. Apply a
     // requested level first so the following pose sync runs against the correct
@@ -12834,6 +12890,18 @@ public class ViewportLayoutEditor : EditorWindow
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
           continue;
 
+        // Structural stairs replacement: a down-stairs tile in the D1-right
+        // relative cell owns the screen slot normally occupied by RightF0.
+        // Draw the stairs wall here, at the exact point where RightF0 would
+        // have been rendered, and skip the ordinary wall. This makes stairs
+        // part of wall geometry instead of a late overlay exception.
+        if (IsWallF0RightPiece(piece)
+            && IsStairsDownRightD1ForCurrentPose())
+        {
+          BlitStairsDownRightD1IntoPreview(pixels);
+          continue;
+        }
+
         // F1 door frames are drawn by the dedicated F1 door composition,
         // not in normal list order.
         if (IsDoorF1FrontView()
@@ -17184,6 +17252,7 @@ public class ViewportLayoutEditor : EditorWindow
     championMirrorD0RightPreviewVisibleWidth = 7;
     championMirrorD0RightPreviewMirror = false;
     previewDisabledFeatureKeys.Clear();
+    previewForcedStairsDownImageKeys.Clear();
     previewFeaturePositionOverrides.Clear();
     previewFeatureMirrorOverrides.Clear();
   }
@@ -17208,6 +17277,124 @@ public class ViewportLayoutEditor : EditorWindow
         && !stairsUp
         && IsPreviewFeatureEnabled(
             MakePreviewFeatureKey("StairsDown", stairsX, stairsY, null));
+  }
+
+  /// <summary>
+  /// True when a down-stairs tile is immediately to the player's right.
+  /// This is geometry-relative and contains no map-coordinate special case.
+  /// </summary>
+  private bool IsStairsDownRightD1ForCurrentPose()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return false;
+
+    // Use the same map-coordinate calculation as the ViewEdit feature list.
+    // D1-right = one step forward + one step right.  This deliberately avoids
+    // SampleViewport17Cell() so the wall replacement and the visible
+    // "Stairs Down" checkbox cannot disagree about which map tile is used.
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int stairsX = previewX + forwardX + rightX;
+    int stairsY = previewY + forwardY + rightY;
+    if (!previewMiniMap.IsInside(stairsX, stairsY))
+      return false;
+
+    DungeonTile tile = previewMiniMap.GetTile(stairsX, stairsY);
+    if (tile == null
+        || !tile.TryGetStairsDirection(out bool stairsUp)
+        || stairsUp)
+    {
+      return false;
+    }
+
+    // Enabled controls whether the stairs feature itself is active. The
+    // separate ViewEdit "Show Image" checkbox explicitly selects the exact
+    // D1-right reference image for this pose, so calibration no longer depends
+    // on automatic wall-slot inference.
+    string key = MakePreviewFeatureKey(
+        "StairsDown",
+        stairsX,
+        stairsY,
+        null);
+    return IsPreviewFeatureEnabled(key)
+        && previewForcedStairsDownImageKeys.Contains(key);
+  }
+
+  /// <summary>
+  /// Replace the RightF0 screen slot with the exact original down-stairs
+  /// D1-right wall projection. The asset already contains the original
+  /// depth/palette pixels and is therefore blitted 1:1 with no scaling or
+  /// colour conversion.
+  /// </summary>
+  private void BlitStairsDownRightD1IntoPreview(Color32[] pixels)
+  {
+    if (pixels == null)
+      return;
+
+    if (!IsStairsDownRightD1ForCurrentPose())
+      return;
+
+    // Exact project asset path. Do not use a filename search here; this
+    // reference crop is intentionally tied to the Stairs folder.
+    Texture2D stairsWall = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        "Assets/Art/Walls/Stairs/Stairs_Down_Front_D1_32x91.png");
+
+    if (stairsWall == null)
+    {
+      Debug.LogWarning(
+          "STAIRS RIGHT D1: Stairs_Down_Front_D1_32x91.png was not found.");
+      return;
+    }
+
+    if (stairsWall.width != 32 || stairsWall.height != 91)
+    {
+      Debug.LogWarning(
+          "STAIRS RIGHT D1: asset loaded but imported size is "
+          + stairsWall.width + "x" + stairsWall.height
+          + " (expected 32x91).");
+      return;
+    }
+
+    if (!stairsWall.isReadable)
+    {
+      string stairsPath = AssetDatabase.GetAssetPath(stairsWall);
+      TextureImporter importer = AssetImporter.GetAtPath(stairsPath) as TextureImporter;
+      if (importer != null)
+      {
+        importer.isReadable = true;
+        importer.mipmapEnabled = false;
+        importer.filterMode = FilterMode.Point;
+        importer.SaveAndReimport();
+        stairsWall = AssetDatabase.LoadAssetAtPath<Texture2D>(stairsPath);
+      }
+    }
+
+    if (stairsWall == null || !stairsWall.isReadable)
+    {
+      Debug.LogWarning(
+          "STAIRS RIGHT D1: asset is still not readable after importer refresh.");
+      return;
+    }
+
+    // IMPORTANT: this exact reference crop is positioned in the native
+    // 224x136 dungeon viewport. Do not convert its Y against the 320x200
+    // output buffer; that places it 64 pixels too high.
+    int destinationY = StairsDownRightD1FramebufferY;
+
+    BlitPieceIntoPreview(
+        pixels,
+        stairsWall,
+        StairsDownRightD1X,
+        destinationY,
+        false);
   }
 
   private static string MakePreviewFeatureKey(
@@ -17957,6 +18144,69 @@ public class ViewportLayoutEditor : EditorWindow
 
     SetPreviewFeatureEnabled(key, enabledAfter);
     previewEnabledChangedThisFrame = true;
+    RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
+  }
+
+  private void DrawStairsDownFeatureChecklistRow(
+      int mapX,
+      int mapY,
+      string key)
+  {
+    EditorGUILayout.BeginHorizontal();
+
+    float savedLabelWidth = EditorGUIUtility.labelWidth;
+    DrawReadOnlyFeatureMapFields(mapX, mapY);
+
+    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
+    featureStyle.normal.textColor = Color.magenta;
+    featureStyle.hover.textColor = Color.magenta;
+    featureStyle.focused.textColor = Color.magenta;
+    GUILayout.Label(
+        "Stairs Down",
+        featureStyle,
+        GUILayout.Width(FeatureDescriptionWidth));
+
+    bool enabledBefore = IsPreviewFeatureEnabled(key);
+    bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
+
+    GUILayout.Space(8f);
+    const string ShowImageLabel = "Show Image";
+    float showImageLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent(ShowImageLabel)).x;
+    EditorGUIUtility.labelWidth = showImageLabelWidth;
+    bool showImageBefore = previewForcedStairsDownImageKeys.Contains(key);
+    bool showImageAfter = DrawMouseOnlyToggle(
+        ShowImageLabel,
+        showImageBefore,
+        showImageBefore,
+        GUILayout.Width(showImageLabelWidth + 18f),
+        GUILayout.ExpandWidth(false));
+
+    EditorGUIUtility.labelWidth = savedLabelWidth;
+    EditorGUILayout.EndHorizontal();
+
+    bool changed = false;
+    if (enabledAfter != enabledBefore)
+    {
+      SetPreviewFeatureEnabled(key, enabledAfter);
+      previewEnabledChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (showImageAfter != showImageBefore)
+    {
+      if (showImageAfter)
+        previewForcedStairsDownImageKeys.Add(key);
+      else
+        previewForcedStairsDownImageKeys.Remove(key);
+      changed = true;
+    }
+
+    if (!changed)
+      return;
+
     RefreshEditModePreview();
     RepaintGameViews();
     Repaint();
@@ -19283,12 +19533,19 @@ public class ViewportLayoutEditor : EditorWindow
 
         string family = stairsUp ? "StairsUp" : "StairsDown";
         string key = MakePreviewFeatureKey(family, x, y, null);
-        DrawFeatureChecklistRow(
-            x,
-            y,
-            stairsUp ? "Stairs Up" : "Stairs Down",
-            key,
-            stairsUp ? new Color(0.25f, 0.6f, 1f) : Color.magenta);
+        if (stairsUp)
+        {
+          DrawFeatureChecklistRow(
+              x,
+              y,
+              "Stairs Up",
+              key,
+              new Color(0.25f, 0.6f, 1f));
+        }
+        else
+        {
+          DrawStairsDownFeatureChecklistRow(x, y, key);
+        }
       }
     }
   }
