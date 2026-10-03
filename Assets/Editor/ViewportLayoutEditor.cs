@@ -181,11 +181,13 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ViAltarS2RightX = 148;
   private const int ViAltarS2Y = 98;
 
-  // Vi Altar S3 uses the exact 4x11 reference crop from the original.
-  // Verified reference pose: player 1,17 East, projection anchor 4,17 East.
+  // Vi Altar S3 uses the exact 6x19 reference crop from the original.
+  // The 1,17 East / anchor 4,17 East pose calibrated this generic S3 slot.
+  // Apply the same S3 projection to every visible Vi Altar resolved at depth 3;
+  // there is no player-coordinate or altar-coordinate special case here.
   // Original-screen top-left is X=140, Y=81, so framebuffer Y is 108.
   private const string ViAltarS3AssetPath =
-      "Assets/Art/Ornaments/Altar_of_Vi_S3_Ref_4x11.png";
+      "Assets/Art/Ornaments/Altar_of_Vi_S3_Ref_6x19.png";
   private const int ViAltarS3RightX = 140;
   private const int ViAltarS3Y = 108;
 
@@ -18262,7 +18264,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     string key = MakePreviewFeatureKey(
-        "ViAltarS3", anchorX, anchorY, viewFacing);
+        "ViAltarS3V2", anchorX, anchorY, viewFacing);
 
     int x = ViAltarS3RightX;
     int y = ViAltarS3Y;
@@ -20000,7 +20002,7 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       string key = MakePreviewFeatureKey(
-          "ViAltarS3", anchorX, anchorY, viewFacing);
+          "ViAltarS3V2", anchorX, anchorY, viewFacing);
       if (!IsPreviewFeatureEnabled(key))
         continue;
 
@@ -20009,7 +20011,10 @@ public class ViewportLayoutEditor : EditorWindow
       bool mirror = defaultMirror;
       ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
 
-      // Direct 1:1 blit of the verified 4x11 S3 reference asset.
+      // Generic S3 render: every Vi Altar that resolves through the S3
+      // projection uses this exact 6x19 crop at 1:1. The crop already contains
+      // the original far-distance palette, so do not scale or palette-remap it.
+      // defaultMirror comes from the projected wall side (right=ON, left=OFF).
       BlitPieceIntoPreview(pixels, altar, x, y, mirror);
     }
   }
