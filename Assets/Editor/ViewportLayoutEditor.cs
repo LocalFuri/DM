@@ -170,8 +170,8 @@ public class ViewportLayoutEditor : EditorWindow
   // Altar_of_Vi_96,56.png or Altar_of_Vi_96x56.png works.
   private const int ViAltarD1FrontX = 64;
   private const int ViAltarD1FrontY = 75;
-  private const int ViAltarS1RightX = 171;
-  private const int ViAltarS1Y = 50;
+  private const int ViAltarS1RightX = 168;
+  private const int ViAltarS1Y = 81;
 
   // F2 and F3 are scaled from the 96x56 F1 graphic. These are the
   // measured destination slots, not separate captured pictures.
@@ -13449,9 +13449,9 @@ public class ViewportLayoutEditor : EditorWindow
     BlitGrateD2FrontIntoPreview(pixels);
     BlitGrateD1FrontIntoPreview(pixels);
 
-    // Absolute final overlay for the verified original pose 3,17 East.
-    // This is intentionally last so no other feature can cover it.
-    BlitViAltarS1RightAt317EastIntoPreview(pixels);
+    // Vi Altar S1 side projection. Keep this final so nearer feature passes
+    // cannot cover the wall inset. Geometry is resolved generically.
+    BlitViAltarS1IntoPreview(pixels);
   }
 
   private static void ApplyDungeonViewportLightPalette(
@@ -17688,12 +17688,8 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    // Calibration key represents the wall projection actually visible from
-    // pose 3,17 East: the S1 Vi Altar on the East-facing wall at 4,17.
-    // Do not label/key this row from the ornament storage cell because that
-    // can differ from the wall geometry currently being rendered.
     string key = MakePreviewFeatureKey(
-        "ViAltarS1", 4, 17, "East");
+        "Ornament", ornament.x, ornament.y, ornament.wall);
     bool mirrorValue = defaultMirror;
     if (previewFeatureMirrorOverrides.TryGetValue(key, out bool mirrorOverride))
       mirrorValue = mirrorOverride;
@@ -18005,25 +18001,134 @@ public class ViewportLayoutEditor : EditorWindow
             || string.Equals(ornament.type, "AltarOfVi", System.StringComparison.OrdinalIgnoreCase));
   }
 
-  private bool DrawViAltarS1CalibrationRow(WallOrnamentPlacement ornament)
+  private bool TryGetViAltarS1Projection(
+      WallOrnamentPlacement ornament,
+      out int anchorX,
+      out int anchorY,
+      out string viewFacing,
+      out bool defaultMirror)
   {
-    if (!IsViAltarOrnament(ornament)
-        || previewX != 3
-        || previewY != 17
-        || previewFacing != DungeonFacing.East)
+    anchorX = 0;
+    anchorY = 0;
+    viewFacing = null;
+    defaultMirror = false;
+
+    if (!IsViAltarOrnament(ornament) || previewMiniMap == null)
+      return false;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    // S1 is the first side projection: one open tile directly ahead, with
+    // the altar mounted on either side boundary of that forward tile.
+    int centerX = previewX + forwardX;
+    int centerY = previewY + forwardY;
+    if (!previewMiniMap.IsInside(centerX, centerY)
+        || previewMiniMap.GetTile(centerX, centerY).Type == DungeonTileType.Wall)
     {
       return false;
     }
 
-    // Use the visible S1 wall geometry as the calibration identity.
-    // At player pose 3,17 East, one step forward is tile 4,17 and the
-    // visible Vi Altar projection is on its East-facing wall.
+    int leftWallX = centerX - rightX;
+    int leftWallY = centerY - rightY;
+    int rightWallX = centerX + rightX;
+    int rightWallY = centerY + rightY;
+
+    bool leftWallExists =
+        previewMiniMap.IsInside(leftWallX, leftWallY)
+        && previewMiniMap.GetTile(leftWallX, leftWallY).Type
+            == DungeonTileType.Wall;
+    bool rightWallExists =
+        previewMiniMap.IsInside(rightWallX, rightWallY)
+        && previewMiniMap.GetTile(rightWallX, rightWallY).Type
+            == DungeonTileType.Wall;
+
+    string leftPhysicalFace =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+    string rightPhysicalFace =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string leftBoundaryDirection =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string rightBoundaryDirection =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+
+    bool matchesLeft = ornament.wallTilePlacement
+        ? leftWallExists
+            && ornament.x == leftWallX
+            && ornament.y == leftWallY
+            && string.Equals(
+                ornament.wall,
+                leftPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase)
+        : leftWallExists
+            && ornament.x == centerX
+            && ornament.y == centerY
+            && string.Equals(
+                ornament.wall,
+                leftBoundaryDirection,
+                System.StringComparison.OrdinalIgnoreCase);
+
+    if (matchesLeft)
+    {
+      anchorX = centerX;
+      anchorY = centerY;
+      viewFacing = FacingName(previewFacing);
+      defaultMirror = false;
+      return true;
+    }
+
+    bool matchesRight = ornament.wallTilePlacement
+        ? rightWallExists
+            && ornament.x == rightWallX
+            && ornament.y == rightWallY
+            && string.Equals(
+                ornament.wall,
+                rightPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase)
+        : rightWallExists
+            && ornament.x == centerX
+            && ornament.y == centerY
+            && string.Equals(
+                ornament.wall,
+                rightBoundaryDirection,
+                System.StringComparison.OrdinalIgnoreCase);
+
+    if (matchesRight)
+    {
+      anchorX = centerX;
+      anchorY = centerY;
+      viewFacing = FacingName(previewFacing);
+      defaultMirror = true;
+      return true;
+    }
+
+    return false;
+  }
+
+  private bool DrawViAltarS1CalibrationRow(WallOrnamentPlacement ornament)
+  {
+    if (!TryGetViAltarS1Projection(
+            ornament,
+            out int anchorX,
+            out int anchorY,
+            out string viewFacing,
+            out bool defaultMirror))
+    {
+      return false;
+    }
+
     string key = MakePreviewFeatureKey(
-        "ViAltarS1", 4, 17, "East");
+        "ViAltarS1", anchorX, anchorY, viewFacing);
 
     int x = ViAltarS1RightX;
     int y = ViAltarS1Y;
-    bool mirror = false;
+    bool mirror = defaultMirror;
     ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
 
     EditorGUILayout.BeginHorizontal();
@@ -18034,11 +18139,12 @@ public class ViewportLayoutEditor : EditorWindow
     featureStyle.normal.textColor = labelColor;
     featureStyle.hover.textColor = labelColor;
     featureStyle.focused.textColor = labelColor;
-    const string ViAltarLabel = "ViAltar S1 4,17 East";
+    string viAltarLabel =
+        "ViAltar S1 " + anchorX + "," + anchorY + " " + viewFacing;
     float featureLabelWidth =
-        featureStyle.CalcSize(new GUIContent(ViAltarLabel)).x;
+        featureStyle.CalcSize(new GUIContent(viAltarLabel)).x;
     GUILayout.Label(
-        ViAltarLabel,
+        viAltarLabel,
         featureStyle,
         GUILayout.Width(featureLabelWidth));
 
@@ -18090,7 +18196,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (mirrorAfter != mirror)
     {
-      if (!mirrorAfter)
+      if (mirrorAfter == defaultMirror)
         previewFeatureMirrorOverrides.Remove(key);
       else
         previewFeatureMirrorOverrides[key] = mirrorAfter;
@@ -18114,7 +18220,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     return true;
   }
-
 
   private bool IsHookProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
   {
@@ -18274,14 +18379,16 @@ public class ViewportLayoutEditor : EditorWindow
       for (int i = 0; i < previewWallOrnaments.Length; i++)
       {
         WallOrnamentPlacement ornament = previewWallOrnaments[i];
-        if (ornament == null || !IsMapCellInCurrentFeatureCone(ornament.x, ornament.y))
+        if (ornament == null)
           continue;
 
-        // The verified 3,17 East Vi Altar S1 view has its own temporary
-        // render-position calibration row.  It consumes the same per-pose
-        // override dictionary as the renderer, so X/Y changes are immediate
-        // and reset automatically when the pose changes.
+        // Vi Altar S1 uses exact side-wall geometry. Test it before the broad
+        // feature-cone filter because a wall-tile placement can live on the
+        // adjacent wall cell while projecting from the forward S1 tile.
         if (DrawViAltarS1CalibrationRow(ornament))
+          continue;
+
+        if (!IsMapCellInCurrentFeatureCone(ornament.x, ornament.y))
           continue;
 
         // Hooks must obey the exact same front/side projection geometry as
@@ -19236,31 +19343,51 @@ public class ViewportLayoutEditor : EditorWindow
     return cachedViAltarS1Texture;
   }
 
-  private void BlitViAltarS1RightAt317EastIntoPreview(Color32[] pixels)
+  private void BlitViAltarS1IntoPreview(Color32[] pixels)
   {
-    if (previewX != 3 || previewY != 17 || previewFacing != DungeonFacing.East)
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
       return;
+    }
 
     Texture2D altar = GetViAltarS1Texture();
     if (altar == null || !altar.isReadable)
       return;
 
-    int x = ViAltarS1RightX;
-    int y = ViAltarS1Y;
-    bool mirror = false;
-    // Use the same visible-projection key as ViewEdit. At pose 3,17 East
-    // the S1 altar is the East-facing wall projection at 4,17.
-    string key = MakePreviewFeatureKey("ViAltarS1", 4, 17, "East");
-    if (!IsPreviewFeatureEnabled(key))
-      return;
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!TryGetViAltarS1Projection(
+              ornament,
+              out int anchorX,
+              out int anchorY,
+              out string viewFacing,
+              out bool defaultMirror))
+      {
+        continue;
+      }
 
-    BlitPieceIntoPreview(
-        pixels,
-        altar,
-        x,
-        y,
-        mirror);
+      string key = MakePreviewFeatureKey(
+          "ViAltarS1", anchorX, anchorY, viewFacing);
+      if (!IsPreviewFeatureEnabled(key))
+        continue;
+
+      int x = ViAltarS1RightX;
+      int y = ViAltarS1Y;
+      bool mirror = defaultMirror;
+      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+
+      BlitPieceIntoPreview(
+          pixels,
+          altar,
+          x,
+          y,
+          mirror);
+      return;
+    }
   }
 
   private void BlitViAltarD2FrontIntoPreview(Color32[] pixels)
