@@ -18038,13 +18038,13 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int editX = x;
     bool xChanged = DrawIntStepperInline(
-        "X", ref editX, snap, false, true, 24f);
+        "X", ref editX, snap, false, true, 24f, 24f);
 
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     int editY = y;
     bool yChanged = DrawIntStepperInline(
-        "Y", ref editY, snap, false, true, 24f);
+        "Y", ref editY, snap, false, true, 24f, 24f);
 
     bool enabledBefore = IsPreviewFeatureEnabled(key);
     bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
@@ -23410,7 +23410,8 @@ public class ViewportLayoutEditor : EditorWindow
       string label,
       int value,
       bool valueDiffersFromRef,
-      bool immediate = false)
+      bool immediate = false,
+      float fieldWidth = 36f)
   {
     Color previousGuiColor = GUI.color;
     Color previousContentColor = GUI.contentColor;
@@ -23427,9 +23428,9 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.LabelField(label, GUILayout.Width(12f));
     int result = immediate
-        ? EditorGUILayout.IntField(value, fieldStyle, GUILayout.Width(36f))
+        ? EditorGUILayout.IntField(value, fieldStyle, GUILayout.Width(fieldWidth))
         : EditorGUILayout.DelayedIntField(
-            value, fieldStyle, GUILayout.Width(36f));
+            value, fieldStyle, GUILayout.Width(fieldWidth));
     GUI.color = previousGuiColor;
     GUI.contentColor = previousContentColor;
     return result;
@@ -23441,11 +23442,12 @@ public class ViewportLayoutEditor : EditorWindow
       int step,
       bool valueDiffersFromRef = false,
       bool immediate = false,
-      float buttonWidth = 36f)
+      float buttonWidth = 36f,
+      float fieldWidth = 36f)
   {
     EditorGUI.BeginChangeCheck();
     value = DrawDelayedIntFieldMaybeRed(
-        label, value, valueDiffersFromRef, immediate);
+        label, value, valueDiffersFromRef, immediate, fieldWidth);
 
     bool changed = EditorGUI.EndChangeCheck();
 
