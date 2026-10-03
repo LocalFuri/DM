@@ -18349,6 +18349,123 @@ public class ViewportLayoutEditor : EditorWindow
     return false;
   }
 
+  private bool IsSlimeProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
+  {
+    if (!IsSlimeOrnament(ornament) || previewMiniMap == null)
+      return false;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int d1CenterX = previewX + forwardX;
+    int d1CenterY = previewY + forwardY;
+    string viewedWallSide = FacingName(previewFacing);
+    string visibleFrontFace = OppositeFacingName(previewFacing);
+
+    // Slime front projection: exactly the same D1 geometry used by
+    // BlitSlimeD1FrontIntoPreview().
+    if (PreviewTileIsWall(d1CenterX, d1CenterY))
+    {
+      if (ornament.wallTilePlacement)
+      {
+        if (ornament.x == d1CenterX
+            && ornament.y == d1CenterY
+            && string.Equals(
+                ornament.wall,
+                visibleFrontFace,
+                System.StringComparison.OrdinalIgnoreCase))
+          return true;
+      }
+      else if (ornament.x == previewX
+          && ornament.y == previewY
+          && string.Equals(
+              ornament.wall,
+              viewedWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        return true;
+      }
+    }
+
+    string leftPhysicalFace =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+    string rightPhysicalFace =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string leftBoundaryDirection =
+        FacingName(TurnPreviewFacingLeft(previewFacing));
+    string rightBoundaryDirection =
+        FacingName(TurnPreviewFacingRight(previewFacing));
+
+    // Current Slime renderer has side projections only at D1 and D2.
+    // Match those exact wall cells and require the center corridor to stay open.
+    for (int depth = 1; depth <= 2; depth++)
+    {
+      bool corridorOpen = true;
+      for (int step = 1; step <= depth; step++)
+      {
+        int cx = previewX + forwardX * step;
+        int cy = previewY + forwardY * step;
+        if (!PreviewTileIsOpen(cx, cy))
+        {
+          corridorOpen = false;
+          break;
+        }
+      }
+      if (!corridorOpen)
+        continue;
+
+      int centerX = previewX + forwardX * depth;
+      int centerY = previewY + forwardY * depth;
+      int leftWallX = centerX - rightX;
+      int leftWallY = centerY - rightY;
+      int rightWallX = centerX + rightX;
+      int rightWallY = centerY + rightY;
+
+      if (ornament.wallTilePlacement)
+      {
+        if (PreviewTileIsWall(leftWallX, leftWallY)
+            && ornament.x == leftWallX
+            && ornament.y == leftWallY
+            && string.Equals(
+                ornament.wall,
+                leftPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase))
+          return true;
+
+        if (PreviewTileIsWall(rightWallX, rightWallY)
+            && ornament.x == rightWallX
+            && ornament.y == rightWallY
+            && string.Equals(
+                ornament.wall,
+                rightPhysicalFace,
+                System.StringComparison.OrdinalIgnoreCase))
+          return true;
+      }
+      else
+      {
+        if (ornament.x == centerX
+            && ornament.y == centerY
+            && (string.Equals(
+                    ornament.wall,
+                    leftBoundaryDirection,
+                    System.StringComparison.OrdinalIgnoreCase)
+                || string.Equals(
+                    ornament.wall,
+                    rightBoundaryDirection,
+                    System.StringComparison.OrdinalIgnoreCase)))
+          return true;
+      }
+    }
+
+    return false;
+  }
+
   private void DrawCurrentPoseFeatureRows()
   {
     EnsurePreviewMiniMapLoaded();
@@ -18397,6 +18514,16 @@ public class ViewportLayoutEditor : EditorWindow
         // from pose 3,17 East), so those must not become ViewEdit rows.
         if (IsHookOrnament(ornament)
             && !IsHookProjectionVisibleInCurrentPose(ornament))
+        {
+          continue;
+        }
+
+        // Slime rows must obey the exact same F1/S1/S2 geometry as the
+        // Slime renderer. The broad feature cone can include adjacent cells
+        // that are not drawable Slime projection slots (for example 2,18
+        // North from pose 2,17 East), so those must not appear in ViewEdit.
+        if (IsSlimeOrnament(ornament)
+            && !IsSlimeProjectionVisibleInCurrentPose(ornament))
         {
           continue;
         }
