@@ -1097,6 +1097,61 @@ public class ViewportLayoutEditor : EditorWindow
       new Dictionary<string, Vector2Int>(System.StringComparer.OrdinalIgnoreCase);
   private readonly Dictionary<string, bool> previewFeatureMirrorOverrides =
       new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
+
+  // Applied ornament references are the accepted generic calibration defaults.
+  // Unlike the red per-pose overrides above, these survive pose changes and
+  // Unity editor restarts. The key identifies an ornament family + projection
+  // slot (for example OrnamentProjection:WoodRing:F1).
+  private const string AppliedOrnamentReferencePrefsPrefix =
+      "DM.ViewportLayoutEditor.AppliedOrnamentReference.";
+
+  private static string GetAppliedOrnamentReferencePrefsKey(
+      string projectionKey,
+      string suffix)
+  {
+    return AppliedOrnamentReferencePrefsPrefix
+        + (projectionKey ?? string.Empty)
+        + "." + suffix;
+  }
+
+  private static void ApplyAcceptedOrnamentReference(
+      string projectionKey,
+      ref int x,
+      ref int y,
+      ref bool mirror)
+  {
+    if (string.IsNullOrEmpty(projectionKey))
+      return;
+
+    string xKey = GetAppliedOrnamentReferencePrefsKey(projectionKey, "X");
+    string yKey = GetAppliedOrnamentReferencePrefsKey(projectionKey, "Y");
+    string mirrorKey =
+        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Mirror");
+
+    if (EditorPrefs.HasKey(xKey))
+      x = EditorPrefs.GetInt(xKey, x);
+    if (EditorPrefs.HasKey(yKey))
+      y = EditorPrefs.GetInt(yKey, y);
+    if (EditorPrefs.HasKey(mirrorKey))
+      mirror = EditorPrefs.GetBool(mirrorKey, mirror);
+  }
+
+  private static void SaveAcceptedOrnamentReference(
+      string projectionKey,
+      int x,
+      int y,
+      bool mirror)
+  {
+    if (string.IsNullOrEmpty(projectionKey))
+      return;
+
+    EditorPrefs.SetInt(
+        GetAppliedOrnamentReferencePrefsKey(projectionKey, "X"), x);
+    EditorPrefs.SetInt(
+        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Y"), y);
+    EditorPrefs.SetBool(
+        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Mirror"), mirror);
+  }
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorSideTexture;
   [System.NonSerialized]
@@ -18084,20 +18139,139 @@ public class ViewportLayoutEditor : EditorWindow
     return false;
   }
 
+  private bool TryGetWallOrnamentProjectionOverrideDescriptor(
+      WallOrnamentPlacement ornament,
+      out string overrideKey,
+      out string projectionSuffix)
+  {
+    overrideKey = null;
+    projectionSuffix = null;
+    if (ornament == null || previewMiniMap == null)
+      return false;
+
+    string family = IsWoodRingOrnament(ornament) ? "WoodRing"
+        : IsHookOrnament(ornament) ? "Hook"
+        : IsSlimeOrnament(ornament) ? "Slime"
+        : IsManaclesOrnament(ornament) ? "Manacles"
+        : IsViAltarOrnament(ornament) ? "ViAltar"
+        : IsGrateOrnament(ornament) ? "Grate"
+        : null;
+    if (string.IsNullOrEmpty(family))
+      return false;
+
+    if (IsGrateOrnament(ornament))
+    {
+      if (!TryGetGrateViewProjection(
+              ornament, out string grateProjectionName, out _))
+        return false;
+
+      string grateSlot = grateProjectionName == "Grate - Front F1" ? "F1"
+          : grateProjectionName == "Grate - Front F2" ? "F2"
+          : grateProjectionName == "Grate - Front F3" ? "F3"
+          : grateProjectionName == "Grate - Side1" ? "S1"
+          : grateProjectionName == "Grate - Side2" ? "S2"
+          : grateProjectionName == "Grate - Side3" ? "S3"
+          : null;
+      if (string.IsNullOrEmpty(grateSlot))
+        return false;
+
+      overrideKey = "OrnamentProjection:" + family + ":" + grateSlot;
+      projectionSuffix = " / " + grateSlot;
+      return true;
+    }
+
+    int maxFrontDepth = IsWoodRingOrnament(ornament) ? 3
+        : IsHookOrnament(ornament) ? 2
+        : IsSlimeOrnament(ornament) ? 1
+        : IsManaclesOrnament(ornament) ? 3
+        : IsViAltarOrnament(ornament) ? 3 : 0;
+    int maxSideDepth = IsWoodRingOrnament(ornament) ? 3
+        : IsHookOrnament(ornament) ? 3
+        : IsSlimeOrnament(ornament) ? 2
+        : IsManaclesOrnament(ornament) ? 2
+        : IsViAltarOrnament(ornament) ? 0 : 0;
+    if (maxFrontDepth == 0)
+      return false;
+
+    if (!TryGetStandardWallOrnamentProjectionInCurrentPose(
+            ornament,
+            maxFrontDepth,
+            maxSideDepth,
+            out int mapX,
+            out int mapY,
+            out string mapFace))
+      return false;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing, out int forwardX, out int forwardY);
+    int depthFromPlayer =
+        (mapX - previewX) * forwardX + (mapY - previewY) * forwardY;
+    string frontFace = FacingName(previewFacing);
+    bool isFront = string.Equals(
+        mapFace, frontFace, System.StringComparison.OrdinalIgnoreCase);
+
+    string slot;
+    if (isFront)
+    {
+      int frontDepth = depthFromPlayer + 1;
+      if (frontDepth < 1 || frontDepth > maxFrontDepth)
+        return false;
+      slot = "F" + frontDepth;
+    }
+    else
+    {
+      int sideDepth = depthFromPlayer;
+      if (sideDepth < 1 || sideDepth > maxSideDepth)
+        return false;
+      slot = "S" + sideDepth;
+    }
+
+    overrideKey = "OrnamentProjection:" + family + ":" + slot;
+    projectionSuffix = " / " + slot;
+    return true;
+  }
+
   private bool DrawWallOrnamentCalibrationRow(
       WallOrnamentPlacement ornament,
       string displayName)
   {
     if (!TryGetWallOrnamentCalibrationDefaults(
-            ornament, out int defaultX, out int defaultY, out bool defaultMirror))
+            ornament, out int codedX, out int codedY, out bool codedMirror))
       return false;
 
     string key = MakePreviewFeatureKey(
         "Ornament", ornament.x, ornament.y, ornament.wall);
+    string projectionSuffix = null;
+    bool hasGenericProjection =
+        TryGetWallOrnamentProjectionOverrideDescriptor(
+            ornament,
+            out string projectionKey,
+            out string resolvedProjectionSuffix);
+    if (hasGenericProjection)
+    {
+      key = projectionKey;
+      projectionSuffix = resolvedProjectionSuffix;
+    }
+
+    // The accepted generic reference becomes the baseline. Red indicates only
+    // values that differ from this accepted reference.
+    int defaultX = codedX;
+    int defaultY = codedY;
+    bool defaultMirror = codedMirror;
+    if (hasGenericProjection)
+      ApplyAcceptedOrnamentReference(
+          key, ref defaultX, ref defaultY, ref defaultMirror);
+
     int x = defaultX;
     int y = defaultY;
     bool mirror = defaultMirror;
     ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+
+    if (!string.IsNullOrEmpty(projectionSuffix)
+        && (displayName == null || !displayName.Contains(projectionSuffix)))
+    {
+      displayName += projectionSuffix;
+    }
 
     EditorGUILayout.BeginHorizontal();
     float savedLabelWidth = EditorGUIUtility.labelWidth;
@@ -18117,13 +18291,13 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int editX = x;
     bool xChanged = DrawIntStepperInline(
-        "X", ref editX, snap, false, true, 24f, 24f);
+        "X", ref editX, snap, x != defaultX, true, 24f, 24f);
 
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     int editY = y;
     bool yChanged = DrawIntStepperInline(
-        "Y", ref editY, snap, false, true, 24f, 24f);
+        "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
 
     const string MirrorLabel = "Mirror";
     const float ToggleBoxWidth = 18f;
@@ -18136,10 +18310,35 @@ public class ViewportLayoutEditor : EditorWindow
         true,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
+
+    GUILayout.Space(6f);
+    bool applyClicked = false;
+    if (hasGenericProjection)
+    {
+      applyClicked = GUILayout.Button(
+          "Apply",
+          GUILayout.Width(48f),
+          GUILayout.ExpandWidth(false));
+    }
     NoteContentRight();
 
     EditorGUIUtility.labelWidth = savedLabelWidth;
     EditorGUILayout.EndHorizontal();
+
+    if (applyClicked)
+    {
+      // Apply is the acceptance action: the current X/Y/Mirror become the new
+      // persistent generic reference for this ornament family + projection.
+      SaveAcceptedOrnamentReference(key, editX, editY, mirrorAfter);
+      previewFeaturePositionOverrides.Remove(key);
+      previewFeatureMirrorOverrides.Remove(key);
+      previewPositionChangedThisFrame = true;
+      previewMirrorChangedThisFrame = true;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+      return true;
+    }
 
     bool changed = false;
     if ((xChanged && editX != x) || (yChanged && editY != y))
@@ -18731,12 +18930,15 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    string key = MakePreviewFeatureKey(
-        "ViAltarS3V2", anchorX, anchorY, viewFacing);
+    string key = "OrnamentProjection:ViAltar:S3";
 
     int x = ViAltarS3RightX;
     int y = ViAltarS3Y;
     bool mirror = defaultMirror;
+    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+    int defaultX = x;
+    int defaultY = y;
+    bool acceptedMirror = mirror;
     ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
 
     EditorGUILayout.BeginHorizontal();
@@ -18760,13 +18962,13 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int editX = x;
     bool xChanged = DrawIntStepperInline(
-        "X", ref editX, snap, false, true, 24f, 24f);
+        "X", ref editX, snap, x != defaultX, true, 24f, 24f);
 
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     int editY = y;
     bool yChanged = DrawIntStepperInline(
-        "Y", ref editY, snap, false, true, 24f, 24f);
+        "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
 
     const string MirrorLabel = "Mirror";
     const float ToggleBoxWidth = 18f;
@@ -18779,29 +18981,44 @@ public class ViewportLayoutEditor : EditorWindow
         true,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
+
+    GUILayout.Space(6f);
+    bool applyClicked = GUILayout.Button(
+        "Apply",
+        GUILayout.Width(48f),
+        GUILayout.ExpandWidth(false));
     NoteContentRight();
 
     EditorGUIUtility.labelWidth = savedLabelWidth;
     EditorGUILayout.EndHorizontal();
 
-    bool changed = false;
-    if (xChanged && editX != x)
+    if (applyClicked)
     {
-      previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      SaveAcceptedOrnamentReference(key, editX, editY, mirrorAfter);
+      previewFeaturePositionOverrides.Remove(key);
+      previewFeatureMirrorOverrides.Remove(key);
       previewPositionChangedThisFrame = true;
-      changed = true;
+      previewMirrorChangedThisFrame = true;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+      return true;
     }
 
-    if (yChanged && editY != y)
+    bool changed = false;
+    if ((xChanged && editX != x) || (yChanged && editY != y))
     {
-      previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      if (editX == defaultX && editY == defaultY)
+        previewFeaturePositionOverrides.Remove(key);
+      else
+        previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
       previewPositionChangedThisFrame = true;
       changed = true;
     }
 
     if (mirrorAfter != mirror)
     {
-      if (mirrorAfter == defaultMirror)
+      if (mirrorAfter == acceptedMirror)
         previewFeatureMirrorOverrides.Remove(key);
       else
         previewFeatureMirrorOverrides[key] = mirrorAfter;
@@ -18934,12 +19151,15 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    string key = MakePreviewFeatureKey(
-        "ViAltarS2", anchorX, anchorY, viewFacing);
+    string key = "OrnamentProjection:ViAltar:S2";
 
     int x = ViAltarS2RightX;
     int y = ViAltarS2Y;
     bool mirror = defaultMirror;
+    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+    int defaultX = x;
+    int defaultY = y;
+    bool acceptedMirror = mirror;
     ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
 
     EditorGUILayout.BeginHorizontal();
@@ -18963,13 +19183,13 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int editX = x;
     bool xChanged = DrawIntStepperInline(
-        "X", ref editX, snap, false, true, 24f, 24f);
+        "X", ref editX, snap, x != defaultX, true, 24f, 24f);
 
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     int editY = y;
     bool yChanged = DrawIntStepperInline(
-        "Y", ref editY, snap, false, true, 24f, 24f);
+        "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
 
     const string MirrorLabel = "Mirror";
     const float ToggleBoxWidth = 18f;
@@ -18982,29 +19202,44 @@ public class ViewportLayoutEditor : EditorWindow
         true,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
+
+    GUILayout.Space(6f);
+    bool applyClicked = GUILayout.Button(
+        "Apply",
+        GUILayout.Width(48f),
+        GUILayout.ExpandWidth(false));
     NoteContentRight();
 
     EditorGUIUtility.labelWidth = savedLabelWidth;
     EditorGUILayout.EndHorizontal();
 
-    bool changed = false;
-    if (xChanged && editX != x)
+    if (applyClicked)
     {
-      previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      SaveAcceptedOrnamentReference(key, editX, editY, mirrorAfter);
+      previewFeaturePositionOverrides.Remove(key);
+      previewFeatureMirrorOverrides.Remove(key);
       previewPositionChangedThisFrame = true;
-      changed = true;
+      previewMirrorChangedThisFrame = true;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+      return true;
     }
 
-    if (yChanged && editY != y)
+    bool changed = false;
+    if ((xChanged && editX != x) || (yChanged && editY != y))
     {
-      previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      if (editX == defaultX && editY == defaultY)
+        previewFeaturePositionOverrides.Remove(key);
+      else
+        previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
       previewPositionChangedThisFrame = true;
       changed = true;
     }
 
     if (mirrorAfter != mirror)
     {
-      if (mirrorAfter == defaultMirror)
+      if (mirrorAfter == acceptedMirror)
         previewFeatureMirrorOverrides.Remove(key);
       else
         previewFeatureMirrorOverrides[key] = mirrorAfter;
@@ -19035,12 +19270,15 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    string key = MakePreviewFeatureKey(
-        "ViAltarS1", anchorX, anchorY, viewFacing);
+    string key = "OrnamentProjection:ViAltar:S1";
 
     int x = ViAltarS1RightX;
     int y = ViAltarS1Y;
     bool mirror = defaultMirror;
+    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+    int defaultX = x;
+    int defaultY = y;
+    bool acceptedMirror = mirror;
     ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
 
     EditorGUILayout.BeginHorizontal();
@@ -19064,13 +19302,13 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int editX = x;
     bool xChanged = DrawIntStepperInline(
-        "X", ref editX, snap, false, true, 24f, 24f);
+        "X", ref editX, snap, x != defaultX, true, 24f, 24f);
 
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     int editY = y;
     bool yChanged = DrawIntStepperInline(
-        "Y", ref editY, snap, false, true, 24f, 24f);
+        "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
 
     const string MirrorLabel = "Mirror";
     const float ToggleBoxWidth = 18f;
@@ -19083,29 +19321,44 @@ public class ViewportLayoutEditor : EditorWindow
         true,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
+
+    GUILayout.Space(6f);
+    bool applyClicked = GUILayout.Button(
+        "Apply",
+        GUILayout.Width(48f),
+        GUILayout.ExpandWidth(false));
     NoteContentRight();
 
     EditorGUIUtility.labelWidth = savedLabelWidth;
     EditorGUILayout.EndHorizontal();
 
-    bool changed = false;
-    if (xChanged && editX != x)
+    if (applyClicked)
     {
-      previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      SaveAcceptedOrnamentReference(key, editX, editY, mirrorAfter);
+      previewFeaturePositionOverrides.Remove(key);
+      previewFeatureMirrorOverrides.Remove(key);
       previewPositionChangedThisFrame = true;
-      changed = true;
+      previewMirrorChangedThisFrame = true;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+      return true;
     }
 
-    if (yChanged && editY != y)
+    bool changed = false;
+    if ((xChanged && editX != x) || (yChanged && editY != y))
     {
-      previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      if (editX == defaultX && editY == defaultY)
+        previewFeaturePositionOverrides.Remove(key);
+      else
+        previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
       previewPositionChangedThisFrame = true;
       changed = true;
     }
 
     if (mirrorAfter != mirror)
     {
-      if (mirrorAfter == defaultMirror)
+      if (mirrorAfter == acceptedMirror)
         previewFeatureMirrorOverrides.Remove(key);
       else
         previewFeatureMirrorOverrides[key] = mirrorAfter;
@@ -20486,14 +20739,14 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      string key = MakePreviewFeatureKey(
-          "ViAltarS3V2", anchorX, anchorY, viewFacing);
+      string key = "OrnamentProjection:ViAltar:S3";
       if (!IsPreviewFeatureEnabled(key))
         continue;
 
       int x = ViAltarS3RightX;
       int y = ViAltarS3Y;
       bool mirror = defaultMirror;
+      ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
       ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
 
       // Generic S3 render: every Vi Altar that resolves through the S3
@@ -20570,14 +20823,14 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      string key = MakePreviewFeatureKey(
-          "ViAltarS2", anchorX, anchorY, viewFacing);
+      string key = "OrnamentProjection:ViAltar:S2";
       if (!IsPreviewFeatureEnabled(key))
         continue;
 
       int x = ViAltarS2RightX;
       int y = ViAltarS2Y;
       bool mirror = defaultMirror;
+      ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
       ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
 
       // Direct 1:1 blit of the verified 12x31 S2 asset. No scaling or palette
@@ -20615,14 +20868,14 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      string key = MakePreviewFeatureKey(
-          "ViAltarS1", anchorX, anchorY, viewFacing);
+      string key = "OrnamentProjection:ViAltar:S1";
       if (!IsPreviewFeatureEnabled(key))
         continue;
 
       int x = ViAltarS1RightX;
       int y = ViAltarS1Y;
       bool mirror = defaultMirror;
+      ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
       ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
 
       BlitPieceIntoPreview(
@@ -24370,9 +24623,19 @@ public class ViewportLayoutEditor : EditorWindow
 
     string key = MakePreviewFeatureKey(
         "Ornament", ornament.x, ornament.y, ornament.wall);
+    bool hasGenericProjection =
+        TryGetWallOrnamentProjectionOverrideDescriptor(
+            ornament,
+            out string projectionKey,
+            out _);
+    if (hasGenericProjection)
+      key = projectionKey;
+
     int x = defaultX;
     int y = defaultY;
     bool mirror = defaultMirror;
+    if (hasGenericProjection)
+      ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
     ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
     BlitPieceIntoPreview(pixels, texture, x, y, mirror);
   }
