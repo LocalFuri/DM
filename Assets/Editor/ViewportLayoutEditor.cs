@@ -68,6 +68,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Champions/Champion_Mirror_Front_48x43.png";
   private const string ZedChampionSheetAssetPath =
       "Assets/Art/Interface/10,5 south Zed image clicked.png";
+  private const string ChampionInventoryAssetPath =
+      "Assets/Art/Interface/Inventory_224x136.png";
 
   private const string OrnamentArtFolder =
       "Assets/Art/Ornaments";
@@ -1629,6 +1631,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedMossF2Texture;
   private Texture2D cachedMossF3Texture;
   private Texture2D cachedZedChampionSheetTexture;
+  private Texture2D cachedChampionInventoryTexture;
   [System.NonSerialized]
   private Texture2D cachedAppleGroundTexture;
   [System.NonSerialized]
@@ -6352,6 +6355,22 @@ public class ViewportLayoutEditor : EditorWindow
     PaintChampionSheetStats(pixels);
   }
 
+  // Worn-slot rectangles on Inventory_224x136. Screen Y is local Y + 33.
+  // Order: neck, torso, legs, feet, weapon hand, left hand, quiver.
+  private static readonly int[] ChampionSheetEquipSlotXY =
+  {
+    33, 25,
+    33, 45,
+    33, 65,
+    33, 85,
+    61, 52,
+    5, 32,
+    5, 52
+  };
+
+  private const int ChampionSheetSlotSize = 18;
+  private const int ChampionSheetInventoryScreenTop = 33;
+
   // The 320x200 image is the shared sheet layout. The clicked champion's
   // name, health, stamina, mana, and load are drawn over it.
   // Stamina is stored in raw units and shown divided by 10.
@@ -6360,7 +6379,9 @@ public class ViewportLayoutEditor : EditorWindow
   private void PaintChampionSheetStats(Color32[] pixels)
   {
     PaintChampionSheetName(pixels);
+    ClearChampionSheetEquipment(pixels);
     HeroDefinition hero = HeroDatabase.GetByName(championSheetName);
+    PaintChampionSheetEquipment(pixels, hero);
     if (hero == null || hero.Resources == null || hero.Attributes == null)
       return;
 
@@ -6482,18 +6503,277 @@ public class ViewportLayoutEditor : EditorWindow
     if (bitmapFont == null || string.IsNullOrEmpty(label))
       return;
 
+    // 8px glyphs at advance 8 clip "IAIDO RUYITO CHIBURI" on the 160px bar.
     bitmapFont.DrawText(
         pixels,
         PreviewWidth,
         PreviewHeight,
         label,
-        4,
-        PreviewHeight - 36 - DungeonBitmapFont.DebugGlyphHeight,
+        2,
+        PreviewHeight - 35 - DungeonBitmapFont.DebugGlyphHeight,
         new Color32(255, 255, 0, 255),
         0,
         0,
         160,
-        PreviewHeight);
+        PreviewHeight,
+        7);
+  }
+
+  private void ClearChampionSheetEquipment(Color32[] pixels)
+  {
+    Texture2D inventory = GetChampionInventoryTexture();
+    if (inventory == null)
+      return;
+
+    Color32[] source = inventory.GetPixels32();
+    if (source == null || source.Length != inventory.width * inventory.height)
+      return;
+
+    for (int i = 0; i < ChampionSheetEquipSlotXY.Length; i += 2)
+    {
+      CopyInventoryRect(
+          pixels,
+          source,
+          inventory.width,
+          ChampionSheetEquipSlotXY[i],
+          ChampionSheetEquipSlotXY[i + 1],
+          ChampionSheetSlotSize,
+          ChampionSheetSlotSize);
+    }
+  }
+
+  private void PaintChampionSheetEquipment(Color32[] pixels, HeroDefinition hero)
+  {
+    if (hero == null || hero.StartingItems == null)
+      return;
+
+    bool handUsed = false;
+    bool quiverUsed = false;
+    for (int i = 0; i < hero.StartingItems.Count; i++)
+    {
+      HeroStartingItem item = hero.StartingItems[i];
+      if (item == null || string.IsNullOrEmpty(item.ObjectType))
+        continue;
+
+      if (!TryGetChampionSheetEquipSlot(
+              item.ObjectType,
+              ref handUsed,
+              ref quiverUsed,
+              out int localX,
+              out int localY))
+      {
+        continue;
+      }
+
+      DrawChampionSheetItemIcon(
+          pixels,
+          localX + 1,
+          localY + 1,
+          item.ObjectType);
+    }
+  }
+
+  private static bool TryGetChampionSheetEquipSlot(
+      string objectType,
+      ref bool handUsed,
+      ref bool quiverUsed,
+      out int localX,
+      out int localY)
+  {
+    localX = 0;
+    localY = 0;
+    string name = objectType.ToUpperInvariant();
+    string slot = "pack";
+    if (name.Contains("HELM"))
+      slot = "head";
+    else if (name.Contains("CHOKER") || name.Contains("CLOAK"))
+      slot = "neck";
+    else if (name.Contains("TROUSER")
+        || name.Contains("PANTS")
+        || name.Contains("HOSEN")
+        || name.Contains("HUKE")
+        || name.Contains("GUNNA")
+        || (name.Contains("ROBE") && name.Contains("LEG")))
+      slot = "legs";
+    else if (name.Contains("BOOT") || name.Contains("SANDAL"))
+      slot = "feet";
+    else if (name.Contains("ARROW")
+        || name.Contains("STAR")
+        || name.Contains("DART"))
+      slot = "quiver";
+    else if (name.Contains("SWORD")
+        || name.Contains("AXE")
+        || name.Contains("CLUB")
+        || name.Contains("TORCH")
+        || name.Contains("DAGGER")
+        || name.Contains("STAFF")
+        || name.Contains("WAND")
+        || name.Contains("BOW")
+        || name.Contains("SLING")
+        || name.Contains("SHIELD"))
+      slot = "hand";
+    else if (name.Contains("SHIRT")
+        || name.Contains("TUNIC")
+        || name.Contains("JERKIN")
+        || name.Contains("DOUBLET")
+        || name.Contains("KIRTLE")
+        || name.Contains("HALTER")
+        || name.Contains("TABARD")
+        || name.Contains("AKETON")
+        || name.Contains("HIDE")
+        || name.Contains("GHI")
+        || (name.Contains("ROBE") && name.Contains("BODY")))
+      slot = "torso";
+
+    if (slot == "neck")
+    {
+      localX = 33;
+      localY = 25;
+      return true;
+    }
+
+    if (slot == "torso")
+    {
+      localX = 33;
+      localY = 45;
+      return true;
+    }
+
+    if (slot == "legs")
+    {
+      localX = 33;
+      localY = 65;
+      return true;
+    }
+
+    if (slot == "feet")
+    {
+      localX = 33;
+      localY = 85;
+      return true;
+    }
+
+    if (slot == "hand")
+    {
+      if (!handUsed)
+      {
+        handUsed = true;
+        localX = 61;
+        localY = 52;
+      }
+      else
+      {
+        localX = 5;
+        localY = 32;
+      }
+
+      return true;
+    }
+
+    if (slot == "quiver")
+    {
+      if (!quiverUsed)
+      {
+        quiverUsed = true;
+        localX = 5;
+        localY = 52;
+      }
+      else
+      {
+        localX = 5;
+        localY = 72;
+      }
+
+      return true;
+    }
+
+    return false;
+  }
+
+  private void DrawChampionSheetItemIcon(
+      Color32[] pixels,
+      int localX,
+      int localY,
+      string objectType)
+  {
+    string name = objectType.ToUpperInvariant();
+    Color32 cloth = new Color32(219, 219, 219, 255);
+    Color32 clothDark = new Color32(146, 146, 146, 255);
+    Color32 steel = new Color32(182, 182, 182, 255);
+    Color32 brown = new Color32(146, 73, 0, 255);
+    Color32 black = new Color32(0, 0, 0, 255);
+    Color32 flame = new Color32(255, 182, 0, 255);
+    Color32 blue = new Color32(0, 0, 255, 255);
+    int screenTop = ChampionSheetInventoryScreenTop + localY;
+
+    if (name.Contains("SWORD") || name.Contains("DAGGER"))
+    {
+      for (int i = 0; i < 12; i++)
+        SetChampionSheetPixel(pixels, localX + 2 + i, screenTop + 12 - i, steel);
+      SetChampionSheetPixel(pixels, localX + 3, screenTop + 13, brown);
+      SetChampionSheetPixel(pixels, localX + 4, screenTop + 14, brown);
+      SetChampionSheetPixel(pixels, localX + 2, screenTop + 14, brown);
+      return;
+    }
+
+    if (name.Contains("TORCH"))
+    {
+      for (int y = 8; y < 15; y++)
+        SetChampionSheetPixel(pixels, localX + 7, screenTop + y, brown);
+      SetChampionSheetPixel(pixels, localX + 6, screenTop + 3, flame);
+      SetChampionSheetPixel(pixels, localX + 7, screenTop + 2, flame);
+      SetChampionSheetPixel(pixels, localX + 8, screenTop + 3, flame);
+      SetChampionSheetPixel(pixels, localX + 7, screenTop + 4, flame);
+      return;
+    }
+
+    if (name.Contains("TROUSER")
+        || name.Contains("PANTS")
+        || name.Contains("HOSEN")
+        || name.Contains("HUKE")
+        || name.Contains("GUNNA")
+        || (name.Contains("ROBE") && name.Contains("LEG")))
+    {
+      Color32 ink = name.Contains("PANTS") && name.Contains("BLUE")
+          ? blue
+          : cloth;
+      for (int y = 2; y < 14; y++)
+      {
+        SetChampionSheetPixel(pixels, localX + 4, screenTop + y, ink);
+        SetChampionSheetPixel(pixels, localX + 5, screenTop + y, ink);
+        SetChampionSheetPixel(pixels, localX + 9, screenTop + y, ink);
+        SetChampionSheetPixel(pixels, localX + 10, screenTop + y, ink);
+      }
+
+      return;
+    }
+
+    if (name.Contains("BOOT") || name.Contains("SANDAL"))
+    {
+      for (int x = 3; x < 12; x++)
+        SetChampionSheetPixel(pixels, localX + x, screenTop + 12, brown);
+      for (int y = 4; y < 12; y++)
+        SetChampionSheetPixel(pixels, localX + 6, screenTop + y, brown);
+      return;
+    }
+
+    // Torso clothes: Ghi, shirt, tunic, aketon, and the other body pieces.
+    for (int y = 2; y < 14; y++)
+    {
+      int inset = y < 5 ? 4 : 2;
+      for (int x = inset; x < 16 - inset; x++)
+      {
+        Color32 ink = name.Contains("AKETON") || name.Contains("MAIL")
+            ? steel
+            : cloth;
+        if (x == inset || x == 15 - inset)
+          ink = clothDark;
+        SetChampionSheetPixel(pixels, localX + x, screenTop + y, ink);
+      }
+    }
+
+    SetChampionSheetPixel(pixels, localX + 7, screenTop + 3, black);
+    SetChampionSheetPixel(pixels, localX + 8, screenTop + 3, black);
   }
 
   private void CaptureChampionSheetGlyph(
@@ -6646,6 +6926,69 @@ public class ViewportLayoutEditor : EditorWindow
 
     cachedZedChampionSheetTexture = readableCopy;
     return cachedZedChampionSheetTexture;
+  }
+
+  private Texture2D GetChampionInventoryTexture()
+  {
+    if (cachedChampionInventoryTexture != null
+        && cachedChampionInventoryTexture.isReadable
+        && cachedChampionInventoryTexture.width == 224
+        && cachedChampionInventoryTexture.height == 136)
+    {
+      return cachedChampionInventoryTexture;
+    }
+
+    string projectRoot = Path.GetDirectoryName(Application.dataPath);
+    string absolutePath = string.IsNullOrEmpty(projectRoot)
+        ? ChampionInventoryAssetPath
+        : Path.Combine(projectRoot, ChampionInventoryAssetPath);
+    if (!File.Exists(absolutePath))
+      return null;
+
+    byte[] pngBytes = File.ReadAllBytes(absolutePath);
+    Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "ChampionInventory_ReadablePreview";
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+    if (!readableCopy.LoadImage(pngBytes, false)
+        || readableCopy.width != 224
+        || readableCopy.height != 136)
+    {
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    cachedChampionInventoryTexture = readableCopy;
+    return cachedChampionInventoryTexture;
+  }
+
+  private void CopyInventoryRect(
+      Color32[] pixels,
+      Color32[] inventory,
+      int inventoryWidth,
+      int localX,
+      int localY,
+      int width,
+      int height)
+  {
+    int inventoryHeight = 136;
+    for (int row = 0; row < height; row++)
+    {
+      int sourceY = inventoryHeight - 1 - (localY + row);
+      int screenY = ChampionSheetInventoryScreenTop + localY + row;
+      for (int column = 0; column < width; column++)
+      {
+        int sourceIndex = sourceY * inventoryWidth + localX + column;
+        if (sourceIndex < 0 || sourceIndex >= inventory.Length)
+          continue;
+        SetChampionSheetPixel(
+            pixels,
+            localX + column,
+            screenY,
+            inventory[sourceIndex]);
+      }
+    }
   }
 
   private static string GetMovementArrowRegionName(float logicalX, float logicalY)
