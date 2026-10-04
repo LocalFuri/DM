@@ -6382,6 +6382,9 @@ public class ViewportLayoutEditor : EditorWindow
   // Stamina is stored in raw units and shown divided by 10.
   // Load is the sum of that champion's carried-item weights.
   // Max load is (8 * Strength + 100) tenths of a kilogram.
+  // The sheet prints that maximum as a whole kilogram, rounded up.
+  // IAIDO is 444 tenths (44.4 kg); the original (10,4) North sheet
+  // shows 45. An exact multiple such as 460 tenths stays 46.
   private void PaintChampionSheetStats(Color32[] pixels)
   {
     PaintChampionSheetName(pixels);
@@ -6409,17 +6412,18 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     int maxLoadTenths = hero.Attributes.Strength * 8 + 100;
+    int maxLoadKilograms = (maxLoadTenths + 9) / 10;
     string healthText = health + "/ " + health;
     string staminaText = stamina + "/ " + stamina;
     string manaText = mana + "/ " + mana;
     string loadText =
         (loadTenths / 10) + "." + (loadTenths % 10)
-        + "/ " + (maxLoadTenths / 10);
+        + "/ " + maxLoadKilograms;
     if (loadText.Length * ChampionSheetGlyphAdvance > 47)
     {
       loadText =
           (loadTenths / 10) + "." + (loadTenths % 10)
-          + "/" + (maxLoadTenths / 10);
+          + "/" + maxLoadKilograms;
     }
 
     if (!TryCaptureChampionSheetGlyphs(
