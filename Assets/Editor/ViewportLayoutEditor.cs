@@ -1122,9 +1122,6 @@ public class ViewportLayoutEditor : EditorWindow
       "// END APPLIED ORNAMENT REFERENCES";
 
   // BEGIN APPLIED ORNAMENT REFERENCES
-  // REF OrnamentProjection:WoodRing:F1|98|104|false
-  // REF OrnamentProjection:WoodRing:F2|103|111|false
-  // REF OrnamentProjection:WoodRing:F3|105|117|false
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
@@ -1375,6 +1372,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedWoodRingSide3Texture;
   [System.NonSerialized]
   private Texture2D cachedSlimeFrontTexture;
+  private Texture2D cachedSlimeGeneratedF2FrontTexture;
   [System.NonSerialized]
   private Texture2D cachedSlimeSide1Texture;
   [System.NonSerialized]
@@ -13736,6 +13734,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitManaclesD3FrontIntoPreview(pixels);
     BlitManaclesD2FrontIntoPreview(pixels);
     BlitManaclesD1FrontIntoPreview(pixels);
+    BlitSlimeD2FrontIntoPreview(pixels);
     BlitSlimeD1FrontIntoPreview(pixels);
     BlitHookD2FrontIntoPreview(pixels);
     BlitHookD1FrontIntoPreview(pixels);
@@ -18133,7 +18132,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     int maxFrontDepth = IsWoodRingOrnament(ornament) ? 3
         : IsHookOrnament(ornament) ? 2
-        : IsSlimeOrnament(ornament) ? 1
+        : IsSlimeOrnament(ornament) ? 2
         : IsManaclesOrnament(ornament) ? 3
         : IsViAltarOrnament(ornament) ? 3 : 0;
     int maxSideDepth = IsWoodRingOrnament(ornament) ? 3
@@ -18185,13 +18184,24 @@ public class ViewportLayoutEditor : EditorWindow
         if (frontDepth == 1) { renderX = HookD1FrontX; renderY = HookD1FrontY; return true; }
         if (frontDepth == 2) { renderX = HookD2FrontX; renderY = HookD2FrontY; return true; }
       }
-      if (IsSlimeOrnament(ornament) && frontDepth == 1)
+      if (IsSlimeOrnament(ornament))
       {
-        Texture2D t = GetSlimeFrontTexture();
-        if (t == null) return false;
-        renderX = 112 - (t.width / 2);
-        renderY = 55 - (t.height / 2);
-        return true;
+        if (frontDepth == 1)
+        {
+          Texture2D t = GetSlimeFrontTexture();
+          if (t == null) return false;
+          renderX = 112 - (t.width / 2);
+          renderY = 55 - (t.height / 2);
+          return true;
+        }
+        if (frontDepth == 2)
+        {
+          Texture2D t = GetSlimeGeneratedF2FrontTexture();
+          if (t == null) return false;
+          renderX = (DungeonViewportWidth - t.width) / 2;
+          renderY = SlimeD2SideY;
+          return true;
+        }
       }
       if (IsManaclesOrnament(ornament))
       {
@@ -18331,7 +18341,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     int maxFrontDepth = IsWoodRingOrnament(ornament) ? 3
         : IsHookOrnament(ornament) ? 2
-        : IsSlimeOrnament(ornament) ? 1
+        : IsSlimeOrnament(ornament) ? 2
         : IsManaclesOrnament(ornament) ? 3
         : IsViAltarOrnament(ornament) ? 3 : 0;
     int maxSideDepth = IsWoodRingOrnament(ornament) ? 3
@@ -19930,7 +19940,7 @@ public class ViewportLayoutEditor : EditorWindow
         // player's relative view.
         int standardFrontDepth = IsWoodRingOrnament(ornament)
             ? 3
-            : IsHookOrnament(ornament) ? 2 : IsSlimeOrnament(ornament) ? 1 : 0;
+            : IsHookOrnament(ornament) ? 2 : IsSlimeOrnament(ornament) ? 2 : 0;
         int standardSideDepth = IsWoodRingOrnament(ornament)
             ? 3
             : IsHookOrnament(ornament) ? 3 : IsSlimeOrnament(ornament) ? 2 : 0;
@@ -21922,6 +21932,111 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return bestPaletteIndex;
+  }
+
+  private Texture2D GetSlimeGeneratedF2FrontTexture()
+  {
+    if (cachedSlimeGeneratedF2FrontTexture != null)
+      return cachedSlimeGeneratedF2FrontTexture;
+
+    Texture2D source = GetSlimeFrontTexture();
+    if (source == null || !source.isReadable)
+      return null;
+
+    // Generic Dungeon Master F2 ornament scale: derive the medium-distance
+    // front image from the native F1 source. Position is calibrated separately
+    // in ViewEdit; the source artwork itself is never resized on disk.
+    int width = Mathf.Max(1, Mathf.RoundToInt(source.width * (2f / 3f)));
+    int height = Mathf.Max(1, Mathf.RoundToInt(source.height * (2f / 3f)));
+
+    cachedSlimeGeneratedF2FrontTexture = GenerateDmScaledWallDecoration(
+        source,
+        width,
+        height,
+        WallOrnamentMediumColorMap,
+        "Slime F2 Generated from F1");
+    return cachedSlimeGeneratedF2FrontTexture;
+  }
+
+  private void BlitSlimeD2FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+    {
+      return;
+    }
+
+    Texture2D slimeFront = GetSlimeGeneratedF2FrontTexture();
+    if (slimeFront == null || !slimeFront.isReadable)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int d1X = previewX + forwardX;
+    int d1Y = previewY + forwardY;
+    int wallTileX = previewX + forwardX * 2;
+    int wallTileY = previewY + forwardY * 2;
+
+    // F2 front is visible only through an open D1 cell.
+    if (!previewMiniMap.IsInside(d1X, d1Y)
+        || previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(wallTileX, wallTileY))
+    {
+      return;
+    }
+
+    string viewedWallSide = FacingName(previewFacing);
+    string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
+      if (!IsSlimeOrnament(ornament))
+        continue;
+
+      bool placementMatches;
+      if (ornament.wallTilePlacement)
+      {
+        placementMatches =
+            ornament.x == wallTileX
+            && ornament.y == wallTileY
+            && string.Equals(
+                ornament.wall,
+                visiblePhysicalWallFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        placementMatches =
+            ornament.x == d1X
+            && ornament.y == d1Y
+            && string.Equals(
+                ornament.wall,
+                viewedWallSide,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+
+      if (!placementMatches)
+        continue;
+
+      // Initial generic F2 slot. X/Y are intentionally exposed in ViewEdit
+      // so the original screenshot can be used for exact pixel calibration.
+      int x = (DungeonViewportWidth - slimeFront.width) / 2;
+      int y = SlimeD2SideY;
+
+      BlitOrnamentPieceIntoPreview(
+          pixels, slimeFront, ornament, x, y, false);
+      return;
+    }
   }
 
   private void BlitSlimeD1FrontIntoPreview(Color32[] pixels)
