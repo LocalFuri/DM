@@ -3004,6 +3004,8 @@ public class ViewportLayoutEditor : EditorWindow
         || name == "RightS3"
         || name == "Wall D3L2"
         || name == "Wall D3R2"
+        || name == "WallD3L2"
+        || name == "WallD3R2"
         || name == "Black Door Frame Left F1"
         || name == "Black Door Frame Right F1"
         || name == "Black Door Frame Left F2"
@@ -4154,11 +4156,8 @@ public class ViewportLayoutEditor : EditorWindow
         || piece.Name == "Wall D3L2"
         || piece.Name == "WallD3L2";
     bool compactD3Header =
-        !isLeftD3Card
-        && piece.Name != "RightD3"
-        && (piece.Name == "Wall D3R2"
-            || piece.Graphic == DungeonGraphicType.WallD3L2
-            || piece.Graphic == DungeonGraphicType.WallD3R2);
+        piece.Name == "Wall D3R2"
+        || piece.Name == "WallD3R2";
     bool compactSideWallHeader =
         IsWallF0LeftPiece(piece)
         || IsWallF0RightPiece(piece)
@@ -4219,58 +4218,11 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       EditorGUIUtility.labelWidth = 0f;
-      if (IsFrontWallF1Card(piece))
-      {
-        // FrontF1 has exactly one valid graphic. Do not expose the full
-        // DungeonGraphicType enum (doors, ornaments, obsolete F1_A/F1_B, etc.).
-        if (piece.Graphic != DungeonGraphicType.FrontWallF1)
-        {
-          piece.Graphic = DungeonGraphicType.FrontWallF1;
-          GUI.changed = true;
-        }
-
-        EditorGUILayout.Popup(
-            0,
-            new[] { "Front Wall F1" },
-            GUILayout.Width(135f));
-      }
-      else if (IsFrontWallF2Card(piece))
-      {
-        if (piece.Graphic != DungeonGraphicType.FrontWallF2)
-        {
-          piece.Graphic = DungeonGraphicType.FrontWallF2;
-          GUI.changed = true;
-        }
-
-        EditorGUILayout.Popup(
-            0,
-            new[] { "Front Wall F2" },
-            GUILayout.Width(135f));
-      }
-      else if (IsFrontWallF3Card(piece))
-      {
-        // FrontF3 is the native 70x49 center (plus optional 32px L/R strips).
-        // An authored Front Wall F2 graphic on this card would show the wrong
-        // name and feed the wrong height into ViewEdit Y.
-        if (piece.Graphic != DungeonGraphicType.FrontWallF3)
-        {
-          piece.Graphic = DungeonGraphicType.FrontWallF3;
-          GUI.changed = true;
-        }
-
-        EditorGUILayout.Popup(
-            0,
-            new[] { "Front Wall F3" },
-            GUILayout.Width(135f));
-      }
-      else
-      {
-        piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
-            GUIContent.none, piece.Graphic, GUILayout.Width(135f));
-      }
+      // Front wall identity/source is fixed by the piece name.
+      // No Graphic dropdown is needed in ViewEdit.
 
       // Front pieces use two compact rows:
-      // row 1 = name + Graphic + Enabled + Mirror
+      // row 1 = name + Enabled + Mirror
       // row 2 = Width (when applicable) + X + Y + Ref.
     }
     else if (compactBlackDoorF1FrameHeader)
@@ -4297,7 +4249,7 @@ public class ViewportLayoutEditor : EditorWindow
           GUIContent.none, piece.Graphic, GUILayout.Width(135f));
 
       // Black Door elements use the same compact arrangement as the normal
-      // Left/Right wall cards: name + Graphic + Enabled + Mirror on row 1,
+      // Left/Right wall cards: name + Enabled + Mirror on row 1,
       // then X / Y on row 2.
     }
     else if (compactD3Header)
@@ -4320,11 +4272,8 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       EditorGUIUtility.labelWidth = 0f;
-      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
-          GUIContent.none, piece.Graphic, GUILayout.Width(135f));
-
-      // Match FrontF1's compact card layout: title + Graphic on row 1,
-      // Enabled / Mirror / Ref on row 2, then X / Y on row 3.
+      // D3 wall identity/source is fixed by the piece name.
+      // Enabled / Mirror / Ref stay on row 2, then X / Y on row 3.
       EditorGUILayout.EndHorizontal();
       EditorGUILayout.BeginHorizontal();
     }
@@ -4348,24 +4297,8 @@ public class ViewportLayoutEditor : EditorWindow
       }
 
       EditorGUIUtility.labelWidth = 0f;
-      if (piece.Name == "RightS3")
-      {
-        // RightS3 uses its dedicated extracted source texture through
-        // GetRight2STexture().  There is no reliable DungeonGraphicType enum
-        // value for this source, so show the real source name instead of the
-        // misleading "None" enum popup.
-        EditorGUILayout.Popup(
-            0,
-            new[] { "Right S3" },
-            GUILayout.Width(135f));
-      }
-      else
-      {
-        piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
-            GUIContent.none, piece.Graphic, GUILayout.Width(135f));
-      }
-
-      // Keep side-wall Enabled and Mirror on the same first row.
+      // Left/Right wall identity/source is fixed by the piece name.
+      // Keep Enabled and Mirror on the same first row.
     }
     else if (!hideNameForWall)
     {
@@ -12012,10 +11945,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null)
       return false;
 
-    if (piece.Name == "Wall F0Left" || piece.Name == "LeftF0")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF0L;
+    return piece.Name == "Wall F0Left" || piece.Name == "LeftF0";
   }
 
   private static bool IsWallF0RightPiece(ViewportPiece piece)
@@ -12023,10 +11953,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null)
       return false;
 
-    if (piece.Name == "Wall F0Right" || piece.Name == "RightF0")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF0R;
+    return piece.Name == "Wall F0Right" || piece.Name == "RightF0";
   }
 
   private static bool IsWallF1LeftPiece(ViewportPiece piece)
@@ -12034,10 +11961,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null)
       return false;
 
-    if (piece.Name == "Wall F1Left" || piece.Name == "LeftF1")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF1L;
+    return piece.Name == "Wall F1Left" || piece.Name == "LeftF1";
   }
 
   private static bool IsWallF1RightPiece(ViewportPiece piece)
@@ -12045,10 +11969,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null)
       return false;
 
-    if (piece.Name == "Wall F1Right" || piece.Name == "RightF1")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF1R;
+    return piece.Name == "Wall F1Right" || piece.Name == "RightF1";
   }
 
   private static bool IsWallF2LeftPiece(ViewportPiece piece)
@@ -12056,10 +11977,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null)
       return false;
 
-    if (piece.Name == "Wall F2Left" || piece.Name == "LeftF2")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF2L;
+    return piece.Name == "Wall F2Left" || piece.Name == "LeftF2";
   }
 
   private static bool IsWallF2RightPiece(ViewportPiece piece)
@@ -12067,10 +11985,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null)
       return false;
 
-    if (piece.Name == "Wall F2Right" || piece.Name == "RightF2")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF2R;
+    return piece.Name == "Wall F2Right" || piece.Name == "RightF2";
   }
 
   private static bool IsWallF3LeftPiece(ViewportPiece piece)
@@ -12078,10 +11993,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null)
       return false;
 
-    if (piece.Name == "Wall F3Left" || piece.Name == "LeftF3")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF3L;
+    return piece.Name == "Wall F3Left" || piece.Name == "LeftF3";
   }
 
   private static bool IsWallF3RightPiece(ViewportPiece piece)
@@ -12089,10 +12001,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null)
       return false;
 
-    if (piece.Name == "Wall F3Right" || piece.Name == "RightF3")
-      return true;
-
-    return piece.Graphic == DungeonGraphicType.WallF3R;
+    return piece.Name == "Wall F3Right" || piece.Name == "RightF3";
   }
 
   private static bool IsNormalWallPiece(ViewportPiece piece)
@@ -12115,14 +12024,14 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
     }
 
-    return piece.Graphic == DungeonGraphicType.WallD3L2
-        || piece.Graphic == DungeonGraphicType.WallD3R2
-        || piece.Name == "LeftS3"
+    return piece.Name == "LeftS3"
         || piece.Name == "RightS3"
         || piece.Name == "LeftD3"
         || piece.Name == "RightD3"
         || piece.Name == "Wall D3L2"
-        || piece.Name == "Wall D3R2";
+        || piece.Name == "Wall D3R2"
+        || piece.Name == "WallD3L2"
+        || piece.Name == "WallD3R2";
   }
 
   private void CaptureNormalWallBaselinesFromLayout()
