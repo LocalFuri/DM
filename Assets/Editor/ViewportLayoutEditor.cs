@@ -1231,6 +1231,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // BEGIN APPLIED ORNAMENT REFERENCES
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
+  // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
   // REF OrnamentProjection:Slime:F2|104|74|false
   // REF OrnamentProjection:Slime:F3|106|93|false|639267208231012151
   // REF OrnamentProjection:WoodRing:F1|98|104|false
