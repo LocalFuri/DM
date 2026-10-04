@@ -1638,6 +1638,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedBreadGroundTexture;
   private readonly Dictionary<string, Texture2D> cachedChampionPortraitTextures =
       new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
+  private readonly Dictionary<string, Texture2D> cachedReadableChampionPortraits =
+      new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
 
   // New normal-wall pipeline foundation:
   // pose-store data may still exist, but normal-wall placement is restored from
@@ -6370,6 +6372,10 @@ public class ViewportLayoutEditor : EditorWindow
 
   private const int ChampionSheetSlotSize = 18;
   private const int ChampionSheetInventoryScreenTop = 33;
+  private const int ChampionSheetPortraitX = 7;
+  private const int ChampionSheetPortraitScreenTop = 0;
+  private const int ChampionSheetPortraitWidth = 32;
+  private const int ChampionSheetPortraitHeight = 29;
 
   // The 320x200 image is the shared sheet layout. The clicked champion's
   // name, health, stamina, mana, and load are drawn over it.
@@ -6381,6 +6387,7 @@ public class ViewportLayoutEditor : EditorWindow
     PaintChampionSheetName(pixels);
     ClearChampionSheetEquipment(pixels);
     HeroDefinition hero = HeroDatabase.GetByName(championSheetName);
+    PaintChampionSheetPortrait(pixels, hero);
     PaintChampionSheetEquipment(pixels, hero);
     if (hero == null || hero.Resources == null || hero.Attributes == null)
       return;
@@ -6517,6 +6524,101 @@ public class ViewportLayoutEditor : EditorWindow
         160,
         PreviewHeight,
         7);
+  }
+
+  private void PaintChampionSheetPortrait(Color32[] pixels, HeroDefinition hero)
+  {
+    string portraitName = hero != null && !string.IsNullOrEmpty(hero.PortraitName)
+        ? hero.PortraitName
+        : championSheetName;
+    Texture2D portrait = GetReadableChampionPortrait(portraitName);
+    if (portrait == null)
+      return;
+
+    Color32 slot = new Color32(109, 109, 109, 255);
+    FillChampionSheetRect(
+        pixels,
+        ChampionSheetPortraitX,
+        ChampionSheetPortraitScreenTop,
+        ChampionSheetPortraitWidth,
+        ChampionSheetPortraitHeight,
+        slot);
+
+    Color32[] source = portrait.GetPixels32();
+    if (source == null || source.Length != portrait.width * portrait.height)
+      return;
+
+    for (int row = 0; row < portrait.height; row++)
+    {
+      int sourceRow = portrait.height - 1 - row;
+      for (int column = 0; column < portrait.width; column++)
+      {
+        Color32 color = source[sourceRow * portrait.width + column];
+        if (color.a == 0)
+          continue;
+        SetChampionSheetPixel(
+            pixels,
+            ChampionSheetPortraitX + column,
+            ChampionSheetPortraitScreenTop + row,
+            color);
+      }
+    }
+  }
+
+  private Texture2D GetReadableChampionPortrait(string championName)
+  {
+    string wantedKey = NormalizeChampionAssetKey(championName);
+    if (string.IsNullOrEmpty(wantedKey))
+      return null;
+
+    if (cachedReadableChampionPortraits.TryGetValue(
+            wantedKey,
+            out Texture2D cached)
+        && cached != null)
+    {
+      return cached;
+    }
+
+    string folder = Path.Combine(
+        Path.GetDirectoryName(Application.dataPath) ?? string.Empty,
+        ChampionArtFolder);
+    if (!Directory.Exists(folder))
+      return null;
+
+    string[] files = Directory.GetFiles(folder, "*.png");
+    string match = null;
+    for (int i = 0; i < files.Length; i++)
+    {
+      string fileKey = NormalizeChampionAssetKey(
+          Path.GetFileNameWithoutExtension(files[i]));
+      if (fileKey.IndexOf("MIRROR", System.StringComparison.Ordinal) >= 0)
+        continue;
+      if (string.Equals(fileKey, wantedKey, System.StringComparison.Ordinal))
+      {
+        match = files[i];
+        break;
+      }
+    }
+
+    if (match == null)
+      return null;
+
+    byte[] pngBytes = File.ReadAllBytes(match);
+    Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "ChampionPortrait_ReadablePreview";
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+    if (!readableCopy.LoadImage(pngBytes, false)
+        || readableCopy.width != ChampionSheetPortraitWidth
+        || readableCopy.height != ChampionSheetPortraitHeight)
+    {
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    cachedReadableChampionPortraits[wantedKey] = readableCopy;
+    return readableCopy;
   }
 
   private void ClearChampionSheetEquipment(Color32[] pixels)
