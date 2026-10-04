@@ -4352,6 +4352,13 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUIUtility.labelWidth = enabledLabelWidth;
 
     bool wallViewEditPreview = IsWallRenderingPiece(piece);
+    bool isBlackDoorF1Required =
+        piece.Name == "BlackDoorF1"
+        && IsDoorF1FrontView();
+    bool isBlackDoorF1FrameRequired =
+        (piece.Name == "Black Door Frame Left F1"
+         || piece.Name == "Black Door Frame Right F1")
+        && IsDoorF1FrontView();
     bool isBlackDoorF3Required =
         piece.Name == "BlackDoorF3"
         && IsDoorF3FrontView();
@@ -4362,6 +4369,8 @@ public class ViewportLayoutEditor : EditorWindow
     bool wallRenderingPreview = wallViewEditPreview;
     bool usePreviewEnabledOverride =
         wallViewEditPreview
+        || isBlackDoorF1Required
+        || isBlackDoorF1FrameRequired
         || isBlackDoorF3Required
         || isBlackDoorF3FrameRequired
         || (previewDisableAllWalls && wallRenderingPreview);
@@ -4400,9 +4409,11 @@ public class ViewportLayoutEditor : EditorWindow
       // owns the automatic wall selection for this stationary pose.
       enabledBefore = manualPreviewEnabled;
     }
-    else if (isBlackDoorF3FrameRequired || isBlackDoorF3Required)
+    else if (isBlackDoorF1Required || isBlackDoorF1FrameRequired
+        || isBlackDoorF3FrameRequired || isBlackDoorF3Required)
     {
-      // At (1,5) North BlackDoorF3 and its F3 frames default ON in ViewEdit.
+      // (1,3) North defaults BlackDoorF1 and its frames ON.
+      // (1,5) North defaults BlackDoorF3 and its frames ON.
       // An explicit ViewEdit toggle is stored in the temporary preview
       // override above and can still turn any of them OFF.
       enabledBefore = true;
@@ -12271,33 +12282,33 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (piece.Name == "Black Door Frame Left F1")
         {
-          if (!blackDoorFrameLeftF1EnabledInitialized)
-          {
-            piece.Enabled = true;
-            blackDoorFrameLeftF1EnabledInitialized = true;
-          }
+          piece.Enabled = !previewEnabledOverrideByPiece.TryGetValue(
+                  piece, out bool leftFrameEnabledOverride)
+              || leftFrameEnabledOverride;
+          blackDoorFrameLeftF1EnabledInitialized = true;
 
           piece.X = 44;
           piece.Y = DisplayYToUnityY(46, 94);
         }
         else if (piece.Name == "Black Door Frame Right F1")
         {
-          if (!blackDoorFrameRightF1EnabledInitialized)
-          {
-            piece.Enabled = true;
-            blackDoorFrameRightF1EnabledInitialized = true;
-          }
+          piece.Enabled = !previewEnabledOverrideByPiece.TryGetValue(
+                  piece, out bool rightFrameEnabledOverride)
+              || rightFrameEnabledOverride;
+          blackDoorFrameRightF1EnabledInitialized = true;
 
           piece.X = 154;
           piece.Y = DisplayYToUnityY(46, 94);
         }
         else if (piece.Name == "BlackDoorF1")
         {
-          if (!blackDoorF1EnabledInitialized)
-          {
-            piece.Enabled = true;
-            blackDoorF1EnabledInitialized = true;
-          }
+          // Leaving this pose forces Enabled off. Coming back must turn the
+          // door on again. A ViewEdit override for this stationary pose still
+          // wins inside the draw.
+          piece.Enabled = !previewEnabledOverrideByPiece.TryGetValue(
+                  piece, out bool doorEnabledOverride)
+              || doorEnabledOverride;
+          blackDoorF1EnabledInitialized = true;
 
           piece.X = 63;
           piece.Y = DisplayYToUnityY(47, 88);
@@ -13604,12 +13615,10 @@ public class ViewportLayoutEditor : EditorWindow
           {
             // Render state must respect the pose-resolved Enabled state.
             // A temporary ViewEdit toggle may still override it for this pose.
-            bool leftFrameEnabled = leftFramePiece.Enabled;
-            if (previewEnabledOverrideByPiece.TryGetValue(
-                    leftFramePiece, out bool leftFrameEnabledOverride))
-            {
-              leftFrameEnabled = leftFrameEnabledOverride;
-            }
+            bool leftFrameEnabled =
+                !previewEnabledOverrideByPiece.TryGetValue(
+                    leftFramePiece, out bool leftFrameEnabledOverride)
+                || leftFrameEnabledOverride;
 
             bool leftFrameMirror = leftFramePiece.MirrorHorizontally;
             if (previewMirrorOverrideByPiece.TryGetValue(
@@ -13634,12 +13643,10 @@ public class ViewportLayoutEditor : EditorWindow
           if (leftFrameSource != null && rightFramePiece != null)
           {
             // Same rule for the right F1 frame: never draw a disabled piece.
-            bool rightFrameEnabled = rightFramePiece.Enabled;
-            if (previewEnabledOverrideByPiece.TryGetValue(
-                    rightFramePiece, out bool rightFrameEnabledOverride))
-            {
-              rightFrameEnabled = rightFrameEnabledOverride;
-            }
+            bool rightFrameEnabled =
+                !previewEnabledOverrideByPiece.TryGetValue(
+                    rightFramePiece, out bool rightFrameEnabledOverride)
+                || rightFrameEnabledOverride;
 
             // Automatic F1 right-frame default is mirrored because both sides
             // use the same extracted left-frame source. A ViewEdit Mirror click
@@ -13662,7 +13669,12 @@ public class ViewportLayoutEditor : EditorWindow
             }
           }
 
-          if (piece.Enabled)
+          bool doorEnabled =
+              !previewEnabledOverrideByPiece.TryGetValue(
+                  piece, out bool doorEnabledOverride)
+              || doorEnabledOverride;
+
+          if (doorEnabled)
           {
             Texture2D f1DoorSource = GetBlackDoorF1SourceTexture();
             if (f1DoorSource != null)
