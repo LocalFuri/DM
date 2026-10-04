@@ -18816,6 +18816,36 @@ public class ViewportLayoutEditor : EditorWindow
     return enabledAfter;
   }
 
+  // A front mirror is stored on the wall face that points back at the party.
+  // From 10,5 South, ZED at (10,6) is stored North, and ViewEdit shows South.
+  private string ChampionMirrorViewEditDirection(ChampionMirrorPlacement mirror)
+  {
+    if (mirror == null || string.IsNullOrEmpty(mirror.wall))
+      return null;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing, out int forwardX, out int forwardY);
+    string frontFace = FacingName(OppositePreviewFacing(previewFacing));
+    if (!string.Equals(
+            mirror.wall,
+            frontFace,
+            System.StringComparison.OrdinalIgnoreCase))
+    {
+      return mirror.wall;
+    }
+
+    for (int depth = 1; depth <= 3; depth++)
+    {
+      if (mirror.x == previewX + forwardX * depth
+          && mirror.y == previewY + forwardY * depth)
+      {
+        return FacingName(previewFacing);
+      }
+    }
+
+    return mirror.wall;
+  }
+
   private bool DrawChampionMirrorFeatureRow(ChampionMirrorPlacement mirror)
   {
     if (!TryGetChampionMirrorViewProjection(
@@ -18834,8 +18864,9 @@ public class ViewportLayoutEditor : EditorWindow
     string name = string.IsNullOrEmpty(mirror.champion)
         ? "ChampMirror"
         : "ChampMirror - " + mirror.champion;
-    if (!string.IsNullOrEmpty(mirror.wall))
-      name += " (" + mirror.wall + ")";
+    string wallLabel = ChampionMirrorViewEditDirection(mirror);
+    if (!string.IsNullOrEmpty(wallLabel))
+      name += " (" + wallLabel + ")";
 
     EditorGUILayout.BeginHorizontal();
 
