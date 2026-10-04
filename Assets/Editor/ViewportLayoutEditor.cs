@@ -65,6 +65,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Champions/Champion_Mirror_Side_16x35.png";
   private const string ChampionMirrorFrontAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Front_48x43.png";
+  private const string ZedChampionSheetAssetPath =
+      "Assets/Art/Interface/10,5 south Zed image clicked.png";
 
   private const string OrnamentArtFolder =
       "Assets/Art/Ornaments";
@@ -617,6 +619,8 @@ public class ViewportLayoutEditor : EditorWindow
   // screen top-left = (88,62), source = 48x43, therefore framebuffer Y=95.
   private const int ChampionMirrorD1FrontX = 88;
   private const int ChampionMirrorD1FrontY = 95;
+  private const int ChampionMirrorD1FrontWidth = 48;
+  private const int ChampionMirrorD1FrontHeight = 43;
 
   // The 32x29 Champion portrait occupies the mirror's inner opening.
   // In the 48x43 source the opening is X=8..39, top Y=6..34.
@@ -931,6 +935,7 @@ public class ViewportLayoutEditor : EditorWindow
   private int previewX;
   private int previewY;
   private DungeonFacing previewFacing = DungeonFacing.South;
+  private bool zedChampionSheetVisible;
   private int previewDungeonLevel = PreviewDungeonLevel;
   private string previewLevelJumpText = string.Empty;
   private DungeonMap previewMiniMap;
@@ -1621,6 +1626,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedMossF1Texture;
   private Texture2D cachedMossF2Texture;
   private Texture2D cachedMossF3Texture;
+  private Texture2D cachedZedChampionSheetTexture;
   [System.NonSerialized]
   private Texture2D cachedAppleGroundTexture;
   [System.NonSerialized]
@@ -6066,6 +6072,29 @@ public class ViewportLayoutEditor : EditorWindow
         windowMouse,
         out Vector2 logical);
 
+    if (hasLogical
+        && window.TryHandleZedChampionSheetClick(logical.x, logical.y))
+    {
+      s_lastGameViewClickTime = now;
+      if (imguiEvent != null)
+        imguiEvent.Use();
+
+      if (pointerEvent != null)
+      {
+        pointerEvent.StopPropagation();
+        UnityEngine.UIElements.VisualElement pointerTarget =
+            pointerEvent.currentTarget as UnityEngine.UIElements.VisualElement
+            ?? pointerEvent.target as UnityEngine.UIElements.VisualElement;
+        if (pointerTarget != null && pointerTarget.focusController != null)
+          pointerTarget.focusController.IgnoreEvent(pointerEvent);
+      }
+
+      gameView.Repaint();
+      window.Repaint();
+      RepaintGameViews();
+      return true;
+    }
+
     string region = "none";
     if (hasLogical)
       region = GetMovementArrowRegionName(logical.x, logical.y);
@@ -6246,6 +6275,145 @@ public class ViewportLayoutEditor : EditorWindow
     logical.x = gamePixel.x - (targetSize.x - PreviewWidth) * 0.5f;
     logical.y = gamePixel.y - (targetSize.y - PreviewHeight) * 0.5f;
     return true;
+  }
+
+  /// <summary>
+  /// At 10,5 South a click inside ZED's D1 mirror frame fills the 320x200
+  /// game view with the champion sheet. A later click, or a pose change,
+  /// returns to the dungeon view.
+  /// </summary>
+  private bool TryHandleZedChampionSheetClick(float logicalX, float logicalY)
+  {
+    bool insideGame =
+        logicalX >= 0f && logicalX < PreviewWidth
+        && logicalY >= 0f && logicalY < PreviewHeight;
+    if (!insideGame)
+      return false;
+
+    if (zedChampionSheetVisible)
+    {
+      zedChampionSheetVisible = false;
+      PresentEditModePreviewToGameView();
+      Repaint();
+      return true;
+    }
+
+    if (!IsZedChampionMirrorFrameClick(logicalX, logicalY))
+      return false;
+
+    zedChampionSheetVisible = true;
+    PresentEditModePreviewToGameView();
+    Repaint();
+    return true;
+  }
+
+  private bool IsZedChampionMirrorFrameClick(float logicalX, float logicalY)
+  {
+    if (previewX != 10
+        || previewY != 5
+        || previewFacing != DungeonFacing.South)
+    {
+      return false;
+    }
+
+    int frameTop =
+        PreviewHeight - ChampionMirrorD1FrontY - ChampionMirrorD1FrontHeight;
+    if (logicalX < ChampionMirrorD1FrontX
+        || logicalX >= ChampionMirrorD1FrontX + ChampionMirrorD1FrontWidth
+        || logicalY < frameTop
+        || logicalY >= frameTop + ChampionMirrorD1FrontHeight)
+    {
+      return false;
+    }
+
+    if (previewChampionMirrors == null)
+      return false;
+
+    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    {
+      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror == null
+          || !string.Equals(
+              mirror.champion,
+              "ZED",
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      if (!TryGetChampionMirrorViewProjection(
+              mirror,
+              out int renderX,
+              out int renderY,
+              out _))
+      {
+        continue;
+      }
+
+      if (renderX == ChampionMirrorD1FrontX
+          && renderY == ChampionMirrorD1FrontY)
+      {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private void BlitZedChampionSheetIntoPreview(Color32[] pixels)
+  {
+    Texture2D sheet = GetZedChampionSheetTexture();
+    if (sheet == null
+        || pixels == null
+        || pixels.Length != PreviewWidth * PreviewHeight)
+    {
+      zedChampionSheetVisible = false;
+      return;
+    }
+
+    Color32[] source = sheet.GetPixels32();
+    if (source == null || source.Length != pixels.Length)
+    {
+      zedChampionSheetVisible = false;
+      return;
+    }
+
+    System.Array.Copy(source, pixels, pixels.Length);
+  }
+
+  private Texture2D GetZedChampionSheetTexture()
+  {
+    if (cachedZedChampionSheetTexture != null
+        && cachedZedChampionSheetTexture.isReadable
+        && cachedZedChampionSheetTexture.width == PreviewWidth
+        && cachedZedChampionSheetTexture.height == PreviewHeight)
+    {
+      return cachedZedChampionSheetTexture;
+    }
+
+    string projectRoot = Path.GetDirectoryName(Application.dataPath);
+    string absolutePath = string.IsNullOrEmpty(projectRoot)
+        ? ZedChampionSheetAssetPath
+        : Path.Combine(projectRoot, ZedChampionSheetAssetPath);
+    if (!File.Exists(absolutePath))
+      return null;
+
+    byte[] pngBytes = File.ReadAllBytes(absolutePath);
+    Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "ZedChampionSheet_ReadablePreview";
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+    if (!readableCopy.LoadImage(pngBytes, false)
+        || readableCopy.width != PreviewWidth
+        || readableCopy.height != PreviewHeight)
+    {
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    cachedZedChampionSheetTexture = readableCopy;
+    return cachedZedChampionSheetTexture;
   }
 
   private static string GetMovementArrowRegionName(float logicalX, float logicalY)
@@ -9693,6 +9861,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
+    zedChampionSheetVisible = false;
 
     // A pose change always returns ViewEdit to the geometry-filtered list.
     // "Show all walls" is a temporary inspection mode for the pose where the
@@ -9758,6 +9927,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
+    zedChampionSheetVisible = false;
 
     // A pose change always returns ViewEdit to the geometry-filtered list.
     // "Show all walls" is a temporary inspection mode for the pose where the
@@ -13836,6 +14006,20 @@ public class ViewportLayoutEditor : EditorWindow
           previewY,
           previewFacing
       );
+    }
+
+    if (zedChampionSheetVisible)
+    {
+      if (previewX == 10
+          && previewY == 5
+          && previewFacing == DungeonFacing.South)
+      {
+        BlitZedChampionSheetIntoPreview(pixels);
+      }
+      else
+      {
+        zedChampionSheetVisible = false;
+      }
     }
 
     editModePreviewTexture.SetPixels32(pixels);
@@ -21988,7 +22172,10 @@ public class ViewportLayoutEditor : EditorWindow
   private static readonly WallOrnamentCoordinateSet ChampionMirrorFrontWallOrnamentSet =
       new WallOrnamentCoordinateSet(
           new WallOrnamentDepthSlot(
-              48, 43, ChampionMirrorD1FrontX, ChampionMirrorD1FrontY),
+              ChampionMirrorD1FrontWidth,
+              ChampionMirrorD1FrontHeight,
+              ChampionMirrorD1FrontX,
+              ChampionMirrorD1FrontY),
           new WallOrnamentDepthSlot(
               ChampionMirrorD2FrontWidth,
               ChampionMirrorD2FrontHeight,
