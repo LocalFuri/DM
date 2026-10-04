@@ -6472,8 +6472,10 @@ public class ViewportLayoutEditor : EditorWindow
     CaptureChampionSheetGlyph(pixels, glyphs, '2', 196, 161);
     AddChampionSheetPatternGlyph(
         glyphs, '3', ".###." + "....#" + "..##." + "....#" + ".###.");
+    // Original DOS 5, measured from the (10,4) North stamina "65".
+    // The bottom row is a full bar, not the rounded ".###." shape.
     AddChampionSheetPatternGlyph(
-        glyphs, '5', "#####" + "#...." + "####." + "....#" + ".###.");
+        glyphs, '5', "#####" + "#...." + "####." + "....#" + "####.");
     AddChampionSheetPatternGlyph(
         glyphs, '7', "#####" + "...#." + "..#.." + ".#..." + "#....");
     return glyphs.ContainsKey('0') && glyphs.ContainsKey('6');
@@ -6510,20 +6512,21 @@ public class ViewportLayoutEditor : EditorWindow
     if (bitmapFont == null || string.IsNullOrEmpty(label))
       return;
 
-    // 8px glyphs at advance 8 clip "IAIDO RUYITO CHIBURI" on the 160px bar.
+    // Original (10,4) North name ink starts at x=3, pitch 6.
+    // The 8px cell has a 2px left bearing, so the cell origin is x=1.
     bitmapFont.DrawText(
         pixels,
         PreviewWidth,
         PreviewHeight,
         label,
-        2,
+        1,
         PreviewHeight - 35 - DungeonBitmapFont.DebugGlyphHeight,
         new Color32(255, 255, 0, 255),
         0,
         0,
         160,
         PreviewHeight,
-        7);
+        6);
   }
 
   private void PaintChampionSheetPortrait(Color32[] pixels, HeroDefinition hero)
@@ -6669,8 +6672,8 @@ public class ViewportLayoutEditor : EditorWindow
 
       DrawChampionSheetItemIcon(
           pixels,
-          localX + 1,
-          localY + 1,
+          localX,
+          localY,
           item.ObjectType);
     }
   }
@@ -6792,6 +6795,75 @@ public class ViewportLayoutEditor : EditorWindow
     return false;
   }
 
+  // Original DOS Ghi, measured in the (10,4) North torso slot.
+  private static readonly string[] ChampionSheetGhiMask =
+  {
+    "..................",
+    "......w.....w.....",
+    "...wWWWw...wWWWw..",
+    "..WWWWWWw.wWWWWWW.",
+    ".WWWwWwWwg.WWwWWW.",
+    ".WWwwwWWWw.wWwwwW.",
+    ".WwwgwWWWw.wWWgww.",
+    ".wwgwwwWWW.gWWggg.",
+    ".wg.wWWwWWg.wWggg.",
+    ".g..gwWWWWw.wWg.g.",
+    "....gwWWWWw.gWg...",
+    "....wgWWWWw.gWg...",
+    "....wWwWWWw.gwg...",
+    "....gWWWwWw.gwg...",
+    "....gwWWWWg.gwg...",
+    ".....wWWWw..wg....",
+    ".....gwWWw.gwg....",
+    "..................",
+  };
+
+  // Original DOS white leg clothes with the red waist, from the same sheet.
+  private static readonly string[] ChampionSheetHosenMask =
+  {
+    "..................",
+    "....bRRRRRRRRb....",
+    "....bRRRRRRRRRR...",
+    "....gwWWWWWwgRgR..",
+    "....wWWWWWWWwgR...",
+    "...gWwWWWWWWWgR...",
+    "...wWWWWgWWWWwg...",
+    "...wwWWWWgWWWwg...",
+    "...wWWWWggWwWWg...",
+    "...wWWWWg.wWWWg...",
+    "...wWWWwg.wWWWg...",
+    "...wWWWwg.wWWwg...",
+    "...wWWWwg.wWWwg...",
+    "...wWWWwg.wWWwg...",
+    "...wWWwwg.wWWwg...",
+    "...wWwwwg.wWwwg...",
+    "...wWWWwg.wWWwg...",
+    "..................",
+  };
+
+  // Original DOS sword, measured in the (10,4) North weapon-hand slot.
+  private static readonly string[] ChampionSheetSwordMask =
+  {
+    "..................",
+    "...............W..",
+    "...............WW.",
+    "..............gWw.",
+    "..............WW..",
+    ".............wWw..",
+    "............gWw...",
+    "............WW....",
+    "...........WWg....",
+    "..........WWw.....",
+    ".........WWw......",
+    "........WWw.......",
+    "....W.wWWg........",
+    "....KWWW..........",
+    "...KKWw...........",
+    ".KKKK.W...........",
+    ".KK...............",
+    "..................",
+  };
+
   private void DrawChampionSheetItemIcon(
       Color32[] pixels,
       int localX,
@@ -6799,33 +6871,39 @@ public class ViewportLayoutEditor : EditorWindow
       string objectType)
   {
     string name = objectType.ToUpperInvariant();
-    Color32 cloth = new Color32(219, 219, 219, 255);
     Color32 clothDark = new Color32(146, 146, 146, 255);
     Color32 steel = new Color32(182, 182, 182, 255);
     Color32 brown = new Color32(146, 73, 0, 255);
     Color32 black = new Color32(0, 0, 0, 255);
     Color32 flame = new Color32(255, 182, 0, 255);
     Color32 blue = new Color32(0, 0, 255, 255);
-    int screenTop = ChampionSheetInventoryScreenTop + localY;
+    int iconX = localX + 1;
+    int screenTop = ChampionSheetInventoryScreenTop + localY + 1;
 
-    if (name.Contains("SWORD") || name.Contains("DAGGER"))
+    if (name.Contains("SWORD"))
+    {
+      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetSwordMask);
+      return;
+    }
+
+    if (name.Contains("DAGGER"))
     {
       for (int i = 0; i < 12; i++)
-        SetChampionSheetPixel(pixels, localX + 2 + i, screenTop + 12 - i, steel);
-      SetChampionSheetPixel(pixels, localX + 3, screenTop + 13, brown);
-      SetChampionSheetPixel(pixels, localX + 4, screenTop + 14, brown);
-      SetChampionSheetPixel(pixels, localX + 2, screenTop + 14, brown);
+        SetChampionSheetPixel(pixels, iconX + 2 + i, screenTop + 12 - i, steel);
+      SetChampionSheetPixel(pixels, iconX + 3, screenTop + 13, brown);
+      SetChampionSheetPixel(pixels, iconX + 4, screenTop + 14, brown);
+      SetChampionSheetPixel(pixels, iconX + 2, screenTop + 14, brown);
       return;
     }
 
     if (name.Contains("TORCH"))
     {
       for (int y = 8; y < 15; y++)
-        SetChampionSheetPixel(pixels, localX + 7, screenTop + y, brown);
-      SetChampionSheetPixel(pixels, localX + 6, screenTop + 3, flame);
-      SetChampionSheetPixel(pixels, localX + 7, screenTop + 2, flame);
-      SetChampionSheetPixel(pixels, localX + 8, screenTop + 3, flame);
-      SetChampionSheetPixel(pixels, localX + 7, screenTop + 4, flame);
+        SetChampionSheetPixel(pixels, iconX + 7, screenTop + y, brown);
+      SetChampionSheetPixel(pixels, iconX + 6, screenTop + 3, flame);
+      SetChampionSheetPixel(pixels, iconX + 7, screenTop + 2, flame);
+      SetChampionSheetPixel(pixels, iconX + 8, screenTop + 3, flame);
+      SetChampionSheetPixel(pixels, iconX + 7, screenTop + 4, flame);
       return;
     }
 
@@ -6836,46 +6914,114 @@ public class ViewportLayoutEditor : EditorWindow
         || name.Contains("GUNNA")
         || (name.Contains("ROBE") && name.Contains("LEG")))
     {
-      Color32 ink = name.Contains("PANTS") && name.Contains("BLUE")
-          ? blue
-          : cloth;
-      for (int y = 2; y < 14; y++)
+      if (name.Contains("PANTS") && name.Contains("BLUE"))
       {
-        SetChampionSheetPixel(pixels, localX + 4, screenTop + y, ink);
-        SetChampionSheetPixel(pixels, localX + 5, screenTop + y, ink);
-        SetChampionSheetPixel(pixels, localX + 9, screenTop + y, ink);
-        SetChampionSheetPixel(pixels, localX + 10, screenTop + y, ink);
+        for (int y = 2; y < 14; y++)
+        {
+          SetChampionSheetPixel(pixels, iconX + 4, screenTop + y, blue);
+          SetChampionSheetPixel(pixels, iconX + 5, screenTop + y, blue);
+          SetChampionSheetPixel(pixels, iconX + 9, screenTop + y, blue);
+          SetChampionSheetPixel(pixels, iconX + 10, screenTop + y, blue);
+        }
+
+        return;
       }
 
+      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetHosenMask);
       return;
     }
 
     if (name.Contains("BOOT") || name.Contains("SANDAL"))
     {
       for (int x = 3; x < 12; x++)
-        SetChampionSheetPixel(pixels, localX + x, screenTop + 12, brown);
+        SetChampionSheetPixel(pixels, iconX + x, screenTop + 12, brown);
       for (int y = 4; y < 12; y++)
-        SetChampionSheetPixel(pixels, localX + 6, screenTop + y, brown);
+        SetChampionSheetPixel(pixels, iconX + 6, screenTop + y, brown);
       return;
     }
 
-    // Torso clothes: Ghi, shirt, tunic, aketon, and the other body pieces.
+    bool whiteTorso = name.Contains("SHIRT")
+        || name.Contains("TUNIC")
+        || name.Contains("JERKIN")
+        || name.Contains("DOUBLET")
+        || name.Contains("KIRTLE")
+        || name.Contains("HALTER")
+        || name.Contains("TABARD")
+        || name.Contains("HIDE")
+        || name.Contains("GHI")
+        || (name.Contains("ROBE") && name.Contains("BODY"));
+    if (whiteTorso)
+    {
+      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetGhiMask);
+      return;
+    }
+
+    // Aketon and mail keep the steel torso block.
     for (int y = 2; y < 14; y++)
     {
       int inset = y < 5 ? 4 : 2;
       for (int x = inset; x < 16 - inset; x++)
       {
-        Color32 ink = name.Contains("AKETON") || name.Contains("MAIL")
-            ? steel
-            : cloth;
-        if (x == inset || x == 15 - inset)
-          ink = clothDark;
-        SetChampionSheetPixel(pixels, localX + x, screenTop + y, ink);
+        Color32 ink = x == inset || x == 15 - inset ? clothDark : steel;
+        SetChampionSheetPixel(pixels, iconX + x, screenTop + y, ink);
       }
     }
 
-    SetChampionSheetPixel(pixels, localX + 7, screenTop + 3, black);
-    SetChampionSheetPixel(pixels, localX + 8, screenTop + 3, black);
+    SetChampionSheetPixel(pixels, iconX + 7, screenTop + 3, black);
+    SetChampionSheetPixel(pixels, iconX + 8, screenTop + 3, black);
+  }
+
+  private void DrawChampionSheetMask(
+      Color32[] pixels,
+      int slotX,
+      int slotY,
+      string[] rows)
+  {
+    int screenTop = ChampionSheetInventoryScreenTop + slotY;
+    for (int row = 0; row < rows.Length; row++)
+    {
+      string line = rows[row];
+      for (int column = 0; column < line.Length; column++)
+      {
+        if (!TryGetChampionSheetMaskColor(line[column], out Color32 color))
+          continue;
+        SetChampionSheetPixel(
+            pixels,
+            slotX + column,
+            screenTop + row,
+            color);
+      }
+    }
+  }
+
+  private static bool TryGetChampionSheetMaskColor(
+      char token,
+      out Color32 color)
+  {
+    switch (token)
+    {
+      case 'W':
+        color = new Color32(255, 255, 255, 255);
+        return true;
+      case 'w':
+        color = new Color32(182, 182, 182, 255);
+        return true;
+      case 'g':
+        color = new Color32(146, 146, 146, 255);
+        return true;
+      case 'R':
+        color = new Color32(255, 0, 0, 255);
+        return true;
+      case 'K':
+        color = new Color32(0, 0, 0, 255);
+        return true;
+      case 'b':
+        color = new Color32(146, 73, 0, 255);
+        return true;
+      default:
+        color = default;
+        return false;
+    }
   }
 
   private void CaptureChampionSheetGlyph(
@@ -7084,11 +7230,25 @@ public class ViewportLayoutEditor : EditorWindow
         int sourceIndex = sourceY * inventoryWidth + localX + column;
         if (sourceIndex < 0 || sourceIndex >= inventory.Length)
           continue;
+        Color32 sourceColor = inventory[sourceIndex];
+        // The blank inventory fill is flat grey. Keep the peach body
+        // outline already on the sheet; the original (10,4) North empty
+        // slots still show that silhouette.
+        Color32 existing = GetChampionSheetPixel(
+            pixels,
+            localX + column,
+            screenY);
+        if (existing.r == 219 && existing.g == 146 && existing.b == 109
+            && sourceColor.r == 73 && sourceColor.g == 73 && sourceColor.b == 73)
+        {
+          continue;
+        }
+
         SetChampionSheetPixel(
             pixels,
             localX + column,
             screenY,
-            inventory[sourceIndex]);
+            sourceColor);
       }
     }
   }
