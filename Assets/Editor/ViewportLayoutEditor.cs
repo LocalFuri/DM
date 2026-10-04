@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using DM.Dungeon;
+using DM.Heroes;
 using DM.Rendering;
 using UnityEditor;
 using UnityEngine;
@@ -6379,6 +6380,205 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     System.Array.Copy(source, pixels, pixels.Length);
+    PaintZedChampionSheetStats(pixels);
+  }
+
+  // The 320x200 sheet image is the layout. Health, stamina, mana, and load
+  // are taken from the hero record and drawn over that layout.
+  // Stamina is stored in raw units (ZED 600) and shown divided by 10.
+  // Load is the sum of carried-item weights. Max load is
+  // (8 * Strength + 100) tenths of a kilogram.
+  private void PaintZedChampionSheetStats(Color32[] pixels)
+  {
+    HeroDefinition hero = HeroDatabase.GetByName("ZED");
+    if (hero == null || hero.Resources == null || hero.Attributes == null)
+      return;
+
+    int health = hero.Resources.Health;
+    int stamina = hero.Resources.Stamina / 10;
+    int mana = hero.Resources.Mana;
+    int loadTenths = 0;
+    if (hero.StartingItems != null)
+    {
+      for (int i = 0; i < hero.StartingItems.Count; i++)
+      {
+        HeroStartingItem item = hero.StartingItems[i];
+        if (item != null)
+          loadTenths += item.WeightTenths;
+      }
+    }
+
+    int maxLoadTenths = hero.Attributes.Strength * 8 + 100;
+    string healthText = health + "/ " + health;
+    string staminaText = stamina + "/ " + stamina;
+    string manaText = mana + "/ " + mana;
+    string loadText =
+        (loadTenths / 10) + "." + (loadTenths % 10)
+        + "/ " + (maxLoadTenths / 10);
+
+    if (!TryCaptureChampionSheetGlyphs(
+            pixels,
+            out Dictionary<char, Color32[]> glyphs))
+    {
+      return;
+    }
+
+    if (!ChampionSheetTextHasGlyphs(glyphs, healthText)
+        || !ChampionSheetTextHasGlyphs(glyphs, staminaText)
+        || !ChampionSheetTextHasGlyphs(glyphs, manaText)
+        || !ChampionSheetTextHasGlyphs(glyphs, loadText))
+    {
+      return;
+    }
+
+    Color32 panel = new Color32(73, 73, 73, 255);
+    FillChampionSheetRect(pixels, 61, 145, 35, 5, panel);
+    FillChampionSheetRect(pixels, 61, 153, 35, 5, panel);
+    FillChampionSheetRect(pixels, 61, 161, 35, 5, panel);
+    FillChampionSheetRect(pixels, 160, 161, 41, 5, panel);
+    DrawChampionSheetText(pixels, glyphs, 61, 145, healthText);
+    DrawChampionSheetText(pixels, glyphs, 61, 153, staminaText);
+    DrawChampionSheetText(pixels, glyphs, 61, 161, manaText);
+    DrawChampionSheetText(pixels, glyphs, 160, 161, loadText);
+  }
+
+  private const int ChampionSheetGlyphWidth = 5;
+  private const int ChampionSheetGlyphHeight = 5;
+  private const int ChampionSheetGlyphAdvance = 6;
+
+  private bool TryCaptureChampionSheetGlyphs(
+      Color32[] pixels,
+      out Dictionary<char, Color32[]> glyphs)
+  {
+    glyphs = new Dictionary<char, Color32[]>();
+    // Digits and marks already drawn on the layout image.
+    CaptureChampionSheetGlyph(pixels, glyphs, '6', 61, 145);
+    CaptureChampionSheetGlyph(pixels, glyphs, '0', 67, 145);
+    CaptureChampionSheetGlyph(pixels, glyphs, '/', 73, 145);
+    CaptureChampionSheetGlyph(pixels, glyphs, '1', 61, 161);
+    CaptureChampionSheetGlyph(pixels, glyphs, '9', 160, 161);
+    CaptureChampionSheetGlyph(pixels, glyphs, '.', 166, 161);
+    CaptureChampionSheetGlyph(pixels, glyphs, '8', 172, 161);
+    CaptureChampionSheetGlyph(pixels, glyphs, '4', 190, 161);
+    CaptureChampionSheetGlyph(pixels, glyphs, '2', 196, 161);
+    return glyphs.Count == 9;
+  }
+
+  private void CaptureChampionSheetGlyph(
+      Color32[] pixels,
+      Dictionary<char, Color32[]> glyphs,
+      char character,
+      int screenX,
+      int screenTop)
+  {
+    Color32[] glyph = new Color32[
+        ChampionSheetGlyphWidth * ChampionSheetGlyphHeight];
+    for (int row = 0; row < ChampionSheetGlyphHeight; row++)
+    {
+      for (int column = 0; column < ChampionSheetGlyphWidth; column++)
+      {
+        glyph[row * ChampionSheetGlyphWidth + column] =
+            GetChampionSheetPixel(pixels, screenX + column, screenTop + row);
+      }
+    }
+
+    glyphs[character] = glyph;
+  }
+
+  private static bool ChampionSheetTextHasGlyphs(
+      Dictionary<char, Color32[]> glyphs,
+      string text)
+  {
+    for (int i = 0; i < text.Length; i++)
+    {
+      char character = text[i];
+      if (character == ' ')
+        continue;
+      if (!glyphs.ContainsKey(character))
+        return false;
+    }
+
+    return true;
+  }
+
+  private void DrawChampionSheetText(
+      Color32[] pixels,
+      Dictionary<char, Color32[]> glyphs,
+      int screenX,
+      int screenTop,
+      string text)
+  {
+    int cursor = screenX;
+    for (int i = 0; i < text.Length; i++)
+    {
+      char character = text[i];
+      if (character != ' '
+          && glyphs.TryGetValue(character, out Color32[] glyph))
+      {
+        for (int row = 0; row < ChampionSheetGlyphHeight; row++)
+        {
+          for (int column = 0; column < ChampionSheetGlyphWidth; column++)
+          {
+            SetChampionSheetPixel(
+                pixels,
+                cursor + column,
+                screenTop + row,
+                glyph[row * ChampionSheetGlyphWidth + column]);
+          }
+        }
+      }
+
+      cursor += ChampionSheetGlyphAdvance;
+    }
+  }
+
+  private void FillChampionSheetRect(
+      Color32[] pixels,
+      int screenX,
+      int screenTop,
+      int width,
+      int height,
+      Color32 color)
+  {
+    for (int row = 0; row < height; row++)
+    {
+      for (int column = 0; column < width; column++)
+        SetChampionSheetPixel(pixels, screenX + column, screenTop + row, color);
+    }
+  }
+
+  private Color32 GetChampionSheetPixel(
+      Color32[] pixels,
+      int screenX,
+      int screenY)
+  {
+    int index = ChampionSheetPixelIndex(screenX, screenY);
+    if (index < 0)
+      return new Color32(0, 0, 0, 255);
+    return pixels[index];
+  }
+
+  private void SetChampionSheetPixel(
+      Color32[] pixels,
+      int screenX,
+      int screenY,
+      Color32 color)
+  {
+    int index = ChampionSheetPixelIndex(screenX, screenY);
+    if (index >= 0)
+      pixels[index] = color;
+  }
+
+  private int ChampionSheetPixelIndex(int screenX, int screenY)
+  {
+    if (screenX < 0 || screenX >= PreviewWidth
+        || screenY < 0 || screenY >= PreviewHeight)
+    {
+      return -1;
+    }
+
+    int framebufferY = PreviewHeight - 1 - screenY;
+    return framebufferY * PreviewWidth + screenX;
   }
 
   private Texture2D GetZedChampionSheetTexture()

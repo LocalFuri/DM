@@ -434,6 +434,31 @@ namespace DM.Heroes
                         X = 10,
                         Y = 4,
                         WallDirection = HeroWallDirection.North
+                    },
+
+                    // Mail Aketon 6.5, Blue Pants 0.6, Hosen 1.6, Torch 1.1.
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Mail Aketon",
+                            WeightTenths = 65
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Blue Pants",
+                            WeightTenths = 6
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Hosen",
+                            WeightTenths = 16
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Torch",
+                            WeightTenths = 11
+                        }
                     }
                 },
 

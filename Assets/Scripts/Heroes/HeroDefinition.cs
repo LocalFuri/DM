@@ -74,6 +74,9 @@ namespace DM.Heroes
     public string ObjectType = string.Empty;
     public int TypeId;
     public int ChargeCount;
+
+    // Weight in tenths of a kilogram, the unit the character sheet adds up.
+    public int WeightTenths;
   }
 
   public enum HeroGender
