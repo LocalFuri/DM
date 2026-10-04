@@ -18421,12 +18421,17 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (IsWoodRingOrnament(ornament))
     {
-      // Facing south, the (3,4) East wood ring is one slot farther than the
-      // cell beside it, on the left. 4,3 South is the D2 left graphic.
-      // 4,2 South is the D3 left graphic.
+      // Facing south, the (3,4) East wood ring stays on the left.
+      // 4,4 South is D1 left, 4,3 South is D2 left, 4,2 South is D3 left.
       if (TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southDepth))
       {
         renderMirror = false;
+        if (southDepth == 1)
+        {
+          renderX = WoodRingD1SideLeftX;
+          renderY = WoodRingD1SideY;
+          return true;
+        }
         if (southDepth == 2)
         {
           renderX = WoodRingD2SideLeftX;
@@ -23039,8 +23044,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   // Original south views of the (3,4) East wood ring place it on the
-  // left, one step farther than the adjacent corridor cell.
-  // 4,3 South -> D2 left. 4,2 South -> D3 left.
+  // left. 4,4 South -> D1 left. 4,3 South -> D2 left. 4,2 South -> D3 left.
   private bool TryGetOriginalSouthWoodRingLeftDepth(
       WallOrnamentPlacement ornament,
       out int depth)
@@ -23060,7 +23064,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     int steps = ornament.y - previewY;
-    if (steps != 1 && steps != 2)
+    if (steps < 0 || steps > 2)
       return false;
 
     depth = steps + 1;
@@ -23615,8 +23619,28 @@ public class ViewportLayoutEditor : EditorWindow
       if (ornament == null)
         continue;
       if (IsWoodRingOrnament(ornament)
-          && TryGetOriginalSouthWoodRingLeftDepth(ornament, out _))
+          && TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southDepth))
+      {
+        if (southDepth == 1 && !leftDrawn)
+        {
+          Texture2D ring = GetWoodRingSideTexture();
+          if (ring != null
+              && ring.isReadable
+              && ring.width == 14
+              && ring.height == 19)
+          {
+            BlitOrnamentPieceIntoPreview(
+                pixels,
+                ring,
+                ornament,
+                WoodRingD1SideLeftX,
+                WoodRingD1SideY,
+                false);
+            leftDrawn = true;
+          }
+        }
         continue;
+      }
 
       // Hook uses native 16x19 1:1; Wood Ring keeps its 14x19 cutout.
       Texture2D sideTexture = null;
