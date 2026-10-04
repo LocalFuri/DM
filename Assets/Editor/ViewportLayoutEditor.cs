@@ -17190,6 +17190,28 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  // Wall-tile ornament storage uses the physical face of the solid wall tile.
+  // Dungeon Features/minimap labels use the corridor boundary direction instead.
+  // Those conventions are opposites: e.g. a North-facing wall tile immediately
+  // south of the player is the player's South map boundary. ViewEdit should show
+  // the same absolute direction as Dungeon Features, never a player-relative face.
+  private static string GetDungeonFeatureDisplayFace(
+      string physicalWallFace,
+      bool wallTilePlacement)
+  {
+    if (!wallTilePlacement || string.IsNullOrEmpty(physicalWallFace))
+      return physicalWallFace;
+
+    switch (char.ToUpperInvariant(physicalWallFace[0]))
+    {
+      case 'N': return "South";
+      case 'E': return "West";
+      case 'S': return "North";
+      case 'W': return "East";
+      default: return physicalWallFace;
+    }
+  }
+
   private void LoadPreviewPuddleFloors()
   {
     previewPuddleFloors.Clear();
@@ -18933,9 +18955,13 @@ public class ViewportLayoutEditor : EditorWindow
     return true;
   }
 
-  private bool IsHookProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
+
+  private bool IsStandardWallOrnamentProjectionVisibleInCurrentPose(
+      WallOrnamentPlacement ornament,
+      int maxFrontDepth,
+      int maxSideDepth)
   {
-    if (!IsHookOrnament(ornament) || previewMiniMap == null)
+    if (ornament == null || previewMiniMap == null)
       return false;
 
     DungeonMap.GetForwardOffset(
@@ -18950,61 +18976,16 @@ public class ViewportLayoutEditor : EditorWindow
     string viewedWallSide = FacingName(previewFacing);
     string visibleFrontFace = OppositeFacingName(previewFacing);
 
-    // F1 front.
-    int f1X = previewX + forwardX;
-    int f1Y = previewY + forwardY;
-    if (PreviewTileIsWall(f1X, f1Y))
-    {
-      if (ornament.wallTilePlacement)
-      {
-        if (ornament.x == f1X
-            && ornament.y == f1Y
-            && string.Equals(ornament.wall, visibleFrontFace,
-                System.StringComparison.OrdinalIgnoreCase))
-          return true;
-      }
-      else if (ornament.x == previewX
-          && ornament.y == previewY
-          && string.Equals(ornament.wall, viewedWallSide,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        return true;
-      }
-    }
-
-    // F2 front.
-    int f2X = previewX + forwardX * 2;
-    int f2Y = previewY + forwardY * 2;
-    bool d1Open = PreviewTileIsOpen(f1X, f1Y);
-    if (d1Open && previewMiniMap.IsInside(f2X, f2Y))
-    {
-      if (ornament.wallTilePlacement)
-      {
-        if (ornament.x == f2X
-            && ornament.y == f2Y
-            && string.Equals(ornament.wall, visibleFrontFace,
-                System.StringComparison.OrdinalIgnoreCase))
-          return true;
-      }
-      else if (ornament.x == f1X
-          && ornament.y == f1Y
-          && string.Equals(ornament.wall, viewedWallSide,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        return true;
-      }
-    }
-
-    // Side projections S1/S2/S3. These exactly mirror the Hook side renderer:
-    // at each depth only the immediate left/right wall beside the lane center
-    // can carry the visible side hook.
-    for (int distance = 1; distance <= 3; distance++)
+    // Front F1..F3. This is the same map geometry used by the ornament
+    // renderers: every nearer center cell must be open, then the ornament
+    // must belong to the front wall boundary at the requested depth.
+    for (int depth = 1; depth <= Mathf.Min(3, maxFrontDepth); depth++)
     {
       bool corridorOpen = true;
-      for (int d = 1; d <= distance; d++)
+      for (int step = 1; step < depth; step++)
       {
-        int cx = previewX + forwardX * d;
-        int cy = previewY + forwardY * d;
+        int cx = previewX + forwardX * step;
+        int cy = previewY + forwardY * step;
         if (!PreviewTileIsOpen(cx, cy))
         {
           corridorOpen = false;
@@ -19014,94 +18995,41 @@ public class ViewportLayoutEditor : EditorWindow
       if (!corridorOpen)
         continue;
 
-      int centerX = previewX + forwardX * distance;
-      int centerY = previewY + forwardY * distance;
-      int leftWallX = centerX - rightX;
-      int leftWallY = centerY - rightY;
-      int rightWallX = centerX + rightX;
-      int rightWallY = centerY + rightY;
+      int wallX = previewX + forwardX * depth;
+      int wallY = previewY + forwardY * depth;
+      if (!previewMiniMap.IsInside(wallX, wallY))
+        continue;
 
-      string leftPhysicalFace =
-          FacingName(TurnPreviewFacingRight(previewFacing));
-      string rightPhysicalFace =
-          FacingName(TurnPreviewFacingLeft(previewFacing));
-      string leftBoundaryDirection =
-          FacingName(TurnPreviewFacingLeft(previewFacing));
-      string rightBoundaryDirection =
-          FacingName(TurnPreviewFacingRight(previewFacing));
+      // F1 renderers require an actual wall directly ahead. F2/F3 use the
+      // authoritative ornament placement after the nearer sight line is open.
+      if (depth == 1 && !PreviewTileIsWall(wallX, wallY))
+        continue;
 
       if (ornament.wallTilePlacement)
       {
-        if (PreviewTileIsWall(leftWallX, leftWallY)
-            && ornament.x == leftWallX
-            && ornament.y == leftWallY
-            && string.Equals(ornament.wall, leftPhysicalFace,
-                System.StringComparison.OrdinalIgnoreCase))
-          return true;
-
-        if (PreviewTileIsWall(rightWallX, rightWallY)
-            && ornament.x == rightWallX
-            && ornament.y == rightWallY
-            && string.Equals(ornament.wall, rightPhysicalFace,
-                System.StringComparison.OrdinalIgnoreCase))
-          return true;
-      }
-      else
-      {
-        if (ornament.x == centerX
-            && ornament.y == centerY
-            && (string.Equals(ornament.wall, leftBoundaryDirection,
-                    System.StringComparison.OrdinalIgnoreCase)
-                || string.Equals(ornament.wall, rightBoundaryDirection,
-                    System.StringComparison.OrdinalIgnoreCase)))
-          return true;
-      }
-    }
-
-    return false;
-  }
-
-  private bool IsSlimeProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
-  {
-    if (!IsSlimeOrnament(ornament) || previewMiniMap == null)
-      return false;
-
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    int d1CenterX = previewX + forwardX;
-    int d1CenterY = previewY + forwardY;
-    string viewedWallSide = FacingName(previewFacing);
-    string visibleFrontFace = OppositeFacingName(previewFacing);
-
-    // Slime front projection: exactly the same D1 geometry used by
-    // BlitSlimeD1FrontIntoPreview().
-    if (PreviewTileIsWall(d1CenterX, d1CenterY))
-    {
-      if (ornament.wallTilePlacement)
-      {
-        if (ornament.x == d1CenterX
-            && ornament.y == d1CenterY
+        if (ornament.x == wallX
+            && ornament.y == wallY
             && string.Equals(
                 ornament.wall,
                 visibleFrontFace,
                 System.StringComparison.OrdinalIgnoreCase))
+        {
           return true;
+        }
       }
-      else if (ornament.x == previewX
-          && ornament.y == previewY
-          && string.Equals(
-              ornament.wall,
-              viewedWallSide,
-              System.StringComparison.OrdinalIgnoreCase))
+      else
       {
-        return true;
+        int storageX = previewX + forwardX * (depth - 1);
+        int storageY = previewY + forwardY * (depth - 1);
+        if (ornament.x == storageX
+            && ornament.y == storageY
+            && string.Equals(
+                ornament.wall,
+                viewedWallSide,
+                System.StringComparison.OrdinalIgnoreCase))
+        {
+          return true;
+        }
       }
     }
 
@@ -19114,9 +19042,10 @@ public class ViewportLayoutEditor : EditorWindow
     string rightBoundaryDirection =
         FacingName(TurnPreviewFacingRight(previewFacing));
 
-    // Current Slime renderer has side projections only at D1 and D2.
-    // Match those exact wall cells and require the center corridor to stay open.
-    for (int depth = 1; depth <= 2; depth++)
+    // Side S1..S3. This mirrors the renderer exactly: the center corridor
+    // must stay open through the requested depth and only the immediate wall
+    // to the left/right of that center lane can carry the visible ornament.
+    for (int depth = 1; depth <= Mathf.Min(3, maxSideDepth); depth++)
     {
       bool corridorOpen = true;
       for (int step = 1; step <= depth; step++)
@@ -19139,43 +19068,73 @@ public class ViewportLayoutEditor : EditorWindow
       int rightWallX = centerX + rightX;
       int rightWallY = centerY + rightY;
 
+      bool leftWallExists = PreviewTileIsWall(leftWallX, leftWallY);
+      bool rightWallExists = PreviewTileIsWall(rightWallX, rightWallY);
+
       if (ornament.wallTilePlacement)
       {
-        if (PreviewTileIsWall(leftWallX, leftWallY)
+        if (leftWallExists
             && ornament.x == leftWallX
             && ornament.y == leftWallY
             && string.Equals(
                 ornament.wall,
                 leftPhysicalFace,
                 System.StringComparison.OrdinalIgnoreCase))
+        {
           return true;
+        }
 
-        if (PreviewTileIsWall(rightWallX, rightWallY)
+        if (rightWallExists
             && ornament.x == rightWallX
             && ornament.y == rightWallY
             && string.Equals(
                 ornament.wall,
                 rightPhysicalFace,
                 System.StringComparison.OrdinalIgnoreCase))
+        {
           return true;
+        }
       }
       else
       {
         if (ornament.x == centerX
             && ornament.y == centerY
-            && (string.Equals(
-                    ornament.wall,
-                    leftBoundaryDirection,
-                    System.StringComparison.OrdinalIgnoreCase)
-                || string.Equals(
-                    ornament.wall,
-                    rightBoundaryDirection,
-                    System.StringComparison.OrdinalIgnoreCase)))
+            && ((leftWallExists
+                    && string.Equals(
+                        ornament.wall,
+                        leftBoundaryDirection,
+                        System.StringComparison.OrdinalIgnoreCase))
+                || (rightWallExists
+                    && string.Equals(
+                        ornament.wall,
+                        rightBoundaryDirection,
+                        System.StringComparison.OrdinalIgnoreCase))))
+        {
           return true;
+        }
       }
     }
 
     return false;
+  }
+
+  private bool IsWoodRingProjectionVisibleInCurrentPose(
+      WallOrnamentPlacement ornament)
+  {
+    return IsWoodRingOrnament(ornament)
+        && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 3, 3);
+  }
+
+  private bool IsHookProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
+  {
+    return IsHookOrnament(ornament)
+        && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 2, 3);
+  }
+
+  private bool IsSlimeProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
+  {
+    return IsSlimeOrnament(ornament)
+        && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 1, 2);
   }
 
   private void DrawCurrentPoseFeatureRows()
@@ -19222,6 +19181,15 @@ public class ViewportLayoutEditor : EditorWindow
 
         if (!IsMapCellInCurrentFeatureCone(ornament.x, ornament.y))
           continue;
+
+        // Wood Rings must obey the exact same F1/F2/F3 and S1/S2/S3 wall
+        // geometry as their renderer. The broad feature cone is only a cheap
+        // neighbourhood prefilter and must never create a ViewEdit row by itself.
+        if (IsWoodRingOrnament(ornament)
+            && !IsWoodRingProjectionVisibleInCurrentPose(ornament))
+        {
+          continue;
+        }
 
         // Hooks must obey the exact same front/side projection geometry as
         // the renderer.  The broad feature cone also contains outer cells
@@ -19301,7 +19269,8 @@ public class ViewportLayoutEditor : EditorWindow
         // underlying storage-wall coordinates.
         int displayMapX = ornament.x;
         int displayMapY = ornament.y;
-        string displayWall = ornament.wall;
+        string displayWall = GetDungeonFeatureDisplayFace(
+            ornament.wall, ornament.wallTilePlacement);
         string manaclesDepthLabel = null;
         if (IsManaclesOrnament(ornament))
         {
