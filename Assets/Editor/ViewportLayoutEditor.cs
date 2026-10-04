@@ -18938,8 +18938,12 @@ public class ViewportLayoutEditor : EditorWindow
       WallOrnamentPlacement ornament,
       int maxFrontDepth,
       int maxSideDepth,
+      out int dungeonFeatureX,
+      out int dungeonFeatureY,
       out string dungeonFeatureFace)
   {
+    dungeonFeatureX = ornament != null ? ornament.x : 0;
+    dungeonFeatureY = ornament != null ? ornament.y : 0;
     dungeonFeatureFace = null;
     if (ornament == null || previewMiniMap == null)
       return false;
@@ -18994,6 +18998,11 @@ public class ViewportLayoutEditor : EditorWindow
                 visibleFrontFace,
                 System.StringComparison.OrdinalIgnoreCase))
         {
+          // Dungeon Features/ViewEdit describes the accessible corridor
+          // square and the direction from that square toward the wall. The
+          // renderer stores random ornaments on the solid wall tile itself.
+          dungeonFeatureX = wallX - forwardX;
+          dungeonFeatureY = wallY - forwardY;
           dungeonFeatureFace = viewedWallSide;
           return true;
         }
@@ -19009,6 +19018,8 @@ public class ViewportLayoutEditor : EditorWindow
                 viewedWallSide,
                 System.StringComparison.OrdinalIgnoreCase))
         {
+          dungeonFeatureX = storageX;
+          dungeonFeatureY = storageY;
           dungeonFeatureFace = viewedWallSide;
           return true;
         }
@@ -19063,6 +19074,8 @@ public class ViewportLayoutEditor : EditorWindow
                 leftPhysicalFace,
                 System.StringComparison.OrdinalIgnoreCase))
         {
+          dungeonFeatureX = centerX;
+          dungeonFeatureY = centerY;
           dungeonFeatureFace = leftBoundaryDirection;
           return true;
         }
@@ -19075,6 +19088,8 @@ public class ViewportLayoutEditor : EditorWindow
                 rightPhysicalFace,
                 System.StringComparison.OrdinalIgnoreCase))
         {
+          dungeonFeatureX = centerX;
+          dungeonFeatureY = centerY;
           dungeonFeatureFace = rightBoundaryDirection;
           return true;
         }
@@ -19089,6 +19104,8 @@ public class ViewportLayoutEditor : EditorWindow
                   leftBoundaryDirection,
                   System.StringComparison.OrdinalIgnoreCase))
           {
+            dungeonFeatureX = centerX;
+            dungeonFeatureY = centerY;
             dungeonFeatureFace = leftBoundaryDirection;
             return true;
           }
@@ -19099,6 +19116,8 @@ public class ViewportLayoutEditor : EditorWindow
                   rightBoundaryDirection,
                   System.StringComparison.OrdinalIgnoreCase))
           {
+            dungeonFeatureX = centerX;
+            dungeonFeatureY = centerY;
             dungeonFeatureFace = rightBoundaryDirection;
             return true;
           }
@@ -19118,6 +19137,8 @@ public class ViewportLayoutEditor : EditorWindow
         ornament,
         maxFrontDepth,
         maxSideDepth,
+        out _,
+        out _,
         out _);
   }
 
@@ -19130,19 +19151,19 @@ public class ViewportLayoutEditor : EditorWindow
     if (IsWoodRingOrnament(ornament))
     {
       return TryGetStandardWallOrnamentProjectionInCurrentPose(
-          ornament, 3, 3, out dungeonFeatureFace);
+          ornament, 3, 3, out _, out _, out dungeonFeatureFace);
     }
 
     if (IsHookOrnament(ornament))
     {
       return TryGetStandardWallOrnamentProjectionInCurrentPose(
-          ornament, 2, 3, out dungeonFeatureFace);
+          ornament, 2, 3, out _, out _, out dungeonFeatureFace);
     }
 
     if (IsSlimeOrnament(ornament))
     {
       return TryGetStandardWallOrnamentProjectionInCurrentPose(
-          ornament, 1, 2, out dungeonFeatureFace);
+          ornament, 1, 2, out _, out _, out dungeonFeatureFace);
     }
 
     return false;
@@ -19306,10 +19327,23 @@ public class ViewportLayoutEditor : EditorWindow
         // wall direction. This keeps the label absolute to the map instead of
         // blindly flipping every stored wall face or deriving it from the
         // player's relative view.
-        if (TryGetStandardWallOrnamentDungeonFeatureFace(
-                ornament, out string projectedDungeonFeatureFace)
-            && !string.IsNullOrEmpty(projectedDungeonFeatureFace))
+        int standardFrontDepth = IsWoodRingOrnament(ornament)
+            ? 3
+            : IsHookOrnament(ornament) ? 2 : IsSlimeOrnament(ornament) ? 1 : 0;
+        int standardSideDepth = IsWoodRingOrnament(ornament)
+            ? 3
+            : IsHookOrnament(ornament) ? 3 : IsSlimeOrnament(ornament) ? 2 : 0;
+        if (standardFrontDepth > 0
+            && TryGetStandardWallOrnamentProjectionInCurrentPose(
+                ornament,
+                standardFrontDepth,
+                standardSideDepth,
+                out int projectedDungeonFeatureX,
+                out int projectedDungeonFeatureY,
+                out string projectedDungeonFeatureFace))
         {
+          displayMapX = projectedDungeonFeatureX;
+          displayMapY = projectedDungeonFeatureY;
           displayWall = projectedDungeonFeatureFace;
         }
 
