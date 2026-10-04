@@ -272,6 +272,18 @@ public class ViewportLayoutEditor : EditorWindow
   private const string PuddleS2AssetPath =
       "Assets/Art/Ornaments/Puddle_S2.png";
 
+  // Moss is a floor ornament resolved from DungeonFeaturePlacements.json.
+  // F1 is the imported original artwork; F2/F3 are generated in code.
+  private const string MossF1AssetPath =
+      "Assets/Art/Ornaments/Moss_F1_56x19.png";
+  private const int MossF1ScreenTop = 132;
+  private const int MossF2ScreenTop = 108;
+  private const int MossF3ScreenTop = 94;
+  private const int MossF2Width = 37;
+  private const int MossF2Height = 13;
+  private const int MossF3Width = 25;
+  private const int MossF3Height = 8;
+
   // Blue floor puddle. Hall of Champions puddles are resolved from the
   // original deterministic random floor-ornament rule (local ordinal 2).
   // Puddle_F1 is the D1 center graphic. D1-left/right use the dedicated
@@ -1083,6 +1095,7 @@ public class ViewportLayoutEditor : EditorWindow
   private WallOrnamentPlacement[] previewWallOrnaments =
       FallbackHallOfChampionsWallOrnaments;
   private readonly HashSet<int> previewPuddleFloors = new HashSet<int>();
+  private readonly HashSet<int> previewMossFloors = new HashSet<int>();
 
   // Temporary per-pose ViewEdit feature visibility overrides. These are never
   // written to map/JSON data. Leaving the current pose clears the set so every
@@ -1232,6 +1245,7 @@ public class ViewportLayoutEditor : EditorWindow
   // BEGIN APPLIED ORNAMENT REFERENCES
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
+  // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
   // REF OrnamentProjection:Slime:F2|104|74|false
   // REF OrnamentProjection:Slime:F3|106|93|false|639267208231012151
   // REF OrnamentProjection:WoodRing:F1|98|104|false
@@ -1601,6 +1615,9 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedPuddleS1Texture;
   [System.NonSerialized]
   private Texture2D cachedPuddleS2Texture;
+  private Texture2D cachedMossF1Texture;
+  private Texture2D cachedMossF2Texture;
+  private Texture2D cachedMossF3Texture;
   [System.NonSerialized]
   private Texture2D cachedAppleGroundTexture;
   [System.NonSerialized]
@@ -10201,6 +10218,7 @@ public class ViewportLayoutEditor : EditorWindow
         {
           previewWallOrnaments = new WallOrnamentPlacement[0];
           previewPuddleFloors.Clear();
+          previewMossFloors.Clear();
         }
       }
 
@@ -10220,6 +10238,7 @@ public class ViewportLayoutEditor : EditorWindow
         previewChampionMirrors = new ChampionMirrorPlacement[0];
         previewWallOrnaments = FallbackHallOfChampionsWallOrnaments;
         previewPuddleFloors.Clear();
+        previewMossFloors.Clear();
       }
 
       previewMiniMapLoadError = ex.Message;
@@ -13797,6 +13816,7 @@ public class ViewportLayoutEditor : EditorWindow
   {
     // Floor features first, so wall-mounted artwork can sit above them.
     BlitPuddlesIntoPreview(pixels);
+    BlitMossIntoPreview(pixels);
     BlitFloorItemsIntoPreview(pixels);
 
     // Champion wall decorations.
@@ -17385,6 +17405,7 @@ public class ViewportLayoutEditor : EditorWindow
       List<WallOrnamentPlacement> wallOrnaments =
           new List<WallOrnamentPlacement>();
       previewPuddleFloors.Clear();
+      previewMossFloors.Clear();
 
       for (int i = 0; i < database.ornamentPlacements.Length; i++)
       {
@@ -17409,6 +17430,16 @@ public class ViewportLayoutEditor : EditorWindow
                   System.StringComparison.OrdinalIgnoreCase))
           {
             previewPuddleFloors.Add(
+                PackPreviewTile(
+                    placement.normalisedX,
+                    placement.normalisedY));
+          }
+          else if (string.Equals(
+                       placement.resolved.type,
+                       "Moss",
+                       System.StringComparison.OrdinalIgnoreCase))
+          {
+            previewMossFloors.Add(
                 PackPreviewTile(
                     placement.normalisedX,
                     placement.normalisedY));
@@ -17536,6 +17567,12 @@ public class ViewportLayoutEditor : EditorWindow
   {
     return previewPuddleFloors.Contains(PackPreviewTile(x, y))
         && IsPreviewFeatureEnabled(MakePreviewFeatureKey("Puddle", x, y, null));
+  }
+
+  private bool IsPreviewMossFloor(int x, int y)
+  {
+    return previewMossFloors.Contains(PackPreviewTile(x, y))
+        && IsPreviewFeatureEnabled(MakePreviewFeatureKey("Moss", x, y, null));
   }
 
 
@@ -18793,6 +18830,102 @@ public class ViewportLayoutEditor : EditorWindow
 
     int maxLane = depth == 0 ? 1 : depth;
     return Mathf.Abs(lane) <= Mathf.Max(1, maxLane);
+  }
+
+  private bool DrawFloorOrnamentCalibrationRow(
+      int mapX,
+      int mapY,
+      string family,
+      string slot,
+      int codedX,
+      int codedY,
+      string displayName)
+  {
+    string key = "OrnamentProjection:" + family + ":" + slot;
+
+    int defaultX = codedX;
+    int defaultY = codedY;
+    bool defaultMirror = false;
+    ApplyAcceptedOrnamentReference(
+        key, ref defaultX, ref defaultY, ref defaultMirror);
+
+    int x = defaultX;
+    int y = defaultY;
+    bool mirror = defaultMirror;
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+
+    EditorGUILayout.BeginHorizontal();
+    float savedLabelWidth = EditorGUIUtility.labelWidth;
+
+    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
+    featureStyle.normal.textColor = Color.yellow;
+    featureStyle.hover.textColor = Color.yellow;
+    featureStyle.focused.textColor = Color.yellow;
+
+    float ornamentCaptionColumnWidth =
+        featureStyle.CalcSize(
+            new GUIContent("WoodRing [1,17] (S) / S1")).x;
+    GUILayout.Label(
+        displayName,
+        featureStyle,
+        GUILayout.Width(ornamentCaptionColumnWidth));
+
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    int editX = x;
+    bool xChanged = DrawIntStepperInline(
+        "X", ref editX, snap, x != defaultX, true, 24f, 24f);
+
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    int editY = y;
+    bool yChanged = DrawIntStepperInline(
+        "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
+
+    GUILayout.Space(6f);
+    bool applyClicked = GUILayout.Button(
+        "Apply",
+        GUILayout.Width(58f),
+        GUILayout.ExpandWidth(false));
+    NoteContentRight();
+
+    EditorGUIUtility.labelWidth = savedLabelWidth;
+    EditorGUILayout.EndHorizontal();
+
+    if (applyClicked)
+    {
+      if (SaveAcceptedOrnamentReference(key, editX, editY, mirror))
+      {
+        previewFeaturePositionOverrides.Remove(key);
+        previewFeatureMirrorOverrides.Remove(key);
+        previewPositionChangedThisFrame = true;
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
+      return true;
+    }
+
+    bool changed = false;
+    if ((xChanged && editX != x) || (yChanged && editY != y))
+    {
+      if (editX == defaultX && editY == defaultY)
+        previewFeaturePositionOverrides.Remove(key);
+      else
+        previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+
+      previewPositionChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (changed)
+    {
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+
+    return true;
   }
 
   private void DrawFeatureChecklistRow(
@@ -20269,6 +20402,56 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
+    // Moss is a resolved floor ornament from the same database as puddles.
+    // The current first implementation exposes the front F1/F2/F3 projections;
+    // side projections can be added/calibrated separately if the original
+    // reference requires them.
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int mossForwardX,
+        out int mossForwardY);
+
+    for (int depth = 1; depth <= 3; depth++)
+    {
+      int x = previewX + mossForwardX * depth;
+      int y = previewY + mossForwardY * depth;
+      if (!previewMiniMap.IsInside(x, y)
+          || !IsPreviewMossFloor(x, y)
+          || !IsMossProjectionVisibleInCurrentPose(x, y, depth, 0))
+      {
+        continue;
+      }
+
+      Texture2D mossTexture =
+          depth == 1 ? GetMossF1Texture()
+          : depth == 2 ? GetMossF2Texture()
+          : GetMossF3Texture();
+      if (mossTexture == null)
+        continue;
+
+      int screenTop =
+          depth == 1 ? MossF1ScreenTop
+          : depth == 2 ? MossF2ScreenTop
+          : MossF3ScreenTop;
+
+      int codedX = (DungeonViewportWidth - mossTexture.width) / 2;
+      int codedY = PreviewHeight - screenTop - mossTexture.height;
+      string slot = "F" + depth;
+      string name =
+          "Moss [" + x + "," + y + "] ("
+          + ShortDirectionLabel(FacingName(previewFacing))
+          + ") / " + slot;
+
+      DrawFloorOrnamentCalibrationRow(
+          x,
+          y,
+          "Moss",
+          slot,
+          codedX,
+          codedY,
+          name);
+    }
+
     // Stairs use the renderer's exact projection geometry. The current
     // stairs renderer has an F1 front projection only: the stairs tile must
     // be exactly one cell directly ahead. Do not list stairs merely because
@@ -20699,21 +20882,21 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  private bool IsPuddleProjectionVisibleInCurrentPose(
+  private bool IsFloorOrnamentProjectionVisibleInCurrentPose(
+      HashSet<int> floorOrnamentTiles,
       int mapX,
       int mapY,
       int depth,
       int lane)
   {
-    if (previewMiniMap == null
+    if (floorOrnamentTiles == null
+        || previewMiniMap == null
         || !previewMiniMap.IsInside(mapX, mapY)
-        || !previewPuddleFloors.Contains(PackPreviewTile(mapX, mapY)))
+        || !floorOrnamentTiles.Contains(PackPreviewTile(mapX, mapY)))
       return false;
 
-    // The renderer has center projections at F1/F2/F3. A center puddle is
-    // visible only while every nearer center tile stays open. This prevents a
-    // floor ornament at D2/D3 from being drawn through a nearer front wall
-    // (for example 7,10 West: the 4,10 puddle is behind the front wall).
+    // Center floor ornaments can be seen at F1/F2/F3 only while every nearer
+    // center tile remains open.
     if (lane == 0)
     {
       if (depth < 1 || depth > 3)
@@ -20763,6 +20946,156 @@ public class ViewportLayoutEditor : EditorWindow
     int f1SideY = previewY + forwardY + rightY * side;
     return previewMiniMap.IsInside(f1SideX, f1SideY)
         && previewMiniMap.GetTile(f1SideX, f1SideY).Type != DungeonTileType.Wall;
+  }
+
+  private bool IsPuddleProjectionVisibleInCurrentPose(
+      int mapX,
+      int mapY,
+      int depth,
+      int lane)
+  {
+    return IsFloorOrnamentProjectionVisibleInCurrentPose(
+        previewPuddleFloors,
+        mapX,
+        mapY,
+        depth,
+        lane);
+  }
+
+  private bool IsMossProjectionVisibleInCurrentPose(
+      int mapX,
+      int mapY,
+      int depth,
+      int lane)
+  {
+    return IsFloorOrnamentProjectionVisibleInCurrentPose(
+        previewMossFloors,
+        mapX,
+        mapY,
+        depth,
+        lane);
+  }
+
+  private Texture2D GetMossF1Texture()
+  {
+    if (cachedMossF1Texture != null)
+      return cachedMossF1Texture;
+
+    TextureImporter importer =
+        AssetImporter.GetAtPath(MossF1AssetPath) as TextureImporter;
+    if (importer != null)
+    {
+      bool changed = false;
+      if (!importer.isReadable)
+      {
+        importer.isReadable = true;
+        changed = true;
+      }
+      if (importer.filterMode != FilterMode.Point)
+      {
+        importer.filterMode = FilterMode.Point;
+        changed = true;
+      }
+      if (importer.mipmapEnabled)
+      {
+        importer.mipmapEnabled = false;
+        changed = true;
+      }
+      if (changed)
+        importer.SaveAndReimport();
+    }
+
+    cachedMossF1Texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(MossF1AssetPath);
+    return cachedMossF1Texture;
+  }
+
+  private Texture2D GetMossF2Texture()
+  {
+    if (cachedMossF2Texture != null)
+      return cachedMossF2Texture;
+
+    Texture2D source = GetMossF1Texture();
+    if (source == null || !source.isReadable)
+      return null;
+
+    cachedMossF2Texture = GenerateDmScaledWallDecoration(
+        source,
+        MossF2Width,
+        MossF2Height,
+        WallOrnamentMediumColorMap,
+        "Moss F2 Generated from F1");
+    return cachedMossF2Texture;
+  }
+
+  private Texture2D GetMossF3Texture()
+  {
+    if (cachedMossF3Texture != null)
+      return cachedMossF3Texture;
+
+    Texture2D source = GetMossF1Texture();
+    if (source == null || !source.isReadable)
+      return null;
+
+    cachedMossF3Texture = GenerateDmScaledWallDecoration(
+        source,
+        MossF3Width,
+        MossF3Height,
+        WallOrnamentFarColorMap,
+        "Moss F3 Generated from F1");
+    return cachedMossF3Texture;
+  }
+
+  private void BlitMossIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (pixels == null
+        || previewMiniMap == null
+        || previewMossFloors.Count == 0)
+    {
+      return;
+    }
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    // Far to near.
+    for (int depth = 3; depth >= 1; depth--)
+    {
+      int mapX = previewX + forwardX * depth;
+      int mapY = previewY + forwardY * depth;
+
+      if (!previewMiniMap.IsInside(mapX, mapY)
+          || !IsPreviewMossFloor(mapX, mapY)
+          || !IsMossProjectionVisibleInCurrentPose(mapX, mapY, depth, 0))
+      {
+        continue;
+      }
+
+      Texture2D texture =
+          depth == 1 ? GetMossF1Texture()
+          : depth == 2 ? GetMossF2Texture()
+          : GetMossF3Texture();
+      if (texture == null || !texture.isReadable)
+        continue;
+
+      int screenTop =
+          depth == 1 ? MossF1ScreenTop
+          : depth == 2 ? MossF2ScreenTop
+          : MossF3ScreenTop;
+
+      int x = (DungeonViewportWidth - texture.width) / 2;
+      int y = PreviewHeight - screenTop - texture.height;
+      bool mirror = false;
+
+      string key = "OrnamentProjection:Moss:F" + depth;
+      ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+
+      BlitPieceIntoPreview(pixels, texture, x, y, mirror);
+    }
   }
 
   private void BlitPuddlesIntoPreview(Color32[] pixels)
