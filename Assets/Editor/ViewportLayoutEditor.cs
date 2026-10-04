@@ -2771,6 +2771,7 @@ public class ViewportLayoutEditor : EditorWindow
       // for the current pose. X/Y come first and the temporary Enabled switch
       // stays on the far right, so ViewEdit can be used as a visual checklist.
       DrawCurrentPoseFeatureRows();
+      DrawVisibleElementsDiagnosticButton();
 
       bool editorChanged = EditorGUI.EndChangeCheck();
       if ((editorChanged || changed)
@@ -19996,6 +19997,368 @@ public class ViewportLayoutEditor : EditorWindow
   {
     return IsSlimeOrnament(ornament)
         && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 2, 2);
+  }
+
+  private void DrawVisibleElementsDiagnosticButton()
+  {
+    GUILayout.Space(4f);
+    EditorGUILayout.BeginHorizontal();
+    if (GUILayout.Button(
+            "Copy Visible Elements",
+            GUILayout.Width(160f),
+            GUILayout.ExpandWidth(false)))
+    {
+      string report = BuildCurrentPoseElementsReport();
+      EditorGUIUtility.systemCopyBuffer = report;
+      Debug.Log(report);
+    }
+    EditorGUILayout.LabelField(
+        "copies the exact current-pose element report",
+        EditorStyles.miniLabel);
+    EditorGUILayout.EndHorizontal();
+  }
+
+  private static string GetFloorItemDepthLabel(FloorItemDepth depth)
+  {
+    return depth == FloorItemDepth.SameTile
+        ? "F1"
+        : depth == FloorItemDepth.OneAhead ? "F2" : "F3";
+  }
+
+  private string BuildCurrentPoseElementsReport()
+  {
+    EnsurePreviewMiniMapLoaded();
+
+    System.Text.StringBuilder sb = new System.Text.StringBuilder();
+    sb.Append("VIEW ");
+    sb.Append(previewDungeonLevel);
+    sb.Append(" - ");
+    sb.Append(previewX);
+    sb.Append(',');
+    sb.Append(previewY);
+    sb.Append(' ');
+    sb.Append(FacingName(previewFacing).ToUpperInvariant());
+    sb.AppendLine();
+    sb.AppendLine();
+
+    sb.AppendLine("VISIBLE ORNAMENTS");
+    int ornamentCount = 0;
+    System.Collections.Generic.HashSet<WallOrnamentPlacement> visibleOrnaments =
+        new System.Collections.Generic.HashSet<WallOrnamentPlacement>();
+
+    if (previewWallOrnaments != null)
+    {
+      for (int i = 0; i < previewWallOrnaments.Length; i++)
+      {
+        WallOrnamentPlacement ornament = previewWallOrnaments[i];
+        if (ornament == null)
+          continue;
+
+        string key = MakePreviewFeatureKey(
+            "Ornament", ornament.x, ornament.y, ornament.wall);
+        if (!IsPreviewFeatureEnabled(key))
+          continue;
+
+        string family = string.IsNullOrEmpty(ornament.type)
+            ? "Ornament"
+            : ornament.type;
+        string slot = null;
+        int displayX = ornament.x;
+        int displayY = ornament.y;
+        string displayFace = ornament.wall;
+        bool visible = false;
+
+        if (IsGrateOrnament(ornament))
+        {
+          if (TryGetGrateViewProjection(
+                  ornament,
+                  out string grateProjection,
+                  out _))
+          {
+            visible = true;
+            slot = grateProjection == "Grate - Front F1" ? "F1"
+                : grateProjection == "Grate - Front F2" ? "F2"
+                : grateProjection == "Grate - Front F3" ? "F3"
+                : grateProjection == "Grate - Side1" ? "S1"
+                : grateProjection == "Grate - Side2" ? "S2"
+                : grateProjection == "Grate - Side3" ? "S3"
+                : grateProjection;
+          }
+        }
+        else if (TryGetWallOrnamentProjectionOverrideDescriptor(
+                     ornament,
+                     out _,
+                     out string projectionSuffix))
+        {
+          visible = true;
+          slot = string.IsNullOrEmpty(projectionSuffix)
+              ? null
+              : projectionSuffix.Replace("/", string.Empty).Trim();
+
+          int maxFrontDepth = IsWoodRingOrnament(ornament) ? 3
+              : IsHookOrnament(ornament) ? 2
+              : IsSlimeOrnament(ornament) ? 2
+              : IsManaclesOrnament(ornament) ? 3
+              : IsViAltarOrnament(ornament) ? 3 : 0;
+          int maxSideDepth = IsWoodRingOrnament(ornament) ? 3
+              : IsHookOrnament(ornament) ? 3
+              : IsSlimeOrnament(ornament) ? 2
+              : IsManaclesOrnament(ornament) ? 2
+              : 0;
+
+          if (maxFrontDepth > 0
+              && TryGetStandardWallOrnamentProjectionInCurrentPose(
+                  ornament,
+                  maxFrontDepth,
+                  maxSideDepth,
+                  out int featureX,
+                  out int featureY,
+                  out string featureFace))
+          {
+            displayX = featureX;
+            displayY = featureY;
+            displayFace = featureFace;
+          }
+        }
+
+        if (!visible)
+          continue;
+
+        visibleOrnaments.Add(ornament);
+        sb.Append("  ");
+        sb.Append(family);
+        sb.Append("  X=");
+        sb.Append(displayX);
+        sb.Append(" Y=");
+        sb.Append(displayY);
+        if (!string.IsNullOrEmpty(displayFace))
+        {
+          sb.Append(" Face=");
+          sb.Append(ShortDirectionLabel(displayFace));
+        }
+        if (!string.IsNullOrEmpty(slot))
+        {
+          sb.Append(" / ");
+          sb.Append(slot);
+        }
+        sb.AppendLine();
+        ornamentCount++;
+      }
+    }
+
+    sb.AppendLine();
+    sb.AppendLine("CHAMPION MIRRORS");
+    int mirrorCount = 0;
+    if (previewChampionMirrors != null)
+    {
+      for (int i = 0; i < previewChampionMirrors.Length; i++)
+      {
+        ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+        if (mirror == null
+            || !TryGetChampionMirrorViewProjection(
+                mirror, out _, out _, out _))
+        {
+          continue;
+        }
+
+        string key = MakePreviewFeatureKey(
+            "ChampionMirror", mirror.x, mirror.y, mirror.wall);
+        if (!IsPreviewFeatureEnabled(key))
+          continue;
+
+        sb.Append("  ");
+        sb.Append(string.IsNullOrEmpty(mirror.champion)
+            ? "ChampMirror"
+            : "ChampMirror - " + mirror.champion);
+        sb.Append("  X=");
+        sb.Append(mirror.x);
+        sb.Append(" Y=");
+        sb.Append(mirror.y);
+        if (!string.IsNullOrEmpty(mirror.wall))
+        {
+          sb.Append(" Face=");
+          sb.Append(ShortDirectionLabel(mirror.wall));
+        }
+        sb.AppendLine();
+        mirrorCount++;
+      }
+    }
+
+    sb.AppendLine();
+    sb.AppendLine("FLOOR ITEMS");
+    int floorItemCount = 0;
+    FloorItemPlacement[] items = GetCurrentFloorItems();
+    for (int i = 0; i < items.Length; i++)
+    {
+      FloorItemPlacement item = items[i];
+      if (!TryProjectFloorItem(
+              item, out FloorItemDepth depth, out bool isRight))
+      {
+        continue;
+      }
+
+      if (depth == FloorItemDepth.TwoAhead
+          && string.Equals(
+              item.type,
+              "Bread",
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(item)))
+        continue;
+
+      sb.Append("  ");
+      sb.Append(item.type);
+      sb.Append("  X=");
+      sb.Append(item.x);
+      sb.Append(" Y=");
+      sb.Append(item.y);
+      sb.Append(" Cell=");
+      sb.Append(item.cell);
+      sb.Append(" / ");
+      sb.Append(GetFloorItemDepthLabel(depth));
+      sb.Append(isRight ? " Right" : " Left");
+      sb.AppendLine();
+      floorItemCount++;
+    }
+
+    sb.AppendLine();
+    sb.AppendLine("PUDDLES");
+    int puddleCount = 0;
+    if (previewMiniMap != null)
+    {
+      DungeonMap.GetForwardOffset(
+          previewFacing,
+          out int puddleForwardX,
+          out int puddleForwardY);
+      DungeonMap.GetRightOffset(
+          previewFacing,
+          out int puddleRightX,
+          out int puddleRightY);
+
+      for (int depth = 1; depth <= 3; depth++)
+      {
+        int minLane = depth == 3 ? 0 : -1;
+        int maxLane = depth == 3 ? 0 : 1;
+        for (int lane = minLane; lane <= maxLane; lane++)
+        {
+          int x = previewX + puddleForwardX * depth + puddleRightX * lane;
+          int y = previewY + puddleForwardY * depth + puddleRightY * lane;
+          if (!IsPuddleProjectionVisibleInCurrentPose(x, y, depth, lane))
+            continue;
+
+          sb.Append("  Puddle  X=");
+          sb.Append(x);
+          sb.Append(" Y=");
+          sb.Append(y);
+          sb.Append(" / F");
+          sb.Append(depth);
+          if (lane < 0) sb.Append(" Left");
+          else if (lane > 0) sb.Append(" Right");
+          else sb.Append(" Center");
+          sb.AppendLine();
+          puddleCount++;
+        }
+      }
+    }
+
+    sb.AppendLine();
+    sb.AppendLine("STAIRS");
+    int stairsCount = 0;
+    if (previewMiniMap != null)
+    {
+      DungeonMap.GetForwardOffset(
+          previewFacing,
+          out int stairsForwardX,
+          out int stairsForwardY);
+      int stairsX = previewX + stairsForwardX;
+      int stairsY = previewY + stairsForwardY;
+
+      if (previewMiniMap.IsInside(stairsX, stairsY))
+      {
+        DungeonTile tile = previewMiniMap.GetTile(stairsX, stairsY);
+        if (tile != null
+            && tile.TryGetStairsDirection(out bool stairsUp))
+        {
+          string family = stairsUp ? "StairsUp" : "StairsDown";
+          string key =
+              MakePreviewFeatureKey(family, stairsX, stairsY, null);
+          if (IsPreviewFeatureEnabled(key))
+          {
+            sb.Append("  ");
+            sb.Append(stairsUp ? "Stairs Up" : "Stairs Down");
+            sb.Append("  X=");
+            sb.Append(stairsX);
+            sb.Append(" Y=");
+            sb.Append(stairsY);
+            sb.AppendLine(" / F1");
+            stairsCount++;
+          }
+        }
+      }
+    }
+
+    sb.AppendLine();
+    sb.AppendLine("NEARBY ORNAMENTS NOT VISIBLE");
+    int hiddenNearbyCount = 0;
+    if (previewWallOrnaments != null)
+    {
+      for (int i = 0; i < previewWallOrnaments.Length; i++)
+      {
+        WallOrnamentPlacement ornament = previewWallOrnaments[i];
+        if (ornament == null
+            || visibleOrnaments.Contains(ornament)
+            || !IsMapCellInCurrentFeatureCone(ornament.x, ornament.y))
+        {
+          continue;
+        }
+
+        sb.Append("  ");
+        sb.Append(string.IsNullOrEmpty(ornament.type)
+            ? "Ornament"
+            : ornament.type);
+        sb.Append("  stored X=");
+        sb.Append(ornament.x);
+        sb.Append(" Y=");
+        sb.Append(ornament.y);
+        if (!string.IsNullOrEmpty(ornament.wall))
+        {
+          sb.Append(" Face=");
+          sb.Append(ShortDirectionLabel(ornament.wall));
+        }
+        sb.AppendLine();
+        hiddenNearbyCount++;
+      }
+    }
+
+    string report = sb.ToString();
+
+    // Do not show empty categories. The diagnostic should contain only
+    // elements that actually exist for the current view.
+    string[] sectionHeaders =
+    {
+      "VISIBLE ORNAMENTS",
+      "CHAMPION MIRRORS",
+      "FLOOR ITEMS",
+      "PUDDLES",
+      "STAIRS",
+      "NEARBY ORNAMENTS NOT VISIBLE"
+    };
+
+    for (int i = 0; i < sectionHeaders.Length; i++)
+    {
+      string header = sectionHeaders[i];
+      string emptySection = header + "\n\n";
+      report = report.Replace(emptySection, string.Empty);
+    }
+
+    // Collapse accidental extra blank lines after removing empty sections.
+    while (report.Contains("\n\n\n"))
+      report = report.Replace("\n\n\n", "\n\n");
+
+    return report.TrimEnd();
   }
 
   private void DrawCurrentPoseFeatureRows()
