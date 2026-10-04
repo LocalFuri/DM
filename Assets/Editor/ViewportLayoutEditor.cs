@@ -273,16 +273,18 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Puddle_S2.png";
 
   // Moss is a floor ornament resolved from DungeonFeaturePlacements.json.
-  // F1 is the imported original artwork; F2/F3 are generated in code.
+  // F1 and F3 are imported original artwork. F2 is generated from F1.
+  // F3 screen top is measured from the 4,5 North original: the 8x2 graphic
+  // sits at viewport X=108, screen Y=105 (dungeon view begins at Y=33).
   private const string MossF1AssetPath =
       "Assets/Art/Ornaments/Moss_F1_56x19.png";
+  private const string MossF3AssetPath =
+      "Assets/Art/Ornaments/Moss_F3_8x2.png";
   private const int MossF1ScreenTop = 132;
   private const int MossF2ScreenTop = 108;
-  private const int MossF3ScreenTop = 94;
+  private const int MossF3ScreenTop = 105;
   private const int MossF2Width = 37;
   private const int MossF2Height = 13;
-  private const int MossF3Width = 25;
-  private const int MossF3Height = 8;
 
   // Blue floor puddle. Hall of Champions puddles are resolved from the
   // original deterministic random floor-ornament rule (local ordinal 2).
@@ -21154,16 +21156,39 @@ public class ViewportLayoutEditor : EditorWindow
     if (cachedMossF3Texture != null)
       return cachedMossF3Texture;
 
-    Texture2D source = GetMossF1Texture();
-    if (source == null || !source.isReadable)
-      return null;
+    TextureImporter importer =
+        AssetImporter.GetAtPath(MossF3AssetPath) as TextureImporter;
+    if (importer != null)
+    {
+      bool changed = false;
+      if (!importer.isReadable)
+      {
+        importer.isReadable = true;
+        changed = true;
+      }
+      if (importer.filterMode != FilterMode.Point)
+      {
+        importer.filterMode = FilterMode.Point;
+        changed = true;
+      }
+      if (importer.mipmapEnabled)
+      {
+        importer.mipmapEnabled = false;
+        changed = true;
+      }
+      if (changed)
+        importer.SaveAndReimport();
+    }
 
-    cachedMossF3Texture = GenerateDmScaledWallDecoration(
-        source,
-        MossF3Width,
-        MossF3Height,
-        WallOrnamentFarColorMap,
-        "Moss F3 Generated from F1");
+    Texture2D texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(MossF3AssetPath);
+    if (texture != null && texture.width == 8 && texture.height == 2)
+    {
+      cachedMossF3Texture = texture;
+      return texture;
+    }
+
+    cachedMossF3Texture = texture;
     return cachedMossF3Texture;
   }
 
