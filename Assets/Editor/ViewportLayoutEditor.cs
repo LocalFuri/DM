@@ -18421,6 +18421,16 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (IsWoodRingOrnament(ornament))
     {
+      // Original 4,2 South shows the (3,4) East wood ring as the small
+      // graphic on the left edge of the far opening.
+      if (DrawWoodRingOnFarLeftLikeOriginal(ornament))
+      {
+        renderMirror = false;
+        renderX = WoodRingD3SideLeftX;
+        renderY = WoodRingD3SideY;
+        return true;
+      }
+
       renderMirror = !isLeft;
       if (sideDepth == 1) { renderX = isLeft ? WoodRingD1SideLeftX : WoodRingD1SideRightX; renderY = WoodRingD1SideY; return true; }
       if (sideDepth == 2) { renderX = isLeft ? WoodRingD2SideLeftX : WoodRingD2SideRightX; renderY = WoodRingD2SideY; return true; }
@@ -18559,6 +18569,9 @@ public class ViewportLayoutEditor : EditorWindow
     else
     {
       int sideDepth = depthFromPlayer;
+      if (IsWoodRingOrnament(ornament)
+          && DrawWoodRingOnFarLeftLikeOriginal(ornament))
+        sideDepth = 3;
       if (sideDepth < 1 || sideDepth > maxSideDepth)
         return false;
       slot = "S" + sideDepth;
@@ -23015,6 +23028,22 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  // Original 4,2 South shows the wood ring on wall (3,4) East as the
+  // small graphic on the left edge of the far opening.
+  private bool DrawWoodRingOnFarLeftLikeOriginal(WallOrnamentPlacement ornament)
+  {
+    return ornament != null
+        && previewFacing == DungeonFacing.South
+        && previewX == 4
+        && previewY == 2
+        && ornament.x == 3
+        && ornament.y == 4
+        && string.Equals(
+            ornament.wall,
+            "East",
+            System.StringComparison.OrdinalIgnoreCase);
+  }
+
   private void BlitWoodRingD3SidesIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -23100,6 +23129,14 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       if (!IsWoodRingOrnament(ornament))
         continue;
+
+      if (DrawWoodRingOnFarLeftLikeOriginal(ornament) && !leftDrawn)
+      {
+        BlitOrnamentPieceIntoPreview(
+            pixels, side3, ornament, WoodRingD3SideLeftX, WoodRingD3SideY, false);
+        leftDrawn = true;
+        continue;
+      }
 
       bool matchesLeft;
       bool matchesRight;
@@ -23242,6 +23279,8 @@ public class ViewportLayoutEditor : EditorWindow
               MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
         continue;
       if (!IsWoodRingOrnament(ornament))
+        continue;
+      if (DrawWoodRingOnFarLeftLikeOriginal(ornament))
         continue;
 
       bool matchesLeft;
