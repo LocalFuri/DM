@@ -1122,6 +1122,9 @@ public class ViewportLayoutEditor : EditorWindow
       "// END APPLIED ORNAMENT REFERENCES";
 
   // BEGIN APPLIED ORNAMENT REFERENCES
+  // REF OrnamentProjection:WoodRing:F1|98|104|false
+  // REF OrnamentProjection:WoodRing:F2|103|111|false
+  // REF OrnamentProjection:WoodRing:F3|105|117|false
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
@@ -1151,16 +1154,22 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     string source = File.ReadAllText(assetPath);
+    string beginLine = "  " + AppliedOrnamentReferencesBeginMarker;
+    string endLine = "  " + AppliedOrnamentReferencesEndMarker;
     int begin = source.IndexOf(
-        AppliedOrnamentReferencesBeginMarker,
+        beginLine,
         System.StringComparison.Ordinal);
-    int end = source.IndexOf(
-        AppliedOrnamentReferencesEndMarker,
-        System.StringComparison.Ordinal);
-    if (begin < 0 || end <= begin)
+    if (begin < 0)
       return;
 
-    int contentStart = begin + AppliedOrnamentReferencesBeginMarker.Length;
+    int end = source.IndexOf(
+        endLine,
+        begin + beginLine.Length,
+        System.StringComparison.Ordinal);
+    if (end <= begin)
+      return;
+
+    int contentStart = begin + beginLine.Length;
     string block = source.Substring(contentStart, end - contentStart);
     string[] lines = block.Split(new[] { '\r', '\n' },
         System.StringSplitOptions.RemoveEmptyEntries);
@@ -1230,16 +1239,27 @@ public class ViewportLayoutEditor : EditorWindow
         new AcceptedOrnamentReference(x, y, mirror);
 
     string source = File.ReadAllText(assetPath);
+    string beginLine = "  " + AppliedOrnamentReferencesBeginMarker;
+    string endLine = "  " + AppliedOrnamentReferencesEndMarker;
     int begin = source.IndexOf(
-        AppliedOrnamentReferencesBeginMarker,
+        beginLine,
         System.StringComparison.Ordinal);
-    int end = source.IndexOf(
-        AppliedOrnamentReferencesEndMarker,
-        System.StringComparison.Ordinal);
-    if (begin < 0 || end <= begin)
+    if (begin < 0)
     {
       Debug.LogError(
-          "ViewEdit Apply: applied-reference markers are missing; "
+          "ViewEdit Apply: applied-reference begin marker is missing; "
+          + "reference was not saved.");
+      return false;
+    }
+
+    int end = source.IndexOf(
+        endLine,
+        begin + beginLine.Length,
+        System.StringComparison.Ordinal);
+    if (end <= begin)
+    {
+      Debug.LogError(
+          "ViewEdit Apply: applied-reference end marker is missing; "
           + "reference was not saved.");
       return false;
     }
@@ -1249,7 +1269,7 @@ public class ViewportLayoutEditor : EditorWindow
     keys.Sort(System.StringComparer.OrdinalIgnoreCase);
 
     System.Text.StringBuilder block = new System.Text.StringBuilder();
-    block.Append(AppliedOrnamentReferencesBeginMarker);
+    block.Append(beginLine);
     block.Append('\n');
     for (int i = 0; i < keys.Count; i++)
     {
@@ -1266,10 +1286,9 @@ public class ViewportLayoutEditor : EditorWindow
       block.Append(value.mirror ? "true" : "false");
       block.Append('\n');
     }
-    block.Append("  ");
-    block.Append(AppliedOrnamentReferencesEndMarker);
+    block.Append(endLine);
 
-    int replaceEnd = end + AppliedOrnamentReferencesEndMarker.Length;
+    int replaceEnd = end + endLine.Length;
     source = source.Substring(0, begin)
         + block.ToString()
         + source.Substring(replaceEnd);
