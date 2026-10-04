@@ -16717,12 +16717,10 @@ public class ViewportLayoutEditor : EditorWindow
       if (!placementMatches)
         continue;
 
-      BlitWallOrnamentIntoPreview(
-          pixels,
-          woodRingFront,
+      BlitOrnamentPieceIntoPreview(
+          pixels, woodRingFront, ornament,
           HookFrontWallOrnamentSet.f3.x,
-          HookFrontWallOrnamentSet.f3.y,
-          false);
+          HookFrontWallOrnamentSet.f3.y, false);
       return;
     }
   }
@@ -16815,12 +16813,10 @@ public class ViewportLayoutEditor : EditorWindow
 
       // Wood Ring shares coordinate set 0 with the Hook, so the F2 front
       // uses that same measured slot.
-      BlitWallOrnamentIntoPreview(
-          pixels,
-          woodRingFront,
+      BlitOrnamentPieceIntoPreview(
+          pixels, woodRingFront, ornament,
           HookFrontWallOrnamentSet.f2.x,
-          HookFrontWallOrnamentSet.f2.y,
-          false);
+          HookFrontWallOrnamentSet.f2.y, false);
       return;
     }
   }
@@ -16920,12 +16916,8 @@ public class ViewportLayoutEditor : EditorWindow
       int x = 112 - (woodRingFront.width / 2);
       int y = 114 - (woodRingFront.height / 2);
 
-      BlitPieceIntoPreview(
-          pixels,
-          woodRingFront,
-          x,
-          y,
-          false);
+      BlitOrnamentPieceIntoPreview(
+          pixels, woodRingFront, ornament, x, y, false);
       return;
     }
   }
@@ -17890,67 +17882,283 @@ public class ViewportLayoutEditor : EditorWindow
     return false;
   }
 
-  private bool DrawGrateFeatureRow(WallOrnamentPlacement ornament)
+  private bool TryGetWallOrnamentCalibrationDefaults(
+      WallOrnamentPlacement ornament,
+      out int renderX,
+      out int renderY,
+      out bool renderMirror)
   {
-    if (!TryGetGrateViewProjection(
-            ornament, out string projectionName, out bool defaultMirror))
+    renderX = 0;
+    renderY = 0;
+    renderMirror = false;
+    if (ornament == null || previewMiniMap == null)
+      return false;
+
+    if (IsGrateOrnament(ornament))
     {
+      if (!TryGetGrateViewProjection(
+              ornament, out string projectionName, out renderMirror))
+        return false;
+
+      if (projectionName == "Grate - Front F1")
+      { renderX = GrateD1FrontX; renderY = GrateD1FrontY; return true; }
+      if (projectionName == "Grate - Front F2")
+      { renderX = GrateD2FrontX; renderY = GrateD2FrontY; return true; }
+      if (projectionName == "Grate - Front F3")
+      { renderX = GrateD3FrontX; renderY = GrateD3FrontY; return true; }
+      if (projectionName == "Grate - Side1")
+      {
+        renderX = renderMirror ? GrateD1SideRightX : GrateD1SideLeftX;
+        renderY = GrateD1SideY;
+        return true;
+      }
+      if (projectionName == "Grate - Side2")
+      {
+        renderX = renderMirror ? GrateD2SideRightX : GrateD2SideLeftX;
+        renderY = GrateD2SideY;
+        return true;
+      }
+      if (projectionName == "Grate - Side3")
+      {
+        renderX = renderMirror ? GrateD3SideRightX : GrateD3SideLeftX;
+        renderY = GrateD3SideY;
+        return true;
+      }
       return false;
     }
 
+    int maxFrontDepth = IsWoodRingOrnament(ornament) ? 3
+        : IsHookOrnament(ornament) ? 2
+        : IsSlimeOrnament(ornament) ? 1
+        : IsManaclesOrnament(ornament) ? 3
+        : IsViAltarOrnament(ornament) ? 3 : 0;
+    int maxSideDepth = IsWoodRingOrnament(ornament) ? 3
+        : IsHookOrnament(ornament) ? 3
+        : IsSlimeOrnament(ornament) ? 2
+        : IsManaclesOrnament(ornament) ? 2
+        : IsViAltarOrnament(ornament) ? 0 : 0;
+    if (maxFrontDepth == 0)
+      return false;
+
+    if (!TryGetStandardWallOrnamentProjectionInCurrentPose(
+            ornament,
+            maxFrontDepth,
+            maxSideDepth,
+            out int mapX,
+            out int mapY,
+            out string mapFace))
+      return false;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing, out int forwardX, out int forwardY);
+    int depthFromPlayer =
+        (mapX - previewX) * forwardX + (mapY - previewY) * forwardY;
+    string frontFace = FacingName(previewFacing);
+    bool isFront = string.Equals(
+        mapFace, frontFace, System.StringComparison.OrdinalIgnoreCase);
+
+    if (isFront)
+    {
+      int frontDepth = depthFromPlayer + 1;
+      renderMirror = false;
+      if (IsWoodRingOrnament(ornament))
+      {
+        if (frontDepth == 1)
+        {
+          Texture2D t = GetWoodRingFrontTexture();
+          if (t == null) return false;
+          renderX = 112 - (t.width / 2);
+          renderY = 114 - (t.height / 2);
+          return true;
+        }
+        if (frontDepth == 2)
+        { renderX = HookFrontWallOrnamentSet.f2.x; renderY = HookFrontWallOrnamentSet.f2.y; return true; }
+        if (frontDepth == 3)
+        { renderX = HookFrontWallOrnamentSet.f3.x; renderY = HookFrontWallOrnamentSet.f3.y; return true; }
+      }
+      if (IsHookOrnament(ornament))
+      {
+        if (frontDepth == 1) { renderX = HookD1FrontX; renderY = HookD1FrontY; return true; }
+        if (frontDepth == 2) { renderX = HookD2FrontX; renderY = HookD2FrontY; return true; }
+      }
+      if (IsSlimeOrnament(ornament) && frontDepth == 1)
+      {
+        Texture2D t = GetSlimeFrontTexture();
+        if (t == null) return false;
+        renderX = 112 - (t.width / 2);
+        renderY = 55 - (t.height / 2);
+        return true;
+      }
+      if (IsManaclesOrnament(ornament))
+      {
+        if (frontDepth == 1)
+        {
+          Texture2D t = GetManaclesF1Texture();
+          if (t == null) return false;
+          renderX = (DungeonViewportWidth - t.width) / 2;
+          renderY = 77;
+          return true;
+        }
+        if (frontDepth == 2) { renderX = ManaclesD2FrontX; renderY = ManaclesD2FrontY; return true; }
+        if (frontDepth == 3) { renderX = ManaclesD3FrontX; renderY = ManaclesD3FrontY; return true; }
+      }
+      if (IsViAltarOrnament(ornament))
+      {
+        if (frontDepth == 1) { renderX = ViAltarD1FrontX; renderY = ViAltarD1FrontY; return true; }
+        if (frontDepth == 2)
+        {
+          renderX = previewUseEngineViAltarSlots ? ViAltarEngineF2FrontX : ViAltarWallOrnamentSet.f2.x;
+          renderY = previewUseEngineViAltarSlots ? ViAltarEngineF2FrontY : ViAltarWallOrnamentSet.f2.y;
+          return true;
+        }
+        if (frontDepth == 3)
+        {
+          renderX = previewUseEngineViAltarSlots ? ViAltarEngineF3FrontX : ViAltarWallOrnamentSet.f3.x;
+          renderY = previewUseEngineViAltarSlots ? ViAltarEngineF3FrontY : ViAltarWallOrnamentSet.f3.y;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    int sideDepth = depthFromPlayer;
+    string leftFace = FacingName(TurnPreviewFacingLeft(previewFacing));
+    bool isLeft = string.Equals(
+        mapFace, leftFace, System.StringComparison.OrdinalIgnoreCase);
+
+    if (IsWoodRingOrnament(ornament))
+    {
+      renderMirror = !isLeft;
+      if (sideDepth == 1) { renderX = isLeft ? WoodRingD1SideLeftX : WoodRingD1SideRightX; renderY = WoodRingD1SideY; return true; }
+      if (sideDepth == 2) { renderX = isLeft ? WoodRingD2SideLeftX : WoodRingD2SideRightX; renderY = WoodRingD2SideY; return true; }
+      if (sideDepth == 3) { renderX = isLeft ? WoodRingD3SideLeftX : WoodRingD3SideRightX; renderY = WoodRingD3SideY; return true; }
+    }
+    if (IsHookOrnament(ornament))
+    {
+      if (sideDepth == 1)
+      {
+        renderMirror = !isLeft;
+        renderX = isLeft ? HookD1SideLeftX : HookD1SideRightX;
+        renderY = HookD1SideY;
+        return true;
+      }
+      if (sideDepth == 2)
+      {
+        renderMirror = isLeft;
+        renderX = isLeft ? HookD2SideLeftX : HookD2SideRightX;
+        renderY = HookD2SideY;
+        return true;
+      }
+      if (sideDepth == 3)
+      {
+        renderMirror = isLeft;
+        renderX = isLeft ? HookD3SideLeftX : HookD3SideRightX;
+        renderY = HookD3SideY;
+        return true;
+      }
+    }
+    if (IsSlimeOrnament(ornament))
+    {
+      if (sideDepth == 1)
+      {
+        renderMirror = !isLeft;
+        renderX = isLeft ? SlimeD1SideLeftX : SlimeD1SideRightX;
+        renderY = SlimeD1SideY;
+        return true;
+      }
+      if (sideDepth == 2)
+      {
+        renderMirror = isLeft;
+        renderX = isLeft ? SlimeD2SideLeftX : SlimeD2SideRightX;
+        renderY = SlimeD2SideY;
+        return true;
+      }
+    }
+    if (IsManaclesOrnament(ornament))
+    {
+      renderMirror = !isLeft;
+      if (sideDepth == 1) { renderX = isLeft ? ManaclesD1SideLeftX : ManaclesD1SideRightX; renderY = ManaclesD1SideY; return true; }
+      if (sideDepth == 2) { renderX = isLeft ? ManaclesD2SideLeftX : ManaclesD2SideRightX; renderY = ManaclesD2SideY; return true; }
+    }
+
+    return false;
+  }
+
+  private bool DrawWallOrnamentCalibrationRow(
+      WallOrnamentPlacement ornament,
+      string displayName)
+  {
+    if (!TryGetWallOrnamentCalibrationDefaults(
+            ornament, out int defaultX, out int defaultY, out bool defaultMirror))
+      return false;
+
     string key = MakePreviewFeatureKey(
         "Ornament", ornament.x, ornament.y, ornament.wall);
-    bool mirrorValue = defaultMirror;
-    if (previewFeatureMirrorOverrides.TryGetValue(key, out bool mirrorOverride))
-      mirrorValue = mirrorOverride;
-
-    string name = projectionName + " (" + FacingName(previewFacing) + ")";
+    int x = defaultX;
+    int y = defaultY;
+    bool mirror = defaultMirror;
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
 
     EditorGUILayout.BeginHorizontal();
-
     float savedLabelWidth = EditorGUIUtility.labelWidth;
-    EditorGUIUtility.labelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    using (new EditorGUI.DisabledScope(true))
-    {
-      EditorGUILayout.IntField("X", previewX, GUILayout.Width(48f));
-      EditorGUIUtility.labelWidth =
-          EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-      EditorGUILayout.IntField("Y", previewY, GUILayout.Width(48f));
-    }
-    EditorGUIUtility.labelWidth = savedLabelWidth;
 
     GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
-    Color labelColor = new Color(1f, 0.65f, 0.1f);
-    featureStyle.normal.textColor = labelColor;
-    featureStyle.hover.textColor = labelColor;
-    featureStyle.focused.textColor = labelColor;
-    const float FeatureDescriptionWidth = 210f;
-    GUILayout.Label(name, featureStyle, GUILayout.Width(FeatureDescriptionWidth));
+    featureStyle.normal.textColor = Color.yellow;
+    featureStyle.hover.textColor = Color.yellow;
+    featureStyle.focused.textColor = Color.yellow;
+    float featureLabelWidth =
+        featureStyle.CalcSize(new GUIContent(displayName)).x;
+    GUILayout.Label(
+        displayName,
+        featureStyle,
+        GUILayout.Width(featureLabelWidth));
 
-    bool enabledBefore = IsPreviewFeatureEnabled(key);
-    bool enabledAfter = DrawCompactMouseOnlyToggle(
-        "Enabled", enabledBefore, false);
-    bool mirrorAfter = DrawCompactMouseOnlyToggle(
-        "Mirror", mirrorValue, true);
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    int editX = x;
+    bool xChanged = DrawIntStepperInline(
+        "X", ref editX, snap, false, true, 24f, 24f);
 
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    int editY = y;
+    bool yChanged = DrawIntStepperInline(
+        "Y", ref editY, snap, false, true, 24f, 24f);
+
+    const string MirrorLabel = "Mirror";
+    const float ToggleBoxWidth = 18f;
+    float mirrorLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
+    EditorGUIUtility.labelWidth = mirrorLabelWidth;
+    bool mirrorAfter = DrawMouseOnlyToggle(
+        MirrorLabel,
+        mirror,
+        true,
+        GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
+        GUILayout.ExpandWidth(false));
+    NoteContentRight();
+
+    EditorGUIUtility.labelWidth = savedLabelWidth;
     EditorGUILayout.EndHorizontal();
 
     bool changed = false;
-    if (mirrorAfter != mirrorValue)
+    if ((xChanged && editX != x) || (yChanged && editY != y))
+    {
+      if (editX == defaultX && editY == defaultY)
+        previewFeaturePositionOverrides.Remove(key);
+      else
+        previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      previewPositionChangedThisFrame = true;
+      changed = true;
+    }
+
+    if (mirrorAfter != mirror)
     {
       if (mirrorAfter == defaultMirror)
         previewFeatureMirrorOverrides.Remove(key);
       else
         previewFeatureMirrorOverrides[key] = mirrorAfter;
       previewMirrorChangedThisFrame = true;
-      changed = true;
-    }
-
-    if (enabledAfter != enabledBefore)
-    {
-      SetPreviewFeatureEnabled(key, enabledAfter);
-      previewEnabledChangedThisFrame = true;
       changed = true;
     }
 
@@ -17962,6 +18170,16 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return true;
+  }
+
+  private bool DrawGrateFeatureRow(WallOrnamentPlacement ornament)
+  {
+    if (!TryGetGrateViewProjection(
+            ornament, out string projectionName, out _))
+      return false;
+
+    string name = projectionName + " (" + FacingName(previewFacing) + ")";
+    return DrawWallOrnamentCalibrationRow(ornament, name);
   }
 
   private void DrawReadOnlyFeatureMapFields(int mapX, int mapY)
@@ -18550,9 +18768,6 @@ public class ViewportLayoutEditor : EditorWindow
     bool yChanged = DrawIntStepperInline(
         "Y", ref editY, snap, false, true, 24f, 24f);
 
-    bool enabledBefore = IsPreviewFeatureEnabled(key);
-    bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
-
     const string MirrorLabel = "Mirror";
     const float ToggleBoxWidth = 18f;
     float mirrorLabelWidth =
@@ -18561,7 +18776,7 @@ public class ViewportLayoutEditor : EditorWindow
     bool mirrorAfter = DrawMouseOnlyToggle(
         MirrorLabel,
         mirror,
-        enabledAfter,
+        true,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -18594,12 +18809,6 @@ public class ViewportLayoutEditor : EditorWindow
       changed = true;
     }
 
-    if (enabledAfter != enabledBefore)
-    {
-      SetPreviewFeatureEnabled(key, enabledAfter);
-      previewEnabledChangedThisFrame = true;
-      changed = true;
-    }
 
     if (changed)
     {
@@ -18762,9 +18971,6 @@ public class ViewportLayoutEditor : EditorWindow
     bool yChanged = DrawIntStepperInline(
         "Y", ref editY, snap, false, true, 24f, 24f);
 
-    bool enabledBefore = IsPreviewFeatureEnabled(key);
-    bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
-
     const string MirrorLabel = "Mirror";
     const float ToggleBoxWidth = 18f;
     float mirrorLabelWidth =
@@ -18773,7 +18979,7 @@ public class ViewportLayoutEditor : EditorWindow
     bool mirrorAfter = DrawMouseOnlyToggle(
         MirrorLabel,
         mirror,
-        enabledAfter,
+        true,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -18806,12 +19012,6 @@ public class ViewportLayoutEditor : EditorWindow
       changed = true;
     }
 
-    if (enabledAfter != enabledBefore)
-    {
-      SetPreviewFeatureEnabled(key, enabledAfter);
-      previewEnabledChangedThisFrame = true;
-      changed = true;
-    }
 
     if (changed)
     {
@@ -18872,9 +19072,6 @@ public class ViewportLayoutEditor : EditorWindow
     bool yChanged = DrawIntStepperInline(
         "Y", ref editY, snap, false, true, 24f, 24f);
 
-    bool enabledBefore = IsPreviewFeatureEnabled(key);
-    bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
-
     const string MirrorLabel = "Mirror";
     const float ToggleBoxWidth = 18f;
     float mirrorLabelWidth =
@@ -18883,7 +19080,7 @@ public class ViewportLayoutEditor : EditorWindow
     bool mirrorAfter = DrawMouseOnlyToggle(
         MirrorLabel,
         mirror,
-        enabledAfter,
+        true,
         GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -18916,12 +19113,6 @@ public class ViewportLayoutEditor : EditorWindow
       changed = true;
     }
 
-    if (enabledAfter != enabledBefore)
-    {
-      SetPreviewFeatureEnabled(key, enabledAfter);
-      previewEnabledChangedThisFrame = true;
-      changed = true;
-    }
 
     if (changed)
     {
@@ -19507,12 +19698,7 @@ public class ViewportLayoutEditor : EditorWindow
           name += " / F1";
         }
 
-        DrawFeatureChecklistRow(
-            displayMapX,
-            displayMapY,
-            name,
-            key,
-            new Color(1f, 0.65f, 0.1f));
+        DrawWallOrnamentCalibrationRow(ornament, name);
       }
     }
 
@@ -20519,12 +20705,8 @@ public class ViewportLayoutEditor : EditorWindow
       int altarY = previewUseEngineViAltarSlots
           ? ViAltarEngineF2FrontY
           : ViAltarWallOrnamentSet.f2.y;
-      BlitPieceIntoPreview(
-          pixels,
-          altar,
-          altarX,
-          altarY,
-          false);
+      BlitOrnamentPieceIntoPreview(
+          pixels, altar, ornament, altarX, altarY, false);
       return;
     }
   }
@@ -20604,12 +20786,8 @@ public class ViewportLayoutEditor : EditorWindow
       int altarY = previewUseEngineViAltarSlots
           ? ViAltarEngineF3FrontY
           : ViAltarWallOrnamentSet.f3.y;
-      BlitPieceIntoPreview(
-          pixels,
-          altar,
-          altarX,
-          altarY,
-          false);
+      BlitOrnamentPieceIntoPreview(
+          pixels, altar, ornament, altarX, altarY, false);
       return;
     }
   }
@@ -20671,12 +20849,8 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      BlitPieceIntoPreview(
-          pixels,
-          altar,
-          ViAltarD1FrontX,
-          ViAltarD1FrontY,
-          false);
+      BlitOrnamentPieceIntoPreview(
+          pixels, altar, ornament, ViAltarD1FrontX, ViAltarD1FrontY, false);
       return;
     }
   }
@@ -21415,12 +21589,8 @@ public class ViewportLayoutEditor : EditorWindow
       int x = 112 - (slimeFront.width / 2);
       int y = 55 - (slimeFront.height / 2);
 
-      BlitPieceIntoPreview(
-          pixels,
-          slimeFront,
-          x,
-          y,
-          false);
+      BlitOrnamentPieceIntoPreview(
+          pixels, slimeFront, ornament, x, y, false);
       return;
     }
   }
@@ -21646,23 +21816,15 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (matchesLeft && !leftDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side1,
-            SlimeD1SideLeftX,
-            SlimeD1SideY,
-            false);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side1, ornament, SlimeD1SideLeftX, SlimeD1SideY, false);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side1,
-            SlimeD1SideRightX,
-            SlimeD1SideY,
-            true);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side1, ornament, SlimeD1SideRightX, SlimeD1SideY, true);
         rightDrawn = true;
       }
 
@@ -21793,23 +21955,15 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (matchesLeft && !leftDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side2,
-            SlimeD2SideLeftX,
-            SlimeD2SideY,
-            true);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side2, ornament, SlimeD2SideLeftX, SlimeD2SideY, true);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side2,
-            SlimeD2SideRightX,
-            SlimeD2SideY,
-            false);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side2, ornament, SlimeD2SideRightX, SlimeD2SideY, false);
         rightDrawn = true;
       }
 
@@ -21947,23 +22101,15 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (matchesLeft && !leftDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side3,
-            WoodRingD3SideLeftX,
-            WoodRingD3SideY,
-            false);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side3, ornament, WoodRingD3SideLeftX, WoodRingD3SideY, false);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side3,
-            WoodRingD3SideRightX,
-            WoodRingD3SideY,
-            true);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side3, ornament, WoodRingD3SideRightX, WoodRingD3SideY, true);
         rightDrawn = true;
       }
 
@@ -22099,23 +22245,15 @@ public class ViewportLayoutEditor : EditorWindow
       if (matchesLeft && !leftDrawn)
       {
         // Native Side2 art is already the verified left-side perspective.
-        BlitPieceIntoPreview(
-            pixels,
-            side2,
-            WoodRingD2SideLeftX,
-            WoodRingD2SideY,
-            false);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side2, ornament, WoodRingD2SideLeftX, WoodRingD2SideY, false);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side2,
-            WoodRingD2SideRightX,
-            WoodRingD2SideY,
-            true);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side2, ornament, WoodRingD2SideRightX, WoodRingD2SideY, true);
         rightDrawn = true;
       }
 
@@ -22277,23 +22415,15 @@ public class ViewportLayoutEditor : EditorWindow
       if (matchesLeft && !leftDrawn)
       {
         // Supplied D2/D3 art is the right-wall crop, so the left slot is mirrored.
-        BlitPieceIntoPreview(
-            pixels,
-            side,
-            leftX,
-            y,
-            true);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side, ornament, leftX, y, true);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side,
-            rightX,
-            y,
-            false);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side, ornament, rightX, y, false);
         rightDrawn = true;
       }
 
@@ -22445,23 +22575,15 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (matchesLeft && !leftDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            sideTexture,
-            sideLeftX,
-            sideY,
-            false);
+        BlitOrnamentPieceIntoPreview(
+            pixels, sideTexture, ornament, sideLeftX, sideY, false);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            sideTexture,
-            sideRightX,
-            sideY,
-            true);
+        BlitOrnamentPieceIntoPreview(
+            pixels, sideTexture, ornament, sideRightX, sideY, true);
         rightDrawn = true;
       }
 
@@ -22546,12 +22668,9 @@ public class ViewportLayoutEditor : EditorWindow
       if (!placementMatches)
         continue;
 
-      BlitWallOrnamentIntoPreview(
-          pixels,
-          hookFront,
-          HookFrontWallOrnamentSet.f2.x,
-          HookFrontWallOrnamentSet.f2.y,
-          false);
+      BlitOrnamentPieceIntoPreview(
+          pixels, hookFront, ornament,
+          HookFrontWallOrnamentSet.f2.x, HookFrontWallOrnamentSet.f2.y, false);
       return;
     }
   }
@@ -22630,23 +22749,15 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (matchesLeft && !leftDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side,
-            ManaclesD2SideLeftX,
-            ManaclesD2SideY,
-            false);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side, ornament, ManaclesD2SideLeftX, ManaclesD2SideY, false);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side,
-            ManaclesD2SideRightX,
-            ManaclesD2SideY,
-            true);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side, ornament, ManaclesD2SideRightX, ManaclesD2SideY, true);
         rightDrawn = true;
       }
 
@@ -22870,23 +22981,15 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (matchesLeft && !leftDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side,
-            ManaclesD1SideLeftX,
-            ManaclesD1SideY,
-            false);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side, ornament, ManaclesD1SideLeftX, ManaclesD1SideY, false);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side,
-            ManaclesD1SideRightX,
-            ManaclesD1SideY,
-            true);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side, ornament, ManaclesD1SideRightX, ManaclesD1SideY, true);
         rightDrawn = true;
       }
 
@@ -22988,12 +23091,8 @@ public class ViewportLayoutEditor : EditorWindow
       if (!placementMatches)
         continue;
 
-      BlitWallOrnamentIntoPreview(
-          pixels,
-          manacles,
-          ManaclesD3FrontX,
-          ManaclesD3FrontY,
-          false);
+      BlitOrnamentPieceIntoPreview(
+          pixels, manacles, ornament, ManaclesD3FrontX, ManaclesD3FrontY, false);
       return;
     }
   }
@@ -23087,12 +23186,8 @@ public class ViewportLayoutEditor : EditorWindow
       if (!placementMatches)
         continue;
 
-      BlitWallOrnamentIntoPreview(
-          pixels,
-          manacles,
-          ManaclesD2FrontX,
-          ManaclesD2FrontY,
-          false);
+      BlitOrnamentPieceIntoPreview(
+          pixels, manacles, ornament, ManaclesD2FrontX, ManaclesD2FrontY, false);
       return;
     }
   }
@@ -23186,12 +23281,8 @@ public class ViewportLayoutEditor : EditorWindow
       // Manacles F1 placements and can be pixel-calibrated from the original.
       int destinationX = (DungeonViewportWidth - manacles.width) / 2;
       const int destinationY = 77;
-      BlitWallOrnamentIntoPreview(
-          pixels,
-          manacles,
-          destinationX,
-          destinationY,
-          false);
+      BlitOrnamentPieceIntoPreview(
+          pixels, manacles, ornament, destinationX, destinationY, false);
       return;
     }
   }
@@ -23319,12 +23410,8 @@ public class ViewportLayoutEditor : EditorWindow
       if (!placementMatches)
         continue;
 
-      BlitPieceIntoPreview(
-          pixels,
-          hookFront,
-          HookD1FrontX,
-          HookD1FrontY,
-          false);
+      BlitOrnamentPieceIntoPreview(
+          pixels, hookFront, ornament, HookD1FrontX, HookD1FrontY, false);
       return;
     }
   }
@@ -23611,23 +23698,17 @@ public class ViewportLayoutEditor : EditorWindow
       if (matchesLeft && !leftDrawn)
       {
         // Native Side3 art is the left-wall perspective.
-        BlitPieceIntoPreview(
-            pixels,
-            side3,
-            GrateD3SideLeftX,
-            GrateD3SideY,
-            GetPreviewFeatureMirrorValue(ornament, false));
+        BlitOrnamentPieceIntoPreview(
+            pixels, side3, ornament,
+            GrateD3SideLeftX, GrateD3SideY, false);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side3,
-            GrateD3SideRightX,
-            GrateD3SideY,
-            GetPreviewFeatureMirrorValue(ornament, true));
+        BlitOrnamentPieceIntoPreview(
+            pixels, side3, ornament,
+            GrateD3SideRightX, GrateD3SideY, true);
         rightDrawn = true;
       }
 
@@ -23777,23 +23858,17 @@ public class ViewportLayoutEditor : EditorWindow
       if (matchesLeft && !leftDrawn)
       {
         // Native Side2 art is the left-wall perspective.
-        BlitPieceIntoPreview(
-            pixels,
-            side2,
-            GrateD2SideLeftX,
-            GrateD2SideY,
-            GetPreviewFeatureMirrorValue(ornament, false));
+        BlitOrnamentPieceIntoPreview(
+            pixels, side2, ornament,
+            GrateD2SideLeftX, GrateD2SideY, false);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side2,
-            GrateD2SideRightX,
-            GrateD2SideY,
-            GetPreviewFeatureMirrorValue(ornament, true));
+        BlitOrnamentPieceIntoPreview(
+            pixels, side2, ornament,
+            GrateD2SideRightX, GrateD2SideY, true);
         rightDrawn = true;
       }
 
@@ -23936,23 +24011,17 @@ public class ViewportLayoutEditor : EditorWindow
 
       if (matchesLeft && !leftDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side1,
-            GrateD1SideLeftX,
-            GrateD1SideY,
-            GetPreviewFeatureMirrorValue(ornament, false));
+        BlitOrnamentPieceIntoPreview(
+            pixels, side1, ornament,
+            GrateD1SideLeftX, GrateD1SideY, false);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        BlitPieceIntoPreview(
-            pixels,
-            side1,
-            GrateD1SideRightX,
-            GrateD1SideY,
-            GetPreviewFeatureMirrorValue(ornament, true));
+        BlitOrnamentPieceIntoPreview(
+            pixels, side1, ornament,
+            GrateD1SideRightX, GrateD1SideY, true);
         rightDrawn = true;
       }
 
@@ -24075,12 +24144,9 @@ public class ViewportLayoutEditor : EditorWindow
       if (!placementMatches)
         continue;
 
-      BlitPieceIntoPreview(
-          pixels,
-          grateFront,
-          GrateD3FrontX,
-          GrateD3FrontY,
-          GetPreviewFeatureMirrorValue(ornament, false));
+      BlitOrnamentPieceIntoPreview(
+            pixels, grateFront, ornament,
+            GrateD3FrontX, GrateD3FrontY, false);
       return;
     }
   }
@@ -24179,12 +24245,9 @@ public class ViewportLayoutEditor : EditorWindow
       if (!placementMatches)
         continue;
 
-      BlitPieceIntoPreview(
-          pixels,
-          grateFront,
-          GrateD2FrontX,
-          GrateD2FrontY,
-          GetPreviewFeatureMirrorValue(ornament, false));
+      BlitOrnamentPieceIntoPreview(
+            pixels, grateFront, ornament,
+            GrateD2FrontX, GrateD2FrontY, false);
       return;
     }
   }
@@ -24273,12 +24336,9 @@ public class ViewportLayoutEditor : EditorWindow
       if (!placementMatches)
         continue;
 
-      BlitPieceIntoPreview(
-          pixels,
-          grateFront,
-          GrateD1FrontX,
-          GrateD1FrontY,
-          GetPreviewFeatureMirrorValue(ornament, false));
+      BlitOrnamentPieceIntoPreview(
+            pixels, grateFront, ornament,
+            GrateD1FrontX, GrateD1FrontY, false);
       return;
     }
   }
@@ -24295,6 +24355,26 @@ public class ViewportLayoutEditor : EditorWindow
     return previewFeatureMirrorOverrides.TryGetValue(key, out bool value)
         ? value
         : defaultMirror;
+  }
+
+  private void BlitOrnamentPieceIntoPreview(
+      Color32[] pixels,
+      Texture2D texture,
+      WallOrnamentPlacement ornament,
+      int defaultX,
+      int defaultY,
+      bool defaultMirror)
+  {
+    if (ornament == null)
+      return;
+
+    string key = MakePreviewFeatureKey(
+        "Ornament", ornament.x, ornament.y, ornament.wall);
+    int x = defaultX;
+    int y = defaultY;
+    bool mirror = defaultMirror;
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+    BlitPieceIntoPreview(pixels, texture, x, y, mirror);
   }
 
   private static bool IsGrateOrnament(WallOrnamentPlacement ornament)
