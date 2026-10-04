@@ -1248,6 +1248,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
   // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
+  // REF OrnamentProjection:Moss:F3|108|96|false|639267381805114279
   // REF OrnamentProjection:Slime:F2|104|74|false
   // REF OrnamentProjection:Slime:F3|106|93|false|639267208231012151
   // REF OrnamentProjection:WoodRing:F1|98|104|false
@@ -21153,42 +21154,38 @@ public class ViewportLayoutEditor : EditorWindow
 
   private Texture2D GetMossF3Texture()
   {
-    if (cachedMossF3Texture != null)
+    if (cachedMossF3Texture != null
+        && cachedMossF3Texture.isReadable
+        && cachedMossF3Texture.width == 8
+        && cachedMossF3Texture.height == 2)
+    {
       return cachedMossF3Texture;
-
-    TextureImporter importer =
-        AssetImporter.GetAtPath(MossF3AssetPath) as TextureImporter;
-    if (importer != null)
-    {
-      bool changed = false;
-      if (!importer.isReadable)
-      {
-        importer.isReadable = true;
-        changed = true;
-      }
-      if (importer.filterMode != FilterMode.Point)
-      {
-        importer.filterMode = FilterMode.Point;
-        changed = true;
-      }
-      if (importer.mipmapEnabled)
-      {
-        importer.mipmapEnabled = false;
-        changed = true;
-      }
-      if (changed)
-        importer.SaveAndReimport();
     }
 
-    Texture2D texture =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(MossF3AssetPath);
-    if (texture != null && texture.width == 8 && texture.height == 2)
+    // The imported sprite sheet does not expose these 8x2 pixels to
+    // GetPixels32. Read the PNG into a temporary readable texture.
+    string projectRoot = Path.GetDirectoryName(Application.dataPath);
+    string absolutePath = string.IsNullOrEmpty(projectRoot)
+        ? MossF3AssetPath
+        : Path.Combine(projectRoot, MossF3AssetPath);
+    if (!File.Exists(absolutePath))
+      return null;
+
+    byte[] pngBytes = File.ReadAllBytes(absolutePath);
+    Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "MossF3_ReadablePreview";
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+    if (!readableCopy.LoadImage(pngBytes, false)
+        || readableCopy.width != 8
+        || readableCopy.height != 2)
     {
-      cachedMossF3Texture = texture;
-      return texture;
+      DestroyImmediate(readableCopy);
+      return null;
     }
 
-    cachedMossF3Texture = texture;
+    cachedMossF3Texture = readableCopy;
     return cachedMossF3Texture;
   }
 
