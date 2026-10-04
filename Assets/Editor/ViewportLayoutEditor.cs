@@ -17190,28 +17190,6 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  // Wall-tile ornament storage uses the physical face of the solid wall tile.
-  // Dungeon Features/minimap labels use the corridor boundary direction instead.
-  // Those conventions are opposites: e.g. a North-facing wall tile immediately
-  // south of the player is the player's South map boundary. ViewEdit should show
-  // the same absolute direction as Dungeon Features, never a player-relative face.
-  private static string GetDungeonFeatureDisplayFace(
-      string physicalWallFace,
-      bool wallTilePlacement)
-  {
-    if (!wallTilePlacement || string.IsNullOrEmpty(physicalWallFace))
-      return physicalWallFace;
-
-    switch (char.ToUpperInvariant(physicalWallFace[0]))
-    {
-      case 'N': return "South";
-      case 'E': return "West";
-      case 'S': return "North";
-      case 'W': return "East";
-      default: return physicalWallFace;
-    }
-  }
-
   private void LoadPreviewPuddleFloors()
   {
     previewPuddleFloors.Clear();
@@ -18956,11 +18934,13 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
 
-  private bool IsStandardWallOrnamentProjectionVisibleInCurrentPose(
+  private bool TryGetStandardWallOrnamentProjectionInCurrentPose(
       WallOrnamentPlacement ornament,
       int maxFrontDepth,
-      int maxSideDepth)
+      int maxSideDepth,
+      out string dungeonFeatureFace)
   {
+    dungeonFeatureFace = null;
     if (ornament == null || previewMiniMap == null)
       return false;
 
@@ -19014,6 +18994,7 @@ public class ViewportLayoutEditor : EditorWindow
                 visibleFrontFace,
                 System.StringComparison.OrdinalIgnoreCase))
         {
+          dungeonFeatureFace = viewedWallSide;
           return true;
         }
       }
@@ -19028,6 +19009,7 @@ public class ViewportLayoutEditor : EditorWindow
                 viewedWallSide,
                 System.StringComparison.OrdinalIgnoreCase))
         {
+          dungeonFeatureFace = viewedWallSide;
           return true;
         }
       }
@@ -19081,6 +19063,7 @@ public class ViewportLayoutEditor : EditorWindow
                 leftPhysicalFace,
                 System.StringComparison.OrdinalIgnoreCase))
         {
+          dungeonFeatureFace = leftBoundaryDirection;
           return true;
         }
 
@@ -19092,27 +19075,74 @@ public class ViewportLayoutEditor : EditorWindow
                 rightPhysicalFace,
                 System.StringComparison.OrdinalIgnoreCase))
         {
+          dungeonFeatureFace = rightBoundaryDirection;
           return true;
         }
       }
       else
       {
-        if (ornament.x == centerX
-            && ornament.y == centerY
-            && ((leftWallExists
-                    && string.Equals(
-                        ornament.wall,
-                        leftBoundaryDirection,
-                        System.StringComparison.OrdinalIgnoreCase))
-                || (rightWallExists
-                    && string.Equals(
-                        ornament.wall,
-                        rightBoundaryDirection,
-                        System.StringComparison.OrdinalIgnoreCase))))
+        if (ornament.x == centerX && ornament.y == centerY)
         {
-          return true;
+          if (leftWallExists
+              && string.Equals(
+                  ornament.wall,
+                  leftBoundaryDirection,
+                  System.StringComparison.OrdinalIgnoreCase))
+          {
+            dungeonFeatureFace = leftBoundaryDirection;
+            return true;
+          }
+
+          if (rightWallExists
+              && string.Equals(
+                  ornament.wall,
+                  rightBoundaryDirection,
+                  System.StringComparison.OrdinalIgnoreCase))
+          {
+            dungeonFeatureFace = rightBoundaryDirection;
+            return true;
+          }
         }
       }
+    }
+
+    return false;
+  }
+
+  private bool IsStandardWallOrnamentProjectionVisibleInCurrentPose(
+      WallOrnamentPlacement ornament,
+      int maxFrontDepth,
+      int maxSideDepth)
+  {
+    return TryGetStandardWallOrnamentProjectionInCurrentPose(
+        ornament,
+        maxFrontDepth,
+        maxSideDepth,
+        out _);
+  }
+
+  private bool TryGetStandardWallOrnamentDungeonFeatureFace(
+      WallOrnamentPlacement ornament,
+      out string dungeonFeatureFace)
+  {
+    dungeonFeatureFace = null;
+
+    if (IsWoodRingOrnament(ornament))
+    {
+      return TryGetStandardWallOrnamentProjectionInCurrentPose(
+          ornament, 3, 3, out dungeonFeatureFace);
+    }
+
+    if (IsHookOrnament(ornament))
+    {
+      return TryGetStandardWallOrnamentProjectionInCurrentPose(
+          ornament, 2, 3, out dungeonFeatureFace);
+    }
+
+    if (IsSlimeOrnament(ornament))
+    {
+      return TryGetStandardWallOrnamentProjectionInCurrentPose(
+          ornament, 1, 2, out dungeonFeatureFace);
     }
 
     return false;
@@ -19269,8 +19299,20 @@ public class ViewportLayoutEditor : EditorWindow
         // underlying storage-wall coordinates.
         int displayMapX = ornament.x;
         int displayMapY = ornament.y;
-        string displayWall = GetDungeonFeatureDisplayFace(
-            ornament.wall, ornament.wallTilePlacement);
+        string displayWall = ornament.wall;
+
+        // For the standard wall ornaments, use the exact projection geometry
+        // that made the ornament visible to derive the Dungeon Features/minimap
+        // wall direction. This keeps the label absolute to the map instead of
+        // blindly flipping every stored wall face or deriving it from the
+        // player's relative view.
+        if (TryGetStandardWallOrnamentDungeonFeatureFace(
+                ornament, out string projectedDungeonFeatureFace)
+            && !string.IsNullOrEmpty(projectedDungeonFeatureFace))
+        {
+          displayWall = projectedDungeonFeatureFace;
+        }
+
         string manaclesDepthLabel = null;
         if (IsManaclesOrnament(ornament))
         {
