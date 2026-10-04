@@ -19552,44 +19552,41 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    // Stairs Up / Down in the same current-view neighbourhood.
-    for (int depth = 0; depth <= 3; depth++)
+    // Stairs use the renderer's exact projection geometry. The current
+    // stairs renderer has an F1 front projection only: the stairs tile must
+    // be exactly one cell directly ahead. Do not list stairs merely because
+    // they fall somewhere inside the broad ViewEdit neighbourhood/cone.
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int stairsForwardX,
+        out int stairsForwardY);
+
+    int visibleStairsX = previewX + stairsForwardX;
+    int visibleStairsY = previewY + stairsForwardY;
+    if (previewMiniMap.IsInside(visibleStairsX, visibleStairsY))
     {
-      int maxLane = depth == 0 ? 1 : Mathf.Max(1, depth);
-      DungeonMap.GetForwardOffset(
-          previewFacing,
-          out int forwardX,
-          out int forwardY);
-      DungeonMap.GetRightOffset(
-          previewFacing,
-          out int rightX,
-          out int rightY);
-
-      for (int lane = -maxLane; lane <= maxLane; lane++)
+      DungeonTile visibleStairsTile =
+          previewMiniMap.GetTile(visibleStairsX, visibleStairsY);
+      if (visibleStairsTile != null
+          && visibleStairsTile.TryGetStairsDirection(out bool stairsUp))
       {
-        int x = previewX + forwardX * depth + rightX * lane;
-        int y = previewY + forwardY * depth + rightY * lane;
-        if (!previewMiniMap.IsInside(x, y))
-          continue;
-
-        DungeonTile tile = previewMiniMap.GetTile(x, y);
-        if (tile == null || !tile.TryGetStairsDirection(out bool stairsUp))
-          continue;
-
         string family = stairsUp ? "StairsUp" : "StairsDown";
-        string key = MakePreviewFeatureKey(family, x, y, null);
+        string key = MakePreviewFeatureKey(
+            family, visibleStairsX, visibleStairsY, null);
+
         if (stairsUp)
         {
           DrawFeatureChecklistRow(
-              x,
-              y,
+              visibleStairsX,
+              visibleStairsY,
               "Stairs Up",
               key,
               new Color(0.25f, 0.6f, 1f));
         }
         else
         {
-          DrawStairsDownFeatureChecklistRow(x, y, key);
+          DrawStairsDownFeatureChecklistRow(
+              visibleStairsX, visibleStairsY, key);
         }
       }
     }
