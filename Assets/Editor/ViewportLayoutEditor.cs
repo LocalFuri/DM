@@ -18540,12 +18540,13 @@ public class ViewportLayoutEditor : EditorWindow
     featureStyle.normal.textColor = Color.yellow;
     featureStyle.hover.textColor = Color.yellow;
     featureStyle.focused.textColor = Color.yellow;
-    float featureLabelWidth =
-        featureStyle.CalcSize(new GUIContent(displayName)).x;
+    // Fixed caption column keeps X, Y and Apply vertically aligned for every
+    // ornament row, regardless of the ornament name/map coordinate/depth text.
+    const float OrnamentCaptionColumnWidth = 205f;
     GUILayout.Label(
         displayName,
         featureStyle,
-        GUILayout.Width(featureLabelWidth));
+        GUILayout.Width(OrnamentCaptionColumnWidth));
 
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
@@ -18565,7 +18566,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       applyClicked = GUILayout.Button(
           "Apply",
-          GUILayout.Width(48f),
+          GUILayout.Width(58f),
           GUILayout.ExpandWidth(false));
     }
     NoteContentRight();
