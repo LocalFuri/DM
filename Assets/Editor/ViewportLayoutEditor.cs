@@ -3110,7 +3110,24 @@ public class ViewportLayoutEditor : EditorWindow
     if (previewMiniMap == null)
       return false;
 
+    // A wall in front of the door hides it. From 4,2 West the door at 1,2
+    // is three steps ahead, but 3,2 and 2,2 are walls, so this is not F3.
+    if (!IsCenterSightLineOpenBefore(depth))
+      return false;
+
     return IsHallOfChampionsBlackDoorCell(SampleViewport17Cell(0, depth));
+  }
+
+  private bool IsCenterSightLineOpenBefore(int depth)
+  {
+    for (int step = 1; step < depth; step++)
+    {
+      Viewport17Cell nearer = SampleViewport17Cell(0, step);
+      if (!nearer.IsInside || nearer.State == Viewport17CellState.Wall)
+        return false;
+    }
+
+    return true;
   }
 
   private bool IsDoorF1FrontView()
@@ -3136,6 +3153,10 @@ public class ViewportLayoutEditor : EditorWindow
   {
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null)
+      return false;
+
+    // The D3-right door is only visible down an open center corridor.
+    if (!IsCenterSightLineOpenBefore(4))
       return false;
 
     return IsHallOfChampionsBlackDoorCell(SampleViewport17Cell(1, 3));
