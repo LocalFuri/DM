@@ -1122,6 +1122,12 @@ public class ViewportLayoutEditor : EditorWindow
       "// END APPLIED ORNAMENT REFERENCES";
 
   // BEGIN APPLIED ORNAMENT REFERENCES
+  // REF OrnamentProjection:Slime:F2|104|74|false
+  // REF OrnamentProjection:Slime:S1|161|63|true
+  // REF OrnamentProjection:WoodRing:F1|98|104|false
+  // REF OrnamentProjection:WoodRing:F2|103|111|false
+  // REF OrnamentProjection:WoodRing:F3|104|117|false
+  // REF OrnamentProjection:WoodRing:S1|49|110|false
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
@@ -19796,7 +19802,7 @@ public class ViewportLayoutEditor : EditorWindow
   private bool IsSlimeProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
   {
     return IsSlimeOrnament(ornament)
-        && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 1, 2);
+        && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 2, 2);
   }
 
   private void DrawCurrentPoseFeatureRows()
@@ -19863,7 +19869,7 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        // Slime rows must obey the exact same F1/S1/S2 geometry as the
+        // Slime rows must obey the exact same F1/F2/S1/S2 geometry as the
         // Slime renderer. The broad feature cone can include adjacent cells
         // that are not drawable Slime projection slots (for example 2,18
         // North from pose 2,17 East), so those must not appear in ViewEdit.
