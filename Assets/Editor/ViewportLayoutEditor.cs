@@ -18421,14 +18421,24 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (IsWoodRingOrnament(ornament))
     {
-      // Original 4,2 South shows the (3,4) East wood ring as the small
-      // graphic on the left edge of the far opening.
-      if (DrawWoodRingOnFarLeftLikeOriginal(ornament))
+      // Facing south, the (3,4) East wood ring is one slot farther than the
+      // cell beside it, on the left. 4,3 South is the D2 left graphic.
+      // 4,2 South is the D3 left graphic.
+      if (TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southDepth))
       {
         renderMirror = false;
-        renderX = WoodRingD3SideLeftX;
-        renderY = WoodRingD3SideY;
-        return true;
+        if (southDepth == 2)
+        {
+          renderX = WoodRingD2SideLeftX;
+          renderY = WoodRingD2SideY;
+          return true;
+        }
+        if (southDepth == 3)
+        {
+          renderX = WoodRingD3SideLeftX;
+          renderY = WoodRingD3SideY;
+          return true;
+        }
       }
 
       renderMirror = !isLeft;
@@ -18570,8 +18580,8 @@ public class ViewportLayoutEditor : EditorWindow
     {
       int sideDepth = depthFromPlayer;
       if (IsWoodRingOrnament(ornament)
-          && DrawWoodRingOnFarLeftLikeOriginal(ornament))
-        sideDepth = 3;
+          && TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southDepth))
+        sideDepth = southDepth;
       if (sideDepth < 1 || sideDepth > maxSideDepth)
         return false;
       slot = "S" + sideDepth;
@@ -23028,20 +23038,33 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  // Original 4,2 South shows the wood ring on wall (3,4) East as the
-  // small graphic on the left edge of the far opening.
-  private bool DrawWoodRingOnFarLeftLikeOriginal(WallOrnamentPlacement ornament)
+  // Original south views of the (3,4) East wood ring place it on the
+  // left, one step farther than the adjacent corridor cell.
+  // 4,3 South -> D2 left. 4,2 South -> D3 left.
+  private bool TryGetOriginalSouthWoodRingLeftDepth(
+      WallOrnamentPlacement ornament,
+      out int depth)
   {
-    return ornament != null
-        && previewFacing == DungeonFacing.South
-        && previewX == 4
-        && previewY == 2
-        && ornament.x == 3
-        && ornament.y == 4
-        && string.Equals(
+    depth = 0;
+    if (ornament == null
+        || previewFacing != DungeonFacing.South
+        || previewX != 4
+        || ornament.x != 3
+        || ornament.y != 4
+        || !string.Equals(
             ornament.wall,
             "East",
-            System.StringComparison.OrdinalIgnoreCase);
+            System.StringComparison.OrdinalIgnoreCase))
+    {
+      return false;
+    }
+
+    int steps = ornament.y - previewY;
+    if (steps != 1 && steps != 2)
+      return false;
+
+    depth = steps + 1;
+    return true;
   }
 
   private void BlitWoodRingD3SidesIntoPreview(Color32[] pixels)
@@ -23130,7 +23153,9 @@ public class ViewportLayoutEditor : EditorWindow
       if (!IsWoodRingOrnament(ornament))
         continue;
 
-      if (DrawWoodRingOnFarLeftLikeOriginal(ornament) && !leftDrawn)
+      if (TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southDepth)
+          && southDepth == 3
+          && !leftDrawn)
       {
         BlitOrnamentPieceIntoPreview(
             pixels, side3, ornament, WoodRingD3SideLeftX, WoodRingD3SideY, false);
@@ -23280,8 +23305,16 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       if (!IsWoodRingOrnament(ornament))
         continue;
-      if (DrawWoodRingOnFarLeftLikeOriginal(ornament))
+      if (TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southDepth))
+      {
+        if (southDepth == 2 && !leftDrawn)
+        {
+          BlitOrnamentPieceIntoPreview(
+              pixels, side2, ornament, WoodRingD2SideLeftX, WoodRingD2SideY, false);
+          leftDrawn = true;
+        }
         continue;
+      }
 
       bool matchesLeft;
       bool matchesRight;
@@ -23580,6 +23613,9 @@ public class ViewportLayoutEditor : EditorWindow
               MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
         continue;
       if (ornament == null)
+        continue;
+      if (IsWoodRingOrnament(ornament)
+          && TryGetOriginalSouthWoodRingLeftDepth(ornament, out _))
         continue;
 
       // Hook uses native 16x19 1:1; Wood Ring keeps its 14x19 cutout.
