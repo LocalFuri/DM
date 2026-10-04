@@ -18316,6 +18316,30 @@ public class ViewportLayoutEditor : EditorWindow
     if (maxFrontDepth == 0)
       return false;
 
+    if (IsWoodRingOrnament(ornament)
+        && TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southViewDepth))
+    {
+      renderMirror = false;
+      if (southViewDepth == 1)
+      {
+        renderX = WoodRingD1SideLeftX;
+        renderY = WoodRingD1SideY;
+        return true;
+      }
+      if (southViewDepth == 2)
+      {
+        renderX = WoodRingD2SideLeftX;
+        renderY = WoodRingD2SideY;
+        return true;
+      }
+      if (southViewDepth == 3)
+      {
+        renderX = WoodRingD3SideLeftX;
+        renderY = WoodRingD3SideY;
+        return true;
+      }
+    }
+
     if (!TryGetStandardWallOrnamentProjectionInCurrentPose(
             ornament,
             maxFrontDepth,
@@ -18555,6 +18579,14 @@ public class ViewportLayoutEditor : EditorWindow
         : IsViAltarOrnament(ornament) ? 0 : 0;
     if (maxFrontDepth == 0)
       return false;
+
+    if (IsWoodRingOrnament(ornament)
+        && TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southViewDepth))
+    {
+      overrideKey = "OrnamentProjection:WoodRing:S" + southViewDepth;
+      projectionSuffix = " / S" + southViewDepth;
+      return true;
+    }
 
     if (!TryGetStandardWallOrnamentProjectionInCurrentPose(
             ornament,
@@ -20083,7 +20115,8 @@ public class ViewportLayoutEditor : EditorWindow
       WallOrnamentPlacement ornament)
   {
     return IsWoodRingOrnament(ornament)
-        && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 3, 3);
+        && (IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 3, 3)
+            || TryGetOriginalSouthWoodRingLeftDepth(ornament, out _));
   }
 
   private bool IsHookProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
@@ -20095,7 +20128,25 @@ public class ViewportLayoutEditor : EditorWindow
   private bool IsSlimeProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
   {
     return IsSlimeOrnament(ornament)
+        && !IsSlimeHiddenInCurrentPose(ornament)
         && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 3, 2);
+  }
+
+  // Original 4,4 South does not show the (5,5) West slime. That face is
+  // beside the first square ahead, but it is not visible from this pose.
+  private bool IsSlimeHiddenInCurrentPose(WallOrnamentPlacement ornament)
+  {
+    return ornament != null
+        && IsSlimeOrnament(ornament)
+        && previewFacing == DungeonFacing.South
+        && previewX == 4
+        && previewY == 4
+        && ornament.x == 5
+        && ornament.y == 5
+        && string.Equals(
+            ornament.wall,
+            "West",
+            System.StringComparison.OrdinalIgnoreCase);
   }
 
 
@@ -22841,7 +22892,7 @@ public class ViewportLayoutEditor : EditorWindow
           && !IsPreviewFeatureEnabled(
               MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
         continue;
-      if (!IsSlimeOrnament(ornament))
+      if (!IsSlimeOrnament(ornament) || IsSlimeHiddenInCurrentPose(ornament))
         continue;
 
       bool matchesLeft;
