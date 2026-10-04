@@ -18540,13 +18540,15 @@ public class ViewportLayoutEditor : EditorWindow
     featureStyle.normal.textColor = Color.yellow;
     featureStyle.hover.textColor = Color.yellow;
     featureStyle.focused.textColor = Color.yellow;
-    // Fixed caption column keeps X, Y and Apply vertically aligned for every
-    // ornament row, regardless of the ornament name/map coordinate/depth text.
-    const float OrnamentCaptionColumnWidth = 205f;
+    // Keep every ornament row aligned, but make the caption column only as
+    // wide as the longest normal ornament label instead of leaving a large gap.
+    float ornamentCaptionColumnWidth =
+        featureStyle.CalcSize(
+            new GUIContent("WoodRing [1,17] (S) / S1")).x;
     GUILayout.Label(
         displayName,
         featureStyle,
-        GUILayout.Width(OrnamentCaptionColumnWidth));
+        GUILayout.Width(ornamentCaptionColumnWidth));
 
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
