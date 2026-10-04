@@ -1573,7 +1573,6 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private Texture2D cachedSlimeFrontTexture;
   private Texture2D cachedSlimeGeneratedF2FrontTexture;
-  private Texture2D cachedSlimeGeneratedF3FrontTexture;
   [System.NonSerialized]
   private Texture2D cachedSlimeSide1Texture;
   [System.NonSerialized]
@@ -13822,7 +13821,6 @@ public class ViewportLayoutEditor : EditorWindow
     BlitManaclesD3FrontIntoPreview(pixels);
     BlitManaclesD2FrontIntoPreview(pixels);
     BlitManaclesD1FrontIntoPreview(pixels);
-    BlitSlimeD3FrontIntoPreview(pixels);
     BlitSlimeD2FrontIntoPreview(pixels);
     BlitSlimeD1FrontIntoPreview(pixels);
     BlitHookD2FrontIntoPreview(pixels);
@@ -13836,6 +13834,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitViAltarS2IntoPreview(pixels);
     BlitViAltarS1IntoPreview(pixels);
   }
+
 
 
   private static void ApplyDungeonViewportLightPalette(
@@ -18222,7 +18221,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     int maxFrontDepth = IsWoodRingOrnament(ornament) ? 3
         : IsHookOrnament(ornament) ? 2
-        : IsSlimeOrnament(ornament) ? 3
+        : IsSlimeOrnament(ornament) ? 2
         : IsManaclesOrnament(ornament) ? 3
         : IsViAltarOrnament(ornament) ? 3 : 0;
     int maxSideDepth = IsWoodRingOrnament(ornament) ? 3
@@ -18290,14 +18289,6 @@ public class ViewportLayoutEditor : EditorWindow
           if (t == null) return false;
           renderX = (DungeonViewportWidth - t.width) / 2;
           renderY = SlimeD2SideY;
-          return true;
-        }
-        if (frontDepth == 3)
-        {
-          Texture2D t = GetSlimeGeneratedF3FrontTexture();
-          if (t == null) return false;
-          renderX = (DungeonViewportWidth - t.width) / 2;
-          renderY = HookFrontWallOrnamentSet.f3.y;
           return true;
         }
       }
@@ -19890,7 +19881,7 @@ public class ViewportLayoutEditor : EditorWindow
   private bool IsSlimeProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
   {
     return IsSlimeOrnament(ornament)
-        && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 3, 2);
+        && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 2, 2);
   }
 
 
@@ -19958,7 +19949,7 @@ public class ViewportLayoutEditor : EditorWindow
           continue;
         }
 
-        // Slime rows must obey the exact same F1/F2/F3/S1/S2 geometry as the
+        // Slime rows must obey the exact same F1/F2/S1/S2 geometry as the
         // Slime renderer. The broad feature cone can include adjacent cells
         // that are not drawable Slime projection slots (for example 2,18
         // North from pose 2,17 East), so those must not appear in ViewEdit.
@@ -21882,39 +21873,6 @@ public class ViewportLayoutEditor : EditorWindow
   /// matches a known stage-1 palette colour. This is shared by generated wall
   /// ornaments; nearest-colour matching is only a fallback for unexpected RGBs.
   /// </summary>
-  private static void TintExactBlackPixelsInTexture(
-      Texture2D texture,
-      Color32 replacement)
-  {
-    if (texture == null || !texture.isReadable)
-      return;
-
-    Color32[] pixels = texture.GetPixels32();
-    bool changed = false;
-    for (int i = 0; i < pixels.Length; i++)
-    {
-      Color32 c = pixels[i];
-      if (c.a == 0)
-        continue;
-
-      if (c.r == 0 && c.g == 0 && c.b == 0)
-      {
-        pixels[i] = new Color32(
-            replacement.r,
-            replacement.g,
-            replacement.b,
-            c.a);
-        changed = true;
-      }
-    }
-
-    if (changed)
-    {
-      texture.SetPixels32(pixels);
-      texture.Apply(false);
-    }
-  }
-
   private static int FindExactDmPaletteIndexOrNearest(
       Color32 source,
       Color32[] palette)
@@ -21998,112 +21956,6 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return bestPaletteIndex;
-  }
-
-  private Texture2D GetSlimeGeneratedF3FrontTexture()
-  {
-    if (cachedSlimeGeneratedF3FrontTexture != null)
-      return cachedSlimeGeneratedF3FrontTexture;
-
-    Texture2D source = GetSlimeFrontTexture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    // Generic F3 wall-ornament image derived from the native F1 Slime.
-    // Start with the same far-distance ratio used by the generic ornament
-    // family; exact X/Y can then be calibrated in ViewEdit.
-    int width = Mathf.Max(1, Mathf.RoundToInt(source.width * 0.5f));
-    int height = Mathf.Max(1, Mathf.RoundToInt(source.height * 0.5f));
-
-    cachedSlimeGeneratedF3FrontTexture = GenerateDmScaledWallDecoration(
-        source,
-        width,
-        height,
-        WallOrnamentFarColorMap,
-        "Slime F3 Generated from F1");
-
-    // User-approved special case: only the black pixels inside the generated
-    // Slime F3 sprite should shift from pure black to a very dark green.
-    TintExactBlackPixelsInTexture(
-        cachedSlimeGeneratedF3FrontTexture,
-        new Color32(0, 24, 0, 255));
-
-    return cachedSlimeGeneratedF3FrontTexture;
-  }
-
-  private void BlitSlimeD3FrontIntoPreview(Color32[] pixels)
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null
-        || previewWallOrnaments == null
-        || previewWallOrnaments.Length == 0)
-    {
-      return;
-    }
-
-    Texture2D slimeFront = GetSlimeGeneratedF3FrontTexture();
-    if (slimeFront == null || !slimeFront.isReadable)
-      return;
-
-    for (int i = 0; i < previewWallOrnaments.Length; i++)
-    {
-      WallOrnamentPlacement ornament = previewWallOrnaments[i];
-      if (ornament == null || !IsSlimeOrnament(ornament))
-        continue;
-
-      if (!IsPreviewFeatureEnabled(
-              MakePreviewFeatureKey(
-                  "Ornament", ornament.x, ornament.y, ornament.wall)))
-      {
-        continue;
-      }
-
-      // Use the same generic projection geometry as ViewEdit instead of a
-      // pose-specific coordinate test. Slime supports front F1-F3 and sides
-      // S1-S2; this method draws only the F3 front projection.
-      if (!TryGetStandardWallOrnamentProjectionInCurrentPose(
-              ornament,
-              3,
-              2,
-              out int mapX,
-              out int mapY,
-              out string mapFace))
-      {
-        continue;
-      }
-
-      DungeonMap.GetForwardOffset(
-          previewFacing,
-          out int forwardX,
-          out int forwardY);
-
-      int depthFromPlayer =
-          (mapX - previewX) * forwardX
-          + (mapY - previewY) * forwardY;
-
-      bool isFront = string.Equals(
-          mapFace,
-          FacingName(previewFacing),
-          System.StringComparison.OrdinalIgnoreCase);
-
-      int frontDepth = depthFromPlayer + 1;
-      if (!isFront || frontDepth != 3)
-        continue;
-
-      int x = (DungeonViewportWidth - slimeFront.width) / 2;
-      int y = HookFrontWallOrnamentSet.f3.y;
-
-      // This common path applies OrnamentProjection:Slime:F3, including
-      // temporary X/Y adjustment and the accepted Apply reference.
-      BlitOrnamentPieceIntoPreview(
-          pixels,
-          slimeFront,
-          ornament,
-          x,
-          y,
-          false);
-      return;
-    }
   }
 
   private Texture2D GetSlimeGeneratedF2FrontTexture()
