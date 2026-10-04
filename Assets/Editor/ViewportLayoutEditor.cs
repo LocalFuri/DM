@@ -20703,6 +20703,16 @@ public class ViewportLayoutEditor : EditorWindow
     if (lateralTileDistance != 0 || forwardDistance < 0 || forwardDistance > 2)
       return false;
 
+    // A nearer wall hides the floor item. From 4,7 South the apple at 4,9
+    // is behind the wall at 4,8 and must not be drawn on that wall.
+    for (int step = 1; step <= forwardDistance; step++)
+    {
+      int stepX = previewX + forwardX * step;
+      int stepY = previewY + forwardY * step;
+      if (!PreviewTileIsOpen(stepX, stepY))
+        return false;
+    }
+
     if (!TryGetFloorItemSubSquareOffset(
             item.cell,
             out int cornerX,
