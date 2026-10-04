@@ -1107,12 +1107,18 @@ public class ViewportLayoutEditor : EditorWindow
     public int x;
     public int y;
     public bool mirror;
+    public long revision;
 
-    public AcceptedOrnamentReference(int xValue, int yValue, bool mirrorValue)
+    public AcceptedOrnamentReference(
+        int xValue,
+        int yValue,
+        bool mirrorValue,
+        long revisionValue = 0)
     {
       x = xValue;
       y = yValue;
       mirror = mirrorValue;
+      revision = revisionValue;
     }
   }
 
@@ -1121,12 +1127,108 @@ public class ViewportLayoutEditor : EditorWindow
   private const string AppliedOrnamentReferencesEndMarker =
       "// END APPLIED ORNAMENT REFERENCES";
 
+  // Redundant local backup. Apply writes both the source block above and
+  // EditorPrefs. If an older ViewportLayoutEditor.cs is copied back over the
+  // current file, these values can restore newer accepted references instead
+  // of silently losing calibration work.
+  private const string AppliedOrnamentReferencePrefsPrefix =
+      "DM.ViewportLayoutEditor.AppliedOrnamentReference.";
+
+  private static string GetAppliedOrnamentReferencePrefsKey(
+      string projectionKey,
+      string suffix)
+  {
+    return AppliedOrnamentReferencePrefsPrefix
+        + (projectionKey ?? string.Empty)
+        + "." + suffix;
+  }
+
+  private static bool TryGetBackedUpOrnamentReference(
+      string projectionKey,
+      out AcceptedOrnamentReference value)
+  {
+    value = new AcceptedOrnamentReference(0, 0, false, 0);
+    if (string.IsNullOrEmpty(projectionKey))
+      return false;
+
+    string xKey = GetAppliedOrnamentReferencePrefsKey(projectionKey, "X");
+    string yKey = GetAppliedOrnamentReferencePrefsKey(projectionKey, "Y");
+    string mirrorKey =
+        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Mirror");
+
+    if (!EditorPrefs.HasKey(xKey)
+        || !EditorPrefs.HasKey(yKey)
+        || !EditorPrefs.HasKey(mirrorKey))
+    {
+      return false;
+    }
+
+    string revisionKey =
+        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Revision");
+
+    long revision = 0L;
+    if (EditorPrefs.HasKey(revisionKey))
+    {
+      string rawRevision = EditorPrefs.GetString(revisionKey, "0");
+      long.TryParse(
+          rawRevision,
+          System.Globalization.NumberStyles.Integer,
+          System.Globalization.CultureInfo.InvariantCulture,
+          out revision);
+    }
+
+    value = new AcceptedOrnamentReference(
+        EditorPrefs.GetInt(xKey, 0),
+        EditorPrefs.GetInt(yKey, 0),
+        EditorPrefs.GetBool(mirrorKey, false),
+        revision);
+    return true;
+  }
+
+  private static void SaveBackedUpOrnamentReference(
+      string projectionKey,
+      AcceptedOrnamentReference value)
+  {
+    EditorPrefs.SetInt(
+        GetAppliedOrnamentReferencePrefsKey(projectionKey, "X"), value.x);
+    EditorPrefs.SetInt(
+        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Y"), value.y);
+    EditorPrefs.SetBool(
+        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Mirror"),
+        value.mirror);
+
+    // EditorPrefs has no Int64 API. Store the revision as an invariant string.
+    EditorPrefs.SetString(
+        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Revision"),
+        value.revision.ToString(
+            System.Globalization.CultureInfo.InvariantCulture));
+  }
+
+  private static long GetBackedUpOrnamentReferenceRevision(
+      string projectionKey)
+  {
+    string key =
+        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Revision");
+    if (!EditorPrefs.HasKey(key))
+      return 0L;
+
+    string raw = EditorPrefs.GetString(key, "0");
+    if (long.TryParse(
+            raw,
+            System.Globalization.NumberStyles.Integer,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out long revision))
+    {
+      return revision;
+    }
+    return 0L;
+  }
+
   // BEGIN APPLIED ORNAMENT REFERENCES
   // REF OrnamentProjection:Slime:F2|104|74|false
-  // REF OrnamentProjection:Slime:S1|161|63|true
   // REF OrnamentProjection:WoodRing:F1|98|104|false
   // REF OrnamentProjection:WoodRing:F2|103|111|false
-  // REF OrnamentProjection:WoodRing:F3|104|117|false
+  // REF OrnamentProjection:WoodRing:F3|105|117|false
   // REF OrnamentProjection:WoodRing:S1|49|110|false
   // END APPLIED ORNAMENT REFERENCES
 
@@ -1142,6 +1244,72 @@ public class ViewportLayoutEditor : EditorWindow
     if (script == null)
       return null;
     return AssetDatabase.GetAssetPath(script);
+  }
+
+  private bool WriteAcceptedOrnamentReferencesBlock(
+      string assetPath,
+      bool importAsset)
+  {
+    if (string.IsNullOrEmpty(assetPath) || !File.Exists(assetPath))
+      return false;
+
+    string source = File.ReadAllText(assetPath);
+    string beginLine = "  " + AppliedOrnamentReferencesBeginMarker;
+    string endLine = "  " + AppliedOrnamentReferencesEndMarker;
+    int begin = source.IndexOf(
+        beginLine,
+        System.StringComparison.Ordinal);
+    if (begin < 0)
+      return false;
+
+    int end = source.IndexOf(
+        endLine,
+        begin + beginLine.Length,
+        System.StringComparison.Ordinal);
+    if (end <= begin)
+      return false;
+
+    List<string> keys =
+        new List<string>(cachedAcceptedOrnamentReferences.Keys);
+    keys.Sort(System.StringComparer.OrdinalIgnoreCase);
+
+    System.Text.StringBuilder block = new System.Text.StringBuilder();
+    block.Append(beginLine);
+    block.Append('\n');
+    for (int i = 0; i < keys.Count; i++)
+    {
+      string key = keys[i];
+      AcceptedOrnamentReference value =
+          cachedAcceptedOrnamentReferences[key];
+      block.Append("  // REF ");
+      block.Append(key);
+      block.Append('|');
+      block.Append(value.x);
+      block.Append('|');
+      block.Append(value.y);
+      block.Append('|');
+      block.Append(value.mirror ? "true" : "false");
+      if (value.revision > 0)
+      {
+        block.Append('|');
+        block.Append(value.revision);
+      }
+      block.Append('\n');
+    }
+    block.Append(endLine);
+
+    int replaceEnd = end + endLine.Length;
+    string updated = source.Substring(0, begin)
+        + block.ToString()
+        + source.Substring(replaceEnd);
+
+    if (string.Equals(source, updated, System.StringComparison.Ordinal))
+      return true;
+
+    File.WriteAllText(assetPath, updated);
+    if (importAsset)
+      AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
+    return true;
   }
 
   private void EnsureAcceptedOrnamentReferencesLoaded()
@@ -1162,41 +1330,113 @@ public class ViewportLayoutEditor : EditorWindow
     int begin = source.IndexOf(
         beginLine,
         System.StringComparison.Ordinal);
-    if (begin < 0)
-      return;
 
-    int end = source.IndexOf(
-        endLine,
-        begin + beginLine.Length,
-        System.StringComparison.Ordinal);
-    if (end <= begin)
-      return;
-
-    int contentStart = begin + beginLine.Length;
-    string block = source.Substring(contentStart, end - contentStart);
-    string[] lines = block.Split(new[] { '\r', '\n' },
-        System.StringSplitOptions.RemoveEmptyEntries);
-
-    for (int i = 0; i < lines.Length; i++)
+    if (begin >= 0)
     {
-      string line = lines[i].Trim();
-      if (!line.StartsWith("// REF ", System.StringComparison.Ordinal))
-        continue;
-
-      string payload = line.Substring(7);
-      string[] parts = payload.Split('|');
-      if (parts.Length != 4)
-        continue;
-
-      if (!int.TryParse(parts[1], out int x)
-          || !int.TryParse(parts[2], out int y)
-          || !bool.TryParse(parts[3], out bool mirror))
+      int end = source.IndexOf(
+          endLine,
+          begin + beginLine.Length,
+          System.StringComparison.Ordinal);
+      if (end > begin)
       {
-        continue;
-      }
+        int contentStart = begin + beginLine.Length;
+        string block = source.Substring(contentStart, end - contentStart);
+        string[] lines = block.Split(new[] { '\r', '\n' },
+            System.StringSplitOptions.RemoveEmptyEntries);
 
-      cachedAcceptedOrnamentReferences[parts[0]] =
-          new AcceptedOrnamentReference(x, y, mirror);
+        for (int i = 0; i < lines.Length; i++)
+        {
+          string line = lines[i].Trim();
+          if (!line.StartsWith("// REF ", System.StringComparison.Ordinal))
+            continue;
+
+          string payload = line.Substring(7);
+          string[] parts = payload.Split('|');
+          if (parts.Length != 4 && parts.Length != 5)
+            continue;
+
+          if (!int.TryParse(parts[1], out int x)
+              || !int.TryParse(parts[2], out int y)
+              || !bool.TryParse(parts[3], out bool mirror))
+          {
+            continue;
+          }
+
+          long revision = 0L;
+          if (parts.Length == 5)
+          {
+            long.TryParse(
+                parts[4],
+                System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out revision);
+          }
+
+          cachedAcceptedOrnamentReferences[parts[0]] =
+              new AcceptedOrnamentReference(x, y, mirror, revision);
+        }
+      }
+    }
+
+    // Probe every generic ornament family/slot. This also migrates references
+    // saved by the earlier EditorPrefs-only Apply implementation.
+    string[] families =
+    {
+      "WoodRing", "Hook", "Slime", "Manacles", "ViAltar", "Grate"
+    };
+    string[] slots =
+    {
+      "F1", "F2", "F3", "S1", "S2", "S3"
+    };
+
+    bool recoveredAnything = false;
+    for (int familyIndex = 0; familyIndex < families.Length; familyIndex++)
+    {
+      for (int slotIndex = 0; slotIndex < slots.Length; slotIndex++)
+      {
+        string projectionKey =
+            "OrnamentProjection:" + families[familyIndex]
+            + ":" + slots[slotIndex];
+
+        if (!TryGetBackedUpOrnamentReference(
+                projectionKey,
+                out AcceptedOrnamentReference backup))
+        {
+          continue;
+        }
+
+        long backupRevision =
+            GetBackedUpOrnamentReferenceRevision(projectionKey);
+        backup.revision = backupRevision;
+
+        if (!cachedAcceptedOrnamentReferences.TryGetValue(
+                projectionKey,
+                out AcceptedOrnamentReference sourceValue))
+        {
+          // Legacy backup with no revision is still valuable if the source
+          // has completely lost this key.
+          cachedAcceptedOrnamentReferences[projectionKey] = backup;
+          recoveredAnything = true;
+          continue;
+        }
+
+        // Newer Apply operations carry a revision. If an older source file is
+        // restored later, the backup wins and repairs the source automatically.
+        if (backupRevision > 0
+            && backupRevision > sourceValue.revision)
+        {
+          cachedAcceptedOrnamentReferences[projectionKey] = backup;
+          recoveredAnything = true;
+        }
+      }
+    }
+
+    if (recoveredAnything)
+    {
+      WriteAcceptedOrnamentReferencesBlock(assetPath, true);
+      Debug.Log(
+          "ViewEdit: restored newer/missing ornament calibration references "
+          + "from the Apply backup into " + assetPath);
     }
   }
 
@@ -1238,72 +1478,32 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     EnsureAcceptedOrnamentReferencesLoaded();
-    cachedAcceptedOrnamentReferences[projectionKey] =
-        new AcceptedOrnamentReference(x, y, mirror);
 
-    string source = File.ReadAllText(assetPath);
-    string beginLine = "  " + AppliedOrnamentReferencesBeginMarker;
-    string endLine = "  " + AppliedOrnamentReferencesEndMarker;
-    int begin = source.IndexOf(
-        beginLine,
-        System.StringComparison.Ordinal);
-    if (begin < 0)
+    long revision = System.DateTime.UtcNow.Ticks;
+    AcceptedOrnamentReference accepted =
+        new AcceptedOrnamentReference(x, y, mirror, revision);
+
+    // Backup first. Even if a later source replacement/undo rolls the .cs file
+    // backwards, the newer accepted reference remains recoverable.
+    SaveBackedUpOrnamentReference(projectionKey, accepted);
+    cachedAcceptedOrnamentReferences[projectionKey] = accepted;
+
+    if (!WriteAcceptedOrnamentReferencesBlock(assetPath, true))
     {
       Debug.LogError(
-          "ViewEdit Apply: applied-reference begin marker is missing; "
-          + "reference was not saved.");
+          "ViewEdit Apply: applied-reference marker block is missing; "
+          + "the value is backed up locally but could not be written to source.");
       return false;
     }
 
-    int end = source.IndexOf(
-        endLine,
-        begin + beginLine.Length,
-        System.StringComparison.Ordinal);
-    if (end <= begin)
-    {
-      Debug.LogError(
-          "ViewEdit Apply: applied-reference end marker is missing; "
-          + "reference was not saved.");
-      return false;
-    }
-
-    List<string> keys =
-        new List<string>(cachedAcceptedOrnamentReferences.Keys);
-    keys.Sort(System.StringComparer.OrdinalIgnoreCase);
-
-    System.Text.StringBuilder block = new System.Text.StringBuilder();
-    block.Append(beginLine);
-    block.Append('\n');
-    for (int i = 0; i < keys.Count; i++)
-    {
-      string key = keys[i];
-      AcceptedOrnamentReference value =
-          cachedAcceptedOrnamentReferences[key];
-      block.Append("  // REF ");
-      block.Append(key);
-      block.Append('|');
-      block.Append(value.x);
-      block.Append('|');
-      block.Append(value.y);
-      block.Append('|');
-      block.Append(value.mirror ? "true" : "false");
-      block.Append('\n');
-    }
-    block.Append(endLine);
-
-    int replaceEnd = end + endLine.Length;
-    source = source.Substring(0, begin)
-        + block.ToString()
-        + source.Substring(replaceEnd);
-
-    File.WriteAllText(assetPath, source);
-    AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
     Debug.Log(
-        "ViewEdit Apply: saved permanent generic ornament reference "
+        "ViewEdit Apply: saved generic ornament reference "
         + projectionKey + " = X " + x + ", Y " + y
-        + ", Mirror " + mirror + " into " + assetPath);
+        + ", Mirror " + mirror + " into " + assetPath
+        + " and backup storage.");
     return true;
   }
+
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorSideTexture;
   [System.NonSerialized]
