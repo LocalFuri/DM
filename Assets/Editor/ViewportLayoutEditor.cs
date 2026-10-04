@@ -1099,22 +1099,96 @@ public class ViewportLayoutEditor : EditorWindow
       new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
 
   // Applied ornament references are the accepted generic calibration defaults.
-  // Unlike the red per-pose overrides above, these survive pose changes and
-  // Unity editor restarts. The key identifies an ornament family + projection
-  // slot (for example OrnamentProjection:WoodRing:F1).
-  private const string AppliedOrnamentReferencePrefsPrefix =
-      "DM.ViewportLayoutEditor.AppliedOrnamentReference.";
-
-  private static string GetAppliedOrnamentReferencePrefsKey(
-      string projectionKey,
-      string suffix)
+  // Pressing Apply writes the accepted X/Y/Mirror directly into THIS source
+  // file between the markers below. This makes the calibration part of the
+  // project/Git state instead of hiding it in machine-local EditorPrefs.
+  private struct AcceptedOrnamentReference
   {
-    return AppliedOrnamentReferencePrefsPrefix
-        + (projectionKey ?? string.Empty)
-        + "." + suffix;
+    public int x;
+    public int y;
+    public bool mirror;
+
+    public AcceptedOrnamentReference(int xValue, int yValue, bool mirrorValue)
+    {
+      x = xValue;
+      y = yValue;
+      mirror = mirrorValue;
+    }
   }
 
-  private static void ApplyAcceptedOrnamentReference(
+  private const string AppliedOrnamentReferencesBeginMarker =
+      "// BEGIN APPLIED ORNAMENT REFERENCES";
+  private const string AppliedOrnamentReferencesEndMarker =
+      "// END APPLIED ORNAMENT REFERENCES";
+
+  // BEGIN APPLIED ORNAMENT REFERENCES
+  // END APPLIED ORNAMENT REFERENCES
+
+  private static readonly Dictionary<string, AcceptedOrnamentReference>
+      cachedAcceptedOrnamentReferences =
+          new Dictionary<string, AcceptedOrnamentReference>(
+              System.StringComparer.OrdinalIgnoreCase);
+  private static bool acceptedOrnamentReferencesLoaded;
+
+  private string GetThisEditorSourceAssetPath()
+  {
+    MonoScript script = MonoScript.FromScriptableObject(this);
+    if (script == null)
+      return null;
+    return AssetDatabase.GetAssetPath(script);
+  }
+
+  private void EnsureAcceptedOrnamentReferencesLoaded()
+  {
+    if (acceptedOrnamentReferencesLoaded)
+      return;
+
+    acceptedOrnamentReferencesLoaded = true;
+    cachedAcceptedOrnamentReferences.Clear();
+
+    string assetPath = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(assetPath) || !File.Exists(assetPath))
+      return;
+
+    string source = File.ReadAllText(assetPath);
+    int begin = source.IndexOf(
+        AppliedOrnamentReferencesBeginMarker,
+        System.StringComparison.Ordinal);
+    int end = source.IndexOf(
+        AppliedOrnamentReferencesEndMarker,
+        System.StringComparison.Ordinal);
+    if (begin < 0 || end <= begin)
+      return;
+
+    int contentStart = begin + AppliedOrnamentReferencesBeginMarker.Length;
+    string block = source.Substring(contentStart, end - contentStart);
+    string[] lines = block.Split(new[] { '\r', '\n' },
+        System.StringSplitOptions.RemoveEmptyEntries);
+
+    for (int i = 0; i < lines.Length; i++)
+    {
+      string line = lines[i].Trim();
+      if (!line.StartsWith("// REF ", System.StringComparison.Ordinal))
+        continue;
+
+      string payload = line.Substring(7);
+      string[] parts = payload.Split('|');
+      if (parts.Length != 4)
+        continue;
+
+      if (!int.TryParse(parts[1], out int x)
+          || !int.TryParse(parts[2], out int y)
+          || !bool.TryParse(parts[3], out bool mirror))
+      {
+        continue;
+      }
+
+      cachedAcceptedOrnamentReferences[parts[0]] =
+          new AcceptedOrnamentReference(x, y, mirror);
+    }
+  }
+
+  private void ApplyAcceptedOrnamentReference(
       string projectionKey,
       ref int x,
       ref int y,
@@ -1123,34 +1197,90 @@ public class ViewportLayoutEditor : EditorWindow
     if (string.IsNullOrEmpty(projectionKey))
       return;
 
-    string xKey = GetAppliedOrnamentReferencePrefsKey(projectionKey, "X");
-    string yKey = GetAppliedOrnamentReferencePrefsKey(projectionKey, "Y");
-    string mirrorKey =
-        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Mirror");
-
-    if (EditorPrefs.HasKey(xKey))
-      x = EditorPrefs.GetInt(xKey, x);
-    if (EditorPrefs.HasKey(yKey))
-      y = EditorPrefs.GetInt(yKey, y);
-    if (EditorPrefs.HasKey(mirrorKey))
-      mirror = EditorPrefs.GetBool(mirrorKey, mirror);
+    EnsureAcceptedOrnamentReferencesLoaded();
+    if (cachedAcceptedOrnamentReferences.TryGetValue(
+            projectionKey, out AcceptedOrnamentReference accepted))
+    {
+      x = accepted.x;
+      y = accepted.y;
+      mirror = accepted.mirror;
+    }
   }
 
-  private static void SaveAcceptedOrnamentReference(
+  private bool SaveAcceptedOrnamentReference(
       string projectionKey,
       int x,
       int y,
       bool mirror)
   {
     if (string.IsNullOrEmpty(projectionKey))
-      return;
+      return false;
 
-    EditorPrefs.SetInt(
-        GetAppliedOrnamentReferencePrefsKey(projectionKey, "X"), x);
-    EditorPrefs.SetInt(
-        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Y"), y);
-    EditorPrefs.SetBool(
-        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Mirror"), mirror);
+    string assetPath = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(assetPath) || !File.Exists(assetPath))
+    {
+      Debug.LogError(
+          "ViewEdit Apply: could not locate ViewportLayoutEditor.cs; "
+          + "reference was not saved.");
+      return false;
+    }
+
+    EnsureAcceptedOrnamentReferencesLoaded();
+    cachedAcceptedOrnamentReferences[projectionKey] =
+        new AcceptedOrnamentReference(x, y, mirror);
+
+    string source = File.ReadAllText(assetPath);
+    int begin = source.IndexOf(
+        AppliedOrnamentReferencesBeginMarker,
+        System.StringComparison.Ordinal);
+    int end = source.IndexOf(
+        AppliedOrnamentReferencesEndMarker,
+        System.StringComparison.Ordinal);
+    if (begin < 0 || end <= begin)
+    {
+      Debug.LogError(
+          "ViewEdit Apply: applied-reference markers are missing; "
+          + "reference was not saved.");
+      return false;
+    }
+
+    List<string> keys =
+        new List<string>(cachedAcceptedOrnamentReferences.Keys);
+    keys.Sort(System.StringComparer.OrdinalIgnoreCase);
+
+    System.Text.StringBuilder block = new System.Text.StringBuilder();
+    block.Append(AppliedOrnamentReferencesBeginMarker);
+    block.Append('\n');
+    for (int i = 0; i < keys.Count; i++)
+    {
+      string key = keys[i];
+      AcceptedOrnamentReference value =
+          cachedAcceptedOrnamentReferences[key];
+      block.Append("  // REF ");
+      block.Append(key);
+      block.Append('|');
+      block.Append(value.x);
+      block.Append('|');
+      block.Append(value.y);
+      block.Append('|');
+      block.Append(value.mirror ? "true" : "false");
+      block.Append('\n');
+    }
+    block.Append("  ");
+    block.Append(AppliedOrnamentReferencesEndMarker);
+
+    int replaceEnd = end + AppliedOrnamentReferencesEndMarker.Length;
+    source = source.Substring(0, begin)
+        + block.ToString()
+        + source.Substring(replaceEnd);
+
+    File.WriteAllText(assetPath, source);
+    AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
+    Debug.Log(
+        "ViewEdit Apply: saved permanent generic ornament reference "
+        + projectionKey + " = X " + x + ", Y " + y
+        + ", Mirror " + mirror + " into " + assetPath);
+    return true;
   }
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorSideTexture;
@@ -18329,14 +18459,16 @@ public class ViewportLayoutEditor : EditorWindow
     {
       // Apply is the acceptance action: the current X/Y/Mirror become the new
       // persistent generic reference for this ornament family + projection.
-      SaveAcceptedOrnamentReference(key, editX, editY, mirrorAfter);
-      previewFeaturePositionOverrides.Remove(key);
-      previewFeatureMirrorOverrides.Remove(key);
-      previewPositionChangedThisFrame = true;
-      previewMirrorChangedThisFrame = true;
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
+      if (SaveAcceptedOrnamentReference(key, editX, editY, mirrorAfter))
+      {
+        previewFeaturePositionOverrides.Remove(key);
+        previewFeatureMirrorOverrides.Remove(key);
+        previewPositionChangedThisFrame = true;
+        previewMirrorChangedThisFrame = true;
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
       return true;
     }
 
@@ -18994,14 +19126,16 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (applyClicked)
     {
-      SaveAcceptedOrnamentReference(key, editX, editY, mirrorAfter);
-      previewFeaturePositionOverrides.Remove(key);
-      previewFeatureMirrorOverrides.Remove(key);
-      previewPositionChangedThisFrame = true;
-      previewMirrorChangedThisFrame = true;
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
+      if (SaveAcceptedOrnamentReference(key, editX, editY, mirrorAfter))
+      {
+        previewFeaturePositionOverrides.Remove(key);
+        previewFeatureMirrorOverrides.Remove(key);
+        previewPositionChangedThisFrame = true;
+        previewMirrorChangedThisFrame = true;
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
       return true;
     }
 
@@ -19215,14 +19349,16 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (applyClicked)
     {
-      SaveAcceptedOrnamentReference(key, editX, editY, mirrorAfter);
-      previewFeaturePositionOverrides.Remove(key);
-      previewFeatureMirrorOverrides.Remove(key);
-      previewPositionChangedThisFrame = true;
-      previewMirrorChangedThisFrame = true;
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
+      if (SaveAcceptedOrnamentReference(key, editX, editY, mirrorAfter))
+      {
+        previewFeaturePositionOverrides.Remove(key);
+        previewFeatureMirrorOverrides.Remove(key);
+        previewPositionChangedThisFrame = true;
+        previewMirrorChangedThisFrame = true;
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
       return true;
     }
 
@@ -19334,14 +19470,16 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (applyClicked)
     {
-      SaveAcceptedOrnamentReference(key, editX, editY, mirrorAfter);
-      previewFeaturePositionOverrides.Remove(key);
-      previewFeatureMirrorOverrides.Remove(key);
-      previewPositionChangedThisFrame = true;
-      previewMirrorChangedThisFrame = true;
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
+      if (SaveAcceptedOrnamentReference(key, editX, editY, mirrorAfter))
+      {
+        previewFeaturePositionOverrides.Remove(key);
+        previewFeatureMirrorOverrides.Remove(key);
+        previewPositionChangedThisFrame = true;
+        previewMirrorChangedThisFrame = true;
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
       return true;
     }
 
