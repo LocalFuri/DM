@@ -936,7 +936,8 @@ public class ViewportLayoutEditor : EditorWindow
   private int previewX;
   private int previewY;
   private DungeonFacing previewFacing = DungeonFacing.South;
-  private bool zedChampionSheetVisible;
+  private bool championSheetVisible;
+  private string championSheetName;
   private int previewDungeonLevel = PreviewDungeonLevel;
   private string previewLevelJumpText = string.Empty;
   private DungeonMap previewMiniMap;
@@ -6074,7 +6075,7 @@ public class ViewportLayoutEditor : EditorWindow
         out Vector2 logical);
 
     if (hasLogical
-        && window.TryHandleZedChampionSheetClick(logical.x, logical.y))
+        && window.TryHandleChampionSheetClick(logical.x, logical.y))
     {
       s_lastGameViewClickTime = now;
       if (imguiEvent != null)
@@ -6279,11 +6280,11 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// At 10,5 South a click inside ZED's D1 mirror frame fills the 320x200
-  /// game view with the champion sheet. A later click, or a pose change,
-  /// returns to the dungeon view.
+  /// A click inside the D1 front mirror frame fills the 320x200 game view
+  /// with that champion's sheet. A later click, or a pose change, returns
+  /// to the dungeon view.
   /// </summary>
-  private bool TryHandleZedChampionSheetClick(float logicalX, float logicalY)
+  private bool TryHandleChampionSheetClick(float logicalX, float logicalY)
   {
     bool insideGame =
         logicalX >= 0f && logicalX < PreviewWidth
@@ -6291,32 +6292,31 @@ public class ViewportLayoutEditor : EditorWindow
     if (!insideGame)
       return false;
 
-    if (zedChampionSheetVisible)
+    if (championSheetVisible)
     {
-      zedChampionSheetVisible = false;
+      championSheetVisible = false;
+      championSheetName = null;
       PresentEditModePreviewToGameView();
       Repaint();
       return true;
     }
 
-    if (!IsZedChampionMirrorFrameClick(logicalX, logicalY))
+    if (!TryGetClickedFrontChampion(logicalX, logicalY, out string championName))
       return false;
 
-    zedChampionSheetVisible = true;
+    championSheetName = championName;
+    championSheetVisible = true;
     PresentEditModePreviewToGameView();
     Repaint();
     return true;
   }
 
-  private bool IsZedChampionMirrorFrameClick(float logicalX, float logicalY)
+  private bool TryGetClickedFrontChampion(
+      float logicalX,
+      float logicalY,
+      out string championName)
   {
-    if (previewX != 10
-        || previewY != 5
-        || previewFacing != DungeonFacing.South)
-    {
-      return false;
-    }
-
+    championName = null;
     int frameTop =
         PreviewHeight - ChampionMirrorD1FrontY - ChampionMirrorD1FrontHeight;
     if (logicalX < ChampionMirrorD1FrontX
@@ -6327,38 +6327,7 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    if (previewChampionMirrors == null)
-      return false;
-
-    for (int i = 0; i < previewChampionMirrors.Length; i++)
-    {
-      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror == null
-          || !string.Equals(
-              mirror.champion,
-              "ZED",
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        continue;
-      }
-
-      if (!TryGetChampionMirrorViewProjection(
-              mirror,
-              out int renderX,
-              out int renderY,
-              out _))
-      {
-        continue;
-      }
-
-      if (renderX == ChampionMirrorD1FrontX
-          && renderY == ChampionMirrorD1FrontY)
-      {
-        return true;
-      }
-    }
-
-    return false;
+    return TryGetCurrentD1FrontChampion(out championName);
   }
 
   private void BlitZedChampionSheetIntoPreview(Color32[] pixels)
@@ -6368,29 +6337,30 @@ public class ViewportLayoutEditor : EditorWindow
         || pixels == null
         || pixels.Length != PreviewWidth * PreviewHeight)
     {
-      zedChampionSheetVisible = false;
+      championSheetVisible = false;
       return;
     }
 
     Color32[] source = sheet.GetPixels32();
     if (source == null || source.Length != pixels.Length)
     {
-      zedChampionSheetVisible = false;
+      championSheetVisible = false;
       return;
     }
 
     System.Array.Copy(source, pixels, pixels.Length);
-    PaintZedChampionSheetStats(pixels);
+    PaintChampionSheetStats(pixels);
   }
 
-  // The 320x200 sheet image is the layout. Health, stamina, mana, and load
-  // are taken from the hero record and drawn over that layout.
-  // Stamina is stored in raw units (ZED 600) and shown divided by 10.
-  // Load is the sum of carried-item weights. Max load is
-  // (8 * Strength + 100) tenths of a kilogram.
-  private void PaintZedChampionSheetStats(Color32[] pixels)
+  // The 320x200 image is the shared sheet layout. The clicked champion's
+  // name, health, stamina, mana, and load are drawn over it.
+  // Stamina is stored in raw units and shown divided by 10.
+  // Load is the sum of that champion's carried-item weights.
+  // Max load is (8 * Strength + 100) tenths of a kilogram.
+  private void PaintChampionSheetStats(Color32[] pixels)
   {
-    HeroDefinition hero = HeroDatabase.GetByName("ZED");
+    PaintChampionSheetName(pixels);
+    HeroDefinition hero = HeroDatabase.GetByName(championSheetName);
     if (hero == null || hero.Resources == null || hero.Attributes == null)
       return;
 
@@ -6403,8 +6373,10 @@ public class ViewportLayoutEditor : EditorWindow
       for (int i = 0; i < hero.StartingItems.Count; i++)
       {
         HeroStartingItem item = hero.StartingItems[i];
-        if (item != null)
-          loadTenths += item.WeightTenths;
+        if (item == null)
+          continue;
+        int count = item.ChargeCount > 0 ? item.ChargeCount : 1;
+        loadTenths += item.WeightTenths * count;
       }
     }
 
@@ -6415,6 +6387,12 @@ public class ViewportLayoutEditor : EditorWindow
     string loadText =
         (loadTenths / 10) + "." + (loadTenths % 10)
         + "/ " + (maxLoadTenths / 10);
+    if (loadText.Length * ChampionSheetGlyphAdvance > 47)
+    {
+      loadText =
+          (loadTenths / 10) + "." + (loadTenths % 10)
+          + "/" + (maxLoadTenths / 10);
+    }
 
     if (!TryCaptureChampionSheetGlyphs(
             pixels,
@@ -6432,10 +6410,13 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     Color32 panel = new Color32(73, 73, 73, 255);
-    FillChampionSheetRect(pixels, 61, 145, 35, 5, panel);
-    FillChampionSheetRect(pixels, 61, 153, 35, 5, panel);
+    FillChampionSheetRect(pixels, 61, 145, 54, 5, panel);
+    FillChampionSheetRect(pixels, 61, 153, 54, 5, panel);
     FillChampionSheetRect(pixels, 61, 161, 35, 5, panel);
-    FillChampionSheetRect(pixels, 160, 161, 41, 5, panel);
+    int loadWidth = loadText.Length * ChampionSheetGlyphAdvance;
+    if (loadWidth > 47)
+      loadWidth = 47;
+    FillChampionSheetRect(pixels, 160, 161, loadWidth, 5, panel);
     DrawChampionSheetText(pixels, glyphs, 61, 145, healthText);
     DrawChampionSheetText(pixels, glyphs, 61, 153, staminaText);
     DrawChampionSheetText(pixels, glyphs, 61, 161, manaText);
@@ -6461,7 +6442,58 @@ public class ViewportLayoutEditor : EditorWindow
     CaptureChampionSheetGlyph(pixels, glyphs, '8', 172, 161);
     CaptureChampionSheetGlyph(pixels, glyphs, '4', 190, 161);
     CaptureChampionSheetGlyph(pixels, glyphs, '2', 196, 161);
-    return glyphs.Count == 9;
+    AddChampionSheetPatternGlyph(
+        glyphs, '3', ".###." + "....#" + "..##." + "....#" + ".###.");
+    AddChampionSheetPatternGlyph(
+        glyphs, '5', "#####" + "#...." + "####." + "....#" + ".###.");
+    AddChampionSheetPatternGlyph(
+        glyphs, '7', "#####" + "...#." + "..#.." + ".#..." + "#....");
+    return glyphs.ContainsKey('0') && glyphs.ContainsKey('6');
+  }
+
+  private static void AddChampionSheetPatternGlyph(
+      Dictionary<char, Color32[]> glyphs,
+      char character,
+      string pattern)
+  {
+    Color32 ink = new Color32(182, 182, 182, 255);
+    Color32 panel = new Color32(73, 73, 73, 255);
+    Color32[] glyph = new Color32[
+        ChampionSheetGlyphWidth * ChampionSheetGlyphHeight];
+    for (int i = 0; i < glyph.Length; i++)
+      glyph[i] = i < pattern.Length && pattern[i] == '#' ? ink : panel;
+    glyphs[character] = glyph;
+  }
+
+  private void PaintChampionSheetName(Color32[] pixels)
+  {
+    HeroDefinition hero = HeroDatabase.GetByName(championSheetName);
+    string label = championSheetName ?? string.Empty;
+    if (hero != null)
+    {
+      label = hero.Name ?? label;
+      if (!string.IsNullOrEmpty(hero.Title))
+        label = label + " " + hero.Title;
+    }
+
+    Color32 panel = new Color32(73, 73, 73, 255);
+    FillChampionSheetRect(pixels, 0, 33, 160, 12, panel);
+    DungeonBitmapFont bitmapFont = FindEditModeBitmapFont();
+    if (bitmapFont == null || string.IsNullOrEmpty(label))
+      return;
+
+    bitmapFont.DrawText(
+        pixels,
+        PreviewWidth,
+        PreviewHeight,
+        label,
+        4,
+        PreviewHeight - 36 - DungeonBitmapFont.DebugGlyphHeight,
+        new Color32(255, 255, 0, 255),
+        0,
+        0,
+        160,
+        PreviewHeight);
   }
 
   private void CaptureChampionSheetGlyph(
@@ -10061,7 +10093,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
-    zedChampionSheetVisible = false;
+    championSheetVisible = false;
 
     // A pose change always returns ViewEdit to the geometry-filtered list.
     // "Show all walls" is a temporary inspection mode for the pose where the
@@ -10127,7 +10159,7 @@ public class ViewportLayoutEditor : EditorWindow
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
-    zedChampionSheetVisible = false;
+    championSheetVisible = false;
 
     // A pose change always returns ViewEdit to the geometry-filtered list.
     // "Show all walls" is a temporary inspection mode for the pose where the
@@ -14208,19 +14240,8 @@ public class ViewportLayoutEditor : EditorWindow
       );
     }
 
-    if (zedChampionSheetVisible)
-    {
-      if (previewX == 10
-          && previewY == 5
-          && previewFacing == DungeonFacing.South)
-      {
-        BlitZedChampionSheetIntoPreview(pixels);
-      }
-      else
-      {
-        zedChampionSheetVisible = false;
-      }
-    }
+    if (championSheetVisible)
+      BlitZedChampionSheetIntoPreview(pixels);
 
     editModePreviewTexture.SetPixels32(pixels);
     editModePreviewTexture.Apply(false);

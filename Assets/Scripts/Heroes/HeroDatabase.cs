@@ -90,6 +90,29 @@ namespace DM.Heroes
                         X = 7,
                         Y = 9,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Bezerker Helm",
+                            WeightTenths = 11,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Barbarian Hide",
+                            WeightTenths = 3,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Sandals",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Club",
+                            WeightTenths = 36,
+                        },
                     }
                 },
 
@@ -133,6 +156,30 @@ namespace DM.Heroes
                         X = 7,
                         Y = 13,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Silk Shirt",
+                            WeightTenths = 2,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Tabard",
+                            WeightTenths = 4,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Sandals",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Throwing Star",
+                            WeightTenths = 1,
+                            ChargeCount = 3
+                        },
                     }
                 },
 
@@ -176,6 +223,30 @@ namespace DM.Heroes
                         X = 7,
                         Y = 16,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Halter",
+                            WeightTenths = 2,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Barbarian Hide",
+                            WeightTenths = 3,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Hide Shield",
+                            WeightTenths = 10,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Dagger",
+                            WeightTenths = 5,
+                            ChargeCount = 2
+                        },
                     }
                 },
 
@@ -219,6 +290,24 @@ namespace DM.Heroes
                         X = 8,
                         Y = 15,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Jerkin",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Pants",
+                            WeightTenths = 8,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Boots",
+                            WeightTenths = 16,
+                        },
                     }
                 },
 
@@ -262,6 +351,29 @@ namespace DM.Heroes
                         X = 9,
                         Y = 7,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Robe (Body)",
+                            WeightTenths = 4,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Robe (Legs)",
+                            WeightTenths = 4,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Sandals",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Magical Box (Blue)",
+                            WeightTenths = 6,
+                        },
                     }
                 },
 
@@ -305,6 +417,24 @@ namespace DM.Heroes
                         X = 9,
                         Y = 9,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Elven Doublet",
+                            WeightTenths = 3,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Tabard",
+                            WeightTenths = 4,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Apple",
+                            WeightTenths = 4,
+                        },
                     }
                 },
 
@@ -348,6 +478,29 @@ namespace DM.Heroes
                         X = 9,
                         Y = 13,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Kirtle",
+                            WeightTenths = 4,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Gunna",
+                            WeightTenths = 5,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Sandals",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Wand",
+                            WeightTenths = 1,
+                        },
                     }
                 },
 
@@ -391,6 +544,24 @@ namespace DM.Heroes
                         X = 10,
                         Y = 5,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Ghi",
+                            WeightTenths = 5,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Ghi Trousers",
+                            WeightTenths = 5,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Samurai Sword",
+                            WeightTenths = 36,
+                        },
                     }
                 },
 
@@ -502,6 +673,30 @@ namespace DM.Heroes
                         X = 11,
                         Y = 10,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Jerkin",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Blue Pants",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Boots",
+                            WeightTenths = 16,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Poison Dart",
+                            WeightTenths = 3,
+                            ChargeCount = 2
+                        },
                     }
                 },
 
@@ -545,6 +740,29 @@ namespace DM.Heroes
                         X = 11,
                         Y = 15,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Tunic",
+                            WeightTenths = 5,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Pants",
+                            WeightTenths = 8,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Suede Boots",
+                            WeightTenths = 14,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Axe",
+                            WeightTenths = 43,
+                        },
                     }
                 },
 
@@ -588,6 +806,29 @@ namespace DM.Heroes
                         X = 12,
                         Y = 9,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Elven Doublet",
+                            WeightTenths = 3,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Elven Huke",
+                            WeightTenths = 3,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Elven Boots",
+                            WeightTenths = 4,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Bow",
+                            WeightTenths = 10,
+                        },
                     }
                 },
 
@@ -631,6 +872,19 @@ namespace DM.Heroes
                         X = 12,
                         Y = 13,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Jerkin",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Empty Flask",
+                            WeightTenths = 1,
+                        },
                     }
                 },
 
@@ -674,6 +928,29 @@ namespace DM.Heroes
                         X = 13,
                         Y = 12,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Silk Shirt",
+                            WeightTenths = 2,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Pants",
+                            WeightTenths = 8,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Boots",
+                            WeightTenths = 16,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Rope",
+                            WeightTenths = 10,
+                        },
                     }
                 },
 
@@ -717,6 +994,39 @@ namespace DM.Heroes
                         X = 13,
                         Y = 14,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Robe (Body)",
+                            WeightTenths = 4,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Robe (Legs)",
+                            WeightTenths = 4,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Sandals",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Bread",
+                            WeightTenths = 3,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Cheese",
+                            WeightTenths = 8,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Apple",
+                            WeightTenths = 4,
+                        },
                     }
                 },
 
@@ -760,6 +1070,29 @@ namespace DM.Heroes
                         X = 14,
                         Y = 3,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Silk Shirt",
+                            WeightTenths = 2,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Gunna",
+                            WeightTenths = 5,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Sandals",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Moonstone",
+                            WeightTenths = 2,
+                        },
                     }
                 },
 
@@ -803,6 +1136,29 @@ namespace DM.Heroes
                         X = 14,
                         Y = 6,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Tunic",
+                            WeightTenths = 5,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Pants",
+                            WeightTenths = 8,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Boots",
+                            WeightTenths = 16,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Rabbit's Foot",
+                            WeightTenths = 1,
+                        },
                     }
                 },
 
@@ -846,6 +1202,34 @@ namespace DM.Heroes
                         X = 14,
                         Y = 12,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Halter",
+                            WeightTenths = 2,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Gunna",
+                            WeightTenths = 5,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Sandals",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Choker",
+                            WeightTenths = 1,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Sword",
+                            WeightTenths = 32,
+                        },
                     }
                 },
 
@@ -889,6 +1273,30 @@ namespace DM.Heroes
                         X = 15,
                         Y = 4,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Jerkin",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Pants",
+                            WeightTenths = 8,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Suede Boots",
+                            WeightTenths = 14,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Arrow",
+                            WeightTenths = 2,
+                            ChargeCount = 2
+                        },
                     }
                 },
 
@@ -932,6 +1340,29 @@ namespace DM.Heroes
                         X = 16,
                         Y = 8,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Jerkin",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Leather Pants",
+                            WeightTenths = 8,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Suede Boots",
+                            WeightTenths = 14,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Sling",
+                            WeightTenths = 19,
+                        },
                     }
                 },
 
@@ -1018,6 +1449,14 @@ namespace DM.Heroes
                         X = 16,
                         Y = 17,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Cloak of Night",
+                            WeightTenths = 4,
+                        },
                     }
                 },
 
@@ -1061,6 +1500,29 @@ namespace DM.Heroes
                         X = 17,
                         Y = 9,
                         WallDirection = HeroWallDirection.North
+                    },
+                    StartingItems = new List<HeroStartingItem>
+                    {
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Tunic",
+                            WeightTenths = 5,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Blue Pants",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Sandals",
+                            WeightTenths = 6,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Staff",
+                            WeightTenths = 26,
+                        },
                     }
                 },
 
