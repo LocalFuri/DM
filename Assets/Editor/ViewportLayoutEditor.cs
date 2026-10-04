@@ -193,10 +193,6 @@ public class ViewportLayoutEditor : EditorWindow
 
   // F2 and F3 are scaled from the 96x56 F1 graphic. These are the
   // measured destination slots, not separate captured pictures.
-  private const int ViAltarD2GeneratedFrontX = 80;
-  private const int ViAltarD2GeneratedFrontY = 92;
-  private const int ViAltarD3GeneratedFrontX = 91;
-  private const int ViAltarD3GeneratedFrontY = 105;
 
   // Engine-slot test sizes. F2 is the original 64x37 center slot.
   // F3 uses the measured 42x24 slot that matches the original crop.
@@ -1524,14 +1520,11 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedViAltarS2Texture;
   private Texture2D cachedViAltarS3Texture;
   [System.NonSerialized]
-  private Texture2D cachedViAltarGeneratedF2TestTexture;
-  private Texture2D cachedViAltarGeneratedF3TestTexture;
   private Texture2D cachedViAltarEngineF2TestTexture;
   private Texture2D cachedViAltarEngineF3TestTexture;
 
   // Separate ViewEdit test. Builds F2/F3 from the 96x56 extract at the
   // engine slot sizes instead of the measured 63x37 and 42x24 slots.
-  private bool previewUseEngineViAltarSlots;
   private int previewDungeonLightStage = 1;
   [System.NonSerialized]
   private Texture2D cachedHookFrontTexture;
@@ -2338,16 +2331,6 @@ public class ViewportLayoutEditor : EditorWindow
       cachedRight2SReadableCopy = null;
     }
 
-    if (cachedViAltarGeneratedF2TestTexture != null)
-    {
-      DestroyImmediate(cachedViAltarGeneratedF2TestTexture);
-      cachedViAltarGeneratedF2TestTexture = null;
-    }
-    if (cachedViAltarGeneratedF3TestTexture != null)
-    {
-      DestroyImmediate(cachedViAltarGeneratedF3TestTexture);
-      cachedViAltarGeneratedF3TestTexture = null;
-    }
     if (cachedViAltarEngineF2TestTexture != null)
     {
       DestroyImmediate(cachedViAltarEngineF2TestTexture);
@@ -6946,18 +6929,6 @@ public class ViewportLayoutEditor : EditorWindow
     {
       showOnlyWallsNeededForCurrentPose = false;
       showWallsActivFilter = false;
-      Repaint();
-    }
-
-    GUILayout.Space(8f);
-    string engineAltarCaption = previewUseEngineViAltarSlots
-        ? "New Algorithm On"
-        : "Old Algorithm On";
-    if (GUILayout.Button(engineAltarCaption, GUILayout.Width(140f)))
-    {
-      previewUseEngineViAltarSlots = !previewUseEngineViAltarSlots;
-      RefreshEditModePreview();
-      RepaintGameViews();
       Repaint();
     }
 
@@ -18427,14 +18398,14 @@ public class ViewportLayoutEditor : EditorWindow
         if (frontDepth == 1) { renderX = ViAltarD1FrontX; renderY = ViAltarD1FrontY; return true; }
         if (frontDepth == 2)
         {
-          renderX = previewUseEngineViAltarSlots ? ViAltarEngineF2FrontX : ViAltarWallOrnamentSet.f2.x;
-          renderY = previewUseEngineViAltarSlots ? ViAltarEngineF2FrontY : ViAltarWallOrnamentSet.f2.y;
+          renderX = ViAltarEngineF2FrontX;
+          renderY = ViAltarEngineF2FrontY;
           return true;
         }
         if (frontDepth == 3)
         {
-          renderX = previewUseEngineViAltarSlots ? ViAltarEngineF3FrontX : ViAltarWallOrnamentSet.f3.x;
-          renderY = previewUseEngineViAltarSlots ? ViAltarEngineF3FrontY : ViAltarWallOrnamentSet.f3.y;
+          renderX = ViAltarEngineF3FrontX;
+          renderY = ViAltarEngineF3FrontY;
           return true;
         }
       }
@@ -21270,9 +21241,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    Texture2D altar = previewUseEngineViAltarSlots
-        ? GetViAltarEngineF2TestTexture()
-        : GetViAltarGeneratedF2TestTexture();
+    Texture2D altar = GetViAltarEngineF2TestTexture();
     if (altar == null || !altar.isReadable)
       return;
 
@@ -21324,12 +21293,8 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      int altarX = previewUseEngineViAltarSlots
-          ? ViAltarEngineF2FrontX
-          : ViAltarWallOrnamentSet.f2.x;
-      int altarY = previewUseEngineViAltarSlots
-          ? ViAltarEngineF2FrontY
-          : ViAltarWallOrnamentSet.f2.y;
+      int altarX = ViAltarEngineF2FrontX;
+      int altarY = ViAltarEngineF2FrontY;
       BlitOrnamentPieceIntoPreview(
           pixels, altar, ornament, altarX, altarY, false);
       return;
@@ -21346,9 +21311,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    Texture2D altar = previewUseEngineViAltarSlots
-        ? GetViAltarEngineF3TestTexture()
-        : GetViAltarGeneratedF3TestTexture();
+    Texture2D altar = GetViAltarEngineF3TestTexture();
     if (altar == null || !altar.isReadable)
       return;
 
@@ -21405,12 +21368,8 @@ public class ViewportLayoutEditor : EditorWindow
         continue;
       }
 
-      int altarX = previewUseEngineViAltarSlots
-          ? ViAltarEngineF3FrontX
-          : ViAltarWallOrnamentSet.f3.x;
-      int altarY = previewUseEngineViAltarSlots
-          ? ViAltarEngineF3FrontY
-          : ViAltarWallOrnamentSet.f3.y;
+      int altarX = ViAltarEngineF3FrontX;
+      int altarY = ViAltarEngineF3FrontY;
       BlitOrnamentPieceIntoPreview(
           pixels, altar, ornament, altarX, altarY, false);
       return;
@@ -21577,18 +21536,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  // First generic coordinate-set profile: VI Altar.
-  // These are the currently visually verified/tuned original-DM targets.
-  // Adding another wall ornament should mean defining another coordinate set,
-  // not adding another scaling algorithm.
-  private static readonly WallOrnamentCoordinateSet ViAltarWallOrnamentSet =
-      new WallOrnamentCoordinateSet(
-          new WallOrnamentDepthSlot(
-              96, 56, ViAltarD1FrontX, ViAltarD1FrontY),
-          new WallOrnamentDepthSlot(
-              63, 37, ViAltarD2GeneratedFrontX, ViAltarD2GeneratedFrontY),
-          new WallOrnamentDepthSlot(
-              42, 24, ViAltarD3GeneratedFrontX, ViAltarD3GeneratedFrontY));
+
 
 
   // Generic wall-ornament coordinate profile: Champion Mirror front.
@@ -21684,50 +21632,6 @@ public class ViewportLayoutEditor : EditorWindow
         dest[targetY * PreviewWidth + targetX] = sourceColour;
       }
     }
-  }
-
-  /// <summary>
-  /// VI Altar F2 scaled from the 96x56 F1 altar with the medium colour map.
-  /// </summary>
-  private Texture2D GetViAltarGeneratedF2TestTexture()
-  {
-    if (cachedViAltarGeneratedF2TestTexture != null)
-      return cachedViAltarGeneratedF2TestTexture;
-
-    Texture2D source = GetViAltarFrontTexture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    cachedViAltarGeneratedF2TestTexture =
-        GenerateWallOrnamentForDepth(
-            source,
-            ViAltarWallOrnamentSet.f2,
-            WallOrnamentMediumColorMap,
-            "VI Altar F2 Generated from F1");
-    return cachedViAltarGeneratedF2TestTexture;
-  }
-
-  /// <summary>
-  /// VI Altar F3 original-DM comparison test.
-  /// Generate F3 directly from the full-size F1 altar and compare a
-  /// 42x24 result against the original screenshot.
-  /// </summary>
-  private Texture2D GetViAltarGeneratedF3TestTexture()
-  {
-    if (cachedViAltarGeneratedF3TestTexture != null)
-      return cachedViAltarGeneratedF3TestTexture;
-
-    Texture2D source = GetViAltarFrontTexture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    cachedViAltarGeneratedF3TestTexture =
-        GenerateWallOrnamentForDepth(
-            source,
-            ViAltarWallOrnamentSet.f3,
-            WallOrnamentFarColorMap,
-            "VI Altar F3 Generated from F1 42x24");
-    return cachedViAltarGeneratedF3TestTexture;
   }
 
   /// <summary>
