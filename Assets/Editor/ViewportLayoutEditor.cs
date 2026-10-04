@@ -20132,15 +20132,14 @@ public class ViewportLayoutEditor : EditorWindow
         && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 3, 2);
   }
 
-  // Original 4,4 South does not show the (5,5) West slime. That face is
-  // beside the first square ahead, but it is not visible from this pose.
+  // Original 4,3 South and 4,4 South do not show the (5,5) West slime.
   private bool IsSlimeHiddenInCurrentPose(WallOrnamentPlacement ornament)
   {
     return ornament != null
         && IsSlimeOrnament(ornament)
         && previewFacing == DungeonFacing.South
         && previewX == 4
-        && previewY == 4
+        && (previewY == 3 || previewY == 4)
         && ornament.x == 5
         && ornament.y == 5
         && string.Equals(
@@ -23031,7 +23030,7 @@ public class ViewportLayoutEditor : EditorWindow
           && !IsPreviewFeatureEnabled(
               MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
         continue;
-      if (!IsSlimeOrnament(ornament))
+      if (!IsSlimeOrnament(ornament) || IsSlimeHiddenInCurrentPose(ornament))
         continue;
 
       bool matchesLeft;
