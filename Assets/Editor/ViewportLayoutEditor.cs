@@ -13837,6 +13837,7 @@ public class ViewportLayoutEditor : EditorWindow
     BlitViAltarS1IntoPreview(pixels);
   }
 
+
   private static void ApplyDungeonViewportLightPalette(
       Color32[] pixels,
       int stage)
@@ -21881,6 +21882,39 @@ public class ViewportLayoutEditor : EditorWindow
   /// matches a known stage-1 palette colour. This is shared by generated wall
   /// ornaments; nearest-colour matching is only a fallback for unexpected RGBs.
   /// </summary>
+  private static void TintExactBlackPixelsInTexture(
+      Texture2D texture,
+      Color32 replacement)
+  {
+    if (texture == null || !texture.isReadable)
+      return;
+
+    Color32[] pixels = texture.GetPixels32();
+    bool changed = false;
+    for (int i = 0; i < pixels.Length; i++)
+    {
+      Color32 c = pixels[i];
+      if (c.a == 0)
+        continue;
+
+      if (c.r == 0 && c.g == 0 && c.b == 0)
+      {
+        pixels[i] = new Color32(
+            replacement.r,
+            replacement.g,
+            replacement.b,
+            c.a);
+        changed = true;
+      }
+    }
+
+    if (changed)
+    {
+      texture.SetPixels32(pixels);
+      texture.Apply(false);
+    }
+  }
+
   private static int FindExactDmPaletteIndexOrNearest(
       Color32 source,
       Color32[] palette)
@@ -21987,6 +22021,13 @@ public class ViewportLayoutEditor : EditorWindow
         height,
         WallOrnamentFarColorMap,
         "Slime F3 Generated from F1");
+
+    // User-approved special case: only the black pixels inside the generated
+    // Slime F3 sprite should shift from pure black to a very dark green.
+    TintExactBlackPixelsInTexture(
+        cachedSlimeGeneratedF3FrontTexture,
+        new Color32(0, 24, 0, 255));
+
     return cachedSlimeGeneratedF3FrontTexture;
   }
 
