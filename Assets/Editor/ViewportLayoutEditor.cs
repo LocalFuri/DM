@@ -18596,6 +18596,21 @@ public class ViewportLayoutEditor : EditorWindow
     return true;
   }
 
+  private static string ShortDirectionLabel(string direction)
+  {
+    if (string.IsNullOrEmpty(direction))
+      return direction;
+
+    switch (direction.Trim().ToLowerInvariant())
+    {
+      case "north": return "N";
+      case "south": return "S";
+      case "east":  return "E";
+      case "west":  return "W";
+      default:      return direction;
+    }
+  }
+
   private bool DrawWallOrnamentCalibrationRow(
       WallOrnamentPlacement ornament,
       string displayName)
@@ -18664,18 +18679,6 @@ public class ViewportLayoutEditor : EditorWindow
     bool yChanged = DrawIntStepperInline(
         "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
 
-    const string MirrorLabel = "Mirror";
-    const float ToggleBoxWidth = 18f;
-    float mirrorLabelWidth =
-        EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
-    EditorGUIUtility.labelWidth = mirrorLabelWidth;
-    bool mirrorAfter = DrawMouseOnlyToggle(
-        MirrorLabel,
-        mirror,
-        true,
-        GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
-        GUILayout.ExpandWidth(false));
-
     GUILayout.Space(6f);
     bool applyClicked = false;
     if (hasGenericProjection)
@@ -18694,7 +18697,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       // Apply is the acceptance action: the current X/Y/Mirror become the new
       // persistent generic reference for this ornament family + projection.
-      if (SaveAcceptedOrnamentReference(key, editX, editY, mirrorAfter))
+      if (SaveAcceptedOrnamentReference(key, editX, editY, mirror))
       {
         previewFeaturePositionOverrides.Remove(key);
         previewFeatureMirrorOverrides.Remove(key);
@@ -18718,16 +18721,6 @@ public class ViewportLayoutEditor : EditorWindow
       changed = true;
     }
 
-    if (mirrorAfter != mirror)
-    {
-      if (mirrorAfter == defaultMirror)
-        previewFeatureMirrorOverrides.Remove(key);
-      else
-        previewFeatureMirrorOverrides[key] = mirrorAfter;
-      previewMirrorChangedThisFrame = true;
-      changed = true;
-    }
-
     if (changed)
     {
       RefreshEditModePreview();
@@ -18744,7 +18737,7 @@ public class ViewportLayoutEditor : EditorWindow
             ornament, out string projectionName, out _))
       return false;
 
-    string name = projectionName + " (" + FacingName(previewFacing) + ")";
+    string name = projectionName + " (" + ShortDirectionLabel(FacingName(previewFacing)) + ")";
     return DrawWallOrnamentCalibrationRow(ornament, name);
   }
 
@@ -19317,7 +19310,7 @@ public class ViewportLayoutEditor : EditorWindow
     featureStyle.hover.textColor = labelColor;
     featureStyle.focused.textColor = labelColor;
     string viAltarLabel =
-        "ViAltar S3 " + anchorX + "," + anchorY + " " + viewFacing;
+        "ViAltar S3 " + anchorX + "," + anchorY + " " + ShortDirectionLabel(viewFacing);
     float featureLabelWidth =
         featureStyle.CalcSize(new GUIContent(viAltarLabel)).x;
     GUILayout.Label(
@@ -19337,8 +19330,8 @@ public class ViewportLayoutEditor : EditorWindow
     bool yChanged = DrawIntStepperInline(
         "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
 
+    GUILayout.Space(6f);
     const string MirrorLabel = "Mirror";
-    const float ToggleBoxWidth = 18f;
     float mirrorLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
     EditorGUIUtility.labelWidth = mirrorLabelWidth;
@@ -19346,7 +19339,7 @@ public class ViewportLayoutEditor : EditorWindow
         MirrorLabel,
         mirror,
         true,
-        GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
+        GUILayout.Width(mirrorLabelWidth + 18f),
         GUILayout.ExpandWidth(false));
 
     GUILayout.Space(6f);
@@ -19540,7 +19533,7 @@ public class ViewportLayoutEditor : EditorWindow
     featureStyle.hover.textColor = labelColor;
     featureStyle.focused.textColor = labelColor;
     string viAltarLabel =
-        "ViAltar S2 " + anchorX + "," + anchorY + " " + viewFacing;
+        "ViAltar S2 " + anchorX + "," + anchorY + " " + ShortDirectionLabel(viewFacing);
     float featureLabelWidth =
         featureStyle.CalcSize(new GUIContent(viAltarLabel)).x;
     GUILayout.Label(
@@ -19560,8 +19553,8 @@ public class ViewportLayoutEditor : EditorWindow
     bool yChanged = DrawIntStepperInline(
         "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
 
+    GUILayout.Space(6f);
     const string MirrorLabel = "Mirror";
-    const float ToggleBoxWidth = 18f;
     float mirrorLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
     EditorGUIUtility.labelWidth = mirrorLabelWidth;
@@ -19569,7 +19562,7 @@ public class ViewportLayoutEditor : EditorWindow
         MirrorLabel,
         mirror,
         true,
-        GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
+        GUILayout.Width(mirrorLabelWidth + 18f),
         GUILayout.ExpandWidth(false));
 
     GUILayout.Space(6f);
@@ -19661,7 +19654,7 @@ public class ViewportLayoutEditor : EditorWindow
     featureStyle.hover.textColor = labelColor;
     featureStyle.focused.textColor = labelColor;
     string viAltarLabel =
-        "ViAltar S1 " + anchorX + "," + anchorY + " " + viewFacing;
+        "ViAltar S1 " + anchorX + "," + anchorY + " " + ShortDirectionLabel(viewFacing);
     float featureLabelWidth =
         featureStyle.CalcSize(new GUIContent(viAltarLabel)).x;
     GUILayout.Label(
@@ -19681,8 +19674,8 @@ public class ViewportLayoutEditor : EditorWindow
     bool yChanged = DrawIntStepperInline(
         "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
 
+    GUILayout.Space(6f);
     const string MirrorLabel = "Mirror";
-    const float ToggleBoxWidth = 18f;
     float mirrorLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
     EditorGUIUtility.labelWidth = mirrorLabelWidth;
@@ -19690,7 +19683,7 @@ public class ViewportLayoutEditor : EditorWindow
         MirrorLabel,
         mirror,
         true,
-        GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
+        GUILayout.Width(mirrorLabelWidth + 18f),
         GUILayout.ExpandWidth(false));
 
     GUILayout.Space(6f);
@@ -20307,7 +20300,7 @@ public class ViewportLayoutEditor : EditorWindow
             ? "Ornament"
             : ornament.type;
         if (!string.IsNullOrEmpty(displayWall))
-          name += " (" + displayWall + ")";
+          name += " (" + ShortDirectionLabel(displayWall) + ")";
 
         // ViewEdit labels use the current-view depth classification.
         // F1 is the wall one step ahead; F2 is two steps ahead.
