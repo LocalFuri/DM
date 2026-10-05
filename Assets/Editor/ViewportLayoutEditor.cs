@@ -6395,7 +6395,36 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    // 4) Draw the selected hero full name at visible screen X=4, Y=35.
+    // 4) Draw CharacterSheet_224x136 at screen X=0, Y=33.
+    // STRICT: no fallback asset and no silent skip. If the exact expected asset
+    // cannot be loaded as 224x136, show an explicit ERROR and stop composing
+    // the Character Sheet UI.
+    Texture2D sheet = GetCharacterSheetTexture();
+    if (sheet == null)
+    {
+      PaintCharacterSheetError(
+          pixels,
+          "ERROR CHARACTER SHEET");
+      return;
+    }
+
+    const int screenLeft = 0;
+    const int screenTop = 33;
+    Color32[] source = sheet.GetPixels32();
+    for (int sourceY = 0; sourceY < DungeonViewportHeight; sourceY++)
+    {
+      int screenY = screenTop + (DungeonViewportHeight - 1 - sourceY);
+      if (screenY < 0 || screenY >= PreviewHeight)
+        continue;
+
+      int destinationY = PreviewHeight - 1 - screenY;
+      int sourceRow = sourceY * DungeonViewportWidth;
+      int destinationRow = destinationY * PreviewWidth + screenLeft;
+      System.Array.Copy(
+          source, sourceRow, pixels, destinationRow, DungeonViewportWidth);
+    }
+
+    // 5) Draw the selected hero full name at visible screen X=4, Y=35.
     PaintChampionSheetName(pixels);
   }
 
@@ -6563,6 +6592,27 @@ public class ViewportLayoutEditor : EditorWindow
         label,
         visibleNameX - glyphLeftBearing,
         PreviewHeight - visibleNameTop - DungeonBitmapFont.DebugGlyphHeight,
+        new Color32(255, 255, 0, 255),
+        0,
+        0,
+        PreviewWidth,
+        PreviewHeight,
+        6);
+  }
+
+  private void PaintCharacterSheetError(Color32[] pixels, string message)
+  {
+    DungeonBitmapFont bitmapFont = FindEditModeBitmapFont();
+    if (bitmapFont == null || pixels == null || string.IsNullOrEmpty(message))
+      return;
+
+    bitmapFont.DrawText(
+        pixels,
+        PreviewWidth,
+        PreviewHeight,
+        message,
+        4,
+        PreviewHeight - 50 - DungeonBitmapFont.DebugGlyphHeight,
         new Color32(255, 255, 0, 255),
         0,
         0,
@@ -7323,7 +7373,12 @@ public class ViewportLayoutEditor : EditorWindow
         ? CharacterSheetAssetPath
         : Path.Combine(projectRoot, CharacterSheetAssetPath);
     if (!File.Exists(absolutePath))
+    {
+      Debug.LogError(
+          "Character Sheet ERROR: required asset not found at exact path: "
+          + absolutePath);
       return null;
+    }
 
     byte[] pngBytes = File.ReadAllBytes(absolutePath);
     Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
@@ -7331,10 +7386,23 @@ public class ViewportLayoutEditor : EditorWindow
     readableCopy.filterMode = FilterMode.Point;
     readableCopy.wrapMode = TextureWrapMode.Clamp;
     readableCopy.hideFlags = HideFlags.HideAndDontSave;
-    if (!readableCopy.LoadImage(pngBytes, false)
-        || readableCopy.width != DungeonViewportWidth
+    if (!readableCopy.LoadImage(pngBytes, false))
+    {
+      Debug.LogError(
+          "Character Sheet ERROR: failed to decode PNG at exact path: "
+          + absolutePath);
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    if (readableCopy.width != DungeonViewportWidth
         || readableCopy.height != DungeonViewportHeight)
     {
+      Debug.LogError(
+          "Character Sheet ERROR: CharacterSheet_224x136.png must be exactly "
+          + DungeonViewportWidth + "x" + DungeonViewportHeight
+          + " but is " + readableCopy.width + "x" + readableCopy.height
+          + ". Path: " + absolutePath);
       DestroyImmediate(readableCopy);
       return null;
     }
