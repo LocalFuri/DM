@@ -66,8 +66,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Champions/Champion_Mirror_Side_16x35.png";
   private const string ChampionMirrorFrontAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Front_48x43.png";
-  private const string ZedChampionSheetAssetPath =
-      "Assets/Art/Interface/10,5 south Zed image clicked.png";
+  private const string CharacterSheetAssetPath =
+      "Assets/Art/Interface/CharacterSheet_224x136.png";
   private const string ChampionInventoryAssetPath =
       "Assets/Art/Interface/Inventory_224x136.png";
 
@@ -1630,7 +1630,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedMossF1Texture;
   private Texture2D cachedMossF2Texture;
   private Texture2D cachedMossF3Texture;
-  private Texture2D cachedZedChampionSheetTexture;
+  private Texture2D cachedCharacterSheetTexture;
   private Texture2D cachedChampionInventoryTexture;
   [System.NonSerialized]
   private Texture2D cachedAppleGroundTexture;
@@ -6285,9 +6285,10 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// A click inside the D1 front mirror frame fills the 320x200 game view
-  /// with that champion's sheet. A later click, or a pose change, returns
-  /// to the dungeon view.
+  /// Single Champion Mirror click path. A click on the current D1/F1 front
+  /// Champion Mirror opens CharacterSheet_224x136.png. No legacy F1 click
+  /// handler or old Zed-screen path is used. A later click, or a pose change,
+  /// returns to the dungeon view.
   /// </summary>
   private bool TryHandleChampionSheetClick(float logicalX, float logicalY)
   {
@@ -6306,7 +6307,7 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
     }
 
-    if (!TryGetClickedFrontChampion(logicalX, logicalY, out string championName))
+    if (!TryGetClickedChampionMirror(logicalX, logicalY, out string championName))
       return false;
 
     championSheetName = championName;
@@ -6316,7 +6317,9 @@ public class ViewportLayoutEditor : EditorWindow
     return true;
   }
 
-  private bool TryGetClickedFrontChampion(
+  // Hit-test only. This method does not select an image or invoke any legacy
+  // F1 Champion action; it only identifies which visible front mirror was hit.
+  private bool TryGetClickedChampionMirror(
       float logicalX,
       float logicalY,
       out string championName)
@@ -6335,9 +6338,9 @@ public class ViewportLayoutEditor : EditorWindow
     return TryGetCurrentD1FrontChampion(out championName);
   }
 
-  private void BlitZedChampionSheetIntoPreview(Color32[] pixels)
+  private void BlitCharacterSheetIntoPreview(Color32[] pixels)
   {
-    Texture2D sheet = GetZedChampionSheetTexture();
+    Texture2D sheet = GetCharacterSheetTexture();
     if (sheet == null
         || pixels == null
         || pixels.Length != PreviewWidth * PreviewHeight)
@@ -6346,21 +6349,26 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
+    // This is the ONLY character-sheet draw path used by a Champion Mirror
+    // click. Copy the fixed 224x136 asset directly into the 320x200 buffer.
+    // Do not route it through the old generic piece blitter or any legacy F1
+    // Champion-sheet painting code. Screen-space top-left is exactly X=0,Y=33.
+    const int characterSheetScreenX = 0;
+    const int characterSheetScreenTop = 33;
     Color32[] source = sheet.GetPixels32();
-    if (source == null || source.Length != pixels.Length)
+    for (int sourceY = 0; sourceY < DungeonViewportHeight; sourceY++)
     {
-      championSheetVisible = false;
-      return;
+      int screenY = characterSheetScreenTop +
+          (DungeonViewportHeight - 1 - sourceY);
+      if (screenY < 0 || screenY >= PreviewHeight)
+        continue;
+
+      int destinationY = PreviewHeight - 1 - screenY;
+      int sourceRow = sourceY * DungeonViewportWidth;
+      int destinationRow = destinationY * PreviewWidth + characterSheetScreenX;
+      System.Array.Copy(
+          source, sourceRow, pixels, destinationRow, DungeonViewportWidth);
     }
-
-    System.Array.Copy(source, pixels, pixels.Length);
-
-    // TEMP DIAGNOSTIC: show the fixed 320x200 champion-sheet PNG completely
-    // untouched. This isolates presentation/layout scaling from all runtime
-    // champion-sheet painting (name, portrait, equipment, stats/load).
-    // If the red CANCEL rectangle is still wrong with this bypass active,
-    // the distortion happens after the framebuffer is built (RawImage/Canvas).
-    // PaintChampionSheetStats(pixels);
   }
 
   // Worn-slot rectangles on Inventory_224x136. Screen Y is local Y + 33.
@@ -7151,39 +7159,39 @@ public class ViewportLayoutEditor : EditorWindow
     return framebufferY * PreviewWidth + screenX;
   }
 
-  private Texture2D GetZedChampionSheetTexture()
+  private Texture2D GetCharacterSheetTexture()
   {
-    if (cachedZedChampionSheetTexture != null
-        && cachedZedChampionSheetTexture.isReadable
-        && cachedZedChampionSheetTexture.width == PreviewWidth
-        && cachedZedChampionSheetTexture.height == PreviewHeight)
+    if (cachedCharacterSheetTexture != null
+        && cachedCharacterSheetTexture.isReadable
+        && cachedCharacterSheetTexture.width == DungeonViewportWidth
+        && cachedCharacterSheetTexture.height == DungeonViewportHeight)
     {
-      return cachedZedChampionSheetTexture;
+      return cachedCharacterSheetTexture;
     }
 
     string projectRoot = Path.GetDirectoryName(Application.dataPath);
     string absolutePath = string.IsNullOrEmpty(projectRoot)
-        ? ZedChampionSheetAssetPath
-        : Path.Combine(projectRoot, ZedChampionSheetAssetPath);
+        ? CharacterSheetAssetPath
+        : Path.Combine(projectRoot, CharacterSheetAssetPath);
     if (!File.Exists(absolutePath))
       return null;
 
     byte[] pngBytes = File.ReadAllBytes(absolutePath);
     Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-    readableCopy.name = "ZedChampionSheet_ReadablePreview";
+    readableCopy.name = "CharacterSheet_224x136_ReadablePreview";
     readableCopy.filterMode = FilterMode.Point;
     readableCopy.wrapMode = TextureWrapMode.Clamp;
     readableCopy.hideFlags = HideFlags.HideAndDontSave;
     if (!readableCopy.LoadImage(pngBytes, false)
-        || readableCopy.width != PreviewWidth
-        || readableCopy.height != PreviewHeight)
+        || readableCopy.width != DungeonViewportWidth
+        || readableCopy.height != DungeonViewportHeight)
     {
       DestroyImmediate(readableCopy);
       return null;
     }
 
-    cachedZedChampionSheetTexture = readableCopy;
-    return cachedZedChampionSheetTexture;
+    cachedCharacterSheetTexture = readableCopy;
+    return cachedCharacterSheetTexture;
   }
 
   private Texture2D GetChampionInventoryTexture()
@@ -14856,7 +14864,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     if (championSheetVisible)
-      BlitZedChampionSheetIntoPreview(pixels);
+      BlitCharacterSheetIntoPreview(pixels);
 
     editModePreviewTexture.SetPixels32(pixels);
     editModePreviewTexture.Apply(false);
