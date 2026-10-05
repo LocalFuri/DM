@@ -942,6 +942,9 @@ public class ViewportLayoutEditor : EditorWindow
   private DungeonFacing previewFacing = DungeonFacing.South;
   private bool championSheetVisible;
   private string championSheetName;
+  // Recruitment order for Champion Hall mirrors. The party can contain up to
+  // four Champions. Slot positions are added/calibrated explicitly.
+  private readonly List<string> recruitedChampionNames = new List<string>(4);
   private int previewDungeonLevel = PreviewDungeonLevel;
   private string previewLevelJumpText = string.Empty;
   private DungeonMap previewMiniMap;
@@ -6315,6 +6318,25 @@ public class ViewportLayoutEditor : EditorWindow
 
     championSheetName = championName;
     championSheetVisible = true;
+
+    // Clicking an F1 Champion Mirror recruits that Champion into the preview
+    // party, preserving recruitment order. Never add the same Champion twice.
+    bool alreadyRecruited = recruitedChampionNames.Exists(
+        name => string.Equals(
+            name, championName, System.StringComparison.OrdinalIgnoreCase));
+    if (!alreadyRecruited)
+    {
+      if (recruitedChampionNames.Count >= 4)
+      {
+        Debug.LogError(
+            "[ViewportLayoutEditor] ERROR: Cannot recruit more than 4 Champions.");
+      }
+      else
+      {
+        recruitedChampionNames.Add(championName);
+      }
+    }
+
     PresentEditModePreviewToGameView();
     Repaint();
     return true;
@@ -6395,7 +6417,27 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    // 4) Draw CharacterSheet_224x136 at screen X=0, Y=33.
+    // 4) Draw the first recruited Champion portrait at screen X=7, Y=0.
+    // This is the first of up to four party portrait slots. Additional slot
+    // coordinates are intentionally not guessed; they will be calibrated
+    // explicitly when supplied.
+    if (recruitedChampionNames.Count > 0)
+    {
+      string firstChampionName = recruitedChampionNames[0];
+      HeroDefinition firstHero = HeroDatabase.GetByName(firstChampionName);
+      if (firstHero == null)
+      {
+        Debug.LogError(
+            "[ViewportLayoutEditor] ERROR: Recruited Champion definition not found: "
+            + firstChampionName);
+      }
+      else
+      {
+        PaintChampionSheetPortrait(pixels, firstHero);
+      }
+    }
+
+    // 5) Draw CharacterSheet_224x136 at screen X=0, Y=33.
     // STRICT: no fallback asset and no silent skip. If the exact expected asset
     // cannot be loaded as 224x136, show an explicit ERROR and stop composing
     // the Character Sheet UI.
@@ -6424,7 +6466,7 @@ public class ViewportLayoutEditor : EditorWindow
           source, sourceRow, pixels, destinationRow, DungeonViewportWidth);
     }
 
-    // 5) Draw the selected hero full name at visible screen X=4, Y=35.
+    // 6) Draw the selected hero full name at visible screen X=4, Y=35.
     PaintChampionSheetName(pixels);
   }
 
@@ -6712,34 +6754,42 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void PaintChampionSheetPortrait(Color32[] pixels, HeroDefinition hero)
   {
-    string portraitName = hero != null && !string.IsNullOrEmpty(hero.PortraitName)
+    if (hero == null)
+    {
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Cannot render Champion portrait: hero definition is null.");
+      PaintCharacterSheetError(pixels, "ERROR CHAMPION PORTRAIT");
+      return;
+    }
+
+    string portraitName = !string.IsNullOrEmpty(hero.PortraitName)
         ? hero.PortraitName
-        : championSheetName;
+        : hero.Name;
     Texture2D portrait = GetReadableChampionPortrait(portraitName);
     if (portrait == null)
+    {
+      PaintCharacterSheetError(pixels, "ERROR CHAMPION PORTRAIT");
       return;
-
-    Color32 slot = new Color32(109, 109, 109, 255);
-    FillChampionSheetRect(
-        pixels,
-        ChampionSheetPortraitX,
-        ChampionSheetPortraitScreenTop,
-        ChampionSheetPortraitWidth,
-        ChampionSheetPortraitHeight,
-        slot);
+    }
 
     Color32[] source = portrait.GetPixels32();
-    if (source == null || source.Length != portrait.width * portrait.height)
-      return;
-
-    for (int row = 0; row < portrait.height; row++)
+    if (source == null || source.Length != ChampionSheetPortraitWidth * ChampionSheetPortraitHeight)
     {
-      int sourceRow = portrait.height - 1 - row;
-      for (int column = 0; column < portrait.width; column++)
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Champion portrait pixel data is invalid for "
+          + portraitName + ".");
+      PaintCharacterSheetError(pixels, "ERROR CHAMPION PORTRAIT");
+      return;
+    }
+
+    // Render the Champion's own fixed 32x29 image from Assets/Art/Champions.
+    // Party slot 1 is screen X=7, Y=0.
+    for (int row = 0; row < ChampionSheetPortraitHeight; row++)
+    {
+      int sourceRow = ChampionSheetPortraitHeight - 1 - row;
+      for (int column = 0; column < ChampionSheetPortraitWidth; column++)
       {
-        Color32 color = source[sourceRow * portrait.width + column];
-        if (color.a == 0)
-          continue;
+        Color32 color = source[sourceRow * ChampionSheetPortraitWidth + column];
         SetChampionSheetPixel(
             pixels,
             ChampionSheetPortraitX + column,
@@ -6753,7 +6803,11 @@ public class ViewportLayoutEditor : EditorWindow
   {
     string wantedKey = NormalizeChampionAssetKey(championName);
     if (string.IsNullOrEmpty(wantedKey))
+    {
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Champion portrait name is empty.");
       return null;
+    }
 
     if (cachedReadableChampionPortraits.TryGetValue(
             wantedKey,
@@ -6767,9 +6821,18 @@ public class ViewportLayoutEditor : EditorWindow
         Path.GetDirectoryName(Application.dataPath) ?? string.Empty,
         ChampionArtFolder);
     if (!Directory.Exists(folder))
+    {
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Champion art folder not found: "
+          + ChampionArtFolder);
       return null;
+    }
 
-    string[] files = Directory.GetFiles(folder, "*.png");
+    // Champion portrait assets are the hero's own 32x29 PNGs in
+    // Assets/Art/Champions. Accept only the hero key itself or the explicit
+    // _32x29 suffix; do not fall back to another image or folder match.
+    string wantedSizedKey = wantedKey + "32X29";
+    string[] files = Directory.GetFiles(folder, "*.png", SearchOption.TopDirectoryOnly);
     string match = null;
     for (int i = 0; i < files.Length; i++)
     {
@@ -6777,26 +6840,62 @@ public class ViewportLayoutEditor : EditorWindow
           Path.GetFileNameWithoutExtension(files[i]));
       if (fileKey.IndexOf("MIRROR", System.StringComparison.Ordinal) >= 0)
         continue;
-      if (string.Equals(fileKey, wantedKey, System.StringComparison.Ordinal))
+
+      if (string.Equals(fileKey, wantedKey, System.StringComparison.Ordinal)
+          || string.Equals(fileKey, wantedSizedKey, System.StringComparison.Ordinal))
       {
+        if (match != null)
+        {
+          Debug.LogError(
+              "[ViewportLayoutEditor] ERROR: More than one Champion portrait matches "
+              + championName + " in " + ChampionArtFolder + ".");
+          return null;
+        }
         match = files[i];
-        break;
       }
     }
 
     if (match == null)
+    {
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: No 32x29 Champion portrait asset found for "
+          + championName + " in " + ChampionArtFolder + ".");
       return null;
+    }
 
-    byte[] pngBytes = File.ReadAllBytes(match);
+    byte[] pngBytes;
+    try
+    {
+      pngBytes = File.ReadAllBytes(match);
+    }
+    catch (System.Exception exception)
+    {
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Failed reading Champion portrait "
+          + match + ": " + exception.Message);
+      return null;
+    }
+
     Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-    readableCopy.name = "ChampionPortrait_ReadablePreview";
+    readableCopy.name = "ChampionPortrait_32x29_ReadablePreview";
     readableCopy.filterMode = FilterMode.Point;
     readableCopy.wrapMode = TextureWrapMode.Clamp;
     readableCopy.hideFlags = HideFlags.HideAndDontSave;
-    if (!readableCopy.LoadImage(pngBytes, false)
-        || readableCopy.width != ChampionSheetPortraitWidth
+    if (!readableCopy.LoadImage(pngBytes, false))
+    {
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Failed decoding Champion portrait PNG: "
+          + match);
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    if (readableCopy.width != ChampionSheetPortraitWidth
         || readableCopy.height != ChampionSheetPortraitHeight)
     {
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Champion portrait must be exactly 32x29: "
+          + match + " is " + readableCopy.width + "x" + readableCopy.height + ".");
       DestroyImmediate(readableCopy);
       return null;
     }
