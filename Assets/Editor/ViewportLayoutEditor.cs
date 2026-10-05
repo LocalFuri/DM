@@ -6372,7 +6372,30 @@ public class ViewportLayoutEditor : EditorWindow
         pixels[destinationRow + x] = panelGrey;
     }
 
-    // 3) Draw the selected hero full name at visible screen X=4, Y=35.
+    // 3) Draw ChampionStatusBackground_67x29 at screen X=0, Y=0.
+    Texture2D statusBackground = GetChampionStatusBackgroundTexture();
+    if (statusBackground != null)
+    {
+      const int statusLeft = 0;
+      const int statusTop = 0;
+      const int statusWidth = 67;
+      const int statusHeight = 29;
+      Color32[] statusSource = statusBackground.GetPixels32();
+      for (int sourceY = 0; sourceY < statusHeight; sourceY++)
+      {
+        int screenY = statusTop + (statusHeight - 1 - sourceY);
+        if (screenY < 0 || screenY >= PreviewHeight)
+          continue;
+
+        int destinationY = PreviewHeight - 1 - screenY;
+        int sourceRow = sourceY * statusWidth;
+        int destinationRow = destinationY * PreviewWidth + statusLeft;
+        System.Array.Copy(
+            statusSource, sourceRow, pixels, destinationRow, statusWidth);
+      }
+    }
+
+    // 4) Draw the selected hero full name at visible screen X=4, Y=35.
     PaintChampionSheetName(pixels);
   }
 
