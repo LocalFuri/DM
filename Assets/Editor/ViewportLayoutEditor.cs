@@ -6408,6 +6408,10 @@ public class ViewportLayoutEditor : EditorWindow
       System.Array.Copy(
           source, sourceRow, pixels, destinationRow, DungeonViewportWidth);
     }
+
+    // 3) Selected hero name. Character Sheet UI only. Coordinates are
+    // zero-based screen coordinates; visible name ink starts at X=4, Y=36.
+    PaintChampionSheetName(pixels);
   }
 
   // Worn-slot rectangles on Inventory_224x136. Screen Y is local Y + 33.
@@ -6555,33 +6559,31 @@ public class ViewportLayoutEditor : EditorWindow
   private void PaintChampionSheetName(Color32[] pixels)
   {
     HeroDefinition hero = HeroDatabase.GetByName(championSheetName);
-    string label = championSheetName ?? string.Empty;
-    if (hero != null)
-    {
-      label = hero.Name ?? label;
-      if (!string.IsNullOrEmpty(hero.Title))
-        label = label + " " + hero.Title;
-    }
+    string label = hero != null && !string.IsNullOrEmpty(hero.Name)
+        ? hero.Name
+        : (championSheetName ?? string.Empty);
 
-    Color32 panel = new Color32(73, 73, 73, 255);
-    FillChampionSheetRect(pixels, 0, 33, 160, 12, panel);
     DungeonBitmapFont bitmapFont = FindEditModeBitmapFont();
     if (bitmapFont == null || string.IsNullOrEmpty(label))
       return;
 
-    // Original (10,4) North name ink starts at x=3, pitch 6.
-    // The 8px cell has a 2px left bearing, so the cell origin is x=1.
+    // Zero-based screen position requested for the visible hero-name ink:
+    // X=4, Y=36. The bitmap font has a 2px left bearing, so its cell origin
+    // is X=2. DrawText uses bottom-origin Y, hence the conversion below.
+    const int visibleNameX = 4;
+    const int visibleNameTop = 36;
+    const int glyphLeftBearing = 2;
     bitmapFont.DrawText(
         pixels,
         PreviewWidth,
         PreviewHeight,
         label,
-        1,
-        PreviewHeight - 35 - DungeonBitmapFont.DebugGlyphHeight,
+        visibleNameX - glyphLeftBearing,
+        PreviewHeight - visibleNameTop - DungeonBitmapFont.DebugGlyphHeight,
         new Color32(255, 255, 0, 255),
         0,
         0,
-        160,
+        PreviewWidth,
         PreviewHeight,
         6);
   }
