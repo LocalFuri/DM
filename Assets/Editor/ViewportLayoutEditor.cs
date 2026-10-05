@@ -6354,7 +6354,13 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     System.Array.Copy(source, pixels, pixels.Length);
-    PaintChampionSheetStats(pixels);
+
+    // TEMP DIAGNOSTIC: show the fixed 320x200 champion-sheet PNG completely
+    // untouched. This isolates presentation/layout scaling from all runtime
+    // champion-sheet painting (name, portrait, equipment, stats/load).
+    // If the red CANCEL rectangle is still wrong with this bypass active,
+    // the distortion happens after the framebuffer is built (RawImage/Canvas).
+    // PaintChampionSheetStats(pixels);
   }
 
   // Worn-slot rectangles on Inventory_224x136. Screen Y is local Y + 33.
