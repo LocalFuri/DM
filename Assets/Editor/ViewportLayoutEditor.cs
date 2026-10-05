@@ -6410,7 +6410,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // 3) Selected hero name. Character Sheet UI only. Coordinates are
-    // zero-based screen coordinates; visible name ink starts at X=4, Y=36.
+    // zero-based screen coordinates; visible name ink starts at X=4, Y=35.
     PaintChampionSheetName(pixels);
   }
 
@@ -6566,10 +6566,10 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     // Zero-based screen position requested for the visible hero-name ink:
-    // X=4, Y=36. The bitmap font has a 2px left bearing, so its cell origin
+    // X=4, Y=35. The bitmap font has a 2px left bearing, so its cell origin
     // is X=2. DrawText uses bottom-origin Y, hence the conversion below.
     const int visibleNameX = 4;
-    const int visibleNameTop = 36;
+    const int visibleNameTop = 35;
     const int glyphLeftBearing = 2;
     bitmapFont.DrawText(
         pixels,
