@@ -6559,9 +6559,7 @@ public class ViewportLayoutEditor : EditorWindow
   private void PaintChampionSheetName(Color32[] pixels)
   {
     HeroDefinition hero = HeroDatabase.GetByName(championSheetName);
-    string label = hero != null && !string.IsNullOrEmpty(hero.Name)
-        ? hero.Name
-        : (championSheetName ?? string.Empty);
+    string label = GetChampionSheetFullName(hero, championSheetName);
 
     DungeonBitmapFont bitmapFont = FindEditModeBitmapFont();
     if (bitmapFont == null || string.IsNullOrEmpty(label))
@@ -6586,6 +6584,95 @@ public class ViewportLayoutEditor : EditorWindow
         PreviewWidth,
         PreviewHeight,
         6);
+  }
+
+  private static string GetChampionSheetFullName(
+      HeroDefinition hero,
+      string fallbackName)
+  {
+    string baseName = hero != null && !string.IsNullOrEmpty(hero.Name)
+        ? hero.Name.Trim()
+        : (fallbackName ?? string.Empty).Trim();
+
+    if (hero == null)
+      return baseName;
+
+    // Character-sheet UI owns the full champion caption. Keep this independent
+    // from Champion Mirror/F1 rendering. Prefer a full/display name supplied by
+    // HeroDefinition; otherwise combine Name with its title if one is present.
+    string fullName = GetHeroTextMember(
+        hero,
+        "FullName",
+        "DisplayName",
+        "LongName");
+    if (!string.IsNullOrEmpty(fullName)
+        && !string.Equals(
+            fullName.Trim(), baseName, System.StringComparison.OrdinalIgnoreCase))
+    {
+      return fullName.Trim();
+    }
+
+    string title = GetHeroTextMember(
+        hero,
+        "Title",
+        "Subtitle",
+        "SubTitle",
+        "Epithet");
+    if (!string.IsNullOrEmpty(title))
+    {
+      title = title.Trim();
+      if (string.IsNullOrEmpty(baseName))
+        return title;
+      if (baseName.IndexOf(title, System.StringComparison.OrdinalIgnoreCase) < 0)
+        return baseName + " " + title;
+    }
+
+    // The Hall of Champions source identifies Zed by the short name. Preserve
+    // the original full character-sheet caption when no title field is exposed
+    // by the runtime HeroDefinition.
+    if (string.Equals(baseName, "ZED", System.StringComparison.OrdinalIgnoreCase))
+      return "ZED DUKE OF BANVILLE";
+
+    return baseName;
+  }
+
+  private static string GetHeroTextMember(
+      object instance,
+      params string[] memberNames)
+  {
+    if (instance == null || memberNames == null)
+      return string.Empty;
+
+    System.Type type = instance.GetType();
+    const System.Reflection.BindingFlags flags =
+        System.Reflection.BindingFlags.Instance
+        | System.Reflection.BindingFlags.Public
+        | System.Reflection.BindingFlags.IgnoreCase;
+
+    for (int i = 0; i < memberNames.Length; i++)
+    {
+      string memberName = memberNames[i];
+      if (string.IsNullOrEmpty(memberName))
+        continue;
+
+      System.Reflection.PropertyInfo property = type.GetProperty(memberName, flags);
+      if (property != null && property.PropertyType == typeof(string))
+      {
+        string value = property.GetValue(instance, null) as string;
+        if (!string.IsNullOrEmpty(value))
+          return value;
+      }
+
+      System.Reflection.FieldInfo field = type.GetField(memberName, flags);
+      if (field != null && field.FieldType == typeof(string))
+      {
+        string value = field.GetValue(instance) as string;
+        if (!string.IsNullOrEmpty(value))
+          return value;
+      }
+    }
+
+    return string.Empty;
   }
 
   private void PaintChampionSheetPortrait(Color32[] pixels, HeroDefinition hero)
