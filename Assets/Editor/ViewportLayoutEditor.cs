@@ -68,8 +68,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Champions/Champion_Mirror_Front_48x43.png";
   private const string CharacterSheetAssetPath =
       "Assets/Art/Interface/CharacterSheet_224x136.png";
-  private const string ChampionStatusBackgroundAssetPath =
-      "Assets/Art/Interface/ChampionStatusBackground_67x29.png";
+  private const string ChampionsBackgroundAssetPath =
+      "Assets/Art/Interface/Champions_Background_67x29.png";
   private const string ChampionInventoryAssetPath =
       "Assets/Art/Interface/Inventory_224x136.png";
 
@@ -1636,7 +1636,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedMossF2Texture;
   private Texture2D cachedMossF3Texture;
   private Texture2D cachedCharacterSheetTexture;
-  private Texture2D cachedChampionStatusBackgroundTexture;
+  private Texture2D cachedChampionsBackgroundTexture;
   private Texture2D cachedChampionInventoryTexture;
   [System.NonSerialized]
   private Texture2D cachedAppleGroundTexture;
@@ -6394,8 +6394,8 @@ public class ViewportLayoutEditor : EditorWindow
         pixels[destinationRow + x] = panelGrey;
     }
 
-    // 3) Draw ChampionStatusBackground_67x29 at screen X=0, Y=0.
-    Texture2D statusBackground = GetChampionStatusBackgroundTexture();
+    // 3) Draw Champions_Background_67x29 at screen X=0, Y=0.
+    Texture2D statusBackground = GetChampionsBackgroundTexture();
     if (statusBackground != null)
     {
       const int statusLeft = 0;
@@ -6783,13 +6783,18 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // Render the Champion's own fixed 32x29 image from Assets/Art/Champions.
+    // Transparent pixels in the Champion image must render as RGB(73,73,73).
     // Party slot 1 is screen X=7, Y=0.
+    Color32 transparentBackground = new Color32(73, 73, 73, 255);
     for (int row = 0; row < ChampionSheetPortraitHeight; row++)
     {
       int sourceRow = ChampionSheetPortraitHeight - 1 - row;
       for (int column = 0; column < ChampionSheetPortraitWidth; column++)
       {
         Color32 color = source[sourceRow * ChampionSheetPortraitWidth + column];
+        if (color.a == 0)
+          color = transparentBackground;
+
         SetChampionSheetPixel(
             pixels,
             ChampionSheetPortraitX + column,
@@ -7422,26 +7427,26 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
 
-  private Texture2D GetChampionStatusBackgroundTexture()
+  private Texture2D GetChampionsBackgroundTexture()
   {
-    if (cachedChampionStatusBackgroundTexture != null
-        && cachedChampionStatusBackgroundTexture.isReadable
-        && cachedChampionStatusBackgroundTexture.width == 67
-        && cachedChampionStatusBackgroundTexture.height == 29)
+    if (cachedChampionsBackgroundTexture != null
+        && cachedChampionsBackgroundTexture.isReadable
+        && cachedChampionsBackgroundTexture.width == 67
+        && cachedChampionsBackgroundTexture.height == 29)
     {
-      return cachedChampionStatusBackgroundTexture;
+      return cachedChampionsBackgroundTexture;
     }
 
     string projectRoot = Path.GetDirectoryName(Application.dataPath);
     string absolutePath = string.IsNullOrEmpty(projectRoot)
-        ? ChampionStatusBackgroundAssetPath
-        : Path.Combine(projectRoot, ChampionStatusBackgroundAssetPath);
+        ? ChampionsBackgroundAssetPath
+        : Path.Combine(projectRoot, ChampionsBackgroundAssetPath);
     if (!File.Exists(absolutePath))
       return null;
 
     byte[] pngBytes = File.ReadAllBytes(absolutePath);
     Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-    readableCopy.name = "ChampionStatusBackground_67x29_ReadablePreview";
+    readableCopy.name = "Champions_Background_67x29_ReadablePreview";
     readableCopy.filterMode = FilterMode.Point;
     readableCopy.wrapMode = TextureWrapMode.Clamp;
     readableCopy.hideFlags = HideFlags.HideAndDontSave;
@@ -7453,8 +7458,8 @@ public class ViewportLayoutEditor : EditorWindow
       return null;
     }
 
-    cachedChampionStatusBackgroundTexture = readableCopy;
-    return cachedChampionStatusBackgroundTexture;
+    cachedChampionsBackgroundTexture = readableCopy;
+    return cachedChampionsBackgroundTexture;
   }
 
   private Texture2D GetCharacterSheetTexture()
