@@ -6338,34 +6338,44 @@ public class ViewportLayoutEditor : EditorWindow
     return TryGetCurrentD1FrontChampion(out championName);
   }
 
-  private void BlitCharacterSheetIntoPreview(Color32[] pixels)
+  /// <summary>
+  /// Dedicated Character Sheet renderer. This is intentionally independent
+  /// from every Champion Mirror / dungeon-depth render path.
+  /// </summary>
+  private void ComposeCharacterSheetModePreview(Color32[] pixels)
   {
+    if (pixels == null || pixels.Length != PreviewWidth * PreviewHeight)
+      return;
+
+    // Character Sheet mode keeps the full 320x200 preview framebuffer magenta.
+    // The 224x136 CharacterSheet is then drawn on top as a completely separate
+    // UI layer. Nothing from the dungeon / Champion Mirror renderer remains.
+    Color32 magenta = new Color32(255, 0, 255, 255);
+    for (int i = 0; i < pixels.Length; i++)
+      pixels[i] = magenta;
+
     Texture2D sheet = GetCharacterSheetTexture();
-    if (sheet == null
-        || pixels == null
-        || pixels.Length != PreviewWidth * PreviewHeight)
+    if (sheet == null)
     {
       championSheetVisible = false;
       return;
     }
 
-    // This is the ONLY character-sheet draw path used by a Champion Mirror
-    // click. Copy the fixed 224x136 asset directly into the 320x200 buffer.
-    // Do not route it through the old generic piece blitter or any legacy F1
-    // Champion-sheet painting code. Screen-space top-left is exactly X=0,Y=33.
-    const int characterSheetScreenX = 0;
-    const int characterSheetScreenTop = 33;
+    // Fixed UI placement in 320x200 screen coordinates. This is NOT an F1/F2/F3
+    // placement and does not use BlitPieceIntoPreview().
+    const int screenLeft = 0;
+    const int screenTop = 33;
+
     Color32[] source = sheet.GetPixels32();
     for (int sourceY = 0; sourceY < DungeonViewportHeight; sourceY++)
     {
-      int screenY = characterSheetScreenTop +
-          (DungeonViewportHeight - 1 - sourceY);
+      int screenY = screenTop + (DungeonViewportHeight - 1 - sourceY);
       if (screenY < 0 || screenY >= PreviewHeight)
         continue;
 
       int destinationY = PreviewHeight - 1 - screenY;
       int sourceRow = sourceY * DungeonViewportWidth;
-      int destinationRow = destinationY * PreviewWidth + characterSheetScreenX;
+      int destinationRow = destinationY * PreviewWidth + screenLeft;
       System.Array.Copy(
           source, sourceRow, pixels, destinationRow, DungeonViewportWidth);
     }
@@ -14034,6 +14044,19 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < pixels.Length; i++)
       pixels[i] = magenta;
 
+    // Character Sheet mode is a completely separate UI renderer.
+    // Once a Champion Mirror click has selected a champion, do NOT compose
+    // dungeon geometry, walls, doors, ornaments, Champion Mirrors, lighting,
+    // or pose text underneath it. The mirror renderer only supplies the click
+    // target; the Character Sheet owns this frame from this point onward.
+    if (championSheetVisible)
+    {
+      ComposeCharacterSheetModePreview(pixels);
+      editModePreviewTexture.SetPixels32(pixels);
+      editModePreviewTexture.Apply(false);
+      return;
+    }
+
     // Temporary pose for visibility/mirror only — never write the layout asset.
     DungeonMap poseMap = TryGetPreviewPoseMap();
     bool viewport17WallAuthorityActive = IsViewport17WallAuthorityActive();
@@ -14862,9 +14885,6 @@ public class ViewportLayoutEditor : EditorWindow
           previewFacing
       );
     }
-
-    if (championSheetVisible)
-      BlitCharacterSheetIntoPreview(pixels);
 
     editModePreviewTexture.SetPixels32(pixels);
     editModePreviewTexture.Apply(false);
