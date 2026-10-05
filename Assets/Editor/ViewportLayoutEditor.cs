@@ -944,7 +944,10 @@ public class ViewportLayoutEditor : EditorWindow
   private string championSheetName;
   // Recruitment order for Champion Hall mirrors. The party can contain up to
   // four Champions. Slot positions are added/calibrated explicitly.
-  private readonly List<string> recruitedChampionNames = new List<string>(4);
+  // Not readonly: Unity's domain-reload backup restores private fields, but it
+  // cannot write readonly fields. A readonly list was recreated empty while
+  // championSheetVisible stayed true, so the sheet reopened with no slot 1.
+  private List<string> recruitedChampionNames = new List<string>(4);
   private int previewDungeonLevel = PreviewDungeonLevel;
   private string previewLevelJumpText = string.Empty;
   private DungeonMap previewMiniMap;
@@ -6316,26 +6319,18 @@ public class ViewportLayoutEditor : EditorWindow
     if (!TryGetClickedChampionMirror(logicalX, logicalY, out string championName))
       return false;
 
-    championSheetName = championName;
-    championSheetVisible = true;
-
     // Clicking an F1 Champion Mirror recruits that Champion into the preview
     // party, preserving recruitment order. Never add the same Champion twice.
-    bool alreadyRecruited = recruitedChampionNames.Exists(
-        name => string.Equals(
-            name, championName, System.StringComparison.OrdinalIgnoreCase));
-    if (!alreadyRecruited)
+    // Recruit before the sheet is visible so a compose cannot observe an open
+    // sheet with an empty party slot 1.
+    if (!TryRecruitChampion(championName)
+        && recruitedChampionNames.Count == 0)
     {
-      if (recruitedChampionNames.Count >= 4)
-      {
-        Debug.LogError(
-            "[ViewportLayoutEditor] ERROR: Cannot recruit more than 4 Champions.");
-      }
-      else
-      {
-        recruitedChampionNames.Add(championName);
-      }
+      return true;
     }
+
+    championSheetName = championName;
+    championSheetVisible = true;
 
     PresentEditModePreviewToGameView();
     Repaint();
@@ -6361,6 +6356,39 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return TryGetCurrentD1FrontChampion(out championName);
+  }
+
+  // Party list can come back null from a domain reload that restored the
+  // open sheet but could not assign the previous readonly list.
+  private void EnsureRecruitedChampionList()
+  {
+    if (recruitedChampionNames == null)
+      recruitedChampionNames = new List<string>(4);
+  }
+
+  // Returns false when the name is missing or the party is already full.
+  // An already-recruited Champion is success and is not added again.
+  private bool TryRecruitChampion(string championName)
+  {
+    EnsureRecruitedChampionList();
+    if (string.IsNullOrEmpty(championName))
+      return false;
+
+    bool alreadyRecruited = recruitedChampionNames.Exists(
+        name => string.Equals(
+            name, championName, System.StringComparison.OrdinalIgnoreCase));
+    if (alreadyRecruited)
+      return true;
+
+    if (recruitedChampionNames.Count >= 4)
+    {
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Cannot recruit more than 4 Champions.");
+      return false;
+    }
+
+    recruitedChampionNames.Add(championName);
+    return true;
   }
 
   /// <summary>
@@ -6417,27 +6445,7 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    // 4) Draw the first recruited Champion portrait at screen X=7, Y=0.
-    // This is the first of up to four party portrait slots. Additional slot
-    // coordinates are intentionally not guessed; they will be calibrated
-    // explicitly when supplied.
-    if (recruitedChampionNames.Count > 0)
-    {
-      string firstChampionName = recruitedChampionNames[0];
-      HeroDefinition firstHero = HeroDatabase.GetByName(firstChampionName);
-      if (firstHero == null)
-      {
-        Debug.LogError(
-            "[ViewportLayoutEditor] ERROR: Recruited Champion definition not found: "
-            + firstChampionName);
-      }
-      else
-      {
-        PaintChampionSheetPortrait(pixels, firstHero);
-      }
-    }
-
-    // 5) Draw CharacterSheet_224x136 at screen X=0, Y=33.
+    // 4) Draw CharacterSheet_224x136 at screen X=0, Y=33.
     // STRICT: no fallback asset and no silent skip. If the exact expected asset
     // cannot be loaded as 224x136, show an explicit ERROR and stop composing
     // the Character Sheet UI.
@@ -6464,6 +6472,40 @@ public class ViewportLayoutEditor : EditorWindow
       int destinationRow = destinationY * PreviewWidth + screenLeft;
       System.Array.Copy(
           source, sourceRow, pixels, destinationRow, DungeonViewportWidth);
+    }
+
+    // 5) Draw the first recruited Champion portrait OVER Champions_Background_67x29.
+    // Party slot 1 is screen X=7, Y=0. Strict: no silent skip.
+    // A domain reload can restore the open sheet without the party list.
+    // The sheet's champion is slot 1 in that case.
+    EnsureRecruitedChampionList();
+    if (recruitedChampionNames.Count == 0
+        && !string.IsNullOrEmpty(championSheetName))
+    {
+      TryRecruitChampion(championSheetName);
+    }
+
+    if (recruitedChampionNames.Count == 0)
+    {
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Character Sheet opened without recruited Champion slot 1.");
+      PaintCharacterSheetError(pixels, "ERROR PARTY SLOT 1");
+    }
+    else
+    {
+      string firstChampionName = recruitedChampionNames[0];
+      HeroDefinition firstHero = HeroDatabase.GetByName(firstChampionName);
+      if (firstHero == null)
+      {
+        Debug.LogError(
+            "[ViewportLayoutEditor] ERROR: Recruited Champion definition not found: "
+            + firstChampionName);
+        PaintCharacterSheetError(pixels, "ERROR CHAMPION PORTRAIT");
+      }
+      else
+      {
+        PaintChampionSheetPortrait(pixels, firstHero);
+      }
     }
 
     // 6) Draw the selected hero full name at visible screen X=4, Y=35.
@@ -6762,9 +6804,7 @@ public class ViewportLayoutEditor : EditorWindow
       return;
     }
 
-    string portraitName = !string.IsNullOrEmpty(hero.PortraitName)
-        ? hero.PortraitName
-        : hero.Name;
+    string portraitName = hero.Name;
     Texture2D portrait = GetReadableChampionPortrait(portraitName);
     if (portrait == null)
     {
@@ -6783,9 +6823,10 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // Render the Champion's own fixed 32x29 image from Assets/Art/Champions.
-    // Transparent pixels in the Champion image must render as RGB(73,73,73).
+    // Champions_Background_67x29 is already rendered first. Therefore the
+    // Champion portrait must only paint its non-transparent pixels so the
+    // background remains visible underneath.
     // Party slot 1 is screen X=7, Y=0.
-    Color32 transparentBackground = new Color32(73, 73, 73, 255);
     for (int row = 0; row < ChampionSheetPortraitHeight; row++)
     {
       int sourceRow = ChampionSheetPortraitHeight - 1 - row;
@@ -6793,7 +6834,7 @@ public class ViewportLayoutEditor : EditorWindow
       {
         Color32 color = source[sourceRow * ChampionSheetPortraitWidth + column];
         if (color.a == 0)
-          color = transparentBackground;
+          continue;
 
         SetChampionSheetPixel(
             pixels,
