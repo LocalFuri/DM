@@ -24,6 +24,12 @@ public class ViewportLayoutEditor : EditorWindow
       "ViewportLayoutEditor.PreviewFacing";
   private const string PrefsSelectedPieceIndexKey =
       "ViewportLayoutEditor.SelectedPieceIndex";
+  private const string PrefsChampionSheetVisibleKey =
+      "ViewportLayoutEditor.ChampionSheetVisible";
+  private const string PrefsChampionSheetNameKey =
+      "ViewportLayoutEditor.ChampionSheetName";
+  private const string PrefsRecruitedChampionsKey =
+      "ViewportLayoutEditor.RecruitedChampions";
   private const string SearchPiecesControlName =
       "ViewportLayoutEditor.SearchPieces";
   private const string PreviewLevelJumpControlName =
@@ -944,10 +950,7 @@ public class ViewportLayoutEditor : EditorWindow
   private string championSheetName;
   // Recruitment order for Champion Hall mirrors. The party can contain up to
   // four Champions. Slot positions are added/calibrated explicitly.
-  // Not readonly: Unity's domain-reload backup restores private fields, but it
-  // cannot write readonly fields. A readonly list was recreated empty while
-  // championSheetVisible stayed true, so the sheet reopened with no slot 1.
-  private List<string> recruitedChampionNames = new List<string>(4);
+  [SerializeField] private List<string> recruitedChampionNames = new List<string>(4);
   private int previewDungeonLevel = PreviewDungeonLevel;
   private string previewLevelJumpText = string.Empty;
   private DungeonMap previewMiniMap;
@@ -6311,6 +6314,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       championSheetVisible = false;
       championSheetName = null;
+      SaveSessionPrefs();
       PresentEditModePreviewToGameView();
       Repaint();
       return true;
@@ -6319,18 +6323,29 @@ public class ViewportLayoutEditor : EditorWindow
     if (!TryGetClickedChampionMirror(logicalX, logicalY, out string championName))
       return false;
 
-    // Clicking an F1 Champion Mirror recruits that Champion into the preview
-    // party, preserving recruitment order. Never add the same Champion twice.
-    // Recruit before the sheet is visible so a compose cannot observe an open
-    // sheet with an empty party slot 1.
-    if (!TryRecruitChampion(championName)
-        && recruitedChampionNames.Count == 0)
+    if (recruitedChampionNames == null)
+      recruitedChampionNames = new List<string>(4);
+
+    // Recruit first, then open Character Sheet mode. This guarantees that the
+    // first frame of the Character Sheet can always resolve party slot 1.
+    bool alreadyRecruited = recruitedChampionNames.Exists(
+        name => string.Equals(
+            name, championName, System.StringComparison.OrdinalIgnoreCase));
+    if (!alreadyRecruited)
     {
-      return true;
+      if (recruitedChampionNames.Count >= 4)
+      {
+        Debug.LogError(
+            "[ViewportLayoutEditor] ERROR: Cannot recruit more than 4 Champions.");
+        return true;
+      }
+
+      recruitedChampionNames.Add(championName);
     }
 
     championSheetName = championName;
     championSheetVisible = true;
+    SaveSessionPrefs();
 
     PresentEditModePreviewToGameView();
     Repaint();
@@ -6358,37 +6373,104 @@ public class ViewportLayoutEditor : EditorWindow
     return TryGetCurrentD1FrontChampion(out championName);
   }
 
-  // Party list can come back null from a domain reload that restored the
-  // open sheet but could not assign the previous readonly list.
-  private void EnsureRecruitedChampionList()
+  private void SaveChampionPartySession()
+  {
+    EditorPrefs.SetBool(PrefsChampionSheetVisibleKey, championSheetVisible);
+    EditorPrefs.SetString(
+        PrefsChampionSheetNameKey,
+        championSheetName ?? string.Empty);
+
+    if (recruitedChampionNames == null || recruitedChampionNames.Count == 0)
+    {
+      EditorPrefs.SetString(PrefsRecruitedChampionsKey, string.Empty);
+      return;
+    }
+
+    string[] names = recruitedChampionNames.ToArray();
+    EditorPrefs.SetString(
+        PrefsRecruitedChampionsKey,
+        string.Join("\n", names));
+  }
+
+  private void RestoreChampionPartySession()
   {
     if (recruitedChampionNames == null)
       recruitedChampionNames = new List<string>(4);
-  }
 
-  // Returns false when the name is missing or the party is already full.
-  // An already-recruited Champion is success and is not added again.
-  private bool TryRecruitChampion(string championName)
-  {
-    EnsureRecruitedChampionList();
-    if (string.IsNullOrEmpty(championName))
-      return false;
-
-    bool alreadyRecruited = recruitedChampionNames.Exists(
-        name => string.Equals(
-            name, championName, System.StringComparison.OrdinalIgnoreCase));
-    if (alreadyRecruited)
-      return true;
-
-    if (recruitedChampionNames.Count >= 4)
+    if (EditorPrefs.HasKey(PrefsRecruitedChampionsKey))
     {
-      Debug.LogError(
-          "[ViewportLayoutEditor] ERROR: Cannot recruit more than 4 Champions.");
-      return false;
+      string saved = EditorPrefs.GetString(
+          PrefsRecruitedChampionsKey,
+          string.Empty);
+      if (!string.IsNullOrEmpty(saved))
+      {
+        recruitedChampionNames.Clear();
+        string[] parts = saved.Split('\n');
+        for (int i = 0; i < parts.Length && recruitedChampionNames.Count < 4; i++)
+        {
+          if (!string.IsNullOrEmpty(parts[i]))
+            recruitedChampionNames.Add(parts[i]);
+        }
+      }
     }
 
-    recruitedChampionNames.Add(championName);
-    return true;
+    if (EditorPrefs.HasKey(PrefsChampionSheetNameKey))
+    {
+      string savedName = EditorPrefs.GetString(
+          PrefsChampionSheetNameKey,
+          string.Empty);
+      if (!string.IsNullOrEmpty(savedName))
+        championSheetName = savedName;
+    }
+
+    if (EditorPrefs.HasKey(PrefsChampionSheetVisibleKey))
+    {
+      championSheetVisible = EditorPrefs.GetBool(
+          PrefsChampionSheetVisibleKey,
+          championSheetVisible);
+    }
+
+    if (championSheetVisible)
+      EnsureOpenCharacterSheetHasPartySlot1();
+  }
+
+  // The open sheet must have party slot 1 before any Character Sheet pixels
+  // are composed. A domain reload keeps the sheet open and can restore an
+  // empty party list. Slot 1 is the sheet champion, otherwise the D1 mirror
+  // still in front of the party.
+  private void EnsureOpenCharacterSheetHasPartySlot1()
+  {
+    if (!championSheetVisible)
+      return;
+
+    if (recruitedChampionNames == null)
+      recruitedChampionNames = new List<string>(4);
+
+    if (recruitedChampionNames.Count > 0)
+      return;
+
+    if (!string.IsNullOrEmpty(championSheetName))
+    {
+      recruitedChampionNames.Add(championSheetName);
+      SaveChampionPartySession();
+      return;
+    }
+
+    EnsurePreviewMiniMapLoaded();
+    if (previewChampionMirrors == null || previewChampionMirrors.Length == 0)
+      return;
+
+    if (TryGetCurrentD1FrontChampion(out string frontChampion)
+        && !string.IsNullOrEmpty(frontChampion))
+    {
+      championSheetName = frontChampion;
+      recruitedChampionNames.Add(frontChampion);
+      SaveChampionPartySession();
+      return;
+    }
+
+    championSheetVisible = false;
+    SaveChampionPartySession();
   }
 
   /// <summary>
@@ -6476,36 +6558,27 @@ public class ViewportLayoutEditor : EditorWindow
 
     // 5) Draw the first recruited Champion portrait OVER Champions_Background_67x29.
     // Party slot 1 is screen X=7, Y=0. Strict: no silent skip.
-    // A domain reload can restore the open sheet without the party list.
-    // The sheet's champion is slot 1 in that case.
-    EnsureRecruitedChampionList();
-    if (recruitedChampionNames.Count == 0
-        && !string.IsNullOrEmpty(championSheetName))
+    // Domain reload restores the open sheet and can restore an empty party.
+    // Slot 1 is the sheet champion, then the D1 mirror still in front.
+    EnsureOpenCharacterSheetHasPartySlot1();
+    if (recruitedChampionNames == null || recruitedChampionNames.Count == 0)
     {
-      TryRecruitChampion(championSheetName);
+      championSheetVisible = false;
+      return;
     }
 
-    if (recruitedChampionNames.Count == 0)
+    string firstChampionName = recruitedChampionNames[0];
+    HeroDefinition firstHero = HeroDatabase.GetByName(firstChampionName);
+    if (firstHero == null)
     {
       Debug.LogError(
-          "[ViewportLayoutEditor] ERROR: Character Sheet opened without recruited Champion slot 1.");
-      PaintCharacterSheetError(pixels, "ERROR PARTY SLOT 1");
+          "[ViewportLayoutEditor] ERROR: Recruited Champion definition not found: "
+          + firstChampionName);
+      PaintCharacterSheetError(pixels, "ERROR CHAMPION PORTRAIT");
     }
     else
     {
-      string firstChampionName = recruitedChampionNames[0];
-      HeroDefinition firstHero = HeroDatabase.GetByName(firstChampionName);
-      if (firstHero == null)
-      {
-        Debug.LogError(
-            "[ViewportLayoutEditor] ERROR: Recruited Champion definition not found: "
-            + firstChampionName);
-        PaintCharacterSheetError(pixels, "ERROR CHAMPION PORTRAIT");
-      }
-      else
-      {
-        PaintChampionSheetPortrait(pixels, firstHero);
-      }
+      PaintChampionSheetPortrait(pixels, firstHero);
     }
 
     // 6) Draw the selected hero full name at visible screen X=4, Y=35.
@@ -6823,10 +6896,9 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     // Render the Champion's own fixed 32x29 image from Assets/Art/Champions.
-    // Champions_Background_67x29 is already rendered first. Therefore the
-    // Champion portrait must only paint its non-transparent pixels so the
-    // background remains visible underneath.
+    // Transparent portrait pixels must render as RGB(109,109,109).
     // Party slot 1 is screen X=7, Y=0.
+    Color32 transparentBackground = new Color32(109, 109, 109, 255);
     for (int row = 0; row < ChampionSheetPortraitHeight; row++)
     {
       int sourceRow = ChampionSheetPortraitHeight - 1 - row;
@@ -6834,7 +6906,7 @@ public class ViewportLayoutEditor : EditorWindow
       {
         Color32 color = source[sourceRow * ChampionSheetPortraitWidth + column];
         if (color.a == 0)
-          continue;
+          color = transparentBackground;
 
         SetChampionSheetPixel(
             pixels,
@@ -8107,6 +8179,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     selectedPieceIndex = EditorPrefs.GetInt(PrefsSelectedPieceIndexKey, 0);
     ClampSelectedPieceIndex();
+    RestoreChampionPartySession();
   }
 
   private void SaveSessionPrefs()
@@ -8116,6 +8189,7 @@ public class ViewportLayoutEditor : EditorWindow
     EditorPrefs.SetInt(PrefsPreviewFacingKey, (int)previewFacing);
     EditorPrefs.SetInt(PrefsPreviewLevelKey, previewDungeonLevel);
     EditorPrefs.SetInt(PrefsSelectedPieceIndexKey, selectedPieceIndex);
+    SaveChampionPartySession();
   }
 
   private static ViewportLayout LoadViewportLayoutByGuid(string guid)
@@ -14403,10 +14477,14 @@ public class ViewportLayoutEditor : EditorWindow
     // target; the Character Sheet owns this frame from this point onward.
     if (championSheetVisible)
     {
-      ComposeCharacterSheetModePreview(pixels);
-      editModePreviewTexture.SetPixels32(pixels);
-      editModePreviewTexture.Apply(false);
-      return;
+      EnsureOpenCharacterSheetHasPartySlot1();
+      if (championSheetVisible)
+      {
+        ComposeCharacterSheetModePreview(pixels);
+        editModePreviewTexture.SetPixels32(pixels);
+        editModePreviewTexture.Apply(false);
+        return;
+      }
     }
 
     // Temporary pose for visibility/mirror only — never write the layout asset.
