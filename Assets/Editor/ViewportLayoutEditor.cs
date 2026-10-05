@@ -68,6 +68,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Champions/Champion_Mirror_Front_48x43.png";
   private const string CharacterSheetAssetPath =
       "Assets/Art/Interface/CharacterSheet_224x136.png";
+  private const string ChampionStatusBackgroundAssetPath =
+      "Assets/Art/Interface/ChampionStatusBackground_67x29.png";
   private const string ChampionInventoryAssetPath =
       "Assets/Art/Interface/Inventory_224x136.png";
 
@@ -1631,6 +1633,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedMossF2Texture;
   private Texture2D cachedMossF3Texture;
   private Texture2D cachedCharacterSheetTexture;
+  private Texture2D cachedChampionStatusBackgroundTexture;
   private Texture2D cachedChampionInventoryTexture;
   [System.NonSerialized]
   private Texture2D cachedAppleGroundTexture;
@@ -6354,6 +6357,32 @@ public class ViewportLayoutEditor : EditorWindow
     for (int i = 0; i < pixels.Length; i++)
       pixels[i] = magenta;
 
+    // 1) Fixed Champion status background at screen X=0, Y=0.
+    // This is Character Sheet UI and is deliberately independent from the
+    // Champion Mirror / dungeon renderer.
+    Texture2D statusBackground = GetChampionStatusBackgroundTexture();
+    if (statusBackground != null)
+    {
+      const int statusLeft = 0;
+      const int statusTop = 0;
+      const int statusWidth = 67;
+      const int statusHeight = 29;
+      Color32[] statusSource = statusBackground.GetPixels32();
+      for (int sourceY = 0; sourceY < statusHeight; sourceY++)
+      {
+        int screenY = statusTop + (statusHeight - 1 - sourceY);
+        if (screenY < 0 || screenY >= PreviewHeight)
+          continue;
+
+        int destinationY = PreviewHeight - 1 - screenY;
+        int sourceRow = sourceY * statusWidth;
+        int destinationRow = destinationY * PreviewWidth + statusLeft;
+        System.Array.Copy(
+            statusSource, sourceRow, pixels, destinationRow, statusWidth);
+      }
+    }
+
+    // 2) Fixed Character Sheet at screen X=0, Y=33.
     Texture2D sheet = GetCharacterSheetTexture();
     if (sheet == null)
     {
@@ -7167,6 +7196,42 @@ public class ViewportLayoutEditor : EditorWindow
 
     int framebufferY = PreviewHeight - 1 - screenY;
     return framebufferY * PreviewWidth + screenX;
+  }
+
+
+  private Texture2D GetChampionStatusBackgroundTexture()
+  {
+    if (cachedChampionStatusBackgroundTexture != null
+        && cachedChampionStatusBackgroundTexture.isReadable
+        && cachedChampionStatusBackgroundTexture.width == 67
+        && cachedChampionStatusBackgroundTexture.height == 29)
+    {
+      return cachedChampionStatusBackgroundTexture;
+    }
+
+    string projectRoot = Path.GetDirectoryName(Application.dataPath);
+    string absolutePath = string.IsNullOrEmpty(projectRoot)
+        ? ChampionStatusBackgroundAssetPath
+        : Path.Combine(projectRoot, ChampionStatusBackgroundAssetPath);
+    if (!File.Exists(absolutePath))
+      return null;
+
+    byte[] pngBytes = File.ReadAllBytes(absolutePath);
+    Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "ChampionStatusBackground_67x29_ReadablePreview";
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+    if (!readableCopy.LoadImage(pngBytes, false)
+        || readableCopy.width != 67
+        || readableCopy.height != 29)
+    {
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    cachedChampionStatusBackgroundTexture = readableCopy;
+    return cachedChampionStatusBackgroundTexture;
   }
 
   private Texture2D GetCharacterSheetTexture()
