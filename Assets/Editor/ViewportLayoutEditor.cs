@@ -6592,7 +6592,7 @@ public class ViewportLayoutEditor : EditorWindow
         label,
         visibleNameX - glyphLeftBearing,
         PreviewHeight - visibleNameTop - DungeonBitmapFont.DebugGlyphHeight,
-        new Color32(255, 255, 0, 255),
+        new Color32(255, 182, 0, 255),
         0,
         0,
         PreviewWidth,
