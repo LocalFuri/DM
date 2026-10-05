@@ -6350,67 +6350,29 @@ public class ViewportLayoutEditor : EditorWindow
     if (pixels == null || pixels.Length != PreviewWidth * PreviewHeight)
       return;
 
-    // Character Sheet mode keeps the full 320x200 preview framebuffer magenta.
-    // The 224x136 CharacterSheet is then drawn on top as a completely separate
-    // UI layer. Nothing from the dungeon / Champion Mirror renderer remains.
+    // Character Sheet mode uses its own UI hierarchy, completely separate
+    // from Champion Mirror and dungeon rendering.
+    // 1) Fill the complete 320x200 preview magenta.
     Color32 magenta = new Color32(255, 0, 255, 255);
     for (int i = 0; i < pixels.Length; i++)
       pixels[i] = magenta;
 
-    // 1) Fixed Champion status background at screen X=0, Y=0.
-    // This is Character Sheet UI and is deliberately independent from the
-    // Champion Mirror / dungeon renderer.
-    Texture2D statusBackground = GetChampionStatusBackgroundTexture();
-    if (statusBackground != null)
+    // 2) Draw a solid grey panel at screen X=0, Y=33, size 224x136.
+    Color32 panelGrey = new Color32(73, 73, 73, 255);
+    const int panelLeft = 0;
+    const int panelTop = 33;
+    for (int screenY = panelTop; screenY < panelTop + DungeonViewportHeight; screenY++)
     {
-      const int statusLeft = 0;
-      const int statusTop = 0;
-      const int statusWidth = 67;
-      const int statusHeight = 29;
-      Color32[] statusSource = statusBackground.GetPixels32();
-      for (int sourceY = 0; sourceY < statusHeight; sourceY++)
-      {
-        int screenY = statusTop + (statusHeight - 1 - sourceY);
-        if (screenY < 0 || screenY >= PreviewHeight)
-          continue;
-
-        int destinationY = PreviewHeight - 1 - screenY;
-        int sourceRow = sourceY * statusWidth;
-        int destinationRow = destinationY * PreviewWidth + statusLeft;
-        System.Array.Copy(
-            statusSource, sourceRow, pixels, destinationRow, statusWidth);
-      }
-    }
-
-    // 2) Fixed Character Sheet at screen X=0, Y=33.
-    Texture2D sheet = GetCharacterSheetTexture();
-    if (sheet == null)
-    {
-      championSheetVisible = false;
-      return;
-    }
-
-    // Fixed UI placement in 320x200 screen coordinates. This is NOT an F1/F2/F3
-    // placement and does not use BlitPieceIntoPreview().
-    const int screenLeft = 0;
-    const int screenTop = 33;
-
-    Color32[] source = sheet.GetPixels32();
-    for (int sourceY = 0; sourceY < DungeonViewportHeight; sourceY++)
-    {
-      int screenY = screenTop + (DungeonViewportHeight - 1 - sourceY);
       if (screenY < 0 || screenY >= PreviewHeight)
         continue;
 
       int destinationY = PreviewHeight - 1 - screenY;
-      int sourceRow = sourceY * DungeonViewportWidth;
-      int destinationRow = destinationY * PreviewWidth + screenLeft;
-      System.Array.Copy(
-          source, sourceRow, pixels, destinationRow, DungeonViewportWidth);
+      int destinationRow = destinationY * PreviewWidth + panelLeft;
+      for (int x = 0; x < DungeonViewportWidth; x++)
+        pixels[destinationRow + x] = panelGrey;
     }
 
-    // 3) Selected hero name. Character Sheet UI only. Coordinates are
-    // zero-based screen coordinates; visible name ink starts at X=4, Y=35.
+    // 3) Draw the selected hero full name at visible screen X=4, Y=35.
     PaintChampionSheetName(pixels);
   }
 
