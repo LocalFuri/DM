@@ -80,6 +80,7 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Interface/Inventory_224x136.png";
   private const string ResurrectReincarnateAssetFileName =
       "Resurrect_Reincarnate_116x73.png";
+  private const string ChampionExitSoundAssetFileName = "pop04.wav";
 
   private const string OrnamentArtFolder =
       "Assets/Art/Ornaments";
@@ -950,6 +951,10 @@ public class ViewportLayoutEditor : EditorWindow
   private DungeonFacing previewFacing = DungeonFacing.South;
   private bool championSheetVisible;
   private string championSheetName;
+  [SerializeField, Range(0f, 1f)]
+  private float championExitVolume = 1f;
+  [System.NonSerialized]
+  private AudioClip cachedChampionExitClip;
   // Recruitment order for Champion Hall mirrors. The party can contain up to
   // four Champions. Slot positions are added/calibrated explicitly.
   [SerializeField] private List<string> recruitedChampionNames = new List<string>(4);
@@ -5765,6 +5770,23 @@ public class ViewportLayoutEditor : EditorWindow
     if (type != EventType.KeyDown)
       return;
 
+    if (keyCode == KeyCode.Escape)
+    {
+      ViewportLayoutEditor window = FindOpenViewEditWindow();
+      if (window != null && window.championSheetVisible)
+      {
+        window.CloseChampionSheetByPlayer();
+        Event escapeEvent = Event.current;
+        if (escapeEvent != null
+            && escapeEvent.type == EventType.KeyDown
+            && escapeEvent.keyCode == KeyCode.Escape)
+        {
+          escapeEvent.Use();
+        }
+        return;
+      }
+    }
+
     // Fast Game View zoom shortcuts.
     // Ctrl + Numpad+ toggles the Game View between 100% and 300%.
     if ((modifiers & EventModifiers.Control) != 0
@@ -5831,6 +5853,19 @@ public class ViewportLayoutEditor : EditorWindow
       return;
 
     Event current = Event.current;
+    if (current != null
+        && current.type == EventType.KeyDown
+        && current.keyCode == KeyCode.Escape)
+    {
+      ViewportLayoutEditor window = FindOpenViewEditWindow();
+      if (window != null && window.championSheetVisible)
+      {
+        window.CloseChampionSheetByPlayer();
+        current.Use();
+        return;
+      }
+    }
+
     if (current != null
         && current.type == EventType.KeyDown
         && current.control
@@ -6300,6 +6335,103 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
+  /// Player-requested exit from the Champion Mirror sheet. CANCEL and Escape
+  /// both use this exact path so they close identically and play pop04.wav once.
+  /// Automatic closes (pose changes, invalid state) remain silent.
+  /// </summary>
+  private void CloseChampionSheetByPlayer()
+  {
+    if (!championSheetVisible)
+      return;
+
+    championSheetVisible = false;
+    championSheetName = null;
+    PlayChampionExitSound();
+    SaveSessionPrefs();
+    PresentEditModePreviewToGameView();
+    Repaint();
+  }
+
+  private AudioClip GetChampionExitSoundClip()
+  {
+    if (cachedChampionExitClip != null)
+      return cachedChampionExitClip;
+
+    string[] guids = AssetDatabase.FindAssets("pop04 t:AudioClip");
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      if (!string.Equals(
+              Path.GetFileName(path),
+              ChampionExitSoundAssetFileName,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      cachedChampionExitClip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+      if (cachedChampionExitClip != null)
+        return cachedChampionExitClip;
+    }
+
+    Debug.LogWarning(
+        "[ViewportLayoutEditor] Champion exit sound not found in Assets: "
+        + ChampionExitSoundAssetFileName);
+    return null;
+  }
+
+  private void PlayChampionExitSound()
+  {
+    AudioClip clip = GetChampionExitSoundClip();
+    if (clip == null || championExitVolume <= 0f)
+      return;
+
+    float volume = Mathf.Clamp01(championExitVolume);
+
+    if (Application.isPlaying)
+    {
+      GameObject soundObject = new GameObject("ChampionExit_pop04");
+      soundObject.hideFlags = HideFlags.HideAndDontSave;
+      AudioSource source = soundObject.AddComponent<AudioSource>();
+      source.playOnAwake = false;
+      source.spatialBlend = 0f;
+      source.volume = volume;
+      source.clip = clip;
+      source.Play();
+      Object.Destroy(soundObject, Mathf.Max(0.1f, clip.length + 0.1f));
+      return;
+    }
+
+    // Editor preview path. AudioUtil is internal, so resolve it by reflection
+    // to keep this single-file editor implementation compatible across Unity 6.
+    System.Type audioUtil = typeof(AudioImporter).Assembly.GetType("UnityEditor.AudioUtil");
+    if (audioUtil == null)
+      return;
+
+    MethodInfo playMethod = audioUtil.GetMethod(
+        "PlayPreviewClip",
+        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+        null,
+        new[] { typeof(AudioClip), typeof(int), typeof(bool) },
+        null);
+
+    if (playMethod != null)
+    {
+      playMethod.Invoke(null, new object[] { clip, 0, false });
+      return;
+    }
+
+    playMethod = audioUtil.GetMethod(
+        "PlayClip",
+        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+        null,
+        new[] { typeof(AudioClip), typeof(int), typeof(bool) },
+        null);
+    if (playMethod != null)
+      playMethod.Invoke(null, new object[] { clip, 0, false });
+  }
+
+  /// <summary>
   /// Single Champion Mirror click path. A click on the current D1/F1 front
   /// Champion Mirror opens CharacterSheet_224x136.png. No legacy F1 click
   /// handler or old Zed-screen path is used. A later click, or a pose change,
@@ -6315,11 +6447,23 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (championSheetVisible)
     {
-      championSheetVisible = false;
-      championSheetName = null;
-      SaveSessionPrefs();
-      PresentEditModePreviewToGameView();
-      Repaint();
+      // Resurrect_Reincarnate_116x73.png is drawn at screen X=103, Y=85.
+      // Its CANCEL strip occupies local Y=60..72, therefore screen
+      // X=103..218 and Y=145..157. Only a click inside that exact
+      // 116x13 pixel strip closes the Champion Mirror view. Other clicks
+      // are consumed here so they cannot move the party while this view is open.
+      const float cancelX = 103f;
+      const float cancelY = 145f;
+      const float cancelWidth = 116f;
+      const float cancelHeight = 13f;
+
+      bool clickedCancel =
+          logicalX >= cancelX && logicalX < cancelX + cancelWidth
+          && logicalY >= cancelY && logicalY < cancelY + cancelHeight;
+
+      if (clickedCancel)
+        CloseChampionSheetByPlayer();
+
       return true;
     }
 
@@ -8706,6 +8850,11 @@ public class ViewportLayoutEditor : EditorWindow
   private void DrawMapPosePreviewControls()
   {
     DrawPreviewMiniMap();
+    championExitVolume = EditorGUILayout.Slider(
+        "Champion Exit Volume",
+        championExitVolume,
+        0f,
+        1f);
   }
   // -------------------------------------------------------------------------
   // Generic original-style viewport inspection model.
