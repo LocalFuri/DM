@@ -8462,32 +8462,12 @@ private static void HandleGameViewPointerDown(
     // Resurrect_Reincarnate_116x73.png. The panel is runtime UI, not a
     // generated image: fixed grey background, two coloured bars, and the
     // two original 48x9 label PNGs placed pixel exact over them.
-    PaintChampionFoodWaterBar(pixels, 139, 91, 58, 5, new Color32(198, 121, 0, 255));
-    PaintChampionFoodWaterBar(pixels, 139, 100, 58, 5, new Color32(0, 43, 198, 255));
-
     Texture2D foodTexture = GetChampionFoodLabelTexture();
     Texture2D waterTexture = GetChampionWaterLabelTexture();
     if (foodTexture != null)
       PaintChampionSheetOverlayTexture(pixels, foodTexture, 110, 92, foodTexture.width, foodTexture.height);
     if (waterTexture != null)
       PaintChampionSheetOverlayTexture(pixels, waterTexture, 110, 115, waterTexture.width, waterTexture.height);
-  }
-
-  private void PaintChampionFoodWaterBar(
-      Color32[] pixels,
-      int screenLeft,
-      int screenTop,
-      int width,
-      int height,
-      Color32 fill)
-  {
-    if (pixels == null || pixels.Length != PreviewWidth * PreviewHeight)
-      return;
-
-    Color32 border = new Color32(0, 0, 0, 255);
-    FillChampionSheetRect(pixels, screenLeft, screenTop, width, height, border);
-    if (width > 2 && height > 2)
-      FillChampionSheetRect(pixels, screenLeft + 1, screenTop + 1, width - 2, height - 2, fill);
   }
 
   private void PaintChampionSheetOverlayTexture(
