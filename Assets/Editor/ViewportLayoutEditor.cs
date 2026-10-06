@@ -6858,10 +6858,13 @@ private static void HandleGameViewPointerDown(
     PaintChampionMovedEyeOverlay(pixels);
     PaintChampionMiddleEyeOverlay(pixels);
 
-    // Final layer: Champion Mirror recruitment choice artwork. Copy the
-    // original PNG 1:1 after all champion stats/equipment so nothing can
-    // overwrite its bottom CANCEL bar.
-    PaintResurrectReincarnateOverlay(pixels);
+    // Eye-hold detail panel temporarily replaces the recruitment artwork.
+    // On mouse release the panel disappears and the 116x73 recruitment PNG
+    // is restored exactly as before.
+    if (championEyePressed)
+      PaintChampionEyeStatsPanel(pixels);
+    else
+      PaintResurrectReincarnateOverlay(pixels);
   }
 
   // Worn-slot rectangles on Inventory_224x136. Screen Y is local Y + 33.
@@ -6948,6 +6951,123 @@ private static void HandleGameViewPointerDown(
     DrawChampionSheetText(pixels, statusGlyphs, 208, 161, "KG");
   }
 
+  private void PaintChampionEyeStatsPanel(Color32[] pixels)
+  {
+    if (pixels == null || pixels.Length != PreviewWidth * PreviewHeight)
+      return;
+
+    HeroDefinition hero = HeroDatabase.GetByName(championSheetName);
+    if (hero == null || hero.Attributes == null)
+      return;
+
+    // Same 116x73 screen rectangle as the Resurrect/Reincarnate panel.
+    // Coordinates are screen-top based, matching the original 320x200 view.
+    const int panelX = 103;
+    const int panelY = 85;
+    const int panelWidth = 116;
+    const int panelHeight = 73;
+
+    Color32 panel = new Color32(73, 73, 73, 255);
+    Color32 border = new Color32(182, 0, 0, 255);
+    FillChampionSheetRect(pixels, panelX, panelY, panelWidth, panelHeight, panel);
+    FillChampionSheetRect(pixels, panelX, panelY, panelWidth, 1, border);
+    FillChampionSheetRect(pixels, panelX, panelY + panelHeight - 1, panelWidth, 1, border);
+    FillChampionSheetRect(pixels, panelX, panelY, 1, panelHeight, border);
+    FillChampionSheetRect(pixels, panelX + panelWidth - 1, panelY, 1, panelHeight, border);
+
+    Dictionary<char, Color32[]> glyphs = BuildChampionSheetStatusGlyphs();
+
+    // The original eye panel prints the champion's non-zero class ranks first.
+    // Hero skill arrays store the current base-class level as their highest
+    // sub-skill level. IAIDO therefore resolves to APPRENTICE FIGHTER (3)
+    // and NOVICE PRIEST (2), matching the original reference screenshot.
+    int rankY = 88;
+    int ranksDrawn = 0;
+    ranksDrawn += DrawChampionRankLine(pixels, glyphs, hero.Skills != null ? hero.Skills.Fighter : null, "FIGHTER", rankY + ranksDrawn * 8);
+    ranksDrawn += DrawChampionRankLine(pixels, glyphs, hero.Skills != null ? hero.Skills.Ninja : null, "NINJA", rankY + ranksDrawn * 8);
+    ranksDrawn += DrawChampionRankLine(pixels, glyphs, hero.Skills != null ? hero.Skills.Priest : null, "PRIEST", rankY + ranksDrawn * 8);
+    ranksDrawn += DrawChampionRankLine(pixels, glyphs, hero.Skills != null ? hero.Skills.Wizard : null, "WIZARD", rankY + ranksDrawn * 8);
+
+    // Attribute block. Current and maximum are identical for the initial
+    // champion definitions; later gameplay can replace either side with live
+    // values without changing the layout.
+    const int labelX = 105;
+    const int currentX = 181;
+    const int maximumX = 201;
+    int statY = ranksDrawn <= 2 ? 110 : 110 + (ranksDrawn - 2) * 6;
+    DrawChampionAttributeLine(pixels, glyphs, "STRENGTH", hero.Attributes.Strength, hero.Attributes.Strength, labelX, currentX, maximumX, statY + 0);
+    DrawChampionAttributeLine(pixels, glyphs, "DEXTERITY", hero.Attributes.Dexterity, hero.Attributes.Dexterity, labelX, currentX, maximumX, statY + 8);
+    DrawChampionAttributeLine(pixels, glyphs, "WISDOM", hero.Attributes.Wisdom, hero.Attributes.Wisdom, labelX, currentX, maximumX, statY + 16);
+    DrawChampionAttributeLine(pixels, glyphs, "VITALITY", hero.Attributes.Vitality, hero.Attributes.Vitality, labelX, currentX, maximumX, statY + 24);
+    DrawChampionAttributeLine(pixels, glyphs, "ANTI-MAGIC", hero.Attributes.AntiMagic, hero.Attributes.AntiMagic, labelX, currentX, maximumX, statY + 32);
+    DrawChampionAttributeLine(pixels, glyphs, "ANTI-FIRE", hero.Attributes.AntiFire, hero.Attributes.AntiFire, labelX, currentX, maximumX, statY + 40);
+  }
+
+  private int DrawChampionRankLine(
+      Color32[] pixels,
+      Dictionary<char, Color32[]> glyphs,
+      int[] levels,
+      string className,
+      int screenTop)
+  {
+    int level = 0;
+    if (levels != null)
+    {
+      for (int i = 0; i < levels.Length; i++)
+        if (levels[i] > level)
+          level = levels[i];
+    }
+
+    if (level <= 0)
+      return 0;
+
+    DrawChampionSheetText(
+        pixels,
+        glyphs,
+        105,
+        screenTop,
+        GetChampionRankName(level) + " " + className);
+    return 1;
+  }
+
+  private static string GetChampionRankName(int level)
+  {
+    switch (level)
+    {
+      case 1: return "NEOPHYTE";
+      case 2: return "NOVICE";
+      case 3: return "APPRENTICE";
+      case 4: return "JOURNEYMAN";
+      case 5: return "CRAFTSMAN";
+      case 6: return "ARTISAN";
+      case 7: return "ADEPT";
+      case 8: return "EXPERT";
+      case 9: return "LO MASTER";
+      case 10: return "UM MASTER";
+      case 11: return "ON MASTER";
+      case 12: return "EE MASTER";
+      case 13: return "PAL MASTER";
+      case 14: return "MON MASTER";
+      default: return "ARCHMASTER";
+    }
+  }
+
+  private void DrawChampionAttributeLine(
+      Color32[] pixels,
+      Dictionary<char, Color32[]> glyphs,
+      string label,
+      int current,
+      int maximum,
+      int labelX,
+      int currentX,
+      int maximumX,
+      int screenTop)
+  {
+    DrawChampionSheetText(pixels, glyphs, labelX, screenTop, label);
+    DrawChampionSheetText(pixels, glyphs, currentX, screenTop, current.ToString());
+    DrawChampionSheetText(pixels, glyphs, maximumX, screenTop, maximum.ToString());
+  }
+
   private static Dictionary<char, Color32[]> BuildChampionSheetStatusGlyphs()
   {
     Dictionary<char, Color32[]> glyphs = new Dictionary<char, Color32[]>();
@@ -6986,6 +7106,12 @@ private static void HandleGameViewPointerDown(
     AddChampionSheetPatternGlyph(glyphs, 'U', "#...#" + "#...#" + "#...#" + "#...#" + ".###.");
     AddChampionSheetPatternGlyph(glyphs, 'W', "#...#" + "#...#" + "#.#.#" + "##.##" + "#...#");
     AddChampionSheetPatternGlyph(glyphs, 'T', "#####" + "..#.." + "..#.." + "..#.." + "..#..");
+    AddChampionSheetPatternGlyph(glyphs, 'C', ".####" + "#...." + "#...." + "#...." + ".####");
+    AddChampionSheetPatternGlyph(glyphs, 'F', "#####" + "#...." + "####." + "#...." + "#....");
+    AddChampionSheetPatternGlyph(glyphs, 'V', "#...#" + "#...#" + "#...#" + ".#.#." + "..#..");
+    AddChampionSheetPatternGlyph(glyphs, 'X', "#...#" + ".#.#." + "..#.." + ".#.#." + "#...#");
+    AddChampionSheetPatternGlyph(glyphs, 'Y', "#...#" + ".#.#." + "..#.." + "..#.." + "..#..");
+    AddChampionSheetPatternGlyph(glyphs, '-', "....." + "....." + "#####" + "....." + ".....");
 
     return glyphs;
   }
