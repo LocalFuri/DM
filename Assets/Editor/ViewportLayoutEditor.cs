@@ -83,6 +83,8 @@ public class ViewportLayoutEditor : EditorWindow
   private const string ChampionExitSoundAssetFileName = "pop04.wav";
   private const string ChampionEyeMovedAssetFileName = "Eye_moved_16x16.png";
   private const string ChampionEyeMiddleAssetFileName = "Eye_middle_16x16.png";
+  private const string ChampionFoodLabelAssetFileName = "Food_Label_48x9.png";
+  private const string ChampionWaterLabelAssetFileName = "Water_Label_48x9.png";
 
   private const string OrnamentArtFolder =
       "Assets/Art/Ornaments";
@@ -959,6 +961,7 @@ public class ViewportLayoutEditor : EditorWindow
   private bool championEyeMoved;
   private bool championEyeMiddle;
   private bool championEyePressed;
+  private bool championMouthPressed;
   [SerializeField, Range(0f, 1f)]
   private float championExitVolume = 1f;
   [System.NonSerialized]
@@ -1662,6 +1665,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedResurrectReincarnateTexture;
   private Texture2D cachedChampionEyeMovedTexture;
   private Texture2D cachedChampionEyeMiddleTexture;
+  private Texture2D cachedChampionFoodLabelTexture;
+  private Texture2D cachedChampionWaterLabelTexture;
   [System.NonSerialized]
   private Texture2D cachedAppleGroundTexture;
   [System.NonSerialized]
@@ -6153,14 +6158,21 @@ private static void HandleGameViewPointerDown(
     ViewportLayoutEditor window = FindOpenViewEditWindow();
     if (window == null
         || !window.championSheetVisible
-        || !window.championEyePressed)
+        || (!window.championEyePressed && !window.championMouthPressed))
     {
       return false;
     }
 
-    window.championEyePressed = false;
-    window.championEyeMoved = false;
-    window.championEyeMiddle = true;
+    if (window.championEyePressed)
+    {
+      window.championEyePressed = false;
+      window.championEyeMoved = false;
+      window.championEyeMiddle = true;
+    }
+
+    if (window.championMouthPressed)
+      window.championMouthPressed = false;
+
     window.PresentEditModePreviewToGameView();
 
     if (imguiEvent != null)
@@ -6419,6 +6431,7 @@ private static void HandleGameViewPointerDown(
     championEyeMoved = false;
     championEyeMiddle = false;
     championEyePressed = false;
+    championMouthPressed = false;
     PlayChampionExitSound();
     SaveSessionPrefs();
     PresentEditModePreviewToGameView();
@@ -6535,6 +6548,29 @@ private static void HandleGameViewPointerDown(
         championEyePressed = true;
         championEyeMoved = true;
         championEyeMiddle = false;
+        championMouthPressed = false;
+        PresentEditModePreviewToGameView();
+        Repaint();
+        return true;
+      }
+
+      // Character Sheet mouth symbol. While the left mouse button is held
+      // on the mouth, show FOOD and WATER labels as runtime overlays.
+      // Mouse release is handled by the same Game View MouseUp/PointerUp path
+      // used by the eye, which hides these labels again.
+      const float mouthX = 59f;
+      const float mouthY = 47f;
+      const float mouthWidth = 16f;
+      const float mouthHeight = 16f;
+      bool clickedMouth =
+          logicalX >= mouthX && logicalX < mouthX + mouthWidth
+          && logicalY >= mouthY && logicalY < mouthY + mouthHeight;
+      if (clickedMouth)
+      {
+        championMouthPressed = true;
+        championEyePressed = false;
+        championEyeMoved = false;
+        championEyeMiddle = false;
         PresentEditModePreviewToGameView();
         Repaint();
         return true;
@@ -6588,6 +6624,7 @@ private static void HandleGameViewPointerDown(
     championEyeMoved = false;
     championEyeMiddle = false;
     championEyePressed = false;
+    championMouthPressed = false;
     SaveSessionPrefs();
 
     PresentEditModePreviewToGameView();
@@ -6865,6 +6902,8 @@ private static void HandleGameViewPointerDown(
       PaintChampionEyeStatsPanel(pixels);
     else
       PaintResurrectReincarnateOverlay(pixels);
+
+    PaintChampionFoodWaterLabels(pixels);
   }
 
   // Worn-slot rectangles on Inventory_224x136. Screen Y is local Y + 33.
@@ -8289,6 +8328,152 @@ private static void HandleGameViewPointerDown(
     const int height = 16;
     Color32[] source = texture.GetPixels32();
 
+    for (int sourceY = 0; sourceY < height; sourceY++)
+    {
+      int screenY = screenTop + (height - 1 - sourceY);
+      if (screenY < 0 || screenY >= PreviewHeight)
+        continue;
+
+      int destinationY = PreviewHeight - 1 - screenY;
+      int sourceRow = sourceY * width;
+      int destinationRow = destinationY * PreviewWidth;
+
+      for (int sourceX = 0; sourceX < width; sourceX++)
+      {
+        int screenX = screenLeft + sourceX;
+        if (screenX < 0 || screenX >= PreviewWidth)
+          continue;
+
+        Color32 sourcePixel = source[sourceRow + sourceX];
+        if (sourcePixel.a == 0)
+          continue;
+
+        pixels[destinationRow + screenX] = sourcePixel;
+      }
+    }
+  }
+
+  private Texture2D GetChampionFoodLabelTexture()
+  {
+    if (cachedChampionFoodLabelTexture != null
+        && cachedChampionFoodLabelTexture.isReadable
+        && cachedChampionFoodLabelTexture.width == 48
+        && cachedChampionFoodLabelTexture.height == 9)
+    {
+      return cachedChampionFoodLabelTexture;
+    }
+
+    string[] matches = Directory.GetFiles(
+        Application.dataPath,
+        ChampionFoodLabelAssetFileName,
+        SearchOption.AllDirectories);
+    if (matches == null || matches.Length == 0)
+    {
+      Debug.LogError(
+          "Champion Sheet ERROR: required asset not found under Assets: "
+          + ChampionFoodLabelAssetFileName);
+      return null;
+    }
+
+    string absolutePath = matches[0];
+    byte[] pngBytes = File.ReadAllBytes(absolutePath);
+    Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "Food_Label_48x9_ReadablePreview";
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+    if (!readableCopy.LoadImage(pngBytes, false)
+        || readableCopy.width != 48
+        || readableCopy.height != 9)
+    {
+      Debug.LogError(
+          "Champion Sheet ERROR: " + ChampionFoodLabelAssetFileName
+          + " must be exactly 48x9. Path: " + absolutePath);
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    cachedChampionFoodLabelTexture = readableCopy;
+    return cachedChampionFoodLabelTexture;
+  }
+
+  private Texture2D GetChampionWaterLabelTexture()
+  {
+    if (cachedChampionWaterLabelTexture != null
+        && cachedChampionWaterLabelTexture.isReadable
+        && cachedChampionWaterLabelTexture.width == 48
+        && cachedChampionWaterLabelTexture.height == 9)
+    {
+      return cachedChampionWaterLabelTexture;
+    }
+
+    string[] matches = Directory.GetFiles(
+        Application.dataPath,
+        ChampionWaterLabelAssetFileName,
+        SearchOption.AllDirectories);
+    if (matches == null || matches.Length == 0)
+    {
+      Debug.LogError(
+          "Champion Sheet ERROR: required asset not found under Assets: "
+          + ChampionWaterLabelAssetFileName);
+      return null;
+    }
+
+    string absolutePath = matches[0];
+    byte[] pngBytes = File.ReadAllBytes(absolutePath);
+    Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "Water_Label_48x9_ReadablePreview";
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+    if (!readableCopy.LoadImage(pngBytes, false)
+        || readableCopy.width != 48
+        || readableCopy.height != 9)
+    {
+      Debug.LogError(
+          "Champion Sheet ERROR: " + ChampionWaterLabelAssetFileName
+          + " must be exactly 48x9. Path: " + absolutePath);
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    cachedChampionWaterLabelTexture = readableCopy;
+    return cachedChampionWaterLabelTexture;
+  }
+
+  private void PaintChampionFoodWaterLabels(Color32[] pixels)
+  {
+    if (!championMouthPressed
+        || pixels == null
+        || pixels.Length != PreviewWidth * PreviewHeight)
+    {
+      return;
+    }
+
+    Texture2D waterTexture = GetChampionWaterLabelTexture();
+    Texture2D foodTexture = GetChampionFoodLabelTexture();
+    if (waterTexture != null)
+      PaintChampionSheetOverlayTexture(pixels, waterTexture, 110, 83, 48, 9);
+    if (foodTexture != null)
+      PaintChampionSheetOverlayTexture(pixels, foodTexture, 110, 92, 48, 9);
+  }
+
+  private void PaintChampionSheetOverlayTexture(
+      Color32[] pixels,
+      Texture2D texture,
+      int screenLeft,
+      int screenTop,
+      int width,
+      int height)
+  {
+    if (pixels == null
+        || texture == null
+        || pixels.Length != PreviewWidth * PreviewHeight)
+    {
+      return;
+    }
+
+    Color32[] source = texture.GetPixels32();
     for (int sourceY = 0; sourceY < height; sourceY++)
     {
       int screenY = screenTop + (height - 1 - sourceY);
