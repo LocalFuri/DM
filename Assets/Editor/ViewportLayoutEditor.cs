@@ -8456,7 +8456,12 @@ private static void HandleGameViewPointerDown(
     const int panelHeight = 73;
 
     Color32 panel = new Color32(73, 73, 73, 255);
+    Color32 border = new Color32(109, 109, 109, 255);
     FillChampionSheetRect(pixels, panelX, panelY, panelWidth, panelHeight, panel);
+    FillChampionSheetRect(pixels, panelX, panelY, panelWidth, 1, border);
+    FillChampionSheetRect(pixels, panelX, panelY + panelHeight - 1, panelWidth, 1, border);
+    FillChampionSheetRect(pixels, panelX, panelY, 1, panelHeight, border);
+    FillChampionSheetRect(pixels, panelX + panelWidth - 1, panelY, 1, panelHeight, border);
 
     // Initial recruitment state: the first recruited champion starts with
     // 100% FOOD and 100% WATER. Keep the fill width isolated here so later
@@ -8470,12 +8475,12 @@ private static void HandleGameViewPointerDown(
     Color32 shadowColour = new Color32(0, 0, 0, 255);
 
     // FOOD: 78x6 coloured fill, then a 78x2 black shadow directly below.
-    FillChampionSheetRect(pixels, 113, 102, fullBarWidth, barHeight, foodColour);
-    FillChampionSheetRect(pixels, 113, 108, fullBarWidth, shadowHeight, shadowColour);
+    FillChampionSheetRect(pixels, 111, 102, fullBarWidth, barHeight, foodColour);
+    FillChampionSheetRect(pixels, 111, 108, fullBarWidth, shadowHeight, shadowColour);
 
     // WATER: 78x6 coloured fill, then a 78x2 black shadow directly below.
-    FillChampionSheetRect(pixels, 113, 125, fullBarWidth, barHeight, waterColour);
-    FillChampionSheetRect(pixels, 113, 131, fullBarWidth, shadowHeight, shadowColour);
+    FillChampionSheetRect(pixels, 111, 125, fullBarWidth, barHeight, waterColour);
+    FillChampionSheetRect(pixels, 111, 131, fullBarWidth, shadowHeight, shadowColour);
 
     // The FOOD and WATER captions remain the original 48x9 PNGs placed
     // pixel-exact at their calibrated screen coordinates.
