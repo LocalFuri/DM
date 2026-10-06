@@ -6900,10 +6900,10 @@ private static void HandleGameViewPointerDown(
     // is restored exactly as before.
     if (championEyePressed)
       PaintChampionEyeStatsPanel(pixels);
+    else if (championMouthPressed)
+      PaintChampionFoodWaterPanel(pixels);
     else
       PaintResurrectReincarnateOverlay(pixels);
-
-    PaintChampionFoodWaterLabels(pixels);
   }
 
   // Worn-slot rectangles on Inventory_224x136. Screen Y is local Y + 33.
@@ -8441,7 +8441,7 @@ private static void HandleGameViewPointerDown(
     return cachedChampionWaterLabelTexture;
   }
 
-  private void PaintChampionFoodWaterLabels(Color32[] pixels)
+  private void PaintChampionFoodWaterPanel(Color32[] pixels)
   {
     if (!championMouthPressed
         || pixels == null
@@ -8450,12 +8450,44 @@ private static void HandleGameViewPointerDown(
       return;
     }
 
-    Texture2D waterTexture = GetChampionWaterLabelTexture();
+    const int panelX = 103;
+    const int panelY = 85;
+    const int panelWidth = 116;
+    const int panelHeight = 73;
+
+    Color32 panel = new Color32(73, 73, 73, 255);
+    FillChampionSheetRect(pixels, panelX, panelY, panelWidth, panelHeight, panel);
+
+    // Food / water bars inside the same 116x73 area that normally shows
+    // Resurrect_Reincarnate_116x73.png. The panel is runtime UI, not a
+    // generated image: fixed grey background, two coloured bars, and the
+    // two original 48x9 label PNGs placed pixel exact over them.
+    PaintChampionFoodWaterBar(pixels, 139, 91, 58, 5, new Color32(198, 121, 0, 255));
+    PaintChampionFoodWaterBar(pixels, 139, 100, 58, 5, new Color32(0, 43, 198, 255));
+
     Texture2D foodTexture = GetChampionFoodLabelTexture();
-    if (waterTexture != null)
-      PaintChampionSheetOverlayTexture(pixels, waterTexture, 110, 83, 48, 9);
+    Texture2D waterTexture = GetChampionWaterLabelTexture();
     if (foodTexture != null)
-      PaintChampionSheetOverlayTexture(pixels, foodTexture, 110, 92, 48, 9);
+      PaintChampionSheetOverlayTexture(pixels, foodTexture, 110, 92, foodTexture.width, foodTexture.height);
+    if (waterTexture != null)
+      PaintChampionSheetOverlayTexture(pixels, waterTexture, 110, 115, waterTexture.width, waterTexture.height);
+  }
+
+  private void PaintChampionFoodWaterBar(
+      Color32[] pixels,
+      int screenLeft,
+      int screenTop,
+      int width,
+      int height,
+      Color32 fill)
+  {
+    if (pixels == null || pixels.Length != PreviewWidth * PreviewHeight)
+      return;
+
+    Color32 border = new Color32(0, 0, 0, 255);
+    FillChampionSheetRect(pixels, screenLeft, screenTop, width, height, border);
+    if (width > 2 && height > 2)
+      FillChampionSheetRect(pixels, screenLeft + 1, screenTop + 1, width - 2, height - 2, fill);
   }
 
   private void PaintChampionSheetOverlayTexture(
@@ -8473,6 +8505,9 @@ private static void HandleGameViewPointerDown(
       return;
     }
 
+    // Strict 1:1 pixel placement. Do not scale, resample, reconstruct,
+    // recolour, or alpha-blend these overlay PNGs. Every visible source
+    // pixel is copied verbatim from the PNG into the 320x200 buffer.
     Color32[] source = texture.GetPixels32();
     for (int sourceY = 0; sourceY < height; sourceY++)
     {
