@@ -78,6 +78,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Interface/Champions_Background_67x29.png";
   private const string ChampionInventoryAssetPath =
       "Assets/Art/Interface/Inventory_224x136.png";
+  private const string ResurrectReincarnateAssetFileName =
+      "Resurrect_Reincarnate_116x73.png";
 
   private const string OrnamentArtFolder =
       "Assets/Art/Ornaments";
@@ -1644,6 +1646,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedCharacterSheetTexture;
   private Texture2D cachedChampionsBackgroundTexture;
   private Texture2D cachedChampionInventoryTexture;
+  private Texture2D cachedResurrectReincarnateTexture;
   [System.NonSerialized]
   private Texture2D cachedAppleGroundTexture;
   [System.NonSerialized]
@@ -6576,6 +6579,11 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
+    // 5) Champion Mirror recruitment choice overlay. The original 116x73
+    // artwork is placed in native pixels at screen X=131, Y=86 whenever the
+    // player has clicked a Champion Mirror and the Character Sheet is open.
+    PaintResurrectReincarnateOverlay(pixels);
+
     // 5) Draw the first recruited Champion portrait OVER Champions_Background_67x29.
     // Party slot 1 is screen X=7, Y=0. Strict: no silent skip.
     // Domain reload restores the open sheet and can restore an empty party.
@@ -7754,6 +7762,97 @@ public class ViewportLayoutEditor : EditorWindow
 
     cachedCharacterSheetTexture = readableCopy;
     return cachedCharacterSheetTexture;
+  }
+
+  private Texture2D GetResurrectReincarnateTexture()
+  {
+    if (cachedResurrectReincarnateTexture != null
+        && cachedResurrectReincarnateTexture.isReadable
+        && cachedResurrectReincarnateTexture.width == 116
+        && cachedResurrectReincarnateTexture.height == 73)
+    {
+      return cachedResurrectReincarnateTexture;
+    }
+
+    // The artwork may be organised anywhere below Assets. Resolve it by its
+    // unique filename so moving interface art between Assets subfolders does
+    // not break the Champion Mirror click screen.
+    string[] matches = Directory.GetFiles(
+        Application.dataPath,
+        ResurrectReincarnateAssetFileName,
+        SearchOption.AllDirectories);
+    if (matches == null || matches.Length == 0)
+    {
+      Debug.LogError(
+          "Champion Sheet ERROR: required asset not found under Assets: "
+          + ResurrectReincarnateAssetFileName);
+      return null;
+    }
+
+    string absolutePath = matches[0];
+    byte[] pngBytes = File.ReadAllBytes(absolutePath);
+    Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "Resurrect_Reincarnate_116x73_ReadablePreview";
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+    if (!readableCopy.LoadImage(pngBytes, false)
+        || readableCopy.width != 116
+        || readableCopy.height != 73)
+    {
+      Debug.LogError(
+          "Champion Sheet ERROR: " + ResurrectReincarnateAssetFileName
+          + " must be exactly 116x73. Path: " + absolutePath);
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    cachedResurrectReincarnateTexture = readableCopy;
+    return cachedResurrectReincarnateTexture;
+  }
+
+  private void PaintResurrectReincarnateOverlay(Color32[] pixels)
+  {
+    if (pixels == null || pixels.Length != PreviewWidth * PreviewHeight)
+      return;
+
+    Texture2D texture = GetResurrectReincarnateTexture();
+    if (texture == null)
+      return;
+
+    const int screenLeft = 131;
+    const int screenTop = 86;
+    const int width = 116;
+    const int height = 73;
+    Color32[] source = texture.GetPixels32();
+
+    for (int sourceY = 0; sourceY < height; sourceY++)
+    {
+      int screenY = screenTop + (height - 1 - sourceY);
+      if (screenY < 0 || screenY >= PreviewHeight)
+        continue;
+
+      int destinationY = PreviewHeight - 1 - screenY;
+      int sourceRow = sourceY * width;
+      int destinationRow = destinationY * PreviewWidth;
+
+      for (int sourceX = 0; sourceX < width; sourceX++)
+      {
+        int screenX = screenLeft + sourceX;
+        if (screenX < 0 || screenX >= PreviewWidth)
+          continue;
+
+        Color32 sourcePixel = source[sourceRow + sourceX];
+        if (sourcePixel.a == 0)
+          continue;
+
+        // Pixel-exact 1:1 placement. Do not scale, resample, recolour,
+        // reconstruct, or alpha-blend the artwork. Every visible source
+        // pixel is copied verbatim from the PNG into the 320x200 buffer.
+        int destinationIndex = destinationRow + screenX;
+        pixels[destinationIndex] = sourcePixel;
+      }
+    }
   }
 
   private Texture2D GetChampionInventoryTexture()
