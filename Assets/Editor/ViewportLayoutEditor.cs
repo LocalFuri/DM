@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -6666,46 +6666,65 @@ public class ViewportLayoutEditor : EditorWindow
 
     int maxLoadTenths = hero.Attributes.Strength * 8 + 100;
     int maxLoadKilograms = (maxLoadTenths + 9) / 10;
+
     string healthText = health + "/ " + health;
     string staminaText = stamina + "/ " + stamina;
     string manaText = mana + "/ " + mana;
     string loadText =
         (loadTenths / 10) + "." + (loadTenths % 10)
         + "/ " + maxLoadKilograms;
-    if (loadText.Length * ChampionSheetGlyphAdvance > 47)
-    {
-      loadText =
-          (loadTenths / 10) + "." + (loadTenths % 10)
-          + "/" + maxLoadKilograms;
-    }
 
-    if (!TryCaptureChampionSheetGlyphs(
-            pixels,
-            out Dictionary<char, Color32[]> glyphs))
-    {
-      return;
-    }
-
-    if (!ChampionSheetTextHasGlyphs(glyphs, healthText)
-        || !ChampionSheetTextHasGlyphs(glyphs, staminaText)
-        || !ChampionSheetTextHasGlyphs(glyphs, manaText)
-        || !ChampionSheetTextHasGlyphs(glyphs, loadText))
-    {
-      return;
-    }
-
+    // CharacterSheet_224x136.png is intentionally transparent. Therefore the
+    // complete status block is runtime UI and must be painted here rather than
+    // expected to exist in the PNG. Clear the full text band first so stale
+    // pixels from a previously selected champion can never survive.
     Color32 panel = new Color32(73, 73, 73, 255);
-    FillChampionSheetRect(pixels, 61, 145, 54, 5, panel);
-    FillChampionSheetRect(pixels, 61, 153, 54, 5, panel);
-    FillChampionSheetRect(pixels, 61, 161, 35, 5, panel);
-    int loadWidth = loadText.Length * ChampionSheetGlyphAdvance;
-    if (loadWidth > 47)
-      loadWidth = 47;
-    FillChampionSheetRect(pixels, 160, 161, loadWidth, 5, panel);
-    DrawChampionSheetText(pixels, glyphs, 61, 145, healthText);
-    DrawChampionSheetText(pixels, glyphs, 61, 153, staminaText);
-    DrawChampionSheetText(pixels, glyphs, 61, 161, manaText);
-    DrawChampionSheetText(pixels, glyphs, 160, 161, loadText);
+    FillChampionSheetRect(pixels, 0, 143, 224, 23, panel);
+
+    Color32 statusInk = new Color32(182, 182, 182, 255);
+    DrawChampionSheetBitmapText(pixels, "HEALTH", 4, 145, statusInk);
+    DrawChampionSheetBitmapText(pixels, "STAMINA", 4, 153, statusInk);
+    DrawChampionSheetBitmapText(pixels, "MANA", 4, 161, statusInk);
+    DrawChampionSheetBitmapText(pixels, "LOAD", 128, 161, statusInk);
+
+    DrawChampionSheetBitmapText(pixels, healthText, 61, 145, statusInk);
+    DrawChampionSheetBitmapText(pixels, staminaText, 61, 153, statusInk);
+    DrawChampionSheetBitmapText(pixels, manaText, 61, 161, statusInk);
+    DrawChampionSheetBitmapText(pixels, loadText, 160, 161, statusInk);
+    DrawChampionSheetBitmapText(pixels, "KG", 208, 161, statusInk);
+  }
+
+  private void DrawChampionSheetBitmapText(
+      Color32[] pixels,
+      string text,
+      int visibleX,
+      int visibleTop,
+      Color32 color)
+  {
+    if (pixels == null || string.IsNullOrEmpty(text))
+      return;
+
+    DungeonBitmapFont bitmapFont = FindEditModeBitmapFont();
+    if (bitmapFont == null)
+      return;
+
+    // DungeonBitmapFont has the same two-pixel left bearing used by the
+    // champion-name renderer. Coordinates here describe the visible ink,
+    // matching the 320x200 original reference image.
+    const int glyphLeftBearing = 2;
+    bitmapFont.DrawText(
+        pixels,
+        PreviewWidth,
+        PreviewHeight,
+        text,
+        visibleX - glyphLeftBearing,
+        PreviewHeight - visibleTop - DungeonBitmapFont.DebugGlyphHeight,
+        color,
+        0,
+        0,
+        PreviewWidth,
+        PreviewHeight,
+        6);
   }
 
   private const int ChampionSheetGlyphWidth = 5;
