@@ -20408,8 +20408,6 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.BeginHorizontal();
 
     float savedLabelWidth = EditorGUIUtility.labelWidth;
-    GetChampionMirrorF1StandPosition(mirror, out int standX, out int standY);
-    DrawReadOnlyFeatureMapFields(standX, standY);
 
     GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
     Color labelColor = new Color(0.15f, 0.85f, 1f);
@@ -20420,6 +20418,11 @@ public class ViewportLayoutEditor : EditorWindow
         name,
         featureStyle,
         GUILayout.Width(FeatureDescriptionWidth));
+
+    // Champion row order: name/direction first at the far left, followed by
+    // the F1 party-position X/Y fields, then Enabled and Mirror.
+    GetChampionMirrorF1StandPosition(mirror, out int standX, out int standY);
+    DrawReadOnlyFeatureMapFields(standX, standY);
 
     bool enabledBefore = IsPreviewFeatureEnabled(key);
     bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
