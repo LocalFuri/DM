@@ -6667,12 +6667,12 @@ public class ViewportLayoutEditor : EditorWindow
     int maxLoadTenths = hero.Attributes.Strength * 8 + 100;
     int maxLoadKilograms = (maxLoadTenths + 9) / 10;
 
-    string healthText = health + "/ " + health;
-    string staminaText = stamina + "/ " + stamina;
-    string manaText = mana + "/ " + mana;
+    string healthText = health + "/" + health;
+    string staminaText = stamina + "/" + stamina;
+    string manaText = mana + "/" + mana;
     string loadText =
         (loadTenths / 10) + "." + (loadTenths % 10)
-        + "/ " + maxLoadKilograms;
+        + "/" + maxLoadKilograms;
 
     // CharacterSheet_224x136.png is intentionally transparent. Therefore the
     // complete status block is runtime UI and must be painted here rather than
@@ -6681,17 +6681,54 @@ public class ViewportLayoutEditor : EditorWindow
     Color32 panel = new Color32(73, 73, 73, 255);
     FillChampionSheetRect(pixels, 0, 143, 224, 23, panel);
 
-    Color32 statusInk = new Color32(182, 182, 182, 255);
-    DrawChampionSheetBitmapText(pixels, "HEALTH", 4, 145, statusInk);
-    DrawChampionSheetBitmapText(pixels, "STAMINA", 4, 153, statusInk);
-    DrawChampionSheetBitmapText(pixels, "MANA", 4, 161, statusInk);
-    DrawChampionSheetBitmapText(pixels, "LOAD", 128, 161, statusInk);
+    Dictionary<char, Color32[]> statusGlyphs = BuildChampionSheetStatusGlyphs();
+    DrawChampionSheetText(pixels, statusGlyphs, 4, 145, "HEALTH");
+    DrawChampionSheetText(pixels, statusGlyphs, 4, 153, "STAMINA");
+    DrawChampionSheetText(pixels, statusGlyphs, 4, 161, "MANA");
+    DrawChampionSheetText(pixels, statusGlyphs, 128, 161, "LOAD");
 
-    DrawChampionSheetBitmapText(pixels, healthText, 61, 145, statusInk);
-    DrawChampionSheetBitmapText(pixels, staminaText, 61, 153, statusInk);
-    DrawChampionSheetBitmapText(pixels, manaText, 61, 161, statusInk);
-    DrawChampionSheetBitmapText(pixels, loadText, 160, 161, statusInk);
-    DrawChampionSheetBitmapText(pixels, "KG", 208, 161, statusInk);
+    DrawChampionSheetText(pixels, statusGlyphs, 61, 145, healthText);
+    DrawChampionSheetText(pixels, statusGlyphs, 61, 153, staminaText);
+    DrawChampionSheetText(pixels, statusGlyphs, 61, 161, manaText);
+    DrawChampionSheetText(pixels, statusGlyphs, 160, 161, loadText);
+    DrawChampionSheetText(pixels, statusGlyphs, 208, 161, "KG");
+  }
+
+  private static Dictionary<char, Color32[]> BuildChampionSheetStatusGlyphs()
+  {
+    Dictionary<char, Color32[]> glyphs = new Dictionary<char, Color32[]>();
+
+    // Fixed 5x5 character-sheet font. Each glyph is written directly into the
+    // 320x200 pixel buffer: no scaling, smoothing, bearing correction, or
+    // runtime font substitution can change the status numbers.
+    AddChampionSheetPatternGlyph(glyphs, '0', ".###." + "#...#" + "#...#" + "#...#" + ".###.");
+    AddChampionSheetPatternGlyph(glyphs, '1', "..#.." + ".##.." + "..#.." + "..#.." + ".###.");
+    AddChampionSheetPatternGlyph(glyphs, '2', ".###." + "....#" + ".###." + "#...." + "#####");
+    AddChampionSheetPatternGlyph(glyphs, '3', "####." + "....#" + ".###." + "....#" + "####.");
+    AddChampionSheetPatternGlyph(glyphs, '4', "#...#" + "#...#" + "#####" + "....#" + "....#");
+    AddChampionSheetPatternGlyph(glyphs, '5', "#####" + "#...." + "####." + "....#" + "####.");
+    AddChampionSheetPatternGlyph(glyphs, '6', ".###." + "#...." + "####." + "#...#" + ".###.");
+    AddChampionSheetPatternGlyph(glyphs, '7', "#####" + "....#" + "...#." + "..#.." + ".#...");
+    AddChampionSheetPatternGlyph(glyphs, '8', ".###." + "#...#" + ".###." + "#...#" + ".###.");
+    AddChampionSheetPatternGlyph(glyphs, '9', ".###." + "#...#" + ".####" + "....#" + ".###.");
+    AddChampionSheetPatternGlyph(glyphs, '/', "....#" + "...#." + "..#.." + ".#..." + "#....");
+    AddChampionSheetPatternGlyph(glyphs, '.', "....." + "....." + "....." + "....." + "..#..");
+
+    AddChampionSheetPatternGlyph(glyphs, 'A', ".###." + "#...#" + "#####" + "#...#" + "#...#");
+    AddChampionSheetPatternGlyph(glyphs, 'D', "####." + "#...#" + "#...#" + "#...#" + "####.");
+    AddChampionSheetPatternGlyph(glyphs, 'E', "#####" + "#...." + "####." + "#...." + "#####");
+    AddChampionSheetPatternGlyph(glyphs, 'G', ".###." + "#...." + "#.###" + "#...#" + ".###.");
+    AddChampionSheetPatternGlyph(glyphs, 'H', "#...#" + "#...#" + "#####" + "#...#" + "#...#");
+    AddChampionSheetPatternGlyph(glyphs, 'I', "#####" + "..#.." + "..#.." + "..#.." + "#####");
+    AddChampionSheetPatternGlyph(glyphs, 'K', "#...#" + "#..#." + "###.." + "#..#." + "#...#");
+    AddChampionSheetPatternGlyph(glyphs, 'L', "#...." + "#...." + "#...." + "#...." + "#####");
+    AddChampionSheetPatternGlyph(glyphs, 'M', "#...#" + "##.##" + "#.#.#" + "#...#" + "#...#");
+    AddChampionSheetPatternGlyph(glyphs, 'N', "#...#" + "##..#" + "#.#.#" + "#..##" + "#...#");
+    AddChampionSheetPatternGlyph(glyphs, 'O', ".###." + "#...#" + "#...#" + "#...#" + ".###.");
+    AddChampionSheetPatternGlyph(glyphs, 'S', ".####" + "#...." + ".###." + "....#" + "####.");
+    AddChampionSheetPatternGlyph(glyphs, 'T', "#####" + "..#.." + "..#.." + "..#.." + "..#..");
+
+    return glyphs;
   }
 
   private void DrawChampionSheetBitmapText(
