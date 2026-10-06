@@ -6968,7 +6968,7 @@ private static void HandleGameViewPointerDown(
     const int panelHeight = 73;
 
     Color32 panel = new Color32(73, 73, 73, 255);
-    Color32 border = new Color32(182, 0, 0, 255);
+    Color32 border = new Color32(109, 109, 109, 255);
     FillChampionSheetRect(pixels, panelX, panelY, panelWidth, panelHeight, panel);
     FillChampionSheetRect(pixels, panelX, panelY, panelWidth, 1, border);
     FillChampionSheetRect(pixels, panelX, panelY + panelHeight - 1, panelWidth, 1, border);
