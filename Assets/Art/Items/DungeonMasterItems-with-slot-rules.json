@@ -1,0 +1,6777 @@
+{
+  "items": [
+    {
+      "id": "eye_of_time_full",
+      "name": "Eye Of Time (Full)",
+      "category": "Weapon",
+      "weight": 0.1,
+      "variants": [
+        "Eye Of Time (Full)",
+        "Eye Of Time (Empty)"
+      ],
+      "spriteKey": "Eye Of Time (Full)",
+      "actions": [
+        "Punch (32, 0)",
+        "Freeze Life (0, 0, Uses charges)"
+      ],
+      "notes": "Freeze Life Duration: 70",
+      "locations": "Atari ST versions 1.0a an 1.0b only: (07,26,28)(Charges=15) (13,47,42)(Charges=5)",
+      "weapon": {
+        "strength": 2,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 130,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "stormring_full",
+      "name": "Stormring (Full)",
+      "category": "Weapon",
+      "weight": 0.1,
+      "variants": [
+        "Stormring (Full)",
+        "Stormring (Empty)"
+      ],
+      "spriteKey": "Stormring (Full)",
+      "actions": [
+        "Swing (16, 0)",
+        "Lightning (0, 3, Uses charges)"
+      ],
+      "notes": "-",
+      "locations": "(08,13,16)(Charges=4)",
+      "weapon": {
+        "strength": 2,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 131,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "torch_unlit",
+      "name": "Torch (Unlit)",
+      "category": "Weapon",
+      "weight": 1.1,
+      "variants": [
+        "Torch (Unlit)",
+        "Torch (Used 2)",
+        "Torch (Used 1)",
+        "Torch (Lit)"
+      ],
+      "spriteKey": "Torch (Unlit)",
+      "actions": [
+        "Swing (16, 0)"
+      ],
+      "notes": "Provides light",
+      "locations": "Zed Duke Of Banville (Champion) (00,04,14) (01,08,19) (01,14,22) (01,16,27) (01,30,39) (01,06,43) (01,08,38)(Screamer) (02,34,39) (02,35,39) (03,00,08) (04,18,16) (04,26,06) (05,14,07) (05,27,28) (05,09,17) (06,14,08) (07,34,38) (08,35,28) (08,13,16) (08,15,07) (09,27,27) (11,39,35) All have Charges=15 except the one at (05,14,07) that has Charges=13",
+      "weapon": {
+        "strength": 8,
+        "kineticEnergy": 2,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0400",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest"
+        ]
+      }
+    },
+    {
+      "id": "flamitt_full",
+      "name": "Flamitt (Full)",
+      "category": "Weapon",
+      "weight": 1.2,
+      "variants": [
+        "Flamitt (Full)",
+        "Flamitt (Empty)"
+      ],
+      "spriteKey": "Flamitt (Full)",
+      "actions": [
+        "Swing (16, 0)",
+        "Fireball (0, 7, Uses charges)"
+      ],
+      "notes": "-",
+      "locations": "(12,43,31)(Charges=7)",
+      "weapon": {
+        "strength": 10,
+        "kineticEnergy": 80,
+        "shootDamage": 40,
+        "itemClass": 112,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0400",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest"
+        ]
+      }
+    },
+    {
+      "id": "staff_of_claws_full",
+      "name": "Staff Of Claws (Full)",
+      "category": "Weapon",
+      "weight": 0.9,
+      "variants": [
+        "Staff Of Claws (Full)",
+        "Staff Of Claws (Empty)",
+        "Staff Of Claws (Unused image)"
+      ],
+      "spriteKey": "Staff Of Claws (Full)",
+      "actions": [
+        "Slash (16, 0)",
+        "Brandish (0, 2)",
+        "Confuse (0, 3, Uses charges)"
+      ],
+      "notes": "+4 Mana",
+      "locations": "(04,33,03)(Charges=0)",
+      "weapon": {
+        "strength": 16,
+        "kineticEnergy": 7,
+        "shootDamage": 0,
+        "itemClass": 129,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "bolt_blade_full",
+      "name": "Bolt Blade (Full)",
+      "category": "Weapon",
+      "weight": 3,
+      "variants": [
+        "Bolt Blade (Full)",
+        "Bolt Blade (Empty)"
+      ],
+      "spriteKey": "Bolt Blade (Full)",
+      "actions": [
+        "Jab (8, 0)",
+        "Chop (48, 0)",
+        "Lightning (0, 4, Uses charges)"
+      ],
+      "notes": "-",
+      "locations": "(06,12,08)(Charges=14)",
+      "weapon": {
+        "strength": 49,
+        "kineticEnergy": 110,
+        "shootDamage": 66,
+        "itemClass": 113,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "fury_full",
+      "name": "Fury (Full)",
+      "category": "Weapon",
+      "weight": 4.7,
+      "variants": [
+        "Fury (Full)",
+        "Fury (Empty)"
+      ],
+      "spriteKey": "Fury (Full)",
+      "actions": [
+        "Chop (48, 0)",
+        "Melee (60, 2)",
+        "Fireball (0, 6, Uses charges)"
+      ],
+      "notes": "-",
+      "locations": "(10,22,13)(Charges=8)",
+      "weapon": {
+        "strength": 55,
+        "kineticEnergy": 20,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "the_firestaff",
+      "name": "The Firestaff",
+      "category": "Weapon",
+      "weight": 2.4,
+      "variants": [
+        "The Firestaff"
+      ],
+      "spriteKey": "The Firestaff",
+      "actions": [
+        "Parry (8, 0)",
+        "Brandish (0, 3)",
+        "Fireshield (0, 5)"
+      ],
+      "notes": "+1 All Skills (including hidden skills) The Firestaff (not complete) in your inventory will open the door at (00,01,02) when walking at (00,01,03).",
+      "locations": "(06,19,20)",
+      "weapon": {
+        "strength": 25,
+        "kineticEnergy": 10,
+        "shootDamage": -1,
+        "itemClass": 255,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "dagger",
+      "name": "Dagger",
+      "category": "Weapon",
+      "weight": 0.5,
+      "variants": [
+        "Dagger"
+      ],
+      "spriteKey": "Dagger",
+      "actions": [
+        "Throw (0, 0)",
+        "Stab (48, 0)",
+        "Slash (16, 2)"
+      ],
+      "notes": "-",
+      "locations": "Azizi Johari (Champion)(2) (01,06,17) (01,08,19) (04,32,28)",
+      "weapon": {
+        "strength": 10,
+        "kineticEnergy": 19,
+        "shootDamage": 0,
+        "itemClass": 2,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x05C0",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Quiver2",
+          "Quiver3",
+          "Quiver4",
+          "Pouch1",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "falchion",
+      "name": "Falchion",
+      "category": "Weapon",
+      "weight": 3.3,
+      "variants": [
+        "Falchion"
+      ],
+      "spriteKey": "Falchion",
+      "actions": [
+        "Swing (16, 0)",
+        "Parry (8, 2)",
+        "Chop (48, 3)"
+      ],
+      "notes": "-",
+      "locations": "(01,06,17) (01,13,22) (01,16,42) Obtained by killing Skeletons",
+      "weapon": {
+        "strength": 30,
+        "kineticEnergy": 8,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "sword",
+      "name": "Sword",
+      "category": "Weapon",
+      "weight": 3.2,
+      "variants": [
+        "Sword"
+      ],
+      "spriteKey": "Sword",
+      "actions": [
+        "Swing (16, 0)",
+        "Parry (8, 2)",
+        "Chop (48, 3)"
+      ],
+      "notes": "-",
+      "locations": "Sonja She Devil (Champion) (02,34,36) Obtained by killing Animated Armours",
+      "weapon": {
+        "strength": 34,
+        "kineticEnergy": 10,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "rapier",
+      "name": "Rapier",
+      "category": "Weapon",
+      "weight": 2.6,
+      "variants": [
+        "Rapier"
+      ],
+      "spriteKey": "Rapier",
+      "actions": [
+        "Jab (8, 0)",
+        "Parry (8, 1)",
+        "Thrust (66, 5)"
+      ],
+      "notes": "-",
+      "locations": "(03,10,12)",
+      "weapon": {
+        "strength": 38,
+        "kineticEnergy": 10,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "sabre",
+      "name": "Sabre",
+      "category": "Weapon",
+      "weight": 3.5,
+      "variants": [
+        "Sabre"
+      ],
+      "spriteKey": "Sabre",
+      "actions": [
+        "Slash (16, 0)",
+        "Parry (8, 1)",
+        "Melee (60, 5)"
+      ],
+      "notes": "-",
+      "locations": "(02,05,20) (10,13,16)",
+      "weapon": {
+        "strength": 42,
+        "kineticEnergy": 11,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "samurai_sword",
+      "name": "Samurai Sword",
+      "category": "Weapon",
+      "weight": 3.6,
+      "variants": [
+        "Samurai Sword"
+      ],
+      "spriteKey": "Samurai Sword",
+      "actions": [
+        "Slash (16, 0)",
+        "Parry (8, 1)",
+        "Melee (60, 5)"
+      ],
+      "notes": "-",
+      "locations": "Iaido Ruyito Chiburi (Champion)",
+      "weapon": {
+        "strength": 46,
+        "kineticEnergy": 12,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "delta",
+      "name": "Delta",
+      "category": "Weapon",
+      "weight": 3.3,
+      "variants": [
+        "Delta"
+      ],
+      "spriteKey": "Delta",
+      "actions": [
+        "Chop (48, 0)",
+        "Melee (60, 5)",
+        "Thrust (66, 6)"
+      ],
+      "notes": "+1 Mana",
+      "locations": "(07,29,38)",
+      "weapon": {
+        "strength": 50,
+        "kineticEnergy": 14,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "diamond_edge",
+      "name": "Diamond Edge",
+      "category": "Weapon",
+      "weight": 3.7,
+      "variants": [
+        "Diamond Edge"
+      ],
+      "spriteKey": "Diamond Edge",
+      "actions": [
+        "Stab (48, 0)",
+        "Chop (48, 2)",
+        "Cleave (48, 5)"
+      ],
+      "notes": "Reduces opponent's armour by 25% A Diamond Edge in your inventory will prevent Poison Cloud launch in the corridor at (10,14,24).",
+      "locations": "(10,11,24)",
+      "weapon": {
+        "strength": 62,
+        "kineticEnergy": 14,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "vorpal_blade",
+      "name": "Vorpal Blade",
+      "category": "Weapon",
+      "weight": 3,
+      "variants": [
+        "Vorpal Blade"
+      ],
+      "spriteKey": "Vorpal Blade",
+      "actions": [
+        "Jab (8, 0)",
+        "Cleave (48, 2)",
+        "Disrupt (55, 4)"
+      ],
+      "notes": "+4 Mana Use it against nonmaterial beings",
+      "locations": "(05,29,05)(Charges=14, unused) (05,12,21)(Charges=0)",
+      "weapon": {
+        "strength": 48,
+        "kineticEnergy": 13,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "the_inquisitor",
+      "name": "The Inquisitor",
+      "category": "Weapon",
+      "weight": 3.9,
+      "variants": [
+        "The Inquisitor"
+      ],
+      "spriteKey": "The Inquisitor",
+      "actions": [
+        "Swing (16, 0)",
+        "Thrust (66, 5)",
+        "Berzerk (96, 7)"
+      ],
+      "notes": "+2 Mana",
+      "locations": "(06,09,23)",
+      "weapon": {
+        "strength": 58,
+        "kineticEnergy": 15,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "axe",
+      "name": "Axe",
+      "category": "Weapon",
+      "weight": 4.3,
+      "variants": [
+        "Axe"
+      ],
+      "spriteKey": "Axe",
+      "actions": [
+        "Swing (16, 0)",
+        "Chop (48, 0)",
+        "Melee (60, 5)"
+      ],
+      "notes": "-",
+      "locations": "Stamm Bladecaster (Champion) (03,23,31)",
+      "weapon": {
+        "strength": 49,
+        "kineticEnergy": 33,
+        "shootDamage": 0,
+        "itemClass": 2,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "hardcleave",
+      "name": "Hardcleave",
+      "category": "Weapon",
+      "weight": 6.5,
+      "variants": [
+        "Hardcleave"
+      ],
+      "spriteKey": "Hardcleave",
+      "actions": [
+        "Chop (48, 0)",
+        "Cleave (48, 3)",
+        "Berzerk (96, 8)"
+      ],
+      "notes": "Reduces opponent's armour by 12.5%",
+      "locations": "(09,36,10)",
+      "weapon": {
+        "strength": 70,
+        "kineticEnergy": 44,
+        "shootDamage": 0,
+        "itemClass": 2,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "mace",
+      "name": "Mace",
+      "category": "Weapon",
+      "weight": 3.1,
+      "variants": [
+        "Mace"
+      ],
+      "spriteKey": "Mace",
+      "actions": [
+        "Swing (16, 0)",
+        "Bash (50, 2)",
+        "Stun (16, 4)"
+      ],
+      "notes": "-",
+      "locations": "(04,17,29)",
+      "weapon": {
+        "strength": 32,
+        "kineticEnergy": 10,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "mace_of_order",
+      "name": "Mace Of Order",
+      "category": "Weapon",
+      "weight": 4.1,
+      "variants": [
+        "Mace Of Order"
+      ],
+      "spriteKey": "Mace Of Order",
+      "actions": [
+        "Swing (16, 0)",
+        "Bash (50, 2)",
+        "Stun (16, 4)"
+      ],
+      "notes": "+5 Strength",
+      "locations": "(07,50,31)",
+      "weapon": {
+        "strength": 42,
+        "kineticEnergy": 13,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "morningstar",
+      "name": "Morningstar",
+      "category": "Weapon",
+      "weight": 5,
+      "variants": [
+        "Morningstar"
+      ],
+      "spriteKey": "Morningstar",
+      "actions": [
+        "Swing (16, 0)",
+        "Stun (16, 3)",
+        "Melee (60, 6)"
+      ],
+      "notes": "-",
+      "locations": "(10,16,16) (11,23,22)",
+      "weapon": {
+        "strength": 60,
+        "kineticEnergy": 15,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0440",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "club",
+      "name": "Club",
+      "category": "Weapon",
+      "weight": 3.6,
+      "variants": [
+        "Club"
+      ],
+      "spriteKey": "Club",
+      "actions": [
+        "Throw (0, 0)",
+        "Bash (50, 0)"
+      ],
+      "notes": "-",
+      "locations": "Halk The Barbarian (Champion) (01,06,14) Obtained by killing Trolins",
+      "weapon": {
+        "strength": 19,
+        "kineticEnergy": 10,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "stone_club",
+      "name": "Stone Club",
+      "category": "Weapon",
+      "weight": 11,
+      "variants": [
+        "Stone Club"
+      ],
+      "spriteKey": "Stone Club",
+      "actions": [
+        "Throw (0, 0)",
+        "Bash (50, 0)"
+      ],
+      "notes": "-",
+      "locations": "Obtained by killing Stone Golems",
+      "weapon": {
+        "strength": 44,
+        "kineticEnergy": 22,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "bow",
+      "name": "Bow",
+      "category": "Weapon",
+      "weight": 1,
+      "variants": [
+        "Bow"
+      ],
+      "spriteKey": "Bow",
+      "actions": [
+        "Shoot (0, 0)"
+      ],
+      "notes": "Requires Arrow or Slayer in second hand Required in alcove at (05,17,28) to open door at (05,18,25)",
+      "locations": "Linflas (Champion) (03,10,09)",
+      "weapon": {
+        "strength": 1,
+        "kineticEnergy": 50,
+        "shootDamage": 50,
+        "itemClass": 20,
+        "deltaEnergy": 4
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "crossbow",
+      "name": "Crossbow",
+      "category": "Weapon",
+      "weight": 2.8,
+      "variants": [
+        "Crossbow"
+      ],
+      "spriteKey": "Crossbow",
+      "actions": [
+        "Shoot (0, 0)"
+      ],
+      "notes": "Requires Arrow or Slayer in second hand",
+      "locations": "(05,16,30)",
+      "weapon": {
+        "strength": 1,
+        "kineticEnergy": 180,
+        "shootDamage": 120,
+        "itemClass": 30,
+        "deltaEnergy": 14
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "arrow",
+      "name": "Arrow",
+      "category": "Weapon",
+      "weight": 0.2,
+      "variants": [
+        "Arrow"
+      ],
+      "spriteKey": "Arrow",
+      "actions": [
+        "Throw (0, 0)",
+        "Stab (48, 0)"
+      ],
+      "notes": "-",
+      "locations": "Hawk The Fearless (Champion)(2) (01,08,19) (02,13,38) (02,06,31) (02,12,16) (02,18,11) (02,28,33)",
+      "weapon": {
+        "strength": 2,
+        "kineticEnergy": 10,
+        "shootDamage": 0,
+        "itemClass": 10,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x05C0",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Quiver2",
+          "Quiver3",
+          "Quiver4",
+          "Pouch1",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "slayer",
+      "name": "Slayer",
+      "category": "Weapon",
+      "weight": 0.2,
+      "variants": [
+        "Slayer"
+      ],
+      "spriteKey": "Slayer",
+      "actions": [
+        "Throw (0, 0)",
+        "Stab (48, 0)"
+      ],
+      "notes": "-",
+      "locations": "(05,18,18)(2) (05,14,33) (11,49,22)",
+      "weapon": {
+        "strength": 2,
+        "kineticEnergy": 28,
+        "shootDamage": 0,
+        "itemClass": 10,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x05C0",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Quiver2",
+          "Quiver3",
+          "Quiver4",
+          "Pouch1",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "sling",
+      "name": "Sling",
+      "category": "Weapon",
+      "weight": 1.9,
+      "variants": [
+        "Sling"
+      ],
+      "spriteKey": "Sling",
+      "actions": [
+        "Shoot (0, 0)"
+      ],
+      "notes": "Requires Rock in second hand",
+      "locations": "Alex Ander (Champion) (02,34,22)",
+      "weapon": {
+        "strength": 5,
+        "kineticEnergy": 20,
+        "shootDamage": 50,
+        "itemClass": 39,
+        "deltaEnergy": 7
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0440",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "rock",
+      "name": "Rock",
+      "category": "Weapon",
+      "weight": 1,
+      "variants": [
+        "Rock"
+      ],
+      "spriteKey": "Rock",
+      "actions": [
+        "Throw (0, 0)"
+      ],
+      "notes": "-",
+      "locations": "(01,04,30) (01,29,25) (these two are missing in Atari ST versions 1.0a and 1.0b) (06,18,08) Obtained by killing Rockpiles",
+      "weapon": {
+        "strength": 6,
+        "kineticEnergy": 18,
+        "shootDamage": 0,
+        "itemClass": 11,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x05C0",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Quiver2",
+          "Quiver3",
+          "Quiver4",
+          "Pouch1",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "poison_dart",
+      "name": "Poison Dart",
+      "category": "Weapon",
+      "weight": 0.3,
+      "variants": [
+        "Poison Dart"
+      ],
+      "spriteKey": "Poison Dart",
+      "actions": [
+        "Throw (0, 0)",
+        "Stab (48, 0)"
+      ],
+      "notes": "-",
+      "locations": "Gando Thurfoot (Champion)(2) (04,12,14) (04,7,27)(2)",
+      "weapon": {
+        "strength": 7,
+        "kineticEnergy": 23,
+        "shootDamage": 0,
+        "itemClass": 12,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x05C0",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Quiver2",
+          "Quiver3",
+          "Quiver4",
+          "Pouch1",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "throwing_star",
+      "name": "Throwing Star",
+      "category": "Weapon",
+      "weight": 0.1,
+      "variants": [
+        "Throwing Star"
+      ],
+      "spriteKey": "Throwing Star",
+      "actions": [
+        "Throw (0, 0)"
+      ],
+      "notes": "-",
+      "locations": "Wu Tse Son Of Heaven (Champion)(3) (01,13,28) (01,12,44) (01,05,38)(Screamer) (05,22,11)(2) (07,44,20)(Giggler)",
+      "weapon": {
+        "strength": 3,
+        "kineticEnergy": 19,
+        "shootDamage": 0,
+        "itemClass": 1,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x05C0",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Quiver2",
+          "Quiver3",
+          "Quiver4",
+          "Pouch1",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "stick",
+      "name": "Stick",
+      "category": "Weapon",
+      "weight": 0.8,
+      "variants": [
+        "Stick"
+      ],
+      "spriteKey": "Stick",
+      "actions": [
+        "Swing (16, 0)"
+      ],
+      "notes": "-",
+      "locations": "Only available by hacking",
+      "weapon": {
+        "strength": 4,
+        "kineticEnergy": 4,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "staff",
+      "name": "Staff",
+      "category": "Weapon",
+      "weight": 2.6,
+      "variants": [
+        "Staff"
+      ],
+      "spriteKey": "Staff",
+      "actions": [
+        "Swing (16, 0)"
+      ],
+      "notes": "+2 Mana",
+      "locations": "Nabi The Prophet (Champion) (10,13,13)",
+      "weapon": {
+        "strength": 12,
+        "kineticEnergy": 4,
+        "shootDamage": 0,
+        "itemClass": 129,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "wand",
+      "name": "Wand",
+      "category": "Weapon",
+      "weight": 0.1,
+      "variants": [
+        "Wand"
+      ],
+      "spriteKey": "Wand",
+      "actions": [
+        "Calm (0, 0)",
+        "Spellshield (0, 2, Uses charges)",
+        "Heal (0, 3)"
+      ],
+      "notes": "+1 Mana",
+      "locations": "Tiggy Tamal (Champion)(Charges=15) (02,05,27)(Charges=15)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 130,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0540",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "teowand",
+      "name": "Teowand",
+      "category": "Weapon",
+      "weight": 0.2,
+      "variants": [
+        "Teowand"
+      ],
+      "spriteKey": "Teowand",
+      "actions": [
+        "Calm (0, 0",
+        "Spellshield (0, 3, Uses charges)",
+        "Fireshield (0, 4, Uses charges)"
+      ],
+      "notes": "+6 Mana",
+      "locations": "(03,20,17)(Charges=15)",
+      "weapon": {
+        "strength": 1,
+        "kineticEnergy": 20,
+        "shootDamage": 0,
+        "itemClass": 140,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0540",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "yew_staff",
+      "name": "Yew Staff",
+      "category": "Weapon",
+      "weight": 3.5,
+      "variants": [
+        "Yew Staff"
+      ],
+      "spriteKey": "Yew Staff",
+      "actions": [
+        "Parry (8, 0)",
+        "Light (0, 0, Uses charges)",
+        "Dispell (0, 3, Uses charges)"
+      ],
+      "notes": "+4 Mana",
+      "locations": "(05,28,10)(Charges=10) (09,30,25)(Charges=12)",
+      "weapon": {
+        "strength": 18,
+        "kineticEnergy": 6,
+        "shootDamage": 0,
+        "itemClass": 128,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "staff_of_manar",
+      "name": "Staff Of Manar",
+      "category": "Weapon",
+      "weight": 2.9,
+      "variants": [
+        "Staff Of Manar"
+      ],
+      "spriteKey": "Staff Of Manar",
+      "actions": [
+        "Swing (16, 0)",
+        "Dispell (0, 3 Uses charges)",
+        "Fireshield (0, 4 Uses charges)"
+      ],
+      "notes": "+10 Mana",
+      "locations": "(07,50,17)(Charges=15)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 4,
+        "shootDamage": 0,
+        "itemClass": 159,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "snake_staff",
+      "name": "Snake Staff",
+      "category": "Weapon",
+      "weight": 2.1,
+      "variants": [
+        "Snake Staff"
+      ],
+      "spriteKey": "Snake Staff",
+      "actions": [
+        "Heal (0, 0)",
+        "Calm (0, 2)",
+        "Brandish (0, 3)"
+      ],
+      "notes": "+8 Mana",
+      "locations": "(11,20,46)(Charges=15, unused)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 3,
+        "shootDamage": 0,
+        "itemClass": 131,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "the_conduit",
+      "name": "The Conduit",
+      "category": "Weapon",
+      "weight": 3.3,
+      "variants": [
+        "The Conduit"
+      ],
+      "spriteKey": "The Conduit",
+      "actions": [
+        "Swing (16, 0)",
+        "Lightning (0, 2 Uses charges)",
+        "Window (0, 4 Uses charges)"
+      ],
+      "notes": "+16 Mana",
+      "locations": "Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 7,
+        "shootDamage": 0,
+        "itemClass": 136,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "dragon_spit",
+      "name": "Dragon Spit",
+      "category": "Weapon",
+      "weight": 0.8,
+      "variants": [
+        "Dragon Spit"
+      ],
+      "spriteKey": "Dragon Spit",
+      "actions": [
+        "Swing (16, 0)"
+      ],
+      "notes": "+7 Mana",
+      "locations": "(06,20,08)(Charges=10)",
+      "weapon": {
+        "strength": 3,
+        "kineticEnergy": 1,
+        "shootDamage": 0,
+        "itemClass": 132,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0440",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "sceptre_of_lyf",
+      "name": "Sceptre Of Lyf",
+      "category": "Weapon",
+      "weight": 1.8,
+      "variants": [
+        "Sceptre Of Lyf"
+      ],
+      "spriteKey": "Sceptre Of Lyf",
+      "actions": [
+        "Parry (8, 0)",
+        "Heal (0, 3)",
+        "Light (0, 4 Uses charges)"
+      ],
+      "notes": "+5 Mana +1 Skill 13 (Hidden Priest skill)",
+      "locations": "(06,24,08)(Charges=15)",
+      "weapon": {
+        "strength": 9,
+        "kineticEnergy": 4,
+        "shootDamage": 0,
+        "itemClass": 131,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "horn_of_fear",
+      "name": "Horn Of Fear",
+      "category": "Weapon",
+      "weight": 0.8,
+      "variants": [
+        "Horn Of Fear"
+      ],
+      "spriteKey": "Horn Of Fear",
+      "actions": [
+        "Blow Horn (0, 0)"
+      ],
+      "notes": "Scares some creatures",
+      "locations": "(03,06,06)",
+      "weapon": {
+        "strength": 1,
+        "kineticEnergy": 1,
+        "shootDamage": 0,
+        "itemClass": 192,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0440",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "speedbow",
+      "name": "Speedbow",
+      "category": "Weapon",
+      "weight": 3,
+      "variants": [
+        "Speedbow"
+      ],
+      "spriteKey": "Speedbow",
+      "actions": [
+        "Shoot (0, 0)"
+      ],
+      "notes": "Requires Arrow or Slayer in second hand",
+      "locations": "(09,10,31)",
+      "weapon": {
+        "strength": 1,
+        "kineticEnergy": 220,
+        "shootDamage": 125,
+        "itemClass": 26,
+        "deltaEnergy": 10
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "the_firestaff_complete",
+      "name": "The Firestaff (Complete)",
+      "category": "Weapon",
+      "weight": 3.6,
+      "variants": [
+        "The Firestaff (Complete)"
+      ],
+      "spriteKey": "The Firestaff (Complete)",
+      "actions": [
+        "Invoke (0, 0)",
+        "Fuse (0, 0)",
+        "Fluxcage (0, 0)"
+      ],
+      "notes": "+2 All Skills (including hidden skills) The Firestaff (complete) in your inventory will activate the teleporter at (13,48,33) when walking at (13,49,39). This will block access to upper levels of the dungeon.",
+      "locations": "Obtained by combining The Firestaff with the power gem at (13,49,36)",
+      "weapon": {
+        "strength": 100,
+        "kineticEnergy": 50,
+        "shootDamage": -1,
+        "itemClass": 255,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0040",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Pouch2"
+        ]
+      }
+    },
+    {
+      "id": "cape",
+      "name": "Cape",
+      "category": "Armour",
+      "weight": 0.3,
+      "variants": [
+        "Cape"
+      ],
+      "spriteKey": "Cape",
+      "actions": [],
+      "notes": "Can also be worn around the neck",
+      "locations": "Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 5,
+        "sharpResistance": 1
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x040C",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Torso",
+          "Neck"
+        ]
+      }
+    },
+    {
+      "id": "cloak_of_night",
+      "name": "Cloak Of Night",
+      "category": "Armour",
+      "weight": 0.4,
+      "variants": [
+        "Cloak Of Night"
+      ],
+      "spriteKey": "Cloak Of Night",
+      "actions": [],
+      "notes": "+8 Dexterity Can also be worn around the neck",
+      "locations": "Gothmog (Champion)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 10,
+        "sharpResistance": 1
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x040C",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Torso",
+          "Neck"
+        ]
+      }
+    },
+    {
+      "id": "barbarian_hide",
+      "name": "Barbarian Hide",
+      "category": "Armour",
+      "weight": 0.3,
+      "variants": [
+        "Barbarian Hide"
+      ],
+      "spriteKey": "Barbarian Hide",
+      "actions": [],
+      "notes": "-",
+      "locations": "Azizi Johari, Halk The Barbarian (Champions)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 4,
+        "sharpResistance": 1
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0410",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "sandals",
+      "name": "Sandals",
+      "category": "Armour",
+      "weight": 0.6,
+      "variants": [
+        "Sandals"
+      ],
+      "spriteKey": "Sandals",
+      "actions": [],
+      "notes": "-",
+      "locations": "Chani Sayyadina Sihaya, Nabi The Prophet, Sonja She Devil, Mophus The Healer, Tiggy Tamal, Wu Tse Son Of Heaven, Halk The Barbarian, Elija Lion Of Yaitopya (Champions)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 5,
+        "sharpResistance": 2
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0420",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Feet"
+        ]
+      }
+    },
+    {
+      "id": "leather_boots",
+      "name": "Leather Boots",
+      "category": "Armour",
+      "weight": 1.6,
+      "variants": [
+        "Leather Boots"
+      ],
+      "spriteKey": "Leather Boots",
+      "actions": [],
+      "notes": "-",
+      "locations": "Boris Wizard Of Baldor, Leyla Shadowseek, Leif The Valiant, Gando Thurfoot (Champions) (01,07,23) (01,14,22)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 25,
+        "sharpResistance": 4
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0420",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Feet"
+        ]
+      }
+    },
+    {
+      "id": "robe_body",
+      "name": "Robe (Body)",
+      "category": "Armour",
+      "weight": 0.4,
+      "variants": [
+        "Robe (Body)"
+      ],
+      "spriteKey": "Robe (Body)",
+      "actions": [],
+      "notes": "-",
+      "locations": "Mophus The Healer, Elija Lion Of Yaitopya (Champions)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 5,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0408",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "robe_legs",
+      "name": "Robe (Legs)",
+      "category": "Armour",
+      "weight": 0.4,
+      "variants": [
+        "Robe (Legs)"
+      ],
+      "spriteKey": "Robe (Legs)",
+      "actions": [],
+      "notes": "-",
+      "locations": "Mophus The Healer, Elija Lion Of Yaitopya (Champions)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 5,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0410",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "fine_robe_body",
+      "name": "Fine Robe (Body)",
+      "category": "Armour",
+      "weight": 0.3,
+      "variants": [
+        "Fine Robe (Body)"
+      ],
+      "spriteKey": "Fine Robe (Body)",
+      "actions": [],
+      "notes": "-",
+      "locations": "(02,05,20)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 7,
+        "sharpResistance": 1
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0408",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "fine_robe_legs",
+      "name": "Fine Robe (Legs)",
+      "category": "Armour",
+      "weight": 0.3,
+      "variants": [
+        "Fine Robe (Legs)"
+      ],
+      "spriteKey": "Fine Robe (Legs)",
+      "actions": [],
+      "notes": "-",
+      "locations": "(02,05,20)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 7,
+        "sharpResistance": 1
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0410",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "kirtle",
+      "name": "Kirtle",
+      "category": "Armour",
+      "weight": 0.4,
+      "variants": [
+        "Kirtle"
+      ],
+      "spriteKey": "Kirtle",
+      "actions": [],
+      "notes": "-",
+      "locations": "Tiggy Tamal (Champion)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 6,
+        "sharpResistance": 1
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0408",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "silk_shirt",
+      "name": "Silk Shirt",
+      "category": "Armour",
+      "weight": 0.2,
+      "variants": [
+        "Silk Shirt"
+      ],
+      "spriteKey": "Silk Shirt",
+      "actions": [],
+      "notes": "-",
+      "locations": "Chani Sayyadina Sihaya, Leyla Shadowseek, Wu Tse Son Of Heaven (Champions)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 4,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0408",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "tabard",
+      "name": "Tabard",
+      "category": "Armour",
+      "weight": 0.4,
+      "variants": [
+        "Tabard"
+      ],
+      "spriteKey": "Tabard",
+      "actions": [],
+      "notes": "-",
+      "locations": "Wu Tse Son Of Heaven, Syra Child Of Nature (Champions)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 5,
+        "sharpResistance": 1
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0410",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "gunna",
+      "name": "Gunna",
+      "category": "Armour",
+      "weight": 0.5,
+      "variants": [
+        "Gunna"
+      ],
+      "spriteKey": "Gunna",
+      "actions": [],
+      "notes": "-",
+      "locations": "Chani Sayyadina Sihaya, Sonja She Devil, Tiggy Tamal (Champions)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 7,
+        "sharpResistance": 1
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0410",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "elven_doublet",
+      "name": "Elven Doublet",
+      "category": "Armour",
+      "weight": 0.3,
+      "variants": [
+        "Elven Doublet"
+      ],
+      "spriteKey": "Elven Doublet",
+      "actions": [],
+      "notes": "-",
+      "locations": "Syra Child Of Nature, Linflas (Champions) (01,08,19)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 11,
+        "sharpResistance": 2
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0408",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "elven_huke",
+      "name": "Elven Huke",
+      "category": "Armour",
+      "weight": 0.3,
+      "variants": [
+        "Elven Huke"
+      ],
+      "spriteKey": "Elven Huke",
+      "actions": [],
+      "notes": "-",
+      "locations": "Linflas (Champion) (02,24,14)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 13,
+        "sharpResistance": 2
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0410",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "elven_boots",
+      "name": "Elven Boots",
+      "category": "Armour",
+      "weight": 0.4,
+      "variants": [
+        "Elven Boots"
+      ],
+      "spriteKey": "Elven Boots",
+      "actions": [],
+      "notes": "+1-14 Load (depends of Strength, see Dungeon Master and Chaos Strikes Back Skills and Statistics )",
+      "locations": "Linflas (Champion) (03,01,22)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 13,
+        "sharpResistance": 2
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0420",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Feet"
+        ]
+      }
+    },
+    {
+      "id": "leather_jerkin",
+      "name": "Leather Jerkin",
+      "category": "Armour",
+      "weight": 0.6,
+      "variants": [
+        "Leather Jerkin"
+      ],
+      "spriteKey": "Leather Jerkin",
+      "actions": [],
+      "notes": "-",
+      "locations": "Hawk The Fearless, Alex Ander, Wuuf The Bika, Leif The Valiant, Gando Thurfoot (Champions) (02,14,38) (02,12,32) (03,16,00)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 17,
+        "sharpResistance": 3
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0408",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "leather_pants",
+      "name": "Leather Pants",
+      "category": "Armour",
+      "weight": 0.8,
+      "variants": [
+        "Leather Pants"
+      ],
+      "spriteKey": "Leather Pants",
+      "actions": [],
+      "notes": "-",
+      "locations": "Hawk The Fearless, Boris Wizard Of Baldor, Alex Ander, Leyla Shadowseek, Stamm Bladecaster, Leif The Valiant (Champions) (01,19,25) (02,14,38) (02,09,24) (03,16,00)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 20,
+        "sharpResistance": 3
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0410",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "suede_boots",
+      "name": "Suede Boots",
+      "category": "Armour",
+      "weight": 1.4,
+      "variants": [
+        "Suede Boots"
+      ],
+      "spriteKey": "Suede Boots",
+      "actions": [],
+      "notes": "-",
+      "locations": "Hawk The Fearless, Alex Ander, Stamm Bladecaster (Champions) (02,14,38)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 20,
+        "sharpResistance": 3
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0420",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Feet"
+        ]
+      }
+    },
+    {
+      "id": "blue_pants",
+      "name": "Blue Pants",
+      "category": "Armour",
+      "weight": 0.6,
+      "variants": [
+        "Blue Pants"
+      ],
+      "spriteKey": "Blue Pants",
+      "actions": [],
+      "notes": "-",
+      "locations": "Zed Duke Of Banville, Nabi The Prophet, Gando Thurfoot (Champions)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 12,
+        "sharpResistance": 2
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0410",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "tunic",
+      "name": "Tunic",
+      "category": "Armour",
+      "weight": 0.5,
+      "variants": [
+        "Tunic"
+      ],
+      "spriteKey": "Tunic",
+      "actions": [],
+      "notes": "-",
+      "locations": "Boris Wizard Of Baldor, Nabi The Prophet, Stamm Bladecaster (Champions)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 9,
+        "sharpResistance": 1
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0408",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "ghi",
+      "name": "Ghi",
+      "category": "Armour",
+      "weight": 0.5,
+      "variants": [
+        "Ghi"
+      ],
+      "spriteKey": "Ghi",
+      "actions": [],
+      "notes": "-",
+      "locations": "Iaido Ruyito Chiburi (Champion)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 8,
+        "sharpResistance": 1
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0408",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "ghi_trousers",
+      "name": "Ghi Trousers",
+      "category": "Armour",
+      "weight": 0.5,
+      "variants": [
+        "Ghi Trousers"
+      ],
+      "spriteKey": "Ghi Trousers",
+      "actions": [],
+      "notes": "-",
+      "locations": "Iaido Ruyito Chiburi (Champion) (01,15,24)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 9,
+        "sharpResistance": 1
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0410",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "calista",
+      "name": "Calista",
+      "category": "Armour",
+      "weight": 0.4,
+      "variants": [
+        "Calista"
+      ],
+      "spriteKey": "Calista",
+      "actions": [],
+      "notes": "-",
+      "locations": "(13,47,40)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 1,
+        "sharpResistance": 4
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0402",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Head"
+        ]
+      }
+    },
+    {
+      "id": "crown_of_nerra",
+      "name": "Crown Of Nerra",
+      "category": "Armour",
+      "weight": 0.6,
+      "variants": [
+        "Crown Of Nerra"
+      ],
+      "spriteKey": "Crown Of Nerra",
+      "actions": [],
+      "notes": "+10 Wisdom",
+      "locations": "(06,16,08)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 5,
+        "sharpResistance": 4
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0402",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Head"
+        ]
+      }
+    },
+    {
+      "id": "bezerker_helm",
+      "name": "Bezerker Helm",
+      "category": "Armour",
+      "weight": 1.1,
+      "variants": [
+        "Bezerker Helm"
+      ],
+      "spriteKey": "Bezerker Helm",
+      "actions": [],
+      "notes": "-",
+      "locations": "Halk The Barbarian (Champion) (02,14,38) (02,31,27)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 12,
+        "sharpResistance": 5
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0402",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Head"
+        ]
+      }
+    },
+    {
+      "id": "helmet",
+      "name": "Helmet",
+      "category": "Armour",
+      "weight": 1.4,
+      "variants": [
+        "Helmet"
+      ],
+      "spriteKey": "Helmet",
+      "actions": [],
+      "notes": "-",
+      "locations": "(02,24,15) (04,08,27) (04,32,29)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 17,
+        "sharpResistance": 5
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0402",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Head"
+        ]
+      }
+    },
+    {
+      "id": "basinet",
+      "name": "Basinet",
+      "category": "Armour",
+      "weight": 1.5,
+      "variants": [
+        "Basinet"
+      ],
+      "spriteKey": "Basinet",
+      "actions": [],
+      "notes": "-",
+      "locations": "(03,18,02)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 20,
+        "sharpResistance": 5
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0402",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Head"
+        ]
+      }
+    },
+    {
+      "id": "buckler",
+      "name": "Buckler",
+      "category": "Armour",
+      "weight": 1.1,
+      "variants": [
+        "Buckler"
+      ],
+      "spriteKey": "Buckler",
+      "actions": [
+        "Block (2)",
+        "Hit (12)"
+      ],
+      "notes": "-",
+      "locations": "(01,05,32)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 22,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0400",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest"
+        ]
+      }
+    },
+    {
+      "id": "hide_shield",
+      "name": "Hide Shield",
+      "category": "Armour",
+      "weight": 1,
+      "variants": [
+        "Hide Shield"
+      ],
+      "spriteKey": "Hide Shield",
+      "actions": [
+        "Block (2)",
+        "Hit (12)"
+      ],
+      "notes": "-",
+      "locations": "Azizi Johari (Champion)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 16,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0200",
+        "allowedSlots": [
+          "Hands",
+          "Backpack"
+        ]
+      }
+    },
+    {
+      "id": "wooden_shield",
+      "name": "Wooden Shield",
+      "category": "Armour",
+      "weight": 1.4,
+      "variants": [
+        "Wooden Shield"
+      ],
+      "spriteKey": "Wooden Shield",
+      "actions": [
+        "Block (2)",
+        "Hit (12)"
+      ],
+      "notes": "-",
+      "locations": "(02,12,20) Obtained by killing Skeletons",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 20,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0200",
+        "allowedSlots": [
+          "Hands",
+          "Backpack"
+        ]
+      }
+    },
+    {
+      "id": "small_shield",
+      "name": "Small Shield",
+      "category": "Armour",
+      "weight": 2.1,
+      "variants": [
+        "Small Shield"
+      ],
+      "spriteKey": "Small Shield",
+      "actions": [
+        "Block (2)",
+        "Hit (12)"
+      ],
+      "notes": "-",
+      "locations": "(03,23,11)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 35,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0200",
+        "allowedSlots": [
+          "Hands",
+          "Backpack"
+        ]
+      }
+    },
+    {
+      "id": "mail_aketon",
+      "name": "Mail Aketon",
+      "category": "Armour",
+      "weight": 6.5,
+      "variants": [
+        "Mail Aketon"
+      ],
+      "spriteKey": "Mail Aketon",
+      "actions": [],
+      "notes": "-",
+      "locations": "Zed Duke Of Banville (Champion) (02,32,36) (04,32,29) (05,26,26)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 35,
+        "sharpResistance": 5
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0408",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "leg_mail",
+      "name": "Leg Mail",
+      "category": "Armour",
+      "weight": 5.3,
+      "variants": [
+        "Leg Mail"
+      ],
+      "spriteKey": "Leg Mail",
+      "actions": [],
+      "notes": "-",
+      "locations": "(03,02,23) (04,32,29)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 35,
+        "sharpResistance": 5
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0410",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "mithral_aketon",
+      "name": "Mithral Aketon",
+      "category": "Armour",
+      "weight": 5.2,
+      "variants": [
+        "Mithral Aketon"
+      ],
+      "spriteKey": "Mithral Aketon",
+      "actions": [],
+      "notes": "-",
+      "locations": "(05,18,18)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 70,
+        "sharpResistance": 7
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0408",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "mithral_mail",
+      "name": "Mithral Mail",
+      "category": "Armour",
+      "weight": 4.1,
+      "variants": [
+        "Mithral Mail"
+      ],
+      "spriteKey": "Mithral Mail",
+      "actions": [],
+      "notes": "-",
+      "locations": "(05,24,32)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 55,
+        "sharpResistance": 7
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0410",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "casque_n_coif",
+      "name": "Casque'n Coif",
+      "category": "Armour",
+      "weight": 1.6,
+      "variants": [
+        "Casque'n Coif"
+      ],
+      "spriteKey": "Casque'n Coif",
+      "actions": [],
+      "notes": "-",
+      "locations": "(04,30,06) (05,32,09)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 25,
+        "sharpResistance": 6
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0402",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Head"
+        ]
+      }
+    },
+    {
+      "id": "hosen",
+      "name": "Hosen",
+      "category": "Armour",
+      "weight": 1.6,
+      "variants": [
+        "Hosen"
+      ],
+      "spriteKey": "Hosen",
+      "actions": [],
+      "notes": "-",
+      "locations": "Zed Duke Of Banville (Champion) (03,00,08) (04,32,29)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 30,
+        "sharpResistance": 6
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0420",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Feet"
+        ]
+      }
+    },
+    {
+      "id": "armet",
+      "name": "Armet",
+      "category": "Armour",
+      "weight": 1.9,
+      "variants": [
+        "Armet"
+      ],
+      "spriteKey": "Armet",
+      "actions": [],
+      "notes": "-",
+      "locations": "(09,16,36) Obtained by killing Animated Armours",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 40,
+        "sharpResistance": 7
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0402",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Head"
+        ]
+      }
+    },
+    {
+      "id": "torso_plate",
+      "name": "Torso Plate",
+      "category": "Armour",
+      "weight": 12,
+      "variants": [
+        "Torso Plate"
+      ],
+      "spriteKey": "Torso Plate",
+      "actions": [],
+      "notes": "-",
+      "locations": "(05,34,19) (09,27,36) Obtained by killing Animated Armours",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 65,
+        "sharpResistance": 4
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0008",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "leg_plate",
+      "name": "Leg Plate",
+      "category": "Armour",
+      "weight": 8,
+      "variants": [
+        "Leg Plate"
+      ],
+      "spriteKey": "Leg Plate",
+      "actions": [],
+      "notes": "-",
+      "locations": "(09,24,35) Obtained by killing Animated Armours",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 56,
+        "sharpResistance": 4
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0010",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "foot_plate",
+      "name": "Foot Plate",
+      "category": "Armour",
+      "weight": 2.8,
+      "variants": [
+        "Foot Plate"
+      ],
+      "spriteKey": "Foot Plate",
+      "actions": [],
+      "notes": "-",
+      "locations": "(09,24,35) (10,16,13) Obtained by killing Animated Armours",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 37,
+        "sharpResistance": 5
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0420",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Feet"
+        ]
+      }
+    },
+    {
+      "id": "large_shield",
+      "name": "Large Shield",
+      "category": "Armour",
+      "weight": 3.4,
+      "variants": [
+        "Large Shield"
+      ],
+      "spriteKey": "Large Shield",
+      "actions": [
+        "Block (2)",
+        "Hit (12)"
+      ],
+      "notes": "-",
+      "locations": "(04,25,04) (05,15,21)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 56,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0200",
+        "allowedSlots": [
+          "Hands",
+          "Backpack"
+        ]
+      }
+    },
+    {
+      "id": "helm_of_lyte",
+      "name": "Helm Of Lyte",
+      "category": "Armour",
+      "weight": 1.7,
+      "variants": [
+        "Helm Of Lyte"
+      ],
+      "spriteKey": "Helm Of Lyte",
+      "actions": [],
+      "notes": "-",
+      "locations": "(11,43,33)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 62,
+        "sharpResistance": 5
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0402",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Head"
+        ]
+      }
+    },
+    {
+      "id": "plate_of_lyte",
+      "name": "Plate Of Lyte",
+      "category": "Armour",
+      "weight": 10.8,
+      "variants": [
+        "Plate Of Lyte"
+      ],
+      "spriteKey": "Plate Of Lyte",
+      "actions": [],
+      "notes": "-",
+      "locations": "(10,10,41)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 125,
+        "sharpResistance": 4
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0008",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "poleyn_of_lyte",
+      "name": "Poleyn Of Lyte",
+      "category": "Armour",
+      "weight": 7.2,
+      "variants": [
+        "Poleyn Of Lyte"
+      ],
+      "spriteKey": "Poleyn Of Lyte",
+      "actions": [],
+      "notes": "-",
+      "locations": "(10,10,41)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 90,
+        "sharpResistance": 4
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0010",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "greave_of_lyte",
+      "name": "Greave Of Lyte",
+      "category": "Armour",
+      "weight": 2.4,
+      "variants": [
+        "Greave Of Lyte"
+      ],
+      "spriteKey": "Greave Of Lyte",
+      "actions": [],
+      "notes": "-",
+      "locations": "(10,10,41)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 50,
+        "sharpResistance": 5
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0420",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Feet"
+        ]
+      }
+    },
+    {
+      "id": "shield_of_lyte",
+      "name": "Shield Of Lyte",
+      "category": "Armour",
+      "weight": 3,
+      "variants": [
+        "Shield Of Lyte"
+      ],
+      "spriteKey": "Shield Of Lyte",
+      "actions": [
+        "Block (2)",
+        "Hit (12)"
+      ],
+      "notes": "-",
+      "locations": "(09,33,16)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 85,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0200",
+        "allowedSlots": [
+          "Hands",
+          "Backpack"
+        ]
+      }
+    },
+    {
+      "id": "helm_of_darc",
+      "name": "Helm Of Darc",
+      "category": "Armour",
+      "weight": 3.5,
+      "variants": [
+        "Helm Of Darc"
+      ],
+      "spriteKey": "Helm Of Darc",
+      "actions": [],
+      "notes": "-",
+      "locations": "(11,48,20)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 76,
+        "sharpResistance": 4
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0402",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Head"
+        ]
+      }
+    },
+    {
+      "id": "plate_of_darc",
+      "name": "Plate Of Darc",
+      "category": "Armour",
+      "weight": 14.1,
+      "variants": [
+        "Plate Of Darc"
+      ],
+      "spriteKey": "Plate Of Darc",
+      "actions": [],
+      "notes": "-",
+      "locations": "(11,41,48)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 160,
+        "sharpResistance": 4
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0008",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "poleyn_of_darc",
+      "name": "Poleyn Of Darc",
+      "category": "Armour",
+      "weight": 9,
+      "variants": [
+        "Poleyn Of Darc"
+      ],
+      "spriteKey": "Poleyn Of Darc",
+      "actions": [],
+      "notes": "-",
+      "locations": "(11,43,48)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 101,
+        "sharpResistance": 4
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0010",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "greave_of_darc",
+      "name": "Greave Of Darc",
+      "category": "Armour",
+      "weight": 3.1,
+      "variants": [
+        "Greave Of Darc"
+      ],
+      "spriteKey": "Greave Of Darc",
+      "actions": [],
+      "notes": "-",
+      "locations": "(11,49,50)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 60,
+        "sharpResistance": 5
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0420",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Feet"
+        ]
+      }
+    },
+    {
+      "id": "shield_of_darc",
+      "name": "Shield Of Darc",
+      "category": "Armour",
+      "weight": 4,
+      "variants": [
+        "Shield Of Darc"
+      ],
+      "spriteKey": "Shield Of Darc",
+      "actions": [
+        "Block (2)",
+        "Hit (12)"
+      ],
+      "notes": "-",
+      "locations": "(11,50,48)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 100,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0200",
+        "allowedSlots": [
+          "Hands",
+          "Backpack"
+        ]
+      }
+    },
+    {
+      "id": "dexhelm",
+      "name": "Dexhelm",
+      "category": "Armour",
+      "weight": 1.4,
+      "variants": [
+        "Dexhelm"
+      ],
+      "spriteKey": "Dexhelm",
+      "actions": [],
+      "notes": "+10 Dexterity",
+      "locations": "Super Famicom / Super NES: (07,48,12)(Giggler) Other versions: Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 54,
+        "sharpResistance": 6
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0402",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Head"
+        ]
+      }
+    },
+    {
+      "id": "flamebain",
+      "name": "Flamebain",
+      "category": "Armour",
+      "weight": 5.7,
+      "variants": [
+        "Flamebain"
+      ],
+      "spriteKey": "Flamebain",
+      "actions": [],
+      "notes": "+12 Anti-Fire",
+      "locations": "(06,12,08)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 60,
+        "sharpResistance": 7
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0408",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "powertowers",
+      "name": "Powertowers",
+      "category": "Armour",
+      "weight": 8.1,
+      "variants": [
+        "Powertowers"
+      ],
+      "spriteKey": "Powertowers",
+      "actions": [],
+      "notes": "+10 Strength",
+      "locations": "Super Famicom / Super NES: (04,21,01) Other versions: Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 88,
+        "sharpResistance": 4
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0010",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Legs"
+        ]
+      }
+    },
+    {
+      "id": "boots_of_speed",
+      "name": "Boots Of Speed",
+      "category": "Armour",
+      "weight": 0.3,
+      "variants": [
+        "Boots Of Speed"
+      ],
+      "spriteKey": "Boots Of Speed",
+      "actions": [],
+      "notes": "Speeds up moves when all party equipped",
+      "locations": "(06,20,08) (09,25,36) (10,34,36) (11,44,34)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 16,
+        "sharpResistance": 2
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0420",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Feet"
+        ]
+      }
+    },
+    {
+      "id": "halter",
+      "name": "Halter",
+      "category": "Armour",
+      "weight": 0.2,
+      "variants": [
+        "Halter"
+      ],
+      "spriteKey": "Halter",
+      "actions": [],
+      "notes": "-",
+      "locations": "Sonja She Devil, Azizi Johari (Champions)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 3,
+        "sharpResistance": 3
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0408",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Torso"
+        ]
+      }
+    },
+    {
+      "id": "scroll",
+      "name": "Scroll",
+      "category": "Scroll",
+      "weight": 0.1,
+      "variants": [
+        "Scroll",
+        "Scroll (In Hand)"
+      ],
+      "spriteKey": "Scroll",
+      "actions": [],
+      "notes": "",
+      "locations": "(00,04,15) \"Invoke Ful for a magic torch\" (00,04,17) \"New lives for old bones\" (01,06,17) \"Small details can hide great rewards\" (01,19,25)(2) \"Casting Vi into a flask creates a serum that heals wounds\", \"Casting Vi Bro into a flask creates a serum for curing poison\" (01,02,45) \"Des Ven will conjure a poison spell\" (01,27,43) \"Drink these to gain magical defense\" (02,21,23)(2) \"Ya will create a stamina potion\", \"Some doors can be opened with a Zo spell\" (02,32,38) \"The spell Des Ew weakens nonmaterial beings\" (03,26,20)(2) \"Ya Bro creates a magical shield potion\", \"The spell Oh Ven cast a cloud of poison.\" (06,33,28) \"Fireball Ful Ir. Fire Shield Ful Bro Neta.\" (06,33,29) \"Light Oh Ir Ra. Darkness Des Ir Sar.\" (06,31,25) \"The keys to passage lie hidden deep.\" (06,10,07)(3) \"Neither Chaos nor Order is truly balanced\", \"The Firestaff can restore balance or destroy it.\", \"The power gem is sealed in the mountain by a strange magical force.\" (06,29,08) \"Balance is the ultimate good\" (06,33,12)(5) \"I fear for the people of the world should the power gem and the Firestaff get in the wrong hands\", \"I have given the Firestaff much power. Power to do and undo. Power to break and mend.\", \"The Firestaff can contain a being of pure alignment with its fluxcage.\", \"Once fluxcaged a being can be transmuted by the power of the staff which should always be used for balance.\", \"Zokathra might create a plasma that could burn through the amalgam encasing the gem.\" (07,35,39) \"Four potions for boosting skills Ful Bro Ku Oh Bro Ros Ya Bro Dain Ya Bro Neta\" (07,25,32) \"The spell Ya Bro Ros leaves a trail of magic footprints.\" (08,22,28) \"Lightning bolt Oh Kath Ra\" (08,40,05) \"Put the gem back...\" (08,30,19) \"The spell Oh Ew Ra bestows magic vision.\" (09,32,40) \"Shield potion Ya Bro. Magic shield Ya Ir.\" (09,33,16) \"Mana potion Zo Bro Ra creates a pure mana potion.\" (10,26,35) \"The only way out is another way in.\" (11,48,27) \"Invisibility Oh Ew Sar\" (13,49,36) \"Only the touch of the proper spell will free the gem and only the Firestaff can possess it.\"",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "empty_flask",
+      "name": "Empty Flask",
+      "category": "Potion",
+      "weight": 0.1,
+      "variants": [
+        "Empty Flask"
+      ],
+      "spriteKey": "Empty Flask",
+      "actions": [],
+      "notes": "Required in hand to make potions",
+      "locations": "Wuuf The Bika (Champion) (01,19,25)(3) (01,02,45) (01,08,38)(Screamer) (02,32,38) (02,32,36) (03,14,06) (03,03,18) (03,06,06) (06,09,07)(3) (06,22,08) (08,30,19)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "ven_potion",
+      "name": "Ven Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Ven Potion"
+      ],
+      "spriteKey": "Ven Potion",
+      "actions": [
+        "Throw (0)"
+      ],
+      "notes": "Poison Cloud",
+      "locations": "(04,17,18)(Swamp Slime) (04,14,08) (04,14,07)(2) (05,12,07) (06,09,23) (10,36,38) (11,47,32)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "ros_potion",
+      "name": "Ros Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Ros Potion"
+      ],
+      "spriteKey": "Ros Potion",
+      "actions": [],
+      "notes": "Consumable Dexterity",
+      "locations": "(05,27,28)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "ku_potion",
+      "name": "Ku Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Ku Potion"
+      ],
+      "spriteKey": "Ku Potion",
+      "actions": [],
+      "notes": "Consumable Strength",
+      "locations": "(04,13,03)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "dane_potion",
+      "name": "Dane Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Dane Potion"
+      ],
+      "spriteKey": "Dane Potion",
+      "actions": [],
+      "notes": "Consumable Wisdom",
+      "locations": "(04,10,07)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "neta_potion",
+      "name": "Neta Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Neta Potion"
+      ],
+      "spriteKey": "Neta Potion",
+      "actions": [],
+      "notes": "Consumable Vitality",
+      "locations": "(03,06,18)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "bro_potion",
+      "name": "Bro Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Bro Potion"
+      ],
+      "spriteKey": "Bro Potion",
+      "actions": [],
+      "notes": "Consumable Cure Poison",
+      "locations": "(04,12,10) (05,16,06)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "ma_potion",
+      "name": "Ma Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Ma Potion"
+      ],
+      "spriteKey": "Ma Potion",
+      "actions": [],
+      "notes": "Consumable Stamina",
+      "locations": "-",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "ya_potion",
+      "name": "Ya Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Ya Potion"
+      ],
+      "spriteKey": "Ya Potion",
+      "actions": [],
+      "notes": "Consumable Magic Shield",
+      "locations": "(01,27,43)(2) (07,25,32) (11,48,27)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "ee_potion",
+      "name": "Ee Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Ee Potion"
+      ],
+      "spriteKey": "Ee Potion",
+      "actions": [],
+      "notes": "Consumable Mana",
+      "locations": "-",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "vi_potion",
+      "name": "Vi Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Vi Potion"
+      ],
+      "spriteKey": "Vi Potion",
+      "actions": [],
+      "notes": "Consumable Health",
+      "locations": "(05,27,28) (08,35,25)(2) (08,40,05) (11,48,27)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "water_flask",
+      "name": "Water Flask",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Water Flask"
+      ],
+      "spriteKey": "Water Flask",
+      "actions": [],
+      "notes": "Consumable Water Value: 1600",
+      "locations": "(05,14,33) (06,26,08) (09,35,27) (11,48,27)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "ful_bomb",
+      "name": "Ful Bomb",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Ful Bomb"
+      ],
+      "spriteKey": "Ful Bomb",
+      "actions": [
+        "Throw (0)"
+      ],
+      "notes": "Fireball",
+      "locations": "(04,12,10) (06,09,23) (07,31,34) (07,50,32)(2) (07,26,28) (09,35,27) (09,27,36) (10,36,38) (10,36,37) (11,47,20) (11,41,32)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "des_potion",
+      "name": "Des Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Des Potion"
+      ],
+      "spriteKey": "Des Potion",
+      "actions": [],
+      "notes": "Not consumable",
+      "locations": "Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "kath_bomb",
+      "name": "Kath Bomb",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Kath Bomb"
+      ],
+      "spriteKey": "Kath Bomb",
+      "actions": [],
+      "notes": "-",
+      "locations": "Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "mon_potion",
+      "name": "Mon Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Mon Potion"
+      ],
+      "spriteKey": "Mon Potion",
+      "actions": [],
+      "notes": "Not consumable",
+      "locations": "Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "pew_bomb",
+      "name": "Pew Bomb",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Pew Bomb"
+      ],
+      "spriteKey": "Pew Bomb",
+      "actions": [],
+      "notes": "-",
+      "locations": "Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "ra_bomb",
+      "name": "Ra Bomb",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Ra Bomb"
+      ],
+      "spriteKey": "Ra Bomb",
+      "actions": [],
+      "notes": "-",
+      "locations": "Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "sar_potion",
+      "name": "Sar Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Sar Potion"
+      ],
+      "spriteKey": "Sar Potion",
+      "actions": [],
+      "notes": "Not consumable",
+      "locations": "Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "um_potion",
+      "name": "Um Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Um Potion"
+      ],
+      "spriteKey": "Um Potion",
+      "actions": [],
+      "notes": "Not consumable",
+      "locations": "Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "zo_potion",
+      "name": "Zo Potion",
+      "category": "Potion",
+      "weight": 0.3,
+      "variants": [
+        "Zo Potion"
+      ],
+      "spriteKey": "Zo Potion",
+      "actions": [],
+      "notes": "Not consumable",
+      "locations": "Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": true
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "chest_closed",
+      "name": "Chest (Closed)",
+      "category": "Container",
+      "weight": 5,
+      "variants": [
+        "Chest (Closed)",
+        "Chest (Opened)"
+      ],
+      "spriteKey": "Chest (Closed)",
+      "actions": [],
+      "notes": "",
+      "locations": "(01,27,43) [Scroll (\"Drink these to gain magical defense\"), Ya potion (2)] (01,02,45) [Drumstick, Corn, Cheese, Bread (2), Magical box (Blue), Scroll (\"Des Ven will conjure a poison spell\"), Empty flask] (02,21,23) [Apple, Cheese, Scroll (\"Ya will create a stamina potion\"), Scroll (\"Some doors can be opened with a Zo spell\"), Gold coin (2)] (02,05,34) [Mirror of dawn] (02,05,23) [Silver coin, Copper coin (3), Magical box (Blue)] (04,12,10) [Bro Potion, Magical Box (Blue), Ful Bomb] (05,14,33) [Slayer, Water Flask, Drumstick] (07,23,13) [Skeleton Key] (07,25,32) [Ya Potion, Scroll (\"The spell Ya Bro Ros leaves a trail of magic footprints.\")] (08,40,05) [Green Gem, Scroll (\"Put the gem back...\")] (10,21,16) [Solid Key] (10,37,37) [Drumstick (4), Cheese (2), Bread (2)]",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0200",
+        "allowedSlots": [
+          "Hands",
+          "Backpack"
+        ]
+      }
+    },
+    {
+      "id": "apple",
+      "name": "Apple",
+      "category": "Miscellaneou",
+      "weight": 0.4,
+      "variants": [
+        "Apple"
+      ],
+      "spriteKey": "Apple",
+      "actions": [],
+      "notes": "Consumable Food Value: 500",
+      "locations": "Mophus The Healer, Syra Child Of Nature (Champions) (00,04,09) (00,02,11) (01,06,17) (01,30,15) (01,17,25) (01,16,27) (01,14,42) (02,21,23) (02,12,32) (02,08,23) (02,28,22) (02,32,19) (02,35,40) (06,33,29) (07,21,19)(2) (08,35,28) (08,17,12)(Vexirk) (08,13,12) (09,10,12) (11,39,35) (11,48,27) (11,49,22) (11,21,33) (11,43,34)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "corn",
+      "name": "Corn",
+      "category": "Miscellaneou",
+      "weight": 0.4,
+      "variants": [
+        "Corn"
+      ],
+      "spriteKey": "Corn",
+      "actions": [],
+      "notes": "Consumable Food Value: 600",
+      "locations": "(00,00,16) (01,06,17) (01,02,45) (02,08,23) (04,33,12) (05,22,11) (06,33,29) (08,13,12) (08,35,30)(Vexirk) (08,17,12)(Vexirk) (09,15,31) (09,27,26) (09,24,37) (10,36,50) (11,27,24)(2)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "bread",
+      "name": "Bread",
+      "category": "Miscellaneou",
+      "weight": 0.3,
+      "variants": [
+        "Bread"
+      ],
+      "spriteKey": "Bread",
+      "actions": [],
+      "notes": "Consumable Food Value: 650",
+      "locations": "Mophus The Healer (Champion) (00,05,11) (00,02,13) (01,02,45)(2) (02,09,28) (02,14,20) (02,32,27) (02,35,40) (08,17,12)(Vexirk) (09,10,12) (09,38,40) (09,38,21) (10,37,37)(2) (11,36,50)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "cheese",
+      "name": "Cheese",
+      "category": "Miscellaneou",
+      "weight": 0.8,
+      "variants": [
+        "Cheese"
+      ],
+      "spriteKey": "Cheese",
+      "actions": [],
+      "notes": "Consumable Food Value: 820",
+      "locations": "Mophus The Healer (Champion) (00,02,12) (01,16,27)(2) (01,02,45) (02,13,38) (02,21,23) (02,05,25)(Trolin) (02,08,23)(2) (02,06,12) (02,12,20) (02,32,21) (02,32,29) (02,25,37)(Trolin) (02,35,40) (03,23,31) (05,16,06) (07,22,22) (08,13,12) (08,35,30)(Vexirk) (08,17,12)(Vexirk) (09,15,31) (09,35,27) (10,28,26) (10,37,37)(2)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "screamer_slice",
+      "name": "Screamer Slice",
+      "category": "Miscellaneou",
+      "weight": 0.5,
+      "variants": [
+        "Screamer Slice"
+      ],
+      "spriteKey": "Screamer Slice",
+      "actions": [],
+      "notes": "Consumable Food Value: 550",
+      "locations": "(02,25,37)(Trolin)(08,17,12)(Vexirk) Obtained by killing Screamers",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0401",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest"
+        ]
+      }
+    },
+    {
+      "id": "worm_round",
+      "name": "Worm Round",
+      "category": "Miscellaneou",
+      "weight": 1.1,
+      "variants": [
+        "Worm Round"
+      ],
+      "spriteKey": "Worm Round",
+      "actions": [],
+      "notes": "Consumable Food Value: 350",
+      "locations": "Obtained by killing Magenta Worms",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0401",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest"
+        ]
+      }
+    },
+    {
+      "id": "drumstick",
+      "name": "Drumstick",
+      "category": "Miscellaneou",
+      "weight": 0.4,
+      "variants": [
+        "Drumstick"
+      ],
+      "spriteKey": "Drumstick",
+      "actions": [],
+      "notes": "Consumable Food Value: 990",
+      "locations": "(01,19,25) (01,02,45) (02,17,29) (02,12,32) (02,31,11) (02,35,40) (02,34,36)(2) (03,25,23) (03,12,21) (03,06,18) (03,00,08) (04,26,06) (04,16,08) (05,22,05) (05,27,28) (05,29,11)(2) (05,18,17) (05,14,33) (08,13,16) (09,22,37) (10,32,24) (10,37,37)(4) (11,38,48) (11,39,35) (11,49,22) Obtained by killing Pain Rats",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "dragon_steak",
+      "name": "Dragon Steak",
+      "category": "Miscellaneou",
+      "weight": 0.6,
+      "variants": [
+        "Dragon Steak"
+      ],
+      "spriteKey": "Dragon Steak",
+      "actions": [],
+      "notes": "Consumable Food Value: 1400",
+      "locations": "(08,13,12) Obtained by killing Red Dragons",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "gem_of_ages",
+      "name": "Gem Of Ages",
+      "category": "Miscellaneou",
+      "weight": 0.2,
+      "variants": [
+        "Gem Of Ages"
+      ],
+      "spriteKey": "Gem Of Ages",
+      "actions": [],
+      "notes": "+1 Skill 13 (Hidden Priest skill)",
+      "locations": "(04,29,27) (06,24,08)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0504",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Neck",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "ekkhard_cross",
+      "name": "Ekkhard Cross",
+      "category": "Miscellaneou",
+      "weight": 0.3,
+      "variants": [
+        "Ekkhard Cross"
+      ],
+      "spriteKey": "Ekkhard Cross",
+      "actions": [],
+      "notes": "+1 Skill 15 (Hidden Priest skill) Faster health regeneration",
+      "locations": "(04,17,28)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0504",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Neck",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "moonstone",
+      "name": "Moonstone",
+      "category": "Miscellaneou",
+      "weight": 0.2,
+      "variants": [
+        "Moonstone"
+      ],
+      "spriteKey": "Moonstone",
+      "actions": [],
+      "notes": "+3 Mana +1 Skill 14 (Hidden Priest skill)",
+      "locations": "Chani Sayyadina Sihaya (Champion) (09,22,37)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0504",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Neck",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "the_hellion",
+      "name": "The Hellion",
+      "category": "Miscellaneou",
+      "weight": 0.2,
+      "variants": [
+        "The Hellion"
+      ],
+      "spriteKey": "The Hellion",
+      "actions": [],
+      "notes": "-",
+      "locations": "(12,43,31)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0504",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Neck",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "pendant_feral",
+      "name": "Pendant Feral",
+      "category": "Miscellaneou",
+      "weight": 0.2,
+      "variants": [
+        "Pendant Feral"
+      ],
+      "spriteKey": "Pendant Feral",
+      "actions": [],
+      "notes": "+1 Wizard Skill",
+      "locations": "(08,30,30)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0504",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Neck",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "magical_box_blue",
+      "name": "Magical Box (Blue)",
+      "category": "Miscellaneou",
+      "weight": 0.6,
+      "variants": [
+        "Magical Box (Blue)"
+      ],
+      "spriteKey": "Magical Box (Blue)",
+      "actions": [
+        "Freeze Life (0)"
+      ],
+      "notes": "Duration: 30",
+      "locations": "Elija Lion Of Yaitopya (Champion) (01,15,45) (01,02,45) (02,05,23) (03,12,21) (04,12,10) (05,34,33) (05,06,11) (08,31,30)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "magical_box_green",
+      "name": "Magical Box (Green)",
+      "category": "Miscellaneou",
+      "weight": 0.9,
+      "variants": [
+        "Magical Box (Green)"
+      ],
+      "spriteKey": "Magical Box (Green)",
+      "actions": [
+        "Freeze Life (0)"
+      ],
+      "notes": "Green boxes are more powerful than blue ones. Duration: 125",
+      "locations": "(05,11,15)(2) (05,28,15) (06,27,32) (06,09,20) (06,16,08) (07,31,34) (07,21,18)(Skeleton) (10,36,37) (10,37,38)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "mirror_of_dawn",
+      "name": "Mirror Of Dawn",
+      "category": "Miscellaneou",
+      "weight": 0.3,
+      "variants": [
+        "Mirror Of Dawn"
+      ],
+      "spriteKey": "Mirror Of Dawn",
+      "actions": [],
+      "notes": "Required in alcove at (05,14,22) to open door at (05,18,25). Required on eye at (02,11,33) to open wall at (02,12,33)",
+      "locations": "(02,05,36) (04,12,19)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "rope",
+      "name": "Rope",
+      "category": "Miscellaneou",
+      "weight": 1,
+      "variants": [
+        "Rope"
+      ],
+      "spriteKey": "Rope",
+      "actions": [
+        "Climb Down (0)"
+      ],
+      "notes": "Use it while facing a pit to get down without hurting your champions by jumping",
+      "locations": "Leyla Shadowseek (Champion) (08,28,06)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0400",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest"
+        ]
+      }
+    },
+    {
+      "id": "rabbit_s_foot",
+      "name": "Rabbit's Foot",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Rabbit's Foot"
+      ],
+      "spriteKey": "Rabbit's Foot",
+      "actions": [],
+      "notes": "+10 Luck (hidden statistic), anywhere in the inventory including inside a chest (in all versions of DM for Atari ST) or excluding inside a chest (other versions)",
+      "locations": "Boris Wizard Of Baldor (Champion) (02,29,14) (04,10,27) (07,26,28)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "corbamite",
+      "name": "Corbamite",
+      "category": "Miscellaneou",
+      "weight": 0,
+      "variants": [
+        "Corbamite"
+      ],
+      "spriteKey": "Corbamite",
+      "actions": [],
+      "notes": "Required in alcove at (08,35,21) to open door at (08,34,20)",
+      "locations": "(06,10,06) (08,15,06)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "choker",
+      "name": "Choker",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Choker"
+      ],
+      "spriteKey": "Choker",
+      "actions": [],
+      "notes": "-",
+      "locations": "Sonja She Devil (Champion) (04,33,12)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0504",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Neck",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "lock_picks",
+      "name": "Lock Picks",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Lock Picks"
+      ],
+      "spriteKey": "Lock Picks",
+      "actions": [],
+      "notes": "-",
+      "locations": "Only available by hacking The lockpicks were originally designed to be used to open chests. This feature was later taken out but they forgot to remove the lockpicks from Alex's inventory in the first two versions of the game. This was fixed in Dungeon Master for Atari ST version 1.1.",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "magnifier",
+      "name": "Magnifier",
+      "category": "Miscellaneou",
+      "weight": 0.2,
+      "variants": [
+        "Magnifier"
+      ],
+      "spriteKey": "Magnifier",
+      "actions": [],
+      "notes": "Will trigger the eye switch at (10,31,34). (In fact, any item can trigger the switch)",
+      "locations": "(06,10,06) (09,28,13)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "zokathra_spell",
+      "name": "Zokathra Spell",
+      "category": "Miscellaneou",
+      "weight": 0,
+      "variants": [
+        "Zokathra Spell"
+      ],
+      "spriteKey": "Zokathra Spell",
+      "actions": [],
+      "notes": "Used to get the power gem at (13,49,36)",
+      "locations": "Obtained by casting the Zokathra spell",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0000",
+        "allowedSlots": []
+      }
+    },
+    {
+      "id": "bones",
+      "name": "Bones",
+      "category": "Miscellaneou",
+      "weight": 0.8,
+      "variants": [
+        "Bones"
+      ],
+      "spriteKey": "Bones",
+      "actions": [],
+      "notes": "-",
+      "locations": "Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0400",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest"
+        ]
+      }
+    },
+    {
+      "id": "compass_north",
+      "name": "Compass (North)",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Compass (North)",
+        "Compass (East)",
+        "Compass (South)",
+        "Compass (West)"
+      ],
+      "spriteKey": "Compass (North)",
+      "actions": [],
+      "notes": "-",
+      "locations": "(02,08,38)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "water",
+      "name": "Water",
+      "category": "Miscellaneou",
+      "weight": 0,
+      "variants": [
+        "Water"
+      ],
+      "spriteKey": "Water",
+      "actions": [],
+      "notes": "Water Value: 800",
+      "locations": "(00,04,15) (01,13,43) (03,23,31) They all have Charges=3",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "waterskin",
+      "name": "Waterskin",
+      "category": "Miscellaneou",
+      "weight": 0.3,
+      "variants": [
+        "Waterskin"
+      ],
+      "spriteKey": "Waterskin",
+      "actions": [],
+      "notes": "-",
+      "locations": "(02,13,38)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0501",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "jewel_symal_unequipped",
+      "name": "Jewel Symal (Unequipped)",
+      "category": "Miscellaneou",
+      "weight": 0.2,
+      "variants": [
+        "Jewel Symal (Unequipped)",
+        "Jewel Symal (Equipped)"
+      ],
+      "spriteKey": "Jewel Symal (Unequipped)",
+      "actions": [],
+      "notes": "+15 Anti-Magic",
+      "locations": "(07,32,37)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0504",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Neck",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "illumulet_lit",
+      "name": "Illumulet (Lit)",
+      "category": "Miscellaneou",
+      "weight": 0.2,
+      "variants": [
+        "Illumulet (Lit)",
+        "Illumulet (Unlit)"
+      ],
+      "spriteKey": "Illumulet (Lit)",
+      "actions": [],
+      "notes": "Produces Light",
+      "locations": "(04,28,10) (06,24,08)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0504",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Neck",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "ashes",
+      "name": "Ashes",
+      "category": "Miscellaneou",
+      "weight": 0.4,
+      "variants": [
+        "Ashes"
+      ],
+      "spriteKey": "Ashes",
+      "actions": [],
+      "notes": "-",
+      "locations": "(06,31,09) (13,39,40) (13,41,41) (13,42,42) (13,43,40) (13,44,42) (13,44,43) (13,45,40)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "name_bones",
+      "name": "<Name>Bones",
+      "category": "Miscellaneou",
+      "weight": 1.5,
+      "variants": [
+        "<Name>Bones"
+      ],
+      "spriteKey": "<Name>Bones",
+      "actions": [],
+      "notes": "Dead party members can be resurrected by putting their bones into a Vi Altar",
+      "locations": "Obtained when a party member is dead",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0400",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest"
+        ]
+      }
+    },
+    {
+      "id": "copper_coin",
+      "name": "Copper Coin",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Copper Coin"
+      ],
+      "spriteKey": "Copper Coin",
+      "actions": [
+        "Flip (0)"
+      ],
+      "notes": "-",
+      "locations": "(01,30,33) (02,05,23)(3) (07,36,39) (10,17,25) (10,12,28) (10,21,29) (10,16,32) (10,38,14) (10,36,30) (10,36,37)(2) (13,34,42) (13,37,38) (13,37,44) (13,40,42) (13,47,40)(3) (13,48,33)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "silver_coin",
+      "name": "Silver Coin",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Silver Coin"
+      ],
+      "spriteKey": "Silver Coin",
+      "actions": [
+        "Flip (0)"
+      ],
+      "notes": "-",
+      "locations": "(02,09,27) (02,05,23) (13,35,39) (13,35,43) (13,38,41) (13,48,38)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "gold_coin",
+      "name": "Gold Coin",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Gold Coin"
+      ],
+      "spriteKey": "Gold Coin",
+      "actions": [
+        "Flip (0)"
+      ],
+      "notes": "Required in alcove at (05,14,28) to open door at (05,18,25). Required in crack in wall at (05,22,23) to open movable wall at (5,25,21)",
+      "locations": "(02,21,23)(2) (03,21,28)(Screamer) (03,21,24)(Rockpile) (03,14,26)(Magenta Worm) (03,16,21)(Magenta Worm) (03,10,08) (04,10,27) (04,20,19) (13,47,40)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "iron_key",
+      "name": "Iron Key",
+      "category": "Miscellaneou",
+      "weight": 0.2,
+      "variants": [
+        "Iron Key"
+      ],
+      "spriteKey": "Iron Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "(01,15,24) (01,31,20) (05,17,24) (05,18,34) (05,26,26) (05,26,21) (05,34,19) (10,16,10)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "key_of_b",
+      "name": "Key of B",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Key of B"
+      ],
+      "spriteKey": "Key of B",
+      "actions": [],
+      "notes": "-",
+      "locations": "(01,31,24) (09,13,22) (09,20,17)(Wizard Eye) (09,13,27)(Skeleton)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "solid_key",
+      "name": "Solid Key",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Solid Key"
+      ],
+      "spriteKey": "Solid Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "(01,14,21) (05,25,08) (07,40,13) (10,21,16)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "square_key",
+      "name": "Square Key",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Square Key"
+      ],
+      "spriteKey": "Square Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "(13,43,40)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "tourquoise_key",
+      "name": "Tourquoise Key",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Tourquoise Key"
+      ],
+      "spriteKey": "Tourquoise Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "(06,31,09)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "cross_key",
+      "name": "Cross Key",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Cross Key"
+      ],
+      "spriteKey": "Cross Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "(10,29,21) (10,37,37)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "onyx_key",
+      "name": "Onyx Key",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Onyx Key"
+      ],
+      "spriteKey": "Onyx Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "skeleton_key",
+      "name": "Skeleton Key",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Skeleton Key"
+      ],
+      "spriteKey": "Skeleton Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "(07,23,13) (08,12,06)(Vexirk) (09,33,16)(Wizard Eye) (10,35,14) (11,49,20)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "gold_key",
+      "name": "Gold Key",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Gold Key"
+      ],
+      "spriteKey": "Gold Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "(01,00,16) (01,07,23) (01,08,17) (01,13,19) (01,30,15) (01,13,28) (02,12,32) (02,08,25) (02,05,20) (02,27,15) (02,30,27) (02,22,38) (03,10,29)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "winged_key",
+      "name": "Winged Key",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Winged Key"
+      ],
+      "spriteKey": "Winged Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "(06,05,06)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "topaz_key",
+      "name": "Topaz Key",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Topaz Key"
+      ],
+      "spriteKey": "Topaz Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "(01,01,23) (11,39,41)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "sapphire_key",
+      "name": "Sapphire Key",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Sapphire Key"
+      ],
+      "spriteKey": "Sapphire Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "Only available by hacking",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "emerald_key",
+      "name": "Emerald Key",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Emerald Key"
+      ],
+      "spriteKey": "Emerald Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "(01,08,19) (11,29,43)(Animated Armour)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "ruby_key",
+      "name": "Ruby Key",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Ruby Key"
+      ],
+      "spriteKey": "Ruby Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "(10,32,30)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "ra_key",
+      "name": "Ra Key",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Ra Key"
+      ],
+      "spriteKey": "Ra Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "(02,32,40) (06,33,12) (08,23,22) (11,21,42)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "master_key",
+      "name": "Master Key",
+      "category": "Miscellaneou",
+      "weight": 0.1,
+      "variants": [
+        "Master Key"
+      ],
+      "spriteKey": "Master Key",
+      "actions": [],
+      "notes": "-",
+      "locations": "(11,32,32)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "boulder",
+      "name": "Boulder",
+      "category": "Miscellaneou",
+      "weight": 8.1,
+      "variants": [
+        "Boulder"
+      ],
+      "spriteKey": "Boulder",
+      "actions": [],
+      "notes": "-",
+      "locations": "(01,25,14) (06,18,08) (13,37,42) (13,38,41) (13,40,39) (13,43,43) (13,44,39) Obtained by killing Rockpiles",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0200",
+        "allowedSlots": [
+          "Hands",
+          "Backpack"
+        ]
+      }
+    },
+    {
+      "id": "blue_gem",
+      "name": "Blue Gem",
+      "category": "Miscellaneou",
+      "weight": 0.2,
+      "variants": [
+        "Blue Gem"
+      ],
+      "spriteKey": "Blue Gem",
+      "actions": [],
+      "notes": "Required in alcove at (05,17,22) to open door at (05,18,25)",
+      "locations": "(02,31,11) (04,08,27) (04,17,29) (04,10,07) (13,47,42)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "orange_gem",
+      "name": "Orange Gem",
+      "category": "Miscellaneou",
+      "weight": 0.3,
+      "variants": [
+        "Orange Gem"
+      ],
+      "spriteKey": "Orange Gem",
+      "actions": [],
+      "notes": "-",
+      "locations": "(06,10,06)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    },
+    {
+      "id": "green_gem",
+      "name": "Green Gem",
+      "category": "Miscellaneou",
+      "weight": 0.2,
+      "variants": [
+        "Green Gem"
+      ],
+      "spriteKey": "Green Gem",
+      "actions": [],
+      "notes": "A Green Gem dropped at (08,21,12) will open the door at (08,21,13)",
+      "locations": "(08,40,05) (13,47,42)(2)",
+      "weapon": {
+        "strength": 0,
+        "kineticEnergy": 0,
+        "shootDamage": 0,
+        "itemClass": 0,
+        "deltaEnergy": 0
+      },
+      "armour": {
+        "armourStrength": 0,
+        "sharpResistance": 0
+      },
+      "potion": {
+        "hasPotionData": false
+      },
+      "slotRestrictions": {
+        "carryMask": "0x0500",
+        "allowedSlots": [
+          "Hands",
+          "Backpack",
+          "Chest",
+          "Quiver1",
+          "Pouch1"
+        ]
+      }
+    }
+  ]
+}
