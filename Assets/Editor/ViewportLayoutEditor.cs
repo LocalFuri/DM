@@ -6579,11 +6579,6 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    // 5) Champion Mirror recruitment choice overlay. The original 116x73
-    // artwork is placed in native pixels at screen X=131, Y=86 whenever the
-    // player has clicked a Champion Mirror and the Character Sheet is open.
-    PaintResurrectReincarnateOverlay(pixels);
-
     // 5) Draw the first recruited Champion portrait OVER Champions_Background_67x29.
     // Party slot 1 is screen X=7, Y=0. Strict: no silent skip.
     // Domain reload restores the open sheet and can restore an empty party.
@@ -6616,6 +6611,11 @@ public class ViewportLayoutEditor : EditorWindow
     // his Samurai Sword, Ghi and Ghi Trousers from champion data; there is no
     // IAIDO-specific draw branch here.
     PaintChampionSheetStats(pixels);
+
+    // Final layer: Champion Mirror recruitment choice artwork. Copy the
+    // original PNG 1:1 after all champion stats/equipment so nothing can
+    // overwrite its bottom CANCEL bar.
+    PaintResurrectReincarnateOverlay(pixels);
   }
 
   // Worn-slot rectangles on Inventory_224x136. Screen Y is local Y + 33.
@@ -7820,8 +7820,8 @@ public class ViewportLayoutEditor : EditorWindow
     if (texture == null)
       return;
 
-    const int screenLeft = 131;
-    const int screenTop = 86;
+    const int screenLeft = 103;
+    const int screenTop = 85;
     const int width = 116;
     const int height = 73;
     Color32[] source = texture.GetPixels32();
