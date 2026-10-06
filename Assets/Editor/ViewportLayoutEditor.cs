@@ -81,6 +81,8 @@ public class ViewportLayoutEditor : EditorWindow
   private const string ResurrectReincarnateAssetFileName =
       "Resurrect_Reincarnate_116x73.png";
   private const string ChampionExitSoundAssetFileName = "pop04.wav";
+  private const string ChampionEyeMovedAssetFileName = "Eye_moved_16x16.png";
+  private const string ChampionEyeMiddleAssetFileName = "Eye_middle_16x16.png";
 
   private const string OrnamentArtFolder =
       "Assets/Art/Ornaments";
@@ -885,6 +887,9 @@ public class ViewportLayoutEditor : EditorWindow
   private static readonly UnityEngine.UIElements.EventCallback<
       UnityEngine.UIElements.PointerDownEvent>
       GameViewPointerDownHandler = HandleGameViewPointerDown;
+  private static readonly UnityEngine.UIElements.EventCallback<
+      UnityEngine.UIElements.PointerUpEvent>
+      GameViewPointerUpHandler = HandleGameViewPointerUp;
   private static EditorWindow s_hookedGameView;
   private static bool s_gameViewPointerCallbackAdded;
   private static bool s_gameViewPointerUpdateAdded;
@@ -951,6 +956,9 @@ public class ViewportLayoutEditor : EditorWindow
   private DungeonFacing previewFacing = DungeonFacing.South;
   private bool championSheetVisible;
   private string championSheetName;
+  private bool championEyeMoved;
+  private bool championEyeMiddle;
+  private bool championEyePressed;
   [SerializeField, Range(0f, 1f)]
   private float championExitVolume = 1f;
   [System.NonSerialized]
@@ -1652,6 +1660,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedChampionsBackgroundTexture;
   private Texture2D cachedChampionInventoryTexture;
   private Texture2D cachedResurrectReincarnateTexture;
+  private Texture2D cachedChampionEyeMovedTexture;
+  private Texture2D cachedChampionEyeMiddleTexture;
   [System.NonSerialized]
   private Texture2D cachedAppleGroundTexture;
   [System.NonSerialized]
@@ -6008,7 +6018,7 @@ public class ViewportLayoutEditor : EditorWindow
   {
     Event current = Event.current;
     if (current == null
-        || current.type != EventType.MouseDown
+        || (current.type != EventType.MouseDown && current.type != EventType.MouseUp)
         || current.button != 0
         || Application.isPlaying)
     {
@@ -6018,6 +6028,9 @@ public class ViewportLayoutEditor : EditorWindow
     EditorWindow gameView = GetCurrentExecutingGameView();
     if (gameView == null)
       return false;
+
+    if (current.type == EventType.MouseUp)
+      return DispatchGameViewChampionEyeRelease(gameView, current.mousePosition, current, null);
 
     return DispatchGameViewMovementClick(
         gameView,
@@ -6049,6 +6062,9 @@ public class ViewportLayoutEditor : EditorWindow
     root.RegisterCallback(
         GameViewPointerDownHandler,
         UnityEngine.UIElements.TrickleDown.TrickleDown);
+    root.RegisterCallback(
+        GameViewPointerUpHandler,
+        UnityEngine.UIElements.TrickleDown.TrickleDown);
     s_hookedGameView = gameView;
     s_gameViewPointerCallbackAdded = true;
   }
@@ -6064,6 +6080,9 @@ public class ViewportLayoutEditor : EditorWindow
         root.UnregisterCallback(
             GameViewPointerDownHandler,
             UnityEngine.UIElements.TrickleDown.TrickleDown);
+        root.UnregisterCallback(
+            GameViewPointerUpHandler,
+            UnityEngine.UIElements.TrickleDown.TrickleDown);
       }
     }
 
@@ -6071,7 +6090,26 @@ public class ViewportLayoutEditor : EditorWindow
     s_gameViewPointerCallbackAdded = false;
   }
 
-  private static void HandleGameViewPointerDown(
+    private static void HandleGameViewPointerUp(
+      UnityEngine.UIElements.PointerUpEvent evt)
+  {
+    if (evt == null || evt.button != 0 || Application.isPlaying)
+      return;
+
+    EditorWindow gameView = s_hookedGameView;
+    if (gameView == null)
+      gameView = FindGameViewWindow();
+    if (gameView == null)
+      return;
+
+    DispatchGameViewChampionEyeRelease(
+        gameView,
+        evt.position,
+        null,
+        evt);
+  }
+
+private static void HandleGameViewPointerDown(
       UnityEngine.UIElements.PointerDownEvent evt)
   {
     if (evt == null || evt.button != 0 || Application.isPlaying)
@@ -6104,6 +6142,38 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     return null;
+  }
+
+  private static bool DispatchGameViewChampionEyeRelease(
+      EditorWindow gameView,
+      Vector2 windowMouse,
+      Event imguiEvent,
+      UnityEngine.UIElements.PointerUpEvent pointerEvent)
+  {
+    ViewportLayoutEditor window = FindOpenViewEditWindow();
+    if (window == null
+        || !window.championSheetVisible
+        || !window.championEyePressed)
+    {
+      return false;
+    }
+
+    window.championEyePressed = false;
+    window.championEyeMoved = false;
+    window.championEyeMiddle = true;
+    window.PresentEditModePreviewToGameView();
+
+    if (imguiEvent != null)
+      imguiEvent.Use();
+
+    if (pointerEvent != null)
+      pointerEvent.StopPropagation();
+
+    if (gameView != null)
+      gameView.Repaint();
+    window.Repaint();
+    RepaintGameViews();
+    return true;
   }
 
   /// <summary>
@@ -6346,6 +6416,9 @@ public class ViewportLayoutEditor : EditorWindow
 
     championSheetVisible = false;
     championSheetName = null;
+    championEyeMoved = false;
+    championEyeMiddle = false;
+    championEyePressed = false;
     PlayChampionExitSound();
     SaveSessionPrefs();
     PresentEditModePreviewToGameView();
@@ -6447,6 +6520,26 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (championSheetVisible)
     {
+      // Character Sheet eye icon: exact 16x16 screen hitbox.
+      // Mouse-down shows Eye_moved_16x16.png. Mouse release is handled by
+      // the Game View MouseUp/PointerUp path and switches to Eye_middle_16x16.png.
+      const float eyeX = 12f;
+      const float eyeY = 46f;
+      const float eyeWidth = 16f;
+      const float eyeHeight = 16f;
+      bool clickedEye =
+          logicalX >= eyeX && logicalX < eyeX + eyeWidth
+          && logicalY >= eyeY && logicalY < eyeY + eyeHeight;
+      if (clickedEye)
+      {
+        championEyePressed = true;
+        championEyeMoved = true;
+        championEyeMiddle = false;
+        PresentEditModePreviewToGameView();
+        Repaint();
+        return true;
+      }
+
       // Resurrect_Reincarnate_116x73.png is drawn at screen X=103, Y=85.
       // Its CANCEL strip occupies local Y=60..72, therefore screen
       // X=103..218 and Y=145..157. Only a click inside that exact
@@ -6492,6 +6585,9 @@ public class ViewportLayoutEditor : EditorWindow
 
     championSheetName = championName;
     championSheetVisible = true;
+    championEyeMoved = false;
+    championEyeMiddle = false;
+    championEyePressed = false;
     SaveSessionPrefs();
 
     PresentEditModePreviewToGameView();
@@ -6755,6 +6851,12 @@ public class ViewportLayoutEditor : EditorWindow
     // his Samurai Sword, Ghi and Ghi Trousers from champion data; there is no
     // IAIDO-specific draw branch here.
     PaintChampionSheetStats(pixels);
+
+    // Eye interaction overlay. The normal eye remains part of the static
+    // CharacterSheet PNG; only after the player clicks it do we place the
+    // moved-eye PNG 1:1 over the same 16x16 pixels.
+    PaintChampionMovedEyeOverlay(pixels);
+    PaintChampionMiddleEyeOverlay(pixels);
 
     // Final layer: Champion Mirror recruitment choice artwork. Copy the
     // original PNG 1:1 after all champion stats/equipment so nothing can
@@ -7906,6 +8008,184 @@ public class ViewportLayoutEditor : EditorWindow
 
     cachedCharacterSheetTexture = readableCopy;
     return cachedCharacterSheetTexture;
+  }
+
+  private Texture2D GetChampionEyeMovedTexture()
+  {
+    if (cachedChampionEyeMovedTexture != null
+        && cachedChampionEyeMovedTexture.isReadable
+        && cachedChampionEyeMovedTexture.width == 16
+        && cachedChampionEyeMovedTexture.height == 16)
+    {
+      return cachedChampionEyeMovedTexture;
+    }
+
+    string[] matches = Directory.GetFiles(
+        Application.dataPath,
+        ChampionEyeMovedAssetFileName,
+        SearchOption.AllDirectories);
+    if (matches == null || matches.Length == 0)
+    {
+      Debug.LogError(
+          "Champion Sheet ERROR: required asset not found under Assets: "
+          + ChampionEyeMovedAssetFileName);
+      return null;
+    }
+
+    string absolutePath = matches[0];
+    byte[] pngBytes = File.ReadAllBytes(absolutePath);
+    Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "Eye_moved_16x16_ReadablePreview";
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+    if (!readableCopy.LoadImage(pngBytes, false)
+        || readableCopy.width != 16
+        || readableCopy.height != 16)
+    {
+      Debug.LogError(
+          "Champion Sheet ERROR: " + ChampionEyeMovedAssetFileName
+          + " must be exactly 16x16. Path: " + absolutePath);
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    cachedChampionEyeMovedTexture = readableCopy;
+    return cachedChampionEyeMovedTexture;
+  }
+
+  private Texture2D GetChampionEyeMiddleTexture()
+  {
+    if (cachedChampionEyeMiddleTexture != null
+        && cachedChampionEyeMiddleTexture.isReadable
+        && cachedChampionEyeMiddleTexture.width == 16
+        && cachedChampionEyeMiddleTexture.height == 16)
+    {
+      return cachedChampionEyeMiddleTexture;
+    }
+
+    string[] matches = Directory.GetFiles(
+        Application.dataPath,
+        ChampionEyeMiddleAssetFileName,
+        SearchOption.AllDirectories);
+    if (matches == null || matches.Length == 0)
+    {
+      Debug.LogError(
+          "Champion Sheet ERROR: required asset not found under Assets: "
+          + ChampionEyeMiddleAssetFileName);
+      return null;
+    }
+
+    string absolutePath = matches[0];
+    byte[] pngBytes = File.ReadAllBytes(absolutePath);
+    Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "Eye_middle_16x16_ReadablePreview";
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+    if (!readableCopy.LoadImage(pngBytes, false)
+        || readableCopy.width != 16
+        || readableCopy.height != 16)
+    {
+      Debug.LogError(
+          "Champion Sheet ERROR: " + ChampionEyeMiddleAssetFileName
+          + " must be exactly 16x16. Path: " + absolutePath);
+      DestroyImmediate(readableCopy);
+      return null;
+    }
+
+    cachedChampionEyeMiddleTexture = readableCopy;
+    return cachedChampionEyeMiddleTexture;
+  }
+
+  private void PaintChampionMovedEyeOverlay(Color32[] pixels)
+  {
+    if (!championEyeMoved
+        || pixels == null
+        || pixels.Length != PreviewWidth * PreviewHeight)
+    {
+      return;
+    }
+
+    Texture2D texture = GetChampionEyeMovedTexture();
+    if (texture == null)
+      return;
+
+    const int screenLeft = 12;
+    const int screenTop = 46;
+    const int width = 16;
+    const int height = 16;
+    Color32[] source = texture.GetPixels32();
+
+    for (int sourceY = 0; sourceY < height; sourceY++)
+    {
+      int screenY = screenTop + (height - 1 - sourceY);
+      if (screenY < 0 || screenY >= PreviewHeight)
+        continue;
+
+      int destinationY = PreviewHeight - 1 - screenY;
+      int sourceRow = sourceY * width;
+      int destinationRow = destinationY * PreviewWidth;
+
+      for (int sourceX = 0; sourceX < width; sourceX++)
+      {
+        int screenX = screenLeft + sourceX;
+        if (screenX < 0 || screenX >= PreviewWidth)
+          continue;
+
+        Color32 sourcePixel = source[sourceRow + sourceX];
+        if (sourcePixel.a == 0)
+          continue;
+
+        // Strict 1:1 pixel copy. No scaling, resampling, reconstruction,
+        // recolouring, or interpolation.
+        pixels[destinationRow + screenX] = sourcePixel;
+      }
+    }
+  }
+
+  private void PaintChampionMiddleEyeOverlay(Color32[] pixels)
+  {
+    if (!championEyeMiddle
+        || pixels == null
+        || pixels.Length != PreviewWidth * PreviewHeight)
+    {
+      return;
+    }
+
+    Texture2D texture = GetChampionEyeMiddleTexture();
+    if (texture == null)
+      return;
+
+    const int screenLeft = 12;
+    const int screenTop = 46;
+    const int width = 16;
+    const int height = 16;
+    Color32[] source = texture.GetPixels32();
+
+    for (int sourceY = 0; sourceY < height; sourceY++)
+    {
+      int screenY = screenTop + (height - 1 - sourceY);
+      if (screenY < 0 || screenY >= PreviewHeight)
+        continue;
+
+      int destinationY = PreviewHeight - 1 - screenY;
+      int sourceRow = sourceY * width;
+      int destinationRow = destinationY * PreviewWidth;
+
+      for (int sourceX = 0; sourceX < width; sourceX++)
+      {
+        int screenX = screenLeft + sourceX;
+        if (screenX < 0 || screenX >= PreviewWidth)
+          continue;
+
+        Color32 sourcePixel = source[sourceRow + sourceX];
+        if (sourcePixel.a == 0)
+          continue;
+
+        pixels[destinationRow + screenX] = sourcePixel;
+      }
+    }
   }
 
   private Texture2D GetResurrectReincarnateTexture()
