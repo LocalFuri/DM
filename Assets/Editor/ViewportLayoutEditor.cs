@@ -8458,10 +8458,27 @@ private static void HandleGameViewPointerDown(
     Color32 panel = new Color32(73, 73, 73, 255);
     FillChampionSheetRect(pixels, panelX, panelY, panelWidth, panelHeight, panel);
 
-    // Food / water bars inside the same 116x73 area that normally shows
-    // Resurrect_Reincarnate_116x73.png. The panel is runtime UI, not a
-    // generated image: fixed grey background, two coloured bars, and the
-    // two original 48x9 label PNGs placed pixel exact over them.
+    // Initial recruitment state: the first recruited champion starts with
+    // 100% FOOD and 100% WATER. Keep the fill width isolated here so later
+    // gameplay code can replace 78 with a value derived from live food/water.
+    const int fullBarWidth = 78;
+    const int barHeight = 6;
+    const int shadowHeight = 2;
+
+    Color32 foodColour = new Color32(146, 73, 0, 255);
+    Color32 waterColour = new Color32(0, 0, 255, 255);
+    Color32 shadowColour = new Color32(0, 0, 0, 255);
+
+    // FOOD: 78x6 coloured fill, then a 78x2 black shadow directly below.
+    FillChampionSheetRect(pixels, 113, 102, fullBarWidth, barHeight, foodColour);
+    FillChampionSheetRect(pixels, 113, 108, fullBarWidth, shadowHeight, shadowColour);
+
+    // WATER: 78x6 coloured fill, then a 78x2 black shadow directly below.
+    FillChampionSheetRect(pixels, 113, 125, fullBarWidth, barHeight, waterColour);
+    FillChampionSheetRect(pixels, 113, 131, fullBarWidth, shadowHeight, shadowColour);
+
+    // The FOOD and WATER captions remain the original 48x9 PNGs placed
+    // pixel-exact at their calibrated screen coordinates.
     Texture2D foodTexture = GetChampionFoodLabelTexture();
     Texture2D waterTexture = GetChampionWaterLabelTexture();
     if (foodTexture != null)
