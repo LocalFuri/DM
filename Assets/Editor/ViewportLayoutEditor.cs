@@ -6552,8 +6552,28 @@ public class ViewportLayoutEditor : EditorWindow
       int destinationY = PreviewHeight - 1 - screenY;
       int sourceRow = sourceY * DungeonViewportWidth;
       int destinationRow = destinationY * PreviewWidth + screenLeft;
-      System.Array.Copy(
-          source, sourceRow, pixels, destinationRow, DungeonViewportWidth);
+      for (int x = 0; x < DungeonViewportWidth; x++)
+      {
+        Color32 sourcePixel = source[sourceRow + x];
+        if (sourcePixel.a == 0)
+          continue;
+
+        int destinationIndex = destinationRow + x;
+        if (sourcePixel.a == 255)
+        {
+          pixels[destinationIndex] = sourcePixel;
+          continue;
+        }
+
+        Color32 destinationPixel = pixels[destinationIndex];
+        int alpha = sourcePixel.a;
+        int inverseAlpha = 255 - alpha;
+        pixels[destinationIndex] = new Color32(
+            (byte)((sourcePixel.r * alpha + destinationPixel.r * inverseAlpha + 127) / 255),
+            (byte)((sourcePixel.g * alpha + destinationPixel.g * inverseAlpha + 127) / 255),
+            (byte)((sourcePixel.b * alpha + destinationPixel.b * inverseAlpha + 127) / 255),
+            255);
+      }
     }
 
     // 5) Draw the first recruited Champion portrait OVER Champions_Background_67x29.
