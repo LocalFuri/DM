@@ -6601,8 +6601,13 @@ public class ViewportLayoutEditor : EditorWindow
       PaintChampionSheetPortrait(pixels, firstHero);
     }
 
-    // 6) Draw the selected hero full name at visible screen X=4, Y=35.
-    PaintChampionSheetName(pixels);
+    // 6) Paint the selected Champion data and starting equipment.
+    // This is the generic Character Sheet path: HeroDefinition.StartingItems
+    // is resolved into equipment slots (hand/torso/legs/etc.) and rendered
+    // over the transparent CharacterSheet layout. IAIDO therefore receives
+    // his Samurai Sword, Ghi and Ghi Trousers from champion data; there is no
+    // IAIDO-specific draw branch here.
+    PaintChampionSheetStats(pixels);
   }
 
   // Worn-slot rectangles on Inventory_224x136. Screen Y is local Y + 33.
