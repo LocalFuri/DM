@@ -6713,6 +6713,7 @@ public class ViewportLayoutEditor : EditorWindow
     AddChampionSheetPatternGlyph(glyphs, '9', ".###." + "#...#" + ".####" + "....#" + ".###.");
     AddChampionSheetPatternGlyph(glyphs, '/', "....#" + "...#." + "..#.." + ".#..." + "#....");
     AddChampionSheetPatternGlyph(glyphs, '.', "....." + "....." + "....." + "....." + "..#..");
+    AddChampionSheetPatternGlyph(glyphs, ',', "....." + "....." + "....." + "..#.." + ".#...");
 
     AddChampionSheetPatternGlyph(glyphs, 'A', ".###." + "#...#" + "#####" + "#...#" + "#...#");
     AddChampionSheetPatternGlyph(glyphs, 'D', "####." + "#...#" + "#...#" + "#...#" + "####.");
@@ -6725,7 +6726,11 @@ public class ViewportLayoutEditor : EditorWindow
     AddChampionSheetPatternGlyph(glyphs, 'M', "#...#" + "##.##" + "#.#.#" + "#...#" + "#...#");
     AddChampionSheetPatternGlyph(glyphs, 'N', "#...#" + "##..#" + "#.#.#" + "#..##" + "#...#");
     AddChampionSheetPatternGlyph(glyphs, 'O', ".###." + "#...#" + "#...#" + "#...#" + ".###.");
+    AddChampionSheetPatternGlyph(glyphs, 'P', "####." + "#...#" + "####." + "#...." + "#....");
+    AddChampionSheetPatternGlyph(glyphs, 'R', "####." + "#...#" + "####." + "#..#." + "#...#");
     AddChampionSheetPatternGlyph(glyphs, 'S', ".####" + "#...." + ".###." + "....#" + "####.");
+    AddChampionSheetPatternGlyph(glyphs, 'U', "#...#" + "#...#" + "#...#" + "#...#" + ".###.");
+    AddChampionSheetPatternGlyph(glyphs, 'W', "#...#" + "#...#" + "#.#.#" + "##.##" + "#...#");
     AddChampionSheetPatternGlyph(glyphs, 'T', "#####" + "..#.." + "..#.." + "..#.." + "..#..");
 
     return glyphs;
@@ -7563,6 +7568,48 @@ public class ViewportLayoutEditor : EditorWindow
                 cursor + column,
                 screenTop + row,
                 glyph[row * ChampionSheetGlyphWidth + column]);
+          }
+        }
+      }
+
+      cursor += ChampionSheetGlyphAdvance;
+    }
+  }
+
+  private void DrawPreviewPosePixelText(Color32[] pixels)
+  {
+    if (pixels == null)
+      return;
+
+    Dictionary<char, Color32[]> glyphs = BuildChampionSheetStatusGlyphs();
+    string text = "POS " + previewX + "," + previewY + " / " + previewFacing;
+
+    const int screenX = 4;
+    const int screenTop = 174;
+    Color32 ink = new Color32(0, 0, 0, 255);
+    Color32 generatedInk = new Color32(182, 182, 182, 255);
+
+    int cursor = screenX;
+    for (int i = 0; i < text.Length; i++)
+    {
+      char character = char.ToUpperInvariant(text[i]);
+      if (character != ' ' && glyphs.TryGetValue(character, out Color32[] glyph))
+      {
+        for (int row = 0; row < ChampionSheetGlyphHeight; row++)
+        {
+          for (int column = 0; column < ChampionSheetGlyphWidth; column++)
+          {
+            Color32 source = glyph[row * ChampionSheetGlyphWidth + column];
+            if (source.r == generatedInk.r
+                && source.g == generatedInk.g
+                && source.b == generatedInk.b)
+            {
+              SetChampionSheetPixel(
+                  pixels,
+                  cursor + column,
+                  screenTop + row,
+                  ink);
+            }
           }
         }
       }
@@ -15384,18 +15431,10 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
 
-    DungeonBitmapFont bitmapFont = FindEditModeBitmapFont();
-    if (bitmapFont != null)
-    {
-      bitmapFont.DrawPoseDebugText(
-          pixels,
-          PreviewWidth,
-          PreviewHeight,
-          previewX,
-          previewY,
-          previewFacing
-      );
-    }
+    // Pose/debug line uses the same fixed 5x5 pixel font as the Champion
+    // status values. Preserve the established top-down position X=4, Y=174
+    // and text format while avoiding DungeonBitmapFont scaling/bearings.
+    DrawPreviewPosePixelText(pixels);
 
     editModePreviewTexture.SetPixels32(pixels);
     editModePreviewTexture.Apply(false);
