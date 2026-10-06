@@ -20349,6 +20349,40 @@ public class ViewportLayoutEditor : EditorWindow
     return mirror.wall;
   }
 
+  // ViewEdit champion coordinates describe the party position from which
+  // the mirror/champion is directly ahead at F1, not the map tile that
+  // stores the mirror wall face. Example: a North-facing mirror stored at
+  // (10,6) is viewed from party position (10,5), facing South.
+  private void GetChampionMirrorF1StandPosition(
+      ChampionMirrorPlacement mirror, out int standX, out int standY)
+  {
+    standX = mirror != null ? mirror.x : 0;
+    standY = mirror != null ? mirror.y : 0;
+    if (mirror == null || string.IsNullOrEmpty(mirror.wall))
+      return;
+
+    if (string.Equals(
+            mirror.wall, "North", System.StringComparison.OrdinalIgnoreCase))
+    {
+      standY -= 1;
+    }
+    else if (string.Equals(
+                 mirror.wall, "South", System.StringComparison.OrdinalIgnoreCase))
+    {
+      standY += 1;
+    }
+    else if (string.Equals(
+                 mirror.wall, "East", System.StringComparison.OrdinalIgnoreCase))
+    {
+      standX += 1;
+    }
+    else if (string.Equals(
+                 mirror.wall, "West", System.StringComparison.OrdinalIgnoreCase))
+    {
+      standX -= 1;
+    }
+  }
+
   private bool DrawChampionMirrorFeatureRow(ChampionMirrorPlacement mirror)
   {
     if (!TryGetChampionMirrorViewProjection(
@@ -20374,7 +20408,8 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUILayout.BeginHorizontal();
 
     float savedLabelWidth = EditorGUIUtility.labelWidth;
-    DrawReadOnlyFeatureMapFields(mirror.x, mirror.y);
+    GetChampionMirrorF1StandPosition(mirror, out int standX, out int standY);
+    DrawReadOnlyFeatureMapFields(standX, standY);
 
     GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
     Color labelColor = new Color(0.15f, 0.85f, 1f);
