@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d285d757fa7a17f47a8e156bc473c6c5, type: 3}
   m_Name: AudioSettings
   m_EditorClassIdentifier: Assembly-CSharp::DungeonAudioSettings
-  championExitSound: {fileID: 0}
+  championExitSound: {fileID: 8300000, guid: 70840d27e0d3cff4a9ba62914cfd3e44, type: 3}
   championExitVolume: 1
-  championResurrectSound: {fileID: 0}
+  championResurrectSound: {fileID: 8300000, guid: 22d599dc65bea2a46be6a6d6f67d3a3f, type: 3}
   championResurrectVolume: 1

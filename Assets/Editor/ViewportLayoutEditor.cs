@@ -7774,9 +7774,10 @@ private static void HandleGameViewPointerDown(
       slot = "head";
     else if (name.Contains("CHOKER") || name.Contains("CLOAK"))
       slot = "neck";
+    else if (name.Contains("HOSEN"))
+      slot = "feet";
     else if (name.Contains("TROUSER")
         || name.Contains("PANTS")
-        || name.Contains("HOSEN")
         || name.Contains("HUKE")
         || name.Contains("GUNNA")
         || (name.Contains("ROBE") && name.Contains("LEG")))
@@ -7922,6 +7923,56 @@ private static void HandleGameViewPointerDown(
     "..................",
   };
 
+  // Original DOS Zed Mail Aketon, measured from the original 320x200
+  // Champion sheet. This includes the complete 18x18 worn-slot pixels so the
+  // mail pattern is reproduced exactly instead of using the old generic block.
+  private static readonly string[] ChampionSheetMailAketonMask =
+  {
+    "mmmmmmmmmmmmmmmmmm",
+    "mddddggdddddggdddm",
+    "mddwdwwgdwdgwwdmdm",
+    "mdwdgwwdgdgdwwgdmm",
+    "mwdgdwwgdwdgwwdgdm",
+    "mdgdwwwwgdgwwwgdgm",
+    "mgdmdwwgwwwwwmdmdm",
+    "mdmdmgwgwwwmmmmdmm",
+    "mmddgggwgggwwmKddm",
+    "mdddgwwwwwwwwmKddm",
+    "mdddgwwgwwwwgmKddm",
+    "mdddgwwggwggwmKddm",
+    "mdddgwwwwggwwmKddm",
+    "mdddgwgwwgwwmmKddm",
+    "mddddwwwwgwgwKdddm",
+    "mdddbbbbbbqqqqqddm",
+    "mddddgwgwgwgmKdddm",
+    "mmmmmmmmmmmmmmmmmm",
+  };
+
+  // Original DOS Zed torch, measured from the original 320x200 Champion
+  // sheet. Keep this separate from world torch rendering; this is inventory
+  // artwork only.
+  private static readonly string[] ChampionSheetTorchMask =
+  {
+    "mmmmmmmmmmmmmmmmmm",
+    "mdddddddddddRRRddm",
+    "mdddddddddRdRORddm",
+    "mddddddddddROYORdm",
+    "mddddddddddROYORdm",
+    "mdddddddddROYYOddm",
+    "mdddddddddRYYORddm",
+    "mddddddddbOYORdddm",
+    "mdddddddbbbOdddddm",
+    "mdddddddqqbddddddm",
+    "mddddddbqqdddddddm",
+    "mddddddqqddddddddm",
+    "mddddbqqdddddddddm",
+    "mdddqqqddddddddddm",
+    "mddqqddddddddddddm",
+    "mdqqdddddddddddddm",
+    "mqqddddddddddddddm",
+    "mmmmmmmmmmmmmmmmmm",
+  };
+
   // Original DOS sword, measured in the (10,4) North weapon-hand slot.
   private static readonly string[] ChampionSheetSwordMask =
   {
@@ -7979,12 +8030,7 @@ private static void HandleGameViewPointerDown(
 
     if (name.Contains("TORCH"))
     {
-      for (int y = 8; y < 15; y++)
-        SetChampionSheetPixel(pixels, iconX + 7, screenTop + y, brown);
-      SetChampionSheetPixel(pixels, iconX + 6, screenTop + 3, flame);
-      SetChampionSheetPixel(pixels, iconX + 7, screenTop + 2, flame);
-      SetChampionSheetPixel(pixels, iconX + 8, screenTop + 3, flame);
-      SetChampionSheetPixel(pixels, iconX + 7, screenTop + 4, flame);
+      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetTorchMask);
       return;
     }
 
@@ -8018,6 +8064,12 @@ private static void HandleGameViewPointerDown(
         SetChampionSheetPixel(pixels, iconX + x, screenTop + 12, brown);
       for (int y = 4; y < 12; y++)
         SetChampionSheetPixel(pixels, iconX + 6, screenTop + y, brown);
+      return;
+    }
+
+    if (name.Contains("AKETON"))
+    {
+      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetMailAketonMask);
       return;
     }
 
@@ -8098,6 +8150,21 @@ private static void HandleGameViewPointerDown(
         return true;
       case 'b':
         color = new Color32(146, 73, 0, 255);
+        return true;
+      case 'd':
+        color = new Color32(73, 73, 73, 255);
+        return true;
+      case 'm':
+        color = new Color32(109, 109, 109, 255);
+        return true;
+      case 'q':
+        color = new Color32(109, 36, 0, 255);
+        return true;
+      case 'O':
+        color = new Color32(255, 182, 0, 255);
+        return true;
+      case 'Y':
+        color = new Color32(255, 255, 0, 255);
         return true;
       default:
         color = default;
