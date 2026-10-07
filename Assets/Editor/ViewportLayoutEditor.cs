@@ -7101,9 +7101,10 @@ private static void HandleGameViewPointerDown(
   }
 
   // Worn-slot rectangles on Inventory_224x136. Screen Y is local Y + 33.
-  // Order: neck, torso, legs, feet, weapon hand, left hand, quiver.
+  // Order: head, neck, torso, legs, feet, weapon hand, left hand, quiver.
   private static readonly int[] ChampionSheetEquipSlotXY =
   {
+    5, 12,
     33, 25,
     33, 45,
     33, 65,
@@ -7835,6 +7836,8 @@ private static void HandleGameViewPointerDown(
       slot = "neck";
     else if (name.Contains("HOSEN"))
       slot = "feet";
+    else if (name.Contains("BARBARIAN") && name.Contains("HIDE"))
+      slot = "legs";
     else if (name.Contains("TROUSER")
         || name.Contains("PANTS")
         || name.Contains("HUKE")
@@ -7872,6 +7875,14 @@ private static void HandleGameViewPointerDown(
       slot = "torso";
     else if (name.Contains("BOX"))
       slot = "magicbox";
+
+    if (slot == "head")
+    {
+      // Original Champion sheet head slot: screen X=5, Y=45.
+      localX = 5;
+      localY = 12;
+      return true;
+    }
 
     if (slot == "neck")
     {
@@ -7948,6 +7959,75 @@ private static void HandleGameViewPointerDown(
   }
 
 
+
+  // Original DOS Halk item artwork measured from the 320x200 Champion sheet.
+  // These are item-type masks, so any Champion using the same item gets the
+  // same exact inventory artwork.
+  private static readonly string[] ChampionSheetBerserkerHelmMask =
+  {
+    "ddddddmmmmmmmmmmmm",
+    "ddddddmppppppppppp",
+    "ddddddmppppppppppp",
+    "ddddddmpppppppKKKK",
+    "ddddddmppKKKKKKKKK",
+    "ddddddmppppppppppp",
+    "ddddddmpppKbKbKbbK",
+    "ddddddmpKbbKKbKKKb",
+    "ddddddmpbKKWGgggWK",
+    "ddddddmpKWWggKKggW",
+    "ddddddmbWWWggKKggW",
+    "ddddddmpbbWWggggWW",
+    "ddddddmpppbbWWWWWb",
+    "ddddddmpppppbbbbbp",
+    "ddddddmppppppppppp",
+    "ddddddmppppppppppp",
+    "ddddddmppppppppppp",
+    "ddddddmmmmmmmmmmmm",
+  };
+
+  private static readonly string[] ChampionSheetBarbarianHideMask =
+  {
+    "mmmmmmmmmmmmmmmmmm",
+    "mdddbbbbwwwbbqqddm",
+    "mddqqqqqwwwqqqqddm",
+    "mdqqqbqbbbbqbqqbdm",
+    "mddbqbbbqbqqqqqddm",
+    "mdbqbqbbbbbbbqqbdm",
+    "mddbqbbbbbbqbbqqdm",
+    "mdbdqbqqbbqqqbqddm",
+    "mdddbdqqqqqqbqdqdm",
+    "mdddddqdddqdqdbddm",
+    "mddddddddddddddddm",
+    "mddddddddddddddddm",
+    "mddddddddddddddddm",
+    "mddddddddddddddddm",
+    "mddddddddddddddddm",
+    "mddddddddddddddddm",
+    "mddddddddddddddddm",
+    "mmmmmmmmmmmmmmmmmm",
+  };
+
+  private static readonly string[] ChampionSheetClubMask =
+  {
+    "mmmmmmmmmmmmmmmmmm",
+    "mddddddddddddbbbdm",
+    "mddddddddddbbbbbbm",
+    "mdddddddddbbbbbqqm",
+    "mdddddddddbbbKqqqm",
+    "mddddddddbbbKKqqdm",
+    "mddddddbdbbbbqqqdm",
+    "mddddddbbbqbbqqddm",
+    "mddddddbbbbqqqdddm",
+    "mddddddbbbqqqddddm",
+    "mdddddbbbqqddddddm",
+    "mddddbbqbqdddddddm",
+    "mdddbbbqdddddddddm",
+    "mddbbbqddddddddddm",
+    "mdbbqddddddddddddm",
+    "mbbqdddddddddddddm",
+    "mbqddddddddddddddm",
+    "mmmmmmmmmmmmmmmmmm",
+  };
 
   // Original DOS inventory artwork measured from Elija's Champion sheet.
   // These are item-type fallbacks, not Elija-specific: any Champion wearing
@@ -8223,6 +8303,29 @@ private static void HandleGameViewPointerDown(
     // Accept all naming generations used by the Hero database / item database.
     // The exact original Champion-sheet art is keyed by item identity, not by
     // one historical spelling of the name.
+    bool isBerserkerHelm = name.Contains("HELM")
+        && (name.Contains("BERSERK") || name.Contains("BEZERK"));
+    bool isBarbarianHide = name.Contains("BARBARIAN") && name.Contains("HIDE");
+    bool isClub = name == "CLUB" || name.EndsWith(" CLUB");
+
+    if (isBerserkerHelm)
+    {
+      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetBerserkerHelmMask);
+      return;
+    }
+
+    if (isBarbarianHide)
+    {
+      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetBarbarianHideMask);
+      return;
+    }
+
+    if (isClub)
+    {
+      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetClubMask);
+      return;
+    }
+
     bool isRobeLegs = name.Contains("ROBE") && name.Contains("LEG");
     bool isRobeBody = name.Contains("ROBE") && !name.Contains("LEG");
     bool isBlueMagicalBox =
@@ -8592,6 +8695,9 @@ private static void HandleGameViewPointerDown(
         return true;
       case 'g':
         color = new Color32(146, 146, 146, 255);
+        return true;
+      case 'G':
+        color = new Color32(0, 219, 0, 255);
         return true;
       case 'R':
         color = new Color32(255, 0, 0, 255);
