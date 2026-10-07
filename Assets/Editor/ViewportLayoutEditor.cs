@@ -6784,21 +6784,33 @@ private static void HandleGameViewPointerDown(
     if (recruitedChampionNames == null)
       recruitedChampionNames = new List<string>(4);
 
-    // Recruit first, then open Character Sheet mode. This guarantees that the
-    // first frame of the Character Sheet can always resolve party slot 1.
-    bool alreadyRecruited = recruitedChampionNames.Exists(
-        name => string.Equals(
-            name, championName, System.StringComparison.OrdinalIgnoreCase));
-    if (!alreadyRecruited)
+    // In Edit Mode this is a calibration/inspection selection, not a real
+    // gameplay recruitment. Keep exactly one current test Champion in party
+    // slot 1 so we can freely inspect every mirror without ever filling the
+    // four-Champion party. Future Play Mode keeps the real four-member cap.
+    if (!EditorApplication.isPlaying)
     {
-      if (recruitedChampionNames.Count >= 4)
-      {
-        Debug.LogError(
-            "[ViewportLayoutEditor] ERROR: Cannot recruit more than 4 Champions.");
-        return true;
-      }
-
+      recruitedChampionNames.Clear();
       recruitedChampionNames.Add(championName);
+    }
+    else
+    {
+      // Recruit first, then open Character Sheet mode. This guarantees that the
+      // first frame of the Character Sheet can always resolve party slot 1.
+      bool alreadyRecruited = recruitedChampionNames.Exists(
+          name => string.Equals(
+              name, championName, System.StringComparison.OrdinalIgnoreCase));
+      if (!alreadyRecruited)
+      {
+        if (recruitedChampionNames.Count >= 4)
+        {
+          Debug.LogError(
+              "[ViewportLayoutEditor] ERROR: Cannot recruit more than 4 Champions.");
+          return true;
+        }
+
+        recruitedChampionNames.Add(championName);
+      }
     }
 
     championSheetName = championName;
@@ -8212,9 +8224,32 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
+  private static string ResolveChampionInventorySpriteKey(string objectType)
+  {
+    if (string.IsNullOrEmpty(objectType))
+      return string.Empty;
+
+    // HeroDatabase starting-item names are gameplay-friendly labels, while the
+    // canonical item database / inventory art uses a few different names.
+    // Resolve those aliases before looking for the real inventory PNG.
+    string key = NormalizeChampionAssetKey(objectType);
+    switch (key)
+    {
+      case "ROBE":
+        return "Robe (Body)";
+      case "ROBELEGS":
+        return "Robe (Legs)";
+      case "BLUEMAGICALBOX":
+        return "Magical Box (Blue)";
+      default:
+        return objectType;
+    }
+  }
+
   private Texture2D GetChampionInventoryItemTexture(string objectType)
   {
-    string wantedKey = NormalizeChampionAssetKey(objectType);
+    string spriteKey = ResolveChampionInventorySpriteKey(objectType);
+    string wantedKey = NormalizeChampionAssetKey(spriteKey);
     if (string.IsNullOrEmpty(wantedKey))
       return null;
 
