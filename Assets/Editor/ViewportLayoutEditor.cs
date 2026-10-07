@@ -7923,6 +7923,55 @@ private static void HandleGameViewPointerDown(
     "..................",
   };
 
+
+  // Original DOS Zed Blue Pants, measured from the original 320x200
+  // Champion sheet legs slot. Full 18x18 slot pixels are preserved exactly.
+  private static readonly string[] ChampionSheetBluePantsMask =
+  {
+    "mmmmmmmmmmmmmmmmmm",
+    "mdddCBBBBBKBKKKddm",
+    "mdddCBBBKBKBBKKddm",
+    "mddCCCBBBBKBBKKKdm",
+    "mddCCBBBKBKBKKKKdm",
+    "mddCBCBBBBKBKBKKdm",
+    "mddCCBBBKBKBBBKKdm",
+    "mddCCBBCBKKCBBKKdm",
+    "mddCBCBBKKCCBBKKdm",
+    "mddCBBKBKdCBBKKKdm",
+    "mddCCBBKKdCBBKKKdm",
+    "mddCCBBKKdCBKBKKdm",
+    "mddCCBBKKdCBBBKKdm",
+    "mddCBBBKKdCBCBKKdm",
+    "mddCBBCKKdCCBBKKdm",
+    "mddCBCCKKdCBCCKKdm",
+    "mddCBBBKKdCBBBKKdm",
+    "mmmmmmmmmmmmmmmmmm",
+  };
+
+  // Original DOS Zed Hosen, measured from the original 320x200
+  // Champion sheet feet slot. Kept separate from Iaido's Ghi Trousers art.
+  private static readonly string[] ChampionSheetZedHosenFeetMask =
+  {
+    "mmmmmmmmmmmmmmmmmm",
+    "mdddddgdmdWdgddddm",
+    "mddddWdgdddgdmdddm",
+    "mdddwdgdmdWdgddddm",
+    "mddddWdgdddgdmdddm",
+    "mdddwdgdmdWdgddddm",
+    "mddddWdgdddgdmdddm",
+    "mdddwdgdmdWdgddddm",
+    "mddddwdgdddgdmdddm",
+    "mdddgdmdmdwdwddddm",
+    "mddddwdgdddgdmdddm",
+    "mdddWdgdmdwdgddddm",
+    "mddwdmdgdddwdgdddm",
+    "mdWdgdmdddgdwdmddm",
+    "mddmdgdddddgdwdmdm",
+    "mWgdgdddddddgdmdmm",
+    "mgmgdddddddddgdmgm",
+    "mmmmmmmmmmmmmmmmmm",
+  };
+
   // Original DOS Zed Mail Aketon, measured from the original 320x200
   // Champion sheet. This includes the complete 18x18 worn-slot pixels so the
   // mail pattern is reproduced exactly instead of using the old generic block.
@@ -8043,14 +8092,13 @@ private static void HandleGameViewPointerDown(
     {
       if (name.Contains("PANTS") && name.Contains("BLUE"))
       {
-        for (int y = 2; y < 14; y++)
-        {
-          SetChampionSheetPixel(pixels, iconX + 4, screenTop + y, blue);
-          SetChampionSheetPixel(pixels, iconX + 5, screenTop + y, blue);
-          SetChampionSheetPixel(pixels, iconX + 9, screenTop + y, blue);
-          SetChampionSheetPixel(pixels, iconX + 10, screenTop + y, blue);
-        }
+        DrawChampionSheetMask(pixels, localX, localY, ChampionSheetBluePantsMask);
+        return;
+      }
 
+      if (name.Contains("HOSEN"))
+      {
+        DrawChampionSheetMask(pixels, localX, localY, ChampionSheetZedHosenFeetMask);
         return;
       }
 
@@ -8165,6 +8213,12 @@ private static void HandleGameViewPointerDown(
         return true;
       case 'Y':
         color = new Color32(255, 255, 0, 255);
+        return true;
+      case 'B':
+        color = new Color32(0, 0, 255, 255);
+        return true;
+      case 'C':
+        color = new Color32(0, 219, 219, 255);
         return true;
       default:
         color = default;
