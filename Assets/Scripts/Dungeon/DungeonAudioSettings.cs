@@ -1,16 +1,17 @@
 using UnityEngine;
 
 /// <summary>
-/// Central Dungeon Master sound configuration.
-/// Create one asset via Assets > Create > Dungeon Master > Audio Settings.
+/// Central sound configuration for the project.
+/// Create one asset via Assets > Create > Audio Settings.
 /// The asset works in Edit Mode and can later be reused by Play Mode/build code.
 /// </summary>
 [CreateAssetMenu(
-    fileName = "DungeonAudioSettings",
-    menuName = "Dungeon Master/Audio Settings")]
+    fileName = "AudioSettings",
+    menuName = "Audio Settings")]
 public sealed class DungeonAudioSettings : ScriptableObject
 {
   [Header("Champion Mirror")]
+
   [Tooltip("Sound played when the Champion sheet is cancelled/closed.")]
   public AudioClip championExitSound;
 
