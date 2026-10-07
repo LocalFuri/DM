@@ -7871,7 +7871,7 @@ private static void HandleGameViewPointerDown(
         || (name.Contains("ROBE") && !name.Contains("LEG")))
       slot = "torso";
     else if (name.Contains("BOX"))
-      slot = "hand";
+      slot = "magicbox";
 
     if (slot == "neck")
     {
@@ -7898,6 +7898,15 @@ private static void HandleGameViewPointerDown(
     {
       localX = 33;
       localY = 85;
+      return true;
+    }
+
+    if (slot == "magicbox")
+    {
+      // Original Champion sheet: carried magical box occupies the upper
+      // right 18x18 carried-item slot (screen X=61, Y=65).
+      localX = 61;
+      localY = 32;
       return true;
     }
 
@@ -8011,24 +8020,24 @@ private static void HandleGameViewPointerDown(
 
   private static readonly string[] ChampionSheetBlueMagicalBoxMask =
   {
-    "mmmmmmmmmmmmmmmmmm",
-    "mddddpdddddddddddm",
-    "mpddddpddddddddddm",
-    "mdpddddppddddddddm",
-    "mddpdddddppddddddm",
-    "mdddpdddddppdddddm",
-    "mdddpddddpddppdddm",
-    "mddddpddddpddddddm",
-    "mddddpdddpdpdddddm",
-    "mdddddpdpdpdpddddm",
-    "mddddddpdpdpdpdddm",
-    "mdddddddpdpdpddddm",
-    "mddddddddpdpdpdddm",
-    "mdddddddddpdpddddm",
-    "mddddddddddddddddm",
-    "mddddddddddddddddm",
-    "mddddddddddddddddm",
-    "mmmmmmmmmmmmmmmmmm",
+    "ddddmmmmmmmmmmmmmm",
+    "ddddmddddddddddddd",
+    "ddddmdddddddCCCddd",
+    "ddddmdddCCCCCCCCdd",
+    "ddddmdCCCCCCCKCCCd",
+    "ddddmdWCCCKKKKKCCC",
+    "ddddmdWWCCCKCCCCCC",
+    "ddBBmdKWWCCCCCCCBB",
+    "BBddmdWKWWCCCBBBWB",
+    "ddddmdWWKWWBBBWWKK",
+    "ddddmdWWWKWBBKKWBB",
+    "ddddmdWWWWKKKBBWWB",
+    "ddddmdWWWWWBBBWBBB",
+    "ddddmddWWWWBBBBBBB",
+    "ddddmdddWWWBBBBBBB",
+    "ddddmddddWWBBBBBdd",
+    "ddddmdddddWBBddddd",
+    "ddddmmmmmmmmmmmmmm",
   };
 
   // Original DOS Ghi, measured in the (10,4) North torso slot.
