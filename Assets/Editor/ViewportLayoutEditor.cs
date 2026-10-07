@@ -1681,6 +1681,10 @@ public class ViewportLayoutEditor : EditorWindow
       new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
   private readonly Dictionary<string, Texture2D> cachedReadableChampionPortraits =
       new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
+  private readonly Dictionary<string, Texture2D> cachedChampionInventoryItemTextures =
+      new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
+  private readonly HashSet<string> missingChampionInventoryItemTextureKeys =
+      new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
 
   // New normal-wall pipeline foundation:
   // pose-store data may still exist, but normal-wall placement is restored from
@@ -6780,14 +6784,22 @@ private static void HandleGameViewPointerDown(
     if (recruitedChampionNames == null)
       recruitedChampionNames = new List<string>(4);
 
-    // A mirror click opens that Champion's sheet. Party slot 1 must exist
-    // before the first sheet frame. A new Champion joins only while the
-    // party has fewer than 4 members. A full party still opens the sheet.
+    // Recruit first, then open Character Sheet mode. This guarantees that the
+    // first frame of the Character Sheet can always resolve party slot 1.
     bool alreadyRecruited = recruitedChampionNames.Exists(
         name => string.Equals(
             name, championName, System.StringComparison.OrdinalIgnoreCase));
-    if (!alreadyRecruited && recruitedChampionNames.Count < 4)
+    if (!alreadyRecruited)
+    {
+      if (recruitedChampionNames.Count >= 4)
+      {
+        Debug.LogError(
+            "[ViewportLayoutEditor] ERROR: Cannot recruit more than 4 Champions.");
+        return true;
+      }
+
       recruitedChampionNames.Add(championName);
+    }
 
     championSheetName = championName;
     championSheetVisible = true;
@@ -7801,8 +7813,10 @@ private static void HandleGameViewPointerDown(
         || name.Contains("AKETON")
         || name.Contains("HIDE")
         || name.Contains("GHI")
-        || (name.Contains("ROBE") && name.Contains("BODY")))
+        || (name.Contains("ROBE") && !name.Contains("LEG")))
       slot = "torso";
+    else if (name.Contains("BOX"))
+      slot = "hand";
 
     if (slot == "neck")
     {
@@ -8043,6 +8057,16 @@ private static void HandleGameViewPointerDown(
       int localY,
       string objectType)
   {
+    // Preferred path: use the real inventory/icon PNG for the starting item.
+    // This makes Champion equipment generic instead of relying on hero-specific
+    // hand-painted approximations. Existing measured masks remain below as a
+    // safe fallback when an item asset cannot be found.
+    if (TryDrawChampionSheetInventoryItemTexture(
+            pixels, localX, localY, objectType))
+    {
+      return;
+    }
+
     string name = objectType.ToUpperInvariant();
     Color32 clothDark = new Color32(146, 146, 146, 255);
     Color32 steel = new Color32(182, 182, 182, 255);
@@ -8142,6 +8166,171 @@ private static void HandleGameViewPointerDown(
 
     SetChampionSheetPixel(pixels, iconX + 7, screenTop + 3, black);
     SetChampionSheetPixel(pixels, iconX + 8, screenTop + 3, black);
+  }
+
+  private bool TryDrawChampionSheetInventoryItemTexture(
+      Color32[] pixels,
+      int slotX,
+      int slotY,
+      string objectType)
+  {
+    Texture2D texture = GetChampionInventoryItemTexture(objectType);
+    if (texture == null || !texture.isReadable)
+      return false;
+
+    // Champion equipment slots are 18x18. Native inventory icons are normally
+    // 16x16, so center them with a 1px border. Exact 18x18 art is copied 1:1.
+    if (texture.width <= 0 || texture.height <= 0
+        || texture.width > ChampionSheetSlotSize
+        || texture.height > ChampionSheetSlotSize)
+    {
+      return false;
+    }
+
+    int offsetX = (ChampionSheetSlotSize - texture.width) / 2;
+    int offsetY = (ChampionSheetSlotSize - texture.height) / 2;
+    int screenTop = ChampionSheetInventoryScreenTop + slotY + offsetY;
+    Color32[] source = texture.GetPixels32();
+
+    for (int row = 0; row < texture.height; row++)
+    {
+      int sourceRow = texture.height - 1 - row;
+      for (int column = 0; column < texture.width; column++)
+      {
+        Color32 color = source[sourceRow * texture.width + column];
+        if (color.a == 0)
+          continue;
+
+        SetChampionSheetPixel(
+            pixels,
+            slotX + offsetX + column,
+            screenTop + row,
+            color);
+      }
+    }
+
+    return true;
+  }
+
+  private Texture2D GetChampionInventoryItemTexture(string objectType)
+  {
+    string wantedKey = NormalizeChampionAssetKey(objectType);
+    if (string.IsNullOrEmpty(wantedKey))
+      return null;
+
+    if (cachedChampionInventoryItemTextures.TryGetValue(
+            wantedKey, out Texture2D cached)
+        && cached != null)
+    {
+      return cached;
+    }
+
+    if (missingChampionInventoryItemTextureKeys.Contains(wantedKey))
+      return null;
+
+    string[] guids = AssetDatabase.FindAssets(
+        "t:Texture2D", new[] { "Assets/Art" });
+    string bestPath = null;
+    int bestScore = int.MinValue;
+
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      if (string.IsNullOrEmpty(path)
+          || !path.EndsWith(".png", System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      string fileKey = NormalizeChampionAssetKey(
+          Path.GetFileNameWithoutExtension(path));
+      if (string.IsNullOrEmpty(fileKey))
+        continue;
+
+      bool exact = string.Equals(
+          fileKey, wantedKey, System.StringComparison.OrdinalIgnoreCase);
+      bool prefixed = fileKey.StartsWith(
+          wantedKey, System.StringComparison.OrdinalIgnoreCase);
+      if (!exact && !prefixed)
+        continue;
+
+      Texture2D imported = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (imported == null || imported.width <= 0 || imported.height <= 0)
+        continue;
+
+      // Only inventory-sized candidates are valid here. This deliberately
+      // rejects larger world/floor sprites such as Apple_19x13 when a 16x16
+      // inventory icon exists.
+      if (imported.width > ChampionSheetSlotSize
+          || imported.height > ChampionSheetSlotSize)
+      {
+        continue;
+      }
+
+      string upperPath = path.ToUpperInvariant();
+      int score = exact ? 1000 : 800;
+      if (upperPath.Contains("INVENTORY")) score += 300;
+      if (upperPath.Contains("ICON")) score += 250;
+      if (upperPath.Contains("ITEM")) score += 100;
+      if (upperPath.Contains("GROUND")
+          || upperPath.Contains("WORLD")
+          || upperPath.Contains("FLOOR"))
+      {
+        score -= 500;
+      }
+      if (imported.width == 16 && imported.height == 16) score += 150;
+      if (imported.width == 18 && imported.height == 18) score += 100;
+
+      if (score > bestScore)
+      {
+        bestScore = score;
+        bestPath = path;
+      }
+    }
+
+    if (string.IsNullOrEmpty(bestPath))
+    {
+      missingChampionInventoryItemTextureKeys.Add(wantedKey);
+      return null;
+    }
+
+    string projectRoot = Path.GetDirectoryName(Application.dataPath);
+    string absolutePath = string.IsNullOrEmpty(projectRoot)
+        ? bestPath
+        : Path.Combine(projectRoot, bestPath);
+    if (!File.Exists(absolutePath))
+    {
+      missingChampionInventoryItemTextureKeys.Add(wantedKey);
+      return null;
+    }
+
+    byte[] pngBytes;
+    try
+    {
+      pngBytes = File.ReadAllBytes(absolutePath);
+    }
+    catch
+    {
+      missingChampionInventoryItemTextureKeys.Add(wantedKey);
+      return null;
+    }
+
+    Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    readableCopy.name = "ChampionInventoryItem_" + wantedKey;
+    readableCopy.filterMode = FilterMode.Point;
+    readableCopy.wrapMode = TextureWrapMode.Clamp;
+    readableCopy.hideFlags = HideFlags.HideAndDontSave;
+    if (!readableCopy.LoadImage(pngBytes, false)
+        || readableCopy.width > ChampionSheetSlotSize
+        || readableCopy.height > ChampionSheetSlotSize)
+    {
+      DestroyImmediate(readableCopy);
+      missingChampionInventoryItemTextureKeys.Add(wantedKey);
+      return null;
+    }
+
+    cachedChampionInventoryItemTextures[wantedKey] = readableCopy;
+    return readableCopy;
   }
 
   private void DrawChampionSheetMask(
