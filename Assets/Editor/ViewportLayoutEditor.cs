@@ -7747,8 +7747,20 @@ private static void HandleGameViewPointerDown(
 
   private void PaintChampionSheetEquipment(Color32[] pixels, HeroDefinition hero)
   {
-    if (hero == null || hero.StartingItems == null)
+    if (hero == null)
+    {
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Cannot render Champion equipment: hero definition is null.");
       return;
+    }
+
+    if (hero.StartingItems == null)
+    {
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Champion " + hero.Name
+          + " has a null StartingItems list.");
+      return;
+    }
 
     bool handUsed = false;
     bool quiverUsed = false;
@@ -7757,7 +7769,13 @@ private static void HandleGameViewPointerDown(
       HeroStartingItem item = hero.StartingItems[i];
       string itemName = GetChampionStartingItemName(item);
       if (string.IsNullOrEmpty(itemName))
+      {
+        Debug.LogError(
+            "[ViewportLayoutEditor] ERROR: Champion " + hero.Name
+            + " starting item #" + i
+            + " has no readable ItemName/ObjectType.");
         continue;
+      }
 
       if (!TryGetChampionSheetEquipSlot(
               itemName,
@@ -7766,14 +7784,23 @@ private static void HandleGameViewPointerDown(
               out int localX,
               out int localY))
       {
+        Debug.LogError(
+            "[ViewportLayoutEditor] ERROR: No Champion-sheet slot mapping for "
+            + hero.Name + " starting item '" + itemName + "'.");
         continue;
       }
 
-      DrawChampionSheetItemIcon(
-          pixels,
-          localX,
-          localY,
-          itemName);
+      if (!DrawChampionSheetItemIcon(
+              pixels,
+              localX,
+              localY,
+              itemName))
+      {
+        Debug.LogError(
+            "[ViewportLayoutEditor] ERROR: Failed to render "
+            + hero.Name + " starting item '" + itemName
+            + "' at Champion-sheet slot X=" + localX + " Y=" + localY + ".");
+      }
     }
   }
 
@@ -8288,180 +8315,27 @@ private static void HandleGameViewPointerDown(
     "..................",
   };
 
-  private void DrawChampionSheetItemIcon(
+  private bool DrawChampionSheetItemIcon(
       Color32[] pixels,
       int localX,
       int localY,
       string objectType)
   {
-    string name = objectType.ToUpperInvariant();
-    string normalizedName = NormalizeChampionAssetKey(objectType);
-
-    // Calibrated original Champion-sheet artwork must win over any generic
-    // AssetDatabase lookup. The previous order allowed a similarly-named but
-    // visually different PNG to return early and hide these exact masks.
-    // Accept all naming generations used by the Hero database / item database.
-    // The exact original Champion-sheet art is keyed by item identity, not by
-    // one historical spelling of the name.
-    bool isBerserkerHelm = name.Contains("HELM")
-        && (name.Contains("BERSERK") || name.Contains("BEZERK"));
-    bool isBarbarianHide = name.Contains("BARBARIAN") && name.Contains("HIDE");
-    bool isClub = name == "CLUB" || name.EndsWith(" CLUB");
-
-    if (isBerserkerHelm)
+    // STRICT starting-item rendering: there is exactly one source of artwork --
+    // the real inventory PNG for the canonical item. Do not draw a hardcoded
+    // mask, generated approximation, or any other fallback. A missing or
+    // invalid asset is an error and must be visible in the Unity Console.
+    string spriteKey = ResolveChampionInventorySpriteKey(objectType);
+    if (string.IsNullOrEmpty(spriteKey))
     {
-      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetBerserkerHelmMask);
-      return;
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Starting item '" + objectType
+          + "' has no canonical inventory sprite key.");
+      return false;
     }
 
-    if (isBarbarianHide)
-    {
-      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetBarbarianHideMask);
-      return;
-    }
-
-    if (isClub)
-    {
-      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetClubMask);
-      return;
-    }
-
-    bool isRobeLegs = name.Contains("ROBE") && name.Contains("LEG");
-    bool isRobeBody = name.Contains("ROBE") && !name.Contains("LEG");
-    bool isBlueMagicalBox =
-        name.Contains("BOX")
-        && (name.Contains("BLUE") || normalizedName.Contains("MAGICALBOXBLUE"));
-
-    if (isRobeBody)
-    {
-      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetRobeBodyMask);
-      return;
-    }
-
-    if (isRobeLegs)
-    {
-      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetRobeLegsMask);
-      return;
-    }
-
-    if (name.Contains("SANDAL"))
-    {
-      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetSandalsMask);
-      return;
-    }
-
-    if (isBlueMagicalBox)
-    {
-      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetBlueMagicalBoxMask);
-      return;
-    }
-
-    // Generic path for item types that do not yet have a measured Champion-
-    // sheet mask. This is deliberately after the exact calibrated items.
-    if (TryDrawChampionSheetInventoryItemTexture(
-            pixels, localX, localY, objectType))
-    {
-      return;
-    }
-
-    Color32 clothDark = new Color32(146, 146, 146, 255);
-    Color32 steel = new Color32(182, 182, 182, 255);
-    Color32 brown = new Color32(146, 73, 0, 255);
-    Color32 black = new Color32(0, 0, 0, 255);
-    Color32 flame = new Color32(255, 182, 0, 255);
-    Color32 blue = new Color32(0, 0, 255, 255);
-    int iconX = localX + 1;
-    int screenTop = ChampionSheetInventoryScreenTop + localY + 1;
-
-    if (name.Contains("SWORD"))
-    {
-      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetSwordMask);
-      return;
-    }
-
-    if (name.Contains("DAGGER"))
-    {
-      for (int i = 0; i < 12; i++)
-        SetChampionSheetPixel(pixels, iconX + 2 + i, screenTop + 12 - i, steel);
-      SetChampionSheetPixel(pixels, iconX + 3, screenTop + 13, brown);
-      SetChampionSheetPixel(pixels, iconX + 4, screenTop + 14, brown);
-      SetChampionSheetPixel(pixels, iconX + 2, screenTop + 14, brown);
-      return;
-    }
-
-    if (name.Contains("TORCH"))
-    {
-      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetTorchMask);
-      return;
-    }
-
-    if (name.Contains("TROUSER")
-        || name.Contains("PANTS")
-        || name.Contains("HOSEN")
-        || name.Contains("HUKE")
-        || name.Contains("GUNNA")
-        || (name.Contains("ROBE") && name.Contains("LEG")))
-    {
-      if (name.Contains("PANTS") && name.Contains("BLUE"))
-      {
-        DrawChampionSheetMask(pixels, localX, localY, ChampionSheetBluePantsMask);
-        return;
-      }
-
-      if (name.Contains("HOSEN"))
-      {
-        DrawChampionSheetMask(pixels, localX, localY, ChampionSheetZedHosenFeetMask);
-        return;
-      }
-
-      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetHosenMask);
-      return;
-    }
-
-    if (name.Contains("BOOT") || name.Contains("SANDAL"))
-    {
-      for (int x = 3; x < 12; x++)
-        SetChampionSheetPixel(pixels, iconX + x, screenTop + 12, brown);
-      for (int y = 4; y < 12; y++)
-        SetChampionSheetPixel(pixels, iconX + 6, screenTop + y, brown);
-      return;
-    }
-
-    if (name.Contains("AKETON"))
-    {
-      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetMailAketonMask);
-      return;
-    }
-
-    bool whiteTorso = name.Contains("SHIRT")
-        || name.Contains("TUNIC")
-        || name.Contains("JERKIN")
-        || name.Contains("DOUBLET")
-        || name.Contains("KIRTLE")
-        || name.Contains("HALTER")
-        || name.Contains("TABARD")
-        || name.Contains("HIDE")
-        || name.Contains("GHI")
-        || (name.Contains("ROBE") && name.Contains("BODY"));
-    if (whiteTorso)
-    {
-      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetGhiMask);
-      return;
-    }
-
-    // Aketon and mail keep the steel torso block.
-    for (int y = 2; y < 14; y++)
-    {
-      int inset = y < 5 ? 4 : 2;
-      for (int x = inset; x < 16 - inset; x++)
-      {
-        Color32 ink = x == inset || x == 15 - inset ? clothDark : steel;
-        SetChampionSheetPixel(pixels, iconX + x, screenTop + y, ink);
-      }
-    }
-
-    SetChampionSheetPixel(pixels, iconX + 7, screenTop + 3, black);
-    SetChampionSheetPixel(pixels, iconX + 8, screenTop + 3, black);
+    return TryDrawChampionSheetInventoryItemTexture(
+        pixels, localX, localY, spriteKey);
   }
 
   private bool TryDrawChampionSheetInventoryItemTexture(
@@ -8541,7 +8415,12 @@ private static void HandleGameViewPointerDown(
     string spriteKey = ResolveChampionInventorySpriteKey(objectType);
     string wantedKey = NormalizeChampionAssetKey(spriteKey);
     if (string.IsNullOrEmpty(wantedKey))
+    {
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Empty inventory sprite key for starting item '"
+          + objectType + "'.");
       return null;
+    }
 
     if (cachedChampionInventoryItemTextures.TryGetValue(
             wantedKey, out Texture2D cached)
@@ -8553,10 +8432,22 @@ private static void HandleGameViewPointerDown(
     if (missingChampionInventoryItemTextureKeys.Contains(wantedKey))
       return null;
 
+    // STRICT lookup. Valid filenames are the canonical sprite key itself or the
+    // canonical key with an explicit 16x16 / 18x18 size suffix. No prefix/score
+    // guessing and no alternate artwork fallback.
+    string wanted16 = wantedKey + "16X16";
+    string wanted18 = wantedKey + "18X18";
+    string alternateWantedKey = string.Empty;
+    if (string.Equals(wantedKey, "BEZERKERHELM", System.StringComparison.Ordinal))
+      alternateWantedKey = "BERSERKERHELM";
+    string alternateWanted16 = string.IsNullOrEmpty(alternateWantedKey)
+        ? string.Empty : alternateWantedKey + "16X16";
+    string alternateWanted18 = string.IsNullOrEmpty(alternateWantedKey)
+        ? string.Empty : alternateWantedKey + "18X18";
     string[] guids = AssetDatabase.FindAssets(
-        "t:Texture2D", new[] { "Assets/Art" });
-    string bestPath = null;
-    int bestScore = int.MinValue;
+        "t:Texture2D", new[] { "Assets" });
+    System.Collections.Generic.List<string> matches =
+        new System.Collections.Generic.List<string>();
 
     for (int i = 0; i < guids.Length; i++)
     {
@@ -8569,56 +8460,70 @@ private static void HandleGameViewPointerDown(
 
       string fileKey = NormalizeChampionAssetKey(
           Path.GetFileNameWithoutExtension(path));
-      if (string.IsNullOrEmpty(fileKey))
+      bool exactPrimary =
+          string.Equals(fileKey, wantedKey, System.StringComparison.Ordinal)
+          || string.Equals(fileKey, wanted16, System.StringComparison.Ordinal)
+          || string.Equals(fileKey, wanted18, System.StringComparison.Ordinal);
+      bool exactDeclaredAlias =
+          !string.IsNullOrEmpty(alternateWantedKey)
+          && (string.Equals(fileKey, alternateWantedKey, System.StringComparison.Ordinal)
+              || string.Equals(fileKey, alternateWanted16, System.StringComparison.Ordinal)
+              || string.Equals(fileKey, alternateWanted18, System.StringComparison.Ordinal));
+      if (!exactPrimary && !exactDeclaredAlias)
+      {
         continue;
-
-      bool exact = string.Equals(
-          fileKey, wantedKey, System.StringComparison.OrdinalIgnoreCase);
-      bool prefixed = fileKey.StartsWith(
-          wantedKey, System.StringComparison.OrdinalIgnoreCase);
-      if (!exact && !prefixed)
-        continue;
+      }
 
       Texture2D imported = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (imported == null || imported.width <= 0 || imported.height <= 0)
+      if (imported == null)
+      {
+        Debug.LogError(
+            "[ViewportLayoutEditor] ERROR: Inventory sprite asset exists but Unity could not load it: "
+            + path);
         continue;
+      }
 
-      // Only inventory-sized candidates are valid here. This deliberately
-      // rejects larger world/floor sprites such as Apple_19x13 when a 16x16
-      // inventory icon exists.
-      if (imported.width > ChampionSheetSlotSize
+      if (imported.width <= 0 || imported.height <= 0
+          || imported.width > ChampionSheetSlotSize
           || imported.height > ChampionSheetSlotSize)
       {
+        Debug.LogError(
+            "[ViewportLayoutEditor] ERROR: Inventory sprite for '" + spriteKey
+            + "' has invalid Champion-sheet size " + imported.width + "x"
+            + imported.height + ": " + path);
         continue;
       }
 
-      string upperPath = path.ToUpperInvariant();
-      int score = exact ? 1000 : 800;
-      if (upperPath.Contains("INVENTORY")) score += 300;
-      if (upperPath.Contains("ICON")) score += 250;
-      if (upperPath.Contains("ITEM")) score += 100;
-      if (upperPath.Contains("GROUND")
-          || upperPath.Contains("WORLD")
-          || upperPath.Contains("FLOOR"))
-      {
-        score -= 500;
-      }
-      if (imported.width == 16 && imported.height == 16) score += 150;
-      if (imported.width == 18 && imported.height == 18) score += 100;
-
-      if (score > bestScore)
-      {
-        bestScore = score;
-        bestPath = path;
-      }
+      matches.Add(path);
     }
 
-    if (string.IsNullOrEmpty(bestPath))
+    if (matches.Count == 0)
     {
       missingChampionInventoryItemTextureKeys.Add(wantedKey);
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Required inventory sprite not found for starting item '"
+          + objectType + "' (canonical spriteKey '" + spriteKey
+          + "'). Expected an exact PNG identity anywhere under Assets: "
+          + spriteKey + ".png, " + spriteKey + "_16x16.png, or "
+          + spriteKey + "_18x18.png"
+          + (string.IsNullOrEmpty(alternateWantedKey)
+              ? "."
+              : " (declared alias Berserker Helm is also accepted)."));
       return null;
     }
 
+    if (matches.Count > 1)
+    {
+      missingChampionInventoryItemTextureKeys.Add(wantedKey);
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Ambiguous inventory sprite for starting item '"
+          + objectType + "' (canonical spriteKey '" + spriteKey
+          + "'). More than one exact candidate exists: "
+          + string.Join(", ", matches.ToArray()));
+      return null;
+    }
+
+    string bestPath = matches[0];
     string projectRoot = Path.GetDirectoryName(Application.dataPath);
     string absolutePath = string.IsNullOrEmpty(projectRoot)
         ? bestPath
@@ -8626,6 +8531,9 @@ private static void HandleGameViewPointerDown(
     if (!File.Exists(absolutePath))
     {
       missingChampionInventoryItemTextureKeys.Add(wantedKey);
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Inventory sprite AssetDatabase path exists but file is missing on disk: "
+          + bestPath);
       return null;
     }
 
@@ -8634,9 +8542,12 @@ private static void HandleGameViewPointerDown(
     {
       pngBytes = File.ReadAllBytes(absolutePath);
     }
-    catch
+    catch (System.Exception exception)
     {
       missingChampionInventoryItemTextureKeys.Add(wantedKey);
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Failed reading inventory sprite '"
+          + bestPath + "': " + exception.Message);
       return null;
     }
 
@@ -8645,12 +8556,27 @@ private static void HandleGameViewPointerDown(
     readableCopy.filterMode = FilterMode.Point;
     readableCopy.wrapMode = TextureWrapMode.Clamp;
     readableCopy.hideFlags = HideFlags.HideAndDontSave;
-    if (!readableCopy.LoadImage(pngBytes, false)
-        || readableCopy.width > ChampionSheetSlotSize
-        || readableCopy.height > ChampionSheetSlotSize)
+    if (!readableCopy.LoadImage(pngBytes, false))
     {
       DestroyImmediate(readableCopy);
       missingChampionInventoryItemTextureKeys.Add(wantedKey);
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Failed decoding inventory sprite PNG: "
+          + bestPath);
+      return null;
+    }
+
+    if (readableCopy.width > ChampionSheetSlotSize
+        || readableCopy.height > ChampionSheetSlotSize)
+    {
+      int width = readableCopy.width;
+      int height = readableCopy.height;
+      DestroyImmediate(readableCopy);
+      missingChampionInventoryItemTextureKeys.Add(wantedKey);
+      Debug.LogError(
+          "[ViewportLayoutEditor] ERROR: Decoded inventory sprite for '" + spriteKey
+          + "' is too large for an 18x18 Champion slot: " + width + "x"
+          + height + " at " + bestPath);
       return null;
     }
 
