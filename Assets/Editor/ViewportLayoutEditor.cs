@@ -6780,22 +6780,14 @@ private static void HandleGameViewPointerDown(
     if (recruitedChampionNames == null)
       recruitedChampionNames = new List<string>(4);
 
-    // Recruit first, then open Character Sheet mode. This guarantees that the
-    // first frame of the Character Sheet can always resolve party slot 1.
+    // A mirror click opens that Champion's sheet. Party slot 1 must exist
+    // before the first sheet frame. A new Champion joins only while the
+    // party has fewer than 4 members. A full party still opens the sheet.
     bool alreadyRecruited = recruitedChampionNames.Exists(
         name => string.Equals(
             name, championName, System.StringComparison.OrdinalIgnoreCase));
-    if (!alreadyRecruited)
-    {
-      if (recruitedChampionNames.Count >= 4)
-      {
-        Debug.LogError(
-            "[ViewportLayoutEditor] ERROR: Cannot recruit more than 4 Champions.");
-        return true;
-      }
-
+    if (!alreadyRecruited && recruitedChampionNames.Count < 4)
       recruitedChampionNames.Add(championName);
-    }
 
     championSheetName = championName;
     championSheetVisible = true;
