@@ -81,6 +81,7 @@ public class ViewportLayoutEditor : EditorWindow
   private const string ResurrectReincarnateAssetFileName =
       "Resurrect_Reincarnate_116x73.png";
   private const string ChampionExitSoundAssetFileName = "pop04.wav";
+  private const string ChampionResurrectSoundAssetFileName = "ResurrectSnd.wav";
   private const string ChampionEyeMovedAssetFileName = "Eye_moved_16x16.png";
   private const string ChampionEyeMiddleAssetFileName = "Eye_middle_16x16.png";
   private const string ChampionFoodLabelAssetFileName = "Food_Label_48x9.png";
@@ -966,6 +967,7 @@ public class ViewportLayoutEditor : EditorWindow
   private float championExitVolume = 1f;
   [System.NonSerialized]
   private AudioClip cachedChampionExitClip;
+  private AudioClip cachedChampionResurrectClip;
   // Recruitment order for Champion Hall mirrors. The party can contain up to
   // four Champions. Slot positions are added/calibrated explicitly.
   [SerializeField] private List<string> recruitedChampionNames = new List<string>(4);
@@ -6517,6 +6519,84 @@ private static void HandleGameViewPointerDown(
       playMethod.Invoke(null, new object[] { clip, 0, false });
   }
 
+
+  private AudioClip GetChampionResurrectSoundClip()
+  {
+    if (cachedChampionResurrectClip != null)
+      return cachedChampionResurrectClip;
+
+    string[] guids = AssetDatabase.FindAssets("ResurrectSnd t:AudioClip");
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      if (!string.Equals(
+              Path.GetFileName(path),
+              ChampionResurrectSoundAssetFileName,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        continue;
+      }
+
+      cachedChampionResurrectClip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+      if (cachedChampionResurrectClip != null)
+        return cachedChampionResurrectClip;
+    }
+
+    Debug.LogWarning(
+        "[ViewportLayoutEditor] Champion resurrect sound not found in Assets: "
+        + ChampionResurrectSoundAssetFileName);
+    return null;
+  }
+
+  private void PlayChampionResurrectSound()
+  {
+    AudioClip clip = GetChampionResurrectSoundClip();
+    if (clip == null || championExitVolume <= 0f)
+      return;
+
+    float volume = Mathf.Clamp01(championExitVolume);
+
+    if (Application.isPlaying)
+    {
+      GameObject soundObject = new GameObject("ChampionResurrect_ResurrectSnd");
+      soundObject.hideFlags = HideFlags.HideAndDontSave;
+      AudioSource source = soundObject.AddComponent<AudioSource>();
+      source.playOnAwake = false;
+      source.spatialBlend = 0f;
+      source.volume = volume;
+      source.clip = clip;
+      source.Play();
+      Object.Destroy(soundObject, Mathf.Max(0.1f, clip.length + 0.1f));
+      return;
+    }
+
+    System.Type audioUtil = typeof(AudioImporter).Assembly.GetType("UnityEditor.AudioUtil");
+    if (audioUtil == null)
+      return;
+
+    MethodInfo playMethod = audioUtil.GetMethod(
+        "PlayPreviewClip",
+        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+        null,
+        new[] { typeof(AudioClip), typeof(int), typeof(bool) },
+        null);
+
+    if (playMethod != null)
+    {
+      playMethod.Invoke(null, new object[] { clip, 0, false });
+      return;
+    }
+
+    playMethod = audioUtil.GetMethod(
+        "PlayClip",
+        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+        null,
+        new[] { typeof(AudioClip), typeof(int), typeof(bool) },
+        null);
+    if (playMethod != null)
+      playMethod.Invoke(null, new object[] { clip, 0, false });
+  }
+
   /// <summary>
   /// Single Champion Mirror click path. A click on the current D1/F1 front
   /// Champion Mirror opens CharacterSheet_224x136.png. No legacy F1 click
@@ -6577,6 +6657,23 @@ private static void HandleGameViewPointerDown(
       }
 
       // Resurrect_Reincarnate_116x73.png is drawn at screen X=103, Y=85.
+      // Confirmed RESURRECT hitbox: X=103..159, Y=85..143 (57x59).
+      // This test only plays ResurrectSnd.wav; it does not change champion state yet.
+      const float resurrectX = 103f;
+      const float resurrectY = 85f;
+      const float resurrectWidth = 57f;
+      const float resurrectHeight = 59f;
+
+      bool clickedResurrect =
+          logicalX >= resurrectX && logicalX < resurrectX + resurrectWidth
+          && logicalY >= resurrectY && logicalY < resurrectY + resurrectHeight;
+
+      if (clickedResurrect)
+      {
+        PlayChampionResurrectSound();
+        return true;
+      }
+
       // Its CANCEL strip occupies local Y=60..72, therefore screen
       // X=103..218 and Y=145..157. Only a click inside that exact
       // 116x13 pixel strip closes the Champion Mirror view. Other clicks
