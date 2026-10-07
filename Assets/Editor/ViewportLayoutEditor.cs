@@ -963,11 +963,15 @@ public class ViewportLayoutEditor : EditorWindow
   private bool championEyeMiddle;
   private bool championEyePressed;
   private bool championMouthPressed;
-  [SerializeField, Range(0f, 1f)]
-  private float championExitVolume = 1f;
+  [System.NonSerialized]
+  private DungeonAudioSettings cachedDungeonAudioSettings;
   [System.NonSerialized]
   private AudioClip cachedChampionExitClip;
   private AudioClip cachedChampionResurrectClip;
+  private AudioClip cachedChampionExitPreviewClip;
+  private AudioClip cachedChampionResurrectPreviewClip;
+  private float cachedChampionExitPreviewVolume = -1f;
+  private float cachedChampionResurrectPreviewVolume = -1f;
   // Recruitment order for Champion Hall mirrors. The party can contain up to
   // four Champions. Slot positions are added/calibrated explicitly.
   [SerializeField] private List<string> recruitedChampionNames = new List<string>(4);
@@ -6440,8 +6444,122 @@ private static void HandleGameViewPointerDown(
     Repaint();
   }
 
+  private DungeonAudioSettings GetDungeonAudioSettings()
+  {
+    if (cachedDungeonAudioSettings != null)
+      return cachedDungeonAudioSettings;
+
+    string[] guids = AssetDatabase.FindAssets("t:DungeonAudioSettings");
+    if (guids.Length == 0)
+      return null;
+
+    string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+    cachedDungeonAudioSettings =
+        AssetDatabase.LoadAssetAtPath<DungeonAudioSettings>(path);
+    return cachedDungeonAudioSettings;
+  }
+
+  private float GetChampionExitVolume()
+  {
+    DungeonAudioSettings settings = GetDungeonAudioSettings();
+    return settings != null ? Mathf.Clamp01(settings.championExitVolume) : 1f;
+  }
+
+  private float GetChampionResurrectVolume()
+  {
+    DungeonAudioSettings settings = GetDungeonAudioSettings();
+    return settings != null ? Mathf.Clamp01(settings.championResurrectVolume) : 1f;
+  }
+
+  private AudioClip GetVolumeAdjustedPreviewClip(
+      AudioClip source,
+      float volume,
+      ref AudioClip cachedPreviewClip,
+      ref float cachedPreviewVolume)
+  {
+    if (source == null)
+      return null;
+
+    volume = Mathf.Clamp01(volume);
+    if (Mathf.Approximately(volume, 1f))
+      return source;
+
+    if (cachedPreviewClip != null
+        && Mathf.Approximately(cachedPreviewVolume, volume)
+        && cachedPreviewClip.samples == source.samples
+        && cachedPreviewClip.channels == source.channels)
+    {
+      return cachedPreviewClip;
+    }
+
+    if (cachedPreviewClip != null)
+    {
+      Object.DestroyImmediate(cachedPreviewClip);
+      cachedPreviewClip = null;
+    }
+
+    float[] samples = new float[source.samples * source.channels];
+    if (!source.GetData(samples, 0))
+    {
+      Debug.LogWarning(
+          "[ViewportLayoutEditor] Could not read AudioClip samples for Edit Mode volume preview: "
+          + source.name);
+      return source;
+    }
+
+    for (int i = 0; i < samples.Length; i++)
+      samples[i] *= volume;
+
+    cachedPreviewClip = AudioClip.Create(
+        source.name + "_EditPreview",
+        source.samples,
+        source.channels,
+        source.frequency,
+        false);
+    cachedPreviewClip.hideFlags = HideFlags.HideAndDontSave;
+    cachedPreviewClip.SetData(samples, 0);
+    cachedPreviewVolume = volume;
+    return cachedPreviewClip;
+  }
+
+  private void PlayEditorPreviewClip(AudioClip clip)
+  {
+    if (clip == null)
+      return;
+
+    System.Type audioUtil = typeof(AudioImporter).Assembly.GetType("UnityEditor.AudioUtil");
+    if (audioUtil == null)
+      return;
+
+    MethodInfo playMethod = audioUtil.GetMethod(
+        "PlayPreviewClip",
+        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+        null,
+        new[] { typeof(AudioClip), typeof(int), typeof(bool) },
+        null);
+
+    if (playMethod != null)
+    {
+      playMethod.Invoke(null, new object[] { clip, 0, false });
+      return;
+    }
+
+    playMethod = audioUtil.GetMethod(
+        "PlayClip",
+        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+        null,
+        new[] { typeof(AudioClip), typeof(int), typeof(bool) },
+        null);
+    if (playMethod != null)
+      playMethod.Invoke(null, new object[] { clip, 0, false });
+  }
+
   private AudioClip GetChampionExitSoundClip()
   {
+    DungeonAudioSettings settings = GetDungeonAudioSettings();
+    if (settings != null && settings.championExitSound != null)
+      return settings.championExitSound;
+
     if (cachedChampionExitClip != null)
       return cachedChampionExitClip;
 
@@ -6471,10 +6589,9 @@ private static void HandleGameViewPointerDown(
   private void PlayChampionExitSound()
   {
     AudioClip clip = GetChampionExitSoundClip();
-    if (clip == null || championExitVolume <= 0f)
+    float volume = GetChampionExitVolume();
+    if (clip == null || volume <= 0f)
       return;
-
-    float volume = Mathf.Clamp01(championExitVolume);
 
     if (Application.isPlaying)
     {
@@ -6490,38 +6607,21 @@ private static void HandleGameViewPointerDown(
       return;
     }
 
-    // Editor preview path. AudioUtil is internal, so resolve it by reflection
-    // to keep this single-file editor implementation compatible across Unity 6.
-    System.Type audioUtil = typeof(AudioImporter).Assembly.GetType("UnityEditor.AudioUtil");
-    if (audioUtil == null)
-      return;
-
-    MethodInfo playMethod = audioUtil.GetMethod(
-        "PlayPreviewClip",
-        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
-        null,
-        new[] { typeof(AudioClip), typeof(int), typeof(bool) },
-        null);
-
-    if (playMethod != null)
-    {
-      playMethod.Invoke(null, new object[] { clip, 0, false });
-      return;
-    }
-
-    playMethod = audioUtil.GetMethod(
-        "PlayClip",
-        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
-        null,
-        new[] { typeof(AudioClip), typeof(int), typeof(bool) },
-        null);
-    if (playMethod != null)
-      playMethod.Invoke(null, new object[] { clip, 0, false });
+    AudioClip previewClip = GetVolumeAdjustedPreviewClip(
+        clip,
+        volume,
+        ref cachedChampionExitPreviewClip,
+        ref cachedChampionExitPreviewVolume);
+    PlayEditorPreviewClip(previewClip);
   }
 
 
   private AudioClip GetChampionResurrectSoundClip()
   {
+    DungeonAudioSettings settings = GetDungeonAudioSettings();
+    if (settings != null && settings.championResurrectSound != null)
+      return settings.championResurrectSound;
+
     if (cachedChampionResurrectClip != null)
       return cachedChampionResurrectClip;
 
@@ -6551,10 +6651,9 @@ private static void HandleGameViewPointerDown(
   private void PlayChampionResurrectSound()
   {
     AudioClip clip = GetChampionResurrectSoundClip();
-    if (clip == null || championExitVolume <= 0f)
+    float volume = GetChampionResurrectVolume();
+    if (clip == null || volume <= 0f)
       return;
-
-    float volume = Mathf.Clamp01(championExitVolume);
 
     if (Application.isPlaying)
     {
@@ -6570,32 +6669,14 @@ private static void HandleGameViewPointerDown(
       return;
     }
 
-    System.Type audioUtil = typeof(AudioImporter).Assembly.GetType("UnityEditor.AudioUtil");
-    if (audioUtil == null)
-      return;
-
-    MethodInfo playMethod = audioUtil.GetMethod(
-        "PlayPreviewClip",
-        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
-        null,
-        new[] { typeof(AudioClip), typeof(int), typeof(bool) },
-        null);
-
-    if (playMethod != null)
-    {
-      playMethod.Invoke(null, new object[] { clip, 0, false });
-      return;
-    }
-
-    playMethod = audioUtil.GetMethod(
-        "PlayClip",
-        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
-        null,
-        new[] { typeof(AudioClip), typeof(int), typeof(bool) },
-        null);
-    if (playMethod != null)
-      playMethod.Invoke(null, new object[] { clip, 0, false });
+    AudioClip previewClip = GetVolumeAdjustedPreviewClip(
+        clip,
+        volume,
+        ref cachedChampionResurrectPreviewClip,
+        ref cachedChampionResurrectPreviewVolume);
+    PlayEditorPreviewClip(previewClip);
   }
+
 
   /// <summary>
   /// Single Champion Mirror click path. A click on the current D1/F1 front
@@ -9575,11 +9656,6 @@ private static void HandleGameViewPointerDown(
   private void DrawMapPosePreviewControls()
   {
     DrawPreviewMiniMap();
-    championExitVolume = EditorGUILayout.Slider(
-        "Champion Exit Volume",
-        championExitVolume,
-        0f,
-        1f);
   }
   // -------------------------------------------------------------------------
   // Generic original-style viewport inspection model.
