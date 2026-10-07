@@ -7754,11 +7754,12 @@ private static void HandleGameViewPointerDown(
     for (int i = 0; i < hero.StartingItems.Count; i++)
     {
       HeroStartingItem item = hero.StartingItems[i];
-      if (item == null || string.IsNullOrEmpty(item.ObjectType))
+      string itemName = GetChampionStartingItemName(item);
+      if (string.IsNullOrEmpty(itemName))
         continue;
 
       if (!TryGetChampionSheetEquipSlot(
-              item.ObjectType,
+              itemName,
               ref handUsed,
               ref quiverUsed,
               out int localX,
@@ -7771,8 +7772,50 @@ private static void HandleGameViewPointerDown(
           pixels,
           localX,
           localY,
-          item.ObjectType);
+          itemName);
     }
+  }
+
+
+  // HeroStartingItem existed in two project generations: one stores the
+  // champion item label in `ItemName`, the other in `ObjectType`.  The editor
+  // must accept both so the Hall of Champions data remains authoritative
+  // regardless of which HeroDefinition version is currently compiled.
+  private static string GetChampionStartingItemName(HeroStartingItem item)
+  {
+    if (item == null)
+      return string.Empty;
+
+    System.Type type = item.GetType();
+    const System.Reflection.BindingFlags flags =
+        System.Reflection.BindingFlags.Instance
+        | System.Reflection.BindingFlags.Public
+        | System.Reflection.BindingFlags.NonPublic;
+
+    string[] memberNames = { "ItemName", "ObjectType" };
+    for (int i = 0; i < memberNames.Length; i++)
+    {
+      System.Reflection.FieldInfo field = type.GetField(memberNames[i], flags);
+      if (field != null && field.FieldType == typeof(string))
+      {
+        string value = field.GetValue(item) as string;
+        if (!string.IsNullOrWhiteSpace(value))
+          return value.Trim();
+      }
+
+      System.Reflection.PropertyInfo property =
+          type.GetProperty(memberNames[i], flags);
+      if (property != null
+          && property.PropertyType == typeof(string)
+          && property.GetIndexParameters().Length == 0)
+      {
+        string value = property.GetValue(item, null) as string;
+        if (!string.IsNullOrWhiteSpace(value))
+          return value.Trim();
+      }
+    }
+
+    return string.Empty;
   }
 
   private static bool TryGetChampionSheetEquipSlot(
@@ -7894,6 +7937,99 @@ private static void HandleGameViewPointerDown(
 
     return false;
   }
+
+
+
+  // Original DOS inventory artwork measured from Elija's Champion sheet.
+  // These are item-type fallbacks, not Elija-specific: any Champion wearing
+  // the same item receives the same original 18x18 inventory art.
+  private static readonly string[] ChampionSheetRobeBodyMask =
+  {
+    "mmmmmmmmmmmmmmmmmm",
+    "mddddgKKKKKKKmdddm",
+    "mddggggKKKKKKmggdm",
+    "mdgwwwgmKKKKmgggwm",
+    "mgwwmgwmKKKmmgwgwm",
+    "mwwmmwggmKmmgmgwwm",
+    "mwmmwwgwmKmmgmmgwm",
+    "mmmmwgwggmKmggmmgm",
+    "mmmwwgwggmKmggmmmm",
+    "mmmwmgwggmmKmgmmmm",
+    "mddwmwgggmmKmmgmdm",
+    "mddmmwgggmmKgmgmdm",
+    "mdddmwgggmggKmmddm",
+    "mdddwgggmmgmKmmddm",
+    "mddddgggmmgmKmmddm",
+    "mddddwgmgggmKmmddm",
+    "mddddbbbbbqbbbqqdm",
+    "mmmmmmmmmmmmmmmmmm",
+  };
+
+  private static readonly string[] ChampionSheetRobeLegsMask =
+  {
+    "mmmmmmmmmmmmmmmmmm",
+    "mddddbbbbbbqbbqqdm",
+    "mddddwmggbqqKgmKdm",
+    "mddddwwggbgmbgmKdm",
+    "mddddwggmgmKggmKdm",
+    "mdddwwggmgmKggmmKm",
+    "mdddwgwgmgmKgmgmKm",
+    "mdddwgwgmgmKgmgmKm",
+    "mdddwgwgmmKgmmgmKm",
+    "mdddwggmgmKgmmgmKm",
+    "mdddwggmgmKgmggmKm",
+    "mdddwgmgmKwgmggmKm",
+    "mdddwgggmKggmggmKm",
+    "mddwwggmmKgmgggmKm",
+    "mddwwggmKmgmggmmKm",
+    "mddwggmmKmmgggmKKm",
+    "mdwggmmKKKgggmmKKm",
+    "mmmmmmmmmmmmmmmmmm",
+  };
+
+  private static readonly string[] ChampionSheetSandalsMask =
+  {
+    "mmmmmmmmmmmmmmmmmm",
+    "mddddddddddddddddm",
+    "mddddddddddddddddm",
+    "mddddddddddddddddm",
+    "mddddddddddddddddm",
+    "mddddddddddddddddm",
+    "mddddddddddddddddm",
+    "mddddbbbbdbbbddddm",
+    "mddddbddddddbddddm",
+    "mddddbbbbKbbbddddm",
+    "mddddbKKKKqqbddddm",
+    "mdddbbbqqKqbKbdddm",
+    "mdddbKKbKKbKqqbddm",
+    "mdbbbKqKddKqbbKbdm",
+    "mdbKqbKddddKbKqbKm",
+    "mqqbKKddddddKqbKqm",
+    "mqqKdddddddddKKqqm",
+    "mmmmmmmmmmmmmmmmmm",
+  };
+
+  private static readonly string[] ChampionSheetBlueMagicalBoxMask =
+  {
+    "mmmmmmmmmmmmmmmmmm",
+    "mddddpdddddddddddm",
+    "mpddddpddddddddddm",
+    "mdpddddppddddddddm",
+    "mddpdddddppddddddm",
+    "mdddpdddddppdddddm",
+    "mdddpddddpddppdddm",
+    "mddddpddddpddddddm",
+    "mddddpdddpdpdddddm",
+    "mdddddpdpdpdpddddm",
+    "mddddddpdpdpdpdddm",
+    "mdddddddpdpdpddddm",
+    "mddddddddpdpdpdddm",
+    "mdddddddddpdpddddm",
+    "mddddddddddddddddm",
+    "mddddddddddddddddm",
+    "mddddddddddddddddm",
+    "mmmmmmmmmmmmmmmmmm",
+  };
 
   // Original DOS Ghi, measured in the (10,4) North torso slot.
   private static readonly string[] ChampionSheetGhiMask =
@@ -8069,17 +8205,53 @@ private static void HandleGameViewPointerDown(
       int localY,
       string objectType)
   {
-    // Preferred path: use the real inventory/icon PNG for the starting item.
-    // This makes Champion equipment generic instead of relying on hero-specific
-    // hand-painted approximations. Existing measured masks remain below as a
-    // safe fallback when an item asset cannot be found.
+    string name = objectType.ToUpperInvariant();
+    string normalizedName = NormalizeChampionAssetKey(objectType);
+
+    // Calibrated original Champion-sheet artwork must win over any generic
+    // AssetDatabase lookup. The previous order allowed a similarly-named but
+    // visually different PNG to return early and hide these exact masks.
+    // Accept all naming generations used by the Hero database / item database.
+    // The exact original Champion-sheet art is keyed by item identity, not by
+    // one historical spelling of the name.
+    bool isRobeLegs = name.Contains("ROBE") && name.Contains("LEG");
+    bool isRobeBody = name.Contains("ROBE") && !name.Contains("LEG");
+    bool isBlueMagicalBox =
+        name.Contains("BOX")
+        && (name.Contains("BLUE") || normalizedName.Contains("MAGICALBOXBLUE"));
+
+    if (isRobeBody)
+    {
+      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetRobeBodyMask);
+      return;
+    }
+
+    if (isRobeLegs)
+    {
+      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetRobeLegsMask);
+      return;
+    }
+
+    if (name.Contains("SANDAL"))
+    {
+      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetSandalsMask);
+      return;
+    }
+
+    if (isBlueMagicalBox)
+    {
+      DrawChampionSheetMask(pixels, localX, localY, ChampionSheetBlueMagicalBoxMask);
+      return;
+    }
+
+    // Generic path for item types that do not yet have a measured Champion-
+    // sheet mask. This is deliberately after the exact calibrated items.
     if (TryDrawChampionSheetInventoryItemTexture(
             pixels, localX, localY, objectType))
     {
       return;
     }
 
-    string name = objectType.ToUpperInvariant();
     Color32 clothDark = new Color32(146, 146, 146, 255);
     Color32 steel = new Color32(182, 182, 182, 255);
     Color32 brown = new Color32(146, 73, 0, 255);
@@ -8236,11 +8408,17 @@ private static void HandleGameViewPointerDown(
     switch (key)
     {
       case "ROBE":
+      case "ROBEBODY":
         return "Robe (Body)";
       case "ROBELEGS":
         return "Robe (Legs)";
       case "BLUEMAGICALBOX":
+      case "MAGICALBOXBLUE":
         return "Magical Box (Blue)";
+      case "BERSERKERHELM":
+        return "Bezerker Helm";
+      case "TORCH":
+        return "Torch (Unlit)";
       default:
         return objectType;
     }
@@ -8435,6 +8613,9 @@ private static void HandleGameViewPointerDown(
         return true;
       case 'C':
         color = new Color32(0, 219, 219, 255);
+        return true;
+      case 'p':
+        color = new Color32(219, 146, 109, 255);
         return true;
       default:
         color = default;
