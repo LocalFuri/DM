@@ -421,6 +421,7 @@ public class ViewportLayoutEditor : EditorWindow
   // This crop lives inside the 224x136 dungeon viewport, not the full
   // 320x200 output. topY 33 with height 91 => framebuffer Y 12.
   private const int StairsDownRightD1FramebufferY = 12;
+  private const string StairsDownRightD1CalibrationKey = "StairsProjection:Down:S1:32x91";
 
   // ViewEdit controls for the down-stairs overlay. These are intentionally
   // editor-preview values (like the live wall controls) so the sprite can be
@@ -2585,43 +2586,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private static void OpenDungeonFeaturesMaximized()
   {
-    // Avoid a compile-time dependency on the separate DungeonFeatureEditor
-    // script. A missing class/method is a hard error, not a substitute window.
-    System.Type dungeonFeatureEditorType = null;
-    System.Reflection.Assembly[] assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
-    for (int a = 0; a < assemblies.Length && dungeonFeatureEditorType == null; ++a)
-    {
-      System.Type[] types;
-      try { types = assemblies[a].GetTypes(); }
-      catch (System.Reflection.ReflectionTypeLoadException ex) { types = ex.Types; }
-      for (int t = 0; t < types.Length; ++t)
-      {
-        if (types[t] != null && types[t].Name == "DungeonFeatureEditor")
-        {
-          dungeonFeatureEditorType = types[t];
-          break;
-        }
-      }
-    }
-    if (dungeonFeatureEditorType == null)
-    {
-      Debug.LogError("ViewEdit: DungeonFeatureEditor class was not found. Cannot open Dungeon Features.");
-      return;
-    }
-    MethodInfo openMethod = dungeonFeatureEditorType.GetMethod(
-        "Open", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
-        null, System.Type.EmptyTypes, null);
-    if (openMethod == null)
-    {
-      Debug.LogError("ViewEdit: DungeonFeatureEditor.Open() was not found. Cannot open Dungeon Features.");
-      return;
-    }
-    try { openMethod.Invoke(null, null); }
-    catch (System.Exception ex)
-    {
-      Debug.LogError("ViewEdit: DungeonFeatureEditor.Open() failed: " + ex);
-      return;
-    }
+    DungeonFeatureEditor.Open();
 
     // DungeonFeatureEditor.Open may create/show the window at the end of this
     // editor update. Maximize it on the next update after Unity has attached
@@ -16488,6 +16453,16 @@ private static void HandleGameViewPointerDown(
                 piece, out bool manualWallEnabledForDraw)
             && manualWallEnabledForDraw;
 
+        // A genuine stairs-down tile in the D1-right cell replaces RightF0.
+        // Handle it before normal-wall visibility filtering, because the
+        // source wall may correctly be absent from the Viewport-17 wall set.
+        if (IsWallF0RightPiece(piece)
+            && IsStairsDownRightD1ForCurrentPose())
+        {
+          BlitStairsDownRightD1IntoPreview(pixels);
+          continue;
+        }
+
         if (viewport17NormalWall)
         {
           // FINAL DRAW FROM VIEWPORT-17 is the automatic visibility default.
@@ -16512,18 +16487,6 @@ private static void HandleGameViewPointerDown(
 
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
           continue;
-
-        // Structural stairs replacement: a down-stairs tile in the D1-right
-        // relative cell owns the screen slot normally occupied by RightF0.
-        // Draw the stairs wall here, at the exact point where RightF0 would
-        // have been rendered, and skip the ordinary wall. This makes stairs
-        // part of wall geometry instead of a late overlay exception.
-        if (IsWallF0RightPiece(piece)
-            && IsStairsDownRightD1ForCurrentPose())
-        {
-          BlitStairsDownRightD1IntoPreview(pixels);
-          continue;
-        }
 
         // F1 door frames are drawn by the dedicated F1 door composition,
         // not in normal list order.
@@ -20954,8 +20917,7 @@ private static void HandleGameViewPointerDown(
         stairsX,
         stairsY,
         null);
-    return IsPreviewFeatureEnabled(key)
-        && previewForcedStairsDownImageKeys.Contains(key);
+    return IsPreviewFeatureEnabled(key);
   }
 
   /// <summary>
@@ -20979,14 +20941,14 @@ private static void HandleGameViewPointerDown(
 
     if (stairsWall == null)
     {
-      Debug.LogWarning(
+      Debug.LogError(
           "STAIRS RIGHT D1: Stairs_Down_Front_D1_32x91.png was not found.");
       return;
     }
 
     if (stairsWall.width != 32 || stairsWall.height != 91)
     {
-      Debug.LogWarning(
+      Debug.LogError(
           "STAIRS RIGHT D1: asset loaded but imported size is "
           + stairsWall.width + "x" + stairsWall.height
           + " (expected 32x91).");
@@ -21009,7 +20971,7 @@ private static void HandleGameViewPointerDown(
 
     if (stairsWall == null || !stairsWall.isReadable)
     {
-      Debug.LogWarning(
+      Debug.LogError(
           "STAIRS RIGHT D1: asset is still not readable after importer refresh.");
       return;
     }
@@ -21017,14 +20979,22 @@ private static void HandleGameViewPointerDown(
     // IMPORTANT: this exact reference crop is positioned in the native
     // 224x136 dungeon viewport. Do not convert its Y against the 320x200
     // output buffer; that places it 64 pixels too high.
-    int destinationY = StairsDownRightD1FramebufferY;
+    int x = StairsDownRightD1X;
+    int topY = StairsDownRightD1DisplayY;
+    bool mirror = false;
+    ApplyAcceptedOrnamentReference(
+        StairsDownRightD1CalibrationKey, ref x, ref topY, ref mirror);
+    ApplyPreviewFeatureRenderOverrides(
+        StairsDownRightD1CalibrationKey, ref x, ref topY, ref mirror);
+    int destinationY = StairsDownRightD1FramebufferY
+        - (topY - StairsDownRightD1DisplayY);
 
     BlitPieceIntoPreview(
         pixels,
         stairsWall,
-        StairsDownRightD1X,
+        x,
         destinationY,
-        false);
+        mirror);
   }
 
   private static string MakePreviewFeatureKey(
@@ -23927,10 +23897,115 @@ private static void HandleGameViewPointerDown(
         }
         else
         {
-          DrawStairsDownFeatureChecklistRow(
-              visibleStairsX, visibleStairsY, key);
+          DrawFeatureChecklistRow(
+              visibleStairsX, visibleStairsY,
+              "Stairs Down", key, Color.magenta);
         }
       }
+    }
+
+    // D1-right stairs have their own 32x91 wall projection. List that
+    // map feature only when the actual right-forward tile is stairs-down.
+    DungeonMap.GetRightOffset(
+        previewFacing, out int stairsRightX, out int stairsRightY);
+    int rightStairsX = visibleStairsX + stairsRightX;
+    int rightStairsY = visibleStairsY + stairsRightY;
+    if (previewMiniMap.IsInside(rightStairsX, rightStairsY))
+    {
+      DungeonTile rightTile = previewMiniMap.GetTile(rightStairsX, rightStairsY);
+      if (rightTile != null
+          && rightTile.TryGetStairsDirection(out bool rightStairsUp)
+          && !rightStairsUp)
+      {
+        string rightKey = MakePreviewFeatureKey(
+            "StairsDown", rightStairsX, rightStairsY, null);
+        DrawStairsDownS1CalibrationRow(rightStairsX, rightStairsY, rightKey);
+      }
+    }
+  }
+
+  // Calibration is keyed by the S1 projection, not by the test map position.
+  // Apply persists the accepted values through the same source-backed storage
+  // used for ornaments; un-applied adjustments remain per-pose overrides.
+  private void DrawStairsDownS1CalibrationRow(int mapX, int mapY, string featureKey)
+  {
+    const string key = StairsDownRightD1CalibrationKey;
+    int defaultX = StairsDownRightD1X;
+    int defaultY = StairsDownRightD1DisplayY;
+    bool defaultMirror = false;
+    ApplyAcceptedOrnamentReference(
+        key, ref defaultX, ref defaultY, ref defaultMirror);
+    int x = defaultX;
+    int y = defaultY;
+    bool mirror = defaultMirror;
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+
+    EditorGUILayout.BeginHorizontal();
+    float savedLabelWidth = EditorGUIUtility.labelWidth;
+    DrawReadOnlyFeatureMapFields(mapX, mapY);
+    GUILayout.Label("Stairs_Down_S1_32x91",
+        GetPieceFamilyHeaderStyle(Color.magenta), GUILayout.Width(176f));
+    bool enabledBefore = IsPreviewFeatureEnabled(featureKey);
+    bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
+
+    const string mirrorLabel = "Mirror";
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent(mirrorLabel)).x;
+    bool mirrorAfter = DrawMouseOnlyToggle(
+        mirrorLabel, mirror, mirror, GUILayout.Width(69f), GUILayout.ExpandWidth(false));
+
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    int editX = x;
+    bool xChanged = DrawIntStepperInline(
+        "X", ref editX, snap, x != defaultX, true, 24f, 24f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    int editY = y;
+    bool yChanged = DrawIntStepperInline(
+        "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
+    GUILayout.Space(6f);
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
+    EditorGUIUtility.labelWidth = savedLabelWidth;
+    EditorGUILayout.EndHorizontal();
+
+    if (enabledAfter != enabledBefore)
+    {
+      SetPreviewFeatureEnabled(featureKey, enabledAfter);
+      previewEnabledChangedThisFrame = true;
+    }
+    if (apply)
+    {
+      if (SaveAcceptedOrnamentReference(key, editX, editY, mirrorAfter))
+      {
+        previewFeaturePositionOverrides.Remove(key);
+        previewFeatureMirrorOverrides.Remove(key);
+        previewPositionChangedThisFrame = true;
+        previewMirrorChangedThisFrame = true;
+      }
+    }
+    else
+    {
+      if ((xChanged && editX != x) || (yChanged && editY != y))
+      {
+        if (editX == defaultX && editY == defaultY)
+          previewFeaturePositionOverrides.Remove(key);
+        else
+          previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+        previewPositionChangedThisFrame = true;
+      }
+      if (mirrorAfter != mirror)
+      {
+        if (mirrorAfter == defaultMirror)
+          previewFeatureMirrorOverrides.Remove(key);
+        else
+          previewFeatureMirrorOverrides[key] = mirrorAfter;
+        previewMirrorChangedThisFrame = true;
+      }
+    }
+    if (enabledAfter != enabledBefore || apply || xChanged || yChanged || mirrorAfter != mirror)
+    {
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
     }
   }
 
