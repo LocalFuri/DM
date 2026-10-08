@@ -7745,6 +7745,9 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Temporary: silence only Halk inventory artwork errors until the PNGs are imported.
+  private const bool SuppressHalkEquipmentSpriteErrors = true;
+
   private void PaintChampionSheetEquipment(Color32[] pixels, HeroDefinition hero)
   {
     if (hero == null)
@@ -7794,9 +7797,13 @@ private static void HandleGameViewPointerDown(
               pixels,
               localX,
               localY,
-              itemName))
+              itemName,
+              SuppressHalkEquipmentSpriteErrors
+                  && string.Equals(hero.Name, "HALK", System.StringComparison.OrdinalIgnoreCase)))
       {
-        Debug.LogError(
+        if (!(SuppressHalkEquipmentSpriteErrors
+              && string.Equals(hero.Name, "HALK", System.StringComparison.OrdinalIgnoreCase)))
+          Debug.LogError(
             "[ViewportLayoutEditor] ERROR: Failed to render "
             + hero.Name + " starting item '" + itemName
             + "' at Champion-sheet slot X=" + localX + " Y=" + localY + ".");
@@ -8319,7 +8326,8 @@ private static void HandleGameViewPointerDown(
       Color32[] pixels,
       int localX,
       int localY,
-      string objectType)
+      string objectType,
+      bool suppressSpriteErrors = false)
   {
     // STRICT starting-item rendering: there is exactly one source of artwork --
     // the real inventory PNG for the canonical item. Do not draw a hardcoded
@@ -8328,23 +8336,25 @@ private static void HandleGameViewPointerDown(
     string spriteKey = ResolveChampionInventorySpriteKey(objectType);
     if (string.IsNullOrEmpty(spriteKey))
     {
-      Debug.LogError(
+      if (!suppressSpriteErrors)
+        Debug.LogError(
           "[ViewportLayoutEditor] ERROR: Starting item '" + objectType
           + "' has no canonical inventory sprite key.");
       return false;
     }
 
     return TryDrawChampionSheetInventoryItemTexture(
-        pixels, localX, localY, spriteKey);
+        pixels, localX, localY, spriteKey, suppressSpriteErrors);
   }
 
   private bool TryDrawChampionSheetInventoryItemTexture(
       Color32[] pixels,
       int slotX,
       int slotY,
-      string objectType)
+      string objectType,
+      bool suppressSpriteErrors = false)
   {
-    Texture2D texture = GetChampionInventoryItemTexture(objectType);
+    Texture2D texture = GetChampionInventoryItemTexture(objectType, suppressSpriteErrors);
     if (texture == null || !texture.isReadable)
       return false;
 
@@ -8410,13 +8420,20 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  private Texture2D GetChampionInventoryItemTexture(string objectType)
+  private static void LogChampionInventorySpriteError(bool suppress, string message)
+  {
+    if (!suppress)
+      Debug.LogError(message);
+  }
+
+  private Texture2D GetChampionInventoryItemTexture(
+      string objectType, bool suppressSpriteErrors = false)
   {
     string spriteKey = ResolveChampionInventorySpriteKey(objectType);
     string wantedKey = NormalizeChampionAssetKey(spriteKey);
     if (string.IsNullOrEmpty(wantedKey))
     {
-      Debug.LogError(
+      LogChampionInventorySpriteError(suppressSpriteErrors, 
           "[ViewportLayoutEditor] ERROR: Empty inventory sprite key for starting item '"
           + objectType + "'.");
       return null;
@@ -8477,7 +8494,7 @@ private static void HandleGameViewPointerDown(
       Texture2D imported = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
       if (imported == null)
       {
-        Debug.LogError(
+        LogChampionInventorySpriteError(suppressSpriteErrors, 
             "[ViewportLayoutEditor] ERROR: Inventory sprite asset exists but Unity could not load it: "
             + path);
         continue;
@@ -8487,7 +8504,7 @@ private static void HandleGameViewPointerDown(
           || imported.width > ChampionSheetSlotSize
           || imported.height > ChampionSheetSlotSize)
       {
-        Debug.LogError(
+        LogChampionInventorySpriteError(suppressSpriteErrors, 
             "[ViewportLayoutEditor] ERROR: Inventory sprite for '" + spriteKey
             + "' has invalid Champion-sheet size " + imported.width + "x"
             + imported.height + ": " + path);
@@ -8500,7 +8517,7 @@ private static void HandleGameViewPointerDown(
     if (matches.Count == 0)
     {
       missingChampionInventoryItemTextureKeys.Add(wantedKey);
-      Debug.LogError(
+      LogChampionInventorySpriteError(suppressSpriteErrors, 
           "[ViewportLayoutEditor] ERROR: Required inventory sprite not found for starting item '"
           + objectType + "' (canonical spriteKey '" + spriteKey
           + "'). Expected an exact PNG identity anywhere under Assets: "
@@ -8515,7 +8532,7 @@ private static void HandleGameViewPointerDown(
     if (matches.Count > 1)
     {
       missingChampionInventoryItemTextureKeys.Add(wantedKey);
-      Debug.LogError(
+      LogChampionInventorySpriteError(suppressSpriteErrors, 
           "[ViewportLayoutEditor] ERROR: Ambiguous inventory sprite for starting item '"
           + objectType + "' (canonical spriteKey '" + spriteKey
           + "'). More than one exact candidate exists: "
@@ -8531,7 +8548,7 @@ private static void HandleGameViewPointerDown(
     if (!File.Exists(absolutePath))
     {
       missingChampionInventoryItemTextureKeys.Add(wantedKey);
-      Debug.LogError(
+      LogChampionInventorySpriteError(suppressSpriteErrors, 
           "[ViewportLayoutEditor] ERROR: Inventory sprite AssetDatabase path exists but file is missing on disk: "
           + bestPath);
       return null;
@@ -8545,7 +8562,7 @@ private static void HandleGameViewPointerDown(
     catch (System.Exception exception)
     {
       missingChampionInventoryItemTextureKeys.Add(wantedKey);
-      Debug.LogError(
+      LogChampionInventorySpriteError(suppressSpriteErrors, 
           "[ViewportLayoutEditor] ERROR: Failed reading inventory sprite '"
           + bestPath + "': " + exception.Message);
       return null;
@@ -8560,7 +8577,7 @@ private static void HandleGameViewPointerDown(
     {
       DestroyImmediate(readableCopy);
       missingChampionInventoryItemTextureKeys.Add(wantedKey);
-      Debug.LogError(
+      LogChampionInventorySpriteError(suppressSpriteErrors, 
           "[ViewportLayoutEditor] ERROR: Failed decoding inventory sprite PNG: "
           + bestPath);
       return null;
@@ -8573,7 +8590,7 @@ private static void HandleGameViewPointerDown(
       int height = readableCopy.height;
       DestroyImmediate(readableCopy);
       missingChampionInventoryItemTextureKeys.Add(wantedKey);
-      Debug.LogError(
+      LogChampionInventorySpriteError(suppressSpriteErrors, 
           "[ViewportLayoutEditor] ERROR: Decoded inventory sprite for '" + spriteKey
           + "' is too large for an 18x18 Champion slot: " + width + "x"
           + height + " at " + bestPath);
