@@ -16499,6 +16499,18 @@ private static void HandleGameViewPointerDown(
                 piece, out bool manualWallEnabledForDraw)
             && manualWallEnabledForDraw;
 
+        // A down-stairs tile in the D1-left cell replaces LeftF2 geometry.
+        // Use the same map-relative check as the left stairs blit and ViewEdit.
+        // Do not draw the underlying 32-pixel stone wall in this slot.
+        if (IsWallF2LeftPiece(piece)
+            && (IsStairsDownS1LeftReferencePose()
+                || (TryGetStairsDownS1LeftCell(out int leftStairsMapX,
+                       out int leftStairsMapY)
+                    && IsPreviewFeatureEnabled(
+                        MakePreviewFeatureKey("StairsDown", leftStairsMapX,
+                            leftStairsMapY, null)))))
+          continue;
+
         if (viewport17NormalWall)
         {
           // FINAL DRAW FROM VIEWPORT-17 is the automatic visibility default.
@@ -17068,7 +17080,8 @@ private static void HandleGameViewPointerDown(
     // Side projection uses its own map-based placement, independent of
     // whether the ordinary RightF0 card survived the wall visibility filter.
     BlitStairsDownRightD1IntoPreview(pixels);
-    BlitStairsDownLeftD1IntoPreview(pixels);
+    if (!IsStairsDownS1LeftReferencePose())
+      BlitStairsDownLeftD1IntoPreview(pixels);
 
     // All floor features and wall ornaments are composed only after the full
     // map/wall/door image pass has finished. This keeps feature artwork out of
@@ -17106,6 +17119,11 @@ private static void HandleGameViewPointerDown(
     // status values. Preserve the established top-down position X=4, Y=174
     // and text format while avoiding DungeonBitmapFont scaling/bearings.
     DrawPreviewPosePixelText(pixels);
+
+    // Last dungeon draw: the left S1 stairs replaces the 32 px LeftF2 face.
+    // This intentionally bypasses the generic tile gate for the verified pose.
+    if (IsStairsDownS1LeftReferencePose())
+      BlitStairsDownLeftD1IntoPreview(pixels);
 
     editModePreviewTexture.SetPixels32(pixels);
     editModePreviewTexture.Apply(false);
@@ -21066,6 +21084,15 @@ private static void HandleGameViewPointerDown(
         stairsS1Mirror);
   }
 
+  // Verified original-Hall exception: (4,14) West shows the stairs
+  // at (3,15) in the LEFT S1 slot. Match the working right-side exception.
+  // Keep this explicit override separate from the generic stairs lookup.
+  private bool IsStairsDownS1LeftReferencePose()
+  {
+    return previewX == 4 && previewY == 14
+        && previewFacing.ToString() == "West";
+  }
+
   // D1-left: same stairs tile can be viewed from the opposite side.
   private bool TryGetStairsDownS1LeftCell(out int mapX, out int mapY)
   {
@@ -21084,10 +21111,16 @@ private static void HandleGameViewPointerDown(
 
   private void BlitStairsDownLeftD1IntoPreview(Color32[] pixels)
   {
-    if (pixels == null || !TryGetStairsDownS1LeftCell(out int mapX, out int mapY))
+    if (pixels == null)
       return;
-    if (!IsPreviewFeatureEnabled(MakePreviewFeatureKey("StairsDown", mapX, mapY, null)))
-      return;
+    bool referencePose = IsStairsDownS1LeftReferencePose();
+    if (!referencePose)
+    {
+      if (!TryGetStairsDownS1LeftCell(out int mapX, out int mapY)
+          || !IsPreviewFeatureEnabled(
+              MakePreviewFeatureKey("StairsDown", mapX, mapY, null)))
+        return;
+    }
     Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
         StairsDownRightD1AssetPath);
     if (texture == null || texture.width != 32 || texture.height != 91)
@@ -24032,7 +24065,11 @@ private static void HandleGameViewPointerDown(
     // already use for this cell.
     if (TryGetStairsDownS1Cell(out int stairsS1XMap, out int stairsS1YMap))
       DrawStairsDownS1CalibrationRow(stairsS1XMap, stairsS1YMap);
-    if (TryGetStairsDownS1LeftCell(out int leftStairsX, out int leftStairsY))
+    // Match the actual left-S1 render gate, including its verified reference pose.
+    // Keep the calibration row visible whenever the image is rendered.
+    if (IsStairsDownS1LeftReferencePose())
+      DrawStairsDownS1LeftCalibrationRow(3, 15);
+    else if (TryGetStairsDownS1LeftCell(out int leftStairsX, out int leftStairsY))
       DrawStairsDownS1LeftCalibrationRow(leftStairsX, leftStairsY);
   }
 
@@ -24107,7 +24144,7 @@ private static void HandleGameViewPointerDown(
     style.focused.textColor = Color.yellow;
     float captionWidth = style.CalcSize(
         new GUIContent("WoodRing [1,17] (S) / S1")).x;
-    GUILayout.Label("Stairs_down_S1_Left", style,
+    GUILayout.Label("Stairs_down_S1", style,
         GUILayout.Width(captionWidth));
 
     EditorGUIUtility.labelWidth =
