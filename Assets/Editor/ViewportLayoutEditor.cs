@@ -16505,6 +16505,9 @@ private static void HandleGameViewPointerDown(
         if (IsWallF2LeftPiece(piece)
             && IsStairsDownS1LeftReferencePose())
           continue;
+        if (IsWallF2RightPiece(piece)
+            && IsStairsDownRightD1ForCurrentPose())
+          continue;
 
         if (viewport17NormalWall)
         {
@@ -17048,7 +17051,10 @@ private static void HandleGameViewPointerDown(
         }
       }
 
-      // Wall rendering is intentionally disabled. No special wall/door blits.
+      // The right S1 slot is resolved with the wall geometry above, and its
+      // exact 32x91 source is emitted here as the last right-wall contribution.
+      // This is inside the normal wall pass, not a post-wall feature overlay.
+      BlitStairsDownRightD1IntoPreview(pixels);
     }
 
     // Native D3 L/C/R is drawn in the normal far-to-near wall pass.
@@ -17072,9 +17078,6 @@ private static void HandleGameViewPointerDown(
     // ahead is a Stairs tile, draw the original F1 stairs front over the
     // completed corridor geometry. No Hall coordinate is hardcoded here.
     BlitStairsDownF1IntoPreview(pixels);
-    // Side projection uses its own map-based placement, independent of
-    // whether the ordinary RightF0 card survived the wall visibility filter.
-    BlitStairsDownRightD1IntoPreview(pixels);
 
     // All floor features and wall ornaments are composed only after the full
     // map/wall/door image pass has finished. This keeps feature artwork out of
@@ -18651,6 +18654,11 @@ private static void HandleGameViewPointerDown(
     ApplyViewport17NativeManualControls("LeftF2", ref leftEnabled, ref leftMirror);
     ApplyViewport17NativeManualControls("FrontF2", ref centerEnabled, ref centerMirror);
     ApplyViewport17NativeManualControls("RightF2", ref rightEnabled, ref rightMirror);
+
+    // The right S1 stairs occupies this right-hand wall projection.
+    // Select stairs rather than emitting the ordinary RightF2 bitmap.
+    if (IsStairsDownRightD1ForCurrentPose())
+      rightEnabled = false;
 
     // Cell-property authority wins over a temporary FrontF2 manual override.
     // A down-stair directly ahead replaces only the D2 center wall; the D2
