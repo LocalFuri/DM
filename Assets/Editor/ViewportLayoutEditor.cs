@@ -23973,50 +23973,51 @@ private static void HandleGameViewPointerDown(
 
   private void DrawStairsDownS1CalibrationRow(int mapX, int mapY)
   {
-    string key = MakePreviewFeatureKey("StairsDown", mapX, mapY, null);
+    // Match the existing Hook/WoodRing ornament calibration row.
     EditorGUILayout.BeginHorizontal();
-    GUILayout.Label("Stairs_Down_S1_32x91", GUILayout.Width(175f));
-    bool wasEnabled = IsPreviewFeatureEnabled(key);
-    bool enabled = DrawMouseOnlyToggle("Enabled", wasEnabled, wasEnabled,
-        GUILayout.Width(82f));
-    bool mirror = DrawMouseOnlyToggle("Mirror", stairsS1Mirror, stairsS1Mirror,
-        GUILayout.Width(75f));
+    float savedLabelWidth = EditorGUIUtility.labelWidth;
+    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
+    featureStyle.normal.textColor = Color.yellow;
+    featureStyle.hover.textColor = Color.yellow;
+    featureStyle.focused.textColor = Color.yellow;
+    float captionWidth = featureStyle.CalcSize(
+        new GUIContent("WoodRing [1,17] (S) / S1")).x;
+    GUILayout.Label("Stairs_down_S1", featureStyle,
+        GUILayout.Width(captionWidth));
+
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int x = stairsS1X;
+    bool xChanged = DrawIntStepperInline(
+        "X", ref x, snap, false, true, 24f, 24f);
+
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     int y = stairsS1TopY;
-    GUILayout.Label("X", GUILayout.Width(12f));
-    x = EditorGUILayout.IntField(x, GUILayout.Width(38f));
-    if (GUILayout.Button("-1", GUILayout.Width(27f))) x--;
-    if (GUILayout.Button("+1", GUILayout.Width(27f))) x++;
-    GUILayout.Label("Y", GUILayout.Width(12f));
-    y = EditorGUILayout.IntField(y, GUILayout.Width(38f));
-    if (GUILayout.Button("-1", GUILayout.Width(27f))) y--;
-    if (GUILayout.Button("+1", GUILayout.Width(27f))) y++;
-    bool apply = GUILayout.Button("Apply", GUILayout.Width(50f));
+    bool yChanged = DrawIntStepperInline(
+        "Y", ref y, snap, false, true, 24f, 24f);
+
+    GUILayout.Space(6f);
+    bool apply = GUILayout.Button("Apply",
+        GUILayout.Width(58f), GUILayout.ExpandWidth(false));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = savedLabelWidth;
     EditorGUILayout.EndHorizontal();
-    bool changed = false;
-    if (enabled != wasEnabled)
-    {
-      SetPreviewFeatureEnabled(key, enabled);
-      changed = true;
-    }
-    if (x != stairsS1X || y != stairsS1TopY || mirror != stairsS1Mirror)
+
+    if ((xChanged && x != stairsS1X) || (yChanged && y != stairsS1TopY))
     {
       stairsS1X = x;
       stairsS1TopY = y;
-      stairsS1Mirror = mirror;
-      changed = true;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
     }
+
     if (apply)
     {
       EditorPrefs.SetInt(StairsS1PrefsPrefix + "X", stairsS1X);
       EditorPrefs.SetInt(StairsS1PrefsPrefix + "Y", stairsS1TopY);
       EditorPrefs.SetBool(StairsS1PrefsPrefix + "Mirror", stairsS1Mirror);
-    }
-    if (changed)
-    {
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
     }
   }
 
