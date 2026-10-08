@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -421,6 +421,11 @@ public class ViewportLayoutEditor : EditorWindow
   // This crop lives inside the 224x136 dungeon viewport, not the full
   // 320x200 output. topY 33 with height 91 => framebuffer Y 12.
   private const int StairsDownRightD1FramebufferY = 12;
+  private const string StairsS1PrefsPrefix = "DM.ViewEdit.StairsDownS1.";
+  private int stairsS1X = StairsDownRightD1X;
+  private int stairsS1TopY = StairsDownRightD1DisplayY;
+  private bool stairsS1Mirror;
+
 
   // ViewEdit controls for the down-stairs overlay. These are intentionally
   // editor-preview values (like the live wall controls) so the sprite can be
@@ -16488,6 +16493,13 @@ private static void HandleGameViewPointerDown(
                 piece, out bool manualWallEnabledForDraw)
             && manualWallEnabledForDraw;
 
+        // S1 down stairs replace the ordinary RightF2 slot even when the
+        // wall engine did not select that stone face for the current pose.
+        if (IsWallF2RightPiece(piece)
+            && (IsStairsDownRightD1ForCurrentPose()
+                || IsForcedStairsDownS1TestPose()))
+          continue;
+
         if (viewport17NormalWall)
         {
           // FINAL DRAW FROM VIEWPORT-17 is the automatic visibility default.
@@ -16518,12 +16530,7 @@ private static void HandleGameViewPointerDown(
         // Draw the stairs wall here, at the exact point where RightF0 would
         // have been rendered, and skip the ordinary wall. This makes stairs
         // part of wall geometry instead of a late overlay exception.
-        if (IsWallF0RightPiece(piece)
-            && IsStairsDownRightD1ForCurrentPose())
-        {
-          BlitStairsDownRightD1IntoPreview(pixels);
-          continue;
-        }
+
 
         // F1 door frames are drawn by the dedicated F1 door composition,
         // not in normal list order.
@@ -17059,6 +17066,9 @@ private static void HandleGameViewPointerDown(
     // ahead is a Stairs tile, draw the original F1 stairs front over the
     // completed corridor geometry. No Hall coordinate is hardcoded here.
     BlitStairsDownF1IntoPreview(pixels);
+    // Side projection uses its own map-based placement, independent of
+    // whether the ordinary RightF0 card survived the wall visibility filter.
+    BlitStairsDownRightD1IntoPreview(pixels);
 
     // All floor features and wall ornaments are composed only after the full
     // map/wall/door image pass has finished. This keeps feature artwork out of
@@ -17096,6 +17106,11 @@ private static void HandleGameViewPointerDown(
     // status values. Preserve the established top-down position X=4, Y=174
     // and text format while avoiding DungeonBitmapFont scaling/bearings.
     DrawPreviewPosePixelText(pixels);
+
+    // TEMPORARY FORCED TEST requested by user: suppress the normal RightF2
+    // wall at (4,16) West and draw the 32x91 stairs image as the last dungeon
+    // hierarchy contribution, immediately before the framebuffer is uploaded.
+    BlitForcedStairsDownRightD1Final(pixels);
 
     editModePreviewTexture.SetPixels32(pixels);
     editModePreviewTexture.Apply(false);
@@ -20883,6 +20898,9 @@ private static void HandleGameViewPointerDown(
     championMirrorD0RightPreviewMirror = false;
     previewDisabledFeatureKeys.Clear();
     previewForcedStairsDownImageKeys.Clear();
+    stairsS1X = EditorPrefs.GetInt(StairsS1PrefsPrefix + "X", StairsDownRightD1X);
+    stairsS1TopY = EditorPrefs.GetInt(StairsS1PrefsPrefix + "Y", StairsDownRightD1DisplayY);
+    stairsS1Mirror = EditorPrefs.GetBool(StairsS1PrefsPrefix + "Mirror", false);
     previewFeaturePositionOverrides.Clear();
     previewFeatureMirrorOverrides.Clear();
   }
@@ -20913,49 +20931,137 @@ private static void HandleGameViewPointerDown(
   /// True when a down-stairs tile is immediately to the player's right.
   /// This is geometry-relative and contains no map-coordinate special case.
   /// </summary>
-  private bool IsStairsDownRightD1ForCurrentPose()
+  // Temporary diagnostic for verifying the loaded script and runtime stairs
+  // geometry. Logs only once per distinct observed pose/tile result.
+  private string stairsS1LastDiagnostic;
+
+  private void LogStairsS1Diagnostic()
   {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+    {
+      const string missing = "STAIRS_S1_DIAG_V1: previewMiniMap is null";
+      if (stairsS1LastDiagnostic != missing)
+      {
+        stairsS1LastDiagnostic = missing;
+        Debug.LogError(missing);
+      }
+      return;
+    }
+
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    int tx = previewX + fx + rx;
+    int ty = previewY + fy + ry;
+    bool inside = previewMiniMap.IsInside(tx, ty);
+    DungeonTile tile = inside ? previewMiniMap.GetTile(tx, ty) : null;
+    string state = "STAIRS_S1_DIAG_V1: pose=(" + previewX + "," + previewY
+        + ") " + previewFacing + " forward=(" + fx + "," + fy
+        + ") right=(" + rx + "," + ry + ") target=(" + tx
+        + "," + ty + ") inside=" + inside
+        + " tile=" + (tile == null ? "NULL" : ("raw=0x" + tile.Raw.ToString("X2")
+        + " type=" + tile.Type))
+        + " recognized=" + (tile != null && tile.Raw == 0x60);
+    if (stairsS1LastDiagnostic != state)
+    {
+      stairsS1LastDiagnostic = state;
+      Debug.Log(state);
+    }
+  }
+
+  // A single authoritative D1-right stairs projection lookup is shared by
+  // the wall painter and ViewEdit. Right is the clockwise perpendicular of
+  // forward in map coordinates (Y increases towards South).
+  private bool TryGetStairsDownS1Cell(out int mapX, out int mapY)
+  {
+    mapX = 0;
+    mapY = 0;
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null)
       return false;
 
-    // Use the same map-coordinate calculation as the ViewEdit feature list.
-    // D1-right = one step forward + one step right.  This deliberately avoids
-    // SampleViewport17Cell() so the wall replacement and the visible
-    // "Stairs Down" checkbox cannot disagree about which map tile is used.
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    int stairsX = previewX + forwardX + rightX;
-    int stairsY = previewY + forwardY + rightY;
-    if (!previewMiniMap.IsInside(stairsX, stairsY))
+    // The same D1-right cell sampling used by the wall engine. Never
+    // reimplement the coordinate transform or infer a stairs sprite.
+    Viewport17Cell cell = SampleViewport17Cell(1, 1);
+    if (!cell.IsInside || !cell.IsStairsDown)
       return false;
 
-    DungeonTile tile = previewMiniMap.GetTile(stairsX, stairsY);
-    if (tile == null
-        || !tile.TryGetStairsDirection(out bool stairsUp)
-        || stairsUp)
+    mapX = cell.MapX;
+    mapY = cell.MapY;
+    return true;
+  }
+
+  private bool IsStairsDownRightD1ForCurrentPose()
+  {
+    if (!TryGetStairsDownS1Cell(out int mapX, out int mapY))
+      return false;
+    return IsPreviewFeatureEnabled(
+        MakePreviewFeatureKey("StairsDown", mapX, mapY, null));
+  }
+
+  // Temporary explicit test pose override requested by the user. This is not
+  // generic stairs logic; it exists only to verify that the 32x91 stairs asset
+  // can replace the right-side 32 px wall slot at Hall of Champions pose
+  // (4,16) facing West.
+  private bool IsForcedStairsDownS1TestPose()
+  {
+    return previewX == 4
+        && previewY == 16
+        && previewFacing.ToString() == "West";
+  }
+
+  // Draw the right-side down-stairs wall projection as the very last preview
+  // hierarchy contribution. This bypasses the ordinary stairs detection/order
+  // so we can prove whether the asset itself appears in the final framebuffer.
+  private static bool stairsOnlyGlobalTestLogged;
+
+  private void BlitForcedStairsDownRightD1Final(Color32[] pixels)
+  {
+    if (pixels == null)
+      return;
+    if (!stairsOnlyGlobalTestLogged)
     {
-      return false;
+      stairsOnlyGlobalTestLogged = true;
+      Debug.LogWarning("STAIRS_ONLY_GLOBAL_TEST_V2: final preview overlay executed");
     }
 
-    // Enabled controls whether the stairs feature itself is active. The
-    // separate ViewEdit "Show Image" checkbox explicitly selects the exact
-    // D1-right reference image for this pose, so calibration no longer depends
-    // on automatic wall-slot inference.
-    string key = MakePreviewFeatureKey(
-        "StairsDown",
-        stairsX,
-        stairsY,
-        null);
-    return IsPreviewFeatureEnabled(key)
-        && previewForcedStairsDownImageKeys.Contains(key);
+    // Unconditional isolation diagnostic: every dungeon preview uses the
+    // stairs-only frame so a pose-gate failure cannot hide the test.
+    // TEMPORARY ISOLATED TEST: erase all prior dungeon
+    // geometry/features and draw ONLY the requested sprite as the final pass.
+    // A black viewport makes the stair art unmistakable. Clear from the
+    // final pixel array, not from a previous render pass.
+    Color32 black = new Color32(0, 0, 0, 255);
+    for (int y = 0; y < DungeonViewportHeight; y++)
+      for (int x = 0; x < DungeonViewportWidth; x++)
+        pixels[y * PreviewWidth + x] = black;
+
+
+    Texture2D stairsWall = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        "Assets/Art/Walls/Stairs/Stairs_Down_Front_D1_32x91.png");
+    if (stairsWall == null)
+    {
+      Debug.LogError("STAIRS ONLY TEST: missing Assets/Art/Walls/Stairs/Stairs_Down_Front_D1_32x91.png");
+      return;
+    }
+    if (stairsWall.width != 32 || stairsWall.height != 91)
+    {
+      Debug.LogError("STAIRS ONLY TEST: expected 32x91, got "
+          + stairsWall.width + "x" + stairsWall.height);
+      return;
+    }
+    if (!stairsWall.isReadable)
+    {
+      Debug.LogError("STAIRS ONLY TEST: PNG must have Read/Write enabled in Texture Import Settings.");
+      return;
+    }
+
+    const int screenX = 192;
+    const int screenTopY = 33;
+    const int spriteWidth = 32;
+    const int spriteHeight = 91;
+    int bottomOriginY = PreviewHeight - screenTopY - spriteHeight; // 76
+    BlitPieceIntoPreview(pixels, stairsWall, screenX, bottomOriginY, false);
   }
 
   /// <summary>
@@ -20979,14 +21085,14 @@ private static void HandleGameViewPointerDown(
 
     if (stairsWall == null)
     {
-      Debug.LogWarning(
+      Debug.LogError(
           "STAIRS RIGHT D1: Stairs_Down_Front_D1_32x91.png was not found.");
       return;
     }
 
     if (stairsWall.width != 32 || stairsWall.height != 91)
     {
-      Debug.LogWarning(
+      Debug.LogError(
           "STAIRS RIGHT D1: asset loaded but imported size is "
           + stairsWall.width + "x" + stairsWall.height
           + " (expected 32x91).");
@@ -21009,7 +21115,7 @@ private static void HandleGameViewPointerDown(
 
     if (stairsWall == null || !stairsWall.isReadable)
     {
-      Debug.LogWarning(
+      Debug.LogError(
           "STAIRS RIGHT D1: asset is still not readable after importer refresh.");
       return;
     }
@@ -21017,14 +21123,14 @@ private static void HandleGameViewPointerDown(
     // IMPORTANT: this exact reference crop is positioned in the native
     // 224x136 dungeon viewport. Do not convert its Y against the 320x200
     // output buffer; that places it 64 pixels too high.
-    int destinationY = StairsDownRightD1FramebufferY;
+    int destinationY = DungeonViewportHeight - stairsS1TopY - stairsWall.height;
 
     BlitPieceIntoPreview(
         pixels,
         stairsWall,
-        StairsDownRightD1X,
+        stairsS1X,
         destinationY,
-        false);
+        stairsS1Mirror);
   }
 
   private static string MakePreviewFeatureKey(
@@ -23894,6 +24000,8 @@ private static void HandleGameViewPointerDown(
           name);
     }
 
+    LogStairsS1Diagnostic();
+
     // Stairs use the renderer's exact projection geometry. The current
     // stairs renderer has an F1 front projection only: the stairs tile must
     // be exactly one cell directly ahead. Do not list stairs merely because
@@ -23931,6 +24039,61 @@ private static void HandleGameViewPointerDown(
               visibleStairsX, visibleStairsY, key);
         }
       }
+    }
+
+    // S1 is the D1-right viewport cell: one step forward, one step right.
+    // IsStairsDown is the same classification the minimap and wall sampler
+    // already use for this cell.
+    if (TryGetStairsDownS1Cell(out int stairsS1XMap, out int stairsS1YMap))
+      DrawStairsDownS1CalibrationRow(stairsS1XMap, stairsS1YMap);
+  }
+
+  private void DrawStairsDownS1CalibrationRow(int mapX, int mapY)
+  {
+    string key = MakePreviewFeatureKey("StairsDown", mapX, mapY, null);
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label("Stairs_Down_S1_32x91", GUILayout.Width(175f));
+    bool wasEnabled = IsPreviewFeatureEnabled(key);
+    bool enabled = DrawMouseOnlyToggle("Enabled", wasEnabled, wasEnabled,
+        GUILayout.Width(82f));
+    bool mirror = DrawMouseOnlyToggle("Mirror", stairsS1Mirror, stairsS1Mirror,
+        GUILayout.Width(75f));
+    int x = stairsS1X;
+    int y = stairsS1TopY;
+    GUILayout.Label("X", GUILayout.Width(12f));
+    x = EditorGUILayout.IntField(x, GUILayout.Width(38f));
+    if (GUILayout.Button("-1", GUILayout.Width(27f))) x--;
+    if (GUILayout.Button("+1", GUILayout.Width(27f))) x++;
+    GUILayout.Label("Y", GUILayout.Width(12f));
+    y = EditorGUILayout.IntField(y, GUILayout.Width(38f));
+    if (GUILayout.Button("-1", GUILayout.Width(27f))) y--;
+    if (GUILayout.Button("+1", GUILayout.Width(27f))) y++;
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(50f));
+    EditorGUILayout.EndHorizontal();
+    bool changed = false;
+    if (enabled != wasEnabled)
+    {
+      SetPreviewFeatureEnabled(key, enabled);
+      changed = true;
+    }
+    if (x != stairsS1X || y != stairsS1TopY || mirror != stairsS1Mirror)
+    {
+      stairsS1X = x;
+      stairsS1TopY = y;
+      stairsS1Mirror = mirror;
+      changed = true;
+    }
+    if (apply)
+    {
+      EditorPrefs.SetInt(StairsS1PrefsPrefix + "X", stairsS1X);
+      EditorPrefs.SetInt(StairsS1PrefsPrefix + "Y", stairsS1TopY);
+      EditorPrefs.SetBool(StairsS1PrefsPrefix + "Mirror", stairsS1Mirror);
+    }
+    if (changed)
+    {
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
     }
   }
 

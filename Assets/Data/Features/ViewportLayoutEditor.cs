@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -2586,7 +2586,43 @@ public class ViewportLayoutEditor : EditorWindow
 
   private static void OpenDungeonFeaturesMaximized()
   {
-    DungeonFeatureEditor.Open();
+    // Avoid a compile-time dependency on the separate DungeonFeatureEditor
+    // script. A missing class/method is a hard error, not a substitute window.
+    System.Type dungeonFeatureEditorType = null;
+    System.Reflection.Assembly[] assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
+    for (int a = 0; a < assemblies.Length && dungeonFeatureEditorType == null; ++a)
+    {
+      System.Type[] types;
+      try { types = assemblies[a].GetTypes(); }
+      catch (System.Reflection.ReflectionTypeLoadException ex) { types = ex.Types; }
+      for (int t = 0; t < types.Length; ++t)
+      {
+        if (types[t] != null && types[t].Name == "DungeonFeatureEditor")
+        {
+          dungeonFeatureEditorType = types[t];
+          break;
+        }
+      }
+    }
+    if (dungeonFeatureEditorType == null)
+    {
+      Debug.LogError("ViewEdit: DungeonFeatureEditor class was not found. Cannot open Dungeon Features.");
+      return;
+    }
+    MethodInfo openMethod = dungeonFeatureEditorType.GetMethod(
+        "Open", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
+        null, System.Type.EmptyTypes, null);
+    if (openMethod == null)
+    {
+      Debug.LogError("ViewEdit: DungeonFeatureEditor.Open() was not found. Cannot open Dungeon Features.");
+      return;
+    }
+    try { openMethod.Invoke(null, null); }
+    catch (System.Exception ex)
+    {
+      Debug.LogError("ViewEdit: DungeonFeatureEditor.Open() failed: " + ex);
+      return;
+    }
 
     // DungeonFeatureEditor.Open may create/show the window at the end of this
     // editor update. Maximize it on the next update after Unity has attached
