@@ -16503,12 +16503,7 @@ private static void HandleGameViewPointerDown(
         // Use the same map-relative check as the left stairs blit and ViewEdit.
         // Do not draw the underlying 32-pixel stone wall in this slot.
         if (IsWallF2LeftPiece(piece)
-            && (IsStairsDownS1LeftReferencePose()
-                || (TryGetStairsDownS1LeftCell(out int leftStairsMapX,
-                       out int leftStairsMapY)
-                    && IsPreviewFeatureEnabled(
-                        MakePreviewFeatureKey("StairsDown", leftStairsMapX,
-                            leftStairsMapY, null)))))
+            && IsStairsDownS1LeftReferencePose())
           continue;
 
         if (viewport17NormalWall)
@@ -17080,8 +17075,6 @@ private static void HandleGameViewPointerDown(
     // Side projection uses its own map-based placement, independent of
     // whether the ordinary RightF0 card survived the wall visibility filter.
     BlitStairsDownRightD1IntoPreview(pixels);
-    if (!IsStairsDownS1LeftReferencePose())
-      BlitStairsDownLeftD1IntoPreview(pixels);
 
     // All floor features and wall ornaments are composed only after the full
     // map/wall/door image pass has finished. This keeps feature artwork out of
@@ -21113,14 +21106,10 @@ private static void HandleGameViewPointerDown(
   {
     if (pixels == null)
       return;
-    bool referencePose = IsStairsDownS1LeftReferencePose();
-    if (!referencePose)
-    {
-      if (!TryGetStairsDownS1LeftCell(out int mapX, out int mapY)
-          || !IsPreviewFeatureEnabled(
-              MakePreviewFeatureKey("StairsDown", mapX, mapY, null)))
-        return;
-    }
+    // This is an explicit verified Hall exception only: (4,14) West.
+    // Do not render the left S1 stairs from generic nearby-stairs checks.
+    if (!IsStairsDownS1LeftReferencePose())
+      return;
     Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
         StairsDownRightD1AssetPath);
     if (texture == null || texture.width != 32 || texture.height != 91)
@@ -24069,8 +24058,6 @@ private static void HandleGameViewPointerDown(
     // Keep the calibration row visible whenever the image is rendered.
     if (IsStairsDownS1LeftReferencePose())
       DrawStairsDownS1LeftCalibrationRow(3, 15);
-    else if (TryGetStairsDownS1LeftCell(out int leftStairsX, out int leftStairsY))
-      DrawStairsDownS1LeftCalibrationRow(leftStairsX, leftStairsY);
   }
 
   private void DrawStairsDownS1CalibrationRow(int mapX, int mapY)
