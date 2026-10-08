@@ -425,6 +425,11 @@ public class ViewportLayoutEditor : EditorWindow
   private int stairsS1X = StairsDownRightD1X;
   private int stairsS1TopY = StairsDownRightD1DisplayY;
   private bool stairsS1Mirror;
+  // Left-hand S1 shares the original 32x91 sprite but has separate calibration.
+  private const string StairsS1LeftPrefsPrefix = "DM.ViewEdit.StairsDownS1Left.";
+  private int stairsS1LeftX = 0;
+  private int stairsS1LeftTopY = 33;
+  private bool stairsS1LeftMirror = true;
 
 
   // ViewEdit controls for the down-stairs overlay. These are intentionally
@@ -17063,6 +17068,7 @@ private static void HandleGameViewPointerDown(
     // Side projection uses its own map-based placement, independent of
     // whether the ordinary RightF0 card survived the wall visibility filter.
     BlitStairsDownRightD1IntoPreview(pixels);
+    BlitStairsDownLeftD1IntoPreview(pixels);
 
     // All floor features and wall ornaments are composed only after the full
     // map/wall/door image pass has finished. This keeps feature artwork out of
@@ -20890,6 +20896,9 @@ private static void HandleGameViewPointerDown(
     stairsS1X = EditorPrefs.GetInt(StairsS1PrefsPrefix + "X", StairsDownRightD1X);
     stairsS1TopY = EditorPrefs.GetInt(StairsS1PrefsPrefix + "Y", StairsDownRightD1DisplayY);
     stairsS1Mirror = EditorPrefs.GetBool(StairsS1PrefsPrefix + "Mirror", false);
+    stairsS1LeftX = EditorPrefs.GetInt(StairsS1LeftPrefsPrefix + "X", 0);
+    stairsS1LeftTopY = EditorPrefs.GetInt(StairsS1LeftPrefsPrefix + "Y", 33);
+    stairsS1LeftMirror = EditorPrefs.GetBool(StairsS1LeftPrefsPrefix + "Mirror", true);
     previewFeaturePositionOverrides.Clear();
     previewFeatureMirrorOverrides.Clear();
   }
@@ -21055,6 +21064,47 @@ private static void HandleGameViewPointerDown(
         stairsS1X,
         destinationY,
         stairsS1Mirror);
+  }
+
+  // D1-left: same stairs tile can be viewed from the opposite side.
+  private bool TryGetStairsDownS1LeftCell(out int mapX, out int mapY)
+  {
+    mapX = 0;
+    mapY = 0;
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return false;
+    Viewport17Cell cell = SampleViewport17Cell(1, -1);
+    if (!cell.IsInside || !cell.IsStairsDown)
+      return false;
+    mapX = cell.MapX;
+    mapY = cell.MapY;
+    return true;
+  }
+
+  private void BlitStairsDownLeftD1IntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || !TryGetStairsDownS1LeftCell(out int mapX, out int mapY))
+      return;
+    if (!IsPreviewFeatureEnabled(MakePreviewFeatureKey("StairsDown", mapX, mapY, null)))
+      return;
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        StairsDownRightD1AssetPath);
+    if (texture == null || texture.width != 32 || texture.height != 91)
+    {
+      Debug.LogError("STAIRS S1 LEFT: missing or invalid 32x91 PNG at "
+          + StairsDownRightD1AssetPath);
+      return;
+    }
+    if (!texture.isReadable)
+    {
+      Debug.LogError("STAIRS S1 LEFT: PNG texture must be Read/Write enabled: "
+          + StairsDownRightD1AssetPath);
+      return;
+    }
+    int destinationY = DungeonViewportHeight - stairsS1LeftTopY - texture.height;
+    BlitPieceIntoPreview(pixels, texture, stairsS1LeftX,
+        destinationY, stairsS1LeftMirror);
   }
 
   private static string MakePreviewFeatureKey(
@@ -23982,6 +24032,8 @@ private static void HandleGameViewPointerDown(
     // already use for this cell.
     if (TryGetStairsDownS1Cell(out int stairsS1XMap, out int stairsS1YMap))
       DrawStairsDownS1CalibrationRow(stairsS1XMap, stairsS1YMap);
+    if (TryGetStairsDownS1LeftCell(out int leftStairsX, out int leftStairsY))
+      DrawStairsDownS1LeftCalibrationRow(leftStairsX, leftStairsY);
   }
 
   private void DrawStairsDownS1CalibrationRow(int mapX, int mapY)
@@ -24042,6 +24094,58 @@ private static void HandleGameViewPointerDown(
       EditorPrefs.SetInt(StairsS1PrefsPrefix + "X", stairsS1X);
       EditorPrefs.SetInt(StairsS1PrefsPrefix + "Y", stairsS1TopY);
       EditorPrefs.SetBool(StairsS1PrefsPrefix + "Mirror", stairsS1Mirror);
+    }
+  }
+
+  private void DrawStairsDownS1LeftCalibrationRow(int mapX, int mapY)
+  {
+    EditorGUILayout.BeginHorizontal();
+    float savedLabelWidth = EditorGUIUtility.labelWidth;
+    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
+    style.normal.textColor = Color.yellow;
+    style.hover.textColor = Color.yellow;
+    style.focused.textColor = Color.yellow;
+    float captionWidth = style.CalcSize(
+        new GUIContent("WoodRing [1,17] (S) / S1")).x;
+    GUILayout.Label("Stairs_down_S1_Left", style,
+        GUILayout.Width(captionWidth));
+
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    int x = stairsS1LeftX;
+    bool xChanged = DrawIntStepperInline(
+        "X", ref x, snap, false, true, 24f, 24f);
+    EditorGUIUtility.labelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    int y = stairsS1LeftTopY;
+    bool yChanged = DrawIntStepperInline(
+        "Y", ref y, snap, false, true, 24f, 24f);
+
+    GUILayout.Space(6f);
+    bool mirror = EditorGUILayout.ToggleLeft(
+        "Mirror", stairsS1LeftMirror, GUILayout.Width(66f));
+    bool mirrorChanged = mirror != stairsS1LeftMirror;
+    bool apply = GUILayout.Button("Apply",
+        GUILayout.Width(58f), GUILayout.ExpandWidth(false));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = savedLabelWidth;
+    EditorGUILayout.EndHorizontal();
+
+    if ((xChanged && x != stairsS1LeftX) || (yChanged && y != stairsS1LeftTopY)
+        || mirrorChanged)
+    {
+      stairsS1LeftX = x;
+      stairsS1LeftTopY = y;
+      stairsS1LeftMirror = mirror;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+    if (apply)
+    {
+      EditorPrefs.SetInt(StairsS1LeftPrefsPrefix + "X", stairsS1LeftX);
+      EditorPrefs.SetInt(StairsS1LeftPrefsPrefix + "Y", stairsS1LeftTopY);
+      EditorPrefs.SetBool(StairsS1LeftPrefsPrefix + "Mirror", stairsS1LeftMirror);
     }
   }
 
