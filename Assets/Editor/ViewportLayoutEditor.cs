@@ -22008,6 +22008,9 @@ private static void HandleGameViewPointerDown(
         "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
 
     GUILayout.Space(6f);
+    bool editMirror = EditorGUILayout.ToggleLeft(
+        "Mirror", mirror, GUILayout.Width(66f));
+    bool mirrorChanged = editMirror != mirror;
     bool applyClicked = false;
     if (hasGenericProjection)
     {
@@ -22025,7 +22028,7 @@ private static void HandleGameViewPointerDown(
     {
       // Apply is the acceptance action: the current X/Y/Mirror become the new
       // persistent generic reference for this ornament family + projection.
-      if (SaveAcceptedOrnamentReference(key, editX, editY, mirror))
+      if (SaveAcceptedOrnamentReference(key, editX, editY, editMirror))
       {
         previewFeaturePositionOverrides.Remove(key);
         previewFeatureMirrorOverrides.Remove(key);
@@ -22039,6 +22042,15 @@ private static void HandleGameViewPointerDown(
     }
 
     bool changed = false;
+    if (mirrorChanged)
+    {
+      if (editMirror == defaultMirror)
+        previewFeatureMirrorOverrides.Remove(key);
+      else
+        previewFeatureMirrorOverrides[key] = editMirror;
+      previewMirrorChangedThisFrame = true;
+      changed = true;
+    }
     if ((xChanged && editX != x) || (yChanged && editY != y))
     {
       if (editX == defaultX && editY == defaultY)
@@ -23999,6 +24011,9 @@ private static void HandleGameViewPointerDown(
         "Y", ref y, snap, false, true, 24f, 24f);
 
     GUILayout.Space(6f);
+    bool updatedMirror = EditorGUILayout.ToggleLeft(
+        "Mirror", stairsS1Mirror, GUILayout.Width(66f));
+    bool mirrorChanged = updatedMirror != stairsS1Mirror;
     bool apply = GUILayout.Button("Apply",
         GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -24009,6 +24024,14 @@ private static void HandleGameViewPointerDown(
     {
       stairsS1X = x;
       stairsS1TopY = y;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+
+    if (mirrorChanged)
+    {
+      stairsS1Mirror = updatedMirror;
       RefreshEditModePreview();
       RepaintGameViews();
       Repaint();
