@@ -16493,13 +16493,6 @@ private static void HandleGameViewPointerDown(
                 piece, out bool manualWallEnabledForDraw)
             && manualWallEnabledForDraw;
 
-        // S1 down stairs replace the ordinary RightF2 slot even when the
-        // wall engine did not select that stone face for the current pose.
-        if (IsWallF2RightPiece(piece)
-            && (IsStairsDownRightD1ForCurrentPose()
-                || IsForcedStairsDownS1TestPose()))
-          continue;
-
         if (viewport17NormalWall)
         {
           // FINAL DRAW FROM VIEWPORT-17 is the automatic visibility default.
@@ -17106,11 +17099,6 @@ private static void HandleGameViewPointerDown(
     // status values. Preserve the established top-down position X=4, Y=174
     // and text format while avoiding DungeonBitmapFont scaling/bearings.
     DrawPreviewPosePixelText(pixels);
-
-    // TEMPORARY FORCED TEST requested by user: suppress the normal RightF2
-    // wall at (4,16) West and draw the 32x91 stairs image as the last dungeon
-    // hierarchy contribution, immediately before the framebuffer is uploaded.
-    BlitForcedStairsDownRightD1Final(pixels);
 
     editModePreviewTexture.SetPixels32(pixels);
     editModePreviewTexture.Apply(false);
@@ -20997,71 +20985,6 @@ private static void HandleGameViewPointerDown(
       return false;
     return IsPreviewFeatureEnabled(
         MakePreviewFeatureKey("StairsDown", mapX, mapY, null));
-  }
-
-  // Temporary explicit test pose override requested by the user. This is not
-  // generic stairs logic; it exists only to verify that the 32x91 stairs asset
-  // can replace the right-side 32 px wall slot at Hall of Champions pose
-  // (4,16) facing West.
-  private bool IsForcedStairsDownS1TestPose()
-  {
-    return previewX == 4
-        && previewY == 16
-        && previewFacing.ToString() == "West";
-  }
-
-  // Draw the right-side down-stairs wall projection as the very last preview
-  // hierarchy contribution. This bypasses the ordinary stairs detection/order
-  // so we can prove whether the asset itself appears in the final framebuffer.
-  private static bool stairsOnlyGlobalTestLogged;
-
-  private void BlitForcedStairsDownRightD1Final(Color32[] pixels)
-  {
-    if (pixels == null)
-      return;
-    if (!stairsOnlyGlobalTestLogged)
-    {
-      stairsOnlyGlobalTestLogged = true;
-      Debug.LogWarning("STAIRS_ONLY_GLOBAL_TEST_V2: final preview overlay executed");
-    }
-
-    // Unconditional isolation diagnostic: every dungeon preview uses the
-    // stairs-only frame so a pose-gate failure cannot hide the test.
-    // TEMPORARY ISOLATED TEST: erase all prior dungeon
-    // geometry/features and draw ONLY the requested sprite as the final pass.
-    // A black viewport makes the stair art unmistakable. Clear from the
-    // final pixel array, not from a previous render pass.
-    Color32 black = new Color32(0, 0, 0, 255);
-    for (int y = 0; y < DungeonViewportHeight; y++)
-      for (int x = 0; x < DungeonViewportWidth; x++)
-        pixels[y * PreviewWidth + x] = black;
-
-
-    Texture2D stairsWall = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        "Assets/Art/Walls/Stairs/Stairs_Down_Front_D1_32x91.png");
-    if (stairsWall == null)
-    {
-      Debug.LogError("STAIRS ONLY TEST: missing Assets/Art/Walls/Stairs/Stairs_Down_Front_D1_32x91.png");
-      return;
-    }
-    if (stairsWall.width != 32 || stairsWall.height != 91)
-    {
-      Debug.LogError("STAIRS ONLY TEST: expected 32x91, got "
-          + stairsWall.width + "x" + stairsWall.height);
-      return;
-    }
-    if (!stairsWall.isReadable)
-    {
-      Debug.LogError("STAIRS ONLY TEST: PNG must have Read/Write enabled in Texture Import Settings.");
-      return;
-    }
-
-    const int screenX = 192;
-    const int screenTopY = 33;
-    const int spriteWidth = 32;
-    const int spriteHeight = 91;
-    int bottomOriginY = PreviewHeight - screenTopY - spriteHeight; // 76
-    BlitPieceIntoPreview(pixels, stairsWall, screenX, bottomOriginY, false);
   }
 
   /// <summary>
