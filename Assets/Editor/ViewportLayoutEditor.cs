@@ -433,6 +433,14 @@ public class ViewportLayoutEditor : EditorWindow
   private bool stairsS1LeftMirror = true;
   private bool stairsS1LeftPreviewEnabled = true;
 
+  // D0 left-art stair-side calibration. ViewEdit only at this stage.
+  private const string StairsD0LPrefsPrefix = "DM.ViewEdit.StairsDownD0L.";
+  private int stairsD0LX = 208;
+  private int stairsD0LTopY = 106;
+  private bool stairsD0LMirror;
+  private bool stairsD0LEnabled = true;
+
+
 
   // ViewEdit controls for the down-stairs overlay. These are intentionally
   // editor-preview values (like the live wall controls) so the sprite can be
@@ -20924,6 +20932,10 @@ private static void HandleGameViewPointerDown(
     championMirrorD0RightPreviewMirror = false;
     previewDisabledFeatureKeys.Clear();
     previewForcedStairsDownImageKeys.Clear();
+    stairsD0LX = EditorPrefs.GetInt(StairsD0LPrefsPrefix + "X", 208);
+    stairsD0LTopY = EditorPrefs.GetInt(StairsD0LPrefsPrefix + "Y", 106);
+    stairsD0LMirror = EditorPrefs.GetBool(StairsD0LPrefsPrefix + "Mirror", false);
+    stairsD0LEnabled = EditorPrefs.GetBool(StairsD0LPrefsPrefix + "Enabled", true);
     stairsS1X = EditorPrefs.GetInt(StairsS1PrefsPrefix + "X", StairsDownRightD1X);
     stairsS1TopY = EditorPrefs.GetInt(StairsS1PrefsPrefix + "Y", StairsDownRightD1DisplayY);
     stairsS1Mirror = EditorPrefs.GetBool(StairsS1PrefsPrefix + "Mirror", false);
@@ -24043,6 +24055,18 @@ private static void HandleGameViewPointerDown(
       }
     }
 
+    // D0L side artwork is visible when the stairs-down tile is immediately
+    // to the player's right (the calibrated 4,15 South view). Use the same
+    // relative map sampler as the wall renderer; do not require the player
+    // to be standing on the stair tile.
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap != null)
+    {
+      Viewport17Cell stairsD0LCell = SampleViewport17Cell(1, 0);
+      if (stairsD0LCell.IsInside && stairsD0LCell.IsStairsDown)
+        DrawStairsDownD0LCalibrationRow();
+    }
+
     // S1 is the D1-right viewport cell: one step forward, one step right.
     // IsStairsDown is the same classification the minimap and wall sampler
     // already use for this cell.
@@ -24053,6 +24077,53 @@ private static void HandleGameViewPointerDown(
         && IsPreviewFeatureEnabled(MakePreviewFeatureKey(
             "StairsDown", leftStairsX, leftStairsY, null)))
       DrawStairsDownS1LeftCalibrationRow(leftStairsX, leftStairsY);
+  }
+
+  private void DrawStairsDownD0LCalibrationRow()
+  {
+    EditorGUILayout.BeginHorizontal();
+    float previousLabelWidth = EditorGUIUtility.labelWidth;
+    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
+    style.normal.textColor = Color.magenta;
+    style.hover.textColor = Color.magenta;
+    style.focused.textColor = Color.magenta;
+    const string caption = "Stairs_Side_D0L";
+    GUILayout.Label(caption, style,
+        GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
+    GUILayout.Space(8f);
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    EditorGUIUtility.labelWidth = enabledWidth;
+    bool enabled = DrawMouseOnlyToggle(
+        "Enabled", stairsD0LEnabled, stairsD0LEnabled,
+        GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    int x = stairsD0LX;
+    bool xChanged = DrawIntStepperInline("X", ref x, snap, false, true, 24f, 24f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    int y = stairsD0LTopY;
+    bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
+    GUILayout.Space(6f);
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsD0LMirror, GUILayout.Width(66f));
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = previousLabelWidth;
+    EditorGUILayout.EndHorizontal();
+    if (enabled != stairsD0LEnabled || (xChanged && x != stairsD0LX)
+        || (yChanged && y != stairsD0LTopY) || mirror != stairsD0LMirror)
+    {
+      stairsD0LEnabled = enabled;
+      stairsD0LX = x;
+      stairsD0LTopY = y;
+      stairsD0LMirror = mirror;
+      Repaint();
+    }
+    if (apply)
+    {
+      EditorPrefs.SetInt(StairsD0LPrefsPrefix + "X", stairsD0LX);
+      EditorPrefs.SetInt(StairsD0LPrefsPrefix + "Y", stairsD0LTopY);
+      EditorPrefs.SetBool(StairsD0LPrefsPrefix + "Mirror", stairsD0LMirror);
+      EditorPrefs.SetBool(StairsD0LPrefsPrefix + "Enabled", stairsD0LEnabled);
+    }
   }
 
   private void DrawStairsDownS1CalibrationRow(int mapX, int mapY)
