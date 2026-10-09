@@ -450,6 +450,14 @@ public class ViewportLayoutEditor : EditorWindow
   private bool stairsdownS2Mirror;
   private bool stairsdownS2Enabled = true;
 
+  // Independent S2 LEFT calibration for (4,15) North; UI only until verified.
+  private const string StairsdownS2LeftPrefsPrefix = "DM.ViewEdit.StairsdownS2Left.";
+  private const string StairsdownS2LeftAccepted = "0|0|false|true";
+  private int stairsdownS2LeftX;
+  private int stairsdownS2LeftTopY;
+  private bool stairsdownS2LeftMirror;
+  private bool stairsdownS2LeftEnabled = true;
+
 
 
   // ViewEdit controls for the down-stairs overlay. These are intentionally
@@ -20961,6 +20969,10 @@ private static void HandleGameViewPointerDown(
     stairsdownS2TopY = EditorPrefs.GetInt(StairsdownS2PrefsPrefix + "Y", 96);
     stairsdownS2Mirror = EditorPrefs.GetBool(StairsdownS2PrefsPrefix + "Mirror", false);
     stairsdownS2Enabled = EditorPrefs.GetBool(StairsdownS2PrefsPrefix + "Enabled", true);
+    stairsdownS2LeftX = EditorPrefs.GetInt(StairsdownS2LeftPrefsPrefix + "X", 0);
+    stairsdownS2LeftTopY = EditorPrefs.GetInt(StairsdownS2LeftPrefsPrefix + "Y", 0);
+    stairsdownS2LeftMirror = EditorPrefs.GetBool(StairsdownS2LeftPrefsPrefix + "Mirror", false);
+    stairsdownS2LeftEnabled = EditorPrefs.GetBool(StairsdownS2LeftPrefsPrefix + "Enabled", true);
     stairsS1X = EditorPrefs.GetInt(StairsS1PrefsPrefix + "X", StairsDownRightD1X);
     stairsS1TopY = EditorPrefs.GetInt(StairsS1PrefsPrefix + "Y", StairsDownRightD1DisplayY);
     stairsS1Mirror = EditorPrefs.GetBool(StairsS1PrefsPrefix + "Mirror", false);
@@ -24121,6 +24133,9 @@ private static void HandleGameViewPointerDown(
     // The D0L controls for (4,15) South are preserved unchanged.
     if (IsStairsdownS2CalibrationPose())
       DrawStairsdownS2CalibrationRow();
+    // Left S2 reference: separate settings; does not modify the working South S2.
+    if (previewX == 4 && previewY == 15 && previewFacing == DungeonFacing.North)
+      DrawStairsdownS2LeftCalibrationRow();
 
     // D0L side artwork is visible when the stairs-down tile is immediately
     // to the player's right (the calibrated 4,15 South view). Use the same
@@ -24331,6 +24346,116 @@ private static void HandleGameViewPointerDown(
       SaveStairsdownS2AcceptedToSource();
   }
 
+  private bool SaveStairsdownS2LeftAcceptedToSource()
+  {
+    string assetPath = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(assetPath) || !File.Exists(assetPath))
+    {
+      Debug.LogError("STAIRSDOWN S2 LEFT Apply: source script is missing: " + assetPath);
+      return false;
+    }
+    const string token = "private const string StairsdownS2LeftAccepted = \"";
+    try
+    {
+      string source = File.ReadAllText(assetPath);
+      int begin = source.IndexOf(token, System.StringComparison.Ordinal);
+      if (begin < 0 || source.IndexOf(token, begin + token.Length,
+          System.StringComparison.Ordinal) >= 0)
+      {
+        Debug.LogError("STAIRSDOWN S2 LEFT Apply: expected exactly one saved-values marker in " + assetPath);
+        return false;
+      }
+      int valueBegin = begin + token.Length;
+      int valueEnd = source.IndexOf('"', valueBegin);
+      if (valueEnd < 0)
+      {
+        Debug.LogError("STAIRSDOWN S2 LEFT Apply: unterminated saved-values marker in " + assetPath);
+        return false;
+      }
+      string accepted = stairsdownS2LeftX.ToString() + "|" + stairsdownS2LeftTopY.ToString()
+          + "|" + (stairsdownS2LeftMirror ? "true" : "false")
+          + "|" + (stairsdownS2LeftEnabled ? "true" : "false");
+      string updated = source.Substring(0, valueBegin) + accepted + source.Substring(valueEnd);
+      if (updated != source)
+        File.WriteAllText(assetPath, updated);
+      // Preserve values through the pending Unity domain/script reload.
+      EditorPrefs.SetInt(StairsdownS2LeftPrefsPrefix + "X", stairsdownS2LeftX);
+      EditorPrefs.SetInt(StairsdownS2LeftPrefsPrefix + "Y", stairsdownS2LeftTopY);
+      EditorPrefs.SetBool(StairsdownS2LeftPrefsPrefix + "Mirror", stairsdownS2LeftMirror);
+      EditorPrefs.SetBool(StairsdownS2LeftPrefsPrefix + "Enabled", stairsdownS2LeftEnabled);
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+      if (updated != source)
+        AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
+      return true;
+    }
+    catch (System.Exception exception)
+    {
+      Debug.LogError("STAIRSDOWN S2 LEFT Apply: failed to save source: " + exception);
+      return false;
+    }
+  }
+
+  private void DrawStairsdownS2LeftCalibrationRow()
+  {
+    string[] saved = StairsdownS2LeftAccepted.Split('|');
+    if (saved.Length != 4 || !int.TryParse(saved[0], out int acceptedX)
+        || !int.TryParse(saved[1], out int acceptedY)
+        || !bool.TryParse(saved[2], out bool acceptedMirror)
+        || !bool.TryParse(saved[3], out bool acceptedEnabled))
+    {
+      Debug.LogError("STAIRSDOWN S2 LEFT: invalid saved calibration values in .cs");
+      return;
+    }
+    EditorGUILayout.BeginHorizontal();
+    float oldLabelWidth = EditorGUIUtility.labelWidth;
+    Color oldContentColor = GUI.contentColor;
+    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
+    style.normal.textColor = Color.magenta;
+    style.hover.textColor = Color.magenta;
+    style.focused.textColor = Color.magenta;
+    const string caption = "Stairsdown_S2";
+    GUILayout.Label(caption, style,
+        GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
+    GUILayout.Space(8f);
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    EditorGUIUtility.labelWidth = enabledWidth;
+    GUI.contentColor = stairsdownS2LeftEnabled != acceptedEnabled ? Color.red : oldContentColor;
+    bool enabled = DrawMouseOnlyToggle(
+        "Enabled", stairsdownS2LeftEnabled, stairsdownS2LeftEnabled,
+        GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    GUI.contentColor = stairsdownS2LeftX != acceptedX ? Color.red : oldContentColor;
+    int x = stairsdownS2LeftX;
+    bool xChanged = DrawIntStepperInline("X", ref x, snap, false, true, 24f, 24f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    GUI.contentColor = stairsdownS2LeftTopY != acceptedY ? Color.red : oldContentColor;
+    int y = stairsdownS2LeftTopY;
+    bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
+    GUILayout.Space(6f);
+    GUI.contentColor = stairsdownS2LeftMirror != acceptedMirror ? Color.red : oldContentColor;
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsdownS2LeftMirror, GUILayout.Width(66f));
+    GUI.contentColor = oldContentColor;
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = oldLabelWidth;
+    EditorGUILayout.EndHorizontal();
+    if (enabled != stairsdownS2LeftEnabled || (xChanged && x != stairsdownS2LeftX)
+        || (yChanged && y != stairsdownS2LeftTopY) || mirror != stairsdownS2LeftMirror)
+    {
+      stairsdownS2LeftEnabled = enabled;
+      stairsdownS2LeftX = x;
+      stairsdownS2LeftTopY = y;
+      stairsdownS2LeftMirror = mirror;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+    if (apply)
+      SaveStairsdownS2LeftAcceptedToSource();
+  }
+
   private void DrawStairsDownD0LCalibrationRow()
   {
     EditorGUILayout.BeginHorizontal();
@@ -24339,7 +24464,7 @@ private static void HandleGameViewPointerDown(
     style.normal.textColor = Color.magenta;
     style.hover.textColor = Color.magenta;
     style.focused.textColor = Color.magenta;
-    const string caption = "Stairs_Side_D0L";
+    const string caption = "Stairs_S0";
     GUILayout.Label(caption, style,
         GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
