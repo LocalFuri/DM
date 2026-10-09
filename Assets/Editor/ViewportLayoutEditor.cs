@@ -17079,6 +17079,10 @@ private static void HandleGameViewPointerDown(
     // completed corridor geometry. No Hall coordinate is hardcoded here.
     BlitStairsDownF1IntoPreview(pixels);
 
+    // Replace the left D2 wall slot before feature and lighting passes.
+    // Do not redraw the sprite after HUD/debug rendering.
+    BlitStairsDownLeftD1IntoPreview(pixels);
+
     // All floor features and wall ornaments are composed only after the full
     // map/wall/door image pass has finished. This keeps feature artwork out of
     // the geometry painter order and gives it one explicit post-map layer.
@@ -17115,11 +17119,6 @@ private static void HandleGameViewPointerDown(
     // status values. Preserve the established top-down position X=4, Y=174
     // and text format while avoiding DungeonBitmapFont scaling/bearings.
     DrawPreviewPosePixelText(pixels);
-
-    // Last dungeon draw: the left S1 stairs replaces the 32 px LeftF2 face.
-    // This intentionally bypasses the generic tile gate for the verified pose.
-    if (IsStairsDownS1LeftReferencePose())
-      BlitStairsDownLeftD1IntoPreview(pixels);
 
     editModePreviewTexture.SetPixels32(pixels);
     editModePreviewTexture.Apply(false);
@@ -18659,6 +18658,11 @@ private static void HandleGameViewPointerDown(
     // Select stairs rather than emitting the ordinary RightF2 bitmap.
     if (IsStairsDownRightD1ForCurrentPose())
       rightEnabled = false;
+
+    // Verified (4,14) West: the left D2 wall slot belongs to the
+    // 32x91 stairs-down graphic, not the normal LeftF2 wall.
+    if (IsStairsDownS1LeftReferencePose())
+      leftEnabled = false;
 
     // Cell-property authority wins over a temporary FrontF2 manual override.
     // A down-stair directly ahead replaces only the D2 center wall; the D2
