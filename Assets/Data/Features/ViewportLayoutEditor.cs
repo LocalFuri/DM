@@ -1290,6 +1290,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   // BEGIN APPLIED ORNAMENT REFERENCES
+  // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
   // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
@@ -1300,6 +1301,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:WoodRing:F2|103|111|false
   // REF OrnamentProjection:WoodRing:F3|105|117|false
   // REF OrnamentProjection:WoodRing:S1|49|110|false
+  // REF StairsProjection:Down:S1:32x91|192|-12|true|639271558780364454
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
