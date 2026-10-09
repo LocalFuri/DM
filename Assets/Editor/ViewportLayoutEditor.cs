@@ -20973,7 +20973,10 @@ private static void HandleGameViewPointerDown(
     // The same D1-right cell sampling used by the wall engine. Never
     // reimplement the coordinate transform or infer a stairs sprite.
     Viewport17Cell cell = SampleViewport17Cell(1, 1);
-    if (!cell.IsInside || !cell.IsStairsDown)
+    // An immediately adjacent solid wall occludes the diagonal stairs.
+    // This applies to every map position and facing, not only the test pose.
+    if (!cell.IsInside || !cell.IsStairsDown
+        || IsViewport17Solid(SampleViewport17Cell(1, 0)))
       return false;
 
     mapX = cell.MapX;
@@ -21088,7 +21091,6 @@ private static void HandleGameViewPointerDown(
     bool adjacentSolid = IsViewport17Solid(nearLeft);
     bool hasDownStairs = diagonal.IsInside && diagonal.IsStairsDown;
     bool passes = hasDownStairs && !adjacentSolid;
-
     if (!passes)
       return false;
     mapX = diagonal.MapX;
