@@ -24016,7 +24016,7 @@ private static void HandleGameViewPointerDown(
               visibleStairsY,
               "Stairs Up",
               key,
-              new Color(0.25f, 0.6f, 1f));
+              Color.magenta);
         }
         else
         {
@@ -24043,9 +24043,9 @@ private static void HandleGameViewPointerDown(
     EditorGUILayout.BeginHorizontal();
     float savedLabelWidth = EditorGUIUtility.labelWidth;
     GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
-    featureStyle.normal.textColor = Color.yellow;
-    featureStyle.hover.textColor = Color.yellow;
-    featureStyle.focused.textColor = Color.yellow;
+    featureStyle.normal.textColor = Color.magenta;
+    featureStyle.hover.textColor = Color.magenta;
+    featureStyle.focused.textColor = Color.magenta;
     float captionWidth = featureStyle.CalcSize(
         new GUIContent("WoodRing [1,17] (S) / S1")).x;
     GUILayout.Label("Stairs_down_S1", featureStyle,
@@ -24103,9 +24103,9 @@ private static void HandleGameViewPointerDown(
     EditorGUILayout.BeginHorizontal();
     float savedLabelWidth = EditorGUIUtility.labelWidth;
     GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
-    style.normal.textColor = Color.yellow;
-    style.hover.textColor = Color.yellow;
-    style.focused.textColor = Color.yellow;
+    style.normal.textColor = Color.magenta;
+    style.hover.textColor = Color.magenta;
+    style.focused.textColor = Color.magenta;
     float captionWidth = style.CalcSize(
         new GUIContent("Stairs_Down_Front_D1_32x91")).x;
     GUILayout.Label("Stairs_Down_Front_D1_32x91", style,
