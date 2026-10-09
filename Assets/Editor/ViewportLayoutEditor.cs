@@ -452,7 +452,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Independent S2 LEFT calibration for (4,15) North; UI only until verified.
   private const string StairsdownS2LeftPrefsPrefix = "DM.ViewEdit.StairsdownS2Left.";
-  private const string StairsdownS2LeftAccepted = "0|0|false|true";
+  private const string StairsdownS2LeftAccepted = "0|106|false|true";
   private int stairsdownS2LeftX;
   private int stairsdownS2LeftTopY;
   private bool stairsdownS2LeftMirror;
@@ -17125,6 +17125,9 @@ private static void HandleGameViewPointerDown(
     // Near-side D0L stair detail, drawn above dungeon geometry but below ornaments.
     BlitStairsDownD0LIntoPreview(pixels);
 
+    // Independent North-facing S0 side detail.
+    BlitStairsS0NorthIntoPreview(pixels);
+
     // All floor features and wall ornaments are composed only after the full
     // map/wall/door image pass has finished. This keeps feature artwork out of
     // the geometry painter order and gives it one explicit post-map layer.
@@ -20970,7 +20973,7 @@ private static void HandleGameViewPointerDown(
     stairsdownS2Mirror = EditorPrefs.GetBool(StairsdownS2PrefsPrefix + "Mirror", false);
     stairsdownS2Enabled = EditorPrefs.GetBool(StairsdownS2PrefsPrefix + "Enabled", true);
     stairsdownS2LeftX = EditorPrefs.GetInt(StairsdownS2LeftPrefsPrefix + "X", 0);
-    stairsdownS2LeftTopY = EditorPrefs.GetInt(StairsdownS2LeftPrefsPrefix + "Y", 0);
+    stairsdownS2LeftTopY = EditorPrefs.GetInt(StairsdownS2LeftPrefsPrefix + "Y", 106);
     stairsdownS2LeftMirror = EditorPrefs.GetBool(StairsdownS2LeftPrefsPrefix + "Mirror", false);
     stairsdownS2LeftEnabled = EditorPrefs.GetBool(StairsdownS2LeftPrefsPrefix + "Enabled", true);
     stairsS1X = EditorPrefs.GetInt(StairsS1PrefsPrefix + "X", StairsDownRightD1X);
@@ -24133,7 +24136,7 @@ private static void HandleGameViewPointerDown(
     // The D0L controls for (4,15) South are preserved unchanged.
     if (IsStairsdownS2CalibrationPose())
       DrawStairsdownS2CalibrationRow();
-    // Left S2 reference: separate settings; does not modify the working South S2.
+    // North S0 reference: independent calibration; does not modify South S2 or South S0.
     if (previewX == 4 && previewY == 15 && previewFacing == DungeonFacing.North)
       DrawStairsdownS2LeftCalibrationRow();
 
@@ -24196,6 +24199,37 @@ private static void HandleGameViewPointerDown(
 
     BlitPieceIntoPreview(pixels, sprite, stairsD0LX,
         DisplayYToUnityY(stairsD0LTopY, sprite.height), stairsD0LMirror);
+  }
+
+  // S0 left-side calibration at (4,15) North. Uses the same 16x13 artwork
+  // as the working South S0, but has independent placement/Enabled/Mirror.
+  private void BlitStairsS0NorthIntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || !stairsdownS2LeftEnabled
+        || previewX != 4 || previewY != 15
+        || previewFacing != DungeonFacing.North)
+      return;
+
+    const string assetPath = "Assets/Art/Walls/Stairs/Stairs_Side_D0L_16x13.png";
+    Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+    if (sprite == null)
+    {
+      Debug.LogError("STAIRS S0 NORTH: missing asset: " + assetPath);
+      return;
+    }
+    if (sprite.width != 16 || sprite.height != 13)
+    {
+      Debug.LogError("STAIRS S0 NORTH: expected 16x13, got "
+          + sprite.width + "x" + sprite.height + " at " + assetPath);
+      return;
+    }
+    if (!sprite.isReadable)
+    {
+      Debug.LogError("STAIRS S0 NORTH: enable Read/Write on " + assetPath);
+      return;
+    }
+    BlitPieceIntoPreview(pixels, sprite, stairsdownS2LeftX,
+        DisplayYToUnityY(stairsdownS2LeftTopY, sprite.height), stairsdownS2LeftMirror);
   }
 
   // Temporary calibration only. Do not generalize this S2 side view
@@ -24415,7 +24449,7 @@ private static void HandleGameViewPointerDown(
     style.normal.textColor = Color.magenta;
     style.hover.textColor = Color.magenta;
     style.focused.textColor = Color.magenta;
-    const string caption = "Stairsdown_S2";
+    const string caption = "Stairs_S0";
     GUILayout.Label(caption, style,
         GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
