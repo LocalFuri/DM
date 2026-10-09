@@ -17058,6 +17058,12 @@ private static void HandleGameViewPointerDown(
           continue;
         }
 
+        // S2 stairs sit behind the near right wall at the calibration pose.
+        // Draw once immediately before RightF0, so RightF0 masks the stair
+        // artwork naturally. Never redraw S2 in the post-wall feature pass.
+        if (IsWallF0RightPiece(piece))
+          BlitStairsdownS2IntoPreview(pixels);
+
         BlitPieceIntoPreview(
             pixels,
             texture,
@@ -17108,9 +17114,6 @@ private static void HandleGameViewPointerDown(
 
     // Near-side D0L stair detail, drawn above dungeon geometry but below ornaments.
     BlitStairsDownD0LIntoPreview(pixels);
-
-    // Calibrate Stairsdown S2 at the (4,14) South reference pose.
-    BlitStairsdownS2IntoPreview(pixels);
 
     // All floor features and wall ornaments are composed only after the full
     // map/wall/door image pass has finished. This keeps feature artwork out of
