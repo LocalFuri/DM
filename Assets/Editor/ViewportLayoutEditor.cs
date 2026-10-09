@@ -16499,7 +16499,7 @@ private static void HandleGameViewPointerDown(
                 piece, out bool manualWallEnabledForDraw)
             && manualWallEnabledForDraw;
 
-        // The 32px left stair projection replaces the near-left F0 wall.
+        // The D1-left stair projection replaces the near-left F0 wall.
         // Also suppress the more distant LeftF2 contribution in this slot;
         // otherwise the ordinary wall can remain visible behind the stairs.
         if ((IsWallF0LeftPiece(piece) || IsWallF2LeftPiece(piece)
@@ -21056,13 +21056,15 @@ private static void HandleGameViewPointerDown(
         stairsS1Mirror);
   }
 
-  // Verified original-Hall exception: (4,14) West shows the stairs
-  // at (3,15) in the LEFT S1 slot. Match the working right-side exception.
-  // Keep this explicit override separate from the generic stairs lookup.
+  // Generic S1-left projection: one cell forward and one cell left.
+  // Use the same map-cell sampler as the established S1-right projection.
+  // No player-position or facing exceptions.
   private bool IsStairsDownS1LeftReferencePose()
   {
-    return previewX == 4 && previewY == 14
-        && previewFacing.ToString() == "West";
+    if (!TryGetStairsDownS1LeftCell(out int mapX, out int mapY))
+      return false;
+    return IsPreviewFeatureEnabled(
+        MakePreviewFeatureKey("StairsDown", mapX, mapY, null));
   }
 
   // D1-left: same stairs tile can be viewed from the opposite side.
@@ -21073,7 +21075,7 @@ private static void HandleGameViewPointerDown(
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null)
       return false;
-    Viewport17Cell cell = SampleViewport17Cell(1, -1);
+    Viewport17Cell cell = SampleViewport17Cell(-1, 1);
     if (!cell.IsInside || !cell.IsStairsDown)
       return false;
     mapX = cell.MapX;
@@ -21085,8 +21087,7 @@ private static void HandleGameViewPointerDown(
   {
     if (pixels == null)
       return;
-    // This is an explicit verified Hall exception only: (4,14) West.
-    // Do not render the left S1 stairs from generic nearby-stairs checks.
+    // Render only when the sampled D1-left map cell contains enabled down stairs.
     if (!IsStairsDownS1LeftReferencePose())
       return;
     Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
@@ -24031,10 +24032,11 @@ private static void HandleGameViewPointerDown(
     // already use for this cell.
     if (TryGetStairsDownS1Cell(out int stairsS1XMap, out int stairsS1YMap))
       DrawStairsDownS1CalibrationRow(stairsS1XMap, stairsS1YMap);
-    // Match the actual left-S1 render gate, including its verified reference pose.
-    // Keep the calibration row visible whenever the image is rendered.
-    if (IsStairsDownS1LeftReferencePose())
-      DrawStairsDownS1LeftCalibrationRow(3, 15);
+    // Show the S1-left controls only for a map-defined, enabled stair.
+    if (TryGetStairsDownS1LeftCell(out int leftStairsX, out int leftStairsY)
+        && IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+            "StairsDown", leftStairsX, leftStairsY, null)))
+      DrawStairsDownS1LeftCalibrationRow(leftStairsX, leftStairsY);
   }
 
   private void DrawStairsDownS1CalibrationRow(int mapX, int mapY)
