@@ -23609,9 +23609,22 @@ private static void HandleGameViewPointerDown(
             || TryGetOriginalSouthWoodRingLeftDepth(ornament, out _));
   }
 
+  // Verified original reference: this east-facing Hook is not visible from
+  // (4,14) South. Keep ViewEdit and the renderer in agreement.
+  // This is a reference-pose exclusion, not yet a generic occlusion algorithm.
+  private bool IsHookHiddenAtStairsS2Reference(WallOrnamentPlacement ornament)
+  {
+    return IsStairsdownS2CalibrationPose()
+        && IsHookOrnament(ornament)
+        && ornament.x == 4
+        && ornament.y == 15
+        && string.Equals(ornament.wall, "East", System.StringComparison.OrdinalIgnoreCase);
+  }
+
   private bool IsHookProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
   {
     return IsHookOrnament(ornament)
+        && !IsHookHiddenAtStairsS2Reference(ornament)
         && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 2, 3);
   }
 
@@ -23669,7 +23682,7 @@ private static void HandleGameViewPointerDown(
       for (int i = 0; i < previewWallOrnaments.Length; i++)
       {
         WallOrnamentPlacement ornament = previewWallOrnaments[i];
-        if (ornament == null)
+        if (ornament == null || IsHookHiddenAtStairsS2Reference(ornament))
           continue;
 
         // Vi Altar side projections use exact geometry before the broad
@@ -29415,7 +29428,7 @@ private static void HandleGameViewPointerDown(
       int defaultY,
       bool defaultMirror)
   {
-    if (ornament == null)
+    if (ornament == null || IsHookHiddenAtStairsS2Reference(ornament))
       return;
 
     string key = MakePreviewFeatureKey(
