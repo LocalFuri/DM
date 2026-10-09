@@ -425,11 +425,13 @@ public class ViewportLayoutEditor : EditorWindow
   private int stairsS1X = StairsDownRightD1X;
   private int stairsS1TopY = StairsDownRightD1DisplayY;
   private bool stairsS1Mirror;
+  private bool stairsS1PreviewEnabled = true;
   // Left-hand S1 shares the original 32x91 sprite but has separate calibration.
   private const string StairsS1LeftPrefsPrefix = "DM.ViewEdit.StairsDownS1Left.";
   private int stairsS1LeftX = 0;
   private int stairsS1LeftTopY = 33;
   private bool stairsS1LeftMirror = true;
+  private bool stairsS1LeftPreviewEnabled = true;
 
 
   // ViewEdit controls for the down-stairs overlay. These are intentionally
@@ -20981,7 +20983,8 @@ private static void HandleGameViewPointerDown(
 
   private bool IsStairsDownRightD1ForCurrentPose()
   {
-    if (!TryGetStairsDownS1Cell(out int mapX, out int mapY))
+    if (!stairsS1PreviewEnabled
+        || !TryGetStairsDownS1Cell(out int mapX, out int mapY))
       return false;
     return IsPreviewFeatureEnabled(
         MakePreviewFeatureKey("StairsDown", mapX, mapY, null));
@@ -21061,7 +21064,8 @@ private static void HandleGameViewPointerDown(
   // No player-position or facing exceptions.
   private bool IsStairsDownS1LeftReferencePose()
   {
-    if (!TryGetStairsDownS1LeftCell(out int mapX, out int mapY))
+    if (!stairsS1LeftPreviewEnabled
+        || !TryGetStairsDownS1LeftCell(out int mapX, out int mapY))
       return false;
     return IsPreviewFeatureEnabled(
         MakePreviewFeatureKey("StairsDown", mapX, mapY, null));
@@ -24053,6 +24057,22 @@ private static void HandleGameViewPointerDown(
     GUILayout.Label("Stairs_down_S1", featureStyle,
         GUILayout.Width(captionWidth));
 
+    GUILayout.Space(8f);
+    float enabledLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    EditorGUIUtility.labelWidth = enabledLabelWidth;
+    bool updatedEnabled = DrawMouseOnlyToggle(
+        "Enabled", stairsS1PreviewEnabled, stairsS1PreviewEnabled,
+        GUILayout.Width(enabledLabelWidth + 18f),
+        GUILayout.ExpandWidth(false));
+    if (updatedEnabled != stairsS1PreviewEnabled)
+    {
+      stairsS1PreviewEnabled = updatedEnabled;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int x = stairsS1X;
@@ -24112,6 +24132,22 @@ private static void HandleGameViewPointerDown(
         new GUIContent("Stairs_down_S1")).x;
     GUILayout.Label("Stairs_down_S1", style,
         GUILayout.Width(captionWidth));
+
+    GUILayout.Space(8f);
+    float enabledLabelWidth =
+        EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    EditorGUIUtility.labelWidth = enabledLabelWidth;
+    bool updatedEnabled = DrawMouseOnlyToggle(
+        "Enabled", stairsS1LeftPreviewEnabled, stairsS1LeftPreviewEnabled,
+        GUILayout.Width(enabledLabelWidth + 18f),
+        GUILayout.ExpandWidth(false));
+    if (updatedEnabled != stairsS1LeftPreviewEnabled)
+    {
+      stairsS1LeftPreviewEnabled = updatedEnabled;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
 
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
