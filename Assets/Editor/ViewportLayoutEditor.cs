@@ -17096,6 +17096,9 @@ private static void HandleGameViewPointerDown(
     // Do not redraw the sprite after HUD/debug rendering.
     BlitStairsDownLeftD1IntoPreview(pixels);
 
+    // Near-side D0L stair detail, drawn above dungeon geometry but below ornaments.
+    BlitStairsDownD0LIntoPreview(pixels);
+
     // All floor features and wall ornaments are composed only after the full
     // map/wall/door image pass has finished. This keeps feature artwork out of
     // the geometry painter order and gives it one explicit post-map layer.
@@ -24079,6 +24082,43 @@ private static void HandleGameViewPointerDown(
       DrawStairsDownS1LeftCalibrationRow(leftStairsX, leftStairsY);
   }
 
+  // Same-tile right-side down-stairs detail. Detection matches its ViewEdit row.
+  private void BlitStairsDownD0LIntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || !stairsD0LEnabled)
+      return;
+
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return;
+
+    Viewport17Cell stairCell = SampleViewport17Cell(1, 0);
+    if (!stairCell.IsInside || !stairCell.IsStairsDown)
+      return;
+
+    const string assetPath = "Assets/Art/Walls/Stairs/Stairs_Side_D0L_16x13.png";
+    Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+    if (sprite == null)
+    {
+      Debug.LogError("STAIRS D0L: missing asset: " + assetPath);
+      return;
+    }
+    if (sprite.width != 16 || sprite.height != 13)
+    {
+      Debug.LogError("STAIRS D0L: expected 16x13, got "
+          + sprite.width + "x" + sprite.height + " at " + assetPath);
+      return;
+    }
+    if (!sprite.isReadable)
+    {
+      Debug.LogError("STAIRS D0L: enable Read/Write on " + assetPath);
+      return;
+    }
+
+    BlitPieceIntoPreview(pixels, sprite, stairsD0LX,
+        DisplayYToUnityY(stairsD0LTopY, sprite.height), stairsD0LMirror);
+  }
+
   private void DrawStairsDownD0LCalibrationRow()
   {
     EditorGUILayout.BeginHorizontal();
@@ -24115,6 +24155,8 @@ private static void HandleGameViewPointerDown(
       stairsD0LX = x;
       stairsD0LTopY = y;
       stairsD0LMirror = mirror;
+      RefreshEditModePreview();
+      RepaintGameViews();
       Repaint();
     }
     if (apply)
