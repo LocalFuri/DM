@@ -16334,7 +16334,7 @@ private static void HandleGameViewPointerDown(
       bool blockViewport17NativeD2ForBlackDoor =
           IsDoorF1FrontView();
       bool suppressViewport17NativeD2CenterForBlackDoorF2 =
-          IsDoorF2FrontView();
+          IsDoorF2FrontView() || IsStairsDownS1LeftReferencePose();
       bool blockViewport17NativeD1ForBlackDoor =
           IsDoorF1FrontView();
       for (int i = 0; i < layout.Pieces.Count; i++)
@@ -16499,10 +16499,12 @@ private static void HandleGameViewPointerDown(
                 piece, out bool manualWallEnabledForDraw)
             && manualWallEnabledForDraw;
 
-        // A down-stairs tile in the D1-left cell replaces LeftF2 geometry.
-        // Use the same map-relative check as the left stairs blit and ViewEdit.
-        // Do not draw the underlying 32-pixel stone wall in this slot.
-        if (IsWallF2LeftPiece(piece)
+        // The 32px left stair projection replaces the near-left F0 wall.
+        // Also suppress the more distant LeftF2 contribution in this slot;
+        // otherwise the ordinary wall can remain visible behind the stairs.
+        if ((IsWallF0LeftPiece(piece) || IsWallF2LeftPiece(piece)
+                || IsFrontWallF2Card(piece)
+                || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
             && IsStairsDownS1LeftReferencePose())
           continue;
         if (IsWallF2RightPiece(piece)
@@ -18659,10 +18661,13 @@ private static void HandleGameViewPointerDown(
     if (IsStairsDownRightD1ForCurrentPose())
       rightEnabled = false;
 
-    // Verified (4,14) West: the left D2 wall slot belongs to the
-    // 32x91 stairs-down graphic, not the normal LeftF2 wall.
+    // The left stair projection occupies the left edge and takes priority
+    // over native D2's LeftF2 contribution.
     if (IsStairsDownS1LeftReferencePose())
+    {
       leftEnabled = false;
+      centerEnabled = false;
+    }
 
     // Cell-property authority wins over a temporary FrontF2 manual override.
     // A down-stair directly ahead replaces only the D2 center wall; the D2
@@ -24142,8 +24147,8 @@ private static void HandleGameViewPointerDown(
     style.hover.textColor = Color.yellow;
     style.focused.textColor = Color.yellow;
     float captionWidth = style.CalcSize(
-        new GUIContent("WoodRing [1,17] (S) / S1")).x;
-    GUILayout.Label("Stairs_down_S1", style,
+        new GUIContent("Stairs_Down_Front_D1_32x91")).x;
+    GUILayout.Label("Stairs_Down_Front_D1_32x91", style,
         GUILayout.Width(captionWidth));
 
     EditorGUIUtility.labelWidth =
