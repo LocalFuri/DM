@@ -23614,11 +23614,18 @@ private static void HandleGameViewPointerDown(
   // This is a reference-pose exclusion, not yet a generic occlusion algorithm.
   private bool IsHookHiddenAtStairsS2Reference(WallOrnamentPlacement ornament)
   {
-    return IsStairsdownS2CalibrationPose()
-        && IsHookOrnament(ornament)
-        && ornament.x == 4
-        && ornament.y == 15
-        && string.Equals(ornament.wall, "East", System.StringComparison.OrdinalIgnoreCase);
+    if (!IsStairsdownS2CalibrationPose() || !IsHookOrnament(ornament))
+      return false;
+
+    // ViewEdit labels the projected dungeon-feature face, not necessarily
+    // the ornament's storage tile/face. Match the same projected coordinates
+    // here so the renderer and ViewEdit suppress the same Hook.
+    return TryGetStandardWallOrnamentProjectionInCurrentPose(
+        ornament, 2, 3, out int featureX, out int featureY,
+        out string featureFace)
+        && featureX == 4 && featureY == 15
+        && string.Equals(featureFace, "East",
+            System.StringComparison.OrdinalIgnoreCase);
   }
 
   private bool IsHookProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
