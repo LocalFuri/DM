@@ -20957,44 +20957,6 @@ private static void HandleGameViewPointerDown(
   /// True when a down-stairs tile is immediately to the player's right.
   /// This is geometry-relative and contains no map-coordinate special case.
   /// </summary>
-  // Temporary diagnostic for verifying the loaded script and runtime stairs
-  // geometry. Logs only once per distinct observed pose/tile result.
-  private string stairsS1LastDiagnostic;
-
-  private void LogStairsS1Diagnostic()
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null)
-    {
-      const string missing = "STAIRS_S1_DIAG_V1: previewMiniMap is null";
-      if (stairsS1LastDiagnostic != missing)
-      {
-        stairsS1LastDiagnostic = missing;
-        Debug.LogError(missing);
-      }
-      return;
-    }
-
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
-    int tx = previewX + fx + rx;
-    int ty = previewY + fy + ry;
-    bool inside = previewMiniMap.IsInside(tx, ty);
-    DungeonTile tile = inside ? previewMiniMap.GetTile(tx, ty) : null;
-    string state = "STAIRS_S1_DIAG_V1: pose=(" + previewX + "," + previewY
-        + ") " + previewFacing + " forward=(" + fx + "," + fy
-        + ") right=(" + rx + "," + ry + ") target=(" + tx
-        + "," + ty + ") inside=" + inside
-        + " tile=" + (tile == null ? "NULL" : ("raw=0x" + tile.Raw.ToString("X2")
-        + " type=" + tile.Type))
-        + " recognized=" + (tile != null && tile.Raw == 0x60);
-    if (stairsS1LastDiagnostic != state)
-    {
-      stairsS1LastDiagnostic = state;
-      Debug.Log(state);
-    }
-  }
-
   // A single authoritative D1-right stairs projection lookup is shared by
   // the wall painter and ViewEdit. Right is the clockwise perpendicular of
   // forward in map coordinates (Y increases towards South).
@@ -24024,8 +23986,6 @@ private static void HandleGameViewPointerDown(
           codedY,
           name);
     }
-
-    LogStairsS1Diagnostic();
 
     // Stairs use the renderer's exact projection geometry. The current
     // stairs renderer has an F1 front projection only: the stairs tile must
