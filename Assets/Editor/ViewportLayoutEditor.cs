@@ -24049,7 +24049,7 @@ private static void HandleGameViewPointerDown(
     featureStyle.hover.textColor = Color.magenta;
     featureStyle.focused.textColor = Color.magenta;
     float captionWidth = featureStyle.CalcSize(
-        new GUIContent("WoodRing [1,17] (S) / S1")).x;
+        new GUIContent("Stairs_down_S1")).x;
     GUILayout.Label("Stairs_down_S1", featureStyle,
         GUILayout.Width(captionWidth));
 
@@ -24109,8 +24109,8 @@ private static void HandleGameViewPointerDown(
     style.hover.textColor = Color.magenta;
     style.focused.textColor = Color.magenta;
     float captionWidth = style.CalcSize(
-        new GUIContent("Stairs_Down_Front_D1_32x91")).x;
-    GUILayout.Label("Stairs_Down_Front_D1_32x91", style,
+        new GUIContent("Stairs_down_S1")).x;
+    GUILayout.Label("Stairs_down_S1", style,
         GUILayout.Width(captionWidth));
 
     EditorGUIUtility.labelWidth =
