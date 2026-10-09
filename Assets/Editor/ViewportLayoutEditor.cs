@@ -21082,6 +21082,11 @@ private static void HandleGameViewPointerDown(
     Viewport17Cell cell = SampleViewport17Cell(-1, 1);
     if (!cell.IsInside || !cell.IsStairsDown)
       return false;
+    // Check the forward approach beyond the stairs. This removes oblique
+    // projections seen across the closed end wall (e.g. 4,16 North), without
+    // changing the established left/right projection or sprite calibration.
+    if (IsViewport17Solid(SampleViewport17Cell(-1, 2)))
+      return false;
     mapX = cell.MapX;
     mapY = cell.MapY;
     return true;
