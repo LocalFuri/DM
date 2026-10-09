@@ -451,6 +451,14 @@ public class ViewportLayoutEditor : EditorWindow
   private bool stairsdownS2Enabled = true;
 
   // Independent S2 LEFT calibration for (4,15) North; UI only until verified.
+  // F2 North stairs-down: separate editable calibration for (4,16) North.
+  private const string StairsdownS2F2NorthPrefsPrefix = "DM.ViewEdit.StairsdownS2F2North.";
+  private const string StairsdownS2F2NorthAccepted = "32|95|false|true";
+  private int stairsdownS2F2NorthX = 0;
+  private int stairsdownS2F2NorthTopY = 96;
+  private bool stairsdownS2F2NorthMirror;
+  private bool stairsdownS2F2NorthEnabled = true;
+
   private const string StairsdownS2LeftPrefsPrefix = "DM.ViewEdit.StairsdownS2Left.";
   private const string StairsdownS2LeftAccepted = "0|106|false|true";
   private int stairsdownS2LeftX;
@@ -17128,6 +17136,9 @@ private static void HandleGameViewPointerDown(
     // Independent North-facing S0 side detail.
     BlitStairsS0NorthIntoPreview(pixels);
 
+    // Calibrated 20x39 down-stairs image at 4,16 North (independent S2 F2 case).
+    BlitStairsdownS2F2NorthIntoPreview(pixels);
+
     // All floor features and wall ornaments are composed only after the full
     // map/wall/door image pass has finished. This keeps feature artwork out of
     // the geometry painter order and gives it one explicit post-map layer.
@@ -20972,6 +20983,10 @@ private static void HandleGameViewPointerDown(
     stairsdownS2TopY = EditorPrefs.GetInt(StairsdownS2PrefsPrefix + "Y", 96);
     stairsdownS2Mirror = EditorPrefs.GetBool(StairsdownS2PrefsPrefix + "Mirror", false);
     stairsdownS2Enabled = EditorPrefs.GetBool(StairsdownS2PrefsPrefix + "Enabled", true);
+    stairsdownS2F2NorthX = EditorPrefs.GetInt(StairsdownS2F2NorthPrefsPrefix + "X", 0);
+    stairsdownS2F2NorthTopY = EditorPrefs.GetInt(StairsdownS2F2NorthPrefsPrefix + "Y", 96);
+    stairsdownS2F2NorthMirror = EditorPrefs.GetBool(StairsdownS2F2NorthPrefsPrefix + "Mirror", false);
+    stairsdownS2F2NorthEnabled = EditorPrefs.GetBool(StairsdownS2F2NorthPrefsPrefix + "Enabled", true);
     stairsdownS2LeftX = EditorPrefs.GetInt(StairsdownS2LeftPrefsPrefix + "X", 0);
     stairsdownS2LeftTopY = EditorPrefs.GetInt(StairsdownS2LeftPrefsPrefix + "Y", 106);
     stairsdownS2LeftMirror = EditorPrefs.GetBool(StairsdownS2LeftPrefsPrefix + "Mirror", false);
@@ -24136,6 +24151,9 @@ private static void HandleGameViewPointerDown(
     // The D0L controls for (4,15) South are preserved unchanged.
     if (IsStairsdownS2CalibrationPose())
       DrawStairsdownS2CalibrationRow();
+    // F2 North reference (4,16): independent S2 20x39 calibration.
+    if (previewX == 4 && previewY == 16 && previewFacing == DungeonFacing.North)
+      DrawStairsdownS2F2NorthCalibrationRow();
     // North S0 reference: independent calibration; does not modify South S2 or South S0.
     if (previewX == 4 && previewY == 15 && previewFacing == DungeonFacing.North)
       DrawStairsdownS2LeftCalibrationRow();
@@ -24230,6 +24248,36 @@ private static void HandleGameViewPointerDown(
     }
     BlitPieceIntoPreview(pixels, sprite, stairsdownS2LeftX,
         DisplayYToUnityY(stairsdownS2LeftTopY, sprite.height), stairsdownS2LeftMirror);
+  }
+
+  private void BlitStairsdownS2F2NorthIntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || !stairsdownS2F2NorthEnabled
+        || previewX != 4 || previewY != 16
+        || previewFacing != DungeonFacing.North)
+      return;
+
+    const string assetPath = "Assets/Art/Walls/Stairs/Stairsdown_S2_20x39.png";
+    Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+    if (sprite == null)
+    {
+      Debug.LogError("STAIRSDOWN S2 F2 NORTH: missing asset: " + assetPath);
+      return;
+    }
+    if (sprite.width != 20 || sprite.height != 39)
+    {
+      Debug.LogError("STAIRSDOWN S2 F2 NORTH: expected 20x39, got "
+          + sprite.width + "x" + sprite.height + " at " + assetPath);
+      return;
+    }
+    if (!sprite.isReadable)
+    {
+      Debug.LogError("STAIRSDOWN S2 F2 NORTH: enable Read/Write on " + assetPath);
+      return;
+    }
+    BlitPieceIntoPreview(pixels, sprite, stairsdownS2F2NorthX,
+        DisplayYToUnityY(stairsdownS2F2NorthTopY, sprite.height),
+        stairsdownS2F2NorthMirror);
   }
 
   // Temporary calibration only. Do not generalize this S2 side view
@@ -24378,6 +24426,116 @@ private static void HandleGameViewPointerDown(
     }
     if (apply)
       SaveStairsdownS2AcceptedToSource();
+  }
+
+  private bool SaveStairsdownS2F2NorthAcceptedToSource()
+  {
+    string assetPath = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(assetPath) || !File.Exists(assetPath))
+    {
+      Debug.LogError("STAIRSDOWN S2 Apply: source script is missing: " + assetPath);
+      return false;
+    }
+    const string token = "private const string StairsdownS2F2NorthAccepted = \"";
+    try
+    {
+      string source = File.ReadAllText(assetPath);
+      int begin = source.IndexOf(token, System.StringComparison.Ordinal);
+      if (begin < 0 || source.IndexOf(token, begin + token.Length,
+          System.StringComparison.Ordinal) >= 0)
+      {
+        Debug.LogError("STAIRSDOWN S2 Apply: expected exactly one saved-values marker in " + assetPath);
+        return false;
+      }
+      int valueBegin = begin + token.Length;
+      int valueEnd = source.IndexOf('"', valueBegin);
+      if (valueEnd < 0)
+      {
+        Debug.LogError("STAIRSDOWN S2 Apply: unterminated saved-values marker in " + assetPath);
+        return false;
+      }
+      string accepted = stairsdownS2F2NorthX.ToString() + "|" + stairsdownS2F2NorthTopY.ToString()
+          + "|" + (stairsdownS2F2NorthMirror ? "true" : "false")
+          + "|" + (stairsdownS2F2NorthEnabled ? "true" : "false");
+      string updated = source.Substring(0, valueBegin) + accepted + source.Substring(valueEnd);
+      if (updated != source)
+        File.WriteAllText(assetPath, updated);
+      // Preserve values through the pending Unity domain/script reload.
+      EditorPrefs.SetInt(StairsdownS2F2NorthPrefsPrefix + "X", stairsdownS2F2NorthX);
+      EditorPrefs.SetInt(StairsdownS2F2NorthPrefsPrefix + "Y", stairsdownS2F2NorthTopY);
+      EditorPrefs.SetBool(StairsdownS2F2NorthPrefsPrefix + "Mirror", stairsdownS2F2NorthMirror);
+      EditorPrefs.SetBool(StairsdownS2F2NorthPrefsPrefix + "Enabled", stairsdownS2F2NorthEnabled);
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+      if (updated != source)
+        AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
+      return true;
+    }
+    catch (System.Exception exception)
+    {
+      Debug.LogError("STAIRSDOWN S2 Apply: failed to save source: " + exception);
+      return false;
+    }
+  }
+
+  private void DrawStairsdownS2F2NorthCalibrationRow()
+  {
+    string[] saved = StairsdownS2F2NorthAccepted.Split('|');
+    if (saved.Length != 4 || !int.TryParse(saved[0], out int acceptedX)
+        || !int.TryParse(saved[1], out int acceptedY)
+        || !bool.TryParse(saved[2], out bool acceptedMirror)
+        || !bool.TryParse(saved[3], out bool acceptedEnabled))
+    {
+      Debug.LogError("STAIRSDOWN S2 F2 NORTH: invalid saved calibration values in .cs");
+      return;
+    }
+    EditorGUILayout.BeginHorizontal();
+    float oldLabelWidth = EditorGUIUtility.labelWidth;
+    Color oldContentColor = GUI.contentColor;
+    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
+    style.normal.textColor = Color.magenta;
+    style.hover.textColor = Color.magenta;
+    style.focused.textColor = Color.magenta;
+    const string caption = "Stairsdown_S2";
+    GUILayout.Label(caption, style,
+        GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
+    GUILayout.Space(8f);
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    EditorGUIUtility.labelWidth = enabledWidth;
+    GUI.contentColor = stairsdownS2F2NorthEnabled != acceptedEnabled ? Color.red : oldContentColor;
+    bool enabled = DrawMouseOnlyToggle(
+        "Enabled", stairsdownS2F2NorthEnabled, stairsdownS2F2NorthEnabled,
+        GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    GUI.contentColor = stairsdownS2F2NorthX != acceptedX ? Color.red : oldContentColor;
+    int x = stairsdownS2F2NorthX;
+    bool xChanged = DrawIntStepperInline("X", ref x, snap, false, true, 24f, 24f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    GUI.contentColor = stairsdownS2F2NorthTopY != acceptedY ? Color.red : oldContentColor;
+    int y = stairsdownS2F2NorthTopY;
+    bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
+    GUILayout.Space(6f);
+    GUI.contentColor = stairsdownS2F2NorthMirror != acceptedMirror ? Color.red : oldContentColor;
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsdownS2F2NorthMirror, GUILayout.Width(66f));
+    GUI.contentColor = oldContentColor;
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = oldLabelWidth;
+    EditorGUILayout.EndHorizontal();
+    if (enabled != stairsdownS2F2NorthEnabled || (xChanged && x != stairsdownS2F2NorthX)
+        || (yChanged && y != stairsdownS2F2NorthTopY) || mirror != stairsdownS2F2NorthMirror)
+    {
+      stairsdownS2F2NorthEnabled = enabled;
+      stairsdownS2F2NorthX = x;
+      stairsdownS2F2NorthTopY = y;
+      stairsdownS2F2NorthMirror = mirror;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+    if (apply)
+      SaveStairsdownS2F2NorthAcceptedToSource();
   }
 
   private bool SaveStairsdownS2LeftAcceptedToSource()
