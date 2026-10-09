@@ -21077,18 +21077,22 @@ private static void HandleGameViewPointerDown(
     mapX = 0;
     mapY = 0;
     EnsurePreviewMiniMapLoaded();
+
     if (previewMiniMap == null)
+    {
       return false;
-    Viewport17Cell cell = SampleViewport17Cell(-1, 1);
-    if (!cell.IsInside || !cell.IsStairsDown)
+    }
+
+    Viewport17Cell diagonal = SampleViewport17Cell(-1, 1);
+    Viewport17Cell nearLeft = SampleViewport17Cell(-1, 0);
+    bool adjacentSolid = IsViewport17Solid(nearLeft);
+    bool hasDownStairs = diagonal.IsInside && diagonal.IsStairsDown;
+    bool passes = hasDownStairs && !adjacentSolid;
+
+    if (!passes)
       return false;
-    // Check the forward approach beyond the stairs. This removes oblique
-    // projections seen across the closed end wall (e.g. 4,16 North), without
-    // changing the established left/right projection or sprite calibration.
-    if (IsViewport17Solid(SampleViewport17Cell(-1, 2)))
-      return false;
-    mapX = cell.MapX;
-    mapY = cell.MapY;
+    mapX = diagonal.MapX;
+    mapY = diagonal.MapY;
     return true;
   }
 
