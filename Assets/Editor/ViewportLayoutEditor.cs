@@ -441,12 +441,12 @@ public class ViewportLayoutEditor : EditorWindow
   private bool stairsD0LEnabled = true;
 
   // S2 stairs side sprite: ViewEdit calibration only, no rendering yet.
-  // Independent calibration of the same D0L sprite one step farther away.
-  private const string StairsD0LFarPrefsPrefix = "DM.ViewEdit.StairsDownD0LFar.";
-  private int stairsD0LFarX = 174;
-  private int stairsD0LFarTopY = 96;
-  private bool stairsD0LFarMirror;
-  private bool stairsD0LFarEnabled = true;
+  // Independent Stairsdown S2 calibration at (4,14) South.
+  private const string StairsdownS2PrefsPrefix = "DM.ViewEdit.StairsdownS2.";
+  private int stairsdownS2X = 174;
+  private int stairsdownS2TopY = 96;
+  private bool stairsdownS2Mirror;
+  private bool stairsdownS2Enabled = true;
 
 
 
@@ -17109,8 +17109,8 @@ private static void HandleGameViewPointerDown(
     // Near-side D0L stair detail, drawn above dungeon geometry but below ornaments.
     BlitStairsDownD0LIntoPreview(pixels);
 
-    // Calibrate the D0L sprite at the farther right-side reference pose.
-    BlitStairsDownD0LFarIntoPreview(pixels);
+    // Calibrate Stairsdown S2 at the (4,14) South reference pose.
+    BlitStairsdownS2IntoPreview(pixels);
 
     // All floor features and wall ornaments are composed only after the full
     // map/wall/door image pass has finished. This keeps feature artwork out of
@@ -20952,10 +20952,10 @@ private static void HandleGameViewPointerDown(
     stairsD0LTopY = EditorPrefs.GetInt(StairsD0LPrefsPrefix + "Y", 106);
     stairsD0LMirror = EditorPrefs.GetBool(StairsD0LPrefsPrefix + "Mirror", false);
     stairsD0LEnabled = EditorPrefs.GetBool(StairsD0LPrefsPrefix + "Enabled", true);
-    stairsD0LFarX = EditorPrefs.GetInt(StairsD0LFarPrefsPrefix + "X", 174);
-    stairsD0LFarTopY = EditorPrefs.GetInt(StairsD0LFarPrefsPrefix + "Y", 96);
-    stairsD0LFarMirror = EditorPrefs.GetBool(StairsD0LFarPrefsPrefix + "Mirror", false);
-    stairsD0LFarEnabled = EditorPrefs.GetBool(StairsD0LFarPrefsPrefix + "Enabled", true);
+    stairsdownS2X = EditorPrefs.GetInt(StairsdownS2PrefsPrefix + "X", 174);
+    stairsdownS2TopY = EditorPrefs.GetInt(StairsdownS2PrefsPrefix + "Y", 96);
+    stairsdownS2Mirror = EditorPrefs.GetBool(StairsdownS2PrefsPrefix + "Mirror", false);
+    stairsdownS2Enabled = EditorPrefs.GetBool(StairsdownS2PrefsPrefix + "Enabled", true);
     stairsS1X = EditorPrefs.GetInt(StairsS1PrefsPrefix + "X", StairsDownRightD1X);
     stairsS1TopY = EditorPrefs.GetInt(StairsS1PrefsPrefix + "Y", StairsDownRightD1DisplayY);
     stairsS1Mirror = EditorPrefs.GetBool(StairsS1PrefsPrefix + "Mirror", false);
@@ -24092,10 +24092,10 @@ private static void HandleGameViewPointerDown(
       }
     }
 
-    // Separate far D0L calibration for the verified (4,14) South view.
-    // The near D0L controls for (4,15) South are preserved unchanged.
-    if (IsStairsDownD0LFarCalibrationPose())
-      DrawStairsDownD0LFarCalibrationRow();
+    // Stairsdown S2 calibration for the verified (4,14) South view.
+    // The D0L controls for (4,15) South are preserved unchanged.
+    if (IsStairsdownS2CalibrationPose())
+      DrawStairsdownS2CalibrationRow();
 
     // D0L side artwork is visible when the stairs-down tile is immediately
     // to the player's right (the calibrated 4,15 South view). Use the same
@@ -24158,50 +24158,45 @@ private static void HandleGameViewPointerDown(
         DisplayYToUnityY(stairsD0LTopY, sprite.height), stairsD0LMirror);
   }
 
-  // Temporary calibration only. Do not generalize this diagonal side view
+  // Temporary calibration only. Do not generalize this S2 side view
   // until the original and Unity images agree at the reference position.
-  private bool IsStairsDownD0LFarCalibrationPose()
+  private bool IsStairsdownS2CalibrationPose()
   {
-    if (previewX != 4 || previewY != 14
-        || previewFacing != DungeonFacing.South)
-      return false;
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null)
-      return false;
-    Viewport17Cell cell = SampleViewport17Cell(1, 1);
-    return cell.IsInside && cell.IsStairsDown;
+    // Temporary reference pose until the map-based S2 rule is calibrated.
+    return previewX == 4 && previewY == 14
+        && previewFacing == DungeonFacing.South;
   }
 
-  private void BlitStairsDownD0LFarIntoPreview(Color32[] pixels)
+  private void BlitStairsdownS2IntoPreview(Color32[] pixels)
   {
-    if (pixels == null || !stairsD0LFarEnabled
-        || !IsStairsDownD0LFarCalibrationPose())
+    if (pixels == null || !stairsdownS2Enabled
+        || !IsStairsdownS2CalibrationPose())
       return;
 
-    const string assetPath = "Assets/Art/Walls/Stairs/Stairs_Side_D0L_16x13.png";
+    const string assetPath = "Assets/Art/Walls/Stairs/Stairsdown_S2_20x39.png";
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRS D0L FAR: missing asset: " + assetPath);
+      Debug.LogError("STAIRSDOWN S2: missing asset: " + assetPath);
       return;
     }
-    if (sprite.width != 16 || sprite.height != 13)
+    if (sprite.width != 20 || sprite.height != 39)
     {
-      Debug.LogError("STAIRS D0L FAR: expected 16x13, got "
+      Debug.LogError("STAIRSDOWN S2: expected 20x39, got "
           + sprite.width + "x" + sprite.height + " at " + assetPath);
       return;
     }
     if (!sprite.isReadable)
     {
-      Debug.LogError("STAIRS D0L FAR: enable Read/Write on " + assetPath);
+      Debug.LogError("STAIRSDOWN S2: enable Read/Write on " + assetPath);
       return;
     }
 
-    BlitPieceIntoPreview(pixels, sprite, stairsD0LFarX,
-        DisplayYToUnityY(stairsD0LFarTopY, sprite.height), stairsD0LFarMirror);
+    BlitPieceIntoPreview(pixels, sprite, stairsdownS2X,
+        DisplayYToUnityY(stairsdownS2TopY, sprite.height), stairsdownS2Mirror);
   }
 
-  private void DrawStairsDownD0LFarCalibrationRow()
+  private void DrawStairsdownS2CalibrationRow()
   {
     EditorGUILayout.BeginHorizontal();
     float oldLabelWidth = EditorGUIUtility.labelWidth;
@@ -24209,44 +24204,44 @@ private static void HandleGameViewPointerDown(
     style.normal.textColor = Color.magenta;
     style.hover.textColor = Color.magenta;
     style.focused.textColor = Color.magenta;
-    const string caption = "Stairs_Side_D0L / Far";
+    const string caption = "Stairsdown_S2";
     GUILayout.Label(caption, style,
         GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
     float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
     bool enabled = DrawMouseOnlyToggle(
-        "Enabled", stairsD0LFarEnabled, stairsD0LFarEnabled,
+        "Enabled", stairsdownS2Enabled, stairsdownS2Enabled,
         GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    int x = stairsD0LFarX;
+    int x = stairsdownS2X;
     bool xChanged = DrawIntStepperInline("X", ref x, snap, false, true, 24f, 24f);
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-    int y = stairsD0LFarTopY;
+    int y = stairsdownS2TopY;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
     GUILayout.Space(6f);
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsD0LFarMirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsdownS2Mirror, GUILayout.Width(66f));
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
     EditorGUIUtility.labelWidth = oldLabelWidth;
     EditorGUILayout.EndHorizontal();
-    if (enabled != stairsD0LFarEnabled || (xChanged && x != stairsD0LFarX)
-        || (yChanged && y != stairsD0LFarTopY) || mirror != stairsD0LFarMirror)
+    if (enabled != stairsdownS2Enabled || (xChanged && x != stairsdownS2X)
+        || (yChanged && y != stairsdownS2TopY) || mirror != stairsdownS2Mirror)
     {
-      stairsD0LFarEnabled = enabled;
-      stairsD0LFarX = x;
-      stairsD0LFarTopY = y;
-      stairsD0LFarMirror = mirror;
+      stairsdownS2Enabled = enabled;
+      stairsdownS2X = x;
+      stairsdownS2TopY = y;
+      stairsdownS2Mirror = mirror;
       RefreshEditModePreview();
       RepaintGameViews();
       Repaint();
     }
     if (apply)
     {
-      EditorPrefs.SetInt(StairsD0LFarPrefsPrefix + "X", stairsD0LFarX);
-      EditorPrefs.SetInt(StairsD0LFarPrefsPrefix + "Y", stairsD0LFarTopY);
-      EditorPrefs.SetBool(StairsD0LFarPrefsPrefix + "Mirror", stairsD0LFarMirror);
-      EditorPrefs.SetBool(StairsD0LFarPrefsPrefix + "Enabled", stairsD0LFarEnabled);
+      EditorPrefs.SetInt(StairsdownS2PrefsPrefix + "X", stairsdownS2X);
+      EditorPrefs.SetInt(StairsdownS2PrefsPrefix + "Y", stairsdownS2TopY);
+      EditorPrefs.SetBool(StairsdownS2PrefsPrefix + "Mirror", stairsdownS2Mirror);
+      EditorPrefs.SetBool(StairsdownS2PrefsPrefix + "Enabled", stairsdownS2Enabled);
     }
   }
 
