@@ -443,6 +443,8 @@ public class ViewportLayoutEditor : EditorWindow
   // S2 stairs side sprite: ViewEdit calibration only, no rendering yet.
   // Independent Stairsdown S2 calibration at (4,14) South.
   private const string StairsdownS2PrefsPrefix = "DM.ViewEdit.StairsdownS2.";
+  // APPLY-SAVED STAIRSDOWN S2 VALUES. Apply updates this literal in this .cs.
+  private const string StairsdownS2Accepted = "174|96|false|true";
   private int stairsdownS2X = 174;
   private int stairsdownS2TopY = 96;
   private bool stairsdownS2Mirror;
@@ -24219,10 +24221,71 @@ private static void HandleGameViewPointerDown(
         DisplayYToUnityY(stairsdownS2TopY, sprite.height), stairsdownS2Mirror);
   }
 
+  private bool SaveStairsdownS2AcceptedToSource()
+  {
+    string assetPath = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(assetPath) || !File.Exists(assetPath))
+    {
+      Debug.LogError("STAIRSDOWN S2 Apply: source script is missing: " + assetPath);
+      return false;
+    }
+    const string token = "private const string StairsdownS2Accepted = \"";
+    try
+    {
+      string source = File.ReadAllText(assetPath);
+      int begin = source.IndexOf(token, System.StringComparison.Ordinal);
+      if (begin < 0 || source.IndexOf(token, begin + token.Length,
+          System.StringComparison.Ordinal) >= 0)
+      {
+        Debug.LogError("STAIRSDOWN S2 Apply: expected exactly one saved-values marker in " + assetPath);
+        return false;
+      }
+      int valueBegin = begin + token.Length;
+      int valueEnd = source.IndexOf('"', valueBegin);
+      if (valueEnd < 0)
+      {
+        Debug.LogError("STAIRSDOWN S2 Apply: unterminated saved-values marker in " + assetPath);
+        return false;
+      }
+      string accepted = stairsdownS2X.ToString() + "|" + stairsdownS2TopY.ToString()
+          + "|" + (stairsdownS2Mirror ? "true" : "false")
+          + "|" + (stairsdownS2Enabled ? "true" : "false");
+      string updated = source.Substring(0, valueBegin) + accepted + source.Substring(valueEnd);
+      if (updated != source)
+        File.WriteAllText(assetPath, updated);
+      // Preserve values through the pending Unity domain/script reload.
+      EditorPrefs.SetInt(StairsdownS2PrefsPrefix + "X", stairsdownS2X);
+      EditorPrefs.SetInt(StairsdownS2PrefsPrefix + "Y", stairsdownS2TopY);
+      EditorPrefs.SetBool(StairsdownS2PrefsPrefix + "Mirror", stairsdownS2Mirror);
+      EditorPrefs.SetBool(StairsdownS2PrefsPrefix + "Enabled", stairsdownS2Enabled);
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+      if (updated != source)
+        AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
+      return true;
+    }
+    catch (System.Exception exception)
+    {
+      Debug.LogError("STAIRSDOWN S2 Apply: failed to save source: " + exception);
+      return false;
+    }
+  }
+
   private void DrawStairsdownS2CalibrationRow()
   {
+    string[] saved = StairsdownS2Accepted.Split('|');
+    if (saved.Length != 4 || !int.TryParse(saved[0], out int acceptedX)
+        || !int.TryParse(saved[1], out int acceptedY)
+        || !bool.TryParse(saved[2], out bool acceptedMirror)
+        || !bool.TryParse(saved[3], out bool acceptedEnabled))
+    {
+      Debug.LogError("STAIRSDOWN S2: invalid saved calibration values in .cs");
+      return;
+    }
     EditorGUILayout.BeginHorizontal();
     float oldLabelWidth = EditorGUIUtility.labelWidth;
+    Color oldContentColor = GUI.contentColor;
     GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
     style.normal.textColor = Color.magenta;
     style.hover.textColor = Color.magenta;
@@ -24233,17 +24296,22 @@ private static void HandleGameViewPointerDown(
     GUILayout.Space(8f);
     float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
+    GUI.contentColor = stairsdownS2Enabled != acceptedEnabled ? Color.red : oldContentColor;
     bool enabled = DrawMouseOnlyToggle(
         "Enabled", stairsdownS2Enabled, stairsdownS2Enabled,
         GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    GUI.contentColor = stairsdownS2X != acceptedX ? Color.red : oldContentColor;
     int x = stairsdownS2X;
     bool xChanged = DrawIntStepperInline("X", ref x, snap, false, true, 24f, 24f);
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    GUI.contentColor = stairsdownS2TopY != acceptedY ? Color.red : oldContentColor;
     int y = stairsdownS2TopY;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
     GUILayout.Space(6f);
+    GUI.contentColor = stairsdownS2Mirror != acceptedMirror ? Color.red : oldContentColor;
     bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsdownS2Mirror, GUILayout.Width(66f));
+    GUI.contentColor = oldContentColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
     EditorGUIUtility.labelWidth = oldLabelWidth;
@@ -24260,12 +24328,7 @@ private static void HandleGameViewPointerDown(
       Repaint();
     }
     if (apply)
-    {
-      EditorPrefs.SetInt(StairsdownS2PrefsPrefix + "X", stairsdownS2X);
-      EditorPrefs.SetInt(StairsdownS2PrefsPrefix + "Y", stairsdownS2TopY);
-      EditorPrefs.SetBool(StairsdownS2PrefsPrefix + "Mirror", stairsdownS2Mirror);
-      EditorPrefs.SetBool(StairsdownS2PrefsPrefix + "Enabled", stairsdownS2Enabled);
-    }
+      SaveStairsdownS2AcceptedToSource();
   }
 
   private void DrawStairsDownD0LCalibrationRow()
