@@ -480,7 +480,7 @@ public class ViewportLayoutEditor : EditorWindow
   // Independent right-side S3 calibration at (4,13) South.
   // Keep independent from the left-side (4,17) North calibration.
   private const string StairsS3RightSouthPrefsPrefix = "DM.ViewEdit.StairsS3RightSouth.";
-  private const string StairsS3RightSouthAccepted = "148|89|true|true";
+  private const string StairsS3RightSouthAccepted = "152|80|true|true";
   private int stairsS3RightSouthX = 152;
   private int stairsS3RightSouthTopY = 80;
   private bool stairsS3RightSouthMirror = true;
