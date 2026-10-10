@@ -498,7 +498,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Front-facing up stairs at the Level 1 staircase landing.
   private const string StairsUpF1Prefs = "DM.ViewEdit.StairsUpF1.";
-  private const string StairsUpF1Accepted = "32|42|false|true";
+  private const string StairsUpF1Accepted = "82|32|false|true";
   private int stairsUpF1X = 82, stairsUpF1Y = 32;
   private bool stairsUpF1Mirror = false, stairsUpF1Enabled = true;
 
@@ -509,31 +509,31 @@ public class ViewportLayoutEditor : EditorWindow
   private int stairsUpFrontS1LeftX = 0, stairsUpFrontS1LeftY = 32;
   private bool stairsUpFrontS1LeftMirror = true, stairsUpFrontS1LeftEnabled = true;
   private const string StairsUpFrontS1Prefs = "DM.ViewEdit.StairsUpFrontS1.";
-  private const string StairsUpFrontS1Accepted = "192|42|true|true";
+  private const string StairsUpFrontS1Accepted = "192|32|false|true";
   private int stairsUpFrontS1X = 192, stairsUpFrontS1Y = 32;
   private bool stairsUpFrontS1Mirror = false, stairsUpFrontS1Enabled = true;
 
   // Left-side distant stair-up piece at Level 1 (4,0) West.
   private const string StairsUpFrontS2Prefs = "DM.ViewEdit.StairsUpFrontS2.";
-  private const string StairsUpFrontS2Accepted = "33|91|false|true";
+  private const string StairsUpFrontS2Accepted = "0|52|false|true";
   private int stairsUpFrontS2X = 0, stairsUpFrontS2Y = 52;
   private bool stairsUpFrontS2Mirror = false, stairsUpFrontS2Enabled = true;
 
   // Right-side S2 counterpart at Level 1 (2,0) East; independently calibrated.
   private const string StairsUpFrontS2RightPrefs = "DM.ViewEdit.StairsUpFrontS2Right.";
-  private const string StairsUpFrontS2RightAccepted = "172|90|true|true";
+  private const string StairsUpFrontS2RightAccepted = "204|52|true|true";
   private int stairsUpFrontS2RightX = 204, stairsUpFrontS2RightY = 52;
   private bool stairsUpFrontS2RightMirror = true, stairsUpFrontS2RightEnabled = true;
 
   // Stair fragment on the left at Level 1 (5,0) West; uses the supplied native S3 sprite.
   private const string StairsUpFrontS3Prefs = "DM.ViewEdit.StairsUpFrontS3.";
-  private const string StairsUpFrontS3Accepted = "59|88|false|true";
+  private const string StairsUpFrontS3Accepted = "58|87|false|true";
   private int stairsUpFrontS3X = 58, stairsUpFrontS3Y = 87;
   private bool stairsUpFrontS3Mirror = false, stairsUpFrontS3Enabled = true;
 
   // Right-side counterpart at Level 1 (1,0) East; independent calibration.
   private const string StairsUpFrontS3RightPrefs = "DM.ViewEdit.StairsUpFrontS3Right.";
-  private const string StairsUpFrontS3RightAccepted = "149|89|true|true";
+  private const string StairsUpFrontS3RightAccepted = "150|87|true|true";
   private int stairsUpFrontS3RightX = 150, stairsUpFrontS3RightY = 87;
   private bool stairsUpFrontS3RightMirror = true, stairsUpFrontS3RightEnabled = true;
 
@@ -24979,10 +24979,29 @@ private static void HandleGameViewPointerDown(
       SaveStairsUpFrontS1LeftCalibration();
   }
 
+  // S2 is the side-on view of an up staircase one tile ahead and one
+  // tile sideways. Currently calibrated for the East/West projection;
+  // South-facing diagonal views use the separate S1 front-side artwork.
+  // Both GameView and ViewEdit call this same geometry predicate.
+  private bool HasStairsUpS2AtSide(bool rightSide)
+  {
+    if (previewMiniMap == null || (previewFacing != DungeonFacing.East
+        && previewFacing != DungeonFacing.West))
+      return false;
+    DungeonMap.GetForwardOffset(previewFacing, out int forwardX, out int forwardY);
+    DungeonMap.GetRightOffset(previewFacing, out int sideX, out int sideY);
+    int side = rightSide ? 1 : -1;
+    int stairsX = previewX + forwardX + sideX * side;
+    int stairsY = previewY + forwardY + sideY * side;
+    if (!previewMiniMap.IsInside(stairsX, stairsY))
+      return false;
+    DungeonTile tile = previewMiniMap.GetTile(stairsX, stairsY);
+    return tile != null && tile.TryGetStairsDirection(out bool up) && up;
+  }
+
   private bool IsStairsUpFrontS2ReferencePose()
   {
-    return previewDungeonLevel == 1 && previewX == 4 && previewY == 0
-        && previewFacing == DungeonFacing.West;
+    return HasStairsUpS2AtSide(false);
   }
 
   private void BlitStairsUpFrontS2IntoPreview(Color32[] pixels)
@@ -25119,8 +25138,7 @@ private static void HandleGameViewPointerDown(
 
   private bool IsStairsUpFrontS2RightReferencePose()
   {
-    return previewDungeonLevel == 1 && previewX == 2 && previewY == 0
-        && previewFacing == DungeonFacing.East;
+    return HasStairsUpS2AtSide(true);
   }
 
   private void BlitStairsUpFrontS2RightIntoPreview(Color32[] pixels)
