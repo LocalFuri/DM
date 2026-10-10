@@ -498,7 +498,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Front-facing up stairs at the Level 1 staircase landing.
   private const string StairsUpF1Prefs = "DM.ViewEdit.StairsUpF1.";
-  private const string StairsUpF1Accepted = "82|32|false|true";
+  private const string StairsUpF1Accepted = "33|43|false|true";
   private int stairsUpF1X = 82, stairsUpF1Y = 32;
   private bool stairsUpF1Mirror = false, stairsUpF1Enabled = true;
 
