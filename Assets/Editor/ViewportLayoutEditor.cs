@@ -13216,8 +13216,18 @@ private static void HandleGameViewPointerDown(
   {
     // On the upper end of a staircase, backing away triggers the stairs
     // instead of taking an ordinary step off the staircase tile.
-    if (localX == 0 && localY == -1 && TryTransitionFromUpStairsInput())
-      return;
+    if (localX == 0 && localY == -1)
+    {
+      if (TryTransitionFromUpStairsInput())
+        return;
+      // At the Level 0 down-stair landing, backing away activates the same
+      // map-based link as the two turn keys. Ordinary backward movement
+      // remains unchanged at every other position.
+      if (previewDungeonLevel == 0 && previewX == 3 && previewY == 15
+          && previewFacing == DungeonFacing.East
+          && TryTransitionFromStairsTurnInput())
+        return;
+    }
 
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null)
