@@ -533,7 +533,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Right-side counterpart at Level 1 (1,0) East; independent calibration.
   private const string StairsUpFrontS3RightPrefs = "DM.ViewEdit.StairsUpFrontS3Right.";
-  private const string StairsUpFrontS3RightAccepted = "150|87|true|true";
+  private const string StairsUpFrontS3RightAccepted = "149|89|true|true";
   private int stairsUpFrontS3RightX = 150, stairsUpFrontS3RightY = 87;
   private bool stairsUpFrontS3RightMirror = true, stairsUpFrontS3RightEnabled = true;
 
