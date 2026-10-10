@@ -540,7 +540,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Pressure plate calibration at Level 0 (7,9) West.
   private const string PressurePadF1Prefs = "DM.ViewEdit.PressurePadF1.";
-  private const string PressurePadF1Accepted = "80|128|false|true";
+  private const string PressurePadF1Accepted = "80|105|false|true";
   private int pressurePadF1X = 80, pressurePadF1Y = 105;
   private bool pressurePadF1Mirror = false, pressurePadF1Enabled = true;
 
@@ -6735,6 +6735,31 @@ private static void HandleGameViewPointerDown(
         null);
     if (playMethod != null)
       playMethod.Invoke(null, new object[] { clip, 0, false });
+  }
+
+  private void PlayLevel0SwitchSound()
+  {
+    const string expectedName = "Switch";
+    string[] guids = AssetDatabase.FindAssets("Switch t:AudioClip");
+    AudioClip clip = null;
+    int exactMatches = 0;
+    foreach (string guid in guids)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guid);
+      if (!string.Equals(Path.GetFileNameWithoutExtension(path), expectedName,
+          System.StringComparison.OrdinalIgnoreCase))
+        continue;
+      exactMatches++;
+      if (exactMatches == 1)
+        clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+    }
+    if (exactMatches != 1 || clip == null)
+    {
+      Debug.LogError("PRESSURE SWITCH: expected exactly one readable AudioClip named Switch in Assets; found "
+          + exactMatches);
+      return;
+    }
+    PlayEditorPreviewClip(clip);
   }
 
   private AudioClip GetChampionExitSoundClip()
@@ -13168,6 +13193,12 @@ private static void HandleGameViewPointerDown(
 
     if (positionChanged)
       TryPreviewStairsTransition();
+
+    // Play the pressure-switch sound only when movement enters the tile.
+    // Turning, refreshing the preview and selecting the tile in the minimap
+    // do not invoke NavigatePreviewPoseOnly with a changed tile.
+    if (positionChanged && previewDungeonLevel == 0 && previewX == 6 && previewY == 9)
+      PlayLevel0SwitchSound();
 
     // Initialize every entered pose through the normal authoritative wall/door renderer.
     ApplyCurrentPoseVisibilityToLayout();
