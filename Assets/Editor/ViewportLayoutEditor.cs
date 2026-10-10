@@ -540,7 +540,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Pressure plate calibration at Level 0 (7,9) West.
   private const string PressurePadF1Prefs = "DM.ViewEdit.PressurePadF1.";
-  private const string PressurePadF1Accepted = "80|105|false|true";
+  private const string PressurePadF1Accepted = "80|128|false|true";
   private int pressurePadF1X = 80, pressurePadF1Y = 105;
   private bool pressurePadF1Mirror = false, pressurePadF1Enabled = true;
 
@@ -24595,8 +24595,8 @@ private static void HandleGameViewPointerDown(
   {
     if (pixels == null || !IsPressurePadF1ReferencePose() || !pressurePadF1Enabled)
       return;
-    const string assetName = "Square_Pressure_Pad_F1_64x25.png";
-    string[] matches = AssetDatabase.FindAssets("Square_Pressure_Pad_F1_64x25 t:Texture2D");
+    const string assetName = "Square_Pressure_Pad_F1_62x21.png";
+    string[] matches = AssetDatabase.FindAssets("Square_Pressure_Pad_F1_62x21 t:Texture2D");
     string assetPath = null;
     int exactMatchCount = 0;
     foreach (string guid in matches)
@@ -24619,9 +24619,9 @@ private static void HandleGameViewPointerDown(
       Debug.LogError("PRESSURE PAD F1: missing asset: " + assetPath);
       return;
     }
-    if (sprite.width != 64 || sprite.height != 25 || !sprite.isReadable)
+    if (sprite.width != 62 || sprite.height != 21 || !sprite.isReadable)
     {
-      Debug.LogError("PRESSURE PAD F1: expected readable 64x25 image: " + assetPath);
+      Debug.LogError("PRESSURE PAD F1: expected readable 62x21 image: " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, pressurePadF1X,
@@ -24696,7 +24696,7 @@ private static void HandleGameViewPointerDown(
     Color oldColor = GUI.contentColor;
     GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
     style.normal.textColor = Color.magenta;
-    const string caption = "PressurePad_F1 (64x25)";
+    const string caption = "PressurePad_F1 (62x21)";
     GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
     float setWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
