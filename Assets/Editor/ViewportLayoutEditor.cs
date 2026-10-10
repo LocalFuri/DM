@@ -515,7 +515,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Left-side distant stair-up piece at Level 1 (4,0) West.
   private const string StairsUpFrontS2Prefs = "DM.ViewEdit.StairsUpFrontS2.";
-  private const string StairsUpFrontS2Accepted = "0|52|false|true";
+  private const string StairsUpFrontS2Accepted = "33|91|false|true";
   private int stairsUpFrontS2X = 0, stairsUpFrontS2Y = 52;
   private bool stairsUpFrontS2Mirror = false, stairsUpFrontS2Enabled = true;
 
