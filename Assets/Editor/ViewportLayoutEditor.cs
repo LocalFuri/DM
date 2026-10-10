@@ -1374,7 +1374,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // BEGIN APPLIED ORNAMENT REFERENCES
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
-  // REF OrnamentProjection:Hook:F2|103|108|false|639272436536613908
+  // REF OrnamentProjection:Hook:F2|103|111|false|639272438417071479
   // REF OrnamentProjection:Hook:S1|160|109|true|639271634293923485
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
@@ -2090,7 +2090,7 @@ public class ViewportLayoutEditor : EditorWindow
   private float MeasureViewEditContentWidth()
   {
     float enabledWidth =
-        EditorStyles.label.CalcSize(new GUIContent("Enabled")).x + 18f;
+        EditorStyles.label.CalcSize(new GUIContent("Set")).x + 18f;
     float mirrorWidth =
         EditorStyles.label.CalcSize(new GUIContent("Mirror")).x + 18f;
 
@@ -4553,7 +4553,7 @@ public class ViewportLayoutEditor : EditorWindow
     const float ToggleBoxWidth = 18f;
     const float ToggleGroupGap = 10f;
 
-    const string EnabledLabel = "Enabled";
+    const string EnabledLabel = "Set";
     float enabledLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent(EnabledLabel)).x;
     EditorGUIUtility.labelWidth = enabledLabelWidth;
@@ -5089,7 +5089,7 @@ public class ViewportLayoutEditor : EditorWindow
         float f2PreviousLabelWidth = EditorGUIUtility.labelWidth;
         EditorGUIUtility.labelWidth = 55f;
         blackDoorF2CardEnabled = DrawMouseOnlyToggle(
-            "Enabled",
+            "Set",
             blackDoorF2CardEnabled,
             blackDoorF2CardEnabled,
             GUILayout.Width(72));
@@ -5162,7 +5162,7 @@ public class ViewportLayoutEditor : EditorWindow
         float f3PreviousLabelWidth = EditorGUIUtility.labelWidth;
         EditorGUIUtility.labelWidth = 55f;
         blackDoorF3CardEnabled = DrawMouseOnlyToggle(
-            "Enabled",
+            "Set",
             blackDoorF3CardEnabled,
             blackDoorF3CardEnabled,
             GUILayout.Width(72));
@@ -5252,7 +5252,7 @@ public class ViewportLayoutEditor : EditorWindow
     float previousLabelWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth = 55f;
     enabled = DrawMouseOnlyToggle(
-        "Enabled",
+        "Set",
         enabled,
         enabled,
         GUILayout.Width(72));
@@ -22267,7 +22267,7 @@ private static void HandleGameViewPointerDown(
           "Ornament", ornament.x, ornament.y, ornament.wall);
       bool wasEnabled = IsPreviewFeatureEnabled(hookVisibilityKey);
       bool nowEnabled = EditorGUILayout.ToggleLeft(
-          "Enabled", wasEnabled, GUILayout.Width(76f));
+          "Set", wasEnabled, GUILayout.Width(76f));
       if (nowEnabled != wasEnabled)
       {
         SetPreviewFeatureEnabled(hookVisibilityKey, nowEnabled);
@@ -22383,7 +22383,7 @@ private static void HandleGameViewPointerDown(
 
   private bool DrawFeatureEnabledToggle(bool enabledBefore)
   {
-    const string EnabledLabel = "Enabled";
+    const string EnabledLabel = "Set";
     const float ToggleBoxWidth = 18f;
     float enabledLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent(EnabledLabel)).x;
@@ -24554,10 +24554,10 @@ private static void HandleGameViewPointerDown(
     string caption = right ? "Stairs_Down_S0 Right (30x60)" : "Stairs_Down_S0 Left (30x60)";
     GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
-    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
     GUI.contentColor = currentEnabled != acceptedEnabled ? Color.red : oldColor;
-    bool enabled = DrawMouseOnlyToggle("Enabled", currentEnabled, currentEnabled,
+    bool enabled = DrawMouseOnlyToggle("Set", currentEnabled, currentEnabled,
         GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     GUI.contentColor = currentX != acceptedX ? Color.red : oldColor;
@@ -24714,10 +24714,10 @@ private static void HandleGameViewPointerDown(
     string caption = right ? "Stairs_S0 Right (30x44)" : "Stairs_S0 Left (30x44)";
     GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
-    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
     GUI.contentColor = currentEnabled != acceptedEnabled ? Color.red : oldColor;
-    bool enabled = DrawMouseOnlyToggle("Enabled", currentEnabled, currentEnabled,
+    bool enabled = DrawMouseOnlyToggle("Set", currentEnabled, currentEnabled,
         GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     GUI.contentColor = currentX != acceptedX ? Color.red : oldColor;
@@ -24933,11 +24933,11 @@ private static void HandleGameViewPointerDown(
     GUILayout.Label(caption, style,
         GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
-    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
     GUI.contentColor = stairsdownS2Enabled != acceptedEnabled ? Color.red : oldContentColor;
     bool enabled = DrawMouseOnlyToggle(
-        "Enabled", stairsdownS2Enabled, stairsdownS2Enabled,
+        "Set", stairsdownS2Enabled, stairsdownS2Enabled,
         GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     GUI.contentColor = stairsdownS2X != acceptedX ? Color.red : oldContentColor;
@@ -25043,11 +25043,11 @@ private static void HandleGameViewPointerDown(
     GUILayout.Label(caption, style,
         GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
-    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
     GUI.contentColor = stairsdownS2F2NorthEnabled != acceptedEnabled ? Color.red : oldContentColor;
     bool enabled = DrawMouseOnlyToggle(
-        "Enabled", stairsdownS2F2NorthEnabled, stairsdownS2F2NorthEnabled,
+        "Set", stairsdownS2F2NorthEnabled, stairsdownS2F2NorthEnabled,
         GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     GUI.contentColor = stairsdownS2F2NorthX != acceptedX ? Color.red : oldContentColor;
@@ -25153,11 +25153,11 @@ private static void HandleGameViewPointerDown(
     GUILayout.Label(caption, style,
         GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
-    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
     GUI.contentColor = stairsdownS2LeftEnabled != acceptedEnabled ? Color.red : oldContentColor;
     bool enabled = DrawMouseOnlyToggle(
-        "Enabled", stairsdownS2LeftEnabled, stairsdownS2LeftEnabled,
+        "Set", stairsdownS2LeftEnabled, stairsdownS2LeftEnabled,
         GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     GUI.contentColor = stairsdownS2LeftX != acceptedX ? Color.red : oldContentColor;
@@ -25263,11 +25263,11 @@ private static void HandleGameViewPointerDown(
     GUILayout.Label(caption, style,
         GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
-    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
     GUI.contentColor = stairsS0D2NorthEnabled != acceptedEnabled ? Color.red : oldContentColor;
     bool enabled = DrawMouseOnlyToggle(
-        "Enabled", stairsS0D2NorthEnabled, stairsS0D2NorthEnabled,
+        "Set", stairsS0D2NorthEnabled, stairsS0D2NorthEnabled,
         GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     GUI.contentColor = stairsS0D2NorthX != acceptedX ? Color.red : oldContentColor;
@@ -25373,11 +25373,11 @@ private static void HandleGameViewPointerDown(
     GUILayout.Label(caption, style,
         GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
-    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
     GUI.contentColor = stairsS3RightSouthEnabled != acceptedEnabled ? Color.red : oldContentColor;
     bool enabled = DrawMouseOnlyToggle(
-        "Enabled", stairsS3RightSouthEnabled, stairsS3RightSouthEnabled,
+        "Set", stairsS3RightSouthEnabled, stairsS3RightSouthEnabled,
         GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     GUI.contentColor = stairsS3RightSouthX != acceptedX ? Color.red : oldContentColor;
@@ -25422,10 +25422,10 @@ private static void HandleGameViewPointerDown(
     GUILayout.Label(caption, style,
         GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
-    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
     bool enabled = DrawMouseOnlyToggle(
-        "Enabled", stairsD0LEnabled, stairsD0LEnabled,
+        "Set", stairsD0LEnabled, stairsD0LEnabled,
         GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int x = stairsD0LX;
@@ -25475,10 +25475,10 @@ private static void HandleGameViewPointerDown(
 
     GUILayout.Space(8f);
     float enabledLabelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+        EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledLabelWidth;
     bool updatedEnabled = DrawMouseOnlyToggle(
-        "Enabled", stairsS1PreviewEnabled, stairsS1PreviewEnabled,
+        "Set", stairsS1PreviewEnabled, stairsS1PreviewEnabled,
         GUILayout.Width(enabledLabelWidth + 18f),
         GUILayout.ExpandWidth(false));
     if (updatedEnabled != stairsS1PreviewEnabled)
@@ -25551,10 +25551,10 @@ private static void HandleGameViewPointerDown(
 
     GUILayout.Space(8f);
     float enabledLabelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+        EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledLabelWidth;
     bool updatedEnabled = DrawMouseOnlyToggle(
-        "Enabled", stairsS1LeftPreviewEnabled, stairsS1LeftPreviewEnabled,
+        "Set", stairsS1LeftPreviewEnabled, stairsS1LeftPreviewEnabled,
         GUILayout.Width(enabledLabelWidth + 18f),
         GUILayout.ExpandWidth(false));
     if (updatedEnabled != stairsS1LeftPreviewEnabled)
@@ -25617,7 +25617,7 @@ private static void HandleGameViewPointerDown(
 
     float savedLabelWidth = EditorGUIUtility.labelWidth;
     const float ToggleBoxWidth = 18f;
-    const string EnabledLabel = "Enabled";
+    const string EnabledLabel = "Set";
     float enabledLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent(EnabledLabel)).x;
     EditorGUIUtility.labelWidth = enabledLabelWidth;
@@ -25990,7 +25990,7 @@ private static void HandleGameViewPointerDown(
           GUILayout.Width(210f));
 
       bool enabledBefore = IsPreviewFeatureEnabled(key);
-      bool enabledAfter = DrawCompactMouseOnlyToggle("Enabled", enabledBefore, false);
+      bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
       EditorGUILayout.EndHorizontal();
 
       if (enabledAfter != enabledBefore)
