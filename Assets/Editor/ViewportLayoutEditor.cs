@@ -471,11 +471,20 @@ public class ViewportLayoutEditor : EditorWindow
   // Separate unverified D2 reference calibration at (4,17) North.
   // Kept independent from the accepted (4,15) North S0 placement.
   private const string StairsS0D2NorthPrefsPrefix = "DM.ViewEdit.StairsS0D2North.";
-  private const string StairsS0D2NorthAccepted = "60|88|false|true";
+  private const string StairsS0D2NorthAccepted = "56|80|false|true";
   private int stairsS0D2NorthX = 56;
   private int stairsS0D2NorthTopY = 80;
   private bool stairsS0D2NorthMirror;
   private bool stairsS0D2NorthEnabled = true;
+
+  // Independent right-side S3 calibration at (4,13) South.
+  // Keep independent from the left-side (4,17) North calibration.
+  private const string StairsS3RightSouthPrefsPrefix = "DM.ViewEdit.StairsS3RightSouth.";
+  private const string StairsS3RightSouthAccepted = "148|89|true|true";
+  private int stairsS3RightSouthX = 152;
+  private int stairsS3RightSouthTopY = 80;
+  private bool stairsS3RightSouthMirror = true;
+  private bool stairsS3RightSouthEnabled = true;
 
   // ViewEdit controls for the down-stairs overlay. These are intentionally
   // editor-preview values (like the live wall controls) so the sprite can be
@@ -17147,6 +17156,7 @@ private static void HandleGameViewPointerDown(
 
     // Reference D2 side fragment, before ornaments (not a final HUD overlay).
     BlitStairsS0D2NorthIntoPreview(pixels);
+    BlitStairsS3RightSouthIntoPreview(pixels);
 
     // Calibrated 20x39 down-stairs image at 4,16 North (independent S2 F2 case).
     BlitStairsdownS2F2NorthIntoPreview(pixels);
@@ -21007,6 +21017,10 @@ private static void HandleGameViewPointerDown(
     stairsS0D2NorthTopY = EditorPrefs.GetInt(StairsS0D2NorthPrefsPrefix + "Y", 80);
     stairsS0D2NorthMirror = EditorPrefs.GetBool(StairsS0D2NorthPrefsPrefix + "Mirror", false);
     stairsS0D2NorthEnabled = EditorPrefs.GetBool(StairsS0D2NorthPrefsPrefix + "Enabled", true);
+    stairsS3RightSouthX = EditorPrefs.GetInt(StairsS3RightSouthPrefsPrefix + "X", 152);
+    stairsS3RightSouthTopY = EditorPrefs.GetInt(StairsS3RightSouthPrefsPrefix + "Y", 80);
+    stairsS3RightSouthMirror = EditorPrefs.GetBool(StairsS3RightSouthPrefsPrefix + "Mirror", true);
+    stairsS3RightSouthEnabled = EditorPrefs.GetBool(StairsS3RightSouthPrefsPrefix + "Enabled", true);
     stairsS1X = EditorPrefs.GetInt(StairsS1PrefsPrefix + "X", StairsDownRightD1X);
     stairsS1TopY = EditorPrefs.GetInt(StairsS1PrefsPrefix + "Y", StairsDownRightD1DisplayY);
     stairsS1Mirror = EditorPrefs.GetBool(StairsS1PrefsPrefix + "Mirror", false);
@@ -24179,6 +24193,8 @@ private static void HandleGameViewPointerDown(
     // independently; ViewEdit must make missing elements inspectable.
     if (previewX == 4 && previewY == 17 && previewFacing == DungeonFacing.North)
       DrawStairsS0D2NorthCalibrationRow();
+    if (previewX == 4 && previewY == 13 && previewFacing == DungeonFacing.South)
+      DrawStairsS3RightSouthCalibrationRow();
 
     // D0L side artwork is visible when the stairs-down tile is immediately
     // to the player's right (the calibrated 4,15 South view). Use the same
@@ -24306,6 +24322,42 @@ private static void HandleGameViewPointerDown(
     // S3 artwork is already 16x5. Render native pixels without downscaling.
     BlitPieceIntoPreview(pixels, sprite, stairsS0D2NorthX,
         DisplayYToUnityY(stairsS0D2NorthTopY, sprite.height), stairsS0D2NorthMirror);
+  }
+
+  // Calibration preview: this row must draw the supplied sprite whenever the
+  // right-side reference view is active and Enabled is checked. Do not gate the preview on
+  // map stair detection: this is the calibration used to diagnose that mapping.
+  // A fully generic map-relative rule can be added after visual verification.
+  private bool IsStairsS3RightSouthReferencePose()
+  {
+    return previewX == 4 && previewY == 13
+        && previewFacing == DungeonFacing.South;
+  }
+
+  private void BlitStairsS3RightSouthIntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || !stairsS3RightSouthEnabled || !IsStairsS3RightSouthReferencePose())
+      return;
+    const string assetPath = "Assets/Art/Walls/Stairs/Stairsdown_S3_16x5.png";
+    Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+    if (sprite == null)
+    {
+      Debug.LogError("STAIRS S3 RIGHT SOUTH: missing asset: " + assetPath);
+      return;
+    }
+    if (sprite.width != 16 || sprite.height != 5)
+    {
+      Debug.LogError("STAIRS S3 RIGHT SOUTH: expected 16x5 at " + assetPath);
+      return;
+    }
+    if (!sprite.isReadable)
+    {
+      Debug.LogError("STAIRS S3 RIGHT SOUTH: enable Read/Write on " + assetPath);
+      return;
+    }
+    // S3 artwork is already 16x5. Render native pixels without downscaling.
+    BlitPieceIntoPreview(pixels, sprite, stairsS3RightSouthX,
+        DisplayYToUnityY(stairsS3RightSouthTopY, sprite.height), stairsS3RightSouthMirror);
   }
 
   private void BlitStairsdownS2F2NorthIntoPreview(Color32[] pixels)
@@ -24814,6 +24866,116 @@ private static void HandleGameViewPointerDown(
     }
     if (apply)
       SaveStairsS0D2NorthAcceptedToSource();
+  }
+
+  private bool SaveStairsS3RightSouthAcceptedToSource()
+  {
+    string assetPath = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(assetPath) || !File.Exists(assetPath))
+    {
+      Debug.LogError("STAIRS S3 RIGHT SOUTH Apply: source script is missing: " + assetPath);
+      return false;
+    }
+    const string token = "private const string StairsS3RightSouthAccepted = \"";
+    try
+    {
+      string source = File.ReadAllText(assetPath);
+      int begin = source.IndexOf(token, System.StringComparison.Ordinal);
+      if (begin < 0 || source.IndexOf(token, begin + token.Length,
+          System.StringComparison.Ordinal) >= 0)
+      {
+        Debug.LogError("STAIRS S3 RIGHT SOUTH Apply: expected exactly one saved-values marker in " + assetPath);
+        return false;
+      }
+      int valueBegin = begin + token.Length;
+      int valueEnd = source.IndexOf('"', valueBegin);
+      if (valueEnd < 0)
+      {
+        Debug.LogError("STAIRS S3 RIGHT SOUTH Apply: unterminated saved-values marker in " + assetPath);
+        return false;
+      }
+      string accepted = stairsS3RightSouthX.ToString() + "|" + stairsS3RightSouthTopY.ToString()
+          + "|" + (stairsS3RightSouthMirror ? "true" : "false")
+          + "|" + (stairsS3RightSouthEnabled ? "true" : "false");
+      string updated = source.Substring(0, valueBegin) + accepted + source.Substring(valueEnd);
+      if (updated != source)
+        File.WriteAllText(assetPath, updated);
+      // Preserve values through the pending Unity domain/script reload.
+      EditorPrefs.SetInt(StairsS3RightSouthPrefsPrefix + "X", stairsS3RightSouthX);
+      EditorPrefs.SetInt(StairsS3RightSouthPrefsPrefix + "Y", stairsS3RightSouthTopY);
+      EditorPrefs.SetBool(StairsS3RightSouthPrefsPrefix + "Mirror", stairsS3RightSouthMirror);
+      EditorPrefs.SetBool(StairsS3RightSouthPrefsPrefix + "Enabled", stairsS3RightSouthEnabled);
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+      if (updated != source)
+        AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
+      return true;
+    }
+    catch (System.Exception exception)
+    {
+      Debug.LogError("STAIRS S3 RIGHT SOUTH Apply: failed to save source: " + exception);
+      return false;
+    }
+  }
+
+  private void DrawStairsS3RightSouthCalibrationRow()
+  {
+    string[] saved = StairsS3RightSouthAccepted.Split('|');
+    if (saved.Length != 4 || !int.TryParse(saved[0], out int acceptedX)
+        || !int.TryParse(saved[1], out int acceptedY)
+        || !bool.TryParse(saved[2], out bool acceptedMirror)
+        || !bool.TryParse(saved[3], out bool acceptedEnabled))
+    {
+      Debug.LogError("STAIRS S3 RIGHT SOUTH: invalid saved calibration values in .cs");
+      return;
+    }
+    EditorGUILayout.BeginHorizontal();
+    float oldLabelWidth = EditorGUIUtility.labelWidth;
+    Color oldContentColor = GUI.contentColor;
+    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
+    style.normal.textColor = Color.magenta;
+    style.hover.textColor = Color.magenta;
+    style.focused.textColor = Color.magenta;
+    const string caption = "Stairsdown_S3 Right (16x5)";
+    GUILayout.Label(caption, style,
+        GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
+    GUILayout.Space(8f);
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    EditorGUIUtility.labelWidth = enabledWidth;
+    GUI.contentColor = stairsS3RightSouthEnabled != acceptedEnabled ? Color.red : oldContentColor;
+    bool enabled = DrawMouseOnlyToggle(
+        "Enabled", stairsS3RightSouthEnabled, stairsS3RightSouthEnabled,
+        GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    GUI.contentColor = stairsS3RightSouthX != acceptedX ? Color.red : oldContentColor;
+    int x = stairsS3RightSouthX;
+    bool xChanged = DrawIntStepperInline("X", ref x, snap, false, true, 24f, 24f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    GUI.contentColor = stairsS3RightSouthTopY != acceptedY ? Color.red : oldContentColor;
+    int y = stairsS3RightSouthTopY;
+    bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
+    GUILayout.Space(6f);
+    GUI.contentColor = stairsS3RightSouthMirror != acceptedMirror ? Color.red : oldContentColor;
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsS3RightSouthMirror, GUILayout.Width(66f));
+    GUI.contentColor = oldContentColor;
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = oldLabelWidth;
+    EditorGUILayout.EndHorizontal();
+    if (enabled != stairsS3RightSouthEnabled || (xChanged && x != stairsS3RightSouthX)
+        || (yChanged && y != stairsS3RightSouthTopY) || mirror != stairsS3RightSouthMirror)
+    {
+      stairsS3RightSouthEnabled = enabled;
+      stairsS3RightSouthX = x;
+      stairsS3RightSouthTopY = y;
+      stairsS3RightSouthMirror = mirror;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+    if (apply)
+      SaveStairsS3RightSouthAcceptedToSource();
   }
 
   private void DrawStairsDownD0LCalibrationRow()
