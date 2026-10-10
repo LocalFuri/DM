@@ -515,7 +515,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Left-side distant stair-up piece at Level 1 (4,0) West.
   private const string StairsUpFrontS2Prefs = "DM.ViewEdit.StairsUpFrontS2.";
-  private const string StairsUpFrontS2Accepted = "0|52|false|true";
+  private const string StairsUpFrontS2Accepted = "33|91|false|true";
   private int stairsUpFrontS2X = 0, stairsUpFrontS2Y = 52;
   private bool stairsUpFrontS2Mirror = false, stairsUpFrontS2Enabled = true;
 
@@ -527,7 +527,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Stair fragment on the left at Level 1 (5,0) West; uses the supplied native S3 sprite.
   private const string StairsUpFrontS3Prefs = "DM.ViewEdit.StairsUpFrontS3.";
-  private const string StairsUpFrontS3Accepted = "58|87|false|true";
+  private const string StairsUpFrontS3Accepted = "59|88|false|true";
   private int stairsUpFrontS3X = 58, stairsUpFrontS3Y = 87;
   private bool stairsUpFrontS3Mirror = false, stairsUpFrontS3Enabled = true;
 
