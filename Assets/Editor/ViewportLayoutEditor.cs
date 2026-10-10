@@ -5676,7 +5676,7 @@ public class ViewportLayoutEditor : EditorWindow
         return;
     }
 
-    if (TryTransitionFromUpStairsInput())
+    if (TryTransitionFromStairsTurnInput())
     {
       current.Use();
       return;
@@ -13132,7 +13132,7 @@ private static void HandleGameViewPointerDown(
 
   private void PreviewNavigateTurnLeft()
   {
-    if (TryTransitionFromUpStairsInput()) return;
+    if (TryTransitionFromStairsTurnInput()) return;
     NavigatePreviewPoseOnly(
         previewX,
         previewY,
@@ -13141,7 +13141,7 @@ private static void HandleGameViewPointerDown(
 
   private void PreviewNavigateTurnRight()
   {
-    if (TryTransitionFromUpStairsInput()) return;
+    if (TryTransitionFromStairsTurnInput()) return;
     NavigatePreviewPoseOnly(
         previewX,
         previewY,
@@ -13462,6 +13462,37 @@ private static void HandleGameViewPointerDown(
   // A staircase is an active transition tile. At its upper endpoint the
   // back/turn commands activate the staircase even without entering a new
   // tile. The destination is still resolved by the standard generic link.
+  // Turning at the Level 0 downward stair landing also enters the staircase.
+  // Keep this separate from ordinary turning and preserve the existing up-stair
+  // behavior. The destination comes from TryPreviewStairsTransition, not a
+  // hardcoded arrival position or facing.
+  private bool TryTransitionFromStairsTurnInput()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || !previewMiniMap.IsInside(previewX, previewY))
+      return false;
+    DungeonTile tile = previewMiniMap.GetTile(previewX, previewY);
+    if (tile == null || !tile.TryGetStairsDirection(out bool stairsUp))
+      return false;
+    if (stairsUp)
+      return TryTransitionFromUpStairsInput();
+    if (previewDungeonLevel != 0 || previewX != 3 || previewY != 15
+        || previewFacing != DungeonFacing.East)
+      return false;
+
+    if (TryPreviewStairsTransition())
+    {
+      ApplyCurrentPoseVisibilityToLayout();
+      ResetEditModeViewportLogCache();
+      RefreshEditModePreview();
+      GUI.changed = true;
+      Repaint();
+    }
+    // A failed link is reported by TryPreviewStairsTransition. Do not turn
+    // instead, because that could conceal a staircase connection error.
+    return true;
+  }
+
   private bool TryTransitionFromUpStairsInput()
   {
     EnsurePreviewMiniMapLoaded();
