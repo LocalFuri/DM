@@ -515,9 +515,15 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Left-side distant stair-up piece at Level 1 (4,0) West.
   private const string StairsUpFrontS2Prefs = "DM.ViewEdit.StairsUpFrontS2.";
-  private const string StairsUpFrontS2Accepted = "33|91|false|true";
+  private const string StairsUpFrontS2Accepted = "0|52|false|true";
   private int stairsUpFrontS2X = 0, stairsUpFrontS2Y = 52;
   private bool stairsUpFrontS2Mirror = false, stairsUpFrontS2Enabled = true;
+
+  // Stair fragment on the left at Level 1 (5,0) West; uses the supplied native S3 sprite.
+  private const string StairsUpFrontS3Prefs = "DM.ViewEdit.StairsUpFrontS3.";
+  private const string StairsUpFrontS3Accepted = "59|88|false|true";
+  private int stairsUpFrontS3X = 58, stairsUpFrontS3Y = 87;
+  private bool stairsUpFrontS3Mirror = false, stairsUpFrontS3Enabled = true;
 
   // Level 0 staircase landing, independent of Level 1 calibration.
   private const string StairsLevel0S0LeftPrefs = "DM.ViewEdit.StairsLevel0S0Left.";
@@ -17295,6 +17301,7 @@ private static void HandleGameViewPointerDown(
     BlitStairsUpFrontS1IntoPreview(pixels);
     BlitStairsUpFrontS1LeftIntoPreview(pixels);
     BlitStairsUpFrontS2IntoPreview(pixels);
+    BlitStairsUpFrontS3IntoPreview(pixels);
     BlitStairsUpS2IntoPreview(pixels);
     BlitStairsLevel0S0IntoPreview(pixels);
     BlitStairsS0D2NorthIntoPreview(pixels);
@@ -21175,6 +21182,10 @@ private static void HandleGameViewPointerDown(
     stairsUpFrontS2Y = EditorPrefs.GetInt(StairsUpFrontS2Prefs + "Y", 52);
     stairsUpFrontS2Mirror = EditorPrefs.GetBool(StairsUpFrontS2Prefs + "Mirror", false);
     stairsUpFrontS2Enabled = EditorPrefs.GetBool(StairsUpFrontS2Prefs + "Enabled", true);
+    stairsUpFrontS3X = EditorPrefs.GetInt(StairsUpFrontS3Prefs + "X", 58);
+    stairsUpFrontS3Y = EditorPrefs.GetInt(StairsUpFrontS3Prefs + "Y", 87);
+    stairsUpFrontS3Mirror = EditorPrefs.GetBool(StairsUpFrontS3Prefs + "Mirror", false);
+    stairsUpFrontS3Enabled = EditorPrefs.GetBool(StairsUpFrontS3Prefs + "Enabled", true);
     stairsUpS2LeftX = EditorPrefs.GetInt(StairsUpS2LeftPrefs + "X", 0);
     stairsUpS2LeftY = EditorPrefs.GetInt(StairsUpS2LeftPrefs + "Y", 61);
     stairsUpS2LeftMirror = EditorPrefs.GetBool(StairsUpS2LeftPrefs + "Mirror", false);
@@ -24378,6 +24389,8 @@ private static void HandleGameViewPointerDown(
       DrawStairsUpFrontS1LeftCalibrationRow();
     if (IsStairsUpFrontS2ReferencePose())
       DrawStairsUpFrontS2CalibrationRow();
+    if (IsStairsUpFrontS3ReferencePose())
+      DrawStairsUpFrontS3CalibrationRow();
     if (IsStairsUpS2ReferencePose())
     {
       DrawStairsUpS2CalibrationRow(false);
@@ -25076,6 +25089,144 @@ private static void HandleGameViewPointerDown(
     }
     if (apply)
       SaveStairsUpFrontS2Calibration();
+  }
+
+  private bool IsStairsUpFrontS3ReferencePose()
+  {
+    return previewDungeonLevel == 1 && previewX == 5 && previewY == 0
+        && previewFacing == DungeonFacing.West;
+  }
+
+  private void BlitStairsUpFrontS3IntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || !IsStairsUpFrontS3ReferencePose() || !stairsUpFrontS3Enabled)
+      return;
+    const string assetPath = "Assets/Art/Walls/Stairs/Stairsdown_S3_16x5.png";
+    Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+    if (sprite == null)
+    {
+      Debug.LogError("STAIRS UP FRONT S3: missing asset: " + assetPath);
+      return;
+    }
+    if (sprite.width != 16 || sprite.height != 5)
+    {
+      Debug.LogError("STAIRS UP FRONT S3: expected 16x5 at " + assetPath);
+      return;
+    }
+    if (!sprite.isReadable)
+    {
+      Debug.LogError("STAIRS UP FRONT S3: enable Read/Write on " + assetPath);
+      return;
+    }
+    BlitPieceIntoPreview(pixels, sprite, stairsUpFrontS3X,
+        DisplayYToUnityY(stairsUpFrontS3Y, sprite.height), stairsUpFrontS3Mirror);
+  }
+
+  private bool SaveStairsUpFrontS3Calibration()
+  {
+    string sourcePath = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(sourcePath) || !File.Exists(sourcePath))
+    {
+      Debug.LogError("STAIRS UP FRONT S3 Apply: source script missing: " + sourcePath);
+      return false;
+    }
+    const string token = "private const string StairsUpFrontS3Accepted = \"";
+    try
+    {
+      string source = File.ReadAllText(sourcePath);
+      int begin = source.IndexOf(token, System.StringComparison.Ordinal);
+      if (begin < 0 || source.IndexOf(token, begin + token.Length,
+          System.StringComparison.Ordinal) >= 0)
+      {
+        Debug.LogError("STAIRS UP FRONT S3 Apply: expected exactly one StairsUpFrontS3Accepted");
+        return false;
+      }
+      int valueStart = begin + token.Length;
+      int end = source.IndexOf('"', valueStart);
+      if (end < 0)
+      {
+        Debug.LogError("STAIRS UP FRONT S3 Apply: malformed StairsUpFrontS3Accepted");
+        return false;
+      }
+      string accepted = stairsUpFrontS3X + "|" + stairsUpFrontS3Y + "|"
+          + (stairsUpFrontS3Mirror ? "true" : "false") + "|"
+          + (stairsUpFrontS3Enabled ? "true" : "false");
+      string updated = source.Substring(0, valueStart) + accepted + source.Substring(end);
+      if (updated != source)
+        File.WriteAllText(sourcePath, updated);
+      EditorPrefs.SetInt(StairsUpFrontS3Prefs + "X", stairsUpFrontS3X);
+      EditorPrefs.SetInt(StairsUpFrontS3Prefs + "Y", stairsUpFrontS3Y);
+      EditorPrefs.SetBool(StairsUpFrontS3Prefs + "Mirror", stairsUpFrontS3Mirror);
+      EditorPrefs.SetBool(StairsUpFrontS3Prefs + "Enabled", stairsUpFrontS3Enabled);
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+      if (updated != source)
+        AssetDatabase.ImportAsset(sourcePath, ImportAssetOptions.ForceUpdate);
+      return true;
+    }
+    catch (System.Exception exception)
+    {
+      Debug.LogError("STAIRS UP FRONT S3 Apply: " + exception);
+      return false;
+    }
+  }
+
+  private void DrawStairsUpFrontS3CalibrationRow()
+  {
+    if (!TryReadSavedStairCalibration("StairsUpFrontS3Accepted", out string accepted))
+      return;
+    string[] saved = accepted.Split('|');
+    if (saved.Length != 4 || !int.TryParse(saved[0], out int acceptedX)
+        || !int.TryParse(saved[1], out int acceptedY)
+        || !bool.TryParse(saved[2], out bool acceptedMirror)
+        || !bool.TryParse(saved[3], out bool acceptedEnabled))
+    {
+      Debug.LogError("STAIRS UP FRONT S3: invalid saved calibration in source");
+      return;
+    }
+    EditorGUILayout.BeginHorizontal();
+    float oldLabelWidth = EditorGUIUtility.labelWidth;
+    Color oldColor = GUI.contentColor;
+    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
+    style.normal.textColor = Color.magenta;
+    const string caption = "StairsUp_S3 (16x5)";
+    GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
+    GUILayout.Space(8f);
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
+    EditorGUIUtility.labelWidth = enabledWidth;
+    GUI.contentColor = stairsUpFrontS3Enabled != acceptedEnabled ? Color.red : oldColor;
+    bool enabled = DrawMouseOnlyToggle("Set", stairsUpFrontS3Enabled, stairsUpFrontS3Enabled,
+        GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    GUI.contentColor = stairsUpFrontS3X != acceptedX ? Color.red : oldColor;
+    int x = stairsUpFrontS3X;
+    bool xChanged = DrawIntStepperInline("X", ref x, snap, false, true, 24f, 24f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    GUI.contentColor = stairsUpFrontS3Y != acceptedY ? Color.red : oldColor;
+    int y = stairsUpFrontS3Y;
+    bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
+    GUILayout.Space(6f);
+    GUI.contentColor = stairsUpFrontS3Mirror != acceptedMirror ? Color.red : oldColor;
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpFrontS3Mirror, GUILayout.Width(66f));
+    GUI.contentColor = oldColor;
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = oldLabelWidth;
+    EditorGUILayout.EndHorizontal();
+    if (enabled != stairsUpFrontS3Enabled || (xChanged && x != stairsUpFrontS3X)
+        || (yChanged && y != stairsUpFrontS3Y) || mirror != stairsUpFrontS3Mirror)
+    {
+      stairsUpFrontS3Enabled = enabled;
+      stairsUpFrontS3X = x;
+      stairsUpFrontS3Y = y;
+      stairsUpFrontS3Mirror = mirror;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+    if (apply)
+      SaveStairsUpFrontS3Calibration();
   }
 
   private bool IsStairsUpS2ReferencePose()
