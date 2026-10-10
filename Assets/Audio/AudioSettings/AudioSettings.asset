@@ -16,3 +16,5 @@ MonoBehaviour:
   championExitVolume: 1
   championResurrectSound: {fileID: 8300000, guid: 22d599dc65bea2a46be6a6d6f67d3a3f, type: 3}
   championResurrectVolume: 1
+  switchSound: {fileID: 8300000, guid: 390b369a9c4d4d246b604764dd0a5970, type: 3}
+  switchVolume: 1
