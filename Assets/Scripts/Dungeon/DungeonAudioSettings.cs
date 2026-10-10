@@ -17,4 +17,11 @@ public class DungeonAudioSettings : ScriptableObject
 
     [Range(0f, 1f)]
     public float championResurrectVolume = 1f;
+
+    [Header("Dungeon Floor Switch")]
+    [Tooltip("Sound played when the player enters the pressure-switch tile.")]
+    public AudioClip switchSound;
+
+    [Range(0f, 1f)]
+    public float switchVolume = 1f;
 }

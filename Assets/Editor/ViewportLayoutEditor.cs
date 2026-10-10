@@ -1104,6 +1104,8 @@ public class ViewportLayoutEditor : EditorWindow
   private AudioClip cachedChampionResurrectPreviewClip;
   private float cachedChampionExitPreviewVolume = -1f;
   private float cachedChampionResurrectPreviewVolume = -1f;
+  private AudioClip cachedSwitchPreviewClip;
+  private float cachedSwitchPreviewVolume = -1f;
   // Recruitment order for Champion Hall mirrors. The party can contain up to
   // four Champions. Slot positions are added/calibrated explicitly.
   [SerializeField] private List<string> recruitedChampionNames = new List<string>(4);
@@ -6739,27 +6741,29 @@ private static void HandleGameViewPointerDown(
 
   private void PlayLevel0SwitchSound()
   {
-    const string expectedName = "Switch";
-    string[] guids = AssetDatabase.FindAssets("Switch t:AudioClip");
-    AudioClip clip = null;
-    int exactMatches = 0;
-    foreach (string guid in guids)
+    DungeonAudioSettings settings = GetDungeonAudioSettings();
+    if (settings == null)
     {
-      string path = AssetDatabase.GUIDToAssetPath(guid);
-      if (!string.Equals(Path.GetFileNameWithoutExtension(path), expectedName,
-          System.StringComparison.OrdinalIgnoreCase))
-        continue;
-      exactMatches++;
-      if (exactMatches == 1)
-        clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
-    }
-    if (exactMatches != 1 || clip == null)
-    {
-      Debug.LogError("PRESSURE SWITCH: expected exactly one readable AudioClip named Switch in Assets; found "
-          + exactMatches);
+      Debug.LogError("PRESSURE SWITCH: DungeonAudioSettings asset is missing. Assign a settings asset in the project.");
       return;
     }
-    PlayEditorPreviewClip(clip);
+
+    AudioClip clip = settings.switchSound;
+    if (clip == null)
+    {
+      Debug.LogError("PRESSURE SWITCH: assign Switch to DungeonAudioSettings > Dungeon Floor Switch > Switch Sound.");
+      return;
+    }
+
+    float volume = Mathf.Clamp01(settings.switchVolume);
+    AudioClip previewClip = GetVolumeAdjustedPreviewClip(
+        clip, volume, ref cachedSwitchPreviewClip, ref cachedSwitchPreviewVolume);
+    if (previewClip == null)
+    {
+      Debug.LogError("PRESSURE SWITCH: unable to prepare the assigned Switch AudioClip.");
+      return;
+    }
+    PlayEditorPreviewClip(previewClip);
   }
 
   private AudioClip GetChampionExitSoundClip()
