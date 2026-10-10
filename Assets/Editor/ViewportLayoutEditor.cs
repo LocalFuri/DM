@@ -499,8 +499,8 @@ public class ViewportLayoutEditor : EditorWindow
   // Level 0 staircase landing, independent of Level 1 calibration.
   private const string StairsLevel0S0LeftPrefs = "DM.ViewEdit.StairsLevel0S0Left.";
   private const string StairsLevel0S0RightPrefs = "DM.ViewEdit.StairsLevel0S0Right.";
-  private const string StairsLevel0S0LeftAccepted = "0|61|false|true";
-  private const string StairsLevel0S0RightAccepted = "194|61|true|true";
+  private const string StairsLevel0S0LeftAccepted = "0|109|false|true";
+  private const string StairsLevel0S0RightAccepted = "194|109|true|true";
   private int stairsLevel0S0LeftX = 0, stairsLevel0S0LeftY = 61;
   private int stairsLevel0S0RightX = 194, stairsLevel0S0RightY = 61;
   private bool stairsLevel0S0LeftMirror, stairsLevel0S0RightMirror = true;
@@ -1374,6 +1374,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // BEGIN APPLIED ORNAMENT REFERENCES
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
+  // REF OrnamentProjection:Hook:F2|103|108|false|639272436536613908
   // REF OrnamentProjection:Hook:S1|160|109|true|639271634293923485
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
