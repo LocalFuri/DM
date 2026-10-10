@@ -24642,10 +24642,27 @@ private static void HandleGameViewPointerDown(
       SaveStairsUpF1Calibration();
   }
 
+  // S1 front-side projection: the staircase is one tile forward and
+  // one tile to the viewer's right (or left). The map defines the stair
+  // type; absolute player coordinates and dungeon level do not.
+  private bool HasStairsUpFrontS1AtSide(bool rightSide)
+  {
+    if (previewMiniMap == null)
+      return false;
+    DungeonMap.GetForwardOffset(previewFacing, out int forwardX, out int forwardY);
+    DungeonMap.GetRightOffset(previewFacing, out int sideX, out int sideY);
+    int side = rightSide ? 1 : -1;
+    int stairsX = previewX + forwardX + sideX * side;
+    int stairsY = previewY + forwardY + sideY * side;
+    if (!previewMiniMap.IsInside(stairsX, stairsY))
+      return false;
+    DungeonTile tile = previewMiniMap.GetTile(stairsX, stairsY);
+    return tile != null && tile.TryGetStairsDirection(out bool up) && up;
+  }
+
   private bool IsStairsUpFrontS1ReferencePose()
   {
-    return previewDungeonLevel == 1 && previewX == 4 && previewY == 0
-        && previewFacing == DungeonFacing.South;
+    return HasStairsUpFrontS1AtSide(true);
   }
 
   private void BlitStairsUpFrontS1IntoPreview(Color32[] pixels)
@@ -24777,8 +24794,7 @@ private static void HandleGameViewPointerDown(
 
   private bool IsStairsUpFrontS1LeftReferencePose()
   {
-    return previewDungeonLevel == 1 && previewX == 2 && previewY == 0
-        && previewFacing == DungeonFacing.South;
+    return HasStairsUpFrontS1AtSide(false);
   }
 
   private void BlitStairsUpFrontS1LeftIntoPreview(Color32[] pixels)
