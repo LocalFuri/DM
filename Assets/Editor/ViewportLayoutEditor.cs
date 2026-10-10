@@ -25273,10 +25273,28 @@ private static void HandleGameViewPointerDown(
       SaveStairsUpFrontS2RightCalibration();
   }
 
+  // S3 up-stair projection: two tiles forward and one tile to either side.
+  // The original reference views are West/left and East/right. Restrict to
+  // those verified facing axes until the North/South projections are calibrated.
+  private bool HasStairsUpS3AtSide(bool rightSide)
+  {
+    if (previewMiniMap == null || (previewFacing != DungeonFacing.East
+        && previewFacing != DungeonFacing.West))
+      return false;
+    DungeonMap.GetForwardOffset(previewFacing, out int forwardX, out int forwardY);
+    DungeonMap.GetRightOffset(previewFacing, out int sideX, out int sideY);
+    int side = rightSide ? 1 : -1;
+    int stairsX = previewX + 2 * forwardX + side * sideX;
+    int stairsY = previewY + 2 * forwardY + side * sideY;
+    if (!previewMiniMap.IsInside(stairsX, stairsY))
+      return false;
+    DungeonTile tile = previewMiniMap.GetTile(stairsX, stairsY);
+    return tile != null && tile.TryGetStairsDirection(out bool up) && up;
+  }
+
   private bool IsStairsUpFrontS3ReferencePose()
   {
-    return previewDungeonLevel == 1 && previewX == 5 && previewY == 0
-        && previewFacing == DungeonFacing.West;
+    return HasStairsUpS3AtSide(false);
   }
 
   private void BlitStairsUpFrontS3IntoPreview(Color32[] pixels)
@@ -25413,8 +25431,7 @@ private static void HandleGameViewPointerDown(
 
   private bool IsStairsUpFrontS3RightReferencePose()
   {
-    return previewDungeonLevel == 1 && previewX == 1 && previewY == 0
-        && previewFacing == DungeonFacing.East;
+    return HasStairsUpS3AtSide(true);
   }
 
   private void BlitStairsUpFrontS3RightIntoPreview(Color32[] pixels)
