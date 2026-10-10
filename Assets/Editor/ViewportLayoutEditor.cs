@@ -499,8 +499,8 @@ public class ViewportLayoutEditor : EditorWindow
   // Level 0 staircase landing, independent of Level 1 calibration.
   private const string StairsLevel0S0LeftPrefs = "DM.ViewEdit.StairsLevel0S0Left.";
   private const string StairsLevel0S0RightPrefs = "DM.ViewEdit.StairsLevel0S0Right.";
-  private const string StairsLevel0S0LeftAccepted = "0|109|false|true";
-  private const string StairsLevel0S0RightAccepted = "194|109|true|true";
+  private const string StairsLevel0S0LeftAccepted = "0|61|false|true";
+  private const string StairsLevel0S0RightAccepted = "194|61|true|true";
   private int stairsLevel0S0LeftX = 0, stairsLevel0S0LeftY = 61;
   private int stairsLevel0S0RightX = 194, stairsLevel0S0RightY = 61;
   private bool stairsLevel0S0LeftMirror, stairsLevel0S0RightMirror = true;
@@ -8886,7 +8886,7 @@ private static void HandleGameViewPointerDown(
       return;
 
     Dictionary<char, Color32[]> glyphs = BuildChampionSheetStatusGlyphs();
-    string text = "POS " + previewX + "," + previewY + " / " + previewFacing;
+    string text = "LEVEL " + previewDungeonLevel + " - " + previewX + "," + previewY + " - " + previewFacing;
 
     const int screenX = 4;
     const int screenTop = 174;
