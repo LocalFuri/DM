@@ -76,6 +76,9 @@ namespace DM.Dungeon
     // -X = strafe left
     private void TryMoveRelative(int localX, int localY)
     {
+      if (localX == 0 && localY == -1 && TryTransitionFromUpStairsInput())
+        return;
+
       map.GetWorldOffset(
           localX,
           localY,
@@ -101,8 +104,29 @@ namespace DM.Dungeon
       }
     }
 
+    // Activate upward stairs using the same verified global-coordinate
+    // transition routine as ordinary movement onto a stair tile.
+    private bool TryTransitionFromUpStairsInput()
+    {
+      if (map == null || !map.TryGetStairsAtPlayer(out bool stairsUp)
+          || !stairsUp)
+        return false;
+
+      if (gameBootstrap == null)
+      {
+        Debug.LogError("DungeonKeyboardInput: Missing GameBootstrap for stair transition.");
+        return true;
+      }
+      if (gameBootstrap.TryTransitionOnCurrentTile(map, out DungeonMap destination))
+        map = destination;
+      // If the transition fails, GameBootstrap logs why. Never reinterpret
+      // the requested stair action as an ordinary turn or backward step.
+      return true;
+    }
+
     private void TurnLeft()
     {
+      if (TryTransitionFromUpStairsInput()) return;
       map.TurnLeft();
 
       dungeonRenderer.RequestRedraw();
@@ -111,6 +135,7 @@ namespace DM.Dungeon
 
     private void TurnRight()
     {
+      if (TryTransitionFromUpStairsInput()) return;
       map.TurnRight();
 
       dungeonRenderer.RequestRedraw();

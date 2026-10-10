@@ -486,6 +486,16 @@ public class ViewportLayoutEditor : EditorWindow
   private bool stairsS3RightSouthMirror = true;
   private bool stairsS3RightSouthEnabled = true;
 
+  // Level 1 stair-up side artwork: independent left and right calibration.
+  private const string StairsUpS2LeftPrefs = "DM.ViewEdit.StairsUpS2Left.";
+  private const string StairsUpS2RightPrefs = "DM.ViewEdit.StairsUpS2Right.";
+  private const string StairsUpS2LeftAccepted = "0|61|false|true";
+  private const string StairsUpS2RightAccepted = "194|61|true|true";
+  private int stairsUpS2LeftX = 0, stairsUpS2LeftY = 61;
+  private int stairsUpS2RightX = 194, stairsUpS2RightY = 61;
+  private bool stairsUpS2LeftMirror, stairsUpS2RightMirror = true;
+  private bool stairsUpS2LeftEnabled = true, stairsUpS2RightEnabled = true;
+
   // ViewEdit controls for the down-stairs overlay. These are intentionally
   // editor-preview values (like the live wall controls) so the sprite can be
   // enabled/disabled and aligned without changing the map data.
@@ -5653,6 +5663,12 @@ public class ViewportLayoutEditor : EditorWindow
         break;
       default:
         return;
+    }
+
+    if (TryTransitionFromUpStairsInput())
+    {
+      current.Use();
+      return;
     }
 
     if (nextFacing != previewFacing)
@@ -13105,6 +13121,7 @@ private static void HandleGameViewPointerDown(
 
   private void PreviewNavigateTurnLeft()
   {
+    if (TryTransitionFromUpStairsInput()) return;
     NavigatePreviewPoseOnly(
         previewX,
         previewY,
@@ -13113,6 +13130,7 @@ private static void HandleGameViewPointerDown(
 
   private void PreviewNavigateTurnRight()
   {
+    if (TryTransitionFromUpStairsInput()) return;
     NavigatePreviewPoseOnly(
         previewX,
         previewY,
@@ -13144,6 +13162,11 @@ private static void HandleGameViewPointerDown(
   /// </summary>
   private void TryPreviewNavigateRelative(int localX, int localY)
   {
+    // On the upper end of a staircase, backing away triggers the stairs
+    // instead of taking an ordinary step off the staircase tile.
+    if (localX == 0 && localY == -1 && TryTransitionFromUpStairsInput())
+      return;
+
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null)
       return;
@@ -13425,21 +13448,48 @@ private static void HandleGameViewPointerDown(
   /// Resolve stair links using the original maps' global coordinates.
   /// Never select a nearest staircase or fall back to playerStart.
   /// </summary>
-  private void TryPreviewStairsTransition()
+  // A staircase is an active transition tile. At its upper endpoint the
+  // back/turn commands activate the staircase even without entering a new
+  // tile. The destination is still resolved by the standard generic link.
+  private bool TryTransitionFromUpStairsInput()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || !previewMiniMap.IsInside(previewX, previewY))
+      return false;
+    DungeonTile tile = previewMiniMap.GetTile(previewX, previewY);
+    if (tile == null || !tile.TryGetStairsDirection(out bool stairsUp)
+        || !stairsUp)
+      return false;
+
+    bool transitioned = TryPreviewStairsTransition();
+    if (transitioned)
+    {
+      ApplyCurrentPoseVisibilityToLayout();
+      ResetEditModeViewportLogCache();
+      RefreshEditModePreview();
+      GUI.changed = true;
+      Repaint();
+    }
+    // An invalid stair link already produced a Console error. Do not
+    // silently perform a different action instead.
+    return true;
+  }
+
+  private bool TryPreviewStairsTransition()
   {
     if (previewMiniMap == null || !previewMiniMap.IsInside(previewX, previewY))
-      return;
+      return false;
 
     DungeonTile currentTile = previewMiniMap.GetTile(previewX, previewY);
     if (currentTile == null || !currentTile.TryGetStairsDirection(out bool stairsUp))
-      return;
+      return false;
 
     int sourceLevel = previewDungeonLevel;
     int targetLevel = sourceLevel + (stairsUp ? -1 : 1);
     if (targetLevel < 0 || targetLevel >= PreviewLevelMapPaths.Length)
     {
       Debug.LogError("ViewEdit: Stair target level out of bounds: " + targetLevel);
-      return;
+      return false;
     }
 
     string sourcePath = PreviewLevelMapPaths[sourceLevel];
@@ -13447,7 +13497,7 @@ private static void HandleGameViewPointerDown(
     if (!File.Exists(sourcePath) || !File.Exists(targetPath))
     {
       Debug.LogError("ViewEdit: Missing staircase map: " + sourcePath + " or " + targetPath);
-      return;
+      return false;
     }
 
     string sourceJson = File.ReadAllText(sourcePath);
@@ -13456,7 +13506,7 @@ private static void HandleGameViewPointerDown(
         || !TryReadStairMapOffsets(targetJson, out int targetOffsetX, out int targetOffsetY))
     {
       Debug.LogError("ViewEdit: Missing OffsetMapX/OffsetMapY in stair maps.");
-      return;
+      return false;
     }
 
     int targetX = previewX + sourceOffsetX - targetOffsetX;
@@ -13469,7 +13519,7 @@ private static void HandleGameViewPointerDown(
     catch (System.Exception ex)
     {
       Debug.LogError("ViewEdit: Cannot load stair destination map: " + ex.Message);
-      return;
+      return false;
     }
 
     if (!destinationMap.IsInside(targetX, targetY)
@@ -13481,14 +13531,14 @@ private static void HandleGameViewPointerDown(
       Debug.LogError("ViewEdit: Invalid staircase connection from level " + sourceLevel
           + " (" + previewX + "," + previewY + ") to level " + targetLevel
           + " (" + targetX + "," + targetY + "). Transition cancelled.");
-      return;
+      return false;
     }
 
     // Validate the matching stair BEFORE changing preview level or map.
     if (!TryLoadPreviewLevel(targetLevel))
     {
       Debug.LogError("ViewEdit: Could not load level " + targetLevel + " for stair transition.");
-      return;
+      return false;
     }
 
     previewX = targetX;
@@ -13497,8 +13547,7 @@ private static void HandleGameViewPointerDown(
     previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
     previewLevelJumpText = previewDungeonLevel.ToString();
     SaveSessionPrefs();
-    Debug.Log("ViewEdit stairs: level " + sourceLevel + " -> " + targetLevel
-        + " (" + targetX + "," + targetY + ") " + targetFacing);
+    return true;
   }
 
   private static bool TryReadStairMapOffsets(
@@ -17176,6 +17225,8 @@ private static void HandleGameViewPointerDown(
     BlitStairsS0NorthIntoPreview(pixels);
 
     // Reference D2 side fragment, before ornaments (not a final HUD overlay).
+    // Two independent native-size stair-up side sprites at the Level 1 landing.
+    BlitStairsUpS2IntoPreview(pixels);
     BlitStairsS0D2NorthIntoPreview(pixels);
     BlitStairsS3RightSouthIntoPreview(pixels);
 
@@ -21038,6 +21089,14 @@ private static void HandleGameViewPointerDown(
     stairsS0D2NorthTopY = EditorPrefs.GetInt(StairsS0D2NorthPrefsPrefix + "Y", 80);
     stairsS0D2NorthMirror = EditorPrefs.GetBool(StairsS0D2NorthPrefsPrefix + "Mirror", false);
     stairsS0D2NorthEnabled = EditorPrefs.GetBool(StairsS0D2NorthPrefsPrefix + "Enabled", true);
+    stairsUpS2LeftX = EditorPrefs.GetInt(StairsUpS2LeftPrefs + "X", 0);
+    stairsUpS2LeftY = EditorPrefs.GetInt(StairsUpS2LeftPrefs + "Y", 61);
+    stairsUpS2LeftMirror = EditorPrefs.GetBool(StairsUpS2LeftPrefs + "Mirror", false);
+    stairsUpS2LeftEnabled = EditorPrefs.GetBool(StairsUpS2LeftPrefs + "Enabled", true);
+    stairsUpS2RightX = EditorPrefs.GetInt(StairsUpS2RightPrefs + "X", 194);
+    stairsUpS2RightY = EditorPrefs.GetInt(StairsUpS2RightPrefs + "Y", 61);
+    stairsUpS2RightMirror = EditorPrefs.GetBool(StairsUpS2RightPrefs + "Mirror", true);
+    stairsUpS2RightEnabled = EditorPrefs.GetBool(StairsUpS2RightPrefs + "Enabled", true);
     stairsS3RightSouthX = EditorPrefs.GetInt(StairsS3RightSouthPrefsPrefix + "X", 152);
     stairsS3RightSouthTopY = EditorPrefs.GetInt(StairsS3RightSouthPrefsPrefix + "Y", 80);
     stairsS3RightSouthMirror = EditorPrefs.GetBool(StairsS3RightSouthPrefsPrefix + "Mirror", true);
@@ -24217,6 +24276,12 @@ private static void HandleGameViewPointerDown(
     if (previewX == 4 && previewY == 13 && previewFacing == DungeonFacing.South)
       DrawStairsS3RightSouthCalibrationRow();
 
+    if (IsStairsUpS2ReferencePose())
+    {
+      DrawStairsUpS2CalibrationRow(false);
+      DrawStairsUpS2CalibrationRow(true);
+    }
+
     // D0L side artwork is visible when the stairs-down tile is immediately
     // to the player's right (the calibrated 4,15 South view). Use the same
     // relative map sampler as the wall renderer; do not require the player
@@ -24349,6 +24414,167 @@ private static void HandleGameViewPointerDown(
   // right-side reference view is active and Enabled is checked. Do not gate the preview on
   // map stair detection: this is the calibration used to diagnose that mapping.
   // A fully generic map-relative rule can be added after visual verification.
+  // Calibration pose; rendering and ViewEdit use precisely the same gate.
+  private bool IsStairsUpS2ReferencePose()
+  {
+    return previewDungeonLevel == 1 && previewX == 3 && previewY == 1
+        && previewFacing == DungeonFacing.North;
+  }
+
+  private void BlitStairsUpS2IntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || !IsStairsUpS2ReferencePose()
+        || (!stairsUpS2LeftEnabled && !stairsUpS2RightEnabled))
+      return;
+    const string assetPath = "Assets/Art/Walls/Stairs/Stairs_S0_30x44.png";
+    Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+    if (sprite == null)
+    {
+      Debug.LogError("STAIRS UP S2: missing asset: " + assetPath);
+      return;
+    }
+    if (sprite.width != 30 || sprite.height != 44)
+    {
+      Debug.LogError("STAIRS UP S2: expected 30x44 at " + assetPath);
+      return;
+    }
+    if (!sprite.isReadable)
+    {
+      Debug.LogError("STAIRS UP S2: enable Read/Write on " + assetPath);
+      return;
+    }
+    if (stairsUpS2LeftEnabled)
+      BlitPieceIntoPreview(pixels, sprite, stairsUpS2LeftX,
+          DisplayYToUnityY(stairsUpS2LeftY, sprite.height), stairsUpS2LeftMirror);
+    if (stairsUpS2RightEnabled)
+      BlitPieceIntoPreview(pixels, sprite, stairsUpS2RightX,
+          DisplayYToUnityY(stairsUpS2RightY, sprite.height), stairsUpS2RightMirror);
+  }
+
+  private bool SaveStairsUpS2Calibration(bool right)
+  {
+    string sourcePath = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(sourcePath) || !File.Exists(sourcePath))
+    {
+      Debug.LogError("STAIRS UP S2 Apply: source script missing: " + sourcePath);
+      return false;
+    }
+    string fieldName = right ? "StairsUpS2RightAccepted" : "StairsUpS2LeftAccepted";
+    string prefix = right ? StairsUpS2RightPrefs : StairsUpS2LeftPrefs;
+    int x = right ? stairsUpS2RightX : stairsUpS2LeftX;
+    int y = right ? stairsUpS2RightY : stairsUpS2LeftY;
+    bool mirror = right ? stairsUpS2RightMirror : stairsUpS2LeftMirror;
+    bool enabled = right ? stairsUpS2RightEnabled : stairsUpS2LeftEnabled;
+    string token = "private const string " + fieldName + " = \"";
+    try
+    {
+      string source = File.ReadAllText(sourcePath);
+      int begin = source.IndexOf(token, System.StringComparison.Ordinal);
+      if (begin < 0 || source.IndexOf(token, begin + token.Length,
+          System.StringComparison.Ordinal) >= 0)
+      {
+        Debug.LogError("STAIRS UP S2 Apply: expected exactly one " + fieldName);
+        return false;
+      }
+      int valueStart = begin + token.Length;
+      int end = source.IndexOf('"', valueStart);
+      if (end < 0)
+      {
+        Debug.LogError("STAIRS UP S2 Apply: malformed " + fieldName);
+        return false;
+      }
+      string accepted = x + "|" + y + "|" + (mirror ? "true" : "false")
+          + "|" + (enabled ? "true" : "false");
+      string updated = source.Substring(0, valueStart) + accepted + source.Substring(end);
+      if (updated != source)
+        File.WriteAllText(sourcePath, updated);
+      EditorPrefs.SetInt(prefix + "X", x);
+      EditorPrefs.SetInt(prefix + "Y", y);
+      EditorPrefs.SetBool(prefix + "Mirror", mirror);
+      EditorPrefs.SetBool(prefix + "Enabled", enabled);
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+      if (updated != source)
+        AssetDatabase.ImportAsset(sourcePath, ImportAssetOptions.ForceUpdate);
+      return true;
+    }
+    catch (System.Exception exception)
+    {
+      Debug.LogError("STAIRS UP S2 Apply: " + exception);
+      return false;
+    }
+  }
+
+  private void DrawStairsUpS2CalibrationRow(bool right)
+  {
+    string[] saved = (right ? StairsUpS2RightAccepted : StairsUpS2LeftAccepted).Split('|');
+    if (saved.Length != 4 || !int.TryParse(saved[0], out int acceptedX)
+        || !int.TryParse(saved[1], out int acceptedY)
+        || !bool.TryParse(saved[2], out bool acceptedMirror)
+        || !bool.TryParse(saved[3], out bool acceptedEnabled))
+    {
+      Debug.LogError("STAIRS UP S2: invalid saved calibration in source");
+      return;
+    }
+    int currentX = right ? stairsUpS2RightX : stairsUpS2LeftX;
+    int currentY = right ? stairsUpS2RightY : stairsUpS2LeftY;
+    bool currentMirror = right ? stairsUpS2RightMirror : stairsUpS2LeftMirror;
+    bool currentEnabled = right ? stairsUpS2RightEnabled : stairsUpS2LeftEnabled;
+    EditorGUILayout.BeginHorizontal();
+    float oldLabelWidth = EditorGUIUtility.labelWidth;
+    Color oldColor = GUI.contentColor;
+    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
+    style.normal.textColor = Color.magenta;
+    string caption = right ? "Stairs_S0 Right (30x44)" : "Stairs_S0 Left (30x44)";
+    GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
+    GUILayout.Space(8f);
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Enabled")).x;
+    EditorGUIUtility.labelWidth = enabledWidth;
+    GUI.contentColor = currentEnabled != acceptedEnabled ? Color.red : oldColor;
+    bool enabled = DrawMouseOnlyToggle("Enabled", currentEnabled, currentEnabled,
+        GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    GUI.contentColor = currentX != acceptedX ? Color.red : oldColor;
+    int x = currentX;
+    bool xChanged = DrawIntStepperInline("X", ref x, snap, false, true, 24f, 24f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    GUI.contentColor = currentY != acceptedY ? Color.red : oldColor;
+    int y = currentY;
+    bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
+    GUILayout.Space(6f);
+    GUI.contentColor = currentMirror != acceptedMirror ? Color.red : oldColor;
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", currentMirror, GUILayout.Width(66f));
+    GUI.contentColor = oldColor;
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = oldLabelWidth;
+    EditorGUILayout.EndHorizontal();
+    if (enabled != currentEnabled || (xChanged && x != currentX)
+        || (yChanged && y != currentY) || mirror != currentMirror)
+    {
+      if (right)
+      {
+        stairsUpS2RightEnabled = enabled;
+        stairsUpS2RightX = x;
+        stairsUpS2RightY = y;
+        stairsUpS2RightMirror = mirror;
+      }
+      else
+      {
+        stairsUpS2LeftEnabled = enabled;
+        stairsUpS2LeftX = x;
+        stairsUpS2LeftY = y;
+        stairsUpS2LeftMirror = mirror;
+      }
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+    if (apply)
+      SaveStairsUpS2Calibration(right);
+  }
+
   private bool IsStairsS3RightSouthReferencePose()
   {
     return previewX == 4 && previewY == 13
