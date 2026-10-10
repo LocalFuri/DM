@@ -509,7 +509,7 @@ public class ViewportLayoutEditor : EditorWindow
   private int stairsUpFrontS1LeftX = 0, stairsUpFrontS1LeftY = 32;
   private bool stairsUpFrontS1LeftMirror = true, stairsUpFrontS1LeftEnabled = true;
   private const string StairsUpFrontS1Prefs = "DM.ViewEdit.StairsUpFrontS1.";
-  private const string StairsUpFrontS1Accepted = "192|32|false|true";
+  private const string StairsUpFrontS1Accepted = "192|42|true|true";
   private int stairsUpFrontS1X = 192, stairsUpFrontS1Y = 32;
   private bool stairsUpFrontS1Mirror = false, stairsUpFrontS1Enabled = true;
 
