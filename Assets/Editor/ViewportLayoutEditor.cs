@@ -519,6 +519,12 @@ public class ViewportLayoutEditor : EditorWindow
   private int stairsUpFrontS2X = 0, stairsUpFrontS2Y = 52;
   private bool stairsUpFrontS2Mirror = false, stairsUpFrontS2Enabled = true;
 
+  // Right-side S2 counterpart at Level 1 (2,0) East; independently calibrated.
+  private const string StairsUpFrontS2RightPrefs = "DM.ViewEdit.StairsUpFrontS2Right.";
+  private const string StairsUpFrontS2RightAccepted = "172|90|true|true";
+  private int stairsUpFrontS2RightX = 204, stairsUpFrontS2RightY = 52;
+  private bool stairsUpFrontS2RightMirror = true, stairsUpFrontS2RightEnabled = true;
+
   // Stair fragment on the left at Level 1 (5,0) West; uses the supplied native S3 sprite.
   private const string StairsUpFrontS3Prefs = "DM.ViewEdit.StairsUpFrontS3.";
   private const string StairsUpFrontS3Accepted = "58|87|false|true";
@@ -527,7 +533,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Right-side counterpart at Level 1 (1,0) East; independent calibration.
   private const string StairsUpFrontS3RightPrefs = "DM.ViewEdit.StairsUpFrontS3Right.";
-  private const string StairsUpFrontS3RightAccepted = "149|89|true|true";
+  private const string StairsUpFrontS3RightAccepted = "150|87|true|true";
   private int stairsUpFrontS3RightX = 150, stairsUpFrontS3RightY = 87;
   private bool stairsUpFrontS3RightMirror = true, stairsUpFrontS3RightEnabled = true;
 
@@ -17307,6 +17313,7 @@ private static void HandleGameViewPointerDown(
     BlitStairsUpFrontS1IntoPreview(pixels);
     BlitStairsUpFrontS1LeftIntoPreview(pixels);
     BlitStairsUpFrontS2IntoPreview(pixels);
+    BlitStairsUpFrontS2RightIntoPreview(pixels);
     BlitStairsUpFrontS3IntoPreview(pixels);
     BlitStairsUpFrontS3RightIntoPreview(pixels);
     BlitStairsUpS2IntoPreview(pixels);
@@ -21189,6 +21196,10 @@ private static void HandleGameViewPointerDown(
     stairsUpFrontS2Y = EditorPrefs.GetInt(StairsUpFrontS2Prefs + "Y", 52);
     stairsUpFrontS2Mirror = EditorPrefs.GetBool(StairsUpFrontS2Prefs + "Mirror", false);
     stairsUpFrontS2Enabled = EditorPrefs.GetBool(StairsUpFrontS2Prefs + "Enabled", true);
+    stairsUpFrontS2RightX = EditorPrefs.GetInt(StairsUpFrontS2RightPrefs + "X", 204);
+    stairsUpFrontS2RightY = EditorPrefs.GetInt(StairsUpFrontS2RightPrefs + "Y", 52);
+    stairsUpFrontS2RightMirror = EditorPrefs.GetBool(StairsUpFrontS2RightPrefs + "Mirror", true);
+    stairsUpFrontS2RightEnabled = EditorPrefs.GetBool(StairsUpFrontS2RightPrefs + "Enabled", true);
     stairsUpFrontS3X = EditorPrefs.GetInt(StairsUpFrontS3Prefs + "X", 58);
     stairsUpFrontS3Y = EditorPrefs.GetInt(StairsUpFrontS3Prefs + "Y", 87);
     stairsUpFrontS3Mirror = EditorPrefs.GetBool(StairsUpFrontS3Prefs + "Mirror", false);
@@ -24400,6 +24411,8 @@ private static void HandleGameViewPointerDown(
       DrawStairsUpFrontS1LeftCalibrationRow();
     if (IsStairsUpFrontS2ReferencePose())
       DrawStairsUpFrontS2CalibrationRow();
+    if (IsStairsUpFrontS2RightReferencePose())
+      DrawStairsUpFrontS2RightCalibrationRow();
     if (IsStairsUpFrontS3ReferencePose())
       DrawStairsUpFrontS3CalibrationRow();
     if (IsStairsUpFrontS3RightReferencePose())
@@ -25102,6 +25115,144 @@ private static void HandleGameViewPointerDown(
     }
     if (apply)
       SaveStairsUpFrontS2Calibration();
+  }
+
+  private bool IsStairsUpFrontS2RightReferencePose()
+  {
+    return previewDungeonLevel == 1 && previewX == 2 && previewY == 0
+        && previewFacing == DungeonFacing.East;
+  }
+
+  private void BlitStairsUpFrontS2RightIntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || !IsStairsUpFrontS2RightReferencePose() || !stairsUpFrontS2RightEnabled)
+      return;
+    const string assetPath = "Assets/Art/Walls/Stairs/StairsUp_S2_20x43.png";
+    Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+    if (sprite == null)
+    {
+      Debug.LogError("STAIRS UP FRONT S2 RIGHT: missing asset: " + assetPath);
+      return;
+    }
+    if (sprite.width != 20 || sprite.height != 43)
+    {
+      Debug.LogError("STAIRS UP FRONT S2 RIGHT: expected 20x43 at " + assetPath);
+      return;
+    }
+    if (!sprite.isReadable)
+    {
+      Debug.LogError("STAIRS UP FRONT S2 RIGHT: enable Read/Write on " + assetPath);
+      return;
+    }
+    BlitPieceIntoPreview(pixels, sprite, stairsUpFrontS2RightX,
+        DisplayYToUnityY(stairsUpFrontS2RightY, sprite.height), stairsUpFrontS2RightMirror);
+  }
+
+  private bool SaveStairsUpFrontS2RightCalibration()
+  {
+    string sourcePath = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(sourcePath) || !File.Exists(sourcePath))
+    {
+      Debug.LogError("STAIRS UP FRONT S2 RIGHT Apply: source script missing: " + sourcePath);
+      return false;
+    }
+    const string token = "private const string StairsUpFrontS2RightAccepted = \"";
+    try
+    {
+      string source = File.ReadAllText(sourcePath);
+      int begin = source.IndexOf(token, System.StringComparison.Ordinal);
+      if (begin < 0 || source.IndexOf(token, begin + token.Length,
+          System.StringComparison.Ordinal) >= 0)
+      {
+        Debug.LogError("STAIRS UP FRONT S2 RIGHT Apply: expected exactly one StairsUpFrontS2RightAccepted");
+        return false;
+      }
+      int valueStart = begin + token.Length;
+      int end = source.IndexOf('"', valueStart);
+      if (end < 0)
+      {
+        Debug.LogError("STAIRS UP FRONT S2 RIGHT Apply: malformed StairsUpFrontS2RightAccepted");
+        return false;
+      }
+      string accepted = stairsUpFrontS2RightX + "|" + stairsUpFrontS2RightY + "|"
+          + (stairsUpFrontS2RightMirror ? "true" : "false") + "|"
+          + (stairsUpFrontS2RightEnabled ? "true" : "false");
+      string updated = source.Substring(0, valueStart) + accepted + source.Substring(end);
+      if (updated != source)
+        File.WriteAllText(sourcePath, updated);
+      EditorPrefs.SetInt(StairsUpFrontS2RightPrefs + "X", stairsUpFrontS2RightX);
+      EditorPrefs.SetInt(StairsUpFrontS2RightPrefs + "Y", stairsUpFrontS2RightY);
+      EditorPrefs.SetBool(StairsUpFrontS2RightPrefs + "Mirror", stairsUpFrontS2RightMirror);
+      EditorPrefs.SetBool(StairsUpFrontS2RightPrefs + "Enabled", stairsUpFrontS2RightEnabled);
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+      if (updated != source)
+        AssetDatabase.ImportAsset(sourcePath, ImportAssetOptions.ForceUpdate);
+      return true;
+    }
+    catch (System.Exception exception)
+    {
+      Debug.LogError("STAIRS UP FRONT S2 RIGHT Apply: " + exception);
+      return false;
+    }
+  }
+
+  private void DrawStairsUpFrontS2RightCalibrationRow()
+  {
+    if (!TryReadSavedStairCalibration("StairsUpFrontS2RightAccepted", out string accepted))
+      return;
+    string[] saved = accepted.Split('|');
+    if (saved.Length != 4 || !int.TryParse(saved[0], out int acceptedX)
+        || !int.TryParse(saved[1], out int acceptedY)
+        || !bool.TryParse(saved[2], out bool acceptedMirror)
+        || !bool.TryParse(saved[3], out bool acceptedEnabled))
+    {
+      Debug.LogError("STAIRS UP FRONT S2 RIGHT: invalid saved calibration in source");
+      return;
+    }
+    EditorGUILayout.BeginHorizontal();
+    float oldLabelWidth = EditorGUIUtility.labelWidth;
+    Color oldColor = GUI.contentColor;
+    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
+    style.normal.textColor = Color.magenta;
+    const string caption = "StairsUp_S2 Right (20x43)";
+    GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
+    GUILayout.Space(8f);
+    float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
+    EditorGUIUtility.labelWidth = enabledWidth;
+    GUI.contentColor = stairsUpFrontS2RightEnabled != acceptedEnabled ? Color.red : oldColor;
+    bool enabled = DrawMouseOnlyToggle("Set", stairsUpFrontS2RightEnabled, stairsUpFrontS2RightEnabled,
+        GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    GUI.contentColor = stairsUpFrontS2RightX != acceptedX ? Color.red : oldColor;
+    int x = stairsUpFrontS2RightX;
+    bool xChanged = DrawIntStepperInline("X", ref x, snap, false, true, 24f, 24f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    GUI.contentColor = stairsUpFrontS2RightY != acceptedY ? Color.red : oldColor;
+    int y = stairsUpFrontS2RightY;
+    bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
+    GUILayout.Space(6f);
+    GUI.contentColor = stairsUpFrontS2RightMirror != acceptedMirror ? Color.red : oldColor;
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpFrontS2RightMirror, GUILayout.Width(66f));
+    GUI.contentColor = oldColor;
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = oldLabelWidth;
+    EditorGUILayout.EndHorizontal();
+    if (enabled != stairsUpFrontS2RightEnabled || (xChanged && x != stairsUpFrontS2RightX)
+        || (yChanged && y != stairsUpFrontS2RightY) || mirror != stairsUpFrontS2RightMirror)
+    {
+      stairsUpFrontS2RightEnabled = enabled;
+      stairsUpFrontS2RightX = x;
+      stairsUpFrontS2RightY = y;
+      stairsUpFrontS2RightMirror = mirror;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+    if (apply)
+      SaveStairsUpFrontS2RightCalibration();
   }
 
   private bool IsStairsUpFrontS3ReferencePose()
