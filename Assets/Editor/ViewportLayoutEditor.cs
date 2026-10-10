@@ -471,7 +471,7 @@ public class ViewportLayoutEditor : EditorWindow
   // Separate unverified D2 reference calibration at (4,17) North.
   // Kept independent from the accepted (4,15) North S0 placement.
   private const string StairsS0D2NorthPrefsPrefix = "DM.ViewEdit.StairsS0D2North.";
-  private const string StairsS0D2NorthAccepted = "56|80|false|true";
+  private const string StairsS0D2NorthAccepted = "60|88|false|true";
   private int stairsS0D2NorthX = 56;
   private int stairsS0D2NorthTopY = 80;
   private bool stairsS0D2NorthMirror;
@@ -24272,35 +24272,30 @@ private static void HandleGameViewPointerDown(
         DisplayYToUnityY(stairsdownS2LeftTopY, sprite.height), stairsdownS2LeftMirror);
   }
 
-  // The screenshot reference is only calibrated at this pose; a fully generic
-  // left-side projection needs further reference views before replacing this gate.
+  // Calibration preview: this row must draw the supplied sprite whenever the
+  // reference view is active and Enabled is checked. Do not gate the preview on
+  // map stair detection: this is the calibration used to diagnose that mapping.
+  // A fully generic map-relative rule can be added after visual verification.
   private bool IsStairsS0D2NorthReferencePose()
   {
-    if (previewX != 4 || previewY != 17 || previewFacing != DungeonFacing.North)
-      return false;
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null)
-      return false;
-    Viewport17Cell stairCell = SampleViewport17Cell(0, 2);
-    return stairCell.IsInside && stairCell.IsStairsDown
-        && IsPreviewFeatureEnabled(MakePreviewFeatureKey(
-            "StairsDown", stairCell.MapX, stairCell.MapY, null));
+    return previewX == 4 && previewY == 17
+        && previewFacing == DungeonFacing.North;
   }
 
   private void BlitStairsS0D2NorthIntoPreview(Color32[] pixels)
   {
     if (pixels == null || !stairsS0D2NorthEnabled || !IsStairsS0D2NorthReferencePose())
       return;
-    const string assetPath = "Assets/Art/Walls/Stairs/Stairs_Side_D0L_16x13.png";
+    const string assetPath = "Assets/Art/Walls/Stairs/Stairsdown_S3_16x5.png";
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
       Debug.LogError("STAIRS S0 D2 NORTH: missing asset: " + assetPath);
       return;
     }
-    if (sprite.width != 16 || sprite.height != 13)
+    if (sprite.width != 16 || sprite.height != 5)
     {
-      Debug.LogError("STAIRS S0 D2 NORTH: expected 16x13 at " + assetPath);
+      Debug.LogError("STAIRS S0 D2 NORTH: expected 16x5 at " + assetPath);
       return;
     }
     if (!sprite.isReadable)
@@ -24308,6 +24303,7 @@ private static void HandleGameViewPointerDown(
       Debug.LogError("STAIRS S0 D2 NORTH: enable Read/Write on " + assetPath);
       return;
     }
+    // S3 artwork is already 16x5. Render native pixels without downscaling.
     BlitPieceIntoPreview(pixels, sprite, stairsS0D2NorthX,
         DisplayYToUnityY(stairsS0D2NorthTopY, sprite.height), stairsS0D2NorthMirror);
   }
@@ -24779,7 +24775,7 @@ private static void HandleGameViewPointerDown(
     style.normal.textColor = Color.magenta;
     style.hover.textColor = Color.magenta;
     style.focused.textColor = Color.magenta;
-    const string caption = "Stairs_S0 D2 (16x13)";
+    const string caption = "Stairsdown_S3 (16x5)";
     GUILayout.Label(caption, style,
         GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
