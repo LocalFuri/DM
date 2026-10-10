@@ -499,10 +499,10 @@ public class ViewportLayoutEditor : EditorWindow
   // Level 0 staircase landing, independent of Level 1 calibration.
   private const string StairsLevel0S0LeftPrefs = "DM.ViewEdit.StairsLevel0S0Left.";
   private const string StairsLevel0S0RightPrefs = "DM.ViewEdit.StairsLevel0S0Right.";
-  private const string StairsLevel0S0LeftAccepted = "0|61|false|true";
-  private const string StairsLevel0S0RightAccepted = "194|61|true|true";
-  private int stairsLevel0S0LeftX = 0, stairsLevel0S0LeftY = 61;
-  private int stairsLevel0S0RightX = 194, stairsLevel0S0RightY = 61;
+  private const string StairsLevel0S0LeftAccepted = "0|109|false|true";
+  private const string StairsLevel0S0RightAccepted = "194|109|true|true";
+  private int stairsLevel0S0LeftX = 0, stairsLevel0S0LeftY = 109;
+  private int stairsLevel0S0RightX = 194, stairsLevel0S0RightY = 109;
   private bool stairsLevel0S0LeftMirror, stairsLevel0S0RightMirror = true;
   private bool stairsLevel0S0LeftEnabled = true, stairsLevel0S0RightEnabled = true;
 
@@ -21141,11 +21141,11 @@ private static void HandleGameViewPointerDown(
     stairsUpS2RightMirror = EditorPrefs.GetBool(StairsUpS2RightPrefs + "Mirror", true);
     stairsUpS2RightEnabled = EditorPrefs.GetBool(StairsUpS2RightPrefs + "Enabled", true);
     stairsLevel0S0LeftX = EditorPrefs.GetInt(StairsLevel0S0LeftPrefs + "X", 0);
-    stairsLevel0S0LeftY = EditorPrefs.GetInt(StairsLevel0S0LeftPrefs + "Y", 61);
+    stairsLevel0S0LeftY = EditorPrefs.GetInt(StairsLevel0S0LeftPrefs + "Y", 109);
     stairsLevel0S0LeftMirror = EditorPrefs.GetBool(StairsLevel0S0LeftPrefs + "Mirror", false);
     stairsLevel0S0LeftEnabled = EditorPrefs.GetBool(StairsLevel0S0LeftPrefs + "Enabled", true);
     stairsLevel0S0RightX = EditorPrefs.GetInt(StairsLevel0S0RightPrefs + "X", 194);
-    stairsLevel0S0RightY = EditorPrefs.GetInt(StairsLevel0S0RightPrefs + "Y", 61);
+    stairsLevel0S0RightY = EditorPrefs.GetInt(StairsLevel0S0RightPrefs + "Y", 109);
     stairsLevel0S0RightMirror = EditorPrefs.GetBool(StairsLevel0S0RightPrefs + "Mirror", true);
     stairsLevel0S0RightEnabled = EditorPrefs.GetBool(StairsLevel0S0RightPrefs + "Enabled", true);
     stairsS3RightSouthX = EditorPrefs.GetInt(StairsS3RightSouthPrefsPrefix + "X", 152);
@@ -24544,6 +24544,13 @@ private static void HandleGameViewPointerDown(
       string updated = source.Substring(0, valueStart) + accepted + source.Substring(end);
       if (updated != source)
         File.WriteAllText(sourcePath, updated);
+      // Verify the persistent .cs write before marking the calibration applied.
+      string persisted = File.ReadAllText(sourcePath);
+      if (persisted != updated)
+      {
+        Debug.LogError("STAIRS Apply: calibration did not persist in " + sourcePath);
+        return false;
+      }
       EditorPrefs.SetInt(prefix + "X", x);
       EditorPrefs.SetInt(prefix + "Y", y);
       EditorPrefs.SetBool(prefix + "Mirror", mirror);
@@ -24562,9 +24569,57 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Read the persisted calibration from the source file rather than a stale
+  // compiled constant. Apply changes the .cs file before Unity recompiles.
+  private bool TryReadSavedStairCalibration(string fieldName, out string accepted)
+  {
+    accepted = null;
+    string sourcePath = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(sourcePath) || !File.Exists(sourcePath))
+    {
+      Debug.LogError("STAIRS Apply: source script missing: " + sourcePath);
+      return false;
+    }
+    string token = "private const string " + fieldName + " = \"";
+    try
+    {
+      string source = File.ReadAllText(sourcePath);
+      int begin = source.IndexOf(token, System.StringComparison.Ordinal);
+      if (begin < 0 || source.IndexOf(token, begin + token.Length,
+          System.StringComparison.Ordinal) >= 0)
+      {
+        Debug.LogError("STAIRS Apply: expected exactly one " + fieldName);
+        return false;
+      }
+      int valueStart = begin + token.Length;
+      int end = source.IndexOf('"', valueStart);
+      if (end < 0)
+      {
+        Debug.LogError("STAIRS Apply: invalid saved calibration " + fieldName);
+        return false;
+      }
+      accepted = source.Substring(valueStart, end - valueStart);
+      return true;
+    }
+    catch (System.Exception exception)
+    {
+      Debug.LogError("STAIRS Apply: " + exception);
+      return false;
+    }
+  }
+
   private void DrawStairsUpS2CalibrationRow(bool right)
   {
-    string[] saved = (right ? StairsUpS2RightAccepted : StairsUpS2LeftAccepted).Split('|');
+    if (!TryReadSavedStairCalibration(
+        right ? "StairsUpS2RightAccepted" : "StairsUpS2LeftAccepted",
+        out string savedValue))
+      return;
+    // Once Apply has saved the .cs file, retain the accepted value across
+    // Unity's assembly reload. The source remains the permanent record.
+    string acceptedPrefsKey = (right ? StairsUpS2RightPrefs : StairsUpS2LeftPrefs) + "Accepted";
+    if (EditorPrefs.HasKey(acceptedPrefsKey))
+      savedValue = EditorPrefs.GetString(acceptedPrefsKey);
+    string[] saved = savedValue.Split('|');
     if (saved.Length != 4 || !int.TryParse(saved[0], out int acceptedX)
         || !int.TryParse(saved[1], out int acceptedY)
         || !bool.TryParse(saved[2], out bool acceptedMirror)
@@ -24582,7 +24637,7 @@ private static void HandleGameViewPointerDown(
     Color oldColor = GUI.contentColor;
     GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
     style.normal.textColor = Color.magenta;
-    string caption = right ? "Stairs_Down_S0 Right (30x60)" : "Stairs_Down_S0 Left (30x60)";
+    string caption = right ? "Stairs_S0 Right (30x44)" : "Stairs_S0 Left (30x44)";
     GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
     float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
@@ -24704,6 +24759,13 @@ private static void HandleGameViewPointerDown(
       string updated = source.Substring(0, valueStart) + accepted + source.Substring(end);
       if (updated != source)
         File.WriteAllText(sourcePath, updated);
+      // Verify the persistent .cs write before marking the calibration applied.
+      string persisted = File.ReadAllText(sourcePath);
+      if (persisted != updated)
+      {
+        Debug.LogError("STAIRS Apply: calibration did not persist in " + sourcePath);
+        return false;
+      }
       EditorPrefs.SetInt(prefix + "X", x);
       EditorPrefs.SetInt(prefix + "Y", y);
       EditorPrefs.SetBool(prefix + "Mirror", mirror);
@@ -24724,7 +24786,13 @@ private static void HandleGameViewPointerDown(
 
   private void DrawStairsLevel0S0CalibrationRow(bool right)
   {
-    string[] saved = (right ? StairsLevel0S0RightAccepted : StairsLevel0S0LeftAccepted).Split('|');
+    if (!TryReadSavedStairCalibration(
+        right ? "StairsLevel0S0RightAccepted" : "StairsLevel0S0LeftAccepted",
+        out string savedValue))
+      return;
+    // The .cs source is the sole accepted calibration authority. An older
+    // EditorPrefs Accepted value may be stale after recompilation or import.
+    string[] saved = savedValue.Split('|');
     if (saved.Length != 4 || !int.TryParse(saved[0], out int acceptedX)
         || !int.TryParse(saved[1], out int acceptedY)
         || !bool.TryParse(saved[2], out bool acceptedMirror)
@@ -24742,7 +24810,7 @@ private static void HandleGameViewPointerDown(
     Color oldColor = GUI.contentColor;
     GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
     style.normal.textColor = Color.magenta;
-    string caption = right ? "Stairs_S0 Right (30x44)" : "Stairs_S0 Left (30x44)";
+    string caption = right ? "Stairs_Down_S0 Right (30x60)" : "Stairs_Down_S0 Left (30x60)";
     GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
     float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
