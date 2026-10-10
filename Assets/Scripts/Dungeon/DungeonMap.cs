@@ -346,11 +346,28 @@ namespace DM.Dungeon
         }
       }
 
+      // Level 0 retains the verified Hall of Champions party entry point.
+      // The original DUNGEON.DAT tile grid has no playerStart object.
+      if (level == 0)
+      {
+        const int hallStartX = 1;
+        const int hallStartY = 3;
+        if (!map.CanEnter(hallStartX, hallStartY))
+          throw new InvalidOperationException(
+              "DungeonMap: original Level 0 start (1,3) is not enterable.");
+        map.SetPlayerStart(hallStartX, hallStartY, DungeonFacing.South);
+        map.StartX = hallStartX;
+        map.StartY = hallStartY;
+        map.StartFacing = DungeonFacing.South;
+        return map;
+      }
+
+      // Preserve the existing start selection for Levels 1-13 for now.
+      // Stair transitions set their own validated destination pose.
       if (!TryFindEnterableStart(map, out int startX, out int startY))
       {
         throw new InvalidOperationException(
-            "DungeonMap: raw tile grid has no enterable tile."
-        );
+            "DungeonMap: raw tile grid has no enterable tile.");
       }
 
       map.SetPlayerStart(startX, startY, DungeonFacing.North);

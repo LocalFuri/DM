@@ -36,7 +36,7 @@ public class ViewportLayoutEditor : EditorWindow
       "ViewportLayoutEditor.PreviewLevelJump";
 
   private const string HallOfChampionsMapPath =
-      "Assets/Data/Maps/HallOfChampions.json";
+      "Assets/Data/Maps/DungeonMaster_Level00.json";
   private static readonly string[] PreviewLevelMapPaths =
   {
     HallOfChampionsMapPath,
@@ -13422,107 +13422,128 @@ private static void HandleGameViewPointerDown(
   }
 
   /// <summary>
-  /// Edit-mode movement uses the same stair rule as GameBootstrap:
-  /// a down stair loads the next level, an up stair loads the previous
-  /// level, and arrival is the nearest opposite stair. No map coordinate
-  /// is special-cased.
+  /// Resolve stair links using the original maps' global coordinates.
+  /// Never select a nearest staircase or fall back to playerStart.
   /// </summary>
   private void TryPreviewStairsTransition()
   {
-    // Read the stair state directly from the tile at ViewEdit's current
-    // preview coordinates. Do not depend on DungeonMap's internal player
-    // state being synchronized before the transition check.
-    if (previewMiniMap == null
-        || !previewMiniMap.IsInside(previewX, previewY))
-    {
+    if (previewMiniMap == null || !previewMiniMap.IsInside(previewX, previewY))
       return;
-    }
 
     DungeonTile currentTile = previewMiniMap.GetTile(previewX, previewY);
-    if (currentTile == null
-        || !currentTile.TryGetStairsDirection(out bool stairsUp))
-    {
+    if (currentTile == null || !currentTile.TryGetStairsDirection(out bool stairsUp))
       return;
-    }
 
-    int targetLevel = stairsUp
-        ? previewDungeonLevel - 1
-        : previewDungeonLevel + 1;
+    int sourceLevel = previewDungeonLevel;
+    int targetLevel = sourceLevel + (stairsUp ? -1 : 1);
     if (targetLevel < 0 || targetLevel >= PreviewLevelMapPaths.Length)
     {
-      Debug.LogWarning(
-          "ViewEdit: Player stepped on "
-          + (stairsUp ? "stairs up" : "stairs down")
-          + " at level " + previewDungeonLevel
-          + " (" + previewX + "," + previewY + "), "
-          + "but level " + targetLevel + " has no preview map.");
+      Debug.LogError("ViewEdit: Stair target level out of bounds: " + targetLevel);
       return;
     }
 
-    int sourceX = previewX;
-    int sourceY = previewY;
-    DungeonFacing sourceFacing = previewFacing;
-    DungeonMap sourceMap = previewMiniMap;
-    int sourceLevel = previewDungeonLevel;
+    string sourcePath = PreviewLevelMapPaths[sourceLevel];
+    string targetPath = PreviewLevelMapPaths[targetLevel];
+    if (!File.Exists(sourcePath) || !File.Exists(targetPath))
+    {
+      Debug.LogError("ViewEdit: Missing staircase map: " + sourcePath + " or " + targetPath);
+      return;
+    }
 
+    string sourceJson = File.ReadAllText(sourcePath);
+    string targetJson = File.ReadAllText(targetPath);
+    if (!TryReadStairMapOffsets(sourceJson, out int sourceOffsetX, out int sourceOffsetY)
+        || !TryReadStairMapOffsets(targetJson, out int targetOffsetX, out int targetOffsetY))
+    {
+      Debug.LogError("ViewEdit: Missing OffsetMapX/OffsetMapY in stair maps.");
+      return;
+    }
+
+    int targetX = previewX + sourceOffsetX - targetOffsetX;
+    int targetY = previewY + sourceOffsetY - targetOffsetY;
+    DungeonMap destinationMap;
+    try
+    {
+      destinationMap = DungeonMap.LoadFromJsonText(targetJson);
+    }
+    catch (System.Exception ex)
+    {
+      Debug.LogError("ViewEdit: Cannot load stair destination map: " + ex.Message);
+      return;
+    }
+
+    if (!destinationMap.IsInside(targetX, targetY)
+        || !destinationMap.GetTile(targetX, targetY).TryGetStairsDirection(out bool destinationUp)
+        || destinationUp == stairsUp
+        || !destinationMap.CanEnter(targetX, targetY)
+        || !TryResolveStairExitFacing(destinationMap, targetX, targetY, out DungeonFacing targetFacing))
+    {
+      Debug.LogError("ViewEdit: Invalid staircase connection from level " + sourceLevel
+          + " (" + previewX + "," + previewY + ") to level " + targetLevel
+          + " (" + targetX + "," + targetY + "). Transition cancelled.");
+      return;
+    }
+
+    // Validate the matching stair BEFORE changing preview level or map.
     if (!TryLoadPreviewLevel(targetLevel))
     {
-      previewMiniMap = sourceMap;
-      previewDungeonLevel = sourceLevel;
+      Debug.LogError("ViewEdit: Could not load level " + targetLevel + " for stair transition.");
       return;
     }
 
-    bool targetStairsUp = !stairsUp;
-    if (previewMiniMap.TryFindStairs(
-            targetStairsUp,
-            sourceX,
-            sourceY,
-            out int targetX,
-            out int targetY))
-    {
-      previewX = targetX;
-      previewY = targetY;
-      previewFacing = sourceFacing;
-    }
-    else
-    {
-      Debug.LogWarning(
-          "ViewEdit: Level " + targetLevel + " has no "
-          + (targetStairsUp ? "stairs up" : "stairs down")
-          + " tile. Using that map's playerStart instead.");
-      previewX = previewMiniMap.PlayerX;
-      previewY = previewMiniMap.PlayerY;
-      previewFacing = previewMiniMap.PlayerFacing;
-    }
-
+    previewX = targetX;
+    previewY = targetY;
+    previewFacing = targetFacing;
     previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
     previewLevelJumpText = previewDungeonLevel.ToString();
-
-    // NavigatePreviewPoseOnly saves the source-level stair tile before this
-    // transition. Persist the loaded level and arrival tile now, or the next
-    // EditorPrefs sync sends the preview back to Level 0.
     SaveSessionPrefs();
+    Debug.Log("ViewEdit stairs: level " + sourceLevel + " -> " + targetLevel
+        + " (" + targetX + "," + targetY + ") " + targetFacing);
   }
 
-  private void LoadPreviewDoorTilesFromJson(string json)
+  private static bool TryReadStairMapOffsets(
+      string json, out int offsetX, out int offsetY)
+  {
+    offsetX = 0;
+    offsetY = 0;
+    Match mx = Regex.Match(json, "\"OffsetMapX\"\\s*:\\s*(-?\\d+)");
+    Match my = Regex.Match(json, "\"OffsetMapY\"\\s*:\\s*(-?\\d+)");
+    return mx.Success && my.Success
+        && int.TryParse(mx.Groups[1].Value, out offsetX)
+        && int.TryParse(my.Groups[1].Value, out offsetY);
+  }
+
+  private static bool TryResolveStairExitFacing(
+      DungeonMap map, int x, int y, out DungeonFacing facing)
+  {
+    facing = DungeonFacing.North;
+    bool northSouth = (map.GetTile(x, y).Raw & 8) != 0;
+    DungeonFacing a = northSouth ? DungeonFacing.North : DungeonFacing.West;
+    DungeonFacing b = northSouth ? DungeonFacing.South : DungeonFacing.East;
+    DungeonMap.GetForwardOffset(a, out int ax, out int ay);
+    DungeonMap.GetForwardOffset(b, out int bx, out int by);
+    bool aOpen = map.CanEnter(x + ax, y + ay);
+    bool bOpen = map.CanEnter(x + bx, y + by);
+    if (aOpen == bOpen)
+      return false;
+    facing = aOpen ? a : b;
+    return true;
+  }
+
+  private void LoadPreviewDoorTilesFromMap(DungeonMap map)
   {
     previewDoorTiles.Clear();
+    if (map == null)
+      throw new System.ArgumentNullException(nameof(map));
 
-    if (string.IsNullOrEmpty(json))
-      return;
-
-    MatchCollection matches = DoorTileRegex.Matches(json);
-    for (int i = 0; i < matches.Count; i++)
-    {
-      Match match = matches[i];
-      if (!int.TryParse(match.Groups["x"].Value, out int x)
-          || !int.TryParse(match.Groups["y"].Value, out int y))
+    // Works for both the original integer tile_grid and the old tiles JSON.
+    for (int y = 0; y < map.Height; y++)
+      for (int x = 0; x < map.Width; x++)
       {
-        continue;
+        DungeonTile tile = map.GetTile(x, y);
+        if (tile != null && tile.SourceType == DungeonSourceTileType.Door)
+          previewDoorTiles.Add(new Vector2Int(x, y));
       }
-
-      previewDoorTiles.Add(new Vector2Int(x, y));
-    }
   }
 
   private bool TryLoadPreviewLevel(int level)
@@ -13546,7 +13567,7 @@ private static void HandleGameViewPointerDown(
     {
       string json = File.ReadAllText(path);
       previewMiniMap = DungeonMap.LoadFromJsonText(json);
-      LoadPreviewDoorTilesFromJson(json);
+      LoadPreviewDoorTilesFromMap(previewMiniMap);
       previewDungeonLevel = level;
 
       ChampionMirrorMapRoot mirrorRoot =

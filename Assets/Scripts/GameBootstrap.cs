@@ -3,6 +3,7 @@ using DM.Rendering;
 using DM.UI;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Text.RegularExpressions;
 
 public class GameBootstrap : MonoBehaviour
 {
@@ -132,34 +133,54 @@ public class GameBootstrap : MonoBehaviour
       return false;
     }
 
+    // Staircases are paired by global coordinates, NOT nearest local tile.
+    // The map_info offsets are part of the original DUNGEON.DAT layout.
+    if (!TryGetMapOffsets(levelMaps[currentLevel],
+            out int sourceOffsetX, out int sourceOffsetY) ||
+        !TryGetMapOffsets(levelMaps[targetLevel],
+            out int targetOffsetX, out int targetOffsetY))
+    {
+      Debug.LogError(
+          "GameBootstrap: Stair transition requires OffsetMapX/OffsetMapY " +
+          "in both level JSON files. Use DungeonMaster_Level00..13.json. " +
+          "Transition cancelled; no destination guessed.");
+      return false;
+    }
+
     int sourceX = sourceMap.PlayerX;
     int sourceY = sourceMap.PlayerY;
-    DungeonFacing sourceFacing = sourceMap.PlayerFacing;
-
+    int targetX = sourceX + sourceOffsetX - targetOffsetX;
+    int targetY = sourceY + sourceOffsetY - targetOffsetY;
     DungeonMap targetMap = DungeonMap.LoadFromJson(levelMaps[targetLevel]);
 
-    // A down stair arrives at an up stair on the next level, and vice versa.
-    // Prefer the corresponding stair nearest the source local coordinate.
-    // This keeps the transition generic and avoids Hall-of-Champions-specific
-    // coordinate checks in gameplay code.
-    bool targetStairsUp = !stairsUp;
-    if (targetMap.TryFindStairs(
-            targetStairsUp,
-            sourceX,
-            sourceY,
-            out int targetX,
-            out int targetY))
+    if (!targetMap.IsInside(targetX, targetY) ||
+        !targetMap.GetTile(targetX, targetY)
+            .TryGetStairsDirection(out bool destinationIsUp) ||
+        destinationIsUp == stairsUp ||
+        !targetMap.CanEnter(targetX, targetY))
     {
-      targetMap.SetPlayerPose(targetX, targetY, sourceFacing);
+      Debug.LogError(
+          $"GameBootstrap: No matching opposite staircase at " +
+          $"level {targetLevel} ({targetX},{targetY}) for " +
+          $"level {currentLevel} ({sourceX},{sourceY}). " +
+          "Transition cancelled; no fallback.");
+      return false;
     }
-    else
+
+    // Raw stair byte bit 3 selects N/S versus E/W orientation. The
+    // original maps place only one traversable exit on that axis.
+    // Arrival facing is therefore derived from the destination geometry.
+    if (!TryGetStairExitFacing(targetMap, targetX, targetY,
+            out DungeonFacing arrivalFacing))
     {
-      Debug.LogWarning(
-          $"GameBootstrap: Level {targetLevel} has no " +
-          $"{(targetStairsUp ? "stairs up" : "stairs down")} tile. " +
-          "Using that map's playerStart instead."
-      );
+      Debug.LogError(
+          $"GameBootstrap: Cannot determine unique stair exit at " +
+          $"level {targetLevel} ({targetX},{targetY}); " +
+          "transition cancelled.");
+      return false;
     }
+
+    targetMap.SetPlayerPose(targetX, targetY, arrivalFacing);
 
     currentLevel = targetLevel;
     currentMap = targetMap;
@@ -181,6 +202,41 @@ public class GameBootstrap : MonoBehaviour
     );
 
     return true;
+  }
+
+  private static bool TryGetMapOffsets(
+      TextAsset asset, out int offsetX, out int offsetY)
+  {
+    offsetX = 0;
+    offsetY = 0;
+    if (asset == null) return false;
+    Match mx = Regex.Match(asset.text, "\"OffsetMapX\"\\s*:\\s*(-?\\d+)");
+    Match my = Regex.Match(asset.text, "\"OffsetMapY\"\\s*:\\s*(-?\\d+)");
+    return mx.Success && my.Success &&
+        int.TryParse(mx.Groups[1].Value, out offsetX) &&
+        int.TryParse(my.Groups[1].Value, out offsetY);
+  }
+
+  private static bool TryGetStairExitFacing(
+      DungeonMap map, int x, int y, out DungeonFacing facing)
+  {
+    facing = DungeonFacing.North;
+    int raw = map.GetTile(x, y).Raw;
+    bool northSouth = (raw & 8) != 0;
+    DungeonFacing first = northSouth ? DungeonFacing.North : DungeonFacing.West;
+    DungeonFacing second = northSouth ? DungeonFacing.South : DungeonFacing.East;
+    bool firstOpen = IsStairExitEnterable(map, x, y, first);
+    bool secondOpen = IsStairExitEnterable(map, x, y, second);
+    if (firstOpen == secondOpen) return false;
+    facing = firstOpen ? first : second;
+    return true;
+  }
+
+  private static bool IsStairExitEnterable(
+      DungeonMap map, int x, int y, DungeonFacing facing)
+  {
+    DungeonMap.GetForwardOffset(facing, out int dx, out int dy);
+    return map.CanEnter(x + dx, y + dy);
   }
 
   // Keep leftover Canvas UI from sitting over the gameplay layout.
