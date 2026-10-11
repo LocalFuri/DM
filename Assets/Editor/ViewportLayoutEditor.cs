@@ -498,7 +498,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Front-facing up stairs at the Level 1 staircase landing.
   private const string StairsUpF1Prefs = "DM.ViewEdit.StairsUpF1.";
-  private const string StairsUpF1Accepted = "32|42|false|true";
+  private const string StairsUpF1Accepted = "82|32|false|true";
   private int stairsUpF1X = 82, stairsUpF1Y = 32;
   private bool stairsUpF1Mirror = false, stairsUpF1Enabled = true;
 
@@ -24670,8 +24670,13 @@ private static void HandleGameViewPointerDown(
         // Keep Stairs Down's independent Show Image control unchanged.
         if (!stairsUp)
         {
-          DrawStairsDownFeatureChecklistRow(
-              visibleStairsX, visibleStairsY, key);
+          // The F1 image has its own calibration row. Do not duplicate it
+          // with the map-only Stairs Down checklist entry.
+          if (IsStairsDownF1NeededForCurrentPose())
+            DrawStairsDownF1ControlRow();
+          else
+            DrawStairsDownFeatureChecklistRow(
+                visibleStairsX, visibleStairsY, key);
         }
       }
     }
@@ -27281,9 +27286,9 @@ private static void HandleGameViewPointerDown(
 
     EditorGUILayout.BeginHorizontal();
     EditorGUILayout.LabelField(
-        "Stairs Down",
+        "Stairs Down F1 152x92",
         GetPieceFamilyHeaderStyle(Color.magenta),
-        GUILayout.Width(110f));
+        GUILayout.Width(190f));
 
     float savedLabelWidth = EditorGUIUtility.labelWidth;
     const float ToggleBoxWidth = 18f;
