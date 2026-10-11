@@ -49357,18 +49357,18 @@
       "direction": "N",
       "recordType": "Sensor",
       "ornamentOrdinal": 4,
-      "domain": "Wall",
+      "domain": "Floor",
       "normalisedX": 6,
-      "normalisedY": 8,
+      "normalisedY": 9,
       "normalisedGlobalX": 6,
-      "normalisedGlobalY": 8,
-      "normalisedFace": "S",
-      "classificationBasis": "Geometry heuristic: floor sensor points at adjacent wall",
+      "normalisedGlobalY": 9,
+      "normalisedFace": null,
+      "classificationBasis": "Explicit floor sensor ordinal 4; Level 0 floor table [2,8,6,1] -> source graphic ID 1",
       "resolved": {
-        "sourceId": 6,
-        "type": "WoodRing",
-        "sourceName": "Wood Ring",
-        "category": "WallOrnament"
+        "sourceId": 1,
+        "type": "SquarePressurePad",
+        "sourceName": "Square Pressure Pad",
+        "category": "FloorOrnament"
       }
     },
     {

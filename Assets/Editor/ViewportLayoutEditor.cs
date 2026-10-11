@@ -1304,6 +1304,7 @@ public class ViewportLayoutEditor : EditorWindow
       FallbackHallOfChampionsWallOrnaments;
   private readonly HashSet<int> previewPuddleFloors = new HashSet<int>();
   private readonly HashSet<int> previewMossFloors = new HashSet<int>();
+  private readonly HashSet<int> previewPressurePadFloors = new HashSet<int>();
 
   // Temporary per-pose ViewEdit feature visibility overrides. These are never
   // written to map/JSON data. Leaving the current pose clears the set so every
@@ -14026,6 +14027,7 @@ private static void HandleGameViewPointerDown(
           previewWallOrnaments = new WallOrnamentPlacement[0];
           previewPuddleFloors.Clear();
           previewMossFloors.Clear();
+          previewPressurePadFloors.Clear();
         }
       }
 
@@ -21279,6 +21281,7 @@ private static void HandleGameViewPointerDown(
           new List<WallOrnamentPlacement>();
       previewPuddleFloors.Clear();
       previewMossFloors.Clear();
+      previewPressurePadFloors.Clear();
 
       for (int i = 0; i < database.ornamentPlacements.Length; i++)
       {
@@ -21298,6 +21301,14 @@ private static void HandleGameViewPointerDown(
                 System.StringComparison.OrdinalIgnoreCase))
         {
           if (string.Equals(
+                  placement.resolved.type,
+                  "SquarePressurePad",
+                  System.StringComparison.OrdinalIgnoreCase))
+          {
+            previewPressurePadFloors.Add(PackPreviewTile(
+                placement.normalisedX, placement.normalisedY));
+          }
+          else if (string.Equals(
                   placement.resolved.type,
                   "Puddle",
                   System.StringComparison.OrdinalIgnoreCase))
@@ -21346,6 +21357,8 @@ private static void HandleGameViewPointerDown(
       }
 
       previewWallOrnaments = wallOrnaments.ToArray();
+      if (previewDungeonLevel == 0 && previewPressurePadFloors.Count == 0)
+        Debug.LogError("PRESSURE PAD F1: no SquarePressurePad floor ornament in Level 0 feature database");
       return true;
     }
     catch (System.Exception ex)
@@ -24841,10 +24854,19 @@ private static void HandleGameViewPointerDown(
       Debug.LogError("PRESSURE PAD F1: accepted calibration could not be loaded from source");
   }
 
+  // Floor ornaments are on map tiles, not on fixed player poses.
+  // F1 is the floor tile immediately ahead, regardless of player facing.
   private bool IsPressurePadF1ReferencePose()
   {
-    return previewDungeonLevel == 0 && previewX == 7 && previewY == 9
-        && previewFacing == DungeonFacing.West;
+    if (previewMiniMap == null || previewPressurePadFloors.Count == 0)
+      return false;
+
+    DungeonMap.GetForwardOffset(previewFacing, out int forwardX, out int forwardY);
+    int tileX = previewX + forwardX;
+    int tileY = previewY + forwardY;
+    return previewMiniMap.IsInside(tileX, tileY)
+        && previewPressurePadFloors.Contains(PackPreviewTile(tileX, tileY))
+        && IsPreviewFeatureEnabled(MakePreviewFeatureKey("SquarePressurePad", tileX, tileY, null));
   }
 
   private void BlitPressurePadF1IntoPreview(Color32[] pixels)
