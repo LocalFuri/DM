@@ -544,6 +544,18 @@ public class ViewportLayoutEditor : EditorWindow
   private int pressurePadF1X, pressurePadF1Y;
   private bool pressurePadF1Mirror = false, pressurePadF1Enabled = true;
 
+  // F2 floor pressure pad: independent editable calibration, same map feature.
+  private const string PressurePadF2Prefs = "DM.ViewEdit.PressurePadF2.";
+  private const string PressurePadF2Accepted = "91|121|false|true";
+  private int pressurePadF2X, pressurePadF2Y;
+  private bool pressurePadF2Mirror = false, pressurePadF2Enabled = true;
+
+  // F3 floor pressure pad: independent editable calibration, same map feature.
+  private const string PressurePadF3Prefs = "DM.ViewEdit.PressurePadF3.";
+  private const string PressurePadF3Accepted = "99|100|false|true";
+  private int pressurePadF3X, pressurePadF3Y;
+  private bool pressurePadF3Mirror = false, pressurePadF3Enabled = true;
+
   // Level 0 staircase landing, independent of Level 1 calibration.
   private const string StairsLevel0S0LeftPrefs = "DM.ViewEdit.StairsLevel0S0Left.";
   private const string StairsLevel0S0RightPrefs = "DM.ViewEdit.StairsLevel0S0Right.";
@@ -2534,6 +2546,8 @@ public class ViewportLayoutEditor : EditorWindow
     ReloadLayoutFromDisk();
     RestoreSessionPrefs();
     LoadPressurePadF1AcceptedCalibration();
+    LoadPressurePadF2AcceptedCalibration();
+    LoadPressurePadF3AcceptedCalibration();
     showOnlyWallsNeededForCurrentPose = true;
     showWallsActivFilter = true;
     StripObsoleteFrontWallF1ABPieces();
@@ -17613,6 +17627,8 @@ private static void HandleGameViewPointerDown(
     // Reference D2 side fragment, before ornaments (not a final HUD overlay).
     // Two independent native-size stair-up side sprites at the Level 1 landing.
     BlitPressurePadF1IntoPreview(pixels);
+    BlitPressurePadF2IntoPreview(pixels);
+    BlitPressurePadF3IntoPreview(pixels);
     BlitStairsUpF1IntoPreview(pixels);
     BlitStairsUpFrontS1IntoPreview(pixels);
     BlitStairsUpFrontS1LeftIntoPreview(pixels);
@@ -21499,6 +21515,8 @@ private static void HandleGameViewPointerDown(
     stairsUpF1Mirror = EditorPrefs.GetBool(StairsUpF1Prefs + "Mirror", false);
     stairsUpF1Enabled = EditorPrefs.GetBool(StairsUpF1Prefs + "Enabled", true);
     LoadPressurePadF1AcceptedCalibration();
+    LoadPressurePadF2AcceptedCalibration();
+    LoadPressurePadF3AcceptedCalibration();
     stairsUpFrontS1LeftX = EditorPrefs.GetInt(StairsUpFrontS1LeftPrefs + "X", 0);
     stairsUpFrontS1LeftY = EditorPrefs.GetInt(StairsUpFrontS1LeftPrefs + "Y", 32);
     stairsUpFrontS1LeftMirror = EditorPrefs.GetBool(StairsUpFrontS1LeftPrefs + "Mirror", true);
@@ -24671,6 +24689,10 @@ private static void HandleGameViewPointerDown(
 
     if (IsPressurePadF1ReferencePose())
       DrawPressurePadF1CalibrationRow();
+    if (IsPressurePadF2ReferencePose())
+      DrawPressurePadF2CalibrationRow();
+    if (IsPressurePadF3ReferencePose())
+      DrawPressurePadF3CalibrationRow();
     if (IsStairsUpF1ReferencePose())
       DrawStairsUpF1CalibrationRow();
     if (IsStairsUpFrontS1ReferencePose())
@@ -25002,6 +25024,352 @@ private static void HandleGameViewPointerDown(
     }
     if (apply)
       SavePressurePadF1Calibration();
+  }
+
+  private void LoadPressurePadF2AcceptedCalibration()
+  {
+    if (TryReadSavedStairCalibration("PressurePadF2Accepted", out string pressurePadSaved))
+    {
+      string[] values = pressurePadSaved.Split('|');
+      if (values.Length == 4
+          && int.TryParse(values[0], out int savedPadX)
+          && int.TryParse(values[1], out int savedPadY)
+          && bool.TryParse(values[2], out bool savedPadMirror)
+          && bool.TryParse(values[3], out bool savedPadEnabled))
+      {
+        pressurePadF2X = savedPadX;
+        pressurePadF2Y = savedPadY;
+        pressurePadF2Mirror = savedPadMirror;
+        pressurePadF2Enabled = savedPadEnabled;
+      }
+      else
+        Debug.LogError("PRESSURE PAD F2: invalid accepted calibration: " + pressurePadSaved);
+    }
+    else
+      Debug.LogError("PRESSURE PAD F2: accepted calibration could not be loaded from source");
+  }
+
+  // Floor ornaments are on map tiles, not on fixed player poses.
+  // F2 is the floor tile two steps ahead, regardless of player facing.
+  private bool IsPressurePadF2ReferencePose()
+  {
+    if (previewMiniMap == null || previewPressurePadFloors.Count == 0)
+      return false;
+
+    DungeonMap.GetForwardOffset(previewFacing, out int forwardX, out int forwardY);
+    int tileX = previewX + 2 * forwardX;
+    int tileY = previewY + 2 * forwardY;
+    return previewMiniMap.IsInside(tileX, tileY)
+        && previewPressurePadFloors.Contains(PackPreviewTile(tileX, tileY))
+        && IsPreviewFeatureEnabled(MakePreviewFeatureKey("SquarePressurePad", tileX, tileY, null));
+  }
+
+  private void BlitPressurePadF2IntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || !IsPressurePadF2ReferencePose() || !pressurePadF2Enabled)
+      return;
+    const string assetPath =
+        "Assets/Art/Ornaments/Square_Pressure_Pad_F2_42x11.png";
+    Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+    if (sprite == null)
+    {
+      Debug.LogError("PRESSURE PAD F2: missing asset: " + assetPath);
+      return;
+    }
+    if (sprite.width != 42 || sprite.height != 11 || !sprite.isReadable)
+    {
+      Debug.LogError("PRESSURE PAD F2: expected readable 42x11 image: " + assetPath);
+      return;
+    }
+    BlitPieceIntoPreview(pixels, sprite, pressurePadF2X,
+        DisplayYToUnityY(pressurePadF2Y, sprite.height), pressurePadF2Mirror);
+  }
+
+  private bool SavePressurePadF2Calibration()
+  {
+    string sourcePath = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(sourcePath) || !File.Exists(sourcePath))
+    {
+      Debug.LogError("PRESSURE PAD F2 Apply: source script missing: " + sourcePath);
+      return false;
+    }
+    const string token = "private const string PressurePadF2Accepted = \"";
+    try
+    {
+      string source = File.ReadAllText(sourcePath);
+      int begin = source.IndexOf(token, System.StringComparison.Ordinal);
+      if (begin < 0 || source.IndexOf(token, begin + token.Length,
+          System.StringComparison.Ordinal) >= 0)
+      {
+        Debug.LogError("PRESSURE PAD F2 Apply: expected exactly one saved constant");
+        return false;
+      }
+      int start = begin + token.Length;
+      int end = source.IndexOf('"', start);
+      if (end < 0)
+      {
+        Debug.LogError("PRESSURE PAD F2 Apply: malformed saved constant");
+        return false;
+      }
+      string accepted = pressurePadF2X + "|" + pressurePadF2Y + "|"
+          + (pressurePadF2Mirror ? "true" : "false") + "|"
+          + (pressurePadF2Enabled ? "true" : "false");
+      string updated = source.Substring(0, start) + accepted + source.Substring(end);
+      if (updated != source)
+        File.WriteAllText(sourcePath, updated);
+      // Do not report success unless the permanent .cs value really matches.
+      if (!TryReadSavedStairCalibration("PressurePadF2Accepted", out string verified)
+          || verified != accepted)
+      {
+        Debug.LogError("PRESSURE PAD F2 Apply: saved value verification failed: " + sourcePath);
+        return false;
+      }
+      EditorPrefs.SetInt(PressurePadF2Prefs + "X", pressurePadF2X);
+      EditorPrefs.SetInt(PressurePadF2Prefs + "Y", pressurePadF2Y);
+      EditorPrefs.SetBool(PressurePadF2Prefs + "Mirror", pressurePadF2Mirror);
+      EditorPrefs.SetBool(PressurePadF2Prefs + "Enabled", pressurePadF2Enabled);
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+      if (updated != source)
+        AssetDatabase.ImportAsset(sourcePath, ImportAssetOptions.ForceUpdate);
+      return true;
+    }
+    catch (System.Exception exception)
+    {
+      Debug.LogError("PRESSURE PAD F2 Apply: " + exception);
+      return false;
+    }
+  }
+
+  private void DrawPressurePadF2CalibrationRow()
+  {
+    if (!TryReadSavedStairCalibration("PressurePadF2Accepted", out string accepted))
+      return;
+    string[] saved = accepted.Split('|');
+    if (saved.Length != 4 || !int.TryParse(saved[0], out int acceptedX)
+        || !int.TryParse(saved[1], out int acceptedY)
+        || !bool.TryParse(saved[2], out bool acceptedMirror)
+        || !bool.TryParse(saved[3], out bool acceptedEnabled))
+    {
+      Debug.LogError("PRESSURE PAD F2: invalid saved calibration in source");
+      return;
+    }
+    EditorGUILayout.BeginHorizontal();
+    float oldLabelWidth = EditorGUIUtility.labelWidth;
+    Color oldColor = GUI.contentColor;
+    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
+    style.normal.textColor = Color.magenta;
+    const string caption = "PressurePad_F2 (42x11)";
+    GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
+    GUILayout.Space(8f);
+    float setWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
+    EditorGUIUtility.labelWidth = setWidth;
+    GUI.contentColor = pressurePadF2Enabled != acceptedEnabled ? Color.red : oldColor;
+    bool enabled = DrawMouseOnlyToggle("Set", pressurePadF2Enabled, pressurePadF2Enabled,
+        GUILayout.Width(setWidth + 18f), GUILayout.ExpandWidth(false));
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    GUI.contentColor = pressurePadF2X != acceptedX ? Color.red : oldColor;
+    int x = pressurePadF2X;
+    bool xChanged = DrawIntStepperInline("X", ref x, snap, false, true, 24f, 24f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    GUI.contentColor = pressurePadF2Y != acceptedY ? Color.red : oldColor;
+    int y = pressurePadF2Y;
+    bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
+    GUILayout.Space(6f);
+    GUI.contentColor = pressurePadF2Mirror != acceptedMirror ? Color.red : oldColor;
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", pressurePadF2Mirror, GUILayout.Width(66f));
+    GUI.contentColor = oldColor;
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = oldLabelWidth;
+    EditorGUILayout.EndHorizontal();
+    if (enabled != pressurePadF2Enabled || (xChanged && x != pressurePadF2X)
+        || (yChanged && y != pressurePadF2Y) || mirror != pressurePadF2Mirror)
+    {
+      pressurePadF2Enabled = enabled;
+      pressurePadF2X = x;
+      pressurePadF2Y = y;
+      pressurePadF2Mirror = mirror;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+    if (apply)
+      SavePressurePadF2Calibration();
+  }
+
+  private void LoadPressurePadF3AcceptedCalibration()
+  {
+    if (TryReadSavedStairCalibration("PressurePadF3Accepted", out string pressurePadSaved))
+    {
+      string[] values = pressurePadSaved.Split('|');
+      if (values.Length == 4
+          && int.TryParse(values[0], out int savedPadX)
+          && int.TryParse(values[1], out int savedPadY)
+          && bool.TryParse(values[2], out bool savedPadMirror)
+          && bool.TryParse(values[3], out bool savedPadEnabled))
+      {
+        pressurePadF3X = savedPadX;
+        pressurePadF3Y = savedPadY;
+        pressurePadF3Mirror = savedPadMirror;
+        pressurePadF3Enabled = savedPadEnabled;
+      }
+      else
+        Debug.LogError("PRESSURE PAD F3: invalid accepted calibration: " + pressurePadSaved);
+    }
+    else
+      Debug.LogError("PRESSURE PAD F3: accepted calibration could not be loaded from source");
+  }
+
+  // Floor ornaments are on map tiles, not on fixed player poses.
+  // F3 is the floor tile three steps ahead, regardless of player facing.
+  private bool IsPressurePadF3ReferencePose()
+  {
+    if (previewMiniMap == null || previewPressurePadFloors.Count == 0)
+      return false;
+
+    DungeonMap.GetForwardOffset(previewFacing, out int forwardX, out int forwardY);
+    int tileX = previewX + 3 * forwardX;
+    int tileY = previewY + 3 * forwardY;
+    return previewMiniMap.IsInside(tileX, tileY)
+        && previewPressurePadFloors.Contains(PackPreviewTile(tileX, tileY))
+        && IsPreviewFeatureEnabled(MakePreviewFeatureKey("SquarePressurePad", tileX, tileY, null));
+  }
+
+  private void BlitPressurePadF3IntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || !IsPressurePadF3ReferencePose() || !pressurePadF3Enabled)
+      return;
+    const string assetPath =
+        "Assets/Art/Ornaments/Square_Pressure_Pad_F3_26x6.png";
+    Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+    if (sprite == null)
+    {
+      Debug.LogError("PRESSURE PAD F3: missing asset: " + assetPath);
+      return;
+    }
+    if (sprite.width != 26 || sprite.height != 6 || !sprite.isReadable)
+    {
+      Debug.LogError("PRESSURE PAD F3: expected readable 26x6 image: " + assetPath);
+      return;
+    }
+    BlitPieceIntoPreview(pixels, sprite, pressurePadF3X,
+        DisplayYToUnityY(pressurePadF3Y, sprite.height), pressurePadF3Mirror);
+  }
+
+  private bool SavePressurePadF3Calibration()
+  {
+    string sourcePath = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(sourcePath) || !File.Exists(sourcePath))
+    {
+      Debug.LogError("PRESSURE PAD F3 Apply: source script missing: " + sourcePath);
+      return false;
+    }
+    const string token = "private const string PressurePadF3Accepted = \"";
+    try
+    {
+      string source = File.ReadAllText(sourcePath);
+      int begin = source.IndexOf(token, System.StringComparison.Ordinal);
+      if (begin < 0 || source.IndexOf(token, begin + token.Length,
+          System.StringComparison.Ordinal) >= 0)
+      {
+        Debug.LogError("PRESSURE PAD F3 Apply: expected exactly one saved constant");
+        return false;
+      }
+      int start = begin + token.Length;
+      int end = source.IndexOf('"', start);
+      if (end < 0)
+      {
+        Debug.LogError("PRESSURE PAD F3 Apply: malformed saved constant");
+        return false;
+      }
+      string accepted = pressurePadF3X + "|" + pressurePadF3Y + "|"
+          + (pressurePadF3Mirror ? "true" : "false") + "|"
+          + (pressurePadF3Enabled ? "true" : "false");
+      string updated = source.Substring(0, start) + accepted + source.Substring(end);
+      if (updated != source)
+        File.WriteAllText(sourcePath, updated);
+      // Do not report success unless the permanent .cs value really matches.
+      if (!TryReadSavedStairCalibration("PressurePadF3Accepted", out string verified)
+          || verified != accepted)
+      {
+        Debug.LogError("PRESSURE PAD F3 Apply: saved value verification failed: " + sourcePath);
+        return false;
+      }
+      EditorPrefs.SetInt(PressurePadF3Prefs + "X", pressurePadF3X);
+      EditorPrefs.SetInt(PressurePadF3Prefs + "Y", pressurePadF3Y);
+      EditorPrefs.SetBool(PressurePadF3Prefs + "Mirror", pressurePadF3Mirror);
+      EditorPrefs.SetBool(PressurePadF3Prefs + "Enabled", pressurePadF3Enabled);
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+      if (updated != source)
+        AssetDatabase.ImportAsset(sourcePath, ImportAssetOptions.ForceUpdate);
+      return true;
+    }
+    catch (System.Exception exception)
+    {
+      Debug.LogError("PRESSURE PAD F3 Apply: " + exception);
+      return false;
+    }
+  }
+
+  private void DrawPressurePadF3CalibrationRow()
+  {
+    if (!TryReadSavedStairCalibration("PressurePadF3Accepted", out string accepted))
+      return;
+    string[] saved = accepted.Split('|');
+    if (saved.Length != 4 || !int.TryParse(saved[0], out int acceptedX)
+        || !int.TryParse(saved[1], out int acceptedY)
+        || !bool.TryParse(saved[2], out bool acceptedMirror)
+        || !bool.TryParse(saved[3], out bool acceptedEnabled))
+    {
+      Debug.LogError("PRESSURE PAD F3: invalid saved calibration in source");
+      return;
+    }
+    EditorGUILayout.BeginHorizontal();
+    float oldLabelWidth = EditorGUIUtility.labelWidth;
+    Color oldColor = GUI.contentColor;
+    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
+    style.normal.textColor = Color.magenta;
+    const string caption = "PressurePad_F3 (26x6)";
+    GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
+    GUILayout.Space(8f);
+    float setWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
+    EditorGUIUtility.labelWidth = setWidth;
+    GUI.contentColor = pressurePadF3Enabled != acceptedEnabled ? Color.red : oldColor;
+    bool enabled = DrawMouseOnlyToggle("Set", pressurePadF3Enabled, pressurePadF3Enabled,
+        GUILayout.Width(setWidth + 18f), GUILayout.ExpandWidth(false));
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    GUI.contentColor = pressurePadF3X != acceptedX ? Color.red : oldColor;
+    int x = pressurePadF3X;
+    bool xChanged = DrawIntStepperInline("X", ref x, snap, false, true, 24f, 24f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    GUI.contentColor = pressurePadF3Y != acceptedY ? Color.red : oldColor;
+    int y = pressurePadF3Y;
+    bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
+    GUILayout.Space(6f);
+    GUI.contentColor = pressurePadF3Mirror != acceptedMirror ? Color.red : oldColor;
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", pressurePadF3Mirror, GUILayout.Width(66f));
+    GUI.contentColor = oldColor;
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = oldLabelWidth;
+    EditorGUILayout.EndHorizontal();
+    if (enabled != pressurePadF3Enabled || (xChanged && x != pressurePadF3X)
+        || (yChanged && y != pressurePadF3Y) || mirror != pressurePadF3Mirror)
+    {
+      pressurePadF3Enabled = enabled;
+      pressurePadF3X = x;
+      pressurePadF3Y = y;
+      pressurePadF3Mirror = mirror;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+    if (apply)
+      SavePressurePadF3Calibration();
   }
 
   private bool IsStairsUpF1ReferencePose()
