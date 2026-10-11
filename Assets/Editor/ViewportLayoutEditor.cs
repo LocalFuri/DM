@@ -1465,6 +1465,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:WoodRing:F2|103|111|false
   // REF OrnamentProjection:WoodRing:F3|105|117|false
   // REF OrnamentProjection:WoodRing:S1|49|110|false
+  // REF OrnamentProjection:WoodRing:S1:Right|161|108|true
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
@@ -22549,6 +22550,22 @@ private static void HandleGameViewPointerDown(
       }
     }
 
+    // S1 Wood Rings need independently accepted left/right screen slots.
+    // The generic projection gives the D1 boundary direction toward the wall:
+    // TurnLeft(viewFacing) = screen-left, TurnRight(viewFacing) = screen-right.
+    // The original WoodRing:S1 reference is the verified left slot.
+    if (IsWoodRingOrnament(ornament) && slot == "S1")
+    {
+      string rightBoundary = FacingName(TurnPreviewFacingRight(previewFacing));
+      if (string.Equals(mapFace, rightBoundary,
+          System.StringComparison.OrdinalIgnoreCase))
+      {
+        overrideKey = "OrnamentProjection:WoodRing:S1:Right";
+        projectionSuffix = " / S1 Right";
+        return true;
+      }
+    }
+
     overrideKey = "OrnamentProjection:" + family + ":" + slot;
     projectionSuffix = " / " + slot;
     return true;
@@ -30269,7 +30286,8 @@ private static void HandleGameViewPointerDown(
       if (ornament == null)
         continue;
 
-      // Hook uses native 16x19 1:1; Wood Ring keeps its 14x19 cutout.
+      // S1 side projection uses the native 16x19 Hook artwork.
+      // Wood Ring S1 is not rendered by this path.
       Texture2D sideTexture = null;
       int sideY = HookD1SideY;
       int sideLeftX = HookD1SideLeftX;
