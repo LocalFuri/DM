@@ -540,8 +540,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Pressure plate calibration at Level 0 (7,9) West.
   private const string PressurePadF1Prefs = "DM.ViewEdit.PressurePadF1.";
-  private const string PressurePadF1Accepted = "80|105|false|true";
-  private int pressurePadF1X = 80, pressurePadF1Y = 105;
+  private const string PressurePadF1Accepted = "80|128|false|true";
+  private int pressurePadF1X, pressurePadF1Y;
   private bool pressurePadF1Mirror = false, pressurePadF1Enabled = true;
 
   // Level 0 staircase landing, independent of Level 1 calibration.
@@ -2502,6 +2502,7 @@ public class ViewportLayoutEditor : EditorWindow
     RestorePersistedAssets();
     ReloadLayoutFromDisk();
     RestoreSessionPrefs();
+    LoadPressurePadF1AcceptedCalibration();
     showOnlyWallsNeededForCurrentPose = true;
     showWallsActivFilter = true;
     StripObsoleteFrontWallF1ABPieces();
@@ -21237,10 +21238,7 @@ private static void HandleGameViewPointerDown(
     stairsUpF1Y = EditorPrefs.GetInt(StairsUpF1Prefs + "Y", 32);
     stairsUpF1Mirror = EditorPrefs.GetBool(StairsUpF1Prefs + "Mirror", false);
     stairsUpF1Enabled = EditorPrefs.GetBool(StairsUpF1Prefs + "Enabled", true);
-    pressurePadF1X = EditorPrefs.GetInt(PressurePadF1Prefs + "X", 80);
-    pressurePadF1Y = EditorPrefs.GetInt(PressurePadF1Prefs + "Y", 105);
-    pressurePadF1Mirror = EditorPrefs.GetBool(PressurePadF1Prefs + "Mirror", false);
-    pressurePadF1Enabled = EditorPrefs.GetBool(PressurePadF1Prefs + "Enabled", true);
+    LoadPressurePadF1AcceptedCalibration();
     stairsUpFrontS1LeftX = EditorPrefs.GetInt(StairsUpFrontS1LeftPrefs + "X", 0);
     stairsUpFrontS1LeftY = EditorPrefs.GetInt(StairsUpFrontS1LeftPrefs + "Y", 32);
     stairsUpFrontS1LeftMirror = EditorPrefs.GetBool(StairsUpFrontS1LeftPrefs + "Mirror", true);
@@ -24620,6 +24618,31 @@ private static void HandleGameViewPointerDown(
   // map stair detection: this is the calibration used to diagnose that mapping.
   // A fully generic map-relative rule can be added after visual verification.
   // Calibration pose; rendering and ViewEdit use precisely the same gate.
+  // Single source of truth for runtime controls and the ViewEdit accepted values.
+  // Reload on window enable and on pose resets; never reuse a stale field initializer.
+  private void LoadPressurePadF1AcceptedCalibration()
+  {
+    if (TryReadSavedStairCalibration("PressurePadF1Accepted", out string pressurePadSaved))
+    {
+      string[] values = pressurePadSaved.Split('|');
+      if (values.Length == 4
+          && int.TryParse(values[0], out int savedPadX)
+          && int.TryParse(values[1], out int savedPadY)
+          && bool.TryParse(values[2], out bool savedPadMirror)
+          && bool.TryParse(values[3], out bool savedPadEnabled))
+      {
+        pressurePadF1X = savedPadX;
+        pressurePadF1Y = savedPadY;
+        pressurePadF1Mirror = savedPadMirror;
+        pressurePadF1Enabled = savedPadEnabled;
+      }
+      else
+        Debug.LogError("PRESSURE PAD F1: invalid accepted calibration: " + pressurePadSaved);
+    }
+    else
+      Debug.LogError("PRESSURE PAD F1: accepted calibration could not be loaded from source");
+  }
+
   private bool IsPressurePadF1ReferencePose()
   {
     return previewDungeonLevel == 0 && previewX == 7 && previewY == 9
@@ -24695,6 +24718,13 @@ private static void HandleGameViewPointerDown(
       string updated = source.Substring(0, start) + accepted + source.Substring(end);
       if (updated != source)
         File.WriteAllText(sourcePath, updated);
+      // Do not report success unless the permanent .cs value really matches.
+      if (!TryReadSavedStairCalibration("PressurePadF1Accepted", out string verified)
+          || verified != accepted)
+      {
+        Debug.LogError("PRESSURE PAD F1 Apply: saved value verification failed: " + sourcePath);
+        return false;
+      }
       EditorPrefs.SetInt(PressurePadF1Prefs + "X", pressurePadF1X);
       EditorPrefs.SetInt(PressurePadF1Prefs + "Y", pressurePadF1Y);
       EditorPrefs.SetBool(PressurePadF1Prefs + "Mirror", pressurePadF1Mirror);
