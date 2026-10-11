@@ -1150,6 +1150,19 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   [System.Serializable]
+  private sealed class ChampionMirrorVerifiedFaces
+  {
+    public ChampionMirrorVerifiedFace[] entries;
+  }
+
+  [System.Serializable]
+  private sealed class ChampionMirrorVerifiedFace
+  {
+    public string champion;
+    public string adjacentWall;
+  }
+
+  [System.Serializable]
   private sealed class WallOrnamentPlacement
   {
     public string type;
@@ -13847,6 +13860,45 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
+    // Multiple adjacent walls: use only independently verified orientation
+    // records from JSON, never guess based on ordering or default direction.
+    if (TryGetVerifiedChampionMirrorAdjacentWall(champion.name, out string adjacentWall))
+    {
+      int dx = 0;
+      int dy = 0;
+      string expectedWallFace;
+      switch (adjacentWall.ToUpperInvariant())
+      {
+        case "NORTH": dy = -1; expectedWallFace = "South"; break;
+        case "EAST":  dx =  1; expectedWallFace = "West";  break;
+        case "SOUTH": dy =  1; expectedWallFace = "North"; break;
+        case "WEST":  dx = -1; expectedWallFace = "East";  break;
+        default:
+          Debug.LogError("ViewEdit: Invalid verified adjacent wall "
+              + adjacentWall + " for " + champion.name);
+          return false;
+      }
+
+      int selectedX = champion.x + dx;
+      int selectedY = champion.y + dy;
+      for (int i = 0; i < candidates.Count; i++)
+      {
+        if (candidates[i].x != selectedX || candidates[i].y != selectedY
+            || !string.Equals(candidates[i].wall, expectedWallFace,
+                System.StringComparison.OrdinalIgnoreCase))
+          continue;
+        wallX = selectedX;
+        wallY = selectedY;
+        wallSide = expectedWallFace;
+        return true;
+      }
+      Debug.LogError("ViewEdit: Verified " + adjacentWall
+          + " wall for champion " + champion.name + " at ("
+          + champion.x + "," + champion.y
+          + ") does not match any adjacent wall in the loaded map.");
+      return false;
+    }
+
     List<string> details = new List<string>(candidates.Count);
     for (int i = 0; i < candidates.Count; i++)
       details.Add(
@@ -13858,6 +13910,51 @@ private static void HandleGameViewPointerDown(
         + candidates.Count + " adjacent wall candidates: "
         + string.Join(", ", details)
         + ". Verify the original mirror wall before adding an explicit placement.");
+    return false;
+  }
+
+  private static readonly string ChampionMirrorVerifiedFacesPath =
+      "Assets/Data/Features/ChampionMirrorVerifiedFaces.json";
+
+  private bool TryGetVerifiedChampionMirrorAdjacentWall(
+      string championName,
+      out string adjacentWall)
+  {
+    adjacentWall = null;
+    if (!File.Exists(ChampionMirrorVerifiedFacesPath))
+    {
+      Debug.LogError("ViewEdit: Missing verified champion mirror faces: "
+          + ChampionMirrorVerifiedFacesPath);
+      return false;
+    }
+
+    ChampionMirrorVerifiedFaces records;
+    try
+    {
+      records = JsonUtility.FromJson<ChampionMirrorVerifiedFaces>(
+          File.ReadAllText(ChampionMirrorVerifiedFacesPath));
+    }
+    catch (System.Exception ex)
+    {
+      Debug.LogError("ViewEdit: Invalid champion mirror faces JSON: " + ex.Message);
+      return false;
+    }
+
+    if (records == null || records.entries == null)
+    {
+      Debug.LogError("ViewEdit: Champion mirror verified faces JSON has no entries.");
+      return false;
+    }
+
+    for (int i = 0; i < records.entries.Length; i++)
+    {
+      ChampionMirrorVerifiedFace record = records.entries[i];
+      if (record == null || !string.Equals(record.champion, championName,
+              System.StringComparison.OrdinalIgnoreCase))
+        continue;
+      adjacentWall = record.adjacentWall;
+      return !string.IsNullOrEmpty(adjacentWall);
+    }
     return false;
   }
 
