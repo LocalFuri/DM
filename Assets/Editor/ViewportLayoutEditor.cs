@@ -498,7 +498,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Front-facing up stairs at the Level 1 staircase landing.
   private const string StairsUpF1Prefs = "DM.ViewEdit.StairsUpF1.";
-  private const string StairsUpF1Accepted = "82|32|false|true";
+  private const string StairsUpF1Accepted = "32|42|false|true";
   private int stairsUpF1X = 82, stairsUpF1Y = 32;
   private bool stairsUpF1Mirror = false, stairsUpF1Enabled = true;
 
@@ -24665,16 +24665,10 @@ private static void HandleGameViewPointerDown(
         string key = MakePreviewFeatureKey(
             family, visibleStairsX, visibleStairsY, null);
 
-        if (stairsUp)
-        {
-          DrawFeatureChecklistRow(
-              visibleStairsX,
-              visibleStairsY,
-              "Stairs Up",
-              key,
-              Color.magenta);
-        }
-        else
+        // Stairs-up tiles are map data, not separate viewport images.
+        // Their visible graphics have their own calibration rows below.
+        // Keep Stairs Down's independent Show Image control unchanged.
+        if (!stairsUp)
         {
           DrawStairsDownFeatureChecklistRow(
               visibleStairsX, visibleStairsY, key);
