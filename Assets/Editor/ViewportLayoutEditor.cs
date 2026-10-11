@@ -24196,29 +24196,9 @@ private static void HandleGameViewPointerDown(
             || TryGetOriginalSouthWoodRingLeftDepth(ornament, out _));
   }
 
-  // Verified original reference: this east-facing Hook is not visible from
-  // (4,14) South. Keep ViewEdit and the renderer in agreement.
-  // This is a reference-pose exclusion, not yet a generic occlusion algorithm.
-  private bool IsHookHiddenAtStairsS2Reference(WallOrnamentPlacement ornament)
-  {
-    if (!IsStairsdownS2CalibrationPose() || !IsHookOrnament(ornament))
-      return false;
-
-    // ViewEdit labels the projected dungeon-feature face, not necessarily
-    // the ornament's storage tile/face. Match the same projected coordinates
-    // here so the renderer and ViewEdit suppress the same Hook.
-    return TryGetStandardWallOrnamentProjectionInCurrentPose(
-        ornament, 2, 3, out int featureX, out int featureY,
-        out string featureFace)
-        && featureX == 4 && featureY == 15
-        && string.Equals(featureFace, "East",
-            System.StringComparison.OrdinalIgnoreCase);
-  }
-
   private bool IsHookProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
   {
     return IsHookOrnament(ornament)
-        && !IsHookHiddenAtStairsS2Reference(ornament)
         && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 2, 3);
   }
 
@@ -24276,7 +24256,7 @@ private static void HandleGameViewPointerDown(
       for (int i = 0; i < previewWallOrnaments.Length; i++)
       {
         WallOrnamentPlacement ornament = previewWallOrnaments[i];
-        if (ornament == null || IsHookHiddenAtStairsS2Reference(ornament))
+        if (ornament == null)
           continue;
 
         // Vi Altar side projections use exact geometry before the broad
@@ -32283,7 +32263,7 @@ private static void HandleGameViewPointerDown(
       int defaultY,
       bool defaultMirror)
   {
-    if (ornament == null || IsHookHiddenAtStairsS2Reference(ornament))
+    if (ornament == null)
       return;
 
     string key = MakePreviewFeatureKey(
