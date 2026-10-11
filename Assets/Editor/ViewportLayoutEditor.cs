@@ -22281,29 +22281,6 @@ private static void HandleGameViewPointerDown(
     if (maxFrontDepth == 0)
       return false;
 
-    if (IsWoodRingOrnament(ornament)
-        && TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southViewDepth))
-    {
-      renderMirror = false;
-      if (southViewDepth == 1)
-      {
-        renderX = WoodRingD1SideLeftX;
-        renderY = WoodRingD1SideY;
-        return true;
-      }
-      if (southViewDepth == 2)
-      {
-        renderX = WoodRingD2SideLeftX;
-        renderY = WoodRingD2SideY;
-        return true;
-      }
-      if (southViewDepth == 3)
-      {
-        renderX = WoodRingD3SideLeftX;
-        renderY = WoodRingD3SideY;
-        return true;
-      }
-    }
 
     if (!TryGetStandardWallOrnamentProjectionInCurrentPose(
             ornament,
@@ -22410,30 +22387,6 @@ private static void HandleGameViewPointerDown(
 
     if (IsWoodRingOrnament(ornament))
     {
-      // Facing south, the (3,4) East wood ring stays on the left.
-      // 4,4 South is D1 left, 4,3 South is D2 left, 4,2 South is D3 left.
-      if (TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southDepth))
-      {
-        renderMirror = false;
-        if (southDepth == 1)
-        {
-          renderX = WoodRingD1SideLeftX;
-          renderY = WoodRingD1SideY;
-          return true;
-        }
-        if (southDepth == 2)
-        {
-          renderX = WoodRingD2SideLeftX;
-          renderY = WoodRingD2SideY;
-          return true;
-        }
-        if (southDepth == 3)
-        {
-          renderX = WoodRingD3SideLeftX;
-          renderY = WoodRingD3SideY;
-          return true;
-        }
-      }
 
       renderMirror = !isLeft;
       if (sideDepth == 1) { renderX = isLeft ? WoodRingD1SideLeftX : WoodRingD1SideRightX; renderY = WoodRingD1SideY; return true; }
@@ -22545,13 +22498,6 @@ private static void HandleGameViewPointerDown(
     if (maxFrontDepth == 0)
       return false;
 
-    if (IsWoodRingOrnament(ornament)
-        && TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southViewDepth))
-    {
-      overrideKey = "OrnamentProjection:WoodRing:S" + southViewDepth;
-      projectionSuffix = " / S" + southViewDepth;
-      return true;
-    }
 
     if (!TryGetStandardWallOrnamentProjectionInCurrentPose(
             ornament,
@@ -22581,9 +22527,6 @@ private static void HandleGameViewPointerDown(
     else
     {
       int sideDepth = depthFromPlayer;
-      if (IsWoodRingOrnament(ornament)
-          && TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southDepth))
-        sideDepth = southDepth;
       if (sideDepth < 1 || sideDepth > maxSideDepth)
         return false;
       slot = "S" + sideDepth;
@@ -24192,8 +24135,7 @@ private static void HandleGameViewPointerDown(
       WallOrnamentPlacement ornament)
   {
     return IsWoodRingOrnament(ornament)
-        && (IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 3, 3)
-            || TryGetOriginalSouthWoodRingLeftDepth(ornament, out _));
+        && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 3, 3);
   }
 
   private bool IsHookProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
@@ -29798,34 +29740,6 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  // Original south views of the (3,4) East wood ring place it on the
-  // left. 4,4 South -> D1 left. 4,3 South -> D2 left. 4,2 South -> D3 left.
-  private bool TryGetOriginalSouthWoodRingLeftDepth(
-      WallOrnamentPlacement ornament,
-      out int depth)
-  {
-    depth = 0;
-    if (ornament == null
-        || previewFacing != DungeonFacing.South
-        || previewX != 4
-        || ornament.x != 3
-        || ornament.y != 4
-        || !string.Equals(
-            ornament.wall,
-            "East",
-            System.StringComparison.OrdinalIgnoreCase))
-    {
-      return false;
-    }
-
-    int steps = ornament.y - previewY;
-    if (steps < 0 || steps > 2)
-      return false;
-
-    depth = steps + 1;
-    return true;
-  }
-
   private void BlitWoodRingD3SidesIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -29912,15 +29826,6 @@ private static void HandleGameViewPointerDown(
       if (!IsWoodRingOrnament(ornament))
         continue;
 
-      if (TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southDepth)
-          && southDepth == 3
-          && !leftDrawn)
-      {
-        BlitOrnamentPieceIntoPreview(
-            pixels, side3, ornament, WoodRingD3SideLeftX, WoodRingD3SideY, false);
-        leftDrawn = true;
-        continue;
-      }
 
       bool matchesLeft;
       bool matchesRight;
@@ -30064,16 +29969,6 @@ private static void HandleGameViewPointerDown(
         continue;
       if (!IsWoodRingOrnament(ornament))
         continue;
-      if (TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southDepth))
-      {
-        if (southDepth == 2 && !leftDrawn)
-        {
-          BlitOrnamentPieceIntoPreview(
-              pixels, side2, ornament, WoodRingD2SideLeftX, WoodRingD2SideY, false);
-          leftDrawn = true;
-        }
-        continue;
-      }
 
       bool matchesLeft;
       bool matchesRight;
@@ -30373,29 +30268,6 @@ private static void HandleGameViewPointerDown(
         continue;
       if (ornament == null)
         continue;
-      if (IsWoodRingOrnament(ornament)
-          && TryGetOriginalSouthWoodRingLeftDepth(ornament, out int southDepth))
-      {
-        if (southDepth == 1 && !leftDrawn)
-        {
-          Texture2D ring = GetWoodRingSideTexture();
-          if (ring != null
-              && ring.isReadable
-              && ring.width == 14
-              && ring.height == 19)
-          {
-            BlitOrnamentPieceIntoPreview(
-                pixels,
-                ring,
-                ornament,
-                WoodRingD1SideLeftX,
-                WoodRingD1SideY,
-                false);
-            leftDrawn = true;
-          }
-        }
-        continue;
-      }
 
       // Hook uses native 16x19 1:1; Wood Ring keeps its 14x19 cutout.
       Texture2D sideTexture = null;
