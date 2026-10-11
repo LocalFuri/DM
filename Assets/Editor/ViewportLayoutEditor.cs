@@ -22814,27 +22814,19 @@ private static void HandleGameViewPointerDown(
     if (mirror == null || string.IsNullOrEmpty(mirror.wall))
       return null;
 
-    DungeonMap.GetForwardOffset(
-        previewFacing, out int forwardX, out int forwardY);
-    string frontFace = FacingName(OppositePreviewFacing(previewFacing));
-    if (!string.Equals(
-            mirror.wall,
-            frontFace,
-            System.StringComparison.OrdinalIgnoreCase))
+    // The sensor records the wall face pointing toward the party. ViewEdit
+    // displays the opposite direction: where the player looks to see it.
+    switch (mirror.wall.ToUpperInvariant())
     {
-      return mirror.wall;
+      case "NORTH": return "South";
+      case "EAST": return "West";
+      case "SOUTH": return "North";
+      case "WEST": return "East";
+      default:
+        Debug.LogError("ViewEdit: Invalid champion mirror wall face '"
+            + mirror.wall + "' for " + mirror.champion);
+        return null;
     }
-
-    for (int depth = 1; depth <= 3; depth++)
-    {
-      if (mirror.x == previewX + forwardX * depth
-          && mirror.y == previewY + forwardY * depth)
-      {
-        return FacingName(previewFacing);
-      }
-    }
-
-    return mirror.wall;
   }
 
   // ViewEdit champion coordinates describe the party position from which
@@ -22903,10 +22895,15 @@ private static void HandleGameViewPointerDown(
     featureStyle.normal.textColor = labelColor;
     featureStyle.hover.textColor = labelColor;
     featureStyle.focused.textColor = labelColor;
+    // Champion rows use the label's actual width instead of reserving the
+    // shared 210px ornament-description column. Keep the map X/Y fields,
+    // Set and Mirror together immediately after the champion description.
+    float championDescriptionWidth =
+        Mathf.Ceil(featureStyle.CalcSize(new GUIContent(name)).x) + 6f;
     GUILayout.Label(
         name,
         featureStyle,
-        GUILayout.Width(FeatureDescriptionWidth));
+        GUILayout.Width(championDescriptionWidth));
 
     // Champion row order: name/direction first at the far left, followed by
     // the F1 party-position X/Y fields, then Enabled and Mirror.
