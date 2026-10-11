@@ -558,7 +558,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // S1 left floor pressure pad: two forward, one tile to the left.
   private const string PressurePadS1Prefs = "DM.ViewEdit.PressurePadS1.";
-  private const string PressurePadS1Accepted = "65|110|false|true";
+  private const string PressurePadS1Accepted = "1|110|false|true";
   private int pressurePadS1X, pressurePadS1Y;
   private bool pressurePadS1Mirror = false, pressurePadS1Enabled = true;
 
@@ -16860,6 +16860,9 @@ private static void HandleGameViewPointerDown(
       bool viewport17NativeD3Drawn = false;
       bool viewport17NativeD2Drawn = false;
       bool viewport17NativeD1Drawn = false;
+      // Draw the S1 floor plate once, immediately before the first near wall.
+      // This is not conditional on any wall's Enabled setting.
+      bool pressurePadS1Drawn = false;
       // Black Door F2/F3 replaces only the D3 center wall. The original
       // view still keeps the native D3 left/right side walls around the door.
       bool suppressViewport17NativeD3CenterForBlackDoor =
@@ -16876,6 +16879,17 @@ private static void HandleGameViewPointerDown(
         ViewportPiece piece = layout.Pieces[i];
         if (IsNormalWallPiece(piece))
           piece = orderedNormalWalls[nextNormalWall++];
+
+        // The plate belongs behind the F1/F0 wall bands. Draw it before
+        // evaluating the wall's visibility, so disabling all walls never
+        // prevents the plate itself from drawing.
+        if (!pressurePadS1Drawn && piece != null && IsNormalWallPiece(piece)
+            && GetNormalWallRenderDepth(piece) >= 0
+            && GetNormalWallRenderDepth(piece) <= 1)
+        {
+          BlitPressurePadS1IntoPreview(pixels);
+          pressurePadS1Drawn = true;
+        }
 
         if (previewDisableAllWalls
             && piece != null
@@ -17593,6 +17607,10 @@ private static void HandleGameViewPointerDown(
         }
       }
 
+      // Maps without near wall cards still draw the independently detected S1.
+      if (!pressurePadS1Drawn)
+        BlitPressurePadS1IntoPreview(pixels);
+
       // The right S1 slot is resolved with the wall geometry above, and its
       // exact 32x91 source is emitted here as the last right-wall contribution.
       // This is inside the normal wall pass, not a post-wall feature overlay.
@@ -17636,7 +17654,6 @@ private static void HandleGameViewPointerDown(
     BlitPressurePadF1IntoPreview(pixels);
     BlitPressurePadF2IntoPreview(pixels);
     BlitPressurePadF3IntoPreview(pixels);
-    BlitPressurePadS1IntoPreview(pixels);
     BlitStairsUpF1IntoPreview(pixels);
     BlitStairsUpFrontS1IntoPreview(pixels);
     BlitStairsUpFrontS1LeftIntoPreview(pixels);
@@ -24702,7 +24719,12 @@ private static void HandleGameViewPointerDown(
       DrawPressurePadF2CalibrationRow();
     if (IsPressurePadF3ReferencePose())
       DrawPressurePadF3CalibrationRow();
-    if (IsPressurePadS1ReferencePose())
+    // Keep S1 inspectable at the user's reference pose even when the
+    // generic floor-feature visibility test does not currently match.
+    // This affects ViewEdit only; it does not force the sprite to render.
+    if ((previewDungeonLevel == 0 && previewX == 4 && previewY == 10
+            && previewFacing == DungeonFacing.East)
+        || IsPressurePadS1ReferencePose())
       DrawPressurePadS1CalibrationRow();
     if (IsStairsUpF1ReferencePose())
       DrawStairsUpF1CalibrationRow();
@@ -25427,16 +25449,16 @@ private static void HandleGameViewPointerDown(
     if (pixels == null || !IsPressurePadS1ReferencePose() || !pressurePadS1Enabled)
       return;
     const string assetPath =
-        "Assets/Art/Ornaments/Square_Pressure_Pad_S1_25x20.png";
+        "Assets/Art/Ornaments/Square_Pressure_Pad_S1_60x11.png";
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
       Debug.LogError("PRESSURE PAD S1: missing asset: " + assetPath);
       return;
     }
-    if (sprite.width != 25 || sprite.height != 20 || !sprite.isReadable)
+    if (sprite.width != 60 || sprite.height != 11 || !sprite.isReadable)
     {
-      Debug.LogError("PRESSURE PAD S1: expected readable 25x20 image: " + assetPath);
+      Debug.LogError("PRESSURE PAD S1: expected readable 60x11 image: " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, pressurePadS1X,
@@ -25518,7 +25540,7 @@ private static void HandleGameViewPointerDown(
     Color oldColor = GUI.contentColor;
     GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
     style.normal.textColor = Color.magenta;
-    const string caption = "PressurePad_S1 (25x20)";
+    const string caption = "PressurePad_S1 (60x11)";
     GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
     float setWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
