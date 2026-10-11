@@ -552,7 +552,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   // F3 floor pressure pad: independent editable calibration, same map feature.
   private const string PressurePadF3Prefs = "DM.ViewEdit.PressurePadF3.";
-  private const string PressurePadF3Accepted = "97|117|false|true";
+  private const string PressurePadF3Accepted = "97|100|false|true";
   private int pressurePadF3X, pressurePadF3Y;
   private bool pressurePadF3Mirror = false, pressurePadF3Enabled = true;
 
