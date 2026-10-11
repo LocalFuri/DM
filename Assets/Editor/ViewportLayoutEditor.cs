@@ -22886,12 +22886,13 @@ private static void HandleGameViewPointerDown(
     bool mirrorValue = defaultMirror;
     ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirrorValue);
 
-    string name = string.IsNullOrEmpty(mirror.champion)
-        ? "ChampMirror"
-        : "ChampMirror - " + mirror.champion;
+    GetChampionMirrorF1StandPosition(mirror, out int standX, out int standY);
+    string name = (string.IsNullOrEmpty(mirror.champion)
+        ? "Unknown champion" : mirror.champion)
+        + " [" + standX + "," + standY + "]";
     string wallLabel = ChampionMirrorViewEditDirection(mirror);
     if (!string.IsNullOrEmpty(wallLabel))
-      name += " (" + wallLabel + ")";
+      name += " " + wallLabel;
 
     EditorGUILayout.BeginHorizontal();
 
@@ -22909,7 +22910,6 @@ private static void HandleGameViewPointerDown(
 
     // Champion row order: name/direction first at the far left, followed by
     // the F1 party-position X/Y fields, then Enabled and Mirror.
-    GetChampionMirrorF1StandPosition(mirror, out int standX, out int standY);
     DrawReadOnlyFeatureMapFields(standX, standY);
 
     bool enabledBefore = IsPreviewFeatureEnabled(key);

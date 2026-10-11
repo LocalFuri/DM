@@ -62,10 +62,6 @@ public class DungeonFeatureEditor : EditorWindow
   private static readonly Color ChampionNameColor =
       new Color(0f, 1f, 0f, 1f);
 
-  // Fallback color used only when an ornament texture cannot be found.
-  private static readonly Color OrnamentFallbackColor =
-      new Color(1f, 0.55f, 0f, 1f);
-
   private enum WallSide
   {
     North,
@@ -172,6 +168,9 @@ public class DungeonFeatureEditor : EditorWindow
   private Texture2D grateMapIcon;
   private Texture2D puddleMapIcon;
   private Texture2D stairDownMapIcon;
+  // Report missing icons once per editor-window lifetime, not every repaint.
+  private readonly HashSet<string> missingMapIconErrors =
+      new HashSet<string>();
 
   [MenuItem("Tools/Dungeon Feature Editor &f")]
   public static void Open()
@@ -185,6 +184,7 @@ public class DungeonFeatureEditor : EditorWindow
   private void OnEnable()
   {
     ornamentTexturesResolved = false;
+    missingMapIconErrors.Clear();
     viAltarMapIcon = null;
     hookMapIcon = null;
     woodRingMapIcon = null;
@@ -720,7 +720,7 @@ public class DungeonFeatureEditor : EditorWindow
         }
         else
         {
-          DrawMissingFloorOrnamentFallback(iconRect, "D");
+          ReportMissingMapIcon("Stair_Down_Icon", "stairs-down map icon");
         }
       }
     }
@@ -762,7 +762,7 @@ public class DungeonFeatureEditor : EditorWindow
         }
         else
         {
-          DrawMissingFloorOrnamentFallback(iconRect, "P");
+          ReportMissingMapIcon(PuddleF1AssetPath, "puddle map icon");
         }
       }
     }
@@ -942,19 +942,12 @@ public class DungeonFeatureEditor : EditorWindow
     return (y << 8) | (x & 0xFF);
   }
 
-  private static void DrawMissingFloorOrnamentFallback(
-      Rect iconRect,
-      string text)
+  private void ReportMissingMapIcon(string asset, string description)
   {
-    EditorGUI.DrawRect(iconRect, OrnamentFallbackColor);
-
-    GUIStyle style = new GUIStyle(EditorStyles.miniBoldLabel)
-    {
-      alignment = TextAnchor.MiddleCenter,
-      clipping = TextClipping.Clip
-    };
-    style.normal.textColor = Color.black;
-    GUI.Label(iconRect, text, style);
+    string key = description + ": " + (asset ?? "<null>");
+    if (missingMapIconErrors.Add(key))
+      Debug.LogError("<color=cyan>Dungeon Features: Missing " + description
+          + " (" + (asset ?? "<null>") + "). No substitute graphic was drawn.</color>");
   }
 
   private void DrawOriginalWallOrnamentIcons(Rect mapRect)
@@ -1078,7 +1071,7 @@ public class DungeonFeatureEditor : EditorWindow
       }
       else
       {
-        DrawMissingOrnamentFallback(iconRect, marker.Type);
+        ReportMissingMapIcon(marker.Type, "wall ornament map icon");
       }
     }
   }
@@ -1288,38 +1281,6 @@ public class DungeonFeatureEditor : EditorWindow
       score -= 10;
 
     return score;
-  }
-
-  private static void DrawMissingOrnamentFallback(
-      Rect iconRect,
-      string type)
-  {
-    EditorGUI.DrawRect(iconRect, OrnamentFallbackColor);
-
-    GUIStyle style = new GUIStyle(EditorStyles.miniBoldLabel)
-    {
-      alignment = TextAnchor.MiddleCenter,
-      clipping = TextClipping.Clip
-    };
-    style.normal.textColor = Color.black;
-
-    string text;
-    if (type == "ViAltar")
-      text = "VI";
-    else if (type == "WoodRing")
-      text = "WR";
-    else if (type == "Hook")
-      text = "H";
-    else if (type == "Grate")
-      text = "G";
-    else if (type == "Slime")
-      text = "S";
-    else
-      text = string.IsNullOrEmpty(type)
-          ? "?"
-          : type.Substring(0, Mathf.Min(2, type.Length)).ToUpperInvariant();
-
-    GUI.Label(iconRect, text, style);
   }
 
   private static GUIStyle CreateChampionNameStyle()
