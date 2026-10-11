@@ -489,8 +489,8 @@ public class ViewportLayoutEditor : EditorWindow
   // Level 1 stair-up side artwork: independent left and right calibration.
   private const string StairsUpS2LeftPrefs = "DM.ViewEdit.StairsUpS2Left.";
   private const string StairsUpS2RightPrefs = "DM.ViewEdit.StairsUpS2Right.";
-  private const string StairsUpS2LeftAccepted = "0|61|false|true";
-  private const string StairsUpS2RightAccepted = "194|61|true|true";
+  private const string StairsUpS2LeftAccepted = "0|91|false|true";
+  private const string StairsUpS2RightAccepted = "194|91|true|true";
   private int stairsUpS2LeftX = 0, stairsUpS2LeftY = 61;
   private int stairsUpS2RightX = 194, stairsUpS2RightY = 61;
   private bool stairsUpS2LeftMirror, stairsUpS2RightMirror = true;
@@ -505,11 +505,11 @@ public class ViewportLayoutEditor : EditorWindow
   // Right-hand side of the front up-staircase, Level 1 (4,0) South.
   // Independent left-hand calibration for the same S1 artwork.
   private const string StairsUpFrontS1LeftPrefs = "DM.ViewEdit.StairsUpFrontS1Left.";
-  private const string StairsUpFrontS1LeftAccepted = "0|32|true|true";
+  private const string StairsUpFrontS1LeftAccepted = "0|42|true|true";
   private int stairsUpFrontS1LeftX = 0, stairsUpFrontS1LeftY = 32;
   private bool stairsUpFrontS1LeftMirror = true, stairsUpFrontS1LeftEnabled = true;
   private const string StairsUpFrontS1Prefs = "DM.ViewEdit.StairsUpFrontS1.";
-  private const string StairsUpFrontS1Accepted = "192|32|false|true";
+  private const string StairsUpFrontS1Accepted = "192|42|true|true";
   private int stairsUpFrontS1X = 192, stairsUpFrontS1Y = 32;
   private bool stairsUpFrontS1Mirror = false, stairsUpFrontS1Enabled = true;
 
