@@ -140,7 +140,7 @@ public class DungeonFeatureEditor : EditorWindow
     new ChampionMirrorMarker(16, 14, WallSide.South, "Hissssa"),
     new ChampionMirrorMarker(16, 17, WallSide.North, "Gothmog"),
     new ChampionMirrorMarker(14, 12, WallSide.East, "Sonja"),
-    new ChampionMirrorMarker(13, 12, WallSide.West, "Leyla"),
+    new ChampionMirrorMarker(13, 12, WallSide.North, "Leyla"),
     new ChampionMirrorMarker(13, 14, WallSide.East, "Mophus"),
     new ChampionMirrorMarker(12, 13, WallSide.West, "Wuuf"),
     new ChampionMirrorMarker(11, 15, WallSide.South, "Stamm"),
