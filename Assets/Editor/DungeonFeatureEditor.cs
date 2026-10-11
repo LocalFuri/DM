@@ -992,31 +992,6 @@ public class DungeonFeatureEditor : EditorWindow
       }
     }
 
-    bool hasSensorWoodRing = false;
-    for (int i = 0; i < markers.Count; i++)
-    {
-      OriginalWallOrnamentMarker marker = markers[i];
-      if (marker.X == 6
-          && marker.Y == 8
-          && marker.Side == WallSide.South
-          && marker.Type == "WoodRing")
-      {
-        hasSensorWoodRing = true;
-        break;
-      }
-    }
-
-    if (!hasSensorWoodRing)
-    {
-      markers.Add(
-          new OriginalWallOrnamentMarker(
-              "WoodRing",
-              6,
-              8,
-              WallSide.South,
-              true));
-    }
-
     return markers.ToArray();
   }
 
