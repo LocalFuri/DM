@@ -444,7 +444,7 @@ public class ViewportLayoutEditor : EditorWindow
   // Independent Stairsdown S2 calibration at (4,14) South.
   private const string StairsdownS2PrefsPrefix = "DM.ViewEdit.StairsdownS2.";
   // APPLY-SAVED STAIRSDOWN S2 VALUES. Apply updates this literal in this .cs.
-  private const string StairsdownS2Accepted = "174|96|false|true";
+  private const string StairsdownS2Accepted = "172|95|true|true";
   private int stairsdownS2X = 174;
   private int stairsdownS2TopY = 96;
   private bool stairsdownS2Mirror;
@@ -471,7 +471,7 @@ public class ViewportLayoutEditor : EditorWindow
   // Separate unverified D2 reference calibration at (4,17) North.
   // Kept independent from the accepted (4,15) North S0 placement.
   private const string StairsS0D2NorthPrefsPrefix = "DM.ViewEdit.StairsS0D2North.";
-  private const string StairsS0D2NorthAccepted = "56|80|false|true";
+  private const string StairsS0D2NorthAccepted = "60|88|false|true";
   private int stairsS0D2NorthX = 56;
   private int stairsS0D2NorthTopY = 80;
   private bool stairsS0D2NorthMirror;
@@ -480,7 +480,7 @@ public class ViewportLayoutEditor : EditorWindow
   // Independent right-side S3 calibration at (4,13) South.
   // Keep independent from the left-side (4,17) North calibration.
   private const string StairsS3RightSouthPrefsPrefix = "DM.ViewEdit.StairsS3RightSouth.";
-  private const string StairsS3RightSouthAccepted = "152|80|true|true";
+  private const string StairsS3RightSouthAccepted = "148|89|true|true";
   private int stairsS3RightSouthX = 152;
   private int stairsS3RightSouthTopY = 80;
   private bool stairsS3RightSouthMirror = true;
