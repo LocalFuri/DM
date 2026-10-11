@@ -24873,24 +24873,8 @@ private static void HandleGameViewPointerDown(
   {
     if (pixels == null || !IsPressurePadF1ReferencePose() || !pressurePadF1Enabled)
       return;
-    const string assetName = "Square_Pressure_Pad_F1_62x21.png";
-    string[] matches = AssetDatabase.FindAssets("Square_Pressure_Pad_F1_62x21 t:Texture2D");
-    string assetPath = null;
-    int exactMatchCount = 0;
-    foreach (string guid in matches)
-    {
-      string candidate = AssetDatabase.GUIDToAssetPath(guid);
-      if (System.IO.Path.GetFileName(candidate) != assetName)
-        continue;
-      assetPath = candidate;
-      exactMatchCount++;
-    }
-    if (exactMatchCount != 1)
-    {
-      Debug.LogError("PRESSURE PAD F1: expected exactly one imported asset named "
-          + assetName + "; found " + exactMatchCount);
-      return;
-    }
+    const string assetPath =
+        "Assets/Art/Ornaments/Square_Pressure_Pad_F1_62x21.png";
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
