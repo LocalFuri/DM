@@ -1454,6 +1454,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
   // REF OrnamentProjection:Hook:F2|103|111|false|639272438417071479
   // REF OrnamentProjection:Hook:S1|160|109|true|639271634293923485
+  // REF OrnamentProjection:Hook:S1:Left|48|107|false
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
   // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
@@ -17628,7 +17629,6 @@ private static void HandleGameViewPointerDown(
     // map/wall/door image pass has finished. This keeps feature artwork out of
     // the geometry painter order and gives it one explicit post-map layer.
     BlitPostMapFeaturesAndOrnamentsIntoPreview(pixels);
-
     // Apply the selected original-DM light palette to the completed dungeon
     // scene before any HUD/debug redraws.  This is a pure in-place colour
     // remap of the already composed 224x136 dungeon viewport; it does not
@@ -22587,6 +22587,23 @@ private static void HandleGameViewPointerDown(
       if (sideDepth < 1 || sideDepth > maxSideDepth)
         return false;
       slot = "S" + sideDepth;
+    }
+
+    // F1 side Hooks are independent left/right projections. The existing
+    // Hook:S1 accepted reference calibrates the right side at X=160;
+    // applying it to the left Hook displaced it from X=48 to the right.
+    // Keep that verified right-side reference unchanged, and give the left
+    // side a separate calibration key shared by rendering and ViewEdit.
+    if (IsHookOrnament(ornament) && slot == "S1")
+    {
+      string leftFace = FacingName(TurnPreviewFacingLeft(previewFacing));
+      if (string.Equals(mapFace, leftFace,
+          System.StringComparison.OrdinalIgnoreCase))
+      {
+        overrideKey = "OrnamentProjection:Hook:S1:Left";
+        projectionSuffix = " / S1 Left";
+        return true;
+      }
     }
 
     overrideKey = "OrnamentProjection:" + family + ":" + slot;
@@ -30490,6 +30507,7 @@ private static void HandleGameViewPointerDown(
       if (leftDrawn && rightDrawn)
         return;
     }
+
   }
 
   private void BlitHookD2FrontIntoPreview(Color32[] pixels)
