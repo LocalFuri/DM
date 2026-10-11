@@ -498,8 +498,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Front-facing up stairs at the Level 1 staircase landing.
   private const string StairsUpF1Prefs = "DM.ViewEdit.StairsUpF1.";
-  private const string StairsUpF1Accepted = "82|32|false|true";
-  private int stairsUpF1X = 82, stairsUpF1Y = 32;
+  private const string StairsUpF1Accepted = "32|42|false|true";
+  private int stairsUpF1X = 32, stairsUpF1Y = 42;
   private bool stairsUpF1Mirror = false, stairsUpF1Enabled = true;
 
   // Right-hand side of the front up-staircase, Level 1 (4,0) South.
@@ -21480,8 +21480,8 @@ private static void HandleGameViewPointerDown(
     stairsS0D2NorthTopY = EditorPrefs.GetInt(StairsS0D2NorthPrefsPrefix + "Y", 80);
     stairsS0D2NorthMirror = EditorPrefs.GetBool(StairsS0D2NorthPrefsPrefix + "Mirror", false);
     stairsS0D2NorthEnabled = EditorPrefs.GetBool(StairsS0D2NorthPrefsPrefix + "Enabled", true);
-    stairsUpF1X = EditorPrefs.GetInt(StairsUpF1Prefs + "X", 82);
-    stairsUpF1Y = EditorPrefs.GetInt(StairsUpF1Prefs + "Y", 32);
+    stairsUpF1X = EditorPrefs.GetInt(StairsUpF1Prefs + "X", 32);
+    stairsUpF1Y = EditorPrefs.GetInt(StairsUpF1Prefs + "Y", 42);
     stairsUpF1Mirror = EditorPrefs.GetBool(StairsUpF1Prefs + "Mirror", false);
     stairsUpF1Enabled = EditorPrefs.GetBool(StairsUpF1Prefs + "Enabled", true);
     LoadPressurePadF1AcceptedCalibration();
@@ -25100,6 +25100,16 @@ private static void HandleGameViewPointerDown(
       string updated = source.Substring(0, start) + accepted + source.Substring(end);
       if (updated != source)
         File.WriteAllText(sourcePath, updated);
+      // Apply succeeds only if the accepted value was actually written.
+      // Do not acknowledge a failed write or silently use stale EditorPrefs.
+      string persistedSource = File.ReadAllText(sourcePath);
+      string persistedToken = token + accepted + "\"";
+      if (persistedSource.IndexOf(persistedToken,
+          System.StringComparison.Ordinal) < 0)
+      {
+        Debug.LogError("STAIRS UP F1 Apply: saved calibration verification failed");
+        return false;
+      }
       EditorPrefs.SetInt(StairsUpF1Prefs + "X", stairsUpF1X);
       EditorPrefs.SetInt(StairsUpF1Prefs + "Y", stairsUpF1Y);
       EditorPrefs.SetBool(StairsUpF1Prefs + "Mirror", stairsUpF1Mirror);
