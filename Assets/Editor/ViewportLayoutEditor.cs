@@ -1135,6 +1135,21 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   [System.Serializable]
+  private sealed class ExtractedLevelChampionRoot
+  {
+    public ExtractedLevelChampionPlacement[] champions;
+  }
+
+  [System.Serializable]
+  private sealed class ExtractedLevelChampionPlacement
+  {
+    public string name;
+    public int x;
+    public int y;
+    public string dir;
+  }
+
+  [System.Serializable]
   private sealed class WallOrnamentPlacement
   {
     public string type;
@@ -13731,6 +13746,140 @@ private static void HandleGameViewPointerDown(
       }
   }
 
+  private ChampionMirrorPlacement[] LoadChampionMirrorsForPreviewLevel(
+      int level,
+      string json,
+      ChampionMirrorMapRoot mirrorRoot)
+  {
+    if (mirrorRoot != null
+        && mirrorRoot.championMirrors != null
+        && mirrorRoot.championMirrors.Length > 0)
+    {
+      return mirrorRoot.championMirrors;
+    }
+
+    if (level != 0)
+      return new ChampionMirrorPlacement[0];
+
+    ExtractedLevelChampionRoot extractedRoot =
+        JsonUtility.FromJson<ExtractedLevelChampionRoot>(json);
+    if (extractedRoot == null
+        || extractedRoot.champions == null
+        || extractedRoot.champions.Length == 0)
+    {
+      Debug.LogError(
+          "ViewEdit: Level 0 map is missing both championMirrors and extracted champions.");
+      return new ChampionMirrorPlacement[0];
+    }
+
+    List<ChampionMirrorPlacement> mirrors =
+        new List<ChampionMirrorPlacement>(extractedRoot.champions.Length);
+
+    for (int i = 0; i < extractedRoot.champions.Length; i++)
+    {
+      ExtractedLevelChampionPlacement champion = extractedRoot.champions[i];
+      if (champion == null || string.IsNullOrEmpty(champion.name))
+      {
+        Debug.LogError(
+            "ViewEdit: Level 0 champion entry " + i + " is missing a name.");
+        continue;
+      }
+
+      if (previewMiniMap == null
+          || !previewMiniMap.IsInside(champion.x, champion.y))
+      {
+        Debug.LogError(
+            "ViewEdit: Champion location outside Level 0 map: "
+            + champion.name + " (" + champion.x + "," + champion.y + ").");
+        continue;
+      }
+
+      if (!TryResolveExtractedChampionMirrorWall(
+              champion, out int wallX, out int wallY, out string wallSide))
+        continue;
+
+      mirrors.Add(new ChampionMirrorPlacement
+      {
+        champion = champion.name,
+        x = wallX,
+        y = wallY,
+        wall = wallSide
+      });
+    }
+
+    if (mirrors.Count == 0)
+      Debug.LogError(
+          "ViewEdit: Level 0 extracted champions were found, but no champion mirrors could be built.");
+
+    return mirrors.ToArray();
+  }
+
+  // Champion records identify the floor cell where the champion is located.
+  // The actual mirror is on its adjacent WALL tile, facing back toward that
+  // floor cell. Do not treat the champion's x/y as wall coordinates.
+  private bool TryResolveExtractedChampionMirrorWall(
+      ExtractedLevelChampionPlacement champion,
+      out int wallX,
+      out int wallY,
+      out string wallSide)
+  {
+    wallX = 0;
+    wallY = 0;
+    wallSide = null;
+    if (champion == null || previewMiniMap == null)
+      return false;
+
+    List<ChampionMirrorPlacement> candidates = new List<ChampionMirrorPlacement>(4);
+    CollectExtractedChampionMirrorWallCandidate(
+        champion.x, champion.y - 1, "South", candidates);
+    CollectExtractedChampionMirrorWallCandidate(
+        champion.x + 1, champion.y, "West", candidates);
+    CollectExtractedChampionMirrorWallCandidate(
+        champion.x, champion.y + 1, "North", candidates);
+    CollectExtractedChampionMirrorWallCandidate(
+        champion.x - 1, champion.y, "East", candidates);
+
+    if (candidates.Count == 1)
+    {
+      wallX = candidates[0].x;
+      wallY = candidates[0].y;
+      wallSide = candidates[0].wall;
+      return true;
+    }
+
+    List<string> details = new List<string>(candidates.Count);
+    for (int i = 0; i < candidates.Count; i++)
+      details.Add(
+          "(" + candidates[i].x + "," + candidates[i].y
+          + ") " + candidates[i].wall);
+    Debug.LogError(
+        "ViewEdit: Champion mirror for " + champion.name
+        + " at (" + champion.x + "," + champion.y + ") has "
+        + candidates.Count + " adjacent wall candidates: "
+        + string.Join(", ", details)
+        + ". Verify the original mirror wall before adding an explicit placement.");
+    return false;
+  }
+
+  private void CollectExtractedChampionMirrorWallCandidate(
+      int x,
+      int y,
+      string wallSide,
+      List<ChampionMirrorPlacement> candidates)
+  {
+    if (previewMiniMap == null
+        || !previewMiniMap.IsInside(x, y)
+        || previewMiniMap.GetTile(x, y).Type != DungeonTileType.Wall)
+      return;
+
+    candidates.Add(new ChampionMirrorPlacement
+    {
+      x = x,
+      y = y,
+      wall = wallSide
+    });
+  }
+
   private bool TryLoadPreviewLevel(int level)
   {
     if (level < 0 || level >= PreviewLevelMapPaths.Length)
@@ -13757,10 +13906,10 @@ private static void HandleGameViewPointerDown(
 
       ChampionMirrorMapRoot mirrorRoot =
           JsonUtility.FromJson<ChampionMirrorMapRoot>(json);
-      previewChampionMirrors =
-          mirrorRoot != null && mirrorRoot.championMirrors != null
-              ? mirrorRoot.championMirrors
-              : new ChampionMirrorPlacement[0];
+      previewChampionMirrors = LoadChampionMirrorsForPreviewLevel(
+          level,
+          json,
+          mirrorRoot);
       // Prefer the all-level feature database for the loaded level.
       // Hall-of-Champions builders remain the Level 0 fallback.
       bool loadedFeatureDatabase = LoadPreviewFeaturesFromDatabase();
