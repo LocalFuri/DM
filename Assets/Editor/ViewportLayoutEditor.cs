@@ -6321,6 +6321,7 @@ public class ViewportLayoutEditor : EditorWindow
         GameViewPointerUpHandler,
         UnityEngine.UIElements.TrickleDown.TrickleDown);
     root.RegisterCallback<UnityEngine.UIElements.PointerMoveEvent>(GameViewHeldItemPointerMove, UnityEngine.UIElements.TrickleDown.TrickleDown);
+    root.RegisterCallback<UnityEngine.UIElements.MouseMoveEvent>(GameViewHeldItemMouseMove, UnityEngine.UIElements.TrickleDown.TrickleDown);
     root.RegisterCallback<UnityEngine.UIElements.PointerLeaveEvent>(GameViewHeldItemPointerLeave);
     s_hookedGameView = gameView;
     s_gameViewPointerCallbackAdded = true;
@@ -6341,6 +6342,7 @@ public class ViewportLayoutEditor : EditorWindow
             GameViewPointerUpHandler,
             UnityEngine.UIElements.TrickleDown.TrickleDown);
         root.UnregisterCallback<UnityEngine.UIElements.PointerMoveEvent>(GameViewHeldItemPointerMove, UnityEngine.UIElements.TrickleDown.TrickleDown);
+        root.UnregisterCallback<UnityEngine.UIElements.MouseMoveEvent>(GameViewHeldItemMouseMove, UnityEngine.UIElements.TrickleDown.TrickleDown);
         root.UnregisterCallback<UnityEngine.UIElements.PointerLeaveEvent>(GameViewHeldItemPointerLeave);
       }
     }
@@ -6506,6 +6508,9 @@ private static void HandleGameViewPointerDown(
         imguiEvent.Use();
       if (pointerEvent != null)
         pointerEvent.StopPropagation();
+      // Create the visual immediately at the click location. Waiting for the
+      // next PointerMove is unreliable in IMGUI-backed Unity GameViews.
+      UpdateHeldItemPointerOverlay(gameView, windowMouse);
       gameView.Repaint();
       window.Repaint();
       RepaintGameViews();
@@ -32871,8 +32876,10 @@ private static void HandleGameViewPointerDown(
           owner.previewHeldTorchCursor);
       overlay.style.unityBackgroundScaleMode = ScaleMode.StretchToFill;
       gameView.rootVisualElement.Add(overlay);
+      overlay.BringToFront();
       s_heldItemPointerOverlay = overlay;
       s_heldItemPointerOverlayWindow = gameView;
+      Debug.Log("TORCH CURSOR: created 16x16 sprite overlay in GameView; scale follows GameView zoom");
     }
     float scale = GetGameViewZoomScale();
     if (scale <= 0f) scale = 1f;
@@ -32882,6 +32889,7 @@ private static void HandleGameViewPointerDown(
     s_heldItemPointerOverlay.style.left = pointerPosition.x;
     s_heldItemPointerOverlay.style.top = pointerPosition.y;
     s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.Flex;
+    s_heldItemPointerOverlay.BringToFront();
   }
 
   private static void HideHeldItemPointerOverlay()
@@ -32897,6 +32905,13 @@ private static void HandleGameViewPointerDown(
   {
     if (evt != null)
       UpdateHeldItemPointerOverlay(s_hookedGameView, evt.position);
+  }
+
+  private static void GameViewHeldItemMouseMove(
+      UnityEngine.UIElements.MouseMoveEvent evt)
+  {
+    if (evt != null)
+      UpdateHeldItemPointerOverlay(s_hookedGameView, evt.mousePosition);
   }
 
   private static void GameViewHeldItemPointerLeave(
