@@ -2586,6 +2586,7 @@ public class ViewportLayoutEditor : EditorWindow
   {
     if (previewHeldTorchCursor != null)
       Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+    HideHeldItemPointerOverlay();
     EditorApplication.delayCall -= ReapplyCurrentPoseToWallRendererAfterReload;
 
     if (hookedViewEditGlobalNavigation)
@@ -6319,6 +6320,8 @@ public class ViewportLayoutEditor : EditorWindow
     root.RegisterCallback(
         GameViewPointerUpHandler,
         UnityEngine.UIElements.TrickleDown.TrickleDown);
+    root.RegisterCallback<UnityEngine.UIElements.PointerMoveEvent>(GameViewHeldItemPointerMove, UnityEngine.UIElements.TrickleDown.TrickleDown);
+    root.RegisterCallback<UnityEngine.UIElements.PointerLeaveEvent>(GameViewHeldItemPointerLeave);
     s_hookedGameView = gameView;
     s_gameViewPointerCallbackAdded = true;
   }
@@ -6337,9 +6340,12 @@ public class ViewportLayoutEditor : EditorWindow
         root.UnregisterCallback(
             GameViewPointerUpHandler,
             UnityEngine.UIElements.TrickleDown.TrickleDown);
+        root.UnregisterCallback<UnityEngine.UIElements.PointerMoveEvent>(GameViewHeldItemPointerMove, UnityEngine.UIElements.TrickleDown.TrickleDown);
+        root.UnregisterCallback<UnityEngine.UIElements.PointerLeaveEvent>(GameViewHeldItemPointerLeave);
       }
     }
 
+    HideHeldItemPointerOverlay();
     s_hookedGameView = null;
     s_gameViewPointerCallbackAdded = false;
   }
@@ -24329,6 +24335,14 @@ private static void HandleGameViewPointerDown(
           DrawWallOrnamentCalibrationRow(ornament,
               renderedName + " [" + previewX + "," + previewY + "] ("
               + ShortDirectionLabel(FacingName(previewFacing)) + ")");
+          if (torchRemoved)
+          {
+            EditorGUILayout.BeginHorizontal();
+            bool restore = EditorGUILayout.ToggleLeft(
+                "Restore torch to holder (editor test)", false, GUILayout.Width(245f));
+            EditorGUILayout.EndHorizontal();
+            if (restore) RestorePickedUpTorch(ornament);
+          }
           continue;
         }
         // Only F1 artwork exists; never list non-renderable holder depths.
@@ -32828,6 +32842,87 @@ private static void HandleGameViewPointerDown(
   private string previewHeldTorchId;
   private Texture2D previewHeldTorchCursor;
 
+  // UI Toolkit overlay is in GameView screen coordinates; the original sprite
+  // is scaled to exactly 16x16 pixels of the 320x200 framebuffer.
+  private static UnityEngine.UIElements.VisualElement s_heldItemPointerOverlay;
+  private static EditorWindow s_heldItemPointerOverlayWindow;
+
+  private static void UpdateHeldItemPointerOverlay(
+      EditorWindow gameView, Vector2 pointerPosition)
+  {
+    ViewportLayoutEditor owner = FindOpenViewEditWindow();
+    if (gameView == null || owner == null || owner.previewHeldTorchCursor == null
+        || owner.previewHeldTorchId == null || Application.isPlaying)
+    {
+      HideHeldItemPointerOverlay();
+      return;
+    }
+    if (s_heldItemPointerOverlayWindow != gameView
+        || s_heldItemPointerOverlay == null)
+    {
+      HideHeldItemPointerOverlay();
+      var overlay = new UnityEngine.UIElements.VisualElement();
+      overlay.name = "DungeonMasterHeldItemCursor";
+      overlay.pickingMode = UnityEngine.UIElements.PickingMode.Ignore;
+      overlay.style.position = UnityEngine.UIElements.Position.Absolute;
+      overlay.style.backgroundImage = new UnityEngine.UIElements.StyleBackground(
+          owner.previewHeldTorchCursor);
+      overlay.style.unityBackgroundScaleMode = ScaleMode.StretchToFill;
+      gameView.rootVisualElement.Add(overlay);
+      s_heldItemPointerOverlay = overlay;
+      s_heldItemPointerOverlayWindow = gameView;
+    }
+    float scale = GetGameViewZoomScale();
+    if (scale <= 0f) scale = 1f;
+    float size = 16f * scale;
+    s_heldItemPointerOverlay.style.width = size;
+    s_heldItemPointerOverlay.style.height = size;
+    s_heldItemPointerOverlay.style.left = pointerPosition.x;
+    s_heldItemPointerOverlay.style.top = pointerPosition.y;
+    s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.Flex;
+  }
+
+  private static void HideHeldItemPointerOverlay()
+  {
+    if (s_heldItemPointerOverlay != null)
+      s_heldItemPointerOverlay.RemoveFromHierarchy();
+    s_heldItemPointerOverlay = null;
+    s_heldItemPointerOverlayWindow = null;
+  }
+
+  private static void GameViewHeldItemPointerMove(
+      UnityEngine.UIElements.PointerMoveEvent evt)
+  {
+    if (evt != null)
+      UpdateHeldItemPointerOverlay(s_hookedGameView, evt.position);
+  }
+
+  private static void GameViewHeldItemPointerLeave(
+      UnityEngine.UIElements.PointerLeaveEvent evt)
+  {
+    if (s_heldItemPointerOverlay != null)
+      s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.None;
+  }
+
+  private void RestorePickedUpTorch(WallOrnamentPlacement ornament)
+  {
+    if (ornament == null) return;
+    string id = MakeTorchHolderInstanceKey(ornament);
+    previewRemovedTorchHolderKeys.Remove(id);
+    if (previewHeldTorchId == id)
+    {
+      previewHeldTorchId = null;
+      previewHeldTorchCursor = null;
+      Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+      HideHeldItemPointerOverlay();
+    }
+    RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
+    Debug.Log("TORCH PICKUP: editor Restore returned " + id + " to its wall holder");
+  }
+
+
   private string MakeTorchHolderInstanceKey(WallOrnamentPlacement ornament)
   {
     return previewDungeonLevel + ":" + ornament.x + ":" + ornament.y
@@ -32922,7 +33017,9 @@ private static void HandleGameViewPointerDown(
     previewHeldTorchId = id;
     previewHeldTorchCursor = cursorImage;
     previewRemovedTorchHolderKeys.Add(id);
-    Cursor.SetCursor(cursorImage, Vector2.zero, CursorMode.Auto);
+    // GameView often ignores EditorWindow Cursor.SetCursor. The UITK overlay
+    // follows subsequent pointer moves without touching the viewport texture.
+    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     Debug.Log("TORCH PICKUP: picked up unique item " + id
         + "; holder remains empty. Inventory, drop, and throw not yet implemented.");
     RefreshEditModePreview();
