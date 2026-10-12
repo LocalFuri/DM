@@ -578,9 +578,6 @@ public class DungeonFeatureEditor : EditorWindow
     if (currentDungeonLevel != HallOfChampionsLevel)
       return;
 
-    const float lineThickness = 3f;
-    const float dotSize = 4f;
-
     for (int i = 0; i < ChampionMirrorMarkers.Length; i++)
     {
       ChampionMirrorMarker marker = ChampionMirrorMarkers[i];
@@ -591,83 +588,91 @@ public class DungeonFeatureEditor : EditorWindow
           CellSize,
           CellSize);
 
-      Rect lineRect;
-      Rect dotRect;
-
-      switch (marker.Side)
-      {
-        case WallSide.North:
-        {
-          float centerX = cellRect.center.x;
-          lineRect = new Rect(
-              cellRect.x,
-              cellRect.y,
-              cellRect.width,
-              lineThickness);
-          dotRect = new Rect(
-              centerX - dotSize * 0.5f,
-              cellRect.y - (dotSize - lineThickness) * 0.5f,
-              dotSize,
-              dotSize);
-          break;
-        }
-
-        case WallSide.East:
-        {
-          float centerY = cellRect.center.y;
-          lineRect = new Rect(
-              cellRect.xMax - lineThickness,
-              cellRect.y,
-              lineThickness,
-              cellRect.height);
-          dotRect = new Rect(
-              cellRect.xMax - lineThickness
-                  - (dotSize - lineThickness) * 0.5f,
-              centerY - dotSize * 0.5f,
-              dotSize,
-              dotSize);
-          break;
-        }
-
-        case WallSide.South:
-        {
-          float centerX = cellRect.center.x;
-          lineRect = new Rect(
-              cellRect.x,
-              cellRect.yMax - lineThickness,
-              cellRect.width,
-              lineThickness);
-          dotRect = new Rect(
-              centerX - dotSize * 0.5f,
-              cellRect.yMax - lineThickness
-                  - (dotSize - lineThickness) * 0.5f,
-              dotSize,
-              dotSize);
-          break;
-        }
-
-        default: // West
-        {
-          float centerY = cellRect.center.y;
-          lineRect = new Rect(
-              cellRect.x,
-              cellRect.y,
-              lineThickness,
-              cellRect.height);
-          dotRect = new Rect(
-              cellRect.x - (dotSize - lineThickness) * 0.5f,
-              centerY - dotSize * 0.5f,
-              dotSize,
-              dotSize);
-          break;
-        }
-      }
-
-      EditorGUI.DrawRect(lineRect, ChampionMirrorLineColor);
-      EditorGUI.DrawRect(dotRect, ChampionMirrorDotColor);
-
+      DrawWallFaceDirectionMarker(cellRect, marker.Side);
       DrawChampionName(mapRect, cellRect, marker);
     }
+  }
+
+  // Shared full-edge direction marker for champion mirrors and wall ornaments.
+  // Wall face direction comes from each map placement, never from player facing.
+  private static void DrawWallFaceDirectionMarker(Rect cellRect, WallSide side)
+  {
+    const float lineThickness = 3f;
+    const float dotSize = 4f;
+    Rect lineRect;
+    Rect dotRect;
+
+    switch (side)
+    {
+      case WallSide.North:
+      {
+        float centerX = cellRect.center.x;
+        lineRect = new Rect(
+            cellRect.x,
+            cellRect.y,
+            cellRect.width,
+            lineThickness);
+        dotRect = new Rect(
+            centerX - dotSize * 0.5f,
+            cellRect.y - (dotSize - lineThickness) * 0.5f,
+            dotSize,
+            dotSize);
+        break;
+      }
+
+      case WallSide.East:
+      {
+        float centerY = cellRect.center.y;
+        lineRect = new Rect(
+            cellRect.xMax - lineThickness,
+            cellRect.y,
+            lineThickness,
+            cellRect.height);
+        dotRect = new Rect(
+            cellRect.xMax - lineThickness
+                - (dotSize - lineThickness) * 0.5f,
+            centerY - dotSize * 0.5f,
+            dotSize,
+            dotSize);
+        break;
+      }
+
+      case WallSide.South:
+      {
+        float centerX = cellRect.center.x;
+        lineRect = new Rect(
+            cellRect.x,
+            cellRect.yMax - lineThickness,
+            cellRect.width,
+            lineThickness);
+        dotRect = new Rect(
+            centerX - dotSize * 0.5f,
+            cellRect.yMax - lineThickness
+                - (dotSize - lineThickness) * 0.5f,
+            dotSize,
+            dotSize);
+        break;
+      }
+
+      default: // West
+      {
+        float centerY = cellRect.center.y;
+        lineRect = new Rect(
+            cellRect.x,
+            cellRect.y,
+            lineThickness,
+            cellRect.height);
+        dotRect = new Rect(
+            cellRect.x - (dotSize - lineThickness) * 0.5f,
+            centerY - dotSize * 0.5f,
+            dotSize,
+            dotSize);
+        break;
+      }
+    }
+
+    EditorGUI.DrawRect(lineRect, ChampionMirrorLineColor);
+    EditorGUI.DrawRect(dotRect, ChampionMirrorDotColor);
   }
 
   private void DrawStairDownIcons(Rect mapRect)
@@ -1057,6 +1062,10 @@ public class DungeonFeatureEditor : EditorWindow
           mapRect.y + marker.Y * CellSize,
           CellSize,
           CellSize);
+
+      // Only wall-attached ornaments have a facing direction. Floor features
+      // are drawn separately and intentionally receive no blue marker.
+      DrawWallFaceDirectionMarker(cellRect, marker.Side);
 
       Texture2D texture = GetOrnamentMapIcon(marker.Type);
       Rect iconRect = GetWallFaceIconRect(cellRect, marker.Side, 20f);
