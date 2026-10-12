@@ -1638,7 +1638,8 @@ public class ViewportLayoutEditor : EditorWindow
     // saved by the earlier EditorPrefs-only Apply implementation.
     string[] families =
     {
-      "WoodRing", "Hook", "Slime", "Manacles", "ViAltar", "Grate"
+      "WoodRing", "Hook", "Slime", "Manacles", "ViAltar", "Grate",
+      "EmptyTorchHolder"
     };
     string[] slots =
     {
