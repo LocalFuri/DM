@@ -32875,6 +32875,73 @@ private static void HandleGameViewPointerDown(
 
   // UI Toolkit overlay is in GameView screen coordinates; the original sprite
   // is scaled to exactly 16x16 pixels of the 320x200 framebuffer.
+  // A transparent Unity/UI Toolkit cursor hides the arrow while the zoom-scaled
+  // item overlay supplies the visible cursor. No native window subclassing.
+  private static Texture2D s_transparentHeldCursor;
+  private static UnityEngine.UIElements.VisualElement s_cursorStyleRoot;
+  private static readonly Dictionary<UnityEngine.UIElements.VisualElement,
+      UnityEngine.UIElements.StyleCursor> s_previousHeldCursorStyles =
+      new Dictionary<UnityEngine.UIElements.VisualElement,
+          UnityEngine.UIElements.StyleCursor>();
+
+  private static void SetHeldItemArrowHidden(EditorWindow gameView)
+  {
+    if (gameView == null) return;
+    var root = gameView.rootVisualElement;
+    if (root == null) return;
+    if (s_cursorStyleRoot == root && s_previousHeldCursorStyles.Count > 0)
+      return;
+    RestoreHeldItemArrow();
+    if (s_transparentHeldCursor == null)
+    {
+      s_transparentHeldCursor = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+      s_transparentHeldCursor.name = "DungeonMasterTransparentHeldCursor";
+      s_transparentHeldCursor.filterMode = FilterMode.Point;
+      s_transparentHeldCursor.SetPixels32(new Color32[4]);
+      s_transparentHeldCursor.Apply(false, false);
+    }
+    var style = new UnityEngine.UIElements.StyleCursor(
+        new UnityEngine.UIElements.Cursor {
+          texture = s_transparentHeldCursor, hotspot = Vector2.zero
+        });
+    s_cursorStyleRoot = root;
+    ApplyTransparentHeldCursorStyle(root, style);
+    // Traverse the visual tree directly. Query<T>() depends on the
+    // UIElements UQuery extension namespace and was not resolving here.
+    ApplyTransparentHeldCursorStyleToIMGUIChildren(root, style);
+  }
+
+  private static void ApplyTransparentHeldCursorStyleToIMGUIChildren(
+      UnityEngine.UIElements.VisualElement parent,
+      UnityEngine.UIElements.StyleCursor style)
+  {
+    if (parent == null) return;
+    for (int i = 0; i < parent.hierarchy.childCount; i++)
+    {
+      var child = parent.hierarchy.ElementAt(i);
+      if (child is UnityEngine.UIElements.IMGUIContainer)
+        ApplyTransparentHeldCursorStyle(child, style);
+      ApplyTransparentHeldCursorStyleToIMGUIChildren(child, style);
+    }
+  }
+
+  private static void ApplyTransparentHeldCursorStyle(
+      UnityEngine.UIElements.VisualElement element,
+      UnityEngine.UIElements.StyleCursor style)
+  {
+    if (element == null || s_previousHeldCursorStyles.ContainsKey(element)) return;
+    s_previousHeldCursorStyles.Add(element, element.style.cursor);
+    element.style.cursor = style;
+  }
+
+  private static void RestoreHeldItemArrow()
+  {
+    foreach (var entry in s_previousHeldCursorStyles)
+      if (entry.Key != null) entry.Key.style.cursor = entry.Value;
+    s_previousHeldCursorStyles.Clear();
+    s_cursorStyleRoot = null;
+  }
+
   private static UnityEngine.UIElements.VisualElement s_heldItemPointerOverlay;
   private static EditorWindow s_heldItemPointerOverlayWindow;
 
@@ -32912,14 +32979,18 @@ private static void HandleGameViewPointerDown(
     float size = 16f * scale;
     s_heldItemPointerOverlay.style.width = size;
     s_heldItemPointerOverlay.style.height = size;
-    s_heldItemPointerOverlay.style.left = pointerPosition.x;
-    s_heldItemPointerOverlay.style.top = pointerPosition.y;
+    // Center the 16x16 inventory sprite on the pointer, matching the
+    // original game more closely than a top-left anchor.
+    s_heldItemPointerOverlay.style.left = pointerPosition.x - size * 0.5f;
+    s_heldItemPointerOverlay.style.top = pointerPosition.y - size * 0.5f;
     s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.Flex;
+    SetHeldItemArrowHidden(gameView);
     s_heldItemPointerOverlay.BringToFront();
   }
 
   private static void HideHeldItemPointerOverlay()
   {
+    RestoreHeldItemArrow();
     if (s_heldItemPointerOverlay != null)
       s_heldItemPointerOverlay.RemoveFromHierarchy();
     s_heldItemPointerOverlay = null;
@@ -32967,6 +33038,7 @@ private static void HandleGameViewPointerDown(
     {
       if (s_heldItemPointerOverlay != null)
         s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.None;
+      RestoreHeldItemArrow();
       return;
     }
     UpdateHeldItemPointerOverlay(s_hookedGameView, local);
@@ -32992,6 +33064,7 @@ private static void HandleGameViewPointerDown(
   {
     if (s_heldItemPointerOverlay != null)
       s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.None;
+    RestoreHeldItemArrow();
   }
 
   private void RestorePickedUpTorch(WallOrnamentPlacement ornament)
@@ -33113,7 +33186,7 @@ private static void HandleGameViewPointerDown(
     Debug.Log("TORCH PICKUP DEBUG: hitbox matched; validating inventory sprite");
 
     // Never remove an item if its cursor graphic is unavailable.
-    Texture2D cursorImage = FindExactTorchTexture("Torch_Lit_16x16.png", 16, 16);
+    Texture2D cursorImage = FindExactTorchTexture("Torch_Unlit_16x16.png", 16, 16);
     if (cursorImage == null)
       return true; // consume the hit; error has already been logged
     Texture2D fullImage = FindExactTorchTexture("Torch_Holder_Full_F1_24x53.png", 24, 53);
