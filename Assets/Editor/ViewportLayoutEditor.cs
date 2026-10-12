@@ -1470,7 +1470,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   // BEGIN APPLIED ORNAMENT REFERENCES
-  // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274244978634688
+  // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274252203846657
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
   // REF OrnamentProjection:Hook:F2|103|111|false|639272438417071479
   // REF OrnamentProjection:Hook:S1|160|109|true|639271634293923485
@@ -27686,6 +27686,12 @@ private static void HandleGameViewPointerDown(
 
   private void DrawStairsDownD0LCalibrationRow()
   {
+    // Compare against the last applied calibration, not the previous frame.
+    int savedX = EditorPrefs.GetInt(StairsD0LPrefsPrefix + "X", 208);
+    int savedY = EditorPrefs.GetInt(StairsD0LPrefsPrefix + "Y", 106);
+    bool savedMirror = EditorPrefs.GetBool(StairsD0LPrefsPrefix + "Mirror", false);
+    bool savedEnabled = EditorPrefs.GetBool(StairsD0LPrefsPrefix + "Enabled", true);
+    Color originalContentColor = GUI.contentColor;
     EditorGUILayout.BeginHorizontal();
     float previousLabelWidth = EditorGUIUtility.labelWidth;
     GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
@@ -27698,17 +27704,21 @@ private static void HandleGameViewPointerDown(
     GUILayout.Space(8f);
     float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
+    GUI.contentColor = stairsD0LEnabled != savedEnabled ? Color.red : originalContentColor;
     bool enabled = DrawMouseOnlyToggle(
         "Set", stairsD0LEnabled, stairsD0LEnabled,
         GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
+    GUI.contentColor = originalContentColor;
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int x = stairsD0LX;
-    bool xChanged = DrawIntStepperInline("X", ref x, snap, false, true, 24f, 24f);
+    bool xChanged = DrawIntStepperInline("X", ref x, snap, stairsD0LX != savedX, true, 24f, 24f);
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     int y = stairsD0LTopY;
-    bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
+    bool yChanged = DrawIntStepperInline("Y", ref y, snap, stairsD0LTopY != savedY, true, 24f, 24f);
     GUILayout.Space(6f);
+    GUI.contentColor = stairsD0LMirror != savedMirror ? Color.red : originalContentColor;
     bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsD0LMirror, GUILayout.Width(66f));
+    GUI.contentColor = originalContentColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
     EditorGUIUtility.labelWidth = previousLabelWidth;
@@ -27726,16 +27736,22 @@ private static void HandleGameViewPointerDown(
     }
     if (apply)
     {
-      EditorPrefs.SetInt(StairsD0LPrefsPrefix + "X", stairsD0LX);
-      EditorPrefs.SetInt(StairsD0LPrefsPrefix + "Y", stairsD0LTopY);
-      EditorPrefs.SetBool(StairsD0LPrefsPrefix + "Mirror", stairsD0LMirror);
-      EditorPrefs.SetBool(StairsD0LPrefsPrefix + "Enabled", stairsD0LEnabled);
+      EditorPrefs.SetInt(StairsD0LPrefsPrefix + "X", 208);
+      EditorPrefs.SetInt(StairsD0LPrefsPrefix + "Y", 106);
+      EditorPrefs.SetBool(StairsD0LPrefsPrefix + "Mirror", false);
+      EditorPrefs.SetBool(StairsD0LPrefsPrefix + "Enabled", true);
     }
   }
 
   private void DrawStairsDownS1CalibrationRow(int mapX, int mapY)
   {
     // Match the existing Hook/WoodRing ornament calibration row.
+    // Compare against the last applied calibration, not the previous frame.
+    int savedX = EditorPrefs.GetInt(StairsS1PrefsPrefix + "X", StairsDownRightD1X);
+    int savedY = EditorPrefs.GetInt(StairsS1PrefsPrefix + "Y", StairsDownRightD1DisplayY);
+    bool savedMirror = EditorPrefs.GetBool(StairsS1PrefsPrefix + "Mirror", false);
+    bool savedEnabled = EditorPrefs.GetBool(StairsS1PrefsPrefix + "Enabled", true);
+    Color originalContentColor = GUI.contentColor;
     EditorGUILayout.BeginHorizontal();
     float savedLabelWidth = EditorGUIUtility.labelWidth;
     GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
@@ -27751,6 +27767,7 @@ private static void HandleGameViewPointerDown(
     float enabledLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledLabelWidth;
+    GUI.contentColor = stairsS1PreviewEnabled != savedEnabled ? Color.red : originalContentColor;
     bool updatedEnabled = DrawMouseOnlyToggle(
         "Set", stairsS1PreviewEnabled, stairsS1PreviewEnabled,
         GUILayout.Width(enabledLabelWidth + 18f),
@@ -27763,22 +27780,25 @@ private static void HandleGameViewPointerDown(
       Repaint();
     }
 
+    GUI.contentColor = originalContentColor;
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int x = stairsS1X;
     bool xChanged = DrawIntStepperInline(
-        "X", ref x, snap, false, true, 24f, 24f);
+        "X", ref x, snap, stairsS1X != savedX, true, 24f, 24f);
 
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     int y = stairsS1TopY;
     bool yChanged = DrawIntStepperInline(
-        "Y", ref y, snap, false, true, 24f, 24f);
+        "Y", ref y, snap, stairsS1TopY != savedY, true, 24f, 24f);
 
     GUILayout.Space(6f);
+    GUI.contentColor = stairsS1Mirror != savedMirror ? Color.red : originalContentColor;
     bool updatedMirror = EditorGUILayout.ToggleLeft(
         "Mirror", stairsS1Mirror, GUILayout.Width(66f));
     bool mirrorChanged = updatedMirror != stairsS1Mirror;
+    GUI.contentColor = originalContentColor;
     bool apply = GUILayout.Button("Apply",
         GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -27807,11 +27827,18 @@ private static void HandleGameViewPointerDown(
       EditorPrefs.SetInt(StairsS1PrefsPrefix + "X", stairsS1X);
       EditorPrefs.SetInt(StairsS1PrefsPrefix + "Y", stairsS1TopY);
       EditorPrefs.SetBool(StairsS1PrefsPrefix + "Mirror", stairsS1Mirror);
+      EditorPrefs.SetBool(StairsS1PrefsPrefix + "Enabled", stairsS1PreviewEnabled);
     }
   }
 
   private void DrawStairsDownS1LeftCalibrationRow(int mapX, int mapY)
   {
+    // Compare against the last applied calibration, not the previous frame.
+    int savedX = EditorPrefs.GetInt(StairsS1LeftPrefsPrefix + "X", 0);
+    int savedY = EditorPrefs.GetInt(StairsS1LeftPrefsPrefix + "Y", 33);
+    bool savedMirror = EditorPrefs.GetBool(StairsS1LeftPrefsPrefix + "Mirror", true);
+    bool savedEnabled = EditorPrefs.GetBool(StairsS1LeftPrefsPrefix + "Enabled", true);
+    Color originalContentColor = GUI.contentColor;
     EditorGUILayout.BeginHorizontal();
     float savedLabelWidth = EditorGUIUtility.labelWidth;
     GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
@@ -27827,6 +27854,7 @@ private static void HandleGameViewPointerDown(
     float enabledLabelWidth =
         EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledLabelWidth;
+    GUI.contentColor = stairsS1LeftPreviewEnabled != savedEnabled ? Color.red : originalContentColor;
     bool updatedEnabled = DrawMouseOnlyToggle(
         "Set", stairsS1LeftPreviewEnabled, stairsS1LeftPreviewEnabled,
         GUILayout.Width(enabledLabelWidth + 18f),
@@ -27839,21 +27867,24 @@ private static void HandleGameViewPointerDown(
       Repaint();
     }
 
+    GUI.contentColor = originalContentColor;
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int x = stairsS1LeftX;
     bool xChanged = DrawIntStepperInline(
-        "X", ref x, snap, false, true, 24f, 24f);
+        "X", ref x, snap, stairsS1LeftX != savedX, true, 24f, 24f);
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     int y = stairsS1LeftTopY;
     bool yChanged = DrawIntStepperInline(
-        "Y", ref y, snap, false, true, 24f, 24f);
+        "Y", ref y, snap, stairsS1LeftTopY != savedY, true, 24f, 24f);
 
     GUILayout.Space(6f);
+    GUI.contentColor = stairsS1LeftMirror != savedMirror ? Color.red : originalContentColor;
     bool mirror = EditorGUILayout.ToggleLeft(
         "Mirror", stairsS1LeftMirror, GUILayout.Width(66f));
     bool mirrorChanged = mirror != stairsS1LeftMirror;
+    GUI.contentColor = originalContentColor;
     bool apply = GUILayout.Button("Apply",
         GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -27875,6 +27906,7 @@ private static void HandleGameViewPointerDown(
       EditorPrefs.SetInt(StairsS1LeftPrefsPrefix + "X", stairsS1LeftX);
       EditorPrefs.SetInt(StairsS1LeftPrefsPrefix + "Y", stairsS1LeftTopY);
       EditorPrefs.SetBool(StairsS1LeftPrefsPrefix + "Mirror", stairsS1LeftMirror);
+      EditorPrefs.SetBool(StairsS1LeftPrefsPrefix + "Enabled", stairsS1LeftPreviewEnabled);
     }
   }
 
