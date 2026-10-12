@@ -1470,7 +1470,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   // BEGIN APPLIED ORNAMENT REFERENCES
-  // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274219326294785
+  // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274244978634688
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
   // REF OrnamentProjection:Hook:F2|103|111|false|639272438417071479
   // REF OrnamentProjection:Hook:S1|160|109|true|639271634293923485
@@ -2583,6 +2583,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnDisable()
   {
+    if (previewHeldTorchCursor != null)
+      Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     EditorApplication.delayCall -= ReapplyCurrentPoseToWallRendererAfterReload;
 
     if (hookedViewEditGlobalNavigation)
@@ -6474,6 +6476,19 @@ private static void HandleGameViewPointerDown(
           pointerTarget.focusController.IgnoreEvent(pointerEvent);
       }
 
+      gameView.Repaint();
+      window.Repaint();
+      RepaintGameViews();
+      return true;
+    }
+
+    if (hasLogical && window.TryPickupVisibleTorchAt(logical.x, logical.y))
+    {
+      s_lastGameViewClickTime = now;
+      if (imguiEvent != null)
+        imguiEvent.Use();
+      if (pointerEvent != null)
+        pointerEvent.StopPropagation();
       gameView.Repaint();
       window.Repaint();
       RepaintGameViews();
@@ -24296,8 +24311,14 @@ private static void HandleGameViewPointerDown(
         // row. No row is shown for a holder behind the party or another wall.
         if (IsEmptyTorchHolderF1Visible(ornament))
         {
+          // Report the actual rendered state, not the source sensor name.
+          // The renderer uses this same per-holder key to choose its PNG.
+          bool torchRemoved = previewRemovedTorchHolderKeys.Contains(
+              MakeTorchHolderInstanceKey(ornament));
+          string renderedName = torchRemoved
+              ? "TorchHolder Empty" : "TorchHolder Full";
           DrawWallOrnamentCalibrationRow(ornament,
-              "EmptyTorchHolder [" + previewX + "," + previewY + "] ("
+              renderedName + " [" + previewX + "," + previewY + "] ("
               + ShortDirectionLabel(FacingName(previewFacing)) + ")");
           continue;
         }
@@ -32759,6 +32780,98 @@ private static void HandleGameViewPointerDown(
 
   // Shared by the renderer and ViewEdit: only the directly facing F1 wall
   // can display this asset. Position comes from the feature-placement data.
+  // First pickup milestone: one held torch, with a stable identity derived from
+  // its original wall fixture. No champion inventory/drop/throw behavior yet.
+  private readonly HashSet<string> previewRemovedTorchHolderKeys =
+      new HashSet<string>();
+  private string previewHeldTorchId;
+  private Texture2D previewHeldTorchCursor;
+
+  private string MakeTorchHolderInstanceKey(WallOrnamentPlacement ornament)
+  {
+    return previewDungeonLevel + ":" + ornament.x + ":" + ornament.y
+        + ":" + ornament.wall.ToUpperInvariant() + ":Weapon:2";
+  }
+
+  private WallOrnamentPlacement FindVisibleEmptyTorchHolderF1()
+  {
+    if (previewWallOrnaments == null)
+      return null;
+    foreach (WallOrnamentPlacement candidate in previewWallOrnaments)
+      if (IsEmptyTorchHolderF1Visible(candidate))
+        return candidate;
+    return null;
+  }
+
+  private static Texture2D FindExactTorchTexture(string name, int width, int height)
+  {
+    string query = System.IO.Path.GetFileNameWithoutExtension(name);
+    string[] guids = AssetDatabase.FindAssets(query + " t:Texture2D");
+    Texture2D result = null;
+    int count = 0;
+    foreach (string guid in guids)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guid);
+      if (!string.Equals(System.IO.Path.GetFileName(path), name,
+              System.StringComparison.Ordinal))
+        continue;
+      ++count;
+      result = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    }
+    if (count != 1 || result == null || result.width != width
+        || result.height != height || !result.isReadable)
+    {
+      Debug.LogError("TORCH PICKUP: expected one readable " + width + "x"
+          + height + " texture '" + name + "'; matches=" + count);
+      return null;
+    }
+    return result;
+  }
+
+  private bool TryPickupVisibleTorchAt(float logicalX, float logicalY)
+  {
+    if (championSheetVisible || previewHeldTorchId != null
+        || logicalX < 0 || logicalX >= 224 || logicalY < 0 || logicalY >= 136)
+      return false;
+    WallOrnamentPlacement ornament = FindVisibleEmptyTorchHolderF1();
+    if (ornament == null || !IsPreviewFeatureEnabled(
+        MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+      return false;
+
+    string id = MakeTorchHolderInstanceKey(ornament);
+    if (previewRemovedTorchHolderKeys.Contains(id))
+      return false;
+
+    // Match the existing ViewEdit X/Y/Mirror calibration and its live overrides.
+    string key = "OrnamentProjection:EmptyTorchHolder:F1";
+    int x = 100;
+    int y = DisplayYToUnityY(60, 54);
+    bool mirror = false;
+    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+    int top = PreviewHeight - y - 54;
+    if (logicalX < x || logicalX >= x + 24
+        || logicalY < top || logicalY >= top + 54)
+      return false;
+
+    // Never remove an item if its cursor graphic is unavailable.
+    Texture2D cursorImage = FindExactTorchTexture("Torch_Lit_16x16.png", 16, 16);
+    if (cursorImage == null)
+      return true; // consume the hit; error has already been logged
+    Texture2D fullImage = FindExactTorchTexture("Torch_Holder_Full_F1_24x53.png", 24, 53);
+    if (fullImage == null)
+      return true;
+
+    previewHeldTorchId = id;
+    previewHeldTorchCursor = cursorImage;
+    previewRemovedTorchHolderKeys.Add(id);
+    Cursor.SetCursor(cursorImage, Vector2.zero, CursorMode.Auto);
+    Debug.Log("TORCH PICKUP: picked up unique item " + id
+        + "; holder remains empty. Inventory, drop, and throw not yet implemented.");
+    RefreshEditModePreview();
+    return true;
+  }
+
   private bool IsEmptyTorchHolderF1Visible(WallOrnamentPlacement ornament)
   {
     if (ornament == null || !ornament.wallTilePlacement
@@ -32805,31 +32918,25 @@ private static void HandleGameViewPointerDown(
         MakePreviewFeatureKey("Ornament", matched.x, matched.y, matched.wall)))
       return;
 
-    const string assetFile = "Torch_Holder_Empty_F1_24x54.png";
-    string[] guids = AssetDatabase.FindAssets("Torch_Holder_Empty_F1_24x54 t:Texture2D");
-    Texture2D texture = null;
-    int matches = 0;
-    for (int i = 0; i < guids.Length; ++i)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      if (!string.Equals(System.IO.Path.GetFileName(path), assetFile,
-              System.StringComparison.Ordinal))
-        continue;
-      matches++;
-      texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-    }
-    if (matches != 1 || texture == null || texture.width != 24
-        || texture.height != 54 || !texture.isReadable)
-    {
-      Debug.LogError("EmptyTorchHolder F1: expected exactly one readable 24x54 asset "
-          + assetFile + "; matches=" + matches);
+    bool removed = previewRemovedTorchHolderKeys.Contains(
+        MakeTorchHolderInstanceKey(matched));
+    string assetFile = removed
+        ? "Torch_Holder_Empty_F1_24x54.png"
+        : "Torch_Holder_Full_F1_24x53.png";
+    int height = removed ? 54 : 53;
+    Texture2D texture = FindExactTorchTexture(assetFile, 24, height);
+    if (texture == null)
       return;
-    }
 
-    // Initial centered calibration in the 224px dungeon viewport.
-    // The accepted ViewEdit ornament override, if present, takes precedence.
-    BlitOrnamentPieceIntoPreview(pixels, texture, matched,
-        100, DisplayYToUnityY(60, texture.height), false);
+    // Keep both states at the same top edge, including ViewEdit overrides.
+    int x = 100;
+    int emptyBaseY = DisplayYToUnityY(60, 54);
+    bool mirror = false;
+    string projectionKey = "OrnamentProjection:EmptyTorchHolder:F1";
+    ApplyAcceptedOrnamentReference(projectionKey, ref x, ref emptyBaseY, ref mirror);
+    ApplyPreviewFeatureRenderOverrides(projectionKey, ref x, ref emptyBaseY, ref mirror);
+    int actualY = emptyBaseY + 54 - height;
+    BlitPieceIntoPreview(pixels, texture, x, actualY, mirror);
   }
 
   private void BlitOrnamentPieceIntoPreview(
