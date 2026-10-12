@@ -17766,6 +17766,7 @@ private static void HandleGameViewPointerDown(
     BlitGrateD3FrontIntoPreview(pixels);
     BlitGrateD2FrontIntoPreview(pixels);
     BlitGrateD1FrontIntoPreview(pixels);
+    BlitEmptyTorchHolderF1IntoPreview(pixels);
 
     // Vi Altar side projections. Draw far-to-near.
     BlitViAltarS3IntoPreview(pixels);
@@ -32725,6 +32726,74 @@ private static void HandleGameViewPointerDown(
     return previewFeatureMirrorOverrides.TryGetValue(key, out bool value)
         ? value
         : defaultMirror;
+  }
+
+  // Empty torch holders are wall ornaments, not floor items. The position and
+  // face come from DungeonFeaturePlacements.json; no player-pose exception.
+  // A FullTorchHolder sensor can coexist on the same face and represents a
+  // separate mechanism/state. It must not create a second empty-holder image.
+  private void BlitEmptyTorchHolderF1IntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || previewWallOrnaments == null)
+      return;
+
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return;
+
+    DungeonMap.GetForwardOffset(previewFacing, out int dx, out int dy);
+    int wallX = previewX + dx;
+    int wallY = previewY + dy;
+    if (!previewMiniMap.IsInside(wallX, wallY)
+        || previewMiniMap.GetTile(wallX, wallY).Type != DungeonTileType.Wall)
+      return;
+
+    string wallFace = OppositeFacingName(previewFacing);
+    WallOrnamentPlacement matched = null;
+    for (int i = 0; i < previewWallOrnaments.Length; ++i)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament == null || !string.Equals(ornament.type,
+              "EmptyTorchHolder", System.StringComparison.OrdinalIgnoreCase))
+        continue;
+      if (ornament.wallTilePlacement && ornament.x == wallX
+          && ornament.y == wallY && string.Equals(ornament.wall, wallFace,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        matched = ornament;
+        break;
+      }
+    }
+
+    if (matched == null || !IsPreviewFeatureEnabled(
+        MakePreviewFeatureKey("Ornament", matched.x, matched.y, matched.wall)))
+      return;
+
+    const string assetFile = "Torch_Holder_Empty_F1_24x54.png";
+    string[] guids = AssetDatabase.FindAssets("Torch_Holder_Empty_F1_24x54 t:Texture2D");
+    Texture2D texture = null;
+    int matches = 0;
+    for (int i = 0; i < guids.Length; ++i)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      if (!string.Equals(System.IO.Path.GetFileName(path), assetFile,
+              System.StringComparison.Ordinal))
+        continue;
+      matches++;
+      texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    }
+    if (matches != 1 || texture == null || texture.width != 24
+        || texture.height != 54 || !texture.isReadable)
+    {
+      Debug.LogError("EmptyTorchHolder F1: expected exactly one readable 24x54 asset "
+          + assetFile + "; matches=" + matches);
+      return;
+    }
+
+    // Initial centered calibration in the 224px dungeon viewport.
+    // The accepted ViewEdit ornament override, if present, takes precedence.
+    BlitOrnamentPieceIntoPreview(pixels, texture, matched,
+        100, DisplayYToUnityY(60, texture.height), false);
   }
 
   private void BlitOrnamentPieceIntoPreview(
