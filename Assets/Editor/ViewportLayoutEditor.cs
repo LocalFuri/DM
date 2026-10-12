@@ -2409,6 +2409,7 @@ public class ViewportLayoutEditor : EditorWindow
         HandleDungeonFeaturesRightClickClose;
     RemoveViewEditGlobalEventHandler(closeDungeonFeaturesHandler);
     AddViewEditGlobalEventHandler(closeDungeonFeaturesHandler);
+
   }
 
   private static void HandleDungeonFeaturesRightClickClose()

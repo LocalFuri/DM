@@ -1802,14 +1802,26 @@ public class DungeonFeatureEditor : EditorWindow
     if (!map.IsInside(x, y))
       return;
 
+    bool doubleClick = current.clickCount == 2;
+    // Double-click navigation only accepts a walkable destination. A single
+    // click still permits selecting map walls and inspecting their ornaments.
+    if (doubleClick && !map.CanEnter(x, y))
+    {
+      current.Use();
+      return;
+    }
+
     if (TryTeleportToWallOrnament(x, y))
     {
       current.Use();
       GUI.changed = true;
       Repaint();
+      if (doubleClick)
+        CloseAfterGridTeleport();
       return;
     }
 
+    DungeonFacing previousFacing = selectedFacing;
     selectedX = x;
     selectedY = y;
 
@@ -1818,6 +1830,9 @@ public class DungeonFeatureEditor : EditorWindow
     {
       selectedFacing = enteredFacing;
     }
+
+    if (doubleClick)
+      selectedFacing = previousFacing;
 
     EditorPrefs.SetInt(ViewEditPreviewLevelKey, currentDungeonLevel);
     EditorPrefs.SetInt(ViewEditPreviewXKey, x);
@@ -1829,6 +1844,29 @@ public class DungeonFeatureEditor : EditorWindow
     current.Use();
     GUI.changed = true;
     Repaint();
+    if (doubleClick)
+      CloseAfterGridTeleport();
+  }
+
+  // The selected map pose has already been published to the shared ViewEdit
+  // preferences. Close like Escape, then focus the existing ViewEdit window;
+  // its normal inspector update applies the requested pose and redraws GameView.
+  private void CloseAfterGridTeleport()
+  {
+    EditorApplication.delayCall += () =>
+    {
+      if (this != null)
+        Close();
+      foreach (ViewportLayoutEditor viewEdit in
+          Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>())
+      {
+        if (viewEdit == null)
+          continue;
+        viewEdit.Focus();
+        viewEdit.Repaint();
+        break;
+      }
+    };
   }
 
 }
