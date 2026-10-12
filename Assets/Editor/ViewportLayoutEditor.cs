@@ -32873,73 +32873,90 @@ private static void HandleGameViewPointerDown(
     HideHeldItemPointerOverlay();
   }
 
-  // UI Toolkit overlay is in GameView screen coordinates; the original sprite
-  // is scaled to exactly 16x16 pixels of the 320x200 framebuffer.
-  // A transparent Unity/UI Toolkit cursor hides the arrow while the zoom-scaled
-  // item overlay supplies the visible cursor. No native window subclassing.
-  private static Texture2D s_transparentHeldCursor;
-  private static UnityEngine.UIElements.VisualElement s_cursorStyleRoot;
-  private static readonly Dictionary<UnityEngine.UIElements.VisualElement,
-      UnityEngine.UIElements.StyleCursor> s_previousHeldCursorStyles =
-      new Dictionary<UnityEngine.UIElements.VisualElement,
-          UnityEngine.UIElements.StyleCursor>();
+  // The zoom-scaled item remains a UI Toolkit overlay.  Unity's Edit-mode
+  // GameView can override a transparent StyleCursor on its IMGUI surface.
+  // On Windows, hide ONLY the native arrow (not substitute another cursor).
+  // Balance every ShowCursor(false) call with ShowCursor(true) on cleanup.
+#if UNITY_EDITOR_WIN
+  [System.Runtime.InteropServices.DllImport("user32.dll")]
+  private static extern int ShowCursor(bool show);
+
+  [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+  private struct WinCursorInfo
+  {
+    public int cbSize;
+    public int flags;
+    public System.IntPtr hCursor;
+    public NativeCursorPoint ptScreenPos;
+  }
+
+  [System.Runtime.InteropServices.DllImport("user32.dll")]
+  [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+  private static extern bool GetCursorInfo(ref WinCursorInfo info);
+#endif
+  private static int s_heldCursorHideCalls;
+  private static bool s_heldCursorCleanupRegistered;
+  private static bool s_heldCursorWarned;
 
   private static void SetHeldItemArrowHidden(EditorWindow gameView)
   {
+#if UNITY_EDITOR_WIN
     if (gameView == null) return;
-    var root = gameView.rootVisualElement;
-    if (root == null) return;
-    if (s_cursorStyleRoot == root && s_previousHeldCursorStyles.Count > 0)
+    if (!s_heldCursorCleanupRegistered)
+    {
+      AssemblyReloadEvents.beforeAssemblyReload += RestoreHeldItemArrow;
+      EditorApplication.quitting += RestoreHeldItemArrow;
+      s_heldCursorCleanupRegistered = true;
+    }
+
+    // A cursor may be re-shown by Unity after we hid it.  Check visibility,
+    // not every mouse move, and only correct if the arrow is actually visible.
+    var info = new WinCursorInfo();
+    info.cbSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(WinCursorInfo));
+    if (!GetCursorInfo(ref info))
+    {
+      if (!s_heldCursorWarned)
+      {
+        Debug.LogWarning("TORCH CURSOR: GetCursorInfo failed; normal pointer may remain visible");
+        s_heldCursorWarned = true;
+      }
       return;
-    RestoreHeldItemArrow();
-    if (s_transparentHeldCursor == null)
-    {
-      s_transparentHeldCursor = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-      s_transparentHeldCursor.name = "DungeonMasterTransparentHeldCursor";
-      s_transparentHeldCursor.filterMode = FilterMode.Point;
-      s_transparentHeldCursor.SetPixels32(new Color32[4]);
-      s_transparentHeldCursor.Apply(false, false);
     }
-    var style = new UnityEngine.UIElements.StyleCursor(
-        new UnityEngine.UIElements.Cursor {
-          texture = s_transparentHeldCursor, hotspot = Vector2.zero
-        });
-    s_cursorStyleRoot = root;
-    ApplyTransparentHeldCursorStyle(root, style);
-    // Traverse the visual tree directly. Query<T>() depends on the
-    // UIElements UQuery extension namespace and was not resolving here.
-    ApplyTransparentHeldCursorStyleToIMGUIChildren(root, style);
-  }
-
-  private static void ApplyTransparentHeldCursorStyleToIMGUIChildren(
-      UnityEngine.UIElements.VisualElement parent,
-      UnityEngine.UIElements.StyleCursor style)
-  {
-    if (parent == null) return;
-    for (int i = 0; i < parent.hierarchy.childCount; i++)
+    const int CURSOR_SHOWING = 0x00000001;
+    if ((info.flags & CURSOR_SHOWING) == 0)
+      return;
+    // A small limit protects the editor if some external code keeps
+    // re-showing the pointer.  Every decrement is tracked and reversible.
+    if (s_heldCursorHideCalls >= 32)
     {
-      var child = parent.hierarchy.ElementAt(i);
-      if (child is UnityEngine.UIElements.IMGUIContainer)
-        ApplyTransparentHeldCursorStyle(child, style);
-      ApplyTransparentHeldCursorStyleToIMGUIChildren(child, style);
+      if (!s_heldCursorWarned)
+      {
+        Debug.LogWarning("TORCH CURSOR: native cursor keeps being shown; stopping corrections");
+        s_heldCursorWarned = true;
+      }
+      return;
     }
-  }
-
-  private static void ApplyTransparentHeldCursorStyle(
-      UnityEngine.UIElements.VisualElement element,
-      UnityEngine.UIElements.StyleCursor style)
-  {
-    if (element == null || s_previousHeldCursorStyles.ContainsKey(element)) return;
-    s_previousHeldCursorStyles.Add(element, element.style.cursor);
-    element.style.cursor = style;
+    ShowCursor(false);
+    s_heldCursorHideCalls++;
+#endif
   }
 
   private static void RestoreHeldItemArrow()
   {
-    foreach (var entry in s_previousHeldCursorStyles)
-      if (entry.Key != null) entry.Key.style.cursor = entry.Value;
-    s_previousHeldCursorStyles.Clear();
-    s_cursorStyleRoot = null;
+#if UNITY_EDITOR_WIN
+    while (s_heldCursorHideCalls > 0)
+    {
+      ShowCursor(true);
+      s_heldCursorHideCalls--;
+    }
+    if (s_heldCursorCleanupRegistered)
+    {
+      AssemblyReloadEvents.beforeAssemblyReload -= RestoreHeldItemArrow;
+      EditorApplication.quitting -= RestoreHeldItemArrow;
+      s_heldCursorCleanupRegistered = false;
+    }
+    s_heldCursorWarned = false;
+#endif
   }
 
   private static UnityEngine.UIElements.VisualElement s_heldItemPointerOverlay;
