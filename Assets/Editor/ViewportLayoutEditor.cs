@@ -1470,6 +1470,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   // BEGIN APPLIED ORNAMENT REFERENCES
+  // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274219326294785
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
   // REF OrnamentProjection:Hook:F2|103|111|false|639272438417071479
   // REF OrnamentProjection:Hook:S1|160|109|true|639271634293923485
@@ -22295,6 +22296,13 @@ private static void HandleGameViewPointerDown(
     if (ornament == null || previewMiniMap == null)
       return false;
 
+    if (IsEmptyTorchHolderF1Visible(ornament))
+    {
+      renderX = 100;
+      renderY = DisplayYToUnityY(60, 54);
+      return true;
+    }
+
     if (IsGrateOrnament(ornament))
     {
       if (!TryGetGrateViewProjection(
@@ -22513,6 +22521,13 @@ private static void HandleGameViewPointerDown(
     projectionSuffix = null;
     if (ornament == null || previewMiniMap == null)
       return false;
+
+    if (IsEmptyTorchHolderF1Visible(ornament))
+    {
+      overrideKey = "OrnamentProjection:EmptyTorchHolder:F1";
+      projectionSuffix = " / F1";
+      return true;
+    }
 
     string family = IsWoodRingOrnament(ornament) ? "WoodRing"
         : IsHookOrnament(ornament) ? "Hook"
@@ -24275,6 +24290,20 @@ private static void HandleGameViewPointerDown(
       {
         WallOrnamentPlacement ornament = previewWallOrnaments[i];
         if (ornament == null)
+          continue;
+
+        // The same F1 visibility predicate is used by the blitter and this
+        // row. No row is shown for a holder behind the party or another wall.
+        if (IsEmptyTorchHolderF1Visible(ornament))
+        {
+          DrawWallOrnamentCalibrationRow(ornament,
+              "EmptyTorchHolder [" + previewX + "," + previewY + "] ("
+              + ShortDirectionLabel(FacingName(previewFacing)) + ")");
+          continue;
+        }
+        // Only F1 artwork exists; never list non-renderable holder depths.
+        if (string.Equals(ornament.type, "EmptyTorchHolder",
+                System.StringComparison.OrdinalIgnoreCase))
           continue;
 
         // Vi Altar side projections use exact geometry before the broad
@@ -32728,6 +32757,27 @@ private static void HandleGameViewPointerDown(
         : defaultMirror;
   }
 
+  // Shared by the renderer and ViewEdit: only the directly facing F1 wall
+  // can display this asset. Position comes from the feature-placement data.
+  private bool IsEmptyTorchHolderF1Visible(WallOrnamentPlacement ornament)
+  {
+    if (ornament == null || !ornament.wallTilePlacement
+        || !string.Equals(ornament.type, "EmptyTorchHolder",
+            System.StringComparison.OrdinalIgnoreCase))
+      return false;
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return false;
+    DungeonMap.GetForwardOffset(previewFacing, out int dx, out int dy);
+    int wallX = previewX + dx;
+    int wallY = previewY + dy;
+    return previewMiniMap.IsInside(wallX, wallY)
+        && previewMiniMap.GetTile(wallX, wallY).Type == DungeonTileType.Wall
+        && ornament.x == wallX && ornament.y == wallY
+        && string.Equals(ornament.wall, OppositeFacingName(previewFacing),
+            System.StringComparison.OrdinalIgnoreCase);
+  }
+
   // Empty torch holders are wall ornaments, not floor items. The position and
   // face come from DungeonFeaturePlacements.json; no player-pose exception.
   // A FullTorchHolder sensor can coexist on the same face and represents a
@@ -32741,26 +32791,12 @@ private static void HandleGameViewPointerDown(
     if (previewMiniMap == null)
       return;
 
-    DungeonMap.GetForwardOffset(previewFacing, out int dx, out int dy);
-    int wallX = previewX + dx;
-    int wallY = previewY + dy;
-    if (!previewMiniMap.IsInside(wallX, wallY)
-        || previewMiniMap.GetTile(wallX, wallY).Type != DungeonTileType.Wall)
-      return;
-
-    string wallFace = OppositeFacingName(previewFacing);
     WallOrnamentPlacement matched = null;
     for (int i = 0; i < previewWallOrnaments.Length; ++i)
     {
-      WallOrnamentPlacement ornament = previewWallOrnaments[i];
-      if (ornament == null || !string.Equals(ornament.type,
-              "EmptyTorchHolder", System.StringComparison.OrdinalIgnoreCase))
-        continue;
-      if (ornament.wallTilePlacement && ornament.x == wallX
-          && ornament.y == wallY && string.Equals(ornament.wall, wallFace,
-              System.StringComparison.OrdinalIgnoreCase))
+      if (IsEmptyTorchHolderF1Visible(previewWallOrnaments[i]))
       {
-        matched = ornament;
+        matched = previewWallOrnaments[i];
         break;
       }
     }
