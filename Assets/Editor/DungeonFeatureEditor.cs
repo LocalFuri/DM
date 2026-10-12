@@ -12,6 +12,7 @@ public class DungeonFeatureEditor : EditorWindow
       "Assets/Data/Features/DungeonFeaturePlacements.json";
   private const int HallOfChampionsLevel = 0;
   private const int MaxDungeonLevel = 13;
+  private const string MossF1AssetName = "Moss_F1_56x19";
   private const string PuddleF1AssetPath =
       "Assets/Art/Ornaments/Puddle_F1.png";
 
@@ -123,6 +124,7 @@ public class DungeonFeatureEditor : EditorWindow
   private OriginalWallOrnamentMarker[] resolvedWallOrnaments =
       new OriginalWallOrnamentMarker[0];
   private readonly HashSet<int> resolvedPuddleFloors = new HashSet<int>();
+  private readonly HashSet<int> resolvedMossFloors = new HashSet<int>();
 
   private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =
   {
@@ -167,6 +169,7 @@ public class DungeonFeatureEditor : EditorWindow
   private Texture2D slimeMapIcon;
   private Texture2D grateMapIcon;
   private Texture2D puddleMapIcon;
+  private Texture2D mossMapIcon;
   private Texture2D stairDownMapIcon;
   // Report missing icons once per editor-window lifetime, not every repaint.
   private readonly HashSet<string> missingMapIconErrors =
@@ -191,6 +194,7 @@ public class DungeonFeatureEditor : EditorWindow
     slimeMapIcon = null;
     grateMapIcon = null;
     puddleMapIcon = null;
+    mossMapIcon = null;
     stairDownMapIcon = null;
 
     currentDungeonLevel = Mathf.Clamp(
@@ -261,6 +265,7 @@ public class DungeonFeatureEditor : EditorWindow
 
       resolvedWallOrnaments = new OriginalWallOrnamentMarker[0];
       resolvedPuddleFloors.Clear();
+      resolvedMossFloors.Clear();
 
       if (!LoadResolvedFeaturesFromDatabase())
       {
@@ -284,6 +289,7 @@ public class DungeonFeatureEditor : EditorWindow
       currentDungeonLevel = previousLevel;
       resolvedWallOrnaments = new OriginalWallOrnamentMarker[0];
       resolvedPuddleFloors.Clear();
+      resolvedMossFloors.Clear();
       mapLoadError = ex.Message;
       Debug.LogWarning(
           "Dungeon Features: Could not load level " + level
@@ -474,6 +480,7 @@ public class DungeonFeatureEditor : EditorWindow
 
     DrawStairDownIcons(mapRect);
     DrawPuddleFloorIcons(mapRect);
+    DrawMossFloorIcons(mapRect);
     DrawChampionMirrorMarkers(mapRect);
     DrawOriginalWallOrnamentIcons(mapRect);
     HandleGridClick(mapRect);
@@ -773,6 +780,43 @@ public class DungeonFeatureEditor : EditorWindow
     }
   }
 
+  // Floor moss has no wall-facing direction. Display it on the exact tile
+  // from DungeonFeaturePlacements.json, including the player's own tile.
+  private void DrawMossFloorIcons(Rect mapRect)
+  {
+    if (resolvedMossFloors.Count == 0)
+      return;
+
+    EnsureOrnamentTexturesResolved();
+    if (mossMapIcon == null)
+    {
+      ReportMissingMapIcon(MossF1AssetName + ".png", "moss map icon");
+      return;
+    }
+
+    const float iconInset = 3f;
+    for (int y = 0; y < map.Height; y++)
+    {
+      for (int x = 0; x < map.Width; x++)
+      {
+        if (!resolvedMossFloors.Contains(PackFloorFeatureTile(x, y)))
+          continue;
+
+        Rect cellRect = new Rect(
+            mapRect.x + x * CellSize,
+            mapRect.y + y * CellSize,
+            CellSize,
+            CellSize);
+        Rect iconRect = new Rect(
+            cellRect.x + iconInset,
+            cellRect.y + iconInset,
+            cellRect.width - iconInset * 2f,
+            cellRect.height - iconInset * 2f);
+        GUI.DrawTexture(iconRect, mossMapIcon, ScaleMode.ScaleToFit, true);
+      }
+    }
+  }
+
   /// <summary>
   /// Populates Dungeon Features from the generated all-level placement
   /// database for the same active level that ViewEdit is displaying.
@@ -794,6 +838,7 @@ public class DungeonFeatureEditor : EditorWindow
       List<OriginalWallOrnamentMarker> wallMarkers =
           new List<OriginalWallOrnamentMarker>();
       resolvedPuddleFloors.Clear();
+      resolvedMossFloors.Clear();
 
       for (int i = 0; i < database.ornamentPlacements.Length; i++)
       {
@@ -818,6 +863,16 @@ public class DungeonFeatureEditor : EditorWindow
                   System.StringComparison.OrdinalIgnoreCase))
           {
             resolvedPuddleFloors.Add(
+                PackFloorFeatureTile(
+                    placement.normalisedX,
+                    placement.normalisedY));
+          }
+          if (string.Equals(
+                  placement.resolved.type,
+                  "Moss",
+                  System.StringComparison.OrdinalIgnoreCase))
+          {
+            resolvedMossFloors.Add(
                 PackFloorFeatureTile(
                     placement.normalisedX,
                     placement.normalisedY));
@@ -1130,6 +1185,7 @@ public class DungeonFeatureEditor : EditorWindow
     grateMapIcon = FindBestOrnamentTexture("Grate");
     puddleMapIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(
         PuddleF1AssetPath);
+    mossMapIcon = FindExactTextureByName(MossF1AssetName);
     stairDownMapIcon = FindExactTextureByName("Stair_Down_Icon");
   }
 
