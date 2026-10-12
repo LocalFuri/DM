@@ -6459,7 +6459,10 @@ private static void HandleGameViewPointerDown(
 
     ViewportLayoutEditor window = FindOpenViewEditWindow();
     if (window == null || window.layout == null)
+    {
+      Debug.Log("TORCH PICKUP TRACE: GameView click ignored: ViewEdit or layout unavailable");
       return false;
+    }
 
     bool hasLogical = window.TryGetLogical320x200FromGameView(
         gameView,
@@ -6489,13 +6492,12 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
-    if (!window.championSheetVisible && window.previewHeldTorchId == null
-        && window.FindVisibleEmptyTorchHolderF1() != null)
-    {
-      Debug.Log("TORCH PICKUP DEBUG: GameView click received; converted="
-          + hasLogical + "; windowMouse=" + windowMouse
-          + (hasLogical ? "; logical320x200=" + logical : " (GameView coordinate conversion failed)"));
-    }
+    Debug.Log("TORCH PICKUP TRACE: GameView left click; converted=" + hasLogical
+        + "; mouse=" + windowMouse
+        + (hasLogical ? "; logical320x200=" + logical : " (conversion failed)")
+        + "; held=" + (window.previewHeldTorchId ?? "none")
+        + "; championSheet=" + window.championSheetVisible
+        + "; holderFound=" + (window.FindVisibleEmptyTorchHolderF1() != null));
 
     if (hasLogical && window.TryPickupVisibleTorchAt(logical.x, logical.y))
     {
@@ -24335,14 +24337,14 @@ private static void HandleGameViewPointerDown(
           DrawWallOrnamentCalibrationRow(ornament,
               renderedName + " [" + previewX + "," + previewY + "] ("
               + ShortDirectionLabel(FacingName(previewFacing)) + ")");
-          if (torchRemoved)
-          {
-            EditorGUILayout.BeginHorizontal();
-            bool restore = EditorGUILayout.ToggleLeft(
-                "Restore torch to holder (editor test)", false, GUILayout.Width(245f));
-            EditorGUILayout.EndHorizontal();
-            if (restore) RestorePickedUpTorch(ornament);
-          }
+          // Keep Restore available during pickup testing, even when the
+          // viewport shows Full but the mouse-held state is still active.
+          // The action targets only this holder and never changes calibration.
+          EditorGUILayout.BeginHorizontal();
+          bool restore = EditorGUILayout.ToggleLeft(
+              "Restore torch to holder (editor test)", false, GUILayout.Width(245f));
+          EditorGUILayout.EndHorizontal();
+          if (restore) RestorePickedUpTorch(ornament);
           continue;
         }
         // Only F1 artwork exists; never list non-renderable holder depths.
@@ -32966,11 +32968,23 @@ private static void HandleGameViewPointerDown(
 
   private bool TryPickupVisibleTorchAt(float logicalX, float logicalY)
   {
-    if (championSheetVisible || previewHeldTorchId != null)
+    if (championSheetVisible)
+    {
+      Debug.Log("TORCH PICKUP TRACE: blocked by champion sheet");
       return false;
+    }
+    if (previewHeldTorchId != null)
+    {
+      Debug.LogWarning("TORCH PICKUP TRACE: blocked because item is already held: "
+          + previewHeldTorchId + ". Restore the original holder in ViewEdit before retrying.");
+      return false;
+    }
     WallOrnamentPlacement ornament = FindVisibleEmptyTorchHolderF1();
     if (ornament == null)
+    {
+      Debug.Log("TORCH PICKUP TRACE: no F1 EmptyTorchHolder placement at this viewpoint");
       return false;
+    }
     if (logicalX < 0 || logicalX >= 224 || logicalY < 0 || logicalY >= 136)
     {
       Debug.Log("TORCH PICKUP DEBUG: click outside viewport: " + logicalX + "," + logicalY);
@@ -32985,7 +32999,10 @@ private static void HandleGameViewPointerDown(
 
     string id = MakeTorchHolderInstanceKey(ornament);
     if (previewRemovedTorchHolderKeys.Contains(id))
+    {
+      Debug.LogWarning("TORCH PICKUP TRACE: holder already marked emptied: " + id);
       return false;
+    }
 
     // Match the existing ViewEdit X/Y/Mirror calibration and its live overrides.
     string key = "OrnamentProjection:EmptyTorchHolder:F1";
