@@ -6304,7 +6304,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorWindow gameView = FindGameViewWindow();
     if (gameView == s_hookedGameView && s_gameViewPointerCallbackAdded)
+    {
+      PollHeldItemPointerPosition();
       return;
+    }
 
     RemoveGameViewPointerHook();
     if (gameView == null)
@@ -32898,6 +32901,49 @@ private static void HandleGameViewPointerDown(
       s_heldItemPointerOverlay.RemoveFromHierarchy();
     s_heldItemPointerOverlay = null;
     s_heldItemPointerOverlayWindow = null;
+  }
+
+  // The Edit-mode GameView sometimes consumes mouse move events inside its
+  // IMGUI surface. Poll the desktop pointer during EditorApplication.update
+  // rather than relying on UITK PointerMove/MouseMove callbacks alone.
+#if UNITY_EDITOR_WIN
+  [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+  private struct NativeCursorPoint { public int x; public int y; }
+
+  [System.Runtime.InteropServices.DllImport("user32.dll")]
+  [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+  private static extern bool GetCursorPos(out NativeCursorPoint point);
+#endif
+
+  private static void PollHeldItemPointerPosition()
+  {
+    if (s_hookedGameView == null || Application.isPlaying)
+      return;
+    ViewportLayoutEditor owner = FindOpenViewEditWindow();
+    if (owner == null || owner.previewHeldTorchId == null
+        || owner.previewHeldTorchCursor == null)
+      return;
+#if UNITY_EDITOR_WIN
+    NativeCursorPoint screen;
+    if (!GetCursorPos(out screen))
+      return;
+    // EditorWindow.position and UITK pointer coordinates are measured in
+    // points. Win32 GetCursorPos returns physical screen pixels.
+    float ppp = EditorGUIUtility.pixelsPerPoint;
+    if (ppp <= 0f) ppp = 1f;
+    Rect windowRect = s_hookedGameView.position;
+    Vector2 local = new Vector2(screen.x / ppp - windowRect.x,
+        screen.y / ppp - windowRect.y);
+    Vector2 panelSize = s_hookedGameView.rootVisualElement.layout.size;
+    if (local.x < 0f || local.y < 0f
+        || local.x > panelSize.x || local.y > panelSize.y)
+    {
+      if (s_heldItemPointerOverlay != null)
+        s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.None;
+      return;
+    }
+    UpdateHeldItemPointerOverlay(s_hookedGameView, local);
+#endif
   }
 
   private static void GameViewHeldItemPointerMove(
