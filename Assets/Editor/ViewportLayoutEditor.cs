@@ -6483,6 +6483,14 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
+    if (!window.championSheetVisible && window.previewHeldTorchId == null
+        && window.FindVisibleEmptyTorchHolderF1() != null)
+    {
+      Debug.Log("TORCH PICKUP DEBUG: GameView click received; converted="
+          + hasLogical + "; windowMouse=" + windowMouse
+          + (hasLogical ? "; logical320x200=" + logical : " (GameView coordinate conversion failed)"));
+    }
+
     if (hasLogical && window.TryPickupVisibleTorchAt(logical.x, logical.y))
     {
       s_lastGameViewClickTime = now;
@@ -32863,13 +32871,22 @@ private static void HandleGameViewPointerDown(
 
   private bool TryPickupVisibleTorchAt(float logicalX, float logicalY)
   {
-    if (championSheetVisible || previewHeldTorchId != null
-        || logicalX < 0 || logicalX >= 224 || logicalY < 0 || logicalY >= 136)
+    if (championSheetVisible || previewHeldTorchId != null)
       return false;
     WallOrnamentPlacement ornament = FindVisibleEmptyTorchHolderF1();
-    if (ornament == null || !IsPreviewFeatureEnabled(
-        MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+    if (ornament == null)
       return false;
+    if (logicalX < 0 || logicalX >= 224 || logicalY < 0 || logicalY >= 136)
+    {
+      Debug.Log("TORCH PICKUP DEBUG: click outside viewport: " + logicalX + "," + logicalY);
+      return false;
+    }
+    if (!IsPreviewFeatureEnabled(
+        MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+    {
+      Debug.Log("TORCH PICKUP DEBUG: ornament disabled");
+      return false;
+    }
 
     string id = MakeTorchHolderInstanceKey(ornament);
     if (previewRemovedTorchHolderKeys.Contains(id))
@@ -32885,7 +32902,14 @@ private static void HandleGameViewPointerDown(
     int top = PreviewHeight - y - 54;
     if (logicalX < x || logicalX >= x + 24
         || logicalY < top || logicalY >= top + 54)
+    {
+      Debug.Log("TORCH PICKUP DEBUG: hitbox miss; click=(" + logicalX + ","
+          + logicalY + ") calibrated holder bounds X=" + x + ".." + (x + 23)
+          + ", topY=" + top + ".." + (top + 53)
+          + "; mirrored=" + mirror);
       return false;
+    }
+    Debug.Log("TORCH PICKUP DEBUG: hitbox matched; validating inventory sprite");
 
     // Never remove an item if its cursor graphic is unavailable.
     Texture2D cursorImage = FindExactTorchTexture("Torch_Lit_16x16.png", 16, 16);
