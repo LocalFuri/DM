@@ -32852,6 +32852,27 @@ private static void HandleGameViewPointerDown(
   private string previewHeldTorchId;
   private Texture2D previewHeldTorchCursor;
 
+  // The held item is authoritative only when its original fixture was emptied.
+  // A script reload or editor Restore can otherwise leave a stale mouse sprite
+  // over a FULL holder. Do not synthesize a second item from that stale state.
+  private bool HasPickedUpTorchOnCursor()
+  {
+    return !string.IsNullOrEmpty(previewHeldTorchId)
+        && previewHeldTorchCursor != null
+        && previewRemovedTorchHolderKeys.Contains(previewHeldTorchId);
+  }
+
+  private void ClearStaleHeldTorchState()
+  {
+    if (string.IsNullOrEmpty(previewHeldTorchId) && previewHeldTorchCursor == null)
+      return;
+    if (HasPickedUpTorchOnCursor())
+      return;
+    previewHeldTorchId = null;
+    previewHeldTorchCursor = null;
+    HideHeldItemPointerOverlay();
+  }
+
   // UI Toolkit overlay is in GameView screen coordinates; the original sprite
   // is scaled to exactly 16x16 pixels of the 320x200 framebuffer.
   private static UnityEngine.UIElements.VisualElement s_heldItemPointerOverlay;
@@ -32861,8 +32882,10 @@ private static void HandleGameViewPointerDown(
       EditorWindow gameView, Vector2 pointerPosition)
   {
     ViewportLayoutEditor owner = FindOpenViewEditWindow();
-    if (gameView == null || owner == null || owner.previewHeldTorchCursor == null
-        || owner.previewHeldTorchId == null || Application.isPlaying)
+    if (owner != null)
+      owner.ClearStaleHeldTorchState();
+    if (gameView == null || owner == null || !owner.HasPickedUpTorchOnCursor()
+        || Application.isPlaying)
     {
       HideHeldItemPointerOverlay();
       return;
@@ -32920,9 +32943,13 @@ private static void HandleGameViewPointerDown(
     if (s_hookedGameView == null || Application.isPlaying)
       return;
     ViewportLayoutEditor owner = FindOpenViewEditWindow();
-    if (owner == null || owner.previewHeldTorchId == null
-        || owner.previewHeldTorchCursor == null)
+    if (owner != null)
+      owner.ClearStaleHeldTorchState();
+    if (owner == null || !owner.HasPickedUpTorchOnCursor())
+    {
+      HideHeldItemPointerOverlay();
       return;
+    }
 #if UNITY_EDITOR_WIN
     NativeCursorPoint screen;
     if (!GetCursorPos(out screen))
@@ -33034,7 +33061,8 @@ private static void HandleGameViewPointerDown(
       Debug.Log("TORCH PICKUP TRACE: blocked by champion sheet");
       return false;
     }
-    if (previewHeldTorchId != null)
+    ClearStaleHeldTorchState();
+    if (HasPickedUpTorchOnCursor())
     {
       Debug.LogWarning("TORCH PICKUP TRACE: blocked because item is already held: "
           + previewHeldTorchId + ". Restore the original holder in ViewEdit before retrying.");
