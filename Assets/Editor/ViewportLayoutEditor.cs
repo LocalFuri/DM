@@ -6504,6 +6504,19 @@ private static void HandleGameViewPointerDown(
         + "; championSheet=" + window.championSheetVisible
         + "; holderFound=" + (window.FindVisibleEmptyTorchHolderF1() != null));
 
+    if (hasLogical && window.TryReturnHeldTorchToVisibleHolder(logical.x, logical.y))
+    {
+      s_lastGameViewClickTime = now;
+      if (imguiEvent != null)
+        imguiEvent.Use();
+      if (pointerEvent != null)
+        pointerEvent.StopPropagation();
+      gameView.Repaint();
+      window.Repaint();
+      RepaintGameViews();
+      return true;
+    }
+
     if (hasLogical && window.TryPickupVisibleTorchAt(logical.x, logical.y))
     {
       s_lastGameViewClickTime = now;
@@ -33142,6 +33155,50 @@ private static void HandleGameViewPointerDown(
       return null;
     }
     return result;
+  }
+
+  // Transfer the same held torch back to its own empty wall fixture.  The
+  // fixture key remains the item identity; no new torch is allocated.
+  private bool TryReturnHeldTorchToVisibleHolder(float logicalX, float logicalY)
+  {
+    ClearStaleHeldTorchState();
+    if (!HasPickedUpTorchOnCursor() || championSheetVisible)
+      return false;
+
+    WallOrnamentPlacement ornament = FindVisibleEmptyTorchHolderF1();
+    if (ornament == null || !IsPreviewFeatureEnabled(
+        MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+      return false;
+
+    string id = MakeTorchHolderInstanceKey(ornament);
+    if (id != previewHeldTorchId || !previewRemovedTorchHolderKeys.Contains(id))
+      return false; // An unrelated fixture cannot accept this held item.
+
+    // Use the exact existing F1 holder calibration for the mouse hit test.
+    string key = "OrnamentProjection:EmptyTorchHolder:F1";
+    int x = 100;
+    int y = DisplayYToUnityY(60, 54);
+    bool mirror = false;
+    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+    int top = PreviewHeight - y - 54;
+    if (logicalX < x || logicalX >= x + 24
+        || logicalY < top || logicalY >= top + 54)
+      return false;
+
+    // A missing asset must never remove the item from the hand.
+    if (FindExactTorchTexture("Torch_Holder_Full_F1_24x53.png", 24, 53) == null)
+      return true; // Click consumed; FindExactTorchTexture logged an error.
+
+    previewRemovedTorchHolderKeys.Remove(id);
+    previewHeldTorchId = null;
+    previewHeldTorchCursor = null;
+    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+    HideHeldItemPointerOverlay();
+    RefreshEditModePreview();
+    Debug.Log("TORCH HOLDER: returned existing item " + id
+        + "; holder full; mouse hand empty.");
+    return true;
   }
 
   private bool TryPickupVisibleTorchAt(float logicalX, float logicalY)
