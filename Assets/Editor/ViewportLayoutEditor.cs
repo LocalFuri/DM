@@ -2567,6 +2567,7 @@ public class ViewportLayoutEditor : EditorWindow
     CaptureNormalWallBaselinesFromLayout();
     ApplyCurrentPoseVisibilityToLayout();
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
+    EditorApplication.update += UpdateTorchFlight;
     // Force a fresh compose from the current pose's Enabled flags.
     DestroyEditModePreviewTextureOnly();
     RefreshEditModePreview();
@@ -2602,6 +2603,7 @@ public class ViewportLayoutEditor : EditorWindow
     SaveSessionPrefs();
 
     EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+    EditorApplication.update -= UpdateTorchFlight;
 
     if (cachedNativeFrontF2ReadableCopy != null)
     {
@@ -6531,7 +6533,8 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
-    if (hasLogical && window.TryDropHeldTorchOnFloor(logical.x, logical.y))
+    if (hasLogical && (window.TryThrowHeldTorch(logical.x, logical.y)
+        || window.TryDropHeldTorchOnFloor(logical.x, logical.y)))
     {
       s_lastGameViewClickTime = now;
       if (imguiEvent != null) imguiEvent.Use();
@@ -17802,6 +17805,7 @@ private static void HandleGameViewPointerDown(
     BlitMossIntoPreview(pixels);
     BlitFloorItemsIntoPreview(pixels);
     BlitDroppedTorchesIntoPreview(pixels);
+    BlitFlyingTorchIntoPreview(pixels);
 
     // Champion wall decorations.
     BlitChampionMirrorD0RightIntoPreview(pixels);
@@ -33218,6 +33222,126 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // First central-meridian throwing prototype. This is a separate action
+  // from dropping, which retains all of its previously calibrated hit areas.
+  // Higher central clicks launch; they do not select a destination distance.
+  private sealed class TorchFlight
+  {
+    public string id;
+    public int level, startX, startY, forwardX, forwardY, steps;
+    public string corner;
+    public double started;
+  }
+  private TorchFlight previewTorchFlight;
+  private const double TorchFlightSeconds = 0.75;
+
+  private bool TryThrowHeldTorch(float logicalX, float logicalY)
+  {
+    ClearStaleHeldTorchState();
+    if (!HasPickedUpTorchOnCursor() || championSheetVisible
+        || previewTorchFlight != null)
+      return false;
+    // The first throw test uses the corridor meridian. The 320x200
+    // screenshot has the dungeon in X=0..223, with 112 as its center.
+    // Clicking elsewhere continues to use the original floor-drop behavior.
+    if (logicalX < 72 || logicalX >= 152 || logicalY < 0 || logicalY >= 90)
+      return false;
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || !PreviewTileIsOpen(previewX, previewY))
+      return false;
+    if (GetTorchGroundTexture() == null)
+      return true; // Explicit asset error, do not lose the item.
+    DungeonMap.GetForwardOffset(previewFacing, out int dx, out int dy);
+    int steps = 0;
+    for (int distance = 1; distance <= 3; distance++)
+    {
+      int tx = previewX + dx * distance;
+      int ty = previewY + dy * distance;
+      if (!previewMiniMap.IsInside(tx, ty)) break;
+      // Only confirmed open floor tiles are legal destinations. In
+      // particular, doors and walls must not be flown through.
+      DungeonTileType tileType = previewMiniMap.GetTile(tx, ty).Type;
+      if (tileType == DungeonTileType.Wall
+          || tileType.ToString().IndexOf("Door", System.StringComparison.OrdinalIgnoreCase) >= 0)
+        break;
+      steps = distance;
+    }
+    if (previewDroppedTorches.ContainsKey(previewHeldTorchId))
+    {
+      Debug.LogError("TORCH THROW: same item already on the floor: " + previewHeldTorchId);
+      return true;
+    }
+    string id = previewHeldTorchId;
+    bool right = logicalX >= 112;
+    if (steps == 0)
+    {
+      // A wall directly ahead blocks throwing. Drop onto the same tile.
+      return TryDropHeldTorchOnFloor(logicalX, logicalY);
+    }
+    previewTorchFlight = new TorchFlight
+    {
+      id = id, level = previewDungeonLevel, startX = previewX, startY = previewY,
+      forwardX = dx, forwardY = dy, steps = steps,
+      corner = FloorCornerForFacing(previewFacing, right),
+      started = EditorApplication.timeSinceStartup
+    };
+    previewHeldTorchId = null;
+    previewHeldTorchCursor = null;
+    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+    HideHeldItemPointerOverlay();
+    RefreshEditModePreview();
+    Debug.Log("TORCH THROW: " + id + " flying " + steps + " tile(s).");
+    return true;
+  }
+
+  private void UpdateTorchFlight()
+  {
+    if (previewTorchFlight == null) return;
+    double t = (EditorApplication.timeSinceStartup - previewTorchFlight.started)
+        / TorchFlightSeconds;
+    if (t >= 1.0)
+    {
+      TorchFlight flight = previewTorchFlight;
+      previewTorchFlight = null;
+      if (previewDroppedTorches.ContainsKey(flight.id))
+        Debug.LogError("TORCH THROW: duplicate item " + flight.id);
+      else
+        previewDroppedTorches.Add(flight.id, new DroppedTorch
+        {
+          id = flight.id, level = flight.level,
+          x = flight.startX + flight.forwardX * flight.steps,
+          y = flight.startY + flight.forwardY * flight.steps,
+          corner = flight.corner
+        });
+      Debug.Log("TORCH THROW: landed at "
+          + (flight.startX + flight.forwardX * flight.steps) + ","
+          + (flight.startY + flight.forwardY * flight.steps));
+    }
+    RefreshEditModePreview();
+    RepaintGameViews();
+  }
+
+  private void BlitFlyingTorchIntoPreview(Color32[] pixels)
+  {
+    TorchFlight flight = previewTorchFlight;
+    if (flight == null || pixels == null || flight.level != previewDungeonLevel)
+      return;
+    Texture2D sprite = GetTorchGroundTexture();
+    if (sprite == null) return;
+    float progress = Mathf.Clamp01((float)(
+        (EditorApplication.timeSinceStartup - flight.started) / TorchFlightSeconds));
+    // Nearest-neighbour sizes shrink continuously toward the far perspective.
+    // These are provisional throw-animation anchors, not saved F1 calibration.
+    float distance = progress * flight.steps;
+    int width = Mathf.Max(8, Mathf.RoundToInt(61f / (1f + distance * 0.55f)));
+    int height = Mathf.Max(2, Mathf.RoundToInt(7f / (1f + distance * 0.45f)));
+    int centerX = 112;
+    int top = Mathf.RoundToInt(Mathf.Lerp(154f, 95f, distance / 3f)
+        - Mathf.Sin(progress * Mathf.PI) * 17f);
+    BlitPieceScaledIntoPreview(pixels, sprite, centerX - width / 2,
+        PreviewHeight - top - height, width, height);
+  }
+
   private bool TryDropHeldTorchOnFloor(float logicalX, float logicalY)
   {
     ClearStaleHeldTorchState();
@@ -33386,12 +33510,27 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = null;
     foreach (DroppedTorch item in previewDroppedTorches.Values)
     {
-      if (!TryGetDroppedTorchProjection(item, out int x, out int top))
+      if (!TryGetDroppedTorchFloorSlot(item, out FloorItemDepth depth, out bool right))
         continue;
       if (sprite == null) sprite = GetTorchGroundTexture();
       if (sprite == null) return;
-      BlitPieceIntoPreview(pixels, sprite, x,
-          PreviewHeight - top - sprite.height, false);
+      if (depth == FloorItemDepth.SameTile)
+      {
+        GetTorchDownF1Calibration(right, out int x, out int top);
+        BlitPieceIntoPreview(pixels, sprite, x,
+            PreviewHeight - top - sprite.height, false);
+      }
+      else
+      {
+        // Provisional distance projection uses the actual torch PNG.
+        int width = depth == FloorItemDepth.OneAhead ? 37 : 24;
+        int height = depth == FloorItemDepth.OneAhead ? 5 : 3;
+        int centerX = depth == FloorItemDepth.OneAhead
+            ? (right ? 140 : 84) : (right ? 126 : 98);
+        int top = depth == FloorItemDepth.OneAhead ? 116 : 99;
+        BlitPieceScaledIntoPreview(pixels, sprite, centerX - width / 2,
+            PreviewHeight - top - height, width, height);
+      }
     }
   }
 
