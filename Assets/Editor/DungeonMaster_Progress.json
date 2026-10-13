@@ -1,22 +1,61 @@
 {
   "project": "Dungeon Master Unity",
-  "checkpointDate": "2026-10-11",
-  "checkpointPurpose": "Resume ViewportLayoutEditor.cs work in the next session",
+  "checkpointDate": "2026-10-12",
+  "checkpointPurpose": "Resume verified Dungeon Features and torch mouse pickup, then implement putting the torch back and throwing it",
   "mainScript": "Assets/Editor/ViewportLayoutEditor.cs",
   "lastVerifiedGitCommit": null,
   "gitNote": "Record the actual current Git commit after committing the working version; do not assume an older baseline is current.",
-  "currentTask": "Square Pressure Pad rendering and viewpoint geometry visibility",
+  "currentTask": "Generic item interaction: wall torch pickup works; next return held torch to holder, then implement throwing",
   "pressurePad": {
     "mapLevel": 0,
-    "mapTile": {"x": 6, "y": 9},
+    "mapTile": {
+      "x": 6,
+      "y": 9
+    },
     "assetsDirectory": "Assets/Art/Ornaments",
     "views": {
-      "F1": {"asset": "Square_Pressure_Pad_F1_62x21.png", "x": 80, "y": 128, "width": 62, "height": 21, "status": "verified"},
-      "F2": {"asset": "Square_Pressure_Pad_F2_42x11.png", "x": 91, "y": 110, "width": 42, "height": 11, "status": "verified"},
-      "F3": {"asset": "Square_Pressure_Pad_F3_26x6.png", "x": 97, "y": 100, "width": 26, "height": 6, "status": "verified at (9,9) West"},
-      "S1": {"asset": "Square_Pressure_Pad_S1_60x11.png", "x": 1, "y": 110, "width": 60, "height": 11, "mirror": false, "enabled": true, "status": "verified at (4,10) East"}
+      "F1": {
+        "asset": "Square_Pressure_Pad_F1_62x21.png",
+        "x": 80,
+        "y": 128,
+        "width": 62,
+        "height": 21,
+        "status": "verified"
+      },
+      "F2": {
+        "asset": "Square_Pressure_Pad_F2_42x11.png",
+        "x": 91,
+        "y": 110,
+        "width": 42,
+        "height": 11,
+        "status": "verified"
+      },
+      "F3": {
+        "asset": "Square_Pressure_Pad_F3_26x6.png",
+        "x": 97,
+        "y": 100,
+        "width": 26,
+        "height": 6,
+        "status": "verified at (9,9) West"
+      },
+      "S1": {
+        "asset": "Square_Pressure_Pad_S1_60x11.png",
+        "x": 1,
+        "y": 110,
+        "width": 60,
+        "height": 11,
+        "mirror": false,
+        "enabled": true,
+        "status": "verified at (4,10) East"
+      }
     },
-    "s1RenderHierarchyBackToFront": ["F3 walls", "F2 walls", "PressurePad_S1", "F1 walls including FrontF1", "F0 walls"],
+    "s1RenderHierarchyBackToFront": [
+      "F3 walls",
+      "F2 walls",
+      "PressurePad_S1",
+      "F1 walls including FrontF1",
+      "F0 walls"
+    ],
     "implementationNote": "Generic map-feature placement; avoid hardcoded player-pose rendering. Preserve verified calibration and rendering hierarchy."
   },
   "viewpointReportingRules": {
@@ -28,13 +67,103 @@
   },
   "lastExaminedViewpoint": {
     "level": 0,
-    "player": {"x": 6, "y": 9, "facing": "West"},
+    "player": {
+      "x": 6,
+      "y": 9,
+      "facing": "West"
+    },
     "tiles": [
-      {"x": 6, "y": 9, "relative": "F0", "feature": "Square Pressure Pad", "visibility": "Existing - not visible (under player)"},
-      {"x": 5, "y": 9, "relative": "F1", "feature": "Door", "visibility": "Visible"},
-      {"x": 4, "y": 9, "relative": "F2", "feature": "Floor", "visibility": "Depends on door state"},
-      {"x": 3, "y": 9, "relative": "F3", "feature": "Wall", "visibility": "Depends on door state"}
+      {
+        "x": 6,
+        "y": 9,
+        "relative": "F0",
+        "feature": "Square Pressure Pad",
+        "visibility": "Existing - not visible (under player)"
+      },
+      {
+        "x": 5,
+        "y": 9,
+        "relative": "F1",
+        "feature": "Door",
+        "visibility": "Visible"
+      },
+      {
+        "x": 4,
+        "y": 9,
+        "relative": "F2",
+        "feature": "Floor",
+        "visibility": "Depends on door state"
+      },
+      {
+        "x": 3,
+        "y": 9,
+        "relative": "F3",
+        "feature": "Wall",
+        "visibility": "Depends on door state"
+      }
     ]
   },
-  "nextStep": "Continue verifying viewpoint geometry from Level 0 map JSON and minimap, listing both visible features and existing but not visible features."
+  "nextStep": "Implement left-click on empty torch holder while holding its torch to return the same item instance and restore Full image; then add generic mouse throw/drop in dungeon with unique item identity and floor placement. Preserve stable software cursor and ViewEdit calibrations.",
+  "latestWorkingFiles": {
+    "mainEditor": "Assets/Editor/ViewportLayoutEditor.cs",
+    "dungeonFeaturesEditor": "Assets/Editor/DungeonFeatureEditor.cs",
+    "nativeWindowsCursorController": "Removed; do not restore Assets/Editor/WindowsHeldItemCursor.cs",
+    "lastSuccessfulCursorChange": "ViewportLayoutEditor_Torch_Hide_Arrow.zip (software item overlay plus scoped Windows arrow visibility)"
+  },
+  "verified20261012": {
+    "dungeonFeatures": {
+      "doubleClick": "Double-click accessible tile teleports player and closes Dungeon Features",
+      "directionBars": "Wall ornaments show blue direction marker; floor features have none",
+      "moss": "Moss appears on map including Level 0 (4,2) North"
+    },
+    "torchHolder": {
+      "testView": {
+        "level": 0,
+        "playerX": 4,
+        "playerY": 14,
+        "facing": "West",
+        "wallX": 3,
+        "wallY": 14,
+        "wallFace": "East",
+        "depth": "F1"
+      },
+      "sourceRecords": {
+        "emptySensor": "P00013",
+        "fullSensor": "P00014",
+        "torchWeapon": "P00015",
+        "weaponType": 2,
+        "initialChargeCount": 15
+      },
+      "graphics": {
+        "full": "Torch_Holder_Full_F1_24x53.png",
+        "empty": "Torch_Holder_Empty_F1_24x54.png",
+        "cursorUnlit": "Torch_Unlit_16x16.png",
+        "cursorLit": "Torch_Lit_16x16.png"
+      },
+      "viewEdit": "Full/Empty label reflects rendered state; X/Y and Apply calibration; always-available Restore editor test control",
+      "verified": "Clicking torch empties holder; Restore returns it; calibrated positions recover across source updates"
+    },
+    "cursor": {
+      "verified": "16x16 unlit torch software overlay follows mouse centered and scaled to GameView; normal Windows arrow is hidden while item held and restored on release/exit; user confirmed no flicker",
+      "method": "Software sprite overlay plus scoped Windows cursor visibility control in ViewportLayoutEditor.cs",
+      "doNotReintroduce": "Native Windows cursor replacement hooks (WindowsHeldItemCursor.cs), which caused flicker or normal arrow to remain"
+    },
+    "stairs": "ViewEdit stairs X/Y red unsaved-change indicators corrected; preservation of applied calibration is required"
+  },
+  "itemArchitectureDecisions": {
+    "uniqueItemIdentity": "Each existing item gets a stable unique ID when dungeon data loads; moving does not change ID",
+    "currentPrototypeIdentity": "0:3:14:EAST:Weapon:2 is a temporary location-derived torch identifier; not yet linked to full registry",
+    "state": "Each item retains individual properties (charges, burning stage, flags); no duplication across cursor, holder, floor, inventory",
+    "idReuse": "Do not recycle consumed-item IDs; allocate new IDs",
+    "locations": "Mouse hand, wall fixture, floor tile/corner, champion inventory, container; one location per item",
+    "stacking": "Support multiple independent records at one floor corner without small fixed limits",
+    "currentLimitations": "No inventory placement, return-to-holder gameplay, floor dropping, throwing, or save/load integration yet; burning/charges not integrated with pickup"
+  },
+  "nextImplementationPlan": [
+    "Make a Git commit of current verified working files before further changes; capture actual commit hash in lastVerifiedGitCommit",
+    "Implement generic transfer cursor-to-wall-holder with validation of holder occupancy and torch compatibility; do not create a duplicate item",
+    "Verify Full/Empty graphic state and normal pointer restoration after putting torch back",
+    "Implement generic throwing/drop from cursor to floor using facing, tile/corner, collisions and identity retention; avoid hardcoded (4,14) logic",
+    "Extend real item registry integration and persistence later; verify original game behavior where unknown"
+  ]
 }
