@@ -1470,6 +1470,8 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   // BEGIN APPLIED ORNAMENT REFERENCES
+  // REF FloorItemProjection:TorchDown:F1:Left|31|157|false|639275095915837870
+  // REF FloorItemProjection:TorchDown:F1:Right|133|157|false|639275097288040421
   // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274252203846657
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
   // REF OrnamentProjection:Hook:F2|103|111|false|639272438417071479
