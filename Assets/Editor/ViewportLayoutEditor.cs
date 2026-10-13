@@ -94,7 +94,7 @@ public class ViewportLayoutEditor : EditorWindow
   // places an Apple at map (4,9), sub-square N. Apple_19x13 is the
   // authoritative ground/world artwork; Apple_16x16 is inventory-only.
   private const string AppleGroundAssetPath =
-      "Assets/Art/Items/Apple_19x13.png";
+      "Assets/Art/Food/Apple_19x13.png";
   private const int Level0AppleTestX = 4;
   private const int Level0AppleTestY = 9;
   private const string Level0AppleTestCell = "N";
@@ -144,7 +144,7 @@ public class ViewportLayoutEditor : EditorWindow
   // Bread at map (5,11), sub-square E. Bread_27x16 is the ground/world
   // artwork; Bread_16x16 is inventory/icon only.
   private const string BreadGroundAssetPath =
-      "Assets/Art/Items/Bread_27x16.png";
+      "Assets/Art/Food/Bread_27x16.png";
   private const int Level0BreadTestX = 5;
   private const int Level0BreadTestY = 11;
   private const string Level0BreadTestCell = "E";
@@ -28225,6 +28225,19 @@ private static void HandleGameViewPointerDown(
         item.cell);
   }
 
+  // Explicit once-per-failure diagnostics: missing/moved floor-item assets must
+  // never disappear silently or be replaced by an unrelated fallback sprite.
+  private readonly HashSet<string> loggedFloorItemTextureErrors =
+      new HashSet<string>(System.StringComparer.Ordinal);
+
+  private void ReportFloorItemTextureProblem(string itemName, string assetPath, string reason)
+  {
+    string key = itemName + ":" + assetPath + ":" + reason;
+    if (loggedFloorItemTextureErrors.Add(key))
+      Debug.LogError("[ViewportLayoutEditor] " + itemName + " floor graphic " + reason +
+          " at exact path '" + assetPath + "'. Check its current location and Texture Import Settings (Read/Write). No fallback will be used.");
+  }
+
   private Texture2D GetFloorItemTexture(FloorItemPlacement item)
   {
     if (item == null)
@@ -28234,6 +28247,8 @@ private static void HandleGameViewPointerDown(
     {
       if (cachedAppleGroundTexture == null)
         cachedAppleGroundTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(AppleGroundAssetPath);
+      if (cachedAppleGroundTexture == null)
+        ReportFloorItemTextureProblem("Apple", AppleGroundAssetPath, "is missing or could not be loaded");
       return cachedAppleGroundTexture;
     }
 
@@ -28241,6 +28256,8 @@ private static void HandleGameViewPointerDown(
     {
       if (cachedBreadGroundTexture == null)
         cachedBreadGroundTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(BreadGroundAssetPath);
+      if (cachedBreadGroundTexture == null)
+        ReportFloorItemTextureProblem("Bread", BreadGroundAssetPath, "is missing or could not be loaded");
       return cachedBreadGroundTexture;
     }
 
@@ -28266,8 +28283,18 @@ private static void HandleGameViewPointerDown(
         continue;
 
       Texture2D texture = GetFloorItemTexture(item);
-      if (texture == null || !texture.isReadable || texture.width <= 0 || texture.height <= 0)
+      if (texture == null)
+        continue; // GetFloorItemTexture has logged the exact missing asset.
+      if (!texture.isReadable || texture.width <= 0 || texture.height <= 0)
+      {
+        bool appleItem = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
+        bool breadItem = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
+        if (appleItem || breadItem)
+          ReportFloorItemTextureProblem(item.type,
+              appleItem ? AppleGroundAssetPath : BreadGroundAssetPath,
+              !texture.isReadable ? "is not readable" : "has invalid dimensions");
         continue;
+      }
 
       BlitProjectedFloorItem(pixels, item, texture, depth, isRight);
     }
