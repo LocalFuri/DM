@@ -33223,12 +33223,11 @@ private static void HandleGameViewPointerDown(
     ClearStaleHeldTorchState();
     if (!HasPickedUpTorchOnCursor() || championSheetVisible)
       return false;
-    // Logical mouse Y is measured from the TOP of the entire 320x200 Game
-    // image. The dungeon viewport occupies X=0..223 and Y=33..168.
-    // Allow dropping onto either the wall area or the near floor; both drop
-    // onto the player's current map tile. The holder-return hit test runs
-    // first, so clicking the empty holder still returns its original torch.
-    if (logicalX < 0 || logicalX >= 224 || logicalY < 33 || logicalY >= 169)
+    // Logical mouse coordinates use the full 320x200 Game image. Accept
+    // ceiling, wall and floor clicks across the dungeon's left 224 pixels;
+    // all three surfaces drop the torch on the player's current floor tile.
+    // Returning the torch to its holder is tested first by the click handler.
+    if (logicalX < 0 || logicalX >= 224 || logicalY < 0 || logicalY >= 169)
       return false;
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null || !PreviewTileIsOpen(previewX, previewY))
