@@ -24385,14 +24385,6 @@ private static void HandleGameViewPointerDown(
           DrawWallOrnamentCalibrationRow(ornament,
               renderedName + " [" + previewX + "," + previewY + "] ("
               + ShortDirectionLabel(FacingName(previewFacing)) + ")");
-          // Keep Restore available during pickup testing, even when the
-          // viewport shows Full but the mouse-held state is still active.
-          // The action targets only this holder and never changes calibration.
-          EditorGUILayout.BeginHorizontal();
-          bool restore = EditorGUILayout.ToggleLeft(
-              "Restore torch to holder (editor test)", false, GUILayout.Width(245f));
-          EditorGUILayout.EndHorizontal();
-          if (restore) RestorePickedUpTorch(ornament);
           continue;
         }
         // Only F1 artwork exists; never list non-renderable holder depths.
@@ -33171,26 +33163,6 @@ private static void HandleGameViewPointerDown(
     RestoreHeldItemArrow();
   }
 
-  private void RestorePickedUpTorch(WallOrnamentPlacement ornament)
-  {
-    if (ornament == null) return;
-    string id = MakeTorchHolderInstanceKey(ornament);
-    previewRemovedTorchHolderKeys.Remove(id);
-    previewDroppedTorches.Remove(id);
-    if (previewHeldTorchId == id)
-    {
-      previewHeldTorchId = null;
-      previewHeldTorchCursor = null;
-      Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-      HideHeldItemPointerOverlay();
-    }
-    RefreshEditModePreview();
-    RepaintGameViews();
-    Repaint();
-    Debug.Log("TORCH PICKUP: editor Restore returned " + id + " to its wall holder");
-  }
-
-
   private string MakeTorchHolderInstanceKey(WallOrnamentPlacement ornament)
   {
     return previewDungeonLevel + ":" + ornament.x + ":" + ornament.y
@@ -33482,7 +33454,7 @@ private static void HandleGameViewPointerDown(
     if (HasPickedUpTorchOnCursor())
     {
       Debug.LogWarning("TORCH PICKUP TRACE: blocked because item is already held: "
-          + previewHeldTorchId + ". Restore the original holder in ViewEdit before retrying.");
+          + previewHeldTorchId + ". Return or drop the held item before retrying.");
       return false;
     }
     WallOrnamentPlacement ornament = FindVisibleEmptyTorchHolderF1();
