@@ -33223,8 +33223,12 @@ private static void HandleGameViewPointerDown(
     ClearStaleHeldTorchState();
     if (!HasPickedUpTorchOnCursor() || championSheetVisible)
       return false;
-    // Keep item actions inside the actual 224x136 dungeon viewport, not HUD.
-    if (logicalX < 0 || logicalX >= 224 || logicalY < 0 || logicalY >= 136)
+    // Logical mouse Y is measured from the TOP of the entire 320x200 Game
+    // image. The dungeon viewport occupies X=0..223 and Y=33..168.
+    // Allow dropping onto either the wall area or the near floor; both drop
+    // onto the player's current map tile. The holder-return hit test runs
+    // first, so clicking the empty holder still returns its original torch.
+    if (logicalX < 0 || logicalX >= 224 || logicalY < 33 || logicalY >= 169)
       return false;
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null || !PreviewTileIsOpen(previewX, previewY))
@@ -33342,20 +33346,36 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  private bool TryGetDroppedTorchProjection(DroppedTorch item,
-      out int x, out int top)
+  // Use the same map-space floor-corner projection for all movable torches
+  // that apples and bread already use. In particular, changing the player's
+  // facing never changes the stored floor corner or the item's identity.
+  // F2/F3 are recognized here, but will only be drawn after their own artwork
+  // and pixel calibrations have been supplied (no invented scaled fallback).
+  private bool TryGetDroppedTorchFloorSlot(DroppedTorch item,
+      out FloorItemDepth depth, out bool right)
   {
-    x = 0;
-    top = TorchGroundTop;
+    depth = FloorItemDepth.SameTile;
+    right = false;
     if (item == null || item.level != previewDungeonLevel)
       return false;
     FloorItemPlacement projection = new FloorItemPlacement
     {
       type = "Torch", x = item.x, y = item.y, cell = item.corner
     };
-    if (!TryProjectFloorItem(projection, out FloorItemDepth depth, out bool right)
+    return TryProjectFloorItem(projection, out depth, out right);
+  }
+
+  // F1 means a floor item on the player's own tile (the near-floor band),
+  // not an item one map square ahead. Preserve the user's accepted F1 X/Y.
+  private bool TryGetDroppedTorchProjection(DroppedTorch item,
+      out int x, out int top)
+  {
+    x = 0;
+    top = TorchGroundTop;
+    if (!TryGetDroppedTorchFloorSlot(item,
+            out FloorItemDepth depth, out bool right)
         || depth != FloorItemDepth.SameTile)
-      return false; // Distant torch graphics/projections require later calibration.
+      return false;
     GetTorchDownF1Calibration(right, out x, out top);
     return true;
   }
