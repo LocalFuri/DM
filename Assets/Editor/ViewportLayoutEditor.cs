@@ -33531,23 +33531,44 @@ private static void HandleGameViewPointerDown(
     ApplyPreviewFeatureRenderOverrides(key, ref x, ref top, ref mirror);
   }
 
+  // Landed torch at one tile ahead: separate from the centered flight frames.
+  // X/Y calibrate the visible floor placement for each screen-side corner.
+  private const string TorchDownF2CalibrationKey = "FloorItemProjection:TorchDown:F2";
+
+  private void GetTorchDownF2Calibration(bool right, out int x, out int top)
+  {
+    const int width = 37;
+    x = (right ? 140 : 84) - width / 2;
+    top = 116;
+    bool mirror = false;
+    string key = TorchDownF2CalibrationKey + (right ? ":Right" : ":Left");
+    ApplyAcceptedOrnamentReference(key, ref x, ref top, ref mirror);
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref top, ref mirror);
+  }
+
   private void DrawTorchDownCalibrationRow()
   {
     foreach (DroppedTorch item in previewDroppedTorches.Values)
     {
-      if (!TryGetDroppedTorchProjection(item, out _, out _)) continue;
-      FloorItemPlacement placement = new FloorItemPlacement
-      { type = "Torch", x = item.x, y = item.y, cell = item.corner };
-      if (!TryProjectFloorItem(placement, out FloorItemDepth depth, out bool right)
-          || depth != FloorItemDepth.SameTile) continue;
+      if (!TryGetDroppedTorchFloorSlot(item,
+              out FloorItemDepth depth, out bool right)
+          || (depth != FloorItemDepth.SameTile
+              && depth != FloorItemDepth.OneAhead)) continue;
 
-      string key = TorchDownF1CalibrationKey + (right ? ":Right" : ":Left");
-      int defaultX = right ? TorchGroundRightX : TorchGroundLeftX;
-      int defaultY = TorchGroundTop;
+      bool f2 = depth == FloorItemDepth.OneAhead;
+      string key = (f2 ? TorchDownF2CalibrationKey : TorchDownF1CalibrationKey)
+          + (right ? ":Right" : ":Left");
+      int defaultX, defaultY;
+      if (f2) GetTorchDownF2Calibration(right, out defaultX, out defaultY);
+      else GetTorchDownF1Calibration(right, out defaultX, out defaultY);
+      // Get*Calibration already accounts for applied and temporary overrides.
+      // Recover the accepted values for the red unsaved-change indicators.
+      int acceptedX = f2 ? (right ? 140 : 84) - 37 / 2
+          : (right ? TorchGroundRightX : TorchGroundLeftX);
+      int acceptedY = f2 ? 116 : TorchGroundTop;
       bool mirror = false;
-      ApplyAcceptedOrnamentReference(key, ref defaultX, ref defaultY, ref mirror);
+      ApplyAcceptedOrnamentReference(key, ref acceptedX, ref acceptedY, ref mirror);
       int x = defaultX, y = defaultY;
-      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
 
       EditorGUILayout.BeginHorizontal();
       float oldWidth = EditorGUIUtility.labelWidth;
@@ -33555,16 +33576,17 @@ private static void HandleGameViewPointerDown(
       torchDownStyle.normal.textColor = Color.yellow;
       torchDownStyle.hover.textColor = Color.yellow;
       torchDownStyle.focused.textColor = Color.yellow;
-      GUILayout.Label("TorchDown F1 [" + item.x + "," + item.y + "] "
-          + (right ? "R" : "L"), torchDownStyle, GUILayout.Width(195f));
+      GUILayout.Label("TorchDown " + (f2 ? "F2" : "F1") + " ["
+          + item.x + "," + item.y + "] " + (right ? "R" : "L"),
+          torchDownStyle, GUILayout.Width(195f));
       EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
       int newX = x;
       bool xChanged = DrawIntStepperInline("X", ref newX, snap,
-          x != defaultX, true, 24f, 24f);
+          x != acceptedX, true, 24f, 24f);
       EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
       int newY = y;
       bool yChanged = DrawIntStepperInline("Y", ref newY, snap,
-          y != defaultY, true, 24f, 24f);
+          y != acceptedY, true, 24f, 24f);
       bool apply = GUILayout.Button("Apply", GUILayout.Width(58f),
           GUILayout.ExpandWidth(false));
       NoteContentRight();
@@ -33583,7 +33605,7 @@ private static void HandleGameViewPointerDown(
       }
       else if ((xChanged && newX != x) || (yChanged && newY != y))
       {
-        if (newX == defaultX && newY == defaultY)
+        if (newX == acceptedX && newY == acceptedY)
           previewFeaturePositionOverrides.Remove(key);
         else previewFeaturePositionOverrides[key] = new Vector2Int(newX, newY);
         RefreshEditModePreview();
@@ -33596,8 +33618,8 @@ private static void HandleGameViewPointerDown(
   // Use the same map-space floor-corner projection for all movable torches
   // that apples and bread already use. In particular, changing the player's
   // facing never changes the stored floor corner or the item's identity.
-  // F2/F3 are recognized here, but will only be drawn after their own artwork
-  // and pixel calibrations have been supplied (no invented scaled fallback).
+  // F2 uses the same source PNG with explicit perspective scaling and
+  // independent X/Y calibration; the F1 floor coordinates remain unchanged.
   private bool TryGetDroppedTorchFloorSlot(DroppedTorch item,
       out FloorItemDepth depth, out bool right)
   {
@@ -33649,10 +33671,16 @@ private static void HandleGameViewPointerDown(
         // Provisional distance projection uses the actual torch PNG.
         int width = depth == FloorItemDepth.OneAhead ? 37 : 24;
         int height = depth == FloorItemDepth.OneAhead ? 5 : 3;
-        int centerX = depth == FloorItemDepth.OneAhead
-            ? (right ? 140 : 84) : (right ? 126 : 98);
-        int top = depth == FloorItemDepth.OneAhead ? 116 : 99;
-        BlitPieceScaledIntoPreview(pixels, sprite, centerX - width / 2,
+        int x, top;
+        if (depth == FloorItemDepth.OneAhead)
+          GetTorchDownF2Calibration(right, out x, out top);
+        else
+        {
+          int centerX = right ? 126 : 98;
+          x = centerX - width / 2;
+          top = 99;
+        }
+        BlitPieceScaledIntoPreview(pixels, sprite, x,
             PreviewHeight - top - height, width, height);
       }
     }
