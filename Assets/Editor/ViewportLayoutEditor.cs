@@ -6517,6 +6517,29 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
+    if (hasLogical && window.TryPickupGroundTorchAt(logical.x, logical.y))
+    {
+      s_lastGameViewClickTime = now;
+      if (imguiEvent != null) imguiEvent.Use();
+      if (pointerEvent != null) pointerEvent.StopPropagation();
+      UpdateHeldItemPointerOverlay(gameView, windowMouse);
+      gameView.Repaint();
+      window.Repaint();
+      RepaintGameViews();
+      return true;
+    }
+
+    if (hasLogical && window.TryDropHeldTorchOnFloor(logical.x, logical.y))
+    {
+      s_lastGameViewClickTime = now;
+      if (imguiEvent != null) imguiEvent.Use();
+      if (pointerEvent != null) pointerEvent.StopPropagation();
+      gameView.Repaint();
+      window.Repaint();
+      RepaintGameViews();
+      return true;
+    }
+
     if (hasLogical && window.TryPickupVisibleTorchAt(logical.x, logical.y))
     {
       s_lastGameViewClickTime = now;
@@ -17776,6 +17799,7 @@ private static void HandleGameViewPointerDown(
     BlitPuddlesIntoPreview(pixels);
     BlitMossIntoPreview(pixels);
     BlitFloorItemsIntoPreview(pixels);
+    BlitDroppedTorchesIntoPreview(pixels);
 
     // Champion wall decorations.
     BlitChampionMirrorD0RightIntoPreview(pixels);
@@ -32864,6 +32888,26 @@ private static void HandleGameViewPointerDown(
       new HashSet<string>();
   private string previewHeldTorchId;
   private Texture2D previewHeldTorchCursor;
+  private sealed class DroppedTorch
+  {
+    public string id;
+    public int level;
+    public int x;
+    public int y;
+    public string corner;
+  }
+  // Location changes, not identity changes. A torch on the floor keeps its
+  // original holder-derived ID, and the holder remains empty.
+  private readonly Dictionary<string, DroppedTorch> previewDroppedTorches =
+      new Dictionary<string, DroppedTorch>();
+  private const string TorchGroundPath = "Assets/Art/Weapons/Torch_Ground_61x7.png";
+  // Near-floor (F1 visual band): the torch lies on the visible front half
+  // of the player's own map square, not on the vertical F1 wall.
+  // Keep this screen-space calibration independent of item map position.
+  private const int TorchGroundLeftX = 30;
+  private const int TorchGroundRightX = 133;
+  private const int TorchGroundTop = 151;
+
 
   // The held item is authoritative only when its original fixture was emptied.
   // A script reload or editor Restore can otherwise leave a stale mouse sprite
@@ -33102,6 +33146,7 @@ private static void HandleGameViewPointerDown(
     if (ornament == null) return;
     string id = MakeTorchHolderInstanceKey(ornament);
     previewRemovedTorchHolderKeys.Remove(id);
+    previewDroppedTorches.Remove(id);
     if (previewHeldTorchId == id)
     {
       previewHeldTorchId = null;
@@ -33159,6 +33204,125 @@ private static void HandleGameViewPointerDown(
 
   // Transfer the same held torch back to its own empty wall fixture.  The
   // fixture key remains the item identity; no new torch is allocated.
+  private static string FloorCornerForFacing(DungeonFacing facing, bool right)
+  {
+    // N/E/S/W are NW/NE/SE/SW map-space corners.
+    switch (facing)
+    {
+      case DungeonFacing.North: return right ? "E" : "N";
+      case DungeonFacing.East:  return right ? "S" : "E";
+      case DungeonFacing.South: return right ? "W" : "S";
+      default:                  return right ? "N" : "W";
+    }
+  }
+
+  private bool TryDropHeldTorchOnFloor(float logicalX, float logicalY)
+  {
+    ClearStaleHeldTorchState();
+    if (!HasPickedUpTorchOnCursor() || championSheetVisible)
+      return false;
+    // Keep item actions inside the actual 224x136 dungeon viewport, not HUD.
+    if (logicalX < 0 || logicalX >= 224 || logicalY < 0 || logicalY >= 136)
+      return false;
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || !PreviewTileIsOpen(previewX, previewY))
+      return false;
+    // Do not modify occupancy/hand state if ground artwork is unavailable.
+    if (GetTorchGroundTexture() == null)
+      return true;
+    string id = previewHeldTorchId;
+    if (previewDroppedTorches.ContainsKey(id))
+    {
+      Debug.LogError("TORCH DROP: item already has a floor location: " + id);
+      return true;
+    }
+    bool right = logicalX >= 112;
+    previewDroppedTorches.Add(id, new DroppedTorch
+    {
+      id = id, level = previewDungeonLevel, x = previewX, y = previewY,
+      corner = FloorCornerForFacing(previewFacing, right)
+    });
+    previewHeldTorchId = null;
+    previewHeldTorchCursor = null;
+    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+    HideHeldItemPointerOverlay();
+    RefreshEditModePreview();
+    Debug.Log("TORCH DROP: moved existing " + id + " onto level "
+        + previewDungeonLevel + " tile " + previewX + "," + previewY
+        + " corner " + previewDroppedTorches[id].corner);
+    return true;
+  }
+
+  private Texture2D GetTorchGroundTexture()
+  {
+    Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(TorchGroundPath);
+    if (sprite == null || sprite.width != 61 || sprite.height != 7 || !sprite.isReadable)
+    {
+      Debug.LogError("TORCH GROUND: expected readable 61x7 PNG at " + TorchGroundPath);
+      return null;
+    }
+    return sprite;
+  }
+
+  private bool TryGetDroppedTorchProjection(DroppedTorch item,
+      out int x, out int top)
+  {
+    x = 0;
+    top = TorchGroundTop;
+    if (item == null || item.level != previewDungeonLevel)
+      return false;
+    FloorItemPlacement projection = new FloorItemPlacement
+    {
+      type = "Torch", x = item.x, y = item.y, cell = item.corner
+    };
+    if (!TryProjectFloorItem(projection, out FloorItemDepth depth, out bool right)
+        || depth != FloorItemDepth.SameTile)
+      return false; // Distant torch graphics/projections require later calibration.
+    x = right ? TorchGroundRightX : TorchGroundLeftX;
+    return true;
+  }
+
+  private void BlitDroppedTorchesIntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || previewDroppedTorches.Count == 0)
+      return;
+    Texture2D sprite = null;
+    foreach (DroppedTorch item in previewDroppedTorches.Values)
+    {
+      if (!TryGetDroppedTorchProjection(item, out int x, out int top))
+        continue;
+      if (sprite == null) sprite = GetTorchGroundTexture();
+      if (sprite == null) return;
+      BlitPieceIntoPreview(pixels, sprite, x,
+          PreviewHeight - top - sprite.height, false);
+    }
+  }
+
+  private bool TryPickupGroundTorchAt(float logicalX, float logicalY)
+  {
+    ClearStaleHeldTorchState();
+    if (HasPickedUpTorchOnCursor() || championSheetVisible)
+      return false;
+    foreach (DroppedTorch item in previewDroppedTorches.Values)
+    {
+      if (!TryGetDroppedTorchProjection(item, out int x, out int top)
+          || logicalX < x || logicalX >= x + 61
+          || logicalY < top || logicalY >= top + 7)
+        continue;
+      Texture2D cursor = FindExactTorchTexture("Torch_Unlit_16x16.png", 16, 16);
+      if (cursor == null || GetTorchGroundTexture() == null)
+        return true;
+      previewHeldTorchId = item.id;
+      previewHeldTorchCursor = cursor;
+      previewDroppedTorches.Remove(item.id);
+      Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+      RefreshEditModePreview();
+      Debug.Log("TORCH PICKUP: retrieved existing floor item " + item.id);
+      return true;
+    }
+    return false;
+  }
+
   private bool TryReturnHeldTorchToVisibleHolder(float logicalX, float logicalY)
   {
     ClearStaleHeldTorchState();
