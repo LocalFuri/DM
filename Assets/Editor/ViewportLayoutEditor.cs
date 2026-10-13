@@ -1472,6 +1472,8 @@ public class ViewportLayoutEditor : EditorWindow
   // BEGIN APPLIED ORNAMENT REFERENCES
   // REF FloorItemProjection:TorchDown:F1:Left|31|157|false|639275095915837870
   // REF FloorItemProjection:TorchDown:F1:Right|133|157|false|639275097288040421
+  // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
+  // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
   // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274252203846657
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
   // REF OrnamentProjection:Hook:F2|103|111|false|639272438417071479
@@ -6894,6 +6896,31 @@ private static void HandleGameViewPointerDown(
     if (matches != 1 || matchedClip == null)
     {
       Debug.LogError("ITEM THROW SOUND: expected exactly one Combat_Attack.wav "
+          + "AudioClip in Assets; matching files=" + matches + ". No fallback used.");
+      return;
+    }
+    PlayEditorPreviewClip(matchedClip);
+  }
+
+  // Shared landing sound for thrown items that come to rest at visible F2/F3
+  // floor distances. Missing or ambiguous assets are errors; never substitute.
+  private void PlayItemLandingThudSound()
+  {
+    string[] guids = AssetDatabase.FindAssets("Metallic_Thud t:AudioClip");
+    AudioClip matchedClip = null;
+    int matches = 0;
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      if (!string.Equals(System.IO.Path.GetFileName(path), "Metallic_Thud.wav",
+          System.StringComparison.OrdinalIgnoreCase))
+        continue;
+      matches++;
+      matchedClip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+    }
+    if (matches != 1 || matchedClip == null)
+    {
+      Debug.LogError("ITEM LANDING SOUND: expected exactly one Metallic_Thud.wav "
           + "AudioClip in Assets; matching files=" + matches + ". No fallback used.");
       return;
     }
@@ -33257,6 +33284,8 @@ private static void HandleGameViewPointerDown(
     public int level, startX, startY, forwardX, forwardY, steps;
     public string corner;
     public double started;
+    public int lastThudStage; // 0=none, 1=F2, 2=F3.
+    public bool landingRight;
   }
   private TorchFlight previewTorchFlight;
   // One perspective stage per interval, without an extra hold between stages.
@@ -33352,10 +33381,10 @@ private static void HandleGameViewPointerDown(
     if (!HasPickedUpTorchOnCursor() || championSheetVisible
         || previewTorchFlight != null)
       return false;
-    // The first throw test uses the corridor meridian. The 320x200
-    // screenshot has the dungeon in X=0..223, with 112 as its center.
-    // Clicking elsewhere continues to use the original floor-drop behavior.
-    if (logicalX < 72 || logicalX >= 152 || logicalY < 0 || logicalY >= 90)
+    // Throw from anywhere across the dungeon viewport when released in
+    // the distant area. Screen X chooses the landing side (left/right),
+    // not whether the item throws. Nearer releases remain F1 floor drops.
+    if (logicalX < 0 || logicalX >= 224 || logicalY < 0 || logicalY >= 90)
       return false;
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null || !PreviewTileIsOpen(previewX, previewY))
@@ -33394,6 +33423,7 @@ private static void HandleGameViewPointerDown(
       id = id, level = previewDungeonLevel, startX = previewX, startY = previewY,
       forwardX = dx, forwardY = dy, steps = steps,
       corner = FloorCornerForFacing(previewFacing, right),
+      landingRight = right,
       started = EditorApplication.timeSinceStartup
     };
     previewHeldTorchId = null;
@@ -33406,17 +33436,35 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
+  // Short final descent after the last flight perspective frame.
+  private const double TorchLandingDescentSeconds = 0.12;
+
   private void UpdateTorchFlight()
   {
     if (previewTorchFlight == null) return;
     double elapsed = EditorApplication.timeSinceStartup - previewTorchFlight.started;
-    if (elapsed >= previewTorchFlight.steps * TorchFlightStageSeconds)
+    // Sound follows the displayed flight stages, not the number of map tiles
+    // remaining at the final landing. Trigger each transition exactly once.
+    int currentStage = Mathf.Min(previewTorchFlight.steps - 1,
+        (int)(elapsed / TorchFlightStageSeconds));
+    // For the one-tile F2 landing test, the thud belongs to actual floor
+    // contact, not the start of a flight stage.
+    int lastSoundStage = previewTorchFlight.steps == 1
+        ? 0 : Mathf.Min(2, currentStage);
+    while (previewTorchFlight.lastThudStage < lastSoundStage)
+    {
+      previewTorchFlight.lastThudStage++;
+      PlayItemLandingThudSound();
+    }
+    if (elapsed >= previewTorchFlight.steps * TorchFlightStageSeconds
+        + TorchLandingDescentSeconds)
     {
       TorchFlight flight = previewTorchFlight;
       previewTorchFlight = null;
       if (previewDroppedTorches.ContainsKey(flight.id))
         Debug.LogError("TORCH THROW: duplicate item " + flight.id);
       else
+      {
         previewDroppedTorches.Add(flight.id, new DroppedTorch
         {
           id = flight.id, level = flight.level,
@@ -33424,6 +33472,11 @@ private static void HandleGameViewPointerDown(
           y = flight.startY + flight.forwardY * flight.steps,
           corner = flight.corner
         });
+        // One map tile ahead is rendered as TorchDown F2. Play the impact
+        // only after the visible descent reaches that calibrated floor slot.
+        if (flight.steps == 1)
+          PlayItemLandingThudSound();
+      }
       Debug.Log("TORCH THROW: landed at "
           + (flight.startX + flight.forwardX * flight.steps) + ","
           + (flight.startY + flight.forwardY * flight.steps));
@@ -33462,6 +33515,32 @@ private static void HandleGameViewPointerDown(
     // Integer pixel centers are rounded consistently for odd-sized sprites.
     int left = corridorLeft + (corridorWidth - width) / 2;
     int top = stageBandTop[stage] + (stageBandHeight[stage] - height) / 2;
+    double descentStarted = flight.steps * TorchFlightStageSeconds;
+    if (elapsed >= descentStarted)
+    {
+      // Flight stays on the centerline. Only its final descent moves
+      // toward the side/corner-specific landed-floor placement.
+      bool right = flight.landingRight;
+      int targetX, targetTop;
+      if (flight.steps >= 3)
+        GetTorchDownF3Calibration(right, out targetX, out targetTop);
+      else
+        GetTorchDownF2Calibration(right, out targetX, out targetTop);
+      if (flight.steps == 1)
+      {
+        // One map square ahead projects as F2, not the same-tile F1.
+        // Shrink to its 37x5 floor representation before the descent;
+        // center that sprite in F2's perspective band.
+        width = 37;
+        height = 5;
+        left = (corridorWidth - width) / 2;
+        top = 52 + (74 - height) / 2;
+      }
+      float t = Mathf.Clamp01((float)((elapsed - descentStarted)
+          / TorchLandingDescentSeconds));
+      left = Mathf.RoundToInt(Mathf.Lerp(left, targetX, t));
+      top = Mathf.RoundToInt(Mathf.Lerp(top, targetTop, t));
+    }
     BlitPieceScaledIntoPreview(pixels, sprite, left,
         PreviewHeight - top - height, width, height);
   }
@@ -33546,26 +33625,44 @@ private static void HandleGameViewPointerDown(
     ApplyPreviewFeatureRenderOverrides(key, ref x, ref top, ref mirror);
   }
 
+  // F3 floor position (two map tiles ahead when observed). The same
+  // perspective is used for the last flight stage before the item settles.
+  private const string TorchDownF3CalibrationKey = "FloorItemProjection:TorchDown:F3";
+
+  private void GetTorchDownF3Calibration(bool right, out int x, out int top)
+  {
+    const int width = 24;
+    x = (right ? 126 : 98) - width / 2;
+    top = 99;
+    bool mirror = false;
+    string key = TorchDownF3CalibrationKey + (right ? ":Right" : ":Left");
+    ApplyAcceptedOrnamentReference(key, ref x, ref top, ref mirror);
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref top, ref mirror);
+  }
+
   private void DrawTorchDownCalibrationRow()
   {
     foreach (DroppedTorch item in previewDroppedTorches.Values)
     {
       if (!TryGetDroppedTorchFloorSlot(item,
               out FloorItemDepth depth, out bool right)
-          || (depth != FloorItemDepth.SameTile
-              && depth != FloorItemDepth.OneAhead)) continue;
+          ) continue;
 
       bool f2 = depth == FloorItemDepth.OneAhead;
-      string key = (f2 ? TorchDownF2CalibrationKey : TorchDownF1CalibrationKey)
+      bool f3 = depth == FloorItemDepth.TwoAhead;
+      string key = (f3 ? TorchDownF3CalibrationKey
+          : f2 ? TorchDownF2CalibrationKey : TorchDownF1CalibrationKey)
           + (right ? ":Right" : ":Left");
       int defaultX, defaultY;
-      if (f2) GetTorchDownF2Calibration(right, out defaultX, out defaultY);
+      if (f3) GetTorchDownF3Calibration(right, out defaultX, out defaultY);
+      else if (f2) GetTorchDownF2Calibration(right, out defaultX, out defaultY);
       else GetTorchDownF1Calibration(right, out defaultX, out defaultY);
       // Get*Calibration already accounts for applied and temporary overrides.
       // Recover the accepted values for the red unsaved-change indicators.
-      int acceptedX = f2 ? (right ? 140 : 84) - 37 / 2
+      int acceptedX = f3 ? (right ? 126 : 98) - 24 / 2
+          : f2 ? (right ? 140 : 84) - 37 / 2
           : (right ? TorchGroundRightX : TorchGroundLeftX);
-      int acceptedY = f2 ? 116 : TorchGroundTop;
+      int acceptedY = f3 ? 99 : f2 ? 116 : TorchGroundTop;
       bool mirror = false;
       ApplyAcceptedOrnamentReference(key, ref acceptedX, ref acceptedY, ref mirror);
       int x = defaultX, y = defaultY;
@@ -33576,7 +33673,7 @@ private static void HandleGameViewPointerDown(
       torchDownStyle.normal.textColor = Color.yellow;
       torchDownStyle.hover.textColor = Color.yellow;
       torchDownStyle.focused.textColor = Color.yellow;
-      GUILayout.Label("TorchDown " + (f2 ? "F2" : "F1") + " ["
+      GUILayout.Label("TorchDown " + (f3 ? "F3" : f2 ? "F2" : "F1") + " ["
           + item.x + "," + item.y + "] " + (right ? "R" : "L"),
           torchDownStyle, GUILayout.Width(195f));
       EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
@@ -33675,11 +33772,7 @@ private static void HandleGameViewPointerDown(
         if (depth == FloorItemDepth.OneAhead)
           GetTorchDownF2Calibration(right, out x, out top);
         else
-        {
-          int centerX = right ? 126 : 98;
-          x = centerX - width / 2;
-          top = 99;
-        }
+          GetTorchDownF3Calibration(right, out x, out top);
         BlitPieceScaledIntoPreview(pixels, sprite, x,
             PreviewHeight - top - height, width, height);
       }
