@@ -33233,7 +33233,10 @@ private static void HandleGameViewPointerDown(
     public double started;
   }
   private TorchFlight previewTorchFlight;
-  private const double TorchFlightSeconds = 0.75;
+  // One perspective stage per interval, without an extra hold between stages.
+  // Adjust this value after comparing the animation with CSBwin.
+  private const double TorchFlightStageSeconds = 0.20;
+
 
   private bool TryThrowHeldTorch(float logicalX, float logicalY)
   {
@@ -33297,9 +33300,8 @@ private static void HandleGameViewPointerDown(
   private void UpdateTorchFlight()
   {
     if (previewTorchFlight == null) return;
-    double t = (EditorApplication.timeSinceStartup - previewTorchFlight.started)
-        / TorchFlightSeconds;
-    if (t >= 1.0)
+    double elapsed = EditorApplication.timeSinceStartup - previewTorchFlight.started;
+    if (elapsed >= previewTorchFlight.steps * TorchFlightStageSeconds)
     {
       TorchFlight flight = previewTorchFlight;
       previewTorchFlight = null;
@@ -33328,17 +33330,30 @@ private static void HandleGameViewPointerDown(
       return;
     Texture2D sprite = GetTorchGroundTexture();
     if (sprite == null) return;
-    float progress = Mathf.Clamp01((float)(
-        (EditorApplication.timeSinceStartup - flight.started) / TorchFlightSeconds));
-    // Nearest-neighbour sizes shrink continuously toward the far perspective.
-    // These are provisional throw-animation anchors, not saved F1 calibration.
-    float distance = progress * flight.steps;
-    int width = Mathf.Max(8, Mathf.RoundToInt(61f / (1f + distance * 0.55f)));
-    int height = Mathf.Max(2, Mathf.RoundToInt(7f / (1f + distance * 0.45f)));
-    int centerX = 112;
-    int top = Mathf.RoundToInt(Mathf.Lerp(154f, 95f, distance / 3f)
-        - Mathf.Sin(progress * Mathf.PI) * 17f);
-    BlitPieceScaledIntoPreview(pixels, sprite, centerX - width / 2,
+    // Each forward step has one discrete projected frame, on the central
+    // meridian. Never interpolate the sprite along a smooth arc: the original
+    // dungeon presents the object at successive depth bands.
+    double elapsed = EditorApplication.timeSinceStartup - flight.started;
+    int stage = Mathf.Clamp((int)(elapsed / TorchFlightStageSeconds), 0,
+        Mathf.Max(0, flight.steps - 1));
+    // Stage geometry comes from the existing perspective's front-wall bands
+    // (screen-top Y and height), rather than arbitrary floor Y coordinates.
+    // F1: 42..153, F2: 52..126, F3: 58..107. Their horizontal
+    // centerline is the midpoint of the 224-pixel dungeon viewport.
+    // Flight graphics are centered in BOTH axes of each stage; normal
+    // dropped-item positions and ViewEdit calibration are not involved.
+    int[] stageWidths = { 61, 37, 23 };
+    int[] stageHeights = { 7, 5, 3 };
+    int[] stageBandTop = { 42, 52, 58 };
+    int[] stageBandHeight = { 111, 74, 49 };
+    int width = stageWidths[stage];
+    int height = stageHeights[stage];
+    const int corridorLeft = 0;
+    const int corridorWidth = 224;
+    // Integer pixel centers are rounded consistently for odd-sized sprites.
+    int left = corridorLeft + (corridorWidth - width) / 2;
+    int top = stageBandTop[stage] + (stageBandHeight[stage] - height) / 2;
+    BlitPieceScaledIntoPreview(pixels, sprite, left,
         PreviewHeight - top - height, width, height);
   }
 
