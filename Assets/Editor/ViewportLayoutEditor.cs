@@ -6533,7 +6533,7 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
-    if (hasLogical && (window.TryThrowHeldTorch(logical.x, logical.y)
+    if (hasLogical && (window.TryThrowHeldItem(logical.x, logical.y)
         || window.TryDropHeldTorchOnFloor(logical.x, logical.y)))
     {
       s_lastGameViewClickTime = now;
@@ -6873,6 +6873,31 @@ private static void HandleGameViewPointerDown(
         null);
     if (playMethod != null)
       playMethod.Invoke(null, new object[] { clip, 0, false });
+  }
+
+  // Shared item-throw sound: only successful throws play this clip.
+  // Missing or ambiguous assets are errors; never substitute another clip.
+  private void PlayItemThrowSound()
+  {
+    string[] guids = AssetDatabase.FindAssets("Combat_Attack t:AudioClip");
+    AudioClip matchedClip = null;
+    int matches = 0;
+    for (int i = 0; i < guids.Length; i++)
+    {
+      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+      if (!string.Equals(System.IO.Path.GetFileName(path), "Combat_Attack.wav",
+          System.StringComparison.OrdinalIgnoreCase))
+        continue;
+      matches++;
+      matchedClip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+    }
+    if (matches != 1 || matchedClip == null)
+    {
+      Debug.LogError("ITEM THROW SOUND: expected exactly one Combat_Attack.wav "
+          + "AudioClip in Assets; matching files=" + matches + ". No fallback used.");
+      return;
+    }
+    PlayEditorPreviewClip(matchedClip);
   }
 
   private void PlayLevel0SwitchSound()
@@ -24351,6 +24376,7 @@ private static void HandleGameViewPointerDown(
     // Loose-item calibrations from the original Level 0 DUNGEON.DAT.
     DrawFloorItemRows();
     DrawTorchDownCalibrationRow();
+    DrawTorchFlightTimingRow();
 
     // Champion Mirrors. Only rows that correspond to a mirror projection the
     // renderer can actually draw for this pose are shown. X/Y are framebuffer
@@ -33235,8 +33261,90 @@ private static void HandleGameViewPointerDown(
   private TorchFlight previewTorchFlight;
   // One perspective stage per interval, without an extra hold between stages.
   // Adjust this value after comparing the animation with CSBwin.
-  private const double TorchFlightStageSeconds = 0.20;
+  // TORCH_FLIGHT_STAGE_MS:200 -- persisted by ViewEdit Apply.
+  private const int TorchFlightStageMilliseconds = 200;
+  [System.NonSerialized] private int? previewTorchFlightTimingOverride;
+  private double TorchFlightStageSeconds =>
+      (previewTorchFlightTimingOverride ?? TorchFlightStageMilliseconds) / 1000.0;
 
+  private void DrawTorchFlightTimingRow()
+  {
+    int stored = TorchFlightStageMilliseconds;
+    int shown = previewTorchFlightTimingOverride ?? stored;
+    EditorGUILayout.BeginHorizontal();
+    GUIStyle labelStyle = new GUIStyle(EditorStyles.boldLabel);
+    labelStyle.normal.textColor = Color.yellow;
+    GUILayout.Label("TorchFlight F1-F3", labelStyle, GUILayout.Width(195f));
+    float oldLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("ms")).x;
+    int selected = shown;
+    bool changed = DrawIntStepperInline("ms", ref selected, snap,
+        shown != stored, true, 40f, 45f);
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f),
+        GUILayout.ExpandWidth(false));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = oldLabelWidth;
+    EditorGUILayout.EndHorizontal();
+    if (changed && selected != shown)
+    {
+      previewTorchFlightTimingOverride = Mathf.Clamp(selected, 20, 2000);
+      Repaint();
+    }
+    if (apply)
+    {
+      int milliseconds = Mathf.Clamp(
+          previewTorchFlightTimingOverride ?? stored, 20, 2000);
+      if (SaveTorchFlightTiming(milliseconds))
+      {
+        previewTorchFlightTimingOverride = null;
+        Repaint();
+      }
+    }
+  }
+
+  private bool SaveTorchFlightTiming(int milliseconds)
+  {
+    string path = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(path) || !File.Exists(path))
+    {
+      Debug.LogError("TorchFlight Apply: ViewportLayoutEditor.cs not found.");
+      return false;
+    }
+    string source = File.ReadAllText(path);
+    const string expression = @"(?m)^(\s*private const int TorchFlightStageMilliseconds = )\d+(;)";
+    MatchCollection matches = Regex.Matches(source, expression);
+    if (matches.Count != 1)
+    {
+      Debug.LogError("TorchFlight Apply: expected exactly one timing constant; source unchanged.");
+      return false;
+    }
+    string revised = Regex.Replace(source, expression,
+        m => m.Groups[1].Value + milliseconds.ToString() + m.Groups[2].Value);
+    try
+    {
+      File.WriteAllText(path, revised);
+      AssetDatabase.ImportAsset(path);
+      Debug.Log("TorchFlight Apply: " + milliseconds
+          + " ms per F1/F2/F3 stage saved to " + path);
+      return true;
+    }
+    catch (System.Exception error)
+    {
+      Debug.LogError("TorchFlight Apply: could not write source: " + error.Message);
+      return false;
+    }
+  }
+
+
+  // Shared item-throw entry point. Add future throwable item handlers here;
+  // the attack sound is emitted exactly once when a throw succeeds.
+  // Normal floor drops and returning an item to a holder remain silent.
+  private bool TryThrowHeldItem(float logicalX, float logicalY)
+  {
+    if (TryThrowHeldTorch(logicalX, logicalY))
+      return true;
+    return false;
+  }
 
   private bool TryThrowHeldTorch(float logicalX, float logicalY)
   {
@@ -33292,6 +33400,7 @@ private static void HandleGameViewPointerDown(
     previewHeldTorchCursor = null;
     Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     HideHeldItemPointerOverlay();
+    PlayItemThrowSound();
     RefreshEditModePreview();
     Debug.Log("TORCH THROW: " + id + " flying " + steps + " tile(s).");
     return true;
