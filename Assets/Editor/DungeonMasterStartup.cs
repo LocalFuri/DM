@@ -112,6 +112,19 @@ internal static class DungeonMasterStartup
         }
     }
 
+    // ScriptableSingleton<T>.instance is declared on a base class. Unity's
+    // internal classes do not redeclare it, so ordinary GetProperty can miss it.
+    private static PropertyInfo FindPropertyInHierarchy(Type type, string name, BindingFlags flags)
+    {
+        for (Type current = type; current != null; current = current.BaseType)
+        {
+            PropertyInfo property = current.GetProperty(name, flags | BindingFlags.DeclaredOnly);
+            if (property != null)
+                return property;
+        }
+        return null;
+    }
+
     private static bool TrySelectSize(int width, int height, out string problem)
     {
         problem = "Unity internal GameView API not available";
@@ -136,26 +149,44 @@ internal static class DungeonMasterStartup
                 return false;
             }
 
-            BindingFlags flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-            PropertyInfo instanceProperty = sizesType.GetProperty("instance", flags);
-            object sizes = instanceProperty != null ? instanceProperty.GetValue(null, null) : null;
+            BindingFlags flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
+            PropertyInfo instanceProperty = FindPropertyInHierarchy(sizesType, "instance", flags);
+            if (instanceProperty == null)
+            {
+                problem = "GameViewSizes.instance property missing";
+                return false;
+            }
+            object sizes = instanceProperty.GetValue(null, null);
             MethodInfo getGroup = sizesType.GetMethod("GetGroup", flags);
             if (sizes == null || getGroup == null)
+            {
+                problem = sizes == null ? "GameViewSizes.instance returned null" : "GameViewSizes.GetGroup missing";
                 return false;
+            }
 
             // Game View's current group differs by platform. Use the GameView's own
             // current group if exposed, otherwise use Standalone (desktop editor).
             PropertyInfo currentGroup = gameViewType.GetProperty("currentSizeGroupType", flags);
-            object groupEnum = currentGroup != null ? currentGroup.GetValue(gameView, null) : Enum.Parse(groupType, "Standalone");
+            object groupEnum = currentGroup != null ? currentGroup.GetValue(null, null) : Enum.Parse(groupType, "Standalone");
             object group = getGroup.Invoke(sizes, new[] { groupEnum });
-            if (group == null) return false;
+            if (group == null)
+            {
+                problem = "GameView size group returned null";
+                return false;
+            }
 
             Type sizeGroupType = group.GetType();
             MethodInfo getTotal = sizeGroupType.GetMethod("GetTotalCount", flags);
             MethodInfo getSize = sizeGroupType.GetMethod("GetGameViewSize", flags);
             PropertyInfo selectedIndex = gameViewType.GetProperty("selectedSizeIndex", flags);
             if (getTotal == null || getSize == null || selectedIndex == null || !selectedIndex.CanWrite)
+            {
+                problem = "missing GameView reflection member: " +
+                    (getTotal == null ? "GetTotalCount " : "") +
+                    (getSize == null ? "GetGameViewSize " : "") +
+                    (selectedIndex == null ? "selectedSizeIndex " : !selectedIndex.CanWrite ? "selectedSizeIndex setter" : "");
                 return false;
+            }
 
             int count = (int)getTotal.Invoke(group, null);
             for (int i = 0; i < count; i++)
