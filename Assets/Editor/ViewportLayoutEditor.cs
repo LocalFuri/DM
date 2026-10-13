@@ -24344,6 +24344,7 @@ private static void HandleGameViewPointerDown(
 
     // Loose-item calibrations from the original Level 0 DUNGEON.DAT.
     DrawFloorItemRows();
+    DrawTorchDownCalibrationRow();
 
     // Champion Mirrors. Only rows that correspond to a mirror projection the
     // renderer can actually draw for this pose are shown. X/Y are framebuffer
@@ -33264,6 +33265,82 @@ private static void HandleGameViewPointerDown(
     return sprite;
   }
 
+  // The F1 torch uses a shared pixel calibration for every map tile/corner.
+  // Show this row only while an actual dropped torch is rendered at this pose.
+  private const string TorchDownF1CalibrationKey = "FloorItemProjection:TorchDown:F1";
+
+  private void GetTorchDownF1Calibration(bool right, out int x, out int top)
+  {
+    x = right ? TorchGroundRightX : TorchGroundLeftX;
+    top = TorchGroundTop;
+    bool mirror = false;
+    string key = TorchDownF1CalibrationKey + (right ? ":Right" : ":Left");
+    ApplyAcceptedOrnamentReference(key, ref x, ref top, ref mirror);
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref top, ref mirror);
+  }
+
+  private void DrawTorchDownCalibrationRow()
+  {
+    foreach (DroppedTorch item in previewDroppedTorches.Values)
+    {
+      if (!TryGetDroppedTorchProjection(item, out _, out _)) continue;
+      FloorItemPlacement placement = new FloorItemPlacement
+      { type = "Torch", x = item.x, y = item.y, cell = item.corner };
+      if (!TryProjectFloorItem(placement, out FloorItemDepth depth, out bool right)
+          || depth != FloorItemDepth.SameTile) continue;
+
+      string key = TorchDownF1CalibrationKey + (right ? ":Right" : ":Left");
+      int defaultX = right ? TorchGroundRightX : TorchGroundLeftX;
+      int defaultY = TorchGroundTop;
+      bool mirror = false;
+      ApplyAcceptedOrnamentReference(key, ref defaultX, ref defaultY, ref mirror);
+      int x = defaultX, y = defaultY;
+      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+
+      EditorGUILayout.BeginHorizontal();
+      float oldWidth = EditorGUIUtility.labelWidth;
+      GUIStyle torchDownStyle = new GUIStyle(EditorStyles.boldLabel);
+      torchDownStyle.normal.textColor = Color.yellow;
+      torchDownStyle.hover.textColor = Color.yellow;
+      torchDownStyle.focused.textColor = Color.yellow;
+      GUILayout.Label("TorchDown F1 [" + item.x + "," + item.y + "] "
+          + (right ? "R" : "L"), torchDownStyle, GUILayout.Width(195f));
+      EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+      int newX = x;
+      bool xChanged = DrawIntStepperInline("X", ref newX, snap,
+          x != defaultX, true, 24f, 24f);
+      EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+      int newY = y;
+      bool yChanged = DrawIntStepperInline("Y", ref newY, snap,
+          y != defaultY, true, 24f, 24f);
+      bool apply = GUILayout.Button("Apply", GUILayout.Width(58f),
+          GUILayout.ExpandWidth(false));
+      NoteContentRight();
+      EditorGUIUtility.labelWidth = oldWidth;
+      EditorGUILayout.EndHorizontal();
+
+      if (apply)
+      {
+        if (SaveAcceptedOrnamentReference(key, newX, newY, false))
+        {
+          previewFeaturePositionOverrides.Remove(key);
+          RefreshEditModePreview();
+          RepaintGameViews();
+          Repaint();
+        }
+      }
+      else if ((xChanged && newX != x) || (yChanged && newY != y))
+      {
+        if (newX == defaultX && newY == defaultY)
+          previewFeaturePositionOverrides.Remove(key);
+        else previewFeaturePositionOverrides[key] = new Vector2Int(newX, newY);
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
+    }
+  }
+
   private bool TryGetDroppedTorchProjection(DroppedTorch item,
       out int x, out int top)
   {
@@ -33278,7 +33355,7 @@ private static void HandleGameViewPointerDown(
     if (!TryProjectFloorItem(projection, out FloorItemDepth depth, out bool right)
         || depth != FloorItemDepth.SameTile)
       return false; // Distant torch graphics/projections require later calibration.
-    x = right ? TorchGroundRightX : TorchGroundLeftX;
+    GetTorchDownF1Calibration(right, out x, out top);
     return true;
   }
 
