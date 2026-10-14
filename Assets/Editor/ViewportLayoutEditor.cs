@@ -6513,7 +6513,8 @@ private static void HandleGameViewPointerDown(
     Debug.Log("TORCH PICKUP TRACE: GameView left click; converted=" + hasLogical
         + "; mouse=" + windowMouse
         + (hasLogical ? "; logical320x200=" + logical : " (conversion failed)")
-        + "; held=" + (window.previewHeldTorchId ?? "none")
+        + "; heldTorch=" + (string.IsNullOrEmpty(window.previewHeldTorchId) ? "none" : window.previewHeldTorchId)
+        + "; heldFloor=" + (string.IsNullOrEmpty(window.previewHeldFloorItemId) ? "none" : window.previewHeldFloorItemId)
         + "; championSheet=" + window.championSheetVisible
         + "; holderFound=" + (window.FindVisibleEmptyTorchHolderF1() != null));
 
@@ -33090,7 +33091,7 @@ private static void HandleGameViewPointerDown(
   {
     return HasPickedUpTorchOnCursor()
         || (previewHeldFloorItem != null && previewHeldFloorItemId != null
-            && previewHeldTorchId == null);
+            && string.IsNullOrEmpty(previewHeldTorchId));
   }
 
   private Texture2D GetHeldItemCursorTexture()
@@ -33337,8 +33338,19 @@ private static void HandleGameViewPointerDown(
       overlay.BringToFront();
       s_heldItemPointerOverlay = overlay;
       s_heldItemPointerOverlayWindow = gameView;
-      Debug.Log("TORCH CURSOR: created 16x16 sprite overlay in GameView; scale follows GameView zoom");
+      Debug.Log("HELD ITEM CURSOR: created 16x16 inventory sprite overlay in GameView; scale follows GameView zoom");
     }
+    // Refresh the texture even when the overlay already exists: picking up
+    // a different inventory item must replace the previous held sprite.
+    Texture2D heldCursor = owner.GetHeldItemCursorTexture();
+    if (heldCursor == null)
+    {
+      Debug.LogError("HELD ITEM CURSOR: held item has no inventory sprite.");
+      HideHeldItemPointerOverlay();
+      return;
+    }
+    s_heldItemPointerOverlay.style.backgroundImage =
+        new UnityEngine.UIElements.StyleBackground(heldCursor);
     float scale = GetGameViewZoomScale();
     if (scale <= 0f) scale = 1f;
     float size = 16f * scale;
@@ -33381,7 +33393,7 @@ private static void HandleGameViewPointerDown(
     ViewportLayoutEditor owner = FindOpenViewEditWindow();
     if (owner != null)
       owner.ClearStaleHeldTorchState();
-    if (owner == null || !owner.HasPickedUpTorchOnCursor())
+    if (owner == null || !owner.HasAnyItemOnCursor())
     {
       HideHeldItemPointerOverlay();
       return;
