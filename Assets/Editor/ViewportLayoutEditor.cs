@@ -6570,7 +6570,7 @@ private static void HandleGameViewPointerDown(
     ViewportLayoutEditor window = FindOpenViewEditWindow();
     if (window == null || window.layout == null)
     {
-      Debug.Log("TORCH PICKUP TRACE: GameView click ignored: ViewEdit or layout unavailable");
+
       return false;
     }
 
@@ -6602,13 +6602,6 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
-    Debug.Log("TORCH PICKUP TRACE: GameView left click; converted=" + hasLogical
-        + "; mouse=" + windowMouse
-        + (hasLogical ? "; logical320x200=" + logical : " (conversion failed)")
-        + "; heldTorch=" + (string.IsNullOrEmpty(window.previewHeldTorchId) ? "none" : window.previewHeldTorchId)
-        + "; heldFloor=" + (string.IsNullOrEmpty(window.previewHeldFloorItemId) ? "none" : window.previewHeldFloorItemId)
-        + "; championSheet=" + window.championSheetVisible
-        + "; holderFound=" + (window.FindVisibleEmptyTorchHolderF1() != null));
 
     if (hasLogical && window.TryReturnHeldTorchToVisibleHolder(logical.x, logical.y))
     {
@@ -18016,7 +18009,6 @@ private static void HandleGameViewPointerDown(
     // Floor features first, so wall-mounted artwork can sit above them.
     BlitPuddlesIntoPreview(pixels);
     BlitMossIntoPreview(pixels);
-    BlitFloorItemsIntoPreview(pixels);
     BlitDroppedTorchesIntoPreview(pixels);
     BlitFlyingTorchIntoPreview(pixels);
 
@@ -18069,6 +18061,12 @@ private static void HandleGameViewPointerDown(
     BlitViAltarS3IntoPreview(pixels);
     BlitViAltarS2IntoPreview(pixels);
     BlitViAltarS1IntoPreview(pixels);
+
+    // Floor items occupy the final viewport feature layer. In particular,
+    // a newly dropped item must not be covered by a subsequent feature pass.
+    // BlitFloorItemsIntoPreview retains the established original-then-moved
+    // order, CSBwin pile offsets, and independent LIFO pickup state.
+    BlitFloorItemsIntoPreview(pixels);
   }
 
 
@@ -28514,49 +28512,59 @@ private static void HandleGameViewPointerDown(
   private const string CsbFloorOffsetsPath =
       "Assets/Editor/CSBwin_Floor_Item_Offsets.json";
   private Vector2Int[][] csbFloorOffsetRows;
-  private bool csbFloorOffsetsLoadAttempted;
+  private string csbFloorOffsetsLastError;
 
   private bool EnsureCsbFloorOffsetsLoaded()
   {
     if (csbFloorOffsetRows != null) return true;
-    if (csbFloorOffsetsLoadAttempted) return false;
-    csbFloorOffsetsLoadAttempted = true;
-    TextAsset source = AssetDatabase.LoadAssetAtPath<TextAsset>(CsbFloorOffsetsPath);
-    if (source == null)
+
+    // Read the one authoritative JSON in Assets/Editor directly. Unity can
+    // import .json as an asset type other than TextAsset, so a failed
+    // LoadAssetAtPath<TextAsset> must not permanently suppress floor piles.
+    // A previous failure is not cached: a corrected file can load on the
+    // next repaint without requiring an EditorWindow restart.
+    try
     {
-      Debug.LogError("CSBwin floor offsets: required JSON missing at " + CsbFloorOffsetsPath);
-      return false;
-    }
-    // JsonUtility cannot deserialize arrays nested directly within arrays.
-    // Parse only the fixed 48 x/y pairs from the extracted reference block.
-    Match block = Regex.Match(source.text,
-        @"""computedOffsetsByDistance""\s*:\s*\[(.*?)\]\s*,\s*""implementationNotes""",
-        RegexOptions.Singleline);
-    if (!block.Success)
-    {
-      Debug.LogError("CSBwin floor offsets: computedOffsetsByDistance block is invalid in " + CsbFloorOffsetsPath);
-      return false;
-    }
-    MatchCollection pairs = Regex.Matches(block.Groups[1].Value,
-        @"\{\s*""x""\s*:\s*(-?\d+)\s*,\s*""y""\s*:\s*(-?\d+)\s*\}");
-    if (pairs.Count != 48)
-    {
-      Debug.LogError("CSBwin floor offsets: expected 48 x/y pairs, found " + pairs.Count);
-      return false;
-    }
-    Vector2Int[][] parsed = new Vector2Int[3][];
-    for (int depth = 0; depth < 3; depth++)
-    {
-      parsed[depth] = new Vector2Int[16];
-      for (int i = 0; i < 16; i++)
+      string diskPath = Path.GetFullPath(CsbFloorOffsetsPath);
+      if (!File.Exists(diskPath))
+        throw new FileNotFoundException("Required CSBwin JSON is missing", diskPath);
+      string json = File.ReadAllText(diskPath);
+      Match block = Regex.Match(json,
+          @"""computedOffsetsByDistance""\s*:\s*\[(.*?)\]\s*,\s*""implementationNotes""",
+          RegexOptions.Singleline);
+      if (!block.Success)
+        throw new System.FormatException("computedOffsetsByDistance block is missing or malformed");
+      MatchCollection pairs = Regex.Matches(block.Groups[1].Value,
+          @"\{\s*""x""\s*:\s*(-?\d+)\s*,\s*""y""\s*:\s*(-?\d+)\s*\}");
+      if (pairs.Count != 48)
+        throw new System.FormatException("expected 48 X/Y pairs, found " + pairs.Count);
+
+      Vector2Int[][] parsed = new Vector2Int[3][];
+      for (int depth = 0; depth < 3; depth++)
       {
-        Match pair = pairs[depth * 16 + i];
-        parsed[depth][i] = new Vector2Int(
-            int.Parse(pair.Groups[1].Value), int.Parse(pair.Groups[2].Value));
+        parsed[depth] = new Vector2Int[16];
+        for (int i = 0; i < 16; i++)
+        {
+          Match pair = pairs[depth * 16 + i];
+          parsed[depth][i] = new Vector2Int(
+              int.Parse(pair.Groups[1].Value), int.Parse(pair.Groups[2].Value));
+        }
       }
+      csbFloorOffsetRows = parsed;
+      csbFloorOffsetsLastError = null;
+      return true;
     }
-    csbFloorOffsetRows = parsed;
-    return true;
+    catch (System.Exception ex)
+    {
+      string message = "CSBwin floor offsets: cannot load " + CsbFloorOffsetsPath
+          + ": " + ex.Message;
+      if (message != csbFloorOffsetsLastError)
+      {
+        Debug.LogError(message);
+        csbFloorOffsetsLastError = message;
+      }
+      return false;
+    }
   }
 
   private static int CsbFloorAbsoluteCorner(string cell)
@@ -28585,6 +28593,9 @@ private static void HandleGameViewPointerDown(
     return offsets[(initial + pileIndex) & 15] - offsets[initial];
   }
 
+  // One-frame diagnostics after a floor drop. Do not change rendering logic.
+  private bool traceNextFloorAppleBlit;
+
   private void BlitFloorItemsIntoPreview(Color32[] pixels)
   {
     if (pixels == null)
@@ -28595,6 +28606,28 @@ private static void HandleGameViewPointerDown(
       return;
 
     FloorItemPlacement[] items = GetCurrentFloorItems();
+    if (traceNextFloorAppleBlit)
+    {
+      string appleId = "0:Apple:4:9:N";
+      bool moved = previewMovedFloorItems.TryGetValue(appleId, out FloorItemPlacement applePlacement);
+      bool listed = false;
+      for (int n = 0; n < items.Length; ++n)
+        if (GetFloorItemInstanceId(items[n]) == appleId) listed = true;
+      string reason = !moved ? "not in moved dictionary" : !listed ? "not in active draw list"
+          : "in active draw list";
+      bool projected = moved && TryProjectFloorItem(applePlacement,
+          out FloorItemDepth appleDepth, out bool appleRight);
+      bool enabled = moved && IsPreviewFeatureEnabled(GetFloorItemFeatureKey(applePlacement));
+      Texture2D appleTexture = moved ? GetFloorItemTexture(applePlacement) : null;
+      Debug.Log("APPLE DRAW GATE: " + reason + "; level=" + previewDungeonLevel
+          + "; held=" + previewFloorPickupCompleted
+          + "; heldId=" + (previewHeldFloorItemId ?? "null")
+          + "; picked=" + previewPickedFloorItemIds.Contains(appleId)
+          + "; movedOrder=" + previewMovedFloorItemOrder.Contains(appleId)
+          + "; activeCount=" + items.Length + "; projected=" + projected
+          + "; enabled=" + enabled + "; texture=" + (appleTexture == null ? "missing" : "loaded")
+          + "; pileDataLoaded=" + (csbFloorOffsetRows != null));
+    }
     // Individual floor items use their calibrated screen positions; the
     // CSBwin offset table is only required for the second and later items
     // at the same floor corner. Do not hide every floor item if JSON fails.
@@ -28603,9 +28636,15 @@ private static void HandleGameViewPointerDown(
     {
       FloorItemPlacement item = items[i];
       if (!TryProjectFloorItem(item, out FloorItemDepth depth, out bool isRight))
+      {
+        if (traceNextFloorAppleBlit && item.type == "Apple") Debug.Log("APPLE DRAW SKIP: projection rejected, tile=(" + item.x + "," + item.y + "), corner=" + item.cell);
         continue;
+      }
       if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(item)))
+      {
+        if (traceNextFloorAppleBlit && item.type == "Apple") Debug.Log("APPLE DRAW SKIP: feature disabled");
         continue;
+      }
 
       Texture2D texture = GetFloorItemTexture(item);
       if (texture == null)
@@ -28626,12 +28665,73 @@ private static void HandleGameViewPointerDown(
       pileCounts[pileKey] = indexInPile + 1;
       if (indexInPile > 0 && !EnsureCsbFloorOffsetsLoaded())
       {
+        if (traceNextFloorAppleBlit && item.type == "Apple") Debug.LogError("APPLE DRAW SKIP: CSBwin pile offsets unavailable; item is in the drawing list but cannot be blitted.");
         // Do not render a pile with invented offsets. Loader reports error.
         continue;
       }
       Vector2Int pileOffset = indexInPile == 0 ? Vector2Int.zero
           : GetCsbPileDisplacement(item, depth, indexInPile);
+      bool traceApple = traceNextFloorAppleBlit
+          && string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase)
+          && previewMovedFloorItems.ContainsKey(GetFloorItemInstanceId(item));
+      Color32[] beforeApple = traceApple ? (Color32[])pixels.Clone() : null;
       BlitProjectedFloorItem(pixels, item, texture, depth, isRight, pileOffset);
+      if (traceApple)
+      {
+        int drawX, drawTop, drawWidth, drawHeight;
+        if (depth == FloorItemDepth.SameTile)
+        {
+          drawX = isRight ? appleF0RightPreviewX : appleF0FrontPreviewX;
+          drawTop = isRight ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop;
+          drawWidth = texture.width;
+          drawHeight = texture.height;
+        }
+        else if (depth == FloorItemDepth.OneAhead)
+        {
+          drawX = isRight ? appleF2RightPreviewX : appleF2LeftPreviewX;
+          drawTop = isRight ? appleF2RightPreviewScreenTop : appleF2LeftPreviewScreenTop;
+          drawWidth = AppleF2Width;
+          drawHeight = AppleF2Height;
+        }
+        else
+        {
+          drawX = isRight ? appleF3RightPreviewX : appleF3LeftPreviewX;
+          drawTop = isRight ? appleF3RightPreviewScreenTop : appleF3LeftPreviewScreenTop;
+          drawWidth = AppleF3Width;
+          drawHeight = AppleF3Height;
+        }
+        int changedPixels = 0;
+        int minX = PreviewWidth, minY = PreviewHeight, maxX = -1, maxY = -1;
+        for (int pixelY = 0; pixelY < PreviewHeight; ++pixelY)
+          for (int pixelX = 0; pixelX < DungeonViewportWidth; ++pixelX)
+          {
+            int pixelIndex = pixelY * PreviewWidth + pixelX;
+            Color32 oldColor = beforeApple[pixelIndex];
+            Color32 newColor = pixels[pixelIndex];
+            if (oldColor.r == newColor.r && oldColor.g == newColor.g
+                && oldColor.b == newColor.b && oldColor.a == newColor.a)
+              continue;
+            changedPixels++;
+            minX = Mathf.Min(minX, pixelX);
+            maxX = Mathf.Max(maxX, pixelX);
+            minY = Mathf.Min(minY, pixelY);
+            maxY = Mathf.Max(maxY, pixelY);
+          }
+        Debug.Log("APPLE BLIT CHECK: called=True; tile=(" + item.x + "," + item.y
+            + "); corner=" + item.cell + "; depth=" + depth
+            + "; right=" + isRight + "; pileOffset=" + pileOffset
+            + "; rectTopLeft=(" + (drawX + pileOffset.x) + ","
+            + (drawTop + pileOffset.y) + "); size=" + drawWidth + "x" + drawHeight
+            + "; changedPixels=" + changedPixels + "; changedBoundsBottomLeft="
+            + (changedPixels == 0 ? "none" : "(" + minX + "," + minY
+                + ")-(" + maxX + "," + maxY + ")"));
+        traceNextFloorAppleBlit = false;
+      }
+    }
+    if (traceNextFloorAppleBlit)
+    {
+      Debug.LogWarning("APPLE BLIT CHECK: called=False; moved apple was not drawn in this floor-item pass. Check projection, feature flag, texture and CSBwin offset validation.");
+      traceNextFloorAppleBlit = false;
     }
   }
 
@@ -28827,6 +28927,131 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Saved defaults for ViewEdit bread pixel positions. The current in-memory
+  // fields are changed live; Apply commits only the relevant pair to this .cs.
+  private readonly Dictionary<string, Vector2Int> breadSavedScreenPositions =
+      new Dictionary<string, Vector2Int>(System.StringComparer.Ordinal);
+
+  private bool TryGetBreadPositionFields(FloorItemDepth depth, bool right,
+      out string xField, out string yField, out int x, out int top)
+  {
+    xField = null;
+    yField = null;
+    x = 0;
+    top = 0;
+    if (depth == FloorItemDepth.SameTile)
+    {
+      // SameTile shows the front half of the party square: use the existing
+      // left/right world-placement slots, not the unused breadF1 field.
+      xField = right ? "breadF0RightPreviewX" : "breadF0LeftPreviewX";
+      yField = right ? "breadF0RightPreviewScreenTop" : "breadF0LeftPreviewScreenTop";
+      x = right ? breadF0RightPreviewX : breadF0LeftPreviewX;
+      top = right ? breadF0RightPreviewScreenTop : breadF0LeftPreviewScreenTop;
+    }
+    else if (depth == FloorItemDepth.OneAhead)
+    {
+      xField = right ? "breadF2RightPreviewX" : "breadF2LeftPreviewX";
+      yField = right ? "breadF2RightPreviewScreenTop" : "breadF2LeftPreviewScreenTop";
+      x = right ? breadF2RightPreviewX : breadF2LeftPreviewX;
+      top = right ? breadF2RightPreviewScreenTop : breadF2LeftPreviewScreenTop;
+    }
+    return xField != null;
+  }
+
+  private void SetBreadScreenPosition(FloorItemDepth depth, bool right, int x, int top)
+  {
+    if (depth == FloorItemDepth.SameTile)
+    {
+      if (right) { breadF0RightPreviewX = x; breadF0RightPreviewScreenTop = top; }
+      else { breadF0LeftPreviewX = x; breadF0LeftPreviewScreenTop = top; }
+    }
+    else if (depth == FloorItemDepth.OneAhead)
+    {
+      if (right) { breadF2RightPreviewX = x; breadF2RightPreviewScreenTop = top; }
+      else { breadF2LeftPreviewX = x; breadF2LeftPreviewScreenTop = top; }
+    }
+  }
+
+  private bool SaveBreadScreenPosition(string xField, string yField, int x, int top)
+  {
+    string path = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(path) || !File.Exists(path))
+    {
+      Debug.LogError("Bread ViewEdit Apply: ViewportLayoutEditor.cs not found.");
+      return false;
+    }
+    string source = File.ReadAllText(path);
+    string revised = source;
+    string[] fields = { xField, yField };
+    int[] values = { x, top };
+    for (int i = 0; i < fields.Length; i++)
+    {
+      string pattern = @"(?m)^(\s*private int " + Regex.Escape(fields[i]) + @" = )-?\d+(;)";
+      MatchCollection matches = Regex.Matches(revised, pattern);
+      if (matches.Count != 1)
+      {
+        Debug.LogError("Bread ViewEdit Apply: expected one declaration for "
+            + fields[i] + "; source unchanged.");
+        return false;
+      }
+      int updated = values[i];
+      revised = Regex.Replace(revised, pattern,
+          m => m.Groups[1].Value + updated.ToString() + m.Groups[2].Value);
+    }
+    try
+    {
+      File.WriteAllText(path, revised);
+      AssetDatabase.ImportAsset(path);
+      return true;
+    }
+    catch (System.Exception error)
+    {
+      Debug.LogError("Bread ViewEdit Apply: " + error.Message);
+      return false;
+    }
+  }
+
+  private void DrawBreadScreenCalibration(FloorItemDepth depth, bool right)
+  {
+    if (!TryGetBreadPositionFields(depth, right,
+            out string xField, out string yField, out int x, out int top))
+      return;
+    string key = xField;
+    if (!breadSavedScreenPositions.TryGetValue(key, out Vector2Int saved))
+    {
+      saved = new Vector2Int(x, top);
+      breadSavedScreenPositions.Add(key, saved);
+    }
+    float previousLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Space(58f);
+    GUILayout.Label("Bread screen", EditorStyles.boldLabel, GUILayout.Width(145f));
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    int editX = x;
+    bool changedX = DrawIntStepperInline(
+        "X", ref editX, snap, x != saved.x, true, 25f, 25f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    int editY = top;
+    bool changedY = DrawIntStepperInline(
+        "Y", ref editY, snap, top != saved.y, true, 25f, 25f);
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    NoteContentRight();
+    EditorGUILayout.EndHorizontal();
+    EditorGUIUtility.labelWidth = previousLabelWidth;
+    if (changedX || changedY)
+    {
+      SetBreadScreenPosition(depth, right, editX, editY);
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+    if (apply && SaveBreadScreenPosition(xField, yField, editX, editY))
+    {
+      breadSavedScreenPositions[key] = new Vector2Int(editX, editY);
+      Repaint();
+    }
+  }
+
   private void DrawFloorItemRows()
   {
     EnsurePreviewMiniMapLoaded();
@@ -28874,6 +29099,9 @@ private static void HandleGameViewPointerDown(
       if (string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase)
           && enabledAfter)
         DrawAppleScreenCalibration(depth, isRight);
+      if (string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase)
+          && enabledAfter)
+        DrawBreadScreenCalibration(depth, isRight);
 
       if (enabledAfter != enabledBefore)
       {
@@ -33566,18 +33794,99 @@ private static void HandleGameViewPointerDown(
       Debug.LogError("FLOOR ITEM: duplicate instance " + previewHeldFloorItemId);
       return true;
     }
-    previewHeldFloorItem.x = previewX;
-    previewHeldFloorItem.y = previewY;
-    previewHeldFloorItem.cell = FloorCornerForFacing(previewFacing, x >= 112);
+    // A click on a visible floor item means "drop onto that item".
+    // Its projected sprite can belong to F1/F2 rather than the party tile;
+    // never convert the screen click into the player's map coordinates.
+    FloorItemPlacement dropTarget = null;
+    FloorItemPlacement[] visibleItems = GetCurrentFloorItems();
+    // Floor objects occupy a physical sub-square, not just their nontransparent
+    // sprite pixels. Accept a small edge margin when dropping onto a pile.
+    // Do not change the tighter hit test used to PICK UP an item.
+    const float dropPileEdgeMargin = 5f;
+    float bestDropTargetDistance = float.MaxValue;
+    for (int i = visibleItems.Length - 1; i >= 0; --i)
+    {
+      FloorItemPlacement candidate = visibleItems[i];
+      if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(candidate)))
+        continue;
+      if (!TryGetFloorItemScreenRect(candidate, out Rect targetRect))
+        continue;
+      // Restrict selection to the same screen half: nearby items on the other
+      // side of the corridor must never steal a drop.
+      float centerX = targetRect.xMin + targetRect.width * 0.5f;
+      if ((centerX >= 112f) != (x >= 112f))
+        continue;
+      Rect region = new Rect(targetRect.xMin - dropPileEdgeMargin,
+          targetRect.yMin - dropPileEdgeMargin,
+          targetRect.width + 2f * dropPileEdgeMargin,
+          targetRect.height + 2f * dropPileEdgeMargin);
+      if (!region.Contains(new Vector2(x, y)))
+        continue;
+      float dx = Mathf.Max(targetRect.xMin - x, 0f, x - targetRect.xMax);
+      float dy = Mathf.Max(targetRect.yMin - y, 0f, y - targetRect.yMax);
+      float distance = dx * dx + dy * dy;
+      if (distance < bestDropTargetDistance)
+      {
+        bestDropTargetDistance = distance;
+        dropTarget = candidate;
+      }
+    }
+    previewHeldFloorItem.x = dropTarget != null ? dropTarget.x : previewX;
+    previewHeldFloorItem.y = dropTarget != null ? dropTarget.y : previewY;
+    previewHeldFloorItem.cell = dropTarget != null ? dropTarget.cell
+        : FloorCornerForFacing(previewFacing, x >= 112);
     previewHeldFloorItem.instanceId = previewHeldFloorItemId;
     previewMovedFloorItems.Add(previewHeldFloorItemId, previewHeldFloorItem);
     previewMovedFloorItemOrder.Add(previewHeldFloorItemId);
+    // Diagnostic for the overlapping-item issue: confirm that the placed
+    // item really enters the visible drawing path before clearing the cursor.
+    bool projectedAfterDrop = TryProjectFloorItem(previewHeldFloorItem,
+        out FloorItemDepth projectedDepth, out bool projectedRight);
+    bool enabledAfterDrop = IsPreviewFeatureEnabled(
+        GetFloorItemFeatureKey(previewHeldFloorItem));
+    Debug.Log("FLOOR PILE DROP TRACE: item=" + previewHeldFloorItem.type
+        + "; id=" + previewHeldFloorItemId
+        + "; tile=(" + previewHeldFloorItem.x + "," + previewHeldFloorItem.y + ")"
+        + "; corner=" + previewHeldFloorItem.cell
+        + "; target=" + (dropTarget == null ? "none" : dropTarget.type)
+        + "; projected=" + projectedAfterDrop
+        + "; depth=" + projectedDepth
+        + "; right=" + projectedRight
+        + "; featureEnabled=" + enabledAfterDrop
+        + "; floorCount=" + GetCurrentFloorItems().Length
+        + "; movedOrder=" + previewMovedFloorItemOrder.Count);
+    // One-shot visual diagnostics for all objects on the destination map tile.
+    // Does not modify item state, draw ordering, CSBwin offsets, or pickup.
+    var pileRenderTrace = new System.Text.StringBuilder("FLOOR PILE RENDER CHECK:");
+    foreach (FloorItemPlacement member in GetCurrentFloorItems())
+    {
+      if (member.x != previewHeldFloorItem.x || member.y != previewHeldFloorItem.y)
+        continue;
+      string memberId = GetFloorItemInstanceId(member);
+      bool memberProjected = TryProjectFloorItem(member,
+          out FloorItemDepth memberDepth, out bool memberRight);
+      bool memberEnabled = IsPreviewFeatureEnabled(GetFloorItemFeatureKey(member));
+      bool memberHasRect = TryGetFloorItemScreenRect(member, out Rect memberRect);
+      Texture2D memberTexture = GetFloorItemTexture(member);
+      pileRenderTrace.Append(" | ").Append(member.type)
+          .Append(" id=").Append(memberId)
+          .Append(" corner=").Append(member.cell)
+          .Append(" projected=").Append(memberProjected)
+          .Append(" depth=").Append(memberDepth)
+          .Append(" sideRight=").Append(memberRight)
+          .Append(" enabled=").Append(memberEnabled)
+          .Append(" texture=").Append(memberTexture == null ? "missing" : "ok")
+          .Append(" screenRect=").Append(memberHasRect ? memberRect.ToString() : "none")
+          .Append(" isMoved=").Append(previewMovedFloorItems.ContainsKey(memberId));
+    }
+    Debug.Log(pileRenderTrace.ToString());
     previewHeldFloorItemId = null;
     previewHeldFloorItem = null;
     previewHeldFloorItemCursor = null;
     previewFloorPickupCompleted = false;
     Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     HideHeldItemPointerOverlay();
+    traceNextFloorAppleBlit = true;
     RefreshEditModePreview();
     return true;
   }
@@ -33709,7 +34018,7 @@ private static void HandleGameViewPointerDown(
       overlay.BringToFront();
       s_heldItemPointerOverlay = overlay;
       s_heldItemPointerOverlayWindow = gameView;
-      Debug.Log("HELD ITEM CURSOR: created 16x16 inventory sprite overlay in GameView; scale follows GameView zoom");
+
     }
     // Refresh the texture even when the overlay already exists: picking up
     // a different inventory item must replace the previous held sprite.
@@ -34430,7 +34739,7 @@ private static void HandleGameViewPointerDown(
   {
     if (championSheetVisible)
     {
-      Debug.Log("TORCH PICKUP TRACE: blocked by champion sheet");
+
       return false;
     }
     ClearStaleHeldTorchState();
@@ -34443,7 +34752,7 @@ private static void HandleGameViewPointerDown(
     WallOrnamentPlacement ornament = FindVisibleEmptyTorchHolderF1();
     if (ornament == null)
     {
-      Debug.Log("TORCH PICKUP TRACE: no F1 EmptyTorchHolder placement at this viewpoint");
+
       return false;
     }
     if (logicalX < 0 || logicalX >= 224 || logicalY < 0 || logicalY >= 136)

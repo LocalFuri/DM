@@ -241,5 +241,6 @@
     "test": "Level 0 (5,11) East, apple dropped on bread; original vs Unity screenshot",
     "change": "Raise same-tile Bread left/right projected draw position by 2 pixels: breadF0LeftPreviewScreenTop and breadF0RightPreviewScreenTop 150 to 152; Apple anchor and CSBwin pile offsets unchanged.",
     "status": "Awaiting Unity visual verification; LIFO pickup already verified."
-  }
+  },
+  "floorPileDropTargetNote": "2026-10-14: Drop-target sprite hit test expanded by 5 logical viewport pixels and restricted to same screen half; CSBwin offsets, LIFO pickup and rendering unchanged. Test in Unity pending."
 }
