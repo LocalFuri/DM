@@ -69,7 +69,6 @@ internal static class DungeonMasterStartup
         if (TrySelectSize(width, height, out problem))
         {
             EditorApplication.update -= ApplyWhenReady;
-            Debug.Log("[DungeonMasterStartup] Game view set to " + width + "x" + height + " from " + SettingsPath + ".");
             return;
         }
 

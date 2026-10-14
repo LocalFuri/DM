@@ -6902,17 +6902,24 @@ private static void HandleGameViewPointerDown(
     PlayEditorPreviewClip(matchedClip);
   }
 
-  // Shared landing sound for thrown items that come to rest at visible F2/F3
-  // floor distances. Missing or ambiguous assets are errors; never substitute.
-  private void PlayItemLandingThudSound()
+  // Central item-category sound rule. Every weapon makes a metallic landing
+  // sound; every other pickup item makes a wooden landing sound. Call this
+  // from each item's generic throwing handler, using its actual item category.
+  // No substitute sound is allowed when the expected asset is missing.
+  private enum ThrownItemSoundCategory { Weapon, Other }
+
+  private void PlayItemLandingThudSound(ThrownItemSoundCategory category)
   {
-    string[] guids = AssetDatabase.FindAssets("Metallic_Thud t:AudioClip");
+    string fileName = category == ThrownItemSoundCategory.Weapon
+        ? "Metallic_Thud.wav" : "Wooden_Thud.wav";
+    string assetName = System.IO.Path.GetFileNameWithoutExtension(fileName);
+    string[] guids = AssetDatabase.FindAssets(assetName + " t:AudioClip");
     AudioClip matchedClip = null;
     int matches = 0;
     for (int i = 0; i < guids.Length; i++)
     {
       string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      if (!string.Equals(System.IO.Path.GetFileName(path), "Metallic_Thud.wav",
+      if (!string.Equals(System.IO.Path.GetFileName(path), fileName,
           System.StringComparison.OrdinalIgnoreCase))
         continue;
       matches++;
@@ -6920,8 +6927,8 @@ private static void HandleGameViewPointerDown(
     }
     if (matches != 1 || matchedClip == null)
     {
-      Debug.LogError("ITEM LANDING SOUND: expected exactly one Metallic_Thud.wav "
-          + "AudioClip in Assets; matching files=" + matches + ". No fallback used.");
+      Debug.LogError("ITEM LANDING SOUND: expected exactly one " + fileName
+          + " AudioClip in Assets; matching files=" + matches + ". No fallback used.");
       return;
     }
     PlayEditorPreviewClip(matchedClip);
@@ -33454,7 +33461,7 @@ private static void HandleGameViewPointerDown(
     while (previewTorchFlight.lastThudStage < lastSoundStage)
     {
       previewTorchFlight.lastThudStage++;
-      PlayItemLandingThudSound();
+      PlayItemLandingThudSound(ThrownItemSoundCategory.Weapon);
     }
     if (elapsed >= previewTorchFlight.steps * TorchFlightStageSeconds
         + TorchLandingDescentSeconds)
@@ -33475,7 +33482,7 @@ private static void HandleGameViewPointerDown(
         // One map tile ahead is rendered as TorchDown F2. Play the impact
         // only after the visible descent reaches that calibrated floor slot.
         if (flight.steps == 1)
-          PlayItemLandingThudSound();
+          PlayItemLandingThudSound(ThrownItemSoundCategory.Weapon);
       }
       Debug.Log("TORCH THROW: landed at "
           + (flight.startX + flight.forwardX * flight.steps) + ","
