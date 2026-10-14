@@ -28270,6 +28270,9 @@ private static void HandleGameViewPointerDown(
   private readonly HashSet<string> previewPickedFloorItemIds = new HashSet<string>();
   private readonly Dictionary<string, FloorItemPlacement> previewMovedFloorItems =
       new Dictionary<string, FloorItemPlacement>();
+  // Explicit insertion order: dictionary enumeration order is not gameplay order.
+  // Source map items precede moved items; moved items keep their insertion order.
+  private readonly List<string> previewMovedFloorItemOrder = new List<string>();
   private string previewHeldFloorItemId;
   private FloorItemPlacement previewHeldFloorItem;
   // Set only after a successful click transfer; a stale record is not a held cursor.
@@ -28291,10 +28294,16 @@ private static void HandleGameViewPointerDown(
           && !(previewFloorPickupCompleted && id == previewHeldFloorItemId))
         items.Add(source);
     }
-    foreach (FloorItemPlacement moved in previewMovedFloorItems.Values)
-      if (!(previewFloorPickupCompleted
-          && GetFloorItemInstanceId(moved) == previewHeldFloorItemId))
+    foreach (string id in previewMovedFloorItemOrder)
+    {
+      if (!previewMovedFloorItems.TryGetValue(id, out FloorItemPlacement moved))
+      {
+        Debug.LogError("FLOOR FIFO: ordered item '" + id + "' has no placement.");
+        continue;
+      }
+      if (!(previewFloorPickupCompleted && id == previewHeldFloorItemId))
         items.Add(moved);
+    }
     return items.ToArray();
   }
 
@@ -33297,13 +33306,28 @@ private static void HandleGameViewPointerDown(
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null) return false;
     var items = GetCurrentFloorItems();
-    // Reverse order matches later sprites drawn over earlier ones.
+    // FIFO within a floor corner. Identify a clicked corner from any sprite
+    // in that corner, then transfer its earliest placed visible item.
+    FloorItemPlacement clicked = null;
     for (int i = items.Length - 1; i >= 0; --i)
     {
+      FloorItemPlacement candidate = items[i];
+      if (IsPreviewFeatureEnabled(GetFloorItemFeatureKey(candidate))
+          && TryGetFloorItemScreenRect(candidate, out Rect hitRect)
+          && hitRect.Contains(new Vector2(x, y)))
+      {
+        clicked = candidate;
+        break;
+      }
+    }
+    if (clicked == null) return false;
+    for (int i = 0; i < items.Length; ++i)
+    {
       FloorItemPlacement item = items[i];
-      if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(item))
-          || !TryGetFloorItemScreenRect(item, out Rect rect)
-          || !rect.Contains(new Vector2(x, y))) continue;
+      if (item.x != clicked.x || item.y != clicked.y
+          || !string.Equals(item.cell, clicked.cell, System.StringComparison.OrdinalIgnoreCase)
+          || !IsPreviewFeatureEnabled(GetFloorItemFeatureKey(item))
+          || !TryGetFloorItemScreenRect(item, out Rect rect)) continue;
       // Inventory art is always the explicitly named 16x16 sprite, never
       // the differently sized floor sprite. Do not search globally or fall back.
       string path = "Assets/Art/Food/" + item.type + "_16x16.png";
@@ -33316,7 +33340,11 @@ private static void HandleGameViewPointerDown(
         return true; // Leave the item on the ground.
       }
       string id = GetFloorItemInstanceId(item);
-      if (previewMovedFloorItems.ContainsKey(id)) previewMovedFloorItems.Remove(id);
+      if (previewMovedFloorItems.ContainsKey(id))
+      {
+        previewMovedFloorItems.Remove(id);
+        previewMovedFloorItemOrder.Remove(id);
+      }
       else previewPickedFloorItemIds.Add(id);
       previewHeldFloorItemId = id;
       // Never mutate the immutable source map placement on subsequent drops.
@@ -33353,6 +33381,7 @@ private static void HandleGameViewPointerDown(
     previewHeldFloorItem.cell = FloorCornerForFacing(previewFacing, x >= 112);
     previewHeldFloorItem.instanceId = previewHeldFloorItemId;
     previewMovedFloorItems.Add(previewHeldFloorItemId, previewHeldFloorItem);
+    previewMovedFloorItemOrder.Add(previewHeldFloorItemId);
     previewHeldFloorItemId = null;
     previewHeldFloorItem = null;
     previewHeldFloorItemCursor = null;
