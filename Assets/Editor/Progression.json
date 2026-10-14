@@ -225,11 +225,10 @@
     },
     "deployment": "Copy archives preserving original Assets/... paths; never create extra copies of existing scripts."
   },
-  "floorItemFIFO20261014": {
-    "rule": "FIFO per map tile and floor sub-square (corner): first placed item is first picked up.",
-    "rendering": "Render items in placement order, so later items may visually overlap earlier items; clicking any visible item in the corner picks the oldest available item.",
-    "identity": "Keep original item instance ID while transferring to cursor and back to floor.",
-    "implementation": "Explicit ordered IDs for moved items; original map items precede moved items. Validated by code inspection, awaiting Unity gameplay test.",
-    "scope": "Current prototype Apple and Bread floor interactions; other imported categories are not yet connected to this renderer."
+  "floorItemLIFO20261014": {
+    "rule": "Last In, First Out: at the same floor position, the most recently dropped item is picked up first, even if it overlaps an older item such as bread.",
+    "implementation": "Use an explicit ordered floor-item list and search newest-to-oldest when selecting pickup candidates; keep stable item IDs and original item placements.",
+    "example": "Bread on floor, apple dropped onto bread: apple picked first, bread remains.",
+    "status": "Code revised; pending Unity verification."
   }
 }

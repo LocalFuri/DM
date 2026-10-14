@@ -162,14 +162,14 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private int breadF0LeftPreviewX = 50;
   [System.NonSerialized]
-  private int breadF0LeftPreviewScreenTop = 150;
+  private int breadF0LeftPreviewScreenTop = 147;
 
   // Same-tile F0 right slot. Stored sub-square E at (5,11) facing North
   // projects here. Measured from that original: X=141, screen top Y=150.
   [System.NonSerialized]
   private int breadF0RightPreviewX = 141;
   [System.NonSerialized]
-  private int breadF0RightPreviewScreenTop = 150;
+  private int breadF0RightPreviewScreenTop = 147;
 
   // One-tile-ahead bread. Measured on the original (4,11) East view:
   // stored E projects left, X=72, screen top Y=121, size 17x10.
@@ -28298,7 +28298,7 @@ private static void HandleGameViewPointerDown(
     {
       if (!previewMovedFloorItems.TryGetValue(id, out FloorItemPlacement moved))
       {
-        Debug.LogError("FLOOR FIFO: ordered item '" + id + "' has no placement.");
+        Debug.LogError("FLOOR ITEM ORDER: ordered item '" + id + "' has no placement.");
         continue;
       }
       if (!(previewFloorPickupCompleted && id == previewHeldFloorItemId))
@@ -33306,8 +33306,8 @@ private static void HandleGameViewPointerDown(
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null) return false;
     var items = GetCurrentFloorItems();
-    // FIFO within a floor corner. Identify a clicked corner from any sprite
-    // in that corner, then transfer its earliest placed visible item.
+    // LIFO in a floor pile. Locate the clicked pile by its visible sprite,
+    // then transfer its most recently placed item first.
     FloorItemPlacement clicked = null;
     for (int i = items.Length - 1; i >= 0; --i)
     {
@@ -33321,13 +33321,21 @@ private static void HandleGameViewPointerDown(
       }
     }
     if (clicked == null) return false;
-    for (int i = 0; i < items.Length; ++i)
+    // Newest-first pickup: use the clicked sprite to locate the pile, then
+    // select the LAST placed item belonging to that pile. Sprites may have
+    // differently sized hit rectangles but share an overlapping floor pile.
+    if (!TryGetFloorItemScreenRect(clicked, out Rect clickedRect)) return false;
+    for (int i = items.Length - 1; i >= 0; --i)
     {
       FloorItemPlacement item = items[i];
-      if (item.x != clicked.x || item.y != clicked.y
-          || !string.Equals(item.cell, clicked.cell, System.StringComparison.OrdinalIgnoreCase)
-          || !IsPreviewFeatureEnabled(GetFloorItemFeatureKey(item))
+      if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(item))
           || !TryGetFloorItemScreenRect(item, out Rect rect)) continue;
+      bool sameCorner = item.x == clicked.x && item.y == clicked.y
+          && string.Equals(item.cell, clicked.cell,
+              System.StringComparison.OrdinalIgnoreCase);
+      bool overlappingSameFloor = item.x == clicked.x && item.y == clicked.y
+          && rect.Overlaps(clickedRect);
+      if (!sameCorner && !overlappingSameFloor) continue;
       // Inventory art is always the explicitly named 16x16 sprite, never
       // the differently sized floor sprite. Do not search globally or fall back.
       string path = "Assets/Art/Food/" + item.type + "_16x16.png";
