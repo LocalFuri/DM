@@ -230,5 +230,16 @@
     "implementation": "Use an explicit ordered floor-item list and search newest-to-oldest when selecting pickup candidates; keep stable item IDs and original item placements.",
     "example": "Bread on floor, apple dropped onto bread: apple picked first, bread remains.",
     "status": "Code revised; pending Unity verification."
+  },
+  "csbwinFloorStacking20261014": {
+    "referenceFile": "Assets/Editor/CSBwin_Floor_Item_Offsets.json",
+    "implementation": "Read 48 computed offset pairs from original graphics.dat extraction; apply per-corner successive-item delta relative to first item; preserve existing single-item ViewEdit anchors and LIFO pickup.",
+    "status": "Unity verification required. Exact original viewpoint class anchor and traversal not fully ported; do not treat prototype as pixel-verified.",
+    "source": "CSBwin Code51a4.cpp currentSmallOffset sequence and graphics.dat graphic 0x22e"
+  },
+  "floorPileAlignmentCalibration20261014": {
+    "test": "Level 0 (5,11) East, apple dropped on bread; original vs Unity screenshot",
+    "change": "Raise same-tile Bread left/right projected draw position by 2 pixels: breadF0LeftPreviewScreenTop and breadF0RightPreviewScreenTop 150 to 152; Apple anchor and CSBwin pile offsets unchanged.",
+    "status": "Awaiting Unity visual verification; LIFO pickup already verified."
   }
 }

@@ -162,14 +162,14 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private int breadF0LeftPreviewX = 50;
   [System.NonSerialized]
-  private int breadF0LeftPreviewScreenTop = 147;
+  private int breadF0LeftPreviewScreenTop = 152;
 
   // Same-tile F0 right slot. Stored sub-square E at (5,11) facing North
   // projects here. Measured from that original: X=141, screen top Y=150.
   [System.NonSerialized]
   private int breadF0RightPreviewX = 141;
   [System.NonSerialized]
-  private int breadF0RightPreviewScreenTop = 147;
+  private int breadF0RightPreviewScreenTop = 152;
 
   // One-tile-ahead bread. Measured on the original (4,11) East view:
   // stored E projects left, X=72, screen top Y=121, size 17x10.
@@ -28417,6 +28417,82 @@ private static void HandleGameViewPointerDown(
     return null;
   }
 
+  // Extracted original CSBwin graphic 0x22e: per-distance sixteen-entry
+  // displacement sequence. Reference data is kept in Assets/Editor.
+  private const string CsbFloorOffsetsPath =
+      "Assets/Editor/CSBwin_Floor_Item_Offsets.json";
+  private Vector2Int[][] csbFloorOffsetRows;
+  private bool csbFloorOffsetsLoadAttempted;
+
+  private bool EnsureCsbFloorOffsetsLoaded()
+  {
+    if (csbFloorOffsetRows != null) return true;
+    if (csbFloorOffsetsLoadAttempted) return false;
+    csbFloorOffsetsLoadAttempted = true;
+    TextAsset source = AssetDatabase.LoadAssetAtPath<TextAsset>(CsbFloorOffsetsPath);
+    if (source == null)
+    {
+      Debug.LogError("CSBwin floor offsets: required JSON missing at " + CsbFloorOffsetsPath);
+      return false;
+    }
+    // JsonUtility cannot deserialize arrays nested directly within arrays.
+    // Parse only the fixed 48 x/y pairs from the extracted reference block.
+    Match block = Regex.Match(source.text,
+        @"""computedOffsetsByDistance""\s*:\s*\[(.*?)\]\s*,\s*""implementationNotes""",
+        RegexOptions.Singleline);
+    if (!block.Success)
+    {
+      Debug.LogError("CSBwin floor offsets: computedOffsetsByDistance block is invalid in " + CsbFloorOffsetsPath);
+      return false;
+    }
+    MatchCollection pairs = Regex.Matches(block.Groups[1].Value,
+        @"\{\s*""x""\s*:\s*(-?\d+)\s*,\s*""y""\s*:\s*(-?\d+)\s*\}");
+    if (pairs.Count != 48)
+    {
+      Debug.LogError("CSBwin floor offsets: expected 48 x/y pairs, found " + pairs.Count);
+      return false;
+    }
+    Vector2Int[][] parsed = new Vector2Int[3][];
+    for (int depth = 0; depth < 3; depth++)
+    {
+      parsed[depth] = new Vector2Int[16];
+      for (int i = 0; i < 16; i++)
+      {
+        Match pair = pairs[depth * 16 + i];
+        parsed[depth][i] = new Vector2Int(
+            int.Parse(pair.Groups[1].Value), int.Parse(pair.Groups[2].Value));
+      }
+    }
+    csbFloorOffsetRows = parsed;
+    return true;
+  }
+
+  private static int CsbFloorAbsoluteCorner(string cell)
+  {
+    if (string.Equals(cell, "N", System.StringComparison.OrdinalIgnoreCase)) return 0;
+    if (string.Equals(cell, "E", System.StringComparison.OrdinalIgnoreCase)) return 1;
+    if (string.Equals(cell, "S", System.StringComparison.OrdinalIgnoreCase)) return 2;
+    if (string.Equals(cell, "W", System.StringComparison.OrdinalIgnoreCase)) return 3;
+    Debug.LogError("CSBwin floor offsets: unknown floor sub-square '" + cell + "'.");
+    return -1;
+  }
+
+  private Vector2Int GetCsbPileDisplacement(FloorItemPlacement item,
+      FloorItemDepth depth, int pileIndex)
+  {
+    if (pileIndex == 0 || csbFloorOffsetRows == null) return Vector2Int.zero;
+    int corner = CsbFloorAbsoluteCorner(item.cell);
+    if (corner < 0) return Vector2Int.zero;
+    // Per Code51a4.cpp: initial index = (CurAbsPos & 1) << 3.
+    // Use delta relative to the first item so existing ViewEdit single-item
+    // screen anchors remain calibrated and unchanged.
+    int initial = (corner & 1) << 3;
+    int depthIndex = depth == FloorItemDepth.SameTile ? 0 :
+        depth == FloorItemDepth.OneAhead ? 1 : 2;
+    Vector2Int[] offsets = csbFloorOffsetRows[depthIndex];
+    return offsets[(initial + pileIndex) & 15] - offsets[initial];
+  }
+
   private void BlitFloorItemsIntoPreview(Color32[] pixels)
   {
     if (pixels == null)
@@ -28427,6 +28503,8 @@ private static void HandleGameViewPointerDown(
       return;
 
     FloorItemPlacement[] items = GetCurrentFloorItems();
+    if (!EnsureCsbFloorOffsetsLoaded()) return;
+    var pileCounts = new Dictionary<string, int>(System.StringComparer.Ordinal);
     for (int i = 0; i < items.Length; i++)
     {
       FloorItemPlacement item = items[i];
@@ -28449,7 +28527,11 @@ private static void HandleGameViewPointerDown(
         continue;
       }
 
-      BlitProjectedFloorItem(pixels, item, texture, depth, isRight);
+      string pileKey = item.x + ":" + item.y + ":" + item.cell;
+      pileCounts.TryGetValue(pileKey, out int indexInPile);
+      pileCounts[pileKey] = indexInPile + 1;
+      Vector2Int pileOffset = GetCsbPileDisplacement(item, depth, indexInPile);
+      BlitProjectedFloorItem(pixels, item, texture, depth, isRight, pileOffset);
     }
   }
 
@@ -28458,7 +28540,7 @@ private static void HandleGameViewPointerDown(
       FloorItemPlacement item,
       Texture2D texture,
       FloorItemDepth depth,
-      bool isRight)
+      bool isRight, Vector2Int pileOffset)
   {
     bool apple = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
     bool bread = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
@@ -28473,7 +28555,7 @@ private static void HandleGameViewPointerDown(
       int top = apple
           ? (isRight ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop)
           : (isRight ? breadF0RightPreviewScreenTop : breadF0LeftPreviewScreenTop);
-      BlitPieceIntoPreview(pixels, texture, x, PreviewHeight - top - texture.height, false);
+      BlitPieceIntoPreview(pixels, texture, x + pileOffset.x, PreviewHeight - top - texture.height - pileOffset.y, false);
       return;
     }
 
@@ -28488,7 +28570,7 @@ private static void HandleGameViewPointerDown(
           ? (isRight ? appleF2RightPreviewScreenTop : appleF2LeftPreviewScreenTop)
           : (isRight ? breadF2RightPreviewScreenTop : breadF2LeftPreviewScreenTop);
       BlitPieceScaledIntoPreview(
-          pixels, texture, x, PreviewHeight - top - height, width, height, false,
+          pixels, texture, x + pileOffset.x, PreviewHeight - top - height - pileOffset.y, width, height, false,
           skipCyanTransparencyKey: apple,
           colorMap: WallOrnamentMediumColorMap);
       return;
@@ -28502,7 +28584,7 @@ private static void HandleGameViewPointerDown(
     int f3X = isRight ? appleF3RightPreviewX : appleF3LeftPreviewX;
     int f3Top = isRight ? appleF3RightPreviewScreenTop : appleF3LeftPreviewScreenTop;
     BlitPieceScaledIntoPreview(
-        pixels, texture, f3X, PreviewHeight - f3Top - AppleF3Height,
+        pixels, texture, f3X + pileOffset.x, PreviewHeight - f3Top - AppleF3Height - pileOffset.y,
         AppleF3Width, AppleF3Height, false,
         skipCyanTransparencyKey: true,
         colorMap: WallOrnamentFarColorMap);
