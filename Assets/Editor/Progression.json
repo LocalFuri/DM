@@ -1,6 +1,6 @@
 {
   "project": "Dungeon Master Unity",
-  "checkpointDate": "2026-10-12",
+  "checkpointDate": "2026-10-14",
   "checkpointPurpose": "Resume verified Dungeon Features and torch mouse pickup, then implement putting the torch back and throwing it",
   "mainScript": "Assets/Editor/ViewportLayoutEditor.cs",
   "lastVerifiedGitCommit": null,
@@ -157,14 +157,18 @@
     "idReuse": "Do not recycle consumed-item IDs; allocate new IDs",
     "locations": "Mouse hand, wall fixture, floor tile/corner, champion inventory, container; one location per item",
     "stacking": "Support multiple independent records at one floor corner without small fixed limits",
-    "currentLimitations": "No inventory placement, return-to-holder gameplay, floor dropping, throwing, or save/load integration yet; burning/charges not integrated with pickup"
+    "currentLimitations": "No inventory placement, return-to-holder gameplay, floor dropping, throwing, or save/load integration yet; burning/charges not integrated with pickup",
+    "universalThrowingRule": "Every item the player can pick up can be thrown. Implement throwing as a generic item interaction, never as a torch-only special case.",
+    "throwIdentityRule": "Throwing, landing, and subsequent pickup transfer the same item instance and ID, preserving item properties; never duplicate or re-create items.",
+    "throwRenderingRule": "Ground rendering for thrown items requires the appropriate explicit item asset at supported depths; missing assets produce errors rather than fallbacks."
   },
   "nextImplementationPlan": [
     "Make a Git commit of current verified working files before further changes; capture actual commit hash in lastVerifiedGitCommit",
     "Implement generic transfer cursor-to-wall-holder with validation of holder occupancy and torch compatibility; do not create a duplicate item",
     "Verify Full/Empty graphic state and normal pointer restoration after putting torch back",
     "Implement generic throwing/drop from cursor to floor using facing, tile/corner, collisions and identity retention; avoid hardcoded (4,14) logic",
-    "Extend real item registry integration and persistence later; verify original game behavior where unknown"
+    "Extend real item registry integration and persistence later; verify original game behavior where unknown",
+    "Generalize throwing to every pickup-capable item; torch is the initial test case only. Keep item-specific data separate from generic movement, collision, landing, sound, and pickup logic."
   ],
   "developmentDefaults": {
     "gameView": {
@@ -184,5 +188,41 @@
       "trigger": "Unity Editor domain reload/project open, not Unity Hub itself",
       "note": "Requires a separate Editor script; JSON alone cannot change Game view resolution."
     }
+  },
+  "throwingSoundRules20261014": {
+    "scope": "All pickup items; weapon category uses Metallic_Thud.wav, all other categories use Wooden_Thud.wav",
+    "throwSound": "Combat_Attack.wav on successful throw (current prototype)",
+    "missingSoundPolicy": "Explicit Unity Console error; no fallback",
+    "implementationStatus": "Category-selectable landing audio helper implemented in ViewportLayoutEditor.cs; current thrown item handler is torch only; generic all-item throwing not yet implemented",
+    "note": "User wrote Mettalic_Thud; existing C# expects Metallic_Thud.wav. Preserve existing asset spelling until actual project sound file verified."
+  },
+  "throwingDistanceAndAudio20261014": {
+    "maximumThrowDistance": "F3, exactly three tiles; never F4",
+    "impactVolumeByDistance": {
+      "F1": 1.0,
+      "F2": 0.75,
+      "F3": 0.5
+    },
+    "impactSoundSelection": {
+      "weapons": "Metallic_Thud.wav",
+      "allOthers": "Wooden_Thud.wav"
+    },
+    "impactTiming": "once at final landing; no intermediate flight thuds",
+    "currentImplementation": "Torch throwing verified only in prior user tests; latest changes untested in Unity; generic audio method handles category but other item throwing handlers are not yet connected",
+    "configuration": "Current audio attenuation is defined as constants in ViewportLayoutEditor.cs; add Inspector controls when DungeonAudioSettings.cs is available"
+  },
+  "audioPolicy": {
+    "mandatoryRule": "Every new game sound must be assigned through the existing DungeonAudioSettings ScriptableObject with its own [Range(0f,1f)] Inspector volume slider. Do not introduce direct clip lookups, hardcoded volumes or alternate audio managers. Missing expected assignments must log explicit Unity Console errors; no fallback sounds.",
+    "asset": "Assets/Audio/AudioSettings/AudioSettings.asset",
+    "script": "Assets/Scripts/Dungeon/DungeonAudioSettings.cs",
+    "throwing": {
+      "throw": "itemThrowSound / itemThrowVolume (Combat_Attack.wav)",
+      "weaponImpact": "weaponImpactSound / weaponImpactVolume (Metallic_Thud.wav)",
+      "otherImpact": "otherItemImpactSound / otherItemImpactVolume (Wooden_Thud.wav)",
+      "distanceMultipliers": "itemImpactF1Volume, itemImpactF2Volume, itemImpactF3Volume",
+      "effectiveImpactVolume": "category base volume multiplied by distance volume",
+      "maxDistance": "F3"
+    },
+    "deployment": "Copy archives preserving original Assets/... paths; never create extra copies of existing scripts."
   }
 }

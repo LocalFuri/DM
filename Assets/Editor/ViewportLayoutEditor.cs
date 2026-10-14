@@ -1124,6 +1124,12 @@ public class ViewportLayoutEditor : EditorWindow
   private float cachedChampionResurrectPreviewVolume = -1f;
   private AudioClip cachedSwitchPreviewClip;
   private float cachedSwitchPreviewVolume = -1f;
+  private AudioClip cachedThrowPreviewClip;
+  private float cachedThrowPreviewVolume = -1f;
+  private AudioClip cachedWeaponThudPreviewClip;
+  private float cachedWeaponThudPreviewVolume = -1f;
+  private AudioClip cachedOtherThudPreviewClip;
+  private float cachedOtherThudPreviewVolume = -1f;
   // Recruitment order for Champion Hall mirrors. The party can contain up to
   // four Champions. Slot positions are added/calibrated explicitly.
   [SerializeField] private List<string> recruitedChampionNames = new List<string>(4);
@@ -6877,29 +6883,24 @@ private static void HandleGameViewPointerDown(
       playMethod.Invoke(null, new object[] { clip, 0, false });
   }
 
-  // Shared item-throw sound: only successful throws play this clip.
-  // Missing or ambiguous assets are errors; never substitute another clip.
+  // Shared throw sound: assigned and adjusted through DungeonAudioSettings.
+  // Missing references are errors; never search for or substitute other clips.
   private void PlayItemThrowSound()
   {
-    string[] guids = AssetDatabase.FindAssets("Combat_Attack t:AudioClip");
-    AudioClip matchedClip = null;
-    int matches = 0;
-    for (int i = 0; i < guids.Length; i++)
+    DungeonAudioSettings settings = GetDungeonAudioSettings();
+    if (settings == null)
     {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      if (!string.Equals(System.IO.Path.GetFileName(path), "Combat_Attack.wav",
-          System.StringComparison.OrdinalIgnoreCase))
-        continue;
-      matches++;
-      matchedClip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
-    }
-    if (matches != 1 || matchedClip == null)
-    {
-      Debug.LogError("ITEM THROW SOUND: expected exactly one Combat_Attack.wav "
-          + "AudioClip in Assets; matching files=" + matches + ". No fallback used.");
+      Debug.LogError("ITEM THROW SOUND: DungeonAudioSettings asset missing.");
       return;
     }
-    PlayEditorPreviewClip(matchedClip);
+    if (settings.itemThrowSound == null)
+    {
+      Debug.LogError("ITEM THROW SOUND: assign Combat_Attack.wav to AudioSettings > Item Throw Sound.");
+      return;
+    }
+    AudioClip clip = GetVolumeAdjustedPreviewClip(settings.itemThrowSound,
+        settings.itemThrowVolume, ref cachedThrowPreviewClip, ref cachedThrowPreviewVolume);
+    if (clip != null) PlayEditorPreviewClip(clip);
   }
 
   // Central item-category sound rule. Every weapon makes a metallic landing
@@ -6908,30 +6909,70 @@ private static void HandleGameViewPointerDown(
   // No substitute sound is allowed when the expected asset is missing.
   private enum ThrownItemSoundCategory { Weapon, Other }
 
-  private void PlayItemLandingThudSound(ThrownItemSoundCategory category)
+  // Sound attenuation uses actual distance travelled, never flight frame index.
+  // F3 is the maximum legal destination for every throwable item.
+  private const int MaximumItemThrowDistance = 3;
+  private float ItemImpactVolumeAtDistance(int distance)
   {
-    string fileName = category == ThrownItemSoundCategory.Weapon
-        ? "Metallic_Thud.wav" : "Wooden_Thud.wav";
-    string assetName = System.IO.Path.GetFileNameWithoutExtension(fileName);
-    string[] guids = AssetDatabase.FindAssets(assetName + " t:AudioClip");
-    AudioClip matchedClip = null;
-    int matches = 0;
-    for (int i = 0; i < guids.Length; i++)
+    DungeonAudioSettings settings = GetDungeonAudioSettings();
+    if (settings == null)
     {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      if (!string.Equals(System.IO.Path.GetFileName(path), fileName,
-          System.StringComparison.OrdinalIgnoreCase))
-        continue;
-      matches++;
-      matchedClip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+      Debug.LogError("ITEM IMPACT: DungeonAudioSettings asset is missing; "
+          + "cannot play impact without configured distance volume.");
+      return -1f;
     }
-    if (matches != 1 || matchedClip == null)
+    switch (distance)
     {
-      Debug.LogError("ITEM LANDING SOUND: expected exactly one " + fileName
-          + " AudioClip in Assets; matching files=" + matches + ". No fallback used.");
+      case 0:
+      case 1: return Mathf.Clamp01(settings.itemImpactF1Volume);
+      case 2: return Mathf.Clamp01(settings.itemImpactF2Volume);
+      case 3: return Mathf.Clamp01(settings.itemImpactF3Volume);
+      default:
+        Debug.LogError("ITEM IMPACT: illegal throw distance " + distance
+            + "; maximum is F3.");
+        return -1f;
+    }
+  }
+
+  private void PlayItemLandingThudSound(ThrownItemSoundCategory category, int distance)
+  {
+    if (distance < 0 || distance > MaximumItemThrowDistance)
+    {
+      Debug.LogError("ITEM IMPACT: invalid impact distance " + distance);
       return;
     }
-    PlayEditorPreviewClip(matchedClip);
+    DungeonAudioSettings settings = GetDungeonAudioSettings();
+    if (settings == null)
+    {
+      Debug.LogError("ITEM IMPACT: DungeonAudioSettings asset missing.");
+      return;
+    }
+    bool weapon = category == ThrownItemSoundCategory.Weapon;
+    AudioClip source = weapon ? settings.weaponImpactSound : settings.otherItemImpactSound;
+    if (source == null)
+    {
+      Debug.LogError(weapon
+          ? "ITEM IMPACT: assign Metallic_Thud.wav to AudioSettings > Weapon Impact Sound."
+          : "ITEM IMPACT: assign Wooden_Thud.wav to AudioSettings > Other Item Impact Sound.");
+      return;
+    }
+    float distanceVolume = ItemImpactVolumeAtDistance(distance);
+    if (distanceVolume < 0f) return;
+    float baseVolume = weapon ? settings.weaponImpactVolume : settings.otherItemImpactVolume;
+    float volume = Mathf.Clamp01(baseVolume) * distanceVolume;
+    AudioClip adjusted;
+    if (category == ThrownItemSoundCategory.Weapon)
+      adjusted = GetVolumeAdjustedPreviewClip(source, volume,
+          ref cachedWeaponThudPreviewClip, ref cachedWeaponThudPreviewVolume);
+    else
+      adjusted = GetVolumeAdjustedPreviewClip(source, volume,
+          ref cachedOtherThudPreviewClip, ref cachedOtherThudPreviewVolume);
+    if (adjusted == null)
+    {
+      Debug.LogError("ITEM IMPACT: could not prepare assigned impact clip " + source.name);
+      return;
+    }
+    PlayEditorPreviewClip(adjusted);
   }
 
   private void PlayLevel0SwitchSound()
@@ -33291,7 +33332,6 @@ private static void HandleGameViewPointerDown(
     public int level, startX, startY, forwardX, forwardY, steps;
     public string corner;
     public double started;
-    public int lastThudStage; // 0=none, 1=F2, 2=F3.
     public bool landingRight;
   }
   private TorchFlight previewTorchFlight;
@@ -33400,7 +33440,7 @@ private static void HandleGameViewPointerDown(
       return true; // Explicit asset error, do not lose the item.
     DungeonMap.GetForwardOffset(previewFacing, out int dx, out int dy);
     int steps = 0;
-    for (int distance = 1; distance <= 3; distance++)
+    for (int distance = 1; distance <= MaximumItemThrowDistance; distance++)
     {
       int tx = previewX + dx * distance;
       int ty = previewY + dy * distance;
@@ -33450,19 +33490,7 @@ private static void HandleGameViewPointerDown(
   {
     if (previewTorchFlight == null) return;
     double elapsed = EditorApplication.timeSinceStartup - previewTorchFlight.started;
-    // Sound follows the displayed flight stages, not the number of map tiles
-    // remaining at the final landing. Trigger each transition exactly once.
-    int currentStage = Mathf.Min(previewTorchFlight.steps - 1,
-        (int)(elapsed / TorchFlightStageSeconds));
-    // For the one-tile F2 landing test, the thud belongs to actual floor
-    // contact, not the start of a flight stage.
-    int lastSoundStage = previewTorchFlight.steps == 1
-        ? 0 : Mathf.Min(2, currentStage);
-    while (previewTorchFlight.lastThudStage < lastSoundStage)
-    {
-      previewTorchFlight.lastThudStage++;
-      PlayItemLandingThudSound(ThrownItemSoundCategory.Weapon);
-    }
+    // Do not play impact sounds during flight; contact happens only once.
     if (elapsed >= previewTorchFlight.steps * TorchFlightStageSeconds
         + TorchLandingDescentSeconds)
     {
@@ -33479,10 +33507,8 @@ private static void HandleGameViewPointerDown(
           y = flight.startY + flight.forwardY * flight.steps,
           corner = flight.corner
         });
-        // One map tile ahead is rendered as TorchDown F2. Play the impact
-        // only after the visible descent reaches that calibrated floor slot.
-        if (flight.steps == 1)
-          PlayItemLandingThudSound(ThrownItemSoundCategory.Weapon);
+        // One impact at the final physical destination, including F2/F3.
+        PlayItemLandingThudSound(ThrownItemSoundCategory.Weapon, flight.steps);
       }
       Debug.Log("TORCH THROW: landed at "
           + (flight.startX + flight.forwardX * flight.steps) + ","

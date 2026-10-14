@@ -24,4 +24,36 @@ public class DungeonAudioSettings : ScriptableObject
 
     [Range(0f, 1f)]
     public float switchVolume = 1f;
+
+    [Header("Thrown Items - Sounds and Base Volumes")]
+    [Tooltip("Played once when an item is successfully thrown. Assign Combat_Attack.wav.")]
+    public AudioClip itemThrowSound;
+
+    [Range(0f, 1f)]
+    public float itemThrowVolume = 1f;
+
+    [Tooltip("Played on impact for weapons. Assign Metallic_Thud.wav.")]
+    public AudioClip weaponImpactSound;
+
+    [Range(0f, 1f)]
+    public float weaponImpactVolume = 1f;
+
+    [Tooltip("Played on impact for every non-weapon item. Assign Wooden_Thud.wav.")]
+    public AudioClip otherItemImpactSound;
+
+    [Range(0f, 1f)]
+    public float otherItemImpactVolume = 1f;
+
+    [Header("Thrown Item Impact by Distance")]
+    [Tooltip("Impact volume when an item lands or hits an obstacle at F1.")]
+    [Range(0f, 1f)]
+    public float itemImpactF1Volume = 1f;
+
+    [Tooltip("Impact volume when an item lands or hits an obstacle at F2.")]
+    [Range(0f, 1f)]
+    public float itemImpactF2Volume = 0.75f;
+
+    [Tooltip("Impact volume when an item lands or hits an obstacle at F3 (maximum throw distance).")]
+    [Range(0f, 1f)]
+    public float itemImpactF3Volume = 0.5f;
 }
