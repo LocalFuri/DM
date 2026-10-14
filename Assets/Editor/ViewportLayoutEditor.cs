@@ -2032,6 +2032,94 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
+  private void RestoreOriginalFloorTestItemsAfterReload()
+  {
+    previewPickedFloorItemIds.Clear();
+    previewMovedFloorItems.Clear();
+    previewMovedFloorItemOrder.Clear();
+    previewHeldFloorItemId = null;
+    previewHeldFloorItem = null;
+    previewHeldFloorItemCursor = null;
+    previewFloorPickupCompleted = false;
+    foreach (FloorItemPlacement item in HallOfChampionsFloorItems)
+      previewDisabledFeatureKeys.Remove(GetFloorItemFeatureKey(item));
+  }
+
+  // Explicit editor recovery for the two original Hall of Champions test items.
+  // Reloading C# alone is not a reliable way to reset an existing EditorWindow's
+  // preview interaction state, so expose an intentional reset command.
+  [MenuItem("Tools/Check Original Apple and Bread")]
+  private static void CheckOriginalAppleAndBreadMenu()
+  {
+    ViewportLayoutEditor[] windows = Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>();
+    Debug.Log("FLOOR ITEM CHECK: source records: " + HallOfChampionsFloorItems.Length
+        + "; Apple expected Level 0 (4,9), corner N, asset " + AppleGroundAssetPath
+        + "; Bread expected Level 0 (5,11), corner E, asset " + BreadGroundAssetPath);
+    foreach (FloorItemPlacement source in HallOfChampionsFloorItems)
+    {
+      string path = string.Equals(source.type, "Apple", System.StringComparison.OrdinalIgnoreCase)
+          ? AppleGroundAssetPath : BreadGroundAssetPath;
+      Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (sprite == null)
+        Debug.LogError("FLOOR ITEM CHECK: " + source.type + " MISSING ART at " + path);
+      else if (!sprite.isReadable)
+        Debug.LogError("FLOOR ITEM CHECK: " + source.type + " sprite NOT READABLE: " + path);
+      else
+        Debug.Log("FLOOR ITEM CHECK: " + source.type + " sprite OK " + sprite.width + "x" + sprite.height);
+    }
+    if (windows == null || windows.Length == 0)
+    {
+      Debug.LogWarning("FLOOR ITEM CHECK: ViewEdit window is not open; open it for projection diagnostics.");
+      return;
+    }
+    foreach (ViewportLayoutEditor window in windows)
+    {
+      window.EnsurePreviewMiniMapLoaded();
+      Debug.Log("FLOOR ITEM CHECK: level=" + window.previewDungeonLevel
+          + ", player=(" + window.previewX + "," + window.previewY + ") facing=" + window.previewFacing
+          + ", minimap=" + (window.previewMiniMap == null ? "MISSING" : "loaded")
+          + ", activeFloorItems=" + window.GetCurrentFloorItems().Length);
+      foreach (FloorItemPlacement source in HallOfChampionsFloorItems)
+      {
+        string id = GetFloorItemInstanceId(source);
+        bool projected = window.TryProjectFloorItem(source, out FloorItemDepth depth, out bool right);
+        Debug.Log("FLOOR ITEM CHECK: " + source.type + " (" + source.x + "," + source.y + "," + source.cell
+            + ") picked=" + window.previewPickedFloorItemIds.Contains(id)
+            + ", disabled=" + !window.IsPreviewFeatureEnabled(window.GetFloorItemFeatureKey(source))
+            + ", projectsFromCurrentView=" + projected
+            + (projected ? ", depth=" + depth + ", right=" + right : ""));
+      }
+    }
+  }
+
+  [MenuItem("Tools/Restore Original Apple and Bread")]
+  private static void RestoreOriginalAppleAndBreadMenu()
+  {
+    ViewportLayoutEditor[] windows = Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>();
+    if (windows == null || windows.Length == 0)
+    {
+      Debug.LogWarning("FLOOR ITEMS: Open the dungeon preview first, then run Restore Original Apple and Bread.");
+      return;
+    }
+    foreach (ViewportLayoutEditor window in windows)
+    {
+      window.previewPickedFloorItemIds.Clear();
+      window.previewMovedFloorItems.Clear();
+      window.previewMovedFloorItemOrder.Clear();
+      window.previewHeldFloorItemId = null;
+      window.previewHeldFloorItem = null;
+      window.previewHeldFloorItemCursor = null;
+      window.previewFloorPickupCompleted = false;
+      foreach (FloorItemPlacement item in HallOfChampionsFloorItems)
+        window.previewDisabledFeatureKeys.Remove(window.GetFloorItemFeatureKey(item));
+      Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+      HideHeldItemPointerOverlay();
+      window.RefreshEditModePreview();
+      window.Repaint();
+    }
+    Debug.Log("FLOOR ITEMS: Restored Apple (Level 0, 4,9 North) and Bread (Level 0, 5,11 East) to original map positions.");
+  }
+
   [MenuItem("Tools/ViewEdit &v")]
   public static void Open()
   {
@@ -2565,6 +2653,10 @@ public class ViewportLayoutEditor : EditorWindow
     RestorePersistedAssets();
     ReloadLayoutFromDisk();
     RestoreSessionPrefs();
+    // The two original floor-item test records must be restored after script
+    // reload. EditorWindow state may survive compilation, including picked-up
+    // IDs or hidden feature flags from an earlier test session.
+    RestoreOriginalFloorTestItemsAfterReload();
     LoadPressurePadF1AcceptedCalibration();
     LoadPressurePadF2AcceptedCalibration();
     LoadPressurePadF3AcceptedCalibration();
@@ -28503,7 +28595,9 @@ private static void HandleGameViewPointerDown(
       return;
 
     FloorItemPlacement[] items = GetCurrentFloorItems();
-    if (!EnsureCsbFloorOffsetsLoaded()) return;
+    // Individual floor items use their calibrated screen positions; the
+    // CSBwin offset table is only required for the second and later items
+    // at the same floor corner. Do not hide every floor item if JSON fails.
     var pileCounts = new Dictionary<string, int>(System.StringComparer.Ordinal);
     for (int i = 0; i < items.Length; i++)
     {
@@ -28530,7 +28624,13 @@ private static void HandleGameViewPointerDown(
       string pileKey = item.x + ":" + item.y + ":" + item.cell;
       pileCounts.TryGetValue(pileKey, out int indexInPile);
       pileCounts[pileKey] = indexInPile + 1;
-      Vector2Int pileOffset = GetCsbPileDisplacement(item, depth, indexInPile);
+      if (indexInPile > 0 && !EnsureCsbFloorOffsetsLoaded())
+      {
+        // Do not render a pile with invented offsets. Loader reports error.
+        continue;
+      }
+      Vector2Int pileOffset = indexInPile == 0 ? Vector2Int.zero
+          : GetCsbPileDisplacement(item, depth, indexInPile);
       BlitProjectedFloorItem(pixels, item, texture, depth, isRight, pileOffset);
     }
   }
