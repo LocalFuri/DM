@@ -13,8 +13,17 @@ MonoBehaviour:
   m_Name: AudioSettings
   m_EditorClassIdentifier: Assembly-CSharp::DungeonAudioSettings
   championExitSound: {fileID: 8300000, guid: 70840d27e0d3cff4a9ba62914cfd3e44, type: 3}
-  championExitVolume: 1
+  championExitVolume: 0.373
   championResurrectSound: {fileID: 8300000, guid: 22d599dc65bea2a46be6a6d6f67d3a3f, type: 3}
   championResurrectVolume: 1
   switchSound: {fileID: 8300000, guid: 390b369a9c4d4d246b604764dd0a5970, type: 3}
   switchVolume: 1
+  itemThrowSound: {fileID: 8300000, guid: 03d0d74f28a11ca4f9f8a9e16b691345, type: 3}
+  itemThrowVolume: 1
+  weaponImpactSound: {fileID: 8300000, guid: e2890e14b8d3b554cab08f7de80023ac, type: 3}
+  weaponImpactVolume: 1
+  otherItemImpactSound: {fileID: 8300000, guid: 6ba60880d7827d543a9b5fa8c476c87a, type: 3}
+  otherItemImpactVolume: 1
+  itemImpactF1Volume: 1
+  itemImpactF2Volume: 0.75
+  itemImpactF3Volume: 0.5

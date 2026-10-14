@@ -28272,6 +28272,8 @@ private static void HandleGameViewPointerDown(
       new Dictionary<string, FloorItemPlacement>();
   private string previewHeldFloorItemId;
   private FloorItemPlacement previewHeldFloorItem;
+  // Set only after a successful click transfer; a stale record is not a held cursor.
+  private bool previewFloorPickupCompleted;
   private static string GetFloorItemInstanceId(FloorItemPlacement item)
   {
     return !string.IsNullOrEmpty(item.instanceId) ? item.instanceId
@@ -28285,10 +28287,14 @@ private static void HandleGameViewPointerDown(
     foreach (FloorItemPlacement source in HallOfChampionsFloorItems)
     {
       string id = GetFloorItemInstanceId(source);
-      if (!previewPickedFloorItemIds.Contains(id)) items.Add(source);
+      if (!previewPickedFloorItemIds.Contains(id)
+          && !(previewFloorPickupCompleted && id == previewHeldFloorItemId))
+        items.Add(source);
     }
     foreach (FloorItemPlacement moved in previewMovedFloorItems.Values)
-      items.Add(moved);
+      if (!(previewFloorPickupCompleted
+          && GetFloorItemInstanceId(moved) == previewHeldFloorItemId))
+        items.Add(moved);
     return items.ToArray();
   }
 
@@ -28493,6 +28499,143 @@ private static void HandleGameViewPointerDown(
         colorMap: WallOrnamentFarColorMap);
   }
 
+  // Saved defaults for ViewEdit apple pixel positions. The current in-memory
+  // fields are changed live; Apply commits only the relevant pair to this .cs.
+  private readonly Dictionary<string, Vector2Int> appleSavedScreenPositions =
+      new Dictionary<string, Vector2Int>(System.StringComparer.Ordinal);
+
+  private bool TryGetApplePositionFields(FloorItemDepth depth, bool right,
+      out string xField, out string yField, out int x, out int top)
+  {
+    xField = null;
+    yField = null;
+    x = 0;
+    top = 0;
+    if (depth == FloorItemDepth.SameTile)
+    {
+      // SameTile shows the front half of the party square: use the existing
+      // left/right world-placement slots, not the unused appleF1 field.
+      xField = right ? "appleF0RightPreviewX" : "appleF0FrontPreviewX";
+      yField = right ? "appleF0RightPreviewScreenTop" : "appleF0FrontPreviewScreenTop";
+      x = right ? appleF0RightPreviewX : appleF0FrontPreviewX;
+      top = right ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop;
+    }
+    else if (depth == FloorItemDepth.OneAhead)
+    {
+      xField = right ? "appleF2RightPreviewX" : "appleF2LeftPreviewX";
+      yField = right ? "appleF2RightPreviewScreenTop" : "appleF2LeftPreviewScreenTop";
+      x = right ? appleF2RightPreviewX : appleF2LeftPreviewX;
+      top = right ? appleF2RightPreviewScreenTop : appleF2LeftPreviewScreenTop;
+    }
+    else if (depth == FloorItemDepth.TwoAhead)
+    {
+      xField = right ? "appleF3RightPreviewX" : "appleF3LeftPreviewX";
+      yField = right ? "appleF3RightPreviewScreenTop" : "appleF3LeftPreviewScreenTop";
+      x = right ? appleF3RightPreviewX : appleF3LeftPreviewX;
+      top = right ? appleF3RightPreviewScreenTop : appleF3LeftPreviewScreenTop;
+    }
+    return xField != null;
+  }
+
+  private void SetAppleScreenPosition(FloorItemDepth depth, bool right, int x, int top)
+  {
+    if (depth == FloorItemDepth.SameTile)
+    {
+      if (right) { appleF0RightPreviewX = x; appleF0RightPreviewScreenTop = top; }
+      else { appleF0FrontPreviewX = x; appleF0FrontPreviewScreenTop = top; }
+    }
+    else if (depth == FloorItemDepth.OneAhead)
+    {
+      if (right) { appleF2RightPreviewX = x; appleF2RightPreviewScreenTop = top; }
+      else { appleF2LeftPreviewX = x; appleF2LeftPreviewScreenTop = top; }
+    }
+    else if (depth == FloorItemDepth.TwoAhead)
+    {
+      if (right) { appleF3RightPreviewX = x; appleF3RightPreviewScreenTop = top; }
+      else { appleF3LeftPreviewX = x; appleF3LeftPreviewScreenTop = top; }
+    }
+  }
+
+  private bool SaveAppleScreenPosition(string xField, string yField, int x, int top)
+  {
+    string path = GetThisEditorSourceAssetPath();
+    if (string.IsNullOrEmpty(path) || !File.Exists(path))
+    {
+      Debug.LogError("Apple ViewEdit Apply: ViewportLayoutEditor.cs not found.");
+      return false;
+    }
+    string source = File.ReadAllText(path);
+    string revised = source;
+    string[] fields = { xField, yField };
+    int[] values = { x, top };
+    for (int i = 0; i < fields.Length; i++)
+    {
+      string pattern = @"(?m)^(\s*private int " + Regex.Escape(fields[i]) + @" = )-?\d+(;)";
+      MatchCollection matches = Regex.Matches(revised, pattern);
+      if (matches.Count != 1)
+      {
+        Debug.LogError("Apple ViewEdit Apply: expected one declaration for "
+            + fields[i] + "; source unchanged.");
+        return false;
+      }
+      int updated = values[i];
+      revised = Regex.Replace(revised, pattern,
+          m => m.Groups[1].Value + updated.ToString() + m.Groups[2].Value);
+    }
+    try
+    {
+      File.WriteAllText(path, revised);
+      AssetDatabase.ImportAsset(path);
+      return true;
+    }
+    catch (System.Exception error)
+    {
+      Debug.LogError("Apple ViewEdit Apply: " + error.Message);
+      return false;
+    }
+  }
+
+  private void DrawAppleScreenCalibration(FloorItemDepth depth, bool right)
+  {
+    if (!TryGetApplePositionFields(depth, right,
+            out string xField, out string yField, out int x, out int top))
+      return;
+    string key = xField;
+    if (!appleSavedScreenPositions.TryGetValue(key, out Vector2Int saved))
+    {
+      saved = new Vector2Int(x, top);
+      appleSavedScreenPositions.Add(key, saved);
+    }
+    float previousLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Space(58f);
+    GUILayout.Label("Apple screen", EditorStyles.boldLabel, GUILayout.Width(145f));
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    int editX = x;
+    bool changedX = DrawIntStepperInline(
+        "X", ref editX, snap, x != saved.x, true, 25f, 25f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    int editY = top;
+    bool changedY = DrawIntStepperInline(
+        "Y", ref editY, snap, top != saved.y, true, 25f, 25f);
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    NoteContentRight();
+    EditorGUILayout.EndHorizontal();
+    EditorGUIUtility.labelWidth = previousLabelWidth;
+    if (changedX || changedY)
+    {
+      SetAppleScreenPosition(depth, right, editX, editY);
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+    if (apply && SaveAppleScreenPosition(xField, yField, editX, editY))
+    {
+      appleSavedScreenPositions[key] = new Vector2Int(editX, editY);
+      Repaint();
+    }
+  }
+
   private void DrawFloorItemRows()
   {
     EnsurePreviewMiniMapLoaded();
@@ -28536,6 +28679,10 @@ private static void HandleGameViewPointerDown(
       bool enabledBefore = IsPreviewFeatureEnabled(key);
       bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
       EditorGUILayout.EndHorizontal();
+
+      if (string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase)
+          && enabledAfter)
+        DrawAppleScreenCalibration(depth, isRight);
 
       if (enabledAfter != enabledBefore)
       {
@@ -33090,13 +33237,15 @@ private static void HandleGameViewPointerDown(
   private bool HasAnyItemOnCursor()
   {
     return HasPickedUpTorchOnCursor()
-        || (previewHeldFloorItem != null && previewHeldFloorItemId != null
+        || (previewFloorPickupCompleted && previewHeldFloorItem != null
+            && !string.IsNullOrEmpty(previewHeldFloorItemId)
+            && previewHeldFloorItemCursor != null
             && string.IsNullOrEmpty(previewHeldTorchId));
   }
 
   private Texture2D GetHeldItemCursorTexture()
   {
-    return previewHeldFloorItem != null
+    return previewFloorPickupCompleted && previewHeldFloorItem != null
         ? previewHeldFloorItemCursor : previewHeldTorchCursor;
   }
   private Texture2D previewHeldFloorItemCursor;
@@ -33177,6 +33326,7 @@ private static void HandleGameViewPointerDown(
         instanceId = id
       };
       previewHeldFloorItemCursor = cursor;
+      previewFloorPickupCompleted = true;
       Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
       RefreshEditModePreview();
       return true;
@@ -33186,7 +33336,8 @@ private static void HandleGameViewPointerDown(
 
   private bool TryDropHeldFloorItem(float x, float y)
   {
-    if (previewHeldFloorItem == null || championSheetVisible
+    if (!previewFloorPickupCompleted || previewHeldFloorItem == null
+        || championSheetVisible
         || x < 0 || x >= 224 || y < 0 || y >= 169) return false;
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null || !PreviewTileIsOpen(previewX, previewY)) return false;
@@ -33205,6 +33356,7 @@ private static void HandleGameViewPointerDown(
     previewHeldFloorItemId = null;
     previewHeldFloorItem = null;
     previewHeldFloorItemCursor = null;
+    previewFloorPickupCompleted = false;
     Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     HideHeldItemPointerOverlay();
     RefreshEditModePreview();
