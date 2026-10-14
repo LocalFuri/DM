@@ -1213,6 +1213,7 @@ public class ViewportLayoutEditor : EditorWindow
     public int x;
     public int y;
     public string cell;
+    public string instanceId;
   }
 
   // Loose items are map-space records. Rendering never keys off a player
@@ -6529,6 +6530,16 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
+    if (hasLogical && window.TryPickupVisibleFloorItem(logical.x, logical.y))
+    {
+      s_lastGameViewClickTime = now;
+      if (imguiEvent != null) imguiEvent.Use();
+      if (pointerEvent != null) pointerEvent.StopPropagation();
+      UpdateHeldItemPointerOverlay(gameView, windowMouse);
+      gameView.Repaint(); window.Repaint(); RepaintGameViews();
+      return true;
+    }
+
     if (hasLogical && window.TryPickupGroundTorchAt(logical.x, logical.y))
     {
       s_lastGameViewClickTime = now;
@@ -6538,6 +6549,15 @@ private static void HandleGameViewPointerDown(
       gameView.Repaint();
       window.Repaint();
       RepaintGameViews();
+      return true;
+    }
+
+    if (hasLogical && window.TryDropHeldFloorItem(logical.x, logical.y))
+    {
+      s_lastGameViewClickTime = now;
+      if (imguiEvent != null) imguiEvent.Use();
+      if (pointerEvent != null) pointerEvent.StopPropagation();
+      gameView.Repaint(); window.Repaint(); RepaintGameViews();
       return true;
     }
 
@@ -28244,11 +28264,31 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // The source array is immutable. Runtime transfers retain the same instance
+  // instead of deleting/recreating a static map entry.
+  private readonly HashSet<string> previewPickedFloorItemIds = new HashSet<string>();
+  private readonly Dictionary<string, FloorItemPlacement> previewMovedFloorItems =
+      new Dictionary<string, FloorItemPlacement>();
+  private string previewHeldFloorItemId;
+  private FloorItemPlacement previewHeldFloorItem;
+  private static string GetFloorItemInstanceId(FloorItemPlacement item)
+  {
+    return !string.IsNullOrEmpty(item.instanceId) ? item.instanceId
+        : "0:" + item.type + ":" + item.x + ":" + item.y + ":" + item.cell;
+  }
+
   private FloorItemPlacement[] GetCurrentFloorItems()
   {
-    return previewDungeonLevel == 0
-        ? HallOfChampionsFloorItems
-        : new FloorItemPlacement[0];
+    if (previewDungeonLevel != 0) return new FloorItemPlacement[0];
+    var items = new List<FloorItemPlacement>();
+    foreach (FloorItemPlacement source in HallOfChampionsFloorItems)
+    {
+      string id = GetFloorItemInstanceId(source);
+      if (!previewPickedFloorItemIds.Contains(id)) items.Add(source);
+    }
+    foreach (FloorItemPlacement moved in previewMovedFloorItems.Values)
+      items.Add(moved);
+    return items.ToArray();
   }
 
   private bool TryProjectFloorItem(
@@ -33046,6 +33086,130 @@ private static void HandleGameViewPointerDown(
         && previewRemovedTorchHolderKeys.Contains(previewHeldTorchId);
   }
 
+  private bool HasAnyItemOnCursor()
+  {
+    return HasPickedUpTorchOnCursor()
+        || (previewHeldFloorItem != null && previewHeldFloorItemId != null
+            && previewHeldTorchId == null);
+  }
+
+  private Texture2D GetHeldItemCursorTexture()
+  {
+    return previewHeldFloorItem != null
+        ? previewHeldFloorItemCursor : previewHeldTorchCursor;
+  }
+  private Texture2D previewHeldFloorItemCursor;
+
+  // These rectangles use exactly the same positions/dimensions as drawing.
+  private bool TryGetFloorItemScreenRect(FloorItemPlacement item,
+      out Rect rect)
+  {
+    rect = new Rect();
+    if (!TryProjectFloorItem(item, out FloorItemDepth depth, out bool right))
+      return false;
+    bool apple = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
+    bool bread = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
+    if (!apple && !bread) return false;
+    int x, top, width, height;
+    if (depth == FloorItemDepth.SameTile)
+    {
+      x = apple ? (right ? appleF0RightPreviewX : appleF0FrontPreviewX)
+          : (right ? breadF0RightPreviewX : breadF0LeftPreviewX);
+      top = apple ? (right ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop)
+          : (right ? breadF0RightPreviewScreenTop : breadF0LeftPreviewScreenTop);
+      Texture2D texture = GetFloorItemTexture(item);
+      if (texture == null) return false;
+      width = texture.width; height = texture.height;
+    }
+    else if (depth == FloorItemDepth.OneAhead)
+    {
+      width = apple ? AppleF2Width : BreadF2Width;
+      height = apple ? AppleF2Height : BreadF2Height;
+      x = apple ? (right ? appleF2RightPreviewX : appleF2LeftPreviewX)
+          : (right ? breadF2RightPreviewX : breadF2LeftPreviewX);
+      top = apple ? (right ? appleF2RightPreviewScreenTop : appleF2LeftPreviewScreenTop)
+          : (right ? breadF2RightPreviewScreenTop : breadF2LeftPreviewScreenTop);
+    }
+    else
+    {
+      if (!apple) return false; // Bread F3 has no verified rendering slot.
+      width = AppleF3Width; height = AppleF3Height;
+      x = right ? appleF3RightPreviewX : appleF3LeftPreviewX;
+      top = right ? appleF3RightPreviewScreenTop : appleF3LeftPreviewScreenTop;
+    }
+    rect = new Rect(x, top, width, height);
+    return true;
+  }
+
+  private bool TryPickupVisibleFloorItem(float x, float y)
+  {
+    if (championSheetVisible || HasAnyItemOnCursor()) return false;
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null) return false;
+    var items = GetCurrentFloorItems();
+    // Reverse order matches later sprites drawn over earlier ones.
+    for (int i = items.Length - 1; i >= 0; --i)
+    {
+      FloorItemPlacement item = items[i];
+      if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(item))
+          || !TryGetFloorItemScreenRect(item, out Rect rect)
+          || !rect.Contains(new Vector2(x, y))) continue;
+      // Inventory art is always the explicitly named 16x16 sprite, never
+      // the differently sized floor sprite. Do not search globally or fall back.
+      string path = "Assets/Art/Food/" + item.type + "_16x16.png";
+      Texture2D cursor = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      if (cursor == null || cursor.width != 16 || cursor.height != 16
+          || !cursor.isReadable)
+      {
+        Debug.LogError("FLOOR ITEM PICKUP: expected readable 16x16 inventory "
+            + "texture at exact path '" + path + "'. No fallback used.");
+        return true; // Leave the item on the ground.
+      }
+      string id = GetFloorItemInstanceId(item);
+      if (previewMovedFloorItems.ContainsKey(id)) previewMovedFloorItems.Remove(id);
+      else previewPickedFloorItemIds.Add(id);
+      previewHeldFloorItemId = id;
+      // Never mutate the immutable source map placement on subsequent drops.
+      previewHeldFloorItem = new FloorItemPlacement
+      {
+        type = item.type, x = item.x, y = item.y, cell = item.cell,
+        instanceId = id
+      };
+      previewHeldFloorItemCursor = cursor;
+      Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+      RefreshEditModePreview();
+      return true;
+    }
+    return false;
+  }
+
+  private bool TryDropHeldFloorItem(float x, float y)
+  {
+    if (previewHeldFloorItem == null || championSheetVisible
+        || x < 0 || x >= 224 || y < 0 || y >= 169) return false;
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || !PreviewTileIsOpen(previewX, previewY)) return false;
+    // Validate ground asset before transferring ownership from mouse to floor.
+    if (GetFloorItemTexture(previewHeldFloorItem) == null) return true;
+    if (previewMovedFloorItems.ContainsKey(previewHeldFloorItemId))
+    {
+      Debug.LogError("FLOOR ITEM: duplicate instance " + previewHeldFloorItemId);
+      return true;
+    }
+    previewHeldFloorItem.x = previewX;
+    previewHeldFloorItem.y = previewY;
+    previewHeldFloorItem.cell = FloorCornerForFacing(previewFacing, x >= 112);
+    previewHeldFloorItem.instanceId = previewHeldFloorItemId;
+    previewMovedFloorItems.Add(previewHeldFloorItemId, previewHeldFloorItem);
+    previewHeldFloorItemId = null;
+    previewHeldFloorItem = null;
+    previewHeldFloorItemCursor = null;
+    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+    HideHeldItemPointerOverlay();
+    RefreshEditModePreview();
+    return true;
+  }
+
   private void ClearStaleHeldTorchState()
   {
     if (string.IsNullOrEmpty(previewHeldTorchId) && previewHeldTorchCursor == null)
@@ -33152,7 +33316,7 @@ private static void HandleGameViewPointerDown(
     ViewportLayoutEditor owner = FindOpenViewEditWindow();
     if (owner != null)
       owner.ClearStaleHeldTorchState();
-    if (gameView == null || owner == null || !owner.HasPickedUpTorchOnCursor()
+    if (gameView == null || owner == null || !owner.HasAnyItemOnCursor()
         || Application.isPlaying)
     {
       HideHeldItemPointerOverlay();
@@ -33167,7 +33331,7 @@ private static void HandleGameViewPointerDown(
       overlay.pickingMode = UnityEngine.UIElements.PickingMode.Ignore;
       overlay.style.position = UnityEngine.UIElements.Position.Absolute;
       overlay.style.backgroundImage = new UnityEngine.UIElements.StyleBackground(
-          owner.previewHeldTorchCursor);
+          owner.GetHeldItemCursorTexture());
       overlay.style.unityBackgroundScaleMode = ScaleMode.StretchToFill;
       gameView.rootVisualElement.Add(overlay);
       overlay.BringToFront();
@@ -33815,7 +33979,7 @@ private static void HandleGameViewPointerDown(
   private bool TryPickupGroundTorchAt(float logicalX, float logicalY)
   {
     ClearStaleHeldTorchState();
-    if (HasPickedUpTorchOnCursor() || championSheetVisible)
+    if (HasAnyItemOnCursor() || championSheetVisible)
       return false;
     foreach (DroppedTorch item in previewDroppedTorches.Values)
     {
@@ -33887,7 +34051,7 @@ private static void HandleGameViewPointerDown(
       return false;
     }
     ClearStaleHeldTorchState();
-    if (HasPickedUpTorchOnCursor())
+    if (HasAnyItemOnCursor())
     {
       Debug.LogWarning("TORCH PICKUP TRACE: blocked because item is already held: "
           + previewHeldTorchId + ". Return or drop the held item before retrying.");

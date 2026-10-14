@@ -224,5 +224,18 @@
       "maxDistance": "F3"
     },
     "deployment": "Copy archives preserving original Assets/... paths; never create extra copies of existing scripts."
+  },
+  "checkpoint20261014ApplePickup": {
+    "status": "Implementation prepared; requires Unity testing",
+    "assetConvention": "Sprite filename ending _16x16.png is the inventory/cursor texture; other dimensions are floor/world textures. No fallback or duplicate asset search.",
+    "testView": "Level 0, (4,9) West: click visible Apple_19x13 on ground, show Apple_16x16 on cursor, remove ground apple; click floor to drop same item ID.",
+    "sourcePaths": {
+      "appleInventory": "Assets/Art/Food/Apple_16x16.png",
+      "appleGround": "Assets/Art/Food/Apple_19x13.png",
+      "breadInventory": "Assets/Art/Food/Bread_16x16.png",
+      "breadGround": "Assets/Art/Food/Bread_27x16.png"
+    },
+    "scope": "Floor apple/bread pickup and local drop; generic throw for all item types not yet integrated. Preserve original placement object and stable instance identity.",
+    "deliveryRule": "ZIP files without subfolders; keep source filenames; distribute to original folders manually."
   }
 }
