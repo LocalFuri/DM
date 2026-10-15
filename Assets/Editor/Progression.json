@@ -1,11 +1,11 @@
 {
   "project": "Dungeon Master Unity",
   "checkpointDate": "2026-10-14",
-  "checkpointPurpose": "Resume verified Dungeon Features and torch mouse pickup, then implement putting the torch back and throwing it",
+  "checkpointPurpose": "Resume Dungeon Master Unity floor-item pile rendering after fixing CSBwin JSON loading; do not rework functional pickup or LIFO.",
   "mainScript": "Assets/Editor/ViewportLayoutEditor.cs",
   "lastVerifiedGitCommit": null,
   "gitNote": "Record the actual current Git commit after committing the working version; do not assume an older baseline is current.",
-  "currentTask": "Generic item interaction: wall torch pickup works; next return held torch to holder, then implement throwing",
+  "currentTask": "Verify CSBwin floor-item offset loader fix in Unity, then inspect apple-on-bread visual stacking if needed.",
   "pressurePad": {
     "mapLevel": 0,
     "mapTile": {
@@ -103,7 +103,7 @@
       }
     ]
   },
-  "nextStep": "Implement left-click on empty torch holder while holding its torch to return the same item instance and restore Full image; then add generic mouse throw/drop in dungeon with unique item identity and floor placement. Preserve stable software cursor and ViewEdit calibrations.",
+  "nextStep": "Install ViewportLayoutEditor.cs from CSBwin_Offset_Loader_Fix.zip into Assets/Editor; ensure Unity compiles without red errors; at Level 0 player (4,11) East drop apple on bread and inspect Console for pileDataLoaded=True, absence of CSBwin pile offsets unavailable, and visible stacked sprites.",
   "latestWorkingFiles": {
     "mainEditor": "Assets/Editor/ViewportLayoutEditor.cs",
     "dungeonFeaturesEditor": "Assets/Editor/DungeonFeatureEditor.cs",
@@ -242,5 +242,40 @@
     "change": "Raise same-tile Bread left/right projected draw position by 2 pixels: breadF0LeftPreviewScreenTop and breadF0RightPreviewScreenTop 150 to 152; Apple anchor and CSBwin pile offsets unchanged.",
     "status": "Awaiting Unity visual verification; LIFO pickup already verified."
   },
-  "floorPileDropTargetNote": "2026-10-14: Drop-target sprite hit test expanded by 5 logical viewport pixels and restricted to same screen half; CSBwin offsets, LIFO pickup and rendering unchanged. Test in Unity pending."
+  "floorPileDropTargetNote": "2026-10-14: Drop-target sprite hit test expanded by 5 logical viewport pixels and restricted to same screen half; CSBwin offsets, LIFO pickup and rendering unchanged. Test in Unity pending.",
+  "checkpoint20261014EndOfDay": {
+    "status": "Latest CSBwin offset loader fix delivered but not tested in Unity; do not claim issue solved.",
+    "latestDeliveredCSharpZip": "CSBwin_Offset_Loader_Fix.zip",
+    "latestDeliveredScript": "Assets/Editor/ViewportLayoutEditor.cs",
+    "csbwinJson": "Assets/Editor/CSBwin_Floor_Item_Offsets.json",
+    "confirmedIssue": "Dropped apple is stored and pickable but is not blitted; APPLE DRAW SKIP reports CSBwin pile offsets unavailable; pileDataLoaded=False.",
+    "diagnostics": {
+      "activeDrawList": true,
+      "projection": true,
+      "enabled": true,
+      "texture": "loaded",
+      "blitCalled": false,
+      "pileDataLoaded": false
+    },
+    "jsonInspection": "Uploaded JSON valid with 48 X/Y pairs; exact folder and name verified in Unity.",
+    "loaderFix": "Latest delivered script reads JSON directly from disk and retries after failed load; not yet validated in Unity.",
+    "testPose": "Level 0, player (4,11) facing East; bread map (5,11) corner East, apple original map (4,9) corner North; drop apple onto bread.",
+    "preserve": [
+      "CSBwin original offset values",
+      "apple/bread calibrated coordinates",
+      "working LIFO floor pickup",
+      "custom inventory-image mouse cursor",
+      "torch pickup and throwing behavior",
+      "no fallback for missing resources"
+    ],
+    "importantRule": "Check and fix red Unity Console compile errors before investigating missing graphics.",
+    "nextTest": [
+      "Replace only ViewportLayoutEditor.cs with latest zip version in Assets/Editor",
+      "Check Unity Console for red compile errors",
+      "Drop apple onto bread once at test pose",
+      "Confirm loader no longer reports pileDataLoaded=False or CSBwin pile offsets unavailable",
+      "Confirm both graphics render; if not capture APPLE DRAW GATE/SKIP logs and screenshot"
+    ],
+    "deliveryPreference": "ZIP files flat/no folders, original filenames; Progression.json never renamed."
+  }
 }
