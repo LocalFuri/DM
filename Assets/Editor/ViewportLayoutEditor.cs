@@ -143,7 +143,7 @@ public class ViewportLayoutEditor : EditorWindow
   // Side-lane S3 (one tile laterally, two tiles ahead). These are independent
   // ViewEdit calibration points; no central F3 coordinate is reused.
   // Initial positions require visual calibration against CSBwin.
-  private int appleS3LeftPreviewX = 49;
+  private int appleS3LeftPreviewX = 7;
   private int appleS3LeftPreviewScreenTop = 106;
   private int appleS3RightPreviewX = 169;
   private int appleS3RightPreviewScreenTop = 106;
