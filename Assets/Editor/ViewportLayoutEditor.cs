@@ -143,7 +143,7 @@ public class ViewportLayoutEditor : EditorWindow
   // Side-lane S3 (one tile laterally, two tiles ahead). These are independent
   // ViewEdit calibration points; no central F3 coordinate is reused.
   // Initial positions require visual calibration against CSBwin.
-  private int appleS3LeftPreviewX = 7;
+  private int appleS3LeftPreviewX = 49;
   private int appleS3LeftPreviewScreenTop = 106;
   private int appleS3RightPreviewX = 169;
   private int appleS3RightPreviewScreenTop = 106;
@@ -1506,7 +1506,6 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:WoodRing:F3|105|117|false
   // REF OrnamentProjection:WoodRing:S1|49|110|false
   // REF OrnamentProjection:WoodRing:S1:Right|161|108|true
-  // REF WallMirror_LeftS3_L0_X5_Y11_F0|0|57|false|639276851562264593
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
