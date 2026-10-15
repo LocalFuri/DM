@@ -109,8 +109,8 @@ public class ViewportLayoutEditor : EditorWindow
   private int appleF0RightPreviewScreenTop = 152;
   // Same-tile front sub-square. From the original 4,9 North reference the
   // native 19x13 apple begins at approximately X=56, screen-top=150.
-  private int appleF0FrontPreviewX = 53;
-  private int appleF0FrontPreviewScreenTop = 151;
+  private int appleF0FrontPreviewX = 56;
+  private int appleF0FrontPreviewScreenTop = 150;
 
   // F2 is generated from the single authoritative F1 ground sprite.
   // Floor-item perspective is steeper than the wall-piece F1->F2 ratio.
@@ -9010,6 +9010,10 @@ private static void HandleGameViewPointerDown(
         return "Robe (Body)";
       case "ROBELEGS":
         return "Robe (Legs)";
+      // Hero data names the torso item "Ghi"; its explicit 16x16 artwork
+      // is stored as Assets/Art/Armor/Ghi_Body_16x16.png.
+      case "GHI":
+        return "Ghi Body";
       case "BLUEMAGICALBOX":
       case "MAGICALBOXBLUE":
         return "Magical Box (Blue)";
@@ -28876,9 +28880,6 @@ private static void HandleGameViewPointerDown(
     return false;
   }
 
-  // One-frame diagnostics after a floor drop. Do not change rendering logic.
-  private bool traceNextFloorAppleBlit;
-
   private void BlitFloorItemsIntoPreview(Color32[] pixels)
   {
     if (pixels == null)
@@ -28889,28 +28890,6 @@ private static void HandleGameViewPointerDown(
       return;
 
     FloorItemPlacement[] items = GetCurrentFloorItems();
-    if (traceNextFloorAppleBlit)
-    {
-      string appleId = "0:Apple:4:9:N";
-      bool moved = previewMovedFloorItems.TryGetValue(appleId, out FloorItemPlacement applePlacement);
-      bool listed = false;
-      for (int n = 0; n < items.Length; ++n)
-        if (GetFloorItemInstanceId(items[n]) == appleId) listed = true;
-      string reason = !moved ? "not in moved dictionary" : !listed ? "not in active draw list"
-          : "in active draw list";
-      bool projected = moved && TryProjectFloorItem(applePlacement,
-          out FloorItemDepth appleDepth, out bool appleRight);
-      bool enabled = moved && IsPreviewFeatureEnabled(GetFloorItemFeatureKey(applePlacement));
-      Texture2D appleTexture = moved ? GetFloorItemTexture(applePlacement) : null;
-      Debug.Log("APPLE DRAW GATE: " + reason + "; level=" + previewDungeonLevel
-          + "; held=" + previewFloorPickupCompleted
-          + "; heldId=" + (previewHeldFloorItemId ?? "null")
-          + "; picked=" + previewPickedFloorItemIds.Contains(appleId)
-          + "; movedOrder=" + previewMovedFloorItemOrder.Contains(appleId)
-          + "; activeCount=" + items.Length + "; projected=" + projected
-          + "; enabled=" + enabled + "; texture=" + (appleTexture == null ? "missing" : "loaded")
-          + "; pileDataLoaded=" + (csbFloorOffsetRows != null));
-    }
     // Individual floor items use their calibrated screen positions. Later
     // pile items inherit the first item's bottom edge; their X offsets still
     // come from CSBwin. Do not hide single items if the offset JSON fails.
@@ -28920,12 +28899,10 @@ private static void HandleGameViewPointerDown(
       FloorItemPlacement item = items[i];
       if (!TryProjectFloorItem(item, out FloorItemDepth depth, out bool isRight))
       {
-        if (traceNextFloorAppleBlit && item.type == "Apple") Debug.Log("APPLE DRAW SKIP: projection rejected, tile=(" + item.x + "," + item.y + "), corner=" + item.cell);
         continue;
       }
       if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(item)))
       {
-        if (traceNextFloorAppleBlit && item.type == "Apple") Debug.Log("APPLE DRAW SKIP: feature disabled");
         continue;
       }
 
@@ -28949,78 +28926,9 @@ private static void HandleGameViewPointerDown(
       if (!TryGetPileAlignedOffset(item, items, depth, indexInPile,
           out Vector2Int pileOffset))
       {
-        if (traceNextFloorAppleBlit && item.type == "Apple")
-          Debug.LogError("APPLE DRAW SKIP: pile offset or bottom anchor unavailable.");
         continue;
       }
-      bool traceApple = traceNextFloorAppleBlit
-          && string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase)
-          && previewMovedFloorItems.ContainsKey(GetFloorItemInstanceId(item));
-      Color32[] beforeApple = traceApple ? (Color32[])pixels.Clone() : null;
       BlitProjectedFloorItem(pixels, item, texture, depth, isRight, pileOffset);
-      if (traceApple)
-      {
-        int drawX, drawTop, drawWidth, drawHeight;
-        if (depth == FloorItemDepth.SideTwoAhead)
-        {
-          drawX = isRight ? appleS3RightPreviewX : appleS3LeftPreviewX;
-          drawTop = isRight ? appleS3RightPreviewScreenTop : appleS3LeftPreviewScreenTop;
-          drawWidth = AppleF3Width;
-          drawHeight = AppleF3Height;
-        }
-        else if (depth == FloorItemDepth.SameTile)
-        {
-          drawX = isRight ? appleF0RightPreviewX : appleF0FrontPreviewX;
-          drawTop = isRight ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop;
-          drawWidth = texture.width;
-          drawHeight = texture.height;
-        }
-        else if (depth == FloorItemDepth.OneAhead)
-        {
-          drawX = isRight ? appleF2RightPreviewX : appleF2LeftPreviewX;
-          drawTop = isRight ? appleF2RightPreviewScreenTop : appleF2LeftPreviewScreenTop;
-          drawWidth = AppleF2Width;
-          drawHeight = AppleF2Height;
-        }
-        else
-        {
-          drawX = isRight ? appleF3RightPreviewX : appleF3LeftPreviewX;
-          drawTop = isRight ? appleF3RightPreviewScreenTop : appleF3LeftPreviewScreenTop;
-          drawWidth = AppleF3Width;
-          drawHeight = AppleF3Height;
-        }
-        int changedPixels = 0;
-        int minX = PreviewWidth, minY = PreviewHeight, maxX = -1, maxY = -1;
-        for (int pixelY = 0; pixelY < PreviewHeight; ++pixelY)
-          for (int pixelX = 0; pixelX < DungeonViewportWidth; ++pixelX)
-          {
-            int pixelIndex = pixelY * PreviewWidth + pixelX;
-            Color32 oldColor = beforeApple[pixelIndex];
-            Color32 newColor = pixels[pixelIndex];
-            if (oldColor.r == newColor.r && oldColor.g == newColor.g
-                && oldColor.b == newColor.b && oldColor.a == newColor.a)
-              continue;
-            changedPixels++;
-            minX = Mathf.Min(minX, pixelX);
-            maxX = Mathf.Max(maxX, pixelX);
-            minY = Mathf.Min(minY, pixelY);
-            maxY = Mathf.Max(maxY, pixelY);
-          }
-        Debug.Log("APPLE BLIT CHECK: called=True; tile=(" + item.x + "," + item.y
-            + "); corner=" + item.cell + "; depth=" + depth
-            + "; right=" + isRight + "; pileOffset=" + pileOffset
-            + "; rectTopLeft=(" + (drawX + pileOffset.x) + ","
-            + (drawTop + pileOffset.y) + "); size=" + drawWidth + "x" + drawHeight
-            + "; changedPixels=" + changedPixels + "; changedBoundsBottomLeft="
-            + (changedPixels == 0 ? "none" : "(" + minX + "," + minY
-                + ")-(" + maxX + "," + maxY + ")"));
-        traceNextFloorAppleBlit = false;
-      }
-    }
-    if (traceNextFloorAppleBlit)
-    {
-      Debug.LogWarning("APPLE BLIT CHECK: called=False; moved apple was not drawn in this floor-item pass. Check projection, feature flag, texture and CSBwin offset validation.");
-      traceNextFloorAppleBlit = false;
     }
   }
 
@@ -34240,55 +34148,12 @@ private static void HandleGameViewPointerDown(
     previewHeldFloorItem.instanceId = previewHeldFloorItemId;
     previewMovedFloorItems.Add(previewHeldFloorItemId, previewHeldFloorItem);
     previewMovedFloorItemOrder.Add(previewHeldFloorItemId);
-    // Diagnostic for the overlapping-item issue: confirm that the placed
-    // item really enters the visible drawing path before clearing the cursor.
-    bool projectedAfterDrop = TryProjectFloorItem(previewHeldFloorItem,
-        out FloorItemDepth projectedDepth, out bool projectedRight);
-    bool enabledAfterDrop = IsPreviewFeatureEnabled(
-        GetFloorItemFeatureKey(previewHeldFloorItem));
-    Debug.Log("FLOOR PILE DROP TRACE: item=" + previewHeldFloorItem.type
-        + "; id=" + previewHeldFloorItemId
-        + "; tile=(" + previewHeldFloorItem.x + "," + previewHeldFloorItem.y + ")"
-        + "; corner=" + previewHeldFloorItem.cell
-        + "; target=" + (dropTarget == null ? "none" : dropTarget.type)
-        + "; projected=" + projectedAfterDrop
-        + "; depth=" + projectedDepth
-        + "; right=" + projectedRight
-        + "; featureEnabled=" + enabledAfterDrop
-        + "; floorCount=" + GetCurrentFloorItems().Length
-        + "; movedOrder=" + previewMovedFloorItemOrder.Count);
-    // One-shot visual diagnostics for all objects on the destination map tile.
-    // Does not modify item state, draw ordering, CSBwin offsets, or pickup.
-    var pileRenderTrace = new System.Text.StringBuilder("FLOOR PILE RENDER CHECK:");
-    foreach (FloorItemPlacement member in GetCurrentFloorItems())
-    {
-      if (member.x != previewHeldFloorItem.x || member.y != previewHeldFloorItem.y)
-        continue;
-      string memberId = GetFloorItemInstanceId(member);
-      bool memberProjected = TryProjectFloorItem(member,
-          out FloorItemDepth memberDepth, out bool memberRight);
-      bool memberEnabled = IsPreviewFeatureEnabled(GetFloorItemFeatureKey(member));
-      bool memberHasRect = TryGetFloorItemScreenRect(member, out Rect memberRect);
-      Texture2D memberTexture = GetFloorItemTexture(member);
-      pileRenderTrace.Append(" | ").Append(member.type)
-          .Append(" id=").Append(memberId)
-          .Append(" corner=").Append(member.cell)
-          .Append(" projected=").Append(memberProjected)
-          .Append(" depth=").Append(memberDepth)
-          .Append(" sideRight=").Append(memberRight)
-          .Append(" enabled=").Append(memberEnabled)
-          .Append(" texture=").Append(memberTexture == null ? "missing" : "ok")
-          .Append(" screenRect=").Append(memberHasRect ? memberRect.ToString() : "none")
-          .Append(" isMoved=").Append(previewMovedFloorItems.ContainsKey(memberId));
-    }
-    Debug.Log(pileRenderTrace.ToString());
     previewHeldFloorItemId = null;
     previewHeldFloorItem = null;
     previewHeldFloorItemCursor = null;
     previewFloorPickupCompleted = false;
     Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     HideHeldItemPointerOverlay();
-    traceNextFloorAppleBlit = true;
     RefreshEditModePreview();
     return true;
   }
