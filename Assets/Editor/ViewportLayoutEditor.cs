@@ -109,8 +109,8 @@ public class ViewportLayoutEditor : EditorWindow
   private int appleF0RightPreviewScreenTop = 152;
   // Same-tile front sub-square. From the original 4,9 North reference the
   // native 19x13 apple begins at approximately X=56, screen-top=150.
-  private int appleF0FrontPreviewX = 56;
-  private int appleF0FrontPreviewScreenTop = 150;
+  private int appleF0FrontPreviewX = 53;
+  private int appleF0FrontPreviewScreenTop = 151;
 
   // F2 is generated from the single authoritative F1 ground sprite.
   // Floor-item perspective is steeper than the wall-piece F1->F2 ratio.
@@ -28813,6 +28813,31 @@ private static void HandleGameViewPointerDown(
     return offsets[(initial + pileIndex) & 15] - offsets[initial];
   }
 
+  // Reference screen-top coordinates when pile calibration was introduced.
+  // Unlike the live ViewEdit fields, these must remain fixed across Apply and
+  // editor recompilation: the difference is the user's independent Y nudge.
+  private int GetFloorItemPileReferenceTop(FloorItemPlacement item,
+      FloorItemDepth depth, bool right)
+  {
+    bool apple = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
+    bool bread = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
+    if (apple)
+    {
+      if (depth == FloorItemDepth.SameTile) return right ? 152 : 150;
+      if (depth == FloorItemDepth.OneAhead) return 124;
+      if (depth == FloorItemDepth.SideTwoAhead || depth == FloorItemDepth.TwoAhead)
+        return 106;
+    }
+    if (bread)
+    {
+      if (depth == FloorItemDepth.SameTile) return 148;
+      if (depth == FloorItemDepth.OneAhead) return 121;
+    }
+    Debug.LogError("Missing floor-item pile calibration reference for "
+        + item.type + " at depth " + depth + ".");
+    return int.MinValue;
+  }
+
   // Pile anchoring is relative to the first placed item, not to a
   // specific item type. ViewEdit calibrations remain independent for single
   // items; when stacked, later sprites share the first sprite's bottom Y.
@@ -28834,8 +28859,16 @@ private static void HandleGameViewPointerDown(
       if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(first)) ||
           !TryGetUnstackedFloorItemScreenRect(first, out Rect firstRect))
         continue;
-      // Unity screen coordinates run downwards; the bottom is yMax.
-      offset.y = Mathf.RoundToInt(firstRect.yMax - itemRect.yMax);
+      // Start on the first sprite's bottom line, but preserve independent
+      // Y nudges made in ViewEdit for every later item in the same pile.
+      // Without this delta the shared-bottom formula cancels every Y click.
+      if (!TryProjectFloorItem(item, out FloorItemDepth itemDepth, out bool right))
+        return false;
+      int referenceTop = GetFloorItemPileReferenceTop(item, itemDepth, right);
+      if (referenceTop == int.MinValue) return false;
+      int currentTop = Mathf.RoundToInt(itemRect.yMin);
+      offset.y = Mathf.RoundToInt(firstRect.yMax - itemRect.yMax)
+          + (currentTop - referenceTop);
       return true;
     }
     Debug.LogError("FLOOR PILE: unable to determine initial item bottom edge at ("
