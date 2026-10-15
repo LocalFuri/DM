@@ -1506,6 +1506,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:WoodRing:F3|105|117|false
   // REF OrnamentProjection:WoodRing:S1|49|110|false
   // REF OrnamentProjection:WoodRing:S1:Right|161|108|true
+  // REF WallMirror_LeftS3_L0_X5_Y11_F0|0|57|false|639276851562264593
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
@@ -1715,6 +1716,27 @@ public class ViewportLayoutEditor : EditorWindow
           "ViewEdit: restored newer/missing ornament calibration references "
           + "from the Apply backup into " + assetPath);
     }
+  }
+
+  // A wall's mirror choice belongs to a particular viewing pose. Persisting
+  // it under a pose key leaves other levels, directions, and wall recipes alone.
+  private string GetLeftS3MirrorCalibrationKey()
+  {
+    return "WallMirror_LeftS3_L" + previewDungeonLevel
+        + "_X" + previewX + "_Y" + previewY
+        + "_F" + (int)previewFacing;
+  }
+
+  private bool TryGetAppliedLeftS3Mirror(out bool mirror)
+  {
+    mirror = false;
+    EnsureAcceptedOrnamentReferencesLoaded();
+    if (!cachedAcceptedOrnamentReferences.TryGetValue(
+            GetLeftS3MirrorCalibrationKey(),
+            out AcceptedOrnamentReference reference))
+      return false;
+    mirror = reference.mirror;
+    return true;
   }
 
   private void ApplyAcceptedOrnamentReference(
@@ -4950,6 +4972,28 @@ public class ViewportLayoutEditor : EditorWindow
     NoteContentRight();
     EditorGUIUtility.labelWidth = previousLabelWidth;
     GUILayout.Space(ToggleGroupGap);
+
+    if (piece.Name == "LeftS3")
+    {
+      // Mirrors are normally only live ViewEdit tests. Explicit Apply accepts
+      // this one pose's choice and writes it into the source-backed references.
+      bool leftS3MirrorPending =
+          previewMirrorOverrideByPiece.ContainsKey(piece);
+      using (new EditorGUI.DisabledScope(!leftS3MirrorPending))
+      {
+        if (GUILayout.Button("Apply", GUILayout.Width(52f)))
+        {
+          if (SaveAcceptedOrnamentReference(
+                  GetLeftS3MirrorCalibrationKey(), 0, 57, mirrorAfter))
+          {
+            previewMirrorOverrideByPiece.Remove(piece);
+            previewMirrorChangedThisFrame = true;
+            RefreshTemporaryNormalWallPreview();
+          }
+        }
+      }
+      NoteContentRight();
+    }
 
     bool hasPieceCardReference = TryGetPieceCardReferenceXY(
         piece, mirrorAfter, out int canonicalRefX, out int canonicalRefY);
@@ -15711,6 +15755,10 @@ private static void HandleGameViewPointerDown(
                 : GetSideWallMirrorFromPose();
         ApplyViewport17NativeManualControls(
             "LeftS3", ref leftS3Enabled, ref leftS3Mirror);
+        // Persisted pose-specific calibration wins over the automatic recipe;
+        // any current ViewEdit checkbox preview is layered on top later.
+        if (TryGetAppliedLeftS3Mirror(out bool appliedLeftS3Mirror))
+          leftS3Mirror = appliedLeftS3Mirror;
         state.Enabled = leftS3Enabled;
         state.X = 0;
         state.Y = DisplayYToUnityY(
