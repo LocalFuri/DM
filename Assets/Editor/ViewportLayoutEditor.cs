@@ -8470,6 +8470,8 @@ private static void HandleGameViewPointerDown(
       slot = "head";
     else if (name.Contains("CHOKER") || name.Contains("CLOAK") || name == "MOONSTONE")
       slot = "neck";
+    else if (NormalizeChampionAssetKey(objectType) == "RABBITSFOOT")
+      slot = "pouchUpper";
     else if (name.Contains("HOSEN"))
       slot = "feet";
     else if (name.Contains("BARBARIAN") && name.Contains("HIDE"))
@@ -8480,7 +8482,8 @@ private static void HandleGameViewPointerDown(
         || name.Contains("GUNNA")
         || (name.Contains("ROBE") && name.Contains("LEG")))
       slot = "legs";
-    else if (name.Contains("BOOT") || name.Contains("SANDAL"))
+    else if (NormalizeChampionAssetKey(objectType) == "LEATHERBOOTS"
+        || name.Contains("BOOT") || name.Contains("SANDAL"))
       slot = "feet";
     else if (name.Contains("ARROW")
         || name.Contains("STAR")
@@ -8524,6 +8527,14 @@ private static void HandleGameViewPointerDown(
     {
       localX = 33;
       localY = 25;
+      return true;
+    }
+
+    if (slot == "pouchUpper")
+    {
+      // Upper pouch slot calibrated by user: character-sheet local X=65, Y=32.
+      localX = 65;
+      localY = 32;
       return true;
     }
 
@@ -9014,6 +9025,9 @@ private static void HandleGameViewPointerDown(
       // is stored as Assets/Art/Armor/Ghi_Body_16x16.png.
       case "GHI":
         return "Ghi Body";
+      // Explicit inventory identity for BORIS's leather boots.
+      case "LEATHERBOOTS":
+        return "Leather Boots";
       case "BLUEMAGICALBOX":
       case "MAGICALBOXBLUE":
         return "Magical Box (Blue)";
