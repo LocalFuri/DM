@@ -35,11 +35,11 @@ public class ViewportLayoutEditor : EditorWindow
   private const string PreviewLevelJumpControlName =
       "ViewportLayoutEditor.PreviewLevelJump";
 
-  private const string HallOfChampionsMapPath =
+  private const string LevelZeroMapPath =
       "Assets/Data/Maps/DungeonMaster_Level00.json";
   private static readonly string[] PreviewLevelMapPaths =
   {
-    HallOfChampionsMapPath,
+    LevelZeroMapPath,
     "Assets/Data/Maps/DungeonMaster_Level01.json",
     "Assets/Data/Maps/DungeonMaster_Level02.json",
     "Assets/Data/Maps/DungeonMaster_Level03.json",
@@ -139,6 +139,14 @@ public class ViewportLayoutEditor : EditorWindow
   private int appleF3LeftPreviewScreenTop = 106;
   private int appleF3RightPreviewX = 129;
   private int appleF3RightPreviewScreenTop = 106;
+
+  // Side-lane S3 (one tile laterally, two tiles ahead). These are independent
+  // ViewEdit calibration points; no central F3 coordinate is reused.
+  // Initial positions require visual calibration against CSBwin.
+  private int appleS3LeftPreviewX = 49;
+  private int appleS3LeftPreviewScreenTop = 106;
+  private int appleS3RightPreviewX = 169;
+  private int appleS3RightPreviewScreenTop = 106;
 
   // Second loose-floor-item calibration. Original Level 0 DUNGEON.DAT places
   // Bread at map (5,11), sub-square E. Bread_27x16 is the ground/world
@@ -20391,7 +20399,7 @@ private static void HandleGameViewPointerDown(
 
   private void BlitChampionMirrorD3FrontIntoPreview(Color32[] pixels)
   {
-    // Load HallOfChampions.json (including championMirrors), but do not make
+    // Load the current level map and champion mirror records, but do not make
     // the F3 decoration depend on the minimap tile classifier.  The mirror
     // placement entry is the authoritative wall-decoration record.
     EnsurePreviewMiniMapLoaded();
@@ -28431,7 +28439,8 @@ private static void HandleGameViewPointerDown(
   {
     SameTile = 0,
     OneAhead = 1,
-    TwoAhead = 2
+    TwoAhead = 2,
+    SideTwoAhead = 3
   }
 
   private static bool TryGetFloorItemSubSquareOffset(
@@ -28537,20 +28546,29 @@ private static void HandleGameViewPointerDown(
     int forwardDistance = dx * forwardX + dy * forwardY;
     int lateralTileDistance = dx * rightX + dy * rightY;
 
-    // This pass handles the center corridor tile at the current square and
-    // the next two map squares. Side-tile floor items can be added later as
-    // a separate occlusion-aware projection, without coordinate hardcodes.
-    if (lateralTileDistance != 0 || forwardDistance < 0 || forwardDistance > 2)
+    // The S3 side lanes are visible through the adjacent side opening,
+    // followed by open D1/D2 tiles in that lane. A front-center wall
+    // does not block the side corridor (e.g. Level 0, 5,11 North).
+    bool sideS3 = forwardDistance == 2 && Mathf.Abs(lateralTileDistance) == 1;
+    if (!sideS3 && (lateralTileDistance != 0 || forwardDistance < 0 || forwardDistance > 2))
       return false;
-
-    // A nearer wall hides the floor item. From 4,7 South the apple at 4,9
-    // is behind the wall at 4,8 and must not be drawn on that wall.
-    for (int step = 1; step <= forwardDistance; step++)
+    if (sideS3)
     {
-      int stepX = previewX + forwardX * step;
-      int stepY = previewY + forwardY * step;
-      if (!PreviewTileIsOpen(stepX, stepY))
+      int laneX = rightX * lateralTileDistance;
+      int laneY = rightY * lateralTileDistance;
+      if (!PreviewTileIsOpen(previewX + laneX, previewY + laneY)
+          || !PreviewTileIsOpen(previewX + forwardX + laneX, previewY + forwardY + laneY)
+          || !PreviewTileIsOpen(previewX + forwardX * 2 + laneX,
+              previewY + forwardY * 2 + laneY))
         return false;
+    }
+    else
+    {
+      for (int step = 1; step <= forwardDistance; step++)
+      {
+        if (!PreviewTileIsOpen(previewX + forwardX * step, previewY + forwardY * step))
+          return false;
+      }
     }
 
     if (!TryGetFloorItemSubSquareOffset(
@@ -28568,6 +28586,13 @@ private static void HandleGameViewPointerDown(
     if (cornerLateral == 0)
       return false;
 
+    if (sideS3)
+    {
+      // Side lane takes its screen side from the tile, not the local corner.
+      isRight = lateralTileDistance > 0;
+      depth = FloorItemDepth.SideTwoAhead;
+      return true;
+    }
     isRight = cornerLateral > 0;
     depth = forwardDistance == 0
         ? FloorItemDepth.SameTile
@@ -28797,7 +28822,14 @@ private static void HandleGameViewPointerDown(
       if (traceApple)
       {
         int drawX, drawTop, drawWidth, drawHeight;
-        if (depth == FloorItemDepth.SameTile)
+        if (depth == FloorItemDepth.SideTwoAhead)
+        {
+          drawX = isRight ? appleS3RightPreviewX : appleS3LeftPreviewX;
+          drawTop = isRight ? appleS3RightPreviewScreenTop : appleS3LeftPreviewScreenTop;
+          drawWidth = AppleF3Width;
+          drawHeight = AppleF3Height;
+        }
+        else if (depth == FloorItemDepth.SameTile)
         {
           drawX = isRight ? appleF0RightPreviewX : appleF0FrontPreviewX;
           drawTop = isRight ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop;
@@ -28894,6 +28926,18 @@ private static void HandleGameViewPointerDown(
       return;
     }
 
+    if (depth == FloorItemDepth.SideTwoAhead)
+    {
+      if (!apple) return; // No verified bread side-S3 graphic yet.
+      int x = isRight ? appleS3RightPreviewX : appleS3LeftPreviewX;
+      int top = isRight ? appleS3RightPreviewScreenTop : appleS3LeftPreviewScreenTop;
+      BlitPieceScaledIntoPreview(pixels, texture,
+          x + pileOffset.x, PreviewHeight - top - AppleF3Height - pileOffset.y,
+          AppleF3Width, AppleF3Height, false,
+          skipCyanTransparencyKey: true, colorMap: WallOrnamentFarColorMap);
+      return;
+    }
+
     // F3 is calibrated from the Apple source today. Keep the generic map
     // projection active, but do not invent an unverified Bread F3 pixel slot.
     if (!apple)
@@ -28936,6 +28980,13 @@ private static void HandleGameViewPointerDown(
       x = right ? appleF2RightPreviewX : appleF2LeftPreviewX;
       top = right ? appleF2RightPreviewScreenTop : appleF2LeftPreviewScreenTop;
     }
+    else if (depth == FloorItemDepth.SideTwoAhead)
+    {
+      xField = right ? "appleS3RightPreviewX" : "appleS3LeftPreviewX";
+      yField = right ? "appleS3RightPreviewScreenTop" : "appleS3LeftPreviewScreenTop";
+      x = right ? appleS3RightPreviewX : appleS3LeftPreviewX;
+      top = right ? appleS3RightPreviewScreenTop : appleS3LeftPreviewScreenTop;
+    }
     else if (depth == FloorItemDepth.TwoAhead)
     {
       xField = right ? "appleF3RightPreviewX" : "appleF3LeftPreviewX";
@@ -28957,6 +29008,11 @@ private static void HandleGameViewPointerDown(
     {
       if (right) { appleF2RightPreviewX = x; appleF2RightPreviewScreenTop = top; }
       else { appleF2LeftPreviewX = x; appleF2LeftPreviewScreenTop = top; }
+    }
+    else if (depth == FloorItemDepth.SideTwoAhead)
+    {
+      if (right) { appleS3RightPreviewX = x; appleS3RightPreviewScreenTop = top; }
+      else { appleS3LeftPreviewX = x; appleS3LeftPreviewScreenTop = top; }
     }
     else if (depth == FloorItemDepth.TwoAhead)
     {
@@ -29177,7 +29233,7 @@ private static void HandleGameViewPointerDown(
 
       // Bread F3 has no verified pixel calibration yet, so it is not drawn
       // and should not appear as an active ViewEdit feature row.
-      if (depth == FloorItemDepth.TwoAhead
+      if ((depth == FloorItemDepth.TwoAhead || depth == FloorItemDepth.SideTwoAhead)
           && string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase))
         continue;
 
@@ -29186,7 +29242,8 @@ private static void HandleGameViewPointerDown(
 
       string depthLabel = depth == FloorItemDepth.SameTile
           ? "F1"
-          : depth == FloorItemDepth.OneAhead ? "F2" : "F3";
+          : depth == FloorItemDepth.OneAhead ? "F2"
+          : depth == FloorItemDepth.SideTwoAhead ? "S3" : "F3";
       // One compact ViewEdit line per pickable item: name, Set, X, Y, Apply.
       // Map coordinates and the redundant second calibration line are omitted.
       GUIStyle pickableLabelStyle = new GUIStyle(EditorStyles.boldLabel);
@@ -33815,6 +33872,13 @@ private static void HandleGameViewPointerDown(
           : (right ? breadF2RightPreviewX : breadF2LeftPreviewX);
       top = apple ? (right ? appleF2RightPreviewScreenTop : appleF2LeftPreviewScreenTop)
           : (right ? breadF2RightPreviewScreenTop : breadF2LeftPreviewScreenTop);
+    }
+    else if (depth == FloorItemDepth.SideTwoAhead)
+    {
+      if (!apple) return false;
+      width = AppleF3Width; height = AppleF3Height;
+      x = right ? appleS3RightPreviewX : appleS3LeftPreviewX;
+      top = right ? appleS3RightPreviewScreenTop : appleS3LeftPreviewScreenTop;
     }
     else
     {
