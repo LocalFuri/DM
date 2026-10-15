@@ -28852,6 +28852,10 @@ private static void HandleGameViewPointerDown(
     // CSBwin offset table is only required for the second and later items
     // at the same floor corner. Do not hide every floor item if JSON fails.
     var pileCounts = new Dictionary<string, int>(System.StringComparer.Ordinal);
+    // Keep all sprites in a same-tile F1 pile on one bottom edge. The first
+    // visible item establishes that edge; later items retain their CSBwin
+    // horizontal pile displacement but do not drift vertically from it.
+    var sameTilePileBottoms = new Dictionary<string, int>(System.StringComparer.Ordinal);
     for (int i = 0; i < items.Length; i++)
     {
       FloorItemPlacement item = items[i];
@@ -28891,6 +28895,26 @@ private static void HandleGameViewPointerDown(
       }
       Vector2Int pileOffset = indexInPile == 0 ? Vector2Int.zero
           : GetCsbPileDisplacement(item, depth, indexInPile);
+      if (depth == FloorItemDepth.SameTile)
+      {
+        bool appleInPile = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
+        bool breadInPile = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
+        if (appleInPile || breadInPile)
+        {
+          int spriteTop = appleInPile
+              ? (isRight ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop)
+              : (isRight ? breadF0RightPreviewScreenTop : breadF0LeftPreviewScreenTop);
+          int spriteBottom = spriteTop + texture.height;
+          if (!sameTilePileBottoms.TryGetValue(pileKey, out int sharedBottom))
+          {
+            sharedBottom = spriteBottom;
+            sameTilePileBottoms.Add(pileKey, sharedBottom);
+          }
+          // pileOffset.y is in screen-top coordinates in BlitProjectedFloorItem.
+          // Align *bottoms*, not texture tops; this leaves solo item anchors intact.
+          pileOffset.y = sharedBottom - spriteBottom;
+        }
+      }
       bool traceApple = traceNextFloorAppleBlit
           && string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase)
           && previewMovedFloorItems.ContainsKey(GetFloorItemInstanceId(item));
