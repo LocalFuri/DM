@@ -160,9 +160,9 @@ public class ViewportLayoutEditor : EditorWindow
   // Same-tile F0-forward calibration for pose (5,11) facing East. Keep these
   // as render-only values while deriving the generic floor-item projection.
   [System.NonSerialized]
-  private int breadF0LeftPreviewX = 50;
+  private int breadF0LeftPreviewX = 49;
   [System.NonSerialized]
-  private int breadF0LeftPreviewScreenTop = 152;
+  private int breadF0LeftPreviewScreenTop = 148;
 
   // Same-tile F0 right slot. Stored sub-square E at (5,11) facing North
   // projects here. Measured from that original: X=141, screen top Y=150.
@@ -29087,10 +29087,15 @@ private static void HandleGameViewPointerDown(
       string depthLabel = depth == FloorItemDepth.SameTile
           ? "F1"
           : depth == FloorItemDepth.OneAhead ? "F2" : "F3";
+      // Pickable floor-item descriptions are green in ViewEdit.
+      // Restore the GUI color immediately so calibration's red change markers remain intact.
+      Color previousItemLabelColor = GUI.contentColor;
+      GUI.contentColor = Color.green;
       GUILayout.Label(
           item.type + " [" + item.cell + "] - " + depthLabel + " " + (isRight ? "Right" : "Left"),
           EditorStyles.boldLabel,
           GUILayout.Width(210f));
+      GUI.contentColor = previousItemLabelColor;
 
       bool enabledBefore = IsPreviewFeatureEnabled(key);
       bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
