@@ -131,7 +131,10 @@ public class DungeonFeatureEditor : EditorWindow
   private static readonly string[] VerifiedChampionEquipmentNames =
   {
     "Iaido",
-    "Chani"
+    "Chani",
+    "Hawk",
+    "Zed",
+    "Alex"
   };
 
   private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =
