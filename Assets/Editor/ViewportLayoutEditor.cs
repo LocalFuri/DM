@@ -169,7 +169,7 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private int breadF0RightPreviewX = 141;
   [System.NonSerialized]
-  private int breadF0RightPreviewScreenTop = 148;
+  private int breadF0RightPreviewScreenTop = 152;
 
   // One-tile-ahead bread. Measured on the original (4,11) East view:
   // stored E projects left, X=72, screen top Y=121, size 17x10.
@@ -23426,6 +23426,32 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
+  // Compact floor-ornament row: only the object's name is colored.
+  // Unlike generic checklist rows, this does not show map coordinates.
+  private void DrawCompactPuddleRow(string displayName, string key)
+  {
+    EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
+    GUIStyle nameStyle = new GUIStyle(EditorStyles.boldLabel);
+    Color puddleColor = new Color(0.3f, 0.75f, 1f);
+    nameStyle.normal.textColor = puddleColor;
+    nameStyle.hover.textColor = puddleColor;
+    nameStyle.focused.textColor = puddleColor;
+    nameStyle.clipping = TextClipping.Clip;
+    GUILayout.Label(displayName, nameStyle, GUILayout.Width(118f));
+
+    bool before = IsPreviewFeatureEnabled(key);
+    bool after = DrawCompactMouseOnlyToggle("Set", before, false);
+    EditorGUILayout.EndHorizontal();
+    if (after == before)
+      return;
+
+    SetPreviewFeatureEnabled(key, after);
+    previewEnabledChangedThisFrame = true;
+    RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
+  }
+
   private void DrawFeatureChecklistRow(
       int mapX,
       int mapY,
@@ -24930,12 +24956,9 @@ private static void HandleGameViewPointerDown(
           continue;
 
         string key = MakePreviewFeatureKey("Puddle", x, y, null);
-        DrawFeatureChecklistRow(
-            x,
-            y,
-            "Puddle",
-            key,
-            new Color(0.3f, 0.75f, 1f));
+        string puddleDepth = "F" + depth;
+        string puddleSide = lane < 0 ? " L" : lane > 0 ? " R" : "";
+        DrawCompactPuddleRow("Puddle " + puddleDepth + puddleSide, key);
       }
     }
 
