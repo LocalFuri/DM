@@ -28898,9 +28898,6 @@ private static void HandleGameViewPointerDown(
       appleSavedScreenPositions.Add(key, saved);
     }
     float previousLabelWidth = EditorGUIUtility.labelWidth;
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.Space(58f);
-    GUILayout.Label("Apple screen", EditorStyles.boldLabel, GUILayout.Width(145f));
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int editX = x;
     bool changedX = DrawIntStepperInline(
@@ -28911,7 +28908,6 @@ private static void HandleGameViewPointerDown(
         "Y", ref editY, snap, top != saved.y, true, 25f, 25f);
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
     NoteContentRight();
-    EditorGUILayout.EndHorizontal();
     EditorGUIUtility.labelWidth = previousLabelWidth;
     if (changedX || changedY)
     {
@@ -29023,9 +29019,6 @@ private static void HandleGameViewPointerDown(
       breadSavedScreenPositions.Add(key, saved);
     }
     float previousLabelWidth = EditorGUIUtility.labelWidth;
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.Space(58f);
-    GUILayout.Label("Bread screen", EditorStyles.boldLabel, GUILayout.Width(145f));
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int editX = x;
     bool changedX = DrawIntStepperInline(
@@ -29036,7 +29029,6 @@ private static void HandleGameViewPointerDown(
         "Y", ref editY, snap, top != saved.y, true, 25f, 25f);
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
     NoteContentRight();
-    EditorGUILayout.EndHorizontal();
     EditorGUIUtility.labelWidth = previousLabelWidth;
     if (changedX || changedY)
     {
@@ -29072,41 +29064,32 @@ private static void HandleGameViewPointerDown(
         continue;
 
       string key = GetFloorItemFeatureKey(item);
-      EditorGUILayout.BeginHorizontal();
-
-      float savedLabelWidth = EditorGUIUtility.labelWidth;
-      EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
-      using (new EditorGUI.DisabledScope(true))
-      {
-        EditorGUILayout.IntField("X", item.x, GUILayout.Width(FloorItemMapCoordFieldWidth));
-        EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-        EditorGUILayout.IntField("Y", item.y, GUILayout.Width(FloorItemMapCoordFieldWidth));
-      }
-      EditorGUIUtility.labelWidth = savedLabelWidth;
+      EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
 
       string depthLabel = depth == FloorItemDepth.SameTile
           ? "F1"
           : depth == FloorItemDepth.OneAhead ? "F2" : "F3";
-      // Pickable floor-item descriptions are green in ViewEdit.
-      // Restore the GUI color immediately so calibration's red change markers remain intact.
-      Color previousItemLabelColor = GUI.contentColor;
-      GUI.contentColor = Color.green;
+      // One compact ViewEdit line per pickable item: name, Set, X, Y, Apply.
+      // Map coordinates and the redundant second calibration line are omitted.
+      GUIStyle pickableLabelStyle = new GUIStyle(EditorStyles.boldLabel);
+      pickableLabelStyle.normal.textColor = Color.green;
+      pickableLabelStyle.hover.textColor = Color.green;
+      pickableLabelStyle.clipping = TextClipping.Clip;
       GUILayout.Label(
-          item.type + " [" + item.cell + "] - " + depthLabel + " " + (isRight ? "Right" : "Left"),
-          EditorStyles.boldLabel,
-          GUILayout.Width(210f));
-      GUI.contentColor = previousItemLabelColor;
+          item.type + " [" + item.cell + "] " + depthLabel + " " + (isRight ? "R" : "L"),
+          pickableLabelStyle,
+          GUILayout.Width(118f));
 
       bool enabledBefore = IsPreviewFeatureEnabled(key);
       bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
+      if (enabledAfter)
+      {
+        if (string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase))
+          DrawAppleScreenCalibration(depth, isRight);
+        else if (string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase))
+          DrawBreadScreenCalibration(depth, isRight);
+      }
       EditorGUILayout.EndHorizontal();
-
-      if (string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase)
-          && enabledAfter)
-        DrawAppleScreenCalibration(depth, isRight);
-      if (string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase)
-          && enabledAfter)
-        DrawBreadScreenCalibration(depth, isRight);
 
       if (enabledAfter != enabledBefore)
       {
