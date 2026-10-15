@@ -28813,6 +28813,36 @@ private static void HandleGameViewPointerDown(
     return offsets[(initial + pileIndex) & 15] - offsets[initial];
   }
 
+  // Pile anchoring is relative to the first placed item, not to a
+  // specific item type. ViewEdit calibrations remain independent for single
+  // items; when stacked, later sprites share the first sprite's bottom Y.
+  private bool TryGetPileAlignedOffset(FloorItemPlacement item,
+      FloorItemPlacement[] items, FloorItemDepth depth, int pileIndex,
+      out Vector2Int offset)
+  {
+    offset = Vector2Int.zero;
+    if (pileIndex == 0) return true;
+    if (!EnsureCsbFloorOffsetsLoaded()) return false;
+    offset = GetCsbPileDisplacement(item, depth, pileIndex);
+    if (!TryGetUnstackedFloorItemScreenRect(item, out Rect itemRect)) return false;
+    for (int i = 0; i < items.Length; ++i)
+    {
+      FloorItemPlacement first = items[i];
+      if (first.x != item.x || first.y != item.y ||
+          !string.Equals(first.cell, item.cell, System.StringComparison.OrdinalIgnoreCase))
+        continue;
+      if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(first)) ||
+          !TryGetUnstackedFloorItemScreenRect(first, out Rect firstRect))
+        continue;
+      // Unity screen coordinates run downwards; the bottom is yMax.
+      offset.y = Mathf.RoundToInt(firstRect.yMax - itemRect.yMax);
+      return true;
+    }
+    Debug.LogError("FLOOR PILE: unable to determine initial item bottom edge at ("
+        + item.x + "," + item.y + ") corner " + item.cell + ".");
+    return false;
+  }
+
   // One-frame diagnostics after a floor drop. Do not change rendering logic.
   private bool traceNextFloorAppleBlit;
 
@@ -28848,9 +28878,9 @@ private static void HandleGameViewPointerDown(
           + "; enabled=" + enabled + "; texture=" + (appleTexture == null ? "missing" : "loaded")
           + "; pileDataLoaded=" + (csbFloorOffsetRows != null));
     }
-    // Individual floor items use their calibrated screen positions; the
-    // CSBwin offset table is only required for the second and later items
-    // at the same floor corner. Do not hide every floor item if JSON fails.
+    // Individual floor items use their calibrated screen positions. Later
+    // pile items inherit the first item's bottom edge; their X offsets still
+    // come from CSBwin. Do not hide single items if the offset JSON fails.
     var pileCounts = new Dictionary<string, int>(System.StringComparer.Ordinal);
     for (int i = 0; i < items.Length; i++)
     {
@@ -28883,14 +28913,13 @@ private static void HandleGameViewPointerDown(
       string pileKey = item.x + ":" + item.y + ":" + item.cell;
       pileCounts.TryGetValue(pileKey, out int indexInPile);
       pileCounts[pileKey] = indexInPile + 1;
-      if (indexInPile > 0 && !EnsureCsbFloorOffsetsLoaded())
+      if (!TryGetPileAlignedOffset(item, items, depth, indexInPile,
+          out Vector2Int pileOffset))
       {
-        if (traceNextFloorAppleBlit && item.type == "Apple") Debug.LogError("APPLE DRAW SKIP: CSBwin pile offsets unavailable; item is in the drawing list but cannot be blitted.");
-        // Do not render a pile with invented offsets. Loader reports error.
+        if (traceNextFloorAppleBlit && item.type == "Apple")
+          Debug.LogError("APPLE DRAW SKIP: pile offset or bottom anchor unavailable.");
         continue;
       }
-      Vector2Int pileOffset = indexInPile == 0 ? Vector2Int.zero
-          : GetCsbPileDisplacement(item, depth, indexInPile);
       bool traceApple = traceNextFloorAppleBlit
           && string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase)
           && previewMovedFloorItems.ContainsKey(GetFloorItemInstanceId(item));
@@ -33972,7 +34001,7 @@ private static void HandleGameViewPointerDown(
   private Texture2D previewHeldFloorItemCursor;
 
   // These rectangles use exactly the same positions/dimensions as drawing.
-  private bool TryGetFloorItemScreenRect(FloorItemPlacement item,
+  private bool TryGetUnstackedFloorItemScreenRect(FloorItemPlacement item,
       out Rect rect)
   {
     rect = new Rect();
@@ -34016,6 +34045,37 @@ private static void HandleGameViewPointerDown(
       top = right ? appleF3RightPreviewScreenTop : appleF3LeftPreviewScreenTop;
     }
     rect = new Rect(x, top, width, height);
+    return true;
+  }
+
+  // Picking uses the exact same translated rectangle as pile rendering.
+  private bool TryGetFloorItemScreenRect(FloorItemPlacement item,
+      out Rect rect)
+  {
+    if (!TryGetUnstackedFloorItemScreenRect(item, out rect)) return false;
+    FloorItemPlacement[] items = GetCurrentFloorItems();
+    int pileIndex = 0;
+    bool found = false;
+    for (int i = 0; i < items.Length; ++i)
+    {
+      FloorItemPlacement current = items[i];
+      if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(current)) ||
+          !TryGetUnstackedFloorItemScreenRect(current, out Rect unusedRect))
+        continue;
+      if (GetFloorItemInstanceId(current) == GetFloorItemInstanceId(item))
+      {
+        found = true;
+        break;
+      }
+      if (current.x == item.x && current.y == item.y &&
+          string.Equals(current.cell, item.cell, System.StringComparison.OrdinalIgnoreCase))
+        pileIndex++;
+    }
+    if (!found) return false;
+    if (!TryProjectFloorItem(item, out FloorItemDepth depth, out bool right)) return false;
+    if (!TryGetPileAlignedOffset(item, items, depth, pileIndex,
+        out Vector2Int offset)) return false;
+    rect = new Rect(rect.x + offset.x, rect.y + offset.y, rect.width, rect.height);
     return true;
   }
 
