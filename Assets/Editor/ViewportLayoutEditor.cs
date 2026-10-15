@@ -169,7 +169,7 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private int breadF0RightPreviewX = 141;
   [System.NonSerialized]
-  private int breadF0RightPreviewScreenTop = 152;
+  private int breadF0RightPreviewScreenTop = 148;
 
   // One-tile-ahead bread. Measured on the original (4,11) East view:
   // stored E projects left, X=72, screen top Y=121, size 17x10.
