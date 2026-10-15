@@ -8468,7 +8468,7 @@ private static void HandleGameViewPointerDown(
     string slot = "pack";
     if (name.Contains("HELM"))
       slot = "head";
-    else if (name.Contains("CHOKER") || name.Contains("CLOAK"))
+    else if (name.Contains("CHOKER") || name.Contains("CLOAK") || name == "MOONSTONE")
       slot = "neck";
     else if (name.Contains("HOSEN"))
       slot = "feet";
