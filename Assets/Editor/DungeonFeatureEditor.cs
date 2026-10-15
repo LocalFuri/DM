@@ -7,7 +7,7 @@ using UnityEngine;
 public class DungeonFeatureEditor : EditorWindow
 {
   private const string HallOfChampionsMapPath =
-      "Assets/Data/Maps/HallOfChampions.json";
+      "Assets/Data/Maps/DungeonMaster_Level00.json";
   private const string DungeonFeaturePlacementsPath =
       "Assets/Data/Features/DungeonFeaturePlacements.json";
   private const int HallOfChampionsLevel = 0;
@@ -61,6 +61,8 @@ public class DungeonFeatureEditor : EditorWindow
   private static readonly Color ChampionMirrorDotColor =
       new Color(1.0f, 0.9f, 0.0f, 1f);
   private static readonly Color ChampionNameColor =
+      new Color(0f, 1f, 0f, 1f);
+  private static readonly Color VerifiedChampionTileColor =
       new Color(0f, 1f, 0f, 1f);
 
   private enum WallSide
@@ -125,6 +127,12 @@ public class DungeonFeatureEditor : EditorWindow
       new OriginalWallOrnamentMarker[0];
   private readonly HashSet<int> resolvedPuddleFloors = new HashSet<int>();
   private readonly HashSet<int> resolvedMossFloors = new HashSet<int>();
+
+  private static readonly string[] VerifiedChampionEquipmentNames =
+  {
+    "Iaido",
+    "Chani"
+  };
 
   private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =
   {
@@ -474,15 +482,19 @@ public class DungeonFeatureEditor : EditorWindow
             CellSize
         );
 
-        DrawCell(cellRect, map.GetTile(x, y), x == selectedX && y == selectedY);
+        DrawCell(
+            cellRect,
+            map.GetTile(x, y),
+            x == selectedX && y == selectedY);
       }
     }
 
     DrawStairDownIcons(mapRect);
     DrawPuddleFloorIcons(mapRect);
     DrawMossFloorIcons(mapRect);
-    DrawChampionMirrorMarkers(mapRect);
     DrawOriginalWallOrnamentIcons(mapRect);
+    DrawVerifiedChampionTileHighlights(mapRect);
+    DrawChampionMirrorMarkers(mapRect);
     HandleGridClick(mapRect);
 
     EditorGUILayout.EndScrollView();
@@ -576,6 +588,54 @@ public class DungeonFeatureEditor : EditorWindow
             2f,
             cellRect.height),
         SelectionBorderColor);
+  }
+
+  private static bool IsVerifiedChampionTile(int dungeonLevel, int tileX, int tileY)
+  {
+    if (dungeonLevel != HallOfChampionsLevel)
+      return false;
+
+    for (int i = 0; i < ChampionMirrorMarkers.Length; i++)
+    {
+      ChampionMirrorMarker marker = ChampionMirrorMarkers[i];
+      if (marker.X != tileX || marker.Y != tileY)
+        continue;
+
+      for (int nameIndex = 0; nameIndex < VerifiedChampionEquipmentNames.Length; nameIndex++)
+      {
+        if (string.Equals(
+                marker.Champion,
+                VerifiedChampionEquipmentNames[nameIndex],
+                System.StringComparison.OrdinalIgnoreCase))
+          return true;
+      }
+
+      return false;
+    }
+
+    return false;
+  }
+
+  // Final tile highlight pass, drawn above ornaments and beneath champion names/markers.
+  // This deliberately uses mirror coordinates (the champion's wall tile), not player coordinates.
+  private void DrawVerifiedChampionTileHighlights(Rect mapRect)
+  {
+    if (currentDungeonLevel != HallOfChampionsLevel)
+      return;
+
+    for (int i = 0; i < ChampionMirrorMarkers.Length; i++)
+    {
+      ChampionMirrorMarker marker = ChampionMirrorMarkers[i];
+      if (!IsVerifiedChampionTile(currentDungeonLevel, marker.X, marker.Y))
+        continue;
+
+      Rect tileRect = new Rect(
+          mapRect.x + marker.X * CellSize + 1f,
+          mapRect.y + marker.Y * CellSize + 1f,
+          CellSize - 2f,
+          CellSize - 2f);
+      EditorGUI.DrawRect(tileRect, VerifiedChampionTileColor);
+    }
   }
 
   private void DrawChampionMirrorMarkers(Rect mapRect)
