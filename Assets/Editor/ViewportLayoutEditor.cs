@@ -9018,7 +9018,8 @@ private static void HandleGameViewPointerDown(
     {
       case "ROBE":
       case "ROBEBODY":
-        return "Robe (Body)";
+        // Explicit canonical artwork for ELIJA's torso robe.
+        return "Robe Body";
       case "ROBELEGS":
         return "Robe (Legs)";
       // Hero data names the torso item "Ghi"; its explicit 16x16 artwork

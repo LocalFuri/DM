@@ -135,7 +135,9 @@ public class DungeonFeatureEditor : EditorWindow
     "Hawk",
     "Zed",
     "Alex",
-    "Boris"
+    "Boris",
+    "Elija",
+    "Linflas"
   };
 
   private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =
