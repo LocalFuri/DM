@@ -23426,11 +23426,73 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
-  // Compact floor-ornament row: only the object's name is colored.
-  // Unlike generic checklist rows, this does not show map coordinates.
-  private void DrawCompactPuddleRow(string displayName, string key)
+  // Puddle screen calibration uses the same projection anchor as its renderer.
+  // X/Y are framebuffer bottom-left coordinates, not dungeon-map coordinates.
+  private string PuddleProjectionKey(int depth, int lane)
   {
+    return "OrnamentProjection:Puddle:F" + depth
+        + (lane < 0 ? "L" : lane > 0 ? "R" : "");
+  }
+
+  private bool TryGetPuddleProjection(int depth, int lane,
+      out int x, out int y)
+  {
+    x = 0;
+    y = 0;
+    string path;
+    Texture2D texture;
+    if (depth == 1 && lane != 0)
+    {
+      path = PuddleF1SideAssetPath;
+      texture = GetPuddleTexture(path, ref cachedPuddleF1SideTexture);
+      if (texture == null) return false;
+      x = lane < 0 ? 0 : DungeonViewportWidth - texture.width;
+      y = PreviewHeight - PuddleF1ScreenTop - texture.height + 1;
+      return true;
+    }
+    if (depth == 2 && lane != 0)
+    {
+      path = PuddleS2AssetPath;
+      texture = GetPuddleTexture(path, ref cachedPuddleS2Texture);
+      if (texture == null) return false;
+      x = lane < 0 ? PuddleS2LeftScreenX
+          : DungeonViewportWidth - PuddleS2LeftScreenX - texture.width;
+      y = PreviewHeight - PuddleS2ScreenTop - texture.height;
+      return true;
+    }
+    if (lane != 0) return false;
+    path = depth == 1 ? PuddleF1AssetPath
+        : depth == 2 ? PuddleF2AssetPath : PuddleF3AssetPath;
+    if (depth == 1) texture = GetPuddleTexture(path, ref cachedPuddleF1Texture);
+    else if (depth == 2) texture = GetPuddleTexture(path, ref cachedPuddleF2Texture);
+    else texture = GetPuddleTexture(path, ref cachedPuddleF3Texture);
+    if (texture == null) return false;
+    x = (DungeonViewportWidth - texture.width) / 2;
+    y = PreviewHeight - (depth == 1 ? PuddleF1ScreenTop
+        : depth == 2 ? PuddleF2ScreenTop : PuddleF3ScreenTop) - texture.height;
+    return true;
+  }
+
+  private void DrawCompactPuddleRow(string displayName, string key,
+      int depth, int lane)
+  {
+    if (!TryGetPuddleProjection(depth, lane, out int codedX, out int codedY))
+    {
+      Debug.LogError("ViewEdit Puddle: missing projection texture for " + displayName);
+      return;
+    }
+    string projectionKey = PuddleProjectionKey(depth, lane);
+    int defaultX = codedX;
+    int defaultY = codedY;
+    bool mirror = lane > 0;
+    ApplyAcceptedOrnamentReference(
+        projectionKey, ref defaultX, ref defaultY, ref mirror);
+    int x = defaultX;
+    int y = defaultY;
+    ApplyPreviewFeatureRenderOverrides(projectionKey, ref x, ref y, ref mirror);
+
     EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
+    float savedLabelWidth = EditorGUIUtility.labelWidth;
     GUIStyle nameStyle = new GUIStyle(EditorStyles.boldLabel);
     Color puddleColor = new Color(0.3f, 0.75f, 1f);
     nameStyle.normal.textColor = puddleColor;
@@ -23439,17 +23501,47 @@ private static void HandleGameViewPointerDown(
     nameStyle.clipping = TextClipping.Clip;
     GUILayout.Label(displayName, nameStyle, GUILayout.Width(118f));
 
-    bool before = IsPreviewFeatureEnabled(key);
-    bool after = DrawCompactMouseOnlyToggle("Set", before, false);
+    bool enabledBefore = IsPreviewFeatureEnabled(key);
+    bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    int editX = x;
+    bool changedX = DrawIntStepperInline(
+        "X", ref editX, snap, x != defaultX, true, 25f, 25f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    int editY = y;
+    bool changedY = DrawIntStepperInline(
+        "Y", ref editY, snap, y != defaultY, true, 25f, 25f);
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = savedLabelWidth;
     EditorGUILayout.EndHorizontal();
-    if (after == before)
-      return;
 
-    SetPreviewFeatureEnabled(key, after);
-    previewEnabledChangedThisFrame = true;
-    RefreshEditModePreview();
-    RepaintGameViews();
-    Repaint();
+    bool refresh = false;
+    if (enabledBefore != enabledAfter)
+    {
+      SetPreviewFeatureEnabled(key, enabledAfter);
+      previewEnabledChangedThisFrame = true;
+      refresh = true;
+    }
+    if (changedX || changedY)
+    {
+      previewFeaturePositionOverrides[projectionKey] =
+          new Vector2Int(editX, editY);
+      previewPositionChangedThisFrame = true;
+      refresh = true;
+    }
+    if (apply && SaveAcceptedOrnamentReference(
+            projectionKey, editX, editY, mirror))
+    {
+      previewFeaturePositionOverrides.Remove(projectionKey);
+      refresh = true;
+    }
+    if (refresh)
+    {
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
   }
 
   private void DrawFeatureChecklistRow(
@@ -24958,7 +25050,7 @@ private static void HandleGameViewPointerDown(
         string key = MakePreviewFeatureKey("Puddle", x, y, null);
         string puddleDepth = "F" + depth;
         string puddleSide = lane < 0 ? " L" : lane > 0 ? " R" : "";
-        DrawCompactPuddleRow("Puddle " + puddleDepth + puddleSide, key);
+        DrawCompactPuddleRow("Puddle " + puddleDepth + puddleSide, key, depth, lane);
       }
     }
 
@@ -29481,7 +29573,11 @@ private static void HandleGameViewPointerDown(
         : 0;
     int y = PreviewHeight - PuddleF1ScreenTop - texture.height + 1;
 
-    BlitPieceIntoPreview(pixels, texture, x, y, rightSide);
+    string projectionKey = PuddleProjectionKey(1, rightSide ? 1 : -1);
+    bool mirror = rightSide;
+    ApplyAcceptedOrnamentReference(projectionKey, ref x, ref y, ref mirror);
+    ApplyPreviewFeatureRenderOverrides(projectionKey, ref x, ref y, ref mirror);
+    BlitPieceIntoPreview(pixels, texture, x, y, mirror);
   }
 
   private void BlitPuddleFloor(
@@ -29512,6 +29608,13 @@ private static void HandleGameViewPointerDown(
       x = DungeonViewportWidth - leftScreenX - texture.width;
 
     int y = PreviewHeight - screenTop - texture.height;
+    int depth = assetPath == PuddleF1AssetPath ? 1
+        : assetPath == PuddleF2AssetPath ? 2
+        : assetPath == PuddleF3AssetPath ? 3 : 2;
+    int lane = centerInViewport ? 0 : mirror ? 1 : -1;
+    string projectionKey = PuddleProjectionKey(depth, lane);
+    ApplyAcceptedOrnamentReference(projectionKey, ref x, ref y, ref mirror);
+    ApplyPreviewFeatureRenderOverrides(projectionKey, ref x, ref y, ref mirror);
     BlitPieceIntoPreview(pixels, texture, x, y, mirror);
   }
 
