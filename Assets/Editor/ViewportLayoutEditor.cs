@@ -169,7 +169,7 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private int breadF0RightPreviewX = 141;
   [System.NonSerialized]
-  private int breadF0RightPreviewScreenTop = 152;
+  private int breadF0RightPreviewScreenTop = 148;
 
   // One-tile-ahead bread. Measured on the original (4,11) East view:
   // stored E projects left, X=72, screen top Y=121, size 17x10.
@@ -1490,6 +1490,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
   // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
   // REF OrnamentProjection:Moss:F3|108|96|false|639267381805114279
+  // REF OrnamentProjection:Puddle:F1L|0|57|false|639276809435648392
   // REF OrnamentProjection:Slime:F2|104|74|false
   // REF OrnamentProjection:Slime:F3|106|93|false|639267208231012151
   // REF OrnamentProjection:WoodRing:F1|98|104|false
@@ -24680,7 +24681,6 @@ private static void HandleGameViewPointerDown(
     // Loose-item calibrations from the original Level 0 DUNGEON.DAT.
     DrawFloorItemRows();
     DrawTorchDownCalibrationRow();
-    DrawTorchFlightTimingRow();
 
     // Champion Mirrors. Only rows that correspond to a mirror projection the
     // renderer can actually draw for this pose are shown. X/Y are framebuffer
@@ -25221,6 +25221,9 @@ private static void HandleGameViewPointerDown(
         && IsPreviewFeatureEnabled(MakePreviewFeatureKey(
             "StairsDown", leftStairsX, leftStairsY, null)))
       DrawStairsDownS1LeftCalibrationRow(leftStairsX, leftStairsY);
+
+    // Timing is a global editor setting, so display it after every feature row.
+    DrawTorchFlightTimingRow();
   }
 
   // Same-tile right-side down-stairs detail. Detection matches its ViewEdit row.
@@ -34319,7 +34322,7 @@ private static void HandleGameViewPointerDown(
     int shown = previewTorchFlightTimingOverride ?? stored;
     EditorGUILayout.BeginHorizontal();
     GUIStyle labelStyle = new GUIStyle(EditorStyles.boldLabel);
-    labelStyle.normal.textColor = Color.yellow;
+    labelStyle.normal.textColor = new Color(0f, 0f, 1f);
     GUILayout.Label("TorchFlight F1-F3", labelStyle, GUILayout.Width(195f));
     float oldLabelWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("ms")).x;
