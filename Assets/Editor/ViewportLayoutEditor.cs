@@ -29008,10 +29008,10 @@ private static void HandleGameViewPointerDown(
       if (!apple) return; // No verified bread side-S3 graphic yet.
       int x = isRight ? appleS3RightPreviewX : appleS3LeftPreviewX;
       int top = isRight ? appleS3RightPreviewScreenTop : appleS3LeftPreviewScreenTop;
-      BlitPieceScaledIntoPreview(pixels, texture,
-          x + pileOffset.x, PreviewHeight - top - AppleF3Height - pileOffset.y,
-          AppleF3Width, AppleF3Height, false,
-          skipCyanTransparencyKey: true, colorMap: WallOrnamentFarColorMap);
+      // S3 uses the visible horizontal artwork bounds so transparent padding
+      // does not consume one of the six destination columns.
+      BlitS3AppleIntoPreview(pixels, texture,
+          x + pileOffset.x, PreviewHeight - top - AppleF3Height - pileOffset.y);
       return;
     }
 
@@ -29027,6 +29027,57 @@ private static void HandleGameViewPointerDown(
         AppleF3Width, AppleF3Height, false,
         skipCyanTransparencyKey: true,
         colorMap: WallOrnamentFarColorMap);
+  }
+
+  // Only the side-corridor S3 apple uses this horizontal source crop.
+  // Keep its 6x5 destination, vertical sampling, palette, and other item
+  // scaling paths unchanged. Transparent source padding is not artwork.
+  private static void BlitS3AppleIntoPreview(
+      Color32[] pixels, Texture2D texture, int destinationX, int destinationY)
+  {
+    if (texture == null || !texture.isReadable || texture.width <= 0 || texture.height <= 0)
+      return;
+
+    Color32[] sourcePixels = texture.GetPixels32();
+    int minVisibleX = texture.width;
+    int maxVisibleX = -1;
+    for (int y = 0; y < texture.height; ++y)
+      for (int x = 0; x < texture.width; ++x)
+      {
+        Color32 c = sourcePixels[y * texture.width + x];
+        if (c.a == 0 || (c.r == 0 && c.g == 255 && c.b == 255))
+          continue;
+        minVisibleX = Mathf.Min(minVisibleX, x);
+        maxVisibleX = Mathf.Max(maxVisibleX, x);
+      }
+
+    if (maxVisibleX < minVisibleX)
+    {
+      Debug.LogError("S3 apple has no visible source pixels: " + AppleGroundAssetPath);
+      return;
+    }
+
+    // Include both visible extreme columns in nearest-neighbor sampling.
+    // This is intentionally S3-only, not a change to generic scaled blits.
+    Color32[] brightPalette = DungeonViewportLightPalettes[0];
+    int sourceSpan = maxVisibleX - minVisibleX;
+    for (int row = 0; row < AppleF3Height; ++row)
+    {
+      int targetY = destinationY + row;
+      if (targetY < 0 || targetY >= PreviewHeight) continue;
+      int sourceY = row * texture.height / AppleF3Height;
+      for (int col = 0; col < AppleF3Width; ++col)
+      {
+        int targetX = destinationX + col;
+        if (targetX < 0 || targetX >= DungeonViewportWidth) continue;
+        int sourceX = minVisibleX + col * sourceSpan / (AppleF3Width - 1);
+        Color32 c = sourcePixels[sourceY * texture.width + sourceX];
+        if (c.a == 0 || (c.r == 0 && c.g == 255 && c.b == 255)) continue;
+        int sourcePaletteIndex = FindExactDmPaletteIndexOrNearest(c, brightPalette);
+        int mappedPaletteIndex = Mathf.Clamp(WallOrnamentFarColorMap[sourcePaletteIndex], 0, 15);
+        pixels[targetY * PreviewWidth + targetX] = brightPalette[mappedPaletteIndex];
+      }
+    }
   }
 
   // Saved defaults for ViewEdit apple pixel positions. The current in-memory
