@@ -11243,6 +11243,28 @@ private static void HandleGameViewPointerDown(
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3));
   }
 
+  /// <summary>
+  /// D3 full-front edge behind a near center wall, with the left lane open
+  /// through D2 (Level 0 5,11 North geometry class). The left edge remains
+  /// visible in original DM even though the D1 center is blocked.
+  /// This uses viewer-relative lanes, not absolute map axes or coordinates.
+  /// </summary>
+  private static bool IsViewport17LeftS3NearCenterFullD3Edge(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null)
+      return false;
+
+    return IsViewport17LaneOpenAt(inspection, -1, 0)
+        && IsViewport17LaneOpenAt(inspection, -1, 1)
+        && IsViewport17LaneOpenAt(inspection, -1, 2)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 1))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 1))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3));
+  }
+
   private static bool IsViewport17RightS3D3FrontEdge(
       Viewport17Inspection inspection)
   {
@@ -11995,7 +12017,7 @@ private static void HandleGameViewPointerDown(
       }
     }
 
-    // LeftS3 has three verified geometry roles:
+    // LeftS3 is selected from viewer-relative geometry classes:
     //   1) the narrow far-left D3 terminator strip (6,4 East class),
     //   2) the tiny exposed left edge of a D2 C+R front block behind a fully
     //      open D1 span (10,5 East class), and
@@ -12019,17 +12041,20 @@ private static void HandleGameViewPointerDown(
         IsViewport17LeftS3D3FullFrontEdge(inspection);
     bool leftS3OpenLeftD3CenterFront =
         IsViewport17LeftS3OpenLeftD3CenterFront(inspection);
+    bool leftS3NearCenterFullD3Edge =
+        IsViewport17LeftS3NearCenterFullD3Edge(inspection);
     if (leftS3D3Terminator
         || leftS3D2FrontEdge
         || leftS3D3FullFrontEdge
-        || leftS3OpenLeftD3CenterFront)
+        || leftS3OpenLeftD3CenterFront
+        || leftS3NearCenterFullD3Edge)
     {
-      Viewport17Cell primaryCell = leftS3D3Terminator || leftS3D3FullFrontEdge
+      Viewport17Cell primaryCell = leftS3D3Terminator || leftS3D3FullFrontEdge || leftS3NearCenterFullD3Edge
           ? FindViewport17Cell(inspection.Cells, -1, 3)
           : leftS3OpenLeftD3CenterFront
               ? FindViewport17Cell(inspection.Cells, 0, 3)
               : FindViewport17Cell(inspection.Cells, 0, 2);
-      Viewport17Cell adjacentCell = leftS3D3Terminator || leftS3D3FullFrontEdge
+      Viewport17Cell adjacentCell = leftS3D3Terminator || leftS3D3FullFrontEdge || leftS3NearCenterFullD3Edge
           ? FindViewport17Cell(inspection.Cells, 0, 3)
           : FindViewport17Cell(inspection.Cells, -1, 2);
       Viewport17Surface leftS3Surface = new Viewport17Surface
@@ -12045,8 +12070,10 @@ private static void HandleGameViewPointerDown(
               "LeftS3",
               leftS3D2FrontEdge
                   ? "LEFT S3 D2 FRONT EDGE"
-                  : leftS3D3FullFrontEdge
-                      ? "LEFT S3 D3 FULL FRONT EDGE"
+                  : leftS3NearCenterFullD3Edge
+                      ? "LEFT S3 NEAR CENTER FULL D3 EDGE"
+                      : leftS3D3FullFrontEdge
+                          ? "LEFT S3 D3 FULL FRONT EDGE"
                       : leftS3OpenLeftD3CenterFront
                           ? "LEFT S3 OPEN LEFT D3 CENTER"
                           : "LEFT S3 STRIP",
@@ -12725,6 +12752,7 @@ private static void HandleGameViewPointerDown(
       if (command.PieceFamily == "LeftS3"
           && (IsViewport17LeftS3D2FrontEdge(inspection)
               || IsViewport17LeftS3D3FullFrontEdge(inspection)
+              || IsViewport17LeftS3NearCenterFullD3Edge(inspection)
               || IsViewport17LeftS3OpenLeftD3CenterFront(inspection)))
       {
         command.Sequence = finalCommands.Count;
@@ -15672,11 +15700,13 @@ private static void HandleGameViewPointerDown(
             IsViewport17LeftS3D3FullFrontEdge(inspection);
         bool leftS3OpenLeftD3CenterFront =
             IsViewport17LeftS3OpenLeftD3CenterFront(inspection);
+        bool leftS3NearCenterFullD3Edge =
+            IsViewport17LeftS3NearCenterFullD3Edge(inspection);
         bool leftS3Enabled =
             HasViewport17FinalFamily(finalCommands, "LeftS3");
         bool leftS3Mirror = leftS3D2FrontEdge || leftS3OpenLeftD3CenterFront
             ? false
-            : leftS3D3FullFrontEdge
+            : (leftS3D3FullFrontEdge || leftS3NearCenterFullD3Edge)
                 ? true
                 : GetSideWallMirrorFromPose();
         ApplyViewport17NativeManualControls(
