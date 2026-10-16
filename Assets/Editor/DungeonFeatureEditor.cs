@@ -1251,7 +1251,7 @@ public class DungeonFeatureEditor : EditorWindow
     woodRingMapIcon = FindBestOrnamentTexture("WoodRing");
     slimeMapIcon = FindBestOrnamentTexture("Slime");
     grateMapIcon = FindBestOrnamentTexture("Grate");
-    fullTorchHolderMapIcon = FindExactTextureByName("Torch_Holder_Empty_F1_24x54");
+    fullTorchHolderMapIcon = FindExactTextureByName("Torch_Lit_16x16");
     puddleMapIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(
         PuddleF1AssetPath);
     mossMapIcon = FindExactTextureByName(MossF1AssetName);
@@ -1285,6 +1285,7 @@ public class DungeonFeatureEditor : EditorWindow
         return null;
     }
   }
+
 
   private static Texture2D FindExactTextureByName(string assetName)
   {
