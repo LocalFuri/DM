@@ -35,7 +35,11 @@ public class DungeonFeatureEditor : EditorWindow
   private const string ViewEditPreviewLevelKey =
       "ViewportLayoutEditor.PreviewLevel";
 
-  private const float CellSize = 32f;
+  private const float BaseCellSize = 32f;
+  private const int MaxMapZoomStep = 3;
+  private const string MapZoomPreferenceKey = "DungeonFeatureEditor.MapZoomOutStep";
+  private float mapZoom => 1f - mapZoomStep * 0.25f;
+  private float CellSize => BaseCellSize * mapZoom;
   private const float LabelLeftMargin = 28f;
   private const float LabelTopMargin = 20f;
   // Extra vertical canvas above/below the map for labels that are drawn
@@ -173,6 +177,7 @@ public class DungeonFeatureEditor : EditorWindow
   private DungeonMap map;
   private string mapLoadError;
   private Vector2 mapScroll;
+  private int mapZoomStep = 0;
   private int selectedX = 1;
   private int selectedY = 2;
   private DungeonFacing selectedFacing = DungeonFacing.North;
@@ -204,6 +209,7 @@ public class DungeonFeatureEditor : EditorWindow
 
   private void OnEnable()
   {
+    mapZoomStep = Mathf.Clamp(EditorPrefs.GetInt(MapZoomPreferenceKey, 0), 0, MaxMapZoomStep);
     ornamentTexturesResolved = false;
     missingMapIconErrors.Clear();
     viAltarMapIcon = null;
@@ -421,6 +427,7 @@ public class DungeonFeatureEditor : EditorWindow
         poseStyle,
         GUILayout.Height(20f));
 
+    EditorGUILayout.LabelField("Mouse wheel over map: 1x / 0.75x / 0.5x / 0.25x  (current: " + mapZoom.ToString("0.##") + "x)");
     DrawMapGrid();
   }
 
@@ -455,13 +462,13 @@ public class DungeonFeatureEditor : EditorWindow
     float mapPixelWidth = map.Width * CellSize;
     float mapPixelHeight = map.Height * CellSize;
     float contentWidth =
-        LabelLeftMargin
+        LabelLeftMargin * mapZoom
         + Mathf.Max(map.Width, OutsideNameColumnX + 2) * CellSize;
     float contentHeight =
-        LabelTopMargin
-        + OutsideFeatureVerticalMargin
+        LabelTopMargin * mapZoom
+        + OutsideFeatureVerticalMargin * mapZoom
         + mapPixelHeight
-        + OutsideFeatureVerticalMargin;
+        + OutsideFeatureVerticalMargin * mapZoom;
 
     mapScroll = EditorGUILayout.BeginScrollView(mapScroll);
 
@@ -475,12 +482,15 @@ public class DungeonFeatureEditor : EditorWindow
     );
 
     Rect mapRect = new Rect(
-        contentRect.x + LabelLeftMargin,
-        contentRect.y + LabelTopMargin + OutsideFeatureVerticalMargin,
+        contentRect.x + LabelLeftMargin * mapZoom,
+        contentRect.y + (LabelTopMargin + OutsideFeatureVerticalMargin) * mapZoom,
         mapPixelWidth,
         mapPixelHeight
     );
 
+    // Consume wheel events only inside the map content; elsewhere the window
+    // keeps its normal scrolling behavior.
+    HandleMapZoom(contentRect);
     DrawAxisLabels(mapRect);
 
     for (int y = 0; y < map.Height; y++)
@@ -512,12 +522,41 @@ public class DungeonFeatureEditor : EditorWindow
     EditorGUILayout.EndScrollView();
   }
 
+  private void HandleMapZoom(Rect contentRect)
+  {
+    Event e = Event.current;
+    if (e.type != EventType.ScrollWheel || !contentRect.Contains(e.mousePosition))
+      return;
+
+    // Wheel down zooms out; wheel up zooms back toward normal 1x size.
+    int nextZoomStep = Mathf.Clamp(
+        mapZoomStep + (e.delta.y > 0f ? 1 : -1), 0, MaxMapZoomStep);
+    if (nextZoomStep == mapZoomStep)
+    {
+      e.Use();
+      return;
+    }
+
+    float nextZoom = 1f - nextZoomStep * 0.25f;
+    float scale = nextZoom / mapZoom;
+    // Preserve the point under the pointer in the scroll view while zooming.
+    Vector2 anchor = e.mousePosition - contentRect.position;
+    mapScroll += anchor * (scale - 1f);
+    mapScroll.x = Mathf.Max(0f, mapScroll.x);
+    mapScroll.y = Mathf.Max(0f, mapScroll.y);
+    mapZoomStep = nextZoomStep;
+    EditorPrefs.SetInt(MapZoomPreferenceKey, mapZoomStep);
+    e.Use();
+    GUI.changed = true;
+    Repaint();
+  }
+
   private void DrawAxisLabels(Rect mapRect)
   {
     GUIStyle labelStyle = new GUIStyle(EditorStyles.miniLabel)
     {
       alignment = TextAnchor.MiddleCenter,
-      fontSize = 10,
+      fontSize = Mathf.Max(1, Mathf.RoundToInt(10f * mapZoom)),
       clipping = TextClipping.Overflow
     };
 
@@ -526,7 +565,7 @@ public class DungeonFeatureEditor : EditorWindow
       alignment = TextAnchor.MiddleRight
     };
 
-    const float xLabelWidth = 20f;
+    float xLabelWidth = 20f * mapZoom;
 
     for (int x = 0; x < map.Width; x++)
     {
@@ -535,9 +574,9 @@ public class DungeonFeatureEditor : EditorWindow
 
       Rect xLabelRect = new Rect(
           columnCenterX - xLabelWidth * 0.5f,
-          mapRect.y - LabelTopMargin,
+          mapRect.y - LabelTopMargin * mapZoom,
           xLabelWidth,
-          LabelTopMargin
+          LabelTopMargin * mapZoom
       );
 
       GUI.Label(xLabelRect, x.ToString(), labelStyle);
@@ -546,9 +585,9 @@ public class DungeonFeatureEditor : EditorWindow
     for (int y = 0; y < map.Height; y++)
     {
       Rect yLabelRect = new Rect(
-          mapRect.x - LabelLeftMargin,
+          mapRect.x - LabelLeftMargin * mapZoom,
           mapRect.y + y * CellSize,
-          LabelLeftMargin - 2f,
+          (LabelLeftMargin - 2f) * mapZoom,
           CellSize
       );
 
@@ -674,10 +713,10 @@ public class DungeonFeatureEditor : EditorWindow
 
   // Shared full-edge direction marker for champion mirrors and wall ornaments.
   // Wall face direction comes from each map placement, never from player facing.
-  private static void DrawWallFaceDirectionMarker(Rect cellRect, WallSide side)
+  private void DrawWallFaceDirectionMarker(Rect cellRect, WallSide side)
   {
-    const float lineThickness = 3f;
-    const float dotSize = 4f;
+    float lineThickness = 3f * mapZoom;
+    float dotSize = 4f * mapZoom;
     Rect lineRect;
     Rect dotRect;
 
@@ -761,7 +800,7 @@ public class DungeonFeatureEditor : EditorWindow
 
     EnsureOrnamentTexturesResolved();
 
-    const float iconInset = 3f;
+    float iconInset = 3f * mapZoom;
 
     for (int y = 0; y < map.Height; y++)
     {
@@ -817,7 +856,7 @@ public class DungeonFeatureEditor : EditorWindow
 
     EnsureOrnamentTexturesResolved();
 
-    const float iconInset = 3f;
+    float iconInset = 3f * mapZoom;
     for (int y = 0; y < map.Height; y++)
     {
       for (int x = 0; x < map.Width; x++)
@@ -866,7 +905,7 @@ public class DungeonFeatureEditor : EditorWindow
       return;
     }
 
-    const float iconInset = 3f;
+    float iconInset = 3f * mapZoom;
     for (int y = 0; y < map.Height; y++)
     {
       for (int x = 0; x < map.Width; x++)
@@ -1185,7 +1224,7 @@ public class DungeonFeatureEditor : EditorWindow
     {
       alignment = TextAnchor.MiddleCenter,
       fontStyle = FontStyle.Bold,
-      fontSize = 20
+      fontSize = Mathf.Max(1, Mathf.RoundToInt(20f * mapZoom))
     };
     viLabelStyle.normal.textColor = Color.red;
 
@@ -1207,7 +1246,7 @@ public class DungeonFeatureEditor : EditorWindow
       // All wall ornaments are centered on their 32x32 map tile.
       // The lit torch retains its native 16x16 display size; other wall
       // ornaments retain their existing 20x20 drawing area.
-      float iconSize = IsTorchHolderOrnamentType(marker.Type) ? 16f : 20f;
+      float iconSize = (IsTorchHolderOrnamentType(marker.Type) ? 16f : 20f) * mapZoom;
       Rect iconRect = new Rect(
           cellRect.center.x - iconSize * 0.5f,
           cellRect.center.y - iconSize * 0.5f,
@@ -1448,12 +1487,12 @@ public class DungeonFeatureEditor : EditorWindow
     return score;
   }
 
-  private static GUIStyle CreateChampionNameStyle()
+  private GUIStyle CreateChampionNameStyle()
   {
     GUIStyle nameStyle = new GUIStyle(GUI.skin.label)
     {
       alignment = TextAnchor.MiddleCenter,
-      fontSize = 12,
+      fontSize = Mathf.Max(1, Mathf.RoundToInt(12f * mapZoom)),
       fontStyle = FontStyle.Bold,
       clipping = TextClipping.Overflow,
       wordWrap = false,
