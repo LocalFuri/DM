@@ -1192,6 +1192,16 @@ public class DungeonFeatureEditor : EditorWindow
 
       Texture2D texture = GetOrnamentMapIcon(marker.Type);
       Rect iconRect = GetWallFaceIconRect(cellRect, marker.Side, 20f);
+      if (IsTorchHolderOrnamentType(marker.Type))
+      {
+        // Center the 16x16 lit-torch map symbol in its 32x32 tile.
+        const float torchIconSize = 16f;
+        iconRect = new Rect(
+            cellRect.center.x - torchIconSize * 0.5f,
+            cellRect.center.y - torchIconSize * 0.5f,
+            torchIconSize,
+            torchIconSize);
+      }
 
       if (texture != null)
       {
@@ -1206,6 +1216,18 @@ public class DungeonFeatureEditor : EditorWindow
         ReportMissingMapIcon(marker.Type, "wall ornament map icon");
       }
     }
+  }
+
+  private static bool IsTorchHolderOrnamentType(string type)
+  {
+    return string.Equals(
+               type,
+               "FullTorchHolder",
+               System.StringComparison.OrdinalIgnoreCase)
+           || string.Equals(
+               type,
+               "EmptyTorchHolder",
+               System.StringComparison.OrdinalIgnoreCase);
   }
 
   private static Rect GetWallFaceIconRect(
