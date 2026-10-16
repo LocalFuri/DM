@@ -36,10 +36,10 @@ public class DungeonFeatureEditor : EditorWindow
       "ViewportLayoutEditor.PreviewLevel";
 
   private const float BaseCellSize = 32f;
-  private const int MaxMapZoomStep = 3;
+  private const int MaxMapZoomStep = 1;
   private const int MaximumDungeonTilesPerAxis = 32;
   private const string MapZoomPreferenceKey = "DungeonFeatureEditor.MapZoomOutStep";
-  // Last wheel level fits a full 32x32 level into the available editor viewport.
+  // Two wheel positions: normal 1x and fit a full 32x32 map in the viewport.
   private float mapZoom => GetZoomForStep(mapZoomStep);
   private float GetFitMapZoom()
   {
@@ -56,10 +56,7 @@ public class DungeonFeatureEditor : EditorWindow
 
   private float GetZoomForStep(int step)
   {
-    float fit = GetFitMapZoom();
-    if (step >= MaxMapZoomStep)
-      return fit;
-    return Mathf.Max(fit, 1f - step * 0.25f);
+    return step >= MaxMapZoomStep ? GetFitMapZoom() : 1f;
   }
   private float CellSize => BaseCellSize * mapZoom;
   private const float LabelLeftMargin = 28f;
@@ -449,7 +446,7 @@ public class DungeonFeatureEditor : EditorWindow
         poseStyle,
         GUILayout.Height(20f));
 
-    EditorGUILayout.LabelField("Mouse wheel: 1x / 0.75x / 0.5x / Fit 32x32  (current: " + mapZoom.ToString("0.##") + "x)");
+    EditorGUILayout.LabelField("Mouse wheel: 1x / Fit 32x32  (current: " + mapZoom.ToString("0.##") + "x)");
     DrawMapGrid();
   }
 
@@ -554,15 +551,8 @@ public class DungeonFeatureEditor : EditorWindow
     int direction = e.delta.y > 0f ? 1 : -1;
     int nextZoomStep = mapZoomStep;
     float currentZoom = mapZoom;
-    // Skip intermediate steps that are already smaller than the window-fit
-    // limit; they would otherwise produce no visible zoom change.
-    while (nextZoomStep + direction >= 0
-           && nextZoomStep + direction <= MaxMapZoomStep)
-    {
-      nextZoomStep += direction;
-      if (Mathf.Abs(GetZoomForStep(nextZoomStep) - currentZoom) > 0.0001f)
-        break;
-    }
+    // Only two possible zoom positions: 1x and fit-to-window.
+    nextZoomStep = Mathf.Clamp(nextZoomStep + direction, 0, MaxMapZoomStep);
     float nextZoom = GetZoomForStep(nextZoomStep);
     if (Mathf.Abs(nextZoom - currentZoom) <= 0.0001f)
     {
