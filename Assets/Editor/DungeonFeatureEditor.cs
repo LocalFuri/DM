@@ -1176,6 +1176,15 @@ public class DungeonFeatureEditor : EditorWindow
     if (markers == null)
       return;
 
+    // Large red VI overlay fills the Altar of Vi tile; original art stays beneath.
+    GUIStyle viLabelStyle = new GUIStyle(GUI.skin.label)
+    {
+      alignment = TextAnchor.MiddleCenter,
+      fontStyle = FontStyle.Bold,
+      fontSize = 20
+    };
+    viLabelStyle.normal.textColor = Color.red;
+
     for (int i = 0; i < markers.Length; i++)
     {
       OriginalWallOrnamentMarker marker = markers[i];
@@ -1208,6 +1217,10 @@ public class DungeonFeatureEditor : EditorWindow
             texture,
             ScaleMode.ScaleToFit,
             true);
+
+        if (string.Equals(marker.Type, "ViAltar",
+                System.StringComparison.OrdinalIgnoreCase))
+          GUI.Label(cellRect, "VI", viLabelStyle);
       }
       else
       {
