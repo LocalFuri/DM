@@ -7309,6 +7309,7 @@ private static void HandleGameViewPointerDown(
   private string previewHeldChampionName;
   private int previewHeldChampionItemIndex = -1;
   private Texture2D previewHeldChampionCursor;
+  private Vector2Int previewHeldChampionSourceSlot = new Vector2Int(-1, -1);
 
   private void ResetChampionEquipmentCursorAfterReload()
   {
@@ -7328,6 +7329,7 @@ private static void HandleGameViewPointerDown(
     previewHeldChampionName = null;
     previewHeldChampionItemIndex = -1;
     previewHeldChampionCursor = null;
+    previewHeldChampionSourceSlot = new Vector2Int(-1, -1);
     HideHeldItemPointerOverlay();
     Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
   }
@@ -7458,11 +7460,36 @@ private static void HandleGameViewPointerDown(
         Debug.LogWarning("CHAMPION EQUIPMENT: Destination slot occupied.");
         return true;
       }
-      if (!IsPermittedChampionItemSlot(
-              heldOriginalX, heldOriginalY, targetX, targetY))
+      bool returningToPickedSlot =
+          previewHeldChampionSourceSlot.x == targetX
+          && previewHeldChampionSourceSlot.y == targetY;
+      string heldItemName = GetChampionStartingItemName(
+          hero.StartingItems[previewHeldChampionItemIndex]);
+      // Verified in the original Dungeon Master: Iaido's Samurai Sword may
+      // occupy either hand or any of the 16 unrestricted backpack slots.
+      // Do not infer a weapon's permissions from its initial placement,
+      // since the source-slot classifier can differ from the clicked slot.
+      bool isIaidoSamuraiSword =
+          string.Equals(hero.Name, "Iaido",
+              System.StringComparison.OrdinalIgnoreCase)
+          && string.Equals(NormalizeChampionAssetKey(heldItemName),
+              "SAMURAISWORD", System.StringComparison.OrdinalIgnoreCase);
+      bool validSamuraiSwordSlot =
+          (targetX == 61 && targetY == 52)
+          || (targetX == 5 && targetY == 32)
+          || IsChampionBackpackSlot(targetX, targetY);
+      bool permitted = returningToPickedSlot
+          || (isIaidoSamuraiSword
+              ? validSamuraiSwordSlot
+              : IsPermittedChampionItemSlot(
+                  heldOriginalX, heldOriginalY, targetX, targetY));
+      if (!permitted)
       {
         Debug.LogWarning("CHAMPION EQUIPMENT: This item cannot be equipped "
-            + "in the selected slot.");
+            + "in the selected slot. Item='" + heldItemName
+            + "', target=(" + targetX + "," + targetY + ")"
+            + ", source=(" + previewHeldChampionSourceSlot.x
+            + "," + previewHeldChampionSourceSlot.y + ").");
         return true;
       }
       if (!previewChampionItemSlots.TryGetValue(hero.Name, out var slots))
@@ -7476,6 +7503,7 @@ private static void HandleGameViewPointerDown(
       previewHeldChampionName = null;
       previewHeldChampionItemIndex = -1;
       previewHeldChampionCursor = null;
+      previewHeldChampionSourceSlot = new Vector2Int(-1, -1);
       HideHeldItemPointerOverlay();
       Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
       PresentEditModePreviewToGameView();
@@ -7505,6 +7533,7 @@ private static void HandleGameViewPointerDown(
     indexes.Add(occupiedIndex);
     previewHeldChampionName = hero.Name;
     previewHeldChampionItemIndex = occupiedIndex;
+    previewHeldChampionSourceSlot = new Vector2Int(targetX, targetY);
     previewHeldChampionCursor = texture;
     PresentEditModePreviewToGameView();
     Repaint();
