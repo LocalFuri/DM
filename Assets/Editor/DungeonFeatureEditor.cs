@@ -182,6 +182,7 @@ public class DungeonFeatureEditor : EditorWindow
   private Texture2D woodRingMapIcon;
   private Texture2D slimeMapIcon;
   private Texture2D grateMapIcon;
+  private Texture2D fullTorchHolderMapIcon;
   private Texture2D puddleMapIcon;
   private Texture2D mossMapIcon;
   private Texture2D stairDownMapIcon;
@@ -207,6 +208,7 @@ public class DungeonFeatureEditor : EditorWindow
     woodRingMapIcon = null;
     slimeMapIcon = null;
     grateMapIcon = null;
+    fullTorchHolderMapIcon = null;
     puddleMapIcon = null;
     mossMapIcon = null;
     stairDownMapIcon = null;
@@ -1249,6 +1251,7 @@ public class DungeonFeatureEditor : EditorWindow
     woodRingMapIcon = FindBestOrnamentTexture("WoodRing");
     slimeMapIcon = FindBestOrnamentTexture("Slime");
     grateMapIcon = FindBestOrnamentTexture("Grate");
+    fullTorchHolderMapIcon = FindExactTextureByName("Torch_Holder_Empty_F1_24x54");
     puddleMapIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(
         PuddleF1AssetPath);
     mossMapIcon = FindExactTextureByName(MossF1AssetName);
@@ -1273,6 +1276,10 @@ public class DungeonFeatureEditor : EditorWindow
 
       case "Grate":
         return grateMapIcon;
+
+      case "FullTorchHolder":
+      case "EmptyTorchHolder":
+        return fullTorchHolderMapIcon;
 
       default:
         return null;

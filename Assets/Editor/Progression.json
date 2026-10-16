@@ -1,11 +1,11 @@
 {
   "project": "Dungeon Master Unity",
-  "checkpointDate": "2026-10-14",
-  "checkpointPurpose": "Resume Dungeon Master Unity floor-item pile rendering after fixing CSBwin JSON loading; do not rework functional pickup or LIFO.",
+  "checkpointDate": "2026-10-15",
+  "checkpointPurpose": "Resume champion starting-equipment verification (8 of 24 completed) while preserving October 14 floor-item work as a separate pending task.",
   "mainScript": "Assets/Editor/ViewportLayoutEditor.cs",
   "lastVerifiedGitCommit": null,
   "gitNote": "Record the actual current Git commit after committing the working version; do not assume an older baseline is current.",
-  "currentTask": "Verify CSBwin floor-item offset loader fix in Unity, then inspect apple-on-bread visual stacking if needed.",
+  "currentTask": "Verify starting equipment of remaining Hall of Champions champions one at a time against original game; mark a champion green only after full equipment matches.",
   "pressurePad": {
     "mapLevel": 0,
     "mapTile": {
@@ -103,7 +103,7 @@
       }
     ]
   },
-  "nextStep": "Install ViewportLayoutEditor.cs from CSBwin_Offset_Loader_Fix.zip into Assets/Editor; ensure Unity compiles without red errors; at Level 0 player (4,11) East drop apple on bread and inspect Console for pileDataLoaded=True, absence of CSBwin pile offsets unavailable, and visible stacked sprites.",
+  "nextStep": "Continue with the next unverified champion (number 9 of 24). Compare original starting equipment with Unity, fix explicit mappings/assets/slots without fallbacks, test, then add to verified green-marker list only on confirmation.",
   "latestWorkingFiles": {
     "mainEditor": "Assets/Editor/ViewportLayoutEditor.cs",
     "dungeonFeaturesEditor": "Assets/Editor/DungeonFeatureEditor.cs",
@@ -277,5 +277,86 @@
       "Confirm both graphics render; if not capture APPLE DRAW GATE/SKIP logs and screenshot"
     ],
     "deliveryPreference": "ZIP files flat/no folders, original filenames; Progression.json never renamed."
-  }
+  },
+  "checkpoint20261015EndOfDay": {
+    "status": "8 of 24 champions fully verified; 16 remain. Verified markers confirmed present in DungeonFeatureEditor.cs in uploaded Editor(5).zip.",
+    "completedCount": 8,
+    "totalCount": 24,
+    "verifiedChampions": [
+      {
+        "name": "IAIDO",
+        "x": 10,
+        "y": 4,
+        "facing": "North"
+      },
+      {
+        "name": "CHANI",
+        "x": 14,
+        "y": 3,
+        "facing": "North"
+      },
+      {
+        "name": "HAWK",
+        "x": 15,
+        "y": 4,
+        "facing": "East"
+      },
+      {
+        "name": "ZED",
+        "x": 10,
+        "y": 5,
+        "facing": "South"
+      },
+      {
+        "name": "ALEX",
+        "x": 16,
+        "y": 8,
+        "facing": "North"
+      },
+      {
+        "name": "BORIS",
+        "x": 14,
+        "y": 6,
+        "facing": "South"
+      },
+      {
+        "name": "ELIJA",
+        "x": 9,
+        "y": 7,
+        "facing": "West"
+      },
+      {
+        "name": "LINFLAS",
+        "x": 12,
+        "y": 9,
+        "facing": "North"
+      }
+    ],
+    "markerColorRGB": [
+      0,
+      255,
+      0
+    ],
+    "markerRule": "Only mark champion after user verifies all starting equipment against original.",
+    "lastVerifiedChampion": "LINFLAS",
+    "confirmedMappings": {
+      "IAIDO Ghi": "Ghi_Body_16x16",
+      "CHANI Moonstone": "Moonstone_16x16, neck slot"
+    },
+    "additionalWorkNotes": [
+      "Rabbit Foot upper-right pouch position reported as X=65, Y=32",
+      "Leather Boots and Robe Body mappings corrected",
+      "Cancel button sound pop04.wav and volume tested"
+    ],
+    "resourceRule": "No fallbacks. Missing images, mappings, or slots must generate explicit Unity Console errors.",
+    "runtimeLevel0Map": "Assets/Data/Maps/DungeonMaster_Level00.json",
+    "sourceFile": "Assets/Editor/DungeonFeatureEditor.cs",
+    "nextTask": "Continue champion 9, do not change the eight confirmed champions without a new reported issue.",
+    "verificationNote": "Confirmed eight names/positions in DungeonFeatureEditor.cs of uploaded ZIP; mappings and sound notes are based on prior progress discussion and were not separately runtime-tested in this update."
+  },
+  "pendingWorkstreams": {
+    "floorItemPiles": "Preserve full October 14 entries checkpoint20261014EndOfDay, csbwinFloorStacking20261014 and related fields; verification of CSBwin offset loader / apple-on-bread rendering remains pending unless separately confirmed.",
+    "throwingAndSound": "Preserve older throwing/audio plans and do not assume unfinished stages have been implemented."
+  },
+  "checkpointHistoryNote": "October 14 checkpoint and diagnostic fields retained without overwriting; current active checkpoint is October 15 champion equipment verification."
 }
