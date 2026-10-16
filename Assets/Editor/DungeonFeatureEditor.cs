@@ -54,6 +54,8 @@ public class DungeonFeatureEditor : EditorWindow
       new Color(0.2f, 0.85f, 1f, 1f);
   private static readonly Color StairDownTileColor =
       new Color(0f, 1f, 0f, 1f);
+  private static readonly Color ManaclesHighlightBackgroundColor =
+      new Color(1f, 165f / 255f, 0f, 1f);
 
   // Champion mirror map marker: full-edge blue wall-face bar with a small yellow center.
   private static readonly Color ChampionMirrorLineColor =
@@ -1214,6 +1216,9 @@ public class DungeonFeatureEditor : EditorWindow
 
       if (texture != null)
       {
+        if (IsManaclesOrnamentType(marker.Type))
+          EditorGUI.DrawRect(iconRect, ManaclesHighlightBackgroundColor);
+
         GUI.DrawTexture(
             iconRect,
             texture,
@@ -1240,6 +1245,18 @@ public class DungeonFeatureEditor : EditorWindow
            || string.Equals(
                type,
                "EmptyTorchHolder",
+               System.StringComparison.OrdinalIgnoreCase);
+  }
+
+  private static bool IsManaclesOrnamentType(string type)
+  {
+    return string.Equals(
+               type,
+               "Manacles",
+               System.StringComparison.OrdinalIgnoreCase)
+           || string.Equals(
+               type,
+               "WallManacles",
                System.StringComparison.OrdinalIgnoreCase);
   }
 
