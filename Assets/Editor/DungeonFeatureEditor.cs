@@ -871,7 +871,7 @@ public class DungeonFeatureEditor : EditorWindow
         }
         else
         {
-          ReportMissingMapIcon("Stair_Down_Icon", "stairs-down map icon");
+          ReportMissingMapIcon("Stairs_Down_Icon_20x22", "stairs-down map icon");
         }
       }
     }
@@ -1367,7 +1367,7 @@ public class DungeonFeatureEditor : EditorWindow
     puddleMapIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(
         PuddleF1AssetPath);
     mossMapIcon = FindExactTextureByName(MossF1AssetName);
-    stairDownMapIcon = FindExactTextureByName("Stair_Down_Icon");
+    stairDownMapIcon = FindExactTextureByName("Stairs_Down_Icon_20x22");
   }
 
   private Texture2D GetOrnamentMapIcon(string type)
