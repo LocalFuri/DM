@@ -2686,6 +2686,10 @@ public class ViewportLayoutEditor : EditorWindow
     RestorePersistedAssets();
     ReloadLayoutFromDisk();
     RestoreSessionPrefs();
+    // A script reload must never reopen a champion sheet automatically.
+    // Keep the current dungeon position/facing and recruited party, but require
+    // the player to click the D1 champion mirror to open the sheet again.
+    ResetChampionSheetAfterScriptReload();
     // The two original floor-item test records must be restored after script
     // reload. EditorWindow state may survive compilation, including picked-up
     // IDs or hidden feature flags from an earlier test session.
@@ -7357,21 +7361,59 @@ private static void HandleGameViewPointerDown(
         && x >= 82 && x <= 208 && (x - 82) % 18 == 0;
   }
 
-  private static bool IsPermittedChampionItemSlot(
-      int originalX, int originalY, int targetX, int targetY)
+  private static bool IsChampionHandSlot(int x, int y)
   {
-    // Every ordinary carried item may be stored in an empty backpack slot.
-    // Equipped items otherwise retain their verified clothing/body slot;
-    // hand equipment can swap between either hand.
+    return (x == ChampionSheetRightHandX && y == ChampionSheetRightHandY)
+        || (x == ChampionSheetLeftHandX && y == ChampionSheetLeftHandY);
+  }
+
+  [System.Flags]
+  private enum ChampionAllowedSlots
+  {
+    None = 0,
+    LeftHand = 1 << 0,
+    RightHand = 1 << 1,
+    Backpack = 1 << 2,
+    OriginalEquippedSlot = 1 << 3
+  }
+
+  // Explicitly verified against the original Dungeon Master. Extend this
+  // mapping only after testing additional item categories in the original.
+  private static readonly System.Collections.Generic.Dictionary<string,
+      ChampionAllowedSlots> VerifiedChampionItemSlotRules =
+      new System.Collections.Generic.Dictionary<string, ChampionAllowedSlots>(
+          System.StringComparer.OrdinalIgnoreCase)
+  {
+    { "SAMURAISWORD", ChampionAllowedSlots.LeftHand
+        | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack }
+  };
+
+  private static bool IsPermittedChampionItemSlot(
+      string itemName, int originalX, int originalY, int targetX, int targetY)
+  {
+    string itemKey = NormalizeChampionAssetKey(itemName);
+    if (!VerifiedChampionItemSlotRules.TryGetValue(itemKey,
+            out ChampionAllowedSlots allowed))
+    {
+      // No guessed equipment-category permissions for unverified items.
+      // The backpack is unrestricted in the original game. Returning an
+      // item to its original worn slot is always permitted.
+      allowed = ChampionAllowedSlots.Backpack
+          | ChampionAllowedSlots.OriginalEquippedSlot;
+    }
+
     if (IsChampionBackpackSlot(targetX, targetY))
+      return (allowed & ChampionAllowedSlots.Backpack) != 0;
+    if (targetX == ChampionSheetLeftHandX
+        && targetY == ChampionSheetLeftHandY
+        && (allowed & ChampionAllowedSlots.LeftHand) != 0)
       return true;
-    bool originalHand = (originalX == 61 && originalY == 52)
-        || (originalX == 5 && originalY == 32);
-    bool targetHand = (targetX == 61 && targetY == 52)
-        || (targetX == 5 && targetY == 32);
-    if (originalHand && targetHand)
+    if (targetX == ChampionSheetRightHandX
+        && targetY == ChampionSheetRightHandY
+        && (allowed & ChampionAllowedSlots.RightHand) != 0)
       return true;
-    return originalX == targetX && originalY == targetY;
+    return (allowed & ChampionAllowedSlots.OriginalEquippedSlot) != 0
+        && originalX == targetX && originalY == targetY;
   }
 
   private bool TryHandleChampionEquipmentClick(float x, float y)
@@ -7380,52 +7422,56 @@ private static void HandleGameViewPointerDown(
     if (hero == null || hero.StartingItems == null)
       return false;
 
-    // Hit-test every known equipment position, including empty slots.
-    // A blank destination must be clickable while carrying an item.
-    int[] equipX = { 5, 33, 33, 33, 33, 61, 5, 5, 5, 61, 65 };
-    int[] equipY = { 12, 25, 45, 65, 85, 52, 32, 52, 72, 32, 32 };
+    // Hit-test the fixed equipment rectangles using the unmodified logical
+    // mouse position. The cursor sprite is visual only.
+    Vector2 slotClick = new Vector2(x, y);
     int targetX = -1, targetY = -1;
-    for (int s = 0; s < equipX.Length; s++)
+    // Both hands are fixed authored slots. Resolve these first when an item
+    // is carried, so neither hand can be mistaken for an auxiliary slot.
+    if (previewHeldChampionCursor != null)
     {
-      Rect rect = new Rect(equipX[s],
-          ChampionSheetInventoryScreenTop + equipY[s],
-          ChampionSheetSlotSize, ChampionSheetSlotSize);
-      if (rect.Contains(new Vector2(x, y)))
+      if (GetChampionSheetSlotScreenRect(
+              ChampionSheetRightHandX, ChampionSheetRightHandY).Contains(slotClick))
       {
-        targetX = equipX[s];
-        targetY = equipY[s];
+        targetX = ChampionSheetRightHandX;
+        targetY = ChampionSheetRightHandY;
+      }
+      else if (GetChampionSheetSlotScreenRect(
+                   ChampionSheetLeftHandX, ChampionSheetLeftHandY).Contains(slotClick))
+      {
+        targetX = ChampionSheetLeftHandX;
+        targetY = ChampionSheetLeftHandY;
+      }
+    }
+    for (int i = 0; targetX < 0 && i < ChampionSheetEquipSlotXY.Length; i += 2)
+    {
+      int slotX = ChampionSheetEquipSlotXY[i];
+      int slotY = ChampionSheetEquipSlotXY[i + 1];
+      if (GetChampionSheetSlotScreenRect(slotX, slotY).Contains(
+              slotClick))
+      {
+        targetX = slotX;
+        targetY = slotY;
         break;
       }
     }
-    // Allow a small edge tolerance when returning a held item to its exact
-    // source slot. The native item cursor's hotspot can make a click land
-    // just outside the drawn 18x18 outline (observed Y=82.7 for a slot
-    // starting at screen Y=85). Do not relax other equipment-slot rules.
-    if (previewHeldChampionCursor != null
-        && previewHeldChampionSourceSlot.x >= 0
-        && previewHeldChampionSourceSlot.y >= 0)
+    // Auxiliary equipment slots have their own authored fixed positions.
+    if (targetX < 0)
     {
-      const float returnEdgeTolerance = 4f;
-      Rect sourceRect = new Rect(
-          previewHeldChampionSourceSlot.x,
-          ChampionSheetInventoryScreenTop + previewHeldChampionSourceSlot.y,
-          ChampionSheetSlotSize,
-          ChampionSheetSlotSize);
-      Rect returnRect = new Rect(
-          sourceRect.x - returnEdgeTolerance,
-          sourceRect.y - returnEdgeTolerance,
-          sourceRect.width + 2f * returnEdgeTolerance,
-          sourceRect.height + 2f * returnEdgeTolerance);
-      if (returnRect.Contains(new Vector2(x, y)))
+      for (int i = 0; i < ChampionSheetAdditionalSlotXY.Length; i += 2)
       {
-        targetX = previewHeldChampionSourceSlot.x;
-        targetY = previewHeldChampionSourceSlot.y;
+        int slotX = ChampionSheetAdditionalSlotXY[i];
+        int slotY = ChampionSheetAdditionalSlotXY[i + 1];
+        if (GetChampionSheetSlotScreenRect(slotX, slotY).Contains(
+                slotClick))
+        {
+          targetX = slotX;
+          targetY = slotY;
+          break;
+        }
       }
     }
-
-    // The backpack is an 8x2 grid immediately right of the equipped gear.
-    // Test the visible 18x18 rectangles, not a broad bounding box, to avoid
-    // consuming clicks on other character-sheet controls.
+    // Eight columns by two rows of unrestricted backpack slots.
     if (targetX < 0)
     {
       for (int row = 0; row < 2 && targetX < 0; row++)
@@ -7434,10 +7480,8 @@ private static void HandleGameViewPointerDown(
         {
           int slotX = 82 + col * ChampionSheetSlotSize;
           int slotY = 15 + row * ChampionSheetSlotSize;
-          Rect rect = new Rect(slotX,
-              ChampionSheetInventoryScreenTop + slotY,
-              ChampionSheetSlotSize, ChampionSheetSlotSize);
-          if (rect.Contains(new Vector2(x, y)))
+          if (GetChampionSheetSlotScreenRect(slotX, slotY).Contains(
+                  slotClick))
           {
             targetX = slotX;
             targetY = slotY;
@@ -7515,24 +7559,11 @@ private static void HandleGameViewPointerDown(
           && previewHeldChampionSourceSlot.y == targetY;
       string heldItemName = GetChampionStartingItemName(
           hero.StartingItems[previewHeldChampionItemIndex]);
-      // Verified in the original Dungeon Master: Iaido's Samurai Sword may
-      // occupy either hand or any of the 16 unrestricted backpack slots.
-      // Do not infer a weapon's permissions from its initial placement,
-      // since the source-slot classifier can differ from the clicked slot.
-      bool isIaidoSamuraiSword =
-          string.Equals(hero.Name, "Iaido",
-              System.StringComparison.OrdinalIgnoreCase)
-          && string.Equals(NormalizeChampionAssetKey(heldItemName),
-              "SAMURAISWORD", System.StringComparison.OrdinalIgnoreCase);
-      bool validSamuraiSwordSlot =
-          (targetX == 61 && targetY == 52)
-          || (targetX == 5 && targetY == 32)
-          || IsChampionBackpackSlot(targetX, targetY);
+      // Permission rules are keyed by item identity, not by the slot where
+      // an item happened to start. The picked source remains returnable.
       bool permitted = returningToPickedSlot
-          || (isIaidoSamuraiSword
-              ? validSamuraiSwordSlot
-              : IsPermittedChampionItemSlot(
-                  heldOriginalX, heldOriginalY, targetX, targetY));
+          || IsPermittedChampionItemSlot(
+              heldItemName, heldOriginalX, heldOriginalY, targetX, targetY);
       if (!permitted)
       {
         Debug.LogWarning("CHAMPION EQUIPMENT: This item cannot be equipped "
@@ -8010,6 +8041,12 @@ private static void HandleGameViewPointerDown(
       PaintResurrectReincarnateOverlay(pixels);
   }
 
+  // Canonical fixed hand slots, shared by hit-testing and permissions.
+  private const int ChampionSheetRightHandX = 61;
+  private const int ChampionSheetRightHandY = 52;
+  private const int ChampionSheetLeftHandX = 5;
+  private const int ChampionSheetLeftHandY = 32;
+
   // Worn-slot rectangles on Inventory_224x136. Screen Y is local Y + 33.
   // Order: head, neck, torso, legs, feet, weapon hand, left hand, quiver.
   private static readonly int[] ChampionSheetEquipSlotXY =
@@ -8023,6 +8060,20 @@ private static void HandleGameViewPointerDown(
     5, 32,
     5, 52
   };
+
+  // Additional equipment locations outside the eight primary worn slots.
+  private static readonly int[] ChampionSheetAdditionalSlotXY =
+  {
+    5, 72,
+    61, 32,
+    65, 32
+  };
+
+  private static Rect GetChampionSheetSlotScreenRect(int slotX, int slotY)
+  {
+    return new Rect(slotX, ChampionSheetInventoryScreenTop + slotY,
+        ChampionSheetSlotSize, ChampionSheetSlotSize);
+  }
 
   private const int ChampionSheetSlotSize = 18;
   private const int ChampionSheetInventoryScreenTop = 33;
@@ -9298,7 +9349,7 @@ private static void HandleGameViewPointerDown(
 
     int offsetX = (ChampionSheetSlotSize - texture.width) / 2;
     int offsetY = (ChampionSheetSlotSize - texture.height) / 2;
-    int screenTop = ChampionSheetInventoryScreenTop + slotY + offsetY;
+    int screenTop = (int)GetChampionSheetSlotScreenRect(slotX, slotY).y + offsetY;
     Color32[] source = texture.GetPixels32();
 
     for (int row = 0; row < texture.height; row++)
@@ -10824,6 +10875,20 @@ private static void HandleGameViewPointerDown(
 
     Object.DestroyImmediate(editModePreviewTexture);
     editModePreviewTexture = null;
+  }
+
+  private void ResetChampionSheetAfterScriptReload()
+  {
+    championSheetVisible = false;
+    championSheetName = null;
+    championEyeMoved = false;
+    championEyeMiddle = false;
+    championEyePressed = false;
+    championMouthPressed = false;
+    // Persist the closed state so another editor window/reload won't reopen it.
+    // Do not reset the saved map pose or recruited champions.
+    EditorPrefs.SetBool(PrefsChampionSheetVisibleKey, false);
+    EditorPrefs.SetString(PrefsChampionSheetNameKey, string.Empty);
   }
 
   private void RestoreSessionPrefs()
@@ -34629,17 +34694,51 @@ private static void HandleGameViewPointerDown(
       HideHeldItemPointerOverlay();
       return;
     }
+    if (owner.previewHeldChampionCursor != null
+        && (heldCursor.width != 16 || heldCursor.height != 16))
+    {
+      Debug.LogError("CHAMPION EQUIPMENT CURSOR: Expected 16x16 inventory sprite, got "
+          + heldCursor.width + "x" + heldCursor.height + " for held item.");
+      HideHeldItemPointerOverlay();
+      return;
+    }
     s_heldItemPointerOverlay.style.backgroundImage =
         new UnityEngine.UIElements.StyleBackground(heldCursor);
-    float scale = GetGameViewZoomScale();
-    if (scale <= 0f) scale = 1f;
-    float size = 16f * scale;
-    s_heldItemPointerOverlay.style.width = size;
-    s_heldItemPointerOverlay.style.height = size;
-    // Center the 16x16 inventory sprite on the pointer, matching the
-    // original game more closely than a top-left anchor.
-    s_heldItemPointerOverlay.style.left = pointerPosition.x - size * 0.5f;
-    s_heldItemPointerOverlay.style.top = pointerPosition.y - size * 0.5f;
+    // Derive the visual size from the same Unity GameView transform used for
+    // inventory click positions. m_ZoomArea.m_Scale is not necessarily the
+    // final UI Toolkit point-to-render-pixel ratio (DPI/zoom can differ).
+    // For a 16x16 cursor this must cover precisely 16x16 render pixels.
+    if (!TryGetGameViewRenderMouse(
+            gameView, pointerPosition, out Vector2 ignoredPixel,
+            out Vector2 ignoredSize))
+    {
+      Debug.LogError("HELD ITEM CURSOR: Could not read GameView mouse "
+          + "transform; cursor cannot be sized exactly. No fallback used.");
+      HideHeldItemPointerOverlay();
+      return;
+    }
+    const BindingFlags mouseFlags = BindingFlags.Instance
+        | BindingFlags.Public | BindingFlags.NonPublic;
+    PropertyInfo mouseScaleProperty = gameView.GetType().GetProperty(
+        "gameMouseScale", mouseFlags);
+    object mouseScaleValue = mouseScaleProperty != null
+        ? mouseScaleProperty.GetValue(gameView, null) : null;
+    float renderPixelsPerPoint;
+    try { renderPixelsPerPoint = System.Convert.ToSingle(mouseScaleValue); }
+    catch { renderPixelsPerPoint = 0f; }
+    if (renderPixelsPerPoint <= 0f)
+    {
+      Debug.LogError("HELD ITEM CURSOR: Invalid GameView mouse scale; "
+          + "cursor cannot be sized exactly. No fallback used.");
+      HideHeldItemPointerOverlay();
+      return;
+    }
+    float displayWidth = heldCursor.width / renderPixelsPerPoint;
+    float displayHeight = heldCursor.height / renderPixelsPerPoint;
+    s_heldItemPointerOverlay.style.width = displayWidth;
+    s_heldItemPointerOverlay.style.height = displayHeight;
+    s_heldItemPointerOverlay.style.left = pointerPosition.x - displayWidth * 0.5f;
+    s_heldItemPointerOverlay.style.top = pointerPosition.y - displayHeight * 0.5f;
     s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.Flex;
     SetHeldItemArrowHidden(gameView);
     s_heldItemPointerOverlay.BringToFront();
