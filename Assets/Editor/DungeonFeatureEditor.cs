@@ -79,6 +79,8 @@ public class DungeonFeatureEditor : EditorWindow
       new Color(0f, 1f, 0f, 1f);
   private static readonly Color ManaclesHighlightBackgroundColor =
       new Color(1f, 165f / 255f, 0f, 1f);
+  private static readonly Color LordOrderOutsideMarkerColor =
+      new Color(0.6f, 0f, 0.8f, 1f);
 
   // Champion mirror map marker: full-edge blue wall-face bar with a small yellow center.
   private static readonly Color ChampionMirrorLineColor =
@@ -1254,6 +1256,14 @@ public class DungeonFeatureEditor : EditorWindow
     };
     viLabelStyle.normal.textColor = Color.red;
 
+    GUIStyle lordOrderOutsideLabelStyle = new GUIStyle(GUI.skin.label)
+    {
+      alignment = TextAnchor.MiddleCenter,
+      fontStyle = FontStyle.Bold,
+      fontSize = Mathf.Max(1, Mathf.RoundToInt(10f * mapZoom))
+    };
+    lordOrderOutsideLabelStyle.normal.textColor = Color.white;
+
     for (int i = 0; i < markers.Length; i++)
     {
       OriginalWallOrnamentMarker marker = markers[i];
@@ -1278,6 +1288,13 @@ public class DungeonFeatureEditor : EditorWindow
           cellRect.center.y - iconSize * 0.5f,
           iconSize,
           iconSize);
+
+      if (IsLordOrderOutsideOrnamentType(marker.Type))
+      {
+        EditorGUI.DrawRect(iconRect, LordOrderOutsideMarkerColor);
+        GUI.Label(cellRect, "LO", lordOrderOutsideLabelStyle);
+        continue;
+      }
 
       if (texture != null)
       {
@@ -1322,6 +1339,14 @@ public class DungeonFeatureEditor : EditorWindow
            || string.Equals(
                type,
                "WallManacles",
+               System.StringComparison.OrdinalIgnoreCase);
+  }
+
+  private static bool IsLordOrderOutsideOrnamentType(string type)
+  {
+    return string.Equals(
+               type,
+               "LordOrderOutside",
                System.StringComparison.OrdinalIgnoreCase);
   }
 
