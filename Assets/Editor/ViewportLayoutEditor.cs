@@ -7397,6 +7397,32 @@ private static void HandleGameViewPointerDown(
         break;
       }
     }
+    // Allow a small edge tolerance when returning a held item to its exact
+    // source slot. The native item cursor's hotspot can make a click land
+    // just outside the drawn 18x18 outline (observed Y=82.7 for a slot
+    // starting at screen Y=85). Do not relax other equipment-slot rules.
+    if (previewHeldChampionCursor != null
+        && previewHeldChampionSourceSlot.x >= 0
+        && previewHeldChampionSourceSlot.y >= 0)
+    {
+      const float returnEdgeTolerance = 4f;
+      Rect sourceRect = new Rect(
+          previewHeldChampionSourceSlot.x,
+          ChampionSheetInventoryScreenTop + previewHeldChampionSourceSlot.y,
+          ChampionSheetSlotSize,
+          ChampionSheetSlotSize);
+      Rect returnRect = new Rect(
+          sourceRect.x - returnEdgeTolerance,
+          sourceRect.y - returnEdgeTolerance,
+          sourceRect.width + 2f * returnEdgeTolerance,
+          sourceRect.height + 2f * returnEdgeTolerance);
+      if (returnRect.Contains(new Vector2(x, y)))
+      {
+        targetX = previewHeldChampionSourceSlot.x;
+        targetY = previewHeldChampionSourceSlot.y;
+      }
+    }
+
     // The backpack is an 8x2 grid immediately right of the equipped gear.
     // Test the visible 18x18 rectangles, not a broad bounding box, to avoid
     // consuming clicks on other character-sheet controls.
@@ -7419,6 +7445,30 @@ private static void HandleGameViewPointerDown(
           }
         }
       }
+    }
+    // TEMPORARY DIAGNOSTIC: Log the click location and the precise slot
+    // hit-test result while a champion item is carried. This does not
+    // alter item placement or the mouse cursor.
+    if (previewHeldChampionCursor != null)
+    {
+      string matchedSlot = targetX < 0
+          ? "none"
+          : "(" + targetX + "," + targetY + ")";
+      string sourceSlot = "(" + previewHeldChampionSourceSlot.x
+          + "," + previewHeldChampionSourceSlot.y + ")";
+      Debug.Log("CHAMPION SLOT HIT TEST: click logical=("
+          + x.ToString("0.0") + "," + y.ToString("0.0") + ")"
+          + ", inventory-local=(" + x.ToString("0.0") + ","
+          + (y - ChampionSheetInventoryScreenTop).ToString("0.0") + ")"
+          + ", detected=" + matchedSlot
+          + ", source=" + sourceSlot
+          + ", source screen rect=("
+          + previewHeldChampionSourceSlot.x + ","
+          + (ChampionSheetInventoryScreenTop
+              + previewHeldChampionSourceSlot.y) + ","
+          + ChampionSheetSlotSize + "," + ChampionSheetSlotSize + ")"
+          + ", held image=" + previewHeldChampionCursor.width + "x"
+          + previewHeldChampionCursor.height);
     }
     if (targetX < 0)
       return false;
