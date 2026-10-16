@@ -1191,17 +1191,15 @@ public class DungeonFeatureEditor : EditorWindow
       DrawWallFaceDirectionMarker(cellRect, marker.Side);
 
       Texture2D texture = GetOrnamentMapIcon(marker.Type);
-      Rect iconRect = GetWallFaceIconRect(cellRect, marker.Side, 20f);
-      if (IsTorchHolderOrnamentType(marker.Type))
-      {
-        // Center the 16x16 lit-torch map symbol in its 32x32 tile.
-        const float torchIconSize = 16f;
-        iconRect = new Rect(
-            cellRect.center.x - torchIconSize * 0.5f,
-            cellRect.center.y - torchIconSize * 0.5f,
-            torchIconSize,
-            torchIconSize);
-      }
+      // All wall ornaments are centered on their 32x32 map tile.
+      // The lit torch retains its native 16x16 display size; other wall
+      // ornaments retain their existing 20x20 drawing area.
+      float iconSize = IsTorchHolderOrnamentType(marker.Type) ? 16f : 20f;
+      Rect iconRect = new Rect(
+          cellRect.center.x - iconSize * 0.5f,
+          cellRect.center.y - iconSize * 0.5f,
+          iconSize,
+          iconSize);
 
       if (texture != null)
       {
@@ -1228,37 +1226,6 @@ public class DungeonFeatureEditor : EditorWindow
                type,
                "EmptyTorchHolder",
                System.StringComparison.OrdinalIgnoreCase);
-  }
-
-  private static Rect GetWallFaceIconRect(
-      Rect cellRect,
-      WallSide side,
-      float iconSize)
-  {
-    float x = cellRect.center.x - iconSize * 0.5f;
-    float y = cellRect.center.y - iconSize * 0.5f;
-    const float edgeInset = 1f;
-
-    switch (side)
-    {
-      case WallSide.North:
-        y = cellRect.y + edgeInset;
-        break;
-
-      case WallSide.East:
-        x = cellRect.xMax - iconSize - edgeInset;
-        break;
-
-      case WallSide.South:
-        y = cellRect.yMax - iconSize - edgeInset;
-        break;
-
-      case WallSide.West:
-        x = cellRect.x + edgeInset;
-        break;
-    }
-
-    return new Rect(x, y, iconSize, iconSize);
   }
 
   private void EnsureOrnamentTexturesResolved()
