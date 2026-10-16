@@ -2677,6 +2677,9 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnEnable()
   {
+    // Script recompilation can restore transient EditorWindow cursor fields.
+    // Never start a new editor session carrying champion equipment.
+    ResetChampionEquipmentCursorAfterReload();
     titleContent = new GUIContent("ViewEdit");
     wantsMouseMove = true;
 
@@ -2718,6 +2721,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnDisable()
   {
+    // Return an in-flight champion item before Unity serializes this window.
+    ResetChampionEquipmentCursorAfterReload();
     if (previewHeldTorchCursor != null)
       Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     HideHeldItemPointerOverlay();
@@ -6635,6 +6640,7 @@ private static void HandleGameViewPointerDown(
         && window.TryHandleChampionSheetClick(logical.x, logical.y))
     {
       s_lastGameViewClickTime = now;
+      UpdateHeldItemPointerOverlay(gameView, windowMouse);
       if (imguiEvent != null)
         imguiEvent.Use();
 
@@ -7290,6 +7296,221 @@ private static void HandleGameViewPointerDown(
   /// handler or old Zed-screen path is used. A later click, or a pose change,
   /// returns to the dungeon view.
   /// </summary>
+  // Editor-session inventory transfers do not modify HeroDatabase definitions.
+  private readonly System.Collections.Generic.Dictionary<string,
+      System.Collections.Generic.HashSet<int>> previewRemovedChampionItemIndexes =
+      new System.Collections.Generic.Dictionary<string,
+          System.Collections.Generic.HashSet<int>>(System.StringComparer.OrdinalIgnoreCase);
+  private readonly System.Collections.Generic.Dictionary<string,
+      System.Collections.Generic.Dictionary<int, Vector2Int>> previewChampionItemSlots =
+      new System.Collections.Generic.Dictionary<string,
+          System.Collections.Generic.Dictionary<int, Vector2Int>>(
+              System.StringComparer.OrdinalIgnoreCase);
+  private string previewHeldChampionName;
+  private int previewHeldChampionItemIndex = -1;
+  private Texture2D previewHeldChampionCursor;
+
+  private void ResetChampionEquipmentCursorAfterReload()
+  {
+    if (previewHeldChampionCursor == null
+        && previewHeldChampionItemIndex < 0
+        && string.IsNullOrEmpty(previewHeldChampionName))
+      return;
+
+    // Restore the original slot instead of discarding the item when a domain
+    // reload interrupts a pickup. This does not touch placed equipment.
+    if (!string.IsNullOrEmpty(previewHeldChampionName)
+        && previewHeldChampionItemIndex >= 0
+        && previewRemovedChampionItemIndexes.TryGetValue(
+            previewHeldChampionName, out var removed))
+      removed.Remove(previewHeldChampionItemIndex);
+
+    previewHeldChampionName = null;
+    previewHeldChampionItemIndex = -1;
+    previewHeldChampionCursor = null;
+    HideHeldItemPointerOverlay();
+    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+  }
+
+  private bool IsChampionItemRemoved(string name, int index)
+  {
+    return previewRemovedChampionItemIndexes.TryGetValue(name, out var removed)
+        && removed.Contains(index);
+  }
+
+  private Vector2Int GetPreviewChampionItemSlot(
+      string heroName, int itemIndex, int originalX, int originalY)
+  {
+    if (previewChampionItemSlots.TryGetValue(heroName, out var slots)
+        && slots.TryGetValue(itemIndex, out var changed))
+      return changed;
+    return new Vector2Int(originalX, originalY);
+  }
+
+  private static bool IsChampionBackpackSlot(int x, int y)
+  {
+    // Eight columns by two rows on the 320x200 champion sheet.
+    // Coordinates are local to Inventory_224x136 (screen Y = local Y + 33).
+    return (y == 15 || y == 33)
+        && x >= 82 && x <= 208 && (x - 82) % 18 == 0;
+  }
+
+  private static bool IsPermittedChampionItemSlot(
+      int originalX, int originalY, int targetX, int targetY)
+  {
+    // Every ordinary carried item may be stored in an empty backpack slot.
+    // Equipped items otherwise retain their verified clothing/body slot;
+    // hand equipment can swap between either hand.
+    if (IsChampionBackpackSlot(targetX, targetY))
+      return true;
+    bool originalHand = (originalX == 61 && originalY == 52)
+        || (originalX == 5 && originalY == 32);
+    bool targetHand = (targetX == 61 && targetY == 52)
+        || (targetX == 5 && targetY == 32);
+    if (originalHand && targetHand)
+      return true;
+    return originalX == targetX && originalY == targetY;
+  }
+
+  private bool TryHandleChampionEquipmentClick(float x, float y)
+  {
+    HeroDefinition hero = HeroDatabase.GetByName(championSheetName);
+    if (hero == null || hero.StartingItems == null)
+      return false;
+
+    // Hit-test every known equipment position, including empty slots.
+    // A blank destination must be clickable while carrying an item.
+    int[] equipX = { 5, 33, 33, 33, 33, 61, 5, 5, 5, 61, 65 };
+    int[] equipY = { 12, 25, 45, 65, 85, 52, 32, 52, 72, 32, 32 };
+    int targetX = -1, targetY = -1;
+    for (int s = 0; s < equipX.Length; s++)
+    {
+      Rect rect = new Rect(equipX[s],
+          ChampionSheetInventoryScreenTop + equipY[s],
+          ChampionSheetSlotSize, ChampionSheetSlotSize);
+      if (rect.Contains(new Vector2(x, y)))
+      {
+        targetX = equipX[s];
+        targetY = equipY[s];
+        break;
+      }
+    }
+    // The backpack is an 8x2 grid immediately right of the equipped gear.
+    // Test the visible 18x18 rectangles, not a broad bounding box, to avoid
+    // consuming clicks on other character-sheet controls.
+    if (targetX < 0)
+    {
+      for (int row = 0; row < 2 && targetX < 0; row++)
+      {
+        for (int col = 0; col < 8; col++)
+        {
+          int slotX = 82 + col * ChampionSheetSlotSize;
+          int slotY = 15 + row * ChampionSheetSlotSize;
+          Rect rect = new Rect(slotX,
+              ChampionSheetInventoryScreenTop + slotY,
+              ChampionSheetSlotSize, ChampionSheetSlotSize);
+          if (rect.Contains(new Vector2(x, y)))
+          {
+            targetX = slotX;
+            targetY = slotY;
+            break;
+          }
+        }
+      }
+    }
+    if (targetX < 0)
+      return false;
+
+    bool handUsed = false;
+    bool quiverUsed = false;
+    int occupiedIndex = -1;
+    int heldOriginalX = -1, heldOriginalY = -1;
+    for (int i = 0; i < hero.StartingItems.Count; i++)
+    {
+      string name = GetChampionStartingItemName(hero.StartingItems[i]);
+      if (string.IsNullOrEmpty(name)
+          || !TryGetChampionSheetEquipSlot(name, ref handUsed,
+              ref quiverUsed, out int originalX, out int originalY))
+        continue;
+      if (i == previewHeldChampionItemIndex
+          && string.Equals(hero.Name, previewHeldChampionName,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        heldOriginalX = originalX;
+        heldOriginalY = originalY;
+      }
+      if (IsChampionItemRemoved(hero.Name, i))
+        continue;
+      Vector2Int current = GetPreviewChampionItemSlot(
+          hero.Name, i, originalX, originalY);
+      if (current.x == targetX && current.y == targetY)
+        occupiedIndex = i;
+    }
+
+    if (previewHeldChampionCursor != null)
+    {
+      if (!string.Equals(previewHeldChampionName, hero.Name,
+              System.StringComparison.OrdinalIgnoreCase)
+          || previewHeldChampionItemIndex < 0)
+        return true;
+      if (occupiedIndex >= 0)
+      {
+        Debug.LogWarning("CHAMPION EQUIPMENT: Destination slot occupied.");
+        return true;
+      }
+      if (!IsPermittedChampionItemSlot(
+              heldOriginalX, heldOriginalY, targetX, targetY))
+      {
+        Debug.LogWarning("CHAMPION EQUIPMENT: This item cannot be equipped "
+            + "in the selected slot.");
+        return true;
+      }
+      if (!previewChampionItemSlots.TryGetValue(hero.Name, out var slots))
+      {
+        slots = new System.Collections.Generic.Dictionary<int, Vector2Int>();
+        previewChampionItemSlots.Add(hero.Name, slots);
+      }
+      slots[previewHeldChampionItemIndex] = new Vector2Int(targetX, targetY);
+      previewRemovedChampionItemIndexes[hero.Name].Remove(
+          previewHeldChampionItemIndex);
+      previewHeldChampionName = null;
+      previewHeldChampionItemIndex = -1;
+      previewHeldChampionCursor = null;
+      HideHeldItemPointerOverlay();
+      Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+      PresentEditModePreviewToGameView();
+      Repaint();
+      return true;
+    }
+
+    if (occupiedIndex < 0 || HasAnyItemOnCursor())
+      return true;
+    string itemName = GetChampionStartingItemName(
+        hero.StartingItems[occupiedIndex]);
+    Texture2D texture = GetChampionInventoryItemTexture(itemName);
+    if (texture == null || !texture.isReadable
+        || texture.width > ChampionSheetSlotSize
+        || texture.height > ChampionSheetSlotSize)
+    {
+      Debug.LogError("CHAMPION PICKUP: Missing/unreadable or invalid inventory "
+          + "sprite for '" + itemName + "'. Item remains equipped; no fallback.");
+      return true;
+    }
+    if (!previewRemovedChampionItemIndexes.TryGetValue(hero.Name,
+            out var indexes))
+    {
+      indexes = new System.Collections.Generic.HashSet<int>();
+      previewRemovedChampionItemIndexes.Add(hero.Name, indexes);
+    }
+    indexes.Add(occupiedIndex);
+    previewHeldChampionName = hero.Name;
+    previewHeldChampionItemIndex = occupiedIndex;
+    previewHeldChampionCursor = texture;
+    PresentEditModePreviewToGameView();
+    Repaint();
+    return true;
+  }
+
   private bool TryHandleChampionSheetClick(float logicalX, float logicalY)
   {
     bool insideGame =
@@ -7300,6 +7521,8 @@ private static void HandleGameViewPointerDown(
 
     if (championSheetVisible)
     {
+      if (TryHandleChampionEquipmentClick(logicalX, logicalY))
+        return true;
       // Character Sheet eye icon: exact 16x16 screen hitbox.
       // Mouse-down shows Eye_moved_16x16.png. Mouse release is handled by
       // the Game View MouseUp/PointerUp path and switches to Eye_middle_16x16.png.
@@ -7375,7 +7598,13 @@ private static void HandleGameViewPointerDown(
           && logicalY >= cancelY && logicalY < cancelY + cancelHeight;
 
       if (clickedCancel)
-        CloseChampionSheetByPlayer();
+      {
+        if (previewHeldChampionCursor != null)
+          Debug.LogWarning("CHAMPION PICKUP: Return the held item to its original "
+              + "slot before closing the character sheet (drop/throw next stage).");
+        else
+          CloseChampionSheetByPlayer();
+      }
 
       return true;
     }
@@ -8394,6 +8623,14 @@ private static void HandleGameViewPointerDown(
             + hero.Name + " starting item '" + itemName + "'.");
         continue;
       }
+
+      if (IsChampionItemRemoved(hero.Name, i))
+        continue;
+
+      Vector2Int placedSlot = GetPreviewChampionItemSlot(
+          hero.Name, i, localX, localY);
+      localX = placedSlot.x;
+      localY = placedSlot.y;
 
       if (!DrawChampionSheetItemIcon(
               pixels,
@@ -33942,7 +34179,7 @@ private static void HandleGameViewPointerDown(
 
   private bool HasAnyItemOnCursor()
   {
-    return HasPickedUpTorchOnCursor()
+    return previewHeldChampionCursor != null || HasPickedUpTorchOnCursor()
         || (previewFloorPickupCompleted && previewHeldFloorItem != null
             && !string.IsNullOrEmpty(previewHeldFloorItemId)
             && previewHeldFloorItemCursor != null
@@ -33951,6 +34188,8 @@ private static void HandleGameViewPointerDown(
 
   private Texture2D GetHeldItemCursorTexture()
   {
+    if (previewHeldChampionCursor != null)
+      return previewHeldChampionCursor;
     return previewFloorPickupCompleted && previewHeldFloorItem != null
         ? previewHeldFloorItemCursor : previewHeldTorchCursor;
   }

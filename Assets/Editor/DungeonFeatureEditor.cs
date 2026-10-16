@@ -155,16 +155,10 @@ public class DungeonFeatureEditor : EditorWindow
   private readonly HashSet<int> resolvedPuddleFloors = new HashSet<int>();
   private readonly HashSet<int> resolvedMossFloors = new HashSet<int>();
 
+  // Verification restarts for each champion: visual equipment, pickup,
+  // floor drop, and throwing must all be tested before marking green.
   private static readonly string[] VerifiedChampionEquipmentNames =
   {
-    "Iaido",
-    "Chani",
-    "Hawk",
-    "Zed",
-    "Alex",
-    "Boris",
-    "Elija",
-    "Linflas"
   };
 
   private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =
