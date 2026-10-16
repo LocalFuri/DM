@@ -37,8 +37,30 @@ public class DungeonFeatureEditor : EditorWindow
 
   private const float BaseCellSize = 32f;
   private const int MaxMapZoomStep = 3;
+  private const int MaximumDungeonTilesPerAxis = 32;
   private const string MapZoomPreferenceKey = "DungeonFeatureEditor.MapZoomOutStep";
-  private float mapZoom => 1f - mapZoomStep * 0.25f;
+  // Last wheel level fits a full 32x32 level into the available editor viewport.
+  private float mapZoom => GetZoomForStep(mapZoomStep);
+  private float GetFitMapZoom()
+  {
+    // Reserve space for map coordinates, wall labels, scrollbars and header.
+    float availableWidth = Mathf.Max(1f, position.width - 24f);
+    float availableHeight = Mathf.Max(1f, position.height - 110f);
+    float requiredWidth = LabelLeftMargin
+        + Mathf.Max(MaximumDungeonTilesPerAxis, OutsideNameColumnX + 2) * BaseCellSize;
+    float requiredHeight = LabelTopMargin + 2f * OutsideFeatureVerticalMargin
+        + MaximumDungeonTilesPerAxis * BaseCellSize;
+    return Mathf.Clamp(Mathf.Min(availableWidth / requiredWidth,
+        availableHeight / requiredHeight), 0.01f, 1f);
+  }
+
+  private float GetZoomForStep(int step)
+  {
+    float fit = GetFitMapZoom();
+    if (step >= MaxMapZoomStep)
+      return fit;
+    return Mathf.Max(fit, 1f - step * 0.25f);
+  }
   private float CellSize => BaseCellSize * mapZoom;
   private const float LabelLeftMargin = 28f;
   private const float LabelTopMargin = 20f;
@@ -427,7 +449,7 @@ public class DungeonFeatureEditor : EditorWindow
         poseStyle,
         GUILayout.Height(20f));
 
-    EditorGUILayout.LabelField("Mouse wheel over map: 1x / 0.75x / 0.5x / 0.25x  (current: " + mapZoom.ToString("0.##") + "x)");
+    EditorGUILayout.LabelField("Mouse wheel: 1x / 0.75x / 0.5x / Fit 32x32  (current: " + mapZoom.ToString("0.##") + "x)");
     DrawMapGrid();
   }
 
@@ -529,16 +551,26 @@ public class DungeonFeatureEditor : EditorWindow
       return;
 
     // Wheel down zooms out; wheel up zooms back toward normal 1x size.
-    int nextZoomStep = Mathf.Clamp(
-        mapZoomStep + (e.delta.y > 0f ? 1 : -1), 0, MaxMapZoomStep);
-    if (nextZoomStep == mapZoomStep)
+    int direction = e.delta.y > 0f ? 1 : -1;
+    int nextZoomStep = mapZoomStep;
+    float currentZoom = mapZoom;
+    // Skip intermediate steps that are already smaller than the window-fit
+    // limit; they would otherwise produce no visible zoom change.
+    while (nextZoomStep + direction >= 0
+           && nextZoomStep + direction <= MaxMapZoomStep)
+    {
+      nextZoomStep += direction;
+      if (Mathf.Abs(GetZoomForStep(nextZoomStep) - currentZoom) > 0.0001f)
+        break;
+    }
+    float nextZoom = GetZoomForStep(nextZoomStep);
+    if (Mathf.Abs(nextZoom - currentZoom) <= 0.0001f)
     {
       e.Use();
       return;
     }
 
-    float nextZoom = 1f - nextZoomStep * 0.25f;
-    float scale = nextZoom / mapZoom;
+    float scale = nextZoom / currentZoom;
     // Preserve the point under the pointer in the scroll view while zooming.
     Vector2 anchor = e.mousePosition - contentRect.position;
     mapScroll += anchor * (scale - 1f);
