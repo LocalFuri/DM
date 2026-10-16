@@ -566,6 +566,10 @@ public class DungeonFeatureEditor : EditorWindow
     mapScroll += anchor * (scale - 1f);
     mapScroll.x = Mathf.Max(0f, mapScroll.x);
     mapScroll.y = Mathf.Max(0f, mapScroll.y);
+    // Returning from Fit 32x32 to 100% starts at the first map row,
+    // like returning to the top of a worksheet in Excel.
+    if (mapZoomStep == MaxMapZoomStep && nextZoomStep == 0)
+      mapScroll = Vector2.zero;
     mapZoomStep = nextZoomStep;
     EditorPrefs.SetInt(MapZoomPreferenceKey, mapZoomStep);
     e.Use();
