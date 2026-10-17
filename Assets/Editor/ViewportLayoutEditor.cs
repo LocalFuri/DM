@@ -29576,8 +29576,8 @@ private static void HandleGameViewPointerDown(
   // ViewEdit-calibrated F1 ground positions for Samurai Sword (72x8).
   // Apply persists these values in ViewportLayoutEditor.cs.
   private int swordF1LeftPreviewX = 20;
-  private int swordF1RightPreviewX = 132;
-  private int swordF1PreviewScreenTop = 146;
+  private int swordF1RightPreviewX = 119;
+  private int swordF1PreviewScreenTop = 156;
   private readonly Dictionary<string, Vector2Int> swordSavedFloorPositions =
       new Dictionary<string, Vector2Int>(System.StringComparer.Ordinal);
 
