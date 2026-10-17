@@ -283,15 +283,22 @@ public class DungeonFeatureEditor : EditorWindow
         }
       }
 
-      Rect marker = new Rect(mapRect.x + x * CellSize + CellSize * 0.56f,
-          mapRect.y + y * CellSize + CellSize * 0.02f,
-          CellSize * 0.42f, CellSize * 0.42f);
-      EditorGUI.DrawRect(marker, FloorItemMapColor);
+      // Multiple floor items fill the tile in orange with a centered white count.
+      // A single item with missing artwork retains the existing small count marker.
+      bool multipleItems = list.Count > 1;
+      float markerSize = multipleItems ? CellSize : CellSize * 0.42f;
+      Rect marker = new Rect(
+          mapRect.x + x * CellSize + (CellSize - markerSize) * 0.5f,
+          mapRect.y + y * CellSize + (CellSize - markerSize) * 0.5f,
+          markerSize, markerSize);
+      EditorGUI.DrawRect(marker, multipleItems
+          ? new Color(1f, 0.55f, 0f, 1f) : FloorItemMapColor);
       GUIStyle style = new GUIStyle(EditorStyles.whiteMiniLabel)
       {
         alignment = TextAnchor.MiddleCenter,
         fontStyle = FontStyle.Bold,
-        fontSize = Mathf.Max(7, Mathf.RoundToInt(10 * mapZoom))
+        normal = { textColor = Color.white },
+        fontSize = Mathf.Max(7, Mathf.RoundToInt(14 * mapZoom))
       };
       GUI.Label(marker, list.Count.ToString(), style);
     }
@@ -347,6 +354,12 @@ public class DungeonFeatureEditor : EditorWindow
     if (string.Equals(recordType, "Potion", System.StringComparison.OrdinalIgnoreCase)
         && string.Equals(decodedName, "Empty Flask", System.StringComparison.OrdinalIgnoreCase))
       return FindExactTextureByName("Potion_Empty_16x16");
+
+    // CSBwin Junk Type 35 (Shank) uses the verified Drumstick inventory art.
+    // This is an explicit asset alias; keep the decoded item name and ID.
+    if (string.Equals(recordType, "Junk", System.StringComparison.OrdinalIgnoreCase)
+        && string.Equals(decodedName, "Shank", System.StringComparison.OrdinalIgnoreCase))
+      return FindExactTextureByName("Drumstick_16x16");
 
     string sanitized = SanitizeItemNameForAsset(decodedName);
     string underscored = decodedName.Replace(" ", "_");
@@ -1106,6 +1119,9 @@ public class DungeonFeatureEditor : EditorWindow
       }
     }
 
+    // Resolve tile selection before drawing item-count overlays. A full-tile
+    // orange count must never obscure inspection or double-click navigation.
+    HandleGridClick(mapRect);
     DrawStairDownIcons(mapRect);
     DrawPuddleFloorIcons(mapRect);
     DrawMossFloorIcons(mapRect);
@@ -1113,10 +1129,11 @@ public class DungeonFeatureEditor : EditorWindow
     DrawOriginalWallOrnamentIcons(mapRect);
     DrawVerifiedChampionTileHighlights(mapRect);
     DrawChampionMirrorMarkers(mapRect);
-    HandleGridClick(mapRect);
-    // Draw last so the item popup remains above other map features.
-    if (showMultiItemPreview)
-      DrawSelectedFloorItemsPopup(mapRect, previewRecords);
+    // The click may have selected a new tile during this GUI event. Read the
+    // current inspection state now, instead of using the previous frame's data.
+    List<FloorItemPlacementRecord> currentPopupRecords = GetInspectedFloorItems();
+    if (currentPopupRecords != null && currentPopupRecords.Count > 1)
+      DrawSelectedFloorItemsPopup(mapRect, currentPopupRecords);
 
     EditorGUILayout.EndScrollView();
   }
@@ -1124,15 +1141,40 @@ public class DungeonFeatureEditor : EditorWindow
   // One horizontal row of multi-item previews. Each item uses a compact
   // mini-block: green name on top, 32x32 icon underneath. Record IDs are
   // omitted here to keep dense multi-item popups readable.
+  // Split long multi-word names into two lines to keep an item pile compact.
+  private string GetFloorItemPopupName(FloorItemPlacementRecord entry)
+  {
+    string name = GetFloorItemDisplayName(entry);
+    int best = -1;
+    int bestDifference = int.MaxValue;
+    for (int i = 0; i < name.Length; i++)
+    {
+      if (name[i] != ' ')
+        continue;
+      int difference = Mathf.Abs(i - (name.Length - i - 1));
+      if (difference < bestDifference)
+      {
+        bestDifference = difference;
+        best = i;
+      }
+    }
+    if (best < 0)
+      return name;
+    return name.Substring(0, best) + "\n" + name.Substring(best + 1);
+  }
+
   private float GetFloorItemPopupBlockWidth(FloorItemPlacementRecord entry)
   {
     GUIStyle nameStyle = new GUIStyle(EditorStyles.label)
     {
       fontStyle = FontStyle.Bold
     };
-    string name = GetFloorItemDisplayName(entry);
-    float textWidth = nameStyle.CalcSize(new GUIContent(name)).x;
-    return (Mathf.Max(32f, Mathf.Ceil(textWidth)) + 2f) * mapZoom;
+    string[] lines = GetFloorItemPopupName(entry).Split('\n');
+    float textWidth = 32f;
+    for (int i = 0; i < lines.Length; i++)
+      textWidth = Mathf.Max(textWidth,
+          nameStyle.CalcSize(new GUIContent(lines[i])).x);
+    return (Mathf.Ceil(textWidth) + 2f) * mapZoom;
   }
 
   private float GetSelectedFloorItemPopupWidth(int itemCount)
@@ -1150,7 +1192,7 @@ public class DungeonFeatureEditor : EditorWindow
   {
     float unit = mapZoom;
     float width = GetSelectedFloorItemPopupWidth(itemCount);
-    float height = 7f * unit * 2f + 18f * unit + 49f * unit;
+    float height = 7f * unit * 2f + 18f * unit + 64f * unit;
     float x = mapRect.xMax + 8f * unit;
     float y = mapRect.y - (LabelTopMargin + OutsideFeatureVerticalMargin) * unit
         + 2f * unit;
@@ -1170,7 +1212,7 @@ public class DungeonFeatureEditor : EditorWindow
     Vector3 popupEnd = new Vector3(popup.xMin, popup.center.y, 0f);
     Handles.BeginGUI();
     Color previous = Handles.color;
-    Handles.color = Color.cyan;
+    Handles.color = new Color(1f, 0.55f, 0f, 1f);
     Handles.DrawAAPolyLine(3f, tileCenter, popupEnd);
     Handles.color = previous;
     Handles.EndGUI();
@@ -1212,13 +1254,14 @@ public class DungeonFeatureEditor : EditorWindow
     {
       FloorItemPlacementRecord entry = records[i];
       float itemWidth = GetFloorItemPopupBlockWidth(entry);
-      string itemName = GetFloorItemDisplayName(entry);
+      string itemName = GetFloorItemPopupName(entry);
       GUI.Label(new Rect(itemX, rowY,
-          itemWidth, 15f * unit), new GUIContent(itemName, itemName), nameStyle);
+          itemWidth, 30f * unit),
+          new GUIContent(itemName, GetFloorItemDisplayName(entry)), nameStyle);
 
       Rect iconRect = new Rect(
           itemX + (itemWidth - iconSize) * 0.5f,
-          rowY + 15f * unit + 1f * unit,
+          rowY + 30f * unit + 1f * unit,
           iconSize, iconSize);
       Texture2D texture = GetFloorItemInventoryMapIcon(entry);
       if (texture != null)
