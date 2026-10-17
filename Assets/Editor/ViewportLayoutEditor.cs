@@ -95,6 +95,9 @@ public class ViewportLayoutEditor : EditorWindow
   // authoritative ground/world artwork; Apple_16x16 is inventory-only.
   private const string AppleGroundAssetPath =
       "Assets/Art/Food/Apple_19x13.png";
+  // Iaido Samurai Sword: independent native world art (never scale 16x16 icon).
+  private const string SamuraiSwordGroundAssetPath =
+      "Assets/Art/Weapons/Sword_72x8.png";
   private const int Level0AppleTestX = 4;
   private const int Level0AppleTestY = 9;
   private const string Level0AppleTestCell = "N";
@@ -6759,6 +6762,16 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
+    if (hasLogical && window.TryDropHeldChampionSword(logical.x, logical.y))
+    {
+      s_lastGameViewClickTime = now;
+      if (imguiEvent != null) imguiEvent.Use();
+      if (pointerEvent != null) pointerEvent.StopPropagation();
+      UpdateHeldItemPointerOverlay(gameView, windowMouse);
+      gameView.Repaint(); window.Repaint(); RepaintGameViews();
+      return true;
+    }
+
     if (hasLogical && window.TryDropHeldFloorItem(logical.x, logical.y))
     {
       s_lastGameViewClickTime = now;
@@ -7373,6 +7386,18 @@ private static void HandleGameViewPointerDown(
   private int previewHeldChampionItemIndex = -1;
   private Texture2D previewHeldChampionCursor;
   private Vector2Int previewHeldChampionSourceSlot = new Vector2Int(-1, -1);
+
+  // Records retaining exact HeroDatabase item identity while a champion's
+  // equipment is physically on the floor. Never create an anonymous sword.
+  private sealed class ChampionFloorIdentity
+  {
+    public string heroName;
+    public int itemIndex;
+    public Vector2Int previousSlot;
+  }
+  private readonly Dictionary<string, ChampionFloorIdentity> previewChampionFloorIds =
+      new Dictionary<string, ChampionFloorIdentity>(System.StringComparer.Ordinal);
+  private int previewChampionFloorSerial;
 
   private void ResetChampionEquipmentCursorAfterReload()
   {
@@ -29306,6 +29331,21 @@ private static void HandleGameViewPointerDown(
     if (item == null)
       return null;
 
+    if (string.Equals(item.type, "Samurai Sword",
+            System.StringComparison.OrdinalIgnoreCase))
+    {
+      Texture2D sword = AssetDatabase.LoadAssetAtPath<Texture2D>(
+          SamuraiSwordGroundAssetPath);
+      if (sword == null || !sword.isReadable || sword.width != 72
+          || sword.height != 8)
+      {
+        ReportFloorItemTextureProblem("Samurai Sword", SamuraiSwordGroundAssetPath,
+            sword == null ? "is missing" : "must be readable and exactly 72x8");
+        return null;
+      }
+      return sword;
+    }
+
     if (string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase))
     {
       if (cachedAppleGroundTexture == null)
@@ -29433,6 +29473,9 @@ private static void HandleGameViewPointerDown(
       if (depth == FloorItemDepth.SameTile) return 148;
       if (depth == FloorItemDepth.OneAhead) return 121;
     }
+    if (string.Equals(item.type, "Samurai Sword",
+            System.StringComparison.OrdinalIgnoreCase)
+        && depth == FloorItemDepth.SameTile) return 146;
     Debug.LogError("Missing floor-item pile calibration reference for "
         + item.type + " at depth " + depth + ".");
     return int.MinValue;
@@ -29509,9 +29552,11 @@ private static void HandleGameViewPointerDown(
       {
         bool appleItem = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
         bool breadItem = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
-        if (appleItem || breadItem)
+        bool swordItem = string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase);
+        if (appleItem || breadItem || swordItem)
           ReportFloorItemTextureProblem(item.type,
-              appleItem ? AppleGroundAssetPath : BreadGroundAssetPath,
+              appleItem ? AppleGroundAssetPath :
+                  (breadItem ? BreadGroundAssetPath : SamuraiSwordGroundAssetPath),
               !texture.isReadable ? "is not readable" : "has invalid dimensions");
         continue;
       }
@@ -29537,6 +29582,20 @@ private static void HandleGameViewPointerDown(
   {
     bool apple = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
     bool bread = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
+    bool sword = string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase);
+    if (sword)
+    {
+      // First verification is a same-tile world sprite at its native 72x8.
+      // Distance views are deliberately not fabricated from inventory art.
+      if (depth == FloorItemDepth.SameTile)
+      {
+        int x = isRight ? 132 : 20;
+        int screenTop = 146;
+        BlitPieceIntoPreview(pixels, texture, x + pileOffset.x,
+            PreviewHeight - screenTop - texture.height - pileOffset.y, false);
+      }
+      return;
+    }
     if (!apple && !bread)
       return;
 
@@ -34548,6 +34607,15 @@ private static void HandleGameViewPointerDown(
       return false;
     bool apple = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
     bool bread = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
+    if (string.Equals(item.type, "Samurai Sword",
+            System.StringComparison.OrdinalIgnoreCase))
+    {
+      if (depth != FloorItemDepth.SameTile) return false;
+      Texture2D sword = GetFloorItemTexture(item);
+      if (sword == null) return false;
+      rect = new Rect(right ? 132 : 20, 146, sword.width, sword.height);
+      return true;
+    }
     if (!apple && !bread) return false;
     int x, top, width, height;
     if (depth == FloorItemDepth.SameTile)
@@ -34654,6 +34722,39 @@ private static void HandleGameViewPointerDown(
       bool overlappingSameFloor = item.x == clicked.x && item.y == clicked.y
           && rect.Overlaps(clickedRect);
       if (!sameCorner && !overlappingSameFloor) continue;
+      // A previously dropped champion sword retains its exact champion item
+      // index and the inventory cursor texture, rather than becoming a clone.
+      string id = GetFloorItemInstanceId(item);
+      if (previewChampionFloorIds.TryGetValue(id, out ChampionFloorIdentity identity))
+      {
+        HeroDefinition swordHero = HeroDatabase.GetByName(identity.heroName);
+        if (swordHero == null || swordHero.StartingItems == null
+            || identity.itemIndex < 0
+            || identity.itemIndex >= swordHero.StartingItems.Count)
+        {
+          Debug.LogError("SAMURAI SWORD FLOOR PICKUP: champion identity invalid; item stays on floor.");
+          return true;
+        }
+        string swordItemName = GetChampionStartingItemName(
+            swordHero.StartingItems[identity.itemIndex]);
+        Texture2D swordCursor = GetChampionInventoryItemTexture(swordItemName);
+        if (swordCursor == null || !swordCursor.isReadable
+            || swordCursor.width != 16 || swordCursor.height != 16)
+        {
+          Debug.LogError("SAMURAI SWORD FLOOR PICKUP: missing valid 16x16 inventory art; item stays on floor.");
+          return true;
+        }
+        previewMovedFloorItems.Remove(id);
+        previewMovedFloorItemOrder.Remove(id);
+        previewChampionFloorIds.Remove(id);
+        previewHeldChampionName = identity.heroName;
+        previewHeldChampionItemIndex = identity.itemIndex;
+        previewHeldChampionSourceSlot = identity.previousSlot;
+        previewHeldChampionCursor = swordCursor;
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+        RefreshEditModePreview();
+        return true;
+      }
       // Inventory art is always the explicitly named 16x16 sprite, never
       // the differently sized floor sprite. Do not search globally or fall back.
       string path = "Assets/Art/Food/" + item.type + "_16x16.png";
@@ -34665,7 +34766,6 @@ private static void HandleGameViewPointerDown(
             + "texture at exact path '" + path + "'. No fallback used.");
         return true; // Leave the item on the ground.
       }
-      string id = GetFloorItemInstanceId(item);
       if (previewMovedFloorItems.ContainsKey(id))
       {
         previewMovedFloorItems.Remove(id);
@@ -34686,6 +34786,76 @@ private static void HandleGameViewPointerDown(
       return true;
     }
     return false;
+  }
+
+  // Transfer Iaido's held equipment to an independent floor record. This
+  // does not overwrite the champion item or alter immutable source data.
+  private bool TryDropHeldChampionSword(float x, float y)
+  {
+    if (previewHeldChampionCursor == null || championSheetVisible)
+      return false;
+    if (x < 0 || x >= 224 || y < 0 || y >= 169)
+      return false;
+    if (previewHeldChampionItemIndex < 0
+        || string.IsNullOrEmpty(previewHeldChampionName))
+      return false;
+    HeroDefinition hero = HeroDatabase.GetByName(previewHeldChampionName);
+    if (hero == null || hero.StartingItems == null
+        || previewHeldChampionItemIndex >= hero.StartingItems.Count)
+    {
+      Debug.LogError("CHAMPION FLOOR DROP: invalid held champion item identity; item remains on cursor.");
+      return true;
+    }
+    string itemName = GetChampionStartingItemName(
+        hero.StartingItems[previewHeldChampionItemIndex]);
+    if (!string.Equals(NormalizeChampionAssetKey(itemName), "SAMURAISWORD",
+            System.StringComparison.OrdinalIgnoreCase))
+    {
+      Debug.LogError("CHAMPION FLOOR DROP: no world-art mapping for '"
+          + itemName + "'; item remains on cursor. No fallback.");
+      return true;
+    }
+    if (previewDungeonLevel != 0)
+    {
+      Debug.LogError("CHAMPION FLOOR DROP: level is not supported by the floor item renderer; sword remains on cursor.");
+      return true;
+    }
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || !PreviewTileIsOpen(previewX, previewY))
+      return true;
+    // Validate texture before transferring anything out of the cursor.
+    var floorItem = new FloorItemPlacement
+    {
+      type = "Samurai Sword",
+      x = previewX,
+      y = previewY,
+      cell = FloorCornerForFacing(previewFacing, x >= 112f)
+    };
+    if (GetFloorItemTexture(floorItem) == null) return true;
+    string id = "champion-floor:" + (++previewChampionFloorSerial);
+    if (previewMovedFloorItems.ContainsKey(id)
+        || previewChampionFloorIds.ContainsKey(id))
+    {
+      Debug.LogError("CHAMPION FLOOR DROP: duplicate instance ID; item remains on cursor.");
+      return true;
+    }
+    floorItem.instanceId = id;
+    previewChampionFloorIds.Add(id, new ChampionFloorIdentity
+    {
+      heroName = previewHeldChampionName,
+      itemIndex = previewHeldChampionItemIndex,
+      previousSlot = previewHeldChampionSourceSlot
+    });
+    previewMovedFloorItems.Add(id, floorItem);
+    previewMovedFloorItemOrder.Add(id);
+    previewHeldChampionName = null;
+    previewHeldChampionItemIndex = -1;
+    previewHeldChampionCursor = null;
+    previewHeldChampionSourceSlot = new Vector2Int(-1, -1);
+    HideHeldItemPointerOverlay();
+    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+    RefreshEditModePreview();
+    return true;
   }
 
   private bool TryDropHeldFloorItem(float x, float y)
