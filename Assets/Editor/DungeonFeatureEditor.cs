@@ -1116,23 +1116,18 @@ public class DungeonFeatureEditor : EditorWindow
     EditorGUILayout.EndScrollView();
   }
 
-  // One horizontal row of multi-item previews. The inventory images remain
-  // 16x16 in Assets and are displayed at 2x in this editor-only popup.
-  // Exact popup width uses each item's displayed name and record ID,
-  // rather than wasting a fixed-width block for short names.
+  // One horizontal row of multi-item previews. Each item uses a compact
+  // mini-block: green name on top, 32x32 icon underneath. Record IDs are
+  // omitted here to keep dense multi-item popups readable.
   private float GetFloorItemPopupBlockWidth(FloorItemPlacementRecord entry)
   {
     GUIStyle nameStyle = new GUIStyle(EditorStyles.label)
     {
       fontStyle = FontStyle.Bold
     };
-    GUIStyle idStyle = EditorStyles.miniLabel;
     string name = GetFloorItemDisplayName(entry);
-    string recordId = "[" + entry.id + "]";
-    float textWidth = Mathf.Max(
-        nameStyle.CalcSize(new GUIContent(name)).x,
-        idStyle.CalcSize(new GUIContent(recordId)).x);
-    return (32f + 3f + Mathf.Ceil(textWidth) + 2f) * mapZoom;
+    float textWidth = nameStyle.CalcSize(new GUIContent(name)).x;
+    return (Mathf.Max(32f, Mathf.Ceil(textWidth)) + 2f) * mapZoom;
   }
 
   private float GetSelectedFloorItemPopupWidth(int itemCount)
@@ -1150,7 +1145,7 @@ public class DungeonFeatureEditor : EditorWindow
   {
     float unit = mapZoom;
     float width = GetSelectedFloorItemPopupWidth(itemCount);
-    float height = 7f * unit * 2f + 18f * unit + 38f * unit;
+    float height = 7f * unit * 2f + 18f * unit + 49f * unit;
     float x = mapRect.xMax + 8f * unit;
     float y = mapRect.y - (LabelTopMargin + OutsideFeatureVerticalMargin) * unit
         + 2f * unit;
@@ -1188,7 +1183,7 @@ public class DungeonFeatureEditor : EditorWindow
     float padding = 7f * unit;
     float headingHeight = 18f * unit;
     float iconSize = 32f * unit;
-    float itemGap = 2f * unit;
+    float itemGap = 1f * unit;
     GUIStyle heading = new GUIStyle(EditorStyles.miniBoldLabel)
     {
       alignment = TextAnchor.MiddleLeft
@@ -1200,14 +1195,9 @@ public class DungeonFeatureEditor : EditorWindow
 
     GUIStyle nameStyle = new GUIStyle(EditorStyles.label)
     {
-      alignment = TextAnchor.MiddleLeft,
+      alignment = TextAnchor.MiddleCenter,
       normal = { textColor = Color.green },
       fontStyle = FontStyle.Bold,
-      clipping = TextClipping.Clip
-    };
-    GUIStyle idStyle = new GUIStyle(EditorStyles.miniLabel)
-    {
-      alignment = TextAnchor.MiddleLeft,
       clipping = TextClipping.Clip
     };
 
@@ -1217,19 +1207,19 @@ public class DungeonFeatureEditor : EditorWindow
     {
       FloorItemPlacementRecord entry = records[i];
       float itemWidth = GetFloorItemPopupBlockWidth(entry);
-      Rect iconRect = new Rect(itemX, rowY + 3f * unit,
+      string itemName = GetFloorItemDisplayName(entry);
+      GUI.Label(new Rect(itemX, rowY,
+          itemWidth, 15f * unit), new GUIContent(itemName, itemName), nameStyle);
+
+      Rect iconRect = new Rect(
+          itemX + (itemWidth - iconSize) * 0.5f,
+          rowY + 15f * unit + 1f * unit,
           iconSize, iconSize);
       Texture2D texture = GetFloorItemInventoryMapIcon(entry);
       if (texture != null)
         GUI.DrawTexture(iconRect, texture, ScaleMode.StretchToFill, true);
       // Missing art remains a Console error, never replace the icon.
-      float textX = iconRect.xMax + 3f * unit;
-      float textWidth = itemWidth - iconSize - 3f * unit;
-      string itemName = GetFloorItemDisplayName(entry);
-      GUI.Label(new Rect(textX, rowY + 2f * unit,
-          textWidth, 19f * unit), new GUIContent(itemName, itemName), nameStyle);
-      GUI.Label(new Rect(textX, rowY + 19f * unit,
-          textWidth, 15f * unit), "[" + entry.id + "]", idStyle);
+
       itemX += itemWidth + itemGap;
     }
   }
