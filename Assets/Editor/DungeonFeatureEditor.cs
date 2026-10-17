@@ -282,6 +282,25 @@ public class DungeonFeatureEditor : EditorWindow
           continue;
         }
       }
+      else if (list.Count == 2)
+      {
+        Texture2D leftIcon = GetFloorItemInventoryMapIcon(list[0]);
+        Texture2D rightIcon = GetFloorItemInventoryMapIcon(list[1]);
+        if (leftIcon != null && rightIcon != null)
+        {
+          float outerMargin = 1f * mapZoom;
+          float gap = 1f * mapZoom;
+          float iconSize = Mathf.Max(1f, (CellSize - outerMargin * 2f - gap) * 0.5f);
+          float totalWidth = iconSize * 2f + gap;
+          float startX = mapRect.x + x * CellSize + (CellSize - totalWidth) * 0.5f;
+          float startY = mapRect.y + y * CellSize + (CellSize - iconSize) * 0.5f;
+          Rect leftRect = new Rect(startX, startY, iconSize, iconSize);
+          Rect rightRect = new Rect(startX + iconSize + gap, startY, iconSize, iconSize);
+          GUI.DrawTexture(leftRect, leftIcon, ScaleMode.StretchToFill, true);
+          GUI.DrawTexture(rightRect, rightIcon, ScaleMode.StretchToFill, true);
+          continue;
+        }
+      }
 
       Rect marker = new Rect(mapRect.x + x * CellSize + CellSize * 0.56f,
           mapRect.y + y * CellSize + CellSize * 0.02f,
@@ -309,6 +328,19 @@ public class DungeonFeatureEditor : EditorWindow
 
     string decodedName = DecodeFloorItemName(entry.recordType, type);
     Texture2D resolved = ResolveInventoryItemIcon(decodedName, entry.recordType);
+    if (resolved == null)
+      Debug.LogError("Dungeon Features: Missing 16x16 inventory map icon for '"
+          + decodedName + "' (" + entry.recordType + " Type " + type
+          + ", record " + entry.id + ", level " + entry.level
+          + ", tile (" + entry.localX + "," + entry.localY
+          + ")). Check the exact asset filename in Assets; no replacement art is used.");
+    else if (resolved.width != 16 || resolved.height != 16)
+    {
+      Debug.LogError("Dungeon Features: Inventory map icon for '" + decodedName
+          + "' must be 16x16, got " + resolved.width + "x" + resolved.height
+          + " (asset " + resolved.name + ").");
+      resolved = null;
+    }
     floorItemInventoryIconCache[cacheKey] = resolved;
     return resolved;
   }
@@ -317,6 +349,18 @@ public class DungeonFeatureEditor : EditorWindow
   {
     if (string.IsNullOrEmpty(decodedName))
       return null;
+
+    // Verified art filename for Junk Type 1. The displayed item name remains
+    // Waterskin; the inventory sprite asset is named Waterskin_empty_16x16.
+    // Strict lookup: do not substitute any other sprite when it is absent.
+    if (string.Equals(recordType, "Junk", System.StringComparison.OrdinalIgnoreCase)
+        && string.Equals(decodedName, "Waterskin", System.StringComparison.OrdinalIgnoreCase))
+      return FindExactTextureByName("Waterskin_empty_16x16");
+
+    // Verified art filename in Assets/MISC.
+    if (string.Equals(recordType, "Scroll", System.StringComparison.OrdinalIgnoreCase)
+        && string.Equals(decodedName, "Scroll", System.StringComparison.OrdinalIgnoreCase))
+      return FindExactTextureByName("Scroll_16x16");
 
     string sanitized = SanitizeItemNameForAsset(decodedName);
     string underscored = decodedName.Replace(" ", "_");
