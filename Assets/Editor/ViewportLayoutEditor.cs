@@ -29573,6 +29573,14 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // ViewEdit-calibrated F1 ground positions for Samurai Sword (72x8).
+  // Apply persists these values in ViewportLayoutEditor.cs.
+  private int swordF1LeftPreviewX = 20;
+  private int swordF1RightPreviewX = 132;
+  private int swordF1PreviewScreenTop = 146;
+  private readonly Dictionary<string, Vector2Int> swordSavedFloorPositions =
+      new Dictionary<string, Vector2Int>(System.StringComparer.Ordinal);
+
   private void BlitProjectedFloorItem(
       Color32[] pixels,
       FloorItemPlacement item,
@@ -29589,8 +29597,8 @@ private static void HandleGameViewPointerDown(
       // Distance views are deliberately not fabricated from inventory art.
       if (depth == FloorItemDepth.SameTile)
       {
-        int x = isRight ? 132 : 20;
-        int screenTop = 146;
+        int x = isRight ? swordF1RightPreviewX : swordF1LeftPreviewX;
+        int screenTop = swordF1PreviewScreenTop;
         BlitPieceIntoPreview(pixels, texture, x + pileOffset.x,
             PreviewHeight - screenTop - texture.height - pileOffset.y, false);
       }
@@ -29971,6 +29979,45 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  private void DrawSamuraiSwordFloorCalibration(bool isRight)
+  {
+    string xField = isRight ? "swordF1RightPreviewX" : "swordF1LeftPreviewX";
+    const string yField = "swordF1PreviewScreenTop";
+    int x = isRight ? swordF1RightPreviewX : swordF1LeftPreviewX;
+    int y = swordF1PreviewScreenTop;
+    if (!swordSavedFloorPositions.TryGetValue(xField, out Vector2Int saved))
+    {
+      saved = new Vector2Int(x, y);
+      swordSavedFloorPositions.Add(xField, saved);
+    }
+    float oldWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    int editX = x;
+    bool changedX = DrawIntStepperInline(
+        "X", ref editX, snap, x != saved.x, true, 25f, 25f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    int editY = y;
+    bool changedY = DrawIntStepperInline(
+        "Y", ref editY, snap, y != saved.y, true, 25f, 25f);
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = oldWidth;
+    if (changedX || changedY)
+    {
+      if (isRight) swordF1RightPreviewX = editX;
+      else swordF1LeftPreviewX = editX;
+      swordF1PreviewScreenTop = editY;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+    if (apply && SaveBreadScreenPosition(xField, yField, editX, editY))
+    {
+      swordSavedFloorPositions[xField] = new Vector2Int(editX, editY);
+      Repaint();
+    }
+  }
+
   private void DrawFloorItemRows()
   {
     EnsurePreviewMiniMapLoaded();
@@ -30016,6 +30063,9 @@ private static void HandleGameViewPointerDown(
           DrawAppleScreenCalibration(depth, isRight);
         else if (string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase))
           DrawBreadScreenCalibration(depth, isRight);
+        else if (depth == FloorItemDepth.SameTile
+            && string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase))
+          DrawSamuraiSwordFloorCalibration(isRight);
       }
       EditorGUILayout.EndHorizontal();
 
@@ -34613,7 +34663,8 @@ private static void HandleGameViewPointerDown(
       if (depth != FloorItemDepth.SameTile) return false;
       Texture2D sword = GetFloorItemTexture(item);
       if (sword == null) return false;
-      rect = new Rect(right ? 132 : 20, 146, sword.width, sword.height);
+      rect = new Rect(right ? swordF1RightPreviewX : swordF1LeftPreviewX,
+          swordF1PreviewScreenTop, sword.width, sword.height);
       return true;
     }
     if (!apple && !bread) return false;
