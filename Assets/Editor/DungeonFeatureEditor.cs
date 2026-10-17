@@ -282,25 +282,6 @@ public class DungeonFeatureEditor : EditorWindow
           continue;
         }
       }
-      else if (list.Count == 2)
-      {
-        Texture2D leftIcon = GetFloorItemInventoryMapIcon(list[0]);
-        Texture2D rightIcon = GetFloorItemInventoryMapIcon(list[1]);
-        if (leftIcon != null && rightIcon != null)
-        {
-          float outerMargin = 1f * mapZoom;
-          float gap = 1f * mapZoom;
-          float iconSize = Mathf.Max(1f, (CellSize - outerMargin * 2f - gap) * 0.5f);
-          float totalWidth = iconSize * 2f + gap;
-          float startX = mapRect.x + x * CellSize + (CellSize - totalWidth) * 0.5f;
-          float startY = mapRect.y + y * CellSize + (CellSize - iconSize) * 0.5f;
-          Rect leftRect = new Rect(startX, startY, iconSize, iconSize);
-          Rect rightRect = new Rect(startX + iconSize + gap, startY, iconSize, iconSize);
-          GUI.DrawTexture(leftRect, leftIcon, ScaleMode.StretchToFill, true);
-          GUI.DrawTexture(rightRect, rightIcon, ScaleMode.StretchToFill, true);
-          continue;
-        }
-      }
 
       Rect marker = new Rect(mapRect.x + x * CellSize + CellSize * 0.56f,
           mapRect.y + y * CellSize + CellSize * 0.02f,
@@ -658,15 +639,43 @@ public class DungeonFeatureEditor : EditorWindow
     return null;
   }
 
+  private List<FloorItemPlacementRecord> GetInspectedFloorItems()
+  {
+    if (inspectedFloorItemX < 0 || inspectedFloorItemY < 0)
+      return null;
+
+    resolvedFloorItems.TryGetValue(
+        PackFloorFeatureTile(inspectedFloorItemX, inspectedFloorItemY),
+        out List<FloorItemPlacementRecord> records);
+    return records;
+  }
+
+  private static string GetFloorItemDisplayName(FloorItemPlacementRecord entry)
+  {
+    if (entry == null)
+      return string.Empty;
+
+    bool singleSubtype = entry.recordType == "Scroll"
+        || entry.recordType == "Container";
+    string label = (entry.thing != null || singleSubtype)
+        ? DecodeFloorItemName(entry.recordType,
+            singleSubtype ? 0 : entry.thing.Type)
+        : null;
+    if (!string.IsNullOrEmpty(label))
+      return label;
+
+    string type = entry.thing != null
+        ? entry.thing.Type.ToString() : "missing";
+    return entry.recordType + " (Type " + type + ")";
+  }
+
+
   // Compact one-line tile summary. The tooltip retains the complete list
   // without pushing the map down or crowding its cells.
   private GUIContent GetSelectedFloorItemsSummary()
   {
-    if (inspectedFloorItemX < 0 || inspectedFloorItemY < 0)
-      return GUIContent.none;
-    if (!resolvedFloorItems.TryGetValue(
-            PackFloorFeatureTile(inspectedFloorItemX, inspectedFloorItemY),
-            out List<FloorItemPlacementRecord> records) || records.Count == 0)
+    List<FloorItemPlacementRecord> records = GetInspectedFloorItems();
+    if (records == null || records.Count == 0)
       return GUIContent.none;
 
     var brief = new System.Text.StringBuilder();
@@ -679,20 +688,7 @@ public class DungeonFeatureEditor : EditorWindow
     for (int i = 0; i < records.Count; i++)
     {
       FloorItemPlacementRecord entry = records[i];
-      // Scroll and Container records have a single defined subtype and may
-      // omit the Type field in placement data. Other records must have Type.
-      bool singleSubtype = entry.recordType == "Scroll"
-          || entry.recordType == "Container";
-      string label = (entry.thing != null || singleSubtype)
-          ? DecodeFloorItemName(entry.recordType,
-              singleSubtype ? 0 : entry.thing.Type)
-          : null;
-      if (string.IsNullOrEmpty(label))
-      {
-        string type = entry.thing != null
-            ? entry.thing.Type.ToString() : "missing";
-        label = entry.recordType + " (Type " + type + ")";
-      }
+      string label = GetFloorItemDisplayName(entry);
       string description = label + " [" + entry.id + "]";
       tooltip.Append("\n").Append(i + 1).Append(". ").Append(description);
       if (i < 2)
@@ -1048,6 +1044,8 @@ public class DungeonFeatureEditor : EditorWindow
   {
     float mapPixelWidth = map.Width * CellSize;
     float mapPixelHeight = map.Height * CellSize;
+    List<FloorItemPlacementRecord> previewRecords = GetInspectedFloorItems();
+    bool showMultiItemPreview = previewRecords != null && previewRecords.Count > 1;
     float contentWidth =
         LabelLeftMargin * mapZoom
         + Mathf.Max(map.Width, OutsideNameColumnX + 2) * CellSize;
@@ -1106,8 +1104,91 @@ public class DungeonFeatureEditor : EditorWindow
     DrawVerifiedChampionTileHighlights(mapRect);
     DrawChampionMirrorMarkers(mapRect);
     HandleGridClick(mapRect);
+    // Draw last so the item popup remains above other map features.
+    if (showMultiItemPreview)
+      DrawSelectedFloorItemsPopup(mapRect, previewRecords);
 
     EditorGUILayout.EndScrollView();
+  }
+
+  // Read-only popup anchored to the selected multi-item map tile.
+  // Inventory art stays 16x16; the popup displays it at 2x (32x32).
+  private Rect GetSelectedFloorItemPopupRect(Rect mapRect, int itemCount)
+  {
+    const int columns = 4;
+    float unit = mapZoom;
+    float iconSize = 32f * unit;
+    float gap = 4f * unit;
+    float padding = 7f * unit;
+    float headingHeight = 15f * unit;
+    int usedColumns = Mathf.Min(columns, itemCount);
+    int rows = (itemCount + columns - 1) / columns;
+    float popupWidth = padding * 2f + usedColumns * iconSize
+        + Mathf.Max(0, usedColumns - 1) * gap;
+    float popupHeight = padding * 2f + headingHeight
+        + rows * iconSize + Mathf.Max(0, rows - 1) * gap;
+    float centerX = mapRect.x + (inspectedFloorItemX + 0.5f) * CellSize;
+    float centerY = mapRect.y + (inspectedFloorItemY + 0.5f) * CellSize;
+    float x = centerX + CellSize * 0.6f;
+    if (x + popupWidth > mapRect.xMax)
+      x = centerX - CellSize * 0.6f - popupWidth;
+    x = Mathf.Clamp(x, mapRect.x, Mathf.Max(mapRect.x, mapRect.xMax - popupWidth));
+    float y = Mathf.Clamp(centerY - popupHeight * 0.5f,
+        mapRect.y, Mathf.Max(mapRect.y, mapRect.yMax - popupHeight));
+    return new Rect(x, y, popupWidth, popupHeight);
+  }
+
+  private void DrawSelectedFloorItemsPopup(Rect mapRect,
+      List<FloorItemPlacementRecord> records)
+  {
+    if (records == null || records.Count <= 1)
+      return;
+
+    Rect popup = GetSelectedFloorItemPopupRect(mapRect, records.Count);
+    Vector3 tileCenter = new Vector3(
+        mapRect.x + (inspectedFloorItemX + 0.5f) * CellSize,
+        mapRect.y + (inspectedFloorItemY + 0.5f) * CellSize, 0f);
+    Vector3 popupEnd = new Vector3(
+        tileCenter.x < popup.center.x ? popup.xMin : popup.xMax,
+        popup.center.y, 0f);
+    Handles.BeginGUI();
+    Color previous = Handles.color;
+    Handles.color = Color.cyan;
+    Handles.DrawAAPolyLine(1f, tileCenter, popupEnd);
+    Handles.color = previous;
+    Handles.EndGUI();
+
+    GUI.Box(popup, GUIContent.none);
+    float unit = mapZoom;
+    float padding = 7f * unit;
+    float headingHeight = 15f * unit;
+    float iconSize = 32f * unit;
+    float gap = 4f * unit;
+    GUIStyle heading = new GUIStyle(EditorStyles.miniBoldLabel)
+    {
+      alignment = TextAnchor.MiddleLeft
+    };
+    GUI.Label(new Rect(popup.x + padding, popup.y + padding,
+        popup.width - 2f * padding, headingHeight),
+        "(" + inspectedFloorItemX + "," + inspectedFloorItemY
+        + ")  " + records.Count + " items", heading);
+    for (int i = 0; i < records.Count; i++)
+    {
+      FloorItemPlacementRecord entry = records[i];
+      int column = i % 4;
+      int row = i / 4;
+      Rect rect = new Rect(
+          popup.x + padding + column * (iconSize + gap),
+          popup.y + padding + headingHeight + row * (iconSize + gap),
+          iconSize, iconSize);
+      Texture2D texture = GetFloorItemInventoryMapIcon(entry);
+      if (texture != null)
+        GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, true);
+      // A missing asset remains an error in GetFloorItemInventoryMapIcon;
+      // do not substitute another image.
+      GUI.Label(rect, new GUIContent(string.Empty,
+          GetFloorItemDisplayName(entry) + " [" + entry.id + "]"));
+    }
   }
 
   private void HandleMapZoom(Rect contentRect)
@@ -2615,6 +2696,13 @@ public class DungeonFeatureEditor : EditorWindow
       return;
 
     Vector2 mouse = current.mousePosition;
+    List<FloorItemPlacementRecord> popupRecords = GetInspectedFloorItems();
+    if (popupRecords != null && popupRecords.Count > 1
+        && GetSelectedFloorItemPopupRect(mapRect, popupRecords.Count).Contains(mouse))
+    {
+      current.Use();
+      return;
+    }
     if (!mapRect.Contains(mouse))
       return;
 
