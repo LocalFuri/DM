@@ -6440,7 +6440,7 @@ public class ViewportLayoutEditor : EditorWindow
     Event current = Event.current;
     if (current == null
         || (current.type != EventType.MouseDown && current.type != EventType.MouseUp)
-        || current.button != 0
+        || (current.button != 0 && current.button != 1)
         || Application.isPlaying)
     {
       return false;
@@ -6449,6 +6449,11 @@ public class ViewportLayoutEditor : EditorWindow
     EditorWindow gameView = GetCurrentExecutingGameView();
     if (gameView == null)
       return false;
+
+    if (current.button == 1)
+      return current.type == EventType.MouseDown
+          && DispatchGameViewChampionRightClickClose(
+              gameView, current.mousePosition, current, null);
 
     if (current.type == EventType.MouseUp)
       return DispatchGameViewChampionEyeRelease(gameView, current.mousePosition, current, null);
@@ -6543,7 +6548,8 @@ public class ViewportLayoutEditor : EditorWindow
 private static void HandleGameViewPointerDown(
       UnityEngine.UIElements.PointerDownEvent evt)
   {
-    if (evt == null || evt.button != 0 || Application.isPlaying)
+    if (evt == null || (evt.button != 0 && evt.button != 1)
+        || Application.isPlaying)
       return;
 
     EditorWindow gameView = s_hookedGameView;
@@ -6552,11 +6558,47 @@ private static void HandleGameViewPointerDown(
     if (gameView == null)
       return;
 
+    if (evt.button == 1)
+    {
+      DispatchGameViewChampionRightClickClose(
+          gameView, evt.position, null, evt);
+      return;
+    }
+
     DispatchGameViewMovementClick(
         gameView,
         evt.position,
         null,
         evt);
+  }
+
+  // Right-click closes an open champion sheet anywhere inside the game's
+  // 320x200 logical image, independently of equipment hit testing.
+  private static bool DispatchGameViewChampionRightClickClose(
+      EditorWindow gameView,
+      Vector2 windowMouse,
+      Event imguiEvent,
+      UnityEngine.UIElements.PointerDownEvent pointerEvent)
+  {
+    ViewportLayoutEditor window = FindOpenViewEditWindow();
+    if (window == null || !window.championSheetVisible || gameView == null)
+      return false;
+
+    if (!window.TryGetLogical320x200FromGameView(
+            gameView, windowMouse, out Vector2 logical)
+        || logical.x < 0f || logical.x >= PreviewWidth
+        || logical.y < 0f || logical.y >= PreviewHeight)
+      return false;
+
+    window.CloseChampionSheetByPlayer();
+    UpdateHeldItemPointerOverlay(gameView, windowMouse);
+    if (imguiEvent != null)
+      imguiEvent.Use();
+    if (pointerEvent != null)
+      pointerEvent.StopPropagation();
+    gameView.Repaint();
+    RepaintGameViews();
+    return true;
   }
 
   private static EditorWindow FindGameViewWindow()
