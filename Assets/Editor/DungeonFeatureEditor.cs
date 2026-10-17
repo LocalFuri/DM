@@ -1046,9 +1046,12 @@ public class DungeonFeatureEditor : EditorWindow
     float mapPixelHeight = map.Height * CellSize;
     List<FloorItemPlacementRecord> previewRecords = GetInspectedFloorItems();
     bool showMultiItemPreview = previewRecords != null && previewRecords.Count > 1;
+    // Reserve a right-side strip for the multi-item popup so it never
+    // covers dungeon tiles, regardless of window width or map zoom.
     float contentWidth =
         LabelLeftMargin * mapZoom
-        + Mathf.Max(map.Width, OutsideNameColumnX + 2) * CellSize;
+        + Mathf.Max(map.Width, OutsideNameColumnX + 2) * CellSize
+        + 164f * mapZoom;
     float contentHeight =
         LabelTopMargin * mapZoom
         + OutsideFeatureVerticalMargin * mapZoom
@@ -1127,14 +1130,11 @@ public class DungeonFeatureEditor : EditorWindow
         + Mathf.Max(0, usedColumns - 1) * gap;
     float popupHeight = padding * 2f + headingHeight
         + rows * iconSize + Mathf.Max(0, rows - 1) * gap;
-    float centerX = mapRect.x + (inspectedFloorItemX + 0.5f) * CellSize;
-    float centerY = mapRect.y + (inspectedFloorItemY + 0.5f) * CellSize;
-    float x = centerX + CellSize * 0.6f;
-    if (x + popupWidth > mapRect.xMax)
-      x = centerX - CellSize * 0.6f - popupWidth;
-    x = Mathf.Clamp(x, mapRect.x, Mathf.Max(mapRect.x, mapRect.xMax - popupWidth));
-    float y = Mathf.Clamp(centerY - popupHeight * 0.5f,
-        mapRect.y, Mathf.Max(mapRect.y, mapRect.yMax - popupHeight));
+    // Top-right OUTSIDE the map cells, near the top of the scrollable area.
+    // The content width reserves this strip; no marker-specific offsets.
+    float inset = 2f * unit;
+    float x = mapRect.xMax + 8f * unit;
+    float y = mapRect.y - (LabelTopMargin + OutsideFeatureVerticalMargin) * unit + inset;
     return new Rect(x, y, popupWidth, popupHeight);
   }
 
@@ -1158,7 +1158,14 @@ public class DungeonFeatureEditor : EditorWindow
     Handles.color = previous;
     Handles.EndGUI();
 
-    GUI.Box(popup, GUIContent.none);
+    // Solid, opaque backing prevents map artwork from showing through.
+    EditorGUI.DrawRect(popup, new Color(0.15f, 0.15f, 0.15f, 1f));
+    float border = Mathf.Max(1f, mapZoom);
+    Color borderColor = new Color(0.45f, 0.45f, 0.45f, 1f);
+    EditorGUI.DrawRect(new Rect(popup.x, popup.y, popup.width, border), borderColor);
+    EditorGUI.DrawRect(new Rect(popup.x, popup.yMax - border, popup.width, border), borderColor);
+    EditorGUI.DrawRect(new Rect(popup.x, popup.y, border, popup.height), borderColor);
+    EditorGUI.DrawRect(new Rect(popup.xMax - border, popup.y, border, popup.height), borderColor);
     float unit = mapZoom;
     float padding = 7f * unit;
     float headingHeight = 15f * unit;
