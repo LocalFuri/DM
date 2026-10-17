@@ -1046,12 +1046,14 @@ public class DungeonFeatureEditor : EditorWindow
     float mapPixelHeight = map.Height * CellSize;
     List<FloorItemPlacementRecord> previewRecords = GetInspectedFloorItems();
     bool showMultiItemPreview = previewRecords != null && previewRecords.Count > 1;
-    // Reserve a right-side strip for the multi-item popup so it never
-    // covers dungeon tiles, regardless of window width or map zoom.
+    // Reserve sufficient horizontal space for one row of item previews.
+    float popupReserve = showMultiItemPreview
+        ? GetSelectedFloorItemPopupWidth(previewRecords.Count) + 16f * mapZoom
+        : 0f;
     float contentWidth =
         LabelLeftMargin * mapZoom
         + Mathf.Max(map.Width, OutsideNameColumnX + 2) * CellSize
-        + 164f * mapZoom;
+        + popupReserve;
     float contentHeight =
         LabelTopMargin * mapZoom
         + OutsideFeatureVerticalMargin * mapZoom
@@ -1114,28 +1116,26 @@ public class DungeonFeatureEditor : EditorWindow
     EditorGUILayout.EndScrollView();
   }
 
-  // Read-only popup anchored to the selected multi-item map tile.
-  // Inventory art stays 16x16; the popup displays it at 2x (32x32).
+  // One horizontal row of multi-item previews. The inventory images remain
+  // 16x16 in Assets and are displayed at 2x in this editor-only popup.
+  private float GetSelectedFloorItemPopupWidth(int itemCount)
+  {
+    float padding = 7f;
+    float itemWidth = 150f;
+    float itemGap = 6f;
+    return (padding * 2f + itemCount * itemWidth
+        + Mathf.Max(0, itemCount - 1) * itemGap) * mapZoom;
+  }
+
   private Rect GetSelectedFloorItemPopupRect(Rect mapRect, int itemCount)
   {
-    const int columns = 4;
     float unit = mapZoom;
-    float iconSize = 32f * unit;
-    float gap = 4f * unit;
-    float padding = 7f * unit;
-    float headingHeight = 15f * unit;
-    int usedColumns = Mathf.Min(columns, itemCount);
-    int rows = (itemCount + columns - 1) / columns;
-    float popupWidth = padding * 2f + usedColumns * iconSize
-        + Mathf.Max(0, usedColumns - 1) * gap;
-    float popupHeight = padding * 2f + headingHeight
-        + rows * iconSize + Mathf.Max(0, rows - 1) * gap;
-    // Top-right OUTSIDE the map cells, near the top of the scrollable area.
-    // The content width reserves this strip; no marker-specific offsets.
-    float inset = 2f * unit;
+    float width = GetSelectedFloorItemPopupWidth(itemCount);
+    float height = 7f * unit * 2f + 18f * unit + 38f * unit;
     float x = mapRect.xMax + 8f * unit;
-    float y = mapRect.y - (LabelTopMargin + OutsideFeatureVerticalMargin) * unit + inset;
-    return new Rect(x, y, popupWidth, popupHeight);
+    float y = mapRect.y - (LabelTopMargin + OutsideFeatureVerticalMargin) * unit
+        + 2f * unit;
+    return new Rect(x, y, width, height);
   }
 
   private void DrawSelectedFloorItemsPopup(Rect mapRect,
@@ -1148,9 +1148,7 @@ public class DungeonFeatureEditor : EditorWindow
     Vector3 tileCenter = new Vector3(
         mapRect.x + (inspectedFloorItemX + 0.5f) * CellSize,
         mapRect.y + (inspectedFloorItemY + 0.5f) * CellSize, 0f);
-    Vector3 popupEnd = new Vector3(
-        tileCenter.x < popup.center.x ? popup.xMin : popup.xMax,
-        popup.center.y, 0f);
+    Vector3 popupEnd = new Vector3(popup.xMin, popup.center.y, 0f);
     Handles.BeginGUI();
     Color previous = Handles.color;
     Handles.color = Color.cyan;
@@ -1158,7 +1156,7 @@ public class DungeonFeatureEditor : EditorWindow
     Handles.color = previous;
     Handles.EndGUI();
 
-    // Solid, opaque backing prevents map artwork from showing through.
+    // Fully opaque backing and thin border.
     EditorGUI.DrawRect(popup, new Color(0.15f, 0.15f, 0.15f, 1f));
     float border = Mathf.Max(1f, mapZoom);
     Color borderColor = new Color(0.45f, 0.45f, 0.45f, 1f);
@@ -1166,11 +1164,13 @@ public class DungeonFeatureEditor : EditorWindow
     EditorGUI.DrawRect(new Rect(popup.x, popup.yMax - border, popup.width, border), borderColor);
     EditorGUI.DrawRect(new Rect(popup.x, popup.y, border, popup.height), borderColor);
     EditorGUI.DrawRect(new Rect(popup.xMax - border, popup.y, border, popup.height), borderColor);
+
     float unit = mapZoom;
     float padding = 7f * unit;
-    float headingHeight = 15f * unit;
+    float headingHeight = 18f * unit;
     float iconSize = 32f * unit;
-    float gap = 4f * unit;
+    float itemWidth = 150f * unit;
+    float itemGap = 6f * unit;
     GUIStyle heading = new GUIStyle(EditorStyles.miniBoldLabel)
     {
       alignment = TextAnchor.MiddleLeft
@@ -1179,22 +1179,38 @@ public class DungeonFeatureEditor : EditorWindow
         popup.width - 2f * padding, headingHeight),
         "(" + inspectedFloorItemX + "," + inspectedFloorItemY
         + ")  " + records.Count + " items", heading);
+
+    GUIStyle nameStyle = new GUIStyle(EditorStyles.label)
+    {
+      alignment = TextAnchor.MiddleLeft,
+      normal = { textColor = Color.green },
+      fontStyle = FontStyle.Bold,
+      clipping = TextClipping.Clip
+    };
+    GUIStyle idStyle = new GUIStyle(EditorStyles.miniLabel)
+    {
+      alignment = TextAnchor.MiddleLeft,
+      clipping = TextClipping.Clip
+    };
+
+    float rowY = popup.y + padding + headingHeight;
     for (int i = 0; i < records.Count; i++)
     {
       FloorItemPlacementRecord entry = records[i];
-      int column = i % 4;
-      int row = i / 4;
-      Rect rect = new Rect(
-          popup.x + padding + column * (iconSize + gap),
-          popup.y + padding + headingHeight + row * (iconSize + gap),
+      float itemX = popup.x + padding + i * (itemWidth + itemGap);
+      Rect iconRect = new Rect(itemX, rowY + 3f * unit,
           iconSize, iconSize);
       Texture2D texture = GetFloorItemInventoryMapIcon(entry);
       if (texture != null)
-        GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, true);
-      // A missing asset remains an error in GetFloorItemInventoryMapIcon;
-      // do not substitute another image.
-      GUI.Label(rect, new GUIContent(string.Empty,
-          GetFloorItemDisplayName(entry) + " [" + entry.id + "]"));
+        GUI.DrawTexture(iconRect, texture, ScaleMode.StretchToFill, true);
+      // Missing art remains a Console error, never replace the icon.
+      float textX = iconRect.xMax + 7f * unit;
+      float textWidth = itemWidth - iconSize - 7f * unit;
+      string itemName = GetFloorItemDisplayName(entry);
+      GUI.Label(new Rect(textX, rowY + 2f * unit,
+          textWidth, 19f * unit), new GUIContent(itemName, itemName), nameStyle);
+      GUI.Label(new Rect(textX, rowY + 19f * unit,
+          textWidth, 15f * unit), "[" + entry.id + "]", idStyle);
     }
   }
 
