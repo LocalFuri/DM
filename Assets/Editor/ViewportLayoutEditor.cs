@@ -7422,49 +7422,57 @@ private static void HandleGameViewPointerDown(
     if (hero == null || hero.StartingItems == null)
       return false;
 
-    // Hit-test the exact 16x16 painted rectangles of the inventory artwork.
-    // Shared grid borders are not drop targets.
-    // Use the unmodified logical mouse position; cursor art is visual only.
+    // The logical pointer is the center hotspot of the 16x16 held sprite.
+    // Target selection: hotspot first, then strictly >50% square overlap.
+    // Transparent pixels still count as part of the cursor square.
     Vector2 slotClick = new Vector2(x, y);
     int targetX = -1, targetY = -1;
-    // One authoritative table controls every 16x16 inventory item rectangle.
-    // Rendering, pickup and drop use the same authored local slot coordinates.
+    float bestOverlap = 0f;
+    bool selectedByHotspot = false;
+    Rect cursorRect = new Rect(x - ChampionSheetItemSize * 0.5f,
+        y - ChampionSheetItemSize * 0.5f,
+        ChampionSheetItemSize, ChampionSheetItemSize);
+    bool placingHeldItem = previewHeldChampionCursor != null;
     foreach (Vector2Int slot in ChampionSheetAllItemSlots)
     {
-      if (GetChampionSheetItemScreenRect(slot.x, slot.y).Contains(slotClick))
+      Rect slotRect = GetChampionSheetItemScreenRect(slot.x, slot.y);
+      if (slotRect.Contains(slotClick))
       {
         targetX = slot.x;
         targetY = slot.y;
+        selectedByHotspot = true;
         break;
       }
     }
-    // TEMPORARY DIAGNOSTIC: Log the click location and the precise slot
-    // hit-test result while a champion item is carried. This does not
-    // alter item placement or the mouse cursor.
-    if (previewHeldChampionCursor != null)
+    if (placingHeldItem && targetX < 0)
     {
-      string matchedSlot = targetX < 0
-          ? "none"
-          : "(" + targetX + "," + targetY + ")";
-      string sourceSlot = "(" + previewHeldChampionSourceSlot.x
-          + "," + previewHeldChampionSourceSlot.y + ")";
-      Debug.Log("CHAMPION SLOT HIT TEST: click logical=("
-          + x.ToString("0.0") + "," + y.ToString("0.0") + ")"
-          + ", inventory-local=(" + x.ToString("0.0") + ","
-          + (y - ChampionSheetInventoryScreenTop).ToString("0.0") + ")"
-          + ", detected=" + matchedSlot
-          + ", source=" + sourceSlot
-          + ", source screen rect=("
-          + previewHeldChampionSourceSlot.x + ","
-          + (ChampionSheetInventoryScreenTop
-              + previewHeldChampionSourceSlot.y) + ","
-          + ChampionSheetSlotSize + "," + ChampionSheetSlotSize + ")"
-          + ", icon hit rect=" + GetChampionSheetItemScreenRect(
-              previewHeldChampionSourceSlot.x,
-              previewHeldChampionSourceSlot.y).ToString()
-          + ", held image=" + previewHeldChampionCursor.width + "x"
-          + previewHeldChampionCursor.height);
+      foreach (Vector2Int slot in ChampionSheetAllItemSlots)
+      {
+        Rect slotRect = GetChampionSheetItemScreenRect(slot.x, slot.y);
+        float overlapWidth = Mathf.Max(0f,
+            Mathf.Min(cursorRect.xMax, slotRect.xMax)
+            - Mathf.Max(cursorRect.xMin, slotRect.xMin));
+        float overlapHeight = Mathf.Max(0f,
+            Mathf.Min(cursorRect.yMax, slotRect.yMax)
+            - Mathf.Max(cursorRect.yMin, slotRect.yMin));
+        float overlap = overlapWidth * overlapHeight;
+        if (overlap > ChampionSheetItemSize * ChampionSheetItemSize * 0.5f
+            && overlap > bestOverlap)
+        {
+          bestOverlap = overlap;
+          targetX = slot.x;
+          targetY = slot.y;
+        }
+      }
     }
+    if (placingHeldItem)
+      Debug.Log("CHAMPION SLOT TARGET: method="
+          + (selectedByHotspot ? "hotspot" : "overlap")
+          + ", cursor=" + cursorRect
+          + ", target=" + (targetX < 0 ? "none" :
+              "(" + targetX + "," + targetY + ")")
+          + ", overlap=" + bestOverlap.ToString("0.##")
+          + "/256 (fallback requires >128)");
     if (targetX < 0)
       return false;
 
@@ -7500,11 +7508,6 @@ private static void HandleGameViewPointerDown(
               System.StringComparison.OrdinalIgnoreCase)
           || previewHeldChampionItemIndex < 0)
         return true;
-      if (occupiedIndex >= 0)
-      {
-        Debug.LogWarning("CHAMPION EQUIPMENT: Destination slot occupied.");
-        return true;
-      }
       bool returningToPickedSlot =
           previewHeldChampionSourceSlot.x == targetX
           && previewHeldChampionSourceSlot.y == targetY;
@@ -7529,15 +7532,55 @@ private static void HandleGameViewPointerDown(
         slots = new System.Collections.Generic.Dictionary<int, Vector2Int>();
         previewChampionItemSlots.Add(hero.Name, slots);
       }
+      // Validate the displaced sprite BEFORE changing either item. A swap
+      // must never discard an item because its asset is missing or invalid.
+      Texture2D displacedTexture = null;
+      string displacedName = null;
+      if (occupiedIndex >= 0)
+      {
+        displacedName = GetChampionStartingItemName(
+            hero.StartingItems[occupiedIndex]);
+        displacedTexture = GetChampionInventoryItemTexture(displacedName);
+        if (displacedTexture == null || !displacedTexture.isReadable
+            || displacedTexture.width != ChampionSheetItemSize
+            || displacedTexture.height != ChampionSheetItemSize)
+        {
+          Debug.LogError("CHAMPION SWAP: Missing/unreadable or invalid 16x16 "
+              + "sprite for displaced item '" + displacedName
+              + "'. Inventory unchanged; no fallback.");
+          return true;
+        }
+      }
+      if (!previewRemovedChampionItemIndexes.TryGetValue(hero.Name,
+              out var removedIndexes))
+      {
+        removedIndexes = new System.Collections.Generic.HashSet<int>();
+        previewRemovedChampionItemIndexes.Add(hero.Name, removedIndexes);
+      }
       slots[previewHeldChampionItemIndex] = new Vector2Int(targetX, targetY);
-      previewRemovedChampionItemIndexes[hero.Name].Remove(
-          previewHeldChampionItemIndex);
-      previewHeldChampionName = null;
-      previewHeldChampionItemIndex = -1;
-      previewHeldChampionCursor = null;
-      previewHeldChampionSourceSlot = new Vector2Int(-1, -1);
-      HideHeldItemPointerOverlay();
-      Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+      removedIndexes.Remove(previewHeldChampionItemIndex);
+      if (occupiedIndex >= 0)
+      {
+        // The displaced item retains its own index/identity; it is now held
+        // and can be placed in any destination permitted for that item.
+        removedIndexes.Add(occupiedIndex);
+        previewHeldChampionName = hero.Name;
+        previewHeldChampionItemIndex = occupiedIndex;
+        previewHeldChampionCursor = displacedTexture;
+        previewHeldChampionSourceSlot = new Vector2Int(targetX, targetY);
+        Debug.Log("CHAMPION SWAP: placed '" + heldItemName
+            + "', picked up '" + displacedName + "' at ("
+            + targetX + "," + targetY + ").");
+      }
+      else
+      {
+        previewHeldChampionName = null;
+        previewHeldChampionItemIndex = -1;
+        previewHeldChampionCursor = null;
+        previewHeldChampionSourceSlot = new Vector2Int(-1, -1);
+        HideHeldItemPointerOverlay();
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+      }
       PresentEditModePreviewToGameView();
       Repaint();
       return true;
@@ -7996,10 +8039,10 @@ private static void HandleGameViewPointerDown(
   private const int ChampionSheetRightHandX = 61;
   private const int ChampionSheetRightHandY = 52;
   private const int ChampionSheetLeftHandX = 5;
-  private const int ChampionSheetLeftHandY = 32;
+  private const int ChampionSheetLeftHandY = 52;
 
   // Worn-slot rectangles on Inventory_224x136. Screen Y is local Y + 33.
-  // Order: head, neck, torso, legs, feet, weapon hand, left hand, quiver.
+  // Order: head, neck, torso, legs, feet, right hand, left hand, upper quiver.
   private static readonly int[] ChampionSheetEquipSlotXY =
   {
     5, 12,
@@ -8008,8 +8051,8 @@ private static void HandleGameViewPointerDown(
     33, 65,
     33, 85,
     61, 52,
-    5, 32,
-    5, 52
+    5, 52,
+    5, 32
   };
 
   // Additional equipment locations outside the eight primary worn slots.
@@ -8975,7 +9018,7 @@ private static void HandleGameViewPointerDown(
       {
         quiverUsed = true;
         localX = 5;
-        localY = 52;
+        localY = 32;
       }
       else
       {
