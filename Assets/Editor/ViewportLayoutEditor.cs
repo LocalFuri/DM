@@ -7443,7 +7443,7 @@ private static void HandleGameViewPointerDown(
       return false;
 
     // The logical pointer is the center hotspot of the 16x16 held sprite.
-    // Target selection: hotspot first, then strictly >40% square overlap.
+    // Target selection: hotspot first, then strictly >30% square overlap.
     // Transparent pixels still count as part of the cursor square.
     Vector2 slotClick = new Vector2(x, y);
     // Pixel-art slot geometry uses integral 320x200 coordinates. GameView
@@ -7477,7 +7477,7 @@ private static void HandleGameViewPointerDown(
         selectedByHotspot = true;
       }
     }
-    // Second preference: >40% of the complete 16x16 cursor square overlaps
+    // Second preference: >30% of the complete 16x16 cursor square overlaps
     // a measured icon rectangle. Alpha/transparency is intentionally ignored.
     // Measure the maximum RAW overlap for diagnostics even if no slot qualifies.
     float highestObservedOverlap = 0f;
@@ -7499,7 +7499,7 @@ private static void HandleGameViewPointerDown(
           highestObservedOverlap = overlap;
           nearestOverlappedSlot = slot;
         }
-        if (overlap > ChampionSheetItemSize * ChampionSheetItemSize * 0.4f
+        if (overlap > ChampionSheetItemSize * ChampionSheetItemSize * 0.3f
             && overlap > bestOverlap)
         {
           bestOverlap = overlap;
@@ -7519,7 +7519,7 @@ private static void HandleGameViewPointerDown(
           + ", acceptedOverlap=" + bestOverlap.ToString("0.##")
           + "/256, rawMaxOverlap=" + highestObservedOverlap.ToString("0.##")
           + "/256, rawMaxSlot=" + nearestOverlappedSlot
-          + " (fallback requires >102.4)");
+          + " (fallback requires >76.8)");
     if (targetX < 0)
       return false;
 
