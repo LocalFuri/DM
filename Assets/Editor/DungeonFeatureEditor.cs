@@ -265,6 +265,24 @@ public class DungeonFeatureEditor : EditorWindow
         continue;
       int x = list[0].localX;
       int y = list[0].localY;
+
+      if (list.Count == 1)
+      {
+        Texture2D itemIcon = GetFloorItemInventoryMapIcon(list[0]);
+        if (itemIcon != null)
+        {
+          float iconMargin = 1f * mapZoom;
+          float iconSize = Mathf.Max(1f, CellSize - iconMargin * 2f);
+          Rect iconRect = new Rect(
+              mapRect.x + x * CellSize + iconMargin,
+              mapRect.y + y * CellSize + iconMargin,
+              iconSize,
+              iconSize);
+          GUI.DrawTexture(iconRect, itemIcon, ScaleMode.StretchToFill, true);
+          continue;
+        }
+      }
+
       Rect marker = new Rect(mapRect.x + x * CellSize + CellSize * 0.56f,
           mapRect.y + y * CellSize + CellSize * 0.02f,
           CellSize * 0.42f, CellSize * 0.42f);
@@ -278,6 +296,103 @@ public class DungeonFeatureEditor : EditorWindow
       GUI.Label(marker, list.Count.ToString(), style);
     }
   }
+
+  private Texture2D GetFloorItemInventoryMapIcon(FloorItemPlacementRecord entry)
+  {
+    if (entry == null)
+      return null;
+
+    int type = entry.thing != null ? entry.thing.Type : -1;
+    string cacheKey = entry.recordType + ":" + type.ToString();
+    if (floorItemInventoryIconCache.TryGetValue(cacheKey, out Texture2D cached))
+      return cached;
+
+    string decodedName = DecodeFloorItemName(entry.recordType, type);
+    Texture2D resolved = ResolveInventoryItemIcon(decodedName, entry.recordType);
+    floorItemInventoryIconCache[cacheKey] = resolved;
+    return resolved;
+  }
+
+  private Texture2D ResolveInventoryItemIcon(string decodedName, string recordType)
+  {
+    if (string.IsNullOrEmpty(decodedName))
+      return null;
+
+    string sanitized = SanitizeItemNameForAsset(decodedName);
+    string underscored = decodedName.Replace(" ", "_");
+    string sanitizedUnderscored = SanitizeItemNameForAsset(underscored);
+
+    List<string> candidates = new List<string>();
+    AddUniqueCandidate(candidates, decodedName + "_16x16");
+    AddUniqueCandidate(candidates, underscored + "_16x16");
+    AddUniqueCandidate(candidates, sanitized + "_16x16");
+    AddUniqueCandidate(candidates, sanitizedUnderscored + "_16x16");
+    AddUniqueCandidate(candidates, decodedName);
+    AddUniqueCandidate(candidates, underscored);
+    AddUniqueCandidate(candidates, sanitized);
+    AddUniqueCandidate(candidates, sanitizedUnderscored);
+
+    if (string.Equals(recordType, "Container", System.StringComparison.OrdinalIgnoreCase))
+    {
+      AddUniqueCandidate(candidates, "Chest_16x16");
+      AddUniqueCandidate(candidates, "Chest");
+    }
+    else if (string.Equals(recordType, "Scroll", System.StringComparison.OrdinalIgnoreCase))
+    {
+      AddUniqueCandidate(candidates, "Scroll_16x16");
+      AddUniqueCandidate(candidates, "Scroll");
+    }
+
+    for (int i = 0; i < candidates.Count; i++)
+    {
+      Texture2D texture = FindExactTextureByName(candidates[i]);
+      if (texture != null)
+        return texture;
+    }
+
+    return null;
+  }
+
+  private static void AddUniqueCandidate(List<string> candidates, string candidate)
+  {
+    if (string.IsNullOrEmpty(candidate))
+      return;
+    for (int i = 0; i < candidates.Count; i++)
+    {
+      if (string.Equals(candidates[i], candidate, System.StringComparison.OrdinalIgnoreCase))
+        return;
+    }
+    candidates.Add(candidate);
+  }
+
+  private static string SanitizeItemNameForAsset(string value)
+  {
+    if (string.IsNullOrEmpty(value))
+      return string.Empty;
+
+    System.Text.StringBuilder builder = new System.Text.StringBuilder(value.Length);
+    bool previousUnderscore = false;
+    for (int i = 0; i < value.Length; i++)
+    {
+      char c = value[i];
+      if (char.IsLetterOrDigit(c))
+      {
+        builder.Append(c);
+        previousUnderscore = false;
+      }
+      else if (char.IsWhiteSpace(c) || c == '-' || c == (char)39 || c == '(' || c == ')' || c == '/')
+      {
+        if (!previousUnderscore)
+        {
+          builder.Append('_');
+          previousUnderscore = true;
+        }
+      }
+    }
+
+    return builder.ToString().Trim('_');
+  }
+
 
   // Exact numeric item enums from LocalFuri CSBwin Objects.h.
   // Never infer names from a numeric type without its record category.
@@ -594,6 +709,8 @@ public class DungeonFeatureEditor : EditorWindow
   private int currentDungeonLevel = HallOfChampionsLevel;
 
   private bool ornamentTexturesResolved;
+  private readonly Dictionary<string, Texture2D> floorItemInventoryIconCache =
+      new Dictionary<string, Texture2D>();
   private Texture2D viAltarMapIcon;
   private Texture2D hookMapIcon;
   private Texture2D woodRingMapIcon;
@@ -622,6 +739,7 @@ public class DungeonFeatureEditor : EditorWindow
     showFloorItems = true; // Floor-item badges are always visible.
     mapZoomStep = Mathf.Clamp(EditorPrefs.GetInt(MapZoomPreferenceKey, 0), 0, MaxMapZoomStep);
     ornamentTexturesResolved = false;
+    floorItemInventoryIconCache.Clear();
     missingMapIconErrors.Clear();
     viAltarMapIcon = null;
     hookMapIcon = null;
