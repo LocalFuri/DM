@@ -29346,6 +29346,30 @@ private static void HandleGameViewPointerDown(
       return sword;
     }
 
+    if (string.Equals(item.type, "Ghi Trousers", System.StringComparison.OrdinalIgnoreCase))
+    {
+      // Ghi Trousers is imported as a Sprite. AssetDatabase.FindAssets with
+      // t:Texture2D may exclude Sprite assets, even when their underlying
+      // texture is perfectly valid. Load the verified exact path directly.
+      const string ghiGroundPath = "Assets/Art/Armor/Ghi_Trousers_64x16.png";
+      Texture2D matching = AssetDatabase.LoadAssetAtPath<Texture2D>(ghiGroundPath);
+      if (matching == null)
+      {
+        ReportFloorItemTextureProblem("Ghi Trousers", ghiGroundPath,
+            "could not be loaded as a Texture2D (verify asset type/path)");
+        return null;
+      }
+      if (!matching.isReadable || matching.width != 64 || matching.height != 16)
+      {
+        ReportFloorItemTextureProblem("Ghi Trousers", ghiGroundPath,
+            "failed validation: Read/Write=" + matching.isReadable
+            + ", imported size=" + matching.width + "x" + matching.height
+            + ", required=64x16");
+        return null;
+      }
+      return matching;
+    }
+
     if (string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase))
     {
       if (cachedAppleGroundTexture == null)
@@ -29476,6 +29500,10 @@ private static void HandleGameViewPointerDown(
     if (string.Equals(item.type, "Samurai Sword",
             System.StringComparison.OrdinalIgnoreCase)
         && depth == FloorItemDepth.SameTile) return 146;
+    if (string.Equals(item.type, "Ghi Trousers",
+            System.StringComparison.OrdinalIgnoreCase)
+        && depth == FloorItemDepth.SameTile)
+      return right ? 151 : 151; // Initial reference; calibrate in ViewEdit.
     Debug.LogError("Missing floor-item pile calibration reference for "
         + item.type + " at depth " + depth + ".");
     return int.MinValue;
@@ -29553,10 +29581,12 @@ private static void HandleGameViewPointerDown(
         bool appleItem = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
         bool breadItem = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
         bool swordItem = string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase);
-        if (appleItem || breadItem || swordItem)
+        bool trousersItem = string.Equals(item.type, "Ghi Trousers", System.StringComparison.OrdinalIgnoreCase);
+        if (appleItem || breadItem || swordItem || trousersItem)
           ReportFloorItemTextureProblem(item.type,
               appleItem ? AppleGroundAssetPath :
-                  (breadItem ? BreadGroundAssetPath : SamuraiSwordGroundAssetPath),
+                  (breadItem ? BreadGroundAssetPath :
+                  (trousersItem ? "Assets/Art/**/Ghi_Trousers_64x16.png" : SamuraiSwordGroundAssetPath)),
               !texture.isReadable ? "is not readable" : "has invalid dimensions");
         continue;
       }
@@ -29581,6 +29611,54 @@ private static void HandleGameViewPointerDown(
   private readonly Dictionary<string, Vector2Int> swordSavedFloorPositions =
       new Dictionary<string, Vector2Int>(System.StringComparer.Ordinal);
 
+  // Ghi Trousers initial F1 positions are provisional until compared with
+  // original Dungeon Master. Left/right X and Y may be calibrated separately.
+  private int ghiTrousersF1LeftPreviewX = 24;
+  private int ghiTrousersF1LeftPreviewScreenTop = 151;
+  private int ghiTrousersF1RightPreviewX = 135;
+  private int ghiTrousersF1RightPreviewScreenTop = 151;
+  private readonly Dictionary<string, Vector2Int> ghiTrousersSavedFloorPositions =
+      new Dictionary<string, Vector2Int>(System.StringComparer.Ordinal);
+
+  // Generic F1 geometry: the item-specific calibration provides only its
+  // left/right anchor, while drawing and picking share this exact rectangle.
+  // The native world texture determines size; no inventory-art fallback.
+  private bool TryGetF1FloorItemRect(FloorItemPlacement item, bool isRight,
+      Texture2D texture, out Rect rect)
+  {
+    rect = new Rect();
+    if (item == null || texture == null || texture.width <= 0 || texture.height <= 0)
+      return false;
+
+    int x;
+    int top;
+    switch ((item.type ?? string.Empty).ToUpperInvariant())
+    {
+      case "SAMURAI SWORD":
+        x = isRight ? swordF1RightPreviewX : swordF1LeftPreviewX;
+        top = swordF1PreviewScreenTop;
+        break;
+      case "GHI TROUSERS":
+        x = isRight ? ghiTrousersF1RightPreviewX : ghiTrousersF1LeftPreviewX;
+        top = isRight ? ghiTrousersF1RightPreviewScreenTop : ghiTrousersF1LeftPreviewScreenTop;
+        break;
+      case "APPLE":
+        x = isRight ? appleF0RightPreviewX : appleF0FrontPreviewX;
+        top = isRight ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop;
+        break;
+      case "BREAD":
+        x = isRight ? breadF0RightPreviewX : breadF0LeftPreviewX;
+        top = isRight ? breadF0RightPreviewScreenTop : breadF0LeftPreviewScreenTop;
+        break;
+      default:
+        // Additional F1 item types need an explicitly verified art mapping
+        // and calibration; never invent coordinates or substitute artwork.
+        return false;
+    }
+    rect = new Rect(x, top, texture.width, texture.height);
+    return true;
+  }
+
   private void BlitProjectedFloorItem(
       Color32[] pixels,
       FloorItemPlacement item,
@@ -29591,33 +29669,19 @@ private static void HandleGameViewPointerDown(
     bool apple = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
     bool bread = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
     bool sword = string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase);
-    if (sword)
-    {
-      // First verification is a same-tile world sprite at its native 72x8.
-      // Distance views are deliberately not fabricated from inventory art.
-      if (depth == FloorItemDepth.SameTile)
-      {
-        int x = isRight ? swordF1RightPreviewX : swordF1LeftPreviewX;
-        int screenTop = swordF1PreviewScreenTop;
-        BlitPieceIntoPreview(pixels, texture, x + pileOffset.x,
-            PreviewHeight - screenTop - texture.height - pileOffset.y, false);
-      }
-      return;
-    }
-    if (!apple && !bread)
-      return;
-
     if (depth == FloorItemDepth.SameTile)
     {
-      int x = apple
-          ? (isRight ? appleF0RightPreviewX : appleF0FrontPreviewX)
-          : (isRight ? breadF0RightPreviewX : breadF0LeftPreviewX);
-      int top = apple
-          ? (isRight ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop)
-          : (isRight ? breadF0RightPreviewScreenTop : breadF0LeftPreviewScreenTop);
-      BlitPieceIntoPreview(pixels, texture, x + pileOffset.x, PreviewHeight - top - texture.height - pileOffset.y, false);
+      if (TryGetF1FloorItemRect(item, isRight, texture, out Rect f1Rect))
+        BlitPieceIntoPreview(pixels, texture,
+            Mathf.RoundToInt(f1Rect.xMin) + pileOffset.x,
+            PreviewHeight - Mathf.RoundToInt(f1Rect.yMin) - texture.height - pileOffset.y,
+            false);
       return;
     }
+    // The sword has no verified distance artwork. Existing apple/bread
+    // F2/F3 paths below are deliberately unchanged.
+    if (sword || (!apple && !bread))
+      return;
 
     if (depth == FloorItemDepth.OneAhead)
     {
@@ -30018,6 +30082,44 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  private void DrawGhiTrousersFloorCalibration(bool isRight)
+  {
+    string xField = isRight ? "ghiTrousersF1RightPreviewX" : "ghiTrousersF1LeftPreviewX";
+    string yField = isRight ? "ghiTrousersF1RightPreviewScreenTop" : "ghiTrousersF1LeftPreviewScreenTop";
+    int x = isRight ? ghiTrousersF1RightPreviewX : ghiTrousersF1LeftPreviewX;
+    int y = isRight ? ghiTrousersF1RightPreviewScreenTop : ghiTrousersF1LeftPreviewScreenTop;
+    if (!ghiTrousersSavedFloorPositions.TryGetValue(xField, out Vector2Int saved))
+    {
+      saved = new Vector2Int(x, y);
+      ghiTrousersSavedFloorPositions.Add(xField, saved);
+    }
+    float oldWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+    int editX = x;
+    bool changedX = DrawIntStepperInline(
+        "X", ref editX, snap, x != saved.x, true, 25f, 25f);
+    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+    int editY = y;
+    bool changedY = DrawIntStepperInline(
+        "Y", ref editY, snap, y != saved.y, true, 25f, 25f);
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    NoteContentRight();
+    EditorGUIUtility.labelWidth = oldWidth;
+    if (changedX || changedY)
+    {
+      if (isRight) { ghiTrousersF1RightPreviewX = editX; ghiTrousersF1RightPreviewScreenTop = editY; }
+      else { ghiTrousersF1LeftPreviewX = editX; ghiTrousersF1LeftPreviewScreenTop = editY; }
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+    if (apply && SaveBreadScreenPosition(xField, yField, editX, editY))
+    {
+      ghiTrousersSavedFloorPositions[xField] = new Vector2Int(editX, editY);
+      Repaint();
+    }
+  }
+
   private void DrawFloorItemRows()
   {
     EnsurePreviewMiniMapLoaded();
@@ -30066,6 +30168,9 @@ private static void HandleGameViewPointerDown(
         else if (depth == FloorItemDepth.SameTile
             && string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase))
           DrawSamuraiSwordFloorCalibration(isRight);
+        else if (depth == FloorItemDepth.SameTile
+            && string.Equals(item.type, "Ghi Trousers", System.StringComparison.OrdinalIgnoreCase))
+          DrawGhiTrousersFloorCalibration(isRight);
       }
       EditorGUILayout.EndHorizontal();
 
@@ -34657,29 +34762,11 @@ private static void HandleGameViewPointerDown(
       return false;
     bool apple = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
     bool bread = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
-    if (string.Equals(item.type, "Samurai Sword",
-            System.StringComparison.OrdinalIgnoreCase))
-    {
-      if (depth != FloorItemDepth.SameTile) return false;
-      Texture2D sword = GetFloorItemTexture(item);
-      if (sword == null) return false;
-      rect = new Rect(right ? swordF1RightPreviewX : swordF1LeftPreviewX,
-          swordF1PreviewScreenTop, sword.width, sword.height);
-      return true;
-    }
+    if (depth == FloorItemDepth.SameTile)
+      return TryGetF1FloorItemRect(item, right, GetFloorItemTexture(item), out rect);
     if (!apple && !bread) return false;
     int x, top, width, height;
-    if (depth == FloorItemDepth.SameTile)
-    {
-      x = apple ? (right ? appleF0RightPreviewX : appleF0FrontPreviewX)
-          : (right ? breadF0RightPreviewX : breadF0LeftPreviewX);
-      top = apple ? (right ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop)
-          : (right ? breadF0RightPreviewScreenTop : breadF0LeftPreviewScreenTop);
-      Texture2D texture = GetFloorItemTexture(item);
-      if (texture == null) return false;
-      width = texture.width; height = texture.height;
-    }
-    else if (depth == FloorItemDepth.OneAhead)
+    if (depth == FloorItemDepth.OneAhead)
     {
       width = apple ? AppleF2Width : BreadF2Width;
       height = apple ? AppleF2Height : BreadF2Height;
@@ -34773,7 +34860,7 @@ private static void HandleGameViewPointerDown(
       bool overlappingSameFloor = item.x == clicked.x && item.y == clicked.y
           && rect.Overlaps(clickedRect);
       if (!sameCorner && !overlappingSameFloor) continue;
-      // A previously dropped champion sword retains its exact champion item
+      // Previously dropped champion equipment retains its exact champion item
       // index and the inventory cursor texture, rather than becoming a clone.
       string id = GetFloorItemInstanceId(item);
       if (previewChampionFloorIds.TryGetValue(id, out ChampionFloorIdentity identity))
@@ -34839,13 +34926,33 @@ private static void HandleGameViewPointerDown(
     return false;
   }
 
+  // All manual drops land on the player's F1 tile. Viewport horizontal half
+  // chooses the floor corner; it never determines a different map tile.
+  // Keep this independent from throw trajectories and F2/F3 rendering.
+  private bool TryResolveManualF1Drop(float logicalX, float logicalY,
+      out int tileX, out int tileY, out string corner)
+  {
+    tileX = previewX;
+    tileY = previewY;
+    corner = null;
+    if (championSheetVisible || logicalX < 0f || logicalX >= 224f
+        || logicalY < 0f || logicalY >= 169f)
+      return false;
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || !PreviewTileIsOpen(tileX, tileY))
+      return false;
+    corner = FloorCornerForFacing(previewFacing, logicalX >= 112f);
+    return true;
+  }
+
   // Transfer Iaido's held equipment to an independent floor record. This
   // does not overwrite the champion item or alter immutable source data.
   private bool TryDropHeldChampionSword(float x, float y)
   {
     if (previewHeldChampionCursor == null || championSheetVisible)
       return false;
-    if (x < 0 || x >= 224 || y < 0 || y >= 169)
+    if (!TryResolveManualF1Drop(x, y,
+        out int dropX, out int dropY, out string dropCorner))
       return false;
     if (previewHeldChampionItemIndex < 0
         || string.IsNullOrEmpty(previewHeldChampionName))
@@ -34859,8 +34966,11 @@ private static void HandleGameViewPointerDown(
     }
     string itemName = GetChampionStartingItemName(
         hero.StartingItems[previewHeldChampionItemIndex]);
-    if (!string.Equals(NormalizeChampionAssetKey(itemName), "SAMURAISWORD",
-            System.StringComparison.OrdinalIgnoreCase))
+    bool isSword = string.Equals(NormalizeChampionAssetKey(itemName), "SAMURAISWORD",
+        System.StringComparison.OrdinalIgnoreCase);
+    bool isTrousers = string.Equals(NormalizeChampionAssetKey(itemName), "GHITROUSERS",
+        System.StringComparison.OrdinalIgnoreCase);
+    if (!isSword && !isTrousers)
     {
       Debug.LogError("CHAMPION FLOOR DROP: no world-art mapping for '"
           + itemName + "'; item remains on cursor. No fallback.");
@@ -34871,18 +34981,23 @@ private static void HandleGameViewPointerDown(
       Debug.LogError("CHAMPION FLOOR DROP: level is not supported by the floor item renderer; sword remains on cursor.");
       return true;
     }
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null || !PreviewTileIsOpen(previewX, previewY))
-      return true;
     // Validate texture before transferring anything out of the cursor.
     var floorItem = new FloorItemPlacement
     {
-      type = "Samurai Sword",
-      x = previewX,
-      y = previewY,
-      cell = FloorCornerForFacing(previewFacing, x >= 112f)
+      type = isSword ? "Samurai Sword" : "Ghi Trousers",
+      x = dropX,
+      y = dropY,
+      cell = dropCorner
     };
-    if (GetFloorItemTexture(floorItem) == null) return true;
+    Texture2D groundTexture = GetFloorItemTexture(floorItem);
+    if (groundTexture == null) return true;
+    if (!TryGetF1FloorItemRect(floorItem, x >= 112f,
+        groundTexture, out Rect unusedF1Rect))
+    {
+      Debug.LogError("CHAMPION F1 DROP: missing calibrated placement for '"
+          + floorItem.type + "'; item remains on cursor.");
+      return true;
+    }
     string id = "champion-floor:" + (++previewChampionFloorSerial);
     if (previewMovedFloorItems.ContainsKey(id)
         || previewChampionFloorIds.ContainsKey(id))
@@ -34911,59 +35026,37 @@ private static void HandleGameViewPointerDown(
 
   private bool TryDropHeldFloorItem(float x, float y)
   {
-    if (!previewFloorPickupCompleted || previewHeldFloorItem == null
-        || championSheetVisible
-        || x < 0 || x >= 224 || y < 0 || y >= 169) return false;
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null || !PreviewTileIsOpen(previewX, previewY)) return false;
-    // Validate ground asset before transferring ownership from mouse to floor.
-    if (GetFloorItemTexture(previewHeldFloorItem) == null) return true;
+    if (!previewFloorPickupCompleted || previewHeldFloorItem == null)
+      return false;
+    if (!TryResolveManualF1Drop(x, y,
+        out int dropX, out int dropY, out string dropCorner))
+      return false;
+
+    // F1 only: the cursor side determines the floor corner, never an item
+    // visible at F2/F3. Reuse the same F1 geometry as render/pickup.
+    Texture2D texture = GetFloorItemTexture(previewHeldFloorItem);
+    if (texture == null)
+    {
+      Debug.LogError("F1 FLOOR DROP: missing world artwork for '"
+          + previewHeldFloorItem.type + "'; item remains on cursor.");
+      return true;
+    }
+    bool right = x >= 112f;
+    if (!TryGetF1FloorItemRect(previewHeldFloorItem, right, texture, out Rect unusedRect))
+    {
+      Debug.LogError("F1 FLOOR DROP: missing calibrated F1 "
+          + (right ? "right" : "left") + " placement for '"
+          + previewHeldFloorItem.type + "'; item remains on cursor.");
+      return true;
+    }
     if (previewMovedFloorItems.ContainsKey(previewHeldFloorItemId))
     {
       Debug.LogError("FLOOR ITEM: duplicate instance " + previewHeldFloorItemId);
       return true;
     }
-    // A click on a visible floor item means "drop onto that item".
-    // Its projected sprite can belong to F1/F2 rather than the party tile;
-    // never convert the screen click into the player's map coordinates.
-    FloorItemPlacement dropTarget = null;
-    FloorItemPlacement[] visibleItems = GetCurrentFloorItems();
-    // Floor objects occupy a physical sub-square, not just their nontransparent
-    // sprite pixels. Accept a small edge margin when dropping onto a pile.
-    // Do not change the tighter hit test used to PICK UP an item.
-    const float dropPileEdgeMargin = 5f;
-    float bestDropTargetDistance = float.MaxValue;
-    for (int i = visibleItems.Length - 1; i >= 0; --i)
-    {
-      FloorItemPlacement candidate = visibleItems[i];
-      if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(candidate)))
-        continue;
-      if (!TryGetFloorItemScreenRect(candidate, out Rect targetRect))
-        continue;
-      // Restrict selection to the same screen half: nearby items on the other
-      // side of the corridor must never steal a drop.
-      float centerX = targetRect.xMin + targetRect.width * 0.5f;
-      if ((centerX >= 112f) != (x >= 112f))
-        continue;
-      Rect region = new Rect(targetRect.xMin - dropPileEdgeMargin,
-          targetRect.yMin - dropPileEdgeMargin,
-          targetRect.width + 2f * dropPileEdgeMargin,
-          targetRect.height + 2f * dropPileEdgeMargin);
-      if (!region.Contains(new Vector2(x, y)))
-        continue;
-      float dx = Mathf.Max(targetRect.xMin - x, 0f, x - targetRect.xMax);
-      float dy = Mathf.Max(targetRect.yMin - y, 0f, y - targetRect.yMax);
-      float distance = dx * dx + dy * dy;
-      if (distance < bestDropTargetDistance)
-      {
-        bestDropTargetDistance = distance;
-        dropTarget = candidate;
-      }
-    }
-    previewHeldFloorItem.x = dropTarget != null ? dropTarget.x : previewX;
-    previewHeldFloorItem.y = dropTarget != null ? dropTarget.y : previewY;
-    previewHeldFloorItem.cell = dropTarget != null ? dropTarget.cell
-        : FloorCornerForFacing(previewFacing, x >= 112);
+    previewHeldFloorItem.x = dropX;
+    previewHeldFloorItem.y = dropY;
+    previewHeldFloorItem.cell = dropCorner;
     previewHeldFloorItem.instanceId = previewHeldFloorItemId;
     previewMovedFloorItems.Add(previewHeldFloorItemId, previewHeldFloorItem);
     previewMovedFloorItemOrder.Add(previewHeldFloorItemId);

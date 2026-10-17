@@ -1,11 +1,11 @@
 {
   "project": "Dungeon Master Unity",
-  "checkpointDate": "2026-10-15",
-  "checkpointPurpose": "Resume champion starting-equipment verification (8 of 24 completed) while preserving October 14 floor-item work as a separate pending task.",
+  "checkpointDate": "2026-10-13",
+  "checkpointPurpose": "Resume torch flight F1-F4, calibrate landed floor F2 then F3, and implement distance-based landing sound attenuation.",
   "mainScript": "Assets/Editor/ViewportLayoutEditor.cs",
   "lastVerifiedGitCommit": null,
   "gitNote": "Record the actual current Git commit after committing the working version; do not assume an older baseline is current.",
-  "currentTask": "Verify starting equipment of remaining Hall of Champions champions one at a time against original game; mark a champion green only after full equipment matches.",
+  "currentTask": "Next: extend actual torch flight to F4 without rendering F4, play one distance-attenuated Metallic_Thud on actual landing, and verify timing and geometry.",
   "pressurePad": {
     "mapLevel": 0,
     "mapTile": {
@@ -103,7 +103,7 @@
       }
     ]
   },
-  "nextStep": "Continue with the next unverified champion (number 9 of 24). Compare original starting equipment with Unity, fix explicit mappings/assets/slots without fallbacks, test, then add to verified green-marker list only on confirmation.",
+  "nextStep": "First establish current verified Unity working version/commit. Implement unobstructed F4 reach with no F4 sprite, preserving item on actual map tile; then change Metallic_Thud from per-stage to once at physical landing with configurable F1-F4 distance attenuation. Test F2 left landing/calibration before F3 and F4.",
   "latestWorkingFiles": {
     "mainEditor": "Assets/Editor/ViewportLayoutEditor.cs",
     "dungeonFeaturesEditor": "Assets/Editor/DungeonFeatureEditor.cs",
@@ -157,18 +157,18 @@
     "idReuse": "Do not recycle consumed-item IDs; allocate new IDs",
     "locations": "Mouse hand, wall fixture, floor tile/corner, champion inventory, container; one location per item",
     "stacking": "Support multiple independent records at one floor corner without small fixed limits",
-    "currentLimitations": "No inventory placement, return-to-holder gameplay, floor dropping, throwing, or save/load integration yet; burning/charges not integrated with pickup",
-    "universalThrowingRule": "Every item the player can pick up can be thrown. Implement throwing as a generic item interaction, never as a torch-only special case.",
-    "throwIdentityRule": "Throwing, landing, and subsequent pickup transfer the same item instance and ID, preserving item properties; never duplicate or re-create items.",
-    "throwRenderingRule": "Ground rendering for thrown items requires the appropriate explicit item asset at supported depths; missing assets produce errors rather than fallbacks."
+    "currentLimitations": "No inventory placement, return-to-holder gameplay, floor dropping, throwing, or save/load integration yet; burning/charges not integrated with pickup"
   },
   "nextImplementationPlan": [
-    "Make a Git commit of current verified working files before further changes; capture actual commit hash in lastVerifiedGitCommit",
-    "Implement generic transfer cursor-to-wall-holder with validation of holder occupancy and torch compatibility; do not create a duplicate item",
-    "Verify Full/Empty graphic state and normal pointer restoration after putting torch back",
-    "Implement generic throwing/drop from cursor to floor using facing, tile/corner, collisions and identity retention; avoid hardcoded (4,14) logic",
-    "Extend real item registry integration and persistence later; verify original game behavior where unknown",
-    "Generalize throwing to every pickup-capable item; torch is the initial test case only. Keep item-specific data separate from generic movement, collision, landing, sound, and pickup logic."
+    "Confirm current ViewportLayoutEditor.cs and Git commit; do not assume latest delivered ZIP is verified.",
+    "Preserve working torch holder pickup/return, floor drop, left/right corners, software cursor, apple/bread and 320x200 startup.",
+    "Extend throw range from 3 to 4 tiles on unobstructed corridor; obstacle stops travel earlier. F4 is invisible, but physical item and ID persist on landing.",
+    "Render visible flight F1/F2/F3 with stage-centered X/Y and scaled Torch_Ground_61x7.png; no F4 visual or ViewEdit F4 graphic.",
+    "Finish F2 landed-floor calibration first (TorchDown F2, separate left/right); then F3. Flight positions distinct from ground positions.",
+    "Play Combat_Attack.wav once at successful throw release; play Metallic_Thud.wav ONCE at actual final floor contact, not on F2/F3 flight stages.",
+    "Implement distance-based landing sound volume in existing DungeonAudioSettings; start with proposed F1 100%, F2 75%, F3 50%, F4 25% (unverified tunable values).",
+    "Check level-spanning item-ID registry integration separately; foundation exists but full all-level item import not completed.",
+    "Test in Unity and commit only after gameplay verification."
   ],
   "developmentDefaults": {
     "gameView": {
@@ -189,174 +189,82 @@
       "note": "Requires a separate Editor script; JSON alone cannot change Game view resolution."
     }
   },
-  "throwingSoundRules20261014": {
-    "scope": "All pickup items; weapon category uses Metallic_Thud.wav, all other categories use Wooden_Thud.wav",
-    "throwSound": "Combat_Attack.wav on successful throw (current prototype)",
-    "missingSoundPolicy": "Explicit Unity Console error; no fallback",
-    "implementationStatus": "Category-selectable landing audio helper implemented in ViewportLayoutEditor.cs; current thrown item handler is torch only; generic all-item throwing not yet implemented",
-    "note": "User wrote Mettalic_Thud; existing C# expects Metallic_Thud.wav. Preserve existing asset spelling until actual project sound file verified."
-  },
-  "throwingDistanceAndAudio20261014": {
-    "maximumThrowDistance": "F3, exactly three tiles; never F4",
-    "impactVolumeByDistance": {
-      "F1": 1.0,
-      "F2": 0.75,
-      "F3": 0.5
-    },
-    "impactSoundSelection": {
-      "weapons": "Metallic_Thud.wav",
-      "allOthers": "Wooden_Thud.wav"
-    },
-    "impactTiming": "once at final landing; no intermediate flight thuds",
-    "currentImplementation": "Torch throwing verified only in prior user tests; latest changes untested in Unity; generic audio method handles category but other item throwing handlers are not yet connected",
-    "configuration": "Current audio attenuation is defined as constants in ViewportLayoutEditor.cs; add Inspector controls when DungeonAudioSettings.cs is available"
-  },
-  "audioPolicy": {
-    "mandatoryRule": "Every new game sound must be assigned through the existing DungeonAudioSettings ScriptableObject with its own [Range(0f,1f)] Inspector volume slider. Do not introduce direct clip lookups, hardcoded volumes or alternate audio managers. Missing expected assignments must log explicit Unity Console errors; no fallback sounds.",
-    "asset": "Assets/Audio/AudioSettings/AudioSettings.asset",
-    "script": "Assets/Scripts/Dungeon/DungeonAudioSettings.cs",
-    "throwing": {
-      "throw": "itemThrowSound / itemThrowVolume (Combat_Attack.wav)",
-      "weaponImpact": "weaponImpactSound / weaponImpactVolume (Metallic_Thud.wav)",
-      "otherImpact": "otherItemImpactSound / otherItemImpactVolume (Wooden_Thud.wav)",
-      "distanceMultipliers": "itemImpactF1Volume, itemImpactF2Volume, itemImpactF3Volume",
-      "effectiveImpactVolume": "category base volume multiplied by distance volume",
-      "maxDistance": "F3"
-    },
-    "deployment": "Copy archives preserving original Assets/... paths; never create extra copies of existing scripts."
-  },
-  "floorItemLIFO20261014": {
-    "rule": "Last In, First Out: at the same floor position, the most recently dropped item is picked up first, even if it overlaps an older item such as bread.",
-    "implementation": "Use an explicit ordered floor-item list and search newest-to-oldest when selecting pickup candidates; keep stable item IDs and original item placements.",
-    "example": "Bread on floor, apple dropped onto bread: apple picked first, bread remains.",
-    "status": "Code revised; pending Unity verification."
-  },
-  "csbwinFloorStacking20261014": {
-    "referenceFile": "Assets/Editor/CSBwin_Floor_Item_Offsets.json",
-    "implementation": "Read 48 computed offset pairs from original graphics.dat extraction; apply per-corner successive-item delta relative to first item; preserve existing single-item ViewEdit anchors and LIFO pickup.",
-    "status": "Unity verification required. Exact original viewpoint class anchor and traversal not fully ported; do not treat prototype as pixel-verified.",
-    "source": "CSBwin Code51a4.cpp currentSmallOffset sequence and graphics.dat graphic 0x22e"
-  },
-  "floorPileAlignmentCalibration20261014": {
-    "test": "Level 0 (5,11) East, apple dropped on bread; original vs Unity screenshot",
-    "change": "Raise same-tile Bread left/right projected draw position by 2 pixels: breadF0LeftPreviewScreenTop and breadF0RightPreviewScreenTop 150 to 152; Apple anchor and CSBwin pile offsets unchanged.",
-    "status": "Awaiting Unity visual verification; LIFO pickup already verified."
-  },
-  "floorPileDropTargetNote": "2026-10-14: Drop-target sprite hit test expanded by 5 logical viewport pixels and restricted to same screen half; CSBwin offsets, LIFO pickup and rendering unchanged. Test in Unity pending.",
-  "checkpoint20261014EndOfDay": {
-    "status": "Latest CSBwin offset loader fix delivered but not tested in Unity; do not claim issue solved.",
-    "latestDeliveredCSharpZip": "CSBwin_Offset_Loader_Fix.zip",
-    "latestDeliveredScript": "Assets/Editor/ViewportLayoutEditor.cs",
-    "csbwinJson": "Assets/Editor/CSBwin_Floor_Item_Offsets.json",
-    "confirmedIssue": "Dropped apple is stored and pickable but is not blitted; APPLE DRAW SKIP reports CSBwin pile offsets unavailable; pileDataLoaded=False.",
-    "diagnostics": {
-      "activeDrawList": true,
-      "projection": true,
-      "enabled": true,
-      "texture": "loaded",
-      "blitCalled": false,
-      "pileDataLoaded": false
-    },
-    "jsonInspection": "Uploaded JSON valid with 48 X/Y pairs; exact folder and name verified in Unity.",
-    "loaderFix": "Latest delivered script reads JSON directly from disk and retries after failed load; not yet validated in Unity.",
-    "testPose": "Level 0, player (4,11) facing East; bread map (5,11) corner East, apple original map (4,9) corner North; drop apple onto bread.",
-    "preserve": [
-      "CSBwin original offset values",
-      "apple/bread calibrated coordinates",
-      "working LIFO floor pickup",
-      "custom inventory-image mouse cursor",
-      "torch pickup and throwing behavior",
-      "no fallback for missing resources"
+  "checkpoint20261013": {
+    "verifiedByUser": [
+      "Torch pickup from holder and return works without mouse cursor flicker",
+      "Normal torch drop at player current tile with left/right floor subtiles works, including wall/ceiling/floor click targets",
+      "TorchDown F1 left/right calibrations work; apple and bread return after correcting asset paths",
+      "Automatic Unity Game view 320x200 startup works",
+      "Combat_Attack.wav throwing sound works"
     ],
-    "importantRule": "Check and fix red Unity Console compile errors before investigating missing graphics.",
-    "nextTest": [
-      "Replace only ViewportLayoutEditor.cs with latest zip version in Assets/Editor",
-      "Check Unity Console for red compile errors",
-      "Drop apple onto bread once at test pose",
-      "Confirm loader no longer reports pileDataLoaded=False or CSBwin pile offsets unavailable",
-      "Confirm both graphics render; if not capture APPLE DRAW GATE/SKIP logs and screenshot"
-    ],
-    "deliveryPreference": "ZIP files flat/no folders, original filenames; Progression.json never renamed."
-  },
-  "checkpoint20261015EndOfDay": {
-    "status": "8 of 24 champions fully verified; 16 remain. Verified markers confirmed present in DungeonFeatureEditor.cs in uploaded Editor(5).zip.",
-    "completedCount": 8,
-    "totalCount": 24,
-    "verifiedChampions": [
-      {
-        "name": "IAIDO",
-        "x": 10,
-        "y": 4,
-        "facing": "North"
+    "calibrationKnown": {
+      "torchDownF1": {
+        "leftX": 31,
+        "rightX": 133,
+        "topY": 157
       },
-      {
-        "name": "CHANI",
-        "x": 14,
-        "y": 3,
-        "facing": "North"
-      },
-      {
-        "name": "HAWK",
-        "x": 15,
-        "y": 4,
-        "facing": "East"
-      },
-      {
-        "name": "ZED",
-        "x": 10,
-        "y": 5,
-        "facing": "South"
-      },
-      {
-        "name": "ALEX",
-        "x": 16,
-        "y": 8,
-        "facing": "North"
-      },
-      {
-        "name": "BORIS",
-        "x": 14,
-        "y": 6,
-        "facing": "South"
-      },
-      {
-        "name": "ELIJA",
-        "x": 9,
-        "y": 7,
-        "facing": "West"
-      },
-      {
-        "name": "LINFLAS",
-        "x": 12,
-        "y": 9,
-        "facing": "North"
-      }
-    ],
-    "markerColorRGB": [
-      0,
-      255,
-      0
-    ],
-    "markerRule": "Only mark champion after user verifies all starting equipment against original.",
-    "lastVerifiedChampion": "LINFLAS",
-    "confirmedMappings": {
-      "IAIDO Ghi": "Ghi_Body_16x16",
-      "CHANI Moonstone": "Moonstone_16x16, neck slot"
+      "notes": "Values from uploaded source earlier today; preserve later applied Unity changes if any."
     },
-    "additionalWorkNotes": [
-      "Rabbit Foot upper-right pouch position reported as X=65, Y=32",
-      "Leather Boots and Robe Body mappings corrected",
-      "Cancel button sound pop04.wav and volume tested"
-    ],
-    "resourceRule": "No fallbacks. Missing images, mappings, or slots must generate explicit Unity Console errors.",
-    "runtimeLevel0Map": "Assets/Data/Maps/DungeonMaster_Level00.json",
-    "sourceFile": "Assets/Editor/DungeonFeatureEditor.cs",
-    "nextTask": "Continue champion 9, do not change the eight confirmed champions without a new reported issue.",
-    "verificationNote": "Confirmed eight names/positions in DungeonFeatureEditor.cs of uploaded ZIP; mappings and sound notes are based on prior progress discussion and were not separately runtime-tested in this update."
+    "graphics": {
+      "torch": "Assets/Art/Weapons/Torch_Ground_61x7.png",
+      "apple": "Assets/Art/Food/Apple_19x13.png",
+      "bread": "Assets/Art/Food/Bread_27x16.png"
+    },
+    "flight": {
+      "model": "Discrete visible stages F1-F2-F3 centered on both X and Y of each perspective band; same torch sprite scaled by distance",
+      "timing": "ViewEdit TorchFlight F1-F3 ms adjustment exists; last shipped source default 200 ms; proposed 166 ms/stage not confirmed applied",
+      "originalGameFinding": "Unobstructed thrown torch can reach F4; F4 torch is invisible, but landing sound can be heard",
+      "currentImplementationStatus": "F4 distance not yet implemented; recent F2/F3 landing and audio changes are prototypes needing Unity verification"
+    },
+    "landing": {
+      "userPriority": "Calibrate F2 first, especially left-side ground placement; then F3",
+      "viewEdit": "TorchDown F2 and F3 controls delivered, but new F2/F3 geometry not fully user-verified"
+    },
+    "audio": {
+      "throw": "Combat_Attack.wav once on throw (user verified)",
+      "landing": "Metallic_Thud.wav should play only once on physical ground contact, attenuated by final landing distance",
+      "suggestedAttenuation": {
+        "F1": 1.0,
+        "F2": 0.75,
+        "F3": 0.5,
+        "F4": 0.25
+      },
+      "attenuationStatus": "Proposed initial values, NOT implemented, not verified against original",
+      "knownIssue": "Previously delivered code plays thuds on intermediate F2/F3 flight stages; replace rather than layering duplicate playback"
+    },
+    "itemRegistry": {
+      "foundation": "DungeonItemRegistry.cs delivered separately; actual Unity compile/integration unconfirmed",
+      "idRule": "stable instance IDs independent of location and level; no duplicate/recycled identities",
+      "persistenceNote": "Library storage is temporary and not a final save-game persistence solution"
+    },
+    "lastDeliveredEditorZip": "ViewportLayoutEditor_F2_Left_Throw_Fix_Flat.zip (not confirmed by user as installed/working)",
+    "deliveryRules": "Always flat ZIP; single C# file at ZIP root; no fallback; do not introduce new item types without user instruction"
   },
-  "pendingWorkstreams": {
-    "floorItemPiles": "Preserve full October 14 entries checkpoint20261014EndOfDay, csbwinFloorStacking20261014 and related fields; verification of CSBwin offset loader / apple-on-bread rendering remains pending unless separately confirmed.",
-    "throwingAndSound": "Preserve older throwing/audio plans and do not assume unfinished stages have been implemented."
+  "pixelMeasurementConvention": {
+    "referenceImage": {
+      "width": 320,
+      "height": 200,
+      "unit": "pixel"
+    },
+    "origin": "Top-left corner of the complete 320x200 image (0,0)",
+    "xAxis": "X increases left to right",
+    "yAxis": "Y increases top to bottom",
+    "rectangles": "X and Y refer to the top-left corner; width and height extend right and down",
+    "editorCoordinateRule": "Measurements supplied by user are absolute screen coordinates, not relative to character sheet or viewport crop; convert internally only where the renderer requires it",
+    "calibrationTolerancePixels": 1,
+    "eyeItemInformationRect": {
+      "x": 104,
+      "y": 88,
+      "width": 104,
+      "height": 72,
+      "status": "provisional; measured from screenshot with red rectangular outline; ±1 pixel possible"
+    },
+    "eyeBehavior": "Hold/move over Eye uses Eye_moved_16x16; red outline was a measurement annotation and must not render in Unity",
+    "scope": "Apply this measurement method consistently for all upcoming image and UI calibrations"
   },
-  "checkpointHistoryNote": "October 14 checkpoint and diagnostic fields retained without overwriting; current active checkpoint is October 15 champion equipment verification."
+  "unityEditorMenuConvention": {
+    "rule": "Add custom Unity Editor commands directly under Tools; do not create submenus under Tools.",
+    "example": "Tools/Apply Pixel-Art Import Settings",
+    "status": "User preference, apply to future Unity Editor menu changes."
+  }
 }
