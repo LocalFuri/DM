@@ -7443,7 +7443,7 @@ private static void HandleGameViewPointerDown(
       return false;
 
     // The logical pointer is the center hotspot of the 16x16 held sprite.
-    // Target selection: hotspot first, then strictly >30% square overlap.
+    // Target selection: hotspot first, then strictly >20% square overlap.
     // Transparent pixels still count as part of the cursor square.
     Vector2 slotClick = new Vector2(x, y);
     // Pixel-art slot geometry uses integral 320x200 coordinates. GameView
@@ -7477,10 +7477,11 @@ private static void HandleGameViewPointerDown(
         selectedByHotspot = true;
       }
     }
-    // Second preference: >30% of the complete 16x16 cursor square overlaps
+    // Second preference: >20% of the complete 16x16 cursor square overlaps
     // a measured icon rectangle. Alpha/transparency is intentionally ignored.
     // Measure the maximum RAW overlap for diagnostics even if no slot qualifies.
     float highestObservedOverlap = 0f;
+    float bestOverlapCenterDistance = float.MaxValue;
     Vector2Int nearestOverlappedSlot = new Vector2Int(-1, -1);
     if (placingHeldItem && targetX < 0)
     {
@@ -7499,12 +7500,27 @@ private static void HandleGameViewPointerDown(
           highestObservedOverlap = overlap;
           nearestOverlappedSlot = slot;
         }
-        if (overlap > ChampionSheetItemSize * ChampionSheetItemSize * 0.3f
-            && overlap > bestOverlap)
+        // Strictly more than 20% overlap qualifies. When two slots have
+        // equal overlap, prefer the icon center nearest the red hotspot.
+        // If still tied, choose the leftmost slot, then the uppermost.
+        if (overlap > ChampionSheetItemSize * ChampionSheetItemSize * 0.2f)
         {
-          bestOverlap = overlap;
-          targetX = slot.x;
-          targetY = slot.y;
+          const float overlapTieEpsilon = 0.0001f;
+          float centerDistance = (slotClick - slotRect.center).sqrMagnitude;
+          bool greaterOverlap = overlap > bestOverlap + overlapTieEpsilon;
+          bool equalOverlap = Mathf.Abs(overlap - bestOverlap) <= overlapTieEpsilon;
+          bool closerCenter = centerDistance < bestOverlapCenterDistance - overlapTieEpsilon;
+          bool equalCenter = Mathf.Abs(centerDistance - bestOverlapCenterDistance) <= overlapTieEpsilon;
+          if (targetX < 0 || greaterOverlap
+              || (equalOverlap && (closerCenter
+                  || (equalCenter && (slot.x < targetX
+                      || (slot.x == targetX && slot.y < targetY))))))
+          {
+            bestOverlap = overlap;
+            bestOverlapCenterDistance = centerDistance;
+            targetX = slot.x;
+            targetY = slot.y;
+          }
         }
       }
     }
@@ -7519,7 +7535,7 @@ private static void HandleGameViewPointerDown(
           + ", acceptedOverlap=" + bestOverlap.ToString("0.##")
           + "/256, rawMaxOverlap=" + highestObservedOverlap.ToString("0.##")
           + "/256, rawMaxSlot=" + nearestOverlappedSlot
-          + " (fallback requires >76.8)");
+          + " (fallback requires >51.2)");
     if (targetX < 0)
       return false;
 
