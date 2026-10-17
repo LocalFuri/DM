@@ -2581,6 +2581,14 @@ public class DungeonFeatureEditor : EditorWindow
       return;
 
     bool doubleClick = current.clickCount == 2;
+    // An inspection belongs only to its selected tile. Clicking any other
+    // tile (including one without items) clears stale details immediately.
+    // Preserve the current details when double-clicking the same tile.
+    if (inspectedFloorItemX != x || inspectedFloorItemY != y)
+    {
+      inspectedFloorItemX = -1;
+      inspectedFloorItemY = -1;
+    }
     // Inspect item records on a SINGLE click only. A second click must
     // remain available for the existing double-click tile navigation.
     if (!doubleClick && showFloorItems
