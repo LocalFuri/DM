@@ -6640,6 +6640,26 @@ private static void HandleGameViewPointerDown(
         windowMouse,
         out Vector2 logical);
 
+    // When holding champion equipment, target the position of the ACTUAL
+    // red hotspot UI Toolkit element, rather than independently interpreting
+    // the incoming click's mouse coordinates. The marker is the visual truth.
+    if (window.championSheetVisible && window.previewHeldChampionCursor != null)
+    {
+      Vector2 redPixelLogical;
+      if (!TryGetRenderedHeldItemHotspotLogical(
+              window, gameView, windowMouse, out redPixelLogical))
+      {
+        Debug.LogError("CHAMPION RED HOTSPOT: Rendered red marker position "
+            + "could not be measured; inventory placement aborted.");
+        return false;
+      }
+      Debug.Log("CHAMPION RED HOTSPOT: clickLogical=" + logical
+          + ", redPixelLogical=" + redPixelLogical
+          + ", delta=" + (redPixelLogical - logical));
+      logical = redPixelLogical;
+      hasLogical = true;
+    }
+
     if (hasLogical
         && window.TryHandleChampionSheetClick(logical.x, logical.y))
     {
@@ -7423,9 +7443,14 @@ private static void HandleGameViewPointerDown(
       return false;
 
     // The logical pointer is the center hotspot of the 16x16 held sprite.
-    // Target selection: hotspot first, then strictly >50% square overlap.
+    // Target selection: hotspot first, then strictly >40% square overlap.
     // Transparent pixels still count as part of the cursor square.
     Vector2 slotClick = new Vector2(x, y);
+    // Pixel-art slot geometry uses integral 320x200 coordinates. GameView
+    // scaling can yield fractional mouse coordinates (e.g. Y=47.90 for a
+    // visually aligned hotspot at Y=48). Snap ONLY hotspot hit testing to
+    // the nearest logical pixel; leave the cursor rectangle and artwork alone.
+    Vector2 pixelHotspot = new Vector2(Mathf.Round(x), Mathf.Round(y));
     int targetX = -1, targetY = -1;
     float bestOverlap = 0f;
     bool selectedByHotspot = false;
@@ -7433,17 +7458,30 @@ private static void HandleGameViewPointerDown(
         y - ChampionSheetItemSize * 0.5f,
         ChampionSheetItemSize, ChampionSheetItemSize);
     bool placingHeldItem = previewHeldChampionCursor != null;
+    // First preference: hotspot inside the visible slot, INCLUDING its border.
+    // Backpack outer rectangles share a one-pixel border, so resolve any
+    // shared-edge candidates by distance to their exact icon centers.
+    float bestHotspotDistance = float.MaxValue;
     foreach (Vector2Int slot in ChampionSheetAllItemSlots)
     {
-      Rect slotRect = GetChampionSheetItemScreenRect(slot.x, slot.y);
-      if (slotRect.Contains(slotClick))
+      Rect outer = GetChampionSheetSlotScreenRect(slot.x, slot.y);
+      if (!outer.Contains(pixelHotspot))
+        continue;
+      Rect icon = GetChampionSheetItemScreenRect(slot.x, slot.y);
+      float distance = (pixelHotspot - icon.center).sqrMagnitude;
+      if (distance < bestHotspotDistance)
       {
+        bestHotspotDistance = distance;
         targetX = slot.x;
         targetY = slot.y;
         selectedByHotspot = true;
-        break;
       }
     }
+    // Second preference: >40% of the complete 16x16 cursor square overlaps
+    // a measured icon rectangle. Alpha/transparency is intentionally ignored.
+    // Measure the maximum RAW overlap for diagnostics even if no slot qualifies.
+    float highestObservedOverlap = 0f;
+    Vector2Int nearestOverlappedSlot = new Vector2Int(-1, -1);
     if (placingHeldItem && targetX < 0)
     {
       foreach (Vector2Int slot in ChampionSheetAllItemSlots)
@@ -7456,7 +7494,12 @@ private static void HandleGameViewPointerDown(
             Mathf.Min(cursorRect.yMax, slotRect.yMax)
             - Mathf.Max(cursorRect.yMin, slotRect.yMin));
         float overlap = overlapWidth * overlapHeight;
-        if (overlap > ChampionSheetItemSize * ChampionSheetItemSize * 0.5f
+        if (overlap > highestObservedOverlap)
+        {
+          highestObservedOverlap = overlap;
+          nearestOverlappedSlot = slot;
+        }
+        if (overlap > ChampionSheetItemSize * ChampionSheetItemSize * 0.4f
             && overlap > bestOverlap)
         {
           bestOverlap = overlap;
@@ -7468,11 +7511,15 @@ private static void HandleGameViewPointerDown(
     if (placingHeldItem)
       Debug.Log("CHAMPION SLOT TARGET: method="
           + (selectedByHotspot ? "hotspot" : "overlap")
+          + ", hotspotRaw=" + slotClick
+          + ", hotspotPixel=" + pixelHotspot
           + ", cursor=" + cursorRect
           + ", target=" + (targetX < 0 ? "none" :
               "(" + targetX + "," + targetY + ")")
-          + ", overlap=" + bestOverlap.ToString("0.##")
-          + "/256 (fallback requires >128)");
+          + ", acceptedOverlap=" + bestOverlap.ToString("0.##")
+          + "/256, rawMaxOverlap=" + highestObservedOverlap.ToString("0.##")
+          + "/256, rawMaxSlot=" + nearestOverlappedSlot
+          + " (fallback requires >102.4)");
     if (targetX < 0)
       return false;
 
@@ -8059,7 +8106,6 @@ private static void HandleGameViewPointerDown(
   private static readonly int[] ChampionSheetAdditionalSlotXY =
   {
     5, 72,
-    61, 32,
     65, 32
   };
 
@@ -8121,13 +8167,6 @@ private static void HandleGameViewPointerDown(
     else if (slotX == 65 && slotY == 32)
     {
       // Measured right-side slot: original slot origin is asymmetric.
-      iconX = 66;
-      iconY = 33;
-    }
-    else if (slotX == 61 && slotY == 32)
-    {
-      // Historical alias for the same right-side artwork; preserved for
-      // existing champion item-slot data until the alias is removed safely.
       iconX = 66;
       iconY = 33;
     }
@@ -8988,9 +9027,9 @@ private static void HandleGameViewPointerDown(
 
     if (slot == "magicbox")
     {
-      // Original Champion sheet: carried magical box occupies the upper
-      // right 18x18 carried-item slot (screen X=61, Y=65).
-      localX = 61;
+      // Use the canonical upper-right slot, not the obsolete (61,32)
+      // alias. Both previously rendered at the same (66,33) icon pixels.
+      localX = 65;
       localY = 32;
       return true;
     }
@@ -9005,8 +9044,9 @@ private static void HandleGameViewPointerDown(
       }
       else
       {
-        localX = 5;
-        localY = 32;
+        // The second hand is the lower left-side slot, not the quiver.
+        localX = ChampionSheetLeftHandX;
+        localY = ChampionSheetLeftHandY;
       }
 
       return true;
@@ -34716,6 +34756,7 @@ private static void HandleGameViewPointerDown(
   }
 
   private static UnityEngine.UIElements.VisualElement s_heldItemPointerOverlay;
+  private static UnityEngine.UIElements.VisualElement s_heldItemHotspotOverlay;
   private static EditorWindow s_heldItemPointerOverlayWindow;
 
   private static void UpdateHeldItemPointerOverlay(
@@ -34741,9 +34782,19 @@ private static void HandleGameViewPointerDown(
       overlay.style.backgroundImage = new UnityEngine.UIElements.StyleBackground(
           owner.GetHeldItemCursorTexture());
       overlay.style.unityBackgroundScaleMode = ScaleMode.StretchToFill;
+      // Debug-only visual marker at the held icon's center hotspot (8,8).
+      // This never receives mouse events and does not change hit testing.
+      var hotspot = new UnityEngine.UIElements.VisualElement();
+      hotspot.name = "DungeonMasterHeldItemCursorHotspot";
+      hotspot.pickingMode = UnityEngine.UIElements.PickingMode.Ignore;
+      hotspot.style.position = UnityEngine.UIElements.Position.Absolute;
+      hotspot.style.backgroundColor = new UnityEngine.UIElements.StyleColor(
+          new Color(1f, 0f, 0f, 1f));
+      overlay.Add(hotspot);
       gameView.rootVisualElement.Add(overlay);
       overlay.BringToFront();
       s_heldItemPointerOverlay = overlay;
+      s_heldItemHotspotOverlay = hotspot;
       s_heldItemPointerOverlayWindow = gameView;
 
     }
@@ -34801,9 +34852,46 @@ private static void HandleGameViewPointerDown(
     s_heldItemPointerOverlay.style.height = displayHeight;
     s_heldItemPointerOverlay.style.left = pointerPosition.x - displayWidth * 0.5f;
     s_heldItemPointerOverlay.style.top = pointerPosition.y - displayHeight * 0.5f;
+    if (s_heldItemHotspotOverlay != null)
+    {
+      float pixelWidth = displayWidth / heldCursor.width;
+      float pixelHeight = displayHeight / heldCursor.height;
+      s_heldItemHotspotOverlay.style.width = pixelWidth;
+      s_heldItemHotspotOverlay.style.height = pixelHeight;
+      s_heldItemHotspotOverlay.style.left = 8f * pixelWidth;
+      s_heldItemHotspotOverlay.style.top = 8f * pixelHeight;
+      s_heldItemHotspotOverlay.BringToFront();
+    }
     s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.Flex;
     SetHeldItemArrowHidden(gameView);
     s_heldItemPointerOverlay.BringToFront();
+  }
+
+  // Read the marker's measured on-screen geometry, NOT a second mouse
+  // conversion. Converting the UITK marker position back into 320x200 space
+  // makes placement follow precisely what the player sees in red.
+  private static bool TryGetRenderedHeldItemHotspotLogical(
+      ViewportLayoutEditor owner, EditorWindow gameView,
+      Vector2 windowMouse, out Vector2 logical)
+  {
+    logical = Vector2.zero;
+    UpdateHeldItemPointerOverlay(gameView, windowMouse);
+    if (owner == null || gameView == null
+        || s_heldItemHotspotOverlay == null
+        || s_heldItemPointerOverlay == null)
+      return false;
+
+    Rect pixelBounds = s_heldItemHotspotOverlay.worldBound;
+    if (pixelBounds.width <= 0f || pixelBounds.height <= 0f)
+      return false;
+    // worldBound is in panel coordinates. Subtract the root's panel origin
+    // to obtain the GameView-local position used by the mouse converter.
+    Vector2 markerOnPanel = pixelBounds.center
+        - gameView.rootVisualElement.worldBound.position;
+    if (!owner.TryGetLogical320x200FromGameView(
+            gameView, markerOnPanel, out logical))
+      return false;
+    return true;
   }
 
   private static void HideHeldItemPointerOverlay()
@@ -34812,6 +34900,7 @@ private static void HandleGameViewPointerDown(
     if (s_heldItemPointerOverlay != null)
       s_heldItemPointerOverlay.RemoveFromHierarchy();
     s_heldItemPointerOverlay = null;
+    s_heldItemHotspotOverlay = null;
     s_heldItemPointerOverlayWindow = null;
   }
 
