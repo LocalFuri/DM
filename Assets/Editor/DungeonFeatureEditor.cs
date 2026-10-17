@@ -343,6 +343,11 @@ public class DungeonFeatureEditor : EditorWindow
         && string.Equals(decodedName, "Scroll", System.StringComparison.OrdinalIgnoreCase))
       return FindExactTextureByName("Scroll_16x16");
 
+    // Verified Potion Type 20: Empty Flask inventory art in Assets/Art/Potions.
+    if (string.Equals(recordType, "Potion", System.StringComparison.OrdinalIgnoreCase)
+        && string.Equals(decodedName, "Empty Flask", System.StringComparison.OrdinalIgnoreCase))
+      return FindExactTextureByName("Potion_Empty_16x16");
+
     string sanitized = SanitizeItemNameForAsset(decodedName);
     string underscored = decodedName.Replace(" ", "_");
     string sanitizedUnderscored = SanitizeItemNameForAsset(underscored);
@@ -1166,7 +1171,7 @@ public class DungeonFeatureEditor : EditorWindow
     Handles.BeginGUI();
     Color previous = Handles.color;
     Handles.color = Color.cyan;
-    Handles.DrawAAPolyLine(1f, tileCenter, popupEnd);
+    Handles.DrawAAPolyLine(3f, tileCenter, popupEnd);
     Handles.color = previous;
     Handles.EndGUI();
 
