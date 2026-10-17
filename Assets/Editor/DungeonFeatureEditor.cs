@@ -597,13 +597,14 @@ public class DungeonFeatureEditor : EditorWindow
     if (GUILayout.Button(">", GUILayout.Width(24f)))
       SetDungeonLevelFromUi(currentDungeonLevel + 1);
 
-    GUILayout.FlexibleSpace();
-    EditorGUILayout.EndHorizontal();
-
-    EditorGUILayout.LabelField(
+    GUILayout.Space(10f);
+    GUILayout.Label(
         $"{selectedX} X / Y {selectedY} {selectedFacing}",
         poseStyle,
+        GUILayout.ExpandWidth(false),
         GUILayout.Height(20f));
+    GUILayout.FlexibleSpace();
+    EditorGUILayout.EndHorizontal();
 
     // Keep inspected tile details in the top-left information area,
     // not below the (potentially tall) map.
