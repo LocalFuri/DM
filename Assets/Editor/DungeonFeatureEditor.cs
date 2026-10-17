@@ -1118,13 +1118,32 @@ public class DungeonFeatureEditor : EditorWindow
 
   // One horizontal row of multi-item previews. The inventory images remain
   // 16x16 in Assets and are displayed at 2x in this editor-only popup.
+  // Exact popup width uses each item's displayed name and record ID,
+  // rather than wasting a fixed-width block for short names.
+  private float GetFloorItemPopupBlockWidth(FloorItemPlacementRecord entry)
+  {
+    GUIStyle nameStyle = new GUIStyle(EditorStyles.label)
+    {
+      fontStyle = FontStyle.Bold
+    };
+    GUIStyle idStyle = EditorStyles.miniLabel;
+    string name = GetFloorItemDisplayName(entry);
+    string recordId = "[" + entry.id + "]";
+    float textWidth = Mathf.Max(
+        nameStyle.CalcSize(new GUIContent(name)).x,
+        idStyle.CalcSize(new GUIContent(recordId)).x);
+    return (32f + 3f + Mathf.Ceil(textWidth) + 2f) * mapZoom;
+  }
+
   private float GetSelectedFloorItemPopupWidth(int itemCount)
   {
-    float padding = 7f;
-    float itemWidth = 150f;
-    float itemGap = 6f;
-    return (padding * 2f + itemCount * itemWidth
-        + Mathf.Max(0, itemCount - 1) * itemGap) * mapZoom;
+    List<FloorItemPlacementRecord> records = GetInspectedFloorItems();
+    if (records == null || records.Count != itemCount)
+      return 0f;
+    float width = 14f + Mathf.Max(0, itemCount - 1) * 2f;
+    for (int i = 0; i < records.Count; i++)
+      width += GetFloorItemPopupBlockWidth(records[i]) / mapZoom;
+    return width * mapZoom;
   }
 
   private Rect GetSelectedFloorItemPopupRect(Rect mapRect, int itemCount)
@@ -1169,8 +1188,7 @@ public class DungeonFeatureEditor : EditorWindow
     float padding = 7f * unit;
     float headingHeight = 18f * unit;
     float iconSize = 32f * unit;
-    float itemWidth = 150f * unit;
-    float itemGap = 6f * unit;
+    float itemGap = 2f * unit;
     GUIStyle heading = new GUIStyle(EditorStyles.miniBoldLabel)
     {
       alignment = TextAnchor.MiddleLeft
@@ -1194,23 +1212,25 @@ public class DungeonFeatureEditor : EditorWindow
     };
 
     float rowY = popup.y + padding + headingHeight;
+    float itemX = popup.x + padding;
     for (int i = 0; i < records.Count; i++)
     {
       FloorItemPlacementRecord entry = records[i];
-      float itemX = popup.x + padding + i * (itemWidth + itemGap);
+      float itemWidth = GetFloorItemPopupBlockWidth(entry);
       Rect iconRect = new Rect(itemX, rowY + 3f * unit,
           iconSize, iconSize);
       Texture2D texture = GetFloorItemInventoryMapIcon(entry);
       if (texture != null)
         GUI.DrawTexture(iconRect, texture, ScaleMode.StretchToFill, true);
       // Missing art remains a Console error, never replace the icon.
-      float textX = iconRect.xMax + 7f * unit;
-      float textWidth = itemWidth - iconSize - 7f * unit;
+      float textX = iconRect.xMax + 3f * unit;
+      float textWidth = itemWidth - iconSize - 3f * unit;
       string itemName = GetFloorItemDisplayName(entry);
       GUI.Label(new Rect(textX, rowY + 2f * unit,
           textWidth, 19f * unit), new GUIContent(itemName, itemName), nameStyle);
       GUI.Label(new Rect(textX, rowY + 19f * unit,
           textWidth, 15f * unit), "[" + entry.id + "]", idStyle);
+      itemX += itemWidth + itemGap;
     }
   }
 
