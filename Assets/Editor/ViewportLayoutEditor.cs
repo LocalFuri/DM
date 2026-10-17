@@ -6653,9 +6653,6 @@ private static void HandleGameViewPointerDown(
             + "could not be measured; inventory placement aborted.");
         return false;
       }
-      Debug.Log("CHAMPION RED HOTSPOT: clickLogical=" + logical
-          + ", redPixelLogical=" + redPixelLogical
-          + ", delta=" + (redPixelLogical - logical));
       logical = redPixelLogical;
       hasLogical = true;
     }
@@ -7411,6 +7408,11 @@ private static void HandleGameViewPointerDown(
   private static bool IsPermittedChampionItemSlot(
       string itemName, int originalX, int originalY, int targetX, int targetY)
   {
+    // The upper-right pouch and lower-right quiver are unrestricted storage
+    // slots. Both accept any real inventory item.
+    if ((targetX == 65 && targetY == 32)
+        || (targetX == ChampionSheetRightHandX && targetY == 72))
+      return true;
     string itemKey = NormalizeChampionAssetKey(itemName);
     if (!VerifiedChampionItemSlotRules.TryGetValue(itemKey,
             out ChampionAllowedSlots allowed))
@@ -7524,18 +7526,6 @@ private static void HandleGameViewPointerDown(
         }
       }
     }
-    if (placingHeldItem)
-      Debug.Log("CHAMPION SLOT TARGET: method="
-          + (selectedByHotspot ? "hotspot" : "overlap")
-          + ", hotspotRaw=" + slotClick
-          + ", hotspotPixel=" + pixelHotspot
-          + ", cursor=" + cursorRect
-          + ", target=" + (targetX < 0 ? "none" :
-              "(" + targetX + "," + targetY + ")")
-          + ", acceptedOverlap=" + bestOverlap.ToString("0.##")
-          + "/256, rawMaxOverlap=" + highestObservedOverlap.ToString("0.##")
-          + "/256, rawMaxSlot=" + nearestOverlappedSlot
-          + " (fallback requires >51.2)");
     if (targetX < 0)
       return false;
 
@@ -7631,9 +7621,6 @@ private static void HandleGameViewPointerDown(
         previewHeldChampionItemIndex = occupiedIndex;
         previewHeldChampionCursor = displacedTexture;
         previewHeldChampionSourceSlot = new Vector2Int(targetX, targetY);
-        Debug.Log("CHAMPION SWAP: placed '" + heldItemName
-            + "', picked up '" + displacedName + "' at ("
-            + targetX + "," + targetY + ").");
       }
       else
       {
@@ -8122,7 +8109,8 @@ private static void HandleGameViewPointerDown(
   private static readonly int[] ChampionSheetAdditionalSlotXY =
   {
     5, 72,
-    65, 32
+    65, 32,
+    ChampionSheetRightHandX, 72
   };
 
   private const int ChampionSheetItemSize = 16;
@@ -8180,12 +8168,6 @@ private static void HandleGameViewPointerDown(
       iconX = slotX + 1;
       iconY = slotY == 15 ? 16 : 33;
     }
-    else if (slotX == 65 && slotY == 32)
-    {
-      // Measured right-side slot: original slot origin is asymmetric.
-      iconX = 66;
-      iconY = 33;
-    }
     return new Rect(iconX, ChampionSheetInventoryScreenTop + iconY,
         ChampionSheetItemSize, ChampionSheetItemSize);
   }
@@ -8212,6 +8194,18 @@ private static void HandleGameViewPointerDown(
     HeroDefinition hero = HeroDatabase.GetByName(championSheetName);
     PaintChampionSheetPortrait(pixels, hero);
     PaintChampionSheetEquipment(pixels, hero);
+    PaintChampionHeadSlotMarker(pixels, hero);
+    PaintChampionEquipmentSlotMarker(pixels, hero, 33, 45, "Torso");
+    PaintChampionEquipmentSlotMarker(pixels, hero, 33, 65, "Legs_both");
+    PaintChampionEquipmentSlotMarker(pixels, hero, 33, 85, "Feet_both");
+    PaintChampionEquipmentSlotMarker(pixels, hero,
+        ChampionSheetLeftHandX, ChampionSheetLeftHandY, "Hand_right");
+    PaintChampionEquipmentSlotMarker(pixels, hero,
+        ChampionSheetRightHandX, ChampionSheetRightHandY, "Hand_left");
+    PaintChampionPouchSlotMarker(pixels, hero);
+    PaintChampionEquipmentSlotMarker(pixels, hero, 5, 72, "Pouch_side");
+    PaintChampionEquipmentSlotMarker(pixels, hero,
+        ChampionSheetRightHandX, 72, "Quiver");
     if (hero == null || hero.Resources == null || hero.Attributes == null)
       return;
 
@@ -8896,6 +8890,52 @@ private static void HandleGameViewPointerDown(
   }
 
 
+  // Equipment silhouettes are purely visual: draw only in empty slots.
+  // They never become champion items and cannot be picked up or swapped.
+  // Coordinates are the existing inventory-local slot IDs, NOT the PNG pixels.
+  private void PaintChampionEquipmentSlotMarker(Color32[] pixels,
+      HeroDefinition hero, int slotX, int slotY, string markerAssetName)
+  {
+    if (hero == null || hero.StartingItems == null)
+      return;
+
+    bool handUsed = false;
+    bool quiverUsed = false;
+    for (int i = 0; i < hero.StartingItems.Count; i++)
+    {
+      string itemName = GetChampionStartingItemName(hero.StartingItems[i]);
+      if (string.IsNullOrEmpty(itemName)
+          || !TryGetChampionSheetEquipSlot(itemName, ref handUsed,
+              ref quiverUsed, out int originalX, out int originalY))
+        continue;
+      if (IsChampionItemRemoved(hero.Name, i))
+        continue;
+      Vector2Int position = GetPreviewChampionItemSlot(
+          hero.Name, i, originalX, originalY);
+      if (position.x == slotX && position.y == slotY)
+        return; // A real item always hides the marker.
+    }
+
+    // Strict inventory texture lookup: a missing 16x16 marker is an error.
+    TryDrawChampionSheetInventoryItemTexture(
+        pixels, slotX, slotY, markerAssetName);
+  }
+
+  private void PaintChampionHeadSlotMarker(Color32[] pixels,
+      HeroDefinition hero)
+  {
+    // The head is the upper-center equipment slot, not the upper-left slot.
+    PaintChampionEquipmentSlotMarker(pixels, hero, 33, 25, "Head");
+  }
+
+  private void PaintChampionPouchSlotMarker(Color32[] pixels,
+      HeroDefinition hero)
+  {
+    // The upper-right pouch accepts any item; the marker is visual only.
+    PaintChampionEquipmentSlotMarker(pixels, hero,
+        65, 32, "Pouch");
+  }
+
   // HeroStartingItem existed in two project generations: one stores the
   // champion item label in `ItemName`, the other in `ObjectType`.  The editor
   // must accept both so the Hall of Champions data remains authoritative
@@ -9014,7 +9054,7 @@ private static void HandleGameViewPointerDown(
 
     if (slot == "pouchUpper")
     {
-      // Upper pouch slot calibrated by user: character-sheet local X=65, Y=32.
+      // Upper pouch uses its measured authored slot origin.
       localX = 65;
       localY = 32;
       return true;
@@ -9043,8 +9083,7 @@ private static void HandleGameViewPointerDown(
 
     if (slot == "magicbox")
     {
-      // Use the canonical upper-right slot, not the obsolete (61,32)
-      // alias. Both previously rendered at the same (66,33) icon pixels.
+      // Magic Box occupies the measured upper-right pouch slot.
       localX = 65;
       localY = 32;
       return true;
@@ -9468,6 +9507,7 @@ private static void HandleGameViewPointerDown(
     Rect itemRect = GetChampionSheetItemScreenRect(slotX, slotY);
     int drawX = (int)itemRect.x;
     int screenTop = (int)itemRect.y;
+
     Color32[] source = texture.GetPixels32();
 
     for (int row = 0; row < texture.height; row++)
