@@ -279,37 +279,274 @@ public class DungeonFeatureEditor : EditorWindow
     }
   }
 
-  private void DrawSelectedFloorItems()
+  // Exact numeric item enums from LocalFuri CSBwin Objects.h.
+  // Never infer names from a numeric type without its record category.
+  private static string DecodeFloorItemName(string recordType, int type)
   {
-    // Keep the tile information accessible even when map badges are hidden.
+    switch (recordType)
+    {
+      case "Weapon":
+        switch (type)
+        {
+          case 0: return "Eye Of Time";
+          case 1: return "Storm Ring";
+          case 2: return "Torch";
+          case 3: return "Flamitt";
+          case 4: return "Staff Of Claws";
+          case 5: return "Storm";
+          case 6: return "Ra Blade";
+          case 7: return "The Firestaff A";
+          case 8: return "Dagger";
+          case 9: return "Falchion";
+          case 10: return "Sword";
+          case 11: return "Rapier";
+          case 12: return "Biter";
+          case 13: return "Samurai Sword";
+          case 14: return "Side Splitter";
+          case 15: return "Diamond Edge";
+          case 16: return "Vorpal Blade";
+          case 17: return "Dragon Fang";
+          case 18: return "Axe";
+          case 19: return "Executioner";
+          case 20: return "Mace";
+          case 21: return "Mace Of Order";
+          case 22: return "Morningstar";
+          case 23: return "Club";
+          case 24: return "Stone Club";
+          case 25: return "Claw Bow";
+          case 26: return "Crossbow";
+          case 27: return "Arrow";
+          case 28: return "Slayer";
+          case 29: return "Sling";
+          case 30: return "Rock";
+          case 31: return "Poison Dart";
+          case 32: return "Throwing Star";
+          case 33: return "Stick";
+          case 34: return "Staff";
+          case 35: return "Wand";
+          case 36: return "Teo Wand";
+          case 37: return "Yew Staff";
+          case 38: return "Staff Of Irra";
+          case 39: return "Cross Of Neta";
+          case 40: return "Serpent Staff";
+          case 41: return "Dragon Spit";
+          case 42: return "Sceptre Of Lyf";
+          case 43: return "Horn Of Fear";
+          case 44: return "Speedbow";
+          case 45: return "The Firestaff B";
+        }
+        break;
+      case "Armour":
+        switch (type)
+        {
+          case 0: return "Cape";
+          case 1: return "Cloak Of Night";
+          case 2: return "Tattered Pants";
+          case 3: return "Sandals";
+          case 4: return "Leather Boots";
+          case 5: return "Tattered Shirt";
+          case 6: return "Robe";
+          case 7: return "Fine Robe A";
+          case 8: return "Fine Robe B";
+          case 9: return "Kirtle";
+          case 10: return "Silk Shirt";
+          case 11: return "Tabard";
+          case 12: return "Gunna";
+          case 13: return "Elven Doublet";
+          case 14: return "Elven Huke";
+          case 15: return "Elven Boots";
+          case 16: return "Leather Jerkin";
+          case 17: return "Leather Pants";
+          case 18: return "Suede Boots";
+          case 19: return "Blue Pants";
+          case 20: return "Tunic";
+          case 21: return "Ghi";
+          case 22: return "Ghi Trousers";
+          case 23: return "Calista";
+          case 24: return "Crown Of Nerra";
+          case 25: return "Berserker Helm";
+          case 26: return "Helmet";
+          case 27: return "Basinet";
+          case 28: return "Neta Shield";
+          case 29: return "Crystal Shield";
+          case 30: return "Wooden Shield";
+          case 31: return "Small Shield";
+          case 32: return "Mail Aketon";
+          case 33: return "Leg Mail";
+          case 34: return "Mithral Aketon";
+          case 35: return "Mithral Mail";
+          case 36: return "Casque NCoif";
+          case 37: return "Hosen";
+          case 38: return "Armet";
+          case 39: return "Torso Plate";
+          case 40: return "Leg Plate";
+          case 41: return "Foot Plate";
+          case 42: return "Sar Shield";
+          case 43: return "Helm Of Ra";
+          case 44: return "Plate Of Ra";
+          case 45: return "Poleyn Of Ra";
+          case 46: return "Greave Of Ra";
+          case 47: return "Shield Of Ra";
+          case 48: return "Dragon Helm";
+          case 49: return "Dragon Plate";
+          case 50: return "Dragon Poleyn";
+          case 51: return "Dragon Greave";
+          case 52: return "Dragon Shield";
+          case 53: return "Dexhelm";
+          case 54: return "Flamebain";
+          case 55: return "Power Towers";
+          case 56: return "Boots Of Speed";
+          case 57: return "Halter";
+        }
+        break;
+      case "Junk":
+        switch (type)
+        {
+          case 0: return "Compass";
+          case 1: return "Waterskin";
+          case 2: return "Jewel Symal";
+          case 3: return "Illumulet";
+          case 4: return "Ashes";
+          case 5: return "Bones Of Hero";
+          case 6: return "Sar Coin";
+          case 7: return "Silver Coin";
+          case 8: return "Gor Coin";
+          case 9: return "Iron Key";
+          case 10: return "Key Of B";
+          case 11: return "Solid Key";
+          case 12: return "Square Key";
+          case 13: return "Tourquoise Key";
+          case 14: return "Cross Key";
+          case 15: return "Onyx Key";
+          case 16: return "Skeleton Key";
+          case 17: return "Gold Key";
+          case 18: return "Winged Key";
+          case 19: return "Topaz Key";
+          case 20: return "Sapphire Key";
+          case 21: return "Emerald Key";
+          case 22: return "Ruby Key";
+          case 23: return "Ra Key";
+          case 24: return "Master Key";
+          case 25: return "Boulder";
+          case 26: return "Blue Gem";
+          case 27: return "Orange Gem";
+          case 28: return "Green Gem";
+          case 29: return "Apple";
+          case 30: return "Corn";
+          case 31: return "Bread";
+          case 32: return "Cheese";
+          case 33: return "Screamer Slice";
+          case 34: return "Worm Round";
+          case 35: return "Shank";
+          case 36: return "Dragon Steak";
+          case 37: return "Gem Of Ages";
+          case 38: return "Ekkhard Cross";
+          case 39: return "Moonstone";
+          case 40: return "The Hellion";
+          case 41: return "Pendant Feral";
+          case 42: return "Magical Box A";
+          case 43: return "Magical Box B";
+          case 44: return "Mirror Of Dawn";
+          case 45: return "Rope";
+          case 46: return "Rabbits Foot";
+          case 47: return "Corbum";
+          case 48: return "Choker";
+          case 49: return "Lock Picks";
+          case 50: return "Magnifier";
+          case 51: return "Zokathra Spell";
+          case 52: return "Bones";
+        }
+        break;
+      case "Potion":
+        switch (type)
+        {
+          case 0: return "Mon Potion A";
+          case 1: return "Um Potion";
+          case 2: return "Des Potion";
+          case 3: return "Ven Potion";
+          case 4: return "Sar Potion";
+          case 5: return "Zo Potion";
+          case 6: return "Ros Potion";
+          case 7: return "Ku Potion";
+          case 8: return "Dane Potion";
+          case 9: return "Neta Potion";
+          case 10: return "Anti Venin";
+          case 11: return "Mon Potion B";
+          case 12: return "Ya Potion";
+          case 13: return "EEPotion";
+          case 14: return "Vi Potion";
+          case 15: return "Water Flask";
+          case 16: return "Kath Bomb";
+          case 17: return "Pew Bomb";
+          case 18: return "Ra Bomb";
+          case 19: return "Ful Bomb";
+          case 20: return "Empty Flask";
+        }
+        break;
+      case "Scroll":
+        switch (type)
+        {
+          case 0: return "Scroll";
+        }
+        break;
+      case "Container":
+        switch (type)
+        {
+          case 0: return "Chest";
+        }
+        break;
+    }
+    return null;
+  }
+
+  // Compact one-line tile summary. The tooltip retains the complete list
+  // without pushing the map down or crowding its cells.
+  private GUIContent GetSelectedFloorItemsSummary()
+  {
     if (inspectedFloorItemX < 0 || inspectedFloorItemY < 0)
-      return;
+      return GUIContent.none;
     if (!resolvedFloorItems.TryGetValue(
             PackFloorFeatureTile(inspectedFloorItemX, inspectedFloorItemY),
             out List<FloorItemPlacementRecord> records) || records.Count == 0)
-      return;
-    EditorGUILayout.LabelField("Floor items at (" + inspectedFloorItemX + ", "
-        + inspectedFloorItemY + ") — " + records.Count + " record(s)",
-        EditorStyles.boldLabel);
-    // Decode only verified item IDs. Other records keep their exact raw
-    // category and numeric type so no item name is ever guessed.
-    // Preserve source order; this is NOT verified LIFO pickup order.
+      return GUIContent.none;
+
+    var brief = new System.Text.StringBuilder();
+    brief.Append(" | <color=#00FF00>(").Append(inspectedFloorItemX).Append(",")
+        .Append(inspectedFloorItemY).Append(")</color>: ");
+    var tooltip = new System.Text.StringBuilder();
+    tooltip.Append("Floor items at (").Append(inspectedFloorItemX)
+        .Append(",").Append(inspectedFloorItemY).Append(") — ")
+        .Append(records.Count).Append(" record(s)");
     for (int i = 0; i < records.Count; i++)
     {
       FloorItemPlacementRecord entry = records[i];
-      string label;
-      if (entry.thing != null && entry.recordType == "Junk"
-          && entry.thing.Type == 29)
-        label = "Apple"; // Verified: Level 0 (4,9), P00016.
-      else
+      // Scroll and Container records have a single defined subtype and may
+      // omit the Type field in placement data. Other records must have Type.
+      bool singleSubtype = entry.recordType == "Scroll"
+          || entry.recordType == "Container";
+      string label = (entry.thing != null || singleSubtype)
+          ? DecodeFloorItemName(entry.recordType,
+              singleSubtype ? 0 : entry.thing.Type)
+          : null;
+      if (string.IsNullOrEmpty(label))
       {
         string type = entry.thing != null
             ? entry.thing.Type.ToString() : "missing";
         label = entry.recordType + " (Type " + type + ")";
       }
-      EditorGUILayout.LabelField((i + 1) + ". " + label
-          + "  [" + entry.id + "]");
+      string description = label + " [" + entry.id + "]";
+      tooltip.Append("\n").Append(i + 1).Append(". ").Append(description);
+      if (i < 2)
+      {
+        if (i > 0)
+          brief.Append(", ");
+        brief.Append("<color=#00FF00>").Append(label)
+            .Append("</color> [").Append(entry.id).Append("]");
+      }
     }
+    if (records.Count > 2)
+      brief.Append(" +").Append(records.Count - 2).Append(" more");
+    return new GUIContent(brief.ToString(), tooltip.ToString());
   }
 
 
@@ -603,12 +840,19 @@ public class DungeonFeatureEditor : EditorWindow
         poseStyle,
         GUILayout.ExpandWidth(false),
         GUILayout.Height(20f));
+    GUIContent floorSummary = GetSelectedFloorItemsSummary();
+    if (!string.IsNullOrEmpty(floorSummary.text))
+    {
+      GUIStyle coloredItemSummaryStyle = new GUIStyle(EditorStyles.label)
+      {
+        richText = true
+      };
+      GUILayout.Label(floorSummary, coloredItemSummaryStyle,
+          GUILayout.ExpandWidth(false), GUILayout.Height(20f));
+    }
     GUILayout.FlexibleSpace();
     EditorGUILayout.EndHorizontal();
 
-    // Keep inspected tile details in the top-left information area,
-    // not below the (potentially tall) map.
-    DrawSelectedFloorItems();
     DrawMapGrid();
   }
 
