@@ -7357,8 +7357,8 @@ private static void HandleGameViewPointerDown(
   {
     // Eight columns by two rows on the 320x200 champion sheet.
     // Coordinates are local to Inventory_224x136 (screen Y = local Y + 33).
-    return (y == 15 || y == 33)
-        && x >= 82 && x <= 208 && (x - 82) % 18 == 0;
+    return (y == 15 || y == 32)
+        && x >= 82 && x <= 201 && (x - 82) % 17 == 0;
   }
 
   private static bool IsChampionHandSlot(int x, int y)
@@ -7422,72 +7422,20 @@ private static void HandleGameViewPointerDown(
     if (hero == null || hero.StartingItems == null)
       return false;
 
-    // Hit-test the fixed equipment rectangles using the unmodified logical
-    // mouse position. The cursor sprite is visual only.
+    // Hit-test the exact 16x16 painted rectangles of the inventory artwork.
+    // Shared grid borders are not drop targets.
+    // Use the unmodified logical mouse position; cursor art is visual only.
     Vector2 slotClick = new Vector2(x, y);
     int targetX = -1, targetY = -1;
-    // Both hands are fixed authored slots. Resolve these first when an item
-    // is carried, so neither hand can be mistaken for an auxiliary slot.
-    if (previewHeldChampionCursor != null)
+    // One authoritative table controls every 16x16 inventory item rectangle.
+    // Rendering, pickup and drop use the same authored local slot coordinates.
+    foreach (Vector2Int slot in ChampionSheetAllItemSlots)
     {
-      if (GetChampionSheetSlotScreenRect(
-              ChampionSheetRightHandX, ChampionSheetRightHandY).Contains(slotClick))
+      if (GetChampionSheetItemScreenRect(slot.x, slot.y).Contains(slotClick))
       {
-        targetX = ChampionSheetRightHandX;
-        targetY = ChampionSheetRightHandY;
-      }
-      else if (GetChampionSheetSlotScreenRect(
-                   ChampionSheetLeftHandX, ChampionSheetLeftHandY).Contains(slotClick))
-      {
-        targetX = ChampionSheetLeftHandX;
-        targetY = ChampionSheetLeftHandY;
-      }
-    }
-    for (int i = 0; targetX < 0 && i < ChampionSheetEquipSlotXY.Length; i += 2)
-    {
-      int slotX = ChampionSheetEquipSlotXY[i];
-      int slotY = ChampionSheetEquipSlotXY[i + 1];
-      if (GetChampionSheetSlotScreenRect(slotX, slotY).Contains(
-              slotClick))
-      {
-        targetX = slotX;
-        targetY = slotY;
+        targetX = slot.x;
+        targetY = slot.y;
         break;
-      }
-    }
-    // Auxiliary equipment slots have their own authored fixed positions.
-    if (targetX < 0)
-    {
-      for (int i = 0; i < ChampionSheetAdditionalSlotXY.Length; i += 2)
-      {
-        int slotX = ChampionSheetAdditionalSlotXY[i];
-        int slotY = ChampionSheetAdditionalSlotXY[i + 1];
-        if (GetChampionSheetSlotScreenRect(slotX, slotY).Contains(
-                slotClick))
-        {
-          targetX = slotX;
-          targetY = slotY;
-          break;
-        }
-      }
-    }
-    // Eight columns by two rows of unrestricted backpack slots.
-    if (targetX < 0)
-    {
-      for (int row = 0; row < 2 && targetX < 0; row++)
-      {
-        for (int col = 0; col < 8; col++)
-        {
-          int slotX = 82 + col * ChampionSheetSlotSize;
-          int slotY = 15 + row * ChampionSheetSlotSize;
-          if (GetChampionSheetSlotScreenRect(slotX, slotY).Contains(
-                  slotClick))
-          {
-            targetX = slotX;
-            targetY = slotY;
-            break;
-          }
-        }
       }
     }
     // TEMPORARY DIAGNOSTIC: Log the click location and the precise slot
@@ -7511,6 +7459,9 @@ private static void HandleGameViewPointerDown(
           + (ChampionSheetInventoryScreenTop
               + previewHeldChampionSourceSlot.y) + ","
           + ChampionSheetSlotSize + "," + ChampionSheetSlotSize + ")"
+          + ", icon hit rect=" + GetChampionSheetItemScreenRect(
+              previewHeldChampionSourceSlot.x,
+              previewHeldChampionSourceSlot.y).ToString()
           + ", held image=" + previewHeldChampionCursor.width + "x"
           + previewHeldChampionCursor.height);
     }
@@ -7598,8 +7549,8 @@ private static void HandleGameViewPointerDown(
         hero.StartingItems[occupiedIndex]);
     Texture2D texture = GetChampionInventoryItemTexture(itemName);
     if (texture == null || !texture.isReadable
-        || texture.width > ChampionSheetSlotSize
-        || texture.height > ChampionSheetSlotSize)
+        || texture.width != ChampionSheetItemSize
+        || texture.height != ChampionSheetItemSize)
     {
       Debug.LogError("CHAMPION PICKUP: Missing/unreadable or invalid inventory "
           + "sprite for '" + itemName + "'. Item remains equipped; no fallback.");
@@ -8069,10 +8020,76 @@ private static void HandleGameViewPointerDown(
     65, 32
   };
 
+  private const int ChampionSheetItemSize = 16;
+
+  // Authored slot IDs remain distinct from the exact sprite rectangles.
+  // CharacterSheet_224x136.png has SHARED backpack borders: pitch=17,
+  // not 18. Keep these IDs consistent for occupancy and item storage.
+  private const int ChampionSheetBackpackPitch = 17;
+  private static readonly Vector2Int[] ChampionSheetAllItemSlots =
+      BuildChampionSheetAllItemSlots();
+
+  private static Vector2Int[] BuildChampionSheetAllItemSlots()
+  {
+    var slots = new System.Collections.Generic.List<Vector2Int>();
+    slots.Add(new Vector2Int(ChampionSheetRightHandX, ChampionSheetRightHandY));
+    slots.Add(new Vector2Int(ChampionSheetLeftHandX, ChampionSheetLeftHandY));
+    for (int i = 0; i < ChampionSheetEquipSlotXY.Length; i += 2)
+      AddChampionItemSlotIfMissing(slots,
+          ChampionSheetEquipSlotXY[i], ChampionSheetEquipSlotXY[i + 1]);
+    for (int i = 0; i < ChampionSheetAdditionalSlotXY.Length; i += 2)
+      AddChampionItemSlotIfMissing(slots,
+          ChampionSheetAdditionalSlotXY[i], ChampionSheetAdditionalSlotXY[i + 1]);
+    for (int row = 0; row < 2; row++)
+      for (int col = 0; col < 8; col++)
+        AddChampionItemSlotIfMissing(slots,
+            82 + col * ChampionSheetBackpackPitch,
+            15 + row * ChampionSheetBackpackPitch);
+    return slots.ToArray();
+  }
+
+  private static void AddChampionItemSlotIfMissing(
+      System.Collections.Generic.List<Vector2Int> slots, int x, int y)
+  {
+    var position = new Vector2Int(x, y);
+    if (!slots.Contains(position))
+      slots.Add(position);
+  }
+
   private static Rect GetChampionSheetSlotScreenRect(int slotX, int slotY)
   {
     return new Rect(slotX, ChampionSheetInventoryScreenTop + slotY,
         ChampionSheetSlotSize, ChampionSheetSlotSize);
+  }
+
+  // Pixel-accurate 16x16 rectangle measured from CharacterSheet_224x136.png.
+  // Used by BOTH item drawing and pointer hit testing. Inventory-local Y
+  // is converted to the 320x200 screen by adding 33 exactly once.
+  private static Rect GetChampionSheetItemScreenRect(int slotX, int slotY)
+  {
+    int iconX = slotX + 1;
+    int iconY = slotY + 1;
+    if (IsChampionBackpackSlot(slotX, slotY))
+    {
+      // Backpack row 2 is immediately below the shared separator.
+      iconX = slotX + 1;
+      iconY = slotY == 15 ? 16 : 33;
+    }
+    else if (slotX == 65 && slotY == 32)
+    {
+      // Measured right-side slot: original slot origin is asymmetric.
+      iconX = 66;
+      iconY = 33;
+    }
+    else if (slotX == 61 && slotY == 32)
+    {
+      // Historical alias for the same right-side artwork; preserved for
+      // existing champion item-slot data until the alias is removed safely.
+      iconX = 66;
+      iconY = 33;
+    }
+    return new Rect(iconX, ChampionSheetInventoryScreenTop + iconY,
+        ChampionSheetItemSize, ChampionSheetItemSize);
   }
 
   private const int ChampionSheetSlotSize = 18;
@@ -9338,18 +9355,20 @@ private static void HandleGameViewPointerDown(
     if (texture == null || !texture.isReadable)
       return false;
 
-    // Champion equipment slots are 18x18. Native inventory icons are normally
-    // 16x16, so center them with a 1px border. Exact 18x18 art is copied 1:1.
-    if (texture.width <= 0 || texture.height <= 0
-        || texture.width > ChampionSheetSlotSize
-        || texture.height > ChampionSheetSlotSize)
+    // Strict 16x16 inventory art only. Never allow 18x18 textures to
+    // overpaint slot borders or independently center icons.
+    if (texture.width != ChampionSheetItemSize
+        || texture.height != ChampionSheetItemSize)
     {
+      Debug.LogError("[ViewportLayoutEditor] ERROR: Inventory sprite '"
+          + objectType + "' is " + texture.width + "x" + texture.height
+          + "; exactly 16x16 is required. No fallback.");
       return false;
     }
 
-    int offsetX = (ChampionSheetSlotSize - texture.width) / 2;
-    int offsetY = (ChampionSheetSlotSize - texture.height) / 2;
-    int screenTop = (int)GetChampionSheetSlotScreenRect(slotX, slotY).y + offsetY;
+    Rect itemRect = GetChampionSheetItemScreenRect(slotX, slotY);
+    int drawX = (int)itemRect.x;
+    int screenTop = (int)itemRect.y;
     Color32[] source = texture.GetPixels32();
 
     for (int row = 0; row < texture.height; row++)
@@ -9363,7 +9382,7 @@ private static void HandleGameViewPointerDown(
 
         SetChampionSheetPixel(
             pixels,
-            slotX + offsetX + column,
+            drawX + column,
             screenTop + row,
             color);
       }
@@ -9489,8 +9508,8 @@ private static void HandleGameViewPointerDown(
       }
 
       if (imported.width <= 0 || imported.height <= 0
-          || imported.width > ChampionSheetSlotSize
-          || imported.height > ChampionSheetSlotSize)
+          || imported.width != ChampionSheetItemSize
+          || imported.height != ChampionSheetItemSize)
       {
         LogChampionInventorySpriteError(suppressSpriteErrors, 
             "[ViewportLayoutEditor] ERROR: Inventory sprite for '" + spriteKey
@@ -9571,8 +9590,8 @@ private static void HandleGameViewPointerDown(
       return null;
     }
 
-    if (readableCopy.width > ChampionSheetSlotSize
-        || readableCopy.height > ChampionSheetSlotSize)
+    if (readableCopy.width != ChampionSheetItemSize
+        || readableCopy.height != ChampionSheetItemSize)
     {
       int width = readableCopy.width;
       int height = readableCopy.height;
@@ -9580,7 +9599,7 @@ private static void HandleGameViewPointerDown(
       missingChampionInventoryItemTextureKeys.Add(wantedKey);
       LogChampionInventorySpriteError(suppressSpriteErrors, 
           "[ViewportLayoutEditor] ERROR: Decoded inventory sprite for '" + spriteKey
-          + "' is too large for an 18x18 Champion slot: " + width + "x"
+          + "' is invalid for a 16x16 Champion item area: " + width + "x"
           + height + " at " + bestPath);
       return null;
     }
