@@ -1121,6 +1121,7 @@ public class ViewportLayoutEditor : EditorWindow
   private bool championSheetVisible;
   private string championSheetName;
   private bool championEyeMoved;
+  private bool championHeldItemOverEye;
   private bool championEyeMiddle;
   private bool championEyePressed;
   private bool championMouthPressed;
@@ -7004,6 +7005,7 @@ private static void HandleGameViewPointerDown(
     championSheetVisible = false;
     championSheetName = null;
     championEyeMoved = false;
+    championHeldItemOverEye = false;
     championEyeMiddle = false;
     championEyePressed = false;
     championMouthPressed = false;
@@ -7756,6 +7758,9 @@ private static void HandleGameViewPointerDown(
           && logicalY >= eyeY && logicalY < eyeY + eyeHeight;
       if (clickedEye)
       {
+        // A carried item is inspected on hover, never dropped into the eye.
+        if (previewHeldChampionCursor != null)
+          return true;
         championEyePressed = true;
         championEyeMoved = true;
         championEyeMiddle = false;
@@ -8144,7 +8149,9 @@ private static void HandleGameViewPointerDown(
     // Eye-hold detail panel temporarily replaces the recruitment artwork.
     // On mouse release the panel disappears and the 116x73 recruitment PNG
     // is restored exactly as before.
-    if (championEyePressed)
+    if (championHeldItemOverEye)
+      PaintChampionHeldItemEyePanel(pixels);
+    else if (championEyePressed)
       PaintChampionEyeStatsPanel(pixels);
     else if (championMouthPressed)
       PaintChampionFoodWaterPanel(pixels);
@@ -8320,6 +8327,69 @@ private static void HandleGameViewPointerDown(
     DrawChampionSheetText(pixels, statusGlyphs, 61, 161, manaText);
     DrawChampionSheetText(pixels, statusGlyphs, 160, 161, loadText);
     DrawChampionSheetText(pixels, statusGlyphs, 208, 161, "KG");
+  }
+
+  // The held-item inspection is temporary. It never removes, drops, or
+  // changes the identity of the inventory item on the cursor.
+  private void SetChampionHeldItemOverEye(bool active)
+  {
+    active = active && championSheetVisible
+        && previewHeldChampionCursor != null
+        && previewHeldChampionItemIndex >= 0;
+    if (championHeldItemOverEye == active)
+      return;
+    championHeldItemOverEye = active;
+    championEyeMoved = active || championEyePressed;
+    championEyeMiddle = !active && !championEyePressed;
+    PresentEditModePreviewToGameView();
+    Repaint();
+  }
+
+  private void PaintChampionHeldItemEyePanel(Color32[] pixels)
+  {
+    if (!championHeldItemOverEye || pixels == null
+        || pixels.Length != PreviewWidth * PreviewHeight)
+      return;
+    HeroDefinition hero = HeroDatabase.GetByName(previewHeldChampionName);
+    if (hero == null || hero.StartingItems == null
+        || previewHeldChampionItemIndex < 0
+        || previewHeldChampionItemIndex >= hero.StartingItems.Count)
+    {
+      Debug.LogError("CHAMPION EYE: Held item identity is unavailable. No fallback.");
+      return;
+    }
+    HeroStartingItem item = hero.StartingItems[previewHeldChampionItemIndex];
+    string name = GetChampionStartingItemName(item);
+    Texture2D art = previewHeldChampionCursor;
+    if (art == null || !art.isReadable || art.width != 16 || art.height != 16)
+    {
+      Debug.LogError("CHAMPION EYE: Required 16x16 readable held-item image is missing.");
+      return;
+    }
+    // All dimensions use the full 320x200 screen, origin top-left.
+    const int x = 104, y = 88, w = 104, h = 72;
+    Color32 panel = new Color32(73, 73, 73, 255);
+    Color32 border = new Color32(109, 109, 109, 255);
+    FillChampionSheetRect(pixels, x, y, w, h, panel);
+    FillChampionSheetRect(pixels, x, y, w, 1, border);
+    FillChampionSheetRect(pixels, x, y + h - 1, w, 1, border);
+    FillChampionSheetRect(pixels, x, y, 1, h, border);
+    FillChampionSheetRect(pixels, x + w - 1, y, 1, h, border);
+    Color32[] sprite = art.GetPixels32();
+    for (int sy = 0; sy < 16; sy++)
+      for (int sx = 0; sx < 16; sx++)
+      {
+        Color32 pixel = sprite[sy * 16 + sx];
+        if (pixel.a != 0)
+          SetChampionSheetPixel(pixels, 109 + sx, 91 + 15 - sy, pixel);
+      }
+    Dictionary<char, Color32[]> glyphs = BuildChampionSheetStatusGlyphs();
+    DrawChampionSheetText(pixels, glyphs, 130, 95, name.ToUpperInvariant());
+    // WeightTenths is stored in tenths of a kilogram in champion JSON.
+    int weight = item.WeightTenths;
+    string weightText = "WEIGHS " + (weight / 10).ToString()
+        + "." + Mathf.Abs(weight % 10).ToString() + " KG.";
+    DrawChampionSheetText(pixels, glyphs, 109, 119, weightText);
   }
 
   private void PaintChampionEyeStatsPanel(Color32[] pixels)
@@ -35275,6 +35345,18 @@ private static void HandleGameViewPointerDown(
       s_heldItemHotspotOverlay.BringToFront();
     }
     s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.Flex;
+    if (owner.championSheetVisible && owner.previewHeldChampionCursor != null)
+    {
+      Vector2 eyeLogical;
+      // Match the same 320x200 coordinate system as inventory hit testing.
+      bool onEye = owner.TryGetLogical320x200FromGameView(
+          gameView, pointerPosition, out eyeLogical)
+          && eyeLogical.x >= 12f && eyeLogical.x < 28f
+          && eyeLogical.y >= 46f && eyeLogical.y < 62f;
+      owner.SetChampionHeldItemOverEye(onEye);
+    }
+    else
+      owner.SetChampionHeldItemOverEye(false);
     SetHeldItemArrowHidden(gameView);
     s_heldItemPointerOverlay.BringToFront();
   }
@@ -35337,6 +35419,7 @@ private static void HandleGameViewPointerDown(
       owner.ClearStaleHeldTorchState();
     if (owner == null || !owner.HasAnyItemOnCursor())
     {
+      if (owner != null) owner.SetChampionHeldItemOverEye(false);
       HideHeldItemPointerOverlay();
       return;
     }
@@ -35357,6 +35440,7 @@ private static void HandleGameViewPointerDown(
     {
       if (s_heldItemPointerOverlay != null)
         s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.None;
+      owner.SetChampionHeldItemOverEye(false);
       RestoreHeldItemArrow();
       return;
     }
@@ -35381,6 +35465,8 @@ private static void HandleGameViewPointerDown(
   private static void GameViewHeldItemPointerLeave(
       UnityEngine.UIElements.PointerLeaveEvent evt)
   {
+    ViewportLayoutEditor owner = FindOpenViewEditWindow();
+    if (owner != null) owner.SetChampionHeldItemOverEye(false);
     if (s_heldItemPointerOverlay != null)
       s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.None;
     RestoreHeldItemArrow();
