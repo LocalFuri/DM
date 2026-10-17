@@ -155,6 +155,164 @@ public class DungeonFeatureEditor : EditorWindow
   private readonly HashSet<int> resolvedPuddleFloors = new HashSet<int>();
   private readonly HashSet<int> resolvedMossFloors = new HashSet<int>();
 
+  // Read-only floor-item map layer sourced from all 14 levels of the
+  // placement database. Never turn wall-linked inventory into floor loot.
+  [System.Serializable]
+  private sealed class FloorItemPlacementRecord
+  {
+    public string id;
+    public int level;
+    public int localX;
+    public int localY;
+    public string recordType;
+    public string tileClass;
+    public FloorThingRecord thing;
+  }
+
+  [System.Serializable]
+  private sealed class FloorThingRecord
+  {
+    public int Type;
+    public int Next;
+  }
+
+  [System.Serializable]
+  private sealed class FloorItemPlacementDatabase
+  {
+    public FloorItemPlacementRecord[] placements;
+  }
+
+  private readonly Dictionary<int, List<FloorItemPlacementRecord>>
+      resolvedFloorItems = new Dictionary<int, List<FloorItemPlacementRecord>>();
+  private static readonly Color FloorItemMapColor = new Color(0.05f, 0.35f, 0.85f, 1f);
+  private const string ShowFloorItemsPreferenceKey = "DungeonFeatureEditor.ShowFloorItems";
+  private bool showFloorItems = true;
+  private int inspectedFloorItemX = -1;
+  private int inspectedFloorItemY = -1;
+
+  private static bool IsFloorItemRecordType(string recordType)
+  {
+    switch (recordType)
+    {
+      case "Junk":
+      case "Weapon":
+      case "Armour":
+      case "Potion":
+      case "Scroll":
+      case "Container":
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private void LoadFloorItemMapLayer()
+  {
+    resolvedFloorItems.Clear();
+    if (!File.Exists(DungeonFeaturePlacementsPath))
+    {
+      Debug.LogError("Dungeon Features: Missing floor-item placements: "
+          + DungeonFeaturePlacementsPath);
+      return;
+    }
+
+    try
+    {
+      FloorItemPlacementDatabase database = JsonUtility.FromJson<FloorItemPlacementDatabase>(
+          File.ReadAllText(DungeonFeaturePlacementsPath));
+      if (database == null || database.placements == null)
+      {
+        Debug.LogError("Dungeon Features: Floor-item placements array is missing.");
+        return;
+      }
+
+      foreach (FloorItemPlacementRecord entry in database.placements)
+      {
+        if (entry == null || entry.level != currentDungeonLevel
+            || entry.tileClass != "Floor" || !IsFloorItemRecordType(entry.recordType))
+          continue;
+        if (!map.IsInside(entry.localX, entry.localY))
+        {
+          Debug.LogError("Dungeon Features: Floor item " + entry.id
+              + " lies outside Level " + entry.level + " map at ("
+              + entry.localX + "," + entry.localY + ").");
+          continue;
+        }
+        int tile = PackFloorFeatureTile(entry.localX, entry.localY);
+        if (!resolvedFloorItems.TryGetValue(tile, out List<FloorItemPlacementRecord> list))
+        {
+          list = new List<FloorItemPlacementRecord>();
+          resolvedFloorItems.Add(tile, list);
+        }
+        list.Add(entry);
+      }
+    }
+    catch (System.Exception ex)
+    {
+      resolvedFloorItems.Clear();
+      Debug.LogError("Dungeon Features: Could not read floor-item database: " + ex);
+    }
+  }
+
+  private void DrawFloorItemMapIcons(Rect mapRect)
+  {
+    if (!showFloorItems)
+      return;
+    foreach (var pair in resolvedFloorItems)
+    {
+      List<FloorItemPlacementRecord> list = pair.Value;
+      if (list == null || list.Count == 0)
+        continue;
+      int x = list[0].localX;
+      int y = list[0].localY;
+      Rect marker = new Rect(mapRect.x + x * CellSize + CellSize * 0.56f,
+          mapRect.y + y * CellSize + CellSize * 0.02f,
+          CellSize * 0.42f, CellSize * 0.42f);
+      EditorGUI.DrawRect(marker, FloorItemMapColor);
+      GUIStyle style = new GUIStyle(EditorStyles.whiteMiniLabel)
+      {
+        alignment = TextAnchor.MiddleCenter,
+        fontStyle = FontStyle.Bold,
+        fontSize = Mathf.Max(7, Mathf.RoundToInt(10 * mapZoom))
+      };
+      GUI.Label(marker, list.Count.ToString(), style);
+    }
+  }
+
+  private void DrawSelectedFloorItems()
+  {
+    // Keep the tile information accessible even when map badges are hidden.
+    if (inspectedFloorItemX < 0 || inspectedFloorItemY < 0)
+      return;
+    if (!resolvedFloorItems.TryGetValue(
+            PackFloorFeatureTile(inspectedFloorItemX, inspectedFloorItemY),
+            out List<FloorItemPlacementRecord> records) || records.Count == 0)
+      return;
+    EditorGUILayout.LabelField("Floor items at (" + inspectedFloorItemX + ", "
+        + inspectedFloorItemY + ") — " + records.Count + " record(s)",
+        EditorStyles.boldLabel);
+    // Decode only verified item IDs. Other records keep their exact raw
+    // category and numeric type so no item name is ever guessed.
+    // Preserve source order; this is NOT verified LIFO pickup order.
+    for (int i = 0; i < records.Count; i++)
+    {
+      FloorItemPlacementRecord entry = records[i];
+      string label;
+      if (entry.thing != null && entry.recordType == "Junk"
+          && entry.thing.Type == 29)
+        label = "Apple"; // Verified: Level 0 (4,9), P00016.
+      else
+      {
+        string type = entry.thing != null
+            ? entry.thing.Type.ToString() : "missing";
+        label = entry.recordType + " (Type " + type + ")";
+      }
+      EditorGUILayout.LabelField((i + 1) + ". " + label
+          + "  [" + entry.id + "]");
+    }
+  }
+
+
   // Verification restarts for each champion: visual equipment, pickup,
   // floor drop, and throwing must all be tested before marking green.
   private static readonly string[] VerifiedChampionEquipmentNames =
@@ -224,6 +382,7 @@ public class DungeonFeatureEditor : EditorWindow
 
   private void OnEnable()
   {
+    showFloorItems = true; // Floor-item badges are always visible.
     mapZoomStep = Mathf.Clamp(EditorPrefs.GetInt(MapZoomPreferenceKey, 0), 0, MaxMapZoomStep);
     ornamentTexturesResolved = false;
     missingMapIconErrors.Clear();
@@ -307,6 +466,9 @@ public class DungeonFeatureEditor : EditorWindow
       resolvedWallOrnaments = new OriginalWallOrnamentMarker[0];
       resolvedPuddleFloors.Clear();
       resolvedMossFloors.Clear();
+      LoadFloorItemMapLayer();
+      inspectedFloorItemX = -1;
+      inspectedFloorItemY = -1;
 
       if (!LoadResolvedFeaturesFromDatabase())
       {
@@ -331,6 +493,7 @@ public class DungeonFeatureEditor : EditorWindow
       resolvedWallOrnaments = new OriginalWallOrnamentMarker[0];
       resolvedPuddleFloors.Clear();
       resolvedMossFloors.Clear();
+      resolvedFloorItems.Clear();
       mapLoadError = ex.Message;
       Debug.LogWarning(
           "Dungeon Features: Could not load level " + level
@@ -442,7 +605,9 @@ public class DungeonFeatureEditor : EditorWindow
         poseStyle,
         GUILayout.Height(20f));
 
-    EditorGUILayout.LabelField("Mouse wheel: 1x / Fit 32x32  (current: " + mapZoom.ToString("0.##") + "x)");
+    // Keep inspected tile details in the top-left information area,
+    // not below the (potentially tall) map.
+    DrawSelectedFloorItems();
     DrawMapGrid();
   }
 
@@ -529,6 +694,7 @@ public class DungeonFeatureEditor : EditorWindow
     DrawStairDownIcons(mapRect);
     DrawPuddleFloorIcons(mapRect);
     DrawMossFloorIcons(mapRect);
+    DrawFloorItemMapIcons(mapRect);
     DrawOriginalWallOrnamentIcons(mapRect);
     DrawVerifiedChampionTileHighlights(mapRect);
     DrawChampionMirrorMarkers(mapRect);
@@ -2052,6 +2218,21 @@ public class DungeonFeatureEditor : EditorWindow
       return;
 
     bool doubleClick = current.clickCount == 2;
+    // Inspect item records on a SINGLE click only. A second click must
+    // remain available for the existing double-click tile navigation.
+    if (!doubleClick && showFloorItems
+        && resolvedFloorItems.TryGetValue(PackFloorFeatureTile(x, y),
+               out List<FloorItemPlacementRecord> clickedItems)
+        && clickedItems != null && clickedItems.Count > 0)
+    {
+      inspectedFloorItemX = x;
+      inspectedFloorItemY = y;
+      current.Use();
+      GUI.changed = true;
+      Repaint();
+      return;
+    }
+
     // Double-click navigation only accepts a walkable destination. A single
     // click still permits selecting map walls and inspecting their ornaments.
     if (doubleClick && !map.CanEnter(x, y))
