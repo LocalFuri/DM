@@ -25,18 +25,14 @@
       "height": 16
     }
   ],
-  "groundF1PlacementRegions": {
+  "groundF1Anchors": {
     "left": {
-      "minX": 20,
-      "maxX": 96,
-      "minY": 151,
-      "maxY": 167
+      "x": 55,
+      "y": 163
     },
     "right": {
-      "minX": 119,
-      "maxX": 199,
-      "minY": 151,
-      "maxY": 167
+      "x": 154,
+      "y": 163
     }
   }
 }

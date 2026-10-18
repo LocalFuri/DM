@@ -29735,23 +29735,21 @@ private static void HandleGameViewPointerDown(
   private sealed class GroundArtworkRegistry
   {
     public GroundArtworkEntry[] entries;
-    public GroundF1PlacementRegions groundF1PlacementRegions;
+    public GroundF1Anchors groundF1Anchors;
   }
 
   [System.Serializable]
-  private sealed class GroundF1PlacementRegions
+  private sealed class GroundF1Anchors
   {
-    public GroundF1PlacementRegion left;
-    public GroundF1PlacementRegion right;
+    public GroundF1Anchor left;
+    public GroundF1Anchor right;
   }
 
   [System.Serializable]
-  private sealed class GroundF1PlacementRegion
+  private sealed class GroundF1Anchor
   {
-    public int minX;
-    public int maxX;
-    public int minY;
-    public int maxY;
+    public int x;
+    public int y;
   }
 
   [System.Serializable]
@@ -30029,31 +30027,32 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  // A single editable translation per floor side applies to every registered
+  // A single editable anchor translation per floor side applies to every registered
   // ground item, regardless of name or native sprite dimensions.
   private readonly Dictionary<string, Vector2Int> draftF1RegionShifts =
       new Dictionary<string, Vector2Int>(System.StringComparer.OrdinalIgnoreCase);
 
+  // ViewEdit Apply changes the anchor for an entire floor side, never an
+  // individual item's coordinates. The original CSBwin rendering rule is
+  // horizontal center + bottom edge anchoring, followed by pile offsets.
   private bool SaveF1PlacementRegionShift(bool isRight, Vector2Int shift)
   {
     GroundArtworkRegistry registry = ReadGroundArtworkRegistry();
-    GroundF1PlacementRegion region = registry == null || registry.groundF1PlacementRegions == null
-        ? null : (isRight ? registry.groundF1PlacementRegions.right : registry.groundF1PlacementRegions.left);
-    if (region == null)
+    GroundF1Anchor anchor = registry == null || registry.groundF1Anchors == null
+        ? null : (isRight ? registry.groundF1Anchors.right : registry.groundF1Anchors.left);
+    if (anchor == null)
     {
-      Debug.LogError("F1 PLACEMENT: Missing shared left/right region. No save.");
+      Debug.LogError("F1 ANCHOR: Missing shared left/right anchor. No save.");
       return false;
     }
-    if (region.minX + shift.x < 0 || region.maxX + shift.x > 224
-        || region.minY + shift.y < 0 || region.maxY + shift.y > 200)
+    if (anchor.x + shift.x < 0 || anchor.x + shift.x >= 224
+        || anchor.y + shift.y < 0 || anchor.y + shift.y >= 200)
     {
-      Debug.LogError("F1 PLACEMENT: Shared region shift exceeds viewport. No save.");
+      Debug.LogError("F1 ANCHOR: Anchor shift exceeds screen bounds. No save.");
       return false;
     }
-    region.minX += shift.x;
-    region.maxX += shift.x;
-    region.minY += shift.y;
-    region.maxY += shift.y;
+    anchor.x += shift.x;
+    anchor.y += shift.y;
     try
     {
       File.WriteAllText(ItemArtworkRegistryPath, JsonUtility.ToJson(registry, true) + "\n");
@@ -30062,47 +30061,44 @@ private static void HandleGameViewPointerDown(
     }
     catch (System.Exception ex)
     {
-      Debug.LogError("F1 PLACEMENT: Could not save shared region: " + ex.Message);
+      Debug.LogError("F1 ANCHOR: Could not save shared anchor: " + ex.Message);
       return false;
     }
   }
 
-  // Calculate an F1 position from the validated image size and the data-defined
-  // left/right region. Region coordinates are screen-top based (320x200).
-  // These regions apply to new item types; verified legacy calibrations remain
-  // authoritative until the placement regions have been checked in Unity.
+  // A single CSBwin-style horizontal center / bottom anchor per side.
+  // Sprite sizes come directly from the registered ground PNG, so no
+  // per-item or per-artwork X/Y overrides are used. The anchor coordinates
+  // are converted into our full 320x200 top-origin image in the JSON file.
+  // Pile offsets are applied later by BlitProjectedFloorItem.
   private bool TryGetAutomaticF1FloorItemRect(string itemType, bool isRight,
       Texture2D texture, out Rect rect)
   {
     rect = new Rect();
+    if (texture == null || texture.width <= 0 || texture.height <= 0)
+      return false;
     GroundArtworkRegistry registry = ReadGroundArtworkRegistry();
-    GroundF1PlacementRegion region = registry == null || registry.groundF1PlacementRegions == null
-        ? null : (isRight ? registry.groundF1PlacementRegions.right
-                          : registry.groundF1PlacementRegions.left);
-    if (region == null || region.minX < 0 || region.minY < 0
-        || region.maxX > 224 || region.maxY > 200
-        || region.minX >= region.maxX || region.minY >= region.maxY)
+    GroundF1Anchor anchor = registry == null || registry.groundF1Anchors == null
+        ? null : (isRight ? registry.groundF1Anchors.right : registry.groundF1Anchors.left);
+    if (anchor == null || anchor.x < 0 || anchor.x >= 224
+        || anchor.y < 0 || anchor.y >= 200)
     {
       ReportFloorItemTextureProblem(itemType, ItemArtworkRegistryPath,
-          "has missing or invalid groundF1PlacementRegions " + (isRight ? "right" : "left"));
+          "has missing or invalid groundF1Anchors " + (isRight ? "right" : "left"));
       return false;
     }
-    int availableWidth = region.maxX - region.minX;
-    int availableHeight = region.maxY - region.minY;
-    if (texture.width > availableWidth || texture.height > availableHeight)
-    {
-      ReportFloorItemTextureProblem(itemType, ItemArtworkRegistryPath,
-          "cannot fit " + texture.width + "x" + texture.height + " into the F1 "
-          + (isRight ? "right" : "left") + " placement region "
-          + availableWidth + "x" + availableHeight);
-      return false;
-    }
-    int x = region.minX + (availableWidth - texture.width) / 2;
-    int y = region.minY + (availableHeight - texture.height) / 2;
+    int x = anchor.x - texture.width / 2 + 1;
+    int y = anchor.y - texture.height + 1;
     if (draftF1RegionShifts.TryGetValue(isRight ? "R" : "L", out Vector2Int shift))
     {
       x += shift.x;
       y += shift.y;
+    }
+    if (x < 0 || y < 0 || x + texture.width > 224 || y + texture.height > 200)
+    {
+      ReportFloorItemTextureProblem(itemType, ItemArtworkRegistryPath,
+          "has F1 anchor outside the screen for " + texture.width + "x" + texture.height);
+      return false;
     }
     rect = new Rect(x, y, texture.width, texture.height);
     return true;
@@ -30133,7 +30129,7 @@ private static void HandleGameViewPointerDown(
           texture.width, texture.height);
       return true;
     }
-    // All registered champion items use the same dimension-based F1 rules.
+    // All registered champion items use the same CSBwin-style F1 anchoring.
     // Never use per-item/per-artwork calibrated coordinates here.
     if (GetRegisteredGroundArtwork(item.type) == null) return false;
     return TryGetAutomaticF1FloorItemRect(item.type, isRight, texture, out rect);
@@ -30525,7 +30521,7 @@ private static void HandleGameViewPointerDown(
 
   private void DrawRegisteredF1FloorCalibration(string itemType, bool isRight)
   {
-    // X/Y edits translate the SAME shared region for every item on this side.
+    // X/Y edits translate the SAME CSBwin-style anchor for every item on this side.
     // They do not create hidden item-specific calibrations.
     GroundArtworkEntry mapping = GetRegisteredGroundArtwork(itemType);
     if (mapping == null) return;
