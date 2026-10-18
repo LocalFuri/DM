@@ -9014,6 +9014,31 @@ private static void HandleGameViewPointerDown(
     if (string.Equals(name.Trim(), "Moonstone", System.StringComparison.OrdinalIgnoreCase))
       DrawChampionSheetTextWithInk(pixels, glyphs, weightX, weightY + 12,
           "+3 MAXIMUM MANA", new Color32(0, 255, 0, 255));
+    // Inspect the physical torch instance, not the hero's starting-item template.
+    // The state is persistent across slot transfers and opening this panel never
+    // resets or consumes fuel. Missing instance/state is a Console error.
+    if (string.Equals(NormalizeChampionAssetKey(name), "TORCH",
+            System.StringComparison.Ordinal))
+    {
+      string sourceKey = ChampionItemSourceKey(previewHeldChampionName,
+          previewHeldChampionItemIndex);
+      if (!previewChampionItemInstanceIds.TryGetValue(sourceKey, out string torchId)
+          || !previewItemInstances.TryGetValue(torchId, out ItemInstance torch)
+          || !torch.HasTorchState)
+      {
+        Debug.LogError("CHAMPION EYE: Missing physical torch state for " + sourceKey);
+        return;
+      }
+      if (torch.RemainingFuel < 0 || torch.RemainingFuel > 15)
+      {
+        Debug.LogError("CHAMPION EYE: Invalid torch fuel " + torch.RemainingFuel
+            + " for " + torchId);
+        return;
+      }
+      DrawChampionSheetTextWithInk(pixels, glyphs, weightX, weightY + 12,
+          "LIGHT POWER " + torch.RemainingFuel + "/15",
+          new Color32(0, 255, 0, 255));
+    }
   }
 
   private void PaintChampionEyeStatsPanel(Color32[] pixels)
@@ -9046,12 +9071,14 @@ private static void HandleGameViewPointerDown(
     // Hero skill arrays store the current base-class level as their highest
     // sub-skill level. IAIDO therefore resolves to APPRENTICE FIGHTER (3)
     // and NOVICE PRIEST (2), matching the original reference screenshot.
-    int rankY = 88;
+    // Match the original 7-pixel line spacing; the final attribute stays
+    // inside the panel so LOAD remains unobstructed below its border.
+    int rankY = 87;
     int ranksDrawn = 0;
-    ranksDrawn += DrawChampionRankLine(pixels, glyphs, hero.Skills != null ? hero.Skills.Fighter : null, "FIGHTER", rankY + ranksDrawn * 8);
-    ranksDrawn += DrawChampionRankLine(pixels, glyphs, hero.Skills != null ? hero.Skills.Ninja : null, "NINJA", rankY + ranksDrawn * 8);
-    ranksDrawn += DrawChampionRankLine(pixels, glyphs, hero.Skills != null ? hero.Skills.Priest : null, "PRIEST", rankY + ranksDrawn * 8);
-    ranksDrawn += DrawChampionRankLine(pixels, glyphs, hero.Skills != null ? hero.Skills.Wizard : null, "WIZARD", rankY + ranksDrawn * 8);
+    ranksDrawn += DrawChampionRankLine(pixels, glyphs, hero.Skills != null ? hero.Skills.Fighter : null, "FIGHTER", rankY + ranksDrawn * 7);
+    ranksDrawn += DrawChampionRankLine(pixels, glyphs, hero.Skills != null ? hero.Skills.Ninja : null, "NINJA", rankY + ranksDrawn * 7);
+    ranksDrawn += DrawChampionRankLine(pixels, glyphs, hero.Skills != null ? hero.Skills.Priest : null, "PRIEST", rankY + ranksDrawn * 7);
+    ranksDrawn += DrawChampionRankLine(pixels, glyphs, hero.Skills != null ? hero.Skills.Wizard : null, "WIZARD", rankY + ranksDrawn * 7);
 
     // Attribute block. Current and maximum are identical for the initial
     // champion definitions; later gameplay can replace either side with live
@@ -9059,13 +9086,13 @@ private static void HandleGameViewPointerDown(
     const int labelX = 105;
     const int currentX = 181;
     const int maximumX = 201;
-    int statY = ranksDrawn <= 2 ? 110 : 110 + (ranksDrawn - 2) * 6;
+    int statY = ranksDrawn <= 2 ? 110 : 110 + (ranksDrawn - 2) * 3;
     DrawChampionAttributeLine(pixels, glyphs, "STRENGTH", hero.Attributes.Strength, hero.Attributes.Strength, labelX, currentX, maximumX, statY + 0);
-    DrawChampionAttributeLine(pixels, glyphs, "DEXTERITY", hero.Attributes.Dexterity, hero.Attributes.Dexterity, labelX, currentX, maximumX, statY + 8);
-    DrawChampionAttributeLine(pixels, glyphs, "WISDOM", hero.Attributes.Wisdom, hero.Attributes.Wisdom, labelX, currentX, maximumX, statY + 16);
-    DrawChampionAttributeLine(pixels, glyphs, "VITALITY", hero.Attributes.Vitality, hero.Attributes.Vitality, labelX, currentX, maximumX, statY + 24);
-    DrawChampionAttributeLine(pixels, glyphs, "ANTI-MAGIC", hero.Attributes.AntiMagic, hero.Attributes.AntiMagic, labelX, currentX, maximumX, statY + 32);
-    DrawChampionAttributeLine(pixels, glyphs, "ANTI-FIRE", hero.Attributes.AntiFire, hero.Attributes.AntiFire, labelX, currentX, maximumX, statY + 40);
+    DrawChampionAttributeLine(pixels, glyphs, "DEXTERITY", hero.Attributes.Dexterity, hero.Attributes.Dexterity, labelX, currentX, maximumX, statY + 7);
+    DrawChampionAttributeLine(pixels, glyphs, "WISDOM", hero.Attributes.Wisdom, hero.Attributes.Wisdom, labelX, currentX, maximumX, statY + 14);
+    DrawChampionAttributeLine(pixels, glyphs, "VITALITY", hero.Attributes.Vitality, hero.Attributes.Vitality, labelX, currentX, maximumX, statY + 21);
+    DrawChampionAttributeLine(pixels, glyphs, "ANTI-MAGIC", hero.Attributes.AntiMagic, hero.Attributes.AntiMagic, labelX, currentX, maximumX, statY + 28);
+    DrawChampionAttributeLine(pixels, glyphs, "ANTI-FIRE", hero.Attributes.AntiFire, hero.Attributes.AntiFire, labelX, currentX, maximumX, statY + 35);
   }
 
   private int DrawChampionRankLine(
