@@ -8997,7 +8997,13 @@ private static void HandleGameViewPointerDown(
     int weight = item.WeightTenths;
     string weightText = "WEIGHS " + (weight / 10).ToString()
         + "." + Mathf.Abs(weight % 10).ToString() + " KG.";
-    DrawChampionSheetText(pixels, glyphs, 109, 119, weightText);
+    const int weightX = 109;
+    const int weightY = 119;
+    DrawChampionSheetText(pixels, glyphs, weightX, weightY, weightText);
+    // Moonstone bonus starts at the same X as WEIGHS, below the weight line.
+    if (string.Equals(name.Trim(), "Moonstone", System.StringComparison.OrdinalIgnoreCase))
+      DrawChampionSheetTextWithInk(pixels, glyphs, weightX, weightY + 12,
+          "+3 MAXIMUM MANA", new Color32(0, 255, 0, 255));
   }
 
   private void PaintChampionEyeStatsPanel(Color32[] pixels)
@@ -10692,6 +10698,40 @@ private static void HandleGameViewPointerDown(
         }
       }
 
+      cursor += ChampionSheetGlyphAdvance;
+    }
+  }
+
+  // Same 5x5 glyph shapes, with an alternate foreground ink for item effects.
+  private void DrawChampionSheetTextWithInk(
+      Color32[] pixels,
+      Dictionary<char, Color32[]> glyphs,
+      int screenX,
+      int screenTop,
+      string text,
+      Color32 ink)
+  {
+    int cursor = screenX;
+    for (int i = 0; i < text.Length; i++)
+    {
+      char character = char.ToUpperInvariant(text[i]);
+      if (character != ' ' && !glyphs.ContainsKey(character))
+      {
+        if (ChampionSheetUnknownGlyphErrors.Add(character))
+          Debug.LogError("[ViewportLayoutEditor] ERROR: Unsupported Champion Sheet font character '"
+              + character + "' in text: " + text);
+      }
+      if (character != ' ' && glyphs.TryGetValue(character, out Color32[] glyph))
+      {
+        for (int row = 0; row < ChampionSheetGlyphHeight; row++)
+          for (int column = 0; column < ChampionSheetGlyphWidth; column++)
+          {
+            Color32 source = glyph[row * ChampionSheetGlyphWidth + column];
+            bool isGlyphInk = source.r == 182 && source.g == 182 && source.b == 182;
+            SetChampionSheetPixel(pixels, cursor + column, screenTop + row,
+                isGlyphInk ? ink : source);
+          }
+      }
       cursor += ChampionSheetGlyphAdvance;
     }
   }
