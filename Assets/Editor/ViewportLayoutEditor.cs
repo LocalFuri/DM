@@ -8477,6 +8477,51 @@ private static void HandleGameViewPointerDown(
         if (pixel.a != 0)
           SetChampionSheetPixel(pixels, itemX + sx, itemY + itemSize - 1 - sy, pixel);
       }
+    // The original inspection symbol sits immediately right of the sword
+    // in the 320x200 reference, outside the description panel.
+    // Load exactly the authored 16x16 artwork; do not generate a substitute.
+    const string inspectionSymbolName = "Inspection_Symbol_16x16.png";
+    string[] inspectionSymbolGuids = AssetDatabase.FindAssets(
+        "Inspection_Symbol_16x16 t:Texture2D", new[] { "Assets" });
+    string inspectionSymbolPath = null;
+    for (int i = 0; i < inspectionSymbolGuids.Length; i++)
+    {
+      string candidate = AssetDatabase.GUIDToAssetPath(inspectionSymbolGuids[i]);
+      if (!string.Equals(Path.GetFileName(candidate), inspectionSymbolName,
+              System.StringComparison.OrdinalIgnoreCase))
+        continue;
+      if (inspectionSymbolPath != null)
+      {
+        Debug.LogError("CHAMPION EYE: Duplicate " + inspectionSymbolName
+            + " assets found: " + inspectionSymbolPath + " and " + candidate);
+        return;
+      }
+      inspectionSymbolPath = candidate;
+    }
+    if (inspectionSymbolPath == null)
+    {
+      Debug.LogError("CHAMPION EYE: Missing required asset " + inspectionSymbolName);
+      return;
+    }
+    Texture2D inspectionSymbol = AssetDatabase.LoadAssetAtPath<Texture2D>(inspectionSymbolPath);
+    if (inspectionSymbol == null || !inspectionSymbol.isReadable
+        || inspectionSymbol.width != 16 || inspectionSymbol.height != 16)
+    {
+      Debug.LogError("CHAMPION EYE: " + inspectionSymbolName
+          + " must be a readable 16x16 Texture2D at " + inspectionSymbolPath);
+      return;
+    }
+    const int inspectionSymbolX = 83;
+    const int inspectionSymbolY = 85;
+    Color32[] inspectionSymbolPixels = inspectionSymbol.GetPixels32();
+    for (int sy = 0; sy < 16; sy++)
+      for (int sx = 0; sx < 16; sx++)
+      {
+        Color32 pixel = inspectionSymbolPixels[sy * 16 + sx];
+        if (pixel.a != 0)
+          SetChampionSheetPixel(pixels, inspectionSymbolX + sx,
+              inspectionSymbolY + 15 - sy, pixel);
+      }
     Dictionary<char, Color32[]> glyphs = BuildChampionSheetStatusGlyphs();
     DrawChampionSheetText(pixels, glyphs, 140, 95, name.ToUpperInvariant());
     // WeightTenths is stored in tenths of a kilogram in champion JSON.
