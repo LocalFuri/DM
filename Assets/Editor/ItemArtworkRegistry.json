@@ -41,6 +41,12 @@
       "groundF1Path": "Assets/Art/Armor/Blue_Pants_F1_61x18.png",
       "width": 61,
       "height": 18
+    },
+    {
+      "itemType": "Torch",
+      "groundF1Path": "Assets/Art/Weapons/Torch_Ground_61x7.png",
+      "width": 61,
+      "height": 7
     }
   ],
   "groundF1Anchors": {

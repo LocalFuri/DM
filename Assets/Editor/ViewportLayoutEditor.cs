@@ -7880,6 +7880,8 @@ private static void HandleGameViewPointerDown(
           System.StringComparer.OrdinalIgnoreCase)
   {
     { "SAMURAISWORD", ChampionAllowedSlots.LeftHand
+        | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack },
+    { "TORCH", ChampionAllowedSlots.LeftHand
         | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack }
   };
 
