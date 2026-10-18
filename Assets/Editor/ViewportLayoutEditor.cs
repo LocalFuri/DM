@@ -8511,7 +8511,7 @@ private static void HandleGameViewPointerDown(
           + " must be a readable 16x16 Texture2D at " + inspectionSymbolPath);
       return;
     }
-    const int inspectionSymbolX = 83;
+    const int inspectionSymbolX = 82;
     const int inspectionSymbolY = 85;
     Color32[] inspectionSymbolPixels = inspectionSymbol.GetPixels32();
     for (int sy = 0; sy < 16; sy++)
