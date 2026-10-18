@@ -8450,23 +8450,32 @@ private static void HandleGameViewPointerDown(
       return;
     }
     // Circle and item stay fully within the proven stats-panel frame.
-    // Circle X=104..135, Y=87..113; item X=112..127, Y=93..108.
+    // GIMP Circle_Mask.png is a measurement guide only, not runtime artwork.
+    // Its 16x16 green target occupies local X=6..21, Y=6..21 in the 32x27
+    // circle. Use this SAME offset for every inspected 16x16 inventory item.
+    const int circleX = 104;
+    const int circleY = 87;
+    const int circleWidth = 32;
+    const int circleHeight = 27;
+    const int itemSize = 16;
+    const int itemX = circleX + 6; // 110
+    const int itemY = circleY + 6; // 93
     // Paint circle first, then item, respecting transparent pixels.
     Color32[] circlePixels = circle.GetPixels32();
-    for (int sy = 0; sy < 27; sy++)
-      for (int sx = 0; sx < 32; sx++)
+    for (int sy = 0; sy < circleHeight; sy++)
+      for (int sx = 0; sx < circleWidth; sx++)
       {
-        Color32 pixel = circlePixels[sy * 32 + sx];
+        Color32 pixel = circlePixels[sy * circleWidth + sx];
         if (pixel.a != 0)
-          SetChampionSheetPixel(pixels, 104 + sx, 87 + 26 - sy, pixel);
+          SetChampionSheetPixel(pixels, circleX + sx, circleY + circleHeight - 1 - sy, pixel);
       }
     Color32[] sprite = art.GetPixels32();
-    for (int sy = 0; sy < 16; sy++)
-      for (int sx = 0; sx < 16; sx++)
+    for (int sy = 0; sy < itemSize; sy++)
+      for (int sx = 0; sx < itemSize; sx++)
       {
-        Color32 pixel = sprite[sy * 16 + sx];
+        Color32 pixel = sprite[sy * itemSize + sx];
         if (pixel.a != 0)
-          SetChampionSheetPixel(pixels, 112 + sx, 93 + 15 - sy, pixel);
+          SetChampionSheetPixel(pixels, itemX + sx, itemY + itemSize - 1 - sy, pixel);
       }
     Dictionary<char, Color32[]> glyphs = BuildChampionSheetStatusGlyphs();
     DrawChampionSheetText(pixels, glyphs, 140, 95, name.ToUpperInvariant());
