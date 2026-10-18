@@ -8824,7 +8824,7 @@ private static void HandleGameViewPointerDown(
     DrawChampionSheetText(pixels, statusGlyphs, 4, 145, "HEALTH");
     DrawChampionSheetText(pixels, statusGlyphs, 4, 153, "STAMINA");
     DrawChampionSheetText(pixels, statusGlyphs, 4, 161, "MANA");
-    DrawChampionSheetText(pixels, statusGlyphs, 128, 161, "LOAD");
+    DrawChampionSheetText(pixels, statusGlyphs, 104, 161, "LOAD");
 
     DrawChampionSheetText(pixels, statusGlyphs, 61, 145, healthText);
     DrawChampionSheetText(pixels, statusGlyphs, 61, 153, staminaText);
