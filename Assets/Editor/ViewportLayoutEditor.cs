@@ -7600,11 +7600,12 @@ private static void HandleGameViewPointerDown(
     if (string.IsNullOrEmpty(normalized)) return;
     var occupied = new HashSet<Vector2Int>();
     hand = false; quiver = false;
+    int hawkArrowIndex = 0;
     for (int i = 0; i < target.StartingItems.Count; i++)
     {
       string name = GetChampionStartingItemName(target.StartingItems[i]);
       if (string.IsNullOrEmpty(name) || !TryGetChampionStartingItemSlot(
-              target.Name, name, ref hand, ref quiver, out int sx, out int sy)) continue;
+              target.Name, name, ref hand, ref quiver, ref hawkArrowIndex, out int sx, out int sy)) continue;
       if (!IsChampionItemRemoved(target.Name, i))
         occupied.Add(GetPreviewChampionItemSlot(target.Name, i, sx, sy));
     }
@@ -8013,6 +8014,7 @@ private static void HandleGameViewPointerDown(
 
     bool handUsed = false;
     bool quiverUsed = false;
+    int hawkArrowIndex = 0;
     int occupiedIndex = -1;
     int heldOriginalX = -1, heldOriginalY = -1;
     for (int i = 0; i < hero.StartingItems.Count; i++)
@@ -8020,7 +8022,7 @@ private static void HandleGameViewPointerDown(
       string name = GetChampionStartingItemName(hero.StartingItems[i]);
       if (string.IsNullOrEmpty(name)
           || !TryGetChampionStartingItemSlot(hero.Name, name, ref handUsed,
-              ref quiverUsed, out int originalX, out int originalY))
+              ref quiverUsed, ref hawkArrowIndex, out int originalX, out int originalY))
         continue;
       if (i == previewHeldChampionItemIndex
           && string.Equals(hero.Name, previewHeldChampionName,
@@ -8766,6 +8768,36 @@ private static void HandleGameViewPointerDown(
   // The sheet prints that maximum as a whole kilogram, rounded up.
   // IAIDO is 444 tenths (44.4 kg); the original (10,4) North sheet
   // shows 45. An exact multiple such as 460 tenths stays 46.
+  // Temporary on-screen slot index for the 17 all-purpose locations marked
+  // by the user: lower-left first, then alternate upper/lower left-to-right.
+  // Equipment/head/hand slots are deliberately not numbered.
+  private void PaintChampionAllPurposeSlotNumbers(Color32[] pixels)
+  {
+    if (pixels == null) return;
+    var glyphs = BuildChampionSheetStatusGlyphs();
+    Color32 black = new Color32(0, 0, 0, 255);
+    Color32 yellow = new Color32(255, 255, 0, 255);
+    for (int number = 1; number <= 17; number++)
+    {
+      int x, localY;
+      if (number == 1) { x = 65; localY = 32; }
+      else
+      {
+        int col = (number - 2) / 2;
+        x = 82 + col * ChampionSheetBackpackPitch;
+        localY = number % 2 == 0 ? 15 : 32;
+      }
+      string label = number.ToString();
+      int labelX = x + 2;
+      int labelY = ChampionSheetInventoryScreenTop + localY + 2;
+      int width = label.Length * ChampionSheetGlyphAdvance;
+      for (int iy = 0; iy < ChampionSheetGlyphHeight + 2; iy++)
+        for (int ix = 0; ix < width + 1; ix++)
+          SetChampionSheetPixel(pixels, labelX + ix, labelY + iy, black);
+      DrawChampionSheetTextWithInk(pixels, glyphs, labelX, labelY, label, yellow);
+    }
+  }
+
   private void PaintChampionSheetStats(Color32[] pixels)
   {
     PaintChampionSheetName(pixels);
@@ -8788,6 +8820,7 @@ private static void HandleGameViewPointerDown(
     PaintChampionEquipmentSlotMarker(pixels, hero,
         ChampionSheetRightHandX, 72, "Quiver");
     PaintChampionAutoHighlights(pixels, championSheetName);
+    PaintChampionAllPurposeSlotNumbers(pixels);
     if (hero == null || hero.Resources == null || hero.Attributes == null)
       return;
 
@@ -9646,6 +9679,56 @@ private static void HandleGameViewPointerDown(
   // Never suppress missing inventory artwork errors, including HALK equipment.
   private const bool SuppressHalkEquipmentSpriteErrors = false;
 
+  private string lastHawkStartingItemDiagnostic = null;
+
+  // Diagnostic only: report the authoritative starting-item list and any
+  // player-moved/removed state once per distinct state. No substitute items.
+  private void DiagnoseHawkStartingArrows(HeroDefinition hero)
+  {
+    if (hero == null || !string.Equals(hero.Name, "HAWK", System.StringComparison.OrdinalIgnoreCase)
+        || hero.StartingItems == null) return;
+    var report = new System.Text.StringBuilder();
+    report.Append("HAWK ARROW DIAG: starting items=").Append(hero.StartingItems.Count);
+    bool hand = false, quiver = false;
+    int arrowIndex = 0;
+    for (int i = 0; i < hero.StartingItems.Count; i++)
+    {
+      string itemName = GetChampionStartingItemName(hero.StartingItems[i]);
+      int before = arrowIndex;
+      bool mapped = !string.IsNullOrEmpty(itemName)
+          && TryGetChampionStartingItemSlot(hero.Name, itemName,
+              ref hand, ref quiver, ref arrowIndex, out int ignoredX, out int ignoredY);
+      // Keep the same sequential item-order accounting as the renderer.
+      if (mapped)
+      {
+        // Re-query only the saved position, never mutate the placement.
+        bool scratchHand = false, scratchQuiver = false;
+        int scratchArrowIndex = before;
+        int x, y;
+        // For non-arrow items the scratch state is not needed: slot is read
+        // from the actual sequential evaluation below.
+        bool isArrow = string.Equals(NormalizeChampionAssetKey(itemName), "ARROW",
+            System.StringComparison.Ordinal);
+        if (isArrow && TryGetChampionStartingItemSlot(hero.Name, itemName,
+            ref scratchHand, ref scratchQuiver, ref scratchArrowIndex, out x, out y))
+        {
+          Vector2Int actual = GetPreviewChampionItemSlot(hero.Name, i, x, y);
+          report.Append(" | #").Append(i).Append(" '").Append(itemName)
+              .Append("' default=").Append(x).Append(',').Append(y)
+              .Append(" actual=").Append(actual.x).Append(',').Append(actual.y)
+              .Append(" removed=").Append(IsChampionItemRemoved(hero.Name, i));
+        }
+      }
+    }
+    report.Append(" | matching Arrow count=").Append(arrowIndex);
+    string msg = report.ToString();
+    if (msg != lastHawkStartingItemDiagnostic)
+    {
+      lastHawkStartingItemDiagnostic = msg;
+      Debug.LogWarning(msg);
+    }
+  }
+
   private void PaintChampionSheetEquipment(Color32[] pixels, HeroDefinition hero)
   {
     if (hero == null)
@@ -9663,8 +9746,11 @@ private static void HandleGameViewPointerDown(
       return;
     }
 
+    DiagnoseHawkStartingArrows(hero);
+
     bool handUsed = false;
     bool quiverUsed = false;
+    int hawkArrowIndex = 0;
     for (int i = 0; i < hero.StartingItems.Count; i++)
     {
       HeroStartingItem item = hero.StartingItems[i];
@@ -9682,6 +9768,7 @@ private static void HandleGameViewPointerDown(
               hero.Name, itemName,
               ref handUsed,
               ref quiverUsed,
+              ref hawkArrowIndex,
               out int localX,
               out int localY))
       {
@@ -9752,12 +9839,13 @@ private static void HandleGameViewPointerDown(
 
     bool handUsed = false;
     bool quiverUsed = false;
+    int hawkArrowIndex = 0;
     for (int i = 0; i < hero.StartingItems.Count; i++)
     {
       string itemName = GetChampionStartingItemName(hero.StartingItems[i]);
       if (string.IsNullOrEmpty(itemName)
           || !TryGetChampionStartingItemSlot(hero.Name, itemName, ref handUsed,
-              ref quiverUsed, out int originalX, out int originalY))
+              ref quiverUsed, ref hawkArrowIndex, out int originalX, out int originalY))
         continue;
       if (IsChampionItemRemoved(hero.Name, i))
         continue;
@@ -9835,7 +9923,7 @@ private static void HandleGameViewPointerDown(
   // starts in the screen-RIGHT hand, not in the quiver. Player movements
   // remain authoritative after initialization.
   private static bool TryGetChampionStartingItemSlot(
-      string heroName, string itemName, ref bool handUsed, ref bool quiverUsed,
+      string heroName, string itemName, ref bool handUsed, ref bool quiverUsed, ref int hawkArrowIndex,
       out int localX, out int localY)
   {
     if (string.Equals(heroName, "HAWK", System.StringComparison.OrdinalIgnoreCase)
@@ -9843,8 +9931,24 @@ private static void HandleGameViewPointerDown(
             System.StringComparison.Ordinal))
     {
       localX = 61;
-      localY = 52;
-      handUsed = true;
+      if (hawkArrowIndex == 0)
+      {
+        localY = 52; // Screen-right hand.
+        handUsed = true;
+      }
+      else if (hawkArrowIndex == 1)
+      {
+        // User-numbered all-purpose slot #1 (far-left lower slot).
+        localX = 65;
+        localY = 32;
+      }
+      else
+      {
+        Debug.LogError("HAWK STARTING ITEMS: More than two Arrows; no verified third slot.");
+        localY = -1;
+        return false;
+      }
+      hawkArrowIndex++;
       return true;
     }
     return TryGetChampionSheetEquipSlot(

@@ -1295,7 +1295,13 @@ namespace DM.Heroes
                         {
                             ObjectType = "Arrow",
                             WeightTenths = 2,
-                            ChargeCount = 2
+                            ChargeCount = 1
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Arrow",
+                            WeightTenths = 2,
+                            ChargeCount = 1
                         },
                     }
                 },

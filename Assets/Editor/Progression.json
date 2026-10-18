@@ -1,270 +1,69 @@
 {
+  "date": "2026-10-18",
   "project": "Dungeon Master Unity",
-  "checkpointDate": "2026-10-13",
-  "checkpointPurpose": "Resume torch flight F1-F4, calibrate landed floor F2 then F3, and implement distance-based landing sound attenuation.",
-  "mainScript": "Assets/Editor/ViewportLayoutEditor.cs",
-  "lastVerifiedGitCommit": null,
-  "gitNote": "Record the actual current Git commit after committing the working version; do not assume an older baseline is current.",
-  "currentTask": "Next: extend actual torch flight to F4 without rendering F4, play one distance-attenuated Metallic_Thud on actual landing, and verify timing and geometry.",
-  "pressurePad": {
-    "mapLevel": 0,
-    "mapTile": {
-      "x": 6,
-      "y": 9
+  "checkpoint": "End of day; HAWK equipment visually verified complete",
+  "verified_today": [
+    {
+      "champion": "ZED",
+      "level": 0,
+      "tile": [
+        10,
+        5
+      ],
+      "facing": "South",
+      "equipment": "complete",
+      "dungeon_features": "green"
     },
-    "assetsDirectory": "Assets/Art/Ornaments",
-    "views": {
-      "F1": {
-        "asset": "Square_Pressure_Pad_F1_62x21.png",
-        "x": 80,
-        "y": 128,
-        "width": 62,
-        "height": 21,
-        "status": "verified"
-      },
-      "F2": {
-        "asset": "Square_Pressure_Pad_F2_42x11.png",
-        "x": 91,
-        "y": 110,
-        "width": 42,
-        "height": 11,
-        "status": "verified"
-      },
-      "F3": {
-        "asset": "Square_Pressure_Pad_F3_26x6.png",
-        "x": 97,
-        "y": 100,
-        "width": 26,
-        "height": 6,
-        "status": "verified at (9,9) West"
-      },
-      "S1": {
-        "asset": "Square_Pressure_Pad_S1_60x11.png",
-        "x": 1,
-        "y": 110,
-        "width": 60,
-        "height": 11,
-        "mirror": false,
-        "enabled": true,
-        "status": "verified at (4,10) East"
-      }
-    },
-    "s1RenderHierarchyBackToFront": [
-      "F3 walls",
-      "F2 walls",
-      "PressurePad_S1",
-      "F1 walls including FrontF1",
-      "F0 walls"
-    ],
-    "implementationNote": "Generic map-feature placement; avoid hardcoded player-pose rendering. Preserve verified calibration and rendering hierarchy."
-  },
-  "viewpointReportingRules": {
-    "currentTile": "List current tile and its features as 'Existing - not visible (under player)'",
-    "visibleTiles": "Report features visible from the player's facing, with distance and side position",
-    "occlusion": "Distinguish features behind near walls or closed doors from visible features; door state may matter",
-    "accessibility": "Check actual minimap/dungeon geometry/JSON before recommending a viewpoint",
-    "noFallback": "Missing expected assets or data must produce explicit Unity Console errors"
-  },
-  "lastExaminedViewpoint": {
-    "level": 0,
-    "player": {
-      "x": 6,
-      "y": 9,
-      "facing": "West"
-    },
-    "tiles": [
-      {
-        "x": 6,
-        "y": 9,
-        "relative": "F0",
-        "feature": "Square Pressure Pad",
-        "visibility": "Existing - not visible (under player)"
-      },
-      {
-        "x": 5,
-        "y": 9,
-        "relative": "F1",
-        "feature": "Door",
-        "visibility": "Visible"
-      },
-      {
-        "x": 4,
-        "y": 9,
-        "relative": "F2",
-        "feature": "Floor",
-        "visibility": "Depends on door state"
-      },
-      {
-        "x": 3,
-        "y": 9,
-        "relative": "F3",
-        "feature": "Wall",
-        "visibility": "Depends on door state"
-      }
+    {
+      "champion": "HAWK THE FEARLESS",
+      "level": 0,
+      "tile": [
+        15,
+        4
+      ],
+      "facing": "East",
+      "equipment": "complete",
+      "dungeon_features": "pending green mark"
+    }
+  ],
+  "hawk_arrows": {
+    "root_cause": "Single Arrow starting-item entry represented quantity 2 using ChargeCount=2, while rendering showed one icon",
+    "fix": "Two distinct Arrow starting entries, each independently movable",
+    "arrow_1": "screen-right hand",
+    "arrow_2": "all-purpose slot 1 (far-left lower numbered slot)",
+    "status": "user verified correct",
+    "latest_sources_zip": "HAWK_Two_Arrows_Slot_1.zip",
+    "zip_contents": [
+      "HeroDatabase.cs",
+      "ViewportLayoutEditor.cs"
     ]
   },
-  "nextStep": "First establish current verified Unity working version/commit. Implement unobstructed F4 reach with no F4 sprite, preserving item on actual map tile; then change Metallic_Thud from per-stage to once at physical landing with configurable F1-F4 distance attenuation. Test F2 left landing/calibration before F3 and F4.",
-  "latestWorkingFiles": {
-    "mainEditor": "Assets/Editor/ViewportLayoutEditor.cs",
-    "dungeonFeaturesEditor": "Assets/Editor/DungeonFeatureEditor.cs",
-    "nativeWindowsCursorController": "Removed; do not restore Assets/Editor/WindowsHeldItemCursor.cs",
-    "lastSuccessfulCursorChange": "ViewportLayoutEditor_Torch_Hide_Arrow.zip (software item overlay plus scoped Windows arrow visibility)"
-  },
-  "verified20261012": {
-    "dungeonFeatures": {
-      "doubleClick": "Double-click accessible tile teleports player and closes Dungeon Features",
-      "directionBars": "Wall ornaments show blue direction marker; floor features have none",
-      "moss": "Moss appears on map including Level 0 (4,2) North"
+  "inventory_slot_convention": "Left and right always mean monitor/screen perspective",
+  "all_purpose_slot_overlay": "Diagnostic numbers 1-17; slot 1 is far-left lower slot",
+  "floor_pile": {
+    "left_F1_anchor": {
+      "x": 68,
+      "y": 163
     },
-    "torchHolder": {
-      "testView": {
-        "level": 0,
-        "playerX": 4,
-        "playerY": 14,
-        "facing": "West",
-        "wallX": 3,
-        "wallY": 14,
-        "wallFace": "East",
-        "depth": "F1"
-      },
-      "sourceRecords": {
-        "emptySensor": "P00013",
-        "fullSensor": "P00014",
-        "torchWeapon": "P00015",
-        "weaponType": 2,
-        "initialChargeCount": 15
-      },
-      "graphics": {
-        "full": "Torch_Holder_Full_F1_24x53.png",
-        "empty": "Torch_Holder_Empty_F1_24x54.png",
-        "cursorUnlit": "Torch_Unlit_16x16.png",
-        "cursorLit": "Torch_Lit_16x16.png"
-      },
-      "viewEdit": "Full/Empty label reflects rendered state; X/Y and Apply calibration; always-available Restore editor test control",
-      "verified": "Clicking torch empties holder; Restore returns it; calibrated positions recover across source updates"
-    },
-    "cursor": {
-      "verified": "16x16 unlit torch software overlay follows mouse centered and scaled to GameView; normal Windows arrow is hidden while item held and restored on release/exit; user confirmed no flicker",
-      "method": "Software sprite overlay plus scoped Windows cursor visibility control in ViewportLayoutEditor.cs",
-      "doNotReintroduce": "Native Windows cursor replacement hooks (WindowsHeldItemCursor.cs), which caused flicker or normal arrow to remain"
-    },
-    "stairs": "ViewEdit stairs X/Y red unsaved-change indicators corrected; preservation of applied calibration is required"
+    "status": "accepted near-exact; preserve"
   },
-  "itemArchitectureDecisions": {
-    "uniqueItemIdentity": "Each existing item gets a stable unique ID when dungeon data loads; moving does not change ID",
-    "currentPrototypeIdentity": "0:3:14:EAST:Weapon:2 is a temporary location-derived torch identifier; not yet linked to full registry",
-    "state": "Each item retains individual properties (charges, burning stage, flags); no duplication across cursor, holder, floor, inventory",
-    "idReuse": "Do not recycle consumed-item IDs; allocate new IDs",
-    "locations": "Mouse hand, wall fixture, floor tile/corner, champion inventory, container; one location per item",
-    "stacking": "Support multiple independent records at one floor corner without small fixed limits",
-    "currentLimitations": "No inventory placement, return-to-holder gameplay, floor dropping, throwing, or save/load integration yet; burning/charges not integrated with pickup"
+  "torch": {
+    "starting_charge": "15/15",
+    "initial_artwork": "lit torch",
+    "eye_inspector": "bright green LIGHT POWER from torch state",
+    "hands": "both",
+    "floor_artwork": "Torch_Ground_61x7.png",
+    "deferred": "CSBwin torch consumption and illumination arithmetic"
   },
-  "nextImplementationPlan": [
-    "Confirm current ViewportLayoutEditor.cs and Git commit; do not assume latest delivered ZIP is verified.",
-    "Preserve working torch holder pickup/return, floor drop, left/right corners, software cursor, apple/bread and 320x200 startup.",
-    "Extend throw range from 3 to 4 tiles on unobstructed corridor; obstacle stops travel earlier. F4 is invisible, but physical item and ID persist on landing.",
-    "Render visible flight F1/F2/F3 with stage-centered X/Y and scaled Torch_Ground_61x7.png; no F4 visual or ViewEdit F4 graphic.",
-    "Finish F2 landed-floor calibration first (TorchDown F2, separate left/right); then F3. Flight positions distinct from ground positions.",
-    "Play Combat_Attack.wav once at successful throw release; play Metallic_Thud.wav ONCE at actual final floor contact, not on F2/F3 flight stages.",
-    "Implement distance-based landing sound volume in existing DungeonAudioSettings; start with proposed F1 100%, F2 75%, F3 50%, F4 25% (unverified tunable values).",
-    "Check level-spanning item-ID registry integration separately; foundation exists but full all-level item import not completed.",
-    "Test in Unity and commit only after gameplay verification."
+  "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
+  "next_actions": [
+    "Mark HAWK Level 0 (15,4) East bright green RGB(0,255,0) in DungeonFeatureEditor.cs",
+    "Proceed to next champion after user specifies it"
   ],
-  "developmentDefaults": {
-    "gameView": {
-      "width": 320,
-      "height": 200,
-      "unityVersion": "6.4 (6000.4.10f1)",
-      "onEditorStartup": "Select existing 320x200 Game view preset when available; report an explicit warning if preset cannot be selected. Do not change player build resolution."
-    },
-    "delivery": {
-      "csharpZip": "ZIP archives must contain C# files at archive root, without directories; preserve original .cs filename"
-    },
-    "assetPolicy": "Never use fallback assets, inferred data, or substitute sprites; explicitly report missing assets/data in Unity Console",
-    "itemPolicy": "Only implement newly introduced item types after explicit user direction; inventory and ground graphics are separate assets and paths must match actual project structure",
-    "startup": {
-      "settingsFile": "Assets/Editor/Progression.json",
-      "loaderScript": "Assets/Editor/DungeonMasterStartup.cs",
-      "trigger": "Unity Editor domain reload/project open, not Unity Hub itself",
-      "note": "Requires a separate Editor script; JSON alone cannot change Game view resolution."
-    }
-  },
-  "checkpoint20261013": {
-    "verifiedByUser": [
-      "Torch pickup from holder and return works without mouse cursor flicker",
-      "Normal torch drop at player current tile with left/right floor subtiles works, including wall/ceiling/floor click targets",
-      "TorchDown F1 left/right calibrations work; apple and bread return after correcting asset paths",
-      "Automatic Unity Game view 320x200 startup works",
-      "Combat_Attack.wav throwing sound works"
-    ],
-    "calibrationKnown": {
-      "torchDownF1": {
-        "leftX": 31,
-        "rightX": 133,
-        "topY": 157
-      },
-      "notes": "Values from uploaded source earlier today; preserve later applied Unity changes if any."
-    },
-    "graphics": {
-      "torch": "Assets/Art/Weapons/Torch_Ground_61x7.png",
-      "apple": "Assets/Art/Food/Apple_19x13.png",
-      "bread": "Assets/Art/Food/Bread_27x16.png"
-    },
-    "flight": {
-      "model": "Discrete visible stages F1-F2-F3 centered on both X and Y of each perspective band; same torch sprite scaled by distance",
-      "timing": "ViewEdit TorchFlight F1-F3 ms adjustment exists; last shipped source default 200 ms; proposed 166 ms/stage not confirmed applied",
-      "originalGameFinding": "Unobstructed thrown torch can reach F4; F4 torch is invisible, but landing sound can be heard",
-      "currentImplementationStatus": "F4 distance not yet implemented; recent F2/F3 landing and audio changes are prototypes needing Unity verification"
-    },
-    "landing": {
-      "userPriority": "Calibrate F2 first, especially left-side ground placement; then F3",
-      "viewEdit": "TorchDown F2 and F3 controls delivered, but new F2/F3 geometry not fully user-verified"
-    },
-    "audio": {
-      "throw": "Combat_Attack.wav once on throw (user verified)",
-      "landing": "Metallic_Thud.wav should play only once on physical ground contact, attenuated by final landing distance",
-      "suggestedAttenuation": {
-        "F1": 1.0,
-        "F2": 0.75,
-        "F3": 0.5,
-        "F4": 0.25
-      },
-      "attenuationStatus": "Proposed initial values, NOT implemented, not verified against original",
-      "knownIssue": "Previously delivered code plays thuds on intermediate F2/F3 flight stages; replace rather than layering duplicate playback"
-    },
-    "itemRegistry": {
-      "foundation": "DungeonItemRegistry.cs delivered separately; actual Unity compile/integration unconfirmed",
-      "idRule": "stable instance IDs independent of location and level; no duplicate/recycled identities",
-      "persistenceNote": "Library storage is temporary and not a final save-game persistence solution"
-    },
-    "lastDeliveredEditorZip": "ViewportLayoutEditor_F2_Left_Throw_Fix_Flat.zip (not confirmed by user as installed/working)",
-    "deliveryRules": "Always flat ZIP; single C# file at ZIP root; no fallback; do not introduce new item types without user instruction"
-  },
-  "pixelMeasurementConvention": {
-    "referenceImage": {
-      "width": 320,
-      "height": 200,
-      "unit": "pixel"
-    },
-    "origin": "Top-left corner of the complete 320x200 image (0,0)",
-    "xAxis": "X increases left to right",
-    "yAxis": "Y increases top to bottom",
-    "rectangles": "X and Y refer to the top-left corner; width and height extend right and down",
-    "editorCoordinateRule": "Measurements supplied by user are absolute screen coordinates, not relative to character sheet or viewport crop; convert internally only where the renderer requires it",
-    "calibrationTolerancePixels": 1,
-    "eyeItemInformationRect": {
-      "x": 104,
-      "y": 88,
-      "width": 104,
-      "height": 72,
-      "status": "provisional; measured from screenshot with red rectangular outline; ±1 pixel possible"
-    },
-    "eyeBehavior": "Hold/move over Eye uses Eye_moved_16x16; red outline was a measurement annotation and must not render in Unity",
-    "scope": "Apply this measurement method consistently for all upcoming image and UI calibrations"
-  },
-  "unityEditorMenuConvention": {
-    "rule": "Add custom Unity Editor commands directly under Tools; do not create submenus under Tools.",
-    "example": "Tools/Apply Pixel-Art Import Settings",
-    "status": "User preference, apply to future Unity Editor menu changes."
-  }
+  "constraints": [
+    "No fallback for missing artwork or data; report Unity Console errors",
+    "Keep original item IDs and independent instance state",
+    "Source deliverables ZIP root only, no subdirectories",
+    "Do not alter accepted placement or verified equipment without explicit request"
+  ]
 }
