@@ -1,38 +1,62 @@
 {
-  "entries": [
-    {
-      "itemType": "Samurai Sword",
-      "groundF1Path": "Assets/Art/Weapons/Sword_72x8.png",
-      "width": 72,
-      "height": 8
-    },
-    {
-      "itemType": "Ghi Trousers",
-      "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
-      "width": 64,
-      "height": 16
-    },
-    {
-      "itemType": "Ghi Body",
-      "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
-      "width": 64,
-      "height": 16
-    },
-    {
-      "itemType": "Ghi",
-      "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
-      "width": 64,
-      "height": 16
+    "entries": [
+        {
+            "itemType": "Samurai Sword",
+            "groundF1Path": "Assets/Art/Weapons/Sword_72x8.png",
+            "width": 72,
+            "height": 8
+        },
+        {
+            "itemType": "Ghi Trousers",
+            "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
+            "width": 64,
+            "height": 16
+        },
+        {
+            "itemType": "Ghi Body",
+            "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
+            "width": 64,
+            "height": 16
+        },
+        {
+            "itemType": "Ghi",
+            "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
+            "width": 64,
+            "height": 16
+        },
+        {
+            "itemType": "Barbarian Hide",
+            "groundF1Path": "Assets/Art/Armor/Barbarian_Hide_F1_64x16.png",
+            "width": 64,
+            "height": 16
+        },
+        {
+            "itemType": "Bezerker Helm",
+            "groundF1Path": "Assets/Art/Armor/Bezerker_Helm_F1_32x20.png",
+            "width": 32,
+            "height": 20
+        },
+        {
+            "itemType": "Sandals",
+            "groundF1Path": "Assets/Art/Armor/Sandals_F1_44x16.png",
+            "width": 44,
+            "height": 16
+        },
+        {
+            "itemType": "Club",
+            "groundF1Path": "Assets/Art/Weapons/Club_F1_64x10.png",
+            "width": 64,
+            "height": 10
+        }
+    ],
+    "groundF1Anchors": {
+        "left": {
+            "x": 55,
+            "y": 163
+        },
+        "right": {
+            "x": 154,
+            "y": 163
+        }
     }
-  ],
-  "groundF1Anchors": {
-    "left": {
-      "x": 55,
-      "y": 163
-    },
-    "right": {
-      "x": 154,
-      "y": 163
-    }
-  }
 }

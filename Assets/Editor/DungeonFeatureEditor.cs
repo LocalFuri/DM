@@ -727,6 +727,8 @@ public class DungeonFeatureEditor : EditorWindow
   // floor drop, and throwing must all be tested before marking green.
   private static readonly string[] VerifiedChampionEquipmentNames =
   {
+    "Iaido",
+    "Halk",
   };
 
   private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =

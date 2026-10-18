@@ -33,7 +33,7 @@ public sealed class ItemArtworkAutoRegistrar : AssetPostprocessor
     [Serializable] private sealed class Anchors { public Anchor left; public Anchor right; }
     [Serializable] private sealed class Anchor { public int x; public int y; }
 
-    [MenuItem("Tools/Register Item Ground Artwork")]
+    [MenuItem("Tools/Register Item Ground Artwork", false, 160)]
     private static void RunFromMenu() { Synchronize(); }
 
     private static bool IsRelevant(string path)

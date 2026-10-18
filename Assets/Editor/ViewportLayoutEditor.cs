@@ -2081,7 +2081,7 @@ public class ViewportLayoutEditor : EditorWindow
   // Explicit editor recovery for the two original Hall of Champions test items.
   // Reloading C# alone is not a reliable way to reset an existing EditorWindow's
   // preview interaction state, so expose an intentional reset command.
-  [MenuItem("Tools/Check Original Apple and Bread")]
+  [MenuItem("Tools/Check Original Apple and Bread", false, 120)]
   private static void CheckOriginalAppleAndBreadMenu()
   {
     ViewportLayoutEditor[] windows = Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>();
@@ -2125,7 +2125,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
   }
 
-  [MenuItem("Tools/Restore Original Apple and Bread")]
+  [MenuItem("Tools/Restore Original Apple and Bread", false, 170)]
   private static void RestoreOriginalAppleAndBreadMenu()
   {
     ViewportLayoutEditor[] windows = Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>();
@@ -2155,7 +2155,7 @@ public class ViewportLayoutEditor : EditorWindow
     Debug.Log("FLOOR ITEMS: Restored Apple (Level 0, 4,9 North) and Bread (Level 0, 5,11 East) to original map positions.");
   }
 
-  [MenuItem("Tools/Audio Settings")]
+  [MenuItem("Tools/Audio Settings", false, 110)]
   public static void OpenDungeonAudioSettings()
   {
     const string audioSettingsPath = "Assets/Audio/AudioSettings/AudioSettings.asset";
@@ -2178,7 +2178,7 @@ public class ViewportLayoutEditor : EditorWindow
     // Select the existing asset: its sliders appear in Unity's Inspector.
   }
 
-  [MenuItem("Tools/ViewEdit &v")]
+  [MenuItem("Tools/ViewEdit &v", false, 180)]
   public static void Open()
   {
     EditorWindow inspector = FindInspectorWindow();
@@ -2772,6 +2772,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
     EditorApplication.update -= UpdateTorchFlight;
+    EditorApplication.update -= UpdateChampionAutoHighlights;
 
     if (cachedNativeFrontF2ReadableCopy != null)
     {
@@ -7460,6 +7461,227 @@ private static void HandleGameViewPointerDown(
       new System.Collections.Generic.Dictionary<string,
           System.Collections.Generic.Dictionary<int, Vector2Int>>(
               System.StringComparer.OrdinalIgnoreCase);
+  // Cross-champion ownership of existing physical item identities.
+  private sealed class ChampionReceivedItem
+  {
+    public string sourceHero;
+    public int sourceIndex;
+    public string ownerHero;
+    public Vector2Int slot;
+  }
+  private readonly Dictionary<string, ChampionReceivedItem> previewReceivedChampionItems =
+      new Dictionary<string, ChampionReceivedItem>(System.StringComparer.OrdinalIgnoreCase);
+  private readonly Dictionary<string, double> previewAutoPlacementHighlights =
+      new Dictionary<string, double>(System.StringComparer.OrdinalIgnoreCase);
+  private const double ChampionAutoPlacementHighlightSeconds = 30.0;
+
+  private static string ChampionHighlightKey(string hero, Vector2Int slot)
+  {
+    return hero + ":" + slot.x + ":" + slot.y;
+  }
+
+  private void BeginChampionAutoHighlight(string hero, Vector2Int slot)
+  {
+    string key = ChampionHighlightKey(hero, slot);
+    previewAutoPlacementHighlights[key] = EditorApplication.timeSinceStartup
+        + ChampionAutoPlacementHighlightSeconds;
+    EditorApplication.update -= UpdateChampionAutoHighlights;
+    EditorApplication.update += UpdateChampionAutoHighlights;
+  }
+
+  private void UpdateChampionAutoHighlights()
+  {
+    double now = EditorApplication.timeSinceStartup;
+    var expired = new List<string>();
+    foreach (var highlight in previewAutoPlacementHighlights)
+      if (highlight.Value <= now) expired.Add(highlight.Key);
+    foreach (string key in expired) previewAutoPlacementHighlights.Remove(key);
+    if (previewAutoPlacementHighlights.Count == 0)
+      EditorApplication.update -= UpdateChampionAutoHighlights;
+    if (expired.Count != 0 && championSheetVisible)
+    {
+      PresentEditModePreviewToGameView();
+      Repaint();
+    }
+  }
+
+  private void PaintChampionAutoHighlights(Color32[] pixels, string hero)
+  {
+    Color32 green = new Color32(0, 255, 0, 255);
+    double now = EditorApplication.timeSinceStartup;
+    foreach (Vector2Int slot in ChampionSheetAllItemSlots)
+    {
+      if (!previewAutoPlacementHighlights.TryGetValue(
+              ChampionHighlightKey(hero, slot), out double expiry) || expiry <= now)
+        continue;
+      Rect r = GetChampionSheetSlotScreenRect(slot.x, slot.y);
+      int x = (int)r.x, y = (int)r.y;
+      int w = (int)r.width, h = (int)r.height;
+      for (int dx = 0; dx < w; dx++)
+      {
+        SetChampionSheetPixel(pixels, x + dx, y, green);
+        SetChampionSheetPixel(pixels, x + dx, y + h - 1, green);
+      }
+      for (int dy = 0; dy < h; dy++)
+      {
+        SetChampionSheetPixel(pixels, x, y + dy, green);
+        SetChampionSheetPixel(pixels, x + w - 1, y + dy, green);
+      }
+    }
+  }
+
+  private bool TryGetReceivedItemAt(string owner, int x, int y,
+      out ChampionReceivedItem received)
+  {
+    foreach (var item in previewReceivedChampionItems.Values)
+      if (string.Equals(item.ownerHero, owner, System.StringComparison.OrdinalIgnoreCase)
+          && item.slot.x == x && item.slot.y == y)
+      {
+        received = item;
+        return true;
+      }
+    received = null;
+    return false;
+  }
+
+  // Invoked on opening a mirror with a champion starting item on the cursor.
+  // Non-armour items retain the normal cursor interaction.
+  private void TryAutoEquipHeldArmor(string targetHero)
+  {
+    if (previewHeldChampionCursor == null || previewHeldChampionItemIndex < 0
+        || string.IsNullOrEmpty(previewHeldChampionName))
+    {
+      if (previewFloorPickupCompleted && previewHeldFloorItem != null)
+        Debug.LogError("CHAMPION AUTO EQUIP: Held item '" + previewHeldFloorItem.type
+            + "' uses the ordinary floor-item cursor rather than a champion-equipment"
+            + " identity. Transfer requires a floor-to-inventory item record;"
+            + " item remains on cursor (no fallback).");
+      else if (HasPickedUpTorchOnCursor())
+        Debug.Log("CHAMPION AUTO EQUIP: Torch cursor remains unchanged; auto equip applies only to armor.");
+      else if (HasAnyItemOnCursor())
+        Debug.LogError("CHAMPION AUTO EQUIP: Held item has incomplete champion identity;"
+            + " item remains on cursor.");
+      return;
+    }
+    HeroDefinition source = HeroDatabase.GetByName(previewHeldChampionName);
+    HeroDefinition target = HeroDatabase.GetByName(targetHero);
+    if (source == null || target == null || source.StartingItems == null
+        || target.StartingItems == null
+        || previewHeldChampionItemIndex >= source.StartingItems.Count)
+    {
+      Debug.LogError("CHAMPION AUTO EQUIP: Invalid source or target; item remains on cursor.");
+      return;
+    }
+    string itemName = GetChampionStartingItemName(
+        source.StartingItems[previewHeldChampionItemIndex]);
+    string normalized = NormalizeChampionAssetKey(itemName);
+    // Use the existing, explicit equipment-category mapping. Never infer a
+    // worn-slot category from an unfamiliar item or substitute another slot.
+    bool hand = false, quiver = false;
+    if (!TryGetChampionSheetEquipSlot(itemName, ref hand, ref quiver,
+            out int equipmentX, out int equipmentY))
+    {
+      Debug.LogError("CHAMPION AUTO EQUIP: No valid equipment slot for '" + itemName
+          + "'; item stays on cursor.");
+      return;
+    }
+    bool isArmor = (equipmentX == 33 && (equipmentY == 25
+        || equipmentY == 45 || equipmentY == 65 || equipmentY == 85));
+    if (!isArmor)
+    {
+      Debug.Log("CHAMPION AUTO EQUIP: '" + itemName
+          + "' is not head/torso/legs/feet armor; cursor remains active.");
+      return;
+    }
+    // Only allow already-known armor types; unrelated objects must not gain
+    // equipment permissions merely from occupying one of those coordinates.
+    if (string.IsNullOrEmpty(normalized)) return;
+    var occupied = new HashSet<Vector2Int>();
+    hand = false; quiver = false;
+    for (int i = 0; i < target.StartingItems.Count; i++)
+    {
+      string name = GetChampionStartingItemName(target.StartingItems[i]);
+      if (string.IsNullOrEmpty(name) || !TryGetChampionSheetEquipSlot(
+              name, ref hand, ref quiver, out int sx, out int sy)) continue;
+      if (!IsChampionItemRemoved(target.Name, i))
+        occupied.Add(GetPreviewChampionItemSlot(target.Name, i, sx, sy));
+    }
+    foreach (var received in previewReceivedChampionItems.Values)
+      if (string.Equals(received.ownerHero, target.Name,
+              System.StringComparison.OrdinalIgnoreCase)) occupied.Add(received.slot);
+    Vector2Int destination = new Vector2Int(equipmentX, equipmentY);
+    if (occupied.Contains(destination))
+    {
+      bool found = false;
+      for (int row = 0; row < 2 && !found; row++)
+        for (int col = 0; col < 8; col++)
+        {
+          Vector2Int candidate = new Vector2Int(82 + col * 17, 15 + row * 17);
+          if (!occupied.Contains(candidate))
+          {
+            destination = candidate;
+            found = true;
+            break;
+          }
+        }
+      if (!found)
+      {
+        Debug.LogWarning("CHAMPION AUTO EQUIP: All 16 backpack slots occupied for "
+            + target.Name + "; '" + itemName + "' stays on cursor.");
+        return;
+      }
+    }
+    ItemInstance physical = EnsureChampionItemInstance(
+        source.Name, previewHeldChampionItemIndex, itemName,
+        previewHeldChampionSourceSlot);
+    if (physical == null)
+    {
+      Debug.LogError("CHAMPION AUTO EQUIP: Physical item record unavailable for '"
+          + itemName + "'; cursor remains active.");
+      return;
+    }
+    string key = ChampionItemSourceKey(source.Name, previewHeldChampionItemIndex);
+    if (string.Equals(source.Name, target.Name,
+            System.StringComparison.OrdinalIgnoreCase))
+    {
+      if (!previewChampionItemSlots.TryGetValue(source.Name, out var slots))
+      {
+        slots = new Dictionary<int, Vector2Int>();
+        previewChampionItemSlots.Add(source.Name, slots);
+      }
+      slots[previewHeldChampionItemIndex] = destination;
+      if (previewRemovedChampionItemIndexes.TryGetValue(source.Name, out var removed))
+        removed.Remove(previewHeldChampionItemIndex);
+      previewReceivedChampionItems.Remove(key);
+    }
+    else
+    {
+      previewReceivedChampionItems[key] = new ChampionReceivedItem {
+        sourceHero = source.Name, sourceIndex = previewHeldChampionItemIndex,
+        ownerHero = target.Name, slot = destination
+      };
+      // Source remains removed; otherwise the same object appears twice.
+      if (!previewRemovedChampionItemIndexes.TryGetValue(source.Name, out var removed))
+      {
+        removed = new HashSet<int>();
+        previewRemovedChampionItemIndexes.Add(source.Name, removed);
+      }
+      removed.Add(previewHeldChampionItemIndex);
+    }
+    MoveItemInstance(physical, "ChampionSlot", target.Name,
+        destination.x, destination.y);
+    previewHeldChampionName = null;
+    previewHeldChampionItemIndex = -1;
+    previewHeldChampionCursor = null;
+    previewHeldChampionSourceSlot = new Vector2Int(-1, -1);
+    HideHeldItemPointerOverlay();
+    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+    BeginChampionAutoHighlight(target.Name, destination);
+    Debug.Log("CHAMPION AUTO EQUIP: Placed '" + itemName + "' into " + target.Name
+        + " slot (" + destination.x + "," + destination.y
+        + "); highlighted for 30 seconds.");
+  }
+
   private string previewHeldChampionName;
   private int previewHeldChampionItemIndex = -1;
   private Texture2D previewHeldChampionCursor;
@@ -7803,6 +8025,12 @@ private static void HandleGameViewPointerDown(
 
     if (previewHeldChampionCursor != null)
     {
+      if (TryGetReceivedItemAt(hero.Name, targetX, targetY, out var occupiedTransfer))
+      {
+        Debug.LogWarning("CHAMPION EQUIPMENT: Target contains a transferred item; "
+            + "pick it up first. Held item unchanged.");
+        return true;
+      }
       if (!string.Equals(previewHeldChampionName, hero.Name,
               System.StringComparison.OrdinalIgnoreCase)
           || previewHeldChampionItemIndex < 0)
@@ -7895,6 +8123,38 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
+    if (occupiedIndex < 0 && !HasAnyItemOnCursor()
+        && TryGetReceivedItemAt(hero.Name, targetX, targetY, out var received))
+    {
+      HeroDefinition origin = HeroDatabase.GetByName(received.sourceHero);
+      if (origin == null || origin.StartingItems == null
+          || received.sourceIndex < 0
+          || received.sourceIndex >= origin.StartingItems.Count)
+      {
+        Debug.LogError("CHAMPION TRANSFER: Invalid item source; pickup refused.");
+        return true;
+      }
+      string name = GetChampionStartingItemName(origin.StartingItems[received.sourceIndex]);
+      Texture2D sprite = GetChampionInventoryItemTexture(name);
+      if (sprite == null || !sprite.isReadable || sprite.width != 16 || sprite.height != 16)
+      {
+        Debug.LogError("CHAMPION TRANSFER: Missing 16x16 sprite for '" + name + "'.");
+        return true;
+      }
+      ItemInstance physical = EnsureChampionItemInstance(origin.Name,
+          received.sourceIndex, name, received.slot);
+      if (physical == null) return true;
+      MoveItemInstance(physical, "Cursor");
+      previewReceivedChampionItems.Remove(ChampionItemSourceKey(
+          received.sourceHero, received.sourceIndex));
+      previewHeldChampionName = origin.Name;
+      previewHeldChampionItemIndex = received.sourceIndex;
+      previewHeldChampionSourceSlot = received.slot;
+      previewHeldChampionCursor = sprite;
+      PresentEditModePreviewToGameView();
+      Repaint();
+      return true;
+    }
     if (occupiedIndex < 0 || HasAnyItemOnCursor())
       return true;
     string itemName = GetChampionStartingItemName(
@@ -8097,6 +8357,10 @@ private static void HandleGameViewPointerDown(
       }
     }
 
+    if (HasAnyItemOnCursor())
+      Debug.Log("CHAMPION AUTO EQUIP: Mirror clicked for '" + championName
+          + "' while holding item; trying placement.");
+    TryAutoEquipHeldArmor(championName);
     championSheetName = championName;
     championSheetVisible = true;
     championEyeMoved = false;
@@ -8495,6 +8759,7 @@ private static void HandleGameViewPointerDown(
     HeroDefinition hero = HeroDatabase.GetByName(championSheetName);
     PaintChampionSheetPortrait(pixels, hero);
     PaintChampionSheetEquipment(pixels, hero);
+    PaintReceivedChampionEquipment(pixels, championSheetName);
     PaintChampionHeadSlotMarker(pixels, hero);
     PaintChampionEquipmentSlotMarker(pixels, hero, 33, 45, "Torso");
     PaintChampionEquipmentSlotMarker(pixels, hero, 33, 65, "Legs_both");
@@ -8507,6 +8772,7 @@ private static void HandleGameViewPointerDown(
     PaintChampionEquipmentSlotMarker(pixels, hero, 5, 72, "Pouch_side");
     PaintChampionEquipmentSlotMarker(pixels, hero,
         ChampionSheetRightHandX, 72, "Quiver");
+    PaintChampionAutoHighlights(pixels, championSheetName);
     if (hero == null || hero.Resources == null || hero.Attributes == null)
       return;
 
@@ -8721,7 +8987,7 @@ private static void HandleGameViewPointerDown(
     // circle artwork.
     // The 32 px sprite includes 5 transparent columns on its right edge.
     // Match the visible circle edge rather than the texture bounds.
-    const int itemNameGap = 2;
+    const int itemNameGap = 1;
     const int circleTransparentRightPadding = 5;
     int itemNameX = circleX + circleWidth - circleTransparentRightPadding + itemNameGap;
     int itemNameY = circleY + (circleHeight - ChampionSheetGlyphHeight) / 2;
@@ -9404,6 +9670,29 @@ private static void HandleGameViewPointerDown(
   }
 
 
+  private void PaintReceivedChampionEquipment(Color32[] pixels, string hero)
+  {
+    foreach (var received in previewReceivedChampionItems.Values)
+    {
+      if (!string.Equals(received.ownerHero, hero,
+              System.StringComparison.OrdinalIgnoreCase)) continue;
+      HeroDefinition source = HeroDatabase.GetByName(received.sourceHero);
+      if (source == null || source.StartingItems == null
+          || received.sourceIndex < 0
+          || received.sourceIndex >= source.StartingItems.Count)
+      {
+        Debug.LogError("CHAMPION TRANSFER: Missing original item identity for " + hero);
+        continue;
+      }
+      string itemName = GetChampionStartingItemName(
+          source.StartingItems[received.sourceIndex]);
+      if (!DrawChampionSheetItemIcon(pixels, received.slot.x,
+              received.slot.y, itemName, false))
+        Debug.LogError("CHAMPION TRANSFER: Cannot render '" + itemName
+            + "' for " + hero + ". No fallback.");
+    }
+  }
+
   // Equipment silhouettes are purely visual: draw only in empty slots.
   // They never become champion items and cannot be picked up or swapped.
   // Coordinates are the existing inventory-local slot IDs, NOT the PNG pixels.
@@ -9429,6 +9718,9 @@ private static void HandleGameViewPointerDown(
       if (position.x == slotX && position.y == slotY)
         return; // A real item always hides the marker.
     }
+
+    if (TryGetReceivedItemAt(hero.Name, slotX, slotY, out var receivedItem))
+      return;
 
     // Strict inventory texture lookup: a missing 16x16 marker is an error.
     TryDrawChampionSheetInventoryItemTexture(
