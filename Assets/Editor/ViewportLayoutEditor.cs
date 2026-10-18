@@ -2734,6 +2734,7 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyCurrentPoseVisibilityToLayout();
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
     EditorApplication.update += UpdateTorchFlight;
+    RecordGroundRegistryFileStamp();
     // Force a fresh compose from the current pose's Enabled flags.
     DestroyEditModePreviewTextureOnly();
     RefreshEditModePreview();
@@ -2879,6 +2880,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnInspectorUpdate()
   {
+    RefreshGroundRegistryIfChanged();
     if (Application.isPlaying)
     {
       Repaint();
@@ -30149,6 +30151,50 @@ private static void HandleGameViewPointerDown(
 
   private const string ItemArtworkRegistryPath =
       "Assets/Editor/ItemArtworkRegistry.json";
+
+  // External replacements of the artwork registry do not recompile C#.
+  // Detect them while ViewEdit is open and force Unity to import the JSON.
+  private System.DateTime lastGroundRegistryWriteUtc = System.DateTime.MinValue;
+  private long lastGroundRegistrySize = -1;
+  private double nextGroundRegistryCheckTime;
+
+  private void RecordGroundRegistryFileStamp()
+  {
+    if (!File.Exists(ItemArtworkRegistryPath))
+    {
+      lastGroundRegistryWriteUtc = System.DateTime.MinValue;
+      lastGroundRegistrySize = -1;
+      return;
+    }
+    var info = new FileInfo(ItemArtworkRegistryPath);
+    lastGroundRegistryWriteUtc = info.LastWriteTimeUtc;
+    lastGroundRegistrySize = info.Length;
+  }
+
+  private void RefreshGroundRegistryIfChanged()
+  {
+    if (EditorApplication.timeSinceStartup < nextGroundRegistryCheckTime) return;
+    nextGroundRegistryCheckTime = EditorApplication.timeSinceStartup + 0.5;
+    if (!File.Exists(ItemArtworkRegistryPath))
+    {
+      if (lastGroundRegistrySize != -1)
+      {
+        RecordGroundRegistryFileStamp();
+        ReportFloorItemTextureProblem("Registry", ItemArtworkRegistryPath, "is missing");
+      }
+      return;
+    }
+    var info = new FileInfo(ItemArtworkRegistryPath);
+    if (info.LastWriteTimeUtc == lastGroundRegistryWriteUtc &&
+        info.Length == lastGroundRegistrySize) return;
+    // Record first to avoid repeated imports if an import triggers repaint.
+    RecordGroundRegistryFileStamp();
+    AssetDatabase.ImportAsset(ItemArtworkRegistryPath, ImportAssetOptions.ForceUpdate);
+    DestroyEditModePreviewTextureOnly();
+    RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
+  }
 
   [System.Serializable]
   private sealed class GroundArtworkRegistry
