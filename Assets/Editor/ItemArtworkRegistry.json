@@ -11,6 +11,18 @@
       "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
       "width": 64,
       "height": 16
+    },
+    {
+      "itemType": "Ghi Body",
+      "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
+      "width": 64,
+      "height": 16
+    },
+    {
+      "itemType": "Ghi",
+      "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
+      "width": 64,
+      "height": 16
     }
   ]
 }

@@ -29655,7 +29655,7 @@ private static void HandleGameViewPointerDown(
   }
 
   private const string ItemArtworkRegistryPath =
-      "Assets/Data/Items/ItemArtworkRegistry.json";
+      "Assets/Editor/ItemArtworkRegistry.json";
 
   [System.Serializable]
   private sealed class GroundArtworkRegistry
@@ -29890,8 +29890,12 @@ private static void HandleGameViewPointerDown(
     if (string.Equals(item.type, "Samurai Sword",
             System.StringComparison.OrdinalIgnoreCase)
         && depth == FloorItemDepth.SameTile) return 146;
-    if (string.Equals(item.type, "Ghi Trousers",
+    if ((string.Equals(item.type, "Ghi Trousers",
             System.StringComparison.OrdinalIgnoreCase)
+        || string.Equals(item.type, "Ghi Body",
+            System.StringComparison.OrdinalIgnoreCase)
+        || string.Equals(item.type, "Ghi",
+            System.StringComparison.OrdinalIgnoreCase))
         && depth == FloorItemDepth.SameTile)
       return right ? 151 : 151; // Initial reference; calibrate in ViewEdit.
     Debug.LogError("Missing floor-item pile calibration reference for "
@@ -30027,6 +30031,8 @@ private static void HandleGameViewPointerDown(
         x = isRight ? swordF1RightPreviewX : swordF1LeftPreviewX;
         top = swordF1PreviewScreenTop;
         break;
+      case "GHI":
+      case "GHI BODY":
       case "GHI TROUSERS":
         x = isRight ? ghiTrousersF1RightPreviewX : ghiTrousersF1LeftPreviewX;
         top = isRight ? ghiTrousersF1RightPreviewScreenTop : ghiTrousersF1LeftPreviewScreenTop;
@@ -30558,7 +30564,9 @@ private static void HandleGameViewPointerDown(
             && string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase))
           DrawSamuraiSwordFloorCalibration(isRight);
         else if (depth == FloorItemDepth.SameTile
-            && string.Equals(item.type, "Ghi Trousers", System.StringComparison.OrdinalIgnoreCase))
+            && (string.Equals(item.type, "Ghi Trousers", System.StringComparison.OrdinalIgnoreCase)
+                || string.Equals(item.type, "Ghi Body", System.StringComparison.OrdinalIgnoreCase)
+                || string.Equals(item.type, "Ghi", System.StringComparison.OrdinalIgnoreCase)))
           DrawGhiTrousersFloorCalibration(isRight);
       }
       EditorGUILayout.EndHorizontal();
