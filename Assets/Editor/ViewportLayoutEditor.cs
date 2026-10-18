@@ -8863,6 +8863,7 @@ private static void HandleGameViewPointerDown(
     AddChampionSheetPatternGlyph(glyphs, ',', "....." + "....." + "....." + "..#.." + ".#...");
 
     AddChampionSheetPatternGlyph(glyphs, 'A', ".###." + "#...#" + "#####" + "#...#" + "#...#");
+    AddChampionSheetPatternGlyph(glyphs, 'B', "####." + "#...#" + "####." + "#...#" + "####.");
     AddChampionSheetPatternGlyph(glyphs, 'D', "####." + "#...#" + "#...#" + "#...#" + "####.");
     AddChampionSheetPatternGlyph(glyphs, 'E', "#####" + "#...." + "####." + "#...." + "#####");
     AddChampionSheetPatternGlyph(glyphs, 'G', ".###." + "#...." + "#.###" + "#...#" + ".###.");
@@ -9284,8 +9285,8 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  // Temporary: silence only Halk inventory artwork errors until the PNGs are imported.
-  private const bool SuppressHalkEquipmentSpriteErrors = true;
+  // Never suppress missing inventory artwork errors, including HALK equipment.
+  private const bool SuppressHalkEquipmentSpriteErrors = false;
 
   private void PaintChampionSheetEquipment(Color32[] pixels, HeroDefinition hero)
   {
@@ -9508,16 +9509,17 @@ private static void HandleGameViewPointerDown(
 
     if (slot == "head")
     {
-      // Original Champion sheet head slot: screen X=5, Y=45.
-      localX = 5;
-      localY = 12;
+      // Actual upper-center head slot (matches PaintChampionHeadSlotMarker).
+      localX = 33;
+      localY = 25;
       return true;
     }
 
     if (slot == "neck")
     {
-      localX = 33;
-      localY = 25;
+      // Upper-left neck slot; keep distinct from the head slot.
+      localX = 5;
+      localY = 12;
       return true;
     }
 
@@ -10069,13 +10071,8 @@ private static void HandleGameViewPointerDown(
     // guessing and no alternate artwork fallback.
     string wanted16 = wantedKey + "16X16";
     string wanted18 = wantedKey + "18X18";
-    string alternateWantedKey = string.Empty;
-    if (string.Equals(wantedKey, "BEZERKERHELM", System.StringComparison.Ordinal))
-      alternateWantedKey = "BERSERKERHELM";
-    string alternateWanted16 = string.IsNullOrEmpty(alternateWantedKey)
-        ? string.Empty : alternateWantedKey + "16X16";
-    string alternateWanted18 = string.IsNullOrEmpty(alternateWantedKey)
-        ? string.Empty : alternateWantedKey + "18X18";
+    // Bezerker Helm is the exact canonical inventory identity.
+    // Do not silently accept differently spelled artwork filenames.
     string[] guids = AssetDatabase.FindAssets(
         "t:Texture2D", new[] { "Assets" });
     System.Collections.Generic.List<string> matches =
@@ -10096,12 +10093,7 @@ private static void HandleGameViewPointerDown(
           string.Equals(fileKey, wantedKey, System.StringComparison.Ordinal)
           || string.Equals(fileKey, wanted16, System.StringComparison.Ordinal)
           || string.Equals(fileKey, wanted18, System.StringComparison.Ordinal);
-      bool exactDeclaredAlias =
-          !string.IsNullOrEmpty(alternateWantedKey)
-          && (string.Equals(fileKey, alternateWantedKey, System.StringComparison.Ordinal)
-              || string.Equals(fileKey, alternateWanted16, System.StringComparison.Ordinal)
-              || string.Equals(fileKey, alternateWanted18, System.StringComparison.Ordinal));
-      if (!exactPrimary && !exactDeclaredAlias)
+      if (!exactPrimary)
       {
         continue;
       }
@@ -10137,10 +10129,7 @@ private static void HandleGameViewPointerDown(
           + objectType + "' (canonical spriteKey '" + spriteKey
           + "'). Expected an exact PNG identity anywhere under Assets: "
           + spriteKey + ".png, " + spriteKey + "_16x16.png, or "
-          + spriteKey + "_18x18.png"
-          + (string.IsNullOrEmpty(alternateWantedKey)
-              ? "."
-              : " (declared alias Berserker Helm is also accepted)."));
+          + spriteKey + "_18x18.png.");
       return null;
     }
 
