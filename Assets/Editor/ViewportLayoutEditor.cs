@@ -2076,6 +2076,8 @@ public class ViewportLayoutEditor : EditorWindow
     previewHeldFloorItemCursor = null;
     previewFloorPickupCompleted = false;
     foreach (FloorItemPlacement item in HallOfChampionsFloorItems)
+      previewItemInstances.Remove(GetFloorItemInstanceId(item));
+    foreach (FloorItemPlacement item in HallOfChampionsFloorItems)
       previewDisabledFeatureKeys.Remove(GetFloorItemFeatureKey(item));
   }
 
@@ -2144,6 +2146,8 @@ public class ViewportLayoutEditor : EditorWindow
       window.previewHeldFloorItem = null;
       window.previewHeldFloorItemCursor = null;
       window.previewFloorPickupCompleted = false;
+      foreach (FloorItemPlacement item in HallOfChampionsFloorItems)
+        window.previewItemInstances.Remove(GetFloorItemInstanceId(item));
       foreach (FloorItemPlacement item in HallOfChampionsFloorItems)
         window.previewDisabledFeatureKeys.Remove(window.GetFloorItemFeatureKey(item));
       Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
@@ -7390,6 +7394,107 @@ private static void HandleGameViewPointerDown(
   private Texture2D previewHeldChampionCursor;
   private Vector2Int previewHeldChampionSourceSlot = new Vector2Int(-1, -1);
 
+  // Generic runtime identity shared by champion equipment, floor items and torches.
+  // A transfer changes only Location; InstanceId and mutable state survive.
+  // SourceChampion/SourceIndex are historical provenance, NOT current ownership.
+  [System.Serializable]
+  private sealed class ItemInstance
+  {
+    public string InstanceId;
+    public string ItemType;
+    public string Location; // ChampionSlot, Cursor, Floor, Holder, Flight
+    public string OwnerChampion;
+    public int SlotX = -1, SlotY = -1;
+    public int Level = -1, TileX = -1, TileY = -1;
+    public string FloorCorner;
+    public string SourceChampion;
+    public int SourceIndex = -1;
+    // The existing torch system has no verified fuel or lit/unlit simulation.
+    // Preserve fields for future use but never invent initial state values.
+    public bool HasTorchState;
+    public bool IsBurning;
+    public int RemainingFuel;
+  }
+  private readonly Dictionary<string, ItemInstance> previewItemInstances =
+      new Dictionary<string, ItemInstance>(System.StringComparer.Ordinal);
+  private readonly Dictionary<string, string> previewChampionItemInstanceIds =
+      new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+  private int previewItemInstanceSerial;
+
+  private static string ChampionItemSourceKey(string heroName, int itemIndex)
+  {
+    return heroName + ":" + itemIndex;
+  }
+
+  private ItemInstance EnsureChampionItemInstance(string heroName, int itemIndex,
+      string itemType, Vector2Int slot)
+  {
+    string source = ChampionItemSourceKey(heroName, itemIndex);
+    if (previewChampionItemInstanceIds.TryGetValue(source, out string id))
+    {
+      if (!previewItemInstances.TryGetValue(id, out ItemInstance existing))
+      {
+        Debug.LogError("ITEM INSTANCE: missing record for " + id);
+        return null;
+      }
+      return existing;
+    }
+    id = "champion-item:" + (++previewItemInstanceSerial);
+    if (previewItemInstances.ContainsKey(id))
+    {
+      Debug.LogError("ITEM INSTANCE: duplicate ID " + id);
+      return null;
+    }
+    ItemInstance created = new ItemInstance {
+      InstanceId = id, ItemType = itemType,
+      SourceChampion = heroName, SourceIndex = itemIndex,
+      OwnerChampion = heroName, SlotX = slot.x, SlotY = slot.y,
+      Location = "ChampionSlot"
+    };
+    previewItemInstances.Add(id, created);
+    previewChampionItemInstanceIds.Add(source, id);
+    return created;
+  }
+
+  // Existing authored map/holder IDs already uniquely identify physical items.
+  // Register them once, never replace a record during pickup or drop.
+  private ItemInstance EnsureWorldItemInstance(string id, string type,
+      string location, int level, int x, int y, string corner)
+  {
+    if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(type))
+    {
+      Debug.LogError("ITEM INSTANCE: missing physical item ID/type");
+      return null;
+    }
+    if (previewItemInstances.TryGetValue(id, out ItemInstance existing))
+    {
+      if (!string.Equals(existing.ItemType, type, System.StringComparison.OrdinalIgnoreCase))
+      {
+        Debug.LogError("ITEM INSTANCE: type mismatch for " + id);
+        return null;
+      }
+      return existing;
+    }
+    ItemInstance created = new ItemInstance {
+      InstanceId = id, ItemType = type, Location = location,
+      Level = level, TileX = x, TileY = y, FloorCorner = corner
+    };
+    previewItemInstances.Add(id, created);
+    return created;
+  }
+
+  private static void MoveItemInstance(ItemInstance item, string location,
+      string owner = null, int slotX = -1, int slotY = -1,
+      int level = -1, int tileX = -1, int tileY = -1, string corner = null)
+  {
+    // Immutable identity, item type, burning state and fuel are never touched.
+    item.Location = location;
+    item.OwnerChampion = owner;
+    item.SlotX = slotX; item.SlotY = slotY;
+    item.Level = level; item.TileX = tileX; item.TileY = tileY;
+    item.FloorCorner = corner;
+  }
+
   // Records retaining exact HeroDatabase item identity while a champion's
   // equipment is physically on the floor. Never create an anonymous sword.
   private sealed class ChampionFloorIdentity
@@ -7680,6 +7785,19 @@ private static void HandleGameViewPointerDown(
         removedIndexes = new System.Collections.Generic.HashSet<int>();
         previewRemovedChampionItemIndexes.Add(hero.Name, removedIndexes);
       }
+      ItemInstance placedInstance = EnsureChampionItemInstance(
+          previewHeldChampionName, previewHeldChampionItemIndex,
+          heldItemName, previewHeldChampionSourceSlot);
+      if (placedInstance == null) return true;
+      ItemInstance displacedInstance = null;
+      if (occupiedIndex >= 0)
+      {
+        displacedInstance = EnsureChampionItemInstance(hero.Name,
+            occupiedIndex, displacedName, new Vector2Int(targetX, targetY));
+        if (displacedInstance == null) return true;
+      }
+      MoveItemInstance(placedInstance, "ChampionSlot", hero.Name, targetX, targetY);
+      if (displacedInstance != null) MoveItemInstance(displacedInstance, "Cursor");
       slots[previewHeldChampionItemIndex] = new Vector2Int(targetX, targetY);
       removedIndexes.Remove(previewHeldChampionItemIndex);
       if (occupiedIndex >= 0)
@@ -7725,6 +7843,10 @@ private static void HandleGameViewPointerDown(
       indexes = new System.Collections.Generic.HashSet<int>();
       previewRemovedChampionItemIndexes.Add(hero.Name, indexes);
     }
+    ItemInstance pickedInstance = EnsureChampionItemInstance(hero.Name,
+        occupiedIndex, itemName, new Vector2Int(targetX, targetY));
+    if (pickedInstance == null) return true;
+    MoveItemInstance(pickedInstance, "Cursor");
     indexes.Add(occupiedIndex);
     previewHeldChampionName = hero.Name;
     previewHeldChampionItemIndex = occupiedIndex;
@@ -35091,6 +35213,12 @@ private static void HandleGameViewPointerDown(
           Debug.LogError("SAMURAI SWORD FLOOR PICKUP: missing valid 16x16 inventory art; item stays on floor.");
           return true;
         }
+        if (!previewItemInstances.TryGetValue(id, out ItemInstance retrievedInstance))
+        {
+          Debug.LogError("ITEM INSTANCE: missing champion floor record " + id);
+          return true;
+        }
+        MoveItemInstance(retrievedInstance, "Cursor");
         previewMovedFloorItems.Remove(id);
         previewMovedFloorItemOrder.Remove(id);
         previewChampionFloorIds.Remove(id);
@@ -35113,6 +35241,10 @@ private static void HandleGameViewPointerDown(
             + "texture at exact path '" + path + "'. No fallback used.");
         return true; // Leave the item on the ground.
       }
+      ItemInstance floorInstance = EnsureWorldItemInstance(id, item.type,
+          "Floor", previewDungeonLevel, item.x, item.y, item.cell);
+      if (floorInstance == null) return true;
+      MoveItemInstance(floorInstance, "Cursor");
       if (previewMovedFloorItems.ContainsKey(id))
       {
         previewMovedFloorItems.Remove(id);
@@ -35207,7 +35339,11 @@ private static void HandleGameViewPointerDown(
           + floorItem.type + "'; item remains on cursor.");
       return true;
     }
-    string id = "champion-floor:" + (++previewChampionFloorSerial);
+    ItemInstance droppedInstance = EnsureChampionItemInstance(
+        previewHeldChampionName, previewHeldChampionItemIndex,
+        itemName, previewHeldChampionSourceSlot);
+    if (droppedInstance == null) return true;
+    string id = droppedInstance.InstanceId;
     if (previewMovedFloorItems.ContainsKey(id)
         || previewChampionFloorIds.ContainsKey(id))
     {
@@ -35223,6 +35359,8 @@ private static void HandleGameViewPointerDown(
     });
     previewMovedFloorItems.Add(id, floorItem);
     previewMovedFloorItemOrder.Add(id);
+    MoveItemInstance(droppedInstance, "Floor", level: previewDungeonLevel,
+        tileX: dropX, tileY: dropY, corner: dropCorner);
     previewHeldChampionName = null;
     previewHeldChampionItemIndex = -1;
     previewHeldChampionCursor = null;
@@ -35267,8 +35405,16 @@ private static void HandleGameViewPointerDown(
     previewHeldFloorItem.y = dropY;
     previewHeldFloorItem.cell = dropCorner;
     previewHeldFloorItem.instanceId = previewHeldFloorItemId;
+    if (!previewItemInstances.TryGetValue(previewHeldFloorItemId,
+        out ItemInstance floorDropInstance))
+    {
+      Debug.LogError("ITEM INSTANCE: missing floor item " + previewHeldFloorItemId);
+      return true;
+    }
     previewMovedFloorItems.Add(previewHeldFloorItemId, previewHeldFloorItem);
     previewMovedFloorItemOrder.Add(previewHeldFloorItemId);
+    MoveItemInstance(floorDropInstance, "Floor", level: previewDungeonLevel,
+        tileX: dropX, tileY: dropY, corner: dropCorner);
     previewHeldFloorItemId = null;
     previewHeldFloorItem = null;
     previewHeldFloorItemCursor = null;
@@ -35805,6 +35951,11 @@ private static void HandleGameViewPointerDown(
       return true;
     }
     string id = previewHeldTorchId;
+    if (!previewItemInstances.TryGetValue(id, out ItemInstance flightInstance))
+    {
+      Debug.LogError("ITEM INSTANCE: missing thrown torch " + id);
+      return true;
+    }
     bool right = logicalX >= 112;
     if (steps == 0)
     {
@@ -35819,6 +35970,8 @@ private static void HandleGameViewPointerDown(
       landingRight = right,
       started = EditorApplication.timeSinceStartup
     };
+    MoveItemInstance(flightInstance, "Flight", level: previewDungeonLevel,
+        tileX: previewX, tileY: previewY);
     previewHeldTorchId = null;
     previewHeldTorchCursor = null;
     Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
@@ -35853,6 +36006,12 @@ private static void HandleGameViewPointerDown(
           y = flight.startY + flight.forwardY * flight.steps,
           corner = flight.corner
         });
+        if (previewItemInstances.TryGetValue(flight.id, out ItemInstance landedInstance))
+          MoveItemInstance(landedInstance, "Floor", level: flight.level,
+              tileX: flight.startX + flight.forwardX * flight.steps,
+              tileY: flight.startY + flight.forwardY * flight.steps,
+              corner: flight.corner);
+        else Debug.LogError("ITEM INSTANCE: missing landed torch " + flight.id);
         // One impact at the final physical destination, including F2/F3.
         PlayItemLandingThudSound(ThrownItemSoundCategory.Weapon, flight.steps);
       }
@@ -35947,12 +36106,20 @@ private static void HandleGameViewPointerDown(
       Debug.LogError("TORCH DROP: item already has a floor location: " + id);
       return true;
     }
+    if (!previewItemInstances.TryGetValue(id, out ItemInstance droppedTorchInstance))
+    {
+      Debug.LogError("ITEM INSTANCE: missing torch " + id);
+      return true;
+    }
     bool right = logicalX >= 112;
     previewDroppedTorches.Add(id, new DroppedTorch
     {
       id = id, level = previewDungeonLevel, x = previewX, y = previewY,
       corner = FloorCornerForFacing(previewFacing, right)
     });
+    MoveItemInstance(droppedTorchInstance, "Floor", level: previewDungeonLevel,
+        tileX: previewX, tileY: previewY,
+        corner: FloorCornerForFacing(previewFacing, right));
     previewHeldTorchId = null;
     previewHeldTorchCursor = null;
     Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
@@ -36172,6 +36339,12 @@ private static void HandleGameViewPointerDown(
       Texture2D cursor = FindExactTorchTexture("Torch_Unlit_16x16.png", 16, 16);
       if (cursor == null || GetTorchGroundTexture() == null)
         return true;
+      if (!previewItemInstances.TryGetValue(item.id, out ItemInstance pickupTorchInstance))
+      {
+        Debug.LogError("ITEM INSTANCE: missing ground torch " + item.id);
+        return true;
+      }
+      MoveItemInstance(pickupTorchInstance, "Cursor");
       previewHeldTorchId = item.id;
       previewHeldTorchCursor = cursor;
       previewDroppedTorches.Remove(item.id);
@@ -36214,6 +36387,13 @@ private static void HandleGameViewPointerDown(
     if (FindExactTorchTexture("Torch_Holder_Full_F1_24x53.png", 24, 53) == null)
       return true; // Click consumed; FindExactTorchTexture logged an error.
 
+    if (!previewItemInstances.TryGetValue(id, out ItemInstance returnedTorchInstance))
+    {
+      Debug.LogError("ITEM INSTANCE: missing returned torch " + id);
+      return true;
+    }
+    MoveItemInstance(returnedTorchInstance, "Holder", level: previewDungeonLevel,
+        tileX: ornament.x, tileY: ornament.y);
     previewRemovedTorchHolderKeys.Remove(id);
     previewHeldTorchId = null;
     previewHeldTorchCursor = null;
@@ -36291,6 +36471,10 @@ private static void HandleGameViewPointerDown(
     if (fullImage == null)
       return true;
 
+    ItemInstance heldTorchInstance = EnsureWorldItemInstance(id, "Torch",
+        "Holder", previewDungeonLevel, ornament.x, ornament.y, null);
+    if (heldTorchInstance == null) return true;
+    MoveItemInstance(heldTorchInstance, "Cursor");
     previewHeldTorchId = id;
     previewHeldTorchCursor = cursorImage;
     previewRemovedTorchHolderKeys.Add(id);
