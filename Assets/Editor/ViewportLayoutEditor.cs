@@ -8841,7 +8841,19 @@ private static void HandleGameViewPointerDown(
     DrawChampionSheetText(pixels, glyphs, maximumX, screenTop, maximum.ToString());
   }
 
+  // Built and validated once when ViewportLayoutEditor is first initialized.
+  // All inspection/status drawing shares the same complete glyph table.
+  private static readonly Dictionary<char, Color32[]> ChampionSheetFont =
+      CreateChampionSheetStatusGlyphs();
+  private static readonly HashSet<char> ChampionSheetUnknownGlyphErrors =
+      new HashSet<char>();
+
   private static Dictionary<char, Color32[]> BuildChampionSheetStatusGlyphs()
+  {
+    return ChampionSheetFont;
+  }
+
+  private static Dictionary<char, Color32[]> CreateChampionSheetStatusGlyphs()
   {
     Dictionary<char, Color32[]> glyphs = new Dictionary<char, Color32[]>();
 
@@ -8885,8 +8897,31 @@ private static void HandleGameViewPointerDown(
     AddChampionSheetPatternGlyph(glyphs, 'V', "#...#" + "#...#" + "#...#" + ".#.#." + "..#..");
     AddChampionSheetPatternGlyph(glyphs, 'X', "#...#" + ".#.#." + "..#.." + ".#.#." + "#...#");
     AddChampionSheetPatternGlyph(glyphs, 'Y', "#...#" + ".#.#." + "..#.." + "..#.." + "..#..");
+    AddChampionSheetPatternGlyph(glyphs, 'J', "..###" + "...#." + "...#." + "#..#." + ".##..");
+    AddChampionSheetPatternGlyph(glyphs, 'Q', ".###." + "#...#" + "#...#" + "#.###" + ".####");
+    AddChampionSheetPatternGlyph(glyphs, 'Z', "#####" + "...#." + "..#.." + ".#..." + "#####");
     AddChampionSheetPatternGlyph(glyphs, '-', "....." + "....." + "#####" + "....." + ".....");
+    AddChampionSheetPatternGlyph(glyphs, ':', "....." + "..#.." + "....." + "..#.." + ".....");
+    AddChampionSheetPatternGlyph(glyphs, '(', "...#." + "..#.." + "..#.." + "..#.." + "...#.");
+    AddChampionSheetPatternGlyph(glyphs, ')', ".#..." + "..#.." + "..#.." + "..#.." + ".#...");
+    AddChampionSheetPatternGlyph(glyphs, '+', "....." + "..#.." + ".###." + "..#.." + ".....");
+    AddChampionSheetPatternGlyph(glyphs, '%', "##..#" + "##.#." + "..#.." + ".#.##" + "#..##");
+    AddChampionSheetPatternGlyph(glyphs, '!', "..#.." + "..#.." + "..#.." + "....." + "..#..");
+    AddChampionSheetPatternGlyph(glyphs, '?', ".###." + "#...#" + "...#." + "....." + "..#..");
+    AddChampionSheetPatternGlyph(glyphs, '=', "....." + "#####" + "....." + "#####" + ".....");
+    AddChampionSheetPatternGlyph(glyphs, '_', "....." + "....." + "....." + "....." + "#####");
+    AddChampionSheetPatternGlyph(glyphs, '\'', "..#.." + "..#.." + "....." + "....." + ".....");
 
+    const string required = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/.,-:()+%!?='_";
+    foreach (char character in required)
+    {
+      if (!glyphs.TryGetValue(character, out Color32[] bitmap)
+          || bitmap == null
+          || bitmap.Length != ChampionSheetGlyphWidth * ChampionSheetGlyphHeight)
+        throw new System.InvalidOperationException(
+            "[ViewportLayoutEditor] Incomplete Champion Sheet 5x5 font: missing/invalid glyph '"
+            + character + "'.");
+    }
     return glyphs;
   }
 
@@ -10332,7 +10367,13 @@ private static void HandleGameViewPointerDown(
     int cursor = screenX;
     for (int i = 0; i < text.Length; i++)
     {
-      char character = text[i];
+      char character = char.ToUpperInvariant(text[i]);
+      if (character != ' ' && !glyphs.ContainsKey(character))
+      {
+        if (ChampionSheetUnknownGlyphErrors.Add(character))
+          Debug.LogError("[ViewportLayoutEditor] ERROR: Unsupported Champion Sheet font character '"
+              + character + "' (U+" + ((int)character).ToString("X4") + ") in text: " + text);
+      }
       if (character != ' '
           && glyphs.TryGetValue(character, out Color32[] glyph))
       {
@@ -10370,6 +10411,10 @@ private static void HandleGameViewPointerDown(
     for (int i = 0; i < text.Length; i++)
     {
       char character = char.ToUpperInvariant(text[i]);
+      if (character != ' ' && !glyphs.ContainsKey(character)
+          && ChampionSheetUnknownGlyphErrors.Add(character))
+        Debug.LogError("[ViewportLayoutEditor] ERROR: Unsupported Champion Sheet font character '"
+            + character + "' (U+" + ((int)character).ToString("X4") + ") in pose text: " + text);
       if (character != ' ' && glyphs.TryGetValue(character, out Color32[] glyph))
       {
         for (int row = 0; row < ChampionSheetGlyphHeight; row++)
