@@ -6638,6 +6638,7 @@ private static void HandleGameViewPointerDown(
     if (window.championEyePressed)
     {
       window.championEyePressed = false;
+      window.championHeldItemOverEye = false;
       window.championEyeMoved = false;
       window.championEyeMiddle = true;
     }
@@ -7744,8 +7745,8 @@ private static void HandleGameViewPointerDown(
 
     if (championSheetVisible)
     {
-      if (TryHandleChampionEquipmentClick(logicalX, logicalY))
-        return true;
+      // Inspecting an item has priority over nearby equipment slot hit-tests.
+      // The click uses the held item's measured red hotspot coordinates.
       // Character Sheet eye icon: exact 16x16 screen hitbox.
       // Mouse-down shows Eye_moved_16x16.png. Mouse release is handled by
       // the Game View MouseUp/PointerUp path and switches to Eye_middle_16x16.png.
@@ -7758,9 +7759,14 @@ private static void HandleGameViewPointerDown(
           && logicalY >= eyeY && logicalY < eyeY + eyeHeight;
       if (clickedEye)
       {
-        // A carried item is inspected on hover, never dropped into the eye.
+        // Holding an item over the Eye requires an actual left-button press.
+        // Never drop the item into the Eye.
         if (previewHeldChampionCursor != null)
+        {
+          championEyePressed = true;
+          SetChampionHeldItemOverEye(true);
           return true;
+        }
         championEyePressed = true;
         championEyeMoved = true;
         championEyeMiddle = false;
@@ -7769,6 +7775,10 @@ private static void HandleGameViewPointerDown(
         Repaint();
         return true;
       }
+
+      // Outside the Eye, preserve all existing slot handling unchanged.
+      if (TryHandleChampionEquipmentClick(logicalX, logicalY))
+        return true;
 
       // Character Sheet mouth symbol. While the left mouse button is held
       // on the mouth, show FOOD and WATER labels as runtime overlays.
@@ -8333,7 +8343,7 @@ private static void HandleGameViewPointerDown(
   // changes the identity of the inventory item on the cursor.
   private void SetChampionHeldItemOverEye(bool active)
   {
-    active = active && championSheetVisible
+    active = active && championSheetVisible && championEyePressed
         && previewHeldChampionCursor != null
         && previewHeldChampionItemIndex >= 0;
     if (championHeldItemOverEye == active)
