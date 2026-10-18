@@ -2155,6 +2155,29 @@ public class ViewportLayoutEditor : EditorWindow
     Debug.Log("FLOOR ITEMS: Restored Apple (Level 0, 4,9 North) and Bread (Level 0, 5,11 East) to original map positions.");
   }
 
+  [MenuItem("Tools/Audio Settings")]
+  public static void OpenDungeonAudioSettings()
+  {
+    const string audioSettingsPath = "Assets/Audio/AudioSettings/AudioSettings.asset";
+    Object settings = AssetDatabase.LoadMainAssetAtPath(audioSettingsPath);
+    if (settings == null)
+    {
+      Debug.LogError("DUNGEON AUDIO SETTINGS: Required asset not found at "
+          + audioSettingsPath + ". No fallback asset will be selected.");
+      return;
+    }
+
+    // ViewEdit floats over the Inspector. Close it before selecting the asset,
+    // otherwise the settings sliders are hidden behind the ViewEdit window.
+    ViewportLayoutEditor viewEdit = FindOpenViewEditWindow();
+    if (viewEdit != null)
+      viewEdit.Close();
+
+    Selection.activeObject = settings;
+    EditorGUIUtility.PingObject(settings);
+    // Select the existing asset: its sliders appear in Unity's Inspector.
+  }
+
   [MenuItem("Tools/ViewEdit &v")]
   public static void Open()
   {
@@ -7048,7 +7071,8 @@ private static void HandleGameViewPointerDown(
       AudioClip source,
       float volume,
       ref AudioClip cachedPreviewClip,
-      ref float cachedPreviewVolume)
+      ref float cachedPreviewVolume,
+      bool preventStreamRewind = false)
   {
     if (source == null)
       return null;
@@ -7074,12 +7098,14 @@ private static void HandleGameViewPointerDown(
     float[] samples = new float[source.samples * source.channels];
     if (!source.GetData(samples, 0))
     {
-      Debug.LogWarning(
-          "[ViewportLayoutEditor] Could not read AudioClip samples for Edit Mode volume preview: "
-          + source.name);
-      return source;
+      Debug.LogError("AUDIO PREVIEW: Cannot read samples from '" + source.name
+          + "'. Check its Audio Import Settings (Decompress On Load required). No silent fallback.");
+      return null;
     }
 
+    // Use a fully populated, non-streaming clip. Streaming AudioUtil previews
+    // can request extra seek/read cycles, replaying the sound or consuming its
+    // one-shot samples before the user can hear them.
     for (int i = 0; i < samples.Length; i++)
       samples[i] *= volume;
 
@@ -7089,8 +7115,37 @@ private static void HandleGameViewPointerDown(
         source.channels,
         source.frequency,
         false);
+    if (cachedPreviewClip == null || !cachedPreviewClip.SetData(samples, 0))
+    {
+      Debug.LogError("AUDIO PREVIEW: Could not write scaled PCM samples for '"
+          + source.name + "'. No silent fallback.");
+      if (cachedPreviewClip != null)
+        Object.DestroyImmediate(cachedPreviewClip);
+      cachedPreviewClip = null;
+      return null;
+    }
+    // Validate that the returned PCM isn't silent or incorrectly written.
+    float[] check = new float[Mathf.Min(samples.Length, 8192)];
+    if (!cachedPreviewClip.GetData(check, 0))
+    {
+      Debug.LogError("AUDIO PREVIEW: Cannot verify generated clip for '"
+          + source.name + "'.");
+      Object.DestroyImmediate(cachedPreviewClip);
+      cachedPreviewClip = null;
+      return null;
+    }
+    bool hasSignal = false;
+    for (int i = 0; i < check.Length; i++)
+      if (Mathf.Abs(check[i]) > 0.000001f) { hasSignal = true; break; }
+    if (!hasSignal)
+    {
+      Debug.LogError("AUDIO PREVIEW: Generated clip contains no audio in its first samples for '"
+          + source.name + "'.");
+      Object.DestroyImmediate(cachedPreviewClip);
+      cachedPreviewClip = null;
+      return null;
+    }
     cachedPreviewClip.hideFlags = HideFlags.HideAndDontSave;
-    cachedPreviewClip.SetData(samples, 0);
     cachedPreviewVolume = volume;
     return cachedPreviewClip;
   }
@@ -7299,12 +7354,31 @@ private static void HandleGameViewPointerDown(
       return;
     }
 
-    AudioClip previewClip = GetVolumeAdjustedPreviewClip(
-        clip,
-        volume,
-        ref cachedChampionExitPreviewClip,
-        ref cachedChampionExitPreviewVolume);
-    PlayEditorPreviewClip(previewClip);
+    // UnityEditor.AudioUtil.PlayPreviewClip does not reliably play dynamically
+    // created AudioClips in Edit Mode. Play the imported source with an
+    // AudioSource, which has native volume control, instead of editing PCM.
+    // The helper component is ExecuteAlways so it can play in Edit Mode.
+    GameObject previewObject = new GameObject("ChampionExit_Pop04_EditPreview");
+    previewObject.hideFlags = HideFlags.HideAndDontSave;
+    AudioSource previewSource = previewObject.AddComponent<AudioSource>();
+    previewSource.playOnAwake = false;
+    previewSource.loop = false;
+    previewSource.spatialBlend = 0f;
+    previewSource.volume = volume;
+    previewSource.clip = clip;
+    previewSource.Play();
+    // Explicitly release the temporary editor object after the one-shot ends.
+    // Do not interrupt a different preview or replay the clip during cleanup.
+    double disposeAt = EditorApplication.timeSinceStartup + clip.length + 0.15;
+    EditorApplication.CallbackFunction cleanup = null;
+    cleanup = () =>
+    {
+      if (EditorApplication.timeSinceStartup < disposeAt) return;
+      EditorApplication.update -= cleanup;
+      if (previewObject != null) Object.DestroyImmediate(previewObject);
+    };
+    EditorApplication.update += cleanup;
+
   }
 
 
@@ -29955,22 +30029,43 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  // ViewEdit-calibrated F1 ground positions for Samurai Sword (72x8).
-  // Apply persists these values in ViewportLayoutEditor.cs.
-  private int swordF1LeftPreviewX = 20;
-  private int swordF1RightPreviewX = 119;
-  private int swordF1PreviewScreenTop = 156;
-  private readonly Dictionary<string, Vector2Int> swordSavedFloorPositions =
-      new Dictionary<string, Vector2Int>(System.StringComparer.Ordinal);
+  // A single editable translation per floor side applies to every registered
+  // ground item, regardless of name or native sprite dimensions.
+  private readonly Dictionary<string, Vector2Int> draftF1RegionShifts =
+      new Dictionary<string, Vector2Int>(System.StringComparer.OrdinalIgnoreCase);
 
-  // Ghi Trousers initial F1 positions are provisional until compared with
-  // original Dungeon Master. Left/right X and Y may be calibrated separately.
-  private int ghiTrousersF1LeftPreviewX = 24;
-  private int ghiTrousersF1LeftPreviewScreenTop = 151;
-  private int ghiTrousersF1RightPreviewX = 135;
-  private int ghiTrousersF1RightPreviewScreenTop = 151;
-  private readonly Dictionary<string, Vector2Int> ghiTrousersSavedFloorPositions =
-      new Dictionary<string, Vector2Int>(System.StringComparer.Ordinal);
+  private bool SaveF1PlacementRegionShift(bool isRight, Vector2Int shift)
+  {
+    GroundArtworkRegistry registry = ReadGroundArtworkRegistry();
+    GroundF1PlacementRegion region = registry == null || registry.groundF1PlacementRegions == null
+        ? null : (isRight ? registry.groundF1PlacementRegions.right : registry.groundF1PlacementRegions.left);
+    if (region == null)
+    {
+      Debug.LogError("F1 PLACEMENT: Missing shared left/right region. No save.");
+      return false;
+    }
+    if (region.minX + shift.x < 0 || region.maxX + shift.x > 224
+        || region.minY + shift.y < 0 || region.maxY + shift.y > 200)
+    {
+      Debug.LogError("F1 PLACEMENT: Shared region shift exceeds viewport. No save.");
+      return false;
+    }
+    region.minX += shift.x;
+    region.maxX += shift.x;
+    region.minY += shift.y;
+    region.maxY += shift.y;
+    try
+    {
+      File.WriteAllText(ItemArtworkRegistryPath, JsonUtility.ToJson(registry, true) + "\n");
+      AssetDatabase.ImportAsset(ItemArtworkRegistryPath);
+      return true;
+    }
+    catch (System.Exception ex)
+    {
+      Debug.LogError("F1 PLACEMENT: Could not save shared region: " + ex.Message);
+      return false;
+    }
+  }
 
   // Calculate an F1 position from the validated image size and the data-defined
   // left/right region. Region coordinates are screen-top based (320x200).
@@ -30004,6 +30099,11 @@ private static void HandleGameViewPointerDown(
     }
     int x = region.minX + (availableWidth - texture.width) / 2;
     int y = region.minY + (availableHeight - texture.height) / 2;
+    if (draftF1RegionShifts.TryGetValue(isRight ? "R" : "L", out Vector2Int shift))
+    {
+      x += shift.x;
+      y += shift.y;
+    }
     rect = new Rect(x, y, texture.width, texture.height);
     return true;
   }
@@ -30018,36 +30118,25 @@ private static void HandleGameViewPointerDown(
     if (item == null || texture == null || texture.width <= 0 || texture.height <= 0)
       return false;
 
-    int x;
-    int top;
-    switch ((item.type ?? string.Empty).ToUpperInvariant())
+    // Apple and Bread keep their verified legacy renderers until migration.
+    if (string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase))
     {
-      case "SAMURAI SWORD":
-        x = isRight ? swordF1RightPreviewX : swordF1LeftPreviewX;
-        top = swordF1PreviewScreenTop;
-        break;
-      case "GHI":
-      case "GHI BODY":
-      case "GHI TROUSERS":
-        x = isRight ? ghiTrousersF1RightPreviewX : ghiTrousersF1LeftPreviewX;
-        top = isRight ? ghiTrousersF1RightPreviewScreenTop : ghiTrousersF1LeftPreviewScreenTop;
-        break;
-      case "APPLE":
-        x = isRight ? appleF0RightPreviewX : appleF0FrontPreviewX;
-        top = isRight ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop;
-        break;
-      case "BREAD":
-        x = isRight ? breadF0RightPreviewX : breadF0LeftPreviewX;
-        top = isRight ? breadF0RightPreviewScreenTop : breadF0LeftPreviewScreenTop;
-        break;
-      default:
-        // Registered artwork can use the shared F1 placement regions without
-        // any new per-item switch cases. Image lookup still fails explicitly
-        // if the exact item mapping or required sprite is absent.
-        return TryGetAutomaticF1FloorItemRect(item.type, isRight, texture, out rect);
+      rect = new Rect(isRight ? appleF0RightPreviewX : appleF0FrontPreviewX,
+          isRight ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop,
+          texture.width, texture.height);
+      return true;
     }
-    rect = new Rect(x, top, texture.width, texture.height);
-    return true;
+    if (string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase))
+    {
+      rect = new Rect(isRight ? breadF0RightPreviewX : breadF0LeftPreviewX,
+          isRight ? breadF0RightPreviewScreenTop : breadF0LeftPreviewScreenTop,
+          texture.width, texture.height);
+      return true;
+    }
+    // All registered champion items use the same dimension-based F1 rules.
+    // Never use per-item/per-artwork calibrated coordinates here.
+    if (GetRegisteredGroundArtwork(item.type) == null) return false;
+    return TryGetAutomaticF1FloorItemRect(item.type, isRight, texture, out rect);
   }
 
   private void BlitProjectedFloorItem(
@@ -30434,79 +30523,45 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  private void DrawSamuraiSwordFloorCalibration(bool isRight)
+  private void DrawRegisteredF1FloorCalibration(string itemType, bool isRight)
   {
-    string xField = isRight ? "swordF1RightPreviewX" : "swordF1LeftPreviewX";
-    const string yField = "swordF1PreviewScreenTop";
-    int x = isRight ? swordF1RightPreviewX : swordF1LeftPreviewX;
-    int y = swordF1PreviewScreenTop;
-    if (!swordSavedFloorPositions.TryGetValue(xField, out Vector2Int saved))
-    {
-      saved = new Vector2Int(x, y);
-      swordSavedFloorPositions.Add(xField, saved);
-    }
+    // X/Y edits translate the SAME shared region for every item on this side.
+    // They do not create hidden item-specific calibrations.
+    GroundArtworkEntry mapping = GetRegisteredGroundArtwork(itemType);
+    if (mapping == null) return;
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(mapping.groundF1Path);
+    if (texture == null || !TryGetAutomaticF1FloorItemRect(itemType, isRight,
+        texture, out Rect calculated)) return;
+    string key = isRight ? "R" : "L";
+    Vector2Int appliedShift = draftF1RegionShifts.TryGetValue(key,
+        out Vector2Int existing) ? existing : Vector2Int.zero;
+    int originalX = Mathf.RoundToInt(calculated.xMin) - appliedShift.x;
+    int originalY = Mathf.RoundToInt(calculated.yMin) - appliedShift.y;
     float oldWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    int editX = x;
-    bool changedX = DrawIntStepperInline(
-        "X", ref editX, snap, x != saved.x, true, 25f, 25f);
+    int editX = Mathf.RoundToInt(calculated.xMin);
+    bool changedX = DrawIntStepperInline("X", ref editX, snap,
+        editX != originalX, true, 25f, 25f);
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-    int editY = y;
-    bool changedY = DrawIntStepperInline(
-        "Y", ref editY, snap, y != saved.y, true, 25f, 25f);
+    int editY = Mathf.RoundToInt(calculated.yMin);
+    bool changedY = DrawIntStepperInline("Y", ref editY, snap,
+        editY != originalY, true, 25f, 25f);
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
     NoteContentRight();
     EditorGUIUtility.labelWidth = oldWidth;
+    Vector2Int newShift = new Vector2Int(editX - originalX, editY - originalY);
     if (changedX || changedY)
     {
-      if (isRight) swordF1RightPreviewX = editX;
-      else swordF1LeftPreviewX = editX;
-      swordF1PreviewScreenTop = editY;
+      draftF1RegionShifts[key] = newShift;
       RefreshEditModePreview();
       RepaintGameViews();
       Repaint();
     }
-    if (apply && SaveBreadScreenPosition(xField, yField, editX, editY))
+    if (apply && SaveF1PlacementRegionShift(isRight, newShift))
     {
-      swordSavedFloorPositions[xField] = new Vector2Int(editX, editY);
-      Repaint();
-    }
-  }
-
-  private void DrawGhiTrousersFloorCalibration(bool isRight)
-  {
-    string xField = isRight ? "ghiTrousersF1RightPreviewX" : "ghiTrousersF1LeftPreviewX";
-    string yField = isRight ? "ghiTrousersF1RightPreviewScreenTop" : "ghiTrousersF1LeftPreviewScreenTop";
-    int x = isRight ? ghiTrousersF1RightPreviewX : ghiTrousersF1LeftPreviewX;
-    int y = isRight ? ghiTrousersF1RightPreviewScreenTop : ghiTrousersF1LeftPreviewScreenTop;
-    if (!ghiTrousersSavedFloorPositions.TryGetValue(xField, out Vector2Int saved))
-    {
-      saved = new Vector2Int(x, y);
-      ghiTrousersSavedFloorPositions.Add(xField, saved);
-    }
-    float oldWidth = EditorGUIUtility.labelWidth;
-    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    int editX = x;
-    bool changedX = DrawIntStepperInline(
-        "X", ref editX, snap, x != saved.x, true, 25f, 25f);
-    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-    int editY = y;
-    bool changedY = DrawIntStepperInline(
-        "Y", ref editY, snap, y != saved.y, true, 25f, 25f);
-    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-    NoteContentRight();
-    EditorGUIUtility.labelWidth = oldWidth;
-    if (changedX || changedY)
-    {
-      if (isRight) { ghiTrousersF1RightPreviewX = editX; ghiTrousersF1RightPreviewScreenTop = editY; }
-      else { ghiTrousersF1LeftPreviewX = editX; ghiTrousersF1LeftPreviewScreenTop = editY; }
+      draftF1RegionShifts.Remove(key);
       RefreshEditModePreview();
       RepaintGameViews();
-      Repaint();
-    }
-    if (apply && SaveBreadScreenPosition(xField, yField, editX, editY))
-    {
-      ghiTrousersSavedFloorPositions[xField] = new Vector2Int(editX, editY);
       Repaint();
     }
   }
@@ -30557,13 +30612,8 @@ private static void HandleGameViewPointerDown(
         else if (string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase))
           DrawBreadScreenCalibration(depth, isRight);
         else if (depth == FloorItemDepth.SameTile
-            && string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase))
-          DrawSamuraiSwordFloorCalibration(isRight);
-        else if (depth == FloorItemDepth.SameTile
-            && (string.Equals(item.type, "Ghi Trousers", System.StringComparison.OrdinalIgnoreCase)
-                || string.Equals(item.type, "Ghi Body", System.StringComparison.OrdinalIgnoreCase)
-                || string.Equals(item.type, "Ghi", System.StringComparison.OrdinalIgnoreCase)))
-          DrawGhiTrousersFloorCalibration(isRight);
+            && IsRegisteredChampionGroundItem(item.type))
+          DrawRegisteredF1FloorCalibration(item.type, isRight);
       }
       EditorGUILayout.EndHorizontal();
 
@@ -37185,3 +37235,24 @@ private static void HandleGameViewPointerDown(
     return PreviewHeight - displayY - height;
   }
 }
+
+// Saves audio settings as soon as a field changes in the Inspector. This keeps
+// the usual Inspector layout and does not modify or replace the sound system.
+[CustomEditor(typeof(DungeonAudioSettings))]
+public sealed class DungeonAudioSettingsAutoSaveInspector : Editor
+{
+  public override void OnInspectorGUI()
+  {
+    serializedObject.Update();
+    EditorGUI.BeginChangeCheck();
+    DrawDefaultInspector();
+    bool changed = EditorGUI.EndChangeCheck();
+    bool applied = serializedObject.ApplyModifiedProperties();
+    if (changed || applied)
+    {
+      EditorUtility.SetDirty(target);
+      AssetDatabase.SaveAssetIfDirty(target);
+    }
+  }
+}
+
