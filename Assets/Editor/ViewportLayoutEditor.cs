@@ -7603,8 +7603,8 @@ private static void HandleGameViewPointerDown(
     for (int i = 0; i < target.StartingItems.Count; i++)
     {
       string name = GetChampionStartingItemName(target.StartingItems[i]);
-      if (string.IsNullOrEmpty(name) || !TryGetChampionSheetEquipSlot(
-              name, ref hand, ref quiver, out int sx, out int sy)) continue;
+      if (string.IsNullOrEmpty(name) || !TryGetChampionStartingItemSlot(
+              target.Name, name, ref hand, ref quiver, out int sx, out int sy)) continue;
       if (!IsChampionItemRemoved(target.Name, i))
         occupied.Add(GetPreviewChampionItemSlot(target.Name, i, sx, sy));
     }
@@ -8019,7 +8019,7 @@ private static void HandleGameViewPointerDown(
     {
       string name = GetChampionStartingItemName(hero.StartingItems[i]);
       if (string.IsNullOrEmpty(name)
-          || !TryGetChampionSheetEquipSlot(name, ref handUsed,
+          || !TryGetChampionStartingItemSlot(hero.Name, name, ref handUsed,
               ref quiverUsed, out int originalX, out int originalY))
         continue;
       if (i == previewHeldChampionItemIndex
@@ -9678,8 +9678,8 @@ private static void HandleGameViewPointerDown(
         continue;
       }
 
-      if (!TryGetChampionSheetEquipSlot(
-              itemName,
+      if (!TryGetChampionStartingItemSlot(
+              hero.Name, itemName,
               ref handUsed,
               ref quiverUsed,
               out int localX,
@@ -9756,7 +9756,7 @@ private static void HandleGameViewPointerDown(
     {
       string itemName = GetChampionStartingItemName(hero.StartingItems[i]);
       if (string.IsNullOrEmpty(itemName)
-          || !TryGetChampionSheetEquipSlot(itemName, ref handUsed,
+          || !TryGetChampionStartingItemSlot(hero.Name, itemName, ref handUsed,
               ref quiverUsed, out int originalX, out int originalY))
         continue;
       if (IsChampionItemRemoved(hero.Name, i))
@@ -9829,6 +9829,26 @@ private static void HandleGameViewPointerDown(
     }
 
     return string.Empty;
+  }
+
+  // Starting-item placement uses monitor-relative directions. HAWK's Arrow
+  // starts in the screen-RIGHT hand, not in the quiver. Player movements
+  // remain authoritative after initialization.
+  private static bool TryGetChampionStartingItemSlot(
+      string heroName, string itemName, ref bool handUsed, ref bool quiverUsed,
+      out int localX, out int localY)
+  {
+    if (string.Equals(heroName, "HAWK", System.StringComparison.OrdinalIgnoreCase)
+        && string.Equals(NormalizeChampionAssetKey(itemName), "ARROW",
+            System.StringComparison.Ordinal))
+    {
+      localX = 61;
+      localY = 52;
+      handUsed = true;
+      return true;
+    }
+    return TryGetChampionSheetEquipSlot(
+        itemName, ref handUsed, ref quiverUsed, out localX, out localY);
   }
 
   private static bool TryGetChampionSheetEquipSlot(
