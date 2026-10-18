@@ -7735,6 +7735,29 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
+  // Match inventory slot selection: snapped red hotspot first, then strictly
+  // more than 20% overlap of the whole 16x16 held cursor (including alpha).
+  private static bool IsHeldChampionItemOverEye(float x, float y)
+  {
+    const float eyeX = 12f, eyeY = 46f;
+    const float eyeSize = 16f;
+    Rect eyeRect = new Rect(eyeX, eyeY, eyeSize, eyeSize);
+    Vector2 pixelHotspot = new Vector2(Mathf.Round(x), Mathf.Round(y));
+    if (eyeRect.Contains(pixelHotspot))
+      return true;
+    float halfItem = ChampionSheetItemSize * 0.5f;
+    Rect cursorRect = new Rect(x - halfItem, y - halfItem,
+        ChampionSheetItemSize, ChampionSheetItemSize);
+    float overlapWidth = Mathf.Max(0f,
+        Mathf.Min(cursorRect.xMax, eyeRect.xMax)
+        - Mathf.Max(cursorRect.xMin, eyeRect.xMin));
+    float overlapHeight = Mathf.Max(0f,
+        Mathf.Min(cursorRect.yMax, eyeRect.yMax)
+        - Mathf.Max(cursorRect.yMin, eyeRect.yMin));
+    return overlapWidth * overlapHeight
+        > ChampionSheetItemSize * ChampionSheetItemSize * 0.2f;
+  }
+
   private bool TryHandleChampionSheetClick(float logicalX, float logicalY)
   {
     bool insideGame =
@@ -7754,9 +7777,10 @@ private static void HandleGameViewPointerDown(
       const float eyeY = 46f;
       const float eyeWidth = 16f;
       const float eyeHeight = 16f;
-      bool clickedEye =
-          logicalX >= eyeX && logicalX < eyeX + eyeWidth
-          && logicalY >= eyeY && logicalY < eyeY + eyeHeight;
+      bool clickedEye = previewHeldChampionCursor != null
+          ? IsHeldChampionItemOverEye(logicalX, logicalY)
+          : (logicalX >= eyeX && logicalX < eyeX + eyeWidth
+              && logicalY >= eyeY && logicalY < eyeY + eyeHeight);
       if (clickedEye)
       {
         // Holding an item over the Eye requires an actual left-button press.
@@ -8392,16 +8416,60 @@ private static void HandleGameViewPointerDown(
     FillChampionSheetRect(pixels, x, y + h - 1, w, 1, border);
     FillChampionSheetRect(pixels, x, y, 1, h, border);
     FillChampionSheetRect(pixels, x + w - 1, y, 1, h, border);
+    // The original item inspection shows its 16x16 item inside the
+    // Object_Description_Circle_32x27 artwork. Use the exact named asset;
+    // missing/duplicate/wrong-sized artwork is an error, never a fallback.
+    const string circleName = "Object_Description_Circle_32x27.png";
+    string[] circleGuids = AssetDatabase.FindAssets(
+        "Object_Description_Circle_32x27 t:Texture2D", new[] { "Assets" });
+    string circlePath = null;
+    for (int i = 0; i < circleGuids.Length; i++)
+    {
+      string candidate = AssetDatabase.GUIDToAssetPath(circleGuids[i]);
+      if (!string.Equals(Path.GetFileName(candidate), circleName,
+              System.StringComparison.OrdinalIgnoreCase))
+        continue;
+      if (circlePath != null)
+      {
+        Debug.LogError("CHAMPION EYE: Duplicate " + circleName
+            + " assets found: " + circlePath + " and " + candidate);
+        return;
+      }
+      circlePath = candidate;
+    }
+    if (circlePath == null)
+    {
+      Debug.LogError("CHAMPION EYE: Missing required asset " + circleName);
+      return;
+    }
+    Texture2D circle = AssetDatabase.LoadAssetAtPath<Texture2D>(circlePath);
+    if (circle == null || !circle.isReadable || circle.width != 32 || circle.height != 27)
+    {
+      Debug.LogError("CHAMPION EYE: " + circleName
+          + " must be a readable 32x27 Texture2D at " + circlePath);
+      return;
+    }
+    // Circle and item stay fully within the proven stats-panel frame.
+    // Circle X=104..135, Y=87..113; item X=112..127, Y=93..108.
+    // Paint circle first, then item, respecting transparent pixels.
+    Color32[] circlePixels = circle.GetPixels32();
+    for (int sy = 0; sy < 27; sy++)
+      for (int sx = 0; sx < 32; sx++)
+      {
+        Color32 pixel = circlePixels[sy * 32 + sx];
+        if (pixel.a != 0)
+          SetChampionSheetPixel(pixels, 104 + sx, 87 + 26 - sy, pixel);
+      }
     Color32[] sprite = art.GetPixels32();
     for (int sy = 0; sy < 16; sy++)
       for (int sx = 0; sx < 16; sx++)
       {
         Color32 pixel = sprite[sy * 16 + sx];
         if (pixel.a != 0)
-          SetChampionSheetPixel(pixels, 109 + sx, 91 + 15 - sy, pixel);
+          SetChampionSheetPixel(pixels, 112 + sx, 93 + 15 - sy, pixel);
       }
     Dictionary<char, Color32[]> glyphs = BuildChampionSheetStatusGlyphs();
-    DrawChampionSheetText(pixels, glyphs, 130, 95, name.ToUpperInvariant());
+    DrawChampionSheetText(pixels, glyphs, 140, 95, name.ToUpperInvariant());
     // WeightTenths is stored in tenths of a kilogram in champion JSON.
     int weight = item.WeightTenths;
     string weightText = "WEIGHS " + (weight / 10).ToString()
@@ -35367,8 +35435,7 @@ private static void HandleGameViewPointerDown(
       // Match the same 320x200 coordinate system as inventory hit testing.
       bool onEye = owner.TryGetLogical320x200FromGameView(
           gameView, pointerPosition, out eyeLogical)
-          && eyeLogical.x >= 12f && eyeLogical.x < 28f
-          && eyeLogical.y >= 46f && eyeLogical.y < 62f;
+          && IsHeldChampionItemOverEye(eyeLogical.x, eyeLogical.y);
       owner.SetChampionHeldItemOverEye(onEye);
     }
     else
