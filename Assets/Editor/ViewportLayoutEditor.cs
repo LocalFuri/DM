@@ -8349,6 +8349,13 @@ private static void HandleGameViewPointerDown(
     if (championHeldItemOverEye == active)
       return;
     championHeldItemOverEye = active;
+    // During an Eye inspection, hide the entire cursor artwork (including
+    // the diagnostic red hotspot) without releasing or changing the item.
+    // Mouse-up restores the very same 16x16 held sprite.
+    if (s_heldItemPointerOverlay != null)
+      s_heldItemPointerOverlay.style.display = active
+          ? UnityEngine.UIElements.DisplayStyle.None
+          : UnityEngine.UIElements.DisplayStyle.Flex;
     championEyeMoved = active || championEyePressed;
     championEyeMiddle = !active && !championEyePressed;
     PresentEditModePreviewToGameView();
@@ -8377,7 +8384,7 @@ private static void HandleGameViewPointerDown(
       return;
     }
     // All dimensions use the full 320x200 screen, origin top-left.
-    const int x = 104, y = 88, w = 104, h = 72;
+    const int x = 103, y = 85, w = 116, h = 73;
     Color32 panel = new Color32(73, 73, 73, 255);
     Color32 border = new Color32(109, 109, 109, 255);
     FillChampionSheetRect(pixels, x, y, w, h, panel);
@@ -35354,7 +35361,6 @@ private static void HandleGameViewPointerDown(
       s_heldItemHotspotOverlay.style.top = 8f * pixelHeight;
       s_heldItemHotspotOverlay.BringToFront();
     }
-    s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.Flex;
     if (owner.championSheetVisible && owner.previewHeldChampionCursor != null)
     {
       Vector2 eyeLogical;
@@ -35367,6 +35373,11 @@ private static void HandleGameViewPointerDown(
     }
     else
       owner.SetChampionHeldItemOverEye(false);
+    // The cursor must disappear only for the duration of the pressed Eye
+    // inspection, and reappear as soon as the button is released.
+    s_heldItemPointerOverlay.style.display = owner.championHeldItemOverEye
+        ? UnityEngine.UIElements.DisplayStyle.None
+        : UnityEngine.UIElements.DisplayStyle.Flex;
     SetHeldItemArrowHidden(gameView);
     s_heldItemPointerOverlay.BringToFront();
   }
