@@ -95,9 +95,6 @@ public class ViewportLayoutEditor : EditorWindow
   // authoritative ground/world artwork; Apple_16x16 is inventory-only.
   private const string AppleGroundAssetPath =
       "Assets/Art/Food/Apple_19x13.png";
-  // Iaido Samurai Sword: independent native world art (never scale 16x16 icon).
-  private const string SamuraiSwordGroundAssetPath =
-      "Assets/Art/Weapons/Sword_72x8.png";
   private const int Level0AppleTestX = 4;
   private const int Level0AppleTestY = 9;
   private const string Level0AppleTestCell = "N";
@@ -29657,49 +29654,111 @@ private static void HandleGameViewPointerDown(
           " at exact path '" + assetPath + "'. Check its current location and Texture Import Settings (Read/Write). No fallback will be used.");
   }
 
+  private const string ItemArtworkRegistryPath =
+      "Assets/Data/Items/ItemArtworkRegistry.json";
+
+  [System.Serializable]
+  private sealed class GroundArtworkRegistry
+  {
+    public GroundArtworkEntry[] entries;
+  }
+
+  [System.Serializable]
+  private sealed class GroundArtworkEntry
+  {
+    public string itemType;
+    public string groundF1Path;
+    public int width;
+    public int height;
+  }
+
+  private GroundArtworkRegistry ReadGroundArtworkRegistry()
+  {
+    if (!File.Exists(ItemArtworkRegistryPath))
+    {
+      ReportFloorItemTextureProblem("Registry", ItemArtworkRegistryPath, "is missing");
+      return null;
+    }
+    try
+    {
+      var registry = JsonUtility.FromJson<GroundArtworkRegistry>(
+          File.ReadAllText(ItemArtworkRegistryPath));
+      if (registry != null && registry.entries != null) return registry;
+    }
+    catch (System.Exception ex)
+    {
+      ReportFloorItemTextureProblem("Registry", ItemArtworkRegistryPath,
+          "cannot be parsed: " + ex.Message);
+      return null;
+    }
+    ReportFloorItemTextureProblem("Registry", ItemArtworkRegistryPath, "has no entries array");
+    return null;
+  }
+
+  private GroundArtworkEntry GetRegisteredGroundArtwork(string itemType)
+  {
+    GroundArtworkRegistry registry = ReadGroundArtworkRegistry();
+    if (registry == null) return null;
+    GroundArtworkEntry found = null;
+    foreach (GroundArtworkEntry entry in registry.entries)
+    {
+      if (entry == null || !string.Equals(entry.itemType, itemType,
+          System.StringComparison.OrdinalIgnoreCase)) continue;
+      if (found != null)
+      {
+        ReportFloorItemTextureProblem(itemType, ItemArtworkRegistryPath,
+            "contains duplicate item mappings");
+        return null;
+      }
+      found = entry;
+    }
+    return found;
+  }
+
+  private bool IsRegisteredChampionGroundItem(string itemType)
+  {
+    // Apple and Bread retain their verified legacy drawing paths during this
+    // staged migration; all other entries use the external mapping.
+    return !string.Equals(itemType, "Apple", System.StringComparison.OrdinalIgnoreCase)
+        && !string.Equals(itemType, "Bread", System.StringComparison.OrdinalIgnoreCase);
+  }
+
+  private Texture2D LoadRegisteredF1GroundArtwork(string itemType)
+  {
+    GroundArtworkEntry entry = GetRegisteredGroundArtwork(itemType);
+    if (entry == null)
+    {
+      ReportFloorItemTextureProblem(itemType, ItemArtworkRegistryPath,
+          "has no unique ground F1 mapping");
+      return null;
+    }
+    if (string.IsNullOrEmpty(entry.groundF1Path) || entry.width <= 0 || entry.height <= 0)
+    {
+      ReportFloorItemTextureProblem(itemType, ItemArtworkRegistryPath,
+          "has invalid F1 path or dimensions");
+      return null;
+    }
+    Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(entry.groundF1Path);
+    if (tex == null || !tex.isReadable || tex.width != entry.width
+        || tex.height != entry.height)
+    {
+      ReportFloorItemTextureProblem(itemType, entry.groundF1Path,
+          tex == null ? "is missing" : "is not readable or has incorrect dimensions; expected "
+              + entry.width + "x" + entry.height);
+      return null;
+    }
+    return tex;
+  }
+
   private Texture2D GetFloorItemTexture(FloorItemPlacement item)
   {
     if (item == null)
       return null;
 
-    if (string.Equals(item.type, "Samurai Sword",
-            System.StringComparison.OrdinalIgnoreCase))
-    {
-      Texture2D sword = AssetDatabase.LoadAssetAtPath<Texture2D>(
-          SamuraiSwordGroundAssetPath);
-      if (sword == null || !sword.isReadable || sword.width != 72
-          || sword.height != 8)
-      {
-        ReportFloorItemTextureProblem("Samurai Sword", SamuraiSwordGroundAssetPath,
-            sword == null ? "is missing" : "must be readable and exactly 72x8");
-        return null;
-      }
-      return sword;
-    }
-
-    if (string.Equals(item.type, "Ghi Trousers", System.StringComparison.OrdinalIgnoreCase))
-    {
-      // Ghi Trousers is imported as a Sprite. AssetDatabase.FindAssets with
-      // t:Texture2D may exclude Sprite assets, even when their underlying
-      // texture is perfectly valid. Load the verified exact path directly.
-      const string ghiGroundPath = "Assets/Art/Armor/Ghi_Trousers_64x16.png";
-      Texture2D matching = AssetDatabase.LoadAssetAtPath<Texture2D>(ghiGroundPath);
-      if (matching == null)
-      {
-        ReportFloorItemTextureProblem("Ghi Trousers", ghiGroundPath,
-            "could not be loaded as a Texture2D (verify asset type/path)");
-        return null;
-      }
-      if (!matching.isReadable || matching.width != 64 || matching.height != 16)
-      {
-        ReportFloorItemTextureProblem("Ghi Trousers", ghiGroundPath,
-            "failed validation: Read/Write=" + matching.isReadable
-            + ", imported size=" + matching.width + "x" + matching.height
-            + ", required=64x16");
-        return null;
-      }
-      return matching;
-    }
+    // Champion equipment ground art is defined in data, not per-item C# paths.
+    // No inferred image, resized inventory art, or silent fallback is permitted.
+    if (IsRegisteredChampionGroundItem(item.type))
+      return LoadRegisteredF1GroundArtwork(item.type);
 
     if (string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase))
     {
@@ -29911,14 +29970,13 @@ private static void HandleGameViewPointerDown(
       {
         bool appleItem = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
         bool breadItem = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
-        bool swordItem = string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase);
-        bool trousersItem = string.Equals(item.type, "Ghi Trousers", System.StringComparison.OrdinalIgnoreCase);
-        if (appleItem || breadItem || swordItem || trousersItem)
+        if (appleItem || breadItem)
           ReportFloorItemTextureProblem(item.type,
-              appleItem ? AppleGroundAssetPath :
-                  (breadItem ? BreadGroundAssetPath :
-                  (trousersItem ? "Assets/Art/**/Ghi_Trousers_64x16.png" : SamuraiSwordGroundAssetPath)),
+              appleItem ? AppleGroundAssetPath : BreadGroundAssetPath,
               !texture.isReadable ? "is not readable" : "has invalid dimensions");
+        else
+          ReportFloorItemTextureProblem(item.type, ItemArtworkRegistryPath,
+              !texture.isReadable ? "texture is not readable" : "texture has invalid dimensions");
         continue;
       }
 
@@ -35307,13 +35365,12 @@ private static void HandleGameViewPointerDown(
     }
     string itemName = GetChampionStartingItemName(
         hero.StartingItems[previewHeldChampionItemIndex]);
-    bool isSword = string.Equals(NormalizeChampionAssetKey(itemName), "SAMURAISWORD",
-        System.StringComparison.OrdinalIgnoreCase);
-    bool isTrousers = string.Equals(NormalizeChampionAssetKey(itemName), "GHITROUSERS",
-        System.StringComparison.OrdinalIgnoreCase);
-    if (!isSword && !isTrousers)
+    // Only registered world art is eligible. F1 placement validation below
+    // independently rejects types without verified screen coordinates.
+    GroundArtworkEntry artwork = GetRegisteredGroundArtwork(itemName);
+    if (artwork == null)
     {
-      Debug.LogError("CHAMPION FLOOR DROP: no world-art mapping for '"
+      Debug.LogError("CHAMPION FLOOR DROP: no unique registered ground artwork for '"
           + itemName + "'; item remains on cursor. No fallback.");
       return true;
     }
@@ -35325,7 +35382,7 @@ private static void HandleGameViewPointerDown(
     // Validate texture before transferring anything out of the cursor.
     var floorItem = new FloorItemPlacement
     {
-      type = isSword ? "Samurai Sword" : "Ghi Trousers",
+      type = itemName,
       x = dropX,
       y = dropY,
       cell = dropCorner

@@ -1,0 +1,16 @@
+{
+  "entries": [
+    {
+      "itemType": "Samurai Sword",
+      "groundF1Path": "Assets/Art/Weapons/Sword_72x8.png",
+      "width": 72,
+      "height": 8
+    },
+    {
+      "itemType": "Ghi Trousers",
+      "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
+      "width": 64,
+      "height": 16
+    }
+  ]
+}
