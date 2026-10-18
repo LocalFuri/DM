@@ -8716,7 +8716,16 @@ private static void HandleGameViewPointerDown(
               inspectionSymbolY + 15 - sy, pixel);
       }
     Dictionary<char, Color32[]> glyphs = BuildChampionSheetStatusGlyphs();
-    DrawChampionSheetText(pixels, glyphs, 140, 95, name.ToUpperInvariant());
+    // Start the item name immediately to the right of the description circle
+    // with a 1 px gap, and vertically center the 5 px font against the 27 px
+    // circle artwork.
+    // The 32 px sprite includes 5 transparent columns on its right edge.
+    // Match the visible circle edge rather than the texture bounds.
+    const int itemNameGap = 2;
+    const int circleTransparentRightPadding = 5;
+    int itemNameX = circleX + circleWidth - circleTransparentRightPadding + itemNameGap;
+    int itemNameY = circleY + (circleHeight - ChampionSheetGlyphHeight) / 2;
+    DrawChampionSheetText(pixels, glyphs, itemNameX, itemNameY, name.ToUpperInvariant());
     // WeightTenths is stored in tenths of a kilogram in champion JSON.
     int weight = item.WeightTenths;
     string weightText = "WEIGHS " + (weight / 10).ToString()
