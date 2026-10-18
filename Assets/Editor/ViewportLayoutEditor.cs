@@ -8660,14 +8660,14 @@ private static void HandleGameViewPointerDown(
   // Order: head, neck, torso, legs, feet, right hand, left hand, upper quiver.
   private static readonly int[] ChampionSheetEquipSlotXY =
   {
-    5, 12,
     33, 25,
+    5, 32,
     33, 45,
     33, 65,
     33, 85,
     61, 52,
     5, 52,
-    5, 32
+    61, 32
   };
 
   // Additional equipment locations outside the eight primary worn slots.
@@ -8761,6 +8761,7 @@ private static void HandleGameViewPointerDown(
     PaintChampionSheetEquipment(pixels, hero);
     PaintReceivedChampionEquipment(pixels, championSheetName);
     PaintChampionHeadSlotMarker(pixels, hero);
+    PaintChampionEquipmentSlotMarker(pixels, hero, 5, 32, "Neck");
     PaintChampionEquipmentSlotMarker(pixels, hero, 33, 45, "Torso");
     PaintChampionEquipmentSlotMarker(pixels, hero, 33, 65, "Legs_both");
     PaintChampionEquipmentSlotMarker(pixels, hero, 33, 85, "Feet_both");
@@ -8768,7 +8769,7 @@ private static void HandleGameViewPointerDown(
         ChampionSheetLeftHandX, ChampionSheetLeftHandY, "Hand_right");
     PaintChampionEquipmentSlotMarker(pixels, hero,
         ChampionSheetRightHandX, ChampionSheetRightHandY, "Hand_left");
-    PaintChampionPouchSlotMarker(pixels, hero);
+    // Neck is at screen (5,65), distinct from the upper-right pouch.
     PaintChampionEquipmentSlotMarker(pixels, hero, 5, 72, "Pouch_side");
     PaintChampionEquipmentSlotMarker(pixels, hero,
         ChampionSheetRightHandX, 72, "Quiver");
@@ -9853,9 +9854,9 @@ private static void HandleGameViewPointerDown(
 
     if (slot == "neck")
     {
-      // Upper-left neck slot; keep distinct from the head slot.
+      // GIMP-measured neck location: screen (5,65), inventory-local (5,32).
       localX = 5;
-      localY = 12;
+      localY = 32;
       return true;
     }
 
