@@ -29661,6 +29661,23 @@ private static void HandleGameViewPointerDown(
   private sealed class GroundArtworkRegistry
   {
     public GroundArtworkEntry[] entries;
+    public GroundF1PlacementRegions groundF1PlacementRegions;
+  }
+
+  [System.Serializable]
+  private sealed class GroundF1PlacementRegions
+  {
+    public GroundF1PlacementRegion left;
+    public GroundF1PlacementRegion right;
+  }
+
+  [System.Serializable]
+  private sealed class GroundF1PlacementRegion
+  {
+    public int minX;
+    public int maxX;
+    public int minY;
+    public int maxY;
   }
 
   [System.Serializable]
@@ -29867,45 +29884,10 @@ private static void HandleGameViewPointerDown(
     return offsets[(initial + pileIndex) & 15] - offsets[initial];
   }
 
-  // Reference screen-top coordinates when pile calibration was introduced.
-  // Unlike the live ViewEdit fields, these must remain fixed across Apply and
-  // editor recompilation: the difference is the user's independent Y nudge.
-  private int GetFloorItemPileReferenceTop(FloorItemPlacement item,
-      FloorItemDepth depth, bool right)
-  {
-    bool apple = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
-    bool bread = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
-    if (apple)
-    {
-      if (depth == FloorItemDepth.SameTile) return right ? 152 : 150;
-      if (depth == FloorItemDepth.OneAhead) return 124;
-      if (depth == FloorItemDepth.SideTwoAhead || depth == FloorItemDepth.TwoAhead)
-        return 106;
-    }
-    if (bread)
-    {
-      if (depth == FloorItemDepth.SameTile) return 148;
-      if (depth == FloorItemDepth.OneAhead) return 121;
-    }
-    if (string.Equals(item.type, "Samurai Sword",
-            System.StringComparison.OrdinalIgnoreCase)
-        && depth == FloorItemDepth.SameTile) return 146;
-    if ((string.Equals(item.type, "Ghi Trousers",
-            System.StringComparison.OrdinalIgnoreCase)
-        || string.Equals(item.type, "Ghi Body",
-            System.StringComparison.OrdinalIgnoreCase)
-        || string.Equals(item.type, "Ghi",
-            System.StringComparison.OrdinalIgnoreCase))
-        && depth == FloorItemDepth.SameTile)
-      return right ? 151 : 151; // Initial reference; calibrate in ViewEdit.
-    Debug.LogError("Missing floor-item pile calibration reference for "
-        + item.type + " at depth " + depth + ".");
-    return int.MinValue;
-  }
-
-  // Pile anchoring is relative to the first placed item, not to a
-  // specific item type. ViewEdit calibrations remain independent for single
-  // items; when stacked, later sprites share the first sprite's bottom Y.
+  // CSBwin supplies both X and Y displacements for additional items in a
+  // floor pile. Keep each sprite's separately calibrated F1 base position;
+  // do not replace CSBwin's Y displacement with a shared-bottom calculation.
+  // The same offset calculation works for any registered ground artwork.
   private bool TryGetPileAlignedOffset(FloorItemPlacement item,
       FloorItemPlacement[] items, FloorItemDepth depth, int pileIndex,
       out Vector2Int offset)
@@ -29913,32 +29895,9 @@ private static void HandleGameViewPointerDown(
     offset = Vector2Int.zero;
     if (pileIndex == 0) return true;
     if (!EnsureCsbFloorOffsetsLoaded()) return false;
+    if (CsbFloorAbsoluteCorner(item.cell) < 0) return false;
     offset = GetCsbPileDisplacement(item, depth, pileIndex);
-    if (!TryGetUnstackedFloorItemScreenRect(item, out Rect itemRect)) return false;
-    for (int i = 0; i < items.Length; ++i)
-    {
-      FloorItemPlacement first = items[i];
-      if (first.x != item.x || first.y != item.y ||
-          !string.Equals(first.cell, item.cell, System.StringComparison.OrdinalIgnoreCase))
-        continue;
-      if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(first)) ||
-          !TryGetUnstackedFloorItemScreenRect(first, out Rect firstRect))
-        continue;
-      // Start on the first sprite's bottom line, but preserve independent
-      // Y nudges made in ViewEdit for every later item in the same pile.
-      // Without this delta the shared-bottom formula cancels every Y click.
-      if (!TryProjectFloorItem(item, out FloorItemDepth itemDepth, out bool right))
-        return false;
-      int referenceTop = GetFloorItemPileReferenceTop(item, itemDepth, right);
-      if (referenceTop == int.MinValue) return false;
-      int currentTop = Mathf.RoundToInt(itemRect.yMin);
-      offset.y = Mathf.RoundToInt(firstRect.yMax - itemRect.yMax)
-          + (currentTop - referenceTop);
-      return true;
-    }
-    Debug.LogError("FLOOR PILE: unable to determine initial item bottom edge at ("
-        + item.x + "," + item.y + ") corner " + item.cell + ".");
-    return false;
+    return true;
   }
 
   private void BlitFloorItemsIntoPreview(Color32[] pixels)
@@ -30013,6 +29972,42 @@ private static void HandleGameViewPointerDown(
   private readonly Dictionary<string, Vector2Int> ghiTrousersSavedFloorPositions =
       new Dictionary<string, Vector2Int>(System.StringComparer.Ordinal);
 
+  // Calculate an F1 position from the validated image size and the data-defined
+  // left/right region. Region coordinates are screen-top based (320x200).
+  // These regions apply to new item types; verified legacy calibrations remain
+  // authoritative until the placement regions have been checked in Unity.
+  private bool TryGetAutomaticF1FloorItemRect(string itemType, bool isRight,
+      Texture2D texture, out Rect rect)
+  {
+    rect = new Rect();
+    GroundArtworkRegistry registry = ReadGroundArtworkRegistry();
+    GroundF1PlacementRegion region = registry == null || registry.groundF1PlacementRegions == null
+        ? null : (isRight ? registry.groundF1PlacementRegions.right
+                          : registry.groundF1PlacementRegions.left);
+    if (region == null || region.minX < 0 || region.minY < 0
+        || region.maxX > 224 || region.maxY > 200
+        || region.minX >= region.maxX || region.minY >= region.maxY)
+    {
+      ReportFloorItemTextureProblem(itemType, ItemArtworkRegistryPath,
+          "has missing or invalid groundF1PlacementRegions " + (isRight ? "right" : "left"));
+      return false;
+    }
+    int availableWidth = region.maxX - region.minX;
+    int availableHeight = region.maxY - region.minY;
+    if (texture.width > availableWidth || texture.height > availableHeight)
+    {
+      ReportFloorItemTextureProblem(itemType, ItemArtworkRegistryPath,
+          "cannot fit " + texture.width + "x" + texture.height + " into the F1 "
+          + (isRight ? "right" : "left") + " placement region "
+          + availableWidth + "x" + availableHeight);
+      return false;
+    }
+    int x = region.minX + (availableWidth - texture.width) / 2;
+    int y = region.minY + (availableHeight - texture.height) / 2;
+    rect = new Rect(x, y, texture.width, texture.height);
+    return true;
+  }
+
   // Generic F1 geometry: the item-specific calibration provides only its
   // left/right anchor, while drawing and picking share this exact rectangle.
   // The native world texture determines size; no inventory-art fallback.
@@ -30046,9 +30041,10 @@ private static void HandleGameViewPointerDown(
         top = isRight ? breadF0RightPreviewScreenTop : breadF0LeftPreviewScreenTop;
         break;
       default:
-        // Additional F1 item types need an explicitly verified art mapping
-        // and calibration; never invent coordinates or substitute artwork.
-        return false;
+        // Registered artwork can use the shared F1 placement regions without
+        // any new per-item switch cases. Image lookup still fails explicitly
+        // if the exact item mapping or required sprite is absent.
+        return TryGetAutomaticF1FloorItemRect(item.type, isRight, texture, out rect);
     }
     rect = new Rect(x, top, texture.width, texture.height);
     return true;

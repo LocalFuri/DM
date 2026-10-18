@@ -24,5 +24,19 @@
       "width": 64,
       "height": 16
     }
-  ]
+  ],
+  "groundF1PlacementRegions": {
+    "left": {
+      "minX": 20,
+      "maxX": 96,
+      "minY": 151,
+      "maxY": 167
+    },
+    "right": {
+      "minX": 119,
+      "maxX": 199,
+      "minY": 151,
+      "maxY": 167
+    }
+  }
 }
