@@ -7702,8 +7702,8 @@ private static void HandleGameViewPointerDown(
     public string FloorCorner;
     public string SourceChampion;
     public int SourceIndex = -1;
-    // The existing torch system has no verified fuel or lit/unlit simulation.
-    // Preserve fields for future use but never invent initial state values.
+    // Torch fuel is per physical instance.  Starting torches receive the
+    // original full charge once; moving a torch never reinitializes it.
     public bool HasTorchState;
     public bool IsBurning;
     public int RemainingFuel;
@@ -7744,6 +7744,16 @@ private static void HandleGameViewPointerDown(
       OwnerChampion = heroName, SlotX = slot.x, SlotY = slot.y,
       Location = "ChampionSlot"
     };
+    // Original Dungeon Master torches begin with charge 15 (full).
+    // Set this ONLY for a newly created champion starting item, never for
+    // an existing instance restored/moved between slots or characters.
+    if (string.Equals(NormalizeChampionAssetKey(itemType), "TORCH",
+            System.StringComparison.Ordinal))
+    {
+      created.HasTorchState = true;
+      created.RemainingFuel = 15;
+      created.IsBurning = false; // Inventory storage does not consume fuel.
+    }
     previewItemInstances.Add(id, created);
     previewChampionItemInstanceIds.Add(source, id);
     return created;
@@ -10374,7 +10384,11 @@ private static void HandleGameViewPointerDown(
       case "BERSERKERHELM":
         return "Bezerker Helm";
       case "TORCH":
-        return "Torch (Unlit)";
+        // A champion's starting torch is initialized with full fuel (15).
+        // Show the bright inventory graphic rather than the unlit graphic.
+        // This selects artwork only; it never modifies the physical torch's fuel.
+        // Strict lookup reports a Console error if Torch_Lit_16x16.png is missing.
+        return "Torch (Lit)";
       default:
         return objectType;
     }
