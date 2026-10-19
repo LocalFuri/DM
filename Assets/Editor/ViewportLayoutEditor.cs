@@ -1218,6 +1218,7 @@ public class ViewportLayoutEditor : EditorWindow
   [System.Serializable]
   private sealed class FloorItemPlacement
   {
+    public int level;
     public string type;
     public int x;
     public int y;
@@ -1234,6 +1235,7 @@ public class ViewportLayoutEditor : EditorWindow
   {
     new FloorItemPlacement
     {
+      level = 0,
       type = "Apple",
       x = Level0AppleTestX,
       y = Level0AppleTestY,
@@ -1241,6 +1243,7 @@ public class ViewportLayoutEditor : EditorWindow
     },
     new FloorItemPlacement
     {
+      level = 0,
       type = "Bread",
       x = Level0BreadTestX,
       y = Level0BreadTestY,
@@ -30176,12 +30179,12 @@ private static void HandleGameViewPointerDown(
 
   private FloorItemPlacement[] GetCurrentFloorItems()
   {
-    if (previewDungeonLevel != 0) return new FloorItemPlacement[0];
     var items = new List<FloorItemPlacement>();
     foreach (FloorItemPlacement source in HallOfChampionsFloorItems)
     {
       string id = GetFloorItemInstanceId(source);
-      if (!previewPickedFloorItemIds.Contains(id)
+      if (source.level == previewDungeonLevel
+          && !previewPickedFloorItemIds.Contains(id)
           && !(previewFloorPickupCompleted && id == previewHeldFloorItemId))
         items.Add(source);
     }
@@ -30192,7 +30195,8 @@ private static void HandleGameViewPointerDown(
         Debug.LogError("FLOOR ITEM ORDER: ordered item '" + id + "' has no placement.");
         continue;
       }
-      if (!(previewFloorPickupCompleted && id == previewHeldFloorItemId))
+      if (moved.level == previewDungeonLevel
+          && !(previewFloorPickupCompleted && id == previewHeldFloorItemId))
         items.Add(moved);
     }
     return items.ToArray();
@@ -35977,8 +35981,8 @@ private static void HandleGameViewPointerDown(
       // Never mutate the immutable source map placement on subsequent drops.
       previewHeldFloorItem = new FloorItemPlacement
       {
-        type = item.type, x = item.x, y = item.y, cell = item.cell,
-        instanceId = id
+        level = item.level, type = item.type, x = item.x, y = item.y,
+        cell = item.cell, instanceId = id
       };
       previewHeldFloorItemCursor = cursor;
       previewFloorPickupCompleted = true;
@@ -36038,14 +36042,10 @@ private static void HandleGameViewPointerDown(
           + itemName + "'; item remains on cursor. No fallback.");
       return true;
     }
-    if (previewDungeonLevel != 0)
-    {
-      Debug.LogError("CHAMPION FLOOR DROP: level is not supported by the floor item renderer; sword remains on cursor.");
-      return true;
-    }
     // Validate texture before transferring anything out of the cursor.
     var floorItem = new FloorItemPlacement
     {
+      level = previewDungeonLevel,
       type = itemName,
       x = dropX,
       y = dropY,
@@ -36122,6 +36122,7 @@ private static void HandleGameViewPointerDown(
       Debug.LogError("FLOOR ITEM: duplicate instance " + previewHeldFloorItemId);
       return true;
     }
+    previewHeldFloorItem.level = previewDungeonLevel;
     previewHeldFloorItem.x = dropX;
     previewHeldFloorItem.y = dropY;
     previewHeldFloorItem.cell = dropCorner;
