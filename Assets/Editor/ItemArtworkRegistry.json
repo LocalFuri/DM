@@ -89,6 +89,18 @@
             "groundF1Path": "Assets/Art/Armor/Ghi_Body_64x16.png",
             "width": 64,
             "height": 16
+        },
+        {
+            "itemType": "Gunna",
+            "groundF1Path": "Assets/Art/Armor/Gunna_64x18_F1.png",
+            "width": 64,
+            "height": 18
+        },
+        {
+            "itemType": "Moonstone",
+            "groundF1Path": "Assets/Art/Amulets/Moonstone_F1_16x8.png",
+            "width": 16,
+            "height": 8
         }
     ],
     "groundF1Anchors": {
