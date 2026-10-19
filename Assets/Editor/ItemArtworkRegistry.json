@@ -101,6 +101,18 @@
             "groundF1Path": "Assets/Art/Amulets/Moonstone_F1_16x8.png",
             "width": 16,
             "height": 8
+        },
+        {
+            "itemType": "Leather Pants",
+            "groundF1Path": "Assets/Art/Armor/Leather_Pants_F1_64x16.png",
+            "width": 64,
+            "height": 16
+        },
+        {
+            "itemType": "Leather Boots",
+            "groundF1Path": "Assets/Art/Armor/Leather_Boots_F1_74x24.png",
+            "width": 74,
+            "height": 24
         }
     ],
     "groundF1Anchors": {
