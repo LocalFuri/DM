@@ -8801,6 +8801,65 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  private int GetChampionCurrentLoadTenths(HeroDefinition hero)
+  {
+    if (hero == null || hero.StartingItems == null) return 0;
+    int total = 0;
+    for (int i = 0; i < hero.StartingItems.Count; i++)
+    {
+      HeroStartingItem item = hero.StartingItems[i];
+      if (item == null || IsChampionItemRemoved(hero.Name, i)) continue;
+      string sourceKey = ChampionItemSourceKey(hero.Name, i);
+      if (previewChampionItemInstanceIds.TryGetValue(sourceKey, out string id))
+      {
+        if (!previewItemInstances.TryGetValue(id, out ItemInstance physical))
+        {
+          Debug.LogError("CHAMPION LOAD: Missing item instance " + id);
+          continue;
+        }
+        if (physical.Location != "ChampionSlot"
+            || !string.Equals(physical.OwnerChampion, hero.Name,
+                System.StringComparison.OrdinalIgnoreCase)) continue;
+      }
+      // An untouched starting item may not yet have an ItemInstance; it is
+      // still carried until an actual pickup/transfer removes it.
+      int count = item.ChargeCount > 0 ? item.ChargeCount : 1;
+      total += item.WeightTenths * count;
+    }
+    foreach (ChampionReceivedItem received in previewReceivedChampionItems.Values)
+    {
+      if (!string.Equals(received.ownerHero, hero.Name,
+              System.StringComparison.OrdinalIgnoreCase)) continue;
+      HeroDefinition source = HeroDatabase.GetByName(received.sourceHero);
+      if (source == null || source.StartingItems == null
+          || received.sourceIndex < 0
+          || received.sourceIndex >= source.StartingItems.Count)
+      {
+        Debug.LogError("CHAMPION LOAD: Invalid transferred item source for " + hero.Name);
+        continue;
+      }
+      string key = ChampionItemSourceKey(received.sourceHero, received.sourceIndex);
+      if (!previewChampionItemInstanceIds.TryGetValue(key, out string id)
+          || !previewItemInstances.TryGetValue(id, out ItemInstance physical))
+      {
+        Debug.LogError("CHAMPION LOAD: Missing transferred item instance " + key);
+        continue;
+      }
+      if (physical.Location != "ChampionSlot"
+          || !string.Equals(physical.OwnerChampion, hero.Name,
+              System.StringComparison.OrdinalIgnoreCase)) continue;
+      HeroStartingItem item = source.StartingItems[received.sourceIndex];
+      if (item == null)
+      {
+        Debug.LogError("CHAMPION LOAD: Null transferred item " + key);
+        continue;
+      }
+      int count = item.ChargeCount > 0 ? item.ChargeCount : 1;
+      total += item.WeightTenths * count;
+    }
+    return total;
+  }
+
   private void PaintChampionSheetStats(Color32[] pixels)
   {
     PaintChampionSheetName(pixels);
@@ -8830,18 +8889,10 @@ private static void HandleGameViewPointerDown(
     int health = hero.Resources.Health;
     int stamina = hero.Resources.Stamina / 10;
     int mana = hero.Resources.Mana;
-    int loadTenths = 0;
-    if (hero.StartingItems != null)
-    {
-      for (int i = 0; i < hero.StartingItems.Count; i++)
-      {
-        HeroStartingItem item = hero.StartingItems[i];
-        if (item == null)
-          continue;
-        int count = item.ChargeCount > 0 ? item.ChargeCount : 1;
-        loadTenths += item.WeightTenths * count;
-      }
-    }
+    // LOAD follows physical ownership, not the immutable starting template.
+    // A removed/cursor/floor item weighs nothing for this champion; a received
+    // item contributes its original weight exactly once to its new owner.
+    int loadTenths = GetChampionCurrentLoadTenths(hero);
 
     int maxLoadTenths = hero.Attributes.Strength * 8 + 100;
     int maxLoadKilograms = (maxLoadTenths + 9) / 10;
@@ -35773,6 +35824,9 @@ private static void HandleGameViewPointerDown(
   // original holder-derived ID, and the holder remains empty.
   private readonly Dictionary<string, DroppedTorch> previewDroppedTorches =
       new Dictionary<string, DroppedTorch>();
+  // Explicit drop/landing order: the last torch added to a floor pile is
+  // the first one picked up. Do not rely on Dictionary iteration order.
+  private readonly List<string> previewDroppedTorchOrder = new List<string>();
   private const string TorchGroundPath = "Assets/Art/Weapons/Torch_Ground_61x7.png";
   // Near-floor (F1 visual band): the torch lies on the visible front half
   // of the player's own map square, not on the vertical F1 wall.
@@ -36728,6 +36782,7 @@ private static void HandleGameViewPointerDown(
           y = flight.startY + flight.forwardY * flight.steps,
           corner = flight.corner
         });
+        previewDroppedTorchOrder.Add(flight.id);
         if (previewItemInstances.TryGetValue(flight.id, out ItemInstance landedInstance))
           MoveItemInstance(landedInstance, "Floor", level: flight.level,
               tileX: flight.startX + flight.forwardX * flight.steps,
@@ -36839,6 +36894,7 @@ private static void HandleGameViewPointerDown(
       id = id, level = previewDungeonLevel, x = previewX, y = previewY,
       corner = FloorCornerForFacing(previewFacing, right)
     });
+    previewDroppedTorchOrder.Add(id);
     MoveItemInstance(droppedTorchInstance, "Floor", level: previewDungeonLevel,
         tileX: previewX, tileY: previewY,
         corner: FloorCornerForFacing(previewFacing, right));
@@ -37052,8 +37108,14 @@ private static void HandleGameViewPointerDown(
     ClearStaleHeldTorchState();
     if (HasAnyItemOnCursor() || championSheetVisible)
       return false;
-    foreach (DroppedTorch item in previewDroppedTorches.Values)
+    for (int i = previewDroppedTorchOrder.Count - 1; i >= 0; i--)
     {
+      string torchId = previewDroppedTorchOrder[i];
+      if (!previewDroppedTorches.TryGetValue(torchId, out DroppedTorch item))
+      {
+        Debug.LogError("TORCH PICKUP: missing ordered floor torch " + torchId);
+        return true;
+      }
       if (!TryGetDroppedTorchProjection(item, out int x, out int top)
           || logicalX < x || logicalX >= x + 61
           || logicalY < top || logicalY >= top + 7)
@@ -37070,6 +37132,7 @@ private static void HandleGameViewPointerDown(
       previewHeldTorchId = item.id;
       previewHeldTorchCursor = cursor;
       previewDroppedTorches.Remove(item.id);
+      previewDroppedTorchOrder.RemoveAt(i);
       Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
       RefreshEditModePreview();
       Debug.Log("TORCH PICKUP: retrieved existing floor item " + item.id);
