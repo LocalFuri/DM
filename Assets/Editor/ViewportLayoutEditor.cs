@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -9078,6 +9078,8 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  private static bool chaniRankV2DiagnosticLogged;
+
   private void PaintChampionEyeStatsPanel(Color32[] pixels)
   {
     if (pixels == null || pixels.Length != PreviewWidth * PreviewHeight)
@@ -9086,6 +9088,19 @@ private static void HandleGameViewPointerDown(
     HeroDefinition hero = HeroDatabase.GetByName(championSheetName);
     if (hero == null || hero.Attributes == null)
       return;
+
+    // Diagnostic only: confirms this exact source is running when CHANI's Eye panel opens.
+    // Never changes champion data or rank calculations.
+    if (!chaniRankV2DiagnosticLogged && string.Equals(hero.Name, "CHANI", System.StringComparison.OrdinalIgnoreCase))
+    {
+      chaniRankV2DiagnosticLogged = true;
+      int[] fighter = hero.Skills != null ? hero.Skills.Fighter : null;
+      int[] wizard = hero.Skills != null ? hero.Skills.Wizard : null;
+      Debug.Log("[CHANI RANK V2 ACTIVE] Hero=" + hero.Name
+          + " FighterHidden=" + (fighter == null ? "MISSING" : string.Join(",", System.Array.ConvertAll(fighter, n => n.ToString())))
+          + " WizardHidden=" + (wizard == null ? "MISSING" : string.Join(",", System.Array.ConvertAll(wizard, n => n.ToString())))
+          + " ExpectedWithThisCode=NOVICE FIGHTER / APPRENTICE WIZARD");
+    }
 
     // Same 116x73 screen rectangle as the Resurrect/Reincarnate panel.
     // Coordinates are screen-top based, matching the original 320x200 view.
@@ -9105,9 +9120,8 @@ private static void HandleGameViewPointerDown(
     Dictionary<char, Color32[]> glyphs = BuildChampionSheetStatusGlyphs();
 
     // The original eye panel prints the champion's non-zero class ranks first.
-    // Hero skill arrays store the current base-class level as their highest
-    // sub-skill level. IAIDO therefore resolves to APPRENTICE FIGHTER (3)
-    // and NOVICE PRIEST (2), matching the original reference screenshot.
+    // The four stored hidden-skill levels contribute starting experience;
+    // visible class ranks are derived from their total, as in DOS DM.
     // Match the original 7-pixel line spacing; the final attribute stays
     // inside the panel so LOAD remains unobstructed below its border.
     int rankY = 87;
@@ -9139,13 +9153,24 @@ private static void HandleGameViewPointerDown(
       string className,
       int screenTop)
   {
-    int level = 0;
+    // Original DOS Dungeon Master: the four stored values are hidden skill
+    // levels, not the visible class rank. Convert each to starting experience
+    // (0 -> 0 XP; n >= 1 -> 250 * 2^(n-1)), then sum all four.
+    // Visible class ranks start at 500 XP and double at each rank.
+    long experience = 0;
     if (levels != null)
     {
       for (int i = 0; i < levels.Length; i++)
-        if (levels[i] > level)
-          level = levels[i];
+      {
+        int hiddenLevel = levels[i];
+        if (hiddenLevel > 0)
+          experience += 250L << (System.Math.Min(hiddenLevel, 15) - 1);
+      }
     }
+
+    int level = 0;
+    for (long threshold = 500; experience >= threshold && level < 15; threshold *= 2)
+      level++;
 
     if (level <= 0)
       return 0;

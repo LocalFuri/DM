@@ -65,5 +65,11 @@
     "Keep original item IDs and independent instance state",
     "Source deliverables ZIP root only, no subdirectories",
     "Do not alter accepted placement or verified equipment without explicit request"
-  ]
+  ],
+  "developmentDefaults": {
+    "gameView": {
+      "width": 320,
+      "height": 200
+    }
+  }
 }
