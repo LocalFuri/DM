@@ -83,6 +83,12 @@
             "groundF1Path": "Assets/Art/Armor/Leather_Jerkin_F1_64x16.png",
             "width": 64,
             "height": 16
+        },
+        {
+            "itemType": "Silk Shirt",
+            "groundF1Path": "Assets/Art/Armor/Ghi_Body_64x16.png",
+            "width": 64,
+            "height": 16
         }
     ],
     "groundF1Anchors": {
