@@ -6702,8 +6702,21 @@ private static void HandleGameViewPointerDown(
       UnityEngine.UIElements.PointerDownEvent pointerEvent)
   {
     double now = EditorApplication.timeSinceStartup;
+    ViewportLayoutEditor diagnosticWindow = FindOpenViewEditWindow();
+    bool traceChampionDrop = diagnosticWindow != null
+        && diagnosticWindow.previewHeldChampionCursor != null
+        && !diagnosticWindow.championSheetVisible;
+    if (traceChampionDrop)
+      Debug.LogWarning("CHAMPION DROP DISPATCH: received GameView click; mouse="
+          + windowMouse + ", imageEvent=" + (imguiEvent != null)
+          + ", pointerEvent=" + (pointerEvent != null)
+          + ", elapsedSinceLastClick=" + (now - s_lastGameViewClickTime));
     if (now - s_lastGameViewClickTime < 0.05)
+    {
+      if (traceChampionDrop)
+        Debug.LogWarning("CHAMPION DROP DISPATCH: rejected by 0.05-second duplicate-click guard.");
       return false;
+    }
 
     ViewportLayoutEditor window = FindOpenViewEditWindow();
     if (window == null || window.layout == null)
@@ -6716,6 +6729,12 @@ private static void HandleGameViewPointerDown(
         gameView,
         windowMouse,
         out Vector2 logical);
+    if (traceChampionDrop)
+      Debug.LogWarning("CHAMPION DROP DISPATCH: hasLogical=" + hasLogical
+          + ", logical=" + logical + ", sheetVisible=" + window.championSheetVisible
+          + ", itemIndex=" + window.previewHeldChampionItemIndex
+          + ", level=" + window.previewDungeonLevel
+          + ", tile=(" + window.previewX + "," + window.previewY + ")");
 
     // When holding champion equipment, target the position of the ACTUAL
     // red hotspot UI Toolkit element, rather than independently interpreting
@@ -6846,7 +6865,11 @@ private static void HandleGameViewPointerDown(
       region = GetMovementArrowRegionName(logical.x, logical.y);
 
     if (region == "none")
+    {
+      if (traceChampionDrop)
+        Debug.LogWarning("CHAMPION DROP DISPATCH: no click handler accepted this point; region=none.");
       return false;
+    }
 
     s_lastGameViewClickTime = now;
     window.InvokeMovementArrowRegion(region);
@@ -30360,6 +30383,8 @@ private static void HandleGameViewPointerDown(
   // Detect them while ViewEdit is open and force Unity to import the JSON.
   private System.DateTime lastGroundRegistryWriteUtc = System.DateTime.MinValue;
   private long lastGroundRegistrySize = -1;
+  // Content check also catches external ZIP replacements that retain timestamp and size.
+  private string lastGroundRegistryContents;
   private double nextGroundRegistryCheckTime;
 
   private void RecordGroundRegistryFileStamp()
@@ -30368,11 +30393,21 @@ private static void HandleGameViewPointerDown(
     {
       lastGroundRegistryWriteUtc = System.DateTime.MinValue;
       lastGroundRegistrySize = -1;
+      lastGroundRegistryContents = null;
       return;
     }
-    var info = new FileInfo(ItemArtworkRegistryPath);
-    lastGroundRegistryWriteUtc = info.LastWriteTimeUtc;
-    lastGroundRegistrySize = info.Length;
+    try
+    {
+      var info = new FileInfo(ItemArtworkRegistryPath);
+      lastGroundRegistryContents = File.ReadAllText(ItemArtworkRegistryPath);
+      lastGroundRegistryWriteUtc = info.LastWriteTimeUtc;
+      lastGroundRegistrySize = info.Length;
+    }
+    catch (System.Exception ex)
+    {
+      ReportFloorItemTextureProblem("Registry", ItemArtworkRegistryPath,
+          "cannot be read: " + ex.Message);
+    }
   }
 
   private void RefreshGroundRegistryIfChanged()
@@ -30388,10 +30423,21 @@ private static void HandleGameViewPointerDown(
       }
       return;
     }
-    var info = new FileInfo(ItemArtworkRegistryPath);
-    if (info.LastWriteTimeUtc == lastGroundRegistryWriteUtc &&
-        info.Length == lastGroundRegistrySize) return;
-    // Record first to avoid repeated imports if an import triggers repaint.
+    string currentContents;
+    try
+    {
+      currentContents = File.ReadAllText(ItemArtworkRegistryPath);
+    }
+    catch (System.Exception ex)
+    {
+      ReportFloorItemTextureProblem("Registry", ItemArtworkRegistryPath,
+          "cannot be read: " + ex.Message);
+      return;
+    }
+    // Check the actual contents, not just time/size: ZIP extraction can preserve both.
+    if (string.Equals(currentContents, lastGroundRegistryContents,
+        System.StringComparison.Ordinal)) return;
+    // Record before importing to avoid repeated reloads during repaint.
     RecordGroundRegistryFileStamp();
     AssetDatabase.ImportAsset(ItemArtworkRegistryPath, ImportAssetOptions.ForceUpdate);
     DestroyEditModePreviewTextureOnly();
@@ -36074,10 +36120,26 @@ private static void HandleGameViewPointerDown(
       return false;
     if (!TryResolveManualF1Drop(x, y,
         out int dropX, out int dropY, out string dropCorner))
+    {
+      Debug.LogWarning("CHAMPION FLOOR DROP BLOCKED: hero="
+          + (previewHeldChampionName ?? "<none>")
+          + ", itemIndex=" + previewHeldChampionItemIndex
+          + ", sheetVisible=" + championSheetVisible
+          + ", click=(" + x + "," + y + ")"
+          + ", playerLevel=" + previewDungeonLevel
+          + ", tile=(" + previewX + "," + previewY + ")"
+          + ", tileOpen=" + (previewMiniMap != null && PreviewTileIsOpen(previewX, previewY))
+          + ". Expected a walkable tile and a click in the dungeon viewport."
+          + " No item state changed.");
       return false;
+    }
     if (previewHeldChampionItemIndex < 0
         || string.IsNullOrEmpty(previewHeldChampionName))
-      return false;
+    {
+      Debug.LogError("CHAMPION FLOOR DROP BLOCKED: missing held champion identity."
+          + " No item state changed.");
+      return true;
+    }
     HeroDefinition hero = HeroDatabase.GetByName(previewHeldChampionName);
     if (hero == null || hero.StartingItems == null
         || previewHeldChampionItemIndex >= hero.StartingItems.Count)
