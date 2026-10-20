@@ -30207,17 +30207,8 @@ private static void HandleGameViewPointerDown(
       out int rightX,
       out int rightY)
   {
-    switch (facing)
-    {
-      case DungeonFacing.North:
-        forwardX = 0; forwardY = -1; rightX = 1; rightY = 0; break;
-      case DungeonFacing.East:
-        forwardX = 1; forwardY = 0; rightX = 0; rightY = 1; break;
-      case DungeonFacing.South:
-        forwardX = 0; forwardY = 1; rightX = -1; rightY = 0; break;
-      default: // West
-        forwardX = -1; forwardY = 0; rightX = 0; rightY = -1; break;
-    }
+    DungeonMap.GetForwardOffset(facing, out forwardX, out forwardY);
+    DungeonMap.GetRightOffset(facing, out rightX, out rightY);
   }
 
   // The source array is immutable. Runtime transfers retain the same instance
