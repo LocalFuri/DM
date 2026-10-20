@@ -10389,6 +10389,19 @@ private static void HandleGameViewPointerDown(
         return true;
       }
     }
+    // MOPHUS original starting food arrangement. The three food items
+    // must occupy individual, real inventory slots rather than being
+    // silently skipped by the generic equipment-only slot selector.
+    // Inventory-local positions: upper pouch, backpack #1 and backpack #2.
+    if (string.Equals(heroName, "MOPHUS", System.StringComparison.OrdinalIgnoreCase))
+    {
+      switch (NormalizeChampionAssetKey(itemName))
+      {
+        case "BREAD": localX = 65; localY = 32; return true;
+        case "CHEESE": localX = 82; localY = 15; return true;
+        case "APPLE": localX = 99; localY = 15; return true;
+      }
+    }
     // WU TSE original character sheet: three distinct Throwing Stars.
     // First backpack cell, upper quiver cell, and screen-right attack hand.
     // Each star is an independent HeroStartingItem (never ChargeCount=3).
