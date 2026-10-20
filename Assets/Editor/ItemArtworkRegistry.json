@@ -137,6 +137,12 @@
             "groundF1Path": "Assets/Art/Weapons/Sling_F1_64x4.png",
             "width": 64,
             "height": 4
+        },
+        {
+            "itemType": "Staff",
+            "groundF1Path": "Assets/Art/Weapons/Sling_F1_64x4.png",
+            "width": 64,
+            "height": 4
         }
     ],
     "groundF1Anchors": {

@@ -733,6 +733,7 @@ public class DungeonFeatureEditor : EditorWindow
     "Hawk",
     "Chani",
     "Alex",
+    "Nabi",
   };
 
   private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =
