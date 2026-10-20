@@ -245,6 +245,36 @@
             "groundF1Path": "Assets/Art/Weapons/Wand_F1_22x3.png",
             "width": 22,
             "height": 3
+        },
+        {
+            "itemType": "Cloak of Night",
+            "groundF1Path": "Assets/Art/Armor/Leather_Jerkin_F1_64x16.png",
+            "width": 64,
+            "height": 16
+        },
+        {
+            "itemType": "Elven Huke",
+            "groundF1Path": "Assets/Art/Armor/Elven_Huke_F1_64x16.png",
+            "width": 64,
+            "height": 16
+        },
+        {
+            "itemType": "Elven Boots",
+            "groundF1Path": "Assets/Art/Armor/Elven_Boots_F1_48x25.png",
+            "width": 48,
+            "height": 25
+        },
+        {
+            "itemType": "Axe",
+            "groundF1Path": "Assets/Art/Weapons/Axe_F1_64x17.png",
+            "width": 64,
+            "height": 17
+        },
+        {
+            "itemType": "Bow",
+            "groundF1Path": "Assets/Art/Weapons/Bow_F1_80x17.png",
+            "width": 80,
+            "height": 17
         }
     ],
     "groundF1Anchors": {
