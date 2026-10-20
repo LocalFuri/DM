@@ -103,8 +103,6 @@ public class ViewportLayoutEditor : EditorWindow
   // from the authoritative DUNGEON.DAT map coordinates so we can tune screen
   // projection without ever moving the object in map space. The original DOS
   // reference shows the 19x13 Apple artwork on the floor.
-  private int appleF1PreviewX = 104;
-  private int appleF1PreviewScreenTop = 144;
   private int appleF0RightPreviewX = 150;
   private int appleF0RightPreviewScreenTop = 152;
   // Same-tile front sub-square. From the original 4,9 North reference the
@@ -1058,9 +1056,6 @@ public class ViewportLayoutEditor : EditorWindow
 
   // BlackDoorF1 layout Enabled is initialized once for the verified 1,3 North pose.
   // After initialization, the visible BlackDoorF1 checkbox remains authoritative.
-  private bool blackDoorF1EnabledInitialized;
-  private bool blackDoorFrameLeftF1EnabledInitialized;
-  private bool blackDoorFrameRightF1EnabledInitialized;
 
   // ViewEdit-only BlackDoorF2 card controls. Do not write layout/pose and
   // do not drive rendering; F2 still uses the existing pose exception.
@@ -1129,7 +1124,6 @@ public class ViewportLayoutEditor : EditorWindow
   private AudioClip cachedChampionResurrectClip;
   private AudioClip cachedChampionExitPreviewClip;
   private AudioClip cachedChampionResurrectPreviewClip;
-  private float cachedChampionExitPreviewVolume = -1f;
   private float cachedChampionResurrectPreviewVolume = -1f;
   private AudioClip cachedSwitchPreviewClip;
   private float cachedSwitchPreviewVolume = -1f;
@@ -6702,19 +6696,8 @@ private static void HandleGameViewPointerDown(
       UnityEngine.UIElements.PointerDownEvent pointerEvent)
   {
     double now = EditorApplication.timeSinceStartup;
-    ViewportLayoutEditor diagnosticWindow = FindOpenViewEditWindow();
-    bool traceChampionDrop = diagnosticWindow != null
-        && diagnosticWindow.previewHeldChampionCursor != null
-        && !diagnosticWindow.championSheetVisible;
-    if (traceChampionDrop)
-      Debug.LogWarning("CHAMPION DROP DISPATCH: received GameView click; mouse="
-          + windowMouse + ", imageEvent=" + (imguiEvent != null)
-          + ", pointerEvent=" + (pointerEvent != null)
-          + ", elapsedSinceLastClick=" + (now - s_lastGameViewClickTime));
     if (now - s_lastGameViewClickTime < 0.05)
     {
-      if (traceChampionDrop)
-        Debug.LogWarning("CHAMPION DROP DISPATCH: rejected by 0.05-second duplicate-click guard.");
       return false;
     }
 
@@ -6729,12 +6712,6 @@ private static void HandleGameViewPointerDown(
         gameView,
         windowMouse,
         out Vector2 logical);
-    if (traceChampionDrop)
-      Debug.LogWarning("CHAMPION DROP DISPATCH: hasLogical=" + hasLogical
-          + ", logical=" + logical + ", sheetVisible=" + window.championSheetVisible
-          + ", itemIndex=" + window.previewHeldChampionItemIndex
-          + ", level=" + window.previewDungeonLevel
-          + ", tile=(" + window.previewX + "," + window.previewY + ")");
 
     // When holding champion equipment, target the position of the ACTUAL
     // red hotspot UI Toolkit element, rather than independently interpreting
@@ -6866,8 +6843,6 @@ private static void HandleGameViewPointerDown(
 
     if (region == "none")
     {
-      if (traceChampionDrop)
-        Debug.LogWarning("CHAMPION DROP DISPATCH: no click handler accepted this point; region=none.");
       return false;
     }
 
@@ -7964,7 +7939,6 @@ private static void HandleGameViewPointerDown(
     Vector2 pixelHotspot = new Vector2(Mathf.Round(x), Mathf.Round(y));
     int targetX = -1, targetY = -1;
     float bestOverlap = 0f;
-    bool selectedByHotspot = false;
     Rect cursorRect = new Rect(x - ChampionSheetItemSize * 0.5f,
         y - ChampionSheetItemSize * 0.5f,
         ChampionSheetItemSize, ChampionSheetItemSize);
@@ -7985,7 +7959,6 @@ private static void HandleGameViewPointerDown(
         bestHotspotDistance = distance;
         targetX = slot.x;
         targetY = slot.y;
-        selectedByHotspot = true;
       }
     }
     // Second preference: >20% of the complete 16x16 cursor square overlaps
@@ -18153,7 +18126,6 @@ private static void HandleGameViewPointerDown(
           piece.Enabled = !previewEnabledOverrideByPiece.TryGetValue(
                   piece, out bool leftFrameEnabledOverride)
               || leftFrameEnabledOverride;
-          blackDoorFrameLeftF1EnabledInitialized = true;
 
           piece.X = 44;
           piece.Y = DisplayYToUnityY(46, 94);
@@ -18163,7 +18135,6 @@ private static void HandleGameViewPointerDown(
           piece.Enabled = !previewEnabledOverrideByPiece.TryGetValue(
                   piece, out bool rightFrameEnabledOverride)
               || rightFrameEnabledOverride;
-          blackDoorFrameRightF1EnabledInitialized = true;
 
           piece.X = 154;
           piece.Y = DisplayYToUnityY(46, 94);
@@ -18176,7 +18147,6 @@ private static void HandleGameViewPointerDown(
           piece.Enabled = !previewEnabledOverrideByPiece.TryGetValue(
                   piece, out bool doorEnabledOverride)
               || doorEnabledOverride;
-          blackDoorF1EnabledInitialized = true;
 
           piece.X = 63;
           piece.Y = DisplayYToUnityY(47, 88);
@@ -36386,7 +36356,9 @@ private static void HandleGameViewPointerDown(
       overlay.style.position = UnityEngine.UIElements.Position.Absolute;
       overlay.style.backgroundImage = new UnityEngine.UIElements.StyleBackground(
           owner.GetHeldItemCursorTexture());
-      overlay.style.unityBackgroundScaleMode = ScaleMode.StretchToFill;
+      overlay.style.backgroundSize = new UnityEngine.UIElements.BackgroundSize(
+          new UnityEngine.UIElements.Length(100, UnityEngine.UIElements.LengthUnit.Percent),
+          new UnityEngine.UIElements.Length(100, UnityEngine.UIElements.LengthUnit.Percent));
       // Debug-only visual marker at the held icon's center hotspot (8,8).
       // This never receives mouse events and does not change hit testing.
       var hotspot = new UnityEngine.UIElements.VisualElement();
