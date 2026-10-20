@@ -31,6 +31,12 @@ public class DungeonAudioSettings : ScriptableObject
     [Range(0f, 1f)]
     public float breadEatingVolume = 1f;
 
+    [Tooltip("Shared eating sound for foods without a dedicated sound. Assign Swallow.wav.")]
+    public AudioClip swallowEatingSound;
+
+    [Range(0f, 1f)]
+    public float swallowEatingVolume = 1f;
+
     [Header("Dungeon Floor Switch")]
     [Tooltip("Sound played when the player enters the pressure-switch tile.")]
     public AudioClip switchSound;

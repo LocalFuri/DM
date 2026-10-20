@@ -1117,6 +1117,16 @@ public class ViewportLayoutEditor : EditorWindow
   private bool championEyeMiddle;
   private bool championEyePressed;
   private bool championMouthPressed;
+  // Edit-mode champion nutrition: initial full FOOD = 2048. A particular
+  // champion's value survives closing and reopening their sheet.
+  private readonly Dictionary<string, int> previewChampionFood =
+      new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
+  private const int ChampionMaximumFood = 2048;
+  private const int ChampionMinimumFood = -1023;
+  private AudioClip cachedEatingSourceClip;
+  private AudioClip cachedEatingPreviewClip;
+  private float cachedEatingPreviewVolume = -1f;
+
   [System.NonSerialized]
   private DungeonAudioSettings cachedDungeonAudioSettings;
   [System.NonSerialized]
@@ -8249,6 +8259,141 @@ private static void HandleGameViewPointerDown(
         > ChampionSheetItemSize * ChampionSheetItemSize * 0.2f;
   }
 
+  // Source: CSBwin graphic 0x22F, signed big-endian FoodValue[8].
+  // Original objNI_Shank is displayed in this Unity project as Drumstick.
+  private static bool TryGetOriginalFoodNutrition(string name, out int value)
+  {
+    value = 0;
+    switch ((name ?? string.Empty).Trim().ToUpperInvariant())
+    {
+      case "APPLE": value = 500; return true;
+      case "CORN": value = 600; return true;
+      case "BREAD": value = 650; return true;
+      case "CHEESE": value = 820; return true;
+      case "SCREAMER SLICE": value = 550; return true;
+      case "WORM ROUND": value = 350; return true;
+      case "SHANK":
+      case "DRUMSTICK": value = 990; return true;
+      case "DRAGON STEAK": value = 1400; return true;
+      default: return false;
+    }
+  }
+
+  private bool TryConsumeHeldFood(string foodName, int nutrition)
+  {
+    if (string.IsNullOrEmpty(championSheetName)) return false;
+    DungeonAudioSettings audio = GetDungeonAudioSettings();
+    if (audio == null)
+    {
+      Debug.LogError("EATING: DungeonAudioSettings asset missing; food not consumed.");
+      return false;
+    }
+    bool apple = string.Equals(foodName, "Apple", System.StringComparison.OrdinalIgnoreCase);
+    bool bread = string.Equals(foodName, "Bread", System.StringComparison.OrdinalIgnoreCase);
+    AudioClip sound = apple ? audio.appleEatingSound
+        : bread ? audio.breadEatingSound : audio.swallowEatingSound;
+    float volume = Mathf.Clamp01(apple ? audio.appleEatingVolume
+        : bread ? audio.breadEatingVolume : audio.swallowEatingVolume);
+    if (sound == null)
+    {
+      Debug.LogError("EATING: No audio assigned for '" + foodName
+          + "' in DungeonAudioSettings. Food not consumed; no fallback.");
+      return false;
+    }
+
+    ItemInstance physical;
+    bool fromChampion = previewHeldChampionCursor != null
+        && previewHeldChampionItemIndex >= 0
+        && !string.IsNullOrEmpty(previewHeldChampionName);
+    if (fromChampion)
+    {
+      HeroDefinition source = HeroDatabase.GetByName(previewHeldChampionName);
+      if (source == null || source.StartingItems == null
+          || previewHeldChampionItemIndex >= source.StartingItems.Count)
+      {
+        Debug.LogError("EATING: Champion source is invalid; food remains held.");
+        return false;
+      }
+      physical = EnsureChampionItemInstance(previewHeldChampionName,
+          previewHeldChampionItemIndex, foodName, previewHeldChampionSourceSlot);
+    }
+    else if (previewFloorPickupCompleted && previewHeldFloorItem != null
+        && !string.IsNullOrEmpty(previewHeldFloorItemId))
+    {
+      if (!previewItemInstances.TryGetValue(previewHeldFloorItemId, out physical))
+      {
+        Debug.LogError("EATING: Held floor item ID not found; food remains held.");
+        return false;
+      }
+    }
+    else return false;
+
+    if (physical == null || physical.Location != "Cursor"
+        || !string.Equals(physical.ItemType, foodName,
+            System.StringComparison.OrdinalIgnoreCase))
+    {
+      Debug.LogError("EATING: Item identity/state mismatch; food remains held.");
+      return false;
+    }
+
+    // CSBwin _FeedCharacter: food=LIMIT(-1023, food+value, 2048).
+    int oldFood = previewChampionFood.TryGetValue(championSheetName, out int saved)
+        ? saved : ChampionMaximumFood;
+    int updatedFood = Mathf.Clamp(oldFood + nutrition,
+        ChampionMinimumFood, ChampionMaximumFood);
+    previewChampionFood[championSheetName] = updatedFood;
+    MoveItemInstance(physical, "Consumed");
+    if (fromChampion)
+    {
+      // The source index remains marked removed; otherwise its starting
+      // equipment would reappear when the sheet is reopened.
+      previewReceivedChampionItems.Remove(ChampionItemSourceKey(
+          previewHeldChampionName, previewHeldChampionItemIndex));
+      previewHeldChampionName = null;
+      previewHeldChampionItemIndex = -1;
+      previewHeldChampionCursor = null;
+      previewHeldChampionSourceSlot = new Vector2Int(-1, -1);
+    }
+    else
+    {
+      previewHeldFloorItemId = null;
+      previewHeldFloorItem = null;
+      previewHeldFloorItemCursor = null;
+      previewFloorPickupCompleted = false;
+    }
+    HideHeldItemPointerOverlay();
+    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+    if (Application.isPlaying)
+    {
+      GameObject soundObject = new GameObject("ChampionEating_" + foodName);
+      soundObject.hideFlags = HideFlags.HideAndDontSave;
+      AudioSource source = soundObject.AddComponent<AudioSource>();
+      source.playOnAwake = false;
+      source.spatialBlend = 0f;
+      source.volume = volume;
+      source.clip = sound;
+      source.Play();
+      Object.Destroy(soundObject, Mathf.Max(0.1f, sound.length + 0.1f));
+    }
+    else if (volume > 0f)
+    {
+      if (cachedEatingSourceClip != sound)
+      {
+        if (cachedEatingPreviewClip != null && cachedEatingPreviewClip != cachedEatingSourceClip)
+          Object.DestroyImmediate(cachedEatingPreviewClip);
+        cachedEatingPreviewClip = null;
+        cachedEatingPreviewVolume = -1f;
+        cachedEatingSourceClip = sound;
+      }
+      AudioClip preview = GetVolumeAdjustedPreviewClip(sound, volume,
+          ref cachedEatingPreviewClip, ref cachedEatingPreviewVolume);
+      if (preview != null) PlayEditorPreviewClip(preview);
+    }
+    Debug.Log("EATING: " + championSheetName + " ate " + foodName
+        + " [" + physical.InstanceId + "] FOOD " + oldFood + " -> " + updatedFood);
+    return true;
+  }
+
   private bool TryHandleChampionSheetClick(float logicalX, float logicalY)
   {
     bool insideGame =
@@ -8312,16 +8457,17 @@ private static void HandleGameViewPointerDown(
         else if (previewFloorPickupCompleted && previewHeldFloorItem != null)
           heldFoodName = previewHeldFloorItem.type;
 
-        bool edible = string.Equals(heldFoodName, "Apple",
-                System.StringComparison.OrdinalIgnoreCase)
-            || string.Equals(heldFoodName, "Bread",
-                System.StringComparison.OrdinalIgnoreCase);
-        championMouthPressed = edible;
+        if (!TryGetOriginalFoodNutrition(heldFoodName, out int nutrition))
+        {
+          // Nonfood objects must never be discarded or produce eating audio.
+          championMouthPressed = false;
+          return true;
+        }
+        bool eaten = TryConsumeHeldFood(heldFoodName, nutrition);
+        championMouthPressed = eaten;
         championEyePressed = false;
         championEyeMoved = false;
         championEyeMiddle = false;
-        // No consumption here: FOOD is still a display-only bar, and this
-        // source contains no verified nutrition rules or live food state.
         PresentEditModePreviewToGameView();
         Repaint();
         return true;
@@ -11551,7 +11697,11 @@ private static void HandleGameViewPointerDown(
     Color32 shadowColour = new Color32(0, 0, 0, 255);
 
     // FOOD: 78x6 coloured fill, then a 78x2 black shadow directly below.
-    FillChampionSheetRect(pixels, 111, 102, fullBarWidth, barHeight, foodColour);
+    int currentFood = previewChampionFood.TryGetValue(championSheetName ?? "",
+        out int foodLevel) ? foodLevel : ChampionMaximumFood;
+    int foodFillWidth = Mathf.Clamp(Mathf.RoundToInt(fullBarWidth
+        * Mathf.Clamp01((float)currentFood / ChampionMaximumFood)), 0, fullBarWidth);
+    FillChampionSheetRect(pixels, 111, 102, foodFillWidth, barHeight, foodColour);
     FillChampionSheetRect(pixels, 111, 108, fullBarWidth, shadowHeight, shadowColour);
 
     // WATER: 78x6 coloured fill, then a 78x2 black shadow directly below.
