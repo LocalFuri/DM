@@ -18,6 +18,19 @@ public class DungeonAudioSettings : ScriptableObject
     [Range(0f, 1f)]
     public float championResurrectVolume = 1f;
 
+    [Header("Champion Eating Sounds")]
+    [Tooltip("Played once when a champion successfully eats an Apple. Assign Apple.wav.")]
+    public AudioClip appleEatingSound;
+
+    [Range(0f, 1f)]
+    public float appleEatingVolume = 1f;
+
+    [Tooltip("Played once when a champion successfully eats Bread. Assign Bread.wav.")]
+    public AudioClip breadEatingSound;
+
+    [Range(0f, 1f)]
+    public float breadEatingVolume = 1f;
+
     [Header("Dungeon Floor Switch")]
     [Tooltip("Sound played when the player enters the pressure-switch tile.")]
     public AudioClip switchSound;

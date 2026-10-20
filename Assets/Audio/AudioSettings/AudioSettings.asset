@@ -16,6 +16,10 @@ MonoBehaviour:
   championExitVolume: 0.111
   championResurrectSound: {fileID: 8300000, guid: 22d599dc65bea2a46be6a6d6f67d3a3f, type: 3}
   championResurrectVolume: 1
+  appleEatingSound: {fileID: 8300000, guid: a32265c3cfdddcf4bb75b7373e13c30c, type: 3}
+  appleEatingVolume: 1
+  breadEatingSound: {fileID: 8300000, guid: 1ab002758b9d2c64fa030393a667a91e, type: 3}
+  breadEatingVolume: 1
   switchSound: {fileID: 8300000, guid: 390b369a9c4d4d246b604764dd0a5970, type: 3}
   switchVolume: 1
   itemThrowSound: {fileID: 8300000, guid: 03d0d74f28a11ca4f9f8a9e16b691345, type: 3}
