@@ -9293,6 +9293,12 @@ private static void HandleGameViewPointerDown(
     }
     HeroStartingItem item = hero.StartingItems[previewHeldChampionItemIndex];
     string name = GetChampionStartingItemName(item);
+    // Present the canonical Empty Flask artwork name in the Eye inspector.
+    // Keep the underlying starting-item identity unchanged.
+    if (NormalizeChampionAssetKey(name) == "EMPTYFLASK"
+        || NormalizeChampionAssetKey(name) == "EMPTYPOTIONFLASK"
+        || NormalizeChampionAssetKey(name) == "EMPTYPOTION")
+      name = "Potion Empty";
     // Blue and green boxes have distinct artwork and item identities, but
     // the Eye inspector shows the same original-game display name.
     string boxKey = NormalizeChampionAssetKey(name);
@@ -10449,7 +10455,11 @@ private static void HandleGameViewPointerDown(
         || name.Contains("STAR")
         || name.Contains("DART"))
       slot = "quiver";
-    else if (name.Contains("SWORD")
+    else if (NormalizeChampionAssetKey(objectType) == "EMPTYFLASK"
+        || NormalizeChampionAssetKey(objectType) == "POTIONEMPTY"
+        || NormalizeChampionAssetKey(objectType) == "EMPTYPOTION"
+        || NormalizeChampionAssetKey(objectType) == "EMPTYPOTIONFLASK"
+        || name.Contains("SWORD")
         || name.Contains("AXE")
         || name.Contains("CLUB")
         || name.Contains("TORCH")
@@ -10997,6 +11007,12 @@ private static void HandleGameViewPointerDown(
         return "Magical Box (Blue)";
       case "BERSERKERHELM":
         return "Bezerker Helm";
+      case "EMPTYPOTIONFLASK":
+      case "EMPTYPOTION":
+      case "EMPTYFLASK":
+      case "POTIONEMPTY":
+        // Canonical 16x16 inventory sprite: Potion_Empty_16x16.png.
+        return "Potion Empty";
       case "TORCH":
         // A champion's starting torch is initialized with full fuel (15).
         // Show the bright inventory graphic rather than the unlit graphic.

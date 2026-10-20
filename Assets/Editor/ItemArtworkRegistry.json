@@ -245,6 +245,18 @@
             "groundF1Path": "Assets/Art/Weapons/Wand_F1_22x3.png",
             "width": 22,
             "height": 3
+        },
+        {
+            "itemType": "Potion Empty",
+            "groundF1Path": "Assets/Art/Misc/Potion_Empty_F1_16x18.png",
+            "width": 16,
+            "height": 18
+        },
+        {
+            "itemType": "Empty Potion Flask",
+            "groundF1Path": "Assets/Art/Misc/Potion_Empty_F1_16x18.png",
+            "width": 16,
+            "height": 18
         }
     ],
     "groundF1Anchors": {
