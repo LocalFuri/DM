@@ -1119,11 +1119,13 @@ public class ViewportLayoutEditor : EditorWindow
   private bool championMouthPressed;
   // Eating animation is independent of the mouse-button state.
   private double championEatAnimationStarted = -1;
-  private const double ChampionEatFrameSeconds = 0.12;
+  // Match the chewing cycle to the audio clip selected for this meal.
+  private double championEatAnimationDurationSeconds = 0.48;
   private readonly Texture2D[] championEatFrames = new Texture2D[3];
 
-  // Edit-mode champion nutrition: initial full FOOD = 2048. A particular
-  // champion's value survives closing and reopening their sheet.
+  // Temporary FOOD depletion visual test: each champion starts at 100.
+  // The per-champion value persists while the editor preview session is open.
+  // Restore CSBwin starting nutrition when the test is complete.
   private readonly Dictionary<string, int> previewChampionFood =
       new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
   // Nutrition foundation: WATER is independent from FOOD, just as in CSBwin.
@@ -1132,6 +1134,19 @@ public class ViewportLayoutEditor : EditorWindow
   private readonly Dictionary<string, int> previewChampionWater =
       new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
   private const int ChampionMaximumFood = 2048;
+  private const int ChampionFoodVisualTestStart = 100;
+  private const int ChampionFoodVisualRedThreshold = 100;
+
+  private int GetOrInitializeChampionFood(string championName)
+  {
+    string key = championName ?? "";
+    if (!previewChampionFood.TryGetValue(key, out int current))
+    {
+      current = ChampionFoodVisualTestStart;
+      previewChampionFood[key] = current;
+    }
+    return current;
+  }
   private const int ChampionMinimumFood = -1023;
   private AudioClip cachedEatingSourceClip;
   private AudioClip cachedEatingPreviewClip;
@@ -8483,8 +8498,7 @@ private static void HandleGameViewPointerDown(
     }
 
     // CSBwin _FeedCharacter: food=LIMIT(-1023, food+value, 2048).
-    int oldFood = previewChampionFood.TryGetValue(championSheetName, out int saved)
-        ? saved : ChampionMaximumFood;
+    int oldFood = GetOrInitializeChampionFood(championSheetName);
     int updatedFood = Mathf.Clamp(oldFood + nutrition,
         ChampionMinimumFood, ChampionMaximumFood);
     previewChampionFood[championSheetName] = updatedFood;
@@ -8535,8 +8549,15 @@ private static void HandleGameViewPointerDown(
           ref cachedEatingPreviewClip, ref cachedEatingPreviewVolume);
       if (preview != null) PlayEditorPreviewClip(preview);
     }
+    // The same resolved clip that was played determines the animation length.
+    championEatAnimationDurationSeconds = System.Math.Max(0.01, (double)sound.length);
+    int actualNutritionGained = updatedFood - oldFood;
     Debug.Log("EATING: " + championSheetName + " ate " + foodName
-        + " [" + physical.InstanceId + "] FOOD " + oldFood + " -> " + updatedFood);
+        + " [" + physical.InstanceId + "]"
+        + " | Nutrition gained: +" + actualNutritionGained
+        + " (food value: +" + nutrition + ")"
+        + " | FOOD: " + oldFood + " -> " + updatedFood
+        + (actualNutritionGained < nutrition ? " (maximum reached)" : ""));
     return true;
   }
 
@@ -11936,7 +11957,7 @@ private static void HandleGameViewPointerDown(
   {
     if (championEatAnimationStarted < 0) return;
     if (!championSheetVisible ||
-        EditorApplication.timeSinceStartup - championEatAnimationStarted >= 4 * ChampionEatFrameSeconds)
+        EditorApplication.timeSinceStartup - championEatAnimationStarted >= championEatAnimationDurationSeconds)
     {
       championEatAnimationStarted = -1;
     }
@@ -11987,8 +12008,8 @@ private static void HandleGameViewPointerDown(
     int frameIndex = 2; // Wide-open mouth is the resting frame.
     if (championEatAnimationStarted >= 0)
     {
-      int phase = (int)((EditorApplication.timeSinceStartup
-          - championEatAnimationStarted) / ChampionEatFrameSeconds);
+      double elapsed = EditorApplication.timeSinceStartup - championEatAnimationStarted;
+      int phase = (int)(elapsed * 4.0 / championEatAnimationDurationSeconds);
       if (phase >= 0 && phase < 4)
         frameIndex = phase == 0 ? 2 : (phase == 2 ? 0 : 1);
     }
@@ -12054,21 +12075,22 @@ private static void HandleGameViewPointerDown(
     Color32 waterColour = new Color32(0, 0, 255, 255);
     Color32 shadowColour = new Color32(0, 0, 0, 255);
 
-    // FOOD: 78x6 coloured fill, then a 78x2 black shadow directly below.
-    int currentFood = previewChampionFood.TryGetValue(championSheetName ?? "",
-        out int foodLevel) ? foodLevel : ChampionMaximumFood;
+    // FOOD: proportional coloured fill with an equally wide 2px black shadow.
+    int currentFood = GetOrInitializeChampionFood(championSheetName);
+    if (currentFood <= ChampionFoodVisualRedThreshold)
+      foodColour = new Color32(255, 0, 0, 255);
     int foodFillWidth = Mathf.Clamp(Mathf.RoundToInt(fullBarWidth
         * Mathf.Clamp01((float)currentFood / ChampionMaximumFood)), 0, fullBarWidth);
     FillChampionSheetRect(pixels, 111, 102, foodFillWidth, barHeight, foodColour);
-    FillChampionSheetRect(pixels, 111, 108, fullBarWidth, shadowHeight, shadowColour);
+    FillChampionSheetRect(pixels, 111, 108, foodFillWidth, shadowHeight, shadowColour);
 
-    // WATER: an independently tracked value, not a permanently full bar.
+    // WATER: independently tracked value; shadow follows its fill width.
     int currentWater = previewChampionWater.TryGetValue(championSheetName ?? "",
         out int waterLevel) ? waterLevel : ChampionMaximumFood;
     int waterFillWidth = Mathf.Clamp(Mathf.RoundToInt(fullBarWidth
         * Mathf.Clamp01((float)currentWater / ChampionMaximumFood)), 0, fullBarWidth);
     FillChampionSheetRect(pixels, 111, 125, waterFillWidth, barHeight, waterColour);
-    FillChampionSheetRect(pixels, 111, 131, fullBarWidth, shadowHeight, shadowColour);
+    FillChampionSheetRect(pixels, 111, 131, waterFillWidth, shadowHeight, shadowColour);
 
     // The FOOD and WATER captions remain the original 48x9 PNGs placed
     // pixel-exact at their calibrated screen coordinates.
