@@ -191,6 +191,24 @@
       "groundF1Path": "Assets/Art/Misc/Magical_Box_Green_F1_15x13.png",
       "width": 15,
       "height": 13
+    },
+    {
+      "itemType": "Tabard",
+      "groundF1Path": "Assets/Art/Armor/Ghi_Body_64x16.png",
+      "width": 64,
+      "height": 16
+    },
+    {
+      "itemType": "Apple",
+      "groundF1Path": "Assets/Art/Food/Apple_F1_19x13.png",
+      "width": 19,
+      "height": 13
+    },
+    {
+      "itemType": "Elven Doublet",
+      "groundF1Path": "Assets/Art/Armor/Elven_Doublet_F1_64x16.png",
+      "width": 64,
+      "height": 16
     }
   ],
   "groundF1Anchors": {

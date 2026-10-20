@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -10063,6 +10063,31 @@ private static void HandleGameViewPointerDown(
       string heroName, string itemName, ref bool handUsed, ref bool quiverUsed, ref int hawkArrowIndex,
       out int localX, out int localY)
   {
+    // Verified against SYRA's original CSBwin sheet. These are starting
+    // positions only; after first activation, player item transfers remain
+    // authoritative. Do not infer unverified backpack placements for others.
+    if (string.Equals(heroName, "SYRA", System.StringComparison.OrdinalIgnoreCase))
+    {
+      string syraItemKey = NormalizeChampionAssetKey(itemName);
+      if (syraItemKey == "APPLE")
+      {
+        localX = 65; // Upper-right pouch (original sheet).
+        localY = 32;
+        return true;
+      }
+      if (syraItemKey == "ELVENDOUBLET")
+      {
+        localX = 33; // Torso.
+        localY = 45;
+        return true;
+      }
+      if (syraItemKey == "TABARD")
+      {
+        localX = 33; // Legs.
+        localY = 65;
+        return true;
+      }
+    }
     if (string.Equals(heroName, "HAWK", System.StringComparison.OrdinalIgnoreCase)
         && string.Equals(NormalizeChampionAssetKey(itemName), "ARROW",
             System.StringComparison.Ordinal))
@@ -10117,6 +10142,7 @@ private static void HandleGameViewPointerDown(
         || name.Contains("PANTS")
         || name.Contains("HUKE")
         || name.Contains("GUNNA")
+        || name.Contains("TABARD")
         || (name.Contains("ROBE") && name.Contains("LEG")))
       slot = "legs";
     else if (NormalizeChampionAssetKey(objectType) == "LEATHERBOOTS"
@@ -10143,7 +10169,6 @@ private static void HandleGameViewPointerDown(
         || name.Contains("DOUBLET")
         || name.Contains("KIRTLE")
         || name.Contains("HALTER")
-        || name.Contains("TABARD")
         || name.Contains("AKETON")
         || name.Contains("HIDE")
         || name.Contains("GHI")
