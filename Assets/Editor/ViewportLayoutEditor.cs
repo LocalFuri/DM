@@ -8038,6 +8038,11 @@ private static void HandleGameViewPointerDown(
     // squares. The leather bag is a separate, unrelated slot.
     if (IsChampionQuiverSlot(targetX, targetY))
       return IsChampionQuiverItem(itemName);
+    // The bottom-left side pouch accepts Throwing Stars as weapons.
+    // This is NOT one of the four automatic-reload Quiver cells.
+    if (targetX == 5 && targetY == 89
+        && itemKey == "THROWINGSTAR")
+      return true;
     // The upper-right pouch retains its existing unrestricted rule.
     if (targetX == 65 && targetY == 32)
       return true;
@@ -8984,7 +8989,9 @@ private static void HandleGameViewPointerDown(
   private const int ChampionSheetLeftHandY = 52;
 
   // Worn-slot rectangles on Inventory_224x136. Screen Y is local Y + 33.
-  // Order: head, neck, torso, legs, feet, right hand, left hand, upper quiver.
+  // Order: head, neck, torso, legs, feet, right hand, left hand, upper pouch.
+  // The upper pouch is numbered all-purpose slot #1 at (65,32); it must not
+  // also be registered as a second overlapping slot at (61,32).
   private static readonly int[] ChampionSheetEquipSlotXY =
   {
     33, 25,
@@ -8994,13 +9001,14 @@ private static void HandleGameViewPointerDown(
     33, 85,
     61, 52,
     5, 52,
-    61, 32
+    65, 32 // Same physical cell as all-purpose slot #1; no overlapping alias.
   };
 
   // Additional equipment locations outside the eight primary worn slots.
   private static readonly int[] ChampionSheetAdditionalSlotXY =
   {
     5, 72,
+    5, 89, // Bottom-left side pouch, 17 px below the upper pouch.
     65, 32,
     ChampionSheetRightHandX, 72
   };
@@ -10355,7 +10363,7 @@ private static void HandleGameViewPointerDown(
       switch (hawkArrowIndex++)
       {
         case 0: localX = 82; localY = 15; return true;
-        case 1: localX = 61; localY = 32; quiverUsed = true; return true;
+        case 1: localX = 65; localY = 32; quiverUsed = true; return true;
         case 2: localX = ChampionSheetRightHandX;
                 localY = ChampionSheetRightHandY;
                 handUsed = true; return true;
