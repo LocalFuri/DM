@@ -1121,6 +1121,11 @@ public class ViewportLayoutEditor : EditorWindow
   // champion's value survives closing and reopening their sheet.
   private readonly Dictionary<string, int> previewChampionFood =
       new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
+  // Nutrition foundation: WATER is independent from FOOD, just as in CSBwin.
+  // Do not decrement either bar until a real gameplay tick and mutable
+  // champion stamina state are available for TenSecondUpdate parity.
+  private readonly Dictionary<string, int> previewChampionWater =
+      new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
   private const int ChampionMaximumFood = 2048;
   private const int ChampionMinimumFood = -1023;
   private AudioClip cachedEatingSourceClip;
@@ -11850,8 +11855,12 @@ private static void HandleGameViewPointerDown(
     FillChampionSheetRect(pixels, 111, 102, foodFillWidth, barHeight, foodColour);
     FillChampionSheetRect(pixels, 111, 108, fullBarWidth, shadowHeight, shadowColour);
 
-    // WATER: 78x6 coloured fill, then a 78x2 black shadow directly below.
-    FillChampionSheetRect(pixels, 111, 125, fullBarWidth, barHeight, waterColour);
+    // WATER: an independently tracked value, not a permanently full bar.
+    int currentWater = previewChampionWater.TryGetValue(championSheetName ?? "",
+        out int waterLevel) ? waterLevel : ChampionMaximumFood;
+    int waterFillWidth = Mathf.Clamp(Mathf.RoundToInt(fullBarWidth
+        * Mathf.Clamp01((float)currentWater / ChampionMaximumFood)), 0, fullBarWidth);
+    FillChampionSheetRect(pixels, 111, 125, waterFillWidth, barHeight, waterColour);
     FillChampionSheetRect(pixels, 111, 131, fullBarWidth, shadowHeight, shadowColour);
 
     // The FOOD and WATER captions remain the original 48x9 PNGs placed
