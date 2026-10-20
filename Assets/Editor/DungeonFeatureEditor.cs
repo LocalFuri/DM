@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using DM.Dungeon;
 using UnityEditor;
@@ -734,6 +734,8 @@ public class DungeonFeatureEditor : EditorWindow
     "Chani",
     "Alex",
     "Nabi",
+    "Wu Tse",
+    "Daroou",
   };
 
   private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =
