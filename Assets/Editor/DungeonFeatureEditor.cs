@@ -736,6 +736,8 @@ public class DungeonFeatureEditor : EditorWindow
     "Nabi",
     "Wu Tse",
     "Daroou",
+    "Stamm",
+    "Wuuf",
   };
 
   private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =
