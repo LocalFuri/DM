@@ -215,6 +215,24 @@
             "groundF1Path": "Assets/Art/Weapons/Throwing_Star_F1_15x9.png",
             "width": 15,
             "height": 9
+        },
+        {
+            "itemType": "Dagger",
+            "groundF1Path": "Assets/Art/Weapons/Dagger_F1_26x9.png",
+            "width": 26,
+            "height": 9
+        },
+        {
+            "itemType": "Hide Shield",
+            "groundF1Path": "Assets/Art/Armor/Hide_Shield_F1_57x23.png",
+            "width": 57,
+            "height": 23
+        },
+        {
+            "itemType": "Halter",
+            "groundF1Path": "Assets/Art/Armor/Halter_F1_55x17.png",
+            "width": 55,
+            "height": 17
         }
     ],
     "groundF1Anchors": {

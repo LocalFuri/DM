@@ -7902,6 +7902,10 @@ private static void HandleGameViewPointerDown(
     { "THROWINGSTAR", ChampionAllowedSlots.LeftHand
         | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack
         | ChampionAllowedSlots.LeftLeatherBag | ChampionAllowedSlots.Quiver },
+    // Dagger uses the same verified slot permissions as Throwing Star.
+    { "DAGGER", ChampionAllowedSlots.LeftHand
+        | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack
+        | ChampionAllowedSlots.LeftLeatherBag | ChampionAllowedSlots.Quiver },
     // Both Magical Box variants follow weapon hand/backpack permissions.
     // Keep separate item identities and artwork; only slot eligibility changes.
     { "MAGICALBOXBLUE", ChampionAllowedSlots.LeftHand
@@ -8038,10 +8042,10 @@ private static void HandleGameViewPointerDown(
     // squares. The leather bag is a separate, unrelated slot.
     if (IsChampionQuiverSlot(targetX, targetY))
       return IsChampionQuiverItem(itemName);
-    // The bottom-left side pouch accepts Throwing Stars as weapons.
+    // The bottom-left side pouch accepts Throwing Stars and Daggers.
     // This is NOT one of the four automatic-reload Quiver cells.
     if (targetX == 5 && targetY == 89
-        && itemKey == "THROWINGSTAR")
+        && (itemKey == "THROWINGSTAR" || itemKey == "DAGGER"))
       return true;
     // The upper-right pouch retains its existing unrestricted rule.
     if (targetX == 65 && targetY == 32)
