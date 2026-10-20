@@ -8260,7 +8260,43 @@ private static void HandleGameViewPointerDown(
         return true;
       }
 
-      // Outside the Eye, preserve all existing slot handling unchanged.
+      // The mouth must take precedence over nearby inventory slots when the
+      // player is holding an item. Only explicitly supported edible items may
+      // activate the mouth interaction; anything else stays on the cursor.
+      const float heldMouthX = 59f, heldMouthY = 47f;
+      bool mouthHit = logicalX >= heldMouthX && logicalX < heldMouthX + 16f
+          && logicalY >= heldMouthY && logicalY < heldMouthY + 16f;
+      if (mouthHit && HasAnyItemOnCursor())
+      {
+        string heldFoodName = null;
+        if (previewHeldChampionCursor != null && previewHeldChampionItemIndex >= 0
+            && !string.IsNullOrEmpty(previewHeldChampionName))
+        {
+          HeroDefinition heldOrigin = HeroDatabase.GetByName(previewHeldChampionName);
+          if (heldOrigin != null && heldOrigin.StartingItems != null
+              && previewHeldChampionItemIndex < heldOrigin.StartingItems.Count)
+            heldFoodName = GetChampionStartingItemName(
+                heldOrigin.StartingItems[previewHeldChampionItemIndex]);
+        }
+        else if (previewFloorPickupCompleted && previewHeldFloorItem != null)
+          heldFoodName = previewHeldFloorItem.type;
+
+        bool edible = string.Equals(heldFoodName, "Apple",
+                System.StringComparison.OrdinalIgnoreCase)
+            || string.Equals(heldFoodName, "Bread",
+                System.StringComparison.OrdinalIgnoreCase);
+        championMouthPressed = edible;
+        championEyePressed = false;
+        championEyeMoved = false;
+        championEyeMiddle = false;
+        // No consumption here: FOOD is still a display-only bar, and this
+        // source contains no verified nutrition rules or live food state.
+        PresentEditModePreviewToGameView();
+        Repaint();
+        return true;
+      }
+
+      // Outside the Eye and Mouth, preserve existing slot handling.
       if (TryHandleChampionEquipmentClick(logicalX, logicalY))
         return true;
 

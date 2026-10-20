@@ -125,6 +125,18 @@
             "groundF1Path": "Assets/Art/Amulets/Rabbits_Foot_F1_16x7.png",
             "width": 16,
             "height": 7
+        },
+        {
+            "itemType": "Suede Boots",
+            "groundF1Path": "Assets/Art/Armor/Suede_Boots_F1_74x24.png",
+            "width": 74,
+            "height": 24
+        },
+        {
+            "itemType": "Sling",
+            "groundF1Path": "Assets/Art/Weapons/Sling_F1_64x4.png",
+            "width": 64,
+            "height": 4
         }
     ],
     "groundF1Anchors": {
