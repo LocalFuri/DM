@@ -8995,7 +8995,9 @@ private static void HandleGameViewPointerDown(
     PaintChampionMovedEyeOverlay(pixels);
     PaintChampionMiddleEyeOverlay(pixels);
     PaintChampionEatingAnimation(pixels);
-    PaintChampionMouthDiagnosticNumber(pixels);
+    // Diagnostic numbers are painted after the mouth sprite so slot 32 stays visible.
+    PaintChampionAllPurposeSlotNumbers(pixels);
+    PaintChampionRemainingSlotNumbers(pixels);
 
     // Eye-hold detail panel temporarily replaces the recruitment artwork.
     // On mouse release the panel disappears and the 116x73 recruitment PNG
@@ -9147,7 +9149,7 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  // VISUAL DIAGNOSTIC ONLY: permanent cell labels #18-#31.
+  // VISUAL DIAGNOSTIC ONLY: permanent cell labels #18-#32.
   // #1-#17 are painted by PaintChampionAllPurposeSlotNumbers above.
   // These coordinates are EXISTING inventory-local cell positions; Eye and
   // Mouth use complete-screen positions. No slot/hit-test logic uses this list.
@@ -9173,7 +9175,7 @@ private static void HandleGameViewPointerDown(
       new Vector2Int(61, 89), // 29 Quiver bottom-left
       new Vector2Int(78, 89)  // 30 Quiver bottom-right
     };
-    for (int i = 0; i < cells.Length + 1; i++)
+    for (int i = 0; i < cells.Length + 2; i++)
     {
       int number = 18 + i;
       int labelX, labelY;
@@ -9187,7 +9189,11 @@ private static void HandleGameViewPointerDown(
         labelX = 12 + 1;
         labelY = 46 + 1;
       }
-      
+      else // 32 Mouth: outer frame (52,45), image inset at (53,46)
+      {
+        labelX = 53;
+        labelY = 46;
+      }
       string label = number.ToString();
       int width = label.Length * ChampionSheetGlyphAdvance;
       for (int iy = 0; iy < ChampionSheetGlyphHeight + 2; iy++)
@@ -9195,25 +9201,6 @@ private static void HandleGameViewPointerDown(
           SetChampionSheetPixel(pixels, labelX + ix, labelY + iy, black);
       DrawChampionSheetTextWithInk(pixels, glyphs, labelX, labelY, label, yellow);
     }
-  }
-
-  // Diagnostic label #32 is drawn AFTER the mouth animation so the
-  // wide-open resting sprite cannot cover the number.
-  // Drawing-only; no slot geometry, sprite or mouse handling changes.
-  private void PaintChampionMouthDiagnosticNumber(Color32[] pixels)
-  {
-    if (pixels == null) return;
-    const int x = 61; // 16x16 mouth image starts at (60,48).
-    const int y = 49;
-    var glyphs = BuildChampionSheetStatusGlyphs();
-    string label = "32";
-    Color32 black = new Color32(0, 0, 0, 255);
-    Color32 yellow = new Color32(255, 255, 0, 255);
-    int width = label.Length * ChampionSheetGlyphAdvance;
-    for (int iy = 0; iy < ChampionSheetGlyphHeight + 2; iy++)
-      for (int ix = 0; ix < width + 1; ix++)
-        SetChampionSheetPixel(pixels, x + ix, y + iy, black);
-    DrawChampionSheetTextWithInk(pixels, glyphs, x, y, label, yellow);
   }
 
   private int GetChampionCurrentLoadTenths(HeroDefinition hero)
@@ -9297,8 +9284,6 @@ private static void HandleGameViewPointerDown(
     PaintChampionEquipmentSlotMarker(pixels, hero,
         ChampionSheetRightHandX, 72, "Quiver");
     PaintChampionAutoHighlights(pixels, championSheetName);
-    PaintChampionAllPurposeSlotNumbers(pixels);
-    PaintChampionRemainingSlotNumbers(pixels);
     if (hero == null || hero.Resources == null || hero.Attributes == null)
       return;
 
@@ -11981,16 +11966,16 @@ private static void HandleGameViewPointerDown(
     return texture;
   }
 
-  // The 18x18 mouth frame starts at (59,47); paint each 16x16 sprite
-  // one pixel inside at (60,48), without scaling, mirroring or movement.
+  // Mouth sprite calibration: X=54, Y=46 (16x16, unscaled).
+  // Diagnostic slot 32 frame remains fixed at (52,45).
   private void PaintChampionEatingAnimation(Color32[] pixels)
   {
     if (!championSheetVisible || pixels == null
         || pixels.Length != PreviewWidth * PreviewHeight)
       return;
 
-    const int mouthX = 60;
-    const int mouthY = 48;
+    const int mouthX = 54;
+    const int mouthY = 46;
     const int mouthSize = 16;
 
     int frameIndex = 2; // Wide-open mouth is the resting frame.
