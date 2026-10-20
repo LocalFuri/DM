@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -8382,7 +8382,7 @@ private static void HandleGameViewPointerDown(
   {
     const float eyeX = 12f, eyeY = 46f;
     const float eyeSize = 16f;
-    Rect eyeRect = ChampionLayoutEye;
+    Rect eyeRect = new Rect(eyeX, eyeY, eyeSize, eyeSize);
     Vector2 pixelHotspot = new Vector2(Mathf.Round(x), Mathf.Round(y));
     if (eyeRect.Contains(pixelHotspot))
       return true;
@@ -8579,8 +8579,9 @@ private static void HandleGameViewPointerDown(
       // The mouth must take precedence over nearby inventory slots when the
       // player is holding an item. Only explicitly supported edible items may
       // activate the mouth interaction; anything else stays on the cursor.
-      bool mouthHit = ChampionLayoutMouthFrame.Contains(
-          new Vector2(logicalX, logicalY));
+      const float heldMouthX = 59f, heldMouthY = 47f;
+      bool mouthHit = logicalX >= heldMouthX && logicalX < heldMouthX + 16f
+          && logicalY >= heldMouthY && logicalY < heldMouthY + 16f;
       if (mouthHit && HasAnyItemOnCursor())
       {
         string heldFoodName = null;
@@ -8994,6 +8995,7 @@ private static void HandleGameViewPointerDown(
     PaintChampionMovedEyeOverlay(pixels);
     PaintChampionMiddleEyeOverlay(pixels);
     PaintChampionEatingAnimation(pixels);
+    PaintChampionMouthDiagnosticNumber(pixels);
 
     // Eye-hold detail panel temporarily replaces the recruitment artwork.
     // On mouse release the panel disappears and the 116x73 recruitment PNG
@@ -9045,82 +9047,27 @@ private static void HandleGameViewPointerDown(
   // CharacterSheet_224x136.png has SHARED backpack borders: pitch=17,
   // not 18. Keep these IDs consistent for occupancy and item storage.
   private const int ChampionSheetBackpackPitch = 17;
-  // AUTHORITATIVE 320x200 champion sheet geometry. Inventory coordinates
-  // are local to the image at screen Y=33; Eye/Mouth are absolute.
-  // All interaction/drawing rectangles below derive from these definitions.
-  private sealed class ChampionLayoutCell
-  {
-    public readonly string Name;
-    public readonly int X, Y, Width, Height;
-    public readonly int ImageX, ImageY, ImageWidth, ImageHeight;
-    public ChampionLayoutCell(string name, int x, int y, int width, int height,
-        int imageX, int imageY, int imageWidth, int imageHeight)
-    {
-      Name = name; X = x; Y = y; Width = width; Height = height;
-      ImageX = imageX; ImageY = imageY;
-      ImageWidth = imageWidth; ImageHeight = imageHeight;
-    }
-    public Rect FrameScreenRect => new Rect(X,
-        Y + ChampionSheetInventoryScreenTop, Width, Height);
-    public Rect ImageScreenRect => new Rect(ImageX,
-        ImageY + ChampionSheetInventoryScreenTop, ImageWidth, ImageHeight);
-  }
-
-  // Exactly 30 inventory slots; add Eye and Mouth below = 32 cells.
-  private static readonly ChampionLayoutCell[] ChampionLayoutInventory =
-  {
-      new ChampionLayoutCell("Head", 33, 25, 18, 18, 34, 26, 16, 16),
-      new ChampionLayoutCell("Neck", 5, 32, 18, 18, 6, 33, 16, 16),
-      new ChampionLayoutCell("Torso", 33, 45, 18, 18, 34, 46, 16, 16),
-      new ChampionLayoutCell("Legs", 33, 65, 18, 18, 34, 66, 16, 16),
-      new ChampionLayoutCell("Feet", 33, 85, 18, 18, 34, 86, 16, 16),
-      new ChampionLayoutCell("RightHand", 61, 52, 18, 18, 62, 53, 16, 16),
-      new ChampionLayoutCell("LeftHand", 5, 52, 18, 18, 6, 53, 16, 16),
-      new ChampionLayoutCell("UpperPouch", 65, 32, 18, 18, 66, 33, 16, 16),
-      new ChampionLayoutCell("LeftPouch1", 5, 72, 18, 18, 6, 73, 16, 16),
-      new ChampionLayoutCell("LeftPouch2", 5, 89, 18, 18, 6, 90, 16, 16),
-      new ChampionLayoutCell("Quiver1", 61, 72, 18, 18, 62, 73, 16, 16),
-      new ChampionLayoutCell("Quiver2", 78, 72, 18, 18, 79, 73, 16, 16),
-      new ChampionLayoutCell("Quiver3", 61, 89, 18, 18, 62, 90, 16, 16),
-      new ChampionLayoutCell("Quiver4", 78, 89, 18, 18, 79, 90, 16, 16),
-      new ChampionLayoutCell("Backpack_1_1", 82, 15, 18, 18, 83, 16, 16, 16),
-      new ChampionLayoutCell("Backpack_1_2", 99, 15, 18, 18, 100, 16, 16, 16),
-      new ChampionLayoutCell("Backpack_1_3", 116, 15, 18, 18, 117, 16, 16, 16),
-      new ChampionLayoutCell("Backpack_1_4", 133, 15, 18, 18, 134, 16, 16, 16),
-      new ChampionLayoutCell("Backpack_1_5", 150, 15, 18, 18, 151, 16, 16, 16),
-      new ChampionLayoutCell("Backpack_1_6", 167, 15, 18, 18, 168, 16, 16, 16),
-      new ChampionLayoutCell("Backpack_1_7", 184, 15, 18, 18, 185, 16, 16, 16),
-      new ChampionLayoutCell("Backpack_1_8", 201, 15, 18, 18, 202, 16, 16, 16),
-      new ChampionLayoutCell("Backpack_2_1", 82, 32, 18, 18, 83, 33, 16, 16),
-      new ChampionLayoutCell("Backpack_2_2", 99, 32, 18, 18, 100, 33, 16, 16),
-      new ChampionLayoutCell("Backpack_2_3", 116, 32, 18, 18, 117, 33, 16, 16),
-      new ChampionLayoutCell("Backpack_2_4", 133, 32, 18, 18, 134, 33, 16, 16),
-      new ChampionLayoutCell("Backpack_2_5", 150, 32, 18, 18, 151, 33, 16, 16),
-      new ChampionLayoutCell("Backpack_2_6", 167, 32, 18, 18, 168, 33, 16, 16),
-      new ChampionLayoutCell("Backpack_2_7", 184, 32, 18, 18, 185, 33, 16, 16),
-      new ChampionLayoutCell("Backpack_2_8", 201, 32, 18, 18, 202, 33, 16, 16),
-  };
-  private static readonly Rect ChampionLayoutEye = new Rect(12, 46, 16, 16);
-  private static readonly Rect ChampionLayoutMouthFrame = new Rect(59, 47, 18, 18);
-  private static readonly Rect ChampionLayoutMouthImage = new Rect(60, 48, 16, 16);
-
-  private static ChampionLayoutCell FindChampionLayoutCell(int x, int y)
-  {
-    foreach (ChampionLayoutCell cell in ChampionLayoutInventory)
-      if (cell.X == x && cell.Y == y) return cell;
-    Debug.LogError("CHAMPION LAYOUT: unregistered inventory cell ("
-        + x + "," + y + "). No fallback.");
-    return null;
-  }
-
   private static readonly Vector2Int[] ChampionSheetAllItemSlots =
       BuildChampionSheetAllItemSlots();
 
   private static Vector2Int[] BuildChampionSheetAllItemSlots()
   {
     var slots = new System.Collections.Generic.List<Vector2Int>();
-    foreach (ChampionLayoutCell cell in ChampionLayoutInventory)
-      slots.Add(new Vector2Int(cell.X, cell.Y));
+    slots.Add(new Vector2Int(ChampionSheetRightHandX, ChampionSheetRightHandY));
+    slots.Add(new Vector2Int(ChampionSheetLeftHandX, ChampionSheetLeftHandY));
+    for (int i = 0; i < ChampionSheetEquipSlotXY.Length; i += 2)
+      AddChampionItemSlotIfMissing(slots,
+          ChampionSheetEquipSlotXY[i], ChampionSheetEquipSlotXY[i + 1]);
+    for (int i = 0; i < ChampionSheetAdditionalSlotXY.Length; i += 2)
+      AddChampionItemSlotIfMissing(slots,
+          ChampionSheetAdditionalSlotXY[i], ChampionSheetAdditionalSlotXY[i + 1]);
+    foreach (Vector2Int slot in ChampionQuiverSlots)
+      AddChampionItemSlotIfMissing(slots, slot.x, slot.y);
+    for (int row = 0; row < 2; row++)
+      for (int col = 0; col < 8; col++)
+        AddChampionItemSlotIfMissing(slots,
+            82 + col * ChampionSheetBackpackPitch,
+            15 + row * ChampionSheetBackpackPitch);
     return slots.ToArray();
   }
 
@@ -9134,14 +9081,25 @@ private static void HandleGameViewPointerDown(
 
   private static Rect GetChampionSheetSlotScreenRect(int slotX, int slotY)
   {
-    ChampionLayoutCell cell = FindChampionLayoutCell(slotX, slotY);
-    return cell == null ? Rect.zero : cell.FrameScreenRect;
+    return new Rect(slotX, ChampionSheetInventoryScreenTop + slotY,
+        ChampionSheetSlotSize, ChampionSheetSlotSize);
   }
 
+  // Pixel-accurate 16x16 rectangle measured from CharacterSheet_224x136.png.
+  // Used by BOTH item drawing and pointer hit testing. Inventory-local Y
+  // is converted to the 320x200 screen by adding 33 exactly once.
   private static Rect GetChampionSheetItemScreenRect(int slotX, int slotY)
   {
-    ChampionLayoutCell cell = FindChampionLayoutCell(slotX, slotY);
-    return cell == null ? Rect.zero : cell.ImageScreenRect;
+    int iconX = slotX + 1;
+    int iconY = slotY + 1;
+    if (IsChampionBackpackSlot(slotX, slotY))
+    {
+      // Backpack row 2 is immediately below the shared separator.
+      iconX = slotX + 1;
+      iconY = slotY == 15 ? 16 : 33;
+    }
+    return new Rect(iconX, ChampionSheetInventoryScreenTop + iconY,
+        ChampionSheetItemSize, ChampionSheetItemSize);
   }
 
   private const int ChampionSheetSlotSize = 18;
@@ -9187,6 +9145,75 @@ private static void HandleGameViewPointerDown(
           SetChampionSheetPixel(pixels, labelX + ix, labelY + iy, black);
       DrawChampionSheetTextWithInk(pixels, glyphs, labelX, labelY, label, yellow);
     }
+  }
+
+  // VISUAL DIAGNOSTIC ONLY: permanent cell labels #18-#31.
+  // #1-#17 are painted by PaintChampionAllPurposeSlotNumbers above.
+  // These coordinates are EXISTING inventory-local cell positions; Eye and
+  // Mouth use complete-screen positions. No slot/hit-test logic uses this list.
+  private void PaintChampionRemainingSlotNumbers(Color32[] pixels)
+  {
+    if (pixels == null) return;
+    var glyphs = BuildChampionSheetStatusGlyphs();
+    Color32 black = new Color32(0, 0, 0, 255);
+    Color32 yellow = new Color32(255, 255, 0, 255);
+    Vector2Int[] cells =
+    {
+      new Vector2Int(33, 25), // 18 Head
+      new Vector2Int(5, 32),  // 19 Neck
+      new Vector2Int(33, 45), // 20 Torso
+      new Vector2Int(33, 65), // 21 Legs
+      new Vector2Int(33, 85), // 22 Feet
+      new Vector2Int(61, 52), // 23 Screen-right hand
+      new Vector2Int(5, 52),  // 24 Screen-left hand
+      new Vector2Int(5, 72),  // 25 Side pouch, upper
+      new Vector2Int(5, 89),  // 26 Side pouch, lower
+      new Vector2Int(61, 72), // 27 Quiver top-left
+      new Vector2Int(78, 72), // 28 Quiver top-right
+      new Vector2Int(61, 89), // 29 Quiver bottom-left
+      new Vector2Int(78, 89)  // 30 Quiver bottom-right
+    };
+    for (int i = 0; i < cells.Length + 1; i++)
+    {
+      int number = 18 + i;
+      int labelX, labelY;
+      if (i < cells.Length)
+      {
+        labelX = cells[i].x + 2;
+        labelY = ChampionSheetInventoryScreenTop + cells[i].y + 2;
+      }
+      else if (number == 31) // Eye, complete screen coordinates
+      {
+        labelX = 12 + 1;
+        labelY = 46 + 1;
+      }
+      
+      string label = number.ToString();
+      int width = label.Length * ChampionSheetGlyphAdvance;
+      for (int iy = 0; iy < ChampionSheetGlyphHeight + 2; iy++)
+        for (int ix = 0; ix < width + 1; ix++)
+          SetChampionSheetPixel(pixels, labelX + ix, labelY + iy, black);
+      DrawChampionSheetTextWithInk(pixels, glyphs, labelX, labelY, label, yellow);
+    }
+  }
+
+  // Diagnostic label #32 is drawn AFTER the mouth animation so the
+  // wide-open resting sprite cannot cover the number.
+  // Drawing-only; no slot geometry, sprite or mouse handling changes.
+  private void PaintChampionMouthDiagnosticNumber(Color32[] pixels)
+  {
+    if (pixels == null) return;
+    const int x = 61; // 16x16 mouth image starts at (60,48).
+    const int y = 49;
+    var glyphs = BuildChampionSheetStatusGlyphs();
+    string label = "32";
+    Color32 black = new Color32(0, 0, 0, 255);
+    Color32 yellow = new Color32(255, 255, 0, 255);
+    int width = label.Length * ChampionSheetGlyphAdvance;
+    for (int iy = 0; iy < ChampionSheetGlyphHeight + 2; iy++)
+      for (int ix = 0; ix < width + 1; ix++)
+        SetChampionSheetPixel(pixels, x + ix, y + iy, black);
+    DrawChampionSheetTextWithInk(pixels, glyphs, x, y, label, yellow);
   }
 
   private int GetChampionCurrentLoadTenths(HeroDefinition hero)
@@ -9271,6 +9298,7 @@ private static void HandleGameViewPointerDown(
         ChampionSheetRightHandX, 72, "Quiver");
     PaintChampionAutoHighlights(pixels, championSheetName);
     PaintChampionAllPurposeSlotNumbers(pixels);
+    PaintChampionRemainingSlotNumbers(pixels);
     if (hero == null || hero.Resources == null || hero.Attributes == null)
       return;
 
@@ -11746,10 +11774,10 @@ private static void HandleGameViewPointerDown(
     if (texture == null)
       return;
 
-    int screenLeft = (int)ChampionLayoutEye.x;
-    int screenTop = (int)ChampionLayoutEye.y;
-    int width = (int)ChampionLayoutEye.width;
-    int height = (int)ChampionLayoutEye.height;
+    const int screenLeft = 12;
+    const int screenTop = 46;
+    const int width = 16;
+    const int height = 16;
     Color32[] source = texture.GetPixels32();
 
     for (int sourceY = 0; sourceY < height; sourceY++)
@@ -11792,10 +11820,10 @@ private static void HandleGameViewPointerDown(
     if (texture == null)
       return;
 
-    int screenLeft = (int)ChampionLayoutEye.x;
-    int screenTop = (int)ChampionLayoutEye.y;
-    int width = (int)ChampionLayoutEye.width;
-    int height = (int)ChampionLayoutEye.height;
+    const int screenLeft = 12;
+    const int screenTop = 46;
+    const int width = 16;
+    const int height = 16;
     Color32[] source = texture.GetPixels32();
 
     for (int sourceY = 0; sourceY < height; sourceY++)
@@ -11961,9 +11989,9 @@ private static void HandleGameViewPointerDown(
         || pixels.Length != PreviewWidth * PreviewHeight)
       return;
 
-    int mouthX = (int)ChampionLayoutMouthImage.x;
-    int mouthY = (int)ChampionLayoutMouthImage.y;
-    int mouthSize = (int)ChampionLayoutMouthImage.width;
+    const int mouthX = 60;
+    const int mouthY = 48;
+    const int mouthSize = 16;
 
     int frameIndex = 2; // Wide-open mouth is the resting frame.
     if (championEatAnimationStarted >= 0)
