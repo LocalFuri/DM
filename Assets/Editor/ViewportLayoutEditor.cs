@@ -9545,6 +9545,12 @@ private static void HandleGameViewPointerDown(
     if (string.Equals(name.Trim(), "Moonstone", System.StringComparison.OrdinalIgnoreCase))
       DrawChampionSheetTextWithInk(pixels, glyphs, weightX, weightY + 12,
           "+3 MAXIMUM MANA", new Color32(0, 255, 0, 255));
+    // Rabbit's Foot grants +10 hidden Luck while carried. This Eye line is
+    // informational; actual Luck gameplay calculations are not yet implemented.
+    if (string.Equals(NormalizeChampionAssetKey(name), "RABBITSFOOT",
+            System.StringComparison.Ordinal))
+      DrawChampionSheetTextWithInk(pixels, glyphs, weightX, weightY + 12,
+          "LUCK +10", new Color32(0, 255, 0, 255));
     // Inspect the physical torch instance, not the hero's starting-item template.
     // The state is persistent across slot transfers and opening this panel never
     // resets or consumes fuel. Missing instance/state is a Console error.
