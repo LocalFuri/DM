@@ -233,6 +233,18 @@
             "groundF1Path": "Assets/Art/Armor/Halter_F1_55x17.png",
             "width": 55,
             "height": 17
+        },
+        {
+            "itemType": "Kirtle",
+            "groundF1Path": "Assets/Art/Armor/Kirtle_F1_64x18.png",
+            "width": 64,
+            "height": 18
+        },
+        {
+            "itemType": "Wand",
+            "groundF1Path": "Assets/Art/Weapons/Wand_F1_22x3.png",
+            "width": 22,
+            "height": 3
         }
     ],
     "groundF1Anchors": {
