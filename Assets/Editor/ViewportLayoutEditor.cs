@@ -7681,9 +7681,6 @@ private static void HandleGameViewPointerDown(
     HideHeldItemPointerOverlay();
     Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     BeginChampionAutoHighlight(target.Name, destination);
-    Debug.Log("CHAMPION AUTO EQUIP: Placed '" + itemName + "' into " + target.Name
-        + " slot (" + destination.x + "," + destination.y
-        + "); highlighted for 30 seconds.");
   }
 
   private string previewHeldChampionName;
@@ -8062,11 +8059,6 @@ private static void HandleGameViewPointerDown(
               heldItemName, heldOriginalX, heldOriginalY, targetX, targetY);
       if (!permitted)
       {
-        Debug.LogWarning("CHAMPION EQUIPMENT: This item cannot be equipped "
-            + "in the selected slot. Item='" + heldItemName
-            + "', target=(" + targetX + "," + targetY + ")"
-            + ", source=(" + previewHeldChampionSourceSlot.x
-            + "," + previewHeldChampionSourceSlot.y + ").");
         return true;
       }
       if (!previewChampionItemSlots.TryGetValue(hero.Name, out var slots))
@@ -8372,9 +8364,6 @@ private static void HandleGameViewPointerDown(
       }
     }
 
-    if (HasAnyItemOnCursor())
-      Debug.Log("CHAMPION AUTO EQUIP: Mirror clicked for '" + championName
-          + "' while holding item; trying placement.");
     TryAutoEquipHeldArmor(championName);
     championSheetName = championName;
     championSheetVisible = true;
