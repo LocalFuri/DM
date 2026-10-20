@@ -8038,6 +8038,10 @@ private static void HandleGameViewPointerDown(
       string itemName, int originalX, int originalY, int targetX, int targetY)
   {
     string itemKey = NormalizeChampionAssetKey(itemName);
+    // Universal rule: every item is permitted in either hand.
+    // Other inventory slots retain their own eligibility restrictions.
+    if (IsChampionHandSlot(targetX, targetY))
+      return true;
     // Only verified quiver-compatible types can be stored in these four
     // squares. The leather bag is a separate, unrelated slot.
     if (IsChampionQuiverSlot(targetX, targetY))
