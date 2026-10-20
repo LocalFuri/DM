@@ -248,13 +248,19 @@
         },
         {
             "itemType": "Potion Empty",
-            "groundF1Path": "Assets/Art/Misc/Potion_Empty_F1_16x18.png",
+            "groundF1Path": "Assets/Art/Potions/Potion_Empty_F1_16x18.png",
             "width": 16,
             "height": 18
         },
         {
             "itemType": "Empty Potion Flask",
-            "groundF1Path": "Assets/Art/Misc/Potion_Empty_F1_16x18.png",
+            "groundF1Path": "Assets/Art/Potions/Potion_Empty_F1_16x18.png",
+            "width": 16,
+            "height": 18
+        },
+        {
+            "itemType": "Empty Flask",
+            "groundF1Path": "Assets/Art/Potions/Potion_Empty_F1_16x18.png",
             "width": 16,
             "height": 18
         }

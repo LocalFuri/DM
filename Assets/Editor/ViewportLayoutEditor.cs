@@ -10323,7 +10323,7 @@ private static void HandleGameViewPointerDown(
       {
         string value = field.GetValue(item) as string;
         if (!string.IsNullOrWhiteSpace(value))
-          return value.Trim();
+          return CanonicalChampionStartingItemName(value);
       }
 
       System.Reflection.PropertyInfo property =
@@ -10334,11 +10334,22 @@ private static void HandleGameViewPointerDown(
       {
         string value = property.GetValue(item, null) as string;
         if (!string.IsNullOrWhiteSpace(value))
-          return value.Trim();
+          return CanonicalChampionStartingItemName(value);
       }
     }
 
     return string.Empty;
+  }
+
+  // Use one item identity for inventory, Eye inspection and dungeon floor.
+  // Existing HeroDatabase data can still contain the historical "Empty Flask".
+  private static string CanonicalChampionStartingItemName(string name)
+  {
+    string key = NormalizeChampionAssetKey(name);
+    if (key == "EMPTYFLASK" || key == "EMPTYPOTIONFLASK"
+        || key == "EMPTYPOTION" || key == "POTIONEMPTY")
+      return "Potion Empty";
+    return name.Trim();
   }
 
   // Starting-item placement uses monitor-relative directions. HAWK's Arrow
