@@ -122,7 +122,7 @@
         },
         {
             "itemType": "Rabbit's Foot",
-            "groundF1Path": "Assets/Art/Amulets/Rabbits_Foot_F1_16x7.png",
+            "groundF1Path": "Assets/Art/Misc/Rabbits_Foot_F1_16x7.png",
             "width": 16,
             "height": 7
         },
@@ -245,42 +245,6 @@
             "groundF1Path": "Assets/Art/Weapons/Wand_F1_22x3.png",
             "width": 22,
             "height": 3
-        },
-        {
-            "itemType": "Potion Empty",
-            "groundF1Path": "Assets/Art/Potions/Potion_Empty_F1_16x18.png",
-            "width": 16,
-            "height": 18
-        },
-        {
-            "itemType": "Empty Potion Flask",
-            "groundF1Path": "Assets/Art/Potions/Potion_Empty_F1_16x18.png",
-            "width": 16,
-            "height": 18
-        },
-        {
-            "itemType": "Empty Flask",
-            "groundF1Path": "Assets/Art/Potions/Potion_Empty_F1_16x18.png",
-            "width": 16,
-            "height": 18
-        },
-        {
-            "itemType": "Axe",
-            "groundF1Path": "Assets/Art/Weapons/Axe_F1_64x17.png",
-            "width": 64,
-            "height": 17
-        },
-        {
-            "itemType": "Bread",
-            "groundF1Path": "Assets/Art/Food/Bread_F1_27x16.png",
-            "width": 27,
-            "height": 16
-        },
-        {
-            "itemType": "Cheese",
-            "groundF1Path": "Assets/Art/Food/Cheese_F1_29x15.png",
-            "width": 29,
-            "height": 15
         }
     ],
     "groundF1Anchors": {
