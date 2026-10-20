@@ -265,12 +265,6 @@
             "height": 25
         },
         {
-            "itemType": "Axe",
-            "groundF1Path": "Assets/Art/Weapons/Axe_F1_64x17.png",
-            "width": 64,
-            "height": 17
-        },
-        {
             "itemType": "Bow",
             "groundF1Path": "Assets/Art/Weapons/Bow_F1_80x17.png",
             "width": 80,
