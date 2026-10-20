@@ -7870,7 +7870,8 @@ private static void HandleGameViewPointerDown(
     LeftHand = 1 << 0,
     RightHand = 1 << 1,
     Backpack = 1 << 2,
-    OriginalEquippedSlot = 1 << 3
+    OriginalEquippedSlot = 1 << 3,
+    LeftLeatherBag = 1 << 4
   }
 
   // Explicitly verified against the original Dungeon Master. Extend this
@@ -7883,18 +7884,43 @@ private static void HandleGameViewPointerDown(
     { "SAMURAISWORD", ChampionAllowedSlots.LeftHand
         | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack },
     { "TORCH", ChampionAllowedSlots.LeftHand
-        | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack }
+        | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack },
+    // Both Magical Box variants follow weapon hand/backpack permissions.
+    // Keep separate item identities and artwork; only slot eligibility changes.
+    { "MAGICALBOXBLUE", ChampionAllowedSlots.LeftHand
+        | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack
+        | ChampionAllowedSlots.LeftLeatherBag },
+    { "BLUEMAGICALBOX", ChampionAllowedSlots.LeftHand
+        | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack
+        | ChampionAllowedSlots.LeftLeatherBag },
+    { "MAGICALBOXGREEN", ChampionAllowedSlots.LeftHand
+        | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack
+        | ChampionAllowedSlots.LeftLeatherBag },
+    { "GREENMAGICALBOX", ChampionAllowedSlots.LeftHand
+        | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack
+        | ChampionAllowedSlots.LeftLeatherBag },
+    { "MAGICALBOX", ChampionAllowedSlots.LeftHand
+        | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack
+        | ChampionAllowedSlots.LeftLeatherBag }
   };
 
   private static bool IsPermittedChampionItemSlot(
       string itemName, int originalX, int originalY, int targetX, int targetY)
   {
-    // The upper-right pouch and lower-right quiver are unrestricted storage
-    // slots. Both accept any real inventory item.
-    if ((targetX == 65 && targetY == 32)
-        || (targetX == ChampionSheetRightHandX && targetY == 72))
-      return true;
     string itemKey = NormalizeChampionAssetKey(itemName);
+    // Magical Boxes can use either hand, the left leather bag and backpack,
+    // but not the lower-right quiver. Other items retain existing quiver rules.
+    if (targetX == ChampionSheetRightHandX && targetY == 72)
+    {
+      if (itemKey == "MAGICALBOXBLUE" || itemKey == "BLUEMAGICALBOX"
+          || itemKey == "MAGICALBOXGREEN" || itemKey == "GREENMAGICALBOX"
+          || itemKey == "MAGICALBOX")
+        return false;
+      return true;
+    }
+    // The upper-right pouch retains its existing unrestricted rule.
+    if (targetX == 65 && targetY == 32)
+      return true;
     if (!VerifiedChampionItemSlotRules.TryGetValue(itemKey,
             out ChampionAllowedSlots allowed))
     {
@@ -7905,6 +7931,11 @@ private static void HandleGameViewPointerDown(
           | ChampionAllowedSlots.OriginalEquippedSlot;
     }
 
+    // The left leather bag is the distinct 5,72 inventory slot.
+    if (targetX == 5 && targetY == 72)
+      return (allowed & ChampionAllowedSlots.LeftLeatherBag) != 0
+          || ((allowed & ChampionAllowedSlots.OriginalEquippedSlot) != 0
+              && originalX == targetX && originalY == targetY);
     if (IsChampionBackpackSlot(targetX, targetY))
       return (allowed & ChampionAllowedSlots.Backpack) != 0;
     if (targetX == ChampionSheetLeftHandX
@@ -8983,6 +9014,12 @@ private static void HandleGameViewPointerDown(
     }
     HeroStartingItem item = hero.StartingItems[previewHeldChampionItemIndex];
     string name = GetChampionStartingItemName(item);
+    // Blue and green boxes have distinct artwork and item identities, but
+    // the Eye inspector shows the same original-game display name.
+    string boxKey = NormalizeChampionAssetKey(name);
+    if (boxKey == "BLUEMAGICALBOX" || boxKey == "MAGICALBOXBLUE"
+        || boxKey == "GREENMAGICALBOX" || boxKey == "MAGICALBOXGREEN")
+      name = "Magical Box";
     Texture2D art = previewHeldChampionCursor;
     if (art == null || !art.isReadable || art.width != 16 || art.height != 16)
     {

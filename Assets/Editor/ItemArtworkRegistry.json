@@ -1,158 +1,206 @@
 {
-    "entries": [
-        {
-            "itemType": "Samurai Sword",
-            "groundF1Path": "Assets/Art/Weapons/Sword_72x8.png",
-            "width": 72,
-            "height": 8
-        },
-        {
-            "itemType": "Ghi Trousers",
-            "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
-            "width": 64,
-            "height": 16
-        },
-        {
-            "itemType": "Ghi Body",
-            "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
-            "width": 64,
-            "height": 16
-        },
-        {
-            "itemType": "Ghi",
-            "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
-            "width": 64,
-            "height": 16
-        },
-        {
-            "itemType": "Mail Aketon",
-            "groundF1Path": "Assets/Art/Armor/Mail_Aketon_F1_59x21.png",
-            "width": 59,
-            "height": 21
-        },
-        {
-            "itemType": "Hosen",
-            "groundF1Path": "Assets/Art/Armor/Mail_Aketon_F1_59x21.png",
-            "width": 59,
-            "height": 21
-        },
-        {
-            "itemType": "Blue Pants",
-            "groundF1Path": "Assets/Art/Armor/Blue_Pants_F1_61x18.png",
-            "width": 61,
-            "height": 18
-        },
-        {
-            "itemType": "Torch",
-            "groundF1Path": "Assets/Art/Weapons/Torch_Ground_61x7.png",
-            "width": 61,
-            "height": 7
-        },
-        {
-            "itemType": "Barbarian Hide",
-            "groundF1Path": "Assets/Art/Armor/Barbarian_Hide_F1_64x16.png",
-            "width": 64,
-            "height": 16
-        },
-        {
-            "itemType": "Bezerker Helm",
-            "groundF1Path": "Assets/Art/Armor/Bezerker_Helm_F1_32x20.png",
-            "width": 32,
-            "height": 20
-        },
-        {
-            "itemType": "Sandals",
-            "groundF1Path": "Assets/Art/Armor/Sandals_F1_44x16.png",
-            "width": 44,
-            "height": 16
-        },
-        {
-            "itemType": "Arrow",
-            "groundF1Path": "Assets/Art/Weapons/Arrow_F1_46x5.png",
-            "width": 46,
-            "height": 5
-        },
-        {
-            "itemType": "Club",
-            "groundF1Path": "Assets/Art/Weapons/Club_F1_64x10.png",
-            "width": 64,
-            "height": 10
-        },
-        {
-            "itemType": "Leather Jerkin",
-            "groundF1Path": "Assets/Art/Armor/Leather_Jerkin_F1_64x16.png",
-            "width": 64,
-            "height": 16
-        },
-        {
-            "itemType": "Silk Shirt",
-            "groundF1Path": "Assets/Art/Armor/Ghi_Body_64x16.png",
-            "width": 64,
-            "height": 16
-        },
-        {
-            "itemType": "Gunna",
-            "groundF1Path": "Assets/Art/Armor/Gunna_64x18_F1.png",
-            "width": 64,
-            "height": 18
-        },
-        {
-            "itemType": "Moonstone",
-            "groundF1Path": "Assets/Art/Amulets/Moonstone_F1_16x8.png",
-            "width": 16,
-            "height": 8
-        },
-        {
-            "itemType": "Leather Pants",
-            "groundF1Path": "Assets/Art/Armor/Leather_Pants_F1_64x16.png",
-            "width": 64,
-            "height": 16
-        },
-        {
-            "itemType": "Leather Boots",
-            "groundF1Path": "Assets/Art/Armor/Leather_Boots_F1_74x24.png",
-            "width": 74,
-            "height": 24
-        },
-        {
-            "itemType": "Tunic",
-            "groundF1Path": "Assets/Art/Armor/Gunna_64x18_F1.png",
-            "width": 64,
-            "height": 18
-        },
-        {
-            "itemType": "Rabbit's Foot",
-            "groundF1Path": "Assets/Art/Amulets/Rabbits_Foot_F1_16x7.png",
-            "width": 16,
-            "height": 7
-        },
-        {
-            "itemType": "Suede Boots",
-            "groundF1Path": "Assets/Art/Armor/Suede_Boots_F1_74x24.png",
-            "width": 74,
-            "height": 24
-        },
-        {
-            "itemType": "Sling",
-            "groundF1Path": "Assets/Art/Weapons/Sling_F1_64x4.png",
-            "width": 64,
-            "height": 4
-        },
-        {
-            "itemType": "Staff",
-            "groundF1Path": "Assets/Art/Weapons/Sling_F1_64x4.png",
-            "width": 64,
-            "height": 4
-        }
-    ],
-    "groundF1Anchors": {
-        "left": {
-            "x": 68,
-            "y": 163
-        },
-        "right": {
-            "x": 154,
-            "y": 163
-        }
+  "entries": [
+    {
+      "itemType": "Samurai Sword",
+      "groundF1Path": "Assets/Art/Weapons/Sword_72x8.png",
+      "width": 72,
+      "height": 8
+    },
+    {
+      "itemType": "Ghi Trousers",
+      "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
+      "width": 64,
+      "height": 16
+    },
+    {
+      "itemType": "Ghi Body",
+      "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
+      "width": 64,
+      "height": 16
+    },
+    {
+      "itemType": "Ghi",
+      "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
+      "width": 64,
+      "height": 16
+    },
+    {
+      "itemType": "Mail Aketon",
+      "groundF1Path": "Assets/Art/Armor/Mail_Aketon_F1_59x21.png",
+      "width": 59,
+      "height": 21
+    },
+    {
+      "itemType": "Hosen",
+      "groundF1Path": "Assets/Art/Armor/Mail_Aketon_F1_59x21.png",
+      "width": 59,
+      "height": 21
+    },
+    {
+      "itemType": "Blue Pants",
+      "groundF1Path": "Assets/Art/Armor/Blue_Pants_F1_61x18.png",
+      "width": 61,
+      "height": 18
+    },
+    {
+      "itemType": "Torch",
+      "groundF1Path": "Assets/Art/Weapons/Torch_Ground_61x7.png",
+      "width": 61,
+      "height": 7
+    },
+    {
+      "itemType": "Barbarian Hide",
+      "groundF1Path": "Assets/Art/Armor/Barbarian_Hide_F1_64x16.png",
+      "width": 64,
+      "height": 16
+    },
+    {
+      "itemType": "Bezerker Helm",
+      "groundF1Path": "Assets/Art/Armor/Bezerker_Helm_F1_32x20.png",
+      "width": 32,
+      "height": 20
+    },
+    {
+      "itemType": "Sandals",
+      "groundF1Path": "Assets/Art/Armor/Sandals_F1_44x16.png",
+      "width": 44,
+      "height": 16
+    },
+    {
+      "itemType": "Arrow",
+      "groundF1Path": "Assets/Art/Weapons/Arrow_F1_46x5.png",
+      "width": 46,
+      "height": 5
+    },
+    {
+      "itemType": "Club",
+      "groundF1Path": "Assets/Art/Weapons/Club_F1_64x10.png",
+      "width": 64,
+      "height": 10
+    },
+    {
+      "itemType": "Leather Jerkin",
+      "groundF1Path": "Assets/Art/Armor/Leather_Jerkin_F1_64x16.png",
+      "width": 64,
+      "height": 16
+    },
+    {
+      "itemType": "Silk Shirt",
+      "groundF1Path": "Assets/Art/Armor/Ghi_Body_64x16.png",
+      "width": 64,
+      "height": 16
+    },
+    {
+      "itemType": "Gunna",
+      "groundF1Path": "Assets/Art/Armor/Gunna_64x18_F1.png",
+      "width": 64,
+      "height": 18
+    },
+    {
+      "itemType": "Moonstone",
+      "groundF1Path": "Assets/Art/Amulets/Moonstone_F1_16x8.png",
+      "width": 16,
+      "height": 8
+    },
+    {
+      "itemType": "Leather Pants",
+      "groundF1Path": "Assets/Art/Armor/Leather_Pants_F1_64x16.png",
+      "width": 64,
+      "height": 16
+    },
+    {
+      "itemType": "Leather Boots",
+      "groundF1Path": "Assets/Art/Armor/Leather_Boots_F1_74x24.png",
+      "width": 74,
+      "height": 24
+    },
+    {
+      "itemType": "Tunic",
+      "groundF1Path": "Assets/Art/Armor/Gunna_64x18_F1.png",
+      "width": 64,
+      "height": 18
+    },
+    {
+      "itemType": "Rabbit's Foot",
+      "groundF1Path": "Assets/Art/Amulets/Rabbits_Foot_F1_16x7.png",
+      "width": 16,
+      "height": 7
+    },
+    {
+      "itemType": "Suede Boots",
+      "groundF1Path": "Assets/Art/Armor/Suede_Boots_F1_74x24.png",
+      "width": 74,
+      "height": 24
+    },
+    {
+      "itemType": "Sling",
+      "groundF1Path": "Assets/Art/Weapons/Sling_F1_64x4.png",
+      "width": 64,
+      "height": 4
+    },
+    {
+      "itemType": "Staff",
+      "groundF1Path": "Assets/Art/Weapons/Sling_F1_64x4.png",
+      "width": 64,
+      "height": 4
+    },
+    {
+      "itemType": "Robe",
+      "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
+      "width": 64,
+      "height": 16
+    },
+    {
+      "itemType": "Robe (Legs)",
+      "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
+      "width": 64,
+      "height": 16
+    },
+    {
+      "itemType": "Robe Body",
+      "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
+      "width": 64,
+      "height": 16
+    },
+    {
+      "itemType": "Robe (Body)",
+      "groundF1Path": "Assets/Art/Armor/Ghi_Trousers_64x16.png",
+      "width": 64,
+      "height": 16
+    },
+    {
+      "itemType": "Magical Box (Blue)",
+      "groundF1Path": "Assets/Art/Misc/Magical_Box_Blue_F1_15x13.png",
+      "width": 15,
+      "height": 13
+    },
+    {
+      "itemType": "Blue Magical Box",
+      "groundF1Path": "Assets/Art/Misc/Magical_Box_Blue_F1_15x13.png",
+      "width": 15,
+      "height": 13
+    },
+    {
+      "itemType": "Magical Box (Green)",
+      "groundF1Path": "Assets/Art/Misc/Magical_Box_Green_F1_15x13.png",
+      "width": 15,
+      "height": 13
+    },
+    {
+      "itemType": "Green Magical Box",
+      "groundF1Path": "Assets/Art/Misc/Magical_Box_Green_F1_15x13.png",
+      "width": 15,
+      "height": 13
     }
+  ],
+  "groundF1Anchors": {
+    "left": {
+      "x": 68,
+      "y": 163
+    },
+    "right": {
+      "x": 154,
+      "y": 163
+    }
+  }
 }
