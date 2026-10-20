@@ -7511,6 +7511,147 @@ private static void HandleGameViewPointerDown(
   }
   private readonly Dictionary<string, ChampionReceivedItem> previewReceivedChampionItems =
       new Dictionary<string, ChampionReceivedItem>(System.StringComparer.OrdinalIgnoreCase);
+  // World-origin weapons use the SAME physical instance ID in a champion hand.
+  // Their original floor placement is retained only for later cursor/drop logic.
+  private sealed class WorldWeaponInHand
+  {
+    public string itemId;
+    public string ownerHero;
+    public Vector2Int slot;
+    public FloorItemPlacement originalFloor;
+  }
+  private readonly Dictionary<string, WorldWeaponInHand> previewWorldWeaponsInHands =
+      new Dictionary<string, WorldWeaponInHand>(System.StringComparer.Ordinal);
+
+  private static bool IsAutomaticAttackHandWeapon(string name)
+  {
+    // Explicit recognized weapons only. Armor, food, projectiles, tools and
+    // unknown items must retain normal floor pickup behavior.
+    switch (NormalizeChampionAssetKey(name))
+    {
+      case "BOW": case "SWORD": case "SAMURAISWORD": case "FALCHION":
+      case "SABRE": case "AXE": case "CLUB": case "DAGGER":
+      case "KNIFE": case "MACE": case "MORNINGSTAR": case "SLING":
+      case "STAFF": case "QUARTERSTAFF": case "WAND":
+      case "RAPIER": case "SHORTSWORD": case "LONGSWORD":
+      case "BATTLEAXE": case "EXECUTIONER": case "FURY":
+      case "DELTA": case "INQUISITOR": case "HARDCLEAVE":
+        return true;
+      default: return false;
+    }
+  }
+
+  private bool TryGetWorldWeaponInHand(string hero, int x, int y,
+      out WorldWeaponInHand weapon)
+  {
+    foreach (WorldWeaponInHand entry in previewWorldWeaponsInHands.Values)
+      if (string.Equals(entry.ownerHero, hero,
+              System.StringComparison.OrdinalIgnoreCase)
+          && entry.slot.x == x && entry.slot.y == y)
+      {
+        weapon = entry;
+        return true;
+      }
+    weapon = null;
+    return false;
+  }
+
+  private bool IsChampionAttackHandEmpty(string name)
+  {
+    HeroDefinition hero = HeroDatabase.GetByName(name);
+    if (hero == null || hero.StartingItems == null) return false;
+    int x = ChampionSheetRightHandX, y = ChampionSheetRightHandY;
+    if (TryGetReceivedItemAt(hero.Name, x, y, out _)
+        || TryGetWorldWeaponInHand(hero.Name, x, y, out _)) return false;
+    bool hand = false, quiver = false;
+    int arrow = 0;
+    for (int i = 0; i < hero.StartingItems.Count; i++)
+    {
+      string itemName = GetChampionStartingItemName(hero.StartingItems[i]);
+      if (string.IsNullOrEmpty(itemName)
+          || !TryGetChampionStartingItemSlot(hero.Name, itemName,
+              ref hand, ref quiver, ref arrow, out int sx, out int sy)) continue;
+      if (IsChampionItemRemoved(hero.Name, i)) continue;
+      Vector2Int current = GetPreviewChampionItemSlot(hero.Name, i, sx, sy);
+      if (current.x == x && current.y == y) return false;
+    }
+    return true;
+  }
+
+  // ONLY called when the player clicks a hero's image with an item already
+  // held on the cursor. Ground pickup itself NEVER auto-equips.
+  private bool TryAutoEquipHeldWeaponOnHeroClick(string targetHero)
+  {
+    HeroDefinition target = HeroDatabase.GetByName(targetHero);
+    if (target == null || !IsChampionAttackHandEmpty(target.Name)) return false;
+    string heldName = null;
+    bool fromWorld = previewFloorPickupCompleted && previewHeldFloorItem != null
+        && !string.IsNullOrEmpty(previewHeldFloorItemId);
+    if (fromWorld) heldName = previewHeldFloorItem.type;
+    else if (previewHeldChampionCursor != null && previewHeldChampionItemIndex >= 0
+        && !string.IsNullOrEmpty(previewHeldChampionName))
+    {
+      HeroDefinition source = HeroDatabase.GetByName(previewHeldChampionName);
+      if (source == null || source.StartingItems == null
+          || previewHeldChampionItemIndex >= source.StartingItems.Count) return false;
+      heldName = GetChampionStartingItemName(source.StartingItems[previewHeldChampionItemIndex]);
+    }
+    if (!IsAutomaticAttackHandWeapon(heldName)) return false;
+    Vector2Int destination = new Vector2Int(ChampionSheetRightHandX, ChampionSheetRightHandY);
+    if (fromWorld)
+    {
+      string id = previewHeldFloorItemId;
+      if (!previewItemInstances.TryGetValue(id, out ItemInstance physical))
+      {
+        Debug.LogError("WEAPON HERO CLICK: Missing physical item " + id);
+        return false;
+      }
+      // Preserve the original physical ID and the original floor placement.
+      previewWorldWeaponsInHands[id] = new WorldWeaponInHand {
+        itemId = id, ownerHero = target.Name, slot = destination,
+        originalFloor = previewHeldFloorItem
+      };
+      MoveItemInstance(physical, "ChampionSlot", target.Name,
+          destination.x, destination.y);
+      previewHeldFloorItemId = null;
+      previewHeldFloorItem = null;
+      previewHeldFloorItemCursor = null;
+      previewFloorPickupCompleted = false;
+    }
+    else
+    {
+      HeroDefinition source = HeroDatabase.GetByName(previewHeldChampionName);
+      int sourceIndex = previewHeldChampionItemIndex;
+      ItemInstance physical = EnsureChampionItemInstance(source.Name, sourceIndex,
+          heldName, previewHeldChampionSourceSlot);
+      if (physical == null) return false;
+      string key = ChampionItemSourceKey(source.Name, sourceIndex);
+      previewReceivedChampionItems[key] = new ChampionReceivedItem {
+        sourceHero = source.Name, sourceIndex = sourceIndex,
+        ownerHero = target.Name, slot = destination
+      };
+      if (!previewRemovedChampionItemIndexes.TryGetValue(source.Name,
+              out HashSet<int> removed))
+      {
+        removed = new HashSet<int>();
+        previewRemovedChampionItemIndexes.Add(source.Name, removed);
+      }
+      removed.Add(sourceIndex);
+      MoveItemInstance(physical, "ChampionSlot", target.Name,
+          destination.x, destination.y);
+      previewHeldChampionName = null;
+      previewHeldChampionItemIndex = -1;
+      previewHeldChampionCursor = null;
+      previewHeldChampionSourceSlot = new Vector2Int(-1, -1);
+    }
+    HideHeldItemPointerOverlay();
+    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+    BeginChampionAutoHighlight(target.Name, destination);
+    Debug.Log("WEAPON HERO CLICK: " + heldName + " -> " + target.Name
+        + " right attack hand (existing item ID preserved)");
+    return true;
+  }
+
   private readonly Dictionary<string, double> previewAutoPlacementHighlights =
       new Dictionary<string, double>(System.StringComparer.OrdinalIgnoreCase);
   private const double ChampionAutoPlacementHighlightSeconds = 30.0;
@@ -8204,6 +8345,33 @@ private static void HandleGameViewPointerDown(
     if (targetX < 0)
       return false;
 
+    if (!HasAnyItemOnCursor()
+        && TryGetWorldWeaponInHand(hero.Name, targetX, targetY,
+            out WorldWeaponInHand worldWeapon))
+    {
+      if (!previewItemInstances.TryGetValue(worldWeapon.itemId,
+              out ItemInstance physical))
+      {
+        Debug.LogError("WEAPON HAND PICKUP: Missing instance " + worldWeapon.itemId);
+        return true;
+      }
+      Texture2D icon = GetChampionInventoryItemTexture(worldWeapon.originalFloor.type);
+      if (icon == null || !icon.isReadable || icon.width != 16 || icon.height != 16)
+      {
+        Debug.LogError("WEAPON HAND PICKUP: Missing exact 16x16 sprite; item unchanged.");
+        return true;
+      }
+      MoveItemInstance(physical, "Cursor");
+      previewWorldWeaponsInHands.Remove(worldWeapon.itemId);
+      previewHeldFloorItemId = worldWeapon.itemId;
+      previewHeldFloorItem = worldWeapon.originalFloor;
+      previewHeldFloorItemCursor = icon;
+      previewFloorPickupCompleted = true;
+      PresentEditModePreviewToGameView();
+      Repaint();
+      return true;
+    }
+
     bool handUsed = false;
     bool quiverUsed = false;
     int hawkArrowIndex = 0;
@@ -8231,9 +8399,43 @@ private static void HandleGameViewPointerDown(
         occupiedIndex = i;
     }
 
+    if (previewFloorPickupCompleted && previewHeldFloorItem != null
+        && !string.IsNullOrEmpty(previewHeldFloorItemId)
+        && !HasPickedUpTorchOnCursor())
+    {
+      if (occupiedIndex >= 0 || TryGetReceivedItemAt(hero.Name, targetX, targetY, out _)
+          || TryGetWorldWeaponInHand(hero.Name, targetX, targetY, out _)) return true;
+      if (!previewItemInstances.TryGetValue(previewHeldFloorItemId,
+              out ItemInstance physical))
+      {
+        Debug.LogError("WORLD ITEM TRANSFER: Missing physical ID " + previewHeldFloorItemId);
+        return true;
+      }
+      // Either hand is permitted for every item; other slot restrictions
+      // are not generalized for world-origin items here.
+      if (!IsChampionHandSlot(targetX, targetY)) return true;
+      string id = previewHeldFloorItemId;
+      previewWorldWeaponsInHands[id] = new WorldWeaponInHand {
+        itemId = id, ownerHero = hero.Name,
+        slot = new Vector2Int(targetX, targetY),
+        originalFloor = previewHeldFloorItem
+      };
+      MoveItemInstance(physical, "ChampionSlot", hero.Name, targetX, targetY);
+      previewHeldFloorItemId = null;
+      previewHeldFloorItem = null;
+      previewHeldFloorItemCursor = null;
+      previewFloorPickupCompleted = false;
+      HideHeldItemPointerOverlay();
+      Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+      PresentEditModePreviewToGameView();
+      Repaint();
+      return true;
+    }
+
     if (previewHeldChampionCursor != null)
     {
-      if (TryGetReceivedItemAt(hero.Name, targetX, targetY, out var occupiedTransfer))
+      if (TryGetReceivedItemAt(hero.Name, targetX, targetY, out var occupiedTransfer)
+          || TryGetWorldWeaponInHand(hero.Name, targetX, targetY, out _))
       {
         Debug.LogWarning("CHAMPION EQUIPMENT: Target contains a transferred item; "
             + "pick it up first. Held item unchanged.");
@@ -8745,7 +8947,9 @@ private static void HandleGameViewPointerDown(
       }
     }
 
-    TryAutoEquipHeldArmor(championName);
+    if (!TryAutoEquipHeldWeaponOnHeroClick(championName)
+        && previewHeldChampionCursor != null)
+      TryAutoEquipHeldArmor(championName);
     championSheetName = championName;
     championSheetVisible = true;
     championEyeMoved = false;
@@ -10332,6 +10536,15 @@ private static void HandleGameViewPointerDown(
 
   private void PaintReceivedChampionEquipment(Color32[] pixels, string hero)
   {
+    foreach (WorldWeaponInHand equipped in previewWorldWeaponsInHands.Values)
+    {
+      if (!string.Equals(equipped.ownerHero, hero,
+              System.StringComparison.OrdinalIgnoreCase)) continue;
+      if (!DrawChampionSheetItemIcon(pixels, equipped.slot.x, equipped.slot.y,
+              equipped.originalFloor.type, false))
+        Debug.LogError("WEAPON AUTO PICKUP: Cannot render '"
+            + equipped.originalFloor.type + "' for " + hero + ".");
+    }
     foreach (var received in previewReceivedChampionItems.Values)
     {
       if (!string.Equals(received.ownerHero, hero,
@@ -10380,7 +10593,8 @@ private static void HandleGameViewPointerDown(
         return; // A real item always hides the marker.
     }
 
-    if (TryGetReceivedItemAt(hero.Name, slotX, slotY, out var receivedItem))
+    if (TryGetReceivedItemAt(hero.Name, slotX, slotY, out var receivedItem)
+        || TryGetWorldWeaponInHand(hero.Name, slotX, slotY, out _))
       return;
 
     // Strict inventory texture lookup: a missing 16x16 marker is an error.
@@ -36575,13 +36789,12 @@ private static void HandleGameViewPointerDown(
       }
       // Inventory art is always the explicitly named 16x16 sprite, never
       // the differently sized floor sprite. Do not search globally or fall back.
-      string path = "Assets/Art/Food/" + item.type + "_16x16.png";
-      Texture2D cursor = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+      Texture2D cursor = GetChampionInventoryItemTexture(item.type);
       if (cursor == null || cursor.width != 16 || cursor.height != 16
           || !cursor.isReadable)
       {
         Debug.LogError("FLOOR ITEM PICKUP: expected readable 16x16 inventory "
-            + "texture at exact path '" + path + "'. No fallback used.");
+            + "texture for '" + item.type + "'. No fallback used.");
         return true; // Leave the item on the ground.
       }
       ItemInstance floorInstance = EnsureWorldItemInstance(id, item.type,
