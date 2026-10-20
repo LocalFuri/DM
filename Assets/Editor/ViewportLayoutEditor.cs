@@ -94,7 +94,7 @@ public class ViewportLayoutEditor : EditorWindow
   // places an Apple at map (4,9), sub-square N. Apple_19x13 is the
   // authoritative ground/world artwork; Apple_16x16 is inventory-only.
   private const string AppleGroundAssetPath =
-      "Assets/Art/Food/Apple_19x13.png";
+      "Assets/Art/Food/Apple_F1_19x13.png";
   private const int Level0AppleTestX = 4;
   private const int Level0AppleTestY = 9;
   private const string Level0AppleTestCell = "N";
@@ -150,7 +150,7 @@ public class ViewportLayoutEditor : EditorWindow
   // Bread at map (5,11), sub-square E. Bread_27x16 is the ground/world
   // artwork; Bread_16x16 is inventory/icon only.
   private const string BreadGroundAssetPath =
-      "Assets/Art/Food/Bread_27x16.png";
+      "Assets/Art/Food/Bread_F1_27x16.png";
   private const int Level0BreadTestX = 5;
   private const int Level0BreadTestY = 11;
   private const string Level0BreadTestCell = "E";
@@ -31069,12 +31069,15 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  private bool SaveAppleScreenPosition(string xField, string yField, int x, int top)
+  // Shared source writer for Apple/Bread ViewEdit position calibration.
+  // Keep the original all-fields-validated-before-write behavior.
+  private bool SaveFloorItemScreenPosition(string itemLabel, string xField,
+      string yField, int x, int top)
   {
     string path = GetThisEditorSourceAssetPath();
     if (string.IsNullOrEmpty(path) || !File.Exists(path))
     {
-      Debug.LogError("Apple ViewEdit Apply: ViewportLayoutEditor.cs not found.");
+      Debug.LogError(itemLabel + " ViewEdit Apply: ViewportLayoutEditor.cs not found.");
       return false;
     }
     string source = File.ReadAllText(path);
@@ -31087,7 +31090,7 @@ private static void HandleGameViewPointerDown(
       MatchCollection matches = Regex.Matches(revised, pattern);
       if (matches.Count != 1)
       {
-        Debug.LogError("Apple ViewEdit Apply: expected one declaration for "
+        Debug.LogError(itemLabel + " ViewEdit Apply: expected one declaration for "
             + fields[i] + "; source unchanged.");
         return false;
       }
@@ -31103,9 +31106,14 @@ private static void HandleGameViewPointerDown(
     }
     catch (System.Exception error)
     {
-      Debug.LogError("Apple ViewEdit Apply: " + error.Message);
+      Debug.LogError(itemLabel + " ViewEdit Apply: " + error.Message);
       return false;
     }
+  }
+
+  private bool SaveAppleScreenPosition(string xField, string yField, int x, int top)
+  {
+    return SaveFloorItemScreenPosition("Apple", xField, yField, x, top);
   }
 
   private void DrawAppleScreenCalibration(FloorItemDepth depth, bool right)
@@ -31192,41 +31200,7 @@ private static void HandleGameViewPointerDown(
 
   private bool SaveBreadScreenPosition(string xField, string yField, int x, int top)
   {
-    string path = GetThisEditorSourceAssetPath();
-    if (string.IsNullOrEmpty(path) || !File.Exists(path))
-    {
-      Debug.LogError("Bread ViewEdit Apply: ViewportLayoutEditor.cs not found.");
-      return false;
-    }
-    string source = File.ReadAllText(path);
-    string revised = source;
-    string[] fields = { xField, yField };
-    int[] values = { x, top };
-    for (int i = 0; i < fields.Length; i++)
-    {
-      string pattern = @"(?m)^(\s*private int " + Regex.Escape(fields[i]) + @" = )-?\d+(;)";
-      MatchCollection matches = Regex.Matches(revised, pattern);
-      if (matches.Count != 1)
-      {
-        Debug.LogError("Bread ViewEdit Apply: expected one declaration for "
-            + fields[i] + "; source unchanged.");
-        return false;
-      }
-      int updated = values[i];
-      revised = Regex.Replace(revised, pattern,
-          m => m.Groups[1].Value + updated.ToString() + m.Groups[2].Value);
-    }
-    try
-    {
-      File.WriteAllText(path, revised);
-      AssetDatabase.ImportAsset(path);
-      return true;
-    }
-    catch (System.Exception error)
-    {
-      Debug.LogError("Bread ViewEdit Apply: " + error.Message);
-      return false;
-    }
+    return SaveFloorItemScreenPosition("Bread", xField, yField, x, top);
   }
 
   private void DrawBreadScreenCalibration(FloorItemDepth depth, bool right)
