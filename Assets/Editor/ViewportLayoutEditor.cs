@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -1117,6 +1117,11 @@ public class ViewportLayoutEditor : EditorWindow
   private bool championEyeMiddle;
   private bool championEyePressed;
   private bool championMouthPressed;
+  // Eating animation is independent of the mouse-button state.
+  private double championEatAnimationStarted = -1;
+  private const double ChampionEatFrameSeconds = 0.12;
+  private readonly Texture2D[] championEatFrames = new Texture2D[3];
+
   // Edit-mode champion nutrition: initial full FOOD = 2048. A particular
   // champion's value survives closing and reopening their sheet.
   private readonly Dictionary<string, int> previewChampionFood =
@@ -2746,6 +2751,7 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyCurrentPoseVisibilityToLayout();
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
     EditorApplication.update += UpdateTorchFlight;
+    EditorApplication.update += UpdateChampionEatAnimation;
     RecordGroundRegistryFileStamp();
     // Force a fresh compose from the current pose's Enabled flags.
     DestroyEditModePreviewTextureOnly();
@@ -2785,6 +2791,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
     EditorApplication.update -= UpdateTorchFlight;
+    EditorApplication.update -= UpdateChampionEatAnimation;
     EditorApplication.update -= UpdateChampionAutoHighlights;
 
     if (cachedNativeFrontF2ReadableCopy != null)
@@ -8375,7 +8382,7 @@ private static void HandleGameViewPointerDown(
   {
     const float eyeX = 12f, eyeY = 46f;
     const float eyeSize = 16f;
-    Rect eyeRect = new Rect(eyeX, eyeY, eyeSize, eyeSize);
+    Rect eyeRect = ChampionLayoutEye;
     Vector2 pixelHotspot = new Vector2(Mathf.Round(x), Mathf.Round(y));
     if (eyeRect.Contains(pixelHotspot))
       return true;
@@ -8572,9 +8579,8 @@ private static void HandleGameViewPointerDown(
       // The mouth must take precedence over nearby inventory slots when the
       // player is holding an item. Only explicitly supported edible items may
       // activate the mouth interaction; anything else stays on the cursor.
-      const float heldMouthX = 59f, heldMouthY = 47f;
-      bool mouthHit = logicalX >= heldMouthX && logicalX < heldMouthX + 16f
-          && logicalY >= heldMouthY && logicalY < heldMouthY + 16f;
+      bool mouthHit = ChampionLayoutMouthFrame.Contains(
+          new Vector2(logicalX, logicalY));
       if (mouthHit && HasAnyItemOnCursor())
       {
         string heldFoodName = null;
@@ -8598,6 +8604,7 @@ private static void HandleGameViewPointerDown(
         }
         bool eaten = TryConsumeHeldFood(heldFoodName, nutrition);
         championMouthPressed = eaten;
+        if (eaten) championEatAnimationStarted = EditorApplication.timeSinceStartup;
         championEyePressed = false;
         championEyeMoved = false;
         championEyeMiddle = false;
@@ -8986,6 +8993,7 @@ private static void HandleGameViewPointerDown(
     // moved-eye PNG 1:1 over the same 16x16 pixels.
     PaintChampionMovedEyeOverlay(pixels);
     PaintChampionMiddleEyeOverlay(pixels);
+    PaintChampionEatingAnimation(pixels);
 
     // Eye-hold detail panel temporarily replaces the recruitment artwork.
     // On mouse release the panel disappears and the 116x73 recruitment PNG
@@ -9037,27 +9045,82 @@ private static void HandleGameViewPointerDown(
   // CharacterSheet_224x136.png has SHARED backpack borders: pitch=17,
   // not 18. Keep these IDs consistent for occupancy and item storage.
   private const int ChampionSheetBackpackPitch = 17;
+  // AUTHORITATIVE 320x200 champion sheet geometry. Inventory coordinates
+  // are local to the image at screen Y=33; Eye/Mouth are absolute.
+  // All interaction/drawing rectangles below derive from these definitions.
+  private sealed class ChampionLayoutCell
+  {
+    public readonly string Name;
+    public readonly int X, Y, Width, Height;
+    public readonly int ImageX, ImageY, ImageWidth, ImageHeight;
+    public ChampionLayoutCell(string name, int x, int y, int width, int height,
+        int imageX, int imageY, int imageWidth, int imageHeight)
+    {
+      Name = name; X = x; Y = y; Width = width; Height = height;
+      ImageX = imageX; ImageY = imageY;
+      ImageWidth = imageWidth; ImageHeight = imageHeight;
+    }
+    public Rect FrameScreenRect => new Rect(X,
+        Y + ChampionSheetInventoryScreenTop, Width, Height);
+    public Rect ImageScreenRect => new Rect(ImageX,
+        ImageY + ChampionSheetInventoryScreenTop, ImageWidth, ImageHeight);
+  }
+
+  // Exactly 30 inventory slots; add Eye and Mouth below = 32 cells.
+  private static readonly ChampionLayoutCell[] ChampionLayoutInventory =
+  {
+      new ChampionLayoutCell("Head", 33, 25, 18, 18, 34, 26, 16, 16),
+      new ChampionLayoutCell("Neck", 5, 32, 18, 18, 6, 33, 16, 16),
+      new ChampionLayoutCell("Torso", 33, 45, 18, 18, 34, 46, 16, 16),
+      new ChampionLayoutCell("Legs", 33, 65, 18, 18, 34, 66, 16, 16),
+      new ChampionLayoutCell("Feet", 33, 85, 18, 18, 34, 86, 16, 16),
+      new ChampionLayoutCell("RightHand", 61, 52, 18, 18, 62, 53, 16, 16),
+      new ChampionLayoutCell("LeftHand", 5, 52, 18, 18, 6, 53, 16, 16),
+      new ChampionLayoutCell("UpperPouch", 65, 32, 18, 18, 66, 33, 16, 16),
+      new ChampionLayoutCell("LeftPouch1", 5, 72, 18, 18, 6, 73, 16, 16),
+      new ChampionLayoutCell("LeftPouch2", 5, 89, 18, 18, 6, 90, 16, 16),
+      new ChampionLayoutCell("Quiver1", 61, 72, 18, 18, 62, 73, 16, 16),
+      new ChampionLayoutCell("Quiver2", 78, 72, 18, 18, 79, 73, 16, 16),
+      new ChampionLayoutCell("Quiver3", 61, 89, 18, 18, 62, 90, 16, 16),
+      new ChampionLayoutCell("Quiver4", 78, 89, 18, 18, 79, 90, 16, 16),
+      new ChampionLayoutCell("Backpack_1_1", 82, 15, 18, 18, 83, 16, 16, 16),
+      new ChampionLayoutCell("Backpack_1_2", 99, 15, 18, 18, 100, 16, 16, 16),
+      new ChampionLayoutCell("Backpack_1_3", 116, 15, 18, 18, 117, 16, 16, 16),
+      new ChampionLayoutCell("Backpack_1_4", 133, 15, 18, 18, 134, 16, 16, 16),
+      new ChampionLayoutCell("Backpack_1_5", 150, 15, 18, 18, 151, 16, 16, 16),
+      new ChampionLayoutCell("Backpack_1_6", 167, 15, 18, 18, 168, 16, 16, 16),
+      new ChampionLayoutCell("Backpack_1_7", 184, 15, 18, 18, 185, 16, 16, 16),
+      new ChampionLayoutCell("Backpack_1_8", 201, 15, 18, 18, 202, 16, 16, 16),
+      new ChampionLayoutCell("Backpack_2_1", 82, 32, 18, 18, 83, 33, 16, 16),
+      new ChampionLayoutCell("Backpack_2_2", 99, 32, 18, 18, 100, 33, 16, 16),
+      new ChampionLayoutCell("Backpack_2_3", 116, 32, 18, 18, 117, 33, 16, 16),
+      new ChampionLayoutCell("Backpack_2_4", 133, 32, 18, 18, 134, 33, 16, 16),
+      new ChampionLayoutCell("Backpack_2_5", 150, 32, 18, 18, 151, 33, 16, 16),
+      new ChampionLayoutCell("Backpack_2_6", 167, 32, 18, 18, 168, 33, 16, 16),
+      new ChampionLayoutCell("Backpack_2_7", 184, 32, 18, 18, 185, 33, 16, 16),
+      new ChampionLayoutCell("Backpack_2_8", 201, 32, 18, 18, 202, 33, 16, 16),
+  };
+  private static readonly Rect ChampionLayoutEye = new Rect(12, 46, 16, 16);
+  private static readonly Rect ChampionLayoutMouthFrame = new Rect(59, 47, 18, 18);
+  private static readonly Rect ChampionLayoutMouthImage = new Rect(60, 48, 16, 16);
+
+  private static ChampionLayoutCell FindChampionLayoutCell(int x, int y)
+  {
+    foreach (ChampionLayoutCell cell in ChampionLayoutInventory)
+      if (cell.X == x && cell.Y == y) return cell;
+    Debug.LogError("CHAMPION LAYOUT: unregistered inventory cell ("
+        + x + "," + y + "). No fallback.");
+    return null;
+  }
+
   private static readonly Vector2Int[] ChampionSheetAllItemSlots =
       BuildChampionSheetAllItemSlots();
 
   private static Vector2Int[] BuildChampionSheetAllItemSlots()
   {
     var slots = new System.Collections.Generic.List<Vector2Int>();
-    slots.Add(new Vector2Int(ChampionSheetRightHandX, ChampionSheetRightHandY));
-    slots.Add(new Vector2Int(ChampionSheetLeftHandX, ChampionSheetLeftHandY));
-    for (int i = 0; i < ChampionSheetEquipSlotXY.Length; i += 2)
-      AddChampionItemSlotIfMissing(slots,
-          ChampionSheetEquipSlotXY[i], ChampionSheetEquipSlotXY[i + 1]);
-    for (int i = 0; i < ChampionSheetAdditionalSlotXY.Length; i += 2)
-      AddChampionItemSlotIfMissing(slots,
-          ChampionSheetAdditionalSlotXY[i], ChampionSheetAdditionalSlotXY[i + 1]);
-    foreach (Vector2Int slot in ChampionQuiverSlots)
-      AddChampionItemSlotIfMissing(slots, slot.x, slot.y);
-    for (int row = 0; row < 2; row++)
-      for (int col = 0; col < 8; col++)
-        AddChampionItemSlotIfMissing(slots,
-            82 + col * ChampionSheetBackpackPitch,
-            15 + row * ChampionSheetBackpackPitch);
+    foreach (ChampionLayoutCell cell in ChampionLayoutInventory)
+      slots.Add(new Vector2Int(cell.X, cell.Y));
     return slots.ToArray();
   }
 
@@ -9071,25 +9134,14 @@ private static void HandleGameViewPointerDown(
 
   private static Rect GetChampionSheetSlotScreenRect(int slotX, int slotY)
   {
-    return new Rect(slotX, ChampionSheetInventoryScreenTop + slotY,
-        ChampionSheetSlotSize, ChampionSheetSlotSize);
+    ChampionLayoutCell cell = FindChampionLayoutCell(slotX, slotY);
+    return cell == null ? Rect.zero : cell.FrameScreenRect;
   }
 
-  // Pixel-accurate 16x16 rectangle measured from CharacterSheet_224x136.png.
-  // Used by BOTH item drawing and pointer hit testing. Inventory-local Y
-  // is converted to the 320x200 screen by adding 33 exactly once.
   private static Rect GetChampionSheetItemScreenRect(int slotX, int slotY)
   {
-    int iconX = slotX + 1;
-    int iconY = slotY + 1;
-    if (IsChampionBackpackSlot(slotX, slotY))
-    {
-      // Backpack row 2 is immediately below the shared separator.
-      iconX = slotX + 1;
-      iconY = slotY == 15 ? 16 : 33;
-    }
-    return new Rect(iconX, ChampionSheetInventoryScreenTop + iconY,
-        ChampionSheetItemSize, ChampionSheetItemSize);
+    ChampionLayoutCell cell = FindChampionLayoutCell(slotX, slotY);
+    return cell == null ? Rect.zero : cell.ImageScreenRect;
   }
 
   private const int ChampionSheetSlotSize = 18;
@@ -11694,10 +11746,10 @@ private static void HandleGameViewPointerDown(
     if (texture == null)
       return;
 
-    const int screenLeft = 12;
-    const int screenTop = 46;
-    const int width = 16;
-    const int height = 16;
+    int screenLeft = (int)ChampionLayoutEye.x;
+    int screenTop = (int)ChampionLayoutEye.y;
+    int width = (int)ChampionLayoutEye.width;
+    int height = (int)ChampionLayoutEye.height;
     Color32[] source = texture.GetPixels32();
 
     for (int sourceY = 0; sourceY < height; sourceY++)
@@ -11740,10 +11792,10 @@ private static void HandleGameViewPointerDown(
     if (texture == null)
       return;
 
-    const int screenLeft = 12;
-    const int screenTop = 46;
-    const int width = 16;
-    const int height = 16;
+    int screenLeft = (int)ChampionLayoutEye.x;
+    int screenTop = (int)ChampionLayoutEye.y;
+    int width = (int)ChampionLayoutEye.width;
+    int height = (int)ChampionLayoutEye.height;
     Color32[] source = texture.GetPixels32();
 
     for (int sourceY = 0; sourceY < height; sourceY++)
@@ -11857,6 +11909,97 @@ private static void HandleGameViewPointerDown(
 
     cachedChampionWaterLabelTexture = readableCopy;
     return cachedChampionWaterLabelTexture;
+  }
+
+  // Four chewing poses from the original sprites: open, half, closed,
+  // half, returning to the wide-open resting mouth.
+  private void UpdateChampionEatAnimation()
+  {
+    if (championEatAnimationStarted < 0) return;
+    if (!championSheetVisible ||
+        EditorApplication.timeSinceStartup - championEatAnimationStarted >= 4 * ChampionEatFrameSeconds)
+    {
+      championEatAnimationStarted = -1;
+    }
+    PresentEditModePreviewToGameView();
+    Repaint();
+  }
+
+  private Texture2D GetChampionEatingFrame(int index)
+  {
+    if (index < 0 || index >= championEatFrames.Length) return null;
+    if (championEatFrames[index] != null) return championEatFrames[index];
+    string[] names = { "Mouth_closed_16x16.png", "Mouth_half_16x16.png", "Mouth_open_16x16.png" };
+    string assetPath = "Assets/Art/Interface/" + names[index];
+    string projectRoot = System.IO.Directory.GetParent(Application.dataPath).FullName;
+    string absolutePath = System.IO.Path.Combine(projectRoot, assetPath);
+    if (!System.IO.File.Exists(absolutePath))
+    {
+      Debug.LogError("Champion eating animation ERROR: missing required asset " + assetPath);
+      return null;
+    }
+    Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    texture.filterMode = FilterMode.Point;
+    texture.wrapMode = TextureWrapMode.Clamp;
+    texture.hideFlags = HideFlags.HideAndDontSave;
+    if (!texture.LoadImage(System.IO.File.ReadAllBytes(absolutePath), false)
+        || texture.width != 16 || texture.height != 16)
+    {
+      Debug.LogError("Champion eating animation ERROR: expected 16x16 PNG: " + assetPath);
+      DestroyImmediate(texture);
+      return null;
+    }
+    championEatFrames[index] = texture;
+    return texture;
+  }
+
+  // The 18x18 mouth frame starts at (59,47); paint each 16x16 sprite
+  // one pixel inside at (60,48), without scaling, mirroring or movement.
+  private void PaintChampionEatingAnimation(Color32[] pixels)
+  {
+    if (!championSheetVisible || pixels == null
+        || pixels.Length != PreviewWidth * PreviewHeight)
+      return;
+
+    int mouthX = (int)ChampionLayoutMouthImage.x;
+    int mouthY = (int)ChampionLayoutMouthImage.y;
+    int mouthSize = (int)ChampionLayoutMouthImage.width;
+
+    int frameIndex = 2; // Wide-open mouth is the resting frame.
+    if (championEatAnimationStarted >= 0)
+    {
+      int phase = (int)((EditorApplication.timeSinceStartup
+          - championEatAnimationStarted) / ChampionEatFrameSeconds);
+      if (phase >= 0 && phase < 4)
+        frameIndex = phase == 0 ? 2 : (phase == 2 ? 0 : 1);
+    }
+
+    Texture2D frame = GetChampionEatingFrame(frameIndex);
+    if (frame == null)
+      return; // GetChampionEatingFrame logs the missing/invalid asset.
+
+    if (frame.width != mouthSize || frame.height != mouthSize)
+    {
+      Debug.LogError("Champion eating animation ERROR: frame must be exactly 16x16: "
+          + frame.name);
+      return;
+    }
+
+    Color32[] source = frame.GetPixels32();
+    // PNG pixels are bottom-up; the screen's Y origin is top-left.
+    for (int sourceY = 0; sourceY < mouthSize; sourceY++)
+    {
+      int screenY = mouthY + (mouthSize - 1 - sourceY);
+      int destinationRow = (PreviewHeight - 1 - screenY) * PreviewWidth;
+      int sourceRow = sourceY * mouthSize;
+      for (int sourceX = 0; sourceX < mouthSize; sourceX++)
+      {
+        Color32 colour = source[sourceRow + sourceX];
+        if (colour.a == 0)
+          continue;
+        pixels[destinationRow + mouthX + sourceX] = colour;
+      }
+    }
   }
 
   private void PaintChampionFoodWaterPanel(Color32[] pixels)
