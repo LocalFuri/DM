@@ -15204,6 +15204,36 @@ private static void HandleGameViewPointerDown(
     TryRefocusPreviewWindow();
   }
 
+  // Clears temporary ViewEdit settings when leaving a pose or changing levels.
+  // This does not modify the persistent wall, door, or item calibrations.
+  private void ResetTemporaryViewEditPoseOverrides()
+  {
+    // Restore manually overridden mirrors to their resolved geometry values.
+    foreach (ViewportPiece overriddenPiece in previewMirrorOverrideByPiece.Keys)
+    {
+      if (overriddenPiece != null
+          && resolvedNormalWallByPiece.TryGetValue(
+              overriddenPiece, out ResolvedNormalWallState resolvedState))
+        overriddenPiece.MirrorHorizontally = resolvedState.Mirror;
+    }
+
+    previewMirrorOverrideByPiece.Clear();
+    previewFrontF1WidthOverrideByPiece.Clear();
+    previewFrontF3WidthOverrideByPiece.Clear();
+    previewPositionOverrideByPiece.Clear();
+    previewPositionReferenceByPiece.Clear();
+    previewEnabledOverrideByPiece.Clear();
+    previewGraphicOverrideByPiece.Clear();
+    previewDisableAllWalls = false;
+    ResetStairsDownF1PreviewControls();
+
+    showOnlyWallsNeededForCurrentPose = true;
+    showWallsActivFilter = false;
+    pieceSearchFamilyIndex = 0;
+    pieceSearchText = string.Empty;
+    editorScroll = Vector2.zero;
+  }
+
   private void SwitchPreviewPose(int newX, int newY, DungeonFacing newFacing)
   {
     // During Play the Game View is owned by DungeonRenderer — do not let the
@@ -15221,39 +15251,13 @@ private static void HandleGameViewPointerDown(
       return;
 
 
-    // Any manual Mirror test belongs only to the pose we are leaving.
-    // Restore the checkbox itself to the geometry result before changing pose,
-    // then discard the temporary preview override.
-    foreach (ViewportPiece overriddenPiece in previewMirrorOverrideByPiece.Keys)
-    {
-      if (overriddenPiece != null
-          && resolvedNormalWallByPiece.TryGetValue(
-              overriddenPiece, out ResolvedNormalWallState resolvedState))
-        overriddenPiece.MirrorHorizontally = resolvedState.Mirror;
-    }
-    previewMirrorOverrideByPiece.Clear();
-    previewFrontF1WidthOverrideByPiece.Clear();
-    previewFrontF3WidthOverrideByPiece.Clear();
-    previewPositionOverrideByPiece.Clear();
-    previewPositionReferenceByPiece.Clear();
-    previewEnabledOverrideByPiece.Clear();
-    previewGraphicOverrideByPiece.Clear();
-    previewDisableAllWalls = false;
-    ResetStairsDownF1PreviewControls();
+    ResetTemporaryViewEditPoseOverrides();
 
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
     championSheetVisible = false;
 
-    // A pose change always returns ViewEdit to the geometry-filtered list.
-    // "Show all walls" is a temporary inspection mode for the pose where the
-    // user enabled it; it must never carry into a different X/Y/Facing.
-    showOnlyWallsNeededForCurrentPose = true;
-    showWallsActivFilter = false;
-    pieceSearchFamilyIndex = 0;
-    pieceSearchText = string.Empty;
-    editorScroll = Vector2.zero;
 
     SaveSessionPrefs();
 
@@ -15287,39 +15291,13 @@ private static void HandleGameViewPointerDown(
 
     bool positionChanged = newX != previewX || newY != previewY;
 
-    // Any manual Mirror test belongs only to the pose we are leaving.
-    // Restore the checkbox itself to the geometry result before changing pose,
-    // then discard the temporary preview override.
-    foreach (ViewportPiece overriddenPiece in previewMirrorOverrideByPiece.Keys)
-    {
-      if (overriddenPiece != null
-          && resolvedNormalWallByPiece.TryGetValue(
-              overriddenPiece, out ResolvedNormalWallState resolvedState))
-        overriddenPiece.MirrorHorizontally = resolvedState.Mirror;
-    }
-    previewMirrorOverrideByPiece.Clear();
-    previewFrontF1WidthOverrideByPiece.Clear();
-    previewFrontF3WidthOverrideByPiece.Clear();
-    previewPositionOverrideByPiece.Clear();
-    previewPositionReferenceByPiece.Clear();
-    previewEnabledOverrideByPiece.Clear();
-    previewGraphicOverrideByPiece.Clear();
-    previewDisableAllWalls = false;
-    ResetStairsDownF1PreviewControls();
+    ResetTemporaryViewEditPoseOverrides();
 
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
     championSheetVisible = false;
 
-    // A pose change always returns ViewEdit to the geometry-filtered list.
-    // "Show all walls" is a temporary inspection mode for the pose where the
-    // user enabled it; it must never carry into a different X/Y/Facing.
-    showOnlyWallsNeededForCurrentPose = true;
-    showWallsActivFilter = false;
-    pieceSearchFamilyIndex = 0;
-    pieceSearchText = string.Empty;
-    editorScroll = Vector2.zero;
 
     SaveSessionPrefs();
 
@@ -15634,31 +15612,8 @@ private static void HandleGameViewPointerDown(
     previewFacing = previewMiniMap.PlayerFacing;
     previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
 
-    foreach (ViewportPiece overriddenPiece in previewMirrorOverrideByPiece.Keys)
-    {
-      if (overriddenPiece != null
-          && resolvedNormalWallByPiece.TryGetValue(
-              overriddenPiece, out ResolvedNormalWallState resolvedState))
-      {
-        overriddenPiece.MirrorHorizontally = resolvedState.Mirror;
-      }
-    }
+    ResetTemporaryViewEditPoseOverrides();
 
-    previewMirrorOverrideByPiece.Clear();
-    previewFrontF1WidthOverrideByPiece.Clear();
-    previewFrontF3WidthOverrideByPiece.Clear();
-    previewPositionOverrideByPiece.Clear();
-    previewPositionReferenceByPiece.Clear();
-    previewEnabledOverrideByPiece.Clear();
-    previewGraphicOverrideByPiece.Clear();
-    previewDisableAllWalls = false;
-    ResetStairsDownF1PreviewControls();
-
-    showOnlyWallsNeededForCurrentPose = true;
-    showWallsActivFilter = false;
-    pieceSearchFamilyIndex = 0;
-    pieceSearchText = string.Empty;
-    editorScroll = Vector2.zero;
     previewLevelJumpText = previewDungeonLevel.ToString();
 
     SaveSessionPrefs();
