@@ -263,6 +263,12 @@
             "groundF1Path": "Assets/Art/Potions/Potion_Empty_F1_16x18.png",
             "width": 16,
             "height": 18
+        },
+        {
+            "itemType": "Axe",
+            "groundF1Path": "Assets/Art/Weapons/Axe_F1_64x17.png",
+            "width": 64,
+            "height": 17
         }
     ],
     "groundF1Anchors": {
