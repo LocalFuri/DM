@@ -9189,9 +9189,9 @@ private static void HandleGameViewPointerDown(
         labelX = 12 + 1;
         labelY = 46 + 1;
       }
-      else // 32 Mouth: outer frame (52,45), image inset at (53,46)
+      else // 32 Mouth: source-art frame (55,45), inner image (56,46)
       {
-        labelX = 53;
+        labelX = 56;
         labelY = 46;
       }
       string label = number.ToString();
@@ -11974,7 +11974,7 @@ private static void HandleGameViewPointerDown(
         || pixels.Length != PreviewWidth * PreviewHeight)
       return;
 
-    const int mouthX = 54;
+    const int mouthX = 56;
     const int mouthY = 46;
     const int mouthSize = 16;
 
