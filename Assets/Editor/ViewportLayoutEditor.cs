@@ -8434,11 +8434,17 @@ private static void HandleGameViewPointerDown(
         : bread ? audio.breadEatingSound : audio.swallowEatingSound;
     float volume = Mathf.Clamp01(apple ? audio.appleEatingVolume
         : bread ? audio.breadEatingVolume : audio.swallowEatingVolume);
+    // Explicit shared eating sound for food without its own assigned sound.
     if (sound == null)
     {
-      Debug.LogError("EATING: No audio assigned for '" + foodName
-          + "' in DungeonAudioSettings. Food not consumed; no fallback.");
-      return false;
+      const string sharedEatingPath = "Assets/Audio/eating.wav";
+      sound = AssetDatabase.LoadAssetAtPath<AudioClip>(sharedEatingPath);
+      if (sound == null)
+      {
+        Debug.LogError("EATING: Shared sound missing at exact path "
+            + sharedEatingPath + ". Food not consumed.");
+        return false;
+      }
     }
 
     ItemInstance physical;
