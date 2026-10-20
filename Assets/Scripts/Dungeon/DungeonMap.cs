@@ -151,44 +151,6 @@ namespace DM.Dungeon
       return tile != null && tile.TryGetStairsDirection(out isUp);
     }
 
-    public bool TryFindStairs(
-        bool isUp,
-        int preferredX,
-        int preferredY,
-        out int stairsX,
-        out int stairsY)
-    {
-      stairsX = -1;
-      stairsY = -1;
-      int bestDistance = int.MaxValue;
-
-      for (int y = 0; y < Height; y++)
-      {
-        for (int x = 0; x < Width; x++)
-        {
-          DungeonTile tile = GetTile(x, y);
-          if (tile == null
-              || !tile.TryGetStairsDirection(out bool tileIsUp)
-              || tileIsUp != isUp)
-          {
-            continue;
-          }
-
-          int distance =
-              Mathf.Abs(x - preferredX) + Mathf.Abs(y - preferredY);
-
-          if (distance >= bestDistance)
-            continue;
-
-          bestDistance = distance;
-          stairsX = x;
-          stairsY = y;
-        }
-      }
-
-      return stairsX >= 0 && stairsY >= 0;
-    }
-
     public void TurnLeft()
     {
       PlayerFacing = PlayerFacing switch
