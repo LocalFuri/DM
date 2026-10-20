@@ -178,7 +178,16 @@ namespace DM.Heroes
                         {
                             ObjectType = "Throwing Star",
                             WeightTenths = 1,
-                            ChargeCount = 3
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Throwing Star",
+                            WeightTenths = 1,
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Throwing Star",
+                            WeightTenths = 1,
                         },
                     }
                 },

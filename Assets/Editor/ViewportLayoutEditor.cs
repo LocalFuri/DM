@@ -7881,7 +7881,8 @@ private static void HandleGameViewPointerDown(
     RightHand = 1 << 1,
     Backpack = 1 << 2,
     OriginalEquippedSlot = 1 << 3,
-    LeftLeatherBag = 1 << 4
+    LeftLeatherBag = 1 << 4,
+    Quiver = 1 << 5
   }
 
   // Explicitly verified against the original Dungeon Master. Extend this
@@ -7895,6 +7896,12 @@ private static void HandleGameViewPointerDown(
         | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack },
     { "TORCH", ChampionAllowedSlots.LeftHand
         | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack },
+    // Throwing Stars fit both hands, both side pouches, the four quiver
+    // slots, and the unrestricted backpack. The upper pouch is already
+    // unrestricted; LeftLeatherBag grants access to the lower pouch.
+    { "THROWINGSTAR", ChampionAllowedSlots.LeftHand
+        | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack
+        | ChampionAllowedSlots.LeftLeatherBag | ChampionAllowedSlots.Quiver },
     // Both Magical Box variants follow weapon hand/backpack permissions.
     // Keep separate item identities and artwork; only slot eligibility changes.
     { "MAGICALBOXBLUE", ChampionAllowedSlots.LeftHand
@@ -7914,20 +7921,123 @@ private static void HandleGameViewPointerDown(
         | ChampionAllowedSlots.LeftLeatherBag }
   };
 
+  // Four quiver cells, read in original reload priority (row-major).
+  // Inventory-local coordinates; do NOT include the independent leather bag.
+  private static readonly Vector2Int[] ChampionQuiverSlots =
+  {
+    new Vector2Int(61, 72), new Vector2Int(78, 72),
+    new Vector2Int(61, 89), new Vector2Int(78, 89)
+  };
+
+  private static bool IsChampionQuiverSlot(int x, int y)
+  {
+    foreach (Vector2Int slot in ChampionQuiverSlots)
+      if (slot.x == x && slot.y == y) return true;
+    return false;
+  }
+
+  // Based on verified throw-capable inventory types; separate from damage
+  // category and bow-compatible ammunition.
+  private static bool IsChampionQuiverItem(string name)
+  {
+    switch (NormalizeChampionAssetKey(name))
+    {
+      case "ARROW": case "SLAYER": case "SLAYERARROW":
+      case "THROWINGSTAR": case "KNIFE": case "DAGGER":
+      case "POISONDART": case "DART": case "SMALLSTONE":
+      case "STONE":
+        return true;
+      default: return false;
+    }
+  }
+
+  private static bool IsChampionBowAmmunition(string name)
+  {
+    switch (NormalizeChampionAssetKey(name))
+    {
+      case "ARROW": case "SLAYER": case "SLAYERARROW": return true;
+      default: return false;
+    }
+  }
+
+  // Stage 1: reserve this for a FUTURE successful combat action.
+  // Never call it on mouse clicks or merely on inventory inspection.
+  // Returns false when the hand is occupied or no compatible item exists.
+  private bool TryReloadChampionFromQuiver(string heroName, bool bowMode)
+  {
+    HeroDefinition hero = HeroDatabase.GetByName(heroName);
+    if (hero == null || hero.StartingItems == null) return false;
+    Vector2Int destination = bowMode
+        ? new Vector2Int(ChampionSheetLeftHandX, ChampionSheetLeftHandY)
+        : new Vector2Int(ChampionSheetRightHandX, ChampionSheetRightHandY);
+    bool handUsed = false, quiverUsed = false;
+    int arrowIndex = 0;
+    var positions = new Dictionary<int, Vector2Int>();
+    for (int i = 0; i < hero.StartingItems.Count; i++)
+    {
+      string name = GetChampionStartingItemName(hero.StartingItems[i]);
+      if (string.IsNullOrEmpty(name) || !TryGetChampionStartingItemSlot(
+              hero.Name, name, ref handUsed, ref quiverUsed, ref arrowIndex,
+              out int initialX, out int initialY)) continue;
+      if (IsChampionItemRemoved(hero.Name, i)) continue;
+      Vector2Int pos = GetPreviewChampionItemSlot(hero.Name, i, initialX, initialY);
+      if (pos == destination) return false;
+      positions[i] = pos;
+    }
+    if (TryGetReceivedItemAt(hero.Name, destination.x, destination.y, out _))
+      return false;
+    foreach (Vector2Int slot in ChampionQuiverSlots)
+    {
+      // A transferred item may also occupy a quiver slot. Move its actual
+      // source identity, never generate a new item.
+      if (TryGetReceivedItemAt(hero.Name, slot.x, slot.y, out var received))
+      {
+        HeroDefinition origin = HeroDatabase.GetByName(received.sourceHero);
+        if (origin == null || origin.StartingItems == null
+            || received.sourceIndex < 0 || received.sourceIndex >= origin.StartingItems.Count)
+        {
+          Debug.LogError("QUIVER RELOAD: transferred item source missing.");
+          return false;
+        }
+        string name = GetChampionStartingItemName(origin.StartingItems[received.sourceIndex]);
+        if (!(bowMode ? IsChampionBowAmmunition(name) : IsChampionQuiverItem(name)))
+          continue;
+        ItemInstance item = EnsureChampionItemInstance(received.sourceHero,
+            received.sourceIndex, name, slot);
+        if (item == null) return false;
+        received.slot = destination;
+        MoveItemInstance(item, "ChampionSlot", hero.Name, destination.x, destination.y);
+        return true;
+      }
+      foreach (var pair in positions)
+      {
+        if (pair.Value != slot) continue;
+        string name = GetChampionStartingItemName(hero.StartingItems[pair.Key]);
+        if (!(bowMode ? IsChampionBowAmmunition(name) : IsChampionQuiverItem(name)))
+          break;
+        ItemInstance item = EnsureChampionItemInstance(hero.Name, pair.Key, name, slot);
+        if (item == null) return false;
+        if (!previewChampionItemSlots.TryGetValue(hero.Name, out var moved))
+        {
+          moved = new Dictionary<int, Vector2Int>();
+          previewChampionItemSlots.Add(hero.Name, moved);
+        }
+        moved[pair.Key] = destination;
+        MoveItemInstance(item, "ChampionSlot", hero.Name, destination.x, destination.y);
+        return true;
+      }
+    }
+    return false;
+  }
+
   private static bool IsPermittedChampionItemSlot(
       string itemName, int originalX, int originalY, int targetX, int targetY)
   {
     string itemKey = NormalizeChampionAssetKey(itemName);
-    // Magical Boxes can use either hand, the left leather bag and backpack,
-    // but not the lower-right quiver. Other items retain existing quiver rules.
-    if (targetX == ChampionSheetRightHandX && targetY == 72)
-    {
-      if (itemKey == "MAGICALBOXBLUE" || itemKey == "BLUEMAGICALBOX"
-          || itemKey == "MAGICALBOXGREEN" || itemKey == "GREENMAGICALBOX"
-          || itemKey == "MAGICALBOX")
-        return false;
-      return true;
-    }
+    // Only verified quiver-compatible types can be stored in these four
+    // squares. The leather bag is a separate, unrelated slot.
+    if (IsChampionQuiverSlot(targetX, targetY))
+      return IsChampionQuiverItem(itemName);
     // The upper-right pouch retains its existing unrestricted rule.
     if (targetX == 65 && targetY == 32)
       return true;
@@ -8915,6 +9025,8 @@ private static void HandleGameViewPointerDown(
     for (int i = 0; i < ChampionSheetAdditionalSlotXY.Length; i += 2)
       AddChampionItemSlotIfMissing(slots,
           ChampionSheetAdditionalSlotXY[i], ChampionSheetAdditionalSlotXY[i + 1]);
+    foreach (Vector2Int slot in ChampionQuiverSlots)
+      AddChampionItemSlotIfMissing(slots, slot.x, slot.y);
     for (int row = 0; row < 2; row++)
       for (int col = 0; col < 8; col++)
         AddChampionItemSlotIfMissing(slots,
@@ -10232,6 +10344,24 @@ private static void HandleGameViewPointerDown(
         localX = 33; // Legs.
         localY = 65;
         return true;
+      }
+    }
+    // WU TSE original character sheet: three distinct Throwing Stars.
+    // First backpack cell, upper quiver cell, and screen-right attack hand.
+    // Each star is an independent HeroStartingItem (never ChargeCount=3).
+    if (string.Equals(heroName, "WU TSE", System.StringComparison.OrdinalIgnoreCase)
+        && NormalizeChampionAssetKey(itemName) == "THROWINGSTAR")
+    {
+      switch (hawkArrowIndex++)
+      {
+        case 0: localX = 82; localY = 15; return true;
+        case 1: localX = 61; localY = 32; quiverUsed = true; return true;
+        case 2: localX = ChampionSheetRightHandX;
+                localY = ChampionSheetRightHandY;
+                handUsed = true; return true;
+        default:
+          Debug.LogError("WU TSE STARTING ITEMS: More than three Throwing Stars; no verified fourth slot.");
+          localX = -1; localY = -1; return false;
       }
     }
     if (string.Equals(heroName, "HAWK", System.StringComparison.OrdinalIgnoreCase)
