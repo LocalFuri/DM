@@ -31663,7 +31663,7 @@ private static void HandleGameViewPointerDown(
     int relCorner = (absCorner - facingCorner + 4) & 3;
     CsbViewportCell[] cells = csbViewportTable.classes[graphic.viewportPositionClass].cells;
     if (cells == null || cells.Length != 10 || cells[6]?.positions == null
-        || cells[3].positions.Length != 5)
+        || cells[6].positions.Length != 5)
     { ReportCsbF2Issue("Invalid F2 viewport positions table."); return false; }
     CsbViewportCell cell = cells[6];
     CsbViewportPoint point = cell.positions[relCorner];
@@ -31683,23 +31683,69 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
+  // CSBwin d.Byte5744 decoded from graphics.dat 0x22E, offsets 1502..1517.
+  // Stored bytes / 10 = the output palette indices used by ShrinkBLT.
+  private static readonly int[] CsbFloorMediumPalette =
+      { 0, 1, 2, 3, 4, 3, 6, 7, 5, 9, 10, 11, 12, 13, 14, 15 };
+
   private void BlitCsbF2Item(Color32[] pixels, FloorItemPlacement item,
       Texture2D texture, Vector2Int pileOffset)
   {
     if (!TryGetCsbF2Rect(item, texture, out Rect rect, out bool mirror)) return;
     int width = Mathf.RoundToInt(rect.width);
     int height = Mathf.RoundToInt(rect.height);
-    // Use the same nearest-neighbour sampling as the existing pixel-art engine.
-    // This intermediate F2 buffer must not modify F1's source texture.
+    // CSBwin Code51a4.cpp: cell 6 far corners (0,1) use distance 1
+    // and Byte5744; near corners (2,3) are native distance 0.
+    // Byte5744 stores palette indices multiplied by ten; these are the
+    // actual resulting indices decoded from graphics.dat graphic 0x22E.
+    int absoluteCorner = CsbFloorAbsoluteCorner(item.cell);
+    int facingIndex = previewFacing == DungeonFacing.North ? 0 :
+        previewFacing == DungeonFacing.East ? 1 :
+        previewFacing == DungeonFacing.South ? 2 : 3;
+    int screenCorner = (absoluteCorner - facingIndex + 4) & 3;
+    bool mediumDistance = screenCorner < 2;
+    Color32[] originalPalette = DungeonViewportLightPalettes[0];
     Color32[] src = texture.GetPixels32();
     var scaled = new Color32[width * height];
+    // CSBwin ShrinkBLT uses a 16.16 sampling accumulator initialized to
+    // 0x7fff, rather than the old floor(x * source/destination) sampler.
+    long stepX = ((long)texture.width << 16) / width;
+    long stepY = ((long)texture.height << 16) / height;
     for (int y = 0; y < height; y++)
       for (int x = 0; x < width; x++)
       {
-        int sourceX = Mathf.Min(texture.width - 1, (x * texture.width) / width);
+        int sourceX = Mathf.Min(texture.width - 1,
+            (int)((0x7fffL + x * stepX) >> 16));
         if (mirror) sourceX = texture.width - 1 - sourceX;
-        int sourceY = Mathf.Min(texture.height - 1, (y * texture.height) / height);
-        scaled[y * width + x] = src[sourceY * texture.width + sourceX];
+        int sourceY = Mathf.Min(texture.height - 1,
+            (int)((0x7fffL + y * stepY) >> 16));
+        Color32 sourceColor = src[sourceY * texture.width + sourceX];
+        if (sourceColor.a == 0)
+        {
+          scaled[y * width + x] = sourceColor;
+          continue;
+        }
+        if (!mediumDistance)
+        {
+          scaled[y * width + x] = sourceColor;
+          continue;
+        }
+        int paletteIndex = -1;
+        for (int p = 0; p < originalPalette.Length; p++)
+        {
+          Color32 candidate = originalPalette[p];
+          if (sourceColor.r == candidate.r && sourceColor.g == candidate.g
+              && sourceColor.b == candidate.b)
+          { paletteIndex = p; break; }
+        }
+        if (paletteIndex < 0)
+        {
+          ReportCsbF2Issue("Unrecognized source RGB (" + sourceColor.r + ","
+              + sourceColor.g + "," + sourceColor.b + ") in " + item.type
+              + " (" + item.instanceId + "). F2 requires original DM palette colors.");
+          return; // No guessed nearest-colour fallback.
+        }
+        scaled[y * width + x] = originalPalette[CsbFloorMediumPalette[paletteIndex]];
       }
     // Preview pixels use bottom-origin indexing; CSBwin table coordinates are
     // top-origin. Clip against the 224x136 viewport to avoid the HUD.
