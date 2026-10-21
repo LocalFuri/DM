@@ -36758,6 +36758,9 @@ private static void HandleGameViewPointerDown(
     {
       FloorItemPlacement candidate = items[i];
       if (IsPreviewFeatureEnabled(GetFloorItemFeatureKey(candidate))
+          && TryProjectFloorItem(candidate, out FloorItemDepth candidateDepth,
+              out bool candidateRight)
+          && candidateDepth == FloorItemDepth.SameTile
           && TryGetFloorItemScreenRect(candidate, out Rect hitRect)
           && hitRect.Contains(new Vector2(x, y)))
       {
@@ -36774,6 +36777,9 @@ private static void HandleGameViewPointerDown(
     {
       FloorItemPlacement item = items[i];
       if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(item))
+          || !TryProjectFloorItem(item, out FloorItemDepth itemDepth,
+              out bool itemRight)
+          || itemDepth != FloorItemDepth.SameTile
           || !TryGetFloorItemScreenRect(item, out Rect rect)) continue;
       bool sameCorner = item.x == clicked.x && item.y == clicked.y
           && string.Equals(item.cell, clicked.cell,
