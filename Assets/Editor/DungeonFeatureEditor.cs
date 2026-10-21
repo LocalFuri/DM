@@ -747,6 +747,7 @@ public class DungeonFeatureEditor : EditorWindow
     "Tiggy",
     "Hissssa",
     "Gothmog",
+    "Gando",
   };
 
   private static readonly ChampionMirrorMarker[] ChampionMirrorMarkers =

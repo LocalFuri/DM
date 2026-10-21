@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -8230,6 +8230,11 @@ private static void HandleGameViewPointerDown(
     // squares. The leather bag is a separate, unrelated slot.
     if (IsChampionQuiverSlot(targetX, targetY))
       return IsChampionQuiverItem(itemName);
+    // Poison Darts are valid in both side pouches: diagnostic slots
+    // #25 (5,72) and #26 (5,89). These are not quiver cells.
+    if (targetX == 5 && (targetY == 72 || targetY == 89)
+        && itemKey == "POISONDART")
+      return true;
     // The bottom-left side pouch also accepts Potion Empty.
     // This is NOT one of the four automatic-reload Quiver cells.
     if (targetX == 5 && targetY == 89
@@ -10688,6 +10693,15 @@ private static void HandleGameViewPointerDown(
       string heroName, string itemName, ref bool handUsed, ref bool quiverUsed, ref int hawkArrowIndex,
       out int localX, out int localY)
   {
+    // LEYLA: original Rope starts in numbered inventory slot #1.
+    // This is a starting placement only; player transfers remain authoritative.
+    if (string.Equals(heroName, "LEYLA", System.StringComparison.OrdinalIgnoreCase)
+        && NormalizeChampionAssetKey(itemName) == "ROPE")
+    {
+      localX = 65;
+      localY = 32;
+      return true;
+    }
     // Verified against SYRA's original CSBwin sheet. These are starting
     // positions only; after first activation, player item transfers remain
     // authoritative. Do not infer unverified backpack placements for others.
