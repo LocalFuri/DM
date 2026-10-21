@@ -31651,7 +31651,10 @@ private static void HandleGameViewPointerDown(
     { ReportCsbF2Issue("Invalid viewport class for " + item.instanceId); return false; }
     // CSBwin positions: 0=far left, 1=far right, 2=near right, 3=near left.
     // The original object sub-square is an absolute N/E/S/W direction, rotated
-    // into the player's view. Relative cell 3 is the front-center F2 square (4/5 are side cells).
+    // into the player's view. OneAhead is the immediate forward cell (CSBwin
+    // relative cell 6), NOT the farther row's relative cell 3.
+    // FloorItemDepth values are renderer-relative and must not be confused with
+    // CSBwin's absolute relative-cell numbering.
     int absCorner = CsbFloorAbsoluteCorner(item.cell);
     if (absCorner < 0) return false;
     int facingCorner = previewFacing == DungeonFacing.North ? 0 :
@@ -31659,10 +31662,10 @@ private static void HandleGameViewPointerDown(
         previewFacing == DungeonFacing.South ? 2 : 3;
     int relCorner = (absCorner - facingCorner + 4) & 3;
     CsbViewportCell[] cells = csbViewportTable.classes[graphic.viewportPositionClass].cells;
-    if (cells == null || cells.Length != 10 || cells[3]?.positions == null
+    if (cells == null || cells.Length != 10 || cells[6]?.positions == null
         || cells[3].positions.Length != 5)
     { ReportCsbF2Issue("Invalid F2 viewport positions table."); return false; }
-    CsbViewportCell cell = cells[3];
+    CsbViewportCell cell = cells[6];
     CsbViewportPoint point = cell.positions[relCorner];
     if (!point.valid || point.y == 0) return false;
     bool near = relCorner >= 2;
