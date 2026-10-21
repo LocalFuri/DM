@@ -293,6 +293,18 @@
       "groundF1Path": "Assets/Art/Weapons/Sword_F1_72x8.png",
       "width": 72,
       "height": 8
+    },
+    {
+      "itemType": "Corn",
+      "groundF1Path": "Assets/Art/Food/Corn_F1_27x10.png",
+      "width": 27,
+      "height": 10
+    },
+    {
+      "itemType": "Bread",
+      "groundF1Path": "Assets/Art/Food/Bread_F1_27x16.png",
+      "width": 27,
+      "height": 16
     }
   ],
   "groundF1Anchors": {
