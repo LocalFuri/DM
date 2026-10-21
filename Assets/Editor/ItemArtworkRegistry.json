@@ -305,6 +305,12 @@
       "groundF1Path": "Assets/Art/Food/Bread_F1_27x16.png",
       "width": 27,
       "height": 16
+    },
+    {
+      "itemType": "Cheese",
+      "groundF1Path": "Assets/Art/Food/Cheese_F1_29x15.png",
+      "width": 29,
+      "height": 15
     }
   ],
   "groundF1Anchors": {

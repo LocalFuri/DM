@@ -1255,30 +1255,46 @@ public class ViewportLayoutEditor : EditorWindow
     public string instanceId;
   }
 
-  // Loose items are map-space records. Rendering never keys off a player
-  // pose; it projects each record from its absolute map X/Y and sub-square
-  // against the current preview position/facing. Add future items here (or
-  // replace this source with parsed DUNGEON.DAT data) without adding pose
-  // exceptions to the renderer.
-  private static readonly FloorItemPlacement[] HallOfChampionsFloorItems =
+  // Original map items are loaded from the same authoritative JSON used by Dungeon Features.
+  // Their Pxxxxx IDs are retained across pickup, movement, and level changes.
+  private static DungeonOriginalItemLoader.Record[] cachedSourceFloorRecords;
+  private static FloorItemPlacement[] cachedOriginalFloorItems;
+  private static FloorItemPlacement[] HallOfChampionsFloorItems
   {
-    new FloorItemPlacement
+    get
     {
-      level = 0,
-      type = "Apple",
-      x = Level0AppleTestX,
-      y = Level0AppleTestY,
-      cell = Level0AppleTestCell
-    },
-    new FloorItemPlacement
-    {
-      level = 0,
-      type = "Bread",
-      x = Level0BreadTestX,
-      y = Level0BreadTestY,
-      cell = Level0BreadTestCell
+      DungeonOriginalItemLoader.Record[] source = DungeonOriginalItemLoader.Load();
+      if (cachedOriginalFloorItems != null && ReferenceEquals(source, cachedSourceFloorRecords))
+        return cachedOriginalFloorItems;
+      var result = new List<FloorItemPlacement>();
+      foreach (DungeonOriginalItemLoader.Record record in source)
+      {
+        string name = DungeonOriginalItemLoader.DecodeFloorItemName(
+            record.recordType, record.thing.Type);
+        if (string.IsNullOrEmpty(name))
+        {
+          Debug.LogError("ORIGINAL FLOOR ITEM: Unknown " + record.recordType
+              + " Type " + record.thing.Type + " at record " + record.id);
+          continue;
+        }
+        if (record.direction != "N" && record.direction != "E"
+            && record.direction != "S" && record.direction != "W")
+        {
+          Debug.LogError("ORIGINAL FLOOR ITEM: Invalid corner for " + record.id
+              + ": " + record.direction);
+          continue;
+        }
+        result.Add(new FloorItemPlacement
+        {
+          level = record.level, type = name, x = record.localX,
+          y = record.localY, cell = record.direction, instanceId = record.id
+        });
+      }
+      cachedSourceFloorRecords = source;
+      cachedOriginalFloorItems = result.ToArray();
+      return cachedOriginalFloorItems;
     }
-  };
+  }
 
   // Hall of Champions level-local wall ornament table extracted from
   // DUNGEON.DAT. OrnamentOrdinal is 1-based, so index = ordinal - 1.
@@ -2110,81 +2126,44 @@ public class ViewportLayoutEditor : EditorWindow
       previewDisabledFeatureKeys.Remove(GetFloorItemFeatureKey(item));
   }
 
-  // Explicit editor recovery for the two original Hall of Champions test items.
-  // Reloading C# alone is not a reliable way to reset an existing EditorWindow's
-  // preview interaction state, so expose an intentional reset command.
-  [MenuItem("Tools/Check Original Apple and Bread", false, 120)]
-  private static void CheckOriginalAppleAndBreadMenu()
+  [MenuItem("Tools/Check Original Ground Items", false, 120)]
+  private static void CheckOriginalGroundItemsMenu()
   {
+    FloorItemPlacement[] all = HallOfChampionsFloorItems;
+    Debug.Log("FLOOR ITEM CHECK: original pickable source records: " + all.Length);
     ViewportLayoutEditor[] windows = Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>();
-    Debug.Log("FLOOR ITEM CHECK: source records: " + HallOfChampionsFloorItems.Length
-        + "; Apple expected Level 0 (4,9), corner N, asset " + AppleGroundAssetPath
-        + "; Bread expected Level 0 (5,11), corner E, asset " + BreadGroundAssetPath);
-    foreach (FloorItemPlacement source in HallOfChampionsFloorItems)
-    {
-      string path = string.Equals(source.type, "Apple", System.StringComparison.OrdinalIgnoreCase)
-          ? AppleGroundAssetPath : BreadGroundAssetPath;
-      Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (sprite == null)
-        Debug.LogError("FLOOR ITEM CHECK: " + source.type + " MISSING ART at " + path);
-      else if (!sprite.isReadable)
-        Debug.LogError("FLOOR ITEM CHECK: " + source.type + " sprite NOT READABLE: " + path);
-      else
-        Debug.Log("FLOOR ITEM CHECK: " + source.type + " sprite OK " + sprite.width + "x" + sprite.height);
-    }
-    if (windows == null || windows.Length == 0)
-    {
-      Debug.LogWarning("FLOOR ITEM CHECK: ViewEdit window is not open; open it for projection diagnostics.");
-      return;
-    }
     foreach (ViewportLayoutEditor window in windows)
     {
       window.EnsurePreviewMiniMapLoaded();
       Debug.Log("FLOOR ITEM CHECK: level=" + window.previewDungeonLevel
-          + ", player=(" + window.previewX + "," + window.previewY + ") facing=" + window.previewFacing
-          + ", minimap=" + (window.previewMiniMap == null ? "MISSING" : "loaded")
-          + ", activeFloorItems=" + window.GetCurrentFloorItems().Length);
-      foreach (FloorItemPlacement source in HallOfChampionsFloorItems)
+          + ", player=(" + window.previewX + "," + window.previewY + ") facing="
+          + window.previewFacing + ", activeFloorItems=" + window.GetCurrentFloorItems().Length);
+      foreach (FloorItemPlacement item in all)
       {
-        string id = GetFloorItemInstanceId(source);
-        bool projected = window.TryProjectFloorItem(source, out FloorItemDepth depth, out bool right);
-        Debug.Log("FLOOR ITEM CHECK: " + source.type + " (" + source.x + "," + source.y + "," + source.cell
-            + ") picked=" + window.previewPickedFloorItemIds.Contains(id)
-            + ", disabled=" + !window.IsPreviewFeatureEnabled(window.GetFloorItemFeatureKey(source))
-            + ", projectsFromCurrentView=" + projected
-            + (projected ? ", depth=" + depth + ", right=" + right : ""));
+        if (item.level != window.previewDungeonLevel) continue;
+        if (!window.TryProjectFloorItem(item, out FloorItemDepth depth, out bool right)) continue;
+        GroundArtworkEntry art = window.GetRegisteredGroundArtwork(item.type);
+        Debug.Log("FLOOR ITEM CHECK: " + item.instanceId + " " + item.type
+            + " tile=(" + item.x + "," + item.y + ") corner=" + item.cell
+            + ", depth=" + depth + ", right=" + right
+            + ", registry=" + (art == null ? "MISSING" : art.groundF1Path)
+            + ", picked=" + window.previewPickedFloorItemIds.Contains(item.instanceId));
       }
     }
   }
 
-  [MenuItem("Tools/Restore Original Apple and Bread", false, 170)]
-  private static void RestoreOriginalAppleAndBreadMenu()
+  [MenuItem("Tools/Restore Original Ground Items", false, 170)]
+  private static void RestoreOriginalGroundItemsMenu()
   {
     ViewportLayoutEditor[] windows = Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>();
-    if (windows == null || windows.Length == 0)
-    {
-      Debug.LogWarning("FLOOR ITEMS: Open the dungeon preview first, then run Restore Original Apple and Bread.");
-      return;
-    }
     foreach (ViewportLayoutEditor window in windows)
     {
-      window.previewPickedFloorItemIds.Clear();
-      window.previewMovedFloorItems.Clear();
-      window.previewMovedFloorItemOrder.Clear();
-      window.previewHeldFloorItemId = null;
-      window.previewHeldFloorItem = null;
-      window.previewHeldFloorItemCursor = null;
-      window.previewFloorPickupCompleted = false;
-      foreach (FloorItemPlacement item in HallOfChampionsFloorItems)
-        window.previewItemInstances.Remove(GetFloorItemInstanceId(item));
-      foreach (FloorItemPlacement item in HallOfChampionsFloorItems)
-        window.previewDisabledFeatureKeys.Remove(window.GetFloorItemFeatureKey(item));
+      window.RestoreOriginalFloorTestItemsAfterReload();
       Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
       HideHeldItemPointerOverlay();
-      window.RefreshEditModePreview();
-      window.Repaint();
+      window.RefreshEditModePreview(); window.Repaint();
     }
-    Debug.Log("FLOOR ITEMS: Restored Apple (Level 0, 4,9 North) and Bread (Level 0, 5,11 East) to original map positions.");
+    Debug.Log("FLOOR ITEMS: Restored original item placements from authoritative map records.");
   }
 
   [MenuItem("Tools/Audio Settings", false, 110)]
