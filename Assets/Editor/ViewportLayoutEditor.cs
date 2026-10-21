@@ -7756,11 +7756,13 @@ private static void HandleGameViewPointerDown(
     string itemName = GetChampionStartingItemName(
         source.StartingItems[previewHeldChampionItemIndex]);
     string normalized = NormalizeChampionAssetKey(itemName);
-    // Use the existing, explicit equipment-category mapping. Never infer a
-    // worn-slot category from an unfamiliar item or substitute another slot.
+    // Rope is carried in all-purpose inventory slots #1 through #17, not worn.
+    // Slot #1 is the upper pouch (65,32); slots #2-#17 are the 2x8 backpack.
+    bool isRope = normalized == "ROPE";
     bool hand = false, quiver = false;
-    if (!TryGetChampionSheetEquipSlot(itemName, ref hand, ref quiver,
-            out int equipmentX, out int equipmentY))
+    int equipmentX = 65, equipmentY = 32;
+    if (!isRope && !TryGetChampionSheetEquipSlot(itemName, ref hand, ref quiver,
+            out equipmentX, out equipmentY))
     {
       Debug.LogError("CHAMPION AUTO EQUIP: No valid equipment slot for '" + itemName
           + "'; item stays on cursor.");
@@ -7768,14 +7770,13 @@ private static void HandleGameViewPointerDown(
     }
     bool isArmor = (equipmentX == 33 && (equipmentY == 25
         || equipmentY == 45 || equipmentY == 65 || equipmentY == 85));
-    if (!isArmor)
+    if (!isArmor && !isRope)
     {
       Debug.Log("CHAMPION AUTO EQUIP: '" + itemName
           + "' is not head/torso/legs/feet armor; cursor remains active.");
       return;
     }
-    // Only allow already-known armor types; unrelated objects must not gain
-    // equipment permissions merely from occupying one of those coordinates.
+    // Only allow known armor or the explicitly approved Rope carry item.
     if (string.IsNullOrEmpty(normalized)) return;
     var occupied = new HashSet<Vector2Int>();
     hand = false; quiver = false;
@@ -8230,10 +8231,12 @@ private static void HandleGameViewPointerDown(
     // squares. The leather bag is a separate, unrelated slot.
     if (IsChampionQuiverSlot(targetX, targetY))
       return IsChampionQuiverItem(itemName);
-    // Poison Darts are valid in both side pouches: diagnostic slots
-    // #25 (5,72) and #26 (5,89). These are not quiver cells.
+    // Both side pouches, diagnostic slots #25 (5,72) and #26 (5,89),
+    // accept Poison Darts and all edible items recognized by the existing
+    // CSBwin food-nutrition table. Keep food eligibility in one place.
     if (targetX == 5 && (targetY == 72 || targetY == 89)
-        && itemKey == "POISONDART")
+        && (itemKey == "POISONDART"
+            || TryGetOriginalFoodNutrition(itemName, out _)))
       return true;
     // The bottom-left side pouch also accepts Potion Empty.
     // This is NOT one of the four automatic-reload Quiver cells.
