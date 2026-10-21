@@ -90,71 +90,6 @@ public class ViewportLayoutEditor : EditorWindow
   private const string OrnamentArtFolder =
       "Assets/Art/Ornaments";
 
-  // First loose-floor-item calibration. The original Level 0 DUNGEON.DAT
-  // places an Apple at map (4,9), sub-square N. Apple_19x13 is the
-  // authoritative ground/world artwork; Apple_16x16 is inventory-only.
-  private const string AppleGroundAssetPath =
-      "Assets/Art/Food/Apple_F1_19x13.png";
-  private const int Level0AppleTestX = 4;
-  private const int Level0AppleTestY = 9;
-  private const string Level0AppleTestCell = "N";
-
-  // Initial loose-floor-item calibration slots. X/Y are deliberately isolated
-  // from the authoritative DUNGEON.DAT map coordinates so we can tune screen
-  // projection without ever moving the object in map space. The original DOS
-  // reference shows the 19x13 Apple artwork on the floor.
-  private int appleF0RightPreviewX = 150;
-  private int appleF0RightPreviewScreenTop = 152;
-  // Same-tile front sub-square. From the original 4,9 North reference the
-  // native 19x13 apple begins at approximately X=56, screen-top=150.
-  private int appleF0FrontPreviewX = 56;
-  private int appleF0FrontPreviewScreenTop = 150;
-
-  // F2 is generated from the single authoritative F1 ground sprite.
-  // Floor-item perspective is steeper than the wall-piece F1->F2 ratio.
-  // Calibrated against the original 5,9 West screenshot: Apple_19x13 is
-  // reduced to 9x6 and moved farther into the corridor.
-  private const int AppleF2Width = 12;
-  private const int AppleF2Height = 8;
-
-  // One-tile-ahead item sub-square projection.
-  // Right-hand is verified from (5,9) West. The same N corner slot projects
-  // left-hand when viewed from (4,10) North.
-  private int appleF2RightPreviewX = 136;
-  private int appleF2RightPreviewScreenTop = 124;
-
-  // Mirror the verified right-hand F2 slot across the 224px dungeon viewport:
-  // 224 - 136 - 12 = 76.
-  private int appleF2LeftPreviewX = 76;
-  private int appleF2LeftPreviewScreenTop = 124;
-
-  // F3 is two map steps ahead, generated from the same Apple_19x13 source.
-  // Measured on the original (4,11) North viewport: left edge X=89,
-  // screen top Y=106, size 6x5. Right-hand is the mirror of that slot.
-  private const int AppleF3Width = 6;
-  private const int AppleF3Height = 5;
-  private int appleF3LeftPreviewX = 89;
-  private int appleF3LeftPreviewScreenTop = 106;
-  private int appleF3RightPreviewX = 129;
-  private int appleF3RightPreviewScreenTop = 106;
-
-  // Side-lane S3 (one tile laterally, two tiles ahead). These are independent
-  // ViewEdit calibration points; no central F3 coordinate is reused.
-  // Initial positions require visual calibration against CSBwin.
-  private int appleS3LeftPreviewX = 49;
-  private int appleS3LeftPreviewScreenTop = 106;
-  private int appleS3RightPreviewX = 169;
-  private int appleS3RightPreviewScreenTop = 106;
-
-  // Second loose-floor-item calibration. Original Level 0 DUNGEON.DAT places
-  // Bread at map (5,11), sub-square E. Bread_27x16 is the ground/world
-  // artwork; Bread_16x16 is inventory/icon only.
-  private const string BreadGroundAssetPath =
-      "Assets/Art/Food/Bread_F1_27x16.png";
-  private const int Level0BreadTestX = 5;
-  private const int Level0BreadTestY = 11;
-  private const string Level0BreadTestCell = "E";
-
   // Compact read-only X/Y boxes for floor-item rows in ViewEdit. Sized for
   // a single visible digit so ground items do not waste horizontal space.
   private const float FloorItemMapCoordFieldWidth = 28f;
@@ -162,34 +97,6 @@ public class ViewportLayoutEditor : EditorWindow
   // Shared description column for Champion Mirror and the ornament rows
   // under it, so Enabled starts on the same x for every feature row.
   private const float FeatureDescriptionWidth = 210f;
-
-  // Same-tile F0-forward calibration for pose (5,11) facing East. Keep these
-  // as render-only values while deriving the generic floor-item projection.
-  [System.NonSerialized]
-  private int breadF0LeftPreviewX = 49;
-  [System.NonSerialized]
-  private int breadF0LeftPreviewScreenTop = 148;
-
-  // Same-tile F0 right slot. Stored sub-square E at (5,11) facing North
-  // projects here. Measured from that original: X=141, screen top Y=150.
-  [System.NonSerialized]
-  private int breadF0RightPreviewX = 141;
-  [System.NonSerialized]
-  private int breadF0RightPreviewScreenTop = 148;
-
-  // One-tile-ahead bread. Measured on the original (4,11) East view:
-  // stored E projects left, X=72, screen top Y=121, size 17x10.
-  // Right-hand is the 224px mirror: 224 - 72 - 17 = 135.
-  private const int BreadF2Width = 17;
-  private const int BreadF2Height = 10;
-  [System.NonSerialized]
-  private int breadF2LeftPreviewX = 72;
-  [System.NonSerialized]
-  private int breadF2LeftPreviewScreenTop = 121;
-  [System.NonSerialized]
-  private int breadF2RightPreviewX = 135;
-  [System.NonSerialized]
-  private int breadF2RightPreviewScreenTop = 121;
 
   // Original DOS Hall of Champions VI Altar: native 96x56 graphic.
   // Adjusted 5 px down: screen top-left (64,69), framebuffer bottom-left (64,75).
@@ -1952,9 +1859,6 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedChampionFoodLabelTexture;
   private Texture2D cachedChampionWaterLabelTexture;
   [System.NonSerialized]
-  private Texture2D cachedAppleGroundTexture;
-  [System.NonSerialized]
-  private Texture2D cachedBreadGroundTexture;
   private readonly Dictionary<string, Texture2D> cachedChampionPortraitTextures =
       new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
   private readonly Dictionary<string, Texture2D> cachedReadableChampionPortraits =
@@ -31309,14 +31213,6 @@ private static void HandleGameViewPointerDown(
     return found;
   }
 
-  private bool IsRegisteredChampionGroundItem(string itemType)
-  {
-    // Apple and Bread retain their verified legacy drawing paths during this
-    // staged migration; all other entries use the external mapping.
-    return !string.Equals(itemType, "Apple", System.StringComparison.OrdinalIgnoreCase)
-        && !string.Equals(itemType, "Bread", System.StringComparison.OrdinalIgnoreCase);
-  }
-
   private Texture2D LoadRegisteredF1GroundArtwork(string itemType)
   {
     GroundArtworkEntry entry = GetRegisteredGroundArtwork(itemType);
@@ -31344,35 +31240,10 @@ private static void HandleGameViewPointerDown(
     return tex;
   }
 
+  // Every floor item, including Apple and Bread, uses the same registry path.
   private Texture2D GetFloorItemTexture(FloorItemPlacement item)
   {
-    if (item == null)
-      return null;
-
-    // Champion equipment ground art is defined in data, not per-item C# paths.
-    // No inferred image, resized inventory art, or silent fallback is permitted.
-    if (IsRegisteredChampionGroundItem(item.type))
-      return LoadRegisteredF1GroundArtwork(item.type);
-
-    if (string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase))
-    {
-      if (cachedAppleGroundTexture == null)
-        cachedAppleGroundTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(AppleGroundAssetPath);
-      if (cachedAppleGroundTexture == null)
-        ReportFloorItemTextureProblem("Apple", AppleGroundAssetPath, "is missing or could not be loaded");
-      return cachedAppleGroundTexture;
-    }
-
-    if (string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase))
-    {
-      if (cachedBreadGroundTexture == null)
-        cachedBreadGroundTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(BreadGroundAssetPath);
-      if (cachedBreadGroundTexture == null)
-        ReportFloorItemTextureProblem("Bread", BreadGroundAssetPath, "is missing or could not be loaded");
-      return cachedBreadGroundTexture;
-    }
-
-    return null;
+    return item == null ? null : LoadRegisteredF1GroundArtwork(item.type);
   }
 
   // Extracted original CSBwin graphic 0x22e: per-distance sixteen-entry
@@ -31508,15 +31379,8 @@ private static void HandleGameViewPointerDown(
         continue; // GetFloorItemTexture has logged the exact missing asset.
       if (!texture.isReadable || texture.width <= 0 || texture.height <= 0)
       {
-        bool appleItem = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
-        bool breadItem = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
-        if (appleItem || breadItem)
-          ReportFloorItemTextureProblem(item.type,
-              appleItem ? AppleGroundAssetPath : BreadGroundAssetPath,
-              !texture.isReadable ? "is not readable" : "has invalid dimensions");
-        else
-          ReportFloorItemTextureProblem(item.type, ItemArtworkRegistryPath,
-              !texture.isReadable ? "texture is not readable" : "texture has invalid dimensions");
+        ReportFloorItemTextureProblem(item.type, ItemArtworkRegistryPath,
+            !texture.isReadable ? "texture is not readable" : "texture has invalid dimensions");
         continue;
       }
 
@@ -31609,393 +31473,28 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
-  // Generic F1 geometry: the item-specific calibration provides only its
-  // left/right anchor, while drawing and picking share this exact rectangle.
-  // The native world texture determines size; no inventory-art fallback.
+  // One registry-based F1 rectangle for all item types.
   private bool TryGetF1FloorItemRect(FloorItemPlacement item, bool isRight,
       Texture2D texture, out Rect rect)
   {
     rect = new Rect();
-    if (item == null || texture == null || texture.width <= 0 || texture.height <= 0)
-      return false;
-
-    // Apple and Bread keep their verified legacy renderers until migration.
-    if (string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase))
-    {
-      rect = new Rect(isRight ? appleF0RightPreviewX : appleF0FrontPreviewX,
-          isRight ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop,
-          texture.width, texture.height);
-      return true;
-    }
-    if (string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase))
-    {
-      rect = new Rect(isRight ? breadF0RightPreviewX : breadF0LeftPreviewX,
-          isRight ? breadF0RightPreviewScreenTop : breadF0LeftPreviewScreenTop,
-          texture.width, texture.height);
-      return true;
-    }
-    // All registered champion items use the same CSBwin-style F1 anchoring.
-    // Never use per-item/per-artwork calibrated coordinates here.
+    if (item == null || texture == null) return false;
     if (GetRegisteredGroundArtwork(item.type) == null) return false;
     return TryGetAutomaticF1FloorItemRect(item.type, isRight, texture, out rect);
   }
 
+  // Cleanup stage: render only the generic near-floor projection.
+  // Distant items remain in the source data, but await CSBwin projection.
   private void BlitProjectedFloorItem(
-      Color32[] pixels,
-      FloorItemPlacement item,
-      Texture2D texture,
-      FloorItemDepth depth,
-      bool isRight, Vector2Int pileOffset)
+      Color32[] pixels, FloorItemPlacement item, Texture2D texture,
+      FloorItemDepth depth, bool isRight, Vector2Int pileOffset)
   {
-    bool apple = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
-    bool bread = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
-    bool sword = string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase);
-    if (depth == FloorItemDepth.SameTile)
-    {
-      if (TryGetF1FloorItemRect(item, isRight, texture, out Rect f1Rect))
-        BlitPieceIntoPreview(pixels, texture,
-            Mathf.RoundToInt(f1Rect.xMin) + pileOffset.x,
-            PreviewHeight - Mathf.RoundToInt(f1Rect.yMin) - texture.height - pileOffset.y,
-            false);
-      return;
-    }
-    // The sword has no verified distance artwork. Existing apple/bread
-    // F2/F3 paths below are deliberately unchanged.
-    if (sword || (!apple && !bread))
-      return;
-
-    if (depth == FloorItemDepth.OneAhead)
-    {
-      int width = apple ? AppleF2Width : BreadF2Width;
-      int height = apple ? AppleF2Height : BreadF2Height;
-      int x = apple
-          ? (isRight ? appleF2RightPreviewX : appleF2LeftPreviewX)
-          : (isRight ? breadF2RightPreviewX : breadF2LeftPreviewX);
-      int top = apple
-          ? (isRight ? appleF2RightPreviewScreenTop : appleF2LeftPreviewScreenTop)
-          : (isRight ? breadF2RightPreviewScreenTop : breadF2LeftPreviewScreenTop);
-      BlitPieceScaledIntoPreview(
-          pixels, texture, x + pileOffset.x, PreviewHeight - top - height - pileOffset.y, width, height, false,
-          skipCyanTransparencyKey: apple,
-          colorMap: WallOrnamentMediumColorMap);
-      return;
-    }
-
-    if (depth == FloorItemDepth.SideTwoAhead)
-    {
-      if (!apple) return; // No verified bread side-S3 graphic yet.
-      int x = isRight ? appleS3RightPreviewX : appleS3LeftPreviewX;
-      int top = isRight ? appleS3RightPreviewScreenTop : appleS3LeftPreviewScreenTop;
-      // S3 uses the visible horizontal artwork bounds so transparent padding
-      // does not consume one of the six destination columns.
-      BlitS3AppleIntoPreview(pixels, texture,
-          x + pileOffset.x, PreviewHeight - top - AppleF3Height - pileOffset.y);
-      return;
-    }
-
-    // F3 is calibrated from the Apple source today. Keep the generic map
-    // projection active, but do not invent an unverified Bread F3 pixel slot.
-    if (!apple)
-      return;
-
-    int f3X = isRight ? appleF3RightPreviewX : appleF3LeftPreviewX;
-    int f3Top = isRight ? appleF3RightPreviewScreenTop : appleF3LeftPreviewScreenTop;
-    BlitPieceScaledIntoPreview(
-        pixels, texture, f3X + pileOffset.x, PreviewHeight - f3Top - AppleF3Height - pileOffset.y,
-        AppleF3Width, AppleF3Height, false,
-        skipCyanTransparencyKey: true,
-        colorMap: WallOrnamentFarColorMap);
-  }
-
-  // Only the side-corridor S3 apple uses this horizontal source crop.
-  // Keep its 6x5 destination, vertical sampling, palette, and other item
-  // scaling paths unchanged. Transparent source padding is not artwork.
-  private static void BlitS3AppleIntoPreview(
-      Color32[] pixels, Texture2D texture, int destinationX, int destinationY)
-  {
-    if (texture == null || !texture.isReadable || texture.width <= 0 || texture.height <= 0)
-      return;
-
-    Color32[] sourcePixels = texture.GetPixels32();
-    int minVisibleX = texture.width;
-    int maxVisibleX = -1;
-    for (int y = 0; y < texture.height; ++y)
-      for (int x = 0; x < texture.width; ++x)
-      {
-        Color32 c = sourcePixels[y * texture.width + x];
-        if (c.a == 0 || (c.r == 0 && c.g == 255 && c.b == 255))
-          continue;
-        minVisibleX = Mathf.Min(minVisibleX, x);
-        maxVisibleX = Mathf.Max(maxVisibleX, x);
-      }
-
-    if (maxVisibleX < minVisibleX)
-    {
-      Debug.LogError("S3 apple has no visible source pixels: " + AppleGroundAssetPath);
-      return;
-    }
-
-    // Include both visible extreme columns in nearest-neighbor sampling.
-    // This is intentionally S3-only, not a change to generic scaled blits.
-    Color32[] brightPalette = DungeonViewportLightPalettes[0];
-    int sourceSpan = maxVisibleX - minVisibleX;
-    for (int row = 0; row < AppleF3Height; ++row)
-    {
-      int targetY = destinationY + row;
-      if (targetY < 0 || targetY >= PreviewHeight) continue;
-      int sourceY = row * texture.height / AppleF3Height;
-      for (int col = 0; col < AppleF3Width; ++col)
-      {
-        int targetX = destinationX + col;
-        if (targetX < 0 || targetX >= DungeonViewportWidth) continue;
-        int sourceX = minVisibleX + col * sourceSpan / (AppleF3Width - 1);
-        Color32 c = sourcePixels[sourceY * texture.width + sourceX];
-        if (c.a == 0 || (c.r == 0 && c.g == 255 && c.b == 255)) continue;
-        int sourcePaletteIndex = FindExactDmPaletteIndexOrNearest(c, brightPalette);
-        int mappedPaletteIndex = Mathf.Clamp(WallOrnamentFarColorMap[sourcePaletteIndex], 0, 15);
-        pixels[targetY * PreviewWidth + targetX] = brightPalette[mappedPaletteIndex];
-      }
-    }
-  }
-
-  // Saved defaults for ViewEdit apple pixel positions. The current in-memory
-  // fields are changed live; Apply commits only the relevant pair to this .cs.
-  private readonly Dictionary<string, Vector2Int> appleSavedScreenPositions =
-      new Dictionary<string, Vector2Int>(System.StringComparer.Ordinal);
-
-  private bool TryGetApplePositionFields(FloorItemDepth depth, bool right,
-      out string xField, out string yField, out int x, out int top)
-  {
-    xField = null;
-    yField = null;
-    x = 0;
-    top = 0;
-    if (depth == FloorItemDepth.SameTile)
-    {
-      // SameTile shows the front half of the party square: use the existing
-      // left/right world-placement slots, not the unused appleF1 field.
-      xField = right ? "appleF0RightPreviewX" : "appleF0FrontPreviewX";
-      yField = right ? "appleF0RightPreviewScreenTop" : "appleF0FrontPreviewScreenTop";
-      x = right ? appleF0RightPreviewX : appleF0FrontPreviewX;
-      top = right ? appleF0RightPreviewScreenTop : appleF0FrontPreviewScreenTop;
-    }
-    else if (depth == FloorItemDepth.OneAhead)
-    {
-      xField = right ? "appleF2RightPreviewX" : "appleF2LeftPreviewX";
-      yField = right ? "appleF2RightPreviewScreenTop" : "appleF2LeftPreviewScreenTop";
-      x = right ? appleF2RightPreviewX : appleF2LeftPreviewX;
-      top = right ? appleF2RightPreviewScreenTop : appleF2LeftPreviewScreenTop;
-    }
-    else if (depth == FloorItemDepth.SideTwoAhead)
-    {
-      xField = right ? "appleS3RightPreviewX" : "appleS3LeftPreviewX";
-      yField = right ? "appleS3RightPreviewScreenTop" : "appleS3LeftPreviewScreenTop";
-      x = right ? appleS3RightPreviewX : appleS3LeftPreviewX;
-      top = right ? appleS3RightPreviewScreenTop : appleS3LeftPreviewScreenTop;
-    }
-    else if (depth == FloorItemDepth.TwoAhead)
-    {
-      xField = right ? "appleF3RightPreviewX" : "appleF3LeftPreviewX";
-      yField = right ? "appleF3RightPreviewScreenTop" : "appleF3LeftPreviewScreenTop";
-      x = right ? appleF3RightPreviewX : appleF3LeftPreviewX;
-      top = right ? appleF3RightPreviewScreenTop : appleF3LeftPreviewScreenTop;
-    }
-    return xField != null;
-  }
-
-  private void SetAppleScreenPosition(FloorItemDepth depth, bool right, int x, int top)
-  {
-    if (depth == FloorItemDepth.SameTile)
-    {
-      if (right) { appleF0RightPreviewX = x; appleF0RightPreviewScreenTop = top; }
-      else { appleF0FrontPreviewX = x; appleF0FrontPreviewScreenTop = top; }
-    }
-    else if (depth == FloorItemDepth.OneAhead)
-    {
-      if (right) { appleF2RightPreviewX = x; appleF2RightPreviewScreenTop = top; }
-      else { appleF2LeftPreviewX = x; appleF2LeftPreviewScreenTop = top; }
-    }
-    else if (depth == FloorItemDepth.SideTwoAhead)
-    {
-      if (right) { appleS3RightPreviewX = x; appleS3RightPreviewScreenTop = top; }
-      else { appleS3LeftPreviewX = x; appleS3LeftPreviewScreenTop = top; }
-    }
-    else if (depth == FloorItemDepth.TwoAhead)
-    {
-      if (right) { appleF3RightPreviewX = x; appleF3RightPreviewScreenTop = top; }
-      else { appleF3LeftPreviewX = x; appleF3LeftPreviewScreenTop = top; }
-    }
-  }
-
-  // Shared source writer for Apple/Bread ViewEdit position calibration.
-  // Keep the original all-fields-validated-before-write behavior.
-  private bool SaveFloorItemScreenPosition(string itemLabel, string xField,
-      string yField, int x, int top)
-  {
-    string path = GetThisEditorSourceAssetPath();
-    if (string.IsNullOrEmpty(path) || !File.Exists(path))
-    {
-      Debug.LogError(itemLabel + " ViewEdit Apply: ViewportLayoutEditor.cs not found.");
-      return false;
-    }
-    string source = File.ReadAllText(path);
-    string revised = source;
-    string[] fields = { xField, yField };
-    int[] values = { x, top };
-    for (int i = 0; i < fields.Length; i++)
-    {
-      string pattern = @"(?m)^(\s*private int " + Regex.Escape(fields[i]) + @" = )-?\d+(;)";
-      MatchCollection matches = Regex.Matches(revised, pattern);
-      if (matches.Count != 1)
-      {
-        Debug.LogError(itemLabel + " ViewEdit Apply: expected one declaration for "
-            + fields[i] + "; source unchanged.");
-        return false;
-      }
-      int updated = values[i];
-      revised = Regex.Replace(revised, pattern,
-          m => m.Groups[1].Value + updated.ToString() + m.Groups[2].Value);
-    }
-    try
-    {
-      File.WriteAllText(path, revised);
-      AssetDatabase.ImportAsset(path);
-      return true;
-    }
-    catch (System.Exception error)
-    {
-      Debug.LogError(itemLabel + " ViewEdit Apply: " + error.Message);
-      return false;
-    }
-  }
-
-  private bool SaveAppleScreenPosition(string xField, string yField, int x, int top)
-  {
-    return SaveFloorItemScreenPosition("Apple", xField, yField, x, top);
-  }
-
-  private void DrawAppleScreenCalibration(FloorItemDepth depth, bool right)
-  {
-    if (!TryGetApplePositionFields(depth, right,
-            out string xField, out string yField, out int x, out int top))
-      return;
-    string key = xField;
-    if (!appleSavedScreenPositions.TryGetValue(key, out Vector2Int saved))
-    {
-      saved = new Vector2Int(x, top);
-      appleSavedScreenPositions.Add(key, saved);
-    }
-    float previousLabelWidth = EditorGUIUtility.labelWidth;
-    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    int editX = x;
-    bool changedX = DrawIntStepperInline(
-        "X", ref editX, snap, x != saved.x, true, 25f, 25f);
-    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-    int editY = top;
-    bool changedY = DrawIntStepperInline(
-        "Y", ref editY, snap, top != saved.y, true, 25f, 25f);
-    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-    NoteContentRight();
-    EditorGUIUtility.labelWidth = previousLabelWidth;
-    if (changedX || changedY)
-    {
-      SetAppleScreenPosition(depth, right, editX, editY);
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
-    }
-    if (apply && SaveAppleScreenPosition(xField, yField, editX, editY))
-    {
-      appleSavedScreenPositions[key] = new Vector2Int(editX, editY);
-      Repaint();
-    }
-  }
-
-  // Saved defaults for ViewEdit bread pixel positions. The current in-memory
-  // fields are changed live; Apply commits only the relevant pair to this .cs.
-  private readonly Dictionary<string, Vector2Int> breadSavedScreenPositions =
-      new Dictionary<string, Vector2Int>(System.StringComparer.Ordinal);
-
-  private bool TryGetBreadPositionFields(FloorItemDepth depth, bool right,
-      out string xField, out string yField, out int x, out int top)
-  {
-    xField = null;
-    yField = null;
-    x = 0;
-    top = 0;
-    if (depth == FloorItemDepth.SameTile)
-    {
-      // SameTile shows the front half of the party square: use the existing
-      // left/right world-placement slots, not the unused breadF1 field.
-      xField = right ? "breadF0RightPreviewX" : "breadF0LeftPreviewX";
-      yField = right ? "breadF0RightPreviewScreenTop" : "breadF0LeftPreviewScreenTop";
-      x = right ? breadF0RightPreviewX : breadF0LeftPreviewX;
-      top = right ? breadF0RightPreviewScreenTop : breadF0LeftPreviewScreenTop;
-    }
-    else if (depth == FloorItemDepth.OneAhead)
-    {
-      xField = right ? "breadF2RightPreviewX" : "breadF2LeftPreviewX";
-      yField = right ? "breadF2RightPreviewScreenTop" : "breadF2LeftPreviewScreenTop";
-      x = right ? breadF2RightPreviewX : breadF2LeftPreviewX;
-      top = right ? breadF2RightPreviewScreenTop : breadF2LeftPreviewScreenTop;
-    }
-    return xField != null;
-  }
-
-  private void SetBreadScreenPosition(FloorItemDepth depth, bool right, int x, int top)
-  {
-    if (depth == FloorItemDepth.SameTile)
-    {
-      if (right) { breadF0RightPreviewX = x; breadF0RightPreviewScreenTop = top; }
-      else { breadF0LeftPreviewX = x; breadF0LeftPreviewScreenTop = top; }
-    }
-    else if (depth == FloorItemDepth.OneAhead)
-    {
-      if (right) { breadF2RightPreviewX = x; breadF2RightPreviewScreenTop = top; }
-      else { breadF2LeftPreviewX = x; breadF2LeftPreviewScreenTop = top; }
-    }
-  }
-
-  private bool SaveBreadScreenPosition(string xField, string yField, int x, int top)
-  {
-    return SaveFloorItemScreenPosition("Bread", xField, yField, x, top);
-  }
-
-  private void DrawBreadScreenCalibration(FloorItemDepth depth, bool right)
-  {
-    if (!TryGetBreadPositionFields(depth, right,
-            out string xField, out string yField, out int x, out int top))
-      return;
-    string key = xField;
-    if (!breadSavedScreenPositions.TryGetValue(key, out Vector2Int saved))
-    {
-      saved = new Vector2Int(x, top);
-      breadSavedScreenPositions.Add(key, saved);
-    }
-    float previousLabelWidth = EditorGUIUtility.labelWidth;
-    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    int editX = x;
-    bool changedX = DrawIntStepperInline(
-        "X", ref editX, snap, x != saved.x, true, 25f, 25f);
-    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-    int editY = top;
-    bool changedY = DrawIntStepperInline(
-        "Y", ref editY, snap, top != saved.y, true, 25f, 25f);
-    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-    NoteContentRight();
-    EditorGUIUtility.labelWidth = previousLabelWidth;
-    if (changedX || changedY)
-    {
-      SetBreadScreenPosition(depth, right, editX, editY);
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
-    }
-    if (apply && SaveBreadScreenPosition(xField, yField, editX, editY))
-    {
-      breadSavedScreenPositions[key] = new Vector2Int(editX, editY);
-      Repaint();
-    }
+    if (depth != FloorItemDepth.SameTile) return;
+    if (TryGetF1FloorItemRect(item, isRight, texture, out Rect rect))
+      BlitPieceIntoPreview(pixels, texture,
+          Mathf.RoundToInt(rect.xMin) + pileOffset.x,
+          PreviewHeight - Mathf.RoundToInt(rect.yMin) - texture.height - pileOffset.y,
+          false);
   }
 
   private void DrawRegisteredF1FloorCalibration(string itemType, bool isRight)
@@ -32054,11 +31553,8 @@ private static void HandleGameViewPointerDown(
       if (!TryProjectFloorItem(item, out FloorItemDepth depth, out bool isRight))
         continue;
 
-      // Bread F3 has no verified pixel calibration yet, so it is not drawn
-      // and should not appear as an active ViewEdit feature row.
-      if ((depth == FloorItemDepth.TwoAhead || depth == FloorItemDepth.SideTwoAhead)
-          && string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase))
-        continue;
+      // Distant projection is not available during the cleanup stage.
+      if (depth != FloorItemDepth.SameTile) continue;
 
       string key = GetFloorItemFeatureKey(item);
       EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
@@ -32082,13 +31578,7 @@ private static void HandleGameViewPointerDown(
       bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
       if (enabledAfter)
       {
-        if (string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase))
-          DrawAppleScreenCalibration(depth, isRight);
-        else if (string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase))
-          DrawBreadScreenCalibration(depth, isRight);
-        else if (depth == FloorItemDepth.SameTile
-            && IsRegisteredChampionGroundItem(item.type))
-          DrawRegisteredF1FloorCalibration(item.type, isRight);
+        DrawRegisteredF1FloorCalibration(item.type, isRight);
       }
       EditorGUILayout.EndHorizontal();
 
@@ -36674,44 +36164,14 @@ private static void HandleGameViewPointerDown(
   }
   private Texture2D previewHeldFloorItemCursor;
 
-  // These rectangles use exactly the same positions/dimensions as drawing.
+  // Near-floor click rectangles share the exact generic drawing geometry.
   private bool TryGetUnstackedFloorItemScreenRect(FloorItemPlacement item,
       out Rect rect)
   {
     rect = new Rect();
-    if (!TryProjectFloorItem(item, out FloorItemDepth depth, out bool right))
-      return false;
-    bool apple = string.Equals(item.type, "Apple", System.StringComparison.OrdinalIgnoreCase);
-    bool bread = string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase);
-    if (depth == FloorItemDepth.SameTile)
-      return TryGetF1FloorItemRect(item, right, GetFloorItemTexture(item), out rect);
-    if (!apple && !bread) return false;
-    int x, top, width, height;
-    if (depth == FloorItemDepth.OneAhead)
-    {
-      width = apple ? AppleF2Width : BreadF2Width;
-      height = apple ? AppleF2Height : BreadF2Height;
-      x = apple ? (right ? appleF2RightPreviewX : appleF2LeftPreviewX)
-          : (right ? breadF2RightPreviewX : breadF2LeftPreviewX);
-      top = apple ? (right ? appleF2RightPreviewScreenTop : appleF2LeftPreviewScreenTop)
-          : (right ? breadF2RightPreviewScreenTop : breadF2LeftPreviewScreenTop);
-    }
-    else if (depth == FloorItemDepth.SideTwoAhead)
-    {
-      if (!apple) return false;
-      width = AppleF3Width; height = AppleF3Height;
-      x = right ? appleS3RightPreviewX : appleS3LeftPreviewX;
-      top = right ? appleS3RightPreviewScreenTop : appleS3LeftPreviewScreenTop;
-    }
-    else
-    {
-      if (!apple) return false; // Bread F3 has no verified rendering slot.
-      width = AppleF3Width; height = AppleF3Height;
-      x = right ? appleF3RightPreviewX : appleF3LeftPreviewX;
-      top = right ? appleF3RightPreviewScreenTop : appleF3LeftPreviewScreenTop;
-    }
-    rect = new Rect(x, top, width, height);
-    return true;
+    if (!TryProjectFloorItem(item, out FloorItemDepth depth, out bool right)
+        || depth != FloorItemDepth.SameTile) return false;
+    return TryGetF1FloorItemRect(item, right, GetFloorItemTexture(item), out rect);
   }
 
   // Picking uses the exact same translated rectangle as pile rendering.
