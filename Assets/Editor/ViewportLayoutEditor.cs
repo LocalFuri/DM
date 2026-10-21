@@ -15972,6 +15972,7 @@ private static void HandleGameViewPointerDown(
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
+    DiscardFloorDraftsAfterTileChange();
     championSheetVisible = false;
 
 
@@ -16012,6 +16013,7 @@ private static void HandleGameViewPointerDown(
     previewX = newX;
     previewY = newY;
     previewFacing = newFacing;
+    DiscardFloorDraftsAfterTileChange();
     championSheetVisible = false;
 
 
@@ -31592,7 +31594,200 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  private bool TryGetCsbF2Rect(FloorItemPlacement item, Texture2D texture,
+  // Explicitly accepted adjustments for ground-artwork geometry. All values are
+  // top-left coordinates in the complete 320x200 preview. A missing record
+  // means the unchanged CSBwin-derived projection is used.
+  [System.Serializable] private sealed class FloorProjectionCalibrationDatabase
+  { public FloorProjectionCalibrationEntry[] entries = new FloorProjectionCalibrationEntry[0]; }
+  [System.Serializable] private sealed class FloorProjectionCalibrationEntry
+  {
+    public string itemType;
+    public string view;
+    public int corner;
+    public int x, y, width, height;
+    public bool mirror;
+    public int samplingMode; // 0 = existing; 1/2/3 = nearest neighbor phase
+    public bool verified;
+  }
+  private const string FloorProjectionCalibrationPath =
+      "Assets/Editor/FloorItemRenderingCalibration.json";
+  private readonly Dictionary<string, FloorProjectionCalibrationEntry> floorProjectionDrafts =
+      new Dictionary<string, FloorProjectionCalibrationEntry>(System.StringComparer.Ordinal);
+  // Unapplied calibration belongs to the current map tile only. Turning on
+  // that tile retains the draft; moving to another tile discards all drafts.
+  private bool floorDraftTileInitialized;
+  private int floorDraftLevel, floorDraftX, floorDraftY;
+  private void DiscardFloorDraftsAfterTileChange()
+  {
+    if (!floorDraftTileInitialized)
+    {
+      floorDraftTileInitialized = true;
+      floorDraftLevel = previewDungeonLevel;
+      floorDraftX = previewX;
+      floorDraftY = previewY;
+      return;
+    }
+    if (floorDraftLevel == previewDungeonLevel && floorDraftX == previewX
+        && floorDraftY == previewY) return;
+    floorProjectionDrafts.Clear();
+    floorDraftLevel = previewDungeonLevel;
+    floorDraftX = previewX;
+    floorDraftY = previewY;
+  }
+  private static string FloorCalibrationKey(string type, string view, int corner)
+  { return (type ?? "").Trim().ToUpperInvariant() + "|" + view + "|" + corner; }
+  private FloorProjectionCalibrationEntry FindFloorProjectionCalibration(
+      string type, string view, int corner)
+  {
+    DiscardFloorDraftsAfterTileChange();
+    string key = FloorCalibrationKey(type, view, corner);
+    if (floorProjectionDrafts.TryGetValue(key, out FloorProjectionCalibrationEntry draft))
+      return draft;
+    if (!File.Exists(FloorProjectionCalibrationPath)) return null;
+    try
+    {
+      FloorProjectionCalibrationDatabase db = JsonUtility.FromJson<FloorProjectionCalibrationDatabase>(
+          File.ReadAllText(FloorProjectionCalibrationPath));
+      if (db?.entries == null) return null;
+      foreach (FloorProjectionCalibrationEntry entry in db.entries)
+        if (entry != null && FloorCalibrationKey(entry.itemType, entry.view, entry.corner) == key)
+          return entry;
+    }
+    catch (System.Exception ex)
+    { Debug.LogError("FLOOR CALIBRATION: Invalid JSON: " + ex.Message); }
+    return null;
+  }
+  private static FloorProjectionCalibrationEntry CloneFloorProjectionCalibration(
+      FloorProjectionCalibrationEntry source)
+  {
+    return new FloorProjectionCalibrationEntry { itemType = source.itemType,
+        view = source.view, corner = source.corner, x = source.x, y = source.y,
+        width = source.width, height = source.height, mirror = source.mirror,
+        samplingMode = source.samplingMode, verified = source.verified };
+  }
+  private bool SaveFloorProjectionCalibration(FloorProjectionCalibrationEntry entry)
+  {
+    if (entry == null || entry.width < 1 || entry.height < 1
+        || entry.x < 0 || entry.y < 32 || entry.x + entry.width > 224
+        || entry.y + entry.height > 168)
+    { Debug.LogError("FLOOR CALIBRATION: Rectangle must fit within the 224x136 viewport."); return false; }
+    try
+    {
+      FloorProjectionCalibrationDatabase db = File.Exists(FloorProjectionCalibrationPath)
+          ? JsonUtility.FromJson<FloorProjectionCalibrationDatabase>(File.ReadAllText(FloorProjectionCalibrationPath))
+          : new FloorProjectionCalibrationDatabase();
+      if (db == null) db = new FloorProjectionCalibrationDatabase();
+      var entries = new List<FloorProjectionCalibrationEntry>(
+          db.entries ?? new FloorProjectionCalibrationEntry[0]);
+      string key = FloorCalibrationKey(entry.itemType, entry.view, entry.corner);
+      entries.RemoveAll(e => e != null && FloorCalibrationKey(e.itemType, e.view, e.corner) == key);
+      FloorProjectionCalibrationEntry saved = CloneFloorProjectionCalibration(entry);
+      saved.verified = true;
+      entries.Add(saved);
+      db.entries = entries.ToArray();
+      File.WriteAllText(FloorProjectionCalibrationPath, JsonUtility.ToJson(db, true) + "\n");
+      AssetDatabase.ImportAsset(FloorProjectionCalibrationPath, ImportAssetOptions.ForceUpdate);
+      floorProjectionDrafts.Remove(key);
+      return true;
+    }
+    catch (System.Exception ex)
+    { Debug.LogError("FLOOR CALIBRATION: Could not save: " + ex.Message); return false; }
+  }
+  private int GetFloorScreenCorner(FloorItemPlacement item)
+  {
+    int absolute = CsbFloorAbsoluteCorner(item.cell);
+    if (absolute < 0) return -1;
+    int facing = previewFacing == DungeonFacing.North ? 0 :
+        previewFacing == DungeonFacing.East ? 1 :
+        previewFacing == DungeonFacing.South ? 2 : 3;
+    return (absolute - facing + 4) & 3;
+  }
+  private void DrawF2FloorCalibration(FloorItemPlacement item, Texture2D texture)
+  {
+    DiscardFloorDraftsAfterTileChange();
+    int corner = GetFloorScreenCorner(item);
+    if (corner < 0) return;
+    // Compute the uncalibrated prediction without changing the renderer.
+    if (!TryGetCsbF2RectBase(item, texture, out Rect predicted, out bool predictedMirror)) return;
+    string key = FloorCalibrationKey(item.type, "F2", corner);
+    FloorProjectionCalibrationEntry accepted = FindSavedFloorProjectionCalibration(item.type, "F2", corner);
+    FloorProjectionCalibrationEntry current = FindFloorProjectionCalibration(item.type, "F2", corner);
+    if (current == null)
+      current = new FloorProjectionCalibrationEntry { itemType = item.type,
+          view = "F2", corner = corner, x = Mathf.RoundToInt(predicted.x),
+          y = Mathf.RoundToInt(predicted.y), width = Mathf.RoundToInt(predicted.width),
+          height = Mathf.RoundToInt(predicted.height), mirror = predictedMirror };
+    int x = current.x, y = current.y, w = current.width, h = current.height;
+    bool m = current.mirror;
+    int samplingMode = Mathf.Clamp(current.samplingMode, 0, 3);
+    // Red indicates values differing from the last accepted calibration (or
+    // the uncalibrated projection when no saved calibration exists).
+    int baseX = accepted != null ? accepted.x : Mathf.RoundToInt(predicted.x);
+    int baseY = accepted != null ? accepted.y : Mathf.RoundToInt(predicted.y);
+    int baseW = accepted != null ? accepted.width : Mathf.RoundToInt(predicted.width);
+    int baseH = accepted != null ? accepted.height : Mathf.RoundToInt(predicted.height);
+    bool baseMirror = accepted != null ? accepted.mirror : predictedMirror;
+    int baseSamplingMode = accepted != null ? Mathf.Clamp(accepted.samplingMode, 0, 3) : 0;
+    Color normalColor = GUI.color;
+    Color changedColor = Color.red;
+    EditorGUI.BeginChangeCheck();
+    float previousLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth = 12f;
+    GUI.color = x != baseX ? changedColor : normalColor;
+    bool steppedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, 22f);
+    GUI.color = y != baseY ? changedColor : normalColor;
+    bool steppedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, 22f);
+    EditorGUIUtility.labelWidth = previousLabelWidth;
+    GUI.color = normalColor;
+    GUILayout.Label("W", GUILayout.Width(14f));
+    GUI.color = w != baseW ? changedColor : normalColor;
+    w = EditorGUILayout.IntField(w, GUILayout.Width(22f));
+    GUI.color = normalColor;
+    GUILayout.Label("H", GUILayout.Width(12f));
+    GUI.color = h != baseH ? changedColor : normalColor;
+    h = EditorGUILayout.IntField(h, GUILayout.Width(22f));
+    GUI.color = m != baseMirror ? changedColor : normalColor;
+    m = EditorGUILayout.ToggleLeft("Mirror", m, GUILayout.Width(65f));
+    GUI.color = normalColor;
+    GUILayout.Label("Scale", GUILayout.Width(36f));
+    GUI.color = samplingMode != baseSamplingMode ? changedColor : normalColor;
+    samplingMode = EditorGUILayout.Popup(samplingMode,
+        new[] { "Current CSBwin", "Nearest: top-left", "Nearest: center", "Nearest: bottom-right" },
+        GUILayout.Width(135f));
+    GUI.color = normalColor;
+    bool changed = EditorGUI.EndChangeCheck() || steppedX || steppedY;
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    if (changed || apply)
+    {
+      var updated = new FloorProjectionCalibrationEntry { itemType = item.type,
+          view = "F2", corner = corner, x = x, y = y, width = w,
+          height = h, mirror = m, samplingMode = samplingMode, verified = false };
+      if (changed && w > 0 && h > 0)
+      { floorProjectionDrafts[key] = updated; RefreshEditModePreview(); RepaintGameViews(); Repaint(); }
+      if (apply && SaveFloorProjectionCalibration(updated))
+      { RefreshEditModePreview(); RepaintGameViews(); Repaint(); }
+    }
+  }
+  private FloorProjectionCalibrationEntry FindSavedFloorProjectionCalibration(
+      string type, string view, int corner)
+  {
+    string key = FloorCalibrationKey(type, view, corner);
+    if (!File.Exists(FloorProjectionCalibrationPath)) return null;
+    try
+    {
+      FloorProjectionCalibrationDatabase db = JsonUtility.FromJson<FloorProjectionCalibrationDatabase>(
+          File.ReadAllText(FloorProjectionCalibrationPath));
+      if (db?.entries != null)
+        foreach (FloorProjectionCalibrationEntry entry in db.entries)
+          if (entry != null && FloorCalibrationKey(entry.itemType, entry.view, entry.corner) == key)
+            return entry;
+    }
+    catch (System.Exception ex)
+    { Debug.LogError("FLOOR CALIBRATION: Invalid JSON: " + ex.Message); }
+    return null;
+  }
+
+  private bool TryGetCsbF2RectBase(FloorItemPlacement item, Texture2D texture,
       out Rect rect, out bool mirror)
   {
     rect = new Rect();
@@ -31669,11 +31864,15 @@ private static void HandleGameViewPointerDown(
     CsbViewportPoint point = cell.positions[relCorner];
     if (!point.valid || point.y == 0) return false;
     bool near = relCorner >= 2;
-    int numerator = near ? 20 : 16;
-    // Original dimensions are padded horizontally; source PNG dimensions
-    // represent actual visible pixels, so shrink the actual image uniformly.
-    int width = Mathf.Max(1, (texture.width * numerator + (near ? 10 : 8)) / 32);
-    int height = Mathf.Max(1, (texture.height * numerator + (near ? 10 : 8)) / 32);
+    // CSBwin cell 6 (one tile ahead): far corners use distance 1 (20/32),
+    // near corners use distance 0 (native dimensions). This deliberately
+    // retains the existing CSBwin table X and bottom-scanline Y anchors.
+    int numerator = near ? 32 : 20;
+    int rounding = near ? 0 : 10;
+    // Source PNGs hold visible pixels rather than original padded bitplanes.
+    // Keep their artwork sizes generic; no per-item correction.
+    int width = Mathf.Max(1, (texture.width * numerator + rounding) / 32);
+    int height = Mathf.Max(1, (texture.height * numerator + rounding) / 32);
     // CSBwin viewport is 224x136; editor's complete 320x200 image has
     // viewport at screen-top 32 (pixel-alignment subject to Unity comparison).
     int top = 32 + point.y - height + 1;
@@ -31683,10 +31882,39 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
+  private bool TryGetCsbF2Rect(FloorItemPlacement item, Texture2D texture,
+      out Rect rect, out bool mirror)
+  {
+    if (!TryGetCsbF2RectBase(item, texture, out rect, out mirror)) return false;
+    int corner = GetFloorScreenCorner(item);
+    FloorProjectionCalibrationEntry entry = FindFloorProjectionCalibration(item.type, "F2", corner);
+    if (entry == null) return true;
+    if (entry.width < 1 || entry.height < 1) return true;
+    rect = new Rect(entry.x, entry.y, entry.width, entry.height);
+    mirror = entry.mirror;
+    return true;
+  }
+
   // CSBwin d.Byte5744 decoded from graphics.dat 0x22E, offsets 1502..1517.
   // Stored bytes / 10 = the output palette indices used by ShrinkBLT.
   private static readonly int[] CsbFloorMediumPalette =
       { 0, 1, 2, 3, 4, 3, 6, 7, 5, 9, 10, 11, 12, 13, 14, 15 };
+
+  // Existing 16.16 sampler remains the default for all existing calibrations.
+  // The other modes change only the pixel selected from the original F1 PNG.
+  private static int SampleF2FloorPixel(int dest, int sourceSize,
+      int targetSize, long fixedStep, int samplingMode)
+  {
+    long sampled;
+    switch (samplingMode)
+    {
+      case 1: sampled = (long)dest * sourceSize / targetSize; break;
+      case 2: sampled = (2L * dest + 1L) * sourceSize / (2L * targetSize); break;
+      case 3: sampled = ((long)(dest + 1) * sourceSize - 1) / targetSize; break;
+      default: sampled = (0x7fffL + dest * fixedStep) >> 16; break;
+    }
+    return Mathf.Clamp((int)sampled, 0, sourceSize - 1);
+  }
 
   private void BlitCsbF2Item(Color32[] pixels, FloorItemPlacement item,
       Texture2D texture, Vector2Int pileOffset)
@@ -31711,14 +31939,15 @@ private static void HandleGameViewPointerDown(
     // 0x7fff, rather than the old floor(x * source/destination) sampler.
     long stepX = ((long)texture.width << 16) / width;
     long stepY = ((long)texture.height << 16) / height;
+    FloorProjectionCalibrationEntry samplingEntry =
+        FindFloorProjectionCalibration(item.type, "F2", GetFloorScreenCorner(item));
+    int samplingMode = samplingEntry != null ? Mathf.Clamp(samplingEntry.samplingMode, 0, 3) : 0;
     for (int y = 0; y < height; y++)
       for (int x = 0; x < width; x++)
       {
-        int sourceX = Mathf.Min(texture.width - 1,
-            (int)((0x7fffL + x * stepX) >> 16));
+        int sourceX = SampleF2FloorPixel(x, texture.width, width, stepX, samplingMode);
         if (mirror) sourceX = texture.width - 1 - sourceX;
-        int sourceY = Mathf.Min(texture.height - 1,
-            (int)((0x7fffL + y * stepY) >> 16));
+        int sourceY = SampleF2FloorPixel(y, texture.height, height, stepY, samplingMode);
         Color32 sourceColor = src[sourceY * texture.width + sourceX];
         if (sourceColor.a == 0)
         {
@@ -31825,7 +32054,7 @@ private static void HandleGameViewPointerDown(
         continue;
 
       // Distant projection is not available during the cleanup stage.
-      if (depth != FloorItemDepth.SameTile) continue;
+      if (depth != FloorItemDepth.SameTile && depth != FloorItemDepth.OneAhead) continue;
 
       string key = GetFloorItemFeatureKey(item);
       EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
@@ -31849,7 +32078,13 @@ private static void HandleGameViewPointerDown(
       bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
       if (enabledAfter)
       {
-        DrawRegisteredF1FloorCalibration(item.type, isRight);
+        if (depth == FloorItemDepth.SameTile)
+          DrawRegisteredF1FloorCalibration(item.type, isRight);
+        else
+        {
+          Texture2D ground = GetFloorItemTexture(item);
+          if (ground != null) DrawF2FloorCalibration(item, ground);
+        }
       }
       EditorGUILayout.EndHorizontal();
 
