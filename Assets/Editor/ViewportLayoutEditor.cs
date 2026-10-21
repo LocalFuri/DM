@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -31489,12 +31489,234 @@ private static void HandleGameViewPointerDown(
       Color32[] pixels, FloorItemPlacement item, Texture2D texture,
       FloorItemDepth depth, bool isRight, Vector2Int pileOffset)
   {
+    if (depth == FloorItemDepth.OneAhead)
+    {
+      BlitCsbF2Item(pixels, item, texture, pileOffset);
+      return;
+    }
     if (depth != FloorItemDepth.SameTile) return;
     if (TryGetF1FloorItemRect(item, isRight, texture, out Rect rect))
       BlitPieceIntoPreview(pixels, texture,
           Mathf.RoundToInt(rect.xMin) + pileOffset.x,
           PreviewHeight - Mathf.RoundToInt(rect.yMin) - texture.height - pileOffset.y,
           false);
+  }
+
+
+  // Original CSBwin tables. These contain data, not rendered sprites.
+  [System.Serializable] private sealed class CsbViewportTable
+  { public CsbViewportClass[] classes; }
+  [System.Serializable] private sealed class CsbViewportClass
+  { public int graphicClass; public CsbViewportCell[] cells; }
+  [System.Serializable] private sealed class CsbViewportCell
+  { public int relativeCell; public CsbViewportPoint[] positions; }
+  [System.Serializable] private sealed class CsbViewportPoint
+  { public int positionIndex; public int x; public int y; public bool valid; }
+  [System.Serializable] private sealed class CsbGraphicClassTable
+  { public CsbGraphicClassRecord[] entries; }
+  [System.Serializable] private sealed class CsbGraphicClassRecord
+  { public int graphicClassIndex; public int originalWidthBytes; public int originalHeight; public int viewportPositionClass; public int flags; }
+  [System.Serializable] private sealed class CsbObjectDescriptionTable
+  { public CsbObjectDescriptionRecord[] entries; }
+  [System.Serializable] private sealed class CsbObjectDescriptionRecord
+  { public string dbCategory; public int dbSubtype; public int graphicClassIndex; }
+
+  private const string CsbViewportTablePath = "Assets/Editor/CSBwin_ViewportPosition_Original.json";
+  private const string CsbGraphicClassTablePath = "Assets/Editor/CSBwin_GraphicClasses_Original.json";
+  private const string CsbObjectDescriptionTablePath = "Assets/Editor/CSBwin_ObjectDescriptors_Original.json";
+  private CsbViewportTable csbViewportTable;
+  private CsbGraphicClassTable csbGraphicTable;
+  private CsbObjectDescriptionTable csbObjectTable;
+  private bool csbF2TablesRead;
+  private readonly HashSet<string> csbF2Diagnostics = new HashSet<string>();
+
+  private void ReportCsbF2Issue(string message)
+  {
+    if (csbF2Diagnostics.Add(message)) Debug.LogError("CSBwin F2: " + message);
+  }
+
+  private bool EnsureCsbF2Tables()
+  {
+    // Editor-window reloads can leave a cached flag while the table fields have
+    // been cleared. A flag alone must never count as a successful load.
+    bool complete = csbViewportTable?.classes != null && csbViewportTable.classes.Length == 3
+        && csbGraphicTable?.entries != null && csbGraphicTable.entries.Length == 85
+        && csbObjectTable?.entries != null && csbObjectTable.entries.Length == 180
+        && csbObjectTable.entries[158] != null
+        && string.Equals((csbObjectTable.entries[158].dbCategory ?? "").Trim(),
+            "Junk", System.StringComparison.OrdinalIgnoreCase)
+        && csbObjectTable.entries[158].dbSubtype == 31
+        && csbObjectTable.entries[158].graphicClassIndex == 25;
+    if (complete) return true;
+
+    // Retry if a prior attempt failed or the editor lost its nonserialized
+    // table data. Never let stale csbF2TablesRead suppress a valid reload.
+    csbF2TablesRead = false;
+    try
+    {
+      if (!File.Exists(CsbViewportTablePath) || !File.Exists(CsbGraphicClassTablePath)
+          || !File.Exists(CsbObjectDescriptionTablePath))
+        throw new FileNotFoundException("One of the three CSBwin original JSON tables is missing in Assets/Editor.");
+      CsbViewportTable newViewport = JsonUtility.FromJson<CsbViewportTable>(File.ReadAllText(CsbViewportTablePath));
+      CsbGraphicClassTable newGraphics = JsonUtility.FromJson<CsbGraphicClassTable>(File.ReadAllText(CsbGraphicClassTablePath));
+      CsbObjectDescriptionTable newObjects = JsonUtility.FromJson<CsbObjectDescriptionTable>(File.ReadAllText(CsbObjectDescriptionTablePath));
+      int vpCount = newViewport?.classes?.Length ?? 0;
+      int graphicCount = newGraphics?.entries?.Length ?? 0;
+      int objectCount = newObjects?.entries?.Length ?? 0;
+      if (vpCount != 3 || graphicCount != 85 || objectCount != 180)
+        throw new InvalidDataException("Incorrect CSBwin table sizes: viewport=" + vpCount
+            + ", graphics=" + graphicCount + ", descriptors=" + objectCount
+            + "; object descriptor path=" + CsbObjectDescriptionTablePath);
+      CsbObjectDescriptionRecord bread = newObjects.entries[158];
+      if (bread == null || !string.Equals((bread.dbCategory ?? "").Trim(), "Junk",
+            System.StringComparison.OrdinalIgnoreCase) || bread.dbSubtype != 31
+          || bread.graphicClassIndex != 25)
+        throw new InvalidDataException("CSBwin descriptor[158] is not Junk:31 => class 25; actual="
+            + (bread == null ? "<null>" : "[" + (bread.dbCategory ?? "<null>")
+            + ":" + bread.dbSubtype + " => " + bread.graphicClassIndex + "]")
+            + "; path=" + CsbObjectDescriptionTablePath);
+      csbViewportTable = newViewport;
+      csbGraphicTable = newGraphics;
+      csbObjectTable = newObjects;
+      csbF2TablesRead = true;
+      return true;
+    }
+    catch (System.Exception ex)
+    {
+      // Invalidate all three together; never render from partially loaded data.
+      csbViewportTable = null;
+      csbGraphicTable = null;
+      csbObjectTable = null;
+      ReportCsbF2Issue("Cannot load validated original tables: " + ex.Message);
+      return false;
+    }
+  }
+
+  private bool TryGetCsbF2Rect(FloorItemPlacement item, Texture2D texture,
+      out Rect rect, out bool mirror)
+  {
+    rect = new Rect();
+    mirror = false;
+    if (!EnsureCsbF2Tables() || item == null || texture == null) return false;
+    // Moved objects retain their original Pxxxxx ID. New dropped equipment has
+    // no original record; it must carry original subtype metadata before F2 is
+    // rendered, rather than guessing from its displayed name.
+    DungeonOriginalItemLoader.Record original = null;
+    foreach (DungeonOriginalItemLoader.Record candidate in DungeonOriginalItemLoader.Load())
+    {
+      if (candidate.id == item.instanceId) { original = candidate; break; }
+    }
+    if (original == null)
+    {
+      ReportCsbF2Issue("No original subtype for F2 object '" + item.type
+          + "' (" + item.instanceId + "). No guessed graphic class.");
+      return false;
+    }
+    CsbObjectDescriptionRecord desc = null;
+    int typeMatches = 0;
+    string subtypeExamples = "";
+    // Compare categories without incidental whitespace/casing differences.
+    // This does not substitute, guess or alter any original CSBwin mapping.
+    string requestedCategory = (original.recordType ?? "").Trim();
+    foreach (CsbObjectDescriptionRecord entry in csbObjectTable.entries)
+    {
+      if (entry == null) continue;
+      if (entry.dbSubtype == original.thing.Type)
+      {
+        typeMatches++;
+        if (subtypeExamples.Length < 300)
+          subtypeExamples += " [" + (entry.dbCategory ?? "<null>")
+              + ":" + entry.dbSubtype + " => " + entry.graphicClassIndex + "]";
+      }
+      if (string.Equals((entry.dbCategory ?? "").Trim(), requestedCategory,
+          System.StringComparison.OrdinalIgnoreCase)
+          && entry.dbSubtype == original.thing.Type)
+      { desc = entry; break; }
+    }
+    if (desc == null || desc.graphicClassIndex < 0 || desc.graphicClassIndex >= csbGraphicTable.entries.Length)
+    {
+      CsbObjectDescriptionRecord expected = csbObjectTable.entries.Length > 158
+          ? csbObjectTable.entries[158] : null;
+      ReportCsbF2Issue("No original graphic mapping for '" + original.recordType
+          + "':" + original.thing.Type + " (" + item.instanceId + "). "
+          + "Loaded descriptors=" + csbObjectTable.entries.Length
+          + ", same-subtype records=" + typeMatches + subtypeExamples
+          + ", entry[158]=" + (expected == null ? "<null>" :
+            "[" + (expected.dbCategory ?? "<null>") + ":" + expected.dbSubtype
+            + " => " + expected.graphicClassIndex + "]") + ".");
+      return false;
+    }
+    CsbGraphicClassRecord graphic = csbGraphicTable.entries[desc.graphicClassIndex];
+    if (graphic.viewportPositionClass < 0 || graphic.viewportPositionClass >= csbViewportTable.classes.Length)
+    { ReportCsbF2Issue("Invalid viewport class for " + item.instanceId); return false; }
+    // CSBwin positions: 0=far left, 1=far right, 2=near right, 3=near left.
+    // The original object sub-square is an absolute N/E/S/W direction, rotated
+    // into the player's view. Relative cell 3 is the front-center F2 square (4/5 are side cells).
+    int absCorner = CsbFloorAbsoluteCorner(item.cell);
+    if (absCorner < 0) return false;
+    int facingCorner = previewFacing == DungeonFacing.North ? 0 :
+        previewFacing == DungeonFacing.East ? 1 :
+        previewFacing == DungeonFacing.South ? 2 : 3;
+    int relCorner = (absCorner - facingCorner + 4) & 3;
+    CsbViewportCell[] cells = csbViewportTable.classes[graphic.viewportPositionClass].cells;
+    if (cells == null || cells.Length != 10 || cells[3]?.positions == null
+        || cells[3].positions.Length != 5)
+    { ReportCsbF2Issue("Invalid F2 viewport positions table."); return false; }
+    CsbViewportCell cell = cells[3];
+    CsbViewportPoint point = cell.positions[relCorner];
+    if (!point.valid || point.y == 0) return false;
+    bool near = relCorner >= 2;
+    int numerator = near ? 20 : 16;
+    // Original dimensions are padded horizontally; source PNG dimensions
+    // represent actual visible pixels, so shrink the actual image uniformly.
+    int width = Mathf.Max(1, (texture.width * numerator + (near ? 10 : 8)) / 32);
+    int height = Mathf.Max(1, (texture.height * numerator + (near ? 10 : 8)) / 32);
+    // CSBwin viewport is 224x136; editor's complete 320x200 image has
+    // viewport at screen-top 32 (pixel-alignment subject to Unity comparison).
+    int top = 32 + point.y - height + 1;
+    int left = point.x - width + 1;
+    rect = new Rect(left, top, width, height);
+    mirror = (graphic.flags & 1) != 0 && (relCorner == 1 || relCorner == 2);
+    return true;
+  }
+
+  private void BlitCsbF2Item(Color32[] pixels, FloorItemPlacement item,
+      Texture2D texture, Vector2Int pileOffset)
+  {
+    if (!TryGetCsbF2Rect(item, texture, out Rect rect, out bool mirror)) return;
+    int width = Mathf.RoundToInt(rect.width);
+    int height = Mathf.RoundToInt(rect.height);
+    // Use the same nearest-neighbour sampling as the existing pixel-art engine.
+    // This intermediate F2 buffer must not modify F1's source texture.
+    Color32[] src = texture.GetPixels32();
+    var scaled = new Color32[width * height];
+    for (int y = 0; y < height; y++)
+      for (int x = 0; x < width; x++)
+      {
+        int sourceX = Mathf.Min(texture.width - 1, (x * texture.width) / width);
+        if (mirror) sourceX = texture.width - 1 - sourceX;
+        int sourceY = Mathf.Min(texture.height - 1, (y * texture.height) / height);
+        scaled[y * width + x] = src[sourceY * texture.width + sourceX];
+      }
+    // Preview pixels use bottom-origin indexing; CSBwin table coordinates are
+    // top-origin. Clip against the 224x136 viewport to avoid the HUD.
+    int targetX = Mathf.RoundToInt(rect.x) + pileOffset.x;
+    int targetTop = Mathf.RoundToInt(rect.y) - pileOffset.y;
+    for (int y = 0; y < height; y++)
+    {
+      int screenTop = targetTop + (height - 1 - y);
+      if (screenTop < 32 || screenTop >= 168) continue;
+      for (int x = 0; x < width; x++)
+      {
+        int screenX = targetX + x;
+        if (screenX < 0 || screenX >= 224) continue;
+        Color32 c = scaled[y * width + x];
+        if (c.a == 0) continue;
+        int screenY = PreviewHeight - 1 - screenTop;
+        if (screenY < 0 || screenY >= PreviewHeight) continue;
+        pixels[screenY * PreviewWidth + screenX] = c;
+      }
+    }
   }
 
   private void DrawRegisteredF1FloorCalibration(string itemType, bool isRight)

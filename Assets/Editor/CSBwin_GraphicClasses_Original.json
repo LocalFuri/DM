@@ -1,0 +1,775 @@
+{
+  "source": "graphics.dat graphic 0x22E, decoded original GRAPHIC_CLASS s5604[85]",
+  "graphicRecord": 558,
+  "recordDecompressedBytes": 4720,
+  "tableOffsetInDecompressedRecord": 1642,
+  "recordSize": 6,
+  "entries": [
+    {
+      "graphicClassIndex": 0,
+      "objectGraphicIndex": 0,
+      "derivedGraphicSlot": 0,
+      "originalWidthBytes": 24,
+      "originalHeight": 27,
+      "flags": 17,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 1,
+      "objectGraphicIndex": 2,
+      "derivedGraphicSlot": 6,
+      "originalWidthBytes": 24,
+      "originalHeight": 8,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 2,
+      "objectGraphicIndex": 3,
+      "derivedGraphicSlot": 8,
+      "originalWidthBytes": 8,
+      "originalHeight": 18,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 3,
+      "objectGraphicIndex": 4,
+      "derivedGraphicSlot": 10,
+      "originalWidthBytes": 8,
+      "originalHeight": 8,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 4,
+      "objectGraphicIndex": 5,
+      "derivedGraphicSlot": 12,
+      "originalWidthBytes": 8,
+      "originalHeight": 4,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 5,
+      "objectGraphicIndex": 6,
+      "derivedGraphicSlot": 14,
+      "originalWidthBytes": 16,
+      "originalHeight": 11,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 6,
+      "objectGraphicIndex": 7,
+      "derivedGraphicSlot": 16,
+      "originalWidthBytes": 24,
+      "originalHeight": 13,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 7,
+      "objectGraphicIndex": 8,
+      "derivedGraphicSlot": 18,
+      "originalWidthBytes": 32,
+      "originalHeight": 16,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 8,
+      "objectGraphicIndex": 9,
+      "derivedGraphicSlot": 20,
+      "originalWidthBytes": 40,
+      "originalHeight": 24,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 9,
+      "objectGraphicIndex": 10,
+      "derivedGraphicSlot": 22,
+      "originalWidthBytes": 16,
+      "originalHeight": 20,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 10,
+      "objectGraphicIndex": 11,
+      "derivedGraphicSlot": 24,
+      "originalWidthBytes": 40,
+      "originalHeight": 20,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 11,
+      "objectGraphicIndex": 12,
+      "derivedGraphicSlot": 26,
+      "originalWidthBytes": 32,
+      "originalHeight": 4,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 12,
+      "objectGraphicIndex": 13,
+      "derivedGraphicSlot": 28,
+      "originalWidthBytes": 40,
+      "originalHeight": 8,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 13,
+      "objectGraphicIndex": 14,
+      "derivedGraphicSlot": 30,
+      "originalWidthBytes": 32,
+      "originalHeight": 17,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 14,
+      "objectGraphicIndex": 15,
+      "derivedGraphicSlot": 32,
+      "originalWidthBytes": 40,
+      "originalHeight": 17,
+      "flags": 0,
+      "viewportPositionClass": 2
+    },
+    {
+      "graphicClassIndex": 15,
+      "objectGraphicIndex": 16,
+      "derivedGraphicSlot": 34,
+      "originalWidthBytes": 16,
+      "originalHeight": 9,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 16,
+      "objectGraphicIndex": 17,
+      "derivedGraphicSlot": 36,
+      "originalWidthBytes": 24,
+      "originalHeight": 5,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 17,
+      "objectGraphicIndex": 18,
+      "derivedGraphicSlot": 38,
+      "originalWidthBytes": 16,
+      "originalHeight": 9,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 18,
+      "objectGraphicIndex": 19,
+      "derivedGraphicSlot": 40,
+      "originalWidthBytes": 8,
+      "originalHeight": 4,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 19,
+      "objectGraphicIndex": 20,
+      "derivedGraphicSlot": 42,
+      "originalWidthBytes": 32,
+      "originalHeight": 21,
+      "flags": 0,
+      "viewportPositionClass": 2
+    },
+    {
+      "graphicClassIndex": 20,
+      "objectGraphicIndex": 21,
+      "derivedGraphicSlot": 44,
+      "originalWidthBytes": 32,
+      "originalHeight": 25,
+      "flags": 0,
+      "viewportPositionClass": 2
+    },
+    {
+      "graphicClassIndex": 21,
+      "objectGraphicIndex": 22,
+      "derivedGraphicSlot": 46,
+      "originalWidthBytes": 32,
+      "originalHeight": 14,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 22,
+      "objectGraphicIndex": 23,
+      "derivedGraphicSlot": 48,
+      "originalWidthBytes": 32,
+      "originalHeight": 26,
+      "flags": 0,
+      "viewportPositionClass": 2
+    },
+    {
+      "graphicClassIndex": 23,
+      "objectGraphicIndex": 24,
+      "derivedGraphicSlot": 50,
+      "originalWidthBytes": 32,
+      "originalHeight": 16,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 24,
+      "objectGraphicIndex": 25,
+      "derivedGraphicSlot": 52,
+      "originalWidthBytes": 32,
+      "originalHeight": 16,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 25,
+      "objectGraphicIndex": 26,
+      "derivedGraphicSlot": 54,
+      "originalWidthBytes": 16,
+      "originalHeight": 16,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 26,
+      "objectGraphicIndex": 27,
+      "derivedGraphicSlot": 56,
+      "originalWidthBytes": 16,
+      "originalHeight": 15,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 27,
+      "objectGraphicIndex": 28,
+      "derivedGraphicSlot": 58,
+      "originalWidthBytes": 16,
+      "originalHeight": 13,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 28,
+      "objectGraphicIndex": 29,
+      "derivedGraphicSlot": 60,
+      "originalWidthBytes": 16,
+      "originalHeight": 10,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 29,
+      "objectGraphicIndex": 30,
+      "derivedGraphicSlot": 62,
+      "originalWidthBytes": 40,
+      "originalHeight": 24,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 30,
+      "objectGraphicIndex": 31,
+      "derivedGraphicSlot": 64,
+      "originalWidthBytes": 40,
+      "originalHeight": 9,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 31,
+      "objectGraphicIndex": 32,
+      "derivedGraphicSlot": 66,
+      "originalWidthBytes": 16,
+      "originalHeight": 3,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 32,
+      "objectGraphicIndex": 33,
+      "derivedGraphicSlot": 68,
+      "originalWidthBytes": 32,
+      "originalHeight": 5,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 33,
+      "objectGraphicIndex": 34,
+      "derivedGraphicSlot": 70,
+      "originalWidthBytes": 40,
+      "originalHeight": 16,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 34,
+      "objectGraphicIndex": 35,
+      "derivedGraphicSlot": 72,
+      "originalWidthBytes": 8,
+      "originalHeight": 7,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 35,
+      "objectGraphicIndex": 36,
+      "derivedGraphicSlot": 74,
+      "originalWidthBytes": 32,
+      "originalHeight": 7,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 36,
+      "objectGraphicIndex": 37,
+      "derivedGraphicSlot": 76,
+      "originalWidthBytes": 24,
+      "originalHeight": 14,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 37,
+      "objectGraphicIndex": 38,
+      "derivedGraphicSlot": 78,
+      "originalWidthBytes": 16,
+      "originalHeight": 8,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 38,
+      "objectGraphicIndex": 39,
+      "derivedGraphicSlot": 80,
+      "originalWidthBytes": 8,
+      "originalHeight": 3,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 39,
+      "objectGraphicIndex": 40,
+      "derivedGraphicSlot": 82,
+      "originalWidthBytes": 40,
+      "originalHeight": 9,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 40,
+      "objectGraphicIndex": 41,
+      "derivedGraphicSlot": 84,
+      "originalWidthBytes": 24,
+      "originalHeight": 14,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 41,
+      "objectGraphicIndex": 42,
+      "derivedGraphicSlot": 86,
+      "originalWidthBytes": 40,
+      "originalHeight": 20,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 42,
+      "objectGraphicIndex": 43,
+      "derivedGraphicSlot": 88,
+      "originalWidthBytes": 40,
+      "originalHeight": 15,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 43,
+      "objectGraphicIndex": 44,
+      "derivedGraphicSlot": 90,
+      "originalWidthBytes": 32,
+      "originalHeight": 10,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 44,
+      "objectGraphicIndex": 45,
+      "derivedGraphicSlot": 92,
+      "originalWidthBytes": 32,
+      "originalHeight": 19,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 45,
+      "objectGraphicIndex": 46,
+      "derivedGraphicSlot": 94,
+      "originalWidthBytes": 40,
+      "originalHeight": 25,
+      "flags": 0,
+      "viewportPositionClass": 2
+    },
+    {
+      "graphicClassIndex": 46,
+      "objectGraphicIndex": 47,
+      "derivedGraphicSlot": 96,
+      "originalWidthBytes": 24,
+      "originalHeight": 7,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 47,
+      "objectGraphicIndex": 48,
+      "derivedGraphicSlot": 98,
+      "originalWidthBytes": 8,
+      "originalHeight": 7,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 48,
+      "objectGraphicIndex": 49,
+      "derivedGraphicSlot": 100,
+      "originalWidthBytes": 16,
+      "originalHeight": 5,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 49,
+      "objectGraphicIndex": 50,
+      "derivedGraphicSlot": 102,
+      "originalWidthBytes": 8,
+      "originalHeight": 9,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 50,
+      "objectGraphicIndex": 51,
+      "derivedGraphicSlot": 104,
+      "originalWidthBytes": 32,
+      "originalHeight": 11,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 51,
+      "objectGraphicIndex": 52,
+      "derivedGraphicSlot": 106,
+      "originalWidthBytes": 32,
+      "originalHeight": 14,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 52,
+      "objectGraphicIndex": 53,
+      "derivedGraphicSlot": 108,
+      "originalWidthBytes": 24,
+      "originalHeight": 20,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 53,
+      "objectGraphicIndex": 54,
+      "derivedGraphicSlot": 110,
+      "originalWidthBytes": 16,
+      "originalHeight": 14,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 54,
+      "objectGraphicIndex": 55,
+      "derivedGraphicSlot": 112,
+      "originalWidthBytes": 32,
+      "originalHeight": 23,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 55,
+      "objectGraphicIndex": 56,
+      "derivedGraphicSlot": 114,
+      "originalWidthBytes": 24,
+      "originalHeight": 16,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 56,
+      "objectGraphicIndex": 57,
+      "derivedGraphicSlot": 116,
+      "originalWidthBytes": 32,
+      "originalHeight": 25,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 57,
+      "objectGraphicIndex": 58,
+      "derivedGraphicSlot": 118,
+      "originalWidthBytes": 24,
+      "originalHeight": 25,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 58,
+      "objectGraphicIndex": 59,
+      "derivedGraphicSlot": 120,
+      "originalWidthBytes": 8,
+      "originalHeight": 8,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 59,
+      "objectGraphicIndex": 60,
+      "derivedGraphicSlot": 122,
+      "originalWidthBytes": 8,
+      "originalHeight": 7,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 60,
+      "objectGraphicIndex": 61,
+      "derivedGraphicSlot": 124,
+      "originalWidthBytes": 8,
+      "originalHeight": 8,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 61,
+      "objectGraphicIndex": 62,
+      "derivedGraphicSlot": 126,
+      "originalWidthBytes": 8,
+      "originalHeight": 8,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 62,
+      "objectGraphicIndex": 63,
+      "derivedGraphicSlot": 128,
+      "originalWidthBytes": 8,
+      "originalHeight": 5,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 63,
+      "objectGraphicIndex": 64,
+      "derivedGraphicSlot": 130,
+      "originalWidthBytes": 8,
+      "originalHeight": 13,
+      "flags": 1,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 64,
+      "objectGraphicIndex": 65,
+      "derivedGraphicSlot": 134,
+      "originalWidthBytes": 16,
+      "originalHeight": 13,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 65,
+      "objectGraphicIndex": 66,
+      "derivedGraphicSlot": 136,
+      "originalWidthBytes": 16,
+      "originalHeight": 14,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 66,
+      "objectGraphicIndex": 67,
+      "derivedGraphicSlot": 138,
+      "originalWidthBytes": 16,
+      "originalHeight": 10,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 67,
+      "objectGraphicIndex": 68,
+      "derivedGraphicSlot": 140,
+      "originalWidthBytes": 8,
+      "originalHeight": 18,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 68,
+      "objectGraphicIndex": 69,
+      "derivedGraphicSlot": 142,
+      "originalWidthBytes": 8,
+      "originalHeight": 17,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 69,
+      "objectGraphicIndex": 70,
+      "derivedGraphicSlot": 144,
+      "originalWidthBytes": 32,
+      "originalHeight": 18,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 70,
+      "objectGraphicIndex": 71,
+      "derivedGraphicSlot": 146,
+      "originalWidthBytes": 16,
+      "originalHeight": 23,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 71,
+      "objectGraphicIndex": 72,
+      "derivedGraphicSlot": 148,
+      "originalWidthBytes": 16,
+      "originalHeight": 24,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 72,
+      "objectGraphicIndex": 73,
+      "derivedGraphicSlot": 150,
+      "originalWidthBytes": 16,
+      "originalHeight": 15,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 73,
+      "objectGraphicIndex": 74,
+      "derivedGraphicSlot": 152,
+      "originalWidthBytes": 8,
+      "originalHeight": 7,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 74,
+      "objectGraphicIndex": 75,
+      "derivedGraphicSlot": 154,
+      "originalWidthBytes": 8,
+      "originalHeight": 15,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 75,
+      "objectGraphicIndex": 76,
+      "derivedGraphicSlot": 156,
+      "originalWidthBytes": 8,
+      "originalHeight": 9,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 76,
+      "objectGraphicIndex": 77,
+      "derivedGraphicSlot": 158,
+      "originalWidthBytes": 16,
+      "originalHeight": 14,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 77,
+      "objectGraphicIndex": 78,
+      "derivedGraphicSlot": 160,
+      "originalWidthBytes": 8,
+      "originalHeight": 8,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 78,
+      "objectGraphicIndex": 79,
+      "derivedGraphicSlot": 162,
+      "originalWidthBytes": 16,
+      "originalHeight": 9,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 79,
+      "objectGraphicIndex": 80,
+      "derivedGraphicSlot": 164,
+      "originalWidthBytes": 8,
+      "originalHeight": 13,
+      "flags": 1,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 80,
+      "objectGraphicIndex": 81,
+      "derivedGraphicSlot": 168,
+      "originalWidthBytes": 8,
+      "originalHeight": 18,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 81,
+      "objectGraphicIndex": 82,
+      "derivedGraphicSlot": 170,
+      "originalWidthBytes": 24,
+      "originalHeight": 28,
+      "flags": 0,
+      "viewportPositionClass": 0
+    },
+    {
+      "graphicClassIndex": 82,
+      "objectGraphicIndex": 83,
+      "derivedGraphicSlot": 172,
+      "originalWidthBytes": 40,
+      "originalHeight": 13,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 83,
+      "objectGraphicIndex": 84,
+      "derivedGraphicSlot": 174,
+      "originalWidthBytes": 8,
+      "originalHeight": 4,
+      "flags": 0,
+      "viewportPositionClass": 1
+    },
+    {
+      "graphicClassIndex": 84,
+      "objectGraphicIndex": 85,
+      "derivedGraphicSlot": 176,
+      "originalWidthBytes": 32,
+      "originalHeight": 17,
+      "flags": 0,
+      "viewportPositionClass": 0
+    }
+  ],
+  "note": "Original class metadata only. Item type to graphicClassIndex mapping must be resolved separately before drawing; do not assume item Type is the graphic class."
+}

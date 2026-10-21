@@ -1,0 +1,1631 @@
+{
+  "source": "Original graphics.dat record 0x22F; CSBwin ObjDesc[180] as mapped in Data.h and Code51a4.cpp",
+  "graphicsRecord": 559,
+  "decompressedRecordLength": 3086,
+  "tableStartOffset": 1958,
+  "entrySize": 6,
+  "byteOrder": "big-endian on disk",
+  "mappingRule": "Find record by database category and subtype. Use its graphicClassIndex to index CSBwin_GraphicClasses_Original.json; use resulting viewportPositionClass to index CSBwin_ViewportPosition_Original.json.",
+  "entries": [
+    {
+      "objectDescriptionIndex": 0,
+      "dbCategory": "Scroll",
+      "dbSubtype": 0,
+      "objectType": 30,
+      "graphicClassIndex": 1,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 1,
+      "dbCategory": "Container",
+      "dbSubtype": 0,
+      "objectType": 144,
+      "graphicClassIndex": 0,
+      "attackClass": 0,
+      "allowedSlotsMask": 512
+    },
+    {
+      "objectDescriptionIndex": 2,
+      "dbCategory": "Potion",
+      "dbSubtype": 0,
+      "objectType": 148,
+      "graphicClassIndex": 67,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 3,
+      "dbCategory": "Potion",
+      "dbSubtype": 1,
+      "objectType": 149,
+      "graphicClassIndex": 67,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 4,
+      "dbCategory": "Potion",
+      "dbSubtype": 2,
+      "objectType": 150,
+      "graphicClassIndex": 67,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 5,
+      "dbCategory": "Potion",
+      "dbSubtype": 3,
+      "objectType": 151,
+      "graphicClassIndex": 67,
+      "attackClass": 42,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 6,
+      "dbCategory": "Potion",
+      "dbSubtype": 4,
+      "objectType": 152,
+      "graphicClassIndex": 67,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 7,
+      "dbCategory": "Potion",
+      "dbSubtype": 5,
+      "objectType": 153,
+      "graphicClassIndex": 67,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 8,
+      "dbCategory": "Potion",
+      "dbSubtype": 6,
+      "objectType": 154,
+      "graphicClassIndex": 2,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 9,
+      "dbCategory": "Potion",
+      "dbSubtype": 7,
+      "objectType": 155,
+      "graphicClassIndex": 2,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 10,
+      "dbCategory": "Potion",
+      "dbSubtype": 8,
+      "objectType": 156,
+      "graphicClassIndex": 2,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 11,
+      "dbCategory": "Potion",
+      "dbSubtype": 9,
+      "objectType": 157,
+      "graphicClassIndex": 2,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 12,
+      "dbCategory": "Potion",
+      "dbSubtype": 10,
+      "objectType": 158,
+      "graphicClassIndex": 2,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 13,
+      "dbCategory": "Potion",
+      "dbSubtype": 11,
+      "objectType": 159,
+      "graphicClassIndex": 2,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 14,
+      "dbCategory": "Potion",
+      "dbSubtype": 12,
+      "objectType": 160,
+      "graphicClassIndex": 2,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 15,
+      "dbCategory": "Potion",
+      "dbSubtype": 13,
+      "objectType": 161,
+      "graphicClassIndex": 2,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 16,
+      "dbCategory": "Potion",
+      "dbSubtype": 14,
+      "objectType": 162,
+      "graphicClassIndex": 2,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 17,
+      "dbCategory": "Potion",
+      "dbSubtype": 15,
+      "objectType": 163,
+      "graphicClassIndex": 2,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 18,
+      "dbCategory": "Potion",
+      "dbSubtype": 16,
+      "objectType": 164,
+      "graphicClassIndex": 68,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 19,
+      "dbCategory": "Potion",
+      "dbSubtype": 17,
+      "objectType": 165,
+      "graphicClassIndex": 68,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 20,
+      "dbCategory": "Potion",
+      "dbSubtype": 18,
+      "objectType": 166,
+      "graphicClassIndex": 68,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 21,
+      "dbCategory": "Potion",
+      "dbSubtype": 19,
+      "objectType": 167,
+      "graphicClassIndex": 68,
+      "attackClass": 42,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 22,
+      "dbCategory": "Potion",
+      "dbSubtype": 20,
+      "objectType": 195,
+      "graphicClassIndex": 80,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 23,
+      "dbCategory": "Weapon",
+      "dbSubtype": 0,
+      "objectType": 16,
+      "graphicClassIndex": 38,
+      "attackClass": 43,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 24,
+      "dbCategory": "Weapon",
+      "dbSubtype": 1,
+      "objectType": 18,
+      "graphicClassIndex": 38,
+      "attackClass": 7,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 25,
+      "dbCategory": "Weapon",
+      "dbSubtype": 2,
+      "objectType": 4,
+      "graphicClassIndex": 35,
+      "attackClass": 5,
+      "allowedSlotsMask": 1024
+    },
+    {
+      "objectDescriptionIndex": 26,
+      "dbCategory": "Weapon",
+      "dbSubtype": 3,
+      "objectType": 14,
+      "graphicClassIndex": 37,
+      "attackClass": 6,
+      "allowedSlotsMask": 1024
+    },
+    {
+      "objectDescriptionIndex": 27,
+      "dbCategory": "Weapon",
+      "dbSubtype": 4,
+      "objectType": 20,
+      "graphicClassIndex": 11,
+      "attackClass": 8,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 28,
+      "dbCategory": "Weapon",
+      "dbSubtype": 5,
+      "objectType": 23,
+      "graphicClassIndex": 12,
+      "attackClass": 9,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 29,
+      "dbCategory": "Weapon",
+      "dbSubtype": 6,
+      "objectType": 25,
+      "graphicClassIndex": 12,
+      "attackClass": 10,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 30,
+      "dbCategory": "Weapon",
+      "dbSubtype": 7,
+      "objectType": 27,
+      "graphicClassIndex": 39,
+      "attackClass": 11,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 31,
+      "dbCategory": "Weapon",
+      "dbSubtype": 8,
+      "objectType": 32,
+      "graphicClassIndex": 17,
+      "attackClass": 12,
+      "allowedSlotsMask": 1472
+    },
+    {
+      "objectDescriptionIndex": 32,
+      "dbCategory": "Weapon",
+      "dbSubtype": 9,
+      "objectType": 33,
+      "graphicClassIndex": 12,
+      "attackClass": 13,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 33,
+      "dbCategory": "Weapon",
+      "dbSubtype": 10,
+      "objectType": 34,
+      "graphicClassIndex": 12,
+      "attackClass": 13,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 34,
+      "dbCategory": "Weapon",
+      "dbSubtype": 11,
+      "objectType": 35,
+      "graphicClassIndex": 12,
+      "attackClass": 14,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 35,
+      "dbCategory": "Weapon",
+      "dbSubtype": 12,
+      "objectType": 36,
+      "graphicClassIndex": 12,
+      "attackClass": 15,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 36,
+      "dbCategory": "Weapon",
+      "dbSubtype": 13,
+      "objectType": 37,
+      "graphicClassIndex": 12,
+      "attackClass": 15,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 37,
+      "dbCategory": "Weapon",
+      "dbSubtype": 14,
+      "objectType": 38,
+      "graphicClassIndex": 12,
+      "attackClass": 16,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 38,
+      "dbCategory": "Weapon",
+      "dbSubtype": 15,
+      "objectType": 39,
+      "graphicClassIndex": 12,
+      "attackClass": 17,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 39,
+      "dbCategory": "Weapon",
+      "dbSubtype": 16,
+      "objectType": 40,
+      "graphicClassIndex": 42,
+      "attackClass": 18,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 40,
+      "dbCategory": "Weapon",
+      "dbSubtype": 17,
+      "objectType": 41,
+      "graphicClassIndex": 12,
+      "attackClass": 19,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 41,
+      "dbCategory": "Weapon",
+      "dbSubtype": 18,
+      "objectType": 42,
+      "graphicClassIndex": 13,
+      "attackClass": 20,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 42,
+      "dbCategory": "Weapon",
+      "dbSubtype": 19,
+      "objectType": 43,
+      "graphicClassIndex": 13,
+      "attackClass": 21,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 43,
+      "dbCategory": "Weapon",
+      "dbSubtype": 20,
+      "objectType": 44,
+      "graphicClassIndex": 21,
+      "attackClass": 22,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 44,
+      "dbCategory": "Weapon",
+      "dbSubtype": 21,
+      "objectType": 45,
+      "graphicClassIndex": 21,
+      "attackClass": 22,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 45,
+      "dbCategory": "Weapon",
+      "dbSubtype": 22,
+      "objectType": 46,
+      "graphicClassIndex": 33,
+      "attackClass": 23,
+      "allowedSlotsMask": 1088
+    },
+    {
+      "objectDescriptionIndex": 46,
+      "dbCategory": "Weapon",
+      "dbSubtype": 23,
+      "objectType": 47,
+      "graphicClassIndex": 43,
+      "attackClass": 24,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 47,
+      "dbCategory": "Weapon",
+      "dbSubtype": 24,
+      "objectType": 48,
+      "graphicClassIndex": 44,
+      "attackClass": 24,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 48,
+      "dbCategory": "Weapon",
+      "dbSubtype": 25,
+      "objectType": 49,
+      "graphicClassIndex": 14,
+      "attackClass": 27,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 49,
+      "dbCategory": "Weapon",
+      "dbSubtype": 26,
+      "objectType": 50,
+      "graphicClassIndex": 45,
+      "attackClass": 27,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 50,
+      "dbCategory": "Weapon",
+      "dbSubtype": 27,
+      "objectType": 51,
+      "graphicClassIndex": 16,
+      "attackClass": 26,
+      "allowedSlotsMask": 1472
+    },
+    {
+      "objectDescriptionIndex": 51,
+      "dbCategory": "Weapon",
+      "dbSubtype": 28,
+      "objectType": 52,
+      "graphicClassIndex": 46,
+      "attackClass": 26,
+      "allowedSlotsMask": 1472
+    },
+    {
+      "objectDescriptionIndex": 52,
+      "dbCategory": "Weapon",
+      "dbSubtype": 29,
+      "objectType": 53,
+      "graphicClassIndex": 11,
+      "attackClass": 27,
+      "allowedSlotsMask": 1088
+    },
+    {
+      "objectDescriptionIndex": 53,
+      "dbCategory": "Weapon",
+      "dbSubtype": 30,
+      "objectType": 54,
+      "graphicClassIndex": 47,
+      "attackClass": 42,
+      "allowedSlotsMask": 1472
+    },
+    {
+      "objectDescriptionIndex": 54,
+      "dbCategory": "Weapon",
+      "dbSubtype": 31,
+      "objectType": 55,
+      "graphicClassIndex": 48,
+      "attackClass": 40,
+      "allowedSlotsMask": 1472
+    },
+    {
+      "objectDescriptionIndex": 55,
+      "dbCategory": "Weapon",
+      "dbSubtype": 32,
+      "objectType": 56,
+      "graphicClassIndex": 49,
+      "attackClass": 42,
+      "allowedSlotsMask": 1472
+    },
+    {
+      "objectDescriptionIndex": 56,
+      "dbCategory": "Weapon",
+      "dbSubtype": 33,
+      "objectType": 57,
+      "graphicClassIndex": 50,
+      "attackClass": 5,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 57,
+      "dbCategory": "Weapon",
+      "dbSubtype": 34,
+      "objectType": 58,
+      "graphicClassIndex": 11,
+      "attackClass": 5,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 58,
+      "dbCategory": "Weapon",
+      "dbSubtype": 35,
+      "objectType": 59,
+      "graphicClassIndex": 31,
+      "attackClass": 28,
+      "allowedSlotsMask": 1344
+    },
+    {
+      "objectDescriptionIndex": 59,
+      "dbCategory": "Weapon",
+      "dbSubtype": 36,
+      "objectType": 60,
+      "graphicClassIndex": 31,
+      "attackClass": 29,
+      "allowedSlotsMask": 1344
+    },
+    {
+      "objectDescriptionIndex": 60,
+      "dbCategory": "Weapon",
+      "dbSubtype": 37,
+      "objectType": 61,
+      "graphicClassIndex": 11,
+      "attackClass": 30,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 61,
+      "dbCategory": "Weapon",
+      "dbSubtype": 38,
+      "objectType": 62,
+      "graphicClassIndex": 11,
+      "attackClass": 31,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 62,
+      "dbCategory": "Weapon",
+      "dbSubtype": 39,
+      "objectType": 63,
+      "graphicClassIndex": 35,
+      "attackClass": 32,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 63,
+      "dbCategory": "Weapon",
+      "dbSubtype": 40,
+      "objectType": 64,
+      "graphicClassIndex": 51,
+      "attackClass": 33,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 64,
+      "dbCategory": "Weapon",
+      "dbSubtype": 41,
+      "objectType": 65,
+      "graphicClassIndex": 32,
+      "attackClass": 5,
+      "allowedSlotsMask": 1088
+    },
+    {
+      "objectDescriptionIndex": 65,
+      "dbCategory": "Weapon",
+      "dbSubtype": 42,
+      "objectType": 66,
+      "graphicClassIndex": 30,
+      "attackClass": 35,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 66,
+      "dbCategory": "Weapon",
+      "dbSubtype": 43,
+      "objectType": 135,
+      "graphicClassIndex": 65,
+      "attackClass": 36,
+      "allowedSlotsMask": 1088
+    },
+    {
+      "objectDescriptionIndex": 67,
+      "dbCategory": "Weapon",
+      "dbSubtype": 44,
+      "objectType": 143,
+      "graphicClassIndex": 45,
+      "attackClass": 27,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 68,
+      "dbCategory": "Weapon",
+      "dbSubtype": 45,
+      "objectType": 28,
+      "graphicClassIndex": 82,
+      "attackClass": 1,
+      "allowedSlotsMask": 64
+    },
+    {
+      "objectDescriptionIndex": 69,
+      "dbCategory": "Armour",
+      "dbSubtype": 0,
+      "objectType": 80,
+      "graphicClassIndex": 23,
+      "attackClass": 0,
+      "allowedSlotsMask": 1036
+    },
+    {
+      "objectDescriptionIndex": 70,
+      "dbCategory": "Armour",
+      "dbSubtype": 1,
+      "objectType": 81,
+      "graphicClassIndex": 23,
+      "attackClass": 0,
+      "allowedSlotsMask": 1036
+    },
+    {
+      "objectDescriptionIndex": 71,
+      "dbCategory": "Armour",
+      "dbSubtype": 2,
+      "objectType": 82,
+      "graphicClassIndex": 23,
+      "attackClass": 0,
+      "allowedSlotsMask": 1040
+    },
+    {
+      "objectDescriptionIndex": 72,
+      "dbCategory": "Armour",
+      "dbSubtype": 3,
+      "objectType": 112,
+      "graphicClassIndex": 55,
+      "attackClass": 0,
+      "allowedSlotsMask": 1056
+    },
+    {
+      "objectDescriptionIndex": 73,
+      "dbCategory": "Armour",
+      "dbSubtype": 4,
+      "objectType": 114,
+      "graphicClassIndex": 8,
+      "attackClass": 0,
+      "allowedSlotsMask": 1056
+    },
+    {
+      "objectDescriptionIndex": 74,
+      "dbCategory": "Armour",
+      "dbSubtype": 5,
+      "objectType": 67,
+      "graphicClassIndex": 24,
+      "attackClass": 0,
+      "allowedSlotsMask": 1032
+    },
+    {
+      "objectDescriptionIndex": 75,
+      "dbCategory": "Armour",
+      "dbSubtype": 6,
+      "objectType": 83,
+      "graphicClassIndex": 24,
+      "attackClass": 0,
+      "allowedSlotsMask": 1040
+    },
+    {
+      "objectDescriptionIndex": 76,
+      "dbCategory": "Armour",
+      "dbSubtype": 7,
+      "objectType": 68,
+      "graphicClassIndex": 24,
+      "attackClass": 0,
+      "allowedSlotsMask": 1032
+    },
+    {
+      "objectDescriptionIndex": 77,
+      "dbCategory": "Armour",
+      "dbSubtype": 8,
+      "objectType": 84,
+      "graphicClassIndex": 24,
+      "attackClass": 0,
+      "allowedSlotsMask": 1040
+    },
+    {
+      "objectDescriptionIndex": 78,
+      "dbCategory": "Armour",
+      "dbSubtype": 9,
+      "objectType": 69,
+      "graphicClassIndex": 69,
+      "attackClass": 0,
+      "allowedSlotsMask": 1032
+    },
+    {
+      "objectDescriptionIndex": 79,
+      "dbCategory": "Armour",
+      "dbSubtype": 10,
+      "objectType": 70,
+      "graphicClassIndex": 24,
+      "attackClass": 0,
+      "allowedSlotsMask": 1032
+    },
+    {
+      "objectDescriptionIndex": 80,
+      "dbCategory": "Armour",
+      "dbSubtype": 11,
+      "objectType": 85,
+      "graphicClassIndex": 24,
+      "attackClass": 0,
+      "allowedSlotsMask": 1040
+    },
+    {
+      "objectDescriptionIndex": 81,
+      "dbCategory": "Armour",
+      "dbSubtype": 12,
+      "objectType": 86,
+      "graphicClassIndex": 69,
+      "attackClass": 0,
+      "allowedSlotsMask": 1040
+    },
+    {
+      "objectDescriptionIndex": 82,
+      "dbCategory": "Armour",
+      "dbSubtype": 13,
+      "objectType": 71,
+      "graphicClassIndex": 7,
+      "attackClass": 0,
+      "allowedSlotsMask": 1032
+    },
+    {
+      "objectDescriptionIndex": 83,
+      "dbCategory": "Armour",
+      "dbSubtype": 14,
+      "objectType": 87,
+      "graphicClassIndex": 7,
+      "attackClass": 0,
+      "allowedSlotsMask": 1040
+    },
+    {
+      "objectDescriptionIndex": 84,
+      "dbCategory": "Armour",
+      "dbSubtype": 15,
+      "objectType": 119,
+      "graphicClassIndex": 57,
+      "attackClass": 0,
+      "allowedSlotsMask": 1056
+    },
+    {
+      "objectDescriptionIndex": 85,
+      "dbCategory": "Armour",
+      "dbSubtype": 16,
+      "objectType": 72,
+      "graphicClassIndex": 23,
+      "attackClass": 0,
+      "allowedSlotsMask": 1032
+    },
+    {
+      "objectDescriptionIndex": 86,
+      "dbCategory": "Armour",
+      "dbSubtype": 17,
+      "objectType": 88,
+      "graphicClassIndex": 23,
+      "attackClass": 0,
+      "allowedSlotsMask": 1040
+    },
+    {
+      "objectDescriptionIndex": 87,
+      "dbCategory": "Armour",
+      "dbSubtype": 18,
+      "objectType": 113,
+      "graphicClassIndex": 29,
+      "attackClass": 0,
+      "allowedSlotsMask": 1056
+    },
+    {
+      "objectDescriptionIndex": 88,
+      "dbCategory": "Armour",
+      "dbSubtype": 19,
+      "objectType": 89,
+      "graphicClassIndex": 69,
+      "attackClass": 0,
+      "allowedSlotsMask": 1040
+    },
+    {
+      "objectDescriptionIndex": 89,
+      "dbCategory": "Armour",
+      "dbSubtype": 20,
+      "objectType": 73,
+      "graphicClassIndex": 69,
+      "attackClass": 0,
+      "allowedSlotsMask": 1032
+    },
+    {
+      "objectDescriptionIndex": 90,
+      "dbCategory": "Armour",
+      "dbSubtype": 21,
+      "objectType": 74,
+      "graphicClassIndex": 24,
+      "attackClass": 0,
+      "allowedSlotsMask": 1032
+    },
+    {
+      "objectDescriptionIndex": 91,
+      "dbCategory": "Armour",
+      "dbSubtype": 22,
+      "objectType": 90,
+      "graphicClassIndex": 24,
+      "attackClass": 0,
+      "allowedSlotsMask": 1040
+    },
+    {
+      "objectDescriptionIndex": 92,
+      "dbCategory": "Armour",
+      "dbSubtype": 23,
+      "objectType": 103,
+      "graphicClassIndex": 53,
+      "attackClass": 0,
+      "allowedSlotsMask": 1026
+    },
+    {
+      "objectDescriptionIndex": 93,
+      "dbCategory": "Armour",
+      "dbSubtype": 24,
+      "objectType": 104,
+      "graphicClassIndex": 53,
+      "attackClass": 0,
+      "allowedSlotsMask": 1026
+    },
+    {
+      "objectDescriptionIndex": 94,
+      "dbCategory": "Armour",
+      "dbSubtype": 25,
+      "objectType": 96,
+      "graphicClassIndex": 9,
+      "attackClass": 0,
+      "allowedSlotsMask": 1026
+    },
+    {
+      "objectDescriptionIndex": 95,
+      "dbCategory": "Armour",
+      "dbSubtype": 26,
+      "objectType": 97,
+      "graphicClassIndex": 9,
+      "attackClass": 0,
+      "allowedSlotsMask": 1026
+    },
+    {
+      "objectDescriptionIndex": 96,
+      "dbCategory": "Armour",
+      "dbSubtype": 27,
+      "objectType": 98,
+      "graphicClassIndex": 9,
+      "attackClass": 0,
+      "allowedSlotsMask": 1026
+    },
+    {
+      "objectDescriptionIndex": 97,
+      "dbCategory": "Armour",
+      "dbSubtype": 28,
+      "objectType": 105,
+      "graphicClassIndex": 54,
+      "attackClass": 41,
+      "allowedSlotsMask": 1024
+    },
+    {
+      "objectDescriptionIndex": 98,
+      "dbCategory": "Armour",
+      "dbSubtype": 29,
+      "objectType": 106,
+      "graphicClassIndex": 54,
+      "attackClass": 41,
+      "allowedSlotsMask": 512
+    },
+    {
+      "objectDescriptionIndex": 99,
+      "dbCategory": "Armour",
+      "dbSubtype": 30,
+      "objectType": 108,
+      "graphicClassIndex": 10,
+      "attackClass": 41,
+      "allowedSlotsMask": 512
+    },
+    {
+      "objectDescriptionIndex": 100,
+      "dbCategory": "Armour",
+      "dbSubtype": 31,
+      "objectType": 107,
+      "graphicClassIndex": 54,
+      "attackClass": 41,
+      "allowedSlotsMask": 512
+    },
+    {
+      "objectDescriptionIndex": 101,
+      "dbCategory": "Armour",
+      "dbSubtype": 32,
+      "objectType": 75,
+      "graphicClassIndex": 19,
+      "attackClass": 0,
+      "allowedSlotsMask": 1032
+    },
+    {
+      "objectDescriptionIndex": 102,
+      "dbCategory": "Armour",
+      "dbSubtype": 33,
+      "objectType": 91,
+      "graphicClassIndex": 19,
+      "attackClass": 0,
+      "allowedSlotsMask": 1040
+    },
+    {
+      "objectDescriptionIndex": 103,
+      "dbCategory": "Armour",
+      "dbSubtype": 34,
+      "objectType": 76,
+      "graphicClassIndex": 19,
+      "attackClass": 0,
+      "allowedSlotsMask": 1032
+    },
+    {
+      "objectDescriptionIndex": 104,
+      "dbCategory": "Armour",
+      "dbSubtype": 35,
+      "objectType": 92,
+      "graphicClassIndex": 19,
+      "attackClass": 0,
+      "allowedSlotsMask": 1040
+    },
+    {
+      "objectDescriptionIndex": 105,
+      "dbCategory": "Armour",
+      "dbSubtype": 36,
+      "objectType": 99,
+      "graphicClassIndex": 9,
+      "attackClass": 0,
+      "allowedSlotsMask": 1026
+    },
+    {
+      "objectDescriptionIndex": 106,
+      "dbCategory": "Armour",
+      "dbSubtype": 37,
+      "objectType": 115,
+      "graphicClassIndex": 19,
+      "attackClass": 0,
+      "allowedSlotsMask": 1056
+    },
+    {
+      "objectDescriptionIndex": 107,
+      "dbCategory": "Armour",
+      "dbSubtype": 38,
+      "objectType": 100,
+      "graphicClassIndex": 52,
+      "attackClass": 0,
+      "allowedSlotsMask": 1026
+    },
+    {
+      "objectDescriptionIndex": 108,
+      "dbCategory": "Armour",
+      "dbSubtype": 39,
+      "objectType": 77,
+      "graphicClassIndex": 20,
+      "attackClass": 0,
+      "allowedSlotsMask": 8
+    },
+    {
+      "objectDescriptionIndex": 109,
+      "dbCategory": "Armour",
+      "dbSubtype": 40,
+      "objectType": 93,
+      "graphicClassIndex": 22,
+      "attackClass": 0,
+      "allowedSlotsMask": 16
+    },
+    {
+      "objectDescriptionIndex": 110,
+      "dbCategory": "Armour",
+      "dbSubtype": 41,
+      "objectType": 116,
+      "graphicClassIndex": 56,
+      "attackClass": 0,
+      "allowedSlotsMask": 1056
+    },
+    {
+      "objectDescriptionIndex": 111,
+      "dbCategory": "Armour",
+      "dbSubtype": 42,
+      "objectType": 109,
+      "graphicClassIndex": 10,
+      "attackClass": 41,
+      "allowedSlotsMask": 512
+    },
+    {
+      "objectDescriptionIndex": 112,
+      "dbCategory": "Armour",
+      "dbSubtype": 43,
+      "objectType": 101,
+      "graphicClassIndex": 52,
+      "attackClass": 0,
+      "allowedSlotsMask": 1026
+    },
+    {
+      "objectDescriptionIndex": 113,
+      "dbCategory": "Armour",
+      "dbSubtype": 44,
+      "objectType": 78,
+      "graphicClassIndex": 20,
+      "attackClass": 0,
+      "allowedSlotsMask": 8
+    },
+    {
+      "objectDescriptionIndex": 114,
+      "dbCategory": "Armour",
+      "dbSubtype": 45,
+      "objectType": 94,
+      "graphicClassIndex": 22,
+      "attackClass": 0,
+      "allowedSlotsMask": 16
+    },
+    {
+      "objectDescriptionIndex": 115,
+      "dbCategory": "Armour",
+      "dbSubtype": 46,
+      "objectType": 117,
+      "graphicClassIndex": 56,
+      "attackClass": 0,
+      "allowedSlotsMask": 1056
+    },
+    {
+      "objectDescriptionIndex": 116,
+      "dbCategory": "Armour",
+      "dbSubtype": 47,
+      "objectType": 110,
+      "graphicClassIndex": 10,
+      "attackClass": 41,
+      "allowedSlotsMask": 512
+    },
+    {
+      "objectDescriptionIndex": 117,
+      "dbCategory": "Armour",
+      "dbSubtype": 48,
+      "objectType": 102,
+      "graphicClassIndex": 52,
+      "attackClass": 0,
+      "allowedSlotsMask": 1026
+    },
+    {
+      "objectDescriptionIndex": 118,
+      "dbCategory": "Armour",
+      "dbSubtype": 49,
+      "objectType": 79,
+      "graphicClassIndex": 20,
+      "attackClass": 0,
+      "allowedSlotsMask": 8
+    },
+    {
+      "objectDescriptionIndex": 119,
+      "dbCategory": "Armour",
+      "dbSubtype": 50,
+      "objectType": 95,
+      "graphicClassIndex": 22,
+      "attackClass": 0,
+      "allowedSlotsMask": 16
+    },
+    {
+      "objectDescriptionIndex": 120,
+      "dbCategory": "Armour",
+      "dbSubtype": 51,
+      "objectType": 118,
+      "graphicClassIndex": 56,
+      "attackClass": 0,
+      "allowedSlotsMask": 1056
+    },
+    {
+      "objectDescriptionIndex": 121,
+      "dbCategory": "Armour",
+      "dbSubtype": 52,
+      "objectType": 111,
+      "graphicClassIndex": 10,
+      "attackClass": 41,
+      "allowedSlotsMask": 512
+    },
+    {
+      "objectDescriptionIndex": 122,
+      "dbCategory": "Armour",
+      "dbSubtype": 53,
+      "objectType": 140,
+      "graphicClassIndex": 52,
+      "attackClass": 0,
+      "allowedSlotsMask": 1026
+    },
+    {
+      "objectDescriptionIndex": 123,
+      "dbCategory": "Armour",
+      "dbSubtype": 54,
+      "objectType": 141,
+      "graphicClassIndex": 19,
+      "attackClass": 0,
+      "allowedSlotsMask": 1032
+    },
+    {
+      "objectDescriptionIndex": 124,
+      "dbCategory": "Armour",
+      "dbSubtype": 55,
+      "objectType": 142,
+      "graphicClassIndex": 22,
+      "attackClass": 0,
+      "allowedSlotsMask": 16
+    },
+    {
+      "objectDescriptionIndex": 125,
+      "dbCategory": "Armour",
+      "dbSubtype": 56,
+      "objectType": 194,
+      "graphicClassIndex": 81,
+      "attackClass": 0,
+      "allowedSlotsMask": 1056
+    },
+    {
+      "objectDescriptionIndex": 126,
+      "dbCategory": "Armour",
+      "dbSubtype": 57,
+      "objectType": 196,
+      "graphicClassIndex": 84,
+      "attackClass": 0,
+      "allowedSlotsMask": 1032
+    },
+    {
+      "objectDescriptionIndex": 127,
+      "dbCategory": "Junk",
+      "dbSubtype": 0,
+      "objectType": 0,
+      "graphicClassIndex": 34,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 128,
+      "dbCategory": "Junk",
+      "dbSubtype": 1,
+      "objectType": 8,
+      "graphicClassIndex": 6,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 129,
+      "dbCategory": "Junk",
+      "dbSubtype": 2,
+      "objectType": 10,
+      "graphicClassIndex": 15,
+      "attackClass": 0,
+      "allowedSlotsMask": 1284
+    },
+    {
+      "objectDescriptionIndex": 130,
+      "dbCategory": "Junk",
+      "dbSubtype": 3,
+      "objectType": 12,
+      "graphicClassIndex": 15,
+      "attackClass": 0,
+      "allowedSlotsMask": 1284
+    },
+    {
+      "objectDescriptionIndex": 131,
+      "dbCategory": "Junk",
+      "dbSubtype": 4,
+      "objectType": 146,
+      "graphicClassIndex": 40,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 132,
+      "dbCategory": "Junk",
+      "dbSubtype": 5,
+      "objectType": 147,
+      "graphicClassIndex": 41,
+      "attackClass": 0,
+      "allowedSlotsMask": 1024
+    },
+    {
+      "objectDescriptionIndex": 133,
+      "dbCategory": "Junk",
+      "dbSubtype": 6,
+      "objectType": 125,
+      "graphicClassIndex": 4,
+      "attackClass": 37,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 134,
+      "dbCategory": "Junk",
+      "dbSubtype": 7,
+      "objectType": 126,
+      "graphicClassIndex": 83,
+      "attackClass": 37,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 135,
+      "dbCategory": "Junk",
+      "dbSubtype": 8,
+      "objectType": 127,
+      "graphicClassIndex": 4,
+      "attackClass": 37,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 136,
+      "dbCategory": "Junk",
+      "dbSubtype": 9,
+      "objectType": 176,
+      "graphicClassIndex": 18,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 137,
+      "dbCategory": "Junk",
+      "dbSubtype": 10,
+      "objectType": 177,
+      "graphicClassIndex": 18,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 138,
+      "dbCategory": "Junk",
+      "dbSubtype": 11,
+      "objectType": 178,
+      "graphicClassIndex": 18,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 139,
+      "dbCategory": "Junk",
+      "dbSubtype": 12,
+      "objectType": 179,
+      "graphicClassIndex": 18,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 140,
+      "dbCategory": "Junk",
+      "dbSubtype": 13,
+      "objectType": 180,
+      "graphicClassIndex": 18,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 141,
+      "dbCategory": "Junk",
+      "dbSubtype": 14,
+      "objectType": 181,
+      "graphicClassIndex": 18,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 142,
+      "dbCategory": "Junk",
+      "dbSubtype": 15,
+      "objectType": 182,
+      "graphicClassIndex": 18,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 143,
+      "dbCategory": "Junk",
+      "dbSubtype": 16,
+      "objectType": 183,
+      "graphicClassIndex": 18,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 144,
+      "dbCategory": "Junk",
+      "dbSubtype": 17,
+      "objectType": 184,
+      "graphicClassIndex": 62,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 145,
+      "dbCategory": "Junk",
+      "dbSubtype": 18,
+      "objectType": 185,
+      "graphicClassIndex": 62,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 146,
+      "dbCategory": "Junk",
+      "dbSubtype": 19,
+      "objectType": 186,
+      "graphicClassIndex": 62,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 147,
+      "dbCategory": "Junk",
+      "dbSubtype": 20,
+      "objectType": 187,
+      "graphicClassIndex": 62,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 148,
+      "dbCategory": "Junk",
+      "dbSubtype": 21,
+      "objectType": 188,
+      "graphicClassIndex": 62,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 149,
+      "dbCategory": "Junk",
+      "dbSubtype": 22,
+      "objectType": 189,
+      "graphicClassIndex": 62,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 150,
+      "dbCategory": "Junk",
+      "dbSubtype": 23,
+      "objectType": 190,
+      "graphicClassIndex": 62,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 151,
+      "dbCategory": "Junk",
+      "dbSubtype": 24,
+      "objectType": 191,
+      "graphicClassIndex": 62,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 152,
+      "dbCategory": "Junk",
+      "dbSubtype": 25,
+      "objectType": 128,
+      "graphicClassIndex": 76,
+      "attackClass": 0,
+      "allowedSlotsMask": 512
+    },
+    {
+      "objectDescriptionIndex": 153,
+      "dbCategory": "Junk",
+      "dbSubtype": 26,
+      "objectType": 129,
+      "graphicClassIndex": 3,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 154,
+      "dbCategory": "Junk",
+      "dbSubtype": 27,
+      "objectType": 130,
+      "graphicClassIndex": 60,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 155,
+      "dbCategory": "Junk",
+      "dbSubtype": 28,
+      "objectType": 131,
+      "graphicClassIndex": 61,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 156,
+      "dbCategory": "Junk",
+      "dbSubtype": 29,
+      "objectType": 168,
+      "graphicClassIndex": 27,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 157,
+      "dbCategory": "Junk",
+      "dbSubtype": 30,
+      "objectType": 169,
+      "graphicClassIndex": 28,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 158,
+      "dbCategory": "Junk",
+      "dbSubtype": 31,
+      "objectType": 170,
+      "graphicClassIndex": 25,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 159,
+      "dbCategory": "Junk",
+      "dbSubtype": 32,
+      "objectType": 171,
+      "graphicClassIndex": 26,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 160,
+      "dbCategory": "Junk",
+      "dbSubtype": 33,
+      "objectType": 172,
+      "graphicClassIndex": 71,
+      "attackClass": 0,
+      "allowedSlotsMask": 1025
+    },
+    {
+      "objectDescriptionIndex": 161,
+      "dbCategory": "Junk",
+      "dbSubtype": 34,
+      "objectType": 173,
+      "graphicClassIndex": 70,
+      "attackClass": 0,
+      "allowedSlotsMask": 1025
+    },
+    {
+      "objectDescriptionIndex": 162,
+      "dbCategory": "Junk",
+      "dbSubtype": 35,
+      "objectType": 174,
+      "graphicClassIndex": 5,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 163,
+      "dbCategory": "Junk",
+      "dbSubtype": 36,
+      "objectType": 175,
+      "graphicClassIndex": 66,
+      "attackClass": 0,
+      "allowedSlotsMask": 1281
+    },
+    {
+      "objectDescriptionIndex": 164,
+      "dbCategory": "Junk",
+      "dbSubtype": 37,
+      "objectType": 120,
+      "graphicClassIndex": 15,
+      "attackClass": 0,
+      "allowedSlotsMask": 1284
+    },
+    {
+      "objectDescriptionIndex": 165,
+      "dbCategory": "Junk",
+      "dbSubtype": 38,
+      "objectType": 121,
+      "graphicClassIndex": 15,
+      "attackClass": 0,
+      "allowedSlotsMask": 1284
+    },
+    {
+      "objectDescriptionIndex": 166,
+      "dbCategory": "Junk",
+      "dbSubtype": 39,
+      "objectType": 122,
+      "graphicClassIndex": 58,
+      "attackClass": 0,
+      "allowedSlotsMask": 1284
+    },
+    {
+      "objectDescriptionIndex": 167,
+      "dbCategory": "Junk",
+      "dbSubtype": 40,
+      "objectType": 123,
+      "graphicClassIndex": 59,
+      "attackClass": 0,
+      "allowedSlotsMask": 1284
+    },
+    {
+      "objectDescriptionIndex": 168,
+      "dbCategory": "Junk",
+      "dbSubtype": 41,
+      "objectType": 124,
+      "graphicClassIndex": 59,
+      "attackClass": 0,
+      "allowedSlotsMask": 1284
+    },
+    {
+      "objectDescriptionIndex": 169,
+      "dbCategory": "Junk",
+      "dbSubtype": 42,
+      "objectType": 132,
+      "graphicClassIndex": 79,
+      "attackClass": 38,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 170,
+      "dbCategory": "Junk",
+      "dbSubtype": 43,
+      "objectType": 133,
+      "graphicClassIndex": 63,
+      "attackClass": 38,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 171,
+      "dbCategory": "Junk",
+      "dbSubtype": 44,
+      "objectType": 134,
+      "graphicClassIndex": 64,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 172,
+      "dbCategory": "Junk",
+      "dbSubtype": 45,
+      "objectType": 136,
+      "graphicClassIndex": 72,
+      "attackClass": 39,
+      "allowedSlotsMask": 1024
+    },
+    {
+      "objectDescriptionIndex": 173,
+      "dbCategory": "Junk",
+      "dbSubtype": 46,
+      "objectType": 137,
+      "graphicClassIndex": 73,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 174,
+      "dbCategory": "Junk",
+      "dbSubtype": 47,
+      "objectType": 138,
+      "graphicClassIndex": 74,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 175,
+      "dbCategory": "Junk",
+      "dbSubtype": 48,
+      "objectType": 139,
+      "graphicClassIndex": 75,
+      "attackClass": 0,
+      "allowedSlotsMask": 1284
+    },
+    {
+      "objectDescriptionIndex": 176,
+      "dbCategory": "Junk",
+      "dbSubtype": 49,
+      "objectType": 192,
+      "graphicClassIndex": 77,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 177,
+      "dbCategory": "Junk",
+      "dbSubtype": 50,
+      "objectType": 193,
+      "graphicClassIndex": 78,
+      "attackClass": 0,
+      "allowedSlotsMask": 1280
+    },
+    {
+      "objectDescriptionIndex": 178,
+      "dbCategory": "Junk",
+      "dbSubtype": 51,
+      "objectType": 197,
+      "graphicClassIndex": 74,
+      "attackClass": 0,
+      "allowedSlotsMask": 0
+    },
+    {
+      "objectDescriptionIndex": 179,
+      "dbCategory": "Junk",
+      "dbSubtype": 52,
+      "objectType": 198,
+      "graphicClassIndex": 41,
+      "attackClass": 0,
+      "allowedSlotsMask": 1024
+    }
+  ]
+}

@@ -1,0 +1,1076 @@
+{
+  "source": "Original graphics.dat graphic 0x22E, CSBwin d.viewportPosition[3]",
+  "fileSHA256": "196cb349827e8926e2763fa61ecbe8e10810003045ef72a435b7da4dded56d8e",
+  "graphicRecord": 558,
+  "recordDecompressedBytes": 4720,
+  "tableOffsetInDecompressedRecord": 1156,
+  "tableSizeBytes": 300,
+  "note": "Raw CSBwin coordinates; zero-zero pairs are absent positions. Coordinate interpretation and item graphic class mapping must follow CSBwin DrawSingleObject logic. Not a Unity-ready placement renderer.",
+  "classes": [
+    {
+      "graphicClass": 0,
+      "cells": [
+        {
+          "relativeCell": 0,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 1,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 2,
+              "x": 125,
+              "y": 72,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 95,
+              "y": 72,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 112,
+              "y": 64,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 1,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 1,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 2,
+              "x": 62,
+              "y": 72,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 25,
+              "y": 72,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 24,
+              "y": 64,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 2,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 1,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 2,
+              "x": 200,
+              "y": 72,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 162,
+              "y": 72,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 194,
+              "y": 64,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 3,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 92,
+              "y": 78,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 132,
+              "y": 78,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 136,
+              "y": 86,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 88,
+              "y": 86,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 112,
+              "y": 74,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 4,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 10,
+              "y": 78,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 53,
+              "y": 78,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 41,
+              "y": 86,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 4,
+              "x": 3,
+              "y": 74,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 5,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 171,
+              "y": 78,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 218,
+              "y": 78,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 3,
+              "x": 183,
+              "y": 86,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 219,
+              "y": 74,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 6,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 83,
+              "y": 96,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 141,
+              "y": 96,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 148,
+              "y": 111,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 76,
+              "y": 111,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 112,
+              "y": 94,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 7,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 1,
+              "x": 26,
+              "y": 96,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 5,
+              "y": 111,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 4,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            }
+          ]
+        },
+        {
+          "relativeCell": 8,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 197,
+              "y": 96,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 2,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 3,
+              "x": 220,
+              "y": 111,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            }
+          ]
+        },
+        {
+          "relativeCell": 9,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 66,
+              "y": 131,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 158,
+              "y": 131,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 3,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 4,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "graphicClass": 1,
+      "cells": [
+        {
+          "relativeCell": 0,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 1,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 2,
+              "x": 125,
+              "y": 72,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 95,
+              "y": 72,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 112,
+              "y": 63,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 1,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 1,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 2,
+              "x": 62,
+              "y": 72,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 25,
+              "y": 72,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 24,
+              "y": 63,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 2,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 1,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 2,
+              "x": 200,
+              "y": 72,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 162,
+              "y": 72,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 194,
+              "y": 63,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 3,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 92,
+              "y": 78,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 132,
+              "y": 78,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 136,
+              "y": 86,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 88,
+              "y": 86,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 112,
+              "y": 73,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 4,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 10,
+              "y": 78,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 53,
+              "y": 78,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 41,
+              "y": 86,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 4,
+              "x": 3,
+              "y": 73,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 5,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 171,
+              "y": 78,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 218,
+              "y": 78,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 3,
+              "x": 183,
+              "y": 86,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 219,
+              "y": 73,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 6,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 83,
+              "y": 96,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 141,
+              "y": 96,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 148,
+              "y": 111,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 76,
+              "y": 111,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 112,
+              "y": 89,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 7,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 1,
+              "x": 26,
+              "y": 96,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 5,
+              "y": 111,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 4,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            }
+          ]
+        },
+        {
+          "relativeCell": 8,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 197,
+              "y": 96,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 2,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 3,
+              "x": 220,
+              "y": 111,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            }
+          ]
+        },
+        {
+          "relativeCell": 9,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 66,
+              "y": 131,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 158,
+              "y": 131,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 3,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 4,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "graphicClass": 2,
+      "cells": [
+        {
+          "relativeCell": 0,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 1,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 2,
+              "x": 125,
+              "y": 75,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 95,
+              "y": 75,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 112,
+              "y": 65,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 1,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 1,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 2,
+              "x": 62,
+              "y": 75,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 25,
+              "y": 75,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 24,
+              "y": 65,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 2,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 1,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 2,
+              "x": 200,
+              "y": 75,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 162,
+              "y": 75,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 194,
+              "y": 65,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 3,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 92,
+              "y": 81,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 132,
+              "y": 81,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 136,
+              "y": 88,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 88,
+              "y": 88,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 112,
+              "y": 76,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 4,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 10,
+              "y": 81,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 53,
+              "y": 81,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 41,
+              "y": 88,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 4,
+              "x": 3,
+              "y": 76,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 5,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 171,
+              "y": 81,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 218,
+              "y": 81,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 3,
+              "x": 183,
+              "y": 88,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 219,
+              "y": 76,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 6,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 83,
+              "y": 98,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 141,
+              "y": 98,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 148,
+              "y": 115,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 76,
+              "y": 115,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 112,
+              "y": 98,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "relativeCell": 7,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 1,
+              "x": 26,
+              "y": 98,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 5,
+              "y": 115,
+              "valid": true
+            },
+            {
+              "positionIndex": 3,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 4,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            }
+          ]
+        },
+        {
+          "relativeCell": 8,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 197,
+              "y": 98,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 2,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 3,
+              "x": 220,
+              "y": 115,
+              "valid": true
+            },
+            {
+              "positionIndex": 4,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            }
+          ]
+        },
+        {
+          "relativeCell": 9,
+          "positions": [
+            {
+              "positionIndex": 0,
+              "x": 66,
+              "y": 135,
+              "valid": true
+            },
+            {
+              "positionIndex": 1,
+              "x": 158,
+              "y": 135,
+              "valid": true
+            },
+            {
+              "positionIndex": 2,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 3,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            },
+            {
+              "positionIndex": 4,
+              "x": 0,
+              "y": 0,
+              "valid": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
