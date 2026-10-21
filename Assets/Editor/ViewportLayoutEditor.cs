@@ -8050,7 +8050,8 @@ private static void HandleGameViewPointerDown(
     Backpack = 1 << 2,
     OriginalEquippedSlot = 1 << 3,
     LeftLeatherBag = 1 << 4,
-    Quiver = 1 << 5
+    Quiver = 1 << 5,
+    Neck = 1 << 6
   }
 
   // Explicitly verified against the original Dungeon Master. Extend this
@@ -8060,6 +8061,11 @@ private static void HandleGameViewPointerDown(
       new System.Collections.Generic.Dictionary<string, ChampionAllowedSlots>(
           System.StringComparer.OrdinalIgnoreCase)
   {
+    // Neck eligibility must be explicitly assigned per item, never inferred
+    // from item category or the slot where the item was first found.
+    { "MOONSTONE", ChampionAllowedSlots.Neck | ChampionAllowedSlots.Backpack },
+    { "CLOAKOFNIGHT", ChampionAllowedSlots.Neck | ChampionAllowedSlots.Backpack },
+    { "CHOKER", ChampionAllowedSlots.Neck | ChampionAllowedSlots.Backpack },
     { "SAMURAISWORD", ChampionAllowedSlots.LeftHand
         | ChampionAllowedSlots.RightHand | ChampionAllowedSlots.Backpack },
     { "TORCH", ChampionAllowedSlots.LeftHand
@@ -8214,6 +8220,12 @@ private static void HandleGameViewPointerDown(
     // Other inventory slots retain their own eligibility restrictions.
     if (IsChampionHandSlot(targetX, targetY))
       return true;
+    // Restricted neck cell: only explicitly neck-authorized items qualify.
+    // Check before the original-slot exception so no item can bypass it.
+    if (targetX == 5 && targetY == 32)
+      return VerifiedChampionItemSlotRules.TryGetValue(itemKey,
+          out ChampionAllowedSlots neckAllowed)
+          && (neckAllowed & ChampionAllowedSlots.Neck) != 0;
     // Only verified quiver-compatible types can be stored in these four
     // squares. The leather bag is a separate, unrelated slot.
     if (IsChampionQuiverSlot(targetX, targetY))
@@ -10713,6 +10725,31 @@ private static void HandleGameViewPointerDown(
         case "CHEESE": localX = 82; localY = 15; return true;
         case "APPLE": localX = 99; localY = 15; return true;
       }
+    }
+    // GANDO: two independent Poison Darts, never one item with ChargeCount=2.
+    // Verified numbered slots: #1 (upper pouch at 65,32) and
+    // #23 (screen-right attack hand). Preserve each dart's own item ID.
+    if (string.Equals(heroName, "GANDO", System.StringComparison.OrdinalIgnoreCase)
+        && NormalizeChampionAssetKey(itemName) == "POISONDART")
+    {
+      if (hawkArrowIndex == 0)
+      {
+        localX = 65; // Diagnostic inventory slot #1.
+        localY = 32;
+      }
+      else if (hawkArrowIndex == 1)
+      {
+        localX = ChampionSheetRightHandX; // Diagnostic slot #23.
+        localY = ChampionSheetRightHandY;
+        handUsed = true;
+      }
+      else
+      {
+        Debug.LogError("GANDO STARTING ITEMS: More than two Poison Darts.");
+        localX = -1; localY = -1; return false;
+      }
+      hawkArrowIndex++;
+      return true;
     }
     // WU TSE original character sheet: three distinct Throwing Stars.
     // First backpack cell, upper quiver cell, and screen-right attack hand.

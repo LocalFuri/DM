@@ -703,8 +703,12 @@ namespace DM.Heroes
                         new HeroStartingItem
                         {
                             ObjectType = "Poison Dart",
-                            WeightTenths = 3,
-                            ChargeCount = 2
+                            WeightTenths = 3
+                        },
+                        new HeroStartingItem
+                        {
+                            ObjectType = "Poison Dart",
+                            WeightTenths = 3
                         },
                     }
                 },
