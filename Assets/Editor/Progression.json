@@ -1,7 +1,7 @@
 {
-  "date": "2026-10-18",
+  "date": "2026-10-22",
   "project": "Dungeon Master Unity",
-  "checkpoint": "End of day; HAWK equipment visually verified complete",
+  "checkpoint": "Eight CSBwin food F1 assets registered; compare F2/F3 next session. Dungeon Features floor-item double-click corrected for same-tile F1 (Unity test pending).",
   "verified_today": [
     {
       "champion": "ZED",
@@ -71,5 +71,29 @@
       "width": 320,
       "height": 200
     }
+  },
+  "csbwin_floor_food_migration": {
+    "status": "all 8 CSBwin F1 food graphic filenames registered; pending full F2/F3 verification",
+    "registered": {
+      "Apple": "Apple_csb_F1_32x13",
+      "Bread": "Bread_csb_F1_32x16",
+      "Cheese": "Cheese_csb_F1_32x15",
+      "Corn": "Corn_csb_F1_32x10",
+      "Dragon Steak": "Dragon_Steak_csb_F1_32x10",
+      "Drumstick": "Drumstick_csb_F1_32x11",
+      "Screamer Slice": "Screamer_Slice_csb_F1_32x24",
+      "Worm Round": "Worm_Round_csb_F1_32x23"
+    },
+    "rules": [
+      "CSBwin original padded floor sprites are the authoritative floor-item artwork",
+      "Inventory and cursor remain 16x16 and untouched",
+      "No silent asset fallback; explicit errors for missing registrations"
+    ],
+    "next_session": "2026-10-23: compare all food floor-item F2 and F3 rendering with CSBwin at native pixel resolution; allow minor one-pixel visual differences, but validate generic algorithm."
+  },
+  "dungeon_features_floor_item_navigation": {
+    "requested": "On double-click of a walkable Dungeon Features tile containing a pickable floor item, navigate the preview to that same tile for F1 rendering. Preserve facing; single-click remains inspection.",
+    "patch_status": "F1-depth correction prepared; requires Unity compile and functional test",
+    "expected": "F1=player/current tile; F2=one tile ahead. Other tiles retain existing double-click navigation."
   }
 }

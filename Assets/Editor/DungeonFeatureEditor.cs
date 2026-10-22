@@ -2849,6 +2849,26 @@ public class DungeonFeatureEditor : EditorWindow
       return;
     }
 
+    // Floor objects use the CURRENT tile for F1. One tile ahead is F2.
+    // Preserve selectedFacing and publish the clicked tile itself.
+    // Single-click floor-item inspection is handled above without teleporting.
+    if (doubleClick && resolvedFloorItems.TryGetValue(
+            PackFloorFeatureTile(x, y), out List<FloorItemPlacementRecord> f1Items)
+        && f1Items != null && f1Items.Count > 0)
+    {
+      selectedX = x;
+      selectedY = y;
+      EditorPrefs.SetInt(ViewEditPreviewLevelKey, currentDungeonLevel);
+      EditorPrefs.SetInt(ViewEditPreviewXKey, x);
+      EditorPrefs.SetInt(ViewEditPreviewYKey, y);
+      EditorPrefs.SetInt(ViewEditPreviewFacingKey, (int)selectedFacing);
+      current.Use();
+      GUI.changed = true;
+      Repaint();
+      CloseAfterGridTeleport();
+      return;
+    }
+
     if (TryTeleportToWallOrnament(x, y))
     {
       current.Use();
