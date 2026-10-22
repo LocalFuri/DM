@@ -31606,7 +31606,7 @@ private static void HandleGameViewPointerDown(
     public int corner;
     public int x, y, width, height;
     public bool mirror;
-    public int samplingMode; // 0 = existing; 1/2/3 = nearest neighbor phase
+    public int samplingMode; // 0 = existing; 1/2/3 = nearest neighbor phase; 4 = padded probe; 5 = padded + exact CSBwin half-step
     public bool verified;
   }
   private const string FloorProjectionCalibrationPath =
@@ -31719,7 +31719,7 @@ private static void HandleGameViewPointerDown(
           height = Mathf.RoundToInt(predicted.height), mirror = predictedMirror };
     int x = current.x, y = current.y, w = current.width, h = current.height;
     bool m = current.mirror;
-    int samplingMode = Mathf.Clamp(current.samplingMode, 0, 3);
+    int samplingMode = Mathf.Clamp(current.samplingMode, 0, 8);
     // Red indicates values differing from the last accepted calibration (or
     // the uncalibrated projection when no saved calibration exists).
     int baseX = accepted != null ? accepted.x : Mathf.RoundToInt(predicted.x);
@@ -31727,7 +31727,7 @@ private static void HandleGameViewPointerDown(
     int baseW = accepted != null ? accepted.width : Mathf.RoundToInt(predicted.width);
     int baseH = accepted != null ? accepted.height : Mathf.RoundToInt(predicted.height);
     bool baseMirror = accepted != null ? accepted.mirror : predictedMirror;
-    int baseSamplingMode = accepted != null ? Mathf.Clamp(accepted.samplingMode, 0, 3) : 0;
+    int baseSamplingMode = accepted != null ? Mathf.Clamp(accepted.samplingMode, 0, 8) : 0;
     Color normalColor = GUI.color;
     Color changedColor = Color.red;
     EditorGUI.BeginChangeCheck();
@@ -31751,9 +31751,12 @@ private static void HandleGameViewPointerDown(
     GUI.color = normalColor;
     GUILayout.Label("Scale", GUILayout.Width(36f));
     GUI.color = samplingMode != baseSamplingMode ? changedColor : normalColor;
-    samplingMode = EditorGUILayout.Popup(samplingMode,
-        new[] { "Current CSBwin", "Nearest: top-left", "Nearest: center", "Nearest: bottom-right" },
-        GUILayout.Width(135f));
+    // Preserve persisted sampling IDs; 6 is a reversible CSBwin dimensions + quantized-step experiment.
+    // Legacy experimental IDs 1-3 are no longer selectable in ViewEdit.
+    samplingMode = EditorGUILayout.IntPopup(
+        samplingMode >= 1 && samplingMode <= 3 ? 0 : samplingMode,
+        new[] { "Current CSBwin", "CSBwin: padded width test", "CSBwin: half-step + pad", "CSBwin: class width + exact step", "CSBwin: original 32x16 bread", "CSBwin: original padded (generic)" },
+        new[] { 0, 4, 5, 6, 7, 8 }, GUILayout.Width(232f));
     GUI.color = normalColor;
     bool changed = EditorGUI.EndChangeCheck() || steppedX || steppedY;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
@@ -31911,9 +31914,23 @@ private static void HandleGameViewPointerDown(
       case 1: sampled = (long)dest * sourceSize / targetSize; break;
       case 2: sampled = (2L * dest + 1L) * sourceSize / (2L * targetSize); break;
       case 3: sampled = ((long)(dest + 1) * sourceSize - 1) / targetSize; break;
+      // Graphics.cpp ShrinkBLT seeds each axis with half its fixed-point step
+      // plus 0x7fff, rather than 0x7fff alone.
+      case 5: sampled = (0x7fffL + (fixedStep >> 1) + dest * fixedStep) >> 16; break;
+      case 6: sampled = (0x7fffL + (fixedStep >> 1) + dest * fixedStep) >> 16; break;
+      case 7: sampled = (0x7fffL + (fixedStep >> 1) + dest * fixedStep) >> 16; break;
+      case 8: sampled = (0x7fffL + (fixedStep >> 1) + dest * fixedStep) >> 16; break;
       default: sampled = (0x7fffL + dest * fixedStep) >> 16; break;
     }
     return Mathf.Clamp((int)sampled, 0, sourceSize - 1);
+  }
+
+  // CSBwin Graphics.cpp ShrinkBLT: (source << 10) / dest is truncated
+  // to a 16-bit quotient, then shifted left six bits. Do not replace this
+  // with (source << 16) / dest: the dropped six fractional bits matter.
+  private static long CsbShrinkFixedStep(int source, int destination)
+  {
+    return (((long)source << 10) / destination & 0xffffL) << 6;
   }
 
   private void BlitCsbF2Item(Color32[] pixels, FloorItemPlacement item,
@@ -31932,23 +31949,138 @@ private static void HandleGameViewPointerDown(
         previewFacing == DungeonFacing.South ? 2 : 3;
     int screenCorner = (absoluteCorner - facingIndex + 4) & 3;
     bool mediumDistance = screenCorner < 2;
+    FloorProjectionCalibrationEntry samplingEntry =
+        FindFloorProjectionCalibration(item.type, "F2", GetFloorScreenCorner(item));
+    int samplingMode = samplingEntry != null ? Mathf.Clamp(samplingEntry.samplingMode, 0, 8) : 0;
+    // Test mode 7 deliberately uses the full original CSBwin 32x16 bread
+    // graphic, including its 4 left and 1 right transparent columns.
+    // F1 and every other item/mode continue to use the artwork registry.
+    if (mediumDistance && samplingMode == 7)
+    {
+      if (!string.Equals(item.type, "Bread", System.StringComparison.OrdinalIgnoreCase))
+      {
+        ReportCsbF2Issue("Original 32x16 sampling mode is only validated for Bread; got '"
+            + item.type + "'. No guessed source graphic.");
+        return;
+      }
+      const string originalBreadPath = "Assets/Art/Food/Bread_csbwin_F1_32x16.png";
+      Texture2D originalBread = AssetDatabase.LoadAssetAtPath<Texture2D>(originalBreadPath);
+      if (originalBread == null || !originalBread.isReadable
+          || originalBread.width != 32 || originalBread.height != 16)
+      {
+        ReportCsbF2Issue("Expected readable 32x16 original Bread texture at "
+            + originalBreadPath + ". Check import settings; no fallback.");
+        return;
+      }
+      texture = originalBread;
+      // Confirm the actual asset used for this experimental render only once
+      // per editor-window lifetime; never flood Console on preview refresh.
+      const string breadSourceVerifiedKey = "Bread F2 original 32x16 asset verified";
+      if (csbF2Diagnostics.Add(breadSourceVerifiedKey))
+        Debug.Log("CSBwin F2 Bread test: loaded " + originalBreadPath
+            + " (" + originalBread.width + "x" + originalBread.height
+            + ", readable=" + originalBread.isReadable
+            + "); sampling buffer 20x10, mode 7. No fallback used.");
+      // Source width 32 pixels = 16 graphic-class units. In CSBwin,
+      // F2 width = ((16 * 20 + 10) >> 5) * 2 = 20 pixels.
+      const int targetWidth = 20;
+      const int targetHeight = 10;
+      rect.x -= targetWidth - width; // Maintain the existing right-hand anchor.
+      width = targetWidth;
+      height = targetHeight;
+    }
+    // Experimental generic original-CSBwin-image mode. Requires exactly one
+    // PNG named <ItemType>_csbwin_F1_<width>x<height>.png under Art/Food.
+    // Absent/ambiguous/wrong dimensions: explicit error, never silent fallback.
+    // Other scale modes, F1 and saved per-item calibration remain unchanged.
+    if (mediumDistance && samplingMode == 8)
+    {
+      string prefix = item.type + "_csbwin_F1_";
+      string[] ids = AssetDatabase.FindAssets(prefix + " t:Texture2D", new[] { "Assets/Art/Food" });
+      Texture2D match = null;
+      string matchPath = null;
+      int matches = 0;
+      foreach (string id in ids)
+      {
+        string path = AssetDatabase.GUIDToAssetPath(id);
+        string name = System.IO.Path.GetFileNameWithoutExtension(path);
+        if (!name.StartsWith(prefix, System.StringComparison.OrdinalIgnoreCase)) continue;
+        string dims = name.Substring(prefix.Length);
+        string[] parts = dims.Split('x');
+        if (parts.Length != 2 || !int.TryParse(parts[0], out int declaredWidth)
+            || !int.TryParse(parts[1], out int declaredHeight)) continue;
+        Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        if (candidate == null || candidate.width != declaredWidth || candidate.height != declaredHeight)
+        {
+          ReportCsbF2Issue("Original CSBwin asset dimension mismatch: " + path);
+          return;
+        }
+        matches++;
+        match = candidate;
+        matchPath = path;
+      }
+      if (matches != 1 || match == null || !match.isReadable)
+      {
+        ReportCsbF2Issue("Expected exactly one readable '" + prefix
+            + "<W>x<H>.png' in Assets/Art/Food; found " + matches
+            + " for " + item.type + ". No fallback.");
+        return;
+      }
+      if (match.width % 16 != 0 || match.height < 1)
+      {
+        ReportCsbF2Issue("CSBwin original packed graphic requires width divisible by 16: "
+            + matchPath + " (" + match.width + "x" + match.height + ").");
+        return;
+      }
+      texture = match;
+      int sourceUnits = texture.width / 2;
+      int targetWidth = ((sourceUnits * 20 + 10) >> 5) * 2;
+      int targetHeight = (texture.height * 20 + 10) >> 5;
+      if (targetWidth < 1 || targetHeight < 1)
+      {
+        ReportCsbF2Issue("Invalid CSBwin F2 target size from " + matchPath);
+        return;
+      }
+      rect.x -= targetWidth - width; // Preserve preexisting right-hand anchor.
+      width = targetWidth;
+      height = targetHeight;
+    }
+    // Diagnostic mode 6: graphic-class width is stored in TWO-pixel units.
+    // Match Code51a4.cpp: round that unit count before converting back to
+    // destination pixels. Only medium-distance F2 items use ShrinkBLT.
+    if (mediumDistance && samplingMode == 6)
+    {
+      int sourceUnits = (texture.width + 1) / 2;
+      int targetUnits = (sourceUnits * 20 + 10) >> 5;
+      int targetHeight = (texture.height * 20 + 10) >> 5;
+      int exactWidth = targetUnits * 2;
+      // Preserve the right-hand anchor when widening the drawing buffer.
+      rect.x -= exactWidth - width;
+      width = exactWidth;
+      height = targetHeight;
+    }
     Color32[] originalPalette = DungeonViewportLightPalettes[0];
     Color32[] src = texture.GetPixels32();
     var scaled = new Color32[width * height];
-    // CSBwin ShrinkBLT uses a 16.16 sampling accumulator initialized to
-    // 0x7fff, rather than the old floor(x * source/destination) sampler.
-    long stepX = ((long)texture.width << 16) / width;
-    long stepY = ((long)texture.height << 16) / height;
-    FloorProjectionCalibrationEntry samplingEntry =
-        FindFloorProjectionCalibration(item.type, "F2", GetFloorScreenCorner(item));
-    int samplingMode = samplingEntry != null ? Mathf.Clamp(samplingEntry.samplingMode, 0, 3) : 0;
+    int samplingSourceWidth = samplingMode >= 4 ? (texture.width + 1) & ~1 : texture.width;
+    long stepX = (samplingMode == 6 || samplingMode == 7 || samplingMode == 8) && mediumDistance
+        ? CsbShrinkFixedStep(samplingSourceWidth, width)
+        : ((long)samplingSourceWidth << 16) / width;
+    long stepY = (samplingMode == 6 || samplingMode == 7 || samplingMode == 8) && mediumDistance
+        ? CsbShrinkFixedStep(texture.height, height)
+        : ((long)texture.height << 16) / height;
     for (int y = 0; y < height; y++)
       for (int x = 0; x < width; x++)
       {
-        int sourceX = SampleF2FloorPixel(x, texture.width, width, stepX, samplingMode);
-        if (mirror) sourceX = texture.width - 1 - sourceX;
-        int sourceY = SampleF2FloorPixel(y, texture.height, height, stepY, samplingMode);
-        Color32 sourceColor = src[sourceY * texture.width + sourceX];
+        int sourceX = SampleF2FloorPixel(x, samplingSourceWidth, width, stepX,
+            samplingMode == 4 ? 0 : samplingMode);
+        if (mirror) sourceX = samplingSourceWidth - 1 - sourceX;
+        int sourceY = SampleF2FloorPixel(y, texture.height, height, stepY,
+            samplingMode == 4 ? 0 : samplingMode);
+        // The virtual padded column has no painted pixels in the PNG.
+        Color32 sourceColor = sourceX >= texture.width
+            ? new Color32(0, 0, 0, 0)
+            : src[sourceY * texture.width + sourceX];
         if (sourceColor.a == 0)
         {
           scaled[y * width + x] = sourceColor;
