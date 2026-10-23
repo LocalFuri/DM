@@ -15,6 +15,37 @@ public class ViewportLayoutEditor : EditorWindow
 {
   private static readonly int[] SnapValues = { 1, 8 };
 
+  // Edit-mode navigation throttle. Commands inside the interval are discarded,
+  // never queued. Dungeon Features teleporting bypasses these checks.
+  private const string PrefsNavigationDelayKey = "ViewportLayoutEditor.NavigationDelayEnabled";
+  private const double MovementDelaySeconds = 0.200;
+  private const double TurningDelaySeconds = 0.150;
+  private static double s_nextMovementAllowedTime;
+  private static double s_nextTurningAllowedTime;
+
+  private static bool NavigationDelayEnabled
+  {
+    get { return EditorPrefs.GetBool(PrefsNavigationDelayKey, true); }
+    set { EditorPrefs.SetBool(PrefsNavigationDelayKey, value); }
+  }
+
+  private static bool CanExecuteNavigation(bool isTurn)
+  {
+    if (!NavigationDelayEnabled) return true;
+    double now = EditorApplication.timeSinceStartup;
+    if (isTurn)
+    {
+      if (now < s_nextTurningAllowedTime) return false;
+      s_nextTurningAllowedTime = now + TurningDelaySeconds;
+    }
+    else
+    {
+      if (now < s_nextMovementAllowedTime) return false;
+      s_nextMovementAllowedTime = now + MovementDelaySeconds;
+    }
+    return true;
+  }
+
   private const string PrefsLayoutGuidKey = "ViewportLayoutEditor.LayoutGuid";
   private const string PrefsGraphicsGuidKey =
       "ViewportLayoutEditor.GraphicsGuid";
@@ -5897,6 +5928,12 @@ public class ViewportLayoutEditor : EditorWindow
         break;
       default:
         return;
+    }
+
+    if (!CanExecuteNavigation(true))
+    {
+      current.Use();
+      return;
     }
 
     if (TryTransitionFromStairsTurnInput())
@@ -13185,6 +13222,22 @@ private static void HandleGameViewPointerDown(
       Repaint();
     }
 
+    GUILayout.Space(8f);
+    bool delayOn = NavigationDelayEnabled;
+    GUIStyle delayButtonStyle = new GUIStyle(GUI.skin.button);
+    delayButtonStyle.normal.textColor = delayOn ? Color.green : Color.red;
+    delayButtonStyle.hover.textColor = delayOn ? Color.green : Color.red;
+    delayButtonStyle.active.textColor = delayOn ? Color.green : Color.red;
+    delayButtonStyle.focused.textColor = delayOn ? Color.green : Color.red;
+    if (GUILayout.Button(delayOn ? "Delay On" : "Delay Off", delayButtonStyle,
+        GUILayout.Width(83f)))
+    {
+      NavigationDelayEnabled = !delayOn;
+      s_nextMovementAllowedTime = 0;
+      s_nextTurningAllowedTime = 0;
+      Repaint();
+    }
+    NoteContentRight();
     EditorGUILayout.EndHorizontal();
   }
 
@@ -16042,6 +16095,7 @@ private static void HandleGameViewPointerDown(
 
   private void PreviewNavigateTurnLeft()
   {
+    if (!CanExecuteNavigation(true)) return;
     if (TryTransitionFromStairsTurnInput()) return;
     NavigatePreviewPoseOnly(
         previewX,
@@ -16051,6 +16105,7 @@ private static void HandleGameViewPointerDown(
 
   private void PreviewNavigateTurnRight()
   {
+    if (!CanExecuteNavigation(true)) return;
     if (TryTransitionFromStairsTurnInput()) return;
     NavigatePreviewPoseOnly(
         previewX,
@@ -16083,6 +16138,7 @@ private static void HandleGameViewPointerDown(
   /// </summary>
   private void TryPreviewNavigateRelative(int localX, int localY)
   {
+    if (!CanExecuteNavigation(false)) return;
     // On the upper end of a staircase, backing away triggers the stairs
     // instead of taking an ordinary step off the staircase tile.
     if (localX == 0 && localY == -1)
