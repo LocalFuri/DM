@@ -1,7 +1,7 @@
 {
   "date": "2026-10-23",
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-10-23: Bread F2 CSBwin-vs-Unity cropped-image pixel audit completed; do not change renderer before examining CSBwin ShrinkBLT and F2 rectangle/transparent padding. Movement delay toggle patch delivered but Unity verification pending.",
+  "checkpoint": "2026-10-23 END OF DAY: Bread F2 Unity-only horizontal sampling-phase experiment delivered but NOT yet verified in Unity; CSBwin GitHub diagnostic abandoned after builds #32/#33 failed. Resume with user comparing Bread F2 in Unity against CSBwin; preserve verified F1.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -57,9 +57,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "First verify Unity compiles with latest ViewEdit delay and Dungeon Features facing patches; avoid assuming these are tested",
-    "Investigate Bread F2 pixel mismatch against CSBwin original scaling/draw code, preserving F1",
-    "Continue F2 then F3/S2/S3 food rendering using generic CSBwin logic; compare user-cropped images pixel-by-pixel"
+    "First test latest Bread_F2_Horizontal_Phase_Test.zip in Unity (installation / compile / visual comparison not yet confirmed)",
+    "Compare Bread F2 directly against CSBwin and improve generic F2 scaling if needed, preserving F1",
+    "Then food F2 remaining items, F3/S2/S3; keep other prior pending patch verifications on record"
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -146,5 +146,41 @@
     },
     "design": "Discard commands during cooldown; no command queue; teleport immediate",
     "status": "Patch delivered; actual Unity compile/UI behavior not confirmed"
+  },
+  "bread_f2_investigation_end_of_day_20261023": {
+    "objective": "Generic CSBwin-accurate F2 food floor sprite downsizing, using Bread as first reference; continue F3/S2/S3 afterwards.",
+    "original_art": "Bread_csb_F1_32x16.png extracted from CSBwin graphics.dat by user; source 32x16, preserve unchanged.",
+    "unity_diagnostic": {
+      "console": "BREAD F2 SAMPLING: item=P00022, mediumDistance=True, corner=0, padded=True, method=CSBwin fixed step, source=32x16, output=20x10, stepX=104832, stepY=104832, mirror=False, visibleBounds=2,0..18,9, visibleWidth=17, opaquePixels=111, rect=64,119, pileOffset=0,0",
+      "meaning": "Correct registered padded CSBwin fixed-step scaling path is active; not the alternative path."
+    },
+    "comparison": {
+      "csbwin_cropped_bread": "16x10 visible; 91 dark-brown RGB(109,36,0) pixels in prior comparison",
+      "unity_cropped_bread": "17x10 visible; 96 dark-brown pixels in prior comparison",
+      "unity_export": "Bread_F2_Debug.png was exported from Unity at 20x10 (pre-blit); 111 nontransparent pixels; visibleWidth=17 per diagnostic",
+      "caveat": "CSBwin GIMP cutout contains background pixels, unlike transparent Unity export. Alignment/background can affect conclusions; exact pixel match NOT proven."
+    },
+    "csbwin_diagnostic_attempt": {
+      "repo": "LocalFuri/CSBwin-position-status (private)",
+      "branch": "bread-f2-diagnostic (2 commits ahead of main as of last screenshot)",
+      "actions": "Build CSBwin for Windows",
+      "failures": "Build #32 commit 64520df and #33 commit 4805409 both failed with 111 compile errors in Code51a4.cpp; no diagnostic binary obtained; do not claim fixed",
+      "decision": "User explicitly quit this GitHub/Visual Studio diagnostic path. DO NOT ask to continue with compilation, source patches, or more screenshots for this investigation unless user reopens it. Main branch left unchanged."
+    },
+    "latest_patch": {
+      "file": "Bread_F2_Horizontal_Phase_Test.zip",
+      "zip_root": "ViewportLayoutEditor.cs",
+      "type": "Unity-only reversible horizontal sampling-phase experiment",
+      "goal": "Move sampled source x coordinate by one pixel for CSBwin-padded F2 image to reduce Bread visible width 17 to 16 without changing 20x10 canvas",
+      "status": "Delivered, user has NOT confirmed installation or Unity compilation or visual result; not a verified fix",
+      "warning": "Check that correction is generic and does not change verified F1 or non-Bread item behavior unexpectedly; revert if worse."
+    },
+    "next_session_exact": [
+      "Ask whether user installed Bread_F2_Horizontal_Phase_Test.zip in Assets/Editor/ViewportLayoutEditor.cs; if not, guide one step at a time.",
+      "Use native-size CSBwin and Unity screenshots/Bread F2 PNGs to compare shape, position, and pixels. Do not assert match until visually verified.",
+      "If mismatch remains, revise horizontal/vertical sampling phase or palette experimentally using original reference images and source; keep changes narrowly scoped, reversible and generic for padded F2 floor sprites.",
+      "Once Bread F2 acceptable, compare other foods F2 then F3 and S2/S3. Keep all original 32px-wide padded source graphics and verified F1 unchanged."
+    ],
+    "user_workflow_preference": "ONE instruction per response for click-by-click guidance; when using user screenshot to direct clicks, annotate same screenshot with a LARGE RED CIRCLE around exact target (not red rectangle). Avoid excessive GitHub screenshot instructions."
   }
 }

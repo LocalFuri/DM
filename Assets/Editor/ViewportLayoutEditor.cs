@@ -31954,6 +31954,10 @@ private static void HandleGameViewPointerDown(
     return (((long)source << 10) / destination & 0xffffL) << 6;
   }
 
+  // Diagnostic only: avoid repeated Console output on every preview repaint.
+  private static string lastBreadF2SamplingDiagnostic;
+  private static string breadF2DebugPngPath;
+
   private void BlitCsbF2Item(Color32[] pixels, FloorItemPlacement item,
       Texture2D texture, Vector2Int pileOffset)
   {
@@ -32059,6 +32063,55 @@ private static void HandleGameViewPointerDown(
         }
         scaled[y * width + x] = originalPalette[CsbFloorMediumPalette[paletteIndex]];
       }
+    // Bread F2 sampling diagnostic only. Does not modify scaling, palette or placement.
+    if (string.Equals(item.type, "Bread",
+        System.StringComparison.OrdinalIgnoreCase))
+    {
+      int minVisibleX = width, maxVisibleX = -1, minVisibleY = height, maxVisibleY = -1;
+      int visiblePixels = 0;
+      for (int sy = 0; sy < height; sy++)
+        for (int sx = 0; sx < width; sx++)
+          if (scaled[sy * width + sx].a != 0)
+          {
+            visiblePixels++;
+            minVisibleX = Mathf.Min(minVisibleX, sx);
+            maxVisibleX = Mathf.Max(maxVisibleX, sx);
+            minVisibleY = Mathf.Min(minVisibleY, sy);
+            maxVisibleY = Mathf.Max(maxVisibleY, sy);
+          }
+      string diagnostic = "BREAD F2 SAMPLING: item=" + item.instanceId
+          + ", mediumDistance=" + mediumDistance
+          + ", corner=" + screenCorner
+          + ", padded=" + hasOriginalPaddedGraphic
+          + ", method=" + (hasOriginalPaddedGraphic ? "CSBwin fixed step" : "alternative")
+          + ", source=" + texture.width + "x" + texture.height
+          + ", output=" + width + "x" + height
+          + ", stepX=" + stepX + ", stepY=" + stepY
+          + ", mirror=" + mirror
+          + ", visibleBounds=" + (maxVisibleX < 0 ? "empty"
+              : (minVisibleX + "," + minVisibleY + ".." + maxVisibleX + "," + maxVisibleY))
+          + ", visibleWidth=" + (maxVisibleX < 0 ? 0 : maxVisibleX - minVisibleX + 1)
+          + ", opaquePixels=" + visiblePixels
+          + ", rect=" + rect.x + "," + rect.y
+          + ", pileOffset=" + pileOffset.x + "," + pileOffset.y;
+      string debugDirectory = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Assets", "Editor");
+      breadF2DebugPngPath = System.IO.Path.Combine(debugDirectory, "Bread_F2_Debug.png");
+      if (!System.IO.Directory.Exists(debugDirectory))
+        System.IO.Directory.CreateDirectory(debugDirectory);
+      Texture2D breadDebugTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+      breadDebugTexture.filterMode = FilterMode.Point;
+      breadDebugTexture.wrapMode = TextureWrapMode.Clamp;
+      breadDebugTexture.SetPixels32(scaled);
+      breadDebugTexture.Apply(false, false);
+      System.IO.File.WriteAllBytes(breadF2DebugPngPath, breadDebugTexture.EncodeToPNG());
+      DestroyImmediate(breadDebugTexture);
+      diagnostic += ", debugPng=" + breadF2DebugPngPath.Replace('\\', '/');
+      if (lastBreadF2SamplingDiagnostic != diagnostic)
+      {
+        lastBreadF2SamplingDiagnostic = diagnostic;
+        Debug.Log(diagnostic);
+      }
+    }
     // Preview pixels use bottom-origin indexing; CSBwin table coordinates are
     // top-origin. Clip against the 224x136 viewport to avoid the HUD.
     int targetX = Mathf.RoundToInt(rect.x) + pileOffset.x;
