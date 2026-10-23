@@ -1,7 +1,7 @@
 {
-  "date": "2026-10-22",
+  "date": "2026-10-23",
   "project": "Dungeon Master Unity",
-  "checkpoint": "Eight CSBwin food F1 assets registered; compare F2/F3 next session. Dungeon Features floor-item double-click corrected for same-tile F1 (Unity test pending).",
+  "checkpoint": "2026-10-23: Bread F2 CSBwin-vs-Unity cropped-image pixel audit completed; do not change renderer before examining CSBwin ShrinkBLT and F2 rectangle/transparent padding. Movement delay toggle patch delivered but Unity verification pending.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -57,8 +57,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Mark HAWK Level 0 (15,4) East bright green RGB(0,255,0) in DungeonFeatureEditor.cs",
-    "Proceed to next champion after user specifies it"
+    "First verify Unity compiles with latest ViewEdit delay and Dungeon Features facing patches; avoid assuming these are tested",
+    "Investigate Bread F2 pixel mismatch against CSBwin original scaling/draw code, preserving F1",
+    "Continue F2 then F3/S2/S3 food rendering using generic CSBwin logic; compare user-cropped images pixel-by-pixel"
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -94,6 +95,56 @@
   "dungeon_features_floor_item_navigation": {
     "requested": "On double-click of a walkable Dungeon Features tile containing a pickable floor item, navigate the preview to that same tile for F1 rendering. Preserve facing; single-click remains inspection.",
     "patch_status": "F1-depth correction prepared; requires Unity compile and functional test",
-    "expected": "F1=player/current tile; F2=one tile ahead. Other tiles retain existing double-click navigation."
+    "expected": "F1=player/current tile; F2=one tile ahead. Other tiles retain existing double-click navigation.",
+    "facing_patch_20261023": {
+      "delivery": "DungeonFeatures_F1_Item_Facing_West.zip",
+      "corn_example": "Level 0 tile (0,16), Corn record P00000, placement facing West",
+      "status": "Patch delivered; Unity functional test pending"
+    }
+  },
+  "bread_f2_comparison_20261023": {
+    "status": "Measured screenshots; no renderer code modified, no final scaling correction yet",
+    "references": {
+      "csbwin": "image(20261023-155444).png",
+      "unity": "image(20261023-155532).png"
+    },
+    "image_note": "User cropped Bread at F2 from both CSBwin and Unity; images contain grey background; transparency not displayed. Cropped dimensions are NOT necessarily scaled sprite buffer dimensions.",
+    "csbwin_crop_px": {
+      "width": 16,
+      "height": 10,
+      "brown_rgb_109_36_0_count": 91,
+      "highlight_rgb_182_182_182_count": 6
+    },
+    "unity_crop_px": {
+      "width": 17,
+      "height": 10,
+      "brown_rgb_109_36_0_count": 96,
+      "highlight_rgb_182_182_182_count": 6
+    },
+    "differences": [
+      "Unity crop 1 px wider",
+      "Unity has 5 more brown pixels",
+      "Minor background grey palette differences e.g. CSBwin RGB145 vs Unity RGB146; do not conflate with bread pixel geometry"
+    ],
+    "current_unity_renderer": "ViewportLayoutEditor.cs uses an F2 scaled sprite buffer reported as 20x10 for Bread source 32x16; visible portion in cropped image is 17x10. Uses fixed-point stepping/palette via CsbShrinkFixedStep and BlitCsbF2Item; confirm actual source before changing.",
+    "suspected_area": "Sampling origin/rounding phase (example expression 0x7fffL + (stepX >> 1) + x * stepX), rectangle width computation, transparent padding, and color mapping. This is a hypothesis, not a proven root cause.",
+    "next_action": "Compare exact CSBwin Graphics.cpp ShrinkBLT and Code51a4.cpp F2 object draw/dimensions against current Unity TryGetCsbF2RectBase, CsbShrinkFixedStep and BlitCsbF2Item. Derive generic correction, then validate Bread F2 followed by other foods; do not hardcode per-item width/height.",
+    "preserve": [
+      "Validated F1 food sprite registration and rendering",
+      "Inventory/cursor 16x16",
+      "Item identity, LIFO floor stacking, pickup/throw",
+      "No asset fallbacks"
+    ]
+  },
+  "viewedit_movement_delay_20261023": {
+    "delivery": "ViewEdit_Delay_Toggle.zip",
+    "source": "ViewportLayoutEditor.cs",
+    "button": "After ViewEdit L6, Delay On green / Delay Off red",
+    "defaults_ms": {
+      "movement": 200,
+      "turn": 150
+    },
+    "design": "Discard commands during cooldown; no command queue; teleport immediate",
+    "status": "Patch delivered; actual Unity compile/UI behavior not confirmed"
   }
 }
