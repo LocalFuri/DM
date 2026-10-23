@@ -166,6 +166,7 @@ public class DungeonFeatureEditor : EditorWindow
     public int localY;
     public string recordType;
     public string tileClass;
+    public string direction;
     public FloorThingRecord thing;
   }
 
@@ -2850,14 +2851,25 @@ public class DungeonFeatureEditor : EditorWindow
     }
 
     // Floor objects use the CURRENT tile for F1. One tile ahead is F2.
-    // Preserve selectedFacing and publish the clicked tile itself.
+    // Use the placement's own CSBwin cell direction to orient the player.
     // Single-click floor-item inspection is handled above without teleporting.
     if (doubleClick && resolvedFloorItems.TryGetValue(
             PackFloorFeatureTile(x, y), out List<FloorItemPlacementRecord> f1Items)
         && f1Items != null && f1Items.Count > 0)
     {
+      // Multiple floor records can share a tile; start with the first one.
+      // Their cell directions are supplied by DungeonFeaturePlacements.json.
+      if (!TryFloorItemFacing(f1Items[0].direction, out DungeonFacing itemFacing))
+      {
+        Debug.LogError("Dungeon Features: Invalid floor-item direction for "
+            + f1Items[0].id + " at (" + x + "," + y + "): '"
+            + f1Items[0].direction + "'. Teleport cancelled.");
+        current.Use();
+        return;
+      }
       selectedX = x;
       selectedY = y;
+      selectedFacing = itemFacing;
       EditorPrefs.SetInt(ViewEditPreviewLevelKey, currentDungeonLevel);
       EditorPrefs.SetInt(ViewEditPreviewXKey, x);
       EditorPrefs.SetInt(ViewEditPreviewYKey, y);
@@ -2909,6 +2921,18 @@ public class DungeonFeatureEditor : EditorWindow
   // The selected map pose has already been published to the shared ViewEdit
   // preferences. Close like Escape, then focus the existing ViewEdit window;
   // its normal inspector update applies the requested pose and redraws GameView.
+  private static bool TryFloorItemFacing(string direction, out DungeonFacing facing)
+  {
+    switch (direction)
+    {
+      case "N": facing = DungeonFacing.North; return true;
+      case "E": facing = DungeonFacing.East; return true;
+      case "S": facing = DungeonFacing.South; return true;
+      case "W": facing = DungeonFacing.West; return true;
+      default: facing = DungeonFacing.North; return false;
+    }
+  }
+
   private void CloseAfterGridTeleport()
   {
     EditorApplication.delayCall += () =>
