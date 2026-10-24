@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -31840,53 +31840,62 @@ private static void HandleGameViewPointerDown(
     rect = new Rect();
     mirror = false;
     if (!EnsureCsbF2Tables() || item == null || texture == null) return false;
-    // Moved objects retain their original Pxxxxx ID. New dropped equipment has
-    // no original record; it must carry original subtype metadata before F2 is
-    // rendered, rather than guessing from its displayed name.
+    // Original dungeon items retain their exact DB category/subtype metadata.
+    // Champion-created and transferred items must resolve the same descriptor
+    // by canonical item type, never by treating their unique ID as graphics data.
+    CsbObjectDescriptionRecord desc = null;
     DungeonOriginalItemLoader.Record original = null;
-    foreach (DungeonOriginalItemLoader.Record candidate in DungeonOriginalItemLoader.Load())
+    foreach (DungeonOriginalItemLoader.Record record in DungeonOriginalItemLoader.Load())
+      if (record.id == item.instanceId) { original = record; break; }
+    if (original != null)
+      foreach (CsbObjectDescriptionRecord entry in csbObjectTable.entries)
+        if (entry != null && entry.dbSubtype == original.thing.Type
+            && string.Equals((entry.dbCategory ?? string.Empty).Trim(),
+                (original.recordType ?? string.Empty).Trim(),
+                System.StringComparison.OrdinalIgnoreCase))
+        { desc = entry; break; }
+    if (original != null && desc == null)
     {
-      if (candidate.id == item.instanceId) { original = candidate; break; }
+      ReportCsbF2Issue("No original graphic descriptor for " + original.recordType
+          + ":" + original.thing.Type + " (" + item.instanceId + ").");
+      return false;
     }
+    // For non-original instances, match the canonical DB item-name decoder
+    // against the original descriptor table. Ambiguity remains an explicit error.
     if (original == null)
     {
-      ReportCsbF2Issue("No original subtype for F2 object '" + item.type
-          + "' (" + item.instanceId + "). No guessed graphic class.");
-      return false;
-    }
-    CsbObjectDescriptionRecord desc = null;
-    int typeMatches = 0;
-    string subtypeExamples = "";
-    // Compare categories without incidental whitespace/casing differences.
-    // This does not substitute, guess or alter any original CSBwin mapping.
-    string requestedCategory = (original.recordType ?? "").Trim();
-    foreach (CsbObjectDescriptionRecord entry in csbObjectTable.entries)
-    {
-      if (entry == null) continue;
-      if (entry.dbSubtype == original.thing.Type)
+      string wantedType = (item.type ?? string.Empty).Trim();
+      int matchingTypes = 0;
+      string candidateDescriptions = string.Empty;
+      foreach (CsbObjectDescriptionRecord entry in csbObjectTable.entries)
       {
-        typeMatches++;
-        if (subtypeExamples.Length < 300)
-          subtypeExamples += " [" + (entry.dbCategory ?? "<null>")
-              + ":" + entry.dbSubtype + " => " + entry.graphicClassIndex + "]";
+        if (entry == null) continue;
+        string decodedName = DungeonOriginalItemLoader.DecodeFloorItemName(
+            entry.dbCategory, entry.dbSubtype);
+        if (!string.Equals((decodedName ?? string.Empty).Trim(), wantedType,
+            System.StringComparison.OrdinalIgnoreCase)) continue;
+        matchingTypes++;
+        if (candidateDescriptions.Length < 300)
+          candidateDescriptions += " [" + entry.dbCategory + ":" + entry.dbSubtype
+              + " => " + entry.graphicClassIndex + "]";
+        if (desc == null) desc = entry;
+        else if (desc.graphicClassIndex != entry.graphicClassIndex)
+        {
+          ReportCsbF2Issue("Ambiguous original graphic mappings for type '"
+              + wantedType + "' (" + item.instanceId + "): "
+              + candidateDescriptions + ". No guessed graphic class.");
+          return false;
+        }
       }
-      if (string.Equals((entry.dbCategory ?? "").Trim(), requestedCategory,
-          System.StringComparison.OrdinalIgnoreCase)
-          && entry.dbSubtype == original.thing.Type)
-      { desc = entry; break; }
-    }
-    if (desc == null || desc.graphicClassIndex < 0 || desc.graphicClassIndex >= csbGraphicTable.entries.Length)
-    {
-      CsbObjectDescriptionRecord expected = csbObjectTable.entries.Length > 158
-          ? csbObjectTable.entries[158] : null;
-      ReportCsbF2Issue("No original graphic mapping for '" + original.recordType
-          + "':" + original.thing.Type + " (" + item.instanceId + "). "
-          + "Loaded descriptors=" + csbObjectTable.entries.Length
-          + ", same-subtype records=" + typeMatches + subtypeExamples
-          + ", entry[158]=" + (expected == null ? "<null>" :
-            "[" + (expected.dbCategory ?? "<null>") + ":" + expected.dbSubtype
-            + " => " + expected.graphicClassIndex + "]") + ".");
-      return false;
+      if (desc == null || desc.graphicClassIndex < 0
+          || desc.graphicClassIndex >= csbGraphicTable.entries.Length)
+      {
+        ReportCsbF2Issue("No original graphic mapping for floor item type '"
+            + wantedType + "' (" + item.instanceId
+            + "). Checked " + csbObjectTable.entries.Length
+            + " original descriptors. No guessed graphic class.");
+        return false;
+      }
     }
     CsbGraphicClassRecord graphic = csbGraphicTable.entries[desc.graphicClassIndex];
     if (graphic.viewportPositionClass < 0 || graphic.viewportPositionClass >= csbViewportTable.classes.Length)
@@ -31909,7 +31918,14 @@ private static void HandleGameViewPointerDown(
     { ReportCsbF2Issue("Invalid F2 viewport positions table."); return false; }
     CsbViewportCell cell = cells[6];
     CsbViewportPoint point = cell.positions[relCorner];
-    if (!point.valid || point.y == 0) return false;
+    if (!point.valid || point.y == 0)
+    {
+      if (string.Equals(item.type, "Club", System.StringComparison.OrdinalIgnoreCase))
+        Debug.LogWarning("CLUB F2 TRACE: viewport position rejected; class="
+            + graphic.viewportPositionClass + ", corner=" + relCorner
+            + ", valid=" + point.valid + ", x=" + point.x + ", y=" + point.y);
+      return false;
+    }
     bool near = relCorner >= 2;
     // CSBwin cell 6 (one tile ahead): far corners use distance 1 (20/32),
     // near corners use distance 0 (native dimensions). This deliberately
@@ -31969,7 +31985,16 @@ private static void HandleGameViewPointerDown(
   private void BlitCsbF2Item(Color32[] pixels, FloorItemPlacement item,
       Texture2D texture, Vector2Int pileOffset)
   {
-    if (!TryGetCsbF2Rect(item, texture, out Rect rect, out bool mirror)) return;
+    bool traceClub = string.Equals(item.type, "Club", System.StringComparison.OrdinalIgnoreCase);
+    if (!TryGetCsbF2Rect(item, texture, out Rect rect, out bool mirror))
+    {
+      if (traceClub) Debug.LogWarning("CLUB F2 TRACE: rectangle lookup failed; item="
+          + item.instanceId + ", source=" + texture.width + "x" + texture.height);
+      return;
+    }
+    if (traceClub) Debug.Log("CLUB F2 TRACE: rectangle resolved; item="
+        + item.instanceId + ", source=" + texture.width + "x" + texture.height
+        + ", rect=" + rect + ", mirror=" + mirror);
     int width = Mathf.RoundToInt(rect.width);
     int height = Mathf.RoundToInt(rect.height);
     // CSBwin Code51a4.cpp: cell 6 far corners (0,1) use distance 1
@@ -32154,6 +32179,10 @@ private static void HandleGameViewPointerDown(
     // top-origin. Clip against the 224x136 viewport to avoid the HUD.
     int targetX = Mathf.RoundToInt(rect.x) + pileOffset.x;
     int targetTop = Mathf.RoundToInt(rect.y) - pileOffset.y;
+    int clubOpaque = 0, clubDrawn = 0;
+    if (traceClub)
+      for (int i = 0; i < scaled.Length; i++)
+        if (scaled[i].a != 0) clubOpaque++;
     for (int y = 0; y < height; y++)
     {
       int screenTop = targetTop + (height - 1 - y);
@@ -32167,8 +32196,14 @@ private static void HandleGameViewPointerDown(
         int screenY = PreviewHeight - 1 - screenTop;
         if (screenY < 0 || screenY >= PreviewHeight) continue;
         pixels[screenY * PreviewWidth + screenX] = c;
+        if (traceClub) clubDrawn++;
       }
     }
+    if (traceClub)
+      Debug.Log("CLUB F2 TRACE: scaled=" + width + "x" + height
+          + ", opaque=" + clubOpaque + ", actuallyWritten=" + clubDrawn
+          + ", topLeft=" + targetX + "," + targetTop
+          + ", viewport top bounds=32..167; screen x=0..223");
   }
 
   private void DrawRegisteredF1FloorCalibration(string itemType, bool isRight)
