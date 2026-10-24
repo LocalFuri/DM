@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -31872,7 +31872,15 @@ private static void HandleGameViewPointerDown(
         if (entry == null) continue;
         string decodedName = DungeonOriginalItemLoader.DecodeFloorItemName(
             entry.dbCategory, entry.dbSubtype);
-        if (!string.Equals((decodedName ?? string.Empty).Trim(), wantedType,
+        // CSBwin Objects.h: weapon_ClawBow = 25. The project's item name
+        // for this original weapon is "Bow". Resolve its original descriptor,
+        // not an invented graphic class, while retaining its unique instance ID.
+        bool originalBowName = string.Equals(wantedType, "Bow",
+            System.StringComparison.OrdinalIgnoreCase)
+            && string.Equals((entry.dbCategory ?? string.Empty).Trim(), "Weapon",
+                System.StringComparison.OrdinalIgnoreCase)
+            && entry.dbSubtype == 25;
+        if (!originalBowName && !string.Equals((decodedName ?? string.Empty).Trim(), wantedType,
             System.StringComparison.OrdinalIgnoreCase)) continue;
         matchingTypes++;
         if (candidateDescriptions.Length < 300)
@@ -31947,10 +31955,26 @@ private static void HandleGameViewPointerDown(
     int initialSmallOffset = (absCorner & 1) << 3;
     Vector2Int firstObjectOffset = csbFloorOffsetRows[1][initialSmallOffset];
     int top = 32 + point.y + firstObjectOffset.y - height + 1;
+    // Position all F2 objects from the original CSBwin viewport anchor and
+    // small-offset table. No temporary item-specific Y compensation.
     // CSBwin DrawSingleObject: width_LOCAL_22 is half the sprite pixel width.
     // Its horizontal anchor is the center; vertical anchor is the bottom scanline.
     // Keep the established F2 scaling and Y calculation unchanged.
     int left = point.x + firstObjectOffset.x - (width / 2) + 1;
+    // Diagnostic only: report the complete F2 vertical equation without
+    // changing the accepted renderer or its existing offset selection.
+    if (string.Equals(item.type, "Club", System.StringComparison.OrdinalIgnoreCase))
+      Debug.Log("CLUB F2 Y TRACE: item=" + item.instanceId
+          + ", viewportY=" + point.y
+          + ", viewportOffsetTop=32"
+          + ", offsetTableRow=1"
+          + ", offsetIndex=" + initialSmallOffset
+          + ", offsetY=" + firstObjectOffset.y
+          + ", scaledHeight=" + height
+          + ", calculatedTop=" + top
+          + ", calculatedBottom=" + (top + height - 1)
+          + ", absCorner=" + absCorner + ", relativeCorner=" + relCorner
+          + ", formula=32+viewportY+offsetY-height+1");
     rect = new Rect(left, top, width, height);
     mirror = (graphic.flags & 1) != 0 && (relCorner == 1 || relCorner == 2);
     return true;
@@ -31959,13 +31983,14 @@ private static void HandleGameViewPointerDown(
   private bool TryGetCsbF2Rect(FloorItemPlacement item, Texture2D texture,
       out Rect rect, out bool mirror)
   {
+    // Generic CSBwin-only F2 position experiment: do not apply saved
+    // per-item ViewEdit F2 calibration rectangles or mirror overrides.
+    // All F2 objects use the original viewport and small-offset tables.
     if (!TryGetCsbF2RectBase(item, texture, out rect, out mirror)) return false;
-    int corner = GetFloorScreenCorner(item);
-    FloorProjectionCalibrationEntry entry = FindFloorProjectionCalibration(item.type, "F2", corner);
-    if (entry == null) return true;
-    if (entry.width < 1 || entry.height < 1) return true;
-    rect = new Rect(entry.x, entry.y, entry.width, entry.height);
-    mirror = entry.mirror;
+    // TEMPORARY VISUAL TEST (2026-10-24): move only Bow at F2 down 2 screen
+    // pixels to assess floor contact. Do not change CSBwin scaling or X.
+    if (string.Equals(item.type, "Bow", System.StringComparison.OrdinalIgnoreCase))
+      rect.y += 2f;
     return true;
   }
 
@@ -32183,6 +32208,8 @@ private static void HandleGameViewPointerDown(
     int targetX = Mathf.RoundToInt(rect.x) + pileOffset.x;
     int targetTop = Mathf.RoundToInt(rect.y) - pileOffset.y;
     int clubOpaque = 0, clubDrawn = 0;
+    int clubMinWrittenY = int.MaxValue, clubMaxWrittenY = int.MinValue;
+    int clubMinWrittenX = int.MaxValue, clubMaxWrittenX = int.MinValue;
     if (traceClub)
       for (int i = 0; i < scaled.Length; i++)
         if (scaled[i].a != 0) clubOpaque++;
@@ -32199,13 +32226,24 @@ private static void HandleGameViewPointerDown(
         int screenY = PreviewHeight - 1 - screenTop;
         if (screenY < 0 || screenY >= PreviewHeight) continue;
         pixels[screenY * PreviewWidth + screenX] = c;
-        if (traceClub) clubDrawn++;
+        if (traceClub)
+        {
+          clubDrawn++;
+          clubMinWrittenY = Mathf.Min(clubMinWrittenY, screenTop);
+          clubMaxWrittenY = Mathf.Max(clubMaxWrittenY, screenTop);
+          clubMinWrittenX = Mathf.Min(clubMinWrittenX, screenX);
+          clubMaxWrittenX = Mathf.Max(clubMaxWrittenX, screenX);
+        }
       }
     }
     if (traceClub)
       Debug.Log("CLUB F2 TRACE: scaled=" + width + "x" + height
           + ", opaque=" + clubOpaque + ", actuallyWritten=" + clubDrawn
           + ", topLeft=" + targetX + "," + targetTop
+          + ", visibleTopY=" + (clubDrawn == 0 ? "none" : clubMinWrittenY.ToString())
+          + ", visibleBottomY=" + (clubDrawn == 0 ? "none" : clubMaxWrittenY.ToString())
+          + ", visibleLeftX=" + (clubDrawn == 0 ? "none" : clubMinWrittenX.ToString())
+          + ", visibleRightX=" + (clubDrawn == 0 ? "none" : clubMaxWrittenX.ToString())
           + ", viewport top bounds=32..167; screen x=0..223");
   }
 
