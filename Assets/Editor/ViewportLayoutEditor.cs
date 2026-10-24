@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -31947,7 +31947,10 @@ private static void HandleGameViewPointerDown(
     int initialSmallOffset = (absCorner & 1) << 3;
     Vector2Int firstObjectOffset = csbFloorOffsetRows[1][initialSmallOffset];
     int top = 32 + point.y + firstObjectOffset.y - height + 1;
-    int left = point.x + firstObjectOffset.x - width + 1;
+    // CSBwin DrawSingleObject: width_LOCAL_22 is half the sprite pixel width.
+    // Its horizontal anchor is the center; vertical anchor is the bottom scanline.
+    // Keep the established F2 scaling and Y calculation unchanged.
+    int left = point.x + firstObjectOffset.x - (width / 2) + 1;
     rect = new Rect(left, top, width, height);
     mirror = (graphic.flags & 1) != 0 && (relCorner == 1 || relCorner == 2);
     return true;
