@@ -31922,8 +31922,16 @@ private static void HandleGameViewPointerDown(
     int height = Mathf.Max(1, (texture.height * numerator + rounding) / 32);
     // CSBwin viewport is 224x136; editor's complete 320x200 image has
     // viewport at screen-top 32 (pixel-alignment subject to Unity comparison).
-    int top = 32 + point.y - height + 1;
-    int left = point.x - width + 1;
+    // Code51a4.cpp DrawSingleObject applies d.smallOffsets to the viewport
+    // anchor BEFORE constructing the sprite rectangle, including the FIRST
+    // object in a cell. Our pile logic already applies relative displacements
+    // for subsequent objects, but previously omitted the first displacement.
+    // Apply it generically at F2 using the existing extracted CSBwin table.
+    if (!EnsureCsbFloorOffsetsLoaded()) return false;
+    int initialSmallOffset = (absCorner & 1) << 3;
+    Vector2Int firstObjectOffset = csbFloorOffsetRows[1][initialSmallOffset];
+    int top = 32 + point.y + firstObjectOffset.y - height + 1;
+    int left = point.x + firstObjectOffset.x - width + 1;
     rect = new Rect(left, top, width, height);
     mirror = (graphic.flags & 1) != 0 && (relCorner == 1 || relCorner == 2);
     return true;
@@ -32025,16 +32033,32 @@ private static void HandleGameViewPointerDown(
     long stepY = hasOriginalPaddedGraphic
         ? CsbShrinkFixedStep(texture.height, height)
         : ((long)texture.height << 16) / height;
+    // Match CSBwin's original sampling phase; no item-specific adjustments.
+    long horizontalPhaseOffset = 0L;
     for (int y = 0; y < height; y++)
       for (int x = 0; x < width; x++)
       {
         int sourceX = Mathf.Clamp((int)((0x7fffL
             + (hasOriginalPaddedGraphic ? stepX >> 1 : 0L)
-            + x * stepX) >> 16), 0, sourceWidth - 1);
+            + horizontalPhaseOffset + x * stepX) >> 16), 0, sourceWidth - 1);
         if (mirror) sourceX = sourceWidth - 1 - sourceX;
-        int sourceY = Mathf.Clamp((int)((0x7fffL
-            + (hasOriginalPaddedGraphic ? stepY >> 1 : 0L)
-            + y * stepY) >> 16), 0, texture.height - 1);
+        // CSBwin ShrinkBLT traverses bitmap rows from top to bottom.
+        // Unity GetPixels32() stores row zero at the bottom. Convert the
+        // destination row to CSBwin top-down order before applying its
+        // fixed-point sampling, then convert the source row back to Unity.
+        int sourceY;
+        if (hasOriginalPaddedGraphic)
+        {
+          int destinationTopY = height - 1 - y;
+          int sourceTopY = Mathf.Clamp((int)((0x7fffL + (stepY >> 1)
+              + destinationTopY * stepY) >> 16), 0, texture.height - 1);
+          sourceY = texture.height - 1 - sourceTopY;
+        }
+        else
+        {
+          sourceY = Mathf.Clamp((int)((0x7fffL + y * stepY) >> 16),
+              0, texture.height - 1);
+        }
         Color32 sourceColor = src[sourceY * sourceWidth + sourceX];
         if (sourceColor.a == 0)
         {
@@ -32083,15 +32107,18 @@ private static void HandleGameViewPointerDown(
           + ", mediumDistance=" + mediumDistance
           + ", corner=" + screenCorner
           + ", padded=" + hasOriginalPaddedGraphic
-          + ", method=" + (hasOriginalPaddedGraphic ? "CSBwin fixed step" : "alternative")
+          + ", method=" + (hasOriginalPaddedGraphic ? "CSBwin fixed step top-down rows" : "alternative")
           + ", source=" + texture.width + "x" + texture.height
           + ", output=" + width + "x" + height
           + ", stepX=" + stepX + ", stepY=" + stepY
+          + ", phaseOffset16_16=" + horizontalPhaseOffset
           + ", mirror=" + mirror
           + ", visibleBounds=" + (maxVisibleX < 0 ? "empty"
               : (minVisibleX + "," + minVisibleY + ".." + maxVisibleX + "," + maxVisibleY))
           + ", visibleWidth=" + (maxVisibleX < 0 ? 0 : maxVisibleX - minVisibleX + 1)
           + ", opaquePixels=" + visiblePixels
+          + ", firstObjectOffset=" + (csbFloorOffsetRows == null ? "unloaded"
+              : csbFloorOffsetRows[1][(absoluteCorner & 1) << 3].ToString())
           + ", rect=" + rect.x + "," + rect.y
           + ", pileOffset=" + pileOffset.x + "," + pileOffset.y;
       string debugDirectory = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Assets", "Editor");
@@ -32105,6 +32132,17 @@ private static void HandleGameViewPointerDown(
       breadDebugTexture.Apply(false, false);
       System.IO.File.WriteAllBytes(breadF2DebugPngPath, breadDebugTexture.EncodeToPNG());
       DestroyImmediate(breadDebugTexture);
+      // Diagnostic export only: preserve the original registered 32x16 RGBA
+      // pixels for comparison against CSBwin's indexed source bitplanes.
+      string sourceDebugPath = System.IO.Path.Combine(debugDirectory, "Bread_F2_Source_Debug.png");
+      Texture2D sourceDebugTexture = new Texture2D(texture.width, texture.height,
+          TextureFormat.RGBA32, false);
+      sourceDebugTexture.filterMode = FilterMode.Point;
+      sourceDebugTexture.SetPixels32(src);
+      sourceDebugTexture.Apply(false, false);
+      System.IO.File.WriteAllBytes(sourceDebugPath, sourceDebugTexture.EncodeToPNG());
+      DestroyImmediate(sourceDebugTexture);
+      diagnostic += ", sourceDebugPng=" + sourceDebugPath.Replace('\\', '/');
       diagnostic += ", debugPng=" + breadF2DebugPngPath.Replace('\\', '/');
       if (lastBreadF2SamplingDiagnostic != diagnostic)
       {
