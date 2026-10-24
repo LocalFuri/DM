@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -31991,8 +31991,69 @@ private static void HandleGameViewPointerDown(
     // future F2 floor items down by three screen pixels. Keep the CSBwin scaling,
     // sprite dimensions, horizontal anchor and wall rendering unchanged.
     rect.y += 3f;
+    // Original-DM-wall alignment (2026-10-24): the F2 far-left floor-item
+    // anchor originally required an 8-pixel shift, refined to 5 pixels
+    // using the Cheese F2 screenshot and Unity's ORIGINAL DM wall joint.
+    // CSBwin's mortar layout is different, so do not reuse its horizontal
+    // anchor unchanged. Mirror the correction for the far-right sub-cell;
+    // near sub-cells and all F1 positions remain untouched. This is a shared
+    // F2 floor-cell alignment correction, not a Cheese-specific sprite tweak.
+    int mortarCorner = CsbFloorAbsoluteCorner(item.cell);
+    int mortarFacing = previewFacing == DungeonFacing.North ? 0 :
+        previewFacing == DungeonFacing.East ? 1 :
+        previewFacing == DungeonFacing.South ? 2 : 3;
+    int mortarRelativeCorner = (mortarCorner - mortarFacing + 4) & 3;
+    if (mortarRelativeCorner == 0) rect.x += 5f;
+    else if (mortarRelativeCorner == 1) rect.x -= 5f;
+    // Diagnostic: compare this item's floor sub-cell and CSBwin position
+    // against the front-wall mortar joint without altering any pixels.
+    int absoluteCorner = CsbFloorAbsoluteCorner(item.cell);
+    int facingIndex = previewFacing == DungeonFacing.North ? 0 :
+        previewFacing == DungeonFacing.East ? 1 :
+        previewFacing == DungeonFacing.South ? 2 : 3;
+    int relativeCorner = (absoluteCorner - facingIndex + 4) & 3;
+    string f2PositionTrace = "F2 POSITION TRACE: type=" + item.type
+        + ", cell=" + item.cell
+        + ", relativeCorner=" + relativeCorner
+        + ", left=" + rect.x
+        + ", center=" + (rect.x + rect.width * 0.5f)
+        + ", top=" + rect.y
+        + ", width=" + rect.width
+        + ", height=" + rect.height;
+    // Diagnostic only. Run for every successfully resolved Cheese F2 rectangle;
+    // do not re-project the item or assume a particular FloorItemDepth value.
+    if (string.Equals(item.type, "Cheese", System.StringComparison.OrdinalIgnoreCase))
+    {
+      GroundArtworkRegistry groundRegistry = ReadGroundArtworkRegistry();
+      GroundF1Anchor anchorL = groundRegistry == null || groundRegistry.groundF1Anchors == null
+          ? null : groundRegistry.groundF1Anchors.left;
+      GroundF1Anchor anchorR = groundRegistry == null || groundRegistry.groundF1Anchors == null
+          ? null : groundRegistry.groundF1Anchors.right;
+      string alignmentTrace = "F1/F2 ALIGNMENT TRACE: type=" + item.type
+          + ", F1LeftAnchor=" + (anchorL == null ? "MISSING" : (anchorL.x + "," + anchorL.y))
+          + ", F1RightAnchor=" + (anchorR == null ? "MISSING" : (anchorR.x + "," + anchorR.y))
+          + ", F2CsbCenterX=" + (rect.x + rect.width * 0.5f)
+          + ", F2CsbTopY=" + rect.y
+          + ", relativeCorner=" + relativeCorner
+          + ", sourceWidth=" + texture.width
+          + ", scaledWidth=" + rect.width
+          + ", correctionApplied=far left +8 / far right -8 (Unity DM wall)";
+      if (alignmentTrace != lastF1F2AlignmentTrace)
+      {
+        lastF1F2AlignmentTrace = alignmentTrace;
+        Debug.Log(alignmentTrace);
+      }
+    }
+    if (f2PositionTrace != lastF2PositionTrace)
+    {
+      lastF2PositionTrace = f2PositionTrace;
+      Debug.Log(f2PositionTrace);
+    }
     return true;
   }
+
+  private static string lastF2PositionTrace;
+  private static string lastF1F2AlignmentTrace;
 
   // CSBwin d.Byte5744 decoded from graphics.dat 0x22E, offsets 1502..1517.
   // Stored bytes / 10 = the output palette indices used by ShrinkBLT.

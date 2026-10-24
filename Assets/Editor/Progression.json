@@ -1,7 +1,7 @@
 {
-  "date": "2026-10-23",
+  "date": "2026-10-24",
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-10-23 END OF DAY: Bread F2 Unity-only horizontal sampling-phase experiment delivered but NOT yet verified in Unity; CSBwin GitHub diagnostic abandoned after builds #32/#33 failed. Resume with user comparing Bread F2 in Unity against CSBwin; preserve verified F1.",
+  "checkpoint": "2026-10-24: CSBwin F2 scaling with corrected source row order accepted; Bread and Apple visible patterns user-verified in GIMP, Cheese also matching; Club and Bow F2 rendering operational. Generic F2 floor Y +3 in tested code; F2 X nearly correct. Open: F2 object alignment to front-wall mortar joint / wall-floor contact; latest diagnostic F2 POSITION TRACE delivered but output not yet provided. Do not alter scaling.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -57,9 +57,11 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "First test latest Bread_F2_Horizontal_Phase_Test.zip in Unity (installation / compile / visual comparison not yet confirmed)",
-    "Compare Bread F2 directly against CSBwin and improve generic F2 scaling if needed, preserving F1",
-    "Then food F2 remaining items, F3/S2/S3; keep other prior pending patch verifications on record"
+    "Preserve user-accepted F2 scaling and wall rendering. Do not chase pixel details for Bread/Apple/Cheese/Club.",
+    "Inspect latest F2 POSITION TRACE for misaligned centred floor item; distinguish true floor-cell anchor from mortar-joint visual before generic X correction.",
+    "After approved F2 visual ground-contact check, commit Unity source and Progression.json to Git.",
+    "Then develop F3/S1/S2/S3 using generic CSBwin scaling and depth/cell ground-contact model; no per-item offsets.",
+    "Keep old pending ViewEdit Delay On/Off and Dungeon Features F1 item navigation patches unverified until explicitly tested."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -182,5 +184,78 @@
       "Once Bread F2 acceptable, compare other foods F2 then F3 and S2/S3. Keep all original 32px-wide padded source graphics and verified F1 unchanged."
     ],
     "user_workflow_preference": "ONE instruction per response for click-by-click guidance; when using user screenshot to direct clicks, annotate same screenshot with a LARGE RED CIRCLE around exact target (not red rectangle). Avoid excessive GitHub screenshot instructions."
-  }
+  },
+  "project_operating_rules_v20261024": {
+    "priority": "Progress over repeated minor pixel calibration. Never alter accepted systems without explicit request. A fix to floor geometry must be generic, not hardcoded by item name.",
+    "delivery": {
+      "source_archive": "ZIP with all modified files at root, never folders",
+      "exact_filenames": "Preserve ViewportLayoutEditor.cs and Progression.json, do not rename inside ZIP",
+      "timestamps": "Set honest ZIP entry modified timestamps and timestamp ZIP filename; preserve timestamps of truly unmodified files; specify files and Unity destination paths in reply",
+      "text_files": "Do not include extra CHANGES.txt unless asked; change history is stored in Progression.json",
+      "source_of_truth": "Use latest user-uploaded C# as baseline; do not assume a previously delivered patch was installed",
+      "compile": "Do not claim Unity compilation/visual check unless user confirms"
+    },
+    "workflow": {
+      "screenshot_guidance": "Give one UI instruction at a time; on user screenshot annotate exact click location with red circle when directing a click",
+      "missing_data": "Explicit Console errors; never substitute fake artwork, default metadata, guessed graphic class or fallback positions",
+      "git": "Prefer tested checkpoint commits before substantial changes; do not force GitHub/CSBwin diagnostic build workflow after user abandoned it"
+    },
+    "rendering": {
+      "screen": "320x200 top-left origin, X right and Y down; viewport 224x136; screen HUD area remaining 96 px",
+      "wall_reference": "Original Dungeon Master wall rendering is accepted; NEVER change wall textures/geometry as part of item tests",
+      "floor_scaling_reference": "CSBwin source ShrinkBLT, preserve fixed-point pixel sampling and correct top-down CSBwin versus bottom-up Unity GetPixels32 row index handling",
+      "f2_scaling_status": "ACCEPTED. Bread and Apple GIMP visible pixel shapes match; Cheese matches; Club 64x10 to 40x6 accepted, Bow 80x17 F2 supported. No further pixel chasing without request. Cropped flattened screenshots do not establish full alpha-mask identity.",
+      "graphic_source_sizes": "Keep original padded F1 sprite widths 32/48/64/80 when present; 16px source width alignment is layout, not a requirement to rescale artwork",
+      "positioning": "Keep F1 verified alignment; F2 generic CSBwin X positioning with current floor calibration bypass experiment; generic F2 Y offset +3 px in latest user code as of 2026-10-24; no per-item offsets for future work. Ground-contact must look natural, not glued to front wall. Do not treat the mortar joint as universal centre for left/right floor cells; verify actual cell and perspective first.",
+      "future": "F3 and S1/S2/S3 only after stable F2 baseline; per depth and floor cell generic ground contact when needed",
+      "item_identity": "Floor image determined by item type/registered art/verified CSBwin subtype, not champion item instance ID; preserve unique identity; explicit errors for missing mappings"
+    },
+    "preservation": [
+      "Do not modify F2 CSBwin fixed-step row-order algorithm",
+      "Do not modify accepted F1 placements, wall renderer, inventory UI or item IDs",
+      "Do not resume graphic 0542 extraction unless user asks",
+      "Leave 1-4px tolerated differences unless user flags visibly unnatural contact"
+    ]
+  },
+  "f2_floor_milestone_20261024": {
+    "rendered_and_accepted": [
+      "Bread F2",
+      "Apple F2",
+      "Cheese F2",
+      "Club F2"
+    ],
+    "bow": {
+      "f1_reference_unity_and_csbwin": {
+        "x": 30,
+        "y": 148
+      },
+      "f2_prior_cs_reference": {
+        "x": 60,
+        "y": 119
+      },
+      "f2_prior_unity_reference": {
+        "x": 64,
+        "y": 119
+      },
+      "mapping": "Bow -> original CSBwin ClawBow subtype 25; registration Bow_F1_80x17",
+      "status": "F2 visible, visual ground-contact work in progress"
+    },
+    "club": {
+      "f1_art": "Club_F1_64x10",
+      "f2_size": [
+        40,
+        6
+      ],
+      "original_cs_f2_visible": [
+        65,
+        122
+      ],
+      "latest_temp_y_history": "original rect Y121; +1 then +3 experiment; later generic +3 F2 correction; avoid per-item Y offsets"
+    },
+    "visual_contact": "User observes F1 item centre aligned with front-wall vertical mortar joint, F2 item visibly offset. Images uploaded on 2026-10-24 demonstrate. Needs actual corner-aware generic X alignment analysis; no new source fix yet.",
+    "current_source_baseline": "ViewportLayoutEditor(20261024-183157).zip uploaded, then ViewportLayoutEditor_F2_Position_Trace_20261024-2035.zip delivered with diagnostic only; latest delivery not yet confirmed installed",
+    "current_test": "Display F2 item and provide Console message F2 POSITION TRACE; establish floor-cell corner and source of visual offset before correcting",
+    "note": "Current corrected Y +3 applies to all F2 objects only; F1/F3/S1/S2/S3 unchanged."
+  },
+  "checkpoint_history_note": "Records dated 2026-10-23 elsewhere in this JSON are historical and superseded by newer project_operating_rules_v20261024 and f2_floor_milestone_20261024; do not treat old experimental next-session instructions as current."
 }
