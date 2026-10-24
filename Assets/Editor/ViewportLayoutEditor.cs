@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -31987,10 +31987,10 @@ private static void HandleGameViewPointerDown(
     // per-item ViewEdit F2 calibration rectangles or mirror overrides.
     // All F2 objects use the original viewport and small-offset tables.
     if (!TryGetCsbF2RectBase(item, texture, out rect, out mirror)) return false;
-    // TEMPORARY VISUAL TEST (2026-10-24): move only Bow at F2 down 2 screen
-    // pixels to assess floor contact. Do not change CSBwin scaling or X.
-    if (string.Equals(item.type, "Bow", System.StringComparison.OrdinalIgnoreCase))
-      rect.y += 2f;
+    // Generic F2 floor-contact adjustment (2026-10-24): move all current and
+    // future F2 floor items down by three screen pixels. Keep the CSBwin scaling,
+    // sprite dimensions, horizontal anchor and wall rendering unchanged.
+    rect.y += 3f;
     return true;
   }
 
