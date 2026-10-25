@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -3058,6 +3058,26 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     ClampSelectedPieceIndex();
+
+    // Experimental floor-item scale comparison; OFF preserves current CSBwin output.
+    // The 21/32 F2 assignment is unverified against DOS PC 3.4 screenshots.
+    if (!Application.isPlaying)
+    {
+      bool nextExperimentalF2 = EditorGUILayout.ToggleLeft(
+          "EXPERIMENT: F2 padded floor items at 21/32 (PC34 sampler)",
+          usePc34ExperimentalF2);
+      if (nextExperimentalF2 != usePc34ExperimentalF2)
+      {
+        usePc34ExperimentalF2 = nextExperimentalF2;
+        lastPc34F2RenderTrace = null; // Emit next actual render branch once.
+        Debug.Log("PC34 F2 TOGGLE: " + (usePc34ExperimentalF2 ? "ON" : "OFF")
+            + "; waiting for F2 rendering. ON uses the experimental scaler ONLY"
+            + " when the object is in an F2 far corner and registered filename"
+            + " ends in _F0_WxH and matches the registered bitmap dimensions.");
+        Repaint();
+        UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+      }
+    }
 
     // Keep the complete minimap outside the controls scroll area. The map is
     // always visible as one fixed ViewEdit header; only the wall/feature rows
@@ -32052,6 +32072,17 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
+  // ViewEdit-only experimental setting; starts OFF on every window instance.
+  private bool usePc34ExperimentalF2;
+  private static string lastPc34F2RenderTrace;
+
+  private static void TracePc34F2Render(string detail)
+  {
+    if (lastPc34F2RenderTrace == detail) return;
+    lastPc34F2RenderTrace = detail;
+    Debug.Log("PC34 F2 RENDER: " + detail);
+  }
+
   private static string lastF2PositionTrace;
   private static string lastF1F2AlignmentTrace;
 
@@ -32077,6 +32108,7 @@ private static void HandleGameViewPointerDown(
     bool traceClub = string.Equals(item.type, "Club", System.StringComparison.OrdinalIgnoreCase);
     if (!TryGetCsbF2Rect(item, texture, out Rect rect, out bool mirror))
     {
+      TracePc34F2Render("object=" + item.type + "; SKIPPED: no F2 rectangle");
       if (traceClub) Debug.LogWarning("CLUB F2 TRACE: rectangle lookup failed; item="
           + item.instanceId + ", source=" + texture.width + "x" + texture.height);
       return;
@@ -32102,15 +32134,19 @@ private static void HandleGameViewPointerDown(
     if (mediumDistance)
     {
       GroundArtworkEntry artwork = GetRegisteredGroundArtwork(item.type);
-      if (artwork == null) return; // Registry loader already reports missing mappings.
+      if (artwork == null)
+      {
+        TracePc34F2Render("object=" + item.type
+            + "; SKIPPED: no registered ground artwork");
+        return; // Registry loader already reports missing mappings.
+      }
       string registeredPath = artwork.groundF1Path ?? string.Empty;
       string registeredName = System.IO.Path.GetFileNameWithoutExtension(registeredPath);
-      int csbMarker = registeredName.IndexOf("_csb_F1_", System.StringComparison.OrdinalIgnoreCase);
-      int csbwinMarker = registeredName.IndexOf("_csbwin_F1_", System.StringComparison.OrdinalIgnoreCase);
-      string suffix = csbMarker >= 0
-          ? registeredName.Substring(csbMarker + "_csb_F1_".Length)
-          : csbwinMarker >= 0
-          ? registeredName.Substring(csbwinMarker + "_csbwin_F1_".Length)
+      // Accept the registered F0 padded source texture by its declared dimensions, not its origin label.
+      // The registry path must point to the actual bitmap; no alternative artwork is loaded.
+      int f0Marker = registeredName.LastIndexOf("_F0_", System.StringComparison.OrdinalIgnoreCase);
+      string suffix = f0Marker >= 0
+          ? registeredName.Substring(f0Marker + "_F0_".Length)
           : null;
       if (suffix != null)
       {
@@ -32125,8 +32161,15 @@ private static void HandleGameViewPointerDown(
         }
         hasOriginalPaddedGraphic = true;
         int sourceUnits = texture.width / 2;
-        int targetWidth = ((sourceUnits * 20 + 10) >> 5) * 2;
-        int targetHeight = (texture.height * 20 + 10) >> 5;
+        // Do not change the default CSBwin 20/32 size/rounding rule.
+        // Experimental 21/32 is chosen for comparison only, not verified
+        // as the true PC 3.4 F2 cell scale.
+        int targetWidth = usePc34ExperimentalF2
+            ? texture.width * 21 / 32
+            : ((sourceUnits * 20 + 10) >> 5) * 2;
+        int targetHeight = usePc34ExperimentalF2
+            ? texture.height * 21 / 32
+            : (texture.height * 20 + 10) >> 5;
         if (targetWidth < 1 || targetHeight < 1)
         {
           ReportCsbF2Issue("Invalid CSBwin scaled dimensions: " + registeredPath);
@@ -32141,10 +32184,29 @@ private static void HandleGameViewPointerDown(
     Color32[] src = texture.GetPixels32();
     var scaled = new Color32[width * height];
     int sourceWidth = texture.width;
-    long stepX = hasOriginalPaddedGraphic
+    bool pc34Sampling = usePc34ExperimentalF2 && mediumDistance
+        && hasOriginalPaddedGraphic;
+    TracePc34F2Render("object=" + item.type + " (" + item.instanceId + ")"
+        + ", toggle=" + (usePc34ExperimentalF2 ? "ON" : "OFF")
+        + ", screenCorner=" + screenCorner
+        + ", mediumDistance=" + mediumDistance
+        + ", paddedFilenameRecognized=" + hasOriginalPaddedGraphic
+        + ", sampler=" + (pc34Sampling ? "PC34 21/32 6-bit"
+            : hasOriginalPaddedGraphic ? "CSBwin existing fixed-step"
+            : "existing non-padded path")
+        + ", source=" + texture.width + "x" + texture.height
+        + ", output=" + width + "x" + height);
+    // PC C implementation in BLTSHRNK.C uses six fractional bits and
+    // half-step starts. Existing CSBwin 16.16 path stays byte-for-byte
+    // unchanged when this ViewEdit experiment is OFF.
+    long stepX = pc34Sampling
+        ? ((long)sourceWidth << 6) / width
+        : hasOriginalPaddedGraphic
         ? CsbShrinkFixedStep(sourceWidth, width)
         : ((long)sourceWidth << 16) / width;
-    long stepY = hasOriginalPaddedGraphic
+    long stepY = pc34Sampling
+        ? ((long)texture.height << 6) / height
+        : hasOriginalPaddedGraphic
         ? CsbShrinkFixedStep(texture.height, height)
         : ((long)texture.height << 16) / height;
     // Match CSBwin's original sampling phase; no item-specific adjustments.
@@ -32152,9 +32214,12 @@ private static void HandleGameViewPointerDown(
     for (int y = 0; y < height; y++)
       for (int x = 0; x < width; x++)
       {
-        int sourceX = Mathf.Clamp((int)((0x7fffL
-            + (hasOriginalPaddedGraphic ? stepX >> 1 : 0L)
-            + horizontalPhaseOffset + x * stepX) >> 16), 0, sourceWidth - 1);
+        int sourceX = pc34Sampling
+            ? Mathf.Clamp((int)(((stepX >> 1) + x * stepX) >> 6),
+                0, sourceWidth - 1)
+            : Mathf.Clamp((int)((0x7fffL
+                + (hasOriginalPaddedGraphic ? stepX >> 1 : 0L)
+                + horizontalPhaseOffset + x * stepX) >> 16), 0, sourceWidth - 1);
         if (mirror) sourceX = sourceWidth - 1 - sourceX;
         // CSBwin ShrinkBLT traverses bitmap rows from top to bottom.
         // Unity GetPixels32() stores row zero at the bottom. Convert the
@@ -32164,8 +32229,11 @@ private static void HandleGameViewPointerDown(
         if (hasOriginalPaddedGraphic)
         {
           int destinationTopY = height - 1 - y;
-          int sourceTopY = Mathf.Clamp((int)((0x7fffL + (stepY >> 1)
-              + destinationTopY * stepY) >> 16), 0, texture.height - 1);
+          int sourceTopY = pc34Sampling
+              ? Mathf.Clamp((int)(((stepY >> 1) + destinationTopY * stepY) >> 6),
+                  0, texture.height - 1)
+              : Mathf.Clamp((int)((0x7fffL + (stepY >> 1)
+                  + destinationTopY * stepY) >> 16), 0, texture.height - 1);
           sourceY = texture.height - 1 - sourceTopY;
         }
         else
@@ -32221,7 +32289,8 @@ private static void HandleGameViewPointerDown(
           + ", mediumDistance=" + mediumDistance
           + ", corner=" + screenCorner
           + ", padded=" + hasOriginalPaddedGraphic
-          + ", method=" + (hasOriginalPaddedGraphic ? "CSBwin fixed step top-down rows" : "alternative")
+          + ", method=" + (pc34Sampling ? "PC34 experiment 21/32 fixed 6-bit"
+              : hasOriginalPaddedGraphic ? "CSBwin fixed step top-down rows" : "alternative")
           + ", source=" + texture.width + "x" + texture.height
           + ", output=" + width + "x" + height
           + ", stepX=" + stepX + ", stepY=" + stepY

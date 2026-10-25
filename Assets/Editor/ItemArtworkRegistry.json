@@ -200,7 +200,7 @@
         },
         {
             "itemType": "Apple",
-            "groundF1Path": "Assets/Art/Food/Apple_csb_F1_32x13.png",
+            "groundF1Path": "Assets/Art/Food/Apple_F0_32x13.png",
             "width": 32,
             "height": 13
         },
@@ -296,43 +296,43 @@
         },
         {
             "itemType": "Corn",
-            "groundF1Path": "Assets/Art/Food/Corn_csb_F1_32x10.png",
+            "groundF1Path": "Assets/Art/Food/Corn_F0_32x10.png",
             "width": 32,
             "height": 10
         },
         {
             "itemType": "Bread",
-            "groundF1Path": "Assets/Art/Food/Bread_csb_F1_32x16.png",
+            "groundF1Path": "Assets/Art/Food/Bread_F0_32x16.png",
             "width": 32,
             "height": 16
         },
         {
             "itemType": "Cheese",
-            "groundF1Path": "Assets/Art/Food/Cheese_csb_F1_32x15.png",
+            "groundF1Path": "Assets/Art/Food/Cheese_F0_32x15.png",
             "width": 32,
             "height": 15
         },
         {
             "itemType": "Dragon Steak",
-            "groundF1Path": "Assets/Art/Food/Dragon_Steak_csb_F1_32x10.png",
+            "groundF1Path": "Assets/Art/Food/Dragon_Steak_F0_32x10.png",
             "width": 32,
             "height": 10
         },
         {
             "itemType": "Drumstick",
-            "groundF1Path": "Assets/Art/Food/Drumstick_csb_F1_32x11.png",
+            "groundF1Path": "Assets/Art/Food/Drumstick_F0_32x11.png",
             "width": 32,
             "height": 11
         },
         {
             "itemType": "Screamer Slice",
-            "groundF1Path": "Assets/Art/Food/Screamer_Slice_csb_F1_32x24.png",
+            "groundF1Path": "Assets/Art/Food/Screamer_Slice_F0_32x24.png",
             "width": 32,
             "height": 24
         },
         {
             "itemType": "Worm Round",
-            "groundF1Path": "Assets/Art/Food/Worm_Round_csb_F1_32x23.png",
+            "groundF1Path": "Assets/Art/Food/Worm_Round_F0_32x23.png",
             "width": 32,
             "height": 23
         },
