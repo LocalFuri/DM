@@ -1,7 +1,7 @@
 {
   "date": "2026-10-24",
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-10-24: CSBwin F2 scaling with corrected source row order accepted; Bread and Apple visible patterns user-verified in GIMP, Cheese also matching; Club and Bow F2 rendering operational. Generic F2 floor Y +3 in tested code; F2 X nearly correct. Open: F2 object alignment to front-wall mortar joint / wall-floor contact; latest diagnostic F2 POSITION TRACE delivered but output not yet provided. Do not alter scaling.",
+  "checkpoint": "2026-10-24 end-of-day: Apple original Dungeon Master ReDMCSB reverse engineering, Graphic 558 recovered; resume decoding original object tables.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -257,5 +257,47 @@
     "current_test": "Display F2 item and provide Console message F2 POSITION TRACE; establish floor-cell corner and source of visual offset before correcting",
     "note": "Current corrected Y +3 applies to all F2 objects only; F1/F3/S1/S2/S3 unchanged."
   },
-  "checkpoint_history_note": "Records dated 2026-10-23 elsewhere in this JSON are historical and superseded by newer project_operating_rules_v20261024 and f2_floor_milestone_20261024; do not treat old experimental next-session instructions as current."
+  "checkpoint_history_note": "Historical bread debugging and earlier F2 positioning questions remain for traceability; use current_next_actions_20261025 and redmcsb_apple_original_dm_research_20261024 as authoritative for next session.",
+  "redmcsb_apple_original_dm_research_20261024": {
+    "status": "Research checkpoint; original code accessed from user uploaded ReDMCSB_Release2-master.zip; renderer remains unchanged by this research.",
+    "source_zip": "ReDMCSB_Release2-master.zip",
+    "source_files": [
+      "SOURCE/ENGINE/DUNVIEW.C",
+      "SOURCE/ENGINE/START.C",
+      "SOURCE/ENGINE/LZW.C"
+    ],
+    "drawing_routine": "F115_xxxx_DUNGEONVIEW_DrawObjectsCreaturesProjectilesExplosions_COPYPROTECTIONEF (verify exact symbol in supplied source)",
+    "scaling": "C20_SCALE_D2=20 and M78_SCALED_DIMENSION using integer arithmetic; for a 32x16 source Apple in the 20/32 branch -> 20x10. Scale depends on distance and floor subcell; do not assume this for every F2 cell.",
+    "object_positioning": "Base coordinates, floor pile shift indices and shifts come from Graphic 558, routed via G218_aaaauc_Graphic558_ObjectCoordinateSets, G217_aauc_Graphic558_ObjectPileShiftSetIndices, G223_aac_Graphic558_ShiftSets; validate exact index mapping and values.",
+    "render_box_x": "Original code uses byte-width-based half-width bounds (Atari ST 2 horizontal pixels per byte): X1=max(0,X-scaledByteWidth+1), X2=min(223,X+scaledByteWidth). Check original clipping before port.",
+    "object_aspects": "G209 ObjectAspects; need decode Apple object record for graphic identity, source dimensions and coordinate-set selection.",
+    "graphics_dat": "graphics(10).dat and graphics(9).dat files available in local working session; original game resource 558 discovered at offset 262198, packed size 3976, decoded size 4720 bytes (as established in this session).",
+    "graphic558": "Extracted decoded raw 4720-byte binary Graphic558_Decoded.bin; previously delivered research zip Graphic558_OriginalDM_Extract_20261024.zip. Table record layouts and numeric offsets have NOT yet been fully mapped.",
+    "critical_next_steps": [
+      "Locate exact Graphic 558 partitioning and table offset declarations/assignment code in START.C and headers, and verify against decoded raw bytes.",
+      "Decode G218 original object coordinate sets, G217 object pile shift-set indices, G223 shift pairs. Check count, index ranges and signed representation.",
+      "Find Apple object-aspect G209 record and precisely trace the code path for the tested F2 floor subcell; determine scale variant and pile shift.",
+      "Calculate original Apple F2 render rectangle as actual integers (X,Y,width,height); independently check existing Unity viewport values and floor-cell convention.",
+      "Only if original data predicts a defensible improvement, prepare a reversible generic C# patch. Do not break existing approved food F2 visuals.",
+      "After Apple, cross-check Club, Bow, F3 and additional subcells using same verified logic."
+    ],
+    "current_unity_verifications": "Apple, Bread, Cheese at F2 verified visually perfect by user on 2026-10-24; current F2 alignment correction far-left +5 px, far-right -5 px; F2 vertical +3 px; scaling and row order preserved. Club F2 was next manual visual test and is not yet confirmed after final +5 correction.",
+    "preserve": [
+      "Unity original DM wall renderer and mortar art",
+      "F1 floor placements",
+      "existing CSBwin-derived F2 sample/downscale and reversed row order",
+      "F2 Y +3 px",
+      "F2 far-left/right horizontal +/-5 px until source-derived replacement is verified",
+      "strict no-fallback asset/data policy"
+    ],
+    "no_claims": "Do not claim Graphic 558 coordinate records are decoded yet, do not invent original Apple F2 X/Y, do not claim source changed/compiled from ReDMCSB study."
+  },
+  "current_next_actions_20261025": [
+    "Locate exact Graphic 558 partitioning and table offset declarations/assignment code in START.C and headers, and verify against decoded raw bytes.",
+    "Decode G218 original object coordinate sets, G217 object pile shift-set indices, G223 shift pairs. Check count, index ranges and signed representation.",
+    "Find Apple object-aspect G209 record and precisely trace the code path for the tested F2 floor subcell; determine scale variant and pile shift.",
+    "Calculate original Apple F2 render rectangle as actual integers (X,Y,width,height); independently check existing Unity viewport values and floor-cell convention.",
+    "Only if original data predicts a defensible improvement, prepare a reversible generic C# patch. Do not break existing approved food F2 visuals.",
+    "After Apple, cross-check Club, Bow, F3 and additional subcells using same verified logic."
+  ]
 }
