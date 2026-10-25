@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -32335,9 +32335,9 @@ private static void HandleGameViewPointerDown(
       string registeredName = System.IO.Path.GetFileNameWithoutExtension(registeredPath);
       // Accept the registered F0 padded source texture by its declared dimensions, not its origin label.
       // The registry path must point to the actual bitmap; no alternative artwork is loaded.
-      int f0Marker = registeredName.LastIndexOf("_F0_", System.StringComparison.OrdinalIgnoreCase);
-      string suffix = f0Marker >= 0
-          ? registeredName.Substring(f0Marker + "_F0_".Length)
+      int f1Marker = registeredName.LastIndexOf("_F1_", System.StringComparison.OrdinalIgnoreCase);
+      string suffix = f1Marker >= 0
+          ? registeredName.Substring(f1Marker + "_F1_".Length)
           : null;
       if (suffix != null)
       {
