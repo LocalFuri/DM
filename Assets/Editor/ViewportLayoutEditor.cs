@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -3074,8 +3074,11 @@ public class ViewportLayoutEditor : EditorWindow
             + "; waiting for F2 rendering. ON uses the experimental scaler ONLY"
             + " when the object is in an F2 far corner and registered filename"
             + " ends in _F0_WxH and matches the registered bitmap dimensions.");
+        // Recompose the dungeon viewport immediately when comparing samplers.
+        // A repaint alone can display the previously composed floor-item pixels.
+        RefreshEditModePreview();
+        RepaintGameViews();
         Repaint();
-        UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
       }
     }
 
@@ -32191,13 +32194,13 @@ private static void HandleGameViewPointerDown(
         + ", screenCorner=" + screenCorner
         + ", mediumDistance=" + mediumDistance
         + ", paddedFilenameRecognized=" + hasOriginalPaddedGraphic
-        + ", sampler=" + (pc34Sampling ? "PC34 21/32 6-bit"
+        + ", sampler=" + (pc34Sampling ? "PC34 21/32 6-bit X+16 Y0"
             : hasOriginalPaddedGraphic ? "CSBwin existing fixed-step"
             : "existing non-padded path")
         + ", source=" + texture.width + "x" + texture.height
         + ", output=" + width + "x" + height);
     // PC C implementation in BLTSHRNK.C uses six fractional bits and
-    // half-step starts. Existing CSBwin 16.16 path stays byte-for-byte
+    // half-step starts. Experimental F2 adds 16/64 to horizontal phase only. Existing CSBwin 16.16 path stays byte-for-byte
     // unchanged when this ViewEdit experiment is OFF.
     long stepX = pc34Sampling
         ? ((long)sourceWidth << 6) / width
@@ -32215,7 +32218,7 @@ private static void HandleGameViewPointerDown(
       for (int x = 0; x < width; x++)
       {
         int sourceX = pc34Sampling
-            ? Mathf.Clamp((int)(((stepX >> 1) + x * stepX) >> 6),
+            ? Mathf.Clamp((int)(((stepX >> 1) + 16L + x * stepX) >> 6),
                 0, sourceWidth - 1)
             : Mathf.Clamp((int)((0x7fffL
                 + (hasOriginalPaddedGraphic ? stepX >> 1 : 0L)
