@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -3058,29 +3058,6 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     ClampSelectedPieceIndex();
-
-    // Experimental floor-item scale comparison; OFF preserves current CSBwin output.
-    // The 21/32 F2 assignment is unverified against DOS PC 3.4 screenshots.
-    if (!Application.isPlaying)
-    {
-      bool nextExperimentalF2 = EditorGUILayout.ToggleLeft(
-          "EXPERIMENT: F2 padded floor items at 21/32 (PC34 sampler)",
-          usePc34ExperimentalF2);
-      if (nextExperimentalF2 != usePc34ExperimentalF2)
-      {
-        usePc34ExperimentalF2 = nextExperimentalF2;
-        lastPc34F2RenderTrace = null; // Emit next actual render branch once.
-        Debug.Log("PC34 F2 TOGGLE: " + (usePc34ExperimentalF2 ? "ON" : "OFF")
-            + "; waiting for F2 rendering. ON uses the experimental scaler ONLY"
-            + " when the object is in an F2 far corner and registered filename"
-            + " ends in _F0_WxH and matches the registered bitmap dimensions.");
-        // Recompose the dungeon viewport immediately when comparing samplers.
-        // A repaint alone can display the previously composed floor-item pixels.
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
-      }
-    }
 
     // Keep the complete minimap outside the controls scroll area. The map is
     // always visible as one fixed ViewEdit header; only the wall/feature rows
@@ -31570,6 +31547,11 @@ private static void HandleGameViewPointerDown(
       Color32[] pixels, FloorItemPlacement item, Texture2D texture,
       FloorItemDepth depth, bool isRight, Vector2Int pileOffset)
   {
+    if (depth == FloorItemDepth.TwoAhead)
+    {
+      BlitCsbF3Item(pixels, item, texture, pileOffset);
+      return;
+    }
     if (depth == FloorItemDepth.OneAhead)
     {
       BlitCsbF2Item(pixels, item, texture, pileOffset);
@@ -32003,6 +31985,220 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
+  private bool TryGetCsbF3RectBase(FloorItemPlacement item, Texture2D texture,
+      out Rect rect, out bool mirror)
+  {
+    rect = new Rect();
+    mirror = false;
+    if (!EnsureCsbF2Tables() || item == null || texture == null) return false;
+    // Original dungeon items retain their exact DB category/subtype metadata.
+    // Champion-created and transferred items must resolve the same descriptor
+    // by canonical item type, never by treating their unique ID as graphics data.
+    CsbObjectDescriptionRecord desc = null;
+    DungeonOriginalItemLoader.Record original = null;
+    foreach (DungeonOriginalItemLoader.Record record in DungeonOriginalItemLoader.Load())
+      if (record.id == item.instanceId) { original = record; break; }
+    if (original != null)
+      foreach (CsbObjectDescriptionRecord entry in csbObjectTable.entries)
+        if (entry != null && entry.dbSubtype == original.thing.Type
+            && string.Equals((entry.dbCategory ?? string.Empty).Trim(),
+                (original.recordType ?? string.Empty).Trim(),
+                System.StringComparison.OrdinalIgnoreCase))
+        { desc = entry; break; }
+    if (original != null && desc == null)
+    {
+      ReportCsbF3Issue("No original graphic descriptor for " + original.recordType
+          + ":" + original.thing.Type + " (" + item.instanceId + ").");
+      return false;
+    }
+    // For non-original instances, match the canonical DB item-name decoder
+    // against the original descriptor table. Ambiguity remains an explicit error.
+    if (original == null)
+    {
+      string wantedType = (item.type ?? string.Empty).Trim();
+      int matchingTypes = 0;
+      string candidateDescriptions = string.Empty;
+      foreach (CsbObjectDescriptionRecord entry in csbObjectTable.entries)
+      {
+        if (entry == null) continue;
+        string decodedName = DungeonOriginalItemLoader.DecodeFloorItemName(
+            entry.dbCategory, entry.dbSubtype);
+        // CSBwin Objects.h: weapon_ClawBow = 25. The project's item name
+        // for this original weapon is "Bow". Resolve its original descriptor,
+        // not an invented graphic class, while retaining its unique instance ID.
+        bool originalBowName = string.Equals(wantedType, "Bow",
+            System.StringComparison.OrdinalIgnoreCase)
+            && string.Equals((entry.dbCategory ?? string.Empty).Trim(), "Weapon",
+                System.StringComparison.OrdinalIgnoreCase)
+            && entry.dbSubtype == 25;
+        if (!originalBowName && !string.Equals((decodedName ?? string.Empty).Trim(), wantedType,
+            System.StringComparison.OrdinalIgnoreCase)) continue;
+        matchingTypes++;
+        if (candidateDescriptions.Length < 300)
+          candidateDescriptions += " [" + entry.dbCategory + ":" + entry.dbSubtype
+              + " => " + entry.graphicClassIndex + "]";
+        if (desc == null) desc = entry;
+        else if (desc.graphicClassIndex != entry.graphicClassIndex)
+        {
+          ReportCsbF3Issue("Ambiguous original graphic mappings for type '"
+              + wantedType + "' (" + item.instanceId + "): "
+              + candidateDescriptions + ". No guessed graphic class.");
+          return false;
+        }
+      }
+      if (desc == null || desc.graphicClassIndex < 0
+          || desc.graphicClassIndex >= csbGraphicTable.entries.Length)
+      {
+        ReportCsbF3Issue("No original graphic mapping for floor item type '"
+            + wantedType + "' (" + item.instanceId
+            + "). Checked " + csbObjectTable.entries.Length
+            + " original descriptors. No guessed graphic class.");
+        return false;
+      }
+    }
+    CsbGraphicClassRecord graphic = csbGraphicTable.entries[desc.graphicClassIndex];
+    if (graphic.viewportPositionClass < 0 || graphic.viewportPositionClass >= csbViewportTable.classes.Length)
+    { ReportCsbF3Issue("Invalid viewport class for " + item.instanceId); return false; }
+    // CSBwin positions: 0=far left, 1=far right, 2=near right, 3=near left.
+    // The original object sub-square is an absolute N/E/S/W direction, rotated
+    // into the player's view. TwoAhead is relative cell 3.
+    int absCorner = CsbFloorAbsoluteCorner(item.cell);
+    if (absCorner < 0) return false;
+    int facingCorner = previewFacing == DungeonFacing.North ? 0 :
+        previewFacing == DungeonFacing.East ? 1 :
+        previewFacing == DungeonFacing.South ? 2 : 3;
+    int relCorner = (absCorner - facingCorner + 4) & 3;
+    CsbViewportCell[] cells = csbViewportTable.classes[graphic.viewportPositionClass].cells;
+    if (cells == null || cells.Length != 10 || cells[3]?.positions == null
+        || cells[3].positions.Length != 5)
+    { ReportCsbF3Issue("Invalid F3 viewport positions table."); return false; }
+    CsbViewportCell cell = cells[3];
+    CsbViewportPoint point = cell.positions[relCorner];
+    if (!point.valid || point.y == 0)
+    {
+      if (string.Equals(item.type, "Club", System.StringComparison.OrdinalIgnoreCase))
+        Debug.LogWarning("CLUB F2 TRACE: viewport position rejected; class="
+            + graphic.viewportPositionClass + ", corner=" + relCorner
+            + ", valid=" + point.valid + ", x=" + point.x + ", y=" + point.y);
+      return false;
+    }
+    bool near = relCorner >= 2;
+    // F3 candidate: CSBwin relative cell 3 uses 16/32 for far corners
+    // and 20/32 for near corners; verify with CSBwin reference screenshot.
+    int numerator = near ? 20 : 16;
+    int rounding = near ? 10 : 8;
+    // Source PNGs hold visible pixels rather than original padded bitplanes.
+    // Keep their artwork sizes generic; no per-item correction.
+    int width = Mathf.Max(1, (texture.width * numerator + rounding) / 32);
+    int height = Mathf.Max(1, (texture.height * numerator + rounding) / 32);
+    // CSBwin viewport is 224x136; editor's complete 320x200 image has
+    // viewport at screen-top 32 (pixel-alignment subject to Unity comparison).
+    // Code51a4.cpp DrawSingleObject applies d.smallOffsets to the viewport
+    // anchor BEFORE constructing the sprite rectangle, including the FIRST
+    // object in a cell. Our pile logic already applies relative displacements
+    // for subsequent objects, but previously omitted the first displacement.
+    // Apply it generically at F3 using the existing extracted CSBwin table.
+    if (!EnsureCsbFloorOffsetsLoaded()) return false;
+    int initialSmallOffset = (absCorner & 1) << 3;
+    Vector2Int firstObjectOffset = csbFloorOffsetRows[2][initialSmallOffset];
+    int top = 32 + point.y + firstObjectOffset.y - height + 1;
+    // Position all F3 objects from the original CSBwin viewport anchor and
+    // small-offset table. No temporary item-specific Y compensation.
+    // CSBwin DrawSingleObject: width_LOCAL_22 is half the sprite pixel width.
+    // Its horizontal anchor is the center; vertical anchor is the bottom scanline.
+    // Keep this F3 calculation independent of the verified F2 code.
+    int left = point.x + firstObjectOffset.x - (width / 2) + 1;
+    rect = new Rect(left, top, width, height);
+    mirror = (graphic.flags & 1) != 0 && (relCorner == 1 || relCorner == 2);
+    return true;
+  }
+
+  private static readonly HashSet<string> csbF3Diagnostics =
+      new HashSet<string>(System.StringComparer.Ordinal);
+  private static void ReportCsbF3Issue(string message)
+  {
+    if (csbF3Diagnostics.Add(message)) Debug.LogError("CSBwin F3: " + message);
+  }
+
+  // Isolated CSBwin F3 implementation; does not change verified CSBwin F2.
+  private void BlitCsbF3Item(Color32[] pixels, FloorItemPlacement item,
+      Texture2D texture, Vector2Int pileOffset)
+  {
+    if (!TryGetCsbF3RectBase(item, texture, out Rect rect, out bool mirror))
+      return;
+    int width = Mathf.RoundToInt(rect.width);
+    int height = Mathf.RoundToInt(rect.height);
+    if (width < 1 || height < 1)
+    {
+      ReportCsbF3Issue("Invalid scaled dimensions for " + item.type);
+      return;
+    }
+    int absCorner = CsbFloorAbsoluteCorner(item.cell);
+    int facingIndex = previewFacing == DungeonFacing.North ? 0 :
+        previewFacing == DungeonFacing.East ? 1 :
+        previewFacing == DungeonFacing.South ? 2 : 3;
+    int relCorner = (absCorner - facingIndex + 4) & 3;
+    // Original Code51a4.cpp DrawSingleObject, relative cell 3:
+    // far corners 0/1 use Byte5728 (16/32); near corners 2/3 use
+    // Byte5744 (20/32). F3 geometry and sampling remain unchanged.
+    int[] f3ColorMap = relCorner < 2
+        ? CsbFloorFarPalette : CsbFloorMediumPalette;
+    Color32[] source = texture.GetPixels32();
+    Color32[] originalPalette = DungeonViewportLightPalettes[0];
+    Color32[] scaled = new Color32[width * height];
+    long stepX = CsbShrinkFixedStep(texture.width, width);
+    long stepY = CsbShrinkFixedStep(texture.height, height);
+    for (int y = 0; y < height; y++)
+    {
+      int dstTopY = height - 1 - y;
+      int srcTopY = Mathf.Clamp((int)((0x7fffL + (stepY >> 1)
+          + dstTopY * stepY) >> 16), 0, texture.height - 1);
+      int srcY = texture.height - 1 - srcTopY;
+      for (int x = 0; x < width; x++)
+      {
+        int srcX = Mathf.Clamp((int)((0x7fffL + (stepX >> 1)
+            + x * stepX) >> 16), 0, texture.width - 1);
+        if (mirror) srcX = texture.width - 1 - srcX;
+        Color32 c = source[srcY * texture.width + srcX];
+        if (c.a != 0)
+        {
+          int paletteIndex = -1;
+          for (int k = 0; k < originalPalette.Length; k++)
+          {
+            Color32 reference = originalPalette[k];
+            if (c.r == reference.r && c.g == reference.g && c.b == reference.b)
+            { paletteIndex = k; break; }
+          }
+          if (paletteIndex < 0)
+          {
+            ReportCsbF3Issue("Unrecognized source RGB " + c.r + "," + c.g
+                + "," + c.b + " for " + item.type + "; no color fallback.");
+            return;
+          }
+          c = originalPalette[f3ColorMap[paletteIndex]];
+        }
+        scaled[y * width + x] = c;
+      }
+    }
+    int left = Mathf.RoundToInt(rect.x) + pileOffset.x;
+    int top = Mathf.RoundToInt(rect.y) - pileOffset.y;
+    for (int y = 0; y < height; y++)
+    {
+      int topY = top + height - 1 - y;
+      if (topY < 32 || topY >= 168) continue;
+      int screenY = PreviewHeight - 1 - topY;
+      if (screenY < 0 || screenY >= PreviewHeight) continue;
+      for (int x = 0; x < width; x++)
+      {
+        int screenX = left + x;
+        if (screenX < 0 || screenX >= 224) continue;
+        Color32 color = scaled[y * width + x];
+        if (color.a == 0) continue;
+        pixels[screenY * PreviewWidth + screenX] = color;
+      }
+    }
+  }
+
   private bool TryGetCsbF2Rect(FloorItemPlacement item, Texture2D texture,
       out Rect rect, out bool mirror)
   {
@@ -32075,19 +32271,14 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
-  // ViewEdit-only experimental setting; starts OFF on every window instance.
-  private bool usePc34ExperimentalF2;
-  private static string lastPc34F2RenderTrace;
-
-  private static void TracePc34F2Render(string detail)
-  {
-    if (lastPc34F2RenderTrace == detail) return;
-    lastPc34F2RenderTrace = detail;
-    Debug.Log("PC34 F2 RENDER: " + detail);
-  }
-
   private static string lastF2PositionTrace;
   private static string lastF1F2AlignmentTrace;
+
+  // Original (CSBwin) d.Byte5728: decoded Atari graphics.dat resource 558
+  // (0x22E), offsets 1518..1533. Byte values are palette indices * 10.
+  // Applies only to F3 far corners (0,1), at 16/32 scale.
+  private static readonly int[] CsbFloorFarPalette =
+      { 0, 12, 1, 3, 4, 3, 0, 6, 3, 9, 10, 11, 0, 2, 14, 13 };
 
   // CSBwin d.Byte5744 decoded from graphics.dat 0x22E, offsets 1502..1517.
   // Stored bytes / 10 = the output palette indices used by ShrinkBLT.
@@ -32111,7 +32302,6 @@ private static void HandleGameViewPointerDown(
     bool traceClub = string.Equals(item.type, "Club", System.StringComparison.OrdinalIgnoreCase);
     if (!TryGetCsbF2Rect(item, texture, out Rect rect, out bool mirror))
     {
-      TracePc34F2Render("object=" + item.type + "; SKIPPED: no F2 rectangle");
       if (traceClub) Debug.LogWarning("CLUB F2 TRACE: rectangle lookup failed; item="
           + item.instanceId + ", source=" + texture.width + "x" + texture.height);
       return;
@@ -32139,8 +32329,6 @@ private static void HandleGameViewPointerDown(
       GroundArtworkEntry artwork = GetRegisteredGroundArtwork(item.type);
       if (artwork == null)
       {
-        TracePc34F2Render("object=" + item.type
-            + "; SKIPPED: no registered ground artwork");
         return; // Registry loader already reports missing mappings.
       }
       string registeredPath = artwork.groundF1Path ?? string.Empty;
@@ -32164,15 +32352,9 @@ private static void HandleGameViewPointerDown(
         }
         hasOriginalPaddedGraphic = true;
         int sourceUnits = texture.width / 2;
-        // Do not change the default CSBwin 20/32 size/rounding rule.
-        // Experimental 21/32 is chosen for comparison only, not verified
-        // as the true PC 3.4 F2 cell scale.
-        int targetWidth = usePc34ExperimentalF2
-            ? texture.width * 21 / 32
-            : ((sourceUnits * 20 + 10) >> 5) * 2;
-        int targetHeight = usePc34ExperimentalF2
-            ? texture.height * 21 / 32
-            : (texture.height * 20 + 10) >> 5;
+        // Verified CSBwin F2 sizing; preserve its original rounding.
+        int targetWidth = ((sourceUnits * 20 + 10) >> 5) * 2;
+        int targetHeight = (texture.height * 20 + 10) >> 5;
         if (targetWidth < 1 || targetHeight < 1)
         {
           ReportCsbF2Issue("Invalid CSBwin scaled dimensions: " + registeredPath);
@@ -32187,29 +32369,11 @@ private static void HandleGameViewPointerDown(
     Color32[] src = texture.GetPixels32();
     var scaled = new Color32[width * height];
     int sourceWidth = texture.width;
-    bool pc34Sampling = usePc34ExperimentalF2 && mediumDistance
-        && hasOriginalPaddedGraphic;
-    TracePc34F2Render("object=" + item.type + " (" + item.instanceId + ")"
-        + ", toggle=" + (usePc34ExperimentalF2 ? "ON" : "OFF")
-        + ", screenCorner=" + screenCorner
-        + ", mediumDistance=" + mediumDistance
-        + ", paddedFilenameRecognized=" + hasOriginalPaddedGraphic
-        + ", sampler=" + (pc34Sampling ? "PC34 21/32 6-bit X+16 Y0"
-            : hasOriginalPaddedGraphic ? "CSBwin existing fixed-step"
-            : "existing non-padded path")
-        + ", source=" + texture.width + "x" + texture.height
-        + ", output=" + width + "x" + height);
-    // PC C implementation in BLTSHRNK.C uses six fractional bits and
-    // half-step starts. Experimental F2 adds 16/64 to horizontal phase only. Existing CSBwin 16.16 path stays byte-for-byte
-    // unchanged when this ViewEdit experiment is OFF.
-    long stepX = pc34Sampling
-        ? ((long)sourceWidth << 6) / width
-        : hasOriginalPaddedGraphic
+    // Fixed-point sampling from the verified CSBwin F2 path.
+    long stepX = hasOriginalPaddedGraphic
         ? CsbShrinkFixedStep(sourceWidth, width)
         : ((long)sourceWidth << 16) / width;
-    long stepY = pc34Sampling
-        ? ((long)texture.height << 6) / height
-        : hasOriginalPaddedGraphic
+    long stepY = hasOriginalPaddedGraphic
         ? CsbShrinkFixedStep(texture.height, height)
         : ((long)texture.height << 16) / height;
     // Match CSBwin's original sampling phase; no item-specific adjustments.
@@ -32217,10 +32381,7 @@ private static void HandleGameViewPointerDown(
     for (int y = 0; y < height; y++)
       for (int x = 0; x < width; x++)
       {
-        int sourceX = pc34Sampling
-            ? Mathf.Clamp((int)(((stepX >> 1) + 16L + x * stepX) >> 6),
-                0, sourceWidth - 1)
-            : Mathf.Clamp((int)((0x7fffL
+        int sourceX = Mathf.Clamp((int)((0x7fffL
                 + (hasOriginalPaddedGraphic ? stepX >> 1 : 0L)
                 + horizontalPhaseOffset + x * stepX) >> 16), 0, sourceWidth - 1);
         if (mirror) sourceX = sourceWidth - 1 - sourceX;
@@ -32232,10 +32393,7 @@ private static void HandleGameViewPointerDown(
         if (hasOriginalPaddedGraphic)
         {
           int destinationTopY = height - 1 - y;
-          int sourceTopY = pc34Sampling
-              ? Mathf.Clamp((int)(((stepY >> 1) + destinationTopY * stepY) >> 6),
-                  0, texture.height - 1)
-              : Mathf.Clamp((int)((0x7fffL + (stepY >> 1)
+          int sourceTopY = Mathf.Clamp((int)((0x7fffL + (stepY >> 1)
                   + destinationTopY * stepY) >> 16), 0, texture.height - 1);
           sourceY = texture.height - 1 - sourceTopY;
         }
@@ -32292,8 +32450,7 @@ private static void HandleGameViewPointerDown(
           + ", mediumDistance=" + mediumDistance
           + ", corner=" + screenCorner
           + ", padded=" + hasOriginalPaddedGraphic
-          + ", method=" + (pc34Sampling ? "PC34 experiment 21/32 fixed 6-bit"
-              : hasOriginalPaddedGraphic ? "CSBwin fixed step top-down rows" : "alternative")
+          + ", method=" + (hasOriginalPaddedGraphic ? "CSBwin fixed step top-down rows" : "alternative")
           + ", source=" + texture.width + "x" + texture.height
           + ", output=" + width + "x" + height
           + ", stepX=" + stepX + ", stepY=" + stepY
@@ -32437,7 +32594,8 @@ private static void HandleGameViewPointerDown(
         continue;
 
       // Distant projection is not available during the cleanup stage.
-      if (depth != FloorItemDepth.SameTile && depth != FloorItemDepth.OneAhead) continue;
+      if (depth != FloorItemDepth.SameTile && depth != FloorItemDepth.OneAhead
+          && depth != FloorItemDepth.TwoAhead) continue;
 
       string key = GetFloorItemFeatureKey(item);
       EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
@@ -32466,7 +32624,10 @@ private static void HandleGameViewPointerDown(
         else
         {
           Texture2D ground = GetFloorItemTexture(item);
-          if (ground != null) DrawF2FloorCalibration(item, ground);
+          if (ground != null && depth == FloorItemDepth.OneAhead)
+            DrawF2FloorCalibration(item, ground);
+          else if (ground != null && depth == FloorItemDepth.TwoAhead)
+            GUILayout.Label("CSBwin F3 test", GUILayout.Width(120f));
         }
       }
       EditorGUILayout.EndHorizontal();
