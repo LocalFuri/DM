@@ -31120,15 +31120,11 @@ private static void HandleGameViewPointerDown(
     if (forwardDistance == 0 && cornerForward < 0)
       return false;
 
-    // A wall immediately ahead occludes the far corners on the player's tile.
-    // The original wall rule remains unchanged. A wall
-    // immediately ahead occludes only the FAR pair of corners (north pair
-    // when facing North); the NEAR pair remains visible and pickable.
-    // This check is shared by the drawing and click-to-pick-up paths. It
-    // does not change artwork, palette, scaling, anchoring or stored cells.
-    if (forwardDistance == 0 && cornerForward > 0
-        && PreviewTileIsWall(previewX + forwardX, previewY + forwardY))
-      return false;
+    // A wall in the NEXT tile must not hide an item on the player's OWN tile.
+    // In particular, a sword dropped into the forward-facing sub-square
+    // remains visible and pickable when the player faces a wall. Occlusion
+    // of the next tile is handled by the forward-distance open-tile test above.
+    // Do not change item corners, scaling, artwork, anchoring, or pickup order.
 
     // F1 floor interactions cover all four N/E/S/W subtiles of the
     // current floor tile, including the two rear subtiles. Turning to
