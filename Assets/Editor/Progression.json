@@ -61,7 +61,8 @@
     "Inspect latest F2 POSITION TRACE for misaligned centred floor item; distinguish true floor-cell anchor from mortar-joint visual before generic X correction.",
     "After approved F2 visual ground-contact check, commit Unity source and Progression.json to Git.",
     "Then develop F3/S1/S2/S3 using generic CSBwin scaling and depth/cell ground-contact model; no per-item offsets.",
-    "Keep old pending ViewEdit Delay On/Off and Dungeon Features F1 item navigation patches unverified until explicitly tested."
+    "Keep old pending ViewEdit Delay On/Off and Dungeon Features F1 item navigation patches unverified until explicitly tested.",
+    "Wall to-do: Level 0, tile (11,4), West — inspect/address wall (specific change to confirm)."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -299,5 +300,18 @@
     "Calculate original Apple F2 render rectangle as actual integers (X,Y,width,height); independently check existing Unity viewport values and floor-cell convention.",
     "Only if original data predicts a defensible improvement, prepare a reversible generic C# patch. Do not break existing approved food F2 visuals.",
     "After Apple, cross-check Club, Bow, F3 and additional subcells using same verified logic."
+  ],
+  "wall_todo": [
+    {
+      "level": 0,
+      "tile": [
+        11,
+        4
+      ],
+      "direction": "West",
+      "task": "Wall at Level 0 (11,4), West — inspect/address wall",
+      "status": "to-do",
+      "added": "2026-10-26"
+    }
   ]
 }

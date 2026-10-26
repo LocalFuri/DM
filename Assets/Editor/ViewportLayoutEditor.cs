@@ -13255,10 +13255,10 @@ private static void HandleGameViewPointerDown(
     GUILayout.Space(8f);
     bool delayOn = NavigationDelayEnabled;
     GUIStyle delayButtonStyle = new GUIStyle(GUI.skin.button);
-    delayButtonStyle.normal.textColor = delayOn ? Color.green : Color.red;
-    delayButtonStyle.hover.textColor = delayOn ? Color.green : Color.red;
-    delayButtonStyle.active.textColor = delayOn ? Color.green : Color.red;
-    delayButtonStyle.focused.textColor = delayOn ? Color.green : Color.red;
+    delayButtonStyle.normal.textColor = delayOn ? Color.green : Color.yellow;
+    delayButtonStyle.hover.textColor = delayOn ? Color.green : Color.yellow;
+    delayButtonStyle.active.textColor = delayOn ? Color.green : Color.yellow;
+    delayButtonStyle.focused.textColor = delayOn ? Color.green : Color.yellow;
     if (GUILayout.Button(delayOn ? "Delay On" : "Delay Off", delayButtonStyle,
         GUILayout.Width(83f)))
     {
@@ -31099,14 +31099,14 @@ private static void HandleGameViewPointerDown(
           + previewFacing + ", item=(" + item.x + "," + item.y + ") cell="
           + item.cell + ", forward=" + forwardDistance
           + ", lateral=" + lateralTileDistance
-          + ", rangeAccepted=" + (forwardDistance <= 2 && forwardDistance >= 0
+          + ", rangeAccepted=" + (forwardDistance <= 3 && forwardDistance >= 0
               && lateralTileDistance == 0));
 
     // The S3 side lanes are visible through the adjacent side opening,
     // followed by open D1/D2 tiles in that lane. A front-center wall
     // does not block the side corridor (e.g. Level 0, 5,11 North).
     bool sideS3 = forwardDistance == 2 && Mathf.Abs(lateralTileDistance) == 1;
-    if (!sideS3 && (lateralTileDistance != 0 || forwardDistance < 0 || forwardDistance > 2))
+    if (!sideS3 && (lateralTileDistance != 0 || forwardDistance < 0 || forwardDistance > 3))
     {
       TraceSwordF3(item, "PROJECTION REJECT: cell=" + item.cell
           + ", facing=" + previewFacing + ", forward=" + forwardDistance
@@ -31140,6 +31140,15 @@ private static void HandleGameViewPointerDown(
 
     int cornerLateral = cornerX * rightX + cornerY * rightY;
     int cornerForward = cornerX * forwardX + cornerY * forwardY;
+
+    // The near half of the third tile ahead is still visible at F3.
+    // Its far half would be F4 and must remain outside the viewport.
+    // Do not alter the previously tested 0/1/2-tile projection paths.
+    if (forwardDistance == 3 && cornerForward >= 0)
+    {
+      TraceSwordF3(item, "F4 REJECT: distant far half, cell=" + item.cell);
+      return false;
+    }
 
     // A floor item on the player's own tile must be in the half facing
     // the viewer. Turning away from a dropped item must not make the same
@@ -32173,10 +32182,16 @@ private static void HandleGameViewPointerDown(
       return false;
     }
     bool near = relCorner >= 2;
-    // F3 candidate: CSBwin relative cell 3 uses 16/32 for far corners
-    // and 20/32 for near corners; verify with CSBwin reference screenshot.
-    int numerator = near ? 20 : 16;
-    int rounding = near ? 10 : 8;
+    // The near half of a tile THREE squares ahead is the last visible F3
+    // band. Give it the far (16/32) scale instead of the medium F2-sized
+    // (20/32) scale. Preserve the already-established two-tile F3 path.
+    GetFloorItemViewBasis(previewFacing,
+        out int fwdX, out int fwdY, out _, out _);
+    int tileDistance = (item.x - previewX) * fwdX
+        + (item.y - previewY) * fwdY;
+    bool thirdTileNear = tileDistance == 3 && near;
+    int numerator = thirdTileNear ? 16 : (near ? 20 : 16);
+    int rounding = thirdTileNear ? 8 : (near ? 10 : 8);
     // Source PNGs hold visible pixels rather than original padded bitplanes.
     // Keep their artwork sizes generic; no per-item correction.
     int width = Mathf.Max(1, (texture.width * numerator + rounding) / 32);
@@ -32198,6 +32213,16 @@ private static void HandleGameViewPointerDown(
     // Its horizontal anchor is the center; vertical anchor is the bottom scanline.
     // Keep this F3 calculation independent of the verified F2 code.
     int left = point.x + firstObjectOffset.x - (width / 2) + 1;
+    // Provisional third-tile near-subtile calibration against the supplied
+    // original CSBwin screenshot at (11,4), facing West. This is a generic
+    // floor-depth adjustment, never a Samurai Sword special case. Do not
+    // affect the established one-/two-tile F1/F2 positions or nearer F3.
+    // The original third-tile anchor still needs source-code verification.
+    if (thirdTileNear)
+    {
+      left += 7;
+      top -= 13;
+    }
     rect = new Rect(left, top, width, height);
     mirror = (graphic.flags & 1) != 0 && (relCorner == 1 || relCorner == 2);
     return true;
@@ -32235,7 +32260,12 @@ private static void HandleGameViewPointerDown(
     // Original Code51a4.cpp DrawSingleObject, relative cell 3:
     // far corners 0/1 use Byte5728 (16/32); near corners 2/3 use
     // Byte5744 (20/32). F3 geometry and sampling remain unchanged.
-    int[] f3ColorMap = relCorner < 2
+    GetFloorItemViewBasis(previewFacing,
+        out int fwdX, out int fwdY, out _, out _);
+    int tileDistance = (item.x - previewX) * fwdX
+        + (item.y - previewY) * fwdY;
+    bool thirdTileNear = tileDistance == 3 && relCorner >= 2;
+    int[] f3ColorMap = relCorner < 2 || thirdTileNear
         ? CsbFloorFarPalette : CsbFloorMediumPalette;
     Color32[] source = texture.GetPixels32();
     Color32[] originalPalette = DungeonViewportLightPalettes[0];
@@ -32274,6 +32304,22 @@ private static void HandleGameViewPointerDown(
         scaled[y * width + x] = c;
       }
     }
+    // Sword-only F3 ViewEdit calibration: adjust position, never scaling.
+    // Draft changes show immediately and are discarded on moving tiles;
+    // only the Apply checkbox persists them to the calibration JSON.
+    if (string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase))
+    {
+      int corner = GetFloorScreenCorner(item);
+      FloorProjectionCalibrationEntry calibration = FindFloorProjectionCalibration(item.type, "F3", corner);
+      string visibleBand = GetViewEditFloorItemDistance(item);
+      if (visibleBand == "F2" || visibleBand == "F1")
+        calibration = FindFloorProjectionCalibration(item.type, visibleBand, corner);
+      if (calibration != null)
+      {
+        rect.x = calibration.x;
+        rect.y = calibration.y;
+      }
+    }
     int left = Mathf.RoundToInt(rect.x) + pileOffset.x;
     int top = Mathf.RoundToInt(rect.y) - pileOffset.y;
     TraceSwordF3(item, "F3 BLIT: relCorner=" + relCorner
@@ -32294,10 +32340,28 @@ private static void HandleGameViewPointerDown(
         pixels[screenY * PreviewWidth + screenX] = color;
       }
     }
+    // Display the actual floor-contact reference used for this F3 sprite.
+    // Magenta cross: center = rectangle's horizontal midpoint, bottom scanline.
+    // Overlay only; never stored in the item texture or placement calibration.
+    if (showSamuraiSwordF3Anchor
+        && string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase))
+    {
+      int anchorX = left + (width / 2);
+      int anchorY = top + height - 1;
+      for (int d = -3; d <= 3; d++)
+      {
+        int px = anchorX + d;
+        if (px >= 0 && px < 224 && anchorY >= 32 && anchorY < 168)
+          pixels[(PreviewHeight - 1 - anchorY) * PreviewWidth + px] = new Color32(255, 0, 255, 255);
+        int py = anchorY + d;
+        if (anchorX >= 0 && anchorX < 224 && py >= 32 && py < 168)
+          pixels[(PreviewHeight - 1 - py) * PreviewWidth + anchorX] = new Color32(255, 0, 255, 255);
+      }
+    }
   }
 
   private bool TryGetCsbF2Rect(FloorItemPlacement item, Texture2D texture,
-      out Rect rect, out bool mirror)
+      out Rect rect, out bool mirror, bool applySwordCalibration = true)
   {
     // Generic CSBwin-only F2 position experiment: do not apply saved
     // per-item ViewEdit F2 calibration rectangles or mirror overrides.
@@ -32364,6 +32428,25 @@ private static void HandleGameViewPointerDown(
     {
       lastF2PositionTrace = f2PositionTrace;
       Debug.Log(f2PositionTrace);
+    }
+    // Keep F2 sword placement independent of the saved F3 calibration.
+    // Preserve existing F2 geometry and scaling for all other items.
+    // F2 calibration applies only at visible F2 distance. A sword in the
+    // nearer subtile of the next map square may use this blitter while its
+    // visible band is F1: do not leak the saved F2 coordinates into F1.
+    string swordVisibleBand = GetViewEditFloorItemDistance(item);
+    if (applySwordCalibration && (swordVisibleBand == "F1" || swordVisibleBand == "F2")
+        && string.Equals(item.type, "Samurai Sword",
+        System.StringComparison.OrdinalIgnoreCase))
+    {
+      int swordCorner = GetFloorScreenCorner(item);
+      FloorProjectionCalibrationEntry swordCalibration =
+          FindFloorProjectionCalibration(item.type, swordVisibleBand, swordCorner);
+      if (swordCalibration != null)
+      {
+        rect.x = swordCalibration.x;
+        rect.y = swordCalibration.y;
+      }
     }
     return true;
   }
@@ -32709,6 +32792,220 @@ private static void HandleGameViewPointerDown(
     return "F" + visibleDistance;
   }
 
+  // Temporary diagnostic overlay for the actual F3 sprite contact point.
+  // Not saved; does not alter calibration, wall geometry or item scaling.
+  private bool showSamuraiSwordF3Anchor;
+
+  private void DrawSamuraiSwordF3Position(FloorItemPlacement item, Texture2D texture)
+  {
+    DiscardFloorDraftsAfterTileChange();
+    if (!TryGetCsbF3RectBase(item, texture, out Rect predicted, out bool mirror)) return;
+    int corner = GetFloorScreenCorner(item);
+    if (corner < 0) return;
+    string key = FloorCalibrationKey(item.type, "F3", corner);
+    FloorProjectionCalibrationEntry accepted = FindSavedFloorProjectionCalibration(item.type, "F3", corner);
+    FloorProjectionCalibrationEntry current = FindFloorProjectionCalibration(item.type, "F3", corner);
+    int baseX = accepted != null ? accepted.x : Mathf.RoundToInt(predicted.x);
+    int baseY = accepted != null ? accepted.y : Mathf.RoundToInt(predicted.y);
+    int x = current != null ? current.x : baseX;
+    int y = current != null ? current.y : baseY;
+    Color normalColor = GUI.color;
+    float previousLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth = 12f;
+    GUI.color = x != baseX ? Color.red : normalColor;
+    bool changedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, 22f);
+    GUI.color = y != baseY ? Color.red : normalColor;
+    bool changedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, 22f);
+    GUI.color = normalColor;
+    EditorGUIUtility.labelWidth = previousLabelWidth;
+    bool apply = GUILayout.Toggle(false, "Apply", GUILayout.Width(58f));
+    bool showAnchor = GUILayout.Toggle(showSamuraiSwordF3Anchor, "Anchor", GUILayout.Width(75f));
+    if (showAnchor != showSamuraiSwordF3Anchor)
+    {
+      showSamuraiSwordF3Anchor = showAnchor;
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+    if (changedX || changedY || apply)
+    {
+      var updated = new FloorProjectionCalibrationEntry {
+        itemType = item.type, view = "F3", corner = corner,
+        x = x, y = y, width = Mathf.RoundToInt(predicted.width),
+        height = Mathf.RoundToInt(predicted.height), mirror = mirror,
+        verified = false
+      };
+      if (changedX || changedY)
+      {
+        floorProjectionDrafts[key] = updated;
+        RefreshEditModePreview(); RepaintGameViews(); Repaint();
+      }
+      if (apply && SaveFloorProjectionCalibration(updated))
+      { RefreshEditModePreview(); RepaintGameViews(); Repaint(); }
+    }
+  }
+
+  private bool samuraiF2RowDiagnosticLogged;
+  private bool samuraiF2CalibrationDiagnosticLogged;
+  // Samurai Sword F2 has its own position draft and saved calibration.
+  // F3 remains completely independent and does not share X/Y values.
+  // Separate visible-F1 position editing; never read F2 or F3 calibration.
+  private void DrawSamuraiSwordF1Position(FloorItemPlacement item, Texture2D texture,
+      FloorItemDepth mapDepth)
+  {
+    DiscardFloorDraftsAfterTileChange();
+    Rect predicted;
+    bool mirror;
+    bool projected = mapDepth == FloorItemDepth.TwoAhead
+        ? TryGetCsbF3RectBase(item, texture, out predicted, out mirror)
+        : TryGetCsbF2Rect(item, texture, out predicted, out mirror, false);
+    if (!projected) return;
+    int corner = GetFloorScreenCorner(item);
+    if (corner < 0) return;
+    const string band = "F1";
+    string key = FloorCalibrationKey(item.type, band, corner);
+    FloorProjectionCalibrationEntry accepted =
+        FindSavedFloorProjectionCalibration(item.type, band, corner);
+    FloorProjectionCalibrationEntry current =
+        FindFloorProjectionCalibration(item.type, band, corner);
+    int baseX = accepted != null ? accepted.x : Mathf.RoundToInt(predicted.x);
+    int baseY = accepted != null ? accepted.y : Mathf.RoundToInt(predicted.y);
+    int x = current != null ? current.x : baseX;
+    int y = current != null ? current.y : baseY;
+    Color normalColor = GUI.color;
+    float previousLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth = 12f;
+    GUI.color = x != baseX ? Color.red : normalColor;
+    bool changedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, 22f);
+    GUI.color = y != baseY ? Color.red : normalColor;
+    bool changedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, 22f);
+    GUI.color = normalColor;
+    EditorGUIUtility.labelWidth = previousLabelWidth;
+    bool apply = GUILayout.Toggle(false, "Apply", GUILayout.Width(58f));
+    if (changedX || changedY || apply)
+    {
+      FloorProjectionCalibrationEntry updated = new FloorProjectionCalibrationEntry {
+        itemType = item.type, view = band, corner = corner,
+        x = x, y = y, width = Mathf.RoundToInt(predicted.width),
+        height = Mathf.RoundToInt(predicted.height), mirror = mirror,
+        verified = false
+      };
+      if (changedX || changedY)
+      {
+        floorProjectionDrafts[key] = updated;
+        RefreshEditModePreview(); RepaintGameViews(); Repaint();
+      }
+      if (apply)
+      {
+        FloorProjectionCalibrationEntry toSave =
+            floorProjectionDrafts.TryGetValue(key, out FloorProjectionCalibrationEntry draft)
+            ? CloneFloorProjectionCalibration(draft) : updated;
+        if (changedX) toSave.x = x;
+        if (changedY) toSave.y = y;
+        if (SaveFloorProjectionCalibration(toSave))
+        { RefreshEditModePreview(); RepaintGameViews(); Repaint(); }
+      }
+    }
+  }
+
+  private void DrawSamuraiSwordF2Position(FloorItemPlacement item, Texture2D texture)
+  {
+    DiscardFloorDraftsAfterTileChange();
+    // F2 subtile label can correspond to the second map tile (TwoAhead),
+    // which is actually rendered by the CSBwin F3 blitter in this codebase.
+    if (!TryGetCsbF3RectBase(item, texture, out Rect predicted, out bool mirror)) return;
+    int corner = GetFloorScreenCorner(item);
+    if (corner < 0) return;
+    string key = FloorCalibrationKey(item.type, "F2", corner);
+    FloorProjectionCalibrationEntry accepted =
+        FindSavedFloorProjectionCalibration(item.type, "F2", corner);
+    FloorProjectionCalibrationEntry current =
+        FindFloorProjectionCalibration(item.type, "F2", corner);
+    // Temporary diagnostic: explain precisely why a valid calibration on disk
+    // is not being shown in ViewEdit. Log once per EditorWindow instance.
+    if (!samuraiF2CalibrationDiagnosticLogged)
+    {
+      samuraiF2CalibrationDiagnosticLogged = true;
+      string fullPath = System.IO.Path.GetFullPath(FloorProjectionCalibrationPath);
+      string message = "SAMURAI F2 CALIBRATION CHECK: path=" + fullPath
+          + ", exists=" + File.Exists(FloorProjectionCalibrationPath)
+          + ", key=" + FloorCalibrationKey(item.type, "F2", corner)
+          + ", saved=" + (accepted == null ? "MISSING" : accepted.x + "/" + accepted.y)
+          + ", displayed=" + (current == null ? "DEFAULT" : current.x + "/" + current.y);
+      if (File.Exists(FloorProjectionCalibrationPath))
+      {
+        try
+        {
+          FloorProjectionCalibrationDatabase diagnosticDb =
+              JsonUtility.FromJson<FloorProjectionCalibrationDatabase>(
+                  File.ReadAllText(FloorProjectionCalibrationPath));
+          if (diagnosticDb == null || diagnosticDb.entries == null)
+            message += ", jsonEntries=NULL";
+          else
+          {
+            message += ", jsonEntries=" + diagnosticDb.entries.Length;
+            foreach (FloorProjectionCalibrationEntry diagnosticEntry in diagnosticDb.entries)
+              if (diagnosticEntry != null)
+                message += ", entry=" + FloorCalibrationKey(diagnosticEntry.itemType,
+                    diagnosticEntry.view, diagnosticEntry.corner)
+                    + ":" + diagnosticEntry.x + "/" + diagnosticEntry.y;
+          }
+        }
+        catch (System.Exception ex) { message += ", JSON ERROR=" + ex.Message; }
+      }
+      Debug.LogWarning(message);
+    }
+    int baseX = accepted != null ? accepted.x : Mathf.RoundToInt(predicted.x);
+    int baseY = accepted != null ? accepted.y : Mathf.RoundToInt(predicted.y);
+    int x = current != null ? current.x : baseX;
+    int y = current != null ? current.y : baseY;
+    Color normalColor = GUI.color;
+    float previousLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth = 12f;
+    GUI.color = x != baseX ? Color.red : normalColor;
+    bool changedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, 22f);
+    GUI.color = y != baseY ? Color.red : normalColor;
+    bool changedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, 22f);
+    GUI.color = normalColor;
+    EditorGUIUtility.labelWidth = previousLabelWidth;
+    bool apply = GUILayout.Toggle(false, "Apply", GUILayout.Width(58f));
+    if (changedX || changedY || apply)
+    {
+      var updated = new FloorProjectionCalibrationEntry {
+        itemType = item.type, view = "F2", corner = corner,
+        x = x, y = y, width = Mathf.RoundToInt(predicted.width),
+        height = Mathf.RoundToInt(predicted.height), mirror = mirror,
+        verified = false
+      };
+      if (changedX || changedY)
+      {
+        floorProjectionDrafts[key] = updated;
+        RefreshEditModePreview(); RepaintGameViews(); Repaint();
+      }
+      if (apply)
+      {
+        // The last displayed red draft is authoritative when Apply is clicked.
+        // GUI events may redraw the inline steppers before the toggle fires.
+        FloorProjectionCalibrationEntry toSave =
+            floorProjectionDrafts.TryGetValue(key, out FloorProjectionCalibrationEntry draft)
+            ? CloneFloorProjectionCalibration(draft) : updated;
+        if (changedX) toSave.x = x;
+        if (changedY) toSave.y = y;
+        if (SaveFloorProjectionCalibration(toSave))
+        {
+          FloorProjectionCalibrationEntry verified =
+              FindSavedFloorProjectionCalibration(item.type, "F2", corner);
+          if (verified == null || verified.x != toSave.x || verified.y != toSave.y)
+            Debug.LogError("SAMURAI F2: calibration read-back mismatch. Expected "
+                + toSave.x + "/" + toSave.y + ", got "
+                + (verified == null ? "missing" : verified.x + "/" + verified.y));
+          else
+            Debug.Log("SAMURAI F2: saved and verified X=" + verified.x
+                + " Y=" + verified.y);
+          RefreshEditModePreview(); RepaintGameViews(); Repaint();
+        }
+      }
+    }
+  }
+
   private void DrawFloorItemRows()
   {
     EnsurePreviewMiniMapLoaded();
@@ -32744,6 +33041,23 @@ private static void HandleGameViewPointerDown(
           pickableLabelStyle,
           GUILayout.Width(220f));
 
+      // Diagnostics run independently of the Set toggle so an inactive row
+      // cannot silently suppress the calibration-loading error report.
+      if (string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase)
+          && depthLabel == "F2" && !samuraiF2RowDiagnosticLogged)
+      {
+        samuraiF2RowDiagnosticLogged = true;
+        int rowCorner = GetFloorScreenCorner(item);
+        FloorProjectionCalibrationEntry loaded = rowCorner < 0 ? null
+            : FindSavedFloorProjectionCalibration(item.type, "F2", rowCorner);
+        Debug.LogWarning("SAMURAI F2 ROW CHECK: player=(" + previewX + "," + previewY
+            + ") facing=" + previewFacing + " sword=(" + item.x + "," + item.y
+            + ") cell=" + item.cell + " depth=" + depth
+            + " key=" + FloorCalibrationKey(item.type, "F2", rowCorner)
+            + " fileExists=" + File.Exists(FloorProjectionCalibrationPath)
+            + " saved=" + (loaded == null ? "MISSING" : loaded.x + "/" + loaded.y)
+            + " Set=" + IsPreviewFeatureEnabled(key));
+      }
       bool enabledBefore = IsPreviewFeatureEnabled(key);
       bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
       if (enabledAfter)
@@ -32754,12 +33068,49 @@ private static void HandleGameViewPointerDown(
         {
           Texture2D ground = GetFloorItemTexture(item);
           if (ground != null && depth == FloorItemDepth.OneAhead)
-            DrawF2FloorCalibration(item, ground);
+          {
+            if (string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase)
+                && depthLabel == "F2")
+              DrawSamuraiSwordF2Position(item, ground);
+            else if (depthLabel == "F1")
+              DrawSamuraiSwordF1Position(item, ground, depth);
+            else
+              DrawF2FloorCalibration(item, ground);
+          }
           else if (ground != null && depth == FloorItemDepth.TwoAhead)
-            GUILayout.Label("CSBwin F3 test", GUILayout.Width(120f));
+          {
+            if (string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase))
+            {
+              if (depthLabel == "F2")
+                DrawSamuraiSwordF2Position(item, ground);
+              else if (depthLabel == "F3")
+                DrawSamuraiSwordF3Position(item, ground);
+              else if (depthLabel == "F1")
+                DrawSamuraiSwordF1Position(item, ground, depth);
+              else
+                GUILayout.Label("Unsupported depth " + depthLabel, GUILayout.Width(160f));
+            }
+            else
+              GUILayout.Label("CSBwin F3 test", GUILayout.Width(120f));
+          }
         }
       }
       EditorGUILayout.EndHorizontal();
+
+      // Always-visible diagnostic: avoids Console filtering and one-shot logs.
+      // This is informational only; it does not alter saved values or rendering.
+      if (string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase)
+          && depthLabel == "F2")
+      {
+        int observedCorner = GetFloorScreenCorner(item);
+        bool calibrationFilePresent = File.Exists(FloorProjectionCalibrationPath);
+        FloorProjectionCalibrationEntry observed = observedCorner < 0 ? null
+            : FindSavedFloorProjectionCalibration(item.type, "F2", observedCorner);
+        string status = "F2 JSON " + (calibrationFilePresent ? "found" : "MISSING")
+            + " | corner=" + observedCorner
+            + " | saved=" + (observed == null ? "NOT FOUND" : observed.x + "/" + observed.y);
+        EditorGUILayout.LabelField(status, EditorStyles.miniLabel);
+      }
 
       if (enabledAfter != enabledBefore)
       {

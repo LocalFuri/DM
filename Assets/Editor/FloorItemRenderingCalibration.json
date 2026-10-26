@@ -1,0 +1,26 @@
+{
+    "entries": [
+        {
+            "itemType": "Samurai Sword",
+            "view": "F3",
+            "corner": 3,
+            "x": 83,
+            "y": 100,
+            "width": 40,
+            "height": 4,
+            "mirror": false,
+            "verified": true
+        },
+        {
+            "itemType": "Samurai Sword",
+            "view": "F2",
+            "corner": 3,
+            "x": 68,
+            "y": 114,
+            "width": 40,
+            "height": 4,
+            "mirror": false,
+            "verified": true
+        }
+    ]
+}
