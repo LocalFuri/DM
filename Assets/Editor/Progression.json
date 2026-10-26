@@ -1,7 +1,7 @@
 {
-  "date": "2026-10-24",
+  "date": "2026-10-26",
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-10-24 end-of-day: Apple original Dungeon Master ReDMCSB reverse engineering, Graphic 558 recovered; resume decoding original object tables.",
+  "checkpoint": "2026-10-26 end-of-day: Samurai Sword F1/F2/F3 visual rendering, positions, and F1 pickup/drop verified; save as Git checkpoint.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -313,5 +313,114 @@
       "status": "to-do",
       "added": "2026-10-26"
     }
+  ],
+  "floor_item_calibration_issue_20261026": {
+    "status": "RESOLVED FOR TESTED SWORD: correct F2 corner=3 JSON key; F2 now loads 68/114 and GameView/Console verified. No separate Unity C# recompile required for JSON replacement; watch future Apply persistence separately.",
+    "item": "Samurai Sword",
+    "test": {
+      "level": 0,
+      "player_tile": [
+        10,
+        4
+      ],
+      "facing": "West",
+      "subtile": "bottom left"
+    },
+    "desired_calibrations": [
+      {
+        "view": "F2",
+        "corner": 3,
+        "x": 68,
+        "y": 114
+      },
+      {
+        "view": "F3",
+        "corner": 3,
+        "x": 83,
+        "y": 100
+      }
+    ],
+    "observed": "Historical: prior F2 key=0 failed to match relative corner=3 and showed generic 65/113. Corrected file now loads F2 68/114. F1 shows 38/137 and is not mislabelled with F2 controls.",
+    "current_patch": "Samurai_Sword_F2_Apply_Persistence_Fix.zip; Unity compile/functional verification not established",
+    "json_refresh_check": "Current ViewportLayoutEditor.cs SaveFloorProjectionCalibration writes Assets/Editor/FloorItemRenderingCalibration.json then calls AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate). This is an asset reimport request, not proof that external file replacements automatically update editor state; verify AssetDatabase.Refresh or watcher behavior in Unity.",
+    "next_actions": [
+      "Keep F2 corner=3 and F3 corner=3 as separate distance keys.",
+      "Retest ViewEdit Apply writing future edits only when needed; today’s saved F2/F3 values and rendering confirmed."
+    ],
+    "important": "Do not assume JSON alone forces C# recompilation or an editor view refresh; separate file import from editor redraw."
+  },
+  "samurai_sword_floor_verified_20261026": {
+    "status": "USER VERIFIED 2026-10-26 (Unity GameView and Console)",
+    "item": "Samurai Sword",
+    "reference_pose": {
+      "level": 0,
+      "item_tile": [
+        8,
+        4
+      ],
+      "item_subtile": "S (bottom-left in tested West-facing map convention)",
+      "player_facing": "West",
+      "player_tiles": {
+        "F1": [
+          9,
+          4
+        ],
+        "F2": [
+          10,
+          4
+        ],
+        "F3": [
+          11,
+          4
+        ]
+      }
+    },
+    "calibrated_viewedit_positions": {
+      "F1": {
+        "x": 38,
+        "y": 137,
+        "status": "visually accepted; generic current value"
+      },
+      "F2": {
+        "x": 68,
+        "y": 114,
+        "status": "saved, loaded, rendered and visually accepted",
+        "calibration_key": "relative corner 3"
+      },
+      "F3": {
+        "x": 83,
+        "y": 100,
+        "status": "saved, loaded, rendered and visually accepted",
+        "calibration_key": "relative corner 3"
+      }
+    },
+    "distance_visibility": "Subtile-aware visible F1/F2/F3; F2 and F3 remain unpickable. Do not conflate map-tile distance with visible distance.",
+    "interaction_verification": {
+      "F1_drop": "CONFIRMED: Unity Console F1 FLOOR DROP SUCCESS (2026-10-26)",
+      "F1_pickup": "CONFIRMED: Unity Console F1 FLOOR PICKUP SUCCESS (2026-10-26)",
+      "F2_pickup": "Not permitted per project rule; user confirmed",
+      "F3_pickup": "Not permitted per project rule; user confirmed",
+      "console_distance": "F2 and F3 confirmed with rect=(68,114,50,5) and rect=(83,100,40,4); F1 distance message confirmed at (9,4) West"
+    },
+    "root_cause_resolved": "F2 68/114 did not load because the JSON F2 relative-corner key was 0 but the drawing path used corner 3. Corrected JSON key; F1 and F2 ViewEdit controls separated.",
+    "files_to_commit": [
+      "Assets/Editor/ViewportLayoutEditor.cs",
+      "Assets/Editor/FloorItemRenderingCalibration.json",
+      "Assets/Editor/Progression.json"
+    ],
+    "preserve": [
+      "Do not change wall renderer",
+      "Keep all three verified Samurai Sword calibrations and floor item size/scale",
+      "F1 pickup only; F2/F3 not pickable",
+      "Preserve item uniqueness, LIFO piles and the working F1 pickup/drop logs"
+    ],
+    "caution": "The saved F1 38/137 is a confirmed displayed/visually accepted position for this test, not evidence of an independent persisted F1 calibration key. Other subtiles/items/facings still require testing."
+  },
+  "current_next_actions_20261026": [
+    "Commit verified Samurai Sword code, FloorItemRenderingCalibration.json, and updated Progression.json to Git.",
+    "Preserve F1=38/137, F2=68/114, F3=83/100 for the tested sword pose.",
+    "Future: cross-check another large floor object and additional subtiles/facing before generalizing anchors.",
+    "Wall to-do remains Level 0 (11,4), West.",
+    "Investigate thrown-object scaling/placement separately without altering verified wall rendering."
   ]
 }

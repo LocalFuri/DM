@@ -33006,6 +33006,10 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Log a sword's visible F1/F2/F3 band only when it changes.
+  // Kept separate from the existing F3 rendering diagnostics.
+  private string lastSamuraiSwordBandTrace = "";
+
   private void DrawFloorItemRows()
   {
     EnsurePreviewMiniMapLoaded();
@@ -33027,6 +33031,25 @@ private static void HandleGameViewPointerDown(
       EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
 
       string depthLabel = GetViewEditFloorItemDistance(item);
+      if (string.Equals(item.type, "Samurai Sword",
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        string traceKey = item.instanceId + "|" + depthLabel;
+        if (traceKey != lastSamuraiSwordBandTrace)
+        {
+          lastSamuraiSwordBandTrace = traceKey;
+          int traceCorner = GetFloorScreenCorner(item);
+          FloorProjectionCalibrationEntry savedTrace =
+              traceCorner < 0 ? null :
+              FindSavedFloorProjectionCalibration(item.type, depthLabel, traceCorner);
+          Debug.Log("SAMURAI SWORD DISTANCE: " + depthLabel
+              + " | player=(" + previewX + "," + previewY + ") " + previewFacing
+              + " | sword=(" + item.x + "," + item.y + ") [" + item.cell + "]"
+              + " | corner=" + traceCorner
+              + " | saved=" + (savedTrace == null ? "generic" :
+                  savedTrace.x + "/" + savedTrace.y));
+        }
+      }
       // One compact ViewEdit line per pickable item: name, Set, X, Y, Apply.
       // Map coordinates and the redundant second calibration line are omitted.
       GUIStyle pickableLabelStyle = new GUIStyle(EditorStyles.boldLabel);
@@ -37700,8 +37723,16 @@ private static void HandleGameViewPointerDown(
   {
     rect = new Rect();
     if (!TryProjectFloorItem(item, out FloorItemDepth depth, out bool right)
-        || depth != FloorItemDepth.SameTile) return false;
-    return TryGetF1FloorItemRect(item, right, GetFloorItemTexture(item), out rect);
+        || GetViewEditFloorItemDistance(item) != "F1") return false;
+    Texture2D texture = GetFloorItemTexture(item);
+    if (texture == null) return false;
+    // A near subtile in the next map tile is still visible at F1.
+    // Hit-test the same projection that draws it, not the SameTile-only rect.
+    if (depth == FloorItemDepth.SameTile)
+      return TryGetF1FloorItemRect(item, right, texture, out rect);
+    if (depth == FloorItemDepth.OneAhead)
+      return TryGetCsbF2Rect(item, texture, out rect, out bool unusedMirror);
+    return false;
   }
 
   // Picking uses the exact same translated rectangle as pile rendering.
@@ -37737,7 +37768,14 @@ private static void HandleGameViewPointerDown(
 
   private bool TryPickupVisibleFloorItem(float x, float y)
   {
-    if (championSheetVisible || HasAnyItemOnCursor()) return false;
+    if (championSheetVisible) return false;
+    if (HasAnyItemOnCursor())
+    {
+      Debug.LogWarning("F1 FLOOR PICKUP BLOCKED: another item is already on cursor; heldFloor="
+          + previewHeldFloorItemId + ", heldChampion=" + previewHeldChampionName
+          + ", heldTorch=" + previewHeldTorchId);
+      return false;
+    }
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null) return false;
     var items = GetCurrentFloorItems();
@@ -37750,15 +37788,40 @@ private static void HandleGameViewPointerDown(
       if (IsPreviewFeatureEnabled(GetFloorItemFeatureKey(candidate))
           && TryProjectFloorItem(candidate, out FloorItemDepth candidateDepth,
               out bool candidateRight)
-          && candidateDepth == FloorItemDepth.SameTile
+          && GetViewEditFloorItemDistance(candidate) == "F1"
           && TryGetFloorItemScreenRect(candidate, out Rect hitRect)
-          && hitRect.Contains(new Vector2(x, y)))
+          // The sword is only a few pixels high at distance; allow a small
+          // click tolerance while retaining the item's true rendering rect.
+          && (string.Equals(candidate.type, "Samurai Sword",
+                System.StringComparison.OrdinalIgnoreCase)
+              ? new Rect(hitRect.xMin - 4f, hitRect.yMin - 5f,
+                    hitRect.width + 8f, hitRect.height + 10f)
+                    .Contains(new Vector2(x, y))
+              : hitRect.Contains(new Vector2(x, y))))
       {
         clicked = candidate;
         break;
       }
     }
-    if (clicked == null) return false;
+    if (clicked == null)
+    {
+      // Diagnostic on a missed click, not on every rendering frame.
+      foreach (FloorItemPlacement candidate in items)
+      {
+        if (!string.Equals(candidate.type, "Samurai Sword",
+              System.StringComparison.OrdinalIgnoreCase)) continue;
+        bool projected = TryProjectFloorItem(candidate, out FloorItemDepth diagnosticDepth,
+            out bool diagnosticRight);
+        bool hasRect = TryGetFloorItemScreenRect(candidate, out Rect diagnosticRect);
+        Debug.LogWarning("F1 SWORD PICKUP MISS: click=(" + x + "," + y
+            + ") sword=(" + candidate.x + "," + candidate.y + ") cell="
+            + candidate.cell + " band=" + GetViewEditFloorItemDistance(candidate)
+            + " visible=" + IsPreviewFeatureEnabled(GetFloorItemFeatureKey(candidate))
+            + " projected=" + projected + " rect="
+            + (hasRect ? diagnosticRect.ToString() : "UNAVAILABLE"));
+      }
+      return false;
+    }
     // Newest-first pickup: use the clicked sprite to locate the pile, then
     // select the LAST placed item belonging to that pile. Sprites may have
     // differently sized hit rectangles but share an overlapping floor pile.
@@ -37769,7 +37832,7 @@ private static void HandleGameViewPointerDown(
       if (!IsPreviewFeatureEnabled(GetFloorItemFeatureKey(item))
           || !TryProjectFloorItem(item, out FloorItemDepth itemDepth,
               out bool itemRight)
-          || itemDepth != FloorItemDepth.SameTile
+          || GetViewEditFloorItemDistance(item) != "F1"
           || !TryGetFloorItemScreenRect(item, out Rect rect)) continue;
       bool sameCorner = item.x == clicked.x && item.y == clicked.y
           && string.Equals(item.cell, clicked.cell,
@@ -37812,6 +37875,10 @@ private static void HandleGameViewPointerDown(
         previewHeldChampionItemIndex = identity.itemIndex;
         previewHeldChampionSourceSlot = identity.previousSlot;
         previewHeldChampionCursor = swordCursor;
+        Debug.Log("F1 FLOOR PICKUP SUCCESS: item=" + swordItemName
+            + ", id=" + id + ", level=" + item.level
+            + ", tile=(" + item.x + "," + item.y + "), corner=" + item.cell
+            + ", player=(" + previewX + "," + previewY + ") " + previewFacing);
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
         RefreshEditModePreview();
         return true;
@@ -37845,6 +37912,10 @@ private static void HandleGameViewPointerDown(
       };
       previewHeldFloorItemCursor = cursor;
       previewFloorPickupCompleted = true;
+      Debug.Log("F1 FLOOR PICKUP SUCCESS: item=" + item.type
+          + ", id=" + id + ", level=" + item.level
+          + ", tile=(" + item.x + "," + item.y + "), corner=" + item.cell
+          + ", player=(" + previewX + "," + previewY + ") " + previewFacing);
       Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
       RefreshEditModePreview();
       return true;
@@ -37973,7 +38044,18 @@ private static void HandleGameViewPointerDown(
       return false;
     if (!TryResolveManualF1Drop(x, y,
         out int dropX, out int dropY, out string dropCorner))
+    {
+      EnsurePreviewMiniMapLoaded();
+      Debug.LogWarning("F1 FLOOR DROP REJECTED: held=" + previewHeldFloorItemId
+          + ", click=(" + x + "," + y + ")"
+          + ", sheetVisible=" + championSheetVisible
+          + ", tile=(" + previewX + "," + previewY + ")"
+          + ", mapLoaded=" + (previewMiniMap != null)
+          + ", tileOpen=" + (previewMiniMap != null
+              && PreviewTileIsOpen(previewX, previewY))
+          + ". Item stays on cursor. Drop requires a valid floor click.");
       return false;
+    }
 
     // F1 only: the cursor side determines the floor corner, never an item
     // visible at F2/F3. Reuse the same F1 geometry as render/pickup.
@@ -38012,6 +38094,10 @@ private static void HandleGameViewPointerDown(
     previewMovedFloorItemOrder.Add(previewHeldFloorItemId);
     MoveItemInstance(floorDropInstance, "Floor", level: previewDungeonLevel,
         tileX: dropX, tileY: dropY, corner: dropCorner);
+    Debug.Log("F1 FLOOR DROP SUCCESS: item=" + previewHeldFloorItem.type
+        + ", id=" + previewHeldFloorItemId + ", level=" + previewDungeonLevel
+        + ", tile=(" + dropX + "," + dropY + "), corner=" + dropCorner
+        + ", player=(" + previewX + "," + previewY + ") " + previewFacing);
     previewHeldFloorItemId = null;
     previewHeldFloorItem = null;
     previewHeldFloorItemCursor = null;
