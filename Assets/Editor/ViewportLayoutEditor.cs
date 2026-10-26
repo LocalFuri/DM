@@ -31028,6 +31028,19 @@ private static void HandleGameViewPointerDown(
     return items.ToArray();
   }
 
+  // Temporary diagnostic for the verified Samurai Sword F3 subtile regression.
+  // Logs only state changes to avoid flooding Unity's Console.
+  private static readonly HashSet<string> swordF3TraceKeys =
+      new HashSet<string>(System.StringComparer.Ordinal);
+  private static void TraceSwordF3(FloorItemPlacement item, string detail)
+  {
+    if (item == null || !string.Equals(item.type, "Samurai Sword",
+        System.StringComparison.OrdinalIgnoreCase)) return;
+    string key = item.instanceId + "|" + detail;
+    if (swordF3TraceKeys.Add(key))
+      Debug.Log("SWORD F3 TRACE: " + detail);
+  }
+
   private bool TryProjectFloorItem(
       FloorItemPlacement item,
       out FloorItemDepth depth,
@@ -31050,12 +31063,26 @@ private static void HandleGameViewPointerDown(
     int forwardDistance = dx * forwardX + dy * forwardY;
     int lateralTileDistance = dx * rightX + dy * rightY;
 
+    if (string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase)
+        && forwardDistance >= 1)
+      TraceSwordF3(item, "pose=(" + previewX + "," + previewY + ") "
+          + previewFacing + ", item=(" + item.x + "," + item.y + ") cell="
+          + item.cell + ", forward=" + forwardDistance
+          + ", lateral=" + lateralTileDistance
+          + ", rangeAccepted=" + (forwardDistance <= 2 && forwardDistance >= 0
+              && lateralTileDistance == 0));
+
     // The S3 side lanes are visible through the adjacent side opening,
     // followed by open D1/D2 tiles in that lane. A front-center wall
     // does not block the side corridor (e.g. Level 0, 5,11 North).
     bool sideS3 = forwardDistance == 2 && Mathf.Abs(lateralTileDistance) == 1;
     if (!sideS3 && (lateralTileDistance != 0 || forwardDistance < 0 || forwardDistance > 2))
+    {
+      TraceSwordF3(item, "PROJECTION REJECT: cell=" + item.cell
+          + ", facing=" + previewFacing + ", forward=" + forwardDistance
+          + ", lateral=" + lateralTileDistance);
       return false;
+    }
     if (sideS3)
     {
       int laneX = rightX * lateralTileDistance;
@@ -31081,14 +31108,40 @@ private static void HandleGameViewPointerDown(
             out int cornerY))
       return false;
 
-    int cornerAhead = cornerX * forwardX + cornerY * forwardY;
     int cornerLateral = cornerX * rightX + cornerY * rightY;
+    int cornerForward = cornerX * forwardX + cornerY * forwardY;
 
-    // On the party's own square only the front half of the floor is visible.
-    if (forwardDistance == 0 && cornerAhead <= 0)
+    // A floor item on the player's own tile must be in the half facing
+    // the viewer. Turning away from a dropped item must not make the same
+    // physical corner appear in front on the opposite facing. This is a
+    // visibility/pickup test only: never modify the stored corner or the
+    // verified F1/F2/F3 scaling, palette and screen placement.
+    // Items on a different tile retain their existing four-corner rules.
+    if (forwardDistance == 0 && cornerForward < 0)
       return false;
+
+    // A wall immediately ahead occludes the far corners on the player's tile.
+    // The original wall rule remains unchanged. A wall
+    // immediately ahead occludes only the FAR pair of corners (north pair
+    // when facing North); the NEAR pair remains visible and pickable.
+    // This check is shared by the drawing and click-to-pick-up paths. It
+    // does not change artwork, palette, scaling, anchoring or stored cells.
+    if (forwardDistance == 0 && cornerForward > 0
+        && PreviewTileIsWall(previewX + forwardX, previewY + forwardY))
+      return false;
+
+    // F1 floor interactions cover all four N/E/S/W subtiles of the
+    // current floor tile, including the two rear subtiles. Turning to
+    // place an item changes its stored physical corner, never its F1
+    // projection depth. The drawing and pickup paths share this test.
+    // Keep the forward-distance classifications and original artwork
+    // scaling/palette paths unchanged.
     if (cornerLateral == 0)
+    {
+      TraceSwordF3(item, "CORNER REJECT: cell=" + item.cell
+          + ", facing=" + previewFacing + ", cornerLateral=0");
       return false;
+    }
 
     if (sideS3)
     {
@@ -31549,6 +31602,8 @@ private static void HandleGameViewPointerDown(
   {
     if (depth == FloorItemDepth.TwoAhead)
     {
+      TraceSwordF3(item, "F3 projection APPROVED; cell=" + item.cell
+          + ", facing=" + previewFacing);
       BlitCsbF3Item(pixels, item, texture, pileOffset);
       return;
     }
@@ -31933,6 +31988,10 @@ private static void HandleGameViewPointerDown(
     CsbViewportPoint point = cell.positions[relCorner];
     if (!point.valid || point.y == 0)
     {
+      TraceSwordF3(item, "F3 viewport position REJECTED: positionClass="
+          + graphic.viewportPositionClass + ", relCorner=" + relCorner
+          + ", valid=" + point.valid + ", x=" + point.x + ", y=" + point.y
+          + ", source=" + texture.width + "x" + texture.height);
       if (string.Equals(item.type, "Club", System.StringComparison.OrdinalIgnoreCase))
         Debug.LogWarning("CLUB F2 TRACE: viewport position rejected; class="
             + graphic.viewportPositionClass + ", corner=" + relCorner
@@ -32076,6 +32135,11 @@ private static void HandleGameViewPointerDown(
     CsbViewportPoint point = cell.positions[relCorner];
     if (!point.valid || point.y == 0)
     {
+      TraceSwordF3(item, "F3 VIEWPORT REJECT: cell=" + item.cell
+          + ", absCorner=" + absCorner + ", relativeCorner=" + relCorner
+          + ", facing=" + previewFacing + ", viewportClass="
+          + graphic.viewportPositionClass + ", tableCell=3, valid="
+          + point.valid + ", x=" + point.x + ", y=" + point.y);
       if (string.Equals(item.type, "Club", System.StringComparison.OrdinalIgnoreCase))
         Debug.LogWarning("CLUB F2 TRACE: viewport position rejected; class="
             + graphic.viewportPositionClass + ", corner=" + relCorner
@@ -32125,7 +32189,11 @@ private static void HandleGameViewPointerDown(
       Texture2D texture, Vector2Int pileOffset)
   {
     if (!TryGetCsbF3RectBase(item, texture, out Rect rect, out bool mirror))
+    {
+      TraceSwordF3(item, "F3 RECT REJECTED: cell=" + item.cell
+          + ", facing=" + previewFacing);
       return;
+    }
     int width = Mathf.RoundToInt(rect.width);
     int height = Mathf.RoundToInt(rect.height);
     if (width < 1 || height < 1)
@@ -32182,6 +32250,9 @@ private static void HandleGameViewPointerDown(
     }
     int left = Mathf.RoundToInt(rect.x) + pileOffset.x;
     int top = Mathf.RoundToInt(rect.y) - pileOffset.y;
+    TraceSwordF3(item, "F3 BLIT: relCorner=" + relCorner
+        + ", rect=" + left + "," + top + "," + width + "x" + height
+        + ", map=" + (relCorner < 2 ? "far" : "medium"));
     for (int y = 0; y < height; y++)
     {
       int topY = top + height - 1 - y;
