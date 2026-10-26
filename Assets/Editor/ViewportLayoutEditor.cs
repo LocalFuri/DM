@@ -2061,6 +2061,35 @@ public class ViewportLayoutEditor : EditorWindow
       previewDisabledFeatureKeys.Remove(GetFloorItemFeatureKey(item));
   }
 
+  // Temporary floor-distance testing aid until champion recruitment is available.
+  // A new test Sword is placed directly on the cursor after each ViewEdit reload;
+  // it is NOT claimed from any champion's starting equipment or source map.
+  private void EquipSamuraiSwordDiagnosticCursorAfterReload()
+  {
+    const string itemType = "Samurai Sword";
+    const string id = "diagnostic:samurai-sword:reload";
+    Texture2D cursor = GetChampionInventoryItemTexture(itemType);
+    if (cursor == null || !cursor.isReadable || cursor.width != 16 || cursor.height != 16)
+    {
+      Debug.LogError("SAMURAI SWORD TEST CURSOR: Missing readable 16x16 inventory artwork; no fallback.");
+      return;
+    }
+    if (previewItemInstances.ContainsKey(id))
+      previewItemInstances.Remove(id); // Remove only the previous test instance on reload.
+    ItemInstance instance = EnsureWorldItemInstance(id, itemType, "Cursor",
+        previewDungeonLevel, previewX, previewY, "N");
+    if (instance == null) return;
+    MoveItemInstance(instance, "Cursor");
+    previewHeldFloorItemId = id;
+    previewHeldFloorItem = new FloorItemPlacement {
+      level = previewDungeonLevel, type = itemType,
+      x = previewX, y = previewY, cell = "N", instanceId = id
+    };
+    previewHeldFloorItemCursor = cursor;
+    previewFloorPickupCompleted = true;
+    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+  }
+
   [MenuItem("Tools/Check Original Ground Items", false, 120)]
   private static void CheckOriginalGroundItemsMenu()
   {
@@ -2668,6 +2697,7 @@ public class ViewportLayoutEditor : EditorWindow
     // reload. EditorWindow state may survive compilation, including picked-up
     // IDs or hidden feature flags from an earlier test session.
     RestoreOriginalFloorTestItemsAfterReload();
+    EquipSamuraiSwordDiagnosticCursorAfterReload();
     LoadPressurePadF1AcceptedCalibration();
     LoadPressurePadF2AcceptedCalibration();
     LoadPressurePadF3AcceptedCalibration();
@@ -32647,6 +32677,38 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // ViewEdit distance reflects the visible half-tile occupied by an item,
+  // rather than simply the number of complete map squares ahead. Keep this
+  // informational label separate from the renderer until its projection is
+  // updated and verified against the original.
+  private string GetViewEditFloorItemDistance(FloorItemPlacement item)
+  {
+    GetFloorItemViewBasis(previewFacing,
+        out int forwardX, out int forwardY,
+        out int rightX, out int rightY);
+    int tilesAhead = (item.x - previewX) * forwardX
+        + (item.y - previewY) * forwardY;
+    if (!TryGetFloorItemSubSquareOffset(item.cell,
+        out int cornerX, out int cornerY))
+    {
+      Debug.LogError("VIEWEDIT FLOOR DEPTH: invalid subtile '"
+          + item.cell + "' for " + item.type);
+      return "?";
+    }
+    int subtileForward = cornerX * forwardX + cornerY * forwardY;
+    // Front of our own square: F1. Near half of the next square: F1;
+    // far half: F2. The same progression holds for the second square.
+    int visibleDistance = tilesAhead + (subtileForward > 0 ? 1 : 0);
+    if (visibleDistance < 1 || visibleDistance > 3)
+    {
+      Debug.LogError("VIEWEDIT FLOOR DEPTH: unsupported position for "
+          + item.type + " at (" + item.x + "," + item.y + ") "
+          + item.cell + ", facing " + previewFacing);
+      return "?";
+    }
+    return "F" + visibleDistance;
+  }
+
   private void DrawFloorItemRows()
   {
     EnsurePreviewMiniMapLoaded();
@@ -32667,20 +32729,20 @@ private static void HandleGameViewPointerDown(
       string key = GetFloorItemFeatureKey(item);
       EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
 
-      string depthLabel = depth == FloorItemDepth.SameTile
-          ? "F1"
-          : depth == FloorItemDepth.OneAhead ? "F2"
-          : depth == FloorItemDepth.SideTwoAhead ? "S3" : "F3";
+      string depthLabel = GetViewEditFloorItemDistance(item);
       // One compact ViewEdit line per pickable item: name, Set, X, Y, Apply.
       // Map coordinates and the redundant second calibration line are omitted.
       GUIStyle pickableLabelStyle = new GUIStyle(EditorStyles.boldLabel);
       pickableLabelStyle.normal.textColor = Color.green;
       pickableLabelStyle.hover.textColor = Color.green;
       pickableLabelStyle.clipping = TextClipping.Clip;
+      // Show the descriptive item text in the requested order:
+      // item name [distance] [left/right] [direction].
       GUILayout.Label(
-          item.type + " [" + item.cell + "] " + depthLabel + " " + (isRight ? "R" : "L"),
+          item.type + " [" + depthLabel + "] [" + (isRight ? "R" : "L")
+          + "] [" + item.cell + "]",
           pickableLabelStyle,
-          GUILayout.Width(118f));
+          GUILayout.Width(220f));
 
       bool enabledBefore = IsPreviewFeatureEnabled(key);
       bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
