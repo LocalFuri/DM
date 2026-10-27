@@ -19714,7 +19714,7 @@ private static void HandleGameViewPointerDown(
     GUILayout.Space(5f);
     GUIStyle titleStyle = new GUIStyle(EditorStyles.boldLabel);
     titleStyle.normal.textColor = new Color(0.25f, 1f, 0.4f);
-    GUILayout.Label("V17 ACTUALLY DRAWN WALLS", titleStyle);
+    GUILayout.Label("FrontF3", titleStyle);
     // The direct V17 FrontF3 edge blit must have a visible, operable switch
     // inside the actual-draw section, even if the strip has been disabled.
     // This is intentionally not a ViewportPiece Enabled flag.
@@ -19723,7 +19723,7 @@ private static void HandleGameViewPointerDown(
     EditorGUILayout.BeginHorizontal();
     bool newLeft16 = EditorGUILayout.Toggle(
         previewAllowFrontF3Left16, GUILayout.Width(20f));
-    GUILayout.Label("Front Wall F3 (V17 source 141 x 49)", EditorStyles.miniLabel);
+    GUILayout.Label("Front Wall F3_141x49", EditorStyles.boldLabel);
     bool newFrontF3Mirror = EditorGUILayout.ToggleLeft(
         "Mirror", previewFrontF3CropMirror, GUILayout.Width(72f));
     EditorGUILayout.EndHorizontal();
@@ -19793,14 +19793,22 @@ private static void HandleGameViewPointerDown(
         ? (previewAllowFrontF3Left16 ? "  Geometry active / drawing permitted"
             : "  Geometry active / disabled by checkbox")
         : "  Geometry inactive at this position", EditorStyles.miniLabel);
-    if (v17DrawnWalls.Count == 0)
-    {
-      GUILayout.Label("No wall blits recorded for this preview", EditorStyles.miniLabel);
-      return;
-    }
+    // FrontF3 has its own editable ViewEdit wall card above. Its former
+    // diagnostic text lines must not duplicate that card. Keep other V17
+    // wall blits visible so the actual-rendering inspection remains useful.
+    bool otherBlitsHeaderDrawn = false;
     for (int i = 0; i < v17DrawnWalls.Count; i++)
     {
-      GUILayout.Label("  " + v17DrawnWalls[i], EditorStyles.miniLabel);
+      string entry = v17DrawnWalls[i];
+      if (entry.StartsWith("FrontF3 D3 edge", System.StringComparison.Ordinal))
+        continue;
+      if (!otherBlitsHeaderDrawn)
+      {
+        GUILayout.Space(4f);
+        GUILayout.Label("Other V17 drawn walls (read-only)", EditorStyles.miniBoldLabel);
+        otherBlitsHeaderDrawn = true;
+      }
+      GUILayout.Label("  " + entry, EditorStyles.miniLabel);
     }
   }
 
