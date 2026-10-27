@@ -13728,6 +13728,26 @@ private static void HandleGameViewPointerDown(
     return !IsViewport17Solid(cell);
   }
 
+  // An open center corridor reaches D3 while the left lane terminates there.
+  // When the D3 right lane is open, the original view uses the outer edge of
+  // FrontF3 at X=0..15 rather than the oblique LeftS3 face. This is a
+  // relative-geometry test; no absolute dungeon coordinates are consulted.
+  private static bool IsViewport17LeftD3FrontF3Extension(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null)
+      return false;
+
+    return IsViewport17LaneOpenAt(inspection, -1, 0)
+        && IsViewport17LaneOpenAt(inspection, -1, 1)
+        && IsViewport17LaneOpenAt(inspection, -1, 2)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
+        && IsViewport17LaneOpenAt(inspection, 0, 1)
+        && IsViewport17LaneOpenAt(inspection, 0, 2)
+        && IsViewport17LaneOpenAt(inspection, 0, 3)
+        && IsViewport17LaneOpenAt(inspection, 1, 3);
+  }
+
   private static bool IsViewport17LeftS3D2FrontEdge(
       Viewport17Inspection inspection)
   {
@@ -14594,7 +14614,8 @@ private static void HandleGameViewPointerDown(
         IsViewport17LeftS3OpenLeftD3CenterFront(inspection);
     bool leftS3NearCenterFullD3Edge =
         IsViewport17LeftS3NearCenterFullD3Edge(inspection);
-    if (leftS3D3Terminator
+    // The open-center/open-right D3 terminator uses FrontF3 instead.
+    if ((leftS3D3Terminator && !IsViewport17LeftD3FrontF3Extension(inspection))
         || leftS3D2FrontEdge
         || leftS3D3FullFrontEdge
         || leftS3OpenLeftD3CenterFront
@@ -18043,6 +18064,10 @@ private static void HandleGameViewPointerDown(
   /// Y / Width / Mirror that Compose actually blits. Stationary-pose ViewEdit
   /// Enabled / Mirror / X/Y tests are applied afterward and still win.
   /// </summary>
+  private static string s_v17ActualLeftS3PaintLog;
+  private static string s_v17LeftEdgeSelectionLog;
+  private static string s_v17LeftEdgeBlitLog;
+
   private void ApplyViewport17LiveDrawToResolvedWalls()
   {
     if (!IsViewport17WallAuthorityActive()
@@ -18068,6 +18093,32 @@ private static void HandleGameViewPointerDown(
     GetViewport17FinalFrontLanes(
         finalCommands, 3,
         out bool d3FrontLeft, out bool d3FrontCenter, out bool d3FrontRight);
+
+    // Diagnostic only. Reports the real FINAL DRAW decision once per changed state.
+    if (previewDungeonLevel == 0 && previewX == 11 && previewY == 4
+        && previewFacing == DungeonFacing.West)
+    {
+      bool d3LeftSolid = IsViewport17Solid(
+          FindViewport17Cell(inspection.Cells, -1, 3));
+      bool d3CenterSolid = IsViewport17Solid(
+          FindViewport17Cell(inspection.Cells, 0, 3));
+      bool d3RightSolid = IsViewport17Solid(
+          FindViewport17Cell(inspection.Cells, 1, 3));
+      string diagnostic = "V17 LEFT EDGE SELECT (11,4 W): D3 solid L/C/R="
+          + d3LeftSolid + "/" + d3CenterSolid + "/" + d3RightSolid
+          + " D3 front L/C/R=" + d3FrontLeft + "/" + d3FrontCenter
+          + "/" + d3FrontRight
+          + " LeftS3 final=" + HasViewport17FinalFamily(finalCommands, "LeftS3")
+          + " rules D2Edge=" + IsViewport17LeftS3D2FrontEdge(inspection)
+          + " D3Full=" + IsViewport17LeftS3D3FullFrontEdge(inspection)
+          + " OpenLeftCenter=" + IsViewport17LeftS3OpenLeftD3CenterFront(inspection)
+          + " NearCenter=" + IsViewport17LeftS3NearCenterFullD3Edge(inspection);
+      if (diagnostic != s_v17LeftEdgeSelectionLog)
+      {
+        s_v17LeftEdgeSelectionLog = diagnostic;
+        Debug.LogWarning(diagnostic);
+      }
+    }
 
     bool d1LeftEnabled =
         HasViewport17FinalFamily(finalCommands, "LeftF1") || d1FrontLeft;
@@ -20151,6 +20202,20 @@ private static void HandleGameViewPointerDown(
           if (wallS3Texture == null)
             continue;
 
+          // Report the actual final LeftS3 paint operation, not a selection
+          // prediction. No coordinate/facing guard: logs at any pose.
+          if (piece.Name == "LeftS3")
+          {
+            string key = previewDungeonLevel + "/" + previewX + "/"
+                + previewY + "/" + previewFacing + " x=" + resolvedX
+                + " y=" + resolvedY + " mirror=" + handedMirror
+                + " source=" + wallS3Texture.name;
+            if (key != s_v17ActualLeftS3PaintLog)
+            {
+              s_v17ActualLeftS3PaintLog = key;
+              Debug.LogWarning("V17 ACTUAL LEFTS3 BLIT: " + key);
+            }
+          }
           BlitPieceIntoPreview(
               pixels,
               wallS3Texture,
@@ -22339,6 +22404,40 @@ private static void HandleGameViewPointerDown(
             frontY,
             centerMirror);
         return;
+      }
+    }
+
+    // The far-left edge of this D3 front configuration is a FrontF3 crop,
+    // not the LeftS3 side-wall sprite. Draw it in the native 49px D3 band.
+    // Diagnostic only. Confirms whether the native FrontF3 blitter runs.
+    if (previewDungeonLevel == 0 && previewX == 11 && previewY == 4
+        && previewFacing == DungeonFacing.West)
+    {
+      string diagnostic = "V17 LEFT EDGE BLIT (11,4 W): leftD3FrontExtension="
+          + IsViewport17LeftD3FrontF3Extension(inspection) + " front L/C/R=" + frontLeft + "/"
+          + frontCenter + "/" + frontRight
+          + " LeftF3=" + leftEnabled + " RightF3=" + rightEnabled
+          + " FrontF3Source=" + (graphics.GetTexture(
+              DungeonGraphicType.FrontWallF3) != null);
+      if (diagnostic != s_v17LeftEdgeBlitLog)
+      {
+        s_v17LeftEdgeBlitLog = diagnostic;
+        Debug.LogWarning(diagnostic);
+      }
+    }
+    if (IsViewport17LeftD3FrontF3Extension(inspection))
+    {
+      Texture2D edgeSource =
+          graphics.GetTexture(DungeonGraphicType.FrontWallF3);
+      if (edgeSource == null || !edgeSource.isReadable
+          || edgeSource.height != nativeHeight || edgeSource.width < 16)
+      {
+        Debug.LogError("V17: missing readable FrontF3 texture for D3 left edge");
+      }
+      else
+      {
+        BlitViewport17SourceStripPreview(
+            pixels, edgeSource, 0, 15, 0, frontY, false);
       }
     }
 
@@ -38119,92 +38218,6 @@ private static void HandleGameViewPointerDown(
     HideHeldItemPointerOverlay();
   }
 
-  // The zoom-scaled item remains a UI Toolkit overlay.  Unity's Edit-mode
-  // GameView can override a transparent StyleCursor on its IMGUI surface.
-  // On Windows, hide ONLY the native arrow (not substitute another cursor).
-  // Balance every ShowCursor(false) call with ShowCursor(true) on cleanup.
-#if UNITY_EDITOR_WIN
-  [System.Runtime.InteropServices.DllImport("user32.dll")]
-  private static extern int ShowCursor(bool show);
-
-  [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-  private struct WinCursorInfo
-  {
-    public int cbSize;
-    public int flags;
-    public System.IntPtr hCursor;
-    public NativeCursorPoint ptScreenPos;
-  }
-
-  [System.Runtime.InteropServices.DllImport("user32.dll")]
-  [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
-  private static extern bool GetCursorInfo(ref WinCursorInfo info);
-#endif
-  private static int s_heldCursorHideCalls;
-  private static bool s_heldCursorCleanupRegistered;
-  private static bool s_heldCursorWarned;
-
-  private static void SetHeldItemArrowHidden(EditorWindow gameView)
-  {
-#if UNITY_EDITOR_WIN
-    if (gameView == null) return;
-    if (!s_heldCursorCleanupRegistered)
-    {
-      AssemblyReloadEvents.beforeAssemblyReload += RestoreHeldItemArrow;
-      EditorApplication.quitting += RestoreHeldItemArrow;
-      s_heldCursorCleanupRegistered = true;
-    }
-
-    // A cursor may be re-shown by Unity after we hid it.  Check visibility,
-    // not every mouse move, and only correct if the arrow is actually visible.
-    var info = new WinCursorInfo();
-    info.cbSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(WinCursorInfo));
-    if (!GetCursorInfo(ref info))
-    {
-      if (!s_heldCursorWarned)
-      {
-        Debug.LogWarning("TORCH CURSOR: GetCursorInfo failed; normal pointer may remain visible");
-        s_heldCursorWarned = true;
-      }
-      return;
-    }
-    const int CURSOR_SHOWING = 0x00000001;
-    if ((info.flags & CURSOR_SHOWING) == 0)
-      return;
-    // A small limit protects the editor if some external code keeps
-    // re-showing the pointer.  Every decrement is tracked and reversible.
-    if (s_heldCursorHideCalls >= 32)
-    {
-      if (!s_heldCursorWarned)
-      {
-        Debug.LogWarning("TORCH CURSOR: native cursor keeps being shown; stopping corrections");
-        s_heldCursorWarned = true;
-      }
-      return;
-    }
-    ShowCursor(false);
-    s_heldCursorHideCalls++;
-#endif
-  }
-
-  private static void RestoreHeldItemArrow()
-  {
-#if UNITY_EDITOR_WIN
-    while (s_heldCursorHideCalls > 0)
-    {
-      ShowCursor(true);
-      s_heldCursorHideCalls--;
-    }
-    if (s_heldCursorCleanupRegistered)
-    {
-      AssemblyReloadEvents.beforeAssemblyReload -= RestoreHeldItemArrow;
-      EditorApplication.quitting -= RestoreHeldItemArrow;
-      s_heldCursorCleanupRegistered = false;
-    }
-    s_heldCursorWarned = false;
-#endif
-  }
-
   private static UnityEngine.UIElements.VisualElement s_heldItemPointerOverlay;
   private static UnityEngine.UIElements.VisualElement s_heldItemHotspotOverlay;
   private static EditorWindow s_heldItemPointerOverlayWindow;
@@ -38330,7 +38343,6 @@ private static void HandleGameViewPointerDown(
     s_heldItemPointerOverlay.style.display = owner.championHeldItemOverEye
         ? UnityEngine.UIElements.DisplayStyle.None
         : UnityEngine.UIElements.DisplayStyle.Flex;
-    SetHeldItemArrowHidden(gameView);
     s_heldItemPointerOverlay.BringToFront();
   }
 
@@ -38363,7 +38375,6 @@ private static void HandleGameViewPointerDown(
 
   private static void HideHeldItemPointerOverlay()
   {
-    RestoreHeldItemArrow();
     if (s_heldItemPointerOverlay != null)
       s_heldItemPointerOverlay.RemoveFromHierarchy();
     s_heldItemPointerOverlay = null;
@@ -38414,8 +38425,7 @@ private static void HandleGameViewPointerDown(
       if (s_heldItemPointerOverlay != null)
         s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.None;
       owner.SetChampionHeldItemOverEye(false);
-      RestoreHeldItemArrow();
-      return;
+        return;
     }
     UpdateHeldItemPointerOverlay(s_hookedGameView, local);
 #endif
@@ -38442,7 +38452,6 @@ private static void HandleGameViewPointerDown(
     if (owner != null) owner.SetChampionHeldItemOverEye(false);
     if (s_heldItemPointerOverlay != null)
       s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.None;
-    RestoreHeldItemArrow();
   }
 
   private string MakeTorchHolderInstanceKey(WallOrnamentPlacement ornament)
