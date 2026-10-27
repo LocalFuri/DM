@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -3194,6 +3194,8 @@ public class ViewportLayoutEditor : EditorWindow
 
       EditorGUILayout.EndHorizontal();
 
+      // Always visible at the top of the ViewEdit piece list, not buried below items.
+      DrawV17ActualWallRows();
 
       ClampSearchFamilyToEnabledPieces();
       HandlePieceSearchKeyboard();
@@ -19684,8 +19686,127 @@ private static void HandleGameViewPointerDown(
     return -1;
   }
 
+  // Only recorded after a wall blit actually executes. Not a visibility prediction.
+  // ViewEdit-only diagnostic override; does not change the V17 geometry recipe.
+  private bool previewAllowFrontF3Left16 = true;
+  // Native FrontF3 D3 left-edge crop: calibrated reference values.
+  // X=-20, Y=93, W=29, H=49, mirror=true. Geometry still gates visibility.
+  private int previewFrontF3Left16X = -20;
+  private int previewFrontF3Left16Width = 29;
+  private int previewFrontF3Left16Height = 49;
+  private bool previewFrontF3CropMirror = true;
+  private int previewFrontF3Left16YOffset = 0;
+  private const int FrontF3Left16ReferenceY = 93;
+  // Diagnostic master switch: disables every native D3 FrontF3 blit, not side walls.
+  private bool previewAllowAllFrontF3 = true;
+  private readonly List<string> v17DrawnWalls = new List<string>();
+  private void RecordV17DrawnWall(string family, int x, int y, int width)
+  {
+    string entry = family + "  X=" + x + " Y=" + y + " W=" + width;
+    if (!v17DrawnWalls.Contains(entry))
+      v17DrawnWalls.Add(entry);
+  }
+
+  private void DrawV17ActualWallRows()
+  {
+    if (!IsViewport17WallAuthorityActive())
+      return;
+    GUILayout.Space(5f);
+    GUIStyle titleStyle = new GUIStyle(EditorStyles.boldLabel);
+    titleStyle.normal.textColor = new Color(0.25f, 1f, 0.4f);
+    GUILayout.Label("V17 ACTUALLY DRAWN WALLS", titleStyle);
+    // The direct V17 FrontF3 edge blit must have a visible, operable switch
+    // inside the actual-draw section, even if the strip has been disabled.
+    // This is intentionally not a ViewportPiece Enabled flag.
+    bool frontF3Left16Available = !previewDisableAllWalls
+        && IsViewport17LeftD3FrontF3Extension(BuildViewport17Inspection());
+    EditorGUILayout.BeginHorizontal();
+    bool newLeft16 = EditorGUILayout.Toggle(
+        previewAllowFrontF3Left16, GUILayout.Width(20f));
+    GUILayout.Label("Front Wall F3 (V17 source 141 x 49)", EditorStyles.miniLabel);
+    bool newFrontF3Mirror = EditorGUILayout.ToggleLeft(
+        "Mirror", previewFrontF3CropMirror, GUILayout.Width(72f));
+    EditorGUILayout.EndHorizontal();
+    if (newFrontF3Mirror != previewFrontF3CropMirror)
+    {
+      previewFrontF3CropMirror = newFrontF3Mirror;
+      RefreshTemporaryNormalWallPreview();
+      Repaint();
+    }
+    if (newLeft16 != previewAllowFrontF3Left16)
+    {
+      previewAllowFrontF3Left16 = newLeft16;
+      RefreshTemporaryNormalWallPreview();
+      Repaint();
+    }
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label("X", GUILayout.Width(12f));
+    int editX = EditorGUILayout.IntField(previewFrontF3Left16X, GUILayout.Width(43f));
+    if (GUILayout.Button("-1", GUILayout.Width(31f))) editX--;
+    if (GUILayout.Button("+1", GUILayout.Width(31f))) editX++;
+    GUILayout.Space(7f);
+    GUILayout.Label("Y", GUILayout.Width(12f));
+    int editY = EditorGUILayout.IntField(
+        FrontF3Left16ReferenceY + previewFrontF3Left16YOffset,
+        GUILayout.Width(43f));
+    if (GUILayout.Button("-1", GUILayout.Width(31f))) editY--;
+    if (GUILayout.Button("+1", GUILayout.Width(31f))) editY++;
+    EditorGUILayout.EndHorizontal();
+    if (editX != previewFrontF3Left16X
+        || editY != FrontF3Left16ReferenceY + previewFrontF3Left16YOffset)
+    {
+      previewFrontF3Left16X = editX;
+      previewFrontF3Left16YOffset = editY - FrontF3Left16ReferenceY;
+      RefreshTemporaryNormalWallPreview();
+      Repaint();
+    }
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label("W", GUILayout.Width(12f));
+    int editW = EditorGUILayout.IntField(previewFrontF3Left16Width, GUILayout.Width(43f));
+    if (GUILayout.Button("-1", GUILayout.Width(31f))) editW--;
+    if (GUILayout.Button("+1", GUILayout.Width(31f))) editW++;
+    EditorGUILayout.EndHorizontal();
+    editW = Mathf.Clamp(editW, 1, 141);
+    if (editW != previewFrontF3Left16Width)
+    {
+      previewFrontF3Left16Width = editW;
+      RefreshTemporaryNormalWallPreview();
+      Repaint();
+    }
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label("H", GUILayout.Width(12f));
+    int editH = EditorGUILayout.IntField(previewFrontF3Left16Height, GUILayout.Width(43f));
+    if (GUILayout.Button("-1", GUILayout.Width(31f))) editH--;
+    if (GUILayout.Button("+1", GUILayout.Width(31f))) editH++;
+    EditorGUILayout.EndHorizontal();
+    editH = Mathf.Clamp(editH, 1, 49);
+    if (editH != previewFrontF3Left16Height)
+    {
+      previewFrontF3Left16Height = editH;
+      RefreshTemporaryNormalWallPreview();
+      Repaint();
+    }
+    GUILayout.Label("Visible crop: " + previewFrontF3Left16Width
+        + " x " + previewFrontF3Left16Height
+        + "  |  Source: 141 x 49", EditorStyles.miniLabel);
+    GUILayout.Label(frontF3Left16Available
+        ? (previewAllowFrontF3Left16 ? "  Geometry active / drawing permitted"
+            : "  Geometry active / disabled by checkbox")
+        : "  Geometry inactive at this position", EditorStyles.miniLabel);
+    if (v17DrawnWalls.Count == 0)
+    {
+      GUILayout.Label("No wall blits recorded for this preview", EditorStyles.miniLabel);
+      return;
+    }
+    for (int i = 0; i < v17DrawnWalls.Count; i++)
+    {
+      GUILayout.Label("  " + v17DrawnWalls[i], EditorStyles.miniLabel);
+    }
+  }
+
   private void ComposeEditModePreview()
   {
+    v17DrawnWalls.Clear();
     EnsureEditModePreviewTexture();
     if (editModePreviewTexture == null)
       return;
@@ -20222,6 +20343,7 @@ private static void HandleGameViewPointerDown(
               resolvedX,
               resolvedY,
               handedMirror);
+          RecordV17DrawnWall(piece.Name, resolvedX, resolvedY, wallS3Texture.width);
           continue;
         }
 
@@ -21661,6 +21783,37 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Draw a native-resolution top-left crop of the full Front Wall F3 asset.
+  // ViewEdit W/H control the actual sampled dimensions (up to 141x49).
+  private static void BlitViewport17FrontF3CropPreview(
+      Color32[] dest, Texture2D source, int width, int height,
+      int destX, int destY, bool mirror)
+  {
+    if (dest == null || source == null || !source.isReadable)
+      return;
+
+    int copyWidth = Mathf.Clamp(width, 1, source.width);
+    int copyHeight = Mathf.Clamp(height, 1, source.height);
+    Color32[] sourcePixels = source.GetPixels32();
+    for (int y = 0; y < copyHeight; y++)
+    {
+      int screenY = destY + y;
+      if (screenY < 0 || screenY >= PreviewHeight)
+        continue;
+      int sourceRow = y * source.width;
+      int destRow = screenY * PreviewWidth;
+      for (int x = 0; x < copyWidth; x++)
+      {
+        int screenX = destX + x;
+        if (screenX < 0 || screenX >= StraightF1WallLogic.CompositeWidth)
+          continue;
+        Color32 color = sourcePixels[sourceRow + (mirror ? copyWidth - 1 - x : x)];
+        color.a = 255;
+        dest[destRow + screenX] = color;
+      }
+    }
+  }
+
   private Texture2D GetReadableNativeFrontF1Texture()
   {
     Texture2D asset =
@@ -22075,6 +22228,7 @@ private static void HandleGameViewPointerDown(
       ApplyViewport17FamilyDestOverride("LeftF1", ref leftX, ref leftY);
       BlitPieceIntoPreview(
           pixels, leftSource, leftX, leftY, leftMirror);
+      RecordV17DrawnWall("LeftF1", leftX, leftY, leftSource.width);
     }
 
     if (rightEnabled
@@ -22087,6 +22241,7 @@ private static void HandleGameViewPointerDown(
       ApplyViewport17FamilyDestOverride("RightF1", ref rightX, ref rightY);
       BlitPieceIntoPreview(
           pixels, rightSource, rightX, rightY, rightMirror);
+      RecordV17DrawnWall("RightF1", rightX, rightY, rightSource.width);
     }
 
     // DOS zone 712: D1C is the original 160x111 center at X=32.
@@ -22104,6 +22259,7 @@ private static void HandleGameViewPointerDown(
         ApplyViewport17FamilyDestOverride("FrontF1", ref centerX, ref centerY);
         BlitPieceIntoPreview(
             pixels, centerSource, centerX, centerY, centerMirror);
+        RecordV17DrawnWall("FrontF1", centerX, centerY, centerSource.width);
       }
       else
       {
@@ -22193,6 +22349,7 @@ private static void HandleGameViewPointerDown(
       ApplyViewport17FamilyDestOverride("LeftF2", ref leftX, ref leftY);
       BlitPieceIntoPreview(
           pixels, leftSource, leftX, leftY, leftMirror);
+      RecordV17DrawnWall("LeftF2", leftX, leftY, leftSource.width);
     }
 
     if (rightEnabled
@@ -22205,6 +22362,7 @@ private static void HandleGameViewPointerDown(
       ApplyViewport17FamilyDestOverride("RightF2", ref rightX, ref rightY);
       BlitPieceIntoPreview(
           pixels, rightSource, rightX, rightY, rightMirror);
+      RecordV17DrawnWall("RightF2", rightX, rightY, rightSource.width);
     }
 
     // DOS layout 696 zone 709: D2C is centered at X=59. Draw it last so
@@ -22222,6 +22380,7 @@ private static void HandleGameViewPointerDown(
         ApplyViewport17FamilyDestOverride("FrontF2", ref centerX, ref centerY);
         BlitPieceIntoPreview(
             pixels, centerSource, centerX, centerY, centerMirror);
+        RecordV17DrawnWall("FrontF2", centerX, centerY, centerSource.width);
       }
       else
       {
@@ -22245,6 +22404,12 @@ private static void HandleGameViewPointerDown(
       List<Viewport17RenderCommand> finalCommands,
       bool suppressCenter = false)
   {
+    // V17 draws native D3 walls directly, bypassing the ordinary ViewEdit
+    // wall-piece Enabled checks. Hide Walls must suppress this entire pass,
+    // including geometry-owned FrontF3 gutters and the leftmost 16px strip.
+    if (previewDisableAllWalls)
+      return;
+
     if (pixels == null || graphics == null || inspection.Cells == null)
       return;
 
@@ -22319,6 +22484,7 @@ private static void HandleGameViewPointerDown(
       ApplyViewport17FamilyDestOverride("LeftF3", ref leftX, ref leftY);
       BlitPieceIntoPreview(
           pixels, leftSource, leftX, leftY, leftMirror);
+      RecordV17DrawnWall("LeftF3", leftX, leftY, leftSource.width);
     }
 
     if (rightEnabled
@@ -22331,7 +22497,14 @@ private static void HandleGameViewPointerDown(
       ApplyViewport17FamilyDestOverride("RightF3", ref rightX, ref rightY);
       BlitPieceIntoPreview(
           pixels, rightSource, rightX, rightY, rightMirror);
+      RecordV17DrawnWall("RightF3", rightX, rightY, rightSource.width);
     }
+
+    // Diagnostic isolation: side walls above remain visible, but none of the
+    // native D3 FrontF3 crops, gutters, lanes, center or left-16 extension
+    // may paint pixels while this switch is off. Geometry is unchanged.
+    if (!previewAllowAllFrontF3)
+      return;
 
     // A surviving D3 FRONT left/right lane without a center is a 32px edge
     // strip, not a full LeftF3/RightF3 side wall. The open-left / full-D3 /
@@ -22403,6 +22576,7 @@ private static void HandleGameViewPointerDown(
             destinationX,
             frontY,
             centerMirror);
+        RecordV17DrawnWall("FrontF3 preview crop", destinationX, frontY, drawWidth);
         return;
       }
     }
@@ -22423,21 +22597,6 @@ private static void HandleGameViewPointerDown(
       {
         s_v17LeftEdgeBlitLog = diagnostic;
         Debug.LogWarning(diagnostic);
-      }
-    }
-    if (IsViewport17LeftD3FrontF3Extension(inspection))
-    {
-      Texture2D edgeSource =
-          graphics.GetTexture(DungeonGraphicType.FrontWallF3);
-      if (edgeSource == null || !edgeSource.isReadable
-          || edgeSource.height != nativeHeight || edgeSource.width < 16)
-      {
-        Debug.LogError("V17: missing readable FrontF3 texture for D3 left edge");
-      }
-      else
-      {
-        BlitViewport17SourceStripPreview(
-            pixels, edgeSource, 0, 15, 0, frontY, false);
       }
     }
 
@@ -22479,6 +22638,7 @@ private static void HandleGameViewPointerDown(
             frontLeftX,
             frontY,
             centerMirror);
+        RecordV17DrawnWall("FrontF3 left gutter", frontLeftX, frontY, drawWidth);
       }
     }
 
@@ -22510,6 +22670,7 @@ private static void HandleGameViewPointerDown(
             frontRightX,
             frontY,
             false);
+        RecordV17DrawnWall("FrontF3 right slit", frontRightX, frontY, NativeD3RightOpenSlitFrontWidth);
       }
     }
 
@@ -22537,6 +22698,7 @@ private static void HandleGameViewPointerDown(
               frontRightX,
               frontY,
               false);
+        RecordV17DrawnWall("FrontF3 right gutter", frontRightX, frontY, drawWidth);
         }
       }
     }
@@ -22552,6 +22714,7 @@ private static void HandleGameViewPointerDown(
         BlitViewport17SourceStripPreview(
             pixels, frontSource, sourceStart, frontSource.width - 1,
             frontLeftX, frontY, centerMirror);
+        RecordV17DrawnWall("FrontF3 left lane", frontLeftX, frontY, stripWidth);
       }
       if (frontRight
           && !frontCenter
@@ -22561,6 +22724,7 @@ private static void HandleGameViewPointerDown(
         BlitViewport17SourceStripPreview(
             pixels, frontSource, sourceStart, frontSource.width - 1,
             frontRightX, frontY, centerMirror);
+        RecordV17DrawnWall("FrontF3 right lane", frontRightX, frontY, stripWidth);
       }
     }
 
@@ -22574,6 +22738,7 @@ private static void HandleGameViewPointerDown(
       {
         BlitPieceIntoPreview(
             pixels, centerSource, frontCenterX, frontY, centerMirror);
+        RecordV17DrawnWall("FrontF3 center", frontCenterX, frontY, centerSource.width);
       }
       else
       {
@@ -22581,6 +22746,38 @@ private static void HandleGameViewPointerDown(
             "V17 native D3: Front_Wall_F3_RAW_70x49.png is missing or not 70x49.");
       }
     }
+
+    // FrontF3 owns the exposed leftmost 16 pixels in this geometry.
+    // Draw after the regular D3 wall strips so they cannot overwrite it.
+    if (previewAllowFrontF3Left16
+        && IsViewport17LeftD3FrontF3Extension(inspection))
+    {
+      Texture2D edgeSource =
+          graphics.GetTexture(DungeonGraphicType.FrontWallF3);
+      if (edgeSource == null || !edgeSource.isReadable
+          || edgeSource.height != nativeHeight || edgeSource.width < 16)
+      {
+        Debug.LogError("V17: missing readable FrontF3 texture for D3 left edge");
+      }
+      else
+      {
+        // Diagnostic native-resolution crop of Front Wall F3 (141x49).
+        // W/H select source pixels; no scaling or stretching is performed.
+        BlitViewport17FrontF3CropPreview(
+            pixels, edgeSource, previewFrontF3Left16Width,
+            previewFrontF3Left16Height, previewFrontF3Left16X,
+            frontY + previewFrontF3Left16YOffset,
+            previewFrontF3CropMirror);
+        RecordV17DrawnWall("FrontF3 D3 edge crop",
+            previewFrontF3Left16X,
+            frontY + previewFrontF3Left16YOffset, previewFrontF3Left16Width);
+        string cropDetails = "FrontF3 D3 edge H=" + previewFrontF3Left16Height
+            + " Mirror=" + (previewFrontF3CropMirror ? "ON" : "OFF");
+        if (!v17DrawnWalls.Contains(cropDetails))
+          v17DrawnWalls.Add(cropDetails);
+      }
+    }
+
   }
 
   private void BlitChampionMirrorD0RightIntoPreview(Color32[] pixels)
