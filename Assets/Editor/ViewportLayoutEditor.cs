@@ -19814,7 +19814,12 @@ private static void HandleGameViewPointerDown(
     GUILayout.Label("X", GUILayout.Width(12f));
     Color originalColorX = GUI.contentColor;
     GUI.contentColor = previewFrontF3Left16X != frontF3AppliedX ? Color.red : originalColorX;
-    int editX = EditorGUILayout.IntField(previewFrontF3Left16X, GUILayout.Width(43f));
+    // ViewEdit X is relative to the first visible pixel of the accepted
+    // calibrated FrontF3 crop (source crop begins at -20; screen starts at 0).
+    // Keep the underlying blit position unchanged.
+    const int FrontF3CropOffscreenX = -20;
+    int editX = EditorGUILayout.IntField(
+        previewFrontF3Left16X - FrontF3CropOffscreenX, GUILayout.Width(43f));
     GUI.contentColor = originalColorX;
     if (GUILayout.Button("-1", GUILayout.Width(31f))) editX--;
     if (GUILayout.Button("+1", GUILayout.Width(31f))) editX++;
@@ -19830,13 +19835,14 @@ private static void HandleGameViewPointerDown(
     if (GUILayout.Button("-1", GUILayout.Width(31f))) editY--;
     if (GUILayout.Button("+1", GUILayout.Width(31f))) editY++;
     GUILayout.Space(6f);
-    GUILayout.Label("Ref X " + frontF3AppliedX + " / Y " + frontF3AppliedY,
+    GUILayout.Label("Ref X " + (frontF3AppliedX - FrontF3CropOffscreenX)
+        + " / Y " + frontF3AppliedY,
         EditorStyles.miniLabel, GUILayout.ExpandWidth(false));
     EditorGUILayout.EndHorizontal();
-    if (editX != previewFrontF3Left16X
+    if (editX + FrontF3CropOffscreenX != previewFrontF3Left16X
         || editY != FrontF3Left16ReferenceY + previewFrontF3Left16YOffset)
     {
-      previewFrontF3Left16X = editX;
+      previewFrontF3Left16X = editX + FrontF3CropOffscreenX;
       previewFrontF3Left16YOffset = editY - FrontF3Left16ReferenceY;
       RefreshTemporaryNormalWallPreview();
       Repaint();
