@@ -3194,9 +3194,6 @@ public class ViewportLayoutEditor : EditorWindow
 
       EditorGUILayout.EndHorizontal();
 
-      // Always visible at the top of the ViewEdit piece list, not buried below items.
-      DrawV17ActualWallRows();
-
       ClampSearchFamilyToEnabledPieces();
       HandlePieceSearchKeyboard();
 
@@ -3223,13 +3220,26 @@ public class ViewportLayoutEditor : EditorWindow
 
       displayIndices.Sort(CompareViewEditPieceDisplayOrder);
 
+      // The V17 native FrontF3 edge is rendered directly by the compositor,
+      // so show its real controls as a standard wall row alongside other walls.
+      // Keep it visible when manually disabled for this stationary pose.
+      bool frontF3CardDrawn = false;
       for (int n = 0; n < displayIndices.Count; n++)
       {
         int i = displayIndices[n];
+        if (!frontF3CardDrawn && layout.Pieces[i] != null
+            && layout.Pieces[i].Name == "LeftF3")
+        {
+          DrawV17ActualWallRows();
+          frontF3CardDrawn = true;
+        }
         ViewportPiece piece = layout.Pieces[i];
         bool isSelected = i == selectedPieceIndex;
         DrawPieceCard(i, piece, isSelected, ref changed);
       }
+
+      if (!frontF3CardDrawn)
+        DrawV17ActualWallRows();
 
       // Non-wall map features are always listed directly below the wall rows
       // for the current pose. X/Y come first and the temporary Enabled switch
@@ -16030,6 +16040,7 @@ private static void HandleGameViewPointerDown(
   // This does not modify the persistent wall, door, or item calibrations.
   private void ResetTemporaryViewEditPoseOverrides()
   {
+    RevertUnappliedFrontF3Draft();
     // Restore manually overridden mirrors to their resolved geometry values.
     foreach (ViewportPiece overriddenPiece in previewMirrorOverrideByPiece.Keys)
     {
@@ -19697,6 +19708,48 @@ private static void HandleGameViewPointerDown(
   private bool previewFrontF3CropMirror = true;
   private int previewFrontF3Left16YOffset = 0;
   private const int FrontF3Left16ReferenceY = 93;
+  // FrontF3 editor follows ordinary wall-card draft semantics.
+  // Baselines are updated only by Apply; un-applied edits reset on pose changes.
+  private int frontF3AppliedX = -20;
+  private int frontF3AppliedY = 93;
+  private int frontF3AppliedWidth = 29;
+  private int frontF3AppliedHeight = 49;
+  private bool frontF3AppliedMirror = true;
+  private bool frontF3AppliedEnabled = true;
+  // Same foldout behaviour as ordinary ViewEdit wall cards.
+  private bool frontF3WallCardExpanded = true;
+
+  private bool IsFrontF3DraftModified()
+  {
+    return previewFrontF3Left16X != frontF3AppliedX
+        || FrontF3Left16ReferenceY + previewFrontF3Left16YOffset != frontF3AppliedY
+        || previewFrontF3Left16Width != frontF3AppliedWidth
+        || previewFrontF3Left16Height != frontF3AppliedHeight
+        || previewFrontF3CropMirror != frontF3AppliedMirror
+        || previewAllowFrontF3Left16 != frontF3AppliedEnabled;
+  }
+
+  private void RevertUnappliedFrontF3Draft()
+  {
+    if (!IsFrontF3DraftModified()) return;
+    previewFrontF3Left16X = frontF3AppliedX;
+    previewFrontF3Left16YOffset = frontF3AppliedY - FrontF3Left16ReferenceY;
+    previewFrontF3Left16Width = frontF3AppliedWidth;
+    previewFrontF3Left16Height = frontF3AppliedHeight;
+    previewFrontF3CropMirror = frontF3AppliedMirror;
+    previewAllowFrontF3Left16 = frontF3AppliedEnabled;
+  }
+
+  private void ApplyFrontF3Draft()
+  {
+    frontF3AppliedX = previewFrontF3Left16X;
+    frontF3AppliedY = FrontF3Left16ReferenceY + previewFrontF3Left16YOffset;
+    frontF3AppliedWidth = previewFrontF3Left16Width;
+    frontF3AppliedHeight = previewFrontF3Left16Height;
+    frontF3AppliedMirror = previewFrontF3CropMirror;
+    frontF3AppliedEnabled = previewAllowFrontF3Left16;
+  }
+
   // Diagnostic master switch: disables every native D3 FrontF3 blit, not side walls.
   private bool previewAllowAllFrontF3 = true;
   private readonly List<string> v17DrawnWalls = new List<string>();
@@ -19711,21 +19764,38 @@ private static void HandleGameViewPointerDown(
   {
     if (!IsViewport17WallAuthorityActive())
       return;
-    GUILayout.Space(5f);
-    GUIStyle titleStyle = new GUIStyle(EditorStyles.boldLabel);
-    titleStyle.normal.textColor = new Color(0.25f, 1f, 0.4f);
-    GUILayout.Label("FrontF3", titleStyle);
+    bool geometryActive = !previewDisableAllWalls
+        && IsViewport17LeftD3FrontF3Extension(BuildViewport17Inspection());
+    if (!geometryActive && !previewAllowFrontF3Left16)
+      return;
+    GUILayout.Space(2f);
+    // Present the native V17 wall exactly where ordinary wall cards appear.
+    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
     // The direct V17 FrontF3 edge blit must have a visible, operable switch
     // inside the actual-draw section, even if the strip has been disabled.
     // This is intentionally not a ViewportPiece Enabled flag.
     bool frontF3Left16Available = !previewDisableAllWalls
         && IsViewport17LeftD3FrontF3Extension(BuildViewport17Inspection());
     EditorGUILayout.BeginHorizontal();
+    // Match the normal LeftF3 wall card header and control order.
+    GUILayout.Space(15f);
+    GUILayout.Label("FrontF3", EditorStyles.boldLabel, GUILayout.Width(116f));
+    GUILayout.Label("Set", EditorStyles.miniLabel, GUILayout.Width(22f));
     bool newLeft16 = EditorGUILayout.Toggle(
-        previewAllowFrontF3Left16, GUILayout.Width(20f));
-    GUILayout.Label("Front Wall F3_141x49", EditorStyles.boldLabel);
-    bool newFrontF3Mirror = EditorGUILayout.ToggleLeft(
-        "Mirror", previewFrontF3CropMirror, GUILayout.Width(72f));
+        previewAllowFrontF3Left16, GUILayout.Width(18f));
+    GUILayout.Space(10f);
+    GUILayout.Label("Mirror", EditorStyles.miniLabel, GUILayout.Width(40f));
+    bool newFrontF3Mirror = EditorGUILayout.Toggle(
+        previewFrontF3CropMirror, GUILayout.Width(18f));
+    using (new EditorGUI.DisabledScope(!IsFrontF3DraftModified()))
+    {
+      if (GUILayout.Button("Apply", GUILayout.Width(52f)))
+      {
+        ApplyFrontF3Draft();
+        Repaint();
+      }
+    }
+    GUILayout.FlexibleSpace();
     EditorGUILayout.EndHorizontal();
     if (newFrontF3Mirror != previewFrontF3CropMirror)
     {
@@ -19739,18 +19809,29 @@ private static void HandleGameViewPointerDown(
       RefreshTemporaryNormalWallPreview();
       Repaint();
     }
+    // Coordinate row follows the exact compact X/Y + Ref layout of LeftF3.
     EditorGUILayout.BeginHorizontal();
     GUILayout.Label("X", GUILayout.Width(12f));
+    Color originalColorX = GUI.contentColor;
+    GUI.contentColor = previewFrontF3Left16X != frontF3AppliedX ? Color.red : originalColorX;
     int editX = EditorGUILayout.IntField(previewFrontF3Left16X, GUILayout.Width(43f));
+    GUI.contentColor = originalColorX;
     if (GUILayout.Button("-1", GUILayout.Width(31f))) editX--;
     if (GUILayout.Button("+1", GUILayout.Width(31f))) editX++;
     GUILayout.Space(7f);
     GUILayout.Label("Y", GUILayout.Width(12f));
+    Color originalColorY = GUI.contentColor;
+    GUI.contentColor = FrontF3Left16ReferenceY + previewFrontF3Left16YOffset != frontF3AppliedY
+        ? Color.red : originalColorY;
     int editY = EditorGUILayout.IntField(
         FrontF3Left16ReferenceY + previewFrontF3Left16YOffset,
         GUILayout.Width(43f));
+    GUI.contentColor = originalColorY;
     if (GUILayout.Button("-1", GUILayout.Width(31f))) editY--;
     if (GUILayout.Button("+1", GUILayout.Width(31f))) editY++;
+    GUILayout.Space(6f);
+    GUILayout.Label("Ref X " + frontF3AppliedX + " / Y " + frontF3AppliedY,
+        EditorStyles.miniLabel, GUILayout.ExpandWidth(false));
     EditorGUILayout.EndHorizontal();
     if (editX != previewFrontF3Left16X
         || editY != FrontF3Left16ReferenceY + previewFrontF3Left16YOffset)
@@ -19760,56 +19841,7 @@ private static void HandleGameViewPointerDown(
       RefreshTemporaryNormalWallPreview();
       Repaint();
     }
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.Label("W", GUILayout.Width(12f));
-    int editW = EditorGUILayout.IntField(previewFrontF3Left16Width, GUILayout.Width(43f));
-    if (GUILayout.Button("-1", GUILayout.Width(31f))) editW--;
-    if (GUILayout.Button("+1", GUILayout.Width(31f))) editW++;
-    EditorGUILayout.EndHorizontal();
-    editW = Mathf.Clamp(editW, 1, 141);
-    if (editW != previewFrontF3Left16Width)
-    {
-      previewFrontF3Left16Width = editW;
-      RefreshTemporaryNormalWallPreview();
-      Repaint();
-    }
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.Label("H", GUILayout.Width(12f));
-    int editH = EditorGUILayout.IntField(previewFrontF3Left16Height, GUILayout.Width(43f));
-    if (GUILayout.Button("-1", GUILayout.Width(31f))) editH--;
-    if (GUILayout.Button("+1", GUILayout.Width(31f))) editH++;
-    EditorGUILayout.EndHorizontal();
-    editH = Mathf.Clamp(editH, 1, 49);
-    if (editH != previewFrontF3Left16Height)
-    {
-      previewFrontF3Left16Height = editH;
-      RefreshTemporaryNormalWallPreview();
-      Repaint();
-    }
-    GUILayout.Label("Visible crop: " + previewFrontF3Left16Width
-        + " x " + previewFrontF3Left16Height
-        + "  |  Source: 141 x 49", EditorStyles.miniLabel);
-    GUILayout.Label(frontF3Left16Available
-        ? (previewAllowFrontF3Left16 ? "  Geometry active / drawing permitted"
-            : "  Geometry active / disabled by checkbox")
-        : "  Geometry inactive at this position", EditorStyles.miniLabel);
-    // FrontF3 has its own editable ViewEdit wall card above. Its former
-    // diagnostic text lines must not duplicate that card. Keep other V17
-    // wall blits visible so the actual-rendering inspection remains useful.
-    bool otherBlitsHeaderDrawn = false;
-    for (int i = 0; i < v17DrawnWalls.Count; i++)
-    {
-      string entry = v17DrawnWalls[i];
-      if (entry.StartsWith("FrontF3 D3 edge", System.StringComparison.Ordinal))
-        continue;
-      if (!otherBlitsHeaderDrawn)
-      {
-        GUILayout.Space(4f);
-        GUILayout.Label("Other V17 drawn walls (read-only)", EditorStyles.miniBoldLabel);
-        otherBlitsHeaderDrawn = true;
-      }
-      GUILayout.Label("  " + entry, EditorStyles.miniLabel);
-    }
+    EditorGUILayout.EndVertical();
   }
 
   private void ComposeEditModePreview()
