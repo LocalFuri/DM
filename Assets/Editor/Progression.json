@@ -1,7 +1,7 @@
 {
-  "date": "2026-10-26",
+  "date": "2026-10-27",
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-10-26 end-of-day: Samurai Sword F1/F2/F3 visual rendering, positions, and F1 pickup/drop verified; save as Git checkpoint.",
+  "checkpoint": "2026-10-27 end-of-day: FrontF3 wall at Level 0 (11,4) West visually verified; next investigate wall at Level 0 (10,4) South tomorrow.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -310,8 +310,19 @@
       ],
       "direction": "West",
       "task": "Wall at Level 0 (11,4), West — inspect/address wall",
-      "status": "to-do",
+      "status": "verified 2026-10-27; retain working FrontF3 V17 baseline",
       "added": "2026-10-26"
+    },
+    {
+      "level": 0,
+      "tile": [
+        10,
+        4
+      ],
+      "direction": "South",
+      "task": "Inspect and fix wall rendering at Level 0 (10,4), facing South; compare original CSBwin with Unity and verify generic V17 wall geometry; do not introduce tile-specific workaround.",
+      "status": "to-do tomorrow",
+      "added": "2026-10-27"
     }
   ],
   "floor_item_calibration_issue_20261026": {
@@ -422,5 +433,24 @@
     "Future: cross-check another large floor object and additional subtiles/facing before generalizing anchors.",
     "Wall to-do remains Level 0 (11,4), West.",
     "Investigate thrown-object scaling/placement separately without altering verified wall rendering."
+  ],
+  "frontf3_wall_checkpoint_20261027": {
+    "location": "Level 0 (11,4), West",
+    "status": "user visually verified; working baseline",
+    "viewedit": "FrontF3 as normal wall card with Set, Mirror, X/Y and reference display; no W/H fields; red changed values and Apply behavior",
+    "calibration": {
+      "visible_viewedit_x": 0,
+      "y": 93,
+      "source_crop_x": -20,
+      "source_crop_width": 29,
+      "source_crop_height": 49,
+      "mirror": true
+    },
+    "note": "Preserve visually accepted rendering. Next wall location is (10,4) South."
+  },
+  "current_next_actions_20261027": [
+    "Tomorrow: investigate Level 0 tile (10,4), facing South, with original CSBwin vs Unity screenshot and V17/minimap geometry.",
+    "Preserve FrontF3 verified wall at Level 0 (11,4) West; no regressions.",
+    "Do not include changelog files in delivered ZIPs."
   ]
 }
