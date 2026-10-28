@@ -452,5 +452,16 @@
     "Tomorrow: investigate Level 0 tile (10,4), facing South, with original CSBwin vs Unity screenshot and V17/minimap geometry.",
     "Preserve FrontF3 verified wall at Level 0 (11,4) West; no regressions.",
     "Do not include changelog files in delivered ZIPs."
-  ]
+  ],
+  "zip_delivery_file_timestamp_rule_20261028": {
+    "rule": "Every changed file must receive an updated meaningful file modification timestamp at the moment it is changed, including when delivered inside a ZIP. Preserve the actual file modification times in the ZIP entry timestamps. Unchanged files retain their original meaningful timestamps.",
+    "applies_to": "All Dungeon Master Unity file deliveries and future ZIP packages",
+    "effective_date": "2026-10-28",
+    "changelog_files": "Do not include changelog/change-record files in ZIP deliverables.",
+    "mandatory_changed_files_only": "Every delivered update ZIP must contain ONLY the files actually modified for that specific update. Do not include unchanged C# files or other unnecessary files.",
+    "mandatory_modified_file_timestamps": "Every modified file must have its filesystem modification time updated to the actual time of modification (Europe/Berlin local time), not an older source timestamp or an arbitrary ZIP creation time. The ZIP entry timestamp must match the modified file timestamp, in the local time shown by Windows archive viewers.",
+    "unchanged_files": "Omit unchanged files from the return ZIP entirely; do not package them merely to preserve timestamps.",
+    "package_structure": "Include only required modified files at ZIP root with original filenames; no subfolders and no changelogs.",
+    "verification_before_delivery": "Inspect ZIP member list and entry timestamps before delivery. Confirm every included file is changed and has a correct modification timestamp."
+  }
 }

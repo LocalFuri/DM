@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -20,6 +20,28 @@ public class ViewportLayoutEditor : EditorWindow
   private const string PrefsNavigationDelayKey = "ViewportLayoutEditor.NavigationDelayEnabled";
   private const double MovementDelaySeconds = 0.200;
   private const double TurningDelaySeconds = 0.150;
+
+  // Generic throwing controls; independent of movement/turn throttling.
+  private const string PrefsGenericThrowDelayMs = "ViewportLayoutEditor.GenericThrowDelayMs";
+  private const string PrefsGenericThrowFlightY = "ViewportLayoutEditor.GenericThrowFlightY";
+  private const string PrefsGenericThrowMouseYMax = "ViewportLayoutEditor.GenericThrowMouseYMax";
+  private static int GenericThrowMouseYMax
+  {
+    get { return Mathf.Clamp(EditorPrefs.GetInt(PrefsGenericThrowMouseYMax, 100), 0, 200); }
+    set { EditorPrefs.SetInt(PrefsGenericThrowMouseYMax, Mathf.Clamp(value, 0, 200)); }
+  }
+  private static int GenericThrowDelayMs
+  {
+    get { return Mathf.Clamp(EditorPrefs.GetInt(PrefsGenericThrowDelayMs, 200), 20, 2000); }
+    set { EditorPrefs.SetInt(PrefsGenericThrowDelayMs, Mathf.Clamp(value, 20, 2000)); }
+  }
+  private static int GenericThrowFlightYOffset
+  {
+    get { return Mathf.Clamp(EditorPrefs.GetInt(PrefsGenericThrowFlightY, 0), -40, 40); }
+    set { EditorPrefs.SetInt(PrefsGenericThrowFlightY, Mathf.Clamp(value, -40, 40)); }
+  }
+  private static double GenericThrowStepSeconds { get { return GenericThrowDelayMs / 1000.0; } }
+
   private static double s_nextMovementAllowedTime;
   private static double s_nextTurningAllowedTime;
 
@@ -99,8 +121,6 @@ public class ViewportLayoutEditor : EditorWindow
 
   private const string ChampionArtFolder =
       "Assets/Art/Champions";
-  private const string ChampionMirrorSideAssetPath =
-      "Assets/Art/Champions/Champion_Mirror_Side_16x35.png";
   private const string ChampionMirrorFrontAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Front_48x43.png";
   private const string CharacterSheetAssetPath =
@@ -740,82 +760,6 @@ public class ViewportLayoutEditor : EditorWindow
   // In framebuffer coordinates that is +8 from the frame bottom.
   private const int ChampionPortraitD1FrontOffsetX = 8;
   private const int ChampionPortraitD1FrontOffsetY = 8;
-
-  // Original DOS Champion side-mirror placement for the D1 corridor walls.
-  // Screen-space original top-left Y=64 for a 35px source becomes framebuffer
-  // bottom-left Y=101 in the 320x200 Texture2D.
-  private const int ChampionMirrorD1LeftX = 41;
-  private const int ChampionMirrorD1RightX =
-      DungeonViewportWidth - ChampionMirrorD1LeftX - 16;
-  private const int ChampionMirrorD1Y = 101;
-
-  // D0/F0 screen-right Champion mirror. The original uses the FRONT mirror
-  // perspective family here, generated from the 48x43 F1 source at F3 size,
-  // then clipped by the near RightF0 wall. Keep the horizontal anchor at the
-  // measured original position; the vertical anchor uses the generated F3
-  // front-mirror slot.
-  private const int ChampionMirrorD0RightX = 185;
-  private const int ChampionMirrorD0RightY = ChampionMirrorD3FrontY;
-
-  // Temporary ViewEdit calibration for the F0-right Champion Mirror projection.
-  // These values are pose-local inspection controls and reset when the pose changes.
-  private int championMirrorD0RightPreviewX = ChampionMirrorD0RightX;
-  private int championMirrorD0RightPreviewVisibleWidth = 7;
-  private bool championMirrorD0RightPreviewMirror;
-
-  // Original DOS Champion front-mirror placement for a D2 center wall.
-  // Measured from the original 320x200 (10,4) South ZED view:
-  // screen top-left = (97,67), visible size = 29x27, therefore framebuffer
-  // bottom-left Y = 200 - 67 - 27 = 106. At D2 the original shows only
-  // the reduced mirror/frame; the Champion portrait is no longer drawn.
-  // D2 front-facing Champion mirrors use the same 29x27 point-scaled frame
-  // in all three projected lanes. The lateral lanes are mostly outside the
-  // 224px dungeon viewport: at X=-10 only source columns 10..28 remain, and
-  // at X=205 only source columns 0..18 remain. This exactly matches the
-  // original clipped 19px-wide mirror visible at (10,9) South on D2-left.
-  private const int ChampionMirrorD2FrontLeftX = -10;
-  private const int ChampionMirrorD2FrontX = 97;
-  private const int ChampionMirrorD2FrontRightX = 205;
-  private const int ChampionMirrorD2FrontY = 106;
-  private const int ChampionMirrorD2FrontWidth = 29;
-  private const int ChampionMirrorD2FrontHeight = 27;
-
-  // Original DOS Champion front-mirror placement for a D3 center wall.
-  // Verified from the original (9,7) South SYRA view.
-  private const int ChampionMirrorD3FrontX = 102;
-  private const int ChampionMirrorD3FrontY = 114;
-  private const int ChampionMirrorD3FrontWidth = 20;
-  private const int ChampionMirrorD3FrontHeight = 19;
-
-  // Original DOS Champion side mirror at D2 on the screen-right wall.
-  // Measured from the original 320x200 (9,5) South ELIJA view:
-  // screen top-left approximately (148,67), visible size 10x23, therefore
-  // framebuffer bottom-left Y = 200 - 67 - 23 = 110.
-  private const int ChampionMirrorD2LeftX = 66;
-  private const int ChampionMirrorD2RightX =
-      DungeonViewportWidth - ChampionMirrorD2LeftX - 10;
-  private const int ChampionMirrorD2SideY = 110;
-  private const int ChampionMirrorD2SideWidth = 10;
-  private const int ChampionMirrorD2SideHeight = 23;
-
-  // Original DOS D3-left F3 corridor slot. Verified from (9,9) East LINFLAS:
-  // Mirror_Side_7x15.png matches screen X=78..84, Y=69..83, then nudged
-  // +2px toward corridor center. Framebuffer Y = 200 - 69 - 15 = 116.
-  // F3-right is only the viewport mirror of that left slot (not another +2).
-  private const int ChampionMirrorD3LeftX = 80;
-  private const int ChampionMirrorD3LeftY = 116;
-  private const int ChampionMirrorD3RightF3X =
-      DungeonViewportWidth - ChampionMirrorD3LeftX - 7;
-  private const int ChampionMirrorD3RightF3Y = ChampionMirrorD3LeftY;
-
-  // Original DOS D3L2/D3R2 oblique slots. All Champion side-mirror source
-  // artwork is now stored in canonical LEFT orientation. The right slot mirrors
-  // the source at render time. Same +2 center-nudge as F3-left, then mirror.
-  private const int ChampionMirrorD3LeftL2X = 17;
-  private const int ChampionMirrorD3LeftL2Y = 116;
-  private const int ChampionMirrorD3RightX =
-      DungeonViewportWidth - ChampionMirrorD3LeftL2X - 15;
-  private const int ChampionMirrorD3RightY = ChampionMirrorD3LeftL2Y;
 
   private const string DefaultViewportLayoutPath =
       "Assets/Dungeon Master/ViewportLayout.asset";
@@ -1790,19 +1734,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   [System.NonSerialized]
-  private Texture2D cachedChampionMirrorSideTexture;
-  [System.NonSerialized]
-  private Texture2D cachedChampionMirrorSideDistantTexture;
-  [System.NonSerialized]
-  private Texture2D cachedChampionMirrorSideDistantLeftTexture;
-  [System.NonSerialized]
-  private Texture2D cachedChampionMirrorSideD2Texture;
-  [System.NonSerialized]
   private Texture2D cachedChampionMirrorFrontTexture;
-  [System.NonSerialized]
-  private Texture2D cachedChampionMirrorGeneratedF2Texture;
-  [System.NonSerialized]
-  private Texture2D cachedChampionMirrorFrontF3Texture;
   [System.NonSerialized]
   private Texture2D cachedViAltarFrontTexture;
   private Texture2D cachedViAltarS1Texture;
@@ -2709,8 +2641,9 @@ public class ViewportLayoutEditor : EditorWindow
     CaptureNormalWallBaselinesFromLayout();
     ApplyCurrentPoseVisibilityToLayout();
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
-    EditorApplication.update += UpdateTorchFlight;
     EditorApplication.update += UpdateChampionEatAnimation;
+    EditorApplication.update -= UpdateSuspendedThrowLandings;
+    EditorApplication.update += UpdateSuspendedThrowLandings;
     RecordGroundRegistryFileStamp();
     // Force a fresh compose from the current pose's Enabled flags.
     DestroyEditModePreviewTextureOnly();
@@ -2731,6 +2664,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnDisable()
   {
+    genericThrowsInFlight.Clear();
     // Return an in-flight champion item before Unity serializes this window.
     ResetChampionEquipmentCursorAfterReload();
     if (previewHeldTorchCursor != null)
@@ -2749,8 +2683,8 @@ public class ViewportLayoutEditor : EditorWindow
     SaveSessionPrefs();
 
     EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
-    EditorApplication.update -= UpdateTorchFlight;
     EditorApplication.update -= UpdateChampionEatAnimation;
+    EditorApplication.update -= UpdateSuspendedThrowLandings;
     EditorApplication.update -= UpdateChampionAutoHighlights;
 
     if (cachedNativeFrontF2ReadableCopy != null)
@@ -6483,7 +6417,8 @@ public class ViewportLayoutEditor : EditorWindow
               gameView, current.mousePosition, current, null);
 
     if (current.type == EventType.MouseUp)
-      return DispatchGameViewChampionEyeRelease(gameView, current.mousePosition, current, null);
+      return DispatchGameViewSuspendedThrowRelease(gameView, current.mousePosition)
+          || DispatchGameViewChampionEyeRelease(gameView, current.mousePosition, current, null);
 
     return DispatchGameViewMovementClick(
         gameView,
@@ -6565,6 +6500,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (gameView == null)
       return;
 
+    DispatchGameViewSuspendedThrowRelease(gameView, evt.position);
     DispatchGameViewChampionEyeRelease(
         gameView,
         evt.position,
@@ -6789,6 +6725,17 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
+    // CSBwin: the throw is dispatched on button DOWN, before floor-drop areas.
+    if (hasLogical && window.TryThrowHeldItemFromViewport(logical.x, logical.y))
+    {
+      s_lastGameViewClickTime = now;
+      if (imguiEvent != null) imguiEvent.Use();
+      if (pointerEvent != null) pointerEvent.StopPropagation();
+      UpdateHeldItemPointerOverlay(gameView, windowMouse);
+      gameView.Repaint(); window.Repaint(); RepaintGameViews();
+      return true;
+    }
+
     if (hasLogical && window.TryDropHeldChampionSword(logical.x, logical.y))
     {
       s_lastGameViewClickTime = now;
@@ -6808,8 +6755,7 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
-    if (hasLogical && (window.TryThrowHeldItem(logical.x, logical.y)
-        || window.TryDropHeldTorchOnFloor(logical.x, logical.y)))
+    if (hasLogical && window.TryDropHeldTorchOnFloor(logical.x, logical.y))
     {
       s_lastGameViewClickTime = now;
       if (imguiEvent != null) imguiEvent.Use();
@@ -20794,18 +20740,8 @@ private static void HandleGameViewPointerDown(
     BlitPuddlesIntoPreview(pixels);
     BlitMossIntoPreview(pixels);
     BlitDroppedTorchesIntoPreview(pixels);
-    BlitFlyingTorchIntoPreview(pixels);
 
     // Champion wall decorations.
-    BlitChampionMirrorD0RightIntoPreview(pixels);
-    BlitChampionMirrorD1FramesIntoPreview(pixels);
-    BlitChampionMirrorD1FrontIntoPreview(pixels);
-    BlitChampionMirrorD2FrontIntoPreview(pixels);
-    BlitChampionMirrorD3FrontIntoPreview(pixels);
-    BlitChampionMirrorD2LeftIntoPreview(pixels);
-    BlitChampionMirrorD2RightIntoPreview(pixels);
-    BlitChampionMirrorD3LeftIntoPreview(pixels);
-    BlitChampionMirrorD3RightIntoPreview(pixels);
 
     // Large wall fixtures.
     BlitViAltarD3FrontIntoPreview(pixels);
@@ -20828,6 +20764,9 @@ private static void HandleGameViewPointerDown(
     BlitWoodRingD3FrontIntoPreview(pixels);
     BlitWoodRingD2FrontIntoPreview(pixels);
     BlitWoodRingD1FrontIntoPreview(pixels);
+    BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 3);
+    BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 2);
+    BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 1);
     BlitManaclesD3FrontIntoPreview(pixels);
     BlitManaclesD2FrontIntoPreview(pixels);
     BlitManaclesD1FrontIntoPreview(pixels);
@@ -20851,6 +20790,7 @@ private static void HandleGameViewPointerDown(
     // BlitFloorItemsIntoPreview retains the established original-then-moved
     // order, CSBwin pile offsets, and independent LIFO pickup state.
     BlitFloorItemsIntoPreview(pixels);
+    BlitSuspendedThrownItemsIntoPreview(pixels);
   }
 
 
@@ -22826,197 +22766,6 @@ private static void HandleGameViewPointerDown(
 
   }
 
-  private void BlitChampionMirrorD0RightIntoPreview(Color32[] pixels)
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null
-        || previewChampionMirrors == null
-        || previewChampionMirrors.Length == 0)
-    {
-      return;
-    }
-
-    // This F0-right glimpse uses the FRONT mirror perspective family, not
-    // the native side/S1 artwork. Generate the distant front image from the
-    // original 48x43 F1 source, then let the near RightF0 geometry clip it.
-    Texture2D frontF3Mirror = GetChampionMirrorFrontF3Texture();
-    if (frontF3Mirror == null || !frontF3Mirror.isReadable)
-      return;
-
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    // D0/F0-right is the wall tile immediately beside the party, not one
-    // cell forward.  The stored wall face is parallel to the current facing.
-    // Example: (9,6) North sees ZED at (10,6), wall North.
-    int mirrorX = previewX + rightX;
-    int mirrorY = previewY + rightY;
-    if (!previewMiniMap.IsInside(mirrorX, mirrorY)
-        || previewMiniMap.GetTile(mirrorX, mirrorY).Type != DungeonTileType.Wall)
-    {
-      return;
-    }
-
-    string expectedWallSide = FacingName(previewFacing);
-    for (int i = 0; i < previewChampionMirrors.Length; i++)
-    {
-      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror != null
-          && !IsPreviewFeatureEnabled(
-              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
-        continue;
-      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
-        continue;
-
-      if (mirror.x != mirrorX
-          || mirror.y != mirrorY
-          || !string.Equals(
-              mirror.wall,
-              expectedWallSide,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        continue;
-      }
-
-      // Use the generated FRONT-F3 image. Only the portion left of the near
-      // RightF0 boundary is visible; this is geometric clipping, not a
-      // hand-authored distance sprite or a crop from the side/S1 image.
-      int clipX = DungeonViewportWidth - 1;
-      if (TryGetCanonicalReferenceXY("RightF0", out int rightF0X, out _))
-        clipX = rightF0X;
-
-      string featureKey = MakePreviewFeatureKey(
-          "ChampionMirror", mirror.x, mirror.y, mirror.wall);
-      int renderX = championMirrorD0RightPreviewX;
-      int renderY = ChampionMirrorD0RightY;
-      bool renderMirror = championMirrorD0RightPreviewMirror;
-      ApplyPreviewFeatureRenderOverrides(
-          featureKey, ref renderX, ref renderY, ref renderMirror);
-
-      int geometricVisibleWidth = clipX - renderX + 1;
-      if (geometricVisibleWidth <= 0)
-        return;
-
-      int visibleWidth = Mathf.Clamp(
-          championMirrorD0RightPreviewVisibleWidth,
-          1,
-          Mathf.Min(frontF3Mirror.width, geometricVisibleWidth));
-
-      BlitPieceScaledIntoPreview(
-          pixels,
-          frontF3Mirror,
-          renderX,
-          renderY,
-          visibleWidth,
-          frontF3Mirror.height,
-          renderMirror,
-          0,
-          0,
-          visibleWidth,
-          frontF3Mirror.height);
-      return;
-    }
-  }
-
-  private void BlitChampionMirrorD1FramesIntoPreview(Color32[] pixels)
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null
-        || previewChampionMirrors == null
-        || previewChampionMirrors.Length == 0)
-    {
-      return;
-    }
-
-    Texture2D sideMirror = GetChampionMirrorSideTexture();
-    if (sideMirror == null || !sideMirror.isReadable)
-      return;
-
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    // A nearer front wall occludes both D1 side faces.
-    int frontX = previewX + forwardX;
-    int frontY = previewY + forwardY;
-    if (!previewMiniMap.IsInside(frontX, frontY)
-        || previewMiniMap.GetTile(frontX, frontY).Type == DungeonTileType.Wall)
-    {
-      return;
-    }
-
-    int leftTileX = frontX - rightX;
-    int leftTileY = frontY - rightY;
-    int rightTileX = frontX + rightX;
-    int rightTileY = frontY + rightY;
-
-    string leftWallSide = FacingName(TurnPreviewFacingRight(previewFacing));
-    string rightWallSide = FacingName(TurnPreviewFacingLeft(previewFacing));
-
-    for (int i = 0; i < previewChampionMirrors.Length; i++)
-    {
-      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror != null
-          && !IsPreviewFeatureEnabled(
-              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
-        continue;
-      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
-        continue;
-
-      if (mirror.x == leftTileX
-          && mirror.y == leftTileY
-          && string.Equals(
-              mirror.wall,
-              leftWallSide,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        string featureKey = MakePreviewFeatureKey(
-            "ChampionMirror", mirror.x, mirror.y, mirror.wall);
-        int renderX = ChampionMirrorD1LeftX;
-        int renderY = ChampionMirrorD1Y;
-        bool renderMirror = false;
-        ApplyPreviewFeatureRenderOverrides(
-            featureKey, ref renderX, ref renderY, ref renderMirror);
-        BlitPieceIntoPreview(
-            pixels,
-            sideMirror,
-            renderX,
-            renderY,
-            renderMirror);
-        continue;
-      }
-
-      if (mirror.x == rightTileX
-          && mirror.y == rightTileY
-          && string.Equals(
-              mirror.wall,
-              rightWallSide,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        string featureKey = MakePreviewFeatureKey(
-            "ChampionMirror", mirror.x, mirror.y, mirror.wall);
-        int renderX = ChampionMirrorD1RightX;
-        int renderY = ChampionMirrorD1Y;
-        bool renderMirror = true;
-        ApplyPreviewFeatureRenderOverrides(
-            featureKey, ref renderX, ref renderY, ref renderMirror);
-        BlitPieceIntoPreview(
-            pixels,
-            sideMirror,
-            renderX,
-            renderY,
-            renderMirror);
-      }
-    }
-  }
-
   private bool TryGetCurrentD1FrontChampion(out string championName)
   {
     championName = null;
@@ -23045,6 +22794,8 @@ private static void HandleGameViewPointerDown(
     for (int i = 0; i < previewChampionMirrors.Length; i++)
     {
       ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror != null && !IsChampionMirrorVisibleFromPlayerSide(mirror))
+        continue;
       if (mirror != null
           && !IsPreviewFeatureEnabled(
               MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
@@ -23080,492 +22831,6 @@ private static void HandleGameViewPointerDown(
     return previewTakenChampionKeys.Contains(key);
   }
 
-  private void BlitChampionMirrorD1FrontIntoPreview(Color32[] pixels)
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null
-        || previewChampionMirrors == null
-        || previewChampionMirrors.Length == 0)
-    {
-      return;
-    }
-
-    Texture2D frontMirror = GetChampionMirrorFrontTexture();
-    if (frontMirror == null || !frontMirror.isReadable)
-      return;
-
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-
-    int frontX = previewX + forwardX;
-    int frontY = previewY + forwardY;
-    if (!previewMiniMap.IsInside(frontX, frontY)
-        || previewMiniMap.GetTile(frontX, frontY).Type != DungeonTileType.Wall)
-    {
-      return;
-    }
-
-    // The visible face of the wall directly in front of the party points back
-    // toward the party, i.e. opposite the viewing direction.
-    string frontWallSide = FacingName(OppositePreviewFacing(previewFacing));
-
-    for (int i = 0; i < previewChampionMirrors.Length; i++)
-    {
-      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror != null
-          && !IsPreviewFeatureEnabled(
-              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
-        continue;
-      if (mirror == null
-          || string.IsNullOrEmpty(mirror.wall)
-          || string.IsNullOrEmpty(mirror.champion))
-      {
-        continue;
-      }
-
-      if (mirror.x != frontX
-          || mirror.y != frontY
-          || !string.Equals(
-              mirror.wall,
-              frontWallSide,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        continue;
-      }
-
-      // Frame first; the portrait then replaces the turquoise mirror opening.
-      string featureKey = MakePreviewFeatureKey(
-          "ChampionMirror", mirror.x, mirror.y, mirror.wall);
-      int renderX = ChampionMirrorD1FrontX;
-      int renderY = ChampionMirrorD1FrontY;
-      bool renderMirror = false;
-      ApplyPreviewFeatureRenderOverrides(
-          featureKey, ref renderX, ref renderY, ref renderMirror);
-
-      BlitPieceIntoPreview(
-          pixels,
-          frontMirror,
-          renderX,
-          renderY,
-          renderMirror);
-
-      Texture2D portrait = GetChampionPortraitTexture(mirror.champion);
-      if (!IsPreviewChampionTaken(mirror.champion)
-          && portrait != null
-          && portrait.isReadable
-          && portrait.width == 32
-          && portrait.height == 29)
-      {
-        BlitPieceIntoPreview(
-            pixels,
-            portrait,
-            renderX + ChampionPortraitD1FrontOffsetX,
-            renderY + ChampionPortraitD1FrontOffsetY,
-            renderMirror);
-      }
-
-      return;
-    }
-  }
-
-  private void BlitChampionMirrorD2FrontIntoPreview(Color32[] pixels)
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null
-        || previewChampionMirrors == null
-        || previewChampionMirrors.Length == 0)
-    {
-      return;
-    }
-
-    Texture2D frontMirror = GetChampionMirrorGeneratedF2Texture();
-    if (frontMirror == null || !frontMirror.isReadable)
-      return;
-
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    // All D2 front lanes are seen through the open D1 center. Lateral D2
-    // mirrors additionally require their matching D1 side lane to be open;
-    // otherwise that nearer wall occludes the decoration.
-    int d1CenterX = previewX + forwardX;
-    int d1CenterY = previewY + forwardY;
-    if (!previewMiniMap.IsInside(d1CenterX, d1CenterY)
-        || previewMiniMap.GetTile(d1CenterX, d1CenterY).Type == DungeonTileType.Wall)
-    {
-      return;
-    }
-
-    string frontWallSide = FacingName(OppositePreviewFacing(previewFacing));
-
-    // localLane -1/0/+1 = screen-left / center / screen-right. The original
-    // DOS projection clips the two lateral 29px frames at the viewport edges.
-    for (int localLane = -1; localLane <= 1; localLane++)
-    {
-      if (localLane != 0)
-      {
-        int d1LaneX = d1CenterX + rightX * localLane;
-        int d1LaneY = d1CenterY + rightY * localLane;
-        if (!previewMiniMap.IsInside(d1LaneX, d1LaneY)
-            || previewMiniMap.GetTile(d1LaneX, d1LaneY).Type == DungeonTileType.Wall)
-        {
-          continue;
-        }
-      }
-
-      int d2X = previewX + forwardX * 2 + rightX * localLane;
-      int d2Y = previewY + forwardY * 2 + rightY * localLane;
-      if (!previewMiniMap.IsInside(d2X, d2Y)
-          || previewMiniMap.GetTile(d2X, d2Y).Type != DungeonTileType.Wall)
-      {
-        continue;
-      }
-
-      int destinationX = localLane < 0
-          ? ChampionMirrorD2FrontLeftX
-          : localLane > 0
-              ? ChampionMirrorD2FrontRightX
-              : ChampionMirrorD2FrontX;
-
-      for (int i = 0; i < previewChampionMirrors.Length; i++)
-      {
-        ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror != null
-          && !IsPreviewFeatureEnabled(
-              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
-        continue;
-        if (mirror == null
-            || string.IsNullOrEmpty(mirror.wall)
-            || string.IsNullOrEmpty(mirror.champion))
-        {
-          continue;
-        }
-
-        if (mirror.x != d2X
-            || mirror.y != d2Y
-            || !string.Equals(
-                mirror.wall,
-                frontWallSide,
-                System.StringComparison.OrdinalIgnoreCase))
-        {
-          continue;
-        }
-
-        // Generic wall-ornament path:
-        // F1 48x43 -> generated F2 29x27 -> Medium distance palette.
-        // The generated texture is already scaled and darkened, so draw it 1:1.
-        // Lateral lanes are still clipped naturally by the 224px dungeon viewport.
-        string featureKey = MakePreviewFeatureKey(
-            "ChampionMirror", mirror.x, mirror.y, mirror.wall);
-        int renderX = destinationX;
-        int renderY = ChampionMirrorFrontWallOrnamentSet.f2.y;
-        bool renderMirror = false;
-        ApplyPreviewFeatureRenderOverrides(
-            featureKey, ref renderX, ref renderY, ref renderMirror);
-        BlitWallOrnamentIntoPreview(
-            pixels,
-            frontMirror,
-            renderX,
-            renderY,
-            renderMirror);
-        break;
-      }
-    }
-  }
-
-  private void BlitChampionMirrorD3FrontIntoPreview(Color32[] pixels)
-  {
-    // Load the current level map and champion mirror records, but do not make
-    // the F3 decoration depend on the minimap tile classifier.  The mirror
-    // placement entry is the authoritative wall-decoration record.
-    EnsurePreviewMiniMapLoaded();
-    if (previewChampionMirrors == null
-        || previewChampionMirrors.Length == 0)
-    {
-      return;
-    }
-
-    Texture2D frontMirror = GetChampionMirrorFrontF3Texture();
-    if (frontMirror == null || !frontMirror.isReadable)
-      return;
-
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-
-    int expectedMirrorX = previewX + forwardX * 3;
-    int expectedMirrorY = previewY + forwardY * 3;
-    string expectedWallSide = FacingName(OppositePreviewFacing(previewFacing));
-
-    for (int i = 0; i < previewChampionMirrors.Length; i++)
-    {
-      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror != null
-          && !IsPreviewFeatureEnabled(
-              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
-        continue;
-      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
-        continue;
-
-      // Generic F3-front test: the stored Champion-mirror wall is exactly
-      // three map cells in the viewing direction and faces back at the party.
-      // Example: 9,7 South -> SYRA mirror at 9,10 North.
-      if (mirror.x != expectedMirrorX
-          || mirror.y != expectedMirrorY
-          || !string.Equals(
-              mirror.wall,
-              expectedWallSide,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        continue;
-      }
-
-      string featureKey = MakePreviewFeatureKey(
-          "ChampionMirror", mirror.x, mirror.y, mirror.wall);
-      int renderX = ChampionMirrorD3FrontX;
-      int renderY = ChampionMirrorD3FrontY;
-      bool renderMirror = false;
-      ApplyPreviewFeatureRenderOverrides(
-          featureKey, ref renderX, ref renderY, ref renderMirror);
-      BlitWallOrnamentIntoPreview(
-          pixels,
-          frontMirror,
-          renderX,
-          renderY,
-          renderMirror);
-      return;
-    }
-  }
-
-  private void BlitChampionMirrorD2LeftIntoPreview(Color32[] pixels)
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null
-        || previewChampionMirrors == null
-        || previewChampionMirrors.Length == 0)
-    {
-      return;
-    }
-
-    Texture2D sideMirror = GetChampionMirrorSideD2Texture();
-    if (sideMirror == null || !sideMirror.isReadable)
-      return;
-
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    int d1CenterX = previewX + forwardX;
-    int d1CenterY = previewY + forwardY;
-    int d2CenterX = previewX + forwardX * 2;
-    int d2CenterY = previewY + forwardY * 2;
-    if (!previewMiniMap.IsInside(d1CenterX, d1CenterY)
-        || previewMiniMap.GetTile(d1CenterX, d1CenterY).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d2CenterX, d2CenterY)
-        || previewMiniMap.GetTile(d2CenterX, d2CenterY).Type == DungeonTileType.Wall)
-    {
-      return;
-    }
-
-    int mirrorX = d2CenterX - rightX;
-    int mirrorY = d2CenterY - rightY;
-    if (!previewMiniMap.IsInside(mirrorX, mirrorY))
-      return;
-
-    // Screen-left side walls face inward toward the corridor: TurnRight.
-    string leftWallSide = FacingName(TurnPreviewFacingRight(previewFacing));
-
-    for (int i = 0; i < previewChampionMirrors.Length; i++)
-    {
-      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror != null
-          && !IsPreviewFeatureEnabled(
-              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
-        continue;
-      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
-        continue;
-
-      if (mirror.x != mirrorX
-          || mirror.y != mirrorY
-          || !string.Equals(
-              mirror.wall,
-              leftWallSide,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        continue;
-      }
-
-      // All Champion side-mirror source artwork is canonical LEFT orientation.
-      // Screen-left therefore uses the generated D2 projection as-is.
-      string featureKey = MakePreviewFeatureKey(
-          "ChampionMirror", mirror.x, mirror.y, mirror.wall);
-      int renderX = ChampionMirrorD2LeftX;
-      int renderY = ChampionMirrorD2SideY;
-      bool renderMirror = false;
-      ApplyPreviewFeatureRenderOverrides(
-          featureKey, ref renderX, ref renderY, ref renderMirror);
-      BlitPieceIntoPreview(
-          pixels,
-          sideMirror,
-          renderX,
-          renderY,
-          renderMirror);
-      return;
-    }
-  }
-
-  private void BlitChampionMirrorD2RightIntoPreview(Color32[] pixels)
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null
-        || previewChampionMirrors == null
-        || previewChampionMirrors.Length == 0)
-    {
-      return;
-    }
-
-    Texture2D rightMirror = GetChampionMirrorSideD2Texture();
-    if (rightMirror == null || !rightMirror.isReadable)
-      return;
-
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    // A D2 side mirror is visible only if the center sight line stays open
-    // through D1 and D2. The decorated wall tile is one lane to screen-right
-    // of the D2 center tile.
-    int d1CenterX = previewX + forwardX;
-    int d1CenterY = previewY + forwardY;
-    int d2CenterX = previewX + forwardX * 2;
-    int d2CenterY = previewY + forwardY * 2;
-    if (!previewMiniMap.IsInside(d1CenterX, d1CenterY)
-        || previewMiniMap.GetTile(d1CenterX, d1CenterY).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d2CenterX, d2CenterY)
-        || previewMiniMap.GetTile(d2CenterX, d2CenterY).Type == DungeonTileType.Wall)
-    {
-      return;
-    }
-
-    int mirrorX = d2CenterX + rightX;
-    int mirrorY = d2CenterY + rightY;
-    if (!previewMiniMap.IsInside(mirrorX, mirrorY))
-      return;
-
-    // A screen-right side wall faces inward toward the corridor, which is
-    // TurnLeft(viewFacing). This matches ELIJA's (8,7) East mirror when the
-    // party is at (9,5) facing South.
-    string rightWallSide = FacingName(TurnPreviewFacingLeft(previewFacing));
-
-    for (int i = 0; i < previewChampionMirrors.Length; i++)
-    {
-      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror != null
-          && !IsPreviewFeatureEnabled(
-              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
-        continue;
-      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
-        continue;
-
-      if (mirror.x != mirrorX
-          || mirror.y != mirrorY
-          || !string.Equals(
-              mirror.wall,
-              rightWallSide,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        continue;
-      }
-
-      // Code-generated 10x23 D2 side projection from the canonical LEFT-oriented
-      // 16x35 S1 source. Screen-right must mirror that source horizontally.
-      string featureKey = MakePreviewFeatureKey(
-          "ChampionMirror", mirror.x, mirror.y, mirror.wall);
-      int renderX = ChampionMirrorD2RightX;
-      int renderY = ChampionMirrorD2SideY;
-      bool renderMirror = true;
-      ApplyPreviewFeatureRenderOverrides(
-          featureKey, ref renderX, ref renderY, ref renderMirror);
-      BlitPieceIntoPreview(
-          pixels,
-          rightMirror,
-          renderX,
-          renderY,
-          renderMirror);
-      return;
-    }
-  }
-
-  private void DarkenChampionMirrorD2InteriorHighlights(
-      Color32[] pixels,
-      int destX,
-      int destY,
-      int destWidth,
-      int destHeight)
-  {
-    if (pixels == null || pixels.Length != PreviewWidth * PreviewHeight)
-      return;
-
-    // The F2 mirror is already geometrically correct; this pass only nudges
-    // the bright neutral glass highlights slightly darker so the reduced view
-    // better matches the original DOS screenshot. Keep the brown frame and the
-    // saturated cyan strokes intact by affecting only bright, low-saturation
-    // pixels inside the scaled mirror's inner opening.
-    int insetLeft = 4;
-    int insetRight = 4;
-    int insetBottom = 4;
-    int insetTop = 0;
-
-    int minX = Mathf.Clamp(destX + insetLeft, 0, PreviewWidth);
-    int maxX = Mathf.Clamp(destX + destWidth - insetRight, 0, PreviewWidth);
-    int minY = Mathf.Clamp(destY + insetBottom, 0, PreviewHeight);
-    int maxY = Mathf.Clamp(destY + destHeight - insetTop, 0, PreviewHeight);
-
-    for (int y = minY; y < maxY; y++)
-    {
-      int row = y * PreviewWidth;
-      for (int x = minX; x < maxX; x++)
-      {
-        int index = row + x;
-        Color32 c = pixels[index];
-        if (c.a == 0)
-          continue;
-
-        int max = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
-        int min = Mathf.Min(c.r, Mathf.Min(c.g, c.b));
-        int luminance = (c.r + c.g + c.b) / 3;
-
-        // Only tone down the whitish/gray reflective pixels.
-        if (luminance < 150 || max - min > 44)
-          continue;
-
-        c.r = (byte)((c.r * 86) / 100);
-        c.g = (byte)((c.g * 86) / 100);
-        c.b = (byte)((c.b * 86) / 100);
-        pixels[index] = c;
-      }
-    }
-  }
-
   private bool PreviewTileIsOpen(int x, int y)
   {
     return previewMiniMap != null
@@ -23580,259 +22845,128 @@ private static void HandleGameViewPointerDown(
         && previewMiniMap.GetTile(x, y).Type == DungeonTileType.Wall;
   }
 
-  private bool TryBlitMatchingChampionMirror(
-      Color32[] pixels,
-      Texture2D texture,
-      int tileX,
-      int tileY,
-      string wallSide,
-      int destX,
-      int destY,
-      bool mirrorHorizontally)
+  // Wall feature visibility: wall ornaments and champion mirrors
+  // use the same front/side corridor, wall-face and occlusion resolver.
+  // Only the sprite and its final screen placement remain feature-specific.
+  private bool IsSharedWallFeatureVisible(
+      int wallX, int wallY, string wallFace, bool wallTilePlacement,
+      int maxFrontDepth = 3, int maxSideDepth = 3)
   {
-    if (pixels == null
-        || texture == null
-        || !texture.isReadable
-        || previewChampionMirrors == null
-        || string.IsNullOrEmpty(wallSide))
-    {
+    if (previewMiniMap == null || string.IsNullOrEmpty(wallFace))
       return false;
-    }
 
-    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    WallOrnamentPlacement geometry = new WallOrnamentPlacement
     {
-      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror != null
-          && !IsPreviewFeatureEnabled(
-              MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall)))
-        continue;
-      if (mirror == null || string.IsNullOrEmpty(mirror.wall))
-        continue;
+      x = wallX,
+      y = wallY,
+      wall = wallFace,
+      wallTilePlacement = wallTilePlacement
+    };
+    // The ornament resolver locates candidate projections, but only V17 is
+    // authoritative for whether their actual wall surface was drawn. This
+    // also rejects distant decorations whose source tile is not a wall.
+    if (!TryGetStandardWallOrnamentProjectionInCurrentPose(
+        geometry, maxFrontDepth, maxSideDepth, out _, out _, out _))
+      return false;
 
-      if (mirror.x != tileX
-          || mirror.y != tileY
-          || !string.Equals(
-              mirror.wall,
-              wallSide,
-              System.StringComparison.OrdinalIgnoreCase))
+    return IsV17DrawnWallFeatureFace(wallX, wallY, wallFace, wallTilePlacement);
+  }
+
+  // One geometric ownership check for every feature on a wall. Distances and
+  // mirroring belong to the existing artwork projection; visibility belongs
+  // exclusively to the corresponding V17 wall surface.
+  private bool IsV17DrawnWallFeatureFace(
+      int x, int y, string wallFace, bool wallTilePlacement)
+  {
+    if (previewMiniMap == null || string.IsNullOrEmpty(wallFace))
+      return false;
+
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    int wallX = x;
+    int wallY = y;
+    string physicalFace = wallFace;
+    if (!wallTilePlacement)
+    {
+      // Corridor-stored ornaments describe the direction TO the wall.
+      // Convert them to the solid wall tile and its facing surface.
+      if (string.Equals(wallFace, FacingName(previewFacing),
+          System.StringComparison.OrdinalIgnoreCase))
       {
-        continue;
+        wallX += fx;
+        wallY += fy;
+        physicalFace = OppositeFacingName(previewFacing);
       }
-
-      string featureKey = MakePreviewFeatureKey(
-          "ChampionMirror", mirror.x, mirror.y, mirror.wall);
-      int renderX = destX;
-      int renderY = destY;
-      bool renderMirror = mirrorHorizontally;
-      ApplyPreviewFeatureRenderOverrides(
-          featureKey, ref renderX, ref renderY, ref renderMirror);
-      BlitPieceIntoPreview(
-          pixels,
-          texture,
-          renderX,
-          renderY,
-          renderMirror);
-      return true;
+      else if (string.Equals(wallFace,
+          FacingName(TurnPreviewFacingLeft(previewFacing)),
+          System.StringComparison.OrdinalIgnoreCase))
+      {
+        wallX -= rx;
+        wallY -= ry;
+        physicalFace = FacingName(TurnPreviewFacingRight(previewFacing));
+      }
+      else if (string.Equals(wallFace,
+          FacingName(TurnPreviewFacingRight(previewFacing)),
+          System.StringComparison.OrdinalIgnoreCase))
+      {
+        wallX += rx;
+        wallY += ry;
+        physicalFace = FacingName(TurnPreviewFacingLeft(previewFacing));
+      }
+      else
+        return false;
     }
 
+    if (!PreviewTileIsWall(wallX, wallY))
+      return false;
+
+    int dx = wallX - previewX;
+    int dy = wallY - previewY;
+    int depth = dx * fx + dy * fy;
+    int lane = dx * rx + dy * ry;
+    string family = null;
+    if (lane == 0 && depth >= 1 && depth <= 3
+        && string.Equals(physicalFace, OppositeFacingName(previewFacing),
+            System.StringComparison.OrdinalIgnoreCase))
+      family = "FrontF" + depth;
+    else if (lane == -1 && depth >= 1 && depth <= 3
+        && string.Equals(physicalFace,
+            FacingName(TurnPreviewFacingRight(previewFacing)),
+            System.StringComparison.OrdinalIgnoreCase))
+      family = "LeftF" + depth;
+    else if (lane == 1 && depth >= 1 && depth <= 3
+        && string.Equals(physicalFace,
+            FacingName(TurnPreviewFacingLeft(previewFacing)),
+            System.StringComparison.OrdinalIgnoreCase))
+      family = "RightF" + depth;
+    if (family == null)
+      return false;
+
+    // V17 writes this list only when the corresponding wall actually blits.
+    // Keep the old non-V17 preview mode operable without guessing visibility.
+    if (!IsViewport17WallAuthorityActive())
+      return true;
+    for (int i = 0; i < v17DrawnWalls.Count; i++)
+    {
+      if (v17DrawnWalls[i].StartsWith(family + "  ",
+          System.StringComparison.Ordinal)
+          || (family == "FrontF3"
+              && v17DrawnWalls[i].StartsWith("FrontF3 ",
+                  System.StringComparison.Ordinal)))
+        return true;
+    }
     return false;
   }
 
-  private void BlitChampionMirrorD3LeftIntoPreview(Color32[] pixels)
+  private bool IsChampionMirrorVisibleFromPlayerSide(ChampionMirrorPlacement mirror)
   {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null
-        || previewChampionMirrors == null
-        || previewChampionMirrors.Length == 0)
-    {
-      return;
-    }
+    if (mirror == null || string.IsNullOrEmpty(mirror.wall))
+      return false;
 
-    Texture2D f3Left = GetChampionMirrorSideDistantLeftTexture();
-    Texture2D l2 = GetChampionMirrorSideDistantTexture();
-
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    string leftWallSide = FacingName(TurnPreviewFacingRight(previewFacing));
-
-    int d1CenterX = previewX + forwardX;
-    int d1CenterY = previewY + forwardY;
-    int d2CenterX = previewX + forwardX * 2;
-    int d2CenterY = previewY + forwardY * 2;
-    int d3CenterX = previewX + forwardX * 3;
-    int d3CenterY = previewY + forwardY * 3;
-
-    // F3-left corridor/alcove: center line open through D3, decorated wall
-    // is one lane left of D3. D1/D2 left may be walls (9,9 East LINFLAS) or
-    // open (12,9 West SYRA). Code-generated 7x15 from S1, unmirrored.
-    int f3LeftX = d3CenterX - rightX;
-    int f3LeftY = d3CenterY - rightY;
-    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
-        && PreviewTileIsOpen(d2CenterX, d2CenterY)
-        && PreviewTileIsOpen(d3CenterX, d3CenterY)
-        && PreviewTileIsWall(f3LeftX, f3LeftY))
-    {
-      TryBlitMatchingChampionMirror(
-          pixels,
-          f3Left,
-          f3LeftX,
-          f3LeftY,
-          leftWallSide,
-          ChampionMirrorD3LeftX,
-          ChampionMirrorD3LeftY,
-          false);
-    }
-
-    // D3L2 oblique: sight through the open left side-lane, decorated wall
-    // two lanes left of D3. The 15x15 source is canonical LEFT orientation,
-    // so the screen-left slot uses it as-is.
-    int d1LeftX = d1CenterX - rightX;
-    int d1LeftY = d1CenterY - rightY;
-    int d2LeftX = d2CenterX - rightX;
-    int d2LeftY = d2CenterY - rightY;
-    int d3LeftX = d3CenterX - rightX;
-    int d3LeftY = d3CenterY - rightY;
-    int l2X = d3CenterX - rightX * 2;
-    int l2Y = d3CenterY - rightY * 2;
-    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
-        && PreviewTileIsOpen(d1LeftX, d1LeftY)
-        && PreviewTileIsOpen(d2LeftX, d2LeftY)
-        && PreviewTileIsOpen(d3LeftX, d3LeftY)
-        && PreviewTileIsWall(l2X, l2Y))
-    {
-      TryBlitMatchingChampionMirror(
-          pixels,
-          l2,
-          l2X,
-          l2Y,
-          leftWallSide,
-          ChampionMirrorD3LeftL2X,
-          ChampionMirrorD3LeftL2Y,
-          false);
-    }
-  }
-
-  private void BlitChampionMirrorD3RightIntoPreview(Color32[] pixels)
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null
-        || previewChampionMirrors == null
-        || previewChampionMirrors.Length == 0)
-    {
-      return;
-    }
-
-    Texture2D f3LeftCutout = GetChampionMirrorSideDistantLeftTexture();
-    Texture2D r2 = GetChampionMirrorSideDistantTexture();
-
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    string rightWallSide = FacingName(TurnPreviewFacingLeft(previewFacing));
-
-    int d1CenterX = previewX + forwardX;
-    int d1CenterY = previewY + forwardY;
-    int d2CenterX = previewX + forwardX * 2;
-    int d2CenterY = previewY + forwardY * 2;
-    int d3CenterX = previewX + forwardX * 3;
-    int d3CenterY = previewY + forwardY * 3;
-
-    // F3-right corridor/alcove: center line open through D3, decorated wall
-    // is one lane right of D3. Same code-generated 7x15 D3 projection as F3-left, mirrored.
-    int f3RightX = d3CenterX + rightX;
-    int f3RightY = d3CenterY + rightY;
-    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
-        && PreviewTileIsOpen(d2CenterX, d2CenterY)
-        && PreviewTileIsOpen(d3CenterX, d3CenterY)
-        && PreviewTileIsWall(f3RightX, f3RightY))
-    {
-      TryBlitMatchingChampionMirror(
-          pixels,
-          f3LeftCutout,
-          f3RightX,
-          f3RightY,
-          rightWallSide,
-          ChampionMirrorD3RightF3X,
-          ChampionMirrorD3RightF3Y,
-          true);
-    }
-
-    // D3R2 oblique: sight through the open right side-lane, decorated wall
-    // two lanes right of D3. The 15x15 source is canonical LEFT orientation,
-    // so the screen-right slot is mirrored horizontally.
-    int d1RightX = d1CenterX + rightX;
-    int d1RightY = d1CenterY + rightY;
-    int d2RightX = d2CenterX + rightX;
-    int d2RightY = d2CenterY + rightY;
-    int d3RightX = d3CenterX + rightX;
-    int d3RightY = d3CenterY + rightY;
-    int r2X = d3CenterX + rightX * 2;
-    int r2Y = d3CenterY + rightY * 2;
-    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
-        && PreviewTileIsOpen(d1RightX, d1RightY)
-        && PreviewTileIsOpen(d2RightX, d2RightY)
-        && PreviewTileIsOpen(d3RightX, d3RightY)
-        && PreviewTileIsWall(r2X, r2Y))
-    {
-      TryBlitMatchingChampionMirror(
-          pixels,
-          r2,
-          r2X,
-          r2Y,
-          rightWallSide,
-          ChampionMirrorD3RightX,
-          ChampionMirrorD3RightY,
-          true);
-    }
-  }
-
-  private Texture2D GetChampionMirrorGeneratedF2Texture()
-  {
-    if (cachedChampionMirrorGeneratedF2Texture != null)
-      return cachedChampionMirrorGeneratedF2Texture;
-
-    Texture2D source = GetChampionMirrorFrontTexture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    cachedChampionMirrorGeneratedF2Texture =
-        GenerateWallOrnamentForDepth(
-            source,
-            ChampionMirrorFrontWallOrnamentSet.f2,
-            WallOrnamentMediumColorMap,
-            "Champion Mirror F2 Generated from F1");
-
-    return cachedChampionMirrorGeneratedF2Texture;
-  }
-
-  private Texture2D GetChampionMirrorFrontF3Texture()
-  {
-    if (cachedChampionMirrorFrontF3Texture != null)
-      return cachedChampionMirrorFrontF3Texture;
-
-    Texture2D source = GetChampionMirrorFrontTexture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    cachedChampionMirrorFrontF3Texture = GenerateWallOrnamentForDepth(
-        source,
-        ChampionMirrorFrontWallOrnamentSet.f3,
-        WallOrnamentFarColorMap,
-        "Champion Mirror F3 Generated from F1");
-    return cachedChampionMirrorFrontF3Texture;
+    // Champion mirrors live on physical solid-wall tiles, as do random
+    // wall-tile ornaments. Never allow a view through a nearer wall.
+    return IsSharedWallFeatureVisible(
+        mirror.x, mirror.y, mirror.wall, true);
   }
 
   private Texture2D GetChampionMirrorFrontTexture()
@@ -23965,103 +23099,6 @@ private static void HandleGameViewPointerDown(
       DungeonFacing.West => DungeonFacing.East,
       _ => facing
     };
-  }
-
-  private Texture2D GetChampionMirrorSideD2Texture()
-  {
-    if (cachedChampionMirrorSideD2Texture != null)
-      return cachedChampionMirrorSideD2Texture;
-
-    // Champion mirrors have only two original source graphics: front F1 and
-    // side S1.  D2/D3 variants are generated at runtime/editor-preview time;
-    // never load hand-copied GIMP distance PNGs here.
-    Texture2D source = GetChampionMirrorSideTexture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    cachedChampionMirrorSideD2Texture = GenerateDmScaledWallDecoration(
-        source,
-        ChampionMirrorD2SideWidth,
-        ChampionMirrorD2SideHeight,
-        WallOrnamentMediumColorMap,
-        "Champion Mirror Side D2 Generated from S1");
-    return cachedChampionMirrorSideD2Texture;
-  }
-
-  private Texture2D GetChampionMirrorSideDistantLeftTexture()
-  {
-    if (cachedChampionMirrorSideDistantLeftTexture != null)
-      return cachedChampionMirrorSideDistantLeftTexture;
-
-    Texture2D source = GetChampionMirrorSideTexture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    cachedChampionMirrorSideDistantLeftTexture = GenerateDmScaledWallDecoration(
-        source,
-        7,
-        15,
-        WallOrnamentFarColorMap,
-        "Champion Mirror Side D3 Generated from S1");
-    return cachedChampionMirrorSideDistantLeftTexture;
-  }
-
-  private Texture2D GetChampionMirrorSideDistantTexture()
-  {
-    if (cachedChampionMirrorSideDistantTexture != null)
-      return cachedChampionMirrorSideDistantTexture;
-
-    Texture2D source = GetChampionMirrorSideTexture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    cachedChampionMirrorSideDistantTexture = GenerateDmScaledWallDecoration(
-        source,
-        15,
-        15,
-        WallOrnamentFarColorMap,
-        "Champion Mirror Side F3 Generated from F1");
-    return cachedChampionMirrorSideDistantTexture;
-  }
-
-  private Texture2D GetChampionMirrorSideTexture()
-  {
-    if (cachedChampionMirrorSideTexture != null)
-      return cachedChampionMirrorSideTexture;
-
-    Texture2D texture =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(ChampionMirrorSideAssetPath);
-    if (texture != null && texture.width == 16 && texture.height == 35)
-    {
-      cachedChampionMirrorSideTexture = texture;
-      return texture;
-    }
-
-    // Filename-independent fallback: the original GRAPHICS.DAT contains one
-    // 16x35 Champion side-mirror image. This lets the project keep a slightly
-    // different filename without changing renderer code.
-    string[] guids = AssetDatabase.FindAssets(
-        "t:Texture2D",
-        new[] { ChampionArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 16 || candidate.height != 35)
-        continue;
-
-      if (path.IndexOf(
-              "mirror",
-              System.StringComparison.OrdinalIgnoreCase) < 0)
-      {
-        continue;
-      }
-
-      cachedChampionMirrorSideTexture = candidate;
-      return candidate;
-    }
-
-    return null;
   }
 
   private static int ResolveHallOfChampionsWallOrnamentSourceId(
@@ -24269,6 +23306,249 @@ private static void HandleGameViewPointerDown(
         WallOrnamentMediumColorMap,
         "Wood Ring F2 Generated from F1");
     return cachedWoodRingGeneratedF2FrontTexture;
+  }
+
+  // Champion mirrors use the ordinary front-wall ornament geometry.
+  // At F2 only the frame is drawn; the champion portrait is visible at F1.
+  private const string ChampionMirrorScalePrefPrefix = "DM.ChampionMirror.FrameScale.F";
+  private static readonly string[] ChampionMirrorScaleOptions =
+      { "CSBwin (original)", "Nearest", "Bilinear", "Top to Bottom", "Bottom to Top" };
+  // Wall-feature artwork policy. Geometry and visibility are resolved by the
+  // existing wall-ornament path; this profile only controls artwork treatment.
+  // Other wall ornaments retain their existing artwork code unchanged.
+  private struct WallFeatureArtworkProfile
+  {
+    public WallOrnamentDepthSlot slot;
+    public bool drawPortrait;
+    public int scaleMethod;
+    public byte[] distancePalette;
+  }
+
+  private static WallFeatureArtworkProfile GetChampionMirrorArtworkProfile(int depth)
+  {
+    WallFeatureArtworkProfile profile = new WallFeatureArtworkProfile();
+    switch (depth)
+    {
+      case 1:
+        profile.slot = ChampionMirrorFrontWallOrnamentSet.f1;
+        profile.drawPortrait = true;
+        profile.scaleMethod = 0;
+        profile.distancePalette = null; // Full-size verified F1 artwork.
+        break;
+      case 2:
+        profile.slot = ChampionMirrorFrontWallOrnamentSet.f2;
+        profile.drawPortrait = false;
+        profile.scaleMethod = Mathf.Clamp(
+            EditorPrefs.GetInt(ChampionMirrorScalePrefPrefix + 2, 0), 0, 4);
+        profile.distancePalette = WallOrnamentMediumColorMap;
+        break;
+      case 3:
+        profile.slot = ChampionMirrorFrontWallOrnamentSet.f3;
+        profile.drawPortrait = false;
+        profile.scaleMethod = 3; // Fixed Top to Bottom.
+        profile.distancePalette = WallOrnamentFarColorMap;
+        break;
+      default:
+        throw new System.ArgumentOutOfRangeException("depth", depth,
+            "Champion mirror artwork is defined only for F1/F2/F3.");
+    }
+    return profile;
+  }
+
+  private Texture2D cachedChampionMirrorF2Frame;
+  private Texture2D cachedChampionMirrorF3Frame;
+  private int cachedChampionMirrorF2Method = -1;
+  private int cachedChampionMirrorF3Method = -1;
+
+  private static int GetChampionMirrorScaleMethod(int depth)
+  {
+    return GetChampionMirrorArtworkProfile(depth).scaleMethod;
+  }
+
+  private void InvalidateChampionMirrorFrameScaleCache()
+  {
+    if (cachedChampionMirrorF2Frame != null)
+      UnityEngine.Object.DestroyImmediate(cachedChampionMirrorF2Frame);
+    if (cachedChampionMirrorF3Frame != null)
+      UnityEngine.Object.DestroyImmediate(cachedChampionMirrorF3Frame);
+    cachedChampionMirrorF2Frame = null;
+    cachedChampionMirrorF3Frame = null;
+    cachedChampionMirrorF2Method = -1;
+    cachedChampionMirrorF3Method = -1;
+  }
+
+  private static Texture2D GenerateChampionMirrorAlternativeScale(
+      Texture2D source, int width, int height, byte[] colorMap, int method,
+      string textureName)
+  {
+    if (source == null || !source.isReadable || width <= 0 || height <= 0)
+      return null;
+    Color32[] sourceColors = source.GetPixels32();
+    Color32[] output = new Color32[width * height];
+    Color32[] palette = DungeonViewportLightPalettes[0];
+    for (int y = 0; y < height; y++)
+      for (int x = 0; x < width; x++)
+      {
+        float sx = ((x + 0.5f) * source.width / width) - 0.5f;
+        float sy = ((y + 0.5f) * source.height / height) - 0.5f;
+        // Unity pixel arrays are bottom-up. For the directional tests, anchor
+        // the fixed-step sample sequence at the selected image edge.
+        if (method == 3) // top-to-bottom: anchor samples at the top edge
+          sy = source.height - 1 - Mathf.Floor((height - 1 - y) * (float)source.height / height);
+        else if (method == 4) // bottom-to-top: anchor at the bottom edge
+          sy = Mathf.Floor(y * (float)source.height / height);
+        Color32 sampled;
+        if (method != 2)
+        {
+          int ix = Mathf.Clamp(Mathf.RoundToInt(sx), 0, source.width - 1);
+          int iy = Mathf.Clamp(Mathf.RoundToInt(sy), 0, source.height - 1);
+          sampled = sourceColors[iy * source.width + ix];
+        }
+        else
+        {
+          int x0 = Mathf.Clamp(Mathf.FloorToInt(sx), 0, source.width - 1);
+          int y0 = Mathf.Clamp(Mathf.FloorToInt(sy), 0, source.height - 1);
+          int x1 = Mathf.Min(x0 + 1, source.width - 1);
+          int y1 = Mathf.Min(y0 + 1, source.height - 1);
+          float tx = Mathf.Clamp01(sx - Mathf.Floor(sx));
+          float ty = Mathf.Clamp01(sy - Mathf.Floor(sy));
+          Color top = Color.Lerp((Color)sourceColors[y0 * source.width + x0],
+              (Color)sourceColors[y0 * source.width + x1], tx);
+          Color bottom = Color.Lerp((Color)sourceColors[y1 * source.width + x0],
+              (Color)sourceColors[y1 * source.width + x1], tx);
+          sampled = (Color32)Color.Lerp(top, bottom, ty);
+        }
+        if (sampled.a == 0) continue;
+        int sourceIndex = FindExactDmPaletteIndexOrNearest(sampled, palette);
+        int mappedIndex = Mathf.Clamp(colorMap[sourceIndex], 0, 15);
+        if (mappedIndex == 10) continue;
+        Color32 mapped = palette[mappedIndex];
+        mapped.a = sampled.a;
+        output[y * width + x] = mapped;
+      }
+    Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+    texture.name = textureName;
+    texture.filterMode = FilterMode.Point;
+    texture.wrapMode = TextureWrapMode.Clamp;
+    texture.SetPixels32(output);
+    texture.Apply(false, false);
+    return texture;
+  }
+
+  private Texture2D GetChampionMirrorScaledFrameTexture(Texture2D frame, int depth)
+  {
+    if (frame == null || !frame.isReadable || (depth != 2 && depth != 3))
+      return null;
+    int method = GetChampionMirrorScaleMethod(depth);
+    if (depth == 2 && cachedChampionMirrorF2Frame != null
+        && cachedChampionMirrorF2Method == method)
+      return cachedChampionMirrorF2Frame;
+    if (depth == 3 && cachedChampionMirrorF3Frame != null
+        && cachedChampionMirrorF3Method == method)
+      return cachedChampionMirrorF3Frame;
+    WallFeatureArtworkProfile profile = GetChampionMirrorArtworkProfile(depth);
+    WallOrnamentDepthSlot slot = profile.slot;
+    byte[] palette = profile.distancePalette;
+    Texture2D scaled = method == 0
+        ? GenerateDmScaledWallDecoration(frame, slot.width, slot.height,
+            palette, "Champion Mirror F" + depth + " CSBwin Frame")
+        : GenerateChampionMirrorAlternativeScale(frame, slot.width, slot.height,
+            palette, method, "Champion Mirror F" + depth + " Frame");
+    if (depth == 2) { cachedChampionMirrorF2Frame = scaled; cachedChampionMirrorF2Method = method; }
+    else { cachedChampionMirrorF3Frame = scaled; cachedChampionMirrorF3Method = method; }
+    return scaled;
+  }
+
+  private void BlitChampionMirrorFrontAsWallOrnamentIntoPreview(
+      Color32[] pixels, int depth)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (pixels == null || previewMiniMap == null
+        || previewChampionMirrors == null || previewChampionMirrors.Length == 0
+        || (depth < 1 || depth > 3))
+      return;
+
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    // Require every intervening tile to be clear, as for front ornaments.
+    for (int step = 1; step < depth; ++step)
+    {
+      int passX = previewX + fx * step;
+      int passY = previewY + fy * step;
+      if (!previewMiniMap.IsInside(passX, passY)
+          || PreviewTileIsWall(passX, passY))
+        return;
+    }
+    int wallX = previewX + fx * depth;
+    int wallY = previewY + fy * depth;
+    if (!PreviewTileIsWall(wallX, wallY))
+      return;
+
+    string physicalFace = OppositeFacingName(previewFacing);
+    for (int i = 0; i < previewChampionMirrors.Length; ++i)
+    {
+      ChampionMirrorPlacement champion = previewChampionMirrors[i];
+      if (champion == null || string.IsNullOrEmpty(champion.champion)
+          || champion.x != wallX || champion.y != wallY
+          || !string.Equals(champion.wall, physicalFace,
+              System.StringComparison.OrdinalIgnoreCase))
+        continue;
+
+      if (IsPreviewChampionTaken(champion.champion)
+          || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+              "ChampionMirror", champion.x, champion.y, champion.wall)))
+        return;
+      if (!IsSharedWallFeatureVisible(
+              champion.x, champion.y, champion.wall, true, depth, 0))
+        return;
+
+      Texture2D frame = GetChampionMirrorFrontTexture();
+      // Portrait artwork is only needed when standing directly at F1.
+      WallFeatureArtworkProfile artwork = GetChampionMirrorArtworkProfile(depth);
+      Texture2D portrait = artwork.drawPortrait
+          ? GetChampionPortraitTexture(champion.champion) : null;
+      if (frame == null || !frame.isReadable
+          || (depth == 1 && (portrait == null || !portrait.isReadable)))
+      {
+        Debug.LogError("ViewEdit: Missing readable champion mirror/frame or F1 portrait: "
+            + champion.champion);
+        return;
+      }
+
+      WallOrnamentDepthSlot slot = artwork.slot;
+      int x = slot.x;
+      int y = slot.y;
+      bool mirrored = false;
+      string mirrorFeatureKey = MakePreviewFeatureKey(
+          "ChampionMirror", champion.x, champion.y, champion.wall);
+      string projectionKey = "OrnamentProjection:ChampionMirror:F" + depth;
+      ApplyAcceptedOrnamentReference(
+          projectionKey, ref x, ref y, ref mirrored);
+      ApplyPreviewFeatureRenderOverrides(
+          projectionKey, ref x, ref y, ref mirrored);
+
+      if (depth == 1)
+      {
+        // Verified IAIDO Front F1: do not alter the existing pixels.
+        BlitWallOrnamentIntoPreview(pixels, frame, x, y, mirrored);
+        BlitWallOrnamentIntoPreview(pixels, portrait,
+            x + (frame.width - portrait.width) / 2,
+            y + (frame.height - portrait.height) / 2, mirrored);
+      }
+      else
+      {
+        // F2/F3: scale only the empty frame with the ordinary ornament
+        // distance palette. Never draw the champion portrait at these depths.
+        Texture2D scaledFrame = GetChampionMirrorScaledFrameTexture(frame, depth);
+        if (scaledFrame == null)
+        {
+          Debug.LogError("ViewEdit: Failed to scale champion mirror F"
+              + depth + ": " + champion.champion);
+          return;
+        }
+        BlitWallOrnamentIntoPreview(pixels, scaledFrame, x, y, mirrored);
+      }
+      return;
+    }
   }
 
   private void BlitWoodRingD1FrontIntoPreview(Color32[] pixels)
@@ -24700,9 +23980,6 @@ private static void HandleGameViewPointerDown(
     stairsDownF1PreviewEnabled = true;
     stairsDownF1PreviewX = StairsDownF1X;
     stairsDownF1PreviewDisplayY = StairsDownF1DisplayY;
-    championMirrorD0RightPreviewX = ChampionMirrorD0RightX;
-    championMirrorD0RightPreviewVisibleWidth = 7;
-    championMirrorD0RightPreviewMirror = false;
     previewDisabledFeatureKeys.Clear();
     previewForcedStairsDownImageKeys.Clear();
     stairsD0LX = EditorPrefs.GetInt(StairsD0LPrefsPrefix + "X", 208);
@@ -25024,247 +24301,6 @@ private static void HandleGameViewPointerDown(
 
     if (previewFeatureMirrorOverrides.TryGetValue(key, out bool mirrorOverride))
       mirror = mirrorOverride;
-  }
-
-  private bool TryGetChampionMirrorViewProjection(
-      ChampionMirrorPlacement mirror,
-      out int renderX,
-      out int renderY,
-      out bool renderMirror)
-  {
-    renderX = 0;
-    renderY = 0;
-    renderMirror = false;
-
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null
-        || mirror == null
-        || string.IsNullOrEmpty(mirror.wall))
-    {
-      return false;
-    }
-
-    DungeonMap.GetForwardOffset(previewFacing, out int forwardX, out int forwardY);
-    DungeonMap.GetRightOffset(previewFacing, out int rightX, out int rightY);
-
-    string frontWallSide = FacingName(OppositePreviewFacing(previewFacing));
-    string leftWallSide = FacingName(TurnPreviewFacingRight(previewFacing));
-    string rightWallSide = FacingName(TurnPreviewFacingLeft(previewFacing));
-    string parallelWallSide = FacingName(previewFacing);
-
-    int d1CenterX = previewX + forwardX;
-    int d1CenterY = previewY + forwardY;
-    int d2CenterX = previewX + forwardX * 2;
-    int d2CenterY = previewY + forwardY * 2;
-    int d3CenterX = previewX + forwardX * 3;
-    int d3CenterY = previewY + forwardY * 3;
-
-    // F0-right glimpse.
-    int f0RightX = previewX + rightX;
-    int f0RightY = previewY + rightY;
-    if (mirror.x == f0RightX
-        && mirror.y == f0RightY
-        && string.Equals(mirror.wall, parallelWallSide, System.StringComparison.OrdinalIgnoreCase)
-        && PreviewTileIsWall(f0RightX, f0RightY))
-    {
-      renderX = championMirrorD0RightPreviewX;
-      renderY = ChampionMirrorD0RightY;
-      renderMirror = championMirrorD0RightPreviewMirror;
-      return true;
-    }
-
-    // D1 front.
-    if (mirror.x == d1CenterX
-        && mirror.y == d1CenterY
-        && string.Equals(mirror.wall, frontWallSide, System.StringComparison.OrdinalIgnoreCase)
-        && PreviewTileIsWall(d1CenterX, d1CenterY))
-    {
-      renderX = ChampionMirrorD1FrontX;
-      renderY = ChampionMirrorD1FrontY;
-      renderMirror = false;
-      return true;
-    }
-
-    // D1 side frames require an open D1 center.
-    if (PreviewTileIsOpen(d1CenterX, d1CenterY))
-    {
-      int d1LeftX = d1CenterX - rightX;
-      int d1LeftY = d1CenterY - rightY;
-      if (mirror.x == d1LeftX
-          && mirror.y == d1LeftY
-          && string.Equals(mirror.wall, leftWallSide, System.StringComparison.OrdinalIgnoreCase))
-      {
-        renderX = ChampionMirrorD1LeftX;
-        renderY = ChampionMirrorD1Y;
-        renderMirror = false;
-        return true;
-      }
-
-      int d1RightX = d1CenterX + rightX;
-      int d1RightY = d1CenterY + rightY;
-      if (mirror.x == d1RightX
-          && mirror.y == d1RightY
-          && string.Equals(mirror.wall, rightWallSide, System.StringComparison.OrdinalIgnoreCase))
-      {
-        renderX = ChampionMirrorD1RightX;
-        renderY = ChampionMirrorD1Y;
-        renderMirror = true;
-        return true;
-      }
-    }
-
-    // D2 front lanes use an open D1 center, and lateral lanes also need the
-    // corresponding D1 side lane open.
-    if (PreviewTileIsOpen(d1CenterX, d1CenterY))
-    {
-      for (int lane = -1; lane <= 1; lane++)
-      {
-        if (lane != 0)
-        {
-          int d1LaneX = d1CenterX + rightX * lane;
-          int d1LaneY = d1CenterY + rightY * lane;
-          if (!PreviewTileIsOpen(d1LaneX, d1LaneY))
-            continue;
-        }
-
-        int d2X = d2CenterX + rightX * lane;
-        int d2Y = d2CenterY + rightY * lane;
-        if (mirror.x == d2X
-            && mirror.y == d2Y
-            && string.Equals(mirror.wall, frontWallSide, System.StringComparison.OrdinalIgnoreCase)
-            && PreviewTileIsWall(d2X, d2Y))
-        {
-          renderX = lane < 0
-              ? ChampionMirrorD2FrontLeftX
-              : lane > 0
-                  ? ChampionMirrorD2FrontRightX
-                  : ChampionMirrorD2FrontX;
-          renderY = ChampionMirrorFrontWallOrnamentSet.f2.y;
-          renderMirror = false;
-          return true;
-        }
-      }
-    }
-
-    // D2 side mirrors require the center sight line to stay open through D2.
-    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
-        && PreviewTileIsOpen(d2CenterX, d2CenterY))
-    {
-      int d2LeftX = d2CenterX - rightX;
-      int d2LeftY = d2CenterY - rightY;
-      if (mirror.x == d2LeftX
-          && mirror.y == d2LeftY
-          && string.Equals(mirror.wall, leftWallSide, System.StringComparison.OrdinalIgnoreCase))
-      {
-        renderX = ChampionMirrorD2LeftX;
-        renderY = ChampionMirrorD2SideY;
-        renderMirror = false;
-        return true;
-      }
-
-      int d2RightX = d2CenterX + rightX;
-      int d2RightY = d2CenterY + rightY;
-      if (mirror.x == d2RightX
-          && mirror.y == d2RightY
-          && string.Equals(mirror.wall, rightWallSide, System.StringComparison.OrdinalIgnoreCase))
-      {
-        renderX = ChampionMirrorD2RightX;
-        renderY = ChampionMirrorD2SideY;
-        renderMirror = true;
-        return true;
-      }
-    }
-
-    // D3 front center.
-    if (mirror.x == d3CenterX
-        && mirror.y == d3CenterY
-        && string.Equals(mirror.wall, frontWallSide, System.StringComparison.OrdinalIgnoreCase))
-    {
-      renderX = ChampionMirrorD3FrontX;
-      renderY = ChampionMirrorD3FrontY;
-      renderMirror = false;
-      return true;
-    }
-
-    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
-        && PreviewTileIsOpen(d2CenterX, d2CenterY)
-        && PreviewTileIsOpen(d3CenterX, d3CenterY))
-    {
-      int d3LeftX = d3CenterX - rightX;
-      int d3LeftY = d3CenterY - rightY;
-      if (mirror.x == d3LeftX
-          && mirror.y == d3LeftY
-          && string.Equals(mirror.wall, leftWallSide, System.StringComparison.OrdinalIgnoreCase)
-          && PreviewTileIsWall(d3LeftX, d3LeftY))
-      {
-        renderX = ChampionMirrorD3LeftX;
-        renderY = ChampionMirrorD3LeftY;
-        renderMirror = false;
-        return true;
-      }
-
-      int d3RightX = d3CenterX + rightX;
-      int d3RightY = d3CenterY + rightY;
-      if (mirror.x == d3RightX
-          && mirror.y == d3RightY
-          && string.Equals(mirror.wall, rightWallSide, System.StringComparison.OrdinalIgnoreCase)
-          && PreviewTileIsWall(d3RightX, d3RightY))
-      {
-        renderX = ChampionMirrorD3RightF3X;
-        renderY = ChampionMirrorD3RightF3Y;
-        renderMirror = true;
-        return true;
-      }
-    }
-
-    // D3 second side lane / oblique projections.
-    int d1LeftOpenX = d1CenterX - rightX;
-    int d1LeftOpenY = d1CenterY - rightY;
-    int d2LeftOpenX = d2CenterX - rightX;
-    int d2LeftOpenY = d2CenterY - rightY;
-    int d3LeftOpenX = d3CenterX - rightX;
-    int d3LeftOpenY = d3CenterY - rightY;
-    int d3L2X = d3CenterX - rightX * 2;
-    int d3L2Y = d3CenterY - rightY * 2;
-    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
-        && PreviewTileIsOpen(d1LeftOpenX, d1LeftOpenY)
-        && PreviewTileIsOpen(d2LeftOpenX, d2LeftOpenY)
-        && PreviewTileIsOpen(d3LeftOpenX, d3LeftOpenY)
-        && PreviewTileIsWall(d3L2X, d3L2Y)
-        && mirror.x == d3L2X
-        && mirror.y == d3L2Y
-        && string.Equals(mirror.wall, leftWallSide, System.StringComparison.OrdinalIgnoreCase))
-    {
-      renderX = ChampionMirrorD3LeftL2X;
-      renderY = ChampionMirrorD3LeftL2Y;
-      renderMirror = false;
-      return true;
-    }
-
-    int d1RightOpenX = d1CenterX + rightX;
-    int d1RightOpenY = d1CenterY + rightY;
-    int d2RightOpenX = d2CenterX + rightX;
-    int d2RightOpenY = d2CenterY + rightY;
-    int d3RightOpenX = d3CenterX + rightX;
-    int d3RightOpenY = d3CenterY + rightY;
-    int d3R2X = d3CenterX + rightX * 2;
-    int d3R2Y = d3CenterY + rightY * 2;
-    if (PreviewTileIsOpen(d1CenterX, d1CenterY)
-        && PreviewTileIsOpen(d1RightOpenX, d1RightOpenY)
-        && PreviewTileIsOpen(d2RightOpenX, d2RightOpenY)
-        && PreviewTileIsOpen(d3RightOpenX, d3RightOpenY)
-        && PreviewTileIsWall(d3R2X, d3R2Y)
-        && mirror.x == d3R2X
-        && mirror.y == d3R2Y
-        && string.Equals(mirror.wall, rightWallSide, System.StringComparison.OrdinalIgnoreCase))
-    {
-      renderX = ChampionMirrorD3RightX;
-      renderY = ChampionMirrorD3RightY;
-      renderMirror = true;
-      return true;
-    }
-
-    return false;
   }
 
   private bool TryGetGrateViewProjection(
@@ -26047,155 +25083,10 @@ private static void HandleGameViewPointerDown(
 
   // A front mirror is stored on the wall face that points back at the party.
   // From 10,5 South, ZED at (10,6) is stored North, and ViewEdit shows South.
-  private string ChampionMirrorViewEditDirection(ChampionMirrorPlacement mirror)
-  {
-    if (mirror == null || string.IsNullOrEmpty(mirror.wall))
-      return null;
-
-    // The sensor records the wall face pointing toward the party. ViewEdit
-    // displays the opposite direction: where the player looks to see it.
-    switch (mirror.wall.ToUpperInvariant())
-    {
-      case "NORTH": return "South";
-      case "EAST": return "West";
-      case "SOUTH": return "North";
-      case "WEST": return "East";
-      default:
-        Debug.LogError("ViewEdit: Invalid champion mirror wall face '"
-            + mirror.wall + "' for " + mirror.champion);
-        return null;
-    }
-  }
-
   // ViewEdit champion coordinates describe the party position from which
   // the mirror/champion is directly ahead at F1, not the map tile that
   // stores the mirror wall face. Example: a North-facing mirror stored at
   // (10,6) is viewed from party position (10,5), facing South.
-  private void GetChampionMirrorF1StandPosition(
-      ChampionMirrorPlacement mirror, out int standX, out int standY)
-  {
-    standX = mirror != null ? mirror.x : 0;
-    standY = mirror != null ? mirror.y : 0;
-    if (mirror == null || string.IsNullOrEmpty(mirror.wall))
-      return;
-
-    if (string.Equals(
-            mirror.wall, "North", System.StringComparison.OrdinalIgnoreCase))
-    {
-      standY -= 1;
-    }
-    else if (string.Equals(
-                 mirror.wall, "South", System.StringComparison.OrdinalIgnoreCase))
-    {
-      standY += 1;
-    }
-    else if (string.Equals(
-                 mirror.wall, "East", System.StringComparison.OrdinalIgnoreCase))
-    {
-      standX += 1;
-    }
-    else if (string.Equals(
-                 mirror.wall, "West", System.StringComparison.OrdinalIgnoreCase))
-    {
-      standX -= 1;
-    }
-  }
-
-  private bool DrawChampionMirrorFeatureRow(ChampionMirrorPlacement mirror)
-  {
-    if (!TryGetChampionMirrorViewProjection(
-            mirror, out int defaultX, out int defaultY, out bool defaultMirror))
-    {
-      return false;
-    }
-
-    string key = MakePreviewFeatureKey(
-        "ChampionMirror", mirror.x, mirror.y, mirror.wall);
-    int x = defaultX;
-    int y = defaultY;
-    bool mirrorValue = defaultMirror;
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirrorValue);
-
-    GetChampionMirrorF1StandPosition(mirror, out int standX, out int standY);
-    string name = (string.IsNullOrEmpty(mirror.champion)
-        ? "Unknown champion" : mirror.champion)
-        + " [" + standX + "," + standY + "]";
-    string wallLabel = ChampionMirrorViewEditDirection(mirror);
-    if (!string.IsNullOrEmpty(wallLabel))
-      name += " " + wallLabel;
-
-    EditorGUILayout.BeginHorizontal();
-
-    float savedLabelWidth = EditorGUIUtility.labelWidth;
-
-    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
-    Color labelColor = new Color(0.15f, 0.85f, 1f);
-    featureStyle.normal.textColor = labelColor;
-    featureStyle.hover.textColor = labelColor;
-    featureStyle.focused.textColor = labelColor;
-    // Champion rows use the label's actual width instead of reserving the
-    // shared 210px ornament-description column. Keep the map X/Y fields,
-    // Set and Mirror together immediately after the champion description.
-    float championDescriptionWidth =
-        Mathf.Ceil(featureStyle.CalcSize(new GUIContent(name)).x) + 6f;
-    GUILayout.Label(
-        name,
-        featureStyle,
-        GUILayout.Width(championDescriptionWidth));
-
-    // Champion row order: name/direction first at the far left, followed by
-    // the F1 party-position X/Y fields, then Enabled and Mirror.
-    DrawReadOnlyFeatureMapFields(standX, standY);
-
-    bool enabledBefore = IsPreviewFeatureEnabled(key);
-    bool enabledAfter = DrawFeatureEnabledToggle(enabledBefore);
-
-    // Champion mirrors additionally expose Mirror immediately after Enabled.
-    const string MirrorLabel = "Mirror";
-    float mirrorLabelWidth =
-        EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
-    EditorGUIUtility.labelWidth = mirrorLabelWidth;
-    const float ToggleBoxWidth = 18f;
-    bool mirrorAfter = DrawMouseOnlyToggle(
-        MirrorLabel,
-        mirrorValue,
-        enabledAfter,
-        GUILayout.Width(mirrorLabelWidth + ToggleBoxWidth),
-        GUILayout.ExpandWidth(false));
-    NoteContentRight();
-
-    EditorGUIUtility.labelWidth = savedLabelWidth;
-    EditorGUILayout.EndHorizontal();
-
-    bool changed = false;
-
-    if (mirrorAfter != mirrorValue)
-    {
-      if (mirrorAfter == defaultMirror)
-        previewFeatureMirrorOverrides.Remove(key);
-      else
-        previewFeatureMirrorOverrides[key] = mirrorAfter;
-      previewMirrorChangedThisFrame = true;
-      changed = true;
-    }
-
-    if (enabledAfter != enabledBefore)
-    {
-      SetPreviewFeatureEnabled(key, enabledAfter);
-      previewEnabledChangedThisFrame = true;
-      changed = true;
-    }
-
-    if (changed)
-    {
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
-    }
-
-    return true;
-  }
-
   private bool IsMapCellInCurrentFeatureCone(int mapX, int mapY)
   {
     DungeonMap.GetForwardOffset(
@@ -26532,61 +25423,6 @@ private static void HandleGameViewPointerDown(
     if (!changed)
       return;
 
-    RefreshEditModePreview();
-    RepaintGameViews();
-    Repaint();
-  }
-
-  private bool IsCurrentPoseF0RightChampionMirror(ChampionMirrorPlacement mirror)
-  {
-    if (mirror == null || string.IsNullOrEmpty(mirror.wall))
-      return false;
-
-    DungeonMap.GetRightOffset(previewFacing, out int rightX, out int rightY);
-    int expectedX = previewX + rightX;
-    int expectedY = previewY + rightY;
-    return mirror.x == expectedX
-        && mirror.y == expectedY
-        && string.Equals(
-            mirror.wall,
-            FacingName(previewFacing),
-            System.StringComparison.OrdinalIgnoreCase);
-  }
-
-  private void DrawChampionMirrorF0RightCalibrationRow(ChampionMirrorPlacement mirror)
-  {
-    if (!IsCurrentPoseF0RightChampionMirror(mirror))
-      return;
-
-    EditorGUILayout.BeginHorizontal();
-
-    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
-    style.normal.textColor = new Color(1f, 0.5f, 0.1f);
-    GUILayout.Label("F0R Mirror Cal", style, GUILayout.Width(110f));
-
-    int x = championMirrorD0RightPreviewX;
-    bool xChanged = DrawIntStepperInline(
-        "X", ref x, snap, x != ChampionMirrorD0RightX, true);
-
-    int width = championMirrorD0RightPreviewVisibleWidth;
-    bool widthChanged = DrawIntStepperInline(
-        "W", ref width, 1, width != 7, true);
-    width = Mathf.Clamp(width, 1, ChampionMirrorD3FrontWidth);
-
-    GUILayout.Space(8f);
-    bool mirrorBefore = championMirrorD0RightPreviewMirror;
-    bool mirrorAfter = EditorGUILayout.ToggleLeft(
-        "Mirror", mirrorBefore, GUILayout.Width(70f));
-
-    EditorGUILayout.EndHorizontal();
-
-    if (!xChanged && !widthChanged && mirrorAfter == mirrorBefore)
-      return;
-
-    championMirrorD0RightPreviewX = x;
-    championMirrorD0RightPreviewVisibleWidth = width;
-    championMirrorD0RightPreviewMirror = mirrorAfter;
-    previewPositionChangedThisFrame = true;
     RefreshEditModePreview();
     RepaintGameViews();
     Repaint();
@@ -27491,13 +26327,9 @@ private static void HandleGameViewPointerDown(
       int maxFrontDepth,
       int maxSideDepth)
   {
-    return TryGetStandardWallOrnamentProjectionInCurrentPose(
-        ornament,
-        maxFrontDepth,
-        maxSideDepth,
-        out _,
-        out _,
-        out _);
+    return ornament != null && IsSharedWallFeatureVisible(
+        ornament.x, ornament.y, ornament.wall, ornament.wallTilePlacement,
+        maxFrontDepth, maxSideDepth);
   }
 
   private bool TryGetStandardWallOrnamentDungeonFeatureFace(
@@ -27564,30 +26396,148 @@ private static void HandleGameViewPointerDown(
   }
 
 
+  // Champion mirrors use the same wall-ornament ViewEdit calibration model.
+  // F1 includes the portrait; F2/F3 show frames only. These rows change only the
+  // projected ornament artwork, never the underlying V17 wall geometry.
+  private void DrawChampionMirrorFrontCalibrationRows()
+  {
+    if (previewMiniMap == null || previewChampionMirrors == null)
+      return;
+
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    string physicalFace = OppositeFacingName(previewFacing);
+    for (int depth = 1; depth <= 3; depth++)
+    {
+      // Mirrors cannot be seen through intervening walls.
+      bool blocked = false;
+      for (int step = 1; step < depth; step++)
+      {
+        if (!previewMiniMap.IsInside(previewX + fx * step, previewY + fy * step)
+            || PreviewTileIsWall(previewX + fx * step, previewY + fy * step))
+        {
+          blocked = true;
+          break;
+        }
+      }
+      if (blocked)
+        break;
+      int wallX = previewX + fx * depth;
+      int wallY = previewY + fy * depth;
+      if (!PreviewTileIsWall(wallX, wallY))
+        continue;
+    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    {
+      ChampionMirrorPlacement champion = previewChampionMirrors[i];
+      if (champion == null || string.IsNullOrEmpty(champion.champion)
+          || champion.x != wallX || champion.y != wallY
+          || !string.Equals(champion.wall, physicalFace,
+              System.StringComparison.OrdinalIgnoreCase)
+          || IsPreviewChampionTaken(champion.champion))
+        continue;
+
+      if (!IsSharedWallFeatureVisible(
+              champion.x, champion.y, champion.wall, true, depth, 0))
+        continue;
+
+      string visibilityKey = MakePreviewFeatureKey(
+          "ChampionMirror", champion.x, champion.y, champion.wall);
+      string projectionKey = "OrnamentProjection:ChampionMirror:F" + depth;
+      WallOrnamentDepthSlot slot = GetChampionMirrorArtworkProfile(depth).slot;
+      int defaultX = slot.x;
+      int defaultY = slot.y;
+      bool defaultMirror = false;
+      ApplyAcceptedOrnamentReference(
+          projectionKey, ref defaultX, ref defaultY, ref defaultMirror);
+      int x = defaultX;
+      int y = defaultY;
+      bool mirrored = defaultMirror;
+      ApplyPreviewFeatureRenderOverrides(
+          projectionKey, ref x, ref y, ref mirrored);
+
+      EditorGUILayout.BeginHorizontal();
+      float savedLabelWidth = EditorGUIUtility.labelWidth;
+      GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
+      featureStyle.normal.textColor = Color.yellow;
+      GUILayout.Label(champion.champion.ToUpperInvariant() + " - F" + depth,
+          featureStyle, GUILayout.Width(235f));
+
+      bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
+      bool nowEnabled = EditorGUILayout.ToggleLeft(
+          "Set", wasEnabled, GUILayout.Width(55f));
+
+      int scaleBefore = GetChampionMirrorScaleMethod(depth);
+      int scaleAfter = scaleBefore;
+      if (depth == 2)
+        scaleAfter = EditorGUILayout.Popup(
+            scaleBefore, ChampionMirrorScaleOptions, GUILayout.Width(155f));
+      NoteContentRight();
+      EditorGUIUtility.labelWidth = savedLabelWidth;
+      EditorGUILayout.EndHorizontal();
+
+      if (nowEnabled != wasEnabled)
+        SetPreviewFeatureEnabled(visibilityKey, nowEnabled);
+      if (scaleAfter != scaleBefore)
+      {
+        EditorPrefs.SetInt(ChampionMirrorScalePrefPrefix + depth, scaleAfter);
+        InvalidateChampionMirrorFrameScaleCache();
+      }
+      if (nowEnabled != wasEnabled || scaleAfter != scaleBefore)
+      {
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
+      return;
+    }
+    }
+  }
+
+  private void DrawGenericThrowViewEditControls()
+  {
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label("Throw flight", EditorStyles.boldLabel, GUILayout.Width(110f));
+    GUILayout.Label("Delay (ms)", GUILayout.Width(72f));
+    int oldDelay = GenericThrowDelayMs;
+    int newDelay = EditorGUILayout.IntField(oldDelay, GUILayout.Width(55f));
+    GUILayout.Space(8f);
+    GUILayout.Label("Flight Y offset", GUILayout.Width(95f));
+    int oldY = GenericThrowFlightYOffset;
+    int newY = EditorGUILayout.IntField(oldY, GUILayout.Width(48f));
+    GUILayout.Space(8f);
+    GUILayout.Label("Mouse Y max", GUILayout.Width(90f));
+    int oldMouseYMax = GenericThrowMouseYMax;
+    int newMouseYMax = EditorGUILayout.IntField(oldMouseYMax, GUILayout.Width(48f));
+    NoteContentRight();
+    EditorGUILayout.EndHorizontal();
+    if (newDelay != oldDelay) GenericThrowDelayMs = newDelay;
+    if (newMouseYMax != oldMouseYMax)
+    {
+      GenericThrowMouseYMax = newMouseYMax;
+      Debug.Log("THROW MOUSE Y LIMIT: 0.." + GenericThrowMouseYMax + " (GameView Y from top)");
+    }
+    if (newY != oldY)
+    {
+      GenericThrowFlightYOffset = newY;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+  }
+
   private void DrawCurrentPoseFeatureRows()
   {
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null)
       return;
 
+    DrawGenericThrowViewEditControls();
+
     // Loose-item calibrations from the original Level 0 DUNGEON.DAT.
     DrawFloorItemRows();
     DrawTorchDownCalibrationRow();
 
-    // Champion Mirrors. Only rows that correspond to a mirror projection the
-    // renderer can actually draw for this pose are shown. X/Y are framebuffer
-    // map coordinates and are temporary per-pose identifiers.
-    if (previewChampionMirrors != null)
-    {
-      for (int i = 0; i < previewChampionMirrors.Length; i++)
-      {
-        ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-        if (mirror == null)
-          continue;
-
-        DrawChampionMirrorFeatureRow(mirror);
-      }
-    }
+    // The new F1-only champion mirror uses the ordinary wall-ornament projection.
+    DrawChampionMirrorFrontCalibrationRows();
 
     // Ordinary wall ornaments.
     if (previewWallOrnaments != null)
@@ -27595,6 +26545,10 @@ private static void HandleGameViewPointerDown(
       for (int i = 0; i < previewWallOrnaments.Length; i++)
       {
         WallOrnamentPlacement ornament = previewWallOrnaments[i];
+        if (ornament == null) continue;
+        if (!string.IsNullOrEmpty(ornament.type)
+            && ornament.type.IndexOf("ChampionMirror", System.StringComparison.OrdinalIgnoreCase) >= 0)
+          continue; // Mirror rendering retired; ordinary ornaments remain intact.
         if (ornament == null)
           continue;
 
@@ -28115,7 +27069,6 @@ private static void HandleGameViewPointerDown(
       DrawStairsDownS1LeftCalibrationRow(leftStairsX, leftStairsY);
 
     // Timing is a global editor setting, so display it after every feature row.
-    DrawTorchFlightTimingRow();
   }
 
   // Same-tile right-side down-stairs detail. Detection matches its ViewEdit row.
@@ -31880,7 +30833,52 @@ private static void HandleGameViewPointerDown(
       {
         continue;
       }
-      BlitProjectedFloorItem(pixels, item, texture, depth, isRight, pileOffset);
+      bool flying = false;
+      for (int f = 0; f < genericThrowsInFlight.Count; f++)
+        if (genericThrowsInFlight[f].id == GetFloorItemInstanceId(item))
+        { flying = true; break; }
+      if (!flying)
+      {
+        BlitProjectedFloorItem(pixels, item, texture, depth, isRight, pileOffset);
+      }
+      else
+      {
+        // Flying items are centered at 50% of GameView height (Y=100 in
+        // 320x200 screen coordinates). ViewEdit Y offset fine-tunes this flight
+        // height without moving the item's verified landing/floor anchors.
+        Color32[] itemPixels = new Color32[pixels.Length];
+        BlitProjectedFloorItem(itemPixels, item, texture, depth, isRight, pileOffset);
+        int minY = PreviewHeight;
+        int maxY = -1;
+        for (int py = 0; py < PreviewHeight; py++)
+        {
+          int row = py * PreviewWidth;
+          for (int px = 0; px < 224; px++)
+          {
+            if (itemPixels[row + px].a == 0) continue;
+            if (py < minY) minY = py;
+            if (py > maxY) maxY = py;
+          }
+        }
+        if (maxY >= minY)
+        {
+          int sourceCenterY = (minY + maxY) / 2;
+          int targetCenterY = PreviewHeight / 2 - GenericThrowFlightYOffset;
+          int deltaY = targetCenterY - sourceCenterY; // Pixel buffer origin is bottom-left.
+          for (int py = 0; py < PreviewHeight; py++)
+          {
+            int dstY = py + deltaY;
+            if (dstY < 0 || dstY >= PreviewHeight) continue;
+            int srcRow = py * PreviewWidth;
+            int dstRow = dstY * PreviewWidth;
+            for (int px = 0; px < 224; px++)
+            {
+              Color32 c = itemPixels[srcRow + px];
+              if (c.a != 0) pixels[dstRow + px] = c;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -34444,9 +33442,7 @@ private static void HandleGameViewPointerDown(
 
 
   // Generic wall-ornament coordinate profile: Champion Mirror front.
-  // F2 is the first non-altar validation of the shared renderer.
-  // F3 is recorded here for the next test, but its existing path is left
-  // untouched in this change.
+  // F1 includes the champion portrait; F2/F3 render frame only.
   private static readonly WallOrnamentCoordinateSet ChampionMirrorFrontWallOrnamentSet =
       new WallOrnamentCoordinateSet(
           new WallOrnamentDepthSlot(
@@ -34455,15 +33451,15 @@ private static void HandleGameViewPointerDown(
               ChampionMirrorD1FrontX,
               ChampionMirrorD1FrontY),
           new WallOrnamentDepthSlot(
-              ChampionMirrorD2FrontWidth,
-              ChampionMirrorD2FrontHeight,
-              ChampionMirrorD2FrontX,
-              ChampionMirrorD2FrontY),
+              29,
+              27,
+              97,
+              106),
           new WallOrnamentDepthSlot(
-              ChampionMirrorD3FrontWidth,
-              ChampionMirrorD3FrontHeight,
-              ChampionMirrorD3FrontX,
-              ChampionMirrorD3FrontY));
+              20,
+              19,
+              102,
+              114));
 
 
   // Generic wall-ornament coordinate profile: Hook front.
@@ -38265,6 +37261,281 @@ private static void HandleGameViewPointerDown(
     return false;
   }
 
+  // Experimental one-step throw: not a floor item until an explicit future landing.
+  private sealed class SuspendedThrownItem
+  {
+    internal string id;
+    internal Texture2D texture;
+    internal int level, tileX, tileY;
+    internal bool right;
+    internal string landingCorner;
+    internal float displayY;
+    internal bool releaseCaptured;
+    internal double landingTime;
+    internal int flightStage;
+    internal int forwardX, forwardY;
+    internal bool torch;
+    internal string championName;
+    internal int championItemIndex;
+    internal Vector2Int championSourceSlot;
+  }
+  private readonly List<SuspendedThrownItem> suspendedThrownItems =
+      new List<SuspendedThrownItem>();
+
+  // Legacy flight list remains empty during this experimental test.
+  private sealed class GenericThrowInFlight { internal string id; }
+  private readonly List<GenericThrowInFlight> genericThrowsInFlight =
+      new List<GenericThrowInFlight>();
+
+  private bool CaptureSuspendedThrowRelease(float y)
+  {
+    SuspendedThrownItem item = null;
+    for (int i = suspendedThrownItems.Count - 1; i >= 0; --i)
+      if (!suspendedThrownItems[i].releaseCaptured)
+      { item = suspendedThrownItems[i]; break; }
+    if (item == null) return false;
+    item.displayY = Mathf.Clamp(y, 0f, PreviewHeight - 1f);
+    item.releaseCaptured = true;
+    item.landingTime = EditorApplication.timeSinceStartup + 1.0;
+    Debug.Log("THROW RELEASE TEST: objectId=" + item.id
+        + " releaseY=" + item.displayY.ToString("F1")
+        + " tile=(" + item.tileX + "," + item.tileY + ")"
+        + " status=F1 1s -> F2 1s -> F3 1s -> LAND");
+    RefreshEditModePreview();
+    return true;
+  }
+
+  // Keep a released throw at the release Y for exactly one second, then
+  // transfer the SAME physical item instance into the normal floor system.
+  private void UpdateSuspendedThrowLandings()
+  {
+    if (suspendedThrownItems.Count == 0) return;
+    double now = EditorApplication.timeSinceStartup;
+    bool changed = false;
+    for (int i = suspendedThrownItems.Count - 1; i >= 0; --i)
+    {
+      SuspendedThrownItem item = suspendedThrownItems[i];
+      if (!item.releaseCaptured || now < item.landingTime) continue;
+      // Each stage is displayed for one full second before advancing.
+      // Do not enter solid dungeon tiles; an obstruction ends the flight.
+      if (item.flightStage < 3)
+      {
+        int nextX = item.tileX + item.forwardX;
+        int nextY = item.tileY + item.forwardY;
+        EnsurePreviewMiniMapLoaded();
+        if (previewMiniMap != null && PreviewTileIsOpen(nextX, nextY))
+        {
+          item.tileX = nextX;
+          item.tileY = nextY;
+          item.flightStage++;
+          item.landingTime = now + 1.0;
+          Debug.Log("THROW FLIGHT: objectId=" + item.id
+              + " stage=F" + item.flightStage + " tile=(" + item.tileX
+              + "," + item.tileY + ") Y=" + item.displayY.ToString("F1"));
+          changed = true;
+          continue;
+        }
+        Debug.Log("THROW FLIGHT BLOCKED: objectId=" + item.id
+            + " at F" + item.flightStage + "; landing on current tile");
+      }
+      if (!previewItemInstances.TryGetValue(item.id, out ItemInstance physical))
+      {
+        Debug.LogError("THROW LAND: missing item instance " + item.id);
+        continue;
+      }
+      string corner = item.landingCorner;
+      // Prefer the physical item's saved type, not a newly allocated object.
+      if (item.torch)
+      {
+        if (previewDroppedTorches.ContainsKey(item.id))
+        {
+          Debug.LogError("THROW LAND: duplicate torch floor id " + item.id);
+          continue;
+        }
+        previewDroppedTorches.Add(item.id, new DroppedTorch {
+          id = item.id, level = item.level, x = item.tileX,
+          y = item.tileY, corner = corner
+        });
+        previewDroppedTorchOrder.Add(item.id);
+      }
+      else
+      {
+        if (previewMovedFloorItems.ContainsKey(item.id))
+        {
+          Debug.LogError("THROW LAND: duplicate floor id " + item.id);
+          continue;
+        }
+        var placement = new FloorItemPlacement {
+          instanceId = item.id, type = physical.ItemType,
+          level = item.level, x = item.tileX, y = item.tileY,
+          cell = corner
+        };
+        previewMovedFloorItems.Add(item.id, placement);
+        previewMovedFloorItemOrder.Add(item.id);
+        if (!string.IsNullOrEmpty(item.championName))
+          previewChampionFloorIds[item.id] = new ChampionFloorIdentity {
+            heroName = item.championName,
+            itemIndex = item.championItemIndex,
+            previousSlot = item.championSourceSlot
+          };
+      }
+      MoveItemInstance(physical, "Floor", level: item.level,
+          tileX: item.tileX, tileY: item.tileY, corner: corner);
+      suspendedThrownItems.RemoveAt(i);
+      Debug.Log("THROW LAND AFTER FLIGHT: objectId=" + item.id
+          + " level=" + item.level + " tile=(" + item.tileX
+          + "," + item.tileY + ") corner=" + corner);
+      changed = true;
+    }
+    if (changed) { RefreshEditModePreview(); RepaintGameViews(); Repaint(); }
+  }
+
+  private static bool DispatchGameViewSuspendedThrowRelease(
+      EditorWindow gameView, Vector2 windowMouse)
+  {
+    ViewportLayoutEditor window = FindOpenViewEditWindow();
+    if (window == null || gameView == null) return false;
+    if (!window.TryGetLogical320x200FromGameView(
+        gameView, windowMouse, out Vector2 logical)) return false;
+    bool captured = window.CaptureSuspendedThrowRelease(logical.y);
+    if (captured) { gameView.Repaint(); window.Repaint(); RepaintGameViews(); }
+    return captured;
+  }
+
+  // Visual overlay only. Never put suspended items in the floor collection.
+  private void BlitSuspendedThrownItemsIntoPreview(Color32[] pixels)
+  {
+    if (pixels == null) return;
+    for (int i = 0; i < suspendedThrownItems.Count; ++i)
+    {
+      SuspendedThrownItem item = suspendedThrownItems[i];
+      if (item.level != previewDungeonLevel || item.texture == null) continue;
+      Texture2D tex = item.texture;
+      if (!tex.isReadable) continue;
+      Color32[] src = tex.GetPixels32();
+      // Stage-dependent perspective preview; retain exact mouse-release Y.
+      float scale = item.flightStage == 1 ? 1f
+          : (item.flightStage == 2 ? 0.625f : 0.4f);
+      int drawW = Mathf.Max(1, Mathf.RoundToInt(tex.width * scale));
+      int drawH = Mathf.Max(1, Mathf.RoundToInt(tex.height * scale));
+      int midX = item.flightStage == 1 ? (item.right ? 152 : 72)
+          : item.flightStage == 2 ? (item.right ? 137 : 87)
+          : (item.right ? 128 : 96);
+      int left = midX - drawW / 2;
+      int top = Mathf.RoundToInt(item.displayY) - drawH / 2;
+      for (int sy = 0; sy < drawH; ++sy)
+      {
+        int dy = PreviewHeight - top - drawH + sy;
+        if (dy < 0 || dy >= PreviewHeight) continue;
+        int sourceY = Mathf.Min(tex.height - 1, sy * tex.height / drawH);
+        for (int sx = 0; sx < drawW; ++sx)
+        {
+          int dx = left + sx;
+          if (dx < 0 || dx >= 224) continue;
+          int sourceX = Mathf.Min(tex.width - 1, sx * tex.width / drawW);
+          Color32 c = src[sourceY * tex.width + sourceX];
+          if (c.a != 0) pixels[dy * PreviewWidth + dx] = c;
+        }
+      }
+    }
+  }
+
+  // Mouse DOWN starts one map-tile advance; mouse UP freezes its screen Y.
+  // This intentionally differs from CSBwin's original release semantics.
+  private bool TryThrowHeldItemFromViewport(float x, float y)
+  {
+    if (championSheetVisible) return false;
+    bool heldWorld = previewFloorPickupCompleted && previewHeldFloorItem != null
+        && !string.IsNullOrEmpty(previewHeldFloorItemId);
+    bool heldChampion = previewHeldChampionCursor != null
+        && previewHeldChampionItemIndex >= 0
+        && !string.IsNullOrEmpty(previewHeldChampionName);
+    ClearStaleHeldTorchState();
+    bool heldTorch = HasPickedUpTorchOnCursor();
+    if (!heldWorld && !heldChampion && !heldTorch) return false;
+    bool yAllowed = y >= 0f && y <= GenericThrowMouseYMax;
+    bool xAllowed = x >= 32f && x <= 191f;
+    Debug.Log("THROW MOUSE CHECK: x=" + x.ToString("F1")
+        + " y=" + y.ToString("F1") + " allowedY=0.." + GenericThrowMouseYMax
+        + " Y=" + (yAllowed ? "PASS" : "BLOCK")
+        + " X=" + (xAllowed ? "PASS" : "BLOCK")
+        + " result=" + (xAllowed && yAllowed ? "THROW AREA" : "NO THROW"));
+    if (!yAllowed || !xAllowed) return false;
+    EnsurePreviewMiniMapLoaded();
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    if (previewMiniMap == null || !PreviewTileIsOpen(previewX + fx, previewY + fy))
+      return false;
+
+    string id;
+    Texture2D texture;
+    ItemInstance physical;
+    if (heldTorch)
+    {
+      id = previewHeldTorchId;
+      if (!previewItemInstances.TryGetValue(id, out physical)) return false;
+      texture = GetTorchGroundTexture();
+    }
+    else if (heldWorld)
+    {
+      id = previewHeldFloorItemId;
+      if (!previewItemInstances.TryGetValue(id, out physical)) return false;
+      texture = GetFloorItemTexture(previewHeldFloorItem);
+    }
+    else
+    {
+      HeroDefinition hero = HeroDatabase.GetByName(previewHeldChampionName);
+      if (hero == null || hero.StartingItems == null
+          || previewHeldChampionItemIndex >= hero.StartingItems.Count) return false;
+      string itemType = GetChampionStartingItemName(
+          hero.StartingItems[previewHeldChampionItemIndex]);
+      physical = EnsureChampionItemInstance(previewHeldChampionName,
+          previewHeldChampionItemIndex, itemType, previewHeldChampionSourceSlot);
+      if (physical == null) return false;
+      id = physical.InstanceId;
+      texture = GetFloorItemTexture(new FloorItemPlacement { type = itemType });
+    }
+    if (texture == null || !texture.isReadable)
+    {
+      Debug.LogError("THROW: missing readable item art, id=" + id);
+      return true;
+    }
+    string thrownChampionName = heldChampion ? previewHeldChampionName : null;
+    int thrownChampionIndex = heldChampion ? previewHeldChampionItemIndex : -1;
+    Vector2Int thrownChampionSlot = previewHeldChampionSourceSlot;
+    if (heldTorch) { previewHeldTorchId = null; previewHeldTorchCursor = null; }
+    else if (heldWorld)
+    {
+      previewHeldFloorItemId = null; previewHeldFloorItem = null;
+      previewHeldFloorItemCursor = null; previewFloorPickupCompleted = false;
+    }
+    else
+    {
+      previewHeldChampionName = null; previewHeldChampionItemIndex = -1;
+      previewHeldChampionCursor = null;
+      previewHeldChampionSourceSlot = new Vector2Int(-1, -1);
+    }
+    int destX = previewX + fx, destY = previewY + fy;
+    MoveItemInstance(physical, "SuspendedThrow", level: previewDungeonLevel,
+        tileX: destX, tileY: destY);
+    suspendedThrownItems.Add(new SuspendedThrownItem {
+      id = id, texture = texture, level = previewDungeonLevel,
+      tileX = destX, tileY = destY, right = x >= 112f,
+      landingCorner = FloorCornerForFacing(previewFacing, x >= 112f),
+      displayY = y, releaseCaptured = false, torch = heldTorch,
+      championName = thrownChampionName, championItemIndex = thrownChampionIndex,
+      championSourceSlot = thrownChampionSlot,
+      flightStage = 1, forwardX = fx, forwardY = fy
+    });
+    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+    HideHeldItemPointerOverlay();
+    Debug.Log("THROW FLIGHT START F1: objectId=" + id
+        + " start=(" + previewX + "," + previewY + ")"
+        + " advanced=(" + destX + "," + destY + ")"
+        + " waiting for mouse UP; F1 -> F2 -> F3, each 1 second");
+    RefreshEditModePreview();
+    return true;
+  }
+
   // All manual drops land on the player's F1 tile. Viewport horizontal half
   // chooses the floor corner; it never determines a different map tile.
   // Keep this independent from throw trajectories and F2/F3 rendering.
@@ -38750,275 +38021,6 @@ private static void HandleGameViewPointerDown(
       case DungeonFacing.South: return right ? "W" : "S";
       default:                  return right ? "N" : "W";
     }
-  }
-
-  // First central-meridian throwing prototype. This is a separate action
-  // from dropping, which retains all of its previously calibrated hit areas.
-  // Higher central clicks launch; they do not select a destination distance.
-  private sealed class TorchFlight
-  {
-    public string id;
-    public int level, startX, startY, forwardX, forwardY, steps;
-    public string corner;
-    public double started;
-    public bool landingRight;
-  }
-  private TorchFlight previewTorchFlight;
-  // One perspective stage per interval, without an extra hold between stages.
-  // Adjust this value after comparing the animation with CSBwin.
-  // TORCH_FLIGHT_STAGE_MS:200 -- persisted by ViewEdit Apply.
-  private const int TorchFlightStageMilliseconds = 200;
-  [System.NonSerialized] private int? previewTorchFlightTimingOverride;
-  private double TorchFlightStageSeconds =>
-      (previewTorchFlightTimingOverride ?? TorchFlightStageMilliseconds) / 1000.0;
-
-  private void DrawTorchFlightTimingRow()
-  {
-    int stored = TorchFlightStageMilliseconds;
-    int shown = previewTorchFlightTimingOverride ?? stored;
-    EditorGUILayout.BeginHorizontal();
-    GUIStyle labelStyle = new GUIStyle(EditorStyles.boldLabel);
-    labelStyle.normal.textColor = new Color(0f, 0f, 1f);
-    GUILayout.Label("TorchFlight F1-F3", labelStyle, GUILayout.Width(195f));
-    float oldLabelWidth = EditorGUIUtility.labelWidth;
-    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("ms")).x;
-    int selected = shown;
-    bool changed = DrawIntStepperInline("ms", ref selected, snap,
-        shown != stored, true, 40f, 45f);
-    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f),
-        GUILayout.ExpandWidth(false));
-    NoteContentRight();
-    EditorGUIUtility.labelWidth = oldLabelWidth;
-    EditorGUILayout.EndHorizontal();
-    if (changed && selected != shown)
-    {
-      previewTorchFlightTimingOverride = Mathf.Clamp(selected, 20, 2000);
-      Repaint();
-    }
-    if (apply)
-    {
-      int milliseconds = Mathf.Clamp(
-          previewTorchFlightTimingOverride ?? stored, 20, 2000);
-      if (SaveTorchFlightTiming(milliseconds))
-      {
-        previewTorchFlightTimingOverride = null;
-        Repaint();
-      }
-    }
-  }
-
-  private bool SaveTorchFlightTiming(int milliseconds)
-  {
-    string path = GetThisEditorSourceAssetPath();
-    if (string.IsNullOrEmpty(path) || !File.Exists(path))
-    {
-      Debug.LogError("TorchFlight Apply: ViewportLayoutEditor.cs not found.");
-      return false;
-    }
-    string source = File.ReadAllText(path);
-    const string expression = @"(?m)^(\s*private const int TorchFlightStageMilliseconds = )\d+(;)";
-    MatchCollection matches = Regex.Matches(source, expression);
-    if (matches.Count != 1)
-    {
-      Debug.LogError("TorchFlight Apply: expected exactly one timing constant; source unchanged.");
-      return false;
-    }
-    string revised = Regex.Replace(source, expression,
-        m => m.Groups[1].Value + milliseconds.ToString() + m.Groups[2].Value);
-    try
-    {
-      File.WriteAllText(path, revised);
-      AssetDatabase.ImportAsset(path);
-      Debug.Log("TorchFlight Apply: " + milliseconds
-          + " ms per F1/F2/F3 stage saved to " + path);
-      return true;
-    }
-    catch (System.Exception error)
-    {
-      Debug.LogError("TorchFlight Apply: could not write source: " + error.Message);
-      return false;
-    }
-  }
-
-
-  // Shared item-throw entry point. Add future throwable item handlers here;
-  // the attack sound is emitted exactly once when a throw succeeds.
-  // Normal floor drops and returning an item to a holder remain silent.
-  private bool TryThrowHeldItem(float logicalX, float logicalY)
-  {
-    if (TryThrowHeldTorch(logicalX, logicalY))
-      return true;
-    return false;
-  }
-
-  private bool TryThrowHeldTorch(float logicalX, float logicalY)
-  {
-    ClearStaleHeldTorchState();
-    if (!HasPickedUpTorchOnCursor() || championSheetVisible
-        || previewTorchFlight != null)
-      return false;
-    // Throw from anywhere across the dungeon viewport when released in
-    // the distant area. Screen X chooses the landing side (left/right),
-    // not whether the item throws. Nearer releases remain F1 floor drops.
-    if (logicalX < 0 || logicalX >= 224 || logicalY < 0 || logicalY >= 90)
-      return false;
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null || !PreviewTileIsOpen(previewX, previewY))
-      return false;
-    if (GetTorchGroundTexture() == null)
-      return true; // Explicit asset error, do not lose the item.
-    DungeonMap.GetForwardOffset(previewFacing, out int dx, out int dy);
-    int steps = 0;
-    for (int distance = 1; distance <= MaximumItemThrowDistance; distance++)
-    {
-      int tx = previewX + dx * distance;
-      int ty = previewY + dy * distance;
-      if (!previewMiniMap.IsInside(tx, ty)) break;
-      // Only confirmed open floor tiles are legal destinations. In
-      // particular, doors and walls must not be flown through.
-      DungeonTileType tileType = previewMiniMap.GetTile(tx, ty).Type;
-      if (tileType == DungeonTileType.Wall
-          || tileType.ToString().IndexOf("Door", System.StringComparison.OrdinalIgnoreCase) >= 0)
-        break;
-      steps = distance;
-    }
-    if (previewDroppedTorches.ContainsKey(previewHeldTorchId))
-    {
-      Debug.LogError("TORCH THROW: same item already on the floor: " + previewHeldTorchId);
-      return true;
-    }
-    string id = previewHeldTorchId;
-    if (!previewItemInstances.TryGetValue(id, out ItemInstance flightInstance))
-    {
-      Debug.LogError("ITEM INSTANCE: missing thrown torch " + id);
-      return true;
-    }
-    bool right = logicalX >= 112;
-    if (steps == 0)
-    {
-      // A wall directly ahead blocks throwing. Drop onto the same tile.
-      return TryDropHeldTorchOnFloor(logicalX, logicalY);
-    }
-    previewTorchFlight = new TorchFlight
-    {
-      id = id, level = previewDungeonLevel, startX = previewX, startY = previewY,
-      forwardX = dx, forwardY = dy, steps = steps,
-      corner = FloorCornerForFacing(previewFacing, right),
-      landingRight = right,
-      started = EditorApplication.timeSinceStartup
-    };
-    MoveItemInstance(flightInstance, "Flight", level: previewDungeonLevel,
-        tileX: previewX, tileY: previewY);
-    previewHeldTorchId = null;
-    previewHeldTorchCursor = null;
-    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-    HideHeldItemPointerOverlay();
-    PlayItemThrowSound();
-    RefreshEditModePreview();
-    Debug.Log("TORCH THROW: " + id + " flying " + steps + " tile(s).");
-    return true;
-  }
-
-  // Short final descent after the last flight perspective frame.
-  private const double TorchLandingDescentSeconds = 0.12;
-
-  private void UpdateTorchFlight()
-  {
-    if (previewTorchFlight == null) return;
-    double elapsed = EditorApplication.timeSinceStartup - previewTorchFlight.started;
-    // Do not play impact sounds during flight; contact happens only once.
-    if (elapsed >= previewTorchFlight.steps * TorchFlightStageSeconds
-        + TorchLandingDescentSeconds)
-    {
-      TorchFlight flight = previewTorchFlight;
-      previewTorchFlight = null;
-      if (previewDroppedTorches.ContainsKey(flight.id))
-        Debug.LogError("TORCH THROW: duplicate item " + flight.id);
-      else
-      {
-        previewDroppedTorches.Add(flight.id, new DroppedTorch
-        {
-          id = flight.id, level = flight.level,
-          x = flight.startX + flight.forwardX * flight.steps,
-          y = flight.startY + flight.forwardY * flight.steps,
-          corner = flight.corner
-        });
-        previewDroppedTorchOrder.Add(flight.id);
-        if (previewItemInstances.TryGetValue(flight.id, out ItemInstance landedInstance))
-          MoveItemInstance(landedInstance, "Floor", level: flight.level,
-              tileX: flight.startX + flight.forwardX * flight.steps,
-              tileY: flight.startY + flight.forwardY * flight.steps,
-              corner: flight.corner);
-        else Debug.LogError("ITEM INSTANCE: missing landed torch " + flight.id);
-        // One impact at the final physical destination, including F2/F3.
-        PlayItemLandingThudSound(ThrownItemSoundCategory.Weapon, flight.steps);
-      }
-      Debug.Log("TORCH THROW: landed at "
-          + (flight.startX + flight.forwardX * flight.steps) + ","
-          + (flight.startY + flight.forwardY * flight.steps));
-    }
-    RefreshEditModePreview();
-    RepaintGameViews();
-  }
-
-  private void BlitFlyingTorchIntoPreview(Color32[] pixels)
-  {
-    TorchFlight flight = previewTorchFlight;
-    if (flight == null || pixels == null || flight.level != previewDungeonLevel)
-      return;
-    Texture2D sprite = GetTorchGroundTexture();
-    if (sprite == null) return;
-    // Each forward step has one discrete projected frame, on the central
-    // meridian. Never interpolate the sprite along a smooth arc: the original
-    // dungeon presents the object at successive depth bands.
-    double elapsed = EditorApplication.timeSinceStartup - flight.started;
-    int stage = Mathf.Clamp((int)(elapsed / TorchFlightStageSeconds), 0,
-        Mathf.Max(0, flight.steps - 1));
-    // Stage geometry comes from the existing perspective's front-wall bands
-    // (screen-top Y and height), rather than arbitrary floor Y coordinates.
-    // F1: 42..153, F2: 52..126, F3: 58..107. Their horizontal
-    // centerline is the midpoint of the 224-pixel dungeon viewport.
-    // Flight graphics are centered in BOTH axes of each stage; normal
-    // dropped-item positions and ViewEdit calibration are not involved.
-    int[] stageWidths = { 61, 37, 23 };
-    int[] stageHeights = { 7, 5, 3 };
-    int[] stageBandTop = { 42, 52, 58 };
-    int[] stageBandHeight = { 111, 74, 49 };
-    int width = stageWidths[stage];
-    int height = stageHeights[stage];
-    const int corridorLeft = 0;
-    const int corridorWidth = 224;
-    // Integer pixel centers are rounded consistently for odd-sized sprites.
-    int left = corridorLeft + (corridorWidth - width) / 2;
-    int top = stageBandTop[stage] + (stageBandHeight[stage] - height) / 2;
-    double descentStarted = flight.steps * TorchFlightStageSeconds;
-    if (elapsed >= descentStarted)
-    {
-      // Flight stays on the centerline. Only its final descent moves
-      // toward the side/corner-specific landed-floor placement.
-      bool right = flight.landingRight;
-      int targetX, targetTop;
-      if (flight.steps >= 3)
-        GetTorchDownF3Calibration(right, out targetX, out targetTop);
-      else
-        GetTorchDownF2Calibration(right, out targetX, out targetTop);
-      if (flight.steps == 1)
-      {
-        // One map square ahead projects as F2, not the same-tile F1.
-        // Shrink to its 37x5 floor representation before the descent;
-        // center that sprite in F2's perspective band.
-        width = 37;
-        height = 5;
-        left = (corridorWidth - width) / 2;
-        top = 52 + (74 - height) / 2;
-      }
-      float t = Mathf.Clamp01((float)((elapsed - descentStarted)
-          / TorchLandingDescentSeconds));
-      left = Mathf.RoundToInt(Mathf.Lerp(left, targetX, t));
-      top = Mathf.RoundToInt(Mathf.Lerp(top, targetTop, t));
-    }
-    BlitPieceScaledIntoPreview(pixels, sprite, left,
-        PreviewHeight - top - height, width, height);
   }
 
   private bool TryDropHeldTorchOnFloor(float logicalX, float logicalY)
@@ -39509,6 +38511,24 @@ private static void HandleGameViewPointerDown(
       bool defaultMirror)
   {
     if (ornament == null)
+      return;
+
+    // One V17-authorized wall-face gate shared with champion mirrors.
+    // The legacy ornament dispatchers still choose artwork and calibration,
+    // but can no longer paint a feature onto an invisible/nonexistent wall.
+    // Restrict this gate to the mapped wall-feature types; the other special
+    // effects have their own geometry and are deliberately not reclassified.
+    if ((IsWoodRingOrnament(ornament)
+          || IsHookOrnament(ornament)
+          || IsSlimeOrnament(ornament)
+          || IsManaclesOrnament(ornament)
+          || IsViAltarOrnament(ornament))
+        && !IsSharedWallFeatureVisible(
+            ornament.x, ornament.y, ornament.wall,
+            ornament.wallTilePlacement,
+            IsHookOrnament(ornament) ? 2 : 3,
+            IsViAltarOrnament(ornament) ? 0
+              : (IsSlimeOrnament(ornament) || IsManaclesOrnament(ornament)) ? 2 : 3))
       return;
 
     string key = MakePreviewFeatureKey(
