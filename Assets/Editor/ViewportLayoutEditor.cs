@@ -26741,12 +26741,31 @@ private static void HandleGameViewPointerDown(
       float savedLabelWidth = EditorGUIUtility.labelWidth;
       GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
       featureStyle.normal.textColor = Color.yellow;
-      GUILayout.Label(champion.champion.ToUpperInvariant() + " - F" + depth,
-          featureStyle, GUILayout.Width(235f));
+      // Show the F1 accessible viewing pose from Dungeon Features, just
+      // like the S1/S2/S3 champion mirror rows. The wall face points toward
+      // the viewer; the viewer faces the opposite direction.
+      int viewingX = champion.hasViewingFloor ? champion.viewingFloorX : champion.x - fx;
+      int viewingY = champion.hasViewingFloor ? champion.viewingFloorY : champion.y - fy;
+      string viewingDirection = FacingName(previewFacing);
+      GUILayout.Label(champion.champion.ToUpperInvariant() + " - F" + depth
+          + " - (" + viewingX + "," + viewingY + " " + viewingDirection + ")",
+          featureStyle, GUILayout.Width(290f));
 
       bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
       bool nowEnabled = EditorGUILayout.ToggleLeft(
           "Set", wasEnabled, GUILayout.Width(55f));
+
+      EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+      int editX = x;
+      bool xChanged = DrawIntStepperInline(
+          "X", ref editX, snap, x != defaultX, true, 24f, 24f);
+      EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+      int editY = y;
+      bool yChanged = DrawIntStepperInline(
+          "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
+      bool editMirror = EditorGUILayout.ToggleLeft(
+          "Mirror", mirrored, GUILayout.Width(66f));
+      bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
 
       int scaleBefore = GetChampionMirrorScaleMethod(depth);
       int scaleAfter = scaleBefore;
@@ -26759,12 +26778,42 @@ private static void HandleGameViewPointerDown(
 
       if (nowEnabled != wasEnabled)
         SetPreviewFeatureEnabled(visibilityKey, nowEnabled);
+      if (apply)
+      {
+        if (SaveAcceptedOrnamentReference(projectionKey, editX, editY, editMirror))
+        {
+          previewFeaturePositionOverrides.Remove(projectionKey);
+          previewFeatureMirrorOverrides.Remove(projectionKey);
+          previewPositionChangedThisFrame = true;
+          previewMirrorChangedThisFrame = true;
+        }
+      }
+      else
+      {
+        if ((xChanged && editX != x) || (yChanged && editY != y))
+        {
+          if (editX == defaultX && editY == defaultY)
+            previewFeaturePositionOverrides.Remove(projectionKey);
+          else
+            previewFeaturePositionOverrides[projectionKey] = new Vector2Int(editX, editY);
+          previewPositionChangedThisFrame = true;
+        }
+        if (editMirror != mirrored)
+        {
+          if (editMirror == defaultMirror)
+            previewFeatureMirrorOverrides.Remove(projectionKey);
+          else
+            previewFeatureMirrorOverrides[projectionKey] = editMirror;
+          previewMirrorChangedThisFrame = true;
+        }
+      }
       if (scaleAfter != scaleBefore)
       {
         EditorPrefs.SetInt(ChampionMirrorScalePrefPrefix + depth, scaleAfter);
         InvalidateChampionMirrorFrameScaleCache();
       }
-      if (nowEnabled != wasEnabled || scaleAfter != scaleBefore)
+      if (apply || nowEnabled != wasEnabled || xChanged || yChanged
+          || editMirror != mirrored || scaleAfter != scaleBefore)
       {
         RefreshEditModePreview();
         RepaintGameViews();
