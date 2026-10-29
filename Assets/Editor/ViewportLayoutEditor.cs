@@ -1078,6 +1078,13 @@ public class ViewportLayoutEditor : EditorWindow
     public int x;
     public int y;
     public string wall;
+    // Source floor tile from the extracted champion record (Dungeon Features).
+    // Wall coordinates remain x/y, used by renderer and visibility checks.
+    public bool hasViewingFloor;
+    public int viewingFloorX;
+    public int viewingFloorY;
+    // Facing recorded on the accessible champion tile in Dungeon Features.
+    public string viewingFloorDirection;
   }
 
   [System.Serializable]
@@ -16694,7 +16701,11 @@ private static void HandleGameViewPointerDown(
         champion = champion.name,
         x = wallX,
         y = wallY,
-        wall = wallSide
+        wall = wallSide,
+        hasViewingFloor = true,
+        viewingFloorX = champion.x,
+        viewingFloorY = champion.y,
+        viewingFloorDirection = champion.dir
       });
     }
 
@@ -26764,6 +26775,175 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Side champion mirrors share exactly the projection keys used by the
+  // S1/S2/S3 renderer. Show only mirrors actually visible in this pose.
+  private void DrawChampionMirrorSideCalibrationRows()
+  {
+    if (previewMiniMap == null || previewChampionMirrors == null)
+      return;
+
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    string leftFace = FacingName(TurnPreviewFacingRight(previewFacing));
+    string rightFace = FacingName(TurnPreviewFacingLeft(previewFacing));
+    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
+    featureStyle.normal.textColor = Color.yellow;
+
+    for (int depth = 1; depth <= 3; depth++)
+    {
+      int corridorX = previewX + depth * fx;
+      int corridorY = previewY + depth * fy;
+      if (!PreviewTileIsOpen(corridorX, corridorY))
+        break;
+
+      for (int sideIndex = 0; sideIndex < 2; sideIndex++)
+      {
+        bool left = sideIndex == 0;
+        int wallX = corridorX + (left ? -rx : rx);
+        int wallY = corridorY + (left ? -ry : ry);
+        string wallFace = left ? leftFace : rightFace;
+        ChampionMirrorPlacement visible = null;
+        for (int i = 0; i < previewChampionMirrors.Length; i++)
+        {
+          ChampionMirrorPlacement candidate = previewChampionMirrors[i];
+          if (candidate == null || string.IsNullOrEmpty(candidate.champion)
+              || candidate.x != wallX || candidate.y != wallY
+              || !string.Equals(candidate.wall, wallFace,
+                  System.StringComparison.OrdinalIgnoreCase)
+              || IsPreviewChampionTaken(candidate.champion))
+            continue;
+          if (!IsSharedWallFeatureVisible(candidate.x, candidate.y,
+                  candidate.wall, true, 0, depth))
+            continue;
+          visible = candidate;
+          break;
+        }
+        if (visible == null)
+          continue;
+
+        string visibilityKey = MakePreviewFeatureKey(
+            "ChampionMirror", visible.x, visible.y, visible.wall);
+        string key = "OrnamentProjection:ChampionMirror:S" + depth + ":"
+            + (left ? "Left" : "Right");
+        int width = depth == 1 ? 16 : depth == 2 ? 8 : 4;
+        int height = depth == 1 ? 35 : depth == 2 ? 18 : 9;
+        int x = depth == 1 ? (left ? HookD1SideLeftX : HookD1SideRightX)
+            : depth == 2 ? (left ? HookD2SideLeftX : HookD2SideRightX)
+            : (left ? HookD3SideLeftX : HookD3SideRightX);
+        int y = depth == 1 ? HookD1SideY - (height - 19) / 2
+            : depth == 2 ? HookD2SideY - (height - HookD2SideHeight) / 2
+            : HookD3SideY - (height - HookD3SideHeight) / 2;
+        bool mirror = !left;
+        ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+        int defaultX = x;
+        int defaultY = y;
+        bool defaultMirror = mirror;
+        ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+
+        // Dungeon Features stores the accessible floor location. The mirror
+        // orientation is resolved from the adjacent solid-wall geometry.
+        // Never display a wall-tile coordinate as the player's F1 location.
+        int viewingX = visible.hasViewingFloor ? visible.viewingFloorX : visible.x;
+        int viewingY = visible.hasViewingFloor ? visible.viewingFloorY : visible.y;
+        string viewingDirection;
+        // The wall face points toward the viewer; the player faces the
+        // opposite direction to look at that face.
+        int offsetX;
+        int offsetY;
+        switch ((visible.wall ?? "").Trim().ToUpperInvariant())
+        {
+          case "NORTH": offsetX = 0; offsetY = -1; viewingDirection = "South"; break;
+          case "EAST": offsetX = 1; offsetY = 0; viewingDirection = "West"; break;
+          case "SOUTH": offsetX = 0; offsetY = 1; viewingDirection = "North"; break;
+          case "WEST": offsetX = -1; offsetY = 0; viewingDirection = "East"; break;
+          default:
+            Debug.LogError("ViewEdit: Invalid champion mirror wall face for "
+                + visible.champion + ": " + visible.wall);
+            continue;
+        }
+        // For explicit mirror placements with no associated champion floor,
+        // derive the adjacent accessible square from the actual wall face.
+        if (!visible.hasViewingFloor)
+        {
+          viewingX += offsetX;
+          viewingY += offsetY;
+        }
+        // Validate the Dungeon Features floor against the resolved geometry.
+        if (viewingX != visible.x + offsetX || viewingY != visible.y + offsetY
+            || !PreviewTileIsOpen(viewingX, viewingY))
+        {
+          Debug.LogError("ViewEdit: Invalid F1 viewing floor for champion "
+              + visible.champion + " at (" + viewingX + "," + viewingY
+              + "), mirror wall (" + visible.x + "," + visible.y
+              + " " + visible.wall + "). Dungeon Features and geometry disagree.");
+          continue;
+        }
+        EditorGUILayout.BeginHorizontal();
+        float oldLabelWidth = EditorGUIUtility.labelWidth;
+        GUILayout.Label(visible.champion.ToUpperInvariant() + " - S" + depth
+            + (left ? " Left" : " Right") + " - (" + viewingX + ","
+            + viewingY + " " + viewingDirection + ")", featureStyle,
+            GUILayout.Width(290f));
+        bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
+        bool nowEnabled = EditorGUILayout.ToggleLeft(
+            "Set", wasEnabled, GUILayout.Width(55f));
+        EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
+        int editX = x;
+        bool xChanged = DrawIntStepperInline(
+            "X", ref editX, snap, x != defaultX, true, 24f, 24f);
+        EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
+        int editY = y;
+        bool yChanged = DrawIntStepperInline(
+            "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
+        bool editMirror = EditorGUILayout.ToggleLeft(
+            "Mirror", mirror, GUILayout.Width(66f));
+        bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+        NoteContentRight();
+        EditorGUIUtility.labelWidth = oldLabelWidth;
+        EditorGUILayout.EndHorizontal();
+
+        if (nowEnabled != wasEnabled)
+          SetPreviewFeatureEnabled(visibilityKey, nowEnabled);
+        if (apply)
+        {
+          if (SaveAcceptedOrnamentReference(key, editX, editY, editMirror))
+          {
+            previewFeaturePositionOverrides.Remove(key);
+            previewFeatureMirrorOverrides.Remove(key);
+            previewPositionChangedThisFrame = true;
+            previewMirrorChangedThisFrame = true;
+          }
+        }
+        else
+        {
+          if ((xChanged && editX != x) || (yChanged && editY != y))
+          {
+            if (editX == defaultX && editY == defaultY)
+              previewFeaturePositionOverrides.Remove(key);
+            else
+              previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+            previewPositionChangedThisFrame = true;
+          }
+          if (editMirror != mirror)
+          {
+            if (editMirror == defaultMirror)
+              previewFeatureMirrorOverrides.Remove(key);
+            else
+              previewFeatureMirrorOverrides[key] = editMirror;
+            previewMirrorChangedThisFrame = true;
+          }
+        }
+        if (apply || nowEnabled != wasEnabled || xChanged || yChanged
+            || editMirror != mirror)
+        {
+          RefreshEditModePreview();
+          RepaintGameViews();
+          Repaint();
+        }
+      }
+    }
+  }
+
   private void DrawGenericThrowViewEditControls()
   {
     EditorGUILayout.BeginHorizontal();
@@ -26810,6 +26990,7 @@ private static void HandleGameViewPointerDown(
 
     // The new F1-only champion mirror uses the ordinary wall-ornament projection.
     DrawChampionMirrorFrontCalibrationRows();
+    DrawChampionMirrorSideCalibrationRows();
 
     // Ordinary wall ornaments.
     if (previewWallOrnaments != null)
