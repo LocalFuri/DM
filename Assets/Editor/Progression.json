@@ -462,7 +462,10 @@
     "mandatory_modified_file_timestamps": "Every modified file must have its filesystem modification time updated to the actual time of modification (Europe/Berlin local time), not an older source timestamp or an arbitrary ZIP creation time. The ZIP entry timestamp must match the modified file timestamp, in the local time shown by Windows archive viewers.",
     "unchanged_files": "Omit unchanged files from the return ZIP entirely; do not package them merely to preserve timestamps.",
     "package_structure": "Include only required modified files at ZIP root with original filenames; no subfolders and no changelogs.",
-    "verification_before_delivery": "Inspect ZIP member list and entry timestamps before delivery. Confirm every included file is changed and has a correct modification timestamp."
+    "verification_before_delivery": "Inspect ZIP member list and entry timestamps before delivery. Confirm every included file is changed and has a correct modification timestamp.",
+    "timezone": "Europe/Berlin (Germany); automatically use CET (UTC+01:00) in winter and CEST (UTC+02:00) in summer.",
+    "zip_entry_timestamp": "Store the modified file’s German local modification date/time in the ZIP entry metadata; verify that the filesystem and ZIP entry timestamps match. Preserve original meaningful timestamps for unchanged files.",
+    "format": "DD.MM.YYYY HH:MM:SS, 24-hour clock, German local time (Europe/Berlin)."
   },
   "checkpoint_20261028": {
     "status": "End-of-session checkpoint. Preserve previously verified baselines; latest experimental code requires Unity re-test.",
@@ -497,5 +500,24 @@
     "Install/test latest three-stage generic throwing ZIP: 1s at F1, 1s at F2, 1s at F3, then floor placement.",
     "Check Console stage transitions, item ID persistence, mouse-up Y and collision behavior.",
     "Maintain verified IAIDO F1 and existing V17 wall geometry; do not expand ornament/altar migration before requested."
-  ]
+  ],
+  "german_file_timestamp_rule_20261029": {
+    "status": "confirmed permanent ZIP delivery rule",
+    "timezone": "Europe/Berlin",
+    "daylight_saving": "CET (UTC+1) in winter, CEST (UTC+2) in summer; apply automatically",
+    "modified_files": "Set filesystem modification timestamp to actual modification time in German local time and preserve corresponding local date/time in ZIP entry metadata",
+    "unchanged_files": "Do not alter original modification timestamps",
+    "display_format": "DD.MM.YYYY HH:MM:SS (24-hour)",
+    "zip_metadata_note": "ZIP DOS timestamps have no timezone field; explicitly encode German wall-clock time, while retaining matching local display time for modified files."
+  },
+  "instruction_conflict_rule_20261029": {
+    "status": "confirmed permanent project rule",
+    "rule": "A — Newest confirmed instruction wins",
+    "application": "If two or more project instructions concern the same subject and conflict, use the newest confirmed instruction; it supersedes the earlier instruction only where they conflict.",
+    "unrelated_rules": "Continue applying all unrelated valid instructions.",
+    "project_ownership": "The user maintains the overall project overview and direction.",
+    "workflow": "Apply this precedence automatically when reading Progression.json at the start of each session; no additional rule-management system is required.",
+    "scope": "Project instructions remain subject to newer user requests and higher-priority instructions."
+  },
+  "_test_comment_20261029": "TEST: JSON content updated to verify Unity recompilation and saved layout restoration."
 }

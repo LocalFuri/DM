@@ -121,6 +121,8 @@ public class ViewportLayoutEditor : EditorWindow
 
   private const string ChampionArtFolder =
       "Assets/Art/Champions";
+  private const string ChampionMirrorSideAssetPath =
+      "Assets/Art/Champions/Champion_Mirror_Side_16x35.png";
   private const string ChampionMirrorFrontAssetPath =
       "Assets/Art/Champions/Champion_Mirror_Front_48x43.png";
   private const string CharacterSheetAssetPath =
@@ -1734,6 +1736,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   [System.NonSerialized]
+  private Texture2D cachedChampionMirrorSideTexture;
   private Texture2D cachedChampionMirrorFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedViAltarFrontTexture;
@@ -7155,11 +7158,11 @@ private static void HandleGameViewPointerDown(
   // sound; every other pickup item makes a wooden landing sound. Call this
   // from each item's generic throwing handler, using its actual item category.
   // No substitute sound is allowed when the expected asset is missing.
-  private enum ThrownItemSoundCategory { Weapon, Other }
+  private enum ThrownItemSoundCategory { Weapon, Armor, Other }
 
   // Sound attenuation uses actual distance travelled, never flight frame index.
-  // F3 is the maximum legal destination for every throwable item.
-  private const int MaximumItemThrowDistance = 3;
+  // The original F3 attenuation is held for more distant impacts.
+  private const int MaximumItemThrowDistance = 6;
   private float ItemImpactVolumeAtDistance(int distance)
   {
     DungeonAudioSettings settings = GetDungeonAudioSettings();
@@ -7174,10 +7177,13 @@ private static void HandleGameViewPointerDown(
       case 0:
       case 1: return Mathf.Clamp01(settings.itemImpactF1Volume);
       case 2: return Mathf.Clamp01(settings.itemImpactF2Volume);
-      case 3: return Mathf.Clamp01(settings.itemImpactF3Volume);
+      case 3:
+      case 4:
+      case 5:
+      case 6: return Mathf.Clamp01(settings.itemImpactF3Volume);
       default:
         Debug.LogError("ITEM IMPACT: illegal throw distance " + distance
-            + "; maximum is F3.");
+            + "; maximum is 6 tiles.");
         return -1f;
     }
   }
@@ -7196,6 +7202,7 @@ private static void HandleGameViewPointerDown(
       return;
     }
     bool weapon = category == ThrownItemSoundCategory.Weapon;
+    // Armor impacts use Wooden_Thud, not Metallic_Thud.
     AudioClip source = weapon ? settings.weaponImpactSound : settings.otherItemImpactSound;
     if (source == null)
     {
@@ -12693,6 +12700,34 @@ private static void HandleGameViewPointerDown(
     finally
     {
       s_viewEditGlobalNavDispatch = false;
+    }
+  }
+
+  // Clear the previous Console messages at the BEGINNING of each script compile.
+  // Compile errors and other new messages remain visible for diagnosis.
+  [InitializeOnLoadMethod]
+  private static void RegisterViewEditConsoleClearOnCompile()
+  {
+    UnityEditor.Compilation.CompilationPipeline.compilationStarted -= ClearConsoleForScriptCompilation;
+    UnityEditor.Compilation.CompilationPipeline.compilationStarted += ClearConsoleForScriptCompilation;
+  }
+
+  private static void ClearConsoleForScriptCompilation(object compilationContext)
+  {
+    // Unity does not expose Console.Clear through a public Editor API.
+    // Keep this optional and silent, so it cannot interfere with recompilation.
+    try
+    {
+      System.Type logEntries = typeof(EditorWindow).Assembly.GetType("UnityEditor.LogEntries");
+      MethodInfo clear = logEntries == null ? null : logEntries.GetMethod(
+          "Clear", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
+          null, System.Type.EmptyTypes, null);
+      if (clear != null)
+        clear.Invoke(null, null);
+    }
+    catch (System.Exception)
+    {
+      // Console-clear is cosmetic; never interrupt compilation.
     }
   }
 
@@ -20764,6 +20799,7 @@ private static void HandleGameViewPointerDown(
     BlitWoodRingD3FrontIntoPreview(pixels);
     BlitWoodRingD2FrontIntoPreview(pixels);
     BlitWoodRingD1FrontIntoPreview(pixels);
+    BlitChampionMirrorS1SidesAsWallOrnamentsIntoPreview(pixels);
     BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 3);
     BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 2);
     BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 1);
@@ -22967,6 +23003,78 @@ private static void HandleGameViewPointerDown(
     // wall-tile ornaments. Never allow a view through a nearer wall.
     return IsSharedWallFeatureVisible(
         mirror.x, mirror.y, mirror.wall, true);
+  }
+
+  // Champion mirrors share the ornament wall-face / V17 visibility rules.
+  // S1 artwork is a native 16x35 side view, never the front-frame sprite.
+  private void BlitChampionMirrorS1SidesAsWallOrnamentsIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (pixels == null || previewMiniMap == null
+        || previewChampionMirrors == null || previewChampionMirrors.Length == 0)
+      return;
+
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    int corridorX = previewX + fx;
+    int corridorY = previewY + fy;
+    if (!PreviewTileIsOpen(corridorX, corridorY))
+      return;
+
+    Texture2D side = cachedChampionMirrorSideTexture;
+    if (side == null)
+    {
+      side = AssetDatabase.LoadAssetAtPath<Texture2D>(ChampionMirrorSideAssetPath);
+      if (side == null || !side.isReadable || side.width != 16 || side.height != 35)
+      {
+        Debug.LogError("ViewEdit: required readable 16x35 S1 champion mirror missing or invalid: "
+            + ChampionMirrorSideAssetPath);
+        return;
+      }
+      cachedChampionMirrorSideTexture = side;
+    }
+
+    bool leftDone = false;
+    bool rightDone = false;
+    for (int i = 0; i < previewChampionMirrors.Length; ++i)
+    {
+      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror == null || string.IsNullOrEmpty(mirror.champion)
+          || string.IsNullOrEmpty(mirror.wall)
+          || IsPreviewChampionTaken(mirror.champion)
+          || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+              "ChampionMirror", mirror.x, mirror.y, mirror.wall)))
+        continue;
+
+      // Use the exact same solid-wall geometry as D1 side ornaments.
+      bool left = mirror.x == corridorX - rx && mirror.y == corridorY - ry
+          && string.Equals(mirror.wall,
+              FacingName(TurnPreviewFacingRight(previewFacing)),
+              System.StringComparison.OrdinalIgnoreCase);
+      bool right = mirror.x == corridorX + rx && mirror.y == corridorY + ry
+          && string.Equals(mirror.wall,
+              FacingName(TurnPreviewFacingLeft(previewFacing)),
+              System.StringComparison.OrdinalIgnoreCase);
+      if ((!left || leftDone) && (!right || rightDone))
+        continue;
+      if (!IsSharedWallFeatureVisible(mirror.x, mirror.y, mirror.wall,
+              true, 0, 1))
+        continue;
+
+      // The S1 side slot follows the normal D1 side-ornament horizontal
+      // boundary, vertically centered against the 19px reference slot.
+      int x = left ? HookD1SideLeftX : HookD1SideRightX;
+      int y = HookD1SideY - (side.height - 19) / 2;
+      bool flip = right;
+      string projectionKey = "OrnamentProjection:ChampionMirror:S1:"
+          + (left ? "Left" : "Right");
+      ApplyAcceptedOrnamentReference(projectionKey, ref x, ref y, ref flip);
+      ApplyPreviewFeatureRenderOverrides(projectionKey, ref x, ref y, ref flip);
+      BlitWallOrnamentIntoPreview(pixels, side, x, y, flip);
+      if (left) leftDone = true;
+      else rightDone = true;
+      if (leftDone && rightDone) return;
+    }
   }
 
   private Texture2D GetChampionMirrorFrontTexture()
@@ -37273,6 +37381,8 @@ private static void HandleGameViewPointerDown(
     internal bool releaseCaptured;
     internal double landingTime;
     internal int flightStage;
+    internal int maxFlightTiles;
+    internal ThrownItemSoundCategory impactCategory;
     internal int forwardX, forwardY;
     internal bool torch;
     internal string championName;
@@ -37287,6 +37397,41 @@ private static void HandleGameViewPointerDown(
   private readonly List<GenericThrowInFlight> genericThrowsInFlight =
       new List<GenericThrowInFlight>();
 
+  // Throw classes: swords fly up to six tiles; all armor flies up to three.
+  // Other item types retain their existing three-tile limit until weight
+  // and class rules have been specified. Do not infer a weight here.
+  private static int ThrowRangeForItem(string itemType)
+  {
+    if (IsThrowArmorItem(itemType)) return 3;
+    switch (NormalizeChampionAssetKey(itemType ?? string.Empty))
+    {
+      case "SWORD": case "SAMURAISWORD": case "SHORTSWORD": case "LONGSWORD":
+        return 6;
+      default: return 3;
+    }
+  }
+
+  // Reuse the existing head/torso/legs/feet equipment classification,
+  // rather than maintaining a second incomplete list of armor names.
+  // Shields are worn protective equipment despite their hand slot.
+  private static bool IsThrowArmorItem(string itemType)
+  {
+    if (string.IsNullOrEmpty(itemType)) return false;
+    if (NormalizeChampionAssetKey(itemType).Contains("SHIELD")) return true;
+    bool handUsed = false, quiverUsed = false;
+    if (!TryGetChampionSheetEquipSlot(itemType, ref handUsed, ref quiverUsed,
+        out int slotX, out int slotY)) return false;
+    return slotX == 33 && (slotY == 25 || slotY == 45
+        || slotY == 65 || slotY == 85);
+  }
+
+  private static ThrownItemSoundCategory ThrowImpactCategoryForItem(string itemType)
+  {
+    if (IsThrowArmorItem(itemType)) return ThrownItemSoundCategory.Armor;
+    return IsAutomaticAttackHandWeapon(itemType)
+        ? ThrownItemSoundCategory.Weapon : ThrownItemSoundCategory.Other;
+  }
+
   private bool CaptureSuspendedThrowRelease(float y)
   {
     SuspendedThrownItem item = null;
@@ -37297,10 +37442,12 @@ private static void HandleGameViewPointerDown(
     item.displayY = Mathf.Clamp(y, 0f, PreviewHeight - 1f);
     item.releaseCaptured = true;
     item.landingTime = EditorApplication.timeSinceStartup + 1.0;
+    // Play the shared Combat_Attack sound exactly once, on mouse release.
+    PlayItemThrowSound();
     Debug.Log("THROW RELEASE TEST: objectId=" + item.id
         + " releaseY=" + item.displayY.ToString("F1")
         + " tile=(" + item.tileX + "," + item.tileY + ")"
-        + " status=F1 1s -> F2 1s -> F3 1s -> LAND");
+        + " range=" + item.maxFlightTiles + " tiles; 1 second per tile -> LAND");
     RefreshEditModePreview();
     return true;
   }
@@ -37318,7 +37465,7 @@ private static void HandleGameViewPointerDown(
       if (!item.releaseCaptured || now < item.landingTime) continue;
       // Each stage is displayed for one full second before advancing.
       // Do not enter solid dungeon tiles; an obstruction ends the flight.
-      if (item.flightStage < 3)
+      if (item.flightStage < item.maxFlightTiles)
       {
         int nextX = item.tileX + item.forwardX;
         int nextY = item.tileY + item.forwardY;
@@ -37381,6 +37528,8 @@ private static void HandleGameViewPointerDown(
       }
       MoveItemInstance(physical, "Floor", level: item.level,
           tileX: item.tileX, tileY: item.tileY, corner: corner);
+      // Wall collision or maximum-range landing: play the category's impact once.
+      PlayItemLandingThudSound(item.impactCategory, item.flightStage);
       suspendedThrownItems.RemoveAt(i);
       Debug.Log("THROW LAND AFTER FLIGHT: objectId=" + item.id
           + " level=" + item.level + " tile=(" + item.tileX
@@ -37524,14 +37673,17 @@ private static void HandleGameViewPointerDown(
       displayY = y, releaseCaptured = false, torch = heldTorch,
       championName = thrownChampionName, championItemIndex = thrownChampionIndex,
       championSourceSlot = thrownChampionSlot,
-      flightStage = 1, forwardX = fx, forwardY = fy
+      flightStage = 1, maxFlightTiles = ThrowRangeForItem(physical.ItemType),
+      impactCategory = ThrowImpactCategoryForItem(physical.ItemType),
+      forwardX = fx, forwardY = fy
     });
     Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     HideHeldItemPointerOverlay();
     Debug.Log("THROW FLIGHT START F1: objectId=" + id
         + " start=(" + previewX + "," + previewY + ")"
         + " advanced=(" + destX + "," + destY + ")"
-        + " waiting for mouse UP; F1 -> F2 -> F3, each 1 second");
+        + " waiting for mouse UP; range=" + ThrowRangeForItem(physical.ItemType)
+        + " tiles, each 1 second");
     RefreshEditModePreview();
     return true;
   }
