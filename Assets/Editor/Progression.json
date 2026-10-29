@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-27",
+  "date": "2026-10-28",
   "project": "Dungeon Master Unity",
   "checkpoint": "2026-10-27 end-of-day: FrontF3 wall at Level 0 (11,4) West visually verified; next investigate wall at Level 0 (10,4) South tomorrow.",
   "verified_today": [
@@ -463,5 +463,39 @@
     "unchanged_files": "Omit unchanged files from the return ZIP entirely; do not package them merely to preserve timestamps.",
     "package_structure": "Include only required modified files at ZIP root with original filenames; no subfolders and no changelogs.",
     "verification_before_delivery": "Inspect ZIP member list and entry timestamps before delivery. Confirm every included file is changed and has a correct modification timestamp."
-  }
+  },
+  "checkpoint_20261028": {
+    "status": "End-of-session checkpoint. Preserve previously verified baselines; latest experimental code requires Unity re-test.",
+    "walls": {
+      "v17": "Preserve existing PC 3.4 17-wall mini-machine and visually approved FrontF3 from 2026-10-27. Level 0 (10,4) South visually compared with original and appeared correct."
+    },
+    "champion_mirrors": {
+      "architecture": "Legacy separate champion mirror render paths and unused helpers removed; champion mirror frames now go through existing wall-ornament based path. Keep separate portrait artwork composition, not separate geometry/visibility engine.",
+      "front_f1": "IAIDO at Level 0 (10,4), facing North, visually confirmed correct. At F1 show frame and portrait.",
+      "front_f2": "Frame only; portrait MUST NOT appear. F2 frame scaling selectable in ViewEdit; user reported frame renders and later clarified portrait only F1.",
+      "front_f3": "Frame only; fixed Top-to-Bottom scaling, no scaling dropdown. F3 visual/pixel exactness not yet verified.",
+      "viewedit": "Champion row name format <CHAMPION> - F1/F2/F3; Set checkbox; removed X/Y, Mirror and Apply; F2 scaling dropdown remains, F3 Top-to-Bottom fixed.",
+      "altar_of_vi": "Not migrated to WallFeatureArtworkProfile; red VI overlay must be preserved when considered later."
+    },
+    "throwing": {
+      "reference": "Cursor research of original CSBwin: throw queued from mouse-button DOWN; button UP only records release; original TestThrow rect X=32..191, Y=47..102. Unity current experimental behavior intentionally uses mouse-UP Y for suspended flight display; do not confuse with CSBwin-original behavior.",
+      "legacy": "Old torch-specific TorchFlight and obsolete throw-only helpers removed; normal torch inventory/fuel/drop retained.",
+      "generic": "Generic throw for cursor-held sword, torches, equipment, floor items; preserve unique item IDs. Tested basic generic throw working.",
+      "input": "Adjustable mouse-down throwing Y allowed from 0 to max (default 100) via ViewEdit; X range 32..191; Console diagnostic PASS/BLOCK. Mouse-up Y captured to display flying item vertically.",
+      "current_test": "F1 suspended for 1 second, then F2 suspended for 1 second, then F3 suspended for 1 second, then only after all three stages drop to floor and become pickable. Items must NOT land at F1/F2; keep in-flight object ID, stop early when wall blocks. This latest sequence was packaged but has not been visually verified after the latest ZIP.",
+      "latest_patch": "Generic_Throw_F1_F2_F3_One_Second_REDOWNLOAD.zip (ViewportLayoutEditor.cs only); the first download link failed, so replacement ZIP issued.",
+      "remaining": "Verify latest ZIP downloads, compiles, stage timing and Y placement in Unity; continue refinement based on test results. Do not assume complete original CSBwin missile physics is implemented."
+    },
+    "mandatory_delivery": "Only files modified for each update; fresh genuine local Europe/Berlin mtime preserved in ZIP; original names at ZIP root; no changelog; verify ZIP member list/timestamps.",
+    "next_actions": [
+      "Install/test latest three-stage generic throwing ZIP: 1s at F1, 1s at F2, 1s at F3, then floor placement.",
+      "Check Console stage transitions, item ID persistence, mouse-up Y and collision behavior.",
+      "Maintain verified IAIDO F1 and existing V17 wall geometry; do not expand ornament/altar migration before requested."
+    ]
+  },
+  "current_next_actions_20261028": [
+    "Install/test latest three-stage generic throwing ZIP: 1s at F1, 1s at F2, 1s at F3, then floor placement.",
+    "Check Console stage transitions, item ID persistence, mouse-up Y and collision behavior.",
+    "Maintain verified IAIDO F1 and existing V17 wall geometry; do not expand ornament/altar migration before requested."
+  ]
 }
