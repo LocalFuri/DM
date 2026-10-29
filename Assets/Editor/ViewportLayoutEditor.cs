@@ -26749,10 +26749,10 @@ private static void HandleGameViewPointerDown(
       string viewingDirection = FacingName(previewFacing);
       string frontLabel = champion.champion.ToUpperInvariant() + " - F" + depth
           + " - (" + viewingX + "," + viewingY + " " + viewingDirection + ")";
-      // Keep the calibration controls immediately beside the actual label,
-      // rather than reserving 290 pixels of empty space.
+      // Align champion calibration controls with the floor-item (sword) row.
+      // Long labels can expand rather than being truncated.
       GUILayout.Label(frontLabel, featureStyle,
-          GUILayout.Width(Mathf.Ceil(featureStyle.CalcSize(new GUIContent(frontLabel)).x) + 8f));
+          GUILayout.Width(Mathf.Ceil(featureStyle.CalcSize(new GUIContent(frontLabel)).x) + 6f));
 
       bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
       bool nowEnabled = EditorGUILayout.ToggleLeft(
@@ -26936,7 +26936,7 @@ private static void HandleGameViewPointerDown(
             + (left ? " Left" : " Right") + " - (" + viewingX + ","
             + viewingY + " " + viewingDirection + ")";
         GUILayout.Label(sideLabel, featureStyle,
-            GUILayout.Width(Mathf.Ceil(featureStyle.CalcSize(new GUIContent(sideLabel)).x) + 8f));
+            GUILayout.Width(Mathf.Ceil(featureStyle.CalcSize(new GUIContent(sideLabel)).x) + 6f));
         bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
         bool nowEnabled = EditorGUILayout.ToggleLeft(
             "Set", wasEnabled, GUILayout.Width(55f));
