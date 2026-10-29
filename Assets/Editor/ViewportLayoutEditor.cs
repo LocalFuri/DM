@@ -22896,9 +22896,28 @@ private static void HandleGameViewPointerDown(
         && previewMiniMap.GetTile(x, y).Type == DungeonTileType.Wall;
   }
 
-  // Wall feature visibility: wall ornaments and champion mirrors
-  // use the same front/side corridor, wall-face and occlusion resolver.
-  // Only the sprite and its final screen placement remain feature-specific.
+  // A corner wall can expose its forward-facing end as well as its side.
+  // Resolve the visible physical face from wall geometry, for both champion
+  // mirrors and ordinary wall ornaments. Never replace the stored wall face.
+  private bool IsVisibleSideWallFace(string physicalFace, string sideFace,
+      int wallX, int wallY)
+  {
+    if (string.Equals(physicalFace, sideFace,
+        System.StringComparison.OrdinalIgnoreCase))
+      return true;
+
+    // Perpendicular end face, only if that actual wall face borders an open
+    // square. E.g. a right S2 wall can expose its east face to a west-looking
+    // observer around the corner.
+    if (!string.Equals(physicalFace, OppositeFacingName(previewFacing),
+        System.StringComparison.OrdinalIgnoreCase))
+      return false;
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    return PreviewTileIsOpen(wallX - fx, wallY - fy);
+  }
+
+  // Wall feature visibility: wall ornaments and champion mirrors share
+  // the same corridor, physical-face and V17 occlusion checks.
   private bool IsSharedWallFeatureVisible(
       int wallX, int wallY, string wallFace, bool wallTilePlacement,
       int maxFrontDepth = 3, int maxSideDepth = 3)
@@ -22981,14 +23000,12 @@ private static void HandleGameViewPointerDown(
             System.StringComparison.OrdinalIgnoreCase))
       family = "FrontF" + depth;
     else if (lane == -1 && depth >= 1 && depth <= 3
-        && string.Equals(physicalFace,
-            FacingName(TurnPreviewFacingRight(previewFacing)),
-            System.StringComparison.OrdinalIgnoreCase))
+        && IsVisibleSideWallFace(physicalFace,
+            FacingName(TurnPreviewFacingRight(previewFacing)), wallX, wallY))
       family = "LeftF" + depth;
     else if (lane == 1 && depth >= 1 && depth <= 3
-        && string.Equals(physicalFace,
-            FacingName(TurnPreviewFacingLeft(previewFacing)),
-            System.StringComparison.OrdinalIgnoreCase))
+        && IsVisibleSideWallFace(physicalFace,
+            FacingName(TurnPreviewFacingLeft(previewFacing)), wallX, wallY))
       family = "RightF" + depth;
     if (family == null)
       return false;
@@ -23063,13 +23080,13 @@ private static void HandleGameViewPointerDown(
 
       // Use the exact same solid-wall geometry as D1 side ornaments.
       bool left = mirror.x == corridorX - rx && mirror.y == corridorY - ry
-          && string.Equals(mirror.wall,
+          && IsVisibleSideWallFace(mirror.wall,
               FacingName(TurnPreviewFacingRight(previewFacing)),
-              System.StringComparison.OrdinalIgnoreCase);
+              mirror.x, mirror.y);
       bool right = mirror.x == corridorX + rx && mirror.y == corridorY + ry
-          && string.Equals(mirror.wall,
+          && IsVisibleSideWallFace(mirror.wall,
               FacingName(TurnPreviewFacingLeft(previewFacing)),
-              System.StringComparison.OrdinalIgnoreCase);
+              mirror.x, mirror.y);
       if ((!left || leftDone) && (!right || rightDone))
         continue;
       if (!IsSharedWallFeatureVisible(mirror.x, mirror.y, mirror.wall,
@@ -23146,13 +23163,13 @@ private static void HandleGameViewPointerDown(
         continue;
 
       bool left = mirror.x == corridorX - rx && mirror.y == corridorY - ry
-          && string.Equals(mirror.wall,
+          && IsVisibleSideWallFace(mirror.wall,
               FacingName(TurnPreviewFacingRight(previewFacing)),
-              System.StringComparison.OrdinalIgnoreCase);
+              mirror.x, mirror.y);
       bool right = mirror.x == corridorX + rx && mirror.y == corridorY + ry
-          && string.Equals(mirror.wall,
+          && IsVisibleSideWallFace(mirror.wall,
               FacingName(TurnPreviewFacingLeft(previewFacing)),
-              System.StringComparison.OrdinalIgnoreCase);
+              mirror.x, mirror.y);
       if ((!left || leftDone) && (!right || rightDone))
         continue;
       if (!IsSharedWallFeatureVisible(mirror.x, mirror.y, mirror.wall,
@@ -23225,13 +23242,13 @@ private static void HandleGameViewPointerDown(
         continue;
 
       bool left = mirror.x == corridorX - rx && mirror.y == corridorY - ry
-          && string.Equals(mirror.wall,
+          && IsVisibleSideWallFace(mirror.wall,
               FacingName(TurnPreviewFacingRight(previewFacing)),
-              System.StringComparison.OrdinalIgnoreCase);
+              mirror.x, mirror.y);
       bool right = mirror.x == corridorX + rx && mirror.y == corridorY + ry
-          && string.Equals(mirror.wall,
+          && IsVisibleSideWallFace(mirror.wall,
               FacingName(TurnPreviewFacingLeft(previewFacing)),
-              System.StringComparison.OrdinalIgnoreCase);
+              mirror.x, mirror.y);
       if ((!left || leftDone) && (!right || rightDone))
         continue;
       if (!IsSharedWallFeatureVisible(mirror.x, mirror.y, mirror.wall,
@@ -26546,10 +26563,8 @@ private static void HandleGameViewPointerDown(
         if (leftWallExists
             && ornament.x == leftWallX
             && ornament.y == leftWallY
-            && string.Equals(
-                ornament.wall,
-                leftPhysicalFace,
-                System.StringComparison.OrdinalIgnoreCase))
+            && IsVisibleSideWallFace(ornament.wall,
+                leftPhysicalFace, leftWallX, leftWallY))
         {
           dungeonFeatureX = centerX;
           dungeonFeatureY = centerY;
@@ -26560,10 +26575,8 @@ private static void HandleGameViewPointerDown(
         if (rightWallExists
             && ornament.x == rightWallX
             && ornament.y == rightWallY
-            && string.Equals(
-                ornament.wall,
-                rightPhysicalFace,
-                System.StringComparison.OrdinalIgnoreCase))
+            && IsVisibleSideWallFace(ornament.wall,
+                rightPhysicalFace, rightWallX, rightWallY))
         {
           dungeonFeatureX = centerX;
           dungeonFeatureY = centerY;
@@ -26860,8 +26873,8 @@ private static void HandleGameViewPointerDown(
           ChampionMirrorPlacement candidate = previewChampionMirrors[i];
           if (candidate == null || string.IsNullOrEmpty(candidate.champion)
               || candidate.x != wallX || candidate.y != wallY
-              || !string.Equals(candidate.wall, wallFace,
-                  System.StringComparison.OrdinalIgnoreCase)
+              || !IsVisibleSideWallFace(candidate.wall, wallFace,
+                  candidate.x, candidate.y)
               || IsPreviewChampionTaken(candidate.champion))
             continue;
           if (!IsSharedWallFeatureVisible(candidate.x, candidate.y,

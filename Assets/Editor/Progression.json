@@ -526,5 +526,11 @@
     "scope": "All applicable ViewEdit rows, including champion mirrors F1/F2/F3 and S1/S2/S3 and floor-item rows; no champion-specific placement or display exceptions.",
     "precedence": "Newest confirmed instruction wins if older layout rules differ.",
     "code_checkpoint": "Latest Champion_Mirror_Compact_Inline_20261029.zip triggers Unity CS1022 at ViewportLayoutEditor.cs(39642,1). Do not treat that build as verified; correct compilation before further layout work."
+  },
+  "unity_editor_tools_no_subfolders_rule_20261029": {
+    "status": "active_permanent_rule",
+    "instruction": "Never create subfolders for new Unity Editor tools. Deliver each new tool as an individual .cs file at the ZIP root; the user installs it directly into Assets/Editor, without any new tool-specific directories.",
+    "scope": "All future Dungeon Master Unity Editor tools and their ZIP deliveries.",
+    "precedence": "Newest confirmed instruction wins on conflicts, preserving unrelated rules."
   }
 }
