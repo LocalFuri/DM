@@ -1737,6 +1737,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   [System.NonSerialized]
   private Texture2D cachedChampionMirrorSideTexture;
+  private Texture2D cachedChampionMirrorS2Texture;
   private Texture2D cachedChampionMirrorFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedViAltarFrontTexture;
@@ -20800,6 +20801,7 @@ private static void HandleGameViewPointerDown(
     BlitWoodRingD2FrontIntoPreview(pixels);
     BlitWoodRingD1FrontIntoPreview(pixels);
     BlitChampionMirrorS1SidesAsWallOrnamentsIntoPreview(pixels);
+    BlitChampionMirrorS2SidesAsWallOrnamentsIntoPreview(pixels);
     BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 3);
     BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 2);
     BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 1);
@@ -23067,6 +23069,87 @@ private static void HandleGameViewPointerDown(
       int y = HookD1SideY - (side.height - 19) / 2;
       bool flip = right;
       string projectionKey = "OrnamentProjection:ChampionMirror:S1:"
+          + (left ? "Left" : "Right");
+      ApplyAcceptedOrnamentReference(projectionKey, ref x, ref y, ref flip);
+      ApplyPreviewFeatureRenderOverrides(projectionKey, ref x, ref y, ref flip);
+      BlitWallOrnamentIntoPreview(pixels, side, x, y, flip);
+      if (left) leftDone = true;
+      else rightDone = true;
+      if (leftDone && rightDone) return;
+    }
+  }
+
+  // S2 is the same champion-mirror wall face as S1, viewed one tile farther.
+  // Use the established medium-distance wall-ornament scaling (no S2 asset).
+  private void BlitChampionMirrorS2SidesAsWallOrnamentsIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (pixels == null || previewMiniMap == null
+        || previewChampionMirrors == null || previewChampionMirrors.Length == 0)
+      return;
+
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    int corridorX = previewX + 2 * fx;
+    int corridorY = previewY + 2 * fy;
+    if (!PreviewTileIsOpen(corridorX, corridorY))
+      return;
+
+    Texture2D source = cachedChampionMirrorSideTexture;
+    if (source == null)
+    {
+      source = AssetDatabase.LoadAssetAtPath<Texture2D>(ChampionMirrorSideAssetPath);
+      if (source == null || !source.isReadable || source.width != 16 || source.height != 35)
+      {
+        Debug.LogError("ViewEdit: required readable 16x35 champion mirror missing or invalid: "
+            + ChampionMirrorSideAssetPath);
+        return;
+      }
+      cachedChampionMirrorSideTexture = source;
+    }
+    if (cachedChampionMirrorS2Texture == null)
+    {
+      cachedChampionMirrorS2Texture = GenerateDmScaledWallDecoration(
+          source, 8, 18, WallOrnamentMediumColorMap,
+          "Champion Mirror S2 Generated from S1");
+      if (cachedChampionMirrorS2Texture == null)
+      {
+        Debug.LogError("ViewEdit: cannot generate champion mirror S2 from "
+            + ChampionMirrorSideAssetPath);
+        return;
+      }
+    }
+    Texture2D side = cachedChampionMirrorS2Texture;
+    bool leftDone = false;
+    bool rightDone = false;
+    for (int i = 0; i < previewChampionMirrors.Length; ++i)
+    {
+      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
+      if (mirror == null || string.IsNullOrEmpty(mirror.champion)
+          || string.IsNullOrEmpty(mirror.wall)
+          || IsPreviewChampionTaken(mirror.champion)
+          || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+              "ChampionMirror", mirror.x, mirror.y, mirror.wall)))
+        continue;
+
+      bool left = mirror.x == corridorX - rx && mirror.y == corridorY - ry
+          && string.Equals(mirror.wall,
+              FacingName(TurnPreviewFacingRight(previewFacing)),
+              System.StringComparison.OrdinalIgnoreCase);
+      bool right = mirror.x == corridorX + rx && mirror.y == corridorY + ry
+          && string.Equals(mirror.wall,
+              FacingName(TurnPreviewFacingLeft(previewFacing)),
+              System.StringComparison.OrdinalIgnoreCase);
+      if ((!left || leftDone) && (!right || rightDone))
+        continue;
+      if (!IsSharedWallFeatureVisible(mirror.x, mirror.y, mirror.wall,
+              true, 0, 2))
+        continue;
+
+      int x = left ? HookD2SideLeftX : HookD2SideRightX;
+      int y = HookD2SideY - (side.height - HookD2SideHeight) / 2;
+      bool flip = !left; // S1 convention, keep matching left/right orientation.
+      string projectionKey = "OrnamentProjection:ChampionMirror:S2:"
           + (left ? "Left" : "Right");
       ApplyAcceptedOrnamentReference(projectionKey, ref x, ref y, ref flip);
       ApplyPreviewFeatureRenderOverrides(projectionKey, ref x, ref y, ref flip);
