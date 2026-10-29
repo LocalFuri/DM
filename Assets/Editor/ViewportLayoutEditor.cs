@@ -26747,9 +26747,12 @@ private static void HandleGameViewPointerDown(
       int viewingX = champion.hasViewingFloor ? champion.viewingFloorX : champion.x - fx;
       int viewingY = champion.hasViewingFloor ? champion.viewingFloorY : champion.y - fy;
       string viewingDirection = FacingName(previewFacing);
-      GUILayout.Label(champion.champion.ToUpperInvariant() + " - F" + depth
-          + " - (" + viewingX + "," + viewingY + " " + viewingDirection + ")",
-          featureStyle, GUILayout.Width(290f));
+      string frontLabel = champion.champion.ToUpperInvariant() + " - F" + depth
+          + " - (" + viewingX + "," + viewingY + " " + viewingDirection + ")";
+      // Keep the calibration controls immediately beside the actual label,
+      // rather than reserving 290 pixels of empty space.
+      GUILayout.Label(frontLabel, featureStyle,
+          GUILayout.Width(Mathf.Ceil(featureStyle.CalcSize(new GUIContent(frontLabel)).x) + 8f));
 
       bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
       bool nowEnabled = EditorGUILayout.ToggleLeft(
@@ -26929,10 +26932,11 @@ private static void HandleGameViewPointerDown(
         }
         EditorGUILayout.BeginHorizontal();
         float oldLabelWidth = EditorGUIUtility.labelWidth;
-        GUILayout.Label(visible.champion.ToUpperInvariant() + " - S" + depth
+        string sideLabel = visible.champion.ToUpperInvariant() + " - S" + depth
             + (left ? " Left" : " Right") + " - (" + viewingX + ","
-            + viewingY + " " + viewingDirection + ")", featureStyle,
-            GUILayout.Width(290f));
+            + viewingY + " " + viewingDirection + ")";
+        GUILayout.Label(sideLabel, featureStyle,
+            GUILayout.Width(Mathf.Ceil(featureStyle.CalcSize(new GUIContent(sideLabel)).x) + 8f));
         bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
         bool nowEnabled = EditorGUILayout.ToggleLeft(
             "Set", wasEnabled, GUILayout.Width(55f));
