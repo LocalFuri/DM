@@ -570,5 +570,106 @@
       "Verify cyan player tile in Unity.",
       "Record actual implementation/verification status in Progression.json."
     ]
-  }
+  },
+  "dungeon_features_current_player_tile_cyan_rule_20261030": {
+    "status": "confirmed_requirement_not_implemented_or_verified",
+    "scope": "Dungeon Features editor map (DungeonFeatureEditor.cs), separate from V17 Combination Explorer",
+    "trigger": "When Dungeon Features is opened, highlight the map tile occupied by the player immediately.",
+    "color": {
+      "name": "cyan",
+      "rgb": [
+        0,
+        255,
+        255
+      ]
+    },
+    "coordinates": "Use the current live player level and map X/Y position; highlight the actual standing tile, not the forward-facing tile.",
+    "updates": "On player movement or a new Dungeon Features opening, reflect the current position; facing must not shift the highlighted tile.",
+    "priority": "Current player cyan highlight should remain distinguishable from existing champion/feature color markers, without changing their underlying data.",
+    "implementation_target": "DungeonFeatureEditor.cs (existing Editor script; no new folder)",
+    "verification": "Test different player positions and facing directions in Unity before marking implemented."
+  },
+  "v17_exact_wall_face_visibility_verified_20261030": {
+    "status": "confirmed_in_unity_by_user_2026-10-30",
+    "milestone": "Generic wall-attached feature visibility must match the unique physical map wall tile AND exact exposed wall face; a visible V17 wall image is not sufficient to render a mirror or ornament.",
+    "root_cause": "The prior IsVisibleSideWallFace() permitted perpendicular wall faces around corners, causing LEYLA South-facing mirror to appear incorrectly from (14,12) North.",
+    "implementation": {
+      "file": "ViewportLayoutEditor.cs",
+      "verified_patch_archive": "V17_Exact_Wall_Face_LEYLA_20261030.zip",
+      "function": "IsVisibleSideWallFace()",
+      "change": "Remove the perpendicular-face exception for attached wall features; match the physical face to the visible face. Existing shared map-based corridor visibility remains.",
+      "scope": [
+        "champion mirrors",
+        "wall ornaments"
+      ],
+      "do_not_change": [
+        "V17 wall renderer and bitmap layout",
+        "CSBwin floor scaling",
+        "floor-item pickup and layout",
+        "champion artwork and mirror metadata"
+      ]
+    },
+    "verified_regressions": [
+      {
+        "level": 0,
+        "player": {
+          "x": 13,
+          "y": 12,
+          "facing": "North"
+        },
+        "champion": "LEYLA",
+        "mirror_wall": {
+          "x": 13,
+          "y": 11,
+          "face": "South"
+        },
+        "expected": "Visible on FrontF1 with portrait",
+        "result": "User confirmed correct"
+      },
+      {
+        "level": 0,
+        "player": {
+          "x": 14,
+          "y": 12,
+          "facing": "North"
+        },
+        "champion": "LEYLA",
+        "mirror_wall": {
+          "x": 13,
+          "y": 11,
+          "face": "South"
+        },
+        "expected": "Not visible (no erroneous LeftF1 mirror)",
+        "result": "User confirmed corrected patch works"
+      },
+      {
+        "level": 0,
+        "player": {
+          "x": 14,
+          "y": 12,
+          "facing": "North"
+        },
+        "expected": "Five wall graphics unchanged",
+        "result": "User confirmed all wall tiles correct"
+      }
+    ],
+    "source_of_truth": {
+      "map": "Assets/Data/Maps/DungeonMaster_Level00.json",
+      "mirror_faces": "Assets/Data/Features/ChampionMirrorVerifiedFaces.json",
+      "wall_visibility": "Existing V17 geometry, preserved"
+    },
+    "future_rules": [
+      "Never infer object visibility solely from a selected wall-piece name or near wall tile.",
+      "Resolve exact wall tile and wall face from JSON/verified placement, then test map geometry, occlusion, and player viewing direction.",
+      "Apply rule generically to all wall-attached ornaments and champion mirrors; no per-champion exceptions.",
+      "Floor items and floor decorations have their own floor geometry and scaling; continue testing their occlusion separately. Do not claim this patch proves all floor-object visibility.",
+      "Newest confirmed instruction wins on conflicts."
+    ],
+    "next_actions": [
+      "Keep verified source unchanged; commit current ViewportLayoutEditor.cs and updated Progression.json to Git.",
+      "Check other wall-mounted mirrors and ornaments in additional positions before broadening implementation.",
+      "Audit floor-object visibility independently if a reproducible failure occurs."
+    ]
+  },
+  "current_checkpoint_20261030": "User-verified V17 exact wall-face fix for LEYLA champion mirror: visible at (13,12) North FrontF1, absent at (14,12) North; five walls unchanged."
 }

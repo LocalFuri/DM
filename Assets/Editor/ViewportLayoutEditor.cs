@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -22896,24 +22896,35 @@ private static void HandleGameViewPointerDown(
         && previewMiniMap.GetTile(x, y).Type == DungeonTileType.Wall;
   }
 
-  // A corner wall can expose its forward-facing end as well as its side.
-  // Resolve the visible physical face from wall geometry, for both champion
-  // mirrors and ordinary wall ornaments. Never replace the stored wall face.
+  // Shared JSON-backed object corridor test. Wall images are not consulted:
+  // mirrors, ornaments and floor items all query the same real map geometry.
+  // A zero-depth check tests the player's current square only.
+  private bool IsObjectCorridorOpen(int lane, int fromDepth, int throughDepth)
+  {
+    if (previewMiniMap == null || fromDepth < 0 || throughDepth < fromDepth)
+      return false;
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    for (int depth = fromDepth; depth <= throughDepth; depth++)
+    {
+      int mapX = previewX + depth * fx + lane * rx;
+      int mapY = previewY + depth * fy + lane * ry;
+      if (!PreviewTileIsOpen(mapX, mapY))
+        return false;
+    }
+    return true;
+  }
+
+  // A wall-attached feature belongs to exactly one physical wall face.
+  // Visible wall geometry does not authorize mirrors/ornaments on another
+  // face of the same wall tile. In particular, LEYLA's south-facing mirror
+  // at (13,11) must not appear on LeftF1 from (14,12) facing North.
+  // The wall renderer itself is intentionally unchanged.
   private bool IsVisibleSideWallFace(string physicalFace, string sideFace,
       int wallX, int wallY)
   {
-    if (string.Equals(physicalFace, sideFace,
-        System.StringComparison.OrdinalIgnoreCase))
-      return true;
-
-    // Perpendicular end face, only if that actual wall face borders an open
-    // square. E.g. a right S2 wall can expose its east face to a west-looking
-    // observer around the corner.
-    if (!string.Equals(physicalFace, OppositeFacingName(previewFacing),
-        System.StringComparison.OrdinalIgnoreCase))
-      return false;
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    return PreviewTileIsOpen(wallX - fx, wallY - fy);
+    return string.Equals(physicalFace, sideFace,
+        System.StringComparison.OrdinalIgnoreCase);
   }
 
   // Wall feature visibility: wall ornaments and champion mirrors share
@@ -26459,18 +26470,8 @@ private static void HandleGameViewPointerDown(
     // must belong to the front wall boundary at the requested depth.
     for (int depth = 1; depth <= Mathf.Min(3, maxFrontDepth); depth++)
     {
-      bool corridorOpen = true;
-      for (int step = 1; step < depth; step++)
-      {
-        int cx = previewX + forwardX * step;
-        int cy = previewY + forwardY * step;
-        if (!PreviewTileIsOpen(cx, cy))
-        {
-          corridorOpen = false;
-          break;
-        }
-      }
-      if (!corridorOpen)
+      // Test only nearer cells: the target cell itself may be a wall.
+      if (depth > 1 && !IsObjectCorridorOpen(0, 1, depth - 1))
         continue;
 
       int wallX = previewX + forwardX * depth;
@@ -26534,18 +26535,7 @@ private static void HandleGameViewPointerDown(
     // to the left/right of that center lane can carry the visible ornament.
     for (int depth = 1; depth <= Mathf.Min(3, maxSideDepth); depth++)
     {
-      bool corridorOpen = true;
-      for (int step = 1; step <= depth; step++)
-      {
-        int cx = previewX + forwardX * step;
-        int cy = previewY + forwardY * step;
-        if (!PreviewTileIsOpen(cx, cy))
-        {
-          corridorOpen = false;
-          break;
-        }
-      }
-      if (!corridorOpen)
+      if (!IsObjectCorridorOpen(0, 1, depth))
         continue;
 
       int centerX = previewX + forwardX * depth;
@@ -30929,22 +30919,14 @@ private static void HandleGameViewPointerDown(
     }
     if (sideS3)
     {
-      int laneX = rightX * lateralTileDistance;
-      int laneY = rightY * lateralTileDistance;
-      if (!PreviewTileIsOpen(previewX + laneX, previewY + laneY)
-          || !PreviewTileIsOpen(previewX + forwardX + laneX, previewY + forwardY + laneY)
-          || !PreviewTileIsOpen(previewX + forwardX * 2 + laneX,
-              previewY + forwardY * 2 + laneY))
+      // Side items require an unobstructed side lane from the player's row
+      // through F2. A front-center wall does not close that side corridor.
+      if (!IsObjectCorridorOpen(lateralTileDistance, 0, forwardDistance))
         return false;
     }
-    else
-    {
-      for (int step = 1; step <= forwardDistance; step++)
-      {
-        if (!PreviewTileIsOpen(previewX + forwardX * step, previewY + forwardY * step))
-          return false;
-      }
-    }
+    else if (forwardDistance > 0
+        && !IsObjectCorridorOpen(0, 1, forwardDistance))
+      return false;
 
     if (!TryGetFloorItemSubSquareOffset(
             item.cell,
