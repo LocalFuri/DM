@@ -1154,6 +1154,9 @@ public class DungeonFeatureEditor : EditorWindow
     DrawOriginalWallOrnamentIcons(mapRect);
     DrawVerifiedChampionTileHighlights(mapRect);
     DrawChampionMirrorMarkers(mapRect);
+    // Always show the current ViewEdit/player tile, even over green champion
+    // highlights and feature icons. The translucent fill preserves details.
+    DrawCurrentPlayerTileHighlight(mapRect);
     // The click may have selected a new tile during this GUI event. Read the
     // current inspection state now, instead of using the previous frame's data.
     List<FloorItemPlacementRecord> currentPopupRecords = GetInspectedFloorItems();
@@ -1469,6 +1472,31 @@ public class DungeonFeatureEditor : EditorWindow
           CellSize - 2f);
       EditorGUI.DrawRect(tileRect, VerifiedChampionTileColor);
     }
+  }
+
+  // The current player position is cyan regardless of the tile's other markers.
+  // The coordinates are synchronized from ViewEdit when the window opens and
+  // on each inspector update; the highlight follows movement automatically.
+  private void DrawCurrentPlayerTileHighlight(Rect mapRect)
+  {
+    if (map == null || !map.IsInside(selectedX, selectedY))
+      return;
+
+    Rect cell = new Rect(
+        mapRect.x + selectedX * CellSize,
+        mapRect.y + selectedY * CellSize,
+        CellSize,
+        CellSize);
+    Color cyan = new Color(0f, 1f, 1f, 1f);
+    EditorGUI.DrawRect(
+        new Rect(cell.x + 2f, cell.y + 2f,
+            Mathf.Max(0f, cell.width - 4f), Mathf.Max(0f, cell.height - 4f)),
+        new Color(0f, 1f, 1f, 0.65f));
+    float edge = Mathf.Min(2f, CellSize / 4f);
+    EditorGUI.DrawRect(new Rect(cell.x, cell.y, cell.width, edge), cyan);
+    EditorGUI.DrawRect(new Rect(cell.x, cell.yMax - edge, cell.width, edge), cyan);
+    EditorGUI.DrawRect(new Rect(cell.x, cell.y, edge, cell.height), cyan);
+    EditorGUI.DrawRect(new Rect(cell.xMax - edge, cell.y, edge, cell.height), cyan);
   }
 
   private void DrawChampionMirrorMarkers(Rect mapRect)

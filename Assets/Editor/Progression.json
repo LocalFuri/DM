@@ -532,5 +532,43 @@
     "instruction": "Never create subfolders for new Unity Editor tools. Deliver each new tool as an individual .cs file at the ZIP root; the user installs it directly into Assets/Editor, without any new tool-specific directories.",
     "scope": "All future Dungeon Master Unity Editor tools and their ZIP deliveries.",
     "precedence": "Newest confirmed instruction wins on conflicts, preserving unrelated rules."
+  },
+  "v17_combination_explorer_requirements_20261030": {
+    "status": "requirements_documented_not_verified",
+    "purpose": "Visualize the existing 17-position V17 dungeon view footprint from the current player perspective and inspect rendering/visibility combinations.",
+    "editor_tool": {
+      "source_file": "V17CombinationExplorer.cs",
+      "unity_install_path": "Assets/Editor/V17CombinationExplorer.cs",
+      "zip_location": "ZIP root; no tool-specific subfolders"
+    },
+    "confirmed_requirements": {
+      "player_relative_orientation": "The displayed grid must rotate with the player facing North, East, South or West; forward always means the direction the player is looking.",
+      "player_tile_highlight": {
+        "color": "cyan",
+        "rgb": [
+          0,
+          255,
+          255
+        ],
+        "meaning": "tile the player is currently standing on"
+      },
+      "v17_footprint": "Show all existing V17 positions, retaining the project's established V17 coordinate/visibility rules."
+    },
+    "proposed_requirements_pending_confirmation": {
+      "live_sync": "Refresh when player changes tile or facing.",
+      "wall_visibility": "Indicate visible versus occluded positions using current wall rules.",
+      "future_scope": [
+        "champion mirrors",
+        "wall ornaments",
+        "floor items"
+      ],
+      "restore_editor_state": "Preserve explorer state across recompilation when full editor-session restoration is implemented."
+    },
+    "verification": "Do not mark the explorer implemented or verified until source is inspected and Unity behavior tested.",
+    "next_steps": [
+      "Inspect current V17CombinationExplorer.cs and verify facing-relative orientation.",
+      "Verify cyan player tile in Unity.",
+      "Record actual implementation/verification status in Progression.json."
+    ]
   }
 }
