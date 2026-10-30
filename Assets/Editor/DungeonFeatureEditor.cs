@@ -190,8 +190,8 @@ public class DungeonFeatureEditor : EditorWindow
   private bool showFloorItems = true;
   private int inspectedFloorItemX = -1;
   private int inspectedFloorItemY = -1;
-  private string hoveredMapTooltip = string.Empty;
-  private Rect hoveredMapTooltipHotspot;
+  private int inspectedOrnamentX = -1;
+  private int inspectedOrnamentY = -1;
 
   private static bool IsFloorItemRecordType(string recordType)
   {
@@ -1057,7 +1057,6 @@ public class DungeonFeatureEditor : EditorWindow
     EditorGUILayout.EndHorizontal();
 
     DrawMapGrid();
-    DrawMapHoverTooltip();
   }
 
   private void SetDungeonLevelFromUi(int requestedLevel)
@@ -1093,9 +1092,12 @@ public class DungeonFeatureEditor : EditorWindow
     List<FloorItemPlacementRecord> previewRecords = GetInspectedFloorItems();
     bool showMultiItemPreview = previewRecords != null && previewRecords.Count > 1;
     // Reserve sufficient horizontal space for one row of item previews.
-    float popupReserve = showMultiItemPreview
+    List<OriginalWallOrnamentMarker> selectedOrnaments = GetSelectedWallOrnaments();
+    float floorReserve = showMultiItemPreview
         ? GetSelectedFloorItemPopupWidth(previewRecords.Count) + 16f * mapZoom
         : 0f;
+    float popupReserve = Mathf.Max(floorReserve,
+        selectedOrnaments.Count > 0 ? 170f * mapZoom : 0f);
     float contentWidth =
         LabelLeftMargin * mapZoom
         + Mathf.Max(map.Width, OutsideNameColumnX + 2) * CellSize
@@ -1124,8 +1126,6 @@ public class DungeonFeatureEditor : EditorWindow
         mapPixelHeight
     );
 
-    hoveredMapTooltip = string.Empty;
-    hoveredMapTooltipHotspot = Rect.zero;
 
     // Consume wheel events only inside the map content; elsewhere the window
     // keeps its normal scrolling behavior.
@@ -1165,6 +1165,12 @@ public class DungeonFeatureEditor : EditorWindow
     List<FloorItemPlacementRecord> currentPopupRecords = GetInspectedFloorItems();
     if (currentPopupRecords != null && currentPopupRecords.Count > 1)
       DrawSelectedFloorItemsPopup(mapRect, currentPopupRecords);
+    else
+      DrawSelectedWallOrnamentPreview(mapRect);
+
+    // Always paint the player tile LAST: no floor, ornament, champion or
+    // preview layer may hide the cyan player location.
+    DrawCurrentPlayerTileHighlight(mapRect);
 
     EditorGUILayout.EndScrollView();
   }
@@ -1339,71 +1345,6 @@ public class DungeonFeatureEditor : EditorWindow
     Repaint();
   }
 
-  private void DrawMapHoverTooltip()
-  {
-    if (string.IsNullOrEmpty(hoveredMapTooltip))
-      return;
-
-    GUIStyle style = new GUIStyle(EditorStyles.helpBox)
-    {
-      alignment = TextAnchor.UpperLeft,
-      wordWrap = true,
-      richText = false,
-      fontSize = Mathf.Max(10, Mathf.RoundToInt(11f * mapZoom))
-    };
-
-    const float horizontalPadding = 8f;
-    const float verticalPadding = 6f;
-    float width = Mathf.Max(160f, 190f * mapZoom);
-    float height = style.CalcHeight(new GUIContent(hoveredMapTooltip), width - horizontalPadding * 2f)
-        + verticalPadding * 2f;
-
-    Vector2 mouse = Event.current.mousePosition;
-    Rect tooltipRect = new Rect(
-        mouse.x + 18f,
-        mouse.y + 18f,
-        width,
-        height);
-
-    Rect windowRect = new Rect(0f, 0f, position.width, position.height);
-    if (tooltipRect.xMax > windowRect.xMax - 6f)
-      tooltipRect.x = Mathf.Max(6f, mouse.x - width - 18f);
-    if (tooltipRect.yMax > windowRect.yMax - 6f)
-      tooltipRect.y = Mathf.Max(6f, mouse.y - height - 18f);
-
-    EditorGUI.DrawRect(tooltipRect, new Color(0.15f, 0.15f, 0.15f, 0.97f));
-    EditorGUI.DrawRect(new Rect(tooltipRect.x, tooltipRect.y, tooltipRect.width, 1f), new Color(0.7f, 0.7f, 0.7f, 1f));
-    EditorGUI.DrawRect(new Rect(tooltipRect.x, tooltipRect.yMax - 1f, tooltipRect.width, 1f), new Color(0.7f, 0.7f, 0.7f, 1f));
-    EditorGUI.DrawRect(new Rect(tooltipRect.x, tooltipRect.y, 1f, tooltipRect.height), new Color(0.7f, 0.7f, 0.7f, 1f));
-    EditorGUI.DrawRect(new Rect(tooltipRect.xMax - 1f, tooltipRect.y, 1f, tooltipRect.height), new Color(0.7f, 0.7f, 0.7f, 1f));
-
-    Rect labelRect = new Rect(
-        tooltipRect.x + horizontalPadding,
-        tooltipRect.y + verticalPadding,
-        tooltipRect.width - horizontalPadding * 2f,
-        tooltipRect.height - verticalPadding * 2f);
-    GUI.Label(labelRect, hoveredMapTooltip, style);
-  }
-
-  private void RegisterMapHoverTooltip(Rect hotspot, string tooltip)
-  {
-    if (string.IsNullOrEmpty(tooltip) || !hotspot.Contains(Event.current.mousePosition))
-      return;
-
-    hoveredMapTooltip = tooltip;
-    hoveredMapTooltipHotspot = hotspot;
-  }
-
-  private static string GetWallOrnamentTooltip(OriginalWallOrnamentMarker marker)
-  {
-    if (marker == null)
-      return string.Empty;
-
-    return marker.Type
-        + "\nWall tile: (" + marker.X + "," + marker.Y + ")"
-        + "\nFace: " + marker.Side;
-  }
-
   private void DrawAxisLabels(Rect mapRect)
   {
     GUIStyle labelStyle = new GUIStyle(EditorStyles.miniLabel)
@@ -1540,6 +1481,22 @@ public class DungeonFeatureEditor : EditorWindow
           CellSize - 2f);
       EditorGUI.DrawRect(tileRect, VerifiedChampionTileColor);
     }
+  }
+
+  // The current player tile is always solid cyan, regardless of the tile's
+  // ordinary wall/floor color or any ornament, champion or item overlays.
+  // ViewEdit's player pose is synchronized in OnInspectorUpdate.
+  private void DrawCurrentPlayerTileHighlight(Rect mapRect)
+  {
+    if (map == null || !map.IsInside(selectedX, selectedY))
+      return;
+
+    Rect cell = new Rect(
+        mapRect.x + selectedX * CellSize,
+        mapRect.y + selectedY * CellSize,
+        CellSize,
+        CellSize);
+    EditorGUI.DrawRect(cell, new Color(0f, 1f, 1f, 1f));
   }
 
   private void DrawChampionMirrorMarkers(Rect mapRect)
@@ -2120,7 +2077,6 @@ public class DungeonFeatureEditor : EditorWindow
       {
         EditorGUI.DrawRect(iconRect, LordOrderOutsideMarkerColor);
         GUI.Label(cellRect, "LO", lordOrderOutsideLabelStyle);
-        RegisterMapHoverTooltip(iconRect, GetWallOrnamentTooltip(marker));
         continue;
       }
 
@@ -2139,11 +2095,78 @@ public class DungeonFeatureEditor : EditorWindow
                 System.StringComparison.OrdinalIgnoreCase))
           GUI.Label(cellRect, "VI", viLabelStyle);
 
-        RegisterMapHoverTooltip(iconRect, GetWallOrnamentTooltip(marker));
       }
       else
       {
         ReportMissingMapIcon(marker.Type, "wall ornament map icon");
+      }
+    }
+  }
+
+  // A compact persistent ornament preview, like the multi-item floor popup.
+  // The map icon and preview both refer to the same authored wall tile/face.
+  private List<OriginalWallOrnamentMarker> GetSelectedWallOrnaments()
+  {
+    List<OriginalWallOrnamentMarker> matches =
+        new List<OriginalWallOrnamentMarker>();
+    if (resolvedWallOrnaments == null)
+      return matches;
+    foreach (OriginalWallOrnamentMarker marker in resolvedWallOrnaments)
+    {
+      if (marker != null && marker.X == inspectedOrnamentX && marker.Y == inspectedOrnamentY)
+        matches.Add(marker);
+    }
+    return matches;
+  }
+
+  private void DrawSelectedWallOrnamentPreview(Rect mapRect)
+  {
+    List<OriginalWallOrnamentMarker> ornaments = GetSelectedWallOrnaments();
+    if (ornaments.Count == 0)
+      return;
+
+    EnsureOrnamentTexturesResolved();
+    float unit = mapZoom;
+    float width = 155f * unit;
+    float blockHeight = 90f * unit;
+    Rect panel = new Rect(mapRect.xMax + 8f * unit,
+        mapRect.y - (LabelTopMargin + OutsideFeatureVerticalMargin) * unit
+            + 2f * unit, width,
+        20f * unit + ornaments.Count * blockHeight);
+    EditorGUI.DrawRect(panel, new Color(0.15f, 0.15f, 0.15f, 1f));
+    float border = Mathf.Max(1f, unit);
+    Color borderColor = new Color(0.45f, 0.45f, 0.45f, 1f);
+    EditorGUI.DrawRect(new Rect(panel.x, panel.y, panel.width, border), borderColor);
+    EditorGUI.DrawRect(new Rect(panel.x, panel.yMax - border, panel.width, border), borderColor);
+    EditorGUI.DrawRect(new Rect(panel.x, panel.y, border, panel.height), borderColor);
+    EditorGUI.DrawRect(new Rect(panel.xMax - border, panel.y, border, panel.height), borderColor);
+
+    GUIStyle titleStyle = new GUIStyle(EditorStyles.miniBoldLabel)
+    { normal = { textColor = Color.white } };
+    GUI.Label(new Rect(panel.x + 7f * unit, panel.y + 4f * unit,
+        panel.width - 14f * unit, 17f * unit),
+        "Wall (" + inspectedOrnamentX + "," + inspectedOrnamentY + ")", titleStyle);
+
+    for (int i = 0; i < ornaments.Count; i++)
+    {
+      OriginalWallOrnamentMarker marker = ornaments[i];
+      float y = panel.y + 22f * unit + i * blockHeight;
+      GUI.Label(new Rect(panel.x + 6f * unit, y,
+          panel.width - 12f * unit, 16f * unit), marker.Type, titleStyle);
+      GUI.Label(new Rect(panel.x + 6f * unit, y + 16f * unit,
+          panel.width - 12f * unit, 16f * unit),
+          "Face: " + marker.Side, EditorStyles.miniLabel);
+      Texture2D texture = GetOrnamentMapIcon(marker.Type);
+      if (texture != null)
+      {
+        float imageSize = 52f * unit;
+        GUI.DrawTexture(new Rect(panel.center.x - imageSize * 0.5f,
+            y + 33f * unit, imageSize, imageSize),
+            texture, ScaleMode.ScaleToFit, true);
+      }
+      else
+      {
+        ReportMissingMapIcon(marker.Type, "wall ornament preview image");
       }
     }
   }
@@ -2903,6 +2926,28 @@ public class DungeonFeatureEditor : EditorWindow
       return;
 
     bool doubleClick = current.clickCount == 2;
+    // Single-click inspection must never teleport the player into a wall.
+    // A second click retains the original wall-ornament teleport behavior.
+    if (!doubleClick && resolvedWallOrnaments != null)
+    {
+      for (int i = 0; i < resolvedWallOrnaments.Length; i++)
+      {
+        OriginalWallOrnamentMarker marker = resolvedWallOrnaments[i];
+        if (marker == null || marker.X != x || marker.Y != y)
+          continue;
+        inspectedOrnamentX = x;
+        inspectedOrnamentY = y;
+        current.Use();
+        GUI.changed = true;
+        Repaint();
+        return;
+      }
+    }
+    if (inspectedOrnamentX != x || inspectedOrnamentY != y)
+    {
+      inspectedOrnamentX = -1;
+      inspectedOrnamentY = -1;
+    }
     // An inspection belongs only to its selected tile. Clicking any other
     // tile (including one without items) clears stale details immediately.
     // Preserve the current details when double-clicking the same tile.

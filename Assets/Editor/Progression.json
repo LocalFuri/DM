@@ -671,5 +671,86 @@
       "Audit floor-object visibility independently if a reproducible failure occurs."
     ]
   },
-  "current_checkpoint_20261030": "User-verified V17 exact wall-face fix for LEYLA champion mirror: visible at (13,12) North FrontF1, absent at (14,12) North; five walls unchanged."
+  "current_checkpoint_20261030": "User-verified V17 exact wall-face fix for LEYLA champion mirror: visible at (13,12) North FrontF1, absent at (14,12) North; five walls unchanged.",
+  "simple_grid_only_mandatory_rule_20261030": {
+    "status": "mandatory, user-confirmed 2026-10-30",
+    "scope": "All requested dungeon tile/map visibility grids, player-view orientation tests, and comparisons in this project.",
+    "reference": "User-supplied screenshot image(20261030-202203).png: 13,12 facing WEST minimalist 5x5 square grid.",
+    "required_format": [
+      "Only draw a simple, flat square-cell map grid, like the reference image. No decorative graphics, wall textures, perspective renders, portraits, maps of the entire level, or editor UI mockups.",
+      "Use a concise header with player X,Y and facing; a small grid of squares with actual tile coordinates where visible.",
+      "Player cell cyan with a small direction arrow.",
+      "Visible wall cells gray with short labels such as F1, L0, R0 when confirmed by map geometry; visible open cells white.",
+      "Tiles geometrically outside the forward view or occluded by walls must be black with no coordinate text or other labels.",
+      "Align the grid to the direction the player faces, matching the reference screenshot.",
+      "No legend, detailed text panel, extra widgets, ornamental imagery, or perspective wall rendering unless the user expressly requests it.",
+      "Read actual DungeonMaster_LevelXX.json and apply confirmed V17 visibility/occlusion; do not invent walls or ornaments from relative tile positions."
+    ],
+    "precedence": "Newest confirmed instruction wins over previous grid/image presentation guidance."
+  },
+  "player_relative_directions_v17_verified_20261030": {
+    "status": "confirmed 2026-10-30; ViewEdit code already uses player-relative offsets, no C# edit needed for this case",
+    "source_code": "ViewportLayoutEditor.cs (2026-10-30): SampleViewport17Cell uses DungeonMap.GetForwardOffset and DungeonMap.GetRightOffset; mapX=previewX+forwardX*depth+rightX*localX; mapY=previewY+forwardY*depth+rightY*localX.",
+    "mandatory_rule": "Always evaluate left/right relative to current player facing (not absolute map West/East); use this same convention in V17 wall/object visibility and simple grid presentation.",
+    "regression_example": {
+      "level": 0,
+      "player_x": 13,
+      "player_y": 12,
+      "facing": "West",
+      "forward_f1": [
+        12,
+        12
+      ],
+      "left_f0": [
+        13,
+        13
+      ],
+      "right_f0": [
+        13,
+        11
+      ],
+      "behind": [
+        14,
+        12
+      ]
+    },
+    "grid_presentation": "For West-facing player view (13,12), map tile (13,13) is player LEFT and (13,11) is player RIGHT; orient screen/grid accordingly. Invisible tiles black with no coordinates.",
+    "implementation_note": "Do not change the verified wall renderer solely to correct past diagrams; validate each object renderer separately when its direction differs."
+  },
+  "checkpoint_20261030_end_of_day_mirror_projection_refactor": {
+    "date": "2026-10-30",
+    "status": "Checkpoint saved; Unity test of latest partial refactor pending",
+    "core_decision": "Stop treating champion mirrors as a separate positioning system. Reuse generic JSON map geometry, physical wall tile/face, player-relative V17 projection and occlusion used for other wall ornaments. Mirror-specific code should only select artwork and F1 portrait; do not hardcode champion-specific positions.",
+    "confirmed_regressions": [
+      "Level 0 (13,12) North: LEYLA South-face mirror on (13,11) correctly appears FrontF1 with portrait.",
+      "Level 0 (14,12) North: LEYLA must not show on side wall; exact physical-wall-face fix user-confirmed, five wall pieces remain correct.",
+      "Level 0 (13,12) West: FrontF1 wall (12,12) East face correct; RightF0 wall (13,11) South face, LEYLA mirror absent.",
+      "Level 0 (13,12) West: WUUF at (12,13), mirror on (11,13) East face; desired LeftF2 screen projection using FrontF2 FRAME image, no portrait; original compared visually."
+    ],
+    "recent_patches": [
+      "V17_Shared_JSON_Object_Visibility_20261030.zip: first shared corridor check.",
+      "V17_Exact_Wall_Face_LEYLA_20261030.zip: exact wall-face visibility, confirmed working in Unity.",
+      "ViewEdit_WUUF_SideLane_FrontF2_20261030.zip: side-lane detection and calibration row, later found positioning/calibration issues.",
+      "ViewEdit_WUUF_F2_XY_Refresh_Fix_20261030.zip: preview refresh for controls.",
+      "ViewEdit_Generic_Mirror_F2_Consolidation_20261030.zip: partial separation of side vs front artwork and shared projection key.",
+      "ViewEdit_Generic_WallFeature_Lateral_Projection_20261030.zip: latest source checkpoint; introduces reusable TryGetLateralFrontWallFeatureProjection for side-lane F2, not yet fully unified."
+    ],
+    "open_issues": [
+      "Latest partial refactor has not been compiled or visually verified in Unity.",
+      "Mirror left/right X/Y adjustments previously changed unrelated mirrors because projection keys are shared or mismatched; retain generic per-projection defaults but do not allow unrelated projection classes to interfere.",
+      "Several distinct champion mirror drawing routines remain; complete single generic physical wall-feature projection/visibility and single-render decision without disrupting existing verified cases.",
+      "Ensure ViewEdit Set/X/Y/Mirror/Apply controls affect the actual rendered image and refresh immediately.",
+      "Inspect generic side-lane placement and F2 front artwork against original; never solve with WUUF-specific or direction-specific hacks."
+    ],
+    "tomorrow_next_steps": [
+      "Start from ViewEdit_Generic_WallFeature_Lateral_Projection_20261030.zip, not an older ViewportLayoutEditor.cs.",
+      "Compile and inspect Unity console; first verify wall rendering and LEYLA FrontF1/hidden-side regression.",
+      "Verify WUUF LeftF2 FrontF2 frame (no portrait) and usable X/Y/ViewEdit calibration.",
+      "Refactor remaining champion mirror positioning paths to shared wall-ornament geometric projection; keep artwork choice separate.",
+      "Verify equivalence after rotating geometry to North/East/South/West and left/right symmetry.",
+      "Only after tests pass, update confirmed status and commit to Git."
+    ],
+    "preserve": "Do not modify verified V17 wall geometry/rendering, CSBwin floor scaling, floor pickups, or existing working ornament placement; no silent asset/data fallbacks; Unity tools stay directly in Assets/Editor.",
+    "grid_rule": "Only simple square grids for visual map explanation: cyan player, white visible open, gray visible walls, black invisible with no coordinates; orientation always player-relative."
+  }
 }
