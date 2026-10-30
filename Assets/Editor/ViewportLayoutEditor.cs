@@ -25253,8 +25253,9 @@ private static void HandleGameViewPointerDown(
         featureStyle,
         GUILayout.Width(ornamentCaptionColumnWidth));
 
-    // Hook toggles use the placement visibility key checked by the renderer.
-    if (IsHookOrnament(ornament))
+    // Hooks and wooden rings share the renderer's placement visibility key.
+    // Allow either to be toggled while testing its appearance in ViewEdit.
+    if (IsHookOrnament(ornament) || IsWoodRingOrnament(ornament))
     {
       string hookVisibilityKey = MakePreviewFeatureKey(
           "Ornament", ornament.x, ornament.y, ornament.wall);

@@ -190,6 +190,8 @@ public class DungeonFeatureEditor : EditorWindow
   private bool showFloorItems = true;
   private int inspectedFloorItemX = -1;
   private int inspectedFloorItemY = -1;
+  private string hoveredMapTooltip = string.Empty;
+  private Rect hoveredMapTooltipHotspot;
 
   private static bool IsFloorItemRecordType(string recordType)
   {
@@ -1055,6 +1057,7 @@ public class DungeonFeatureEditor : EditorWindow
     EditorGUILayout.EndHorizontal();
 
     DrawMapGrid();
+    DrawMapHoverTooltip();
   }
 
   private void SetDungeonLevelFromUi(int requestedLevel)
@@ -1121,6 +1124,9 @@ public class DungeonFeatureEditor : EditorWindow
         mapPixelHeight
     );
 
+    hoveredMapTooltip = string.Empty;
+    hoveredMapTooltipHotspot = Rect.zero;
+
     // Consume wheel events only inside the map content; elsewhere the window
     // keeps its normal scrolling behavior.
     HandleMapZoom(contentRect);
@@ -1154,9 +1160,6 @@ public class DungeonFeatureEditor : EditorWindow
     DrawOriginalWallOrnamentIcons(mapRect);
     DrawVerifiedChampionTileHighlights(mapRect);
     DrawChampionMirrorMarkers(mapRect);
-    // Always show the current ViewEdit/player tile, even over green champion
-    // highlights and feature icons. The translucent fill preserves details.
-    DrawCurrentPlayerTileHighlight(mapRect);
     // The click may have selected a new tile during this GUI event. Read the
     // current inspection state now, instead of using the previous frame's data.
     List<FloorItemPlacementRecord> currentPopupRecords = GetInspectedFloorItems();
@@ -1336,6 +1339,71 @@ public class DungeonFeatureEditor : EditorWindow
     Repaint();
   }
 
+  private void DrawMapHoverTooltip()
+  {
+    if (string.IsNullOrEmpty(hoveredMapTooltip))
+      return;
+
+    GUIStyle style = new GUIStyle(EditorStyles.helpBox)
+    {
+      alignment = TextAnchor.UpperLeft,
+      wordWrap = true,
+      richText = false,
+      fontSize = Mathf.Max(10, Mathf.RoundToInt(11f * mapZoom))
+    };
+
+    const float horizontalPadding = 8f;
+    const float verticalPadding = 6f;
+    float width = Mathf.Max(160f, 190f * mapZoom);
+    float height = style.CalcHeight(new GUIContent(hoveredMapTooltip), width - horizontalPadding * 2f)
+        + verticalPadding * 2f;
+
+    Vector2 mouse = Event.current.mousePosition;
+    Rect tooltipRect = new Rect(
+        mouse.x + 18f,
+        mouse.y + 18f,
+        width,
+        height);
+
+    Rect windowRect = new Rect(0f, 0f, position.width, position.height);
+    if (tooltipRect.xMax > windowRect.xMax - 6f)
+      tooltipRect.x = Mathf.Max(6f, mouse.x - width - 18f);
+    if (tooltipRect.yMax > windowRect.yMax - 6f)
+      tooltipRect.y = Mathf.Max(6f, mouse.y - height - 18f);
+
+    EditorGUI.DrawRect(tooltipRect, new Color(0.15f, 0.15f, 0.15f, 0.97f));
+    EditorGUI.DrawRect(new Rect(tooltipRect.x, tooltipRect.y, tooltipRect.width, 1f), new Color(0.7f, 0.7f, 0.7f, 1f));
+    EditorGUI.DrawRect(new Rect(tooltipRect.x, tooltipRect.yMax - 1f, tooltipRect.width, 1f), new Color(0.7f, 0.7f, 0.7f, 1f));
+    EditorGUI.DrawRect(new Rect(tooltipRect.x, tooltipRect.y, 1f, tooltipRect.height), new Color(0.7f, 0.7f, 0.7f, 1f));
+    EditorGUI.DrawRect(new Rect(tooltipRect.xMax - 1f, tooltipRect.y, 1f, tooltipRect.height), new Color(0.7f, 0.7f, 0.7f, 1f));
+
+    Rect labelRect = new Rect(
+        tooltipRect.x + horizontalPadding,
+        tooltipRect.y + verticalPadding,
+        tooltipRect.width - horizontalPadding * 2f,
+        tooltipRect.height - verticalPadding * 2f);
+    GUI.Label(labelRect, hoveredMapTooltip, style);
+  }
+
+  private void RegisterMapHoverTooltip(Rect hotspot, string tooltip)
+  {
+    if (string.IsNullOrEmpty(tooltip) || !hotspot.Contains(Event.current.mousePosition))
+      return;
+
+    hoveredMapTooltip = tooltip;
+    hoveredMapTooltipHotspot = hotspot;
+  }
+
+  private static string GetWallOrnamentTooltip(OriginalWallOrnamentMarker marker)
+  {
+    if (marker == null)
+      return string.Empty;
+
+    return marker.Type
+        + "\nWall tile: (" + marker.X + "," + marker.Y + ")"
+        + "\nFace: " + marker.Side;
+  }
+
   private void DrawAxisLabels(Rect mapRect)
   {
     GUIStyle labelStyle = new GUIStyle(EditorStyles.miniLabel)
@@ -1472,31 +1540,6 @@ public class DungeonFeatureEditor : EditorWindow
           CellSize - 2f);
       EditorGUI.DrawRect(tileRect, VerifiedChampionTileColor);
     }
-  }
-
-  // The current player position is cyan regardless of the tile's other markers.
-  // The coordinates are synchronized from ViewEdit when the window opens and
-  // on each inspector update; the highlight follows movement automatically.
-  private void DrawCurrentPlayerTileHighlight(Rect mapRect)
-  {
-    if (map == null || !map.IsInside(selectedX, selectedY))
-      return;
-
-    Rect cell = new Rect(
-        mapRect.x + selectedX * CellSize,
-        mapRect.y + selectedY * CellSize,
-        CellSize,
-        CellSize);
-    Color cyan = new Color(0f, 1f, 1f, 1f);
-    EditorGUI.DrawRect(
-        new Rect(cell.x + 2f, cell.y + 2f,
-            Mathf.Max(0f, cell.width - 4f), Mathf.Max(0f, cell.height - 4f)),
-        new Color(0f, 1f, 1f, 0.65f));
-    float edge = Mathf.Min(2f, CellSize / 4f);
-    EditorGUI.DrawRect(new Rect(cell.x, cell.y, cell.width, edge), cyan);
-    EditorGUI.DrawRect(new Rect(cell.x, cell.yMax - edge, cell.width, edge), cyan);
-    EditorGUI.DrawRect(new Rect(cell.x, cell.y, edge, cell.height), cyan);
-    EditorGUI.DrawRect(new Rect(cell.xMax - edge, cell.y, edge, cell.height), cyan);
   }
 
   private void DrawChampionMirrorMarkers(Rect mapRect)
@@ -2062,9 +2105,11 @@ public class DungeonFeatureEditor : EditorWindow
 
       Texture2D texture = GetOrnamentMapIcon(marker.Type);
       // All wall ornaments are centered on their 32x32 map tile.
-      // The lit torch retains its native 16x16 display size; other wall
-      // ornaments retain their existing 20x20 drawing area.
-      float iconSize = (IsTorchHolderOrnamentType(marker.Type) ? 16f : 20f) * mapZoom;
+      // The lit torch retains its native 16x16 display size. Wood rings get
+      // a slightly larger marker so they remain legible on the compact map.
+      float iconBaseSize = IsTorchHolderOrnamentType(marker.Type) ? 16f
+          : (IsWoodRingOrnamentType(marker.Type) ? 24f : 20f);
+      float iconSize = iconBaseSize * mapZoom;
       Rect iconRect = new Rect(
           cellRect.center.x - iconSize * 0.5f,
           cellRect.center.y - iconSize * 0.5f,
@@ -2075,6 +2120,7 @@ public class DungeonFeatureEditor : EditorWindow
       {
         EditorGUI.DrawRect(iconRect, LordOrderOutsideMarkerColor);
         GUI.Label(cellRect, "LO", lordOrderOutsideLabelStyle);
+        RegisterMapHoverTooltip(iconRect, GetWallOrnamentTooltip(marker));
         continue;
       }
 
@@ -2092,6 +2138,8 @@ public class DungeonFeatureEditor : EditorWindow
         if (string.Equals(marker.Type, "ViAltar",
                 System.StringComparison.OrdinalIgnoreCase))
           GUI.Label(cellRect, "VI", viLabelStyle);
+
+        RegisterMapHoverTooltip(iconRect, GetWallOrnamentTooltip(marker));
       }
       else
       {
@@ -2109,6 +2157,14 @@ public class DungeonFeatureEditor : EditorWindow
            || string.Equals(
                type,
                "EmptyTorchHolder",
+               System.StringComparison.OrdinalIgnoreCase);
+  }
+
+  private static bool IsWoodRingOrnamentType(string type)
+  {
+    return string.Equals(
+               type,
+               "WoodRing",
                System.StringComparison.OrdinalIgnoreCase);
   }
 
