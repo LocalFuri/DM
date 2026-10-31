@@ -36,6 +36,12 @@
             "x": -3,
             "y": 75,
             "mirror": false
+        },
+        {
+            "key": "OrnamentClass:7:EmptyTorchHolder:CornerFrontF2:Left",
+            "x": 2,
+            "y": 93,
+            "mirror": false
         }
     ]
 }
