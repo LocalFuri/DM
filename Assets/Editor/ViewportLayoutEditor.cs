@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -1429,6 +1429,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF FloorItemProjection:TorchDown:F1:Right|133|157|false|639275097288040421
   // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
   // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
+  // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
   // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
   // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274252203846657
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
@@ -2000,39 +2001,12 @@ public class ViewportLayoutEditor : EditorWindow
     previewHeldFloorItem = null;
     previewHeldFloorItemCursor = null;
     previewFloorPickupCompleted = false;
+    // Remove only the synthetic sword created by older diagnostic builds.
+    previewItemInstances.Remove("diagnostic:samurai-sword:reload");
     foreach (FloorItemPlacement item in HallOfChampionsFloorItems)
       previewItemInstances.Remove(GetFloorItemInstanceId(item));
     foreach (FloorItemPlacement item in HallOfChampionsFloorItems)
       previewDisabledFeatureKeys.Remove(GetFloorItemFeatureKey(item));
-  }
-
-  // Temporary floor-distance testing aid until champion recruitment is available.
-  // A new test Sword is placed directly on the cursor after each ViewEdit reload;
-  // it is NOT claimed from any champion's starting equipment or source map.
-  private void EquipSamuraiSwordDiagnosticCursorAfterReload()
-  {
-    const string itemType = "Samurai Sword";
-    const string id = "diagnostic:samurai-sword:reload";
-    Texture2D cursor = GetChampionInventoryItemTexture(itemType);
-    if (cursor == null || !cursor.isReadable || cursor.width != 16 || cursor.height != 16)
-    {
-      Debug.LogError("SAMURAI SWORD TEST CURSOR: Missing readable 16x16 inventory artwork; no fallback.");
-      return;
-    }
-    if (previewItemInstances.ContainsKey(id))
-      previewItemInstances.Remove(id); // Remove only the previous test instance on reload.
-    ItemInstance instance = EnsureWorldItemInstance(id, itemType, "Cursor",
-        previewDungeonLevel, previewX, previewY, "N");
-    if (instance == null) return;
-    MoveItemInstance(instance, "Cursor");
-    previewHeldFloorItemId = id;
-    previewHeldFloorItem = new FloorItemPlacement {
-      level = previewDungeonLevel, type = itemType,
-      x = previewX, y = previewY, cell = "N", instanceId = id
-    };
-    previewHeldFloorItemCursor = cursor;
-    previewFloorPickupCompleted = true;
-    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
   }
 
   [MenuItem("Tools/Check Original Ground Items", false, 120)]
@@ -2642,7 +2616,6 @@ public class ViewportLayoutEditor : EditorWindow
     // reload. EditorWindow state may survive compilation, including picked-up
     // IDs or hidden feature flags from an earlier test session.
     RestoreOriginalFloorTestItemsAfterReload();
-    EquipSamuraiSwordDiagnosticCursorAfterReload();
     LoadPressurePadF1AcceptedCalibration();
     LoadPressurePadF2AcceptedCalibration();
     LoadPressurePadF3AcceptedCalibration();
@@ -13272,6 +13245,29 @@ private static void HandleGameViewPointerDown(
     }
     NoteContentRight();
     EditorGUILayout.EndHorizontal();
+
+    // Explicit ViewEdit redraw: allows diagnostic capture at the current pose
+    // without walking to another tile, turning, or recompiling scripts.
+    EditorGUILayout.BeginHorizontal();
+    if (GUILayout.Button("Refresh", GUILayout.Width(83f)))
+    {
+      Debug.Log("ViewEdit Refresh: requested at Level " + previewDungeonLevel
+          + " X=" + previewX + " Y=" + previewY
+          + " Facing=" + previewFacing);
+      if (Application.isPlaying)
+      {
+        Debug.LogWarning("ViewEdit Refresh: edit-mode preview redraw is unavailable in Play mode.");
+      }
+      else
+      {
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+        Debug.Log("ViewEdit Refresh: redraw completed (inspect LeftF2 POSE/comparison diagnostics above).");
+      }
+    }
+    NoteContentRight();
+    EditorGUILayout.EndHorizontal();
   }
 
   private bool TryGetViewportRawImage(out RawImage viewportImage)
@@ -19713,7 +19709,6 @@ private static void HandleGameViewPointerDown(
   private bool frontF3AppliedMirror = true;
   private bool frontF3AppliedEnabled = true;
   // Same foldout behaviour as ordinary ViewEdit wall cards.
-  private bool frontF3WallCardExpanded = true;
 
   private bool IsFrontF3DraftModified()
   {
@@ -23347,79 +23342,10 @@ private static void HandleGameViewPointerDown(
     // the off-screen portion exactly as original's srcOffsetX does.
   }
 
-  // CSBwin group 5, relative position 8 supplies the complete F2 bitmap;
-  // positions 7/9 supply the cropped LeftF2/RightF2 destination rectangle.
-  // Diagnostic only: identify the actual source artwork and its transparency.
-  // Does not change source selection, scale, placement, or rendered pixels.
-  private static bool loggedCornerF2SourceInspection;
-  private static void LogCornerF2SourceInspection(Texture2D source)
-  {
-    if (loggedCornerF2SourceInspection) return;
-    loggedCornerF2SourceInspection = true;
-    if (source == null)
-    {
-      Debug.LogError("CSBwin LeftF2 SOURCE: no front-mirror source texture selected.");
-      return;
-    }
-    string path = AssetDatabase.GetAssetPath(source);
-    Debug.Log("CSBwin LeftF2 SOURCE: asset=" + path
-        + " size=" + source.width + "x" + source.height
-        + " readable=" + source.isReadable
-        + " (original CSBwin graphic 208 source=64x43)");
-    TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
-    if (importer != null)
-      Debug.Log("CSBwin LeftF2 SOURCE IMPORT: alphaSource=" + importer.alphaSource
-          + " alphaIsTransparency=" + importer.alphaIsTransparency
-          + " compression=" + importer.textureCompression
-          + " filter=" + importer.filterMode
-          + " mipmap=" + importer.mipmapEnabled);
-    if (!source.isReadable)
-    {
-      Debug.LogError("CSBwin LeftF2 SOURCE: texture not readable; no pixel analysis.");
-      return;
-    }
-    Color32[] rgba = source.GetPixels32();
-    int transparentPixels = 0, opaquePixels = 0, partialPixels = 0;
-    int alphaColumns = 0, visibleColumns = 0, blackColumns = 0;
-    System.Text.StringBuilder cols = new System.Text.StringBuilder();
-    for (int x = 0; x < source.width; ++x)
-    {
-      int zero = 0, partial = 0, opaque = 0, colored = 0, black = 0;
-      for (int y = 0; y < source.height; ++y)
-      {
-        Color32 c = rgba[y * source.width + x];
-        if (c.a == 0) { zero++; transparentPixels++; }
-        else
-        {
-          if (c.a == 255) { opaque++; opaquePixels++; }
-          else { partial++; partialPixels++; }
-          if (c.r == 0 && c.g == 0 && c.b == 0) black++;
-          else colored++;
-        }
-      }
-      if (opaque + partial > 0) alphaColumns++;
-      if (colored > 0) visibleColumns++;
-      if (black > 0) blackColumns++;
-      if (cols.Length > 0) cols.Append(' ');
-      cols.Append(x).Append(':').Append(zero).Append('/')
-          .Append(partial).Append('/').Append(opaque).Append('/')
-          .Append(colored);
-    }
-    Debug.Log("CSBwin LeftF2 SOURCE MASK: transparentPixels=" + transparentPixels
-        + " partialAlphaPixels=" + partialPixels
-        + " opaquePixels=" + opaquePixels
-        + " columnsWithAlpha=" + alphaColumns
-        + " columnsWithColor=" + visibleColumns
-        + " columnsWithOpaqueBlack=" + blackColumns
-        + " [column:alpha0/alphaPartial/alpha255/nonBlack] " + cols);
-  }
-
   private Texture2D cachedOriginalCornerF2MirrorFrame;
   private Texture2D GetOriginalCornerF2MirrorFrame()
   {
-    // Inspect the actual source even when the scaled frame is already cached.
     Texture2D source = GetChampionMirrorFrontTexture();
-    LogCornerF2SourceInspection(source);
     if (cachedOriginalCornerF2MirrorFrame != null)
       return cachedOriginalCornerF2MirrorFrame;
     if (source == null || !source.isReadable)
@@ -23516,126 +23442,47 @@ private static void HandleGameViewPointerDown(
         + (left ? "Left" : "Right");
   }
 
-  // Diagnostic only: compare the Unity corner bitmap with CSBwin's captured
-  // graphic 208 (43x29, clipped at source X=16 to 27 destination columns).
-  // Do not change any rendering pixels or map geometry here.
-  private static bool loggedOriginalCornerF2PixelComparison;
-  private static void LogOriginalCornerF2PixelComparison(Texture2D scaled, Texture2D source)
+  // Class 1: champion mirror calibration is independent of ordinary ornaments.
+  // The class/view key contains no map position, champion name or compass facing.
+  private static string GetChampionMirrorClass1CornerF2Key(bool left)
   {
-    if (loggedOriginalCornerF2PixelComparison || scaled == null
-        || !scaled.isReadable) return;
-    loggedOriginalCornerF2PixelComparison = true;
-    const int originalScaledWidth = 43;
-    const int originalScaledHeight = 29;
-    const int clipSourceX = 16;
-    const int clipWidth = 27;
-    if (scaled.width != originalScaledWidth
-        || scaled.height != originalScaledHeight)
-    {
-      Debug.LogError("CSBwin LeftF2: expected 43x29, received "
-          + scaled.width + "x" + scaled.height + ". Verify source asset/descriptors.");
-      return;
-    }
-    Color32[] bitmap = scaled.GetPixels32();
-    int opaqueColumns = 0;
-    int coloredColumns = 0;
-    System.Text.StringBuilder columns = new System.Text.StringBuilder();
-    for (int x = clipSourceX; x < clipSourceX + clipWidth; x++)
-    {
-      int opaque = 0;
-      int colored = 0;
-      for (int y = 0; y < originalScaledHeight; y++)
-      {
-        Color32 pixel = bitmap[y * originalScaledWidth + x];
-        if (pixel.a == 0) continue;
-        opaque++;
-        if (pixel.r != 0 || pixel.g != 0 || pixel.b != 0) colored++;
-      }
-      if (opaque > 0) opaqueColumns++;
-      if (colored > 0) coloredColumns++;
-      if (columns.Length != 0) columns.Append(" ");
-      columns.Append(x - clipSourceX).Append(":")
-          .Append(opaque).Append("/").Append(colored);
-    }
-    // Source inspection is included in the SAME proven working comparison
-    // log. No separate once-only flag or cache gate can hide this data.
-    string sourceReport = " SOURCE asset=";
-    if (source == null)
-    {
-      sourceReport += "<missing>";
-    }
-    else
-    {
-      sourceReport += AssetDatabase.GetAssetPath(source)
-          + " size=" + source.width + "x" + source.height
-          + " readable=" + source.isReadable;
-      if (source.isReadable)
-      {
-        Color32[] srcPixels = source.GetPixels32();
-        int srcTransparent = 0, srcPartial = 0, srcOpaque = 0;
-        int srcAlphaCols = 0, srcColorCols = 0;
-        System.Text.StringBuilder sourceCols = new System.Text.StringBuilder();
-        for (int sx = 0; sx < source.width; sx++)
-        {
-          int alphaInCol = 0, coloredInCol = 0;
-          for (int sy = 0; sy < source.height; sy++)
-          {
-            Color32 c = srcPixels[sy * source.width + sx];
-            if (c.a == 0) srcTransparent++;
-            else
-            {
-              alphaInCol++;
-              if (c.a == 255) srcOpaque++;
-              else srcPartial++;
-              if (c.r != 0 || c.g != 0 || c.b != 0) coloredInCol++;
-            }
-          }
-          if (alphaInCol > 0) srcAlphaCols++;
-          if (coloredInCol > 0) srcColorCols++;
-          if (sx > 0) sourceCols.Append(' ');
-          sourceCols.Append(sx).Append(':').Append(alphaInCol)
-              .Append('/').Append(coloredInCol);
-        }
-        sourceReport += " transparentPixels=" + srcTransparent
-            + " partialAlphaPixels=" + srcPartial
-            + " opaquePixels=" + srcOpaque
-            + " columnsWithAlpha=" + srcAlphaCols
-            + " columnsWithColor=" + srcColorCols
-            + " [sourceColumn:alphaNonzero/nonBlack] " + sourceCols;
-      }
-    }
-    Debug.Log("CSBwin LeftF2 comparison (Unity source): "
-        + "opaqueColumns=" + opaqueColumns + " coloredColumns=" + coloredColumns
-        + " [destinationColumn:opaquePixels/coloredPixels] " + columns
-        + ". CSBwin captured graphic 208: 21 opaque, 20 colored. "
-        + "Black index 0 remains opaque; index 10 is transparent."
-        + sourceReport);
+    return "OrnamentClass:1:ChampionMirror:CornerFrontF2:"
+        + (left ? "Left" : "Right");
   }
 
-  private static bool loggedLeftF2BranchDiagnostic;
+  private static readonly System.Collections.Generic.HashSet<string>
+      loggedUncalibratedChampionViews =
+          new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
+
+  private void ReportUncalibratedChampionView(string key, bool left,
+      ChampionMirrorPlacement champion)
+  {
+    EnsureAcceptedOrnamentReferencesLoaded();
+    if (cachedAcceptedOrnamentReferences.ContainsKey(key)) return;
+    string occurrence = key + "|" + previewDungeonLevel + "|" + previewX
+        + "," + previewY + "|" + previewFacing;
+    if (!loggedUncalibratedChampionViews.Add(occurrence)) return;
+    Debug.Log("<color=cyan>CYAN | ViewEdit UNCALIBRATED | "
+        + "Class 1 Champion Mirror " + (left ? "LeftF2" : "RightF2")
+        + " | Level " + previewDungeonLevel + " player=" + previewX
+        + "," + previewY + ":" + previewFacing
+        + " | champion=" + (champion == null ? "NONE" : champion.champion)
+        + " | No applied class calibration yet; adjust X/Y and press Apply."
+        + "</color>");
+  }
+
   private void BlitChampionMirrorSideLaneFrontF2IntoPreview(Color32[] pixels)
   {
     if (pixels == null) return;
-    bool reportBranch = !loggedLeftF2BranchDiagnostic;
-    if (reportBranch)
-    {
-      loggedLeftF2BranchDiagnostic = true;
-      Debug.Log("CSBwin LeftF2 PATH: renderer entered; "
-          + "mirrorCount=" + (previewChampionMirrors == null ? -1 : previewChampionMirrors.Length)
-          + "; map=" + (previewMiniMap == null ? "MISSING" : "available")
-          + ". Scanning both side lanes.");
-    }
     for (int sideIndex = 0; sideIndex < 2; ++sideIndex)
     {
       bool left = sideIndex == 0;
       bool found = TryGetSideLaneFrontF2Mirror(left, out ChampionMirrorPlacement mirror, out bool nearCorner);
-      if (reportBranch)
-        Debug.Log("CSBwin LeftF2 PATH: side=" + (left ? "Left" : "Right")
-            + " found=" + found + " nearCorner=" + nearCorner
-            + (found && mirror != null ? " champion=" + mirror.champion : "")
-            + (found && mirror != null ? " tile=" + mirror.x + "," + mirror.y : ""));
       if (!found)
         continue;
+      if (nearCorner)
+        ReportUncalibratedChampionView(
+            GetChampionMirrorClass1CornerF2Key(left), left, mirror);
 
       Texture2D scaled = nearCorner
           ? GetOriginalCornerF2MirrorFrame()
@@ -23646,8 +23493,6 @@ private static void HandleGameViewPointerDown(
             + mirror.champion);
         continue;
       }
-      if (nearCorner && left)
-        LogOriginalCornerF2PixelComparison(scaled, GetChampionMirrorFrontTexture());
 
       int x, y;
       bool flip = false;
@@ -23655,7 +23500,7 @@ private static void HandleGameViewPointerDown(
       {
         GetOriginalCornerF2DrawPosition(5, left,
             scaled.width, scaled.height, out x, out y);
-        string key = GetOriginalCornerF2MirrorKey(left);
+        string key = GetChampionMirrorClass1CornerF2Key(left);
         ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
         ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
       }
@@ -23685,7 +23530,7 @@ private static void HandleGameViewPointerDown(
           : GetChampionMirrorScaledFrameTexture(GetChampionMirrorFrontTexture(), 2);
       if (scaled == null) continue;
       string key = nearCorner
-          ? GetOriginalCornerF2MirrorKey(left)
+          ? GetChampionMirrorClass1CornerF2Key(left)
           : GetSideLaneFrontF2MirrorProjectionKey(left);
       string visibilityKey = MakePreviewFeatureKey(
           "ChampionMirror", mirror.x, mirror.y, mirror.wall);
@@ -23866,40 +23711,35 @@ private static void HandleGameViewPointerDown(
 
   private Texture2D GetChampionMirrorFrontTexture()
   {
+    // Use only the explicitly configured original-size front mirror.
+    // Never silently substitute a differently sized mirror image.
     if (cachedChampionMirrorFrontTexture != null)
-      return cachedChampionMirrorFrontTexture;
+        return cachedChampionMirrorFrontTexture;
 
     Texture2D texture =
         AssetDatabase.LoadAssetAtPath<Texture2D>(ChampionMirrorFrontAssetPath);
-    if (texture != null && texture.width == 48 && texture.height == 43)
+    if (texture == null)
     {
-      cachedChampionMirrorFrontTexture = texture;
-      return texture;
+      Debug.LogError("ViewEdit: Champion mirror front asset missing: "
+          + ChampionMirrorFrontAssetPath + " (required 64x43).");
+      return null;
+    }
+    if (texture.width != 64 || texture.height != 43)
+    {
+      Debug.LogError("ViewEdit: Champion mirror front asset has wrong dimensions: "
+          + ChampionMirrorFrontAssetPath + " (expected 64x43, actual "
+          + texture.width + "x" + texture.height + ").");
+      return null;
+    }
+    if (!texture.isReadable)
+    {
+      Debug.LogError("ViewEdit: Champion mirror front asset is not readable: "
+          + ChampionMirrorFrontAssetPath + ". Enable Read/Write in Import Settings.");
+      return null;
     }
 
-    // Filename-independent fallback for the original 48x43 front mirror.
-    string[] guids = AssetDatabase.FindAssets(
-        "t:Texture2D",
-        new[] { ChampionArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 48 || candidate.height != 43)
-        continue;
-
-      if (path.IndexOf(
-              "mirror",
-              System.StringComparison.OrdinalIgnoreCase) < 0)
-      {
-        continue;
-      }
-
-      cachedChampionMirrorFrontTexture = candidate;
-      return candidate;
-    }
-
-    return null;
+    cachedChampionMirrorFrontTexture = texture;
+    return texture;
   }
 
   private Texture2D GetChampionPortraitTexture(string championName)
@@ -24404,8 +24244,11 @@ private static void HandleGameViewPointerDown(
       if (frame == null || !frame.isReadable
           || (depth == 1 && (portrait == null || !portrait.isReadable)))
       {
-        Debug.LogError("ViewEdit: Missing readable champion mirror/frame or F1 portrait: "
-            + champion.champion);
+        Debug.LogError("ViewEdit: Champion mirror render asset unavailable for "
+            + champion.champion + " F" + depth + ": frame="
+            + ChampionMirrorFrontAssetPath + " (64x43)"
+            + (depth == 1 ? "; F1 portrait=" + champion.champion : "")
+            + ". Check preceding asset errors.");
         return;
       }
 
@@ -31500,8 +31343,8 @@ private static void HandleGameViewPointerDown(
     if (item == null || !string.Equals(item.type, "Samurai Sword",
         System.StringComparison.OrdinalIgnoreCase)) return;
     string key = item.instanceId + "|" + detail;
-    if (swordF3TraceKeys.Add(key))
-      Debug.Log("SWORD F3 TRACE: " + detail);
+    // Temporarily silence Samurai Sword F3 trace during ornament calibration.
+    swordF3TraceKeys.Add(key);
   }
 
   private bool TryProjectFloorItem(
@@ -32158,7 +32001,6 @@ private static void HandleGameViewPointerDown(
   private CsbViewportTable csbViewportTable;
   private CsbGraphicClassTable csbGraphicTable;
   private CsbObjectDescriptionTable csbObjectTable;
-  private bool csbF2TablesRead;
   private readonly HashSet<string> csbF2Diagnostics = new HashSet<string>();
 
   private void ReportCsbF2Issue(string message)
@@ -32168,8 +32010,7 @@ private static void HandleGameViewPointerDown(
 
   private bool EnsureCsbF2Tables()
   {
-    // Editor-window reloads can leave a cached flag while the table fields have
-    // been cleared. A flag alone must never count as a successful load.
+    // Editor-window reloads may clear the cached table fields.
     bool complete = csbViewportTable?.classes != null && csbViewportTable.classes.Length == 3
         && csbGraphicTable?.entries != null && csbGraphicTable.entries.Length == 85
         && csbObjectTable?.entries != null && csbObjectTable.entries.Length == 180
@@ -32180,9 +32021,7 @@ private static void HandleGameViewPointerDown(
         && csbObjectTable.entries[158].graphicClassIndex == 25;
     if (complete) return true;
 
-    // Retry if a prior attempt failed or the editor lost its nonserialized
-    // table data. Never let stale csbF2TablesRead suppress a valid reload.
-    csbF2TablesRead = false;
+    // Reload when a prior attempt failed or nonserialized table data was lost.
     try
     {
       if (!File.Exists(CsbViewportTablePath) || !File.Exists(CsbGraphicClassTablePath)
@@ -32209,7 +32048,6 @@ private static void HandleGameViewPointerDown(
       csbViewportTable = newViewport;
       csbGraphicTable = newGraphics;
       csbObjectTable = newObjects;
-      csbF2TablesRead = true;
       return true;
     }
     catch (System.Exception ex)
@@ -33520,12 +33358,7 @@ private static void HandleGameViewPointerDown(
           FloorProjectionCalibrationEntry savedTrace =
               traceCorner < 0 ? null :
               FindSavedFloorProjectionCalibration(item.type, depthLabel, traceCorner);
-          Debug.Log("SAMURAI SWORD DISTANCE: " + depthLabel
-              + " | player=(" + previewX + "," + previewY + ") " + previewFacing
-              + " | sword=(" + item.x + "," + item.y + ") [" + item.cell + "]"
-              + " | corner=" + traceCorner
-              + " | saved=" + (savedTrace == null ? "generic" :
-                  savedTrace.x + "/" + savedTrace.y));
+          // Temporary Samurai Sword distance logging disabled for ornament calibration.
         }
       }
       // One compact ViewEdit line per pickable item: name, Set, X, Y, Apply.
@@ -33551,13 +33384,7 @@ private static void HandleGameViewPointerDown(
         int rowCorner = GetFloorScreenCorner(item);
         FloorProjectionCalibrationEntry loaded = rowCorner < 0 ? null
             : FindSavedFloorProjectionCalibration(item.type, "F2", rowCorner);
-        Debug.LogWarning("SAMURAI F2 ROW CHECK: player=(" + previewX + "," + previewY
-            + ") facing=" + previewFacing + " sword=(" + item.x + "," + item.y
-            + ") cell=" + item.cell + " depth=" + depth
-            + " key=" + FloorCalibrationKey(item.type, "F2", rowCorner)
-            + " fileExists=" + File.Exists(FloorProjectionCalibrationPath)
-            + " saved=" + (loaded == null ? "MISSING" : loaded.x + "/" + loaded.y)
-            + " Set=" + IsPreviewFeatureEnabled(key));
+        // Temporary Samurai Sword F2 row warning disabled for ornament calibration.
       }
       bool enabledBefore = IsPreviewFeatureEnabled(key);
       bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
