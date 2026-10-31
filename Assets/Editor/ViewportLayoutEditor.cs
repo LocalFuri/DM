@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -1429,6 +1429,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF FloorItemProjection:TorchDown:F1:Right|133|157|false|639275097288040421
   // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
   // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
+  // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
   // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274252203846657
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
   // REF OrnamentProjection:Hook:F2|103|111|false|639272438417071479
@@ -16917,6 +16918,9 @@ private static void HandleGameViewPointerDown(
         }
       }
 
+      // Temporary WUUF Manacles A/B experiment; ordinary ornament renderer only.
+      ApplyWuufManaclesProjectionExperiment(level);
+
       previewMiniMapLoadError = null;
       return true;
     }
@@ -16948,6 +16952,52 @@ private static void HandleGameViewPointerDown(
   /// Disables every piece except Floor, Ceiling, Movement Arrows, and
   /// Champion Status Slot 1–4 (matched by ViewportPiece.Name).
   /// </summary>
+  // TEMPORARY EXPERIMENT: replace WUUF's mirror with Manacles at the
+  // physical feature location as recorded by Dungeon Features: floor
+  // (12,13), facing West. Manacles use ordinary ornament drawing/projection.
+  // Undo by removing this method and its call in TryLoadPreviewLevel.
+  private void ApplyWuufManaclesProjectionExperiment(int level)
+  {
+    if (level != 0)
+      return;
+
+    if (previewChampionMirrors == null || previewWallOrnaments == null)
+      throw new System.InvalidOperationException(
+          "WUUF Manacles test requires loaded champion mirrors and wall ornaments.");
+
+    var remainingMirrors = new List<ChampionMirrorPlacement>(
+        previewChampionMirrors.Length);
+    bool foundWuuf = false;
+    foreach (ChampionMirrorPlacement mirror in previewChampionMirrors)
+    {
+      if (mirror != null && string.Equals(mirror.champion, "WUUF",
+          System.StringComparison.OrdinalIgnoreCase))
+      {
+        foundWuuf = true;
+        continue;
+      }
+      remainingMirrors.Add(mirror);
+    }
+    if (!foundWuuf)
+      throw new System.InvalidOperationException(
+          "WUUF Manacles test: WUUF mirror was not loaded; no substitution performed.");
+
+    var ornaments = new List<WallOrnamentPlacement>(previewWallOrnaments);
+    ornaments.Add(new WallOrnamentPlacement
+    {
+      type = "Manacles",
+      ornamentOrdinal = -1,
+      x = 12,
+      y = 13,
+      wall = "West",
+      wallTilePlacement = false
+    });
+    previewChampionMirrors = remainingMirrors.ToArray();
+    previewWallOrnaments = ornaments.ToArray();
+    Debug.Log("ViewEdit WUUF A/B: mirror suppressed; ordinary Manacles at "
+        + "floor (12,13) facing West; no persistent data changed.");
+  }
+
   /// <summary>
   /// ViewEdit preview only. Floor, ceiling, arrows, and champion slots stay.
   /// Stored piece Enabled / X / Y / Graphic / Mirror are not changed.
@@ -22996,7 +23046,14 @@ private static void HandleGameViewPointerDown(
     int depth = dx * fx + dy * fy;
     int lane = dx * rx + dy * ry;
     string family = null;
-    if (lane == 0 && depth >= 1 && depth <= 3
+    // The end face of an immediately adjacent corner wall belongs to the
+    // drawn D1 side wall strip, even though the feature artwork is front-on.
+    if (depth == 0 && (lane == -1 || lane == 1)
+        && string.Equals(physicalFace, FacingName(previewFacing),
+            System.StringComparison.OrdinalIgnoreCase)
+        && PreviewTileIsOpen(wallX + fx, wallY + fy))
+      family = lane == -1 ? "LeftF1" : "RightF1";
+    else if (lane == 0 && depth >= 1 && depth <= 3
         && string.Equals(physicalFace, OppositeFacingName(previewFacing),
             System.StringComparison.OrdinalIgnoreCase))
       family = "FrontF" + depth;
@@ -23198,38 +23255,52 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  // Shared wall-feature projection for a front-facing wall surface seen
-  // through a lateral corridor. The target is a physical WALL and the
-  // stored face must point toward the observer; an ornament/mirror name
-  // never enters the geometry decision. It can be used by any wall feature.
+  // Champion mirrors use the EXACT same map/face/V17 visibility resolver
+  // as ordinary wall ornaments. The lateral F2 drawing path is only an
+  // artwork slot; it must never invent an alternative corridor projection.
   private bool TryGetLateralFrontWallFeatureProjection(
       int wallX, int wallY, string wallFace, int depth, bool left)
   {
-    if (previewMiniMap == null || depth < 1 || depth > 3
-        || string.IsNullOrEmpty(wallFace))
+    if (previewMiniMap == null || depth < 1 || depth > 3)
       return false;
+
     DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
     DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
-    int sx = left ? -rx : rx;
-    int sy = left ? -ry : ry;
-    if (wallX != previewX + sx + fx * depth
-        || wallY != previewY + sy + fy * depth
+    int side = left ? -1 : 1;
+    // Determine the artwork slot only. Actual visibility is delegated
+    // exclusively to the ordinary wall-ornament projection algorithm.
+    if (wallX != previewX + fx * depth + rx * side
+        || wallY != previewY + fy * depth + ry * side
         || !string.Equals(wallFace, OppositeFacingName(previewFacing),
-            System.StringComparison.OrdinalIgnoreCase)
-        || !PreviewTileIsWall(wallX, wallY))
+            System.StringComparison.OrdinalIgnoreCase))
       return false;
-    // The lateral entrance and all intervening lateral cells must be open.
-    for (int step = 0; step < depth; ++step)
-    {
-      if (!PreviewTileIsOpen(previewX + sx + fx * step,
-              previewY + sy + fy * step))
-        return false;
-    }
-    // This is a physical wall feature, so its face must also belong to a
-    // V17 wall surface actually drawn in this pose. The same authority gate
-    // is used by ordinary wall ornaments and other champion mirror views.
-    // Both the preview blitter and ViewEdit's row use this one projection.
-    return IsV17DrawnWallFeatureFace(wallX, wallY, wallFace, true);
+
+    return IsSharedWallFeatureVisible(
+        wallX, wallY, wallFace, true, depth, depth);
+  }
+
+  // Corner front-face projection from the actual SOLID wall tile. The
+  // champion's viewing-floor coordinates are different from the wall tile:
+  // at (13,12) West the diagonal open cell is (12,13), while its mirror
+  // is on the solid wall (11,13) with physical East face. This projection
+  // is purely geometric and applies in all four orientations.
+  private bool TryGetNearCornerWallFeatureProjection(
+      int wallX, int wallY, string wallFace, bool left)
+  {
+    if (previewMiniMap == null) return false;
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    int side = left ? -1 : 1;
+    int diagonalFloorX = previewX + fx + rx * side;
+    int diagonalFloorY = previewY + fy + ry * side;
+    // The front-facing wall at the far end of the diagonal open cell.
+    if (wallX != diagonalFloorX + fx
+        || wallY != diagonalFloorY + fy
+        || !string.Equals(wallFace, OppositeFacingName(previewFacing),
+            System.StringComparison.OrdinalIgnoreCase))
+      return false;
+    return PreviewTileIsOpen(diagonalFloorX, diagonalFloorY)
+        && PreviewTileIsWall(wallX, wallY);
   }
 
   // The front-facing surface at the END of an open lateral passage is not
@@ -23237,9 +23308,10 @@ private static void HandleGameViewPointerDown(
   // placed in the left/right screen slot. The center lane may be blocked.
   // This is generic geometry: no champion or map-coordinate exceptions.
   private bool TryGetSideLaneFrontF2Mirror(bool left,
-      out ChampionMirrorPlacement visible)
+      out ChampionMirrorPlacement visible, out bool nearCorner)
   {
     visible = null;
+    nearCorner = false;
     if (previewMiniMap == null || previewChampionMirrors == null)
       return false;
 
@@ -23249,10 +23321,14 @@ private static void HandleGameViewPointerDown(
       if (candidate == null || string.IsNullOrEmpty(candidate.champion)
           || IsPreviewChampionTaken(candidate.champion)
           || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
-              "ChampionMirror", candidate.x, candidate.y, candidate.wall))
-          || !TryGetLateralFrontWallFeatureProjection(
+              "ChampionMirror", candidate.x, candidate.y, candidate.wall)))
+        continue;
+      bool corner = TryGetNearCornerWallFeatureProjection(
+          candidate.x, candidate.y, candidate.wall, left);
+      if (!corner && !TryGetLateralFrontWallFeatureProjection(
               candidate.x, candidate.y, candidate.wall, 2, left))
         continue;
+      nearCorner = corner;
       visible = candidate;
       return true;
     }
@@ -23274,7 +23350,7 @@ private static void HandleGameViewPointerDown(
     for (int sideIndex = 0; sideIndex < 2; ++sideIndex)
     {
       bool left = sideIndex == 0;
-      if (!TryGetSideLaneFrontF2Mirror(left, out ChampionMirrorPlacement mirror))
+      if (!TryGetSideLaneFrontF2Mirror(left, out ChampionMirrorPlacement mirror, out bool nearCorner))
         continue;
 
       Texture2D front = GetChampionMirrorFrontTexture();
@@ -23287,10 +23363,16 @@ private static void HandleGameViewPointerDown(
         continue;
       }
 
-      int x = left ? HookD2SideLeftX : HookD2SideRightX;
-      int y = HookD2SideY - (scaled.height - HookD2SideHeight) / 2;
+      int x = nearCorner
+          ? (left ? 20 - scaled.width : DungeonViewportWidth - 20)
+          : (left ? HookD2SideLeftX : HookD2SideRightX);
+      int y = nearCorner
+          ? DisplayYToUnityY(33, scaled.height)
+          : HookD2SideY - (scaled.height - HookD2SideHeight) / 2;
       bool flip = false;
-      string key = GetSideLaneFrontF2MirrorProjectionKey(left);
+      string key = nearCorner
+          ? "OrnamentProjection:CornerFrontF2:" + (left ? "Left" : "Right")
+          : GetSideLaneFrontF2MirrorProjectionKey(left);
       ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
       ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
       BlitWallOrnamentIntoPreview(pixels, scaled, x, y, flip);
@@ -23304,17 +23386,23 @@ private static void HandleGameViewPointerDown(
     for (int sideIndex = 0; sideIndex < 2; sideIndex++)
     {
       bool left = sideIndex == 0;
-      if (!TryGetSideLaneFrontF2Mirror(left, out ChampionMirrorPlacement mirror))
+      if (!TryGetSideLaneFrontF2Mirror(left, out ChampionMirrorPlacement mirror, out bool nearCorner))
         continue;
       Texture2D frame = GetChampionMirrorFrontTexture();
       Texture2D scaled = frame != null
           ? GetChampionMirrorScaledFrameTexture(frame, 2) : null;
       if (scaled == null) continue;
-      string key = GetSideLaneFrontF2MirrorProjectionKey(left);
+      string key = nearCorner
+          ? "OrnamentProjection:CornerFrontF2:" + (left ? "Left" : "Right")
+          : GetSideLaneFrontF2MirrorProjectionKey(left);
       string visibilityKey = MakePreviewFeatureKey(
           "ChampionMirror", mirror.x, mirror.y, mirror.wall);
-      int x = left ? HookD2SideLeftX : HookD2SideRightX;
-      int y = HookD2SideY - (scaled.height - HookD2SideHeight) / 2;
+      int x = nearCorner
+          ? (left ? 20 - scaled.width : DungeonViewportWidth - 20)
+          : (left ? HookD2SideLeftX : HookD2SideRightX);
+      int y = nearCorner
+          ? DisplayYToUnityY(33, scaled.height)
+          : HookD2SideY - (scaled.height - HookD2SideHeight) / 2;
       bool flip = false;
       ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
       int defaultX = x;
@@ -23324,7 +23412,8 @@ private static void HandleGameViewPointerDown(
 
       EditorGUILayout.BeginHorizontal();
       string label = mirror.champion.ToUpperInvariant()
-          + (left ? " - LeftF2 (Front image)" : " - RightF2 (Front image)");
+          + (left ? " - LeftF2" : " - RightF2")
+          + " - (" + mirror.x + "," + mirror.y + " " + mirror.wall + ")";
       GUILayout.Label(label, style,
           GUILayout.Width(Mathf.Ceil(style.CalcSize(new GUIContent(label)).x) + 6f));
       bool enabled = IsPreviewFeatureEnabled(visibilityKey);
@@ -26664,6 +26753,29 @@ private static void HandleGameViewPointerDown(
 
     string viewedWallSide = FacingName(previewFacing);
     string visibleFrontFace = OppositeFacingName(previewFacing);
+
+    // Near-corner end faces are visible at the extreme left/right viewport
+    // boundary. They belong to the adjacent wall (depth 0, lateral +/-1),
+    // not to an invented wall two tiles ahead. Share this classification
+    // between ordinary ornaments and champion mirror features.
+    for (int side = -1; side <= 1; side += 2)
+    {
+      int cornerX = previewX + rightX * side;
+      int cornerY = previewY + rightY * side;
+      if (maxSideDepth < 1 || !PreviewTileIsWall(cornerX, cornerY)
+          || !PreviewTileIsOpen(cornerX + forwardX, cornerY + forwardY))
+        continue;
+      if (ornament.wallTilePlacement
+          && ornament.x == cornerX && ornament.y == cornerY
+          && string.Equals(ornament.wall, viewedWallSide,
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        dungeonFeatureX = cornerX + forwardX;
+        dungeonFeatureY = cornerY + forwardY;
+        dungeonFeatureFace = visibleFrontFace;
+        return true;
+      }
+    }
 
     // Front F1..F3. This is the same map geometry used by the ornament
     // renderers: every nearer center cell must be open, then the ornament
