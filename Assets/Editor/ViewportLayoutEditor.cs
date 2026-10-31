@@ -23621,7 +23621,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass2ManaclesCornerF2)
     {
       calibrateClass2ManaclesCornerF2 = selected;
-      if (selected) calibrateClass3HookCornerF2 = false;
+      if (selected) { calibrateClass3HookCornerF2 = false; calibrateClass4WoodenCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass2ManaclesCornerF2) return;
@@ -23694,7 +23694,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass3HookCornerF2)
     {
       calibrateClass3HookCornerF2 = selected;
-      if (selected) calibrateClass2ManaclesCornerF2 = false;
+      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass4WoodenCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass3HookCornerF2) return;
@@ -23739,6 +23739,76 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Class 4 Wooden Decoration: independent JSON calibration, using the same JSON-driven
+  // near-corner classification as Classes 1 and 2, never map-specific.
+  private const string WoodenPreviewPrefsKey = "DM.ViewEdit.WoodenClass4Preview";
+  private bool calibrateClass4WoodenCornerF2
+  {
+    get { return EditorPrefs.GetBool(WoodenPreviewPrefsKey, false); }
+    set { EditorPrefs.SetBool(WoodenPreviewPrefsKey, value); }
+  }
+  private static string GetWoodenClass4CornerF2Key(bool left)
+  {
+    return "OrnamentClass:4:WoodRing:CornerFrontF2:"
+        + (left ? "Left" : "Right");
+  }
+
+  private void DrawWoodenClass4CornerF2CalibrationRow()
+  {
+    bool left = true;
+    if (!TryGetSideLaneFrontF2Mirror(left,
+        out ChampionMirrorPlacement existing, out bool nearCorner)
+        || !nearCorner) return;
+    bool selected = EditorGUILayout.ToggleLeft(
+        "Calibrate Class 4 - Wooden Decoration (preview only)", calibrateClass4WoodenCornerF2);
+    if (selected != calibrateClass4WoodenCornerF2)
+    {
+      calibrateClass4WoodenCornerF2 = selected;
+      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass3HookCornerF2 = false; }
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+    if (!calibrateClass4WoodenCornerF2) return;
+    Texture2D artwork = GetWoodRingGeneratedF2FrontTexture();
+    if (artwork == null || !artwork.isReadable)
+    {
+      Debug.LogError("ViewEdit Class 4 Wooden Decoration: required readable Wood Ring F2 artwork is missing.");
+      return;
+    }
+    string key = GetWoodenClass4CornerF2Key(left);
+    GetOriginalCornerF2DrawPosition(0, left, artwork.width, artwork.height,
+        out int x, out int y);
+    bool flip = false;
+    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
+    int defaultX = x, defaultY = y;
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label("Class 4 Wooden Decoration - LeftF2", GUILayout.Width(190f));
+    int editX = x, editY = y;
+    bool changedX = DrawIntStepperInline("X", ref editX, snap,
+        x != defaultX, true, 24f, 24f);
+    bool changedY = DrawIntStepperInline("Y", ref editY, snap,
+        y != defaultY, true, 24f, 24f);
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    NoteContentRight();
+    EditorGUILayout.EndHorizontal();
+    if (apply)
+    {
+      if (SaveAcceptedOrnamentReference(key, editX, editY, flip))
+      {
+        previewFeaturePositionOverrides.Remove(key);
+        previewFeatureMirrorOverrides.Remove(key);
+        RefreshEditModePreview(); RepaintGameViews(); Repaint();
+      }
+    }
+    else if ((changedX && editX != x) || (changedY && editY != y))
+    {
+      if (editX == defaultX && editY == defaultY)
+        previewFeaturePositionOverrides.Remove(key);
+      else previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+  }
+
   private void BlitChampionMirrorSideLaneFrontF2IntoPreview(Color32[] pixels)
   {
     if (pixels == null) return;
@@ -23749,12 +23819,41 @@ private static void HandleGameViewPointerDown(
       if (!found)
         continue;
       if (nearCorner && !(left && (calibrateClass2ManaclesCornerF2
-          || calibrateClass3HookCornerF2)))
+          || calibrateClass3HookCornerF2
+          || calibrateClass4WoodenCornerF2)))
         ReportUncalibratedChampionView(
             GetChampionMirrorClass1CornerF2Key(left), left, mirror);
 
       // Class 2 replaces the picture only while calibrating this geometry.
       // Never write to the map or the Class 1 mirror calibration.
+      if (left && nearCorner && calibrateClass4WoodenCornerF2)
+      {
+        Texture2D wood = GetWoodRingGeneratedF2FrontTexture();
+        if (wood == null || !wood.isReadable)
+        {
+          Debug.LogError("ViewEdit Class 4: Missing readable Wood Ring F2 artwork.");
+          continue;
+        }
+        string woodKey = GetWoodenClass4CornerF2Key(left);
+        if (!TryGetOrnamentClassJson(woodKey,
+            out AcceptedOrnamentReference ignoredWood))
+        {
+          string occurrence = "Class4|" + previewDungeonLevel + "|" + previewX
+              + "," + previewY + "|" + previewFacing;
+          if (loggedUncalibratedChampionViews.Add(occurrence))
+            Debug.Log("<color=cyan>CYAN | ViewEdit UNCALIBRATED | "
+                + "Class 4 Wooden Decoration LeftF2 | adjust X/Y and press Apply.</color>");
+        }
+        GetOriginalCornerF2DrawPosition(0, left, wood.width, wood.height,
+            out int woodX, out int woodY);
+        bool woodFlip = false;
+        ApplyAcceptedOrnamentReference(woodKey,
+            ref woodX, ref woodY, ref woodFlip);
+        ApplyPreviewFeatureRenderOverrides(woodKey,
+            ref woodX, ref woodY, ref woodFlip);
+        BlitWallOrnamentIntoPreview(pixels, wood, woodX, woodY, woodFlip);
+        continue;
+      }
       if (left && nearCorner && calibrateClass3HookCornerF2)
       {
         Texture2D hook = GetHookGeneratedF2FrontTexture();
@@ -27850,6 +27949,7 @@ private static void HandleGameViewPointerDown(
     DrawChampionMirrorSideLaneFrontF2Rows();
     DrawManaclesClass2CornerF2CalibrationRow();
     DrawHookClass3CornerF2CalibrationRow();
+    DrawWoodenClass4CornerF2CalibrationRow();
 
     // Ordinary wall ornaments.
     if (previewWallOrnaments != null)
