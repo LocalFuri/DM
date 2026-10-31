@@ -30,6 +30,12 @@
             "x": 3,
             "y": 74,
             "mirror": false
+        },
+        {
+            "key": "OrnamentClass:6:Grate:CornerFrontF2:Left",
+            "x": -3,
+            "y": 75,
+            "mirror": false
         }
     ]
 }

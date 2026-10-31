@@ -23621,7 +23621,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass2ManaclesCornerF2)
     {
       calibrateClass2ManaclesCornerF2 = selected;
-      if (selected) { calibrateClass3HookCornerF2 = false; calibrateClass4WoodenCornerF2 = false; calibrateClass5SlimeCornerF2 = false; }
+      if (selected) { calibrateClass3HookCornerF2 = false; calibrateClass4WoodenCornerF2 = false; calibrateClass5SlimeCornerF2 = false;  calibrateClass6GrateCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass2ManaclesCornerF2) return;
@@ -23694,7 +23694,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass3HookCornerF2)
     {
       calibrateClass3HookCornerF2 = selected;
-      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass4WoodenCornerF2 = false; calibrateClass5SlimeCornerF2 = false; }
+      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass4WoodenCornerF2 = false; calibrateClass5SlimeCornerF2 = false;  calibrateClass6GrateCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass3HookCornerF2) return;
@@ -23764,7 +23764,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass4WoodenCornerF2)
     {
       calibrateClass4WoodenCornerF2 = selected;
-      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass3HookCornerF2 = false; calibrateClass5SlimeCornerF2 = false; }
+      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass3HookCornerF2 = false; calibrateClass5SlimeCornerF2 = false;  calibrateClass6GrateCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass4WoodenCornerF2) return;
@@ -23834,7 +23834,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass5SlimeCornerF2)
     {
       calibrateClass5SlimeCornerF2 = selected;
-      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass3HookCornerF2 = false; calibrateClass4WoodenCornerF2 = false; }
+      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass3HookCornerF2 = false; calibrateClass4WoodenCornerF2 = false;  calibrateClass6GrateCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass5SlimeCornerF2) return;
@@ -23879,6 +23879,76 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Class 6 Grate: independent JSON calibration, using the same JSON-driven
+  // near-corner classification as Classes 1 and 2, never map-specific.
+  private const string GratePreviewPrefsKey = "DM.ViewEdit.GrateClass6Preview";
+  private bool calibrateClass6GrateCornerF2
+  {
+    get { return EditorPrefs.GetBool(GratePreviewPrefsKey, false); }
+    set { EditorPrefs.SetBool(GratePreviewPrefsKey, value); }
+  }
+  private static string GetGrateClass6CornerF2Key(bool left)
+  {
+    return "OrnamentClass:6:Grate:CornerFrontF2:"
+        + (left ? "Left" : "Right");
+  }
+
+  private void DrawGrateClass6CornerF2CalibrationRow()
+  {
+    bool left = true;
+    if (!TryGetSideLaneFrontF2Mirror(left,
+        out ChampionMirrorPlacement existing, out bool nearCorner)
+        || !nearCorner) return;
+    bool selected = EditorGUILayout.ToggleLeft(
+        "Calibrate Class 6 - Grate (preview only)", calibrateClass6GrateCornerF2);
+    if (selected != calibrateClass6GrateCornerF2)
+    {
+      calibrateClass6GrateCornerF2 = selected;
+      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass3HookCornerF2 = false; calibrateClass4WoodenCornerF2 = false; calibrateClass5SlimeCornerF2 = false; }
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+    if (!calibrateClass6GrateCornerF2) return;
+    Texture2D artwork = GetGrateFront2Texture();
+    if (artwork == null || !artwork.isReadable)
+    {
+      Debug.LogError("ViewEdit Class 6 Grate: required readable Grate F2 artwork is missing.");
+      return;
+    }
+    string key = GetGrateClass6CornerF2Key(left);
+    GetOriginalCornerF2DrawPosition(0, left, artwork.width, artwork.height,
+        out int x, out int y);
+    bool flip = false;
+    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
+    int defaultX = x, defaultY = y;
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label("Class 6 Grate - LeftF2", GUILayout.Width(190f));
+    int editX = x, editY = y;
+    bool changedX = DrawIntStepperInline("X", ref editX, snap,
+        x != defaultX, true, 24f, 24f);
+    bool changedY = DrawIntStepperInline("Y", ref editY, snap,
+        y != defaultY, true, 24f, 24f);
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    NoteContentRight();
+    EditorGUILayout.EndHorizontal();
+    if (apply)
+    {
+      if (SaveAcceptedOrnamentReference(key, editX, editY, flip))
+      {
+        previewFeaturePositionOverrides.Remove(key);
+        previewFeatureMirrorOverrides.Remove(key);
+        RefreshEditModePreview(); RepaintGameViews(); Repaint();
+      }
+    }
+    else if ((changedX && editX != x) || (changedY && editY != y))
+    {
+      if (editX == defaultX && editY == defaultY)
+        previewFeaturePositionOverrides.Remove(key);
+      else previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+  }
+
   private void BlitChampionMirrorSideLaneFrontF2IntoPreview(Color32[] pixels)
   {
     if (pixels == null) return;
@@ -23891,12 +23961,41 @@ private static void HandleGameViewPointerDown(
       if (nearCorner && !(left && (calibrateClass2ManaclesCornerF2
           || calibrateClass3HookCornerF2
           || calibrateClass4WoodenCornerF2
-          || calibrateClass5SlimeCornerF2)))
+          || calibrateClass5SlimeCornerF2
+          || calibrateClass6GrateCornerF2)))
         ReportUncalibratedChampionView(
             GetChampionMirrorClass1CornerF2Key(left), left, mirror);
 
       // Class 2 replaces the picture only while calibrating this geometry.
       // Never write to the map or the Class 1 mirror calibration.
+      if (left && nearCorner && calibrateClass6GrateCornerF2)
+      {
+        Texture2D grate = GetGrateFront2Texture();
+        if (grate == null || !grate.isReadable)
+        {
+          Debug.LogError("ViewEdit Class 6: Missing readable Grate F2 artwork.");
+          continue;
+        }
+        string grateKey = GetGrateClass6CornerF2Key(left);
+        if (!TryGetOrnamentClassJson(grateKey,
+            out AcceptedOrnamentReference ignoredGrate))
+        {
+          string occurrence = "Class6|" + previewDungeonLevel + "|" + previewX
+              + "," + previewY + "|" + previewFacing;
+          if (loggedUncalibratedChampionViews.Add(occurrence))
+            Debug.Log("<color=cyan>CYAN | ViewEdit UNCALIBRATED | "
+                + "Class 6 Grate LeftF2 | adjust X/Y and press Apply.</color>");
+        }
+        GetOriginalCornerF2DrawPosition(0, left, grate.width, grate.height,
+            out int grateX, out int grateY);
+        bool grateFlip = false;
+        ApplyAcceptedOrnamentReference(grateKey,
+            ref grateX, ref grateY, ref grateFlip);
+        ApplyPreviewFeatureRenderOverrides(grateKey,
+            ref grateX, ref grateY, ref grateFlip);
+        BlitWallOrnamentIntoPreview(pixels, grate, grateX, grateY, grateFlip);
+        continue;
+      }
       if (left && nearCorner && calibrateClass5SlimeCornerF2)
       {
         Texture2D slime = GetSlimeGeneratedF2FrontTexture();
@@ -28050,6 +28149,7 @@ private static void HandleGameViewPointerDown(
     DrawHookClass3CornerF2CalibrationRow();
     DrawWoodenClass4CornerF2CalibrationRow();
     DrawSlimeClass5CornerF2CalibrationRow();
+    DrawGrateClass6CornerF2CalibrationRow();
 
     // Ordinary wall ornaments.
     if (previewWallOrnaments != null)
