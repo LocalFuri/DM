@@ -1689,6 +1689,17 @@ public class ViewportLayoutEditor : EditorWindow
     if (string.IsNullOrEmpty(projectionKey))
       return;
 
+    if (IsOrnamentClassCalibrationKey(projectionKey))
+    {
+      if (TryGetOrnamentClassJson(projectionKey,
+          out AcceptedOrnamentReference jsonCalibration))
+      {
+        x = jsonCalibration.x;
+        y = jsonCalibration.y;
+        mirror = jsonCalibration.mirror;
+      }
+      return;
+    }
     EnsureAcceptedOrnamentReferencesLoaded();
     if (cachedAcceptedOrnamentReferences.TryGetValue(
             projectionKey, out AcceptedOrnamentReference accepted))
@@ -1707,6 +1718,8 @@ public class ViewportLayoutEditor : EditorWindow
   {
     if (string.IsNullOrEmpty(projectionKey))
       return false;
+    if (IsOrnamentClassCalibrationKey(projectionKey))
+      return SaveOrnamentClassJson(projectionKey, x, y, mirror);
 
     string assetPath = GetThisEditorSourceAssetPath();
     if (string.IsNullOrEmpty(assetPath) || !File.Exists(assetPath))
@@ -23457,8 +23470,15 @@ private static void HandleGameViewPointerDown(
   private void ReportUncalibratedChampionView(string key, bool left,
       ChampionMirrorPlacement champion)
   {
-    EnsureAcceptedOrnamentReferencesLoaded();
-    if (cachedAcceptedOrnamentReferences.ContainsKey(key)) return;
+    if (IsOrnamentClassCalibrationKey(key))
+    {
+      if (TryGetOrnamentClassJson(key, out AcceptedOrnamentReference ignored)) return;
+    }
+    else
+    {
+      EnsureAcceptedOrnamentReferencesLoaded();
+      if (cachedAcceptedOrnamentReferences.ContainsKey(key)) return;
+    }
     string occurrence = key + "|" + previewDungeonLevel + "|" + previewX
         + "," + previewY + "|" + previewFacing;
     if (!loggedUncalibratedChampionViews.Add(occurrence)) return;
@@ -23471,6 +23491,183 @@ private static void HandleGameViewPointerDown(
         + "</color>");
   }
 
+  // Class calibrations are deliberately external to C# source. Changing an
+  // ornament must never force recompilation or overwrite a prior adjustment.
+  [System.Serializable]
+  private class OrnamentCalibrationJsonEntry
+  {
+    public string key;
+    public int x;
+    public int y;
+    public bool mirror;
+  }
+
+  [System.Serializable]
+  private class OrnamentCalibrationJsonStore
+  {
+    public int version = 1;
+    public List<OrnamentCalibrationJsonEntry> entries =
+        new List<OrnamentCalibrationJsonEntry>();
+  }
+
+  private const string OrnamentClassJsonPath = "Assets/Editor/OrnamentCalibration.json";
+
+  private static bool IsOrnamentClassCalibrationKey(string key)
+  {
+    return !string.IsNullOrEmpty(key)
+        && key.StartsWith("OrnamentClass:", System.StringComparison.Ordinal);
+  }
+
+  private static bool TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore data)
+  {
+    data = null;
+    try
+    {
+      if (!File.Exists(OrnamentClassJsonPath))
+      {
+        Debug.LogError("ViewEdit: required ornament calibration JSON missing: "
+            + OrnamentClassJsonPath);
+        return false;
+      }
+      data = JsonUtility.FromJson<OrnamentCalibrationJsonStore>(
+          File.ReadAllText(OrnamentClassJsonPath));
+      if (data == null || data.version != 1 || data.entries == null)
+        throw new System.IO.InvalidDataException("Invalid ornament calibration JSON format/version");
+      return true;
+    }
+    catch (System.Exception e)
+    {
+      Debug.LogError("ViewEdit: cannot read " + OrnamentClassJsonPath + ": " + e.Message);
+      return false;
+    }
+  }
+
+  private static bool TryGetOrnamentClassJson(string key, out AcceptedOrnamentReference value)
+  {
+    value = new AcceptedOrnamentReference(0, 0, false);
+    if (!TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore data))
+      return false;
+    foreach (OrnamentCalibrationJsonEntry entry in data.entries)
+      if (entry != null && string.Equals(entry.key, key,
+          System.StringComparison.OrdinalIgnoreCase))
+      {
+        value = new AcceptedOrnamentReference(entry.x, entry.y, entry.mirror);
+        return true;
+      }
+    return false;
+  }
+
+  private static bool SaveOrnamentClassJson(string key, int x, int y, bool mirror)
+  {
+    if (!TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore data))
+      return false;
+    OrnamentCalibrationJsonEntry entry = null;
+    foreach (OrnamentCalibrationJsonEntry candidate in data.entries)
+      if (candidate != null && string.Equals(candidate.key, key,
+          System.StringComparison.OrdinalIgnoreCase)) { entry = candidate; break; }
+    if (entry == null)
+    {
+      entry = new OrnamentCalibrationJsonEntry { key = key };
+      data.entries.Add(entry);
+    }
+    entry.x = x; entry.y = y; entry.mirror = mirror;
+    string temp = OrnamentClassJsonPath + ".tmp";
+    try
+    {
+      File.WriteAllText(temp, JsonUtility.ToJson(data, true));
+      // Keep the previous valid file if writing the replacement fails.
+      if (File.Exists(OrnamentClassJsonPath))
+        File.Replace(temp, OrnamentClassJsonPath, null);
+      else File.Move(temp, OrnamentClassJsonPath);
+      Debug.Log("ViewEdit Apply: saved " + key + " X=" + x + " Y=" + y
+          + " to " + OrnamentClassJsonPath);
+      return true;
+    }
+    catch (System.Exception e)
+    {
+      Debug.LogError("ViewEdit Apply: could not save " + OrnamentClassJsonPath
+          + ": " + e.Message);
+      return false;
+    }
+  }
+
+  // Class 2 calibration preview: replace only the currently recognized
+  // front-facing F2 corner mirror artwork temporarily, never the dungeon map.
+  // Class 1's saved positioning key is not accessed or modified in this mode.
+  private const string ManaclesPreviewPrefsKey =
+      "DM.ViewEdit.ManaclesClass2Preview";
+  private bool calibrateClass2ManaclesCornerF2
+  {
+    get { return EditorPrefs.GetBool(ManaclesPreviewPrefsKey, false); }
+    set { EditorPrefs.SetBool(ManaclesPreviewPrefsKey, value); }
+  }
+  private static string GetManaclesClass2CornerF2Key(bool left)
+  {
+    return "OrnamentClass:2:Manacles:CornerFrontF2:"
+        + (left ? "Left" : "Right");
+  }
+
+  private void DrawManaclesClass2CornerF2CalibrationRow()
+  {
+    bool left = true;
+    ChampionMirrorPlacement existing;
+    bool nearCorner;
+    if (!TryGetSideLaneFrontF2Mirror(left, out existing, out nearCorner)
+        || !nearCorner) return;
+
+    bool selected = EditorGUILayout.ToggleLeft(
+        "Calibrate Class 2 - Manacles (preview only)",
+        calibrateClass2ManaclesCornerF2);
+    if (selected != calibrateClass2ManaclesCornerF2)
+    {
+      calibrateClass2ManaclesCornerF2 = selected;
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+    if (!calibrateClass2ManaclesCornerF2) return;
+
+    Texture2D artwork = GetManaclesOriginalCornerF2Texture();
+    if (artwork == null || !artwork.isReadable)
+    {
+      Debug.LogError("ViewEdit Class 2 Manacles: required readable source artwork is missing.");
+      return;
+    }
+    string key = GetManaclesClass2CornerF2Key(left);
+    int x, y;
+    GetOriginalCornerF2DrawPosition(1, left, artwork.width, artwork.height,
+        out x, out y);
+    bool flip = false;
+    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
+    int defaultX = x, defaultY = y;
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label("Class 2 Manacles - LeftF2", GUILayout.Width(190f));
+    int editX = x, editY = y;
+    bool changedX = DrawIntStepperInline("X", ref editX, snap,
+        x != defaultX, true, 24f, 24f);
+    bool changedY = DrawIntStepperInline("Y", ref editY, snap,
+        y != defaultY, true, 24f, 24f);
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    NoteContentRight();
+    EditorGUILayout.EndHorizontal();
+    if (apply)
+    {
+      if (SaveAcceptedOrnamentReference(key, editX, editY, flip))
+      {
+        previewFeaturePositionOverrides.Remove(key);
+        previewFeatureMirrorOverrides.Remove(key);
+        RefreshEditModePreview(); RepaintGameViews(); Repaint();
+      }
+    }
+    else if ((changedX && editX != x) || (changedY && editY != y))
+    {
+      if (editX == defaultX && editY == defaultY)
+        previewFeaturePositionOverrides.Remove(key);
+      else
+        previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+  }
+
   private void BlitChampionMirrorSideLaneFrontF2IntoPreview(Color32[] pixels)
   {
     if (pixels == null) return;
@@ -23480,9 +23677,41 @@ private static void HandleGameViewPointerDown(
       bool found = TryGetSideLaneFrontF2Mirror(left, out ChampionMirrorPlacement mirror, out bool nearCorner);
       if (!found)
         continue;
-      if (nearCorner)
+      if (nearCorner && !(left && calibrateClass2ManaclesCornerF2))
         ReportUncalibratedChampionView(
             GetChampionMirrorClass1CornerF2Key(left), left, mirror);
+
+      // Class 2 replaces the picture only while calibrating this geometry.
+      // Never write to the map or the Class 1 mirror calibration.
+      if (left && nearCorner && calibrateClass2ManaclesCornerF2)
+      {
+        Texture2D manacles = GetManaclesOriginalCornerF2Texture();
+        if (manacles == null || !manacles.isReadable)
+        {
+          Debug.LogError("ViewEdit Class 2: Missing readable Manacles F2 artwork.");
+          continue;
+        }
+        string manaclesKey = GetManaclesClass2CornerF2Key(left);
+        if (!TryGetOrnamentClassJson(manaclesKey,
+            out AcceptedOrnamentReference ignoredManacles))
+        {
+          string occurrence = "Class2|" + previewDungeonLevel + "|" + previewX
+              + "," + previewY + "|" + previewFacing;
+          if (loggedUncalibratedChampionViews.Add(occurrence))
+            Debug.Log("<color=cyan>CYAN | ViewEdit UNCALIBRATED | "
+                + "Class 2 Manacles LeftF2 | adjust X/Y and press Apply.</color>");
+        }
+        GetOriginalCornerF2DrawPosition(1, left, manacles.width, manacles.height,
+            out int manaclesX, out int manaclesY);
+        bool manaclesFlip = false;
+        ApplyAcceptedOrnamentReference(manaclesKey,
+            ref manaclesX, ref manaclesY, ref manaclesFlip);
+        ApplyPreviewFeatureRenderOverrides(manaclesKey,
+            ref manaclesX, ref manaclesY, ref manaclesFlip);
+        BlitWallOrnamentIntoPreview(pixels, manacles,
+            manaclesX, manaclesY, manaclesFlip);
+        continue;
+      }
 
       Texture2D scaled = nearCorner
           ? GetOriginalCornerF2MirrorFrame()
@@ -27519,6 +27748,7 @@ private static void HandleGameViewPointerDown(
     DrawChampionMirrorFrontCalibrationRows();
     DrawChampionMirrorSideCalibrationRows();
     DrawChampionMirrorSideLaneFrontF2Rows();
+    DrawManaclesClass2CornerF2CalibrationRow();
 
     // Ordinary wall ornaments.
     if (previewWallOrnaments != null)
