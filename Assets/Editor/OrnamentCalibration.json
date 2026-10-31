@@ -12,6 +12,12 @@
             "x": -41,
             "y": 93,
             "mirror": false
+        },
+        {
+            "key": "OrnamentClass:3:Hook:CornerFrontF2:Left",
+            "x": -9,
+            "y": 111,
+            "mirror": false
         }
     ]
 }

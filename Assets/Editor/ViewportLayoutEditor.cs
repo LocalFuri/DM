@@ -23621,6 +23621,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass2ManaclesCornerF2)
     {
       calibrateClass2ManaclesCornerF2 = selected;
+      if (selected) calibrateClass3HookCornerF2 = false;
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass2ManaclesCornerF2) return;
@@ -23668,6 +23669,76 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Class 3 Hook: independent JSON calibration, using the same JSON-driven
+  // near-corner classification as Classes 1 and 2, never map-specific.
+  private const string HookPreviewPrefsKey = "DM.ViewEdit.HookClass3Preview";
+  private bool calibrateClass3HookCornerF2
+  {
+    get { return EditorPrefs.GetBool(HookPreviewPrefsKey, false); }
+    set { EditorPrefs.SetBool(HookPreviewPrefsKey, value); }
+  }
+  private static string GetHookClass3CornerF2Key(bool left)
+  {
+    return "OrnamentClass:3:Hook:CornerFrontF2:"
+        + (left ? "Left" : "Right");
+  }
+
+  private void DrawHookClass3CornerF2CalibrationRow()
+  {
+    bool left = true;
+    if (!TryGetSideLaneFrontF2Mirror(left,
+        out ChampionMirrorPlacement existing, out bool nearCorner)
+        || !nearCorner) return;
+    bool selected = EditorGUILayout.ToggleLeft(
+        "Calibrate Class 3 - Hook (preview only)", calibrateClass3HookCornerF2);
+    if (selected != calibrateClass3HookCornerF2)
+    {
+      calibrateClass3HookCornerF2 = selected;
+      if (selected) calibrateClass2ManaclesCornerF2 = false;
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+    if (!calibrateClass3HookCornerF2) return;
+    Texture2D artwork = GetHookGeneratedF2FrontTexture();
+    if (artwork == null || !artwork.isReadable)
+    {
+      Debug.LogError("ViewEdit Class 3 Hook: required readable Hook F2 artwork is missing.");
+      return;
+    }
+    string key = GetHookClass3CornerF2Key(left);
+    GetOriginalCornerF2DrawPosition(0, left, artwork.width, artwork.height,
+        out int x, out int y);
+    bool flip = false;
+    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
+    int defaultX = x, defaultY = y;
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label("Class 3 Hook - LeftF2", GUILayout.Width(190f));
+    int editX = x, editY = y;
+    bool changedX = DrawIntStepperInline("X", ref editX, snap,
+        x != defaultX, true, 24f, 24f);
+    bool changedY = DrawIntStepperInline("Y", ref editY, snap,
+        y != defaultY, true, 24f, 24f);
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    NoteContentRight();
+    EditorGUILayout.EndHorizontal();
+    if (apply)
+    {
+      if (SaveAcceptedOrnamentReference(key, editX, editY, flip))
+      {
+        previewFeaturePositionOverrides.Remove(key);
+        previewFeatureMirrorOverrides.Remove(key);
+        RefreshEditModePreview(); RepaintGameViews(); Repaint();
+      }
+    }
+    else if ((changedX && editX != x) || (changedY && editY != y))
+    {
+      if (editX == defaultX && editY == defaultY)
+        previewFeaturePositionOverrides.Remove(key);
+      else previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+  }
+
   private void BlitChampionMirrorSideLaneFrontF2IntoPreview(Color32[] pixels)
   {
     if (pixels == null) return;
@@ -23677,12 +23748,41 @@ private static void HandleGameViewPointerDown(
       bool found = TryGetSideLaneFrontF2Mirror(left, out ChampionMirrorPlacement mirror, out bool nearCorner);
       if (!found)
         continue;
-      if (nearCorner && !(left && calibrateClass2ManaclesCornerF2))
+      if (nearCorner && !(left && (calibrateClass2ManaclesCornerF2
+          || calibrateClass3HookCornerF2)))
         ReportUncalibratedChampionView(
             GetChampionMirrorClass1CornerF2Key(left), left, mirror);
 
       // Class 2 replaces the picture only while calibrating this geometry.
       // Never write to the map or the Class 1 mirror calibration.
+      if (left && nearCorner && calibrateClass3HookCornerF2)
+      {
+        Texture2D hook = GetHookGeneratedF2FrontTexture();
+        if (hook == null || !hook.isReadable)
+        {
+          Debug.LogError("ViewEdit Class 3: Missing readable Hook F2 artwork.");
+          continue;
+        }
+        string hookKey = GetHookClass3CornerF2Key(left);
+        if (!TryGetOrnamentClassJson(hookKey,
+            out AcceptedOrnamentReference ignoredHook))
+        {
+          string occurrence = "Class3|" + previewDungeonLevel + "|" + previewX
+              + "," + previewY + "|" + previewFacing;
+          if (loggedUncalibratedChampionViews.Add(occurrence))
+            Debug.Log("<color=cyan>CYAN | ViewEdit UNCALIBRATED | "
+                + "Class 3 Hook LeftF2 | adjust X/Y and press Apply.</color>");
+        }
+        GetOriginalCornerF2DrawPosition(0, left, hook.width, hook.height,
+            out int hookX, out int hookY);
+        bool hookFlip = false;
+        ApplyAcceptedOrnamentReference(hookKey,
+            ref hookX, ref hookY, ref hookFlip);
+        ApplyPreviewFeatureRenderOverrides(hookKey,
+            ref hookX, ref hookY, ref hookFlip);
+        BlitWallOrnamentIntoPreview(pixels, hook, hookX, hookY, hookFlip);
+        continue;
+      }
       if (left && nearCorner && calibrateClass2ManaclesCornerF2)
       {
         Texture2D manacles = GetManaclesOriginalCornerF2Texture();
@@ -27749,6 +27849,7 @@ private static void HandleGameViewPointerDown(
     DrawChampionMirrorSideCalibrationRows();
     DrawChampionMirrorSideLaneFrontF2Rows();
     DrawManaclesClass2CornerF2CalibrationRow();
+    DrawHookClass3CornerF2CalibrationRow();
 
     // Ordinary wall ornaments.
     if (previewWallOrnaments != null)
