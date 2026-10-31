@@ -24,6 +24,12 @@
             "x": -8,
             "y": 111,
             "mirror": false
+        },
+        {
+            "key": "OrnamentClass:5:Slime:CornerFrontF2:Left",
+            "x": 3,
+            "y": 74,
+            "mirror": false
         }
     ]
 }

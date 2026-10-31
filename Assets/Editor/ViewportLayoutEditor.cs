@@ -23621,7 +23621,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass2ManaclesCornerF2)
     {
       calibrateClass2ManaclesCornerF2 = selected;
-      if (selected) { calibrateClass3HookCornerF2 = false; calibrateClass4WoodenCornerF2 = false; }
+      if (selected) { calibrateClass3HookCornerF2 = false; calibrateClass4WoodenCornerF2 = false; calibrateClass5SlimeCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass2ManaclesCornerF2) return;
@@ -23694,7 +23694,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass3HookCornerF2)
     {
       calibrateClass3HookCornerF2 = selected;
-      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass4WoodenCornerF2 = false; }
+      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass4WoodenCornerF2 = false; calibrateClass5SlimeCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass3HookCornerF2) return;
@@ -23764,7 +23764,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass4WoodenCornerF2)
     {
       calibrateClass4WoodenCornerF2 = selected;
-      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass3HookCornerF2 = false; }
+      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass3HookCornerF2 = false; calibrateClass5SlimeCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass4WoodenCornerF2) return;
@@ -23809,6 +23809,76 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Class 5 Slime: independent JSON calibration, using the same JSON-driven
+  // near-corner classification as Classes 1 and 2, never map-specific.
+  private const string SlimePreviewPrefsKey = "DM.ViewEdit.SlimeClass5Preview";
+  private bool calibrateClass5SlimeCornerF2
+  {
+    get { return EditorPrefs.GetBool(SlimePreviewPrefsKey, false); }
+    set { EditorPrefs.SetBool(SlimePreviewPrefsKey, value); }
+  }
+  private static string GetSlimeClass5CornerF2Key(bool left)
+  {
+    return "OrnamentClass:5:Slime:CornerFrontF2:"
+        + (left ? "Left" : "Right");
+  }
+
+  private void DrawSlimeClass5CornerF2CalibrationRow()
+  {
+    bool left = true;
+    if (!TryGetSideLaneFrontF2Mirror(left,
+        out ChampionMirrorPlacement existing, out bool nearCorner)
+        || !nearCorner) return;
+    bool selected = EditorGUILayout.ToggleLeft(
+        "Calibrate Class 5 - Slime (preview only)", calibrateClass5SlimeCornerF2);
+    if (selected != calibrateClass5SlimeCornerF2)
+    {
+      calibrateClass5SlimeCornerF2 = selected;
+      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass3HookCornerF2 = false; calibrateClass4WoodenCornerF2 = false; }
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+    if (!calibrateClass5SlimeCornerF2) return;
+    Texture2D artwork = GetSlimeGeneratedF2FrontTexture();
+    if (artwork == null || !artwork.isReadable)
+    {
+      Debug.LogError("ViewEdit Class 5 Slime: required readable Slime F2 artwork is missing.");
+      return;
+    }
+    string key = GetSlimeClass5CornerF2Key(left);
+    GetOriginalCornerF2DrawPosition(0, left, artwork.width, artwork.height,
+        out int x, out int y);
+    bool flip = false;
+    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
+    int defaultX = x, defaultY = y;
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label("Class 5 Slime - LeftF2", GUILayout.Width(190f));
+    int editX = x, editY = y;
+    bool changedX = DrawIntStepperInline("X", ref editX, snap,
+        x != defaultX, true, 24f, 24f);
+    bool changedY = DrawIntStepperInline("Y", ref editY, snap,
+        y != defaultY, true, 24f, 24f);
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    NoteContentRight();
+    EditorGUILayout.EndHorizontal();
+    if (apply)
+    {
+      if (SaveAcceptedOrnamentReference(key, editX, editY, flip))
+      {
+        previewFeaturePositionOverrides.Remove(key);
+        previewFeatureMirrorOverrides.Remove(key);
+        RefreshEditModePreview(); RepaintGameViews(); Repaint();
+      }
+    }
+    else if ((changedX && editX != x) || (changedY && editY != y))
+    {
+      if (editX == defaultX && editY == defaultY)
+        previewFeaturePositionOverrides.Remove(key);
+      else previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+  }
+
   private void BlitChampionMirrorSideLaneFrontF2IntoPreview(Color32[] pixels)
   {
     if (pixels == null) return;
@@ -23820,12 +23890,41 @@ private static void HandleGameViewPointerDown(
         continue;
       if (nearCorner && !(left && (calibrateClass2ManaclesCornerF2
           || calibrateClass3HookCornerF2
-          || calibrateClass4WoodenCornerF2)))
+          || calibrateClass4WoodenCornerF2
+          || calibrateClass5SlimeCornerF2)))
         ReportUncalibratedChampionView(
             GetChampionMirrorClass1CornerF2Key(left), left, mirror);
 
       // Class 2 replaces the picture only while calibrating this geometry.
       // Never write to the map or the Class 1 mirror calibration.
+      if (left && nearCorner && calibrateClass5SlimeCornerF2)
+      {
+        Texture2D slime = GetSlimeGeneratedF2FrontTexture();
+        if (slime == null || !slime.isReadable)
+        {
+          Debug.LogError("ViewEdit Class 5: Missing readable Slime F2 artwork.");
+          continue;
+        }
+        string slimeKey = GetSlimeClass5CornerF2Key(left);
+        if (!TryGetOrnamentClassJson(slimeKey,
+            out AcceptedOrnamentReference ignoredSlime))
+        {
+          string occurrence = "Class5|" + previewDungeonLevel + "|" + previewX
+              + "," + previewY + "|" + previewFacing;
+          if (loggedUncalibratedChampionViews.Add(occurrence))
+            Debug.Log("<color=cyan>CYAN | ViewEdit UNCALIBRATED | "
+                + "Class 5 Slime LeftF2 | adjust X/Y and press Apply.</color>");
+        }
+        GetOriginalCornerF2DrawPosition(0, left, slime.width, slime.height,
+            out int slimeX, out int slimeY);
+        bool slimeFlip = false;
+        ApplyAcceptedOrnamentReference(slimeKey,
+            ref slimeX, ref slimeY, ref slimeFlip);
+        ApplyPreviewFeatureRenderOverrides(slimeKey,
+            ref slimeX, ref slimeY, ref slimeFlip);
+        BlitWallOrnamentIntoPreview(pixels, slime, slimeX, slimeY, slimeFlip);
+        continue;
+      }
       if (left && nearCorner && calibrateClass4WoodenCornerF2)
       {
         Texture2D wood = GetWoodRingGeneratedF2FrontTexture();
@@ -27950,6 +28049,7 @@ private static void HandleGameViewPointerDown(
     DrawManaclesClass2CornerF2CalibrationRow();
     DrawHookClass3CornerF2CalibrationRow();
     DrawWoodenClass4CornerF2CalibrationRow();
+    DrawSlimeClass5CornerF2CalibrationRow();
 
     // Ordinary wall ornaments.
     if (previewWallOrnaments != null)
