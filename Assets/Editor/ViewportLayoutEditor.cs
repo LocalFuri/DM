@@ -16918,9 +16918,6 @@ private static void HandleGameViewPointerDown(
         }
       }
 
-      // Temporary WUUF Manacles A/B experiment; ordinary ornament renderer only.
-      ApplyWuufManaclesProjectionExperiment(level);
-
       previewMiniMapLoadError = null;
       return true;
     }
@@ -16952,52 +16949,6 @@ private static void HandleGameViewPointerDown(
   /// Disables every piece except Floor, Ceiling, Movement Arrows, and
   /// Champion Status Slot 1–4 (matched by ViewportPiece.Name).
   /// </summary>
-  // TEMPORARY EXPERIMENT: replace WUUF's mirror with Manacles at the
-  // physical feature location as recorded by Dungeon Features: floor
-  // (12,13), facing West. Manacles use ordinary ornament drawing/projection.
-  // Undo by removing this method and its call in TryLoadPreviewLevel.
-  private void ApplyWuufManaclesProjectionExperiment(int level)
-  {
-    if (level != 0)
-      return;
-
-    if (previewChampionMirrors == null || previewWallOrnaments == null)
-      throw new System.InvalidOperationException(
-          "WUUF Manacles test requires loaded champion mirrors and wall ornaments.");
-
-    var remainingMirrors = new List<ChampionMirrorPlacement>(
-        previewChampionMirrors.Length);
-    bool foundWuuf = false;
-    foreach (ChampionMirrorPlacement mirror in previewChampionMirrors)
-    {
-      if (mirror != null && string.Equals(mirror.champion, "WUUF",
-          System.StringComparison.OrdinalIgnoreCase))
-      {
-        foundWuuf = true;
-        continue;
-      }
-      remainingMirrors.Add(mirror);
-    }
-    if (!foundWuuf)
-      throw new System.InvalidOperationException(
-          "WUUF Manacles test: WUUF mirror was not loaded; no substitution performed.");
-
-    var ornaments = new List<WallOrnamentPlacement>(previewWallOrnaments);
-    ornaments.Add(new WallOrnamentPlacement
-    {
-      type = "Manacles",
-      ornamentOrdinal = -1,
-      x = 12,
-      y = 13,
-      wall = "West",
-      wallTilePlacement = false
-    });
-    previewChampionMirrors = remainingMirrors.ToArray();
-    previewWallOrnaments = ornaments.ToArray();
-    Debug.Log("ViewEdit WUUF A/B: mirror suppressed; ordinary Manacles at "
-        + "floor (12,13) facing West; no persistent data changed.");
-  }
-
   /// <summary>
   /// ViewEdit preview only. Floor, ceiling, arrows, and champion slots stay.
   /// Stored piece Enabled / X / Y / Graphic / Mirror are not changed.
@@ -20864,6 +20815,7 @@ private static void HandleGameViewPointerDown(
     BlitWoodRingD1FrontIntoPreview(pixels);
     BlitChampionMirrorS1SidesAsWallOrnamentsIntoPreview(pixels);
     BlitChampionMirrorS2SidesAsWallOrnamentsIntoPreview(pixels);
+    BlitOrnamentCornerFrontF2IntoPreview(pixels);
     BlitChampionMirrorSideLaneFrontF2IntoPreview(pixels);
     BlitChampionMirrorS3SidesAsWallOrnamentsIntoPreview(pixels);
     BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 3);
@@ -23303,6 +23255,71 @@ private static void HandleGameViewPointerDown(
         && PreviewTileIsWall(wallX, wallY);
   }
 
+  // Shared physical-wall corner F2 projection. This is the same geometric
+  // classification for champion mirrors and ordinary front-facing ornaments.
+  // Artwork is sized by each caller; only the projected right/left visible
+  // boundary and the accepted corner anchor are shared.
+  private bool TryGetSharedCornerFrontF2(int wallX, int wallY,
+      string wallFace, out bool left)
+  {
+    left = false;
+    if (TryGetNearCornerWallFeatureProjection(wallX, wallY, wallFace, true))
+    { left = true; return true; }
+    return TryGetNearCornerWallFeatureProjection(
+        wallX, wallY, wallFace, false);
+  }
+
+  private void GetSharedCornerFrontF2Position(bool left,
+      int artworkWidth, int artworkHeight, out int x, out int y,
+      out bool flip)
+  {
+    // The 20-pixel edge is the current accepted V17 calibration, not an
+    // artwork width: images of different sizes share the same right edge.
+    // Calibration belongs to the projected wall anchor, not to the
+    // individual ornament bitmap. Apply the saved mirror-sized reference
+    // first, then convert that anchor to this artwork's bounds.
+    const int calibratedReferenceWidth = 29;
+    const int calibratedReferenceHeight = 27;
+    x = left ? 20 - calibratedReferenceWidth
+        : DungeonViewportWidth - 20;
+    y = DisplayYToUnityY(33, calibratedReferenceHeight);
+    flip = false;
+    string key = "OrnamentProjection:CornerFrontF2:"
+        + (left ? "Left" : "Right");
+    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+    if (left) x += calibratedReferenceWidth - artworkWidth;
+    y += calibratedReferenceHeight - artworkHeight;
+  }
+
+  // Real ordinary wall ornaments: share the corner map geometry and the
+  // calibrated screen anchor with champion mirrors. Existing S1-S3 and
+  // center F1-F3 ornament paths remain unchanged.
+  private void BlitOrnamentCornerFrontF2IntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || previewMiniMap == null
+        || previewWallOrnaments == null) return;
+    for (int i = 0; i < previewWallOrnaments.Length; ++i)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament == null || !ornament.wallTilePlacement
+          || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+              "Ornament", ornament.x, ornament.y, ornament.wall))
+          || !TryGetSharedCornerFrontF2(
+              ornament.x, ornament.y, ornament.wall, out bool left))
+        continue;
+      Texture2D artwork = null;
+      if (IsManaclesOrnament(ornament))
+        artwork = GetManaclesGeneratedF2FrontTexture();
+      else if (IsHookOrnament(ornament))
+        artwork = GetHookGeneratedF2FrontTexture();
+      if (artwork == null || !artwork.isReadable) continue;
+      GetSharedCornerFrontF2Position(left, artwork.width, artwork.height,
+          out int x, out int y, out bool flip);
+      BlitPieceIntoPreview(pixels, artwork, x, y, flip);
+    }
+  }
+
   // The front-facing surface at the END of an open lateral passage is not
   // a sideways wall face. At distance 2 the frame uses front F2 artwork,
   // placed in the left/right screen slot. The center lane may be blocked.
@@ -23323,8 +23340,9 @@ private static void HandleGameViewPointerDown(
           || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
               "ChampionMirror", candidate.x, candidate.y, candidate.wall)))
         continue;
-      bool corner = TryGetNearCornerWallFeatureProjection(
-          candidate.x, candidate.y, candidate.wall, left);
+      bool corner = TryGetSharedCornerFrontF2(
+          candidate.x, candidate.y, candidate.wall, out bool cornerLeft)
+          && cornerLeft == left;
       if (!corner && !TryGetLateralFrontWallFeatureProjection(
               candidate.x, candidate.y, candidate.wall, 2, left))
         continue;
@@ -23363,18 +23381,20 @@ private static void HandleGameViewPointerDown(
         continue;
       }
 
-      int x = nearCorner
-          ? (left ? 20 - scaled.width : DungeonViewportWidth - 20)
-          : (left ? HookD2SideLeftX : HookD2SideRightX);
-      int y = nearCorner
-          ? DisplayYToUnityY(33, scaled.height)
-          : HookD2SideY - (scaled.height - HookD2SideHeight) / 2;
-      bool flip = false;
-      string key = nearCorner
-          ? "OrnamentProjection:CornerFrontF2:" + (left ? "Left" : "Right")
-          : GetSideLaneFrontF2MirrorProjectionKey(left);
-      ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
-      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+      int x, y;
+      bool flip;
+      if (nearCorner)
+        GetSharedCornerFrontF2Position(left, scaled.width, scaled.height,
+            out x, out y, out flip);
+      else
+      {
+        x = left ? HookD2SideLeftX : HookD2SideRightX;
+        y = HookD2SideY - (scaled.height - HookD2SideHeight) / 2;
+        flip = false;
+        string key = GetSideLaneFrontF2MirrorProjectionKey(left);
+        ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
+        ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+      }
       BlitWallOrnamentIntoPreview(pixels, scaled, x, y, flip);
     }
   }
