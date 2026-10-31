@@ -1,11 +1,17 @@
 {
-  "version": 1,
-  "entries": [
-    {
-      "key": "OrnamentClass:1:ChampionMirror:CornerFrontF2:Left",
-      "x": -23,
-      "y": 104,
-      "mirror": false
-    }
-  ]
+    "version": 1,
+    "entries": [
+        {
+            "key": "OrnamentClass:1:ChampionMirror:CornerFrontF2:Left",
+            "x": -23,
+            "y": 104,
+            "mirror": false
+        },
+        {
+            "key": "OrnamentClass:2:Manacles:CornerFrontF2:Left",
+            "x": -41,
+            "y": 93,
+            "mirror": false
+        }
+    ]
 }
