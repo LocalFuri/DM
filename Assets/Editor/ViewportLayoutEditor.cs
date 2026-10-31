@@ -13259,6 +13259,17 @@ private static void HandleGameViewPointerDown(
     NoteContentRight();
     EditorGUILayout.EndHorizontal();
 
+    // Safe opt-out for comparison with the historical automatic renderer.
+    // Strict mode is on by default and survives Editor recompilation.
+    bool strictBefore = StrictManualOrnamentMode;
+    bool strictAfter = EditorGUILayout.ToggleLeft(
+        "Manual ornaments only (no automatic guesses)", strictBefore);
+    if (strictAfter != strictBefore)
+    {
+      StrictManualOrnamentMode = strictAfter;
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+
     // Explicit ViewEdit redraw: allows diagnostic capture at the current pose
     // without walking to another tile, turning, or recompiling scripts.
     EditorGUILayout.BeginHorizontal();
@@ -20786,6 +20797,13 @@ private static void HandleGameViewPointerDown(
     editModePreviewTexture.Apply(false);
   }
 
+  private const string StrictManualOrnamentPref = "DM.ViewEdit.StrictManualOrnaments";
+  private static bool StrictManualOrnamentMode
+  {
+    get { return EditorPrefs.GetBool(StrictManualOrnamentPref, true); }
+    set { EditorPrefs.SetBool(StrictManualOrnamentPref, value); }
+  }
+
   /// <summary>
   /// Post-map feature layer. This method is intentionally called only after
   /// floor/ceiling/walls/doors/stairs have completed their geometry pass.
@@ -20798,6 +20816,22 @@ private static void HandleGameViewPointerDown(
     BlitPuddlesIntoPreview(pixels);
     BlitMossIntoPreview(pixels);
     BlitDroppedTorchesIntoPreview(pixels);
+
+    // Strict manual mode disables unverified distant ornament passes only.
+    // Preserve the established, full-size near champion-mirror views:
+    // S1 Left/Right uses its native 16x35 side asset; Front F1 uses its
+    // existing unscaled 64x43 frame and portrait drawing path.
+    // Do not route these confirmed views through F2/F3 shrink logic.
+    if (StrictManualOrnamentMode)
+    {
+      BlitChampionMirrorS1SidesAsWallOrnamentsIntoPreview(pixels);
+      BlitChampionMirrorSideLaneFrontF2IntoPreview(pixels);
+      BlitManualChampionLeftF3Preview(pixels);
+      BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 1);
+      BlitFloorItemsIntoPreview(pixels);
+      BlitSuspendedThrownItemsIntoPreview(pixels);
+      return;
+    }
 
     // Champion wall decorations.
 
@@ -20827,6 +20861,7 @@ private static void HandleGameViewPointerDown(
     BlitOrnamentCornerFrontF2IntoPreview(pixels);
     BlitChampionMirrorSideLaneFrontF2IntoPreview(pixels);
     BlitChampionMirrorS3SidesAsWallOrnamentsIntoPreview(pixels);
+    BlitManualChampionLeftF3Preview(pixels);
     BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 3);
     BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 2);
     BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 1);
@@ -23575,10 +23610,18 @@ private static void HandleGameViewPointerDown(
     try
     {
       File.WriteAllText(temp, JsonUtility.ToJson(data, true));
-      // Keep the previous valid file if writing the replacement fails.
+      // File.Replace can fail for an asset under Unity/Windows even when
+      // the temporary JSON was written successfully. Preserve the prior
+      // calibration data before replacing the destination.
       if (File.Exists(OrnamentClassJsonPath))
-        File.Replace(temp, OrnamentClassJsonPath, null);
-      else File.Move(temp, OrnamentClassJsonPath);
+      {
+        string backup = OrnamentClassJsonPath + ".bak";
+        File.Copy(OrnamentClassJsonPath, backup, true);
+        File.Copy(temp, OrnamentClassJsonPath, true);
+        File.Delete(temp);
+      }
+      else
+        File.Move(temp, OrnamentClassJsonPath);
       Debug.Log("ViewEdit Apply: saved " + key + " X=" + x + " Y=" + y
           + " to " + OrnamentClassJsonPath);
       return true;
@@ -24041,6 +24084,23 @@ private static void HandleGameViewPointerDown(
       bool found = TryGetSideLaneFrontF2Mirror(left, out ChampionMirrorPlacement mirror, out bool nearCorner);
       if (!found)
         continue;
+      // In strict mode an uncalibrated geometry must not produce a guessed image.
+      // Preview checkboxes are explicit user selections and remain available.
+      bool explicitPreview = left && nearCorner &&
+          (calibrateClass2ManaclesCornerF2 || calibrateClass3HookCornerF2 ||
+           calibrateClass4WoodenCornerF2 || calibrateClass5SlimeCornerF2 ||
+           calibrateClass6GrateCornerF2 || calibrateClass7EmptyHolderCornerF2);
+      if (StrictManualOrnamentMode && !explicitPreview)
+      {
+        if (!nearCorner || !TryGetOrnamentClassJson(
+            GetChampionMirrorClass1CornerF2Key(left),
+            out AcceptedOrnamentReference approved))
+        {
+          ReportUncalibratedChampionView(
+              GetChampionMirrorClass1CornerF2Key(left), left, mirror);
+          continue;
+        }
+      }
       if (nearCorner && !(left && (calibrateClass2ManaclesCornerF2
           || calibrateClass3HookCornerF2
           || calibrateClass4WoodenCornerF2
@@ -24345,6 +24405,108 @@ private static void HandleGameViewPointerDown(
         RepaintGameViews();
         Repaint();
       }
+    }
+  }
+
+  // Manual F3 calibration is opt-in. It leaves the existing V17 wall drawing
+  // and the seven accepted LeftF2 class calibrations completely unchanged.
+  // The player's coordinates are never embedded in the JSON calibration key.
+  private const string ManualLeftF3PreviewPref = "DM.ViewEdit.ManualChampionLeftF3Preview";
+  private bool manualChampionLeftF3Preview
+  {
+    get { return EditorPrefs.GetBool(ManualLeftF3PreviewPref, false); }
+    set { EditorPrefs.SetBool(ManualLeftF3PreviewPref, value); }
+  }
+
+  private const string ManualChampionLeftF3Key =
+      "OrnamentClass:1:ChampionMirror:ManualFrontF3:Left";
+
+  private bool TryFindManualLeftF3Mirror(out ChampionMirrorPlacement result)
+  {
+    result = null;
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || previewChampionMirrors == null) return false;
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    int wallX = previewX + 3 * fx - rx;
+    int wallY = previewY + 3 * fy - ry;
+    string requiredFace = OppositeFacingName(previewFacing);
+    for (int i = 0; i < previewChampionMirrors.Length; i++)
+    {
+      ChampionMirrorPlacement candidate = previewChampionMirrors[i];
+      if (candidate == null || candidate.x != wallX || candidate.y != wallY
+          || !string.Equals(candidate.wall, requiredFace,
+              System.StringComparison.OrdinalIgnoreCase)
+          || IsPreviewChampionTaken(candidate.champion)
+          || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+              "ChampionMirror", candidate.x, candidate.y, candidate.wall)))
+        continue;
+      result = candidate;
+      return true;
+    }
+    return false;
+  }
+
+  private void BlitManualChampionLeftF3Preview(Color32[] pixels)
+  {
+    if (!manualChampionLeftF3Preview || pixels == null) return;
+    if (!TryFindManualLeftF3Mirror(out ChampionMirrorPlacement mirror)) return;
+    Texture2D source = GetChampionMirrorFrontTexture();
+    Texture2D artwork = source != null
+        ? GetChampionMirrorScaledFrameTexture(source, 3) : null;
+    if (artwork == null || !artwork.isReadable)
+    {
+      Debug.LogError("ViewEdit manual LeftF3: required readable champion mirror F3 frame unavailable.");
+      return;
+    }
+    int x = 0, y = 83;
+    bool flip = false;
+    ApplyAcceptedOrnamentReference(ManualChampionLeftF3Key, ref x, ref y, ref flip);
+    ApplyPreviewFeatureRenderOverrides(ManualChampionLeftF3Key, ref x, ref y, ref flip);
+    BlitWallOrnamentIntoPreview(pixels, artwork, x, y, flip);
+  }
+
+  private void DrawManualChampionLeftF3Row()
+  {
+    if (!TryFindManualLeftF3Mirror(out ChampionMirrorPlacement mirror)) return;
+    bool active = manualChampionLeftF3Preview;
+    bool selected = EditorGUILayout.ToggleLeft(
+        "Manual Class 1 - Champion Mirror LeftF3 (preview)", active);
+    if (selected != active)
+    {
+      manualChampionLeftF3Preview = selected;
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+    if (!selected) return;
+    int x = 0, y = 83;
+    bool flip = false;
+    ApplyAcceptedOrnamentReference(ManualChampionLeftF3Key, ref x, ref y, ref flip);
+    int savedX = x, savedY = y;
+    ApplyPreviewFeatureRenderOverrides(ManualChampionLeftF3Key, ref x, ref y, ref flip);
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label(mirror.champion + " - LeftF3", GUILayout.Width(160f));
+    int editX = x, editY = y;
+    bool changeX = DrawIntStepperInline("X", ref editX, snap,
+        x != savedX, true, 24f, 24f);
+    bool changeY = DrawIntStepperInline("Y", ref editY, snap,
+        y != savedY, true, 24f, 24f);
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    NoteContentRight();
+    EditorGUILayout.EndHorizontal();
+    if (apply)
+    {
+      if (SaveAcceptedOrnamentReference(ManualChampionLeftF3Key, editX, editY, flip))
+      {
+        previewFeaturePositionOverrides.Remove(ManualChampionLeftF3Key);
+        previewFeatureMirrorOverrides.Remove(ManualChampionLeftF3Key);
+      }
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+    else if ((changeX && editX != x) || (changeY && editY != y))
+    {
+      previewFeaturePositionOverrides[ManualChampionLeftF3Key] =
+          new Vector2Int(editX, editY);
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
   }
 
@@ -28257,6 +28419,7 @@ private static void HandleGameViewPointerDown(
     DrawChampionMirrorFrontCalibrationRows();
     DrawChampionMirrorSideCalibrationRows();
     DrawChampionMirrorSideLaneFrontF2Rows();
+    DrawManualChampionLeftF3Row();
     DrawManaclesClass2CornerF2CalibrationRow();
     DrawHookClass3CornerF2CalibrationRow();
     DrawWoodenClass4CornerF2CalibrationRow();
