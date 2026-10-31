@@ -23225,7 +23225,11 @@ private static void HandleGameViewPointerDown(
               previewY + sy + fy * step))
         return false;
     }
-    return true;
+    // This is a physical wall feature, so its face must also belong to a
+    // V17 wall surface actually drawn in this pose. The same authority gate
+    // is used by ordinary wall ornaments and other champion mirror views.
+    // Both the preview blitter and ViewEdit's row use this one projection.
+    return IsV17DrawnWallFeatureFace(wallX, wallY, wallFace, true);
   }
 
   // The front-facing surface at the END of an open lateral passage is not
