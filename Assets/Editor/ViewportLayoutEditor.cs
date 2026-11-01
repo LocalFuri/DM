@@ -737,7 +737,8 @@ public class ViewportLayoutEditor : EditorWindow
   // Hook D3 blits native Hook_Side3_5x10.png 1:1. The file is 3x5 and is also
   // a right-wall crop, placed in the Wood Ring D3 box. Same mirror rule.
   private const int HookD2SideWidth = 6;
-  private const int HookD2SideHeight = 10;
+  // TEMPORARY size experiment: original S2 target 6x10; test 6x12.
+  private const int HookD2SideHeight = 12;
   private const int HookD2SideLeftX = WoodRingD2SideLeftX;
   private const int HookD2SideRightX =
       DungeonViewportWidth - HookD2SideLeftX - HookD2SideWidth;
@@ -13321,6 +13322,9 @@ private static void HandleGameViewPointerDown(
     EditorGUILayout.BeginHorizontal();
     if (GUILayout.Button("Refresh", GUILayout.Width(83f)))
     {
+      // An explicit Refresh should report Hook S2 drawing again even when
+      // the render is unchanged and the Unity Console has been cleared.
+      lastHookS2DrawDiagnostic = null;
       Debug.Log("ViewEdit Refresh: requested at Level " + previewDungeonLevel
           + " X=" + previewX + " Y=" + previewY
           + " Facing=" + previewFacing);
