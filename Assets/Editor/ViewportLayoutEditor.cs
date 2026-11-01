@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -239,6 +239,9 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ManaclesD3FrontWidth = 38;
   private const int ManaclesD3FrontHeight = 20;
   private const string GrateFrontAssetPath =
+      "Assets/Art/Ornaments/Grate_F1_32x28.png";
+  // Preserve the pre-existing F2/F3 scaling source; changing F1 artwork must not change distant Grates.
+  private const string GrateDistantScalingSourceAssetPath =
       "Assets/Art/Ornaments/Grate_Front_32x28.png";
   private const string GrateSide1AssetPath =
       "Assets/Art/Ornaments/Grate_Side1_16x19.png";
@@ -251,6 +254,9 @@ public class ViewportLayoutEditor : EditorWindow
   // Dedicated right-hand corner artwork; independent of the verified S2/S3 art.
   private const string GrateF2SideAssetPath =
       "Assets/Art/Ornaments/Grate_F2_Side_20x13.png";
+  // Independent F3 corner art; native 14x8, never rescaled.
+  private const string GrateF3SideAssetPath =
+      "Assets/Art/Ornaments/Grate_F3_Side_14x8.png";
   private const string HookSideAssetPath =
       "Assets/Art/Ornaments/Hook_Side_16x19.png";
   private const string HookS3AssetPath =
@@ -368,6 +374,8 @@ public class ViewportLayoutEditor : EditorWindow
   // Initial right-edge location, adjustable with the independent ViewEdit Apply row.
   private const int GrateF2SideCornerX = DungeonViewportWidth - 10;
   private const int GrateF2SideCornerY = 83;
+  private const int GrateF3SideCornerX = DungeonViewportWidth - 7;
+  private const int GrateF3SideCornerY = 98;
 
   private const int GrateD3SideLeftX = 81;
   private const int GrateD3SideRightX =
@@ -1861,6 +1869,7 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedGrateSide3Texture;
   [System.NonSerialized]
   private Texture2D cachedGrateF2SideTexture;
+  private Texture2D cachedGrateF3SideTexture;
   [System.NonSerialized]
   private Texture2D cachedHookSideTexture;
   [System.NonSerialized]
@@ -20947,6 +20956,7 @@ private static void HandleGameViewPointerDown(
     BlitHookD2SidesIntoPreview(pixels);
     BlitGrateD2SidesIntoPreview(pixels);
     BlitGrateF2SideCornerIntoPreview(pixels);
+    BlitGrateF3SideCornerIntoPreview(pixels);
     BlitHookStyleD1SidesIntoPreview(pixels);
     BlitManaclesD2SidesIntoPreview(pixels);
     BlitManaclesD1SidesIntoPreview(pixels);
@@ -25852,6 +25862,12 @@ private static void HandleGameViewPointerDown(
       renderMirror = false;
       return true;
     }
+    if (IsGrateF3SideCornerVisible(ornament))
+    {
+      projectionName = "Grate - F3 Side Corner";
+      renderMirror = false;
+      return true;
+    }
 
     // Front F1.
     int d1X = previewX + forwardX;
@@ -26062,6 +26078,8 @@ private static void HandleGameViewPointerDown(
 
       if (projectionName == "Grate - F2 Side Corner")
       { renderX = GrateF2SideCornerX; renderY = GrateF2SideCornerY; return true; }
+      if (projectionName == "Grate - F3 Side Corner")
+      { renderX = GrateF3SideCornerX; renderY = GrateF3SideCornerY; return true; }
       if (projectionName == "Grate - Front F1")
       { renderX = GrateD1FrontX; renderY = GrateD1FrontY; return true; }
       if (projectionName == "Grate - Front F2")
@@ -26299,6 +26317,7 @@ private static void HandleGameViewPointerDown(
         return false;
 
       string grateSlot = grateProjectionName == "Grate - F2 Side Corner" ? "F2SideCorner"
+          : grateProjectionName == "Grate - F3 Side Corner" ? "F3SideCorner"
           : grateProjectionName == "Grate - Front F1" ? "F1"
           : grateProjectionName == "Grate - Front F2" ? "F2"
           : grateProjectionName == "Grate - Front F3" ? "F3"
@@ -26451,6 +26470,7 @@ private static void HandleGameViewPointerDown(
     ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
 
     if (!string.IsNullOrEmpty(projectionSuffix)
+        && !(IsGrateOrnament(ornament) && displayName != null && displayName.StartsWith("Grate F1 ", System.StringComparison.Ordinal))
         && (displayName == null || !displayName.Contains(projectionSuffix)))
     {
       displayName += projectionSuffix;
@@ -26468,6 +26488,11 @@ private static void HandleGameViewPointerDown(
     float ornamentCaptionColumnWidth =
         featureStyle.CalcSize(
             new GUIContent("WoodRing [1,17] (S) / S1")).x;
+    // Grate captions use their own exact width: no blank column after short
+    // labels, while longer perspective labels still remain fully readable.
+    if (IsGrateOrnament(ornament))
+      ornamentCaptionColumnWidth =
+          featureStyle.CalcSize(new GUIContent(displayName)).x + 6f;
     GUILayout.Label(
         displayName,
         featureStyle,
@@ -26490,6 +26515,25 @@ private static void HandleGameViewPointerDown(
       }
     }
 
+    // A Grate can be hidden temporarily to compare the underlying wall
+    // mortar lines. The original placement and accepted X/Y are not edited.
+    if (IsGrateOrnament(ornament))
+    {
+      string grateVisibilityKey = MakePreviewFeatureKey(
+          "Ornament", ornament.x, ornament.y, ornament.wall);
+      bool wasEnabled = IsPreviewFeatureEnabled(grateVisibilityKey);
+      bool nowEnabled = EditorGUILayout.ToggleLeft(
+          "Set", wasEnabled, GUILayout.Width(50f));
+      if (nowEnabled != wasEnabled)
+      {
+        SetPreviewFeatureEnabled(grateVisibilityKey, nowEnabled);
+        previewEnabledChangedThisFrame = true;
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
+    }
+
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int editX = x;
@@ -26502,9 +26546,20 @@ private static void HandleGameViewPointerDown(
     bool yChanged = DrawIntStepperInline(
         "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
 
-    GUILayout.Space(6f);
-    bool editMirror = EditorGUILayout.ToggleLeft(
-        "Mirror", mirror, GUILayout.Width(66f));
+    // Front-facing ornament projections never expose a Mirror checkbox.
+    // Retain the stored mirror value unchanged for calibration compatibility;
+    // side and corner perspectives continue to provide their Mirror control.
+    bool frontOrnamentProjection = hasGenericProjection
+        && (projectionSuffix == " / F1"
+            || projectionSuffix == " / F2"
+            || projectionSuffix == " / F3");
+    bool editMirror = mirror;
+    if (!frontOrnamentProjection)
+    {
+      GUILayout.Space(6f);
+      editMirror = EditorGUILayout.ToggleLeft(
+          "Mirror", mirror, GUILayout.Width(66f));
+    }
     bool mirrorChanged = editMirror != mirror;
     bool applyClicked = false;
     if (hasGenericProjection)
@@ -26572,7 +26627,9 @@ private static void HandleGameViewPointerDown(
             ornament, out string projectionName, out _))
       return false;
 
-    string name = projectionName.Replace("Grate - Side3", "Grate - S3") + " [" + ornament.x + "," + ornament.y + "] (" + ShortDirectionLabel(FacingName(previewFacing)) + ")";
+    string name = projectionName == "Grate - Front F1"
+        ? "Grate F1 " + previewX + "," + previewY + " " + ShortDirectionLabel(FacingName(previewFacing))
+        : projectionName.Replace("Grate - Side3", "Grate - S3") + " [" + previewX + "," + previewY + "] (" + ShortDirectionLabel(FacingName(previewFacing)) + ")";
     return DrawWallOrnamentCalibrationRow(ornament, name);
   }
 
@@ -38325,6 +38382,68 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // F3 corner: the same forward-facing right-side wall face as the accepted
+  // F2 corner, but one tile farther away. Keep separate from the native S3 side.
+  // Uses player-relative coordinates so it works for all four directions.
+  private bool IsGrateF3SideCornerVisible(WallOrnamentPlacement ornament)
+  {
+    if (!IsGrateOrnament(ornament) || previewMiniMap == null)
+      return false;
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    for (int step = 1; step <= 3; step++)
+    {
+      int x = previewX + fx * step;
+      int y = previewY + fy * step;
+      if (!previewMiniMap.IsInside(x, y)
+          || previewMiniMap.GetTile(x, y).Type == DungeonTileType.Wall)
+        return false;
+    }
+    int tileX = previewX + fx * 3 + rx;
+    int tileY = previewY + fy * 3 + ry;
+    return previewMiniMap.IsInside(tileX, tileY)
+        && string.Equals(ornament.wall, OppositeFacingName(previewFacing),
+            System.StringComparison.OrdinalIgnoreCase)
+        && ornament.x == tileX && ornament.y == tileY;
+  }
+
+  private Texture2D GetGrateF3SideCornerTexture()
+  {
+    if (cachedGrateF3SideTexture != null)
+      return cachedGrateF3SideTexture;
+    Texture2D image = AssetDatabase.LoadAssetAtPath<Texture2D>(GrateF3SideAssetPath);
+    if (image == null || image.width != 14 || image.height != 8 || !image.isReadable)
+    {
+      Debug.LogError("ViewEdit: Grate F3 Side requires readable native 14x8 asset: "
+          + GrateF3SideAssetPath);
+      return null;
+    }
+    cachedGrateF3SideTexture = image;
+    return image;
+  }
+
+  private void BlitGrateF3SideCornerIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewWallOrnaments == null)
+      return;
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!IsGrateF3SideCornerVisible(ornament))
+        continue;
+      if (!IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+              "Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
+      Texture2D image = GetGrateF3SideCornerTexture();
+      if (image == null)
+        return;
+      BlitOrnamentPieceIntoPreview(pixels, image, ornament,
+          GrateF3SideCornerX, GrateF3SideCornerY, false);
+      return;
+    }
+  }
+
   private void BlitGrateD2SidesIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -38758,7 +38877,7 @@ private static void HandleGameViewPointerDown(
     if (cachedGrateFront3Texture != null)
       return cachedGrateFront3Texture;
 
-    Texture2D source = GetGrateFrontTexture();
+    Texture2D source = GetGrateDistantScalingSourceTexture();
     if (source == null || !source.isReadable)
       return null;
 
@@ -38859,7 +38978,7 @@ private static void HandleGameViewPointerDown(
     if (cachedGrateFront2Texture != null)
       return cachedGrateFront2Texture;
 
-    Texture2D source = GetGrateFrontTexture();
+    Texture2D source = GetGrateDistantScalingSourceTexture();
     if (source == null || !source.isReadable)
       return null;
 
@@ -40575,6 +40694,19 @@ private static void HandleGameViewPointerDown(
     return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 34;
   }
 
+  private Texture2D GetGrateDistantScalingSourceTexture()
+  {
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        GrateDistantScalingSourceAssetPath);
+    if (texture == null || texture.width != 32 || texture.height != 28)
+    {
+      Debug.LogError("Grate F2/F3 source must exist as a 32x28 texture: "
+          + GrateDistantScalingSourceAssetPath);
+      return null;
+    }
+    return texture;
+  }
+
   private Texture2D GetGrateFrontTexture()
   {
     if (cachedGrateFrontTexture != null)
@@ -40582,36 +40714,13 @@ private static void HandleGameViewPointerDown(
 
     Texture2D texture =
         AssetDatabase.LoadAssetAtPath<Texture2D>(GrateFrontAssetPath);
-    if (texture != null && texture.width == 32 && texture.height == 28)
+    if (texture == null || texture.width != 32 || texture.height != 28)
     {
-      cachedGrateFrontTexture = texture;
-      return texture;
+      Debug.LogError("Grate F1 must exist as a 32x28 texture: "
+          + GrateFrontAssetPath);
+      return null;
     }
-
-    string[] guids = AssetDatabase.FindAssets(
-        "Grate t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 32 || candidate.height != 28)
-        continue;
-
-      if (path.IndexOf(
-              "grate",
-              System.StringComparison.OrdinalIgnoreCase) < 0
-          || path.IndexOf(
-              "front",
-              System.StringComparison.OrdinalIgnoreCase) < 0)
-      {
-        continue;
-      }
-
-      cachedGrateFrontTexture = candidate;
-      return candidate;
-    }
-
+    cachedGrateFrontTexture = texture;
     return texture;
   }
 
