@@ -19829,7 +19829,7 @@ private static void HandleGameViewPointerDown(
     EditorGUILayout.BeginHorizontal();
     // Match the normal LeftF3 wall card header and control order.
     GUILayout.Space(15f);
-    GUILayout.Label("FrontF3 edge", EditorStyles.boldLabel, GUILayout.Width(116f));
+    GUILayout.Label("FrontF3", EditorStyles.boldLabel, GUILayout.Width(116f));
     GUILayout.Label("Set", EditorStyles.miniLabel, GUILayout.Width(22f));
     bool newLeft16 = EditorGUILayout.Toggle(
         previewAllowFrontF3Left16, GUILayout.Width(18f));
