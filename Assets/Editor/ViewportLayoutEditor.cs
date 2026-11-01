@@ -20863,6 +20863,7 @@ private static void HandleGameViewPointerDown(
     // runs before a calibration exists so ViewEdit can visually position it.
     BlitUnifiedChampionMirrorFrontPreview(pixels);
     BlitUnifiedChampionMirrorCornerF2Preview(pixels);
+    BlitUnifiedChampionMirrorLeftF3Preview(pixels);
 
     // Wall decorations (ordinary ornaments retain their own rendering).
 
@@ -24295,6 +24296,41 @@ private static void HandleGameViewPointerDown(
       ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
       BlitPieceIntoPreview(pixels, artwork, x, y, flip);
     }
+  }
+
+  // Shared diagonal-left F3 front-wall mirror. The same relative tile
+  // pattern is evaluated in all four directions; no champion/coordinate cases.
+  // Reuse the pre-existing LeftF3 calibration key and ViewEdit row.
+  private void BlitUnifiedChampionMirrorLeftF3Preview(Color32[] pixels)
+  {
+    if (pixels == null || previewMiniMap == null) return;
+    if (!TryFindManualLeftF3Mirror(out ChampionMirrorPlacement mirror))
+      return;
+
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    // Require an open near-left diagonal and the wall-facing approach
+    // cell, rather than displaying a mirror through solid tiles.
+    int leftNearX = previewX + fx - rx;
+    int leftNearY = previewY + fy - ry;
+    int leftMiddleX = previewX + 2 * fx - rx;
+    int leftMiddleY = previewY + 2 * fy - ry;
+    if (!PreviewTileIsOpen(leftNearX, leftNearY)
+        || !PreviewTileIsOpen(leftMiddleX, leftMiddleY)
+        || !PreviewTileIsWall(mirror.x, mirror.y))
+      return;
+
+    Texture2D frame = GetChampionMirrorFrontTexture();
+    if (frame == null || !frame.isReadable) return;
+    Texture2D artwork = GetChampionMirrorScaledFrameTexture(frame, 3);
+    if (artwork == null || !artwork.isReadable) return;
+    int x = 0, y = 83;
+    bool flip = false;
+    ApplyAcceptedOrnamentReference(
+        ManualChampionLeftF3Key, ref x, ref y, ref flip);
+    ApplyPreviewFeatureRenderOverrides(
+        ManualChampionLeftF3Key, ref x, ref y, ref flip);
+    BlitWallOrnamentIntoPreview(pixels, artwork, x, y, flip);
   }
 
   private Texture2D GetChampionMirrorFrontTexture()

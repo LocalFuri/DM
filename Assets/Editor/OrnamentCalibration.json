@@ -42,6 +42,12 @@
             "x": 2,
             "y": 93,
             "mirror": false
+        },
+        {
+            "key": "OrnamentClass:1:ChampionMirror:ManualFrontF3:Left",
+            "x": 16,
+            "y": 114,
+            "mirror": false
         }
     ]
 }
