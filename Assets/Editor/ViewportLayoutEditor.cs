@@ -23996,7 +23996,7 @@ private static void HandleGameViewPointerDown(
       EditorGUILayout.BeginHorizontal();
       string label = mirror.champion.ToUpperInvariant()
           + (left ? " - LeftF2" : " - RightF2")
-          + " - (" + mirror.x + "," + mirror.y + " " + mirror.wall + ")";
+          + " - (" + mirror.x + "," + mirror.y + " " + ShortDirectionLabel(mirror.wall) + ")";
       GUILayout.Label(label, style,
           GUILayout.Width(Mathf.Ceil(style.CalcSize(new GUIContent(label)).x) + 6f));
       bool enabled = IsPreviewFeatureEnabled(visibilityKey);
@@ -24111,7 +24111,7 @@ private static void HandleGameViewPointerDown(
     style.normal.textColor = Color.yellow;
     EditorGUILayout.BeginHorizontal();
     string label = mirror.champion.ToUpperInvariant() + " - LeftF3"
-        + " - (" + mirror.x + "," + mirror.y + " " + mirror.wall + ")";
+        + " - (" + mirror.x + "," + mirror.y + " " + ShortDirectionLabel(mirror.wall) + ")";
     GUILayout.Label(label, style,
         GUILayout.Width(Mathf.Ceil(style.CalcSize(new GUIContent(label)).x) + 6f));
     bool active = manualChampionLeftF3Preview;
@@ -24224,6 +24224,9 @@ private static void HandleGameViewPointerDown(
         bool flip = false;
         ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
         ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+        // Front F1/F2/F3 mirror artwork is never horizontally flipped,
+        // regardless of older saved calibration values.
+        flip = false;
         if (depth == 2)
         {
           string message = "MIRROR F2 DRAW: champion=" + m.champion
@@ -24628,7 +24631,8 @@ private static void HandleGameViewPointerDown(
       case 3:
         profile.slot = ChampionMirrorFrontWallOrnamentSet.f3;
         profile.drawPortrait = false;
-        profile.scaleMethod = 3; // Fixed Top to Bottom.
+        profile.scaleMethod = Mathf.Clamp(
+            EditorPrefs.GetInt(ChampionMirrorScalePrefPrefix + 3, 3), 0, 4);
         profile.distancePalette = WallOrnamentFarColorMap;
         break;
       default:
@@ -27725,7 +27729,7 @@ private static void HandleGameViewPointerDown(
       // the viewer; the viewer faces the opposite direction.
       int viewingX = champion.hasViewingFloor ? champion.viewingFloorX : champion.x - fx;
       int viewingY = champion.hasViewingFloor ? champion.viewingFloorY : champion.y - fy;
-      string viewingDirection = FacingName(previewFacing);
+      string viewingDirection = ShortDirectionLabel(FacingName(previewFacing));
       string frontLabel = champion.champion.ToUpperInvariant() + " - F" + depth
           + " - (" + viewingX + "," + viewingY + " " + viewingDirection + ")";
       // Align champion calibration controls with the floor-item (sword) row.
@@ -27745,15 +27749,14 @@ private static void HandleGameViewPointerDown(
       int editY = y;
       bool yChanged = DrawIntStepperInline(
           "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
-      bool editMirror = EditorGUILayout.ToggleLeft(
-          "Mirror", mirrored, GUILayout.Width(66f));
+      // Front-facing champion mirrors are never mirrored.
       bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
 
       int scaleBefore = GetChampionMirrorScaleMethod(depth);
       int scaleAfter = scaleBefore;
-      if (depth == 2)
+      if (depth == 2 || depth == 3)
         scaleAfter = EditorGUILayout.Popup(
-            scaleBefore, ChampionMirrorScaleOptions, GUILayout.Width(155f));
+            scaleBefore, ChampionMirrorScaleOptions, GUILayout.Width(82f));
       NoteContentRight();
       EditorGUIUtility.labelWidth = savedLabelWidth;
       EditorGUILayout.EndHorizontal();
@@ -27762,7 +27765,7 @@ private static void HandleGameViewPointerDown(
         SetPreviewFeatureEnabled(visibilityKey, nowEnabled);
       if (apply)
       {
-        if (SaveAcceptedOrnamentReference(projectionKey, editX, editY, editMirror))
+        if (SaveAcceptedOrnamentReference(projectionKey, editX, editY, false))
         {
           previewFeaturePositionOverrides.Remove(projectionKey);
           previewFeatureMirrorOverrides.Remove(projectionKey);
@@ -27780,14 +27783,6 @@ private static void HandleGameViewPointerDown(
             previewFeaturePositionOverrides[projectionKey] = new Vector2Int(editX, editY);
           previewPositionChangedThisFrame = true;
         }
-        if (editMirror != mirrored)
-        {
-          if (editMirror == defaultMirror)
-            previewFeatureMirrorOverrides.Remove(projectionKey);
-          else
-            previewFeatureMirrorOverrides[projectionKey] = editMirror;
-          previewMirrorChangedThisFrame = true;
-        }
       }
       if (scaleAfter != scaleBefore)
       {
@@ -27795,7 +27790,7 @@ private static void HandleGameViewPointerDown(
         InvalidateChampionMirrorFrameScaleCache();
       }
       if (apply || nowEnabled != wasEnabled || xChanged || yChanged
-          || editMirror != mirrored || scaleAfter != scaleBefore)
+          || scaleAfter != scaleBefore)
       {
         RefreshEditModePreview();
         RepaintGameViews();
@@ -27883,10 +27878,10 @@ private static void HandleGameViewPointerDown(
         int offsetY;
         switch ((visible.wall ?? "").Trim().ToUpperInvariant())
         {
-          case "NORTH": offsetX = 0; offsetY = -1; viewingDirection = "South"; break;
-          case "EAST": offsetX = 1; offsetY = 0; viewingDirection = "West"; break;
-          case "SOUTH": offsetX = 0; offsetY = 1; viewingDirection = "North"; break;
-          case "WEST": offsetX = -1; offsetY = 0; viewingDirection = "East"; break;
+          case "NORTH": offsetX = 0; offsetY = -1; viewingDirection = "S"; break;
+          case "EAST": offsetX = 1; offsetY = 0; viewingDirection = "W"; break;
+          case "SOUTH": offsetX = 0; offsetY = 1; viewingDirection = "N"; break;
+          case "WEST": offsetX = -1; offsetY = 0; viewingDirection = "E"; break;
           default:
             Debug.LogError("ViewEdit: Invalid champion mirror wall face for "
                 + visible.champion + ": " + visible.wall);
