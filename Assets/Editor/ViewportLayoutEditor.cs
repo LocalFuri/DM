@@ -3281,7 +3281,11 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
 
     // Permanent ViewEdit exclusions.
-    if (piece.Name == "Front Wall F1"
+    // The generic FrontF3 card is redundant with the dedicated native
+    // FrontF3 edge controls. Hide its UI only; keep the piece and V17
+    // compositor untouched so existing geometry calibrations remain intact.
+    if (piece.Name == "FrontF3"
+        || piece.Name == "Front Wall F1"
         || piece.Name == "Ceiling"
         || piece.Name == "Floor"
         || piece.Graphic == DungeonGraphicType.Ceiling
@@ -13934,6 +13938,37 @@ private static void HandleGameViewPointerDown(
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 2, 3));
   }
 
+  // Verified original CSBwin: Level 0 (14,12), facing West, exposes an
+  // 8-pixel gap at the far left. The FrontF3 pass must not paint over it.
+  // Match the entire viewer-relative V17 footprint, NOT map coordinates or
+  // compass direction. Rotations of this arrangement therefore match too.
+  // '#' = solid wall/outside; '.' = any non-solid traversable cell.
+  // Only this visually verified footprint is suppressed; other FrontF3
+  // geometry classes (including the approved 10,4 South) remain unchanged.
+  private static bool IsViewport17VerifiedOpenLeftGap(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null)
+      return false;
+
+    string[] rows = { "...", "..#", "..##.", ".###." };
+    for (int depth = 0; depth < rows.Length; depth++)
+    {
+      int minLocalX = depth < 2 ? -1 : -2;
+      for (int index = 0; index < rows[depth].Length; index++)
+      {
+        if (!TryFindViewport17Cell(
+                inspection.Cells, minLocalX + index, depth,
+                out Viewport17Cell cell))
+          return false;
+        bool expectedSolid = rows[depth][index] == '#';
+        if (IsViewport17Solid(cell) != expectedSolid)
+          return false;
+      }
+    }
+    return true;
+  }
+
   private static bool IsViewport17D3LeftEdgeFrontGutter(
       Viewport17Inspection inspection)
   {
@@ -19794,7 +19829,7 @@ private static void HandleGameViewPointerDown(
     EditorGUILayout.BeginHorizontal();
     // Match the normal LeftF3 wall card header and control order.
     GUILayout.Space(15f);
-    GUILayout.Label("FrontF3", EditorStyles.boldLabel, GUILayout.Width(116f));
+    GUILayout.Label("FrontF3 edge", EditorStyles.boldLabel, GUILayout.Width(116f));
     GUILayout.Label("Set", EditorStyles.miniLabel, GUILayout.Width(22f));
     bool newLeft16 = EditorGUILayout.Toggle(
         previewAllowFrontF3Left16, GUILayout.Width(18f));
@@ -22546,6 +22581,16 @@ private static void HandleGameViewPointerDown(
     ApplyViewport17NativeManualControls("RightF3", ref rightEnabled, ref rightMirror);
     ApplyViewport17NativeFrontF3ManualControls(
         ref frontLeft, ref frontCenter, ref frontRight, ref centerMirror);
+
+    // Preserve the open left gap of this verified, rotation-independent
+    // footprint even when FrontF3 is generally enabled in ViewEdit.
+    // This affects only FrontF3, never the left/right wall sprites.
+    if (IsViewport17VerifiedOpenLeftGap(inspection))
+    {
+      frontLeft = false;
+      frontCenter = false;
+      frontRight = false;
+    }
 
     const int displayY = 58;
     const int nativeHeight = 49;
