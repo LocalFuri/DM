@@ -23379,8 +23379,7 @@ private static void HandleGameViewPointerDown(
         artwork = GetHookGeneratedF2FrontTexture();
       if (artwork == null || !artwork.isReadable) continue;
       // Hook uses original placement group 0; Manacles group 1.
-      // A front-left/right projection uses that group's own source crop and
-      // vertical rectangle; it must not inherit the champion mirror Y.
+      // The corner projection uses the ornament's original placement group.
       int originalGroup = IsManaclesOrnament(ornament) ? 1 : 0;
       GetOriginalCornerF2DrawPosition(originalGroup, left,
           artwork.width, artwork.height, out int x, out int y);
