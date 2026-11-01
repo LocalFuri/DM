@@ -20852,23 +20852,12 @@ private static void HandleGameViewPointerDown(
     BlitMossIntoPreview(pixels);
     BlitDroppedTorchesIntoPreview(pixels);
 
-    // Strict manual mode disables unverified distant ornament passes only.
-    // Preserve the established, full-size near champion-mirror views:
-    // S1 Left/Right uses its native 16x35 side asset; Front F1 uses its
-    // existing unscaled 64x43 frame and portrait drawing path.
-    // Do not route these confirmed views through F2/F3 shrink logic.
-    if (StrictManualOrnamentMode)
-    {
-      BlitChampionMirrorS1SidesAsWallOrnamentsIntoPreview(pixels);
-      BlitChampionMirrorSideLaneFrontF2IntoPreview(pixels);
-      BlitManualChampionLeftF3Preview(pixels);
-      BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 1);
-      BlitFloorItemsIntoPreview(pixels);
-      BlitSuspendedThrownItemsIntoPreview(pixels);
-      return;
-    }
+    // Legacy champion-mirror drawing has been removed deliberately.
+    // Mirror data and calibration controls remain for a unified renderer.
+    // Ordinary wall-ornament passes must still execute even when strict
+    // manual calibration mode is active; do not return before those passes.
 
-    // Champion wall decorations.
+    // Wall decorations (champion mirrors are intentionally not drawn).
 
     // Large wall fixtures.
     BlitViAltarD3FrontIntoPreview(pixels);
@@ -20891,15 +20880,9 @@ private static void HandleGameViewPointerDown(
     BlitWoodRingD3FrontIntoPreview(pixels);
     BlitWoodRingD2FrontIntoPreview(pixels);
     BlitWoodRingD1FrontIntoPreview(pixels);
-    BlitChampionMirrorS1SidesAsWallOrnamentsIntoPreview(pixels);
-    BlitChampionMirrorS2SidesAsWallOrnamentsIntoPreview(pixels);
+
     BlitOrnamentCornerFrontF2IntoPreview(pixels);
-    BlitChampionMirrorSideLaneFrontF2IntoPreview(pixels);
-    BlitChampionMirrorS3SidesAsWallOrnamentsIntoPreview(pixels);
-    BlitManualChampionLeftF3Preview(pixels);
-    BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 3);
-    BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 2);
-    BlitChampionMirrorFrontAsWallOrnamentIntoPreview(pixels, 1);
+
     BlitManaclesD3FrontIntoPreview(pixels);
     BlitManaclesD2FrontIntoPreview(pixels);
     BlitManaclesD1FrontIntoPreview(pixels);
@@ -23138,163 +23121,11 @@ private static void HandleGameViewPointerDown(
 
   // Champion mirrors share the ornament wall-face / V17 visibility rules.
   // S1 artwork is a native 16x35 side view, never the front-frame sprite.
-  private void BlitChampionMirrorS1SidesAsWallOrnamentsIntoPreview(Color32[] pixels)
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (pixels == null || previewMiniMap == null
-        || previewChampionMirrors == null || previewChampionMirrors.Length == 0)
-      return;
 
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
-    int corridorX = previewX + fx;
-    int corridorY = previewY + fy;
-    if (!PreviewTileIsOpen(corridorX, corridorY))
-      return;
-
-    Texture2D side = cachedChampionMirrorSideTexture;
-    if (side == null)
-    {
-      side = AssetDatabase.LoadAssetAtPath<Texture2D>(ChampionMirrorSideAssetPath);
-      if (side == null || !side.isReadable || side.width != 16 || side.height != 35)
-      {
-        Debug.LogError("ViewEdit: required readable 16x35 S1 champion mirror missing or invalid: "
-            + ChampionMirrorSideAssetPath);
-        return;
-      }
-      cachedChampionMirrorSideTexture = side;
-    }
-
-    bool leftDone = false;
-    bool rightDone = false;
-    for (int i = 0; i < previewChampionMirrors.Length; ++i)
-    {
-      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror == null || string.IsNullOrEmpty(mirror.champion)
-          || string.IsNullOrEmpty(mirror.wall)
-          || IsPreviewChampionTaken(mirror.champion)
-          || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
-              "ChampionMirror", mirror.x, mirror.y, mirror.wall)))
-        continue;
-
-      // Use the exact same solid-wall geometry as D1 side ornaments.
-      bool left = mirror.x == corridorX - rx && mirror.y == corridorY - ry
-          && IsVisibleSideWallFace(mirror.wall,
-              FacingName(TurnPreviewFacingRight(previewFacing)),
-              mirror.x, mirror.y);
-      bool right = mirror.x == corridorX + rx && mirror.y == corridorY + ry
-          && IsVisibleSideWallFace(mirror.wall,
-              FacingName(TurnPreviewFacingLeft(previewFacing)),
-              mirror.x, mirror.y);
-      if ((!left || leftDone) && (!right || rightDone))
-        continue;
-      if (!IsSharedWallFeatureVisible(mirror.x, mirror.y, mirror.wall,
-              true, 0, 1))
-        continue;
-
-      // The S1 side slot follows the normal D1 side-ornament horizontal
-      // boundary, vertically centered against the 19px reference slot.
-      int x = left ? HookD1SideLeftX : HookD1SideRightX;
-      int y = HookD1SideY - (side.height - 19) / 2;
-      bool flip = right;
-      string projectionKey = "OrnamentProjection:ChampionMirror:S1:"
-          + (left ? "Left" : "Right");
-      ApplyAcceptedOrnamentReference(projectionKey, ref x, ref y, ref flip);
-      ApplyPreviewFeatureRenderOverrides(projectionKey, ref x, ref y, ref flip);
-      BlitWallOrnamentIntoPreview(pixels, side, x, y, flip);
-      if (left) leftDone = true;
-      else rightDone = true;
-      if (leftDone && rightDone) return;
-    }
-  }
 
   // S2 is the same champion-mirror wall face as S1, viewed one tile farther.
   // Use the established medium-distance wall-ornament scaling (no S2 asset).
-  private void BlitChampionMirrorS2SidesAsWallOrnamentsIntoPreview(Color32[] pixels)
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (pixels == null || previewMiniMap == null
-        || previewChampionMirrors == null || previewChampionMirrors.Length == 0)
-      return;
 
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
-    int corridorX = previewX + 2 * fx;
-    int corridorY = previewY + 2 * fy;
-    if (!PreviewTileIsOpen(corridorX, corridorY))
-      return;
-
-    Texture2D source = cachedChampionMirrorSideTexture;
-    if (source == null)
-    {
-      source = AssetDatabase.LoadAssetAtPath<Texture2D>(ChampionMirrorSideAssetPath);
-      if (source == null || !source.isReadable || source.width != 16 || source.height != 35)
-      {
-        Debug.LogError("ViewEdit: required readable 16x35 champion mirror missing or invalid: "
-            + ChampionMirrorSideAssetPath);
-        return;
-      }
-      cachedChampionMirrorSideTexture = source;
-    }
-    if (cachedChampionMirrorS2Texture == null)
-    {
-      cachedChampionMirrorS2Texture = GenerateDmScaledWallDecoration(
-          source, 8, 18, WallOrnamentMediumColorMap,
-          "Champion Mirror S2 Generated from S1");
-      if (cachedChampionMirrorS2Texture == null)
-      {
-        Debug.LogError("ViewEdit: cannot generate champion mirror S2 from "
-            + ChampionMirrorSideAssetPath);
-        return;
-      }
-    }
-    Texture2D side = cachedChampionMirrorS2Texture;
-    bool leftDone = false;
-    bool rightDone = false;
-    for (int i = 0; i < previewChampionMirrors.Length; ++i)
-    {
-      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror == null || string.IsNullOrEmpty(mirror.champion)
-          || string.IsNullOrEmpty(mirror.wall)
-          || IsPreviewChampionTaken(mirror.champion)
-          || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
-              "ChampionMirror", mirror.x, mirror.y, mirror.wall)))
-        continue;
-
-      bool left = mirror.x == corridorX - rx && mirror.y == corridorY - ry
-          && IsVisibleSideWallFace(mirror.wall,
-              FacingName(TurnPreviewFacingRight(previewFacing)),
-              mirror.x, mirror.y);
-      bool right = mirror.x == corridorX + rx && mirror.y == corridorY + ry
-          && IsVisibleSideWallFace(mirror.wall,
-              FacingName(TurnPreviewFacingLeft(previewFacing)),
-              mirror.x, mirror.y);
-      if ((!left || leftDone) && (!right || rightDone))
-        continue;
-      if (!IsSharedWallFeatureVisible(mirror.x, mirror.y, mirror.wall,
-              true, 0, 2))
-        continue;
-
-      // A front-facing mirror in the lateral F2 lane has its own generic
-      // projection (TryGetSideLaneFrontF2Mirror). Do not draw it again using
-      // sideways S2 artwork or share sideways S2 calibration with it.
-      if (string.Equals(mirror.wall, OppositeFacingName(previewFacing),
-          System.StringComparison.OrdinalIgnoreCase))
-        continue;
-
-      int x = left ? HookD2SideLeftX : HookD2SideRightX;
-      int y = HookD2SideY - (side.height - HookD2SideHeight) / 2;
-      bool flip = !left;
-      string projectionKey = "OrnamentProjection:ChampionMirror:S2:"
-          + (left ? "Left" : "Right");
-      ApplyAcceptedOrnamentReference(projectionKey, ref x, ref y, ref flip);
-      ApplyPreviewFeatureRenderOverrides(projectionKey, ref x, ref y, ref flip);
-      BlitWallOrnamentIntoPreview(pixels, side, x, y, flip);
-      if (left) leftDone = true;
-      else rightDone = true;
-      if (leftDone && rightDone) return;
-    }
-  }
 
   // Champion mirrors use the EXACT same map/face/V17 visibility resolver
   // as ordinary wall ornaments. The lateral F2 drawing path is only an
@@ -24120,244 +23951,7 @@ private static void HandleGameViewPointerDown(
     return cachedEmptyHolderClass7Front2Texture;
   }
 
-  private void BlitChampionMirrorSideLaneFrontF2IntoPreview(Color32[] pixels)
-  {
-    if (pixels == null) return;
-    for (int sideIndex = 0; sideIndex < 2; ++sideIndex)
-    {
-      bool left = sideIndex == 0;
-      bool found = TryGetSideLaneFrontF2Mirror(left, out ChampionMirrorPlacement mirror, out bool nearCorner);
-      if (!found)
-        continue;
-      // In strict mode an uncalibrated geometry must not produce a guessed image.
-      // Preview checkboxes are explicit user selections and remain available.
-      bool explicitPreview = left && nearCorner &&
-          (calibrateClass2ManaclesCornerF2 || calibrateClass3HookCornerF2 ||
-           calibrateClass4WoodenCornerF2 || calibrateClass5SlimeCornerF2 ||
-           calibrateClass6GrateCornerF2 || calibrateClass7EmptyHolderCornerF2);
-      if (StrictManualOrnamentMode && !explicitPreview)
-      {
-        if (!nearCorner || !TryGetOrnamentClassJson(
-            GetChampionMirrorClass1CornerF2Key(left),
-            out AcceptedOrnamentReference approved))
-        {
-          ReportUncalibratedChampionView(
-              GetChampionMirrorClass1CornerF2Key(left), left, mirror);
-          continue;
-        }
-      }
-      if (nearCorner && !(left && (calibrateClass2ManaclesCornerF2
-          || calibrateClass3HookCornerF2
-          || calibrateClass4WoodenCornerF2
-          || calibrateClass5SlimeCornerF2
-          || calibrateClass6GrateCornerF2
-          || calibrateClass7EmptyHolderCornerF2)))
-        ReportUncalibratedChampionView(
-            GetChampionMirrorClass1CornerF2Key(left), left, mirror);
 
-      // Class 2 replaces the picture only while calibrating this geometry.
-      // Never write to the map or the Class 1 mirror calibration.
-      if (left && nearCorner && calibrateClass7EmptyHolderCornerF2)
-      {
-        Texture2D holder = GetEmptyHolderClass7Front2Texture();
-        if (holder == null || !holder.isReadable)
-        {
-          Debug.LogError("ViewEdit Class 7: Missing readable Empty Torch Holder F2 preview artwork.");
-          continue;
-        }
-        string holderKey = GetEmptyHolderClass7CornerF2Key(left);
-        if (!TryGetOrnamentClassJson(holderKey,
-            out AcceptedOrnamentReference ignoredHolder))
-        {
-          string occurrence = "Class7|" + previewDungeonLevel + "|" + previewX
-              + "," + previewY + "|" + previewFacing;
-          if (loggedUncalibratedChampionViews.Add(occurrence))
-            Debug.Log("<color=cyan>CYAN | ViewEdit UNCALIBRATED | "
-                + "Class 7 Empty Torch Holder LeftF2 | adjust X/Y and press Apply.</color>");
-        }
-        GetOriginalCornerF2DrawPosition(0, left, holder.width, holder.height,
-            out int holderX, out int holderY);
-        bool holderFlip = false;
-        ApplyAcceptedOrnamentReference(holderKey,
-            ref holderX, ref holderY, ref holderFlip);
-        ApplyPreviewFeatureRenderOverrides(holderKey,
-            ref holderX, ref holderY, ref holderFlip);
-        BlitWallOrnamentIntoPreview(pixels, holder, holderX, holderY, holderFlip);
-        continue;
-      }
-      if (left && nearCorner && calibrateClass6GrateCornerF2)
-      {
-        Texture2D grate = GetGrateFront2Texture();
-        if (grate == null || !grate.isReadable)
-        {
-          Debug.LogError("ViewEdit Class 6: Missing readable Grate F2 artwork.");
-          continue;
-        }
-        string grateKey = GetGrateClass6CornerF2Key(left);
-        if (!TryGetOrnamentClassJson(grateKey,
-            out AcceptedOrnamentReference ignoredGrate))
-        {
-          string occurrence = "Class6|" + previewDungeonLevel + "|" + previewX
-              + "," + previewY + "|" + previewFacing;
-          if (loggedUncalibratedChampionViews.Add(occurrence))
-            Debug.Log("<color=cyan>CYAN | ViewEdit UNCALIBRATED | "
-                + "Class 6 Grate LeftF2 | adjust X/Y and press Apply.</color>");
-        }
-        GetOriginalCornerF2DrawPosition(0, left, grate.width, grate.height,
-            out int grateX, out int grateY);
-        bool grateFlip = false;
-        ApplyAcceptedOrnamentReference(grateKey,
-            ref grateX, ref grateY, ref grateFlip);
-        ApplyPreviewFeatureRenderOverrides(grateKey,
-            ref grateX, ref grateY, ref grateFlip);
-        BlitWallOrnamentIntoPreview(pixels, grate, grateX, grateY, grateFlip);
-        continue;
-      }
-      if (left && nearCorner && calibrateClass5SlimeCornerF2)
-      {
-        Texture2D slime = GetSlimeGeneratedF2FrontTexture();
-        if (slime == null || !slime.isReadable)
-        {
-          Debug.LogError("ViewEdit Class 5: Missing readable Slime F2 artwork.");
-          continue;
-        }
-        string slimeKey = GetSlimeClass5CornerF2Key(left);
-        if (!TryGetOrnamentClassJson(slimeKey,
-            out AcceptedOrnamentReference ignoredSlime))
-        {
-          string occurrence = "Class5|" + previewDungeonLevel + "|" + previewX
-              + "," + previewY + "|" + previewFacing;
-          if (loggedUncalibratedChampionViews.Add(occurrence))
-            Debug.Log("<color=cyan>CYAN | ViewEdit UNCALIBRATED | "
-                + "Class 5 Slime LeftF2 | adjust X/Y and press Apply.</color>");
-        }
-        GetOriginalCornerF2DrawPosition(0, left, slime.width, slime.height,
-            out int slimeX, out int slimeY);
-        bool slimeFlip = false;
-        ApplyAcceptedOrnamentReference(slimeKey,
-            ref slimeX, ref slimeY, ref slimeFlip);
-        ApplyPreviewFeatureRenderOverrides(slimeKey,
-            ref slimeX, ref slimeY, ref slimeFlip);
-        BlitWallOrnamentIntoPreview(pixels, slime, slimeX, slimeY, slimeFlip);
-        continue;
-      }
-      if (left && nearCorner && calibrateClass4WoodenCornerF2)
-      {
-        Texture2D wood = GetWoodRingGeneratedF2FrontTexture();
-        if (wood == null || !wood.isReadable)
-        {
-          Debug.LogError("ViewEdit Class 4: Missing readable Wood Ring F2 artwork.");
-          continue;
-        }
-        string woodKey = GetWoodenClass4CornerF2Key(left);
-        if (!TryGetOrnamentClassJson(woodKey,
-            out AcceptedOrnamentReference ignoredWood))
-        {
-          string occurrence = "Class4|" + previewDungeonLevel + "|" + previewX
-              + "," + previewY + "|" + previewFacing;
-          if (loggedUncalibratedChampionViews.Add(occurrence))
-            Debug.Log("<color=cyan>CYAN | ViewEdit UNCALIBRATED | "
-                + "Class 4 Wooden Decoration LeftF2 | adjust X/Y and press Apply.</color>");
-        }
-        GetOriginalCornerF2DrawPosition(0, left, wood.width, wood.height,
-            out int woodX, out int woodY);
-        bool woodFlip = false;
-        ApplyAcceptedOrnamentReference(woodKey,
-            ref woodX, ref woodY, ref woodFlip);
-        ApplyPreviewFeatureRenderOverrides(woodKey,
-            ref woodX, ref woodY, ref woodFlip);
-        BlitWallOrnamentIntoPreview(pixels, wood, woodX, woodY, woodFlip);
-        continue;
-      }
-      if (left && nearCorner && calibrateClass3HookCornerF2)
-      {
-        Texture2D hook = GetHookGeneratedF2FrontTexture();
-        if (hook == null || !hook.isReadable)
-        {
-          Debug.LogError("ViewEdit Class 3: Missing readable Hook F2 artwork.");
-          continue;
-        }
-        string hookKey = GetHookClass3CornerF2Key(left);
-        if (!TryGetOrnamentClassJson(hookKey,
-            out AcceptedOrnamentReference ignoredHook))
-        {
-          string occurrence = "Class3|" + previewDungeonLevel + "|" + previewX
-              + "," + previewY + "|" + previewFacing;
-          if (loggedUncalibratedChampionViews.Add(occurrence))
-            Debug.Log("<color=cyan>CYAN | ViewEdit UNCALIBRATED | "
-                + "Class 3 Hook LeftF2 | adjust X/Y and press Apply.</color>");
-        }
-        GetOriginalCornerF2DrawPosition(0, left, hook.width, hook.height,
-            out int hookX, out int hookY);
-        bool hookFlip = false;
-        ApplyAcceptedOrnamentReference(hookKey,
-            ref hookX, ref hookY, ref hookFlip);
-        ApplyPreviewFeatureRenderOverrides(hookKey,
-            ref hookX, ref hookY, ref hookFlip);
-        BlitWallOrnamentIntoPreview(pixels, hook, hookX, hookY, hookFlip);
-        continue;
-      }
-      if (left && nearCorner && calibrateClass2ManaclesCornerF2)
-      {
-        Texture2D manacles = GetManaclesOriginalCornerF2Texture();
-        if (manacles == null || !manacles.isReadable)
-        {
-          Debug.LogError("ViewEdit Class 2: Missing readable Manacles F2 artwork.");
-          continue;
-        }
-        string manaclesKey = GetManaclesClass2CornerF2Key(left);
-        if (!TryGetOrnamentClassJson(manaclesKey,
-            out AcceptedOrnamentReference ignoredManacles))
-        {
-          string occurrence = "Class2|" + previewDungeonLevel + "|" + previewX
-              + "," + previewY + "|" + previewFacing;
-          if (loggedUncalibratedChampionViews.Add(occurrence))
-            Debug.Log("<color=cyan>CYAN | ViewEdit UNCALIBRATED | "
-                + "Class 2 Manacles LeftF2 | adjust X/Y and press Apply.</color>");
-        }
-        GetOriginalCornerF2DrawPosition(1, left, manacles.width, manacles.height,
-            out int manaclesX, out int manaclesY);
-        bool manaclesFlip = false;
-        ApplyAcceptedOrnamentReference(manaclesKey,
-            ref manaclesX, ref manaclesY, ref manaclesFlip);
-        ApplyPreviewFeatureRenderOverrides(manaclesKey,
-            ref manaclesX, ref manaclesY, ref manaclesFlip);
-        BlitWallOrnamentIntoPreview(pixels, manacles,
-            manaclesX, manaclesY, manaclesFlip);
-        continue;
-      }
-
-      Texture2D scaled = nearCorner
-          ? GetOriginalCornerF2MirrorFrame()
-          : GetChampionMirrorScaledFrameTexture(GetChampionMirrorFrontTexture(), 2);
-      if (scaled == null)
-      {
-        Debug.LogError("ViewEdit: Missing front F2 mirror frame for "
-            + mirror.champion);
-        continue;
-      }
-
-      int x, y;
-      bool flip = false;
-      if (nearCorner)
-      {
-        GetOriginalCornerF2DrawPosition(5, left,
-            scaled.width, scaled.height, out x, out y);
-        string key = GetChampionMirrorClass1CornerF2Key(left);
-        ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
-        ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
-      }
-      else
-      {
-        x = left ? HookD2SideLeftX : HookD2SideRightX;
-        y = HookD2SideY - (scaled.height - HookD2SideHeight) / 2;
-        string key = GetSideLaneFrontF2MirrorProjectionKey(left);
-        ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
-        ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
-      }
-      BlitWallOrnamentIntoPreview(pixels, scaled, x, y, flip);
-    }
-  }
 
   private void DrawChampionMirrorSideLaneFrontF2Rows()
   {
@@ -24492,167 +24086,85 @@ private static void HandleGameViewPointerDown(
     return false;
   }
 
-  private void BlitManualChampionLeftF3Preview(Color32[] pixels)
-  {
-    if (!manualChampionLeftF3Preview || pixels == null) return;
-    if (!TryFindManualLeftF3Mirror(out ChampionMirrorPlacement mirror)) return;
-    Texture2D source = GetChampionMirrorFrontTexture();
-    Texture2D artwork = source != null
-        ? GetChampionMirrorScaledFrameTexture(source, 3) : null;
-    if (artwork == null || !artwork.isReadable)
-    {
-      Debug.LogError("ViewEdit manual LeftF3: required readable champion mirror F3 frame unavailable.");
-      return;
-    }
-    int x = 0, y = 83;
-    bool flip = false;
-    ApplyAcceptedOrnamentReference(ManualChampionLeftF3Key, ref x, ref y, ref flip);
-    ApplyPreviewFeatureRenderOverrides(ManualChampionLeftF3Key, ref x, ref y, ref flip);
-    BlitWallOrnamentIntoPreview(pixels, artwork, x, y, flip);
-  }
 
+
+  // Shared champion-mirror calibration controls for the existing LeftF3
+  // preview. Keep its persisted key intact until all projection paths have
+  // been migrated; otherwise previously accepted calibrations would be lost.
   private void DrawManualChampionLeftF3Row()
   {
     if (!TryFindManualLeftF3Mirror(out ChampionMirrorPlacement mirror)) return;
-    bool active = manualChampionLeftF3Preview;
-    bool selected = EditorGUILayout.ToggleLeft(
-        "Manual Class 1 - Champion Mirror LeftF3 (preview)", active);
-    if (selected != active)
-    {
-      manualChampionLeftF3Preview = selected;
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
-    }
-    if (!selected) return;
     int x = 0, y = 83;
     bool flip = false;
     ApplyAcceptedOrnamentReference(ManualChampionLeftF3Key, ref x, ref y, ref flip);
     int savedX = x, savedY = y;
+    bool savedMirror = flip;
     ApplyPreviewFeatureRenderOverrides(ManualChampionLeftF3Key, ref x, ref y, ref flip);
+
+    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
+    style.normal.textColor = Color.yellow;
     EditorGUILayout.BeginHorizontal();
-    GUILayout.Label(mirror.champion + " - LeftF3", GUILayout.Width(160f));
+    string label = mirror.champion.ToUpperInvariant() + " - LeftF3"
+        + " - (" + mirror.x + "," + mirror.y + " " + mirror.wall + ")";
+    GUILayout.Label(label, style,
+        GUILayout.Width(Mathf.Ceil(style.CalcSize(new GUIContent(label)).x) + 6f));
+    bool active = manualChampionLeftF3Preview;
+    bool selected = EditorGUILayout.ToggleLeft("Set", active, GUILayout.Width(55f));
     int editX = x, editY = y;
     bool changeX = DrawIntStepperInline("X", ref editX, snap,
         x != savedX, true, 24f, 24f);
     bool changeY = DrawIntStepperInline("Y", ref editY, snap,
         y != savedY, true, 24f, 24f);
+    bool editMirror = EditorGUILayout.ToggleLeft("Mirror", flip, GUILayout.Width(66f));
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
     NoteContentRight();
     EditorGUILayout.EndHorizontal();
+
+    bool changed = false;
+    if (selected != active)
+    {
+      manualChampionLeftF3Preview = selected;
+      changed = true;
+    }
     if (apply)
     {
-      if (SaveAcceptedOrnamentReference(ManualChampionLeftF3Key, editX, editY, flip))
+      if (SaveAcceptedOrnamentReference(
+          ManualChampionLeftF3Key, editX, editY, editMirror))
       {
         previewFeaturePositionOverrides.Remove(ManualChampionLeftF3Key);
         previewFeatureMirrorOverrides.Remove(ManualChampionLeftF3Key);
       }
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+      changed = true;
     }
-    else if ((changeX && editX != x) || (changeY && editY != y))
+    else
     {
-      previewFeaturePositionOverrides[ManualChampionLeftF3Key] =
-          new Vector2Int(editX, editY);
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+      if ((changeX && editX != x) || (changeY && editY != y))
+      {
+        if (editX == savedX && editY == savedY)
+          previewFeaturePositionOverrides.Remove(ManualChampionLeftF3Key);
+        else
+          previewFeaturePositionOverrides[ManualChampionLeftF3Key] =
+              new Vector2Int(editX, editY);
+        changed = true;
+      }
+      if (editMirror != flip)
+      {
+        if (editMirror == savedMirror)
+          previewFeatureMirrorOverrides.Remove(ManualChampionLeftF3Key);
+        else
+          previewFeatureMirrorOverrides[ManualChampionLeftF3Key] = editMirror;
+        changed = true;
+      }
+    }
+    if (changed)
+    {
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
     }
   }
 
-  private void BlitChampionMirrorS3SidesAsWallOrnamentsIntoPreview(Color32[] pixels)
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (pixels == null || previewMiniMap == null
-        || previewChampionMirrors == null || previewChampionMirrors.Length == 0)
-      return;
 
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
-    int corridorX = previewX + 3 * fx;
-    int corridorY = previewY + 3 * fy;
-    if (!PreviewTileIsOpen(corridorX, corridorY))
-      return;
-
-    Texture2D source = cachedChampionMirrorSideTexture;
-    if (source == null)
-    {
-      source = AssetDatabase.LoadAssetAtPath<Texture2D>(ChampionMirrorSideAssetPath);
-      if (source == null || !source.isReadable || source.width != 16 || source.height != 35)
-      {
-        Debug.LogError("ViewEdit: required readable 16x35 champion mirror missing or invalid: "
-            + ChampionMirrorSideAssetPath);
-        return;
-      }
-      cachedChampionMirrorSideTexture = source;
-    }
-    if (cachedChampionMirrorS3Texture == null)
-    {
-      cachedChampionMirrorS3Texture = GenerateDmScaledWallDecoration(
-          source, 4, 9, WallOrnamentFarColorMap,
-          "Champion Mirror S3 Generated from S1");
-      if (cachedChampionMirrorS3Texture == null)
-      {
-        Debug.LogError("ViewEdit: cannot generate champion mirror S3 from "
-            + ChampionMirrorSideAssetPath);
-        return;
-      }
-    }
-    Texture2D side = cachedChampionMirrorS3Texture;
-    bool leftDone = false;
-    bool rightDone = false;
-    for (int i = 0; i < previewChampionMirrors.Length; ++i)
-    {
-      ChampionMirrorPlacement mirror = previewChampionMirrors[i];
-      if (mirror == null || string.IsNullOrEmpty(mirror.champion)
-          || string.IsNullOrEmpty(mirror.wall)
-          || IsPreviewChampionTaken(mirror.champion)
-          || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
-              "ChampionMirror", mirror.x, mirror.y, mirror.wall)))
-        continue;
-
-      bool left = mirror.x == corridorX - rx && mirror.y == corridorY - ry
-          && IsVisibleSideWallFace(mirror.wall,
-              FacingName(TurnPreviewFacingRight(previewFacing)),
-              mirror.x, mirror.y);
-      bool right = mirror.x == corridorX + rx && mirror.y == corridorY + ry
-          && IsVisibleSideWallFace(mirror.wall,
-              FacingName(TurnPreviewFacingLeft(previewFacing)),
-              mirror.x, mirror.y);
-      if ((!left || leftDone) && (!right || rightDone))
-        continue;
-      if (!IsSharedWallFeatureVisible(mirror.x, mirror.y, mirror.wall,
-              true, 0, 3))
-        continue;
-
-      bool usesFrontViewArtwork = string.Equals(
-          mirror.wall,
-          OppositeFacingName(previewFacing),
-          System.StringComparison.OrdinalIgnoreCase);
-      Texture2D renderTexture = side;
-      int x = left ? HookD3SideLeftX : HookD3SideRightX;
-      int y = HookD3SideY - (side.height - HookD3SideHeight) / 2;
-      bool flip = !left; // Match S1/S2 champion-mirror orientation.
-      string projectionKey = "OrnamentProjection:ChampionMirror:S3:"
-          + (left ? "Left" : "Right");
-      if (usesFrontViewArtwork)
-      {
-        Texture2D frontFrame = GetChampionMirrorFrontTexture();
-        Texture2D frontF3 = frontFrame != null
-            ? GetChampionMirrorScaledFrameTexture(frontFrame, 3)
-            : null;
-        if (frontF3 != null)
-        {
-          renderTexture = frontF3;
-          y = HookD3SideY - (frontF3.height - HookD3SideHeight) / 2;
-          flip = false;
-          projectionKey = "OrnamentProjection:ChampionMirror:F3:"
-              + (left ? "Left" : "Right");
-        }
-      }
-      ApplyAcceptedOrnamentReference(projectionKey, ref x, ref y, ref flip);
-      ApplyPreviewFeatureRenderOverrides(projectionKey, ref x, ref y, ref flip);
-      BlitWallOrnamentIntoPreview(pixels, renderTexture, x, y, flip);
-      if (left) leftDone = true;
-      else rightDone = true;
-      if (leftDone && rightDone) return;
-    }
-  }
 
   private Texture2D GetChampionMirrorFrontTexture()
   {
@@ -25139,100 +24651,7 @@ private static void HandleGameViewPointerDown(
     return scaled;
   }
 
-  private void BlitChampionMirrorFrontAsWallOrnamentIntoPreview(
-      Color32[] pixels, int depth)
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (pixels == null || previewMiniMap == null
-        || previewChampionMirrors == null || previewChampionMirrors.Length == 0
-        || (depth < 1 || depth > 3))
-      return;
 
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    // Require every intervening tile to be clear, as for front ornaments.
-    for (int step = 1; step < depth; ++step)
-    {
-      int passX = previewX + fx * step;
-      int passY = previewY + fy * step;
-      if (!previewMiniMap.IsInside(passX, passY)
-          || PreviewTileIsWall(passX, passY))
-        return;
-    }
-    int wallX = previewX + fx * depth;
-    int wallY = previewY + fy * depth;
-    if (!PreviewTileIsWall(wallX, wallY))
-      return;
-
-    string physicalFace = OppositeFacingName(previewFacing);
-    for (int i = 0; i < previewChampionMirrors.Length; ++i)
-    {
-      ChampionMirrorPlacement champion = previewChampionMirrors[i];
-      if (champion == null || string.IsNullOrEmpty(champion.champion)
-          || champion.x != wallX || champion.y != wallY
-          || !string.Equals(champion.wall, physicalFace,
-              System.StringComparison.OrdinalIgnoreCase))
-        continue;
-
-      if (IsPreviewChampionTaken(champion.champion)
-          || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
-              "ChampionMirror", champion.x, champion.y, champion.wall)))
-        return;
-      if (!IsSharedWallFeatureVisible(
-              champion.x, champion.y, champion.wall, true, depth, 0))
-        return;
-
-      Texture2D frame = GetChampionMirrorFrontTexture();
-      // Portrait artwork is only needed when standing directly at F1.
-      WallFeatureArtworkProfile artwork = GetChampionMirrorArtworkProfile(depth);
-      Texture2D portrait = artwork.drawPortrait
-          ? GetChampionPortraitTexture(champion.champion) : null;
-      if (frame == null || !frame.isReadable
-          || (depth == 1 && (portrait == null || !portrait.isReadable)))
-      {
-        Debug.LogError("ViewEdit: Champion mirror render asset unavailable for "
-            + champion.champion + " F" + depth + ": frame="
-            + ChampionMirrorFrontAssetPath + " (64x43)"
-            + (depth == 1 ? "; F1 portrait=" + champion.champion : "")
-            + ". Check preceding asset errors.");
-        return;
-      }
-
-      WallOrnamentDepthSlot slot = artwork.slot;
-      int x = slot.x;
-      int y = slot.y;
-      bool mirrored = false;
-      string mirrorFeatureKey = MakePreviewFeatureKey(
-          "ChampionMirror", champion.x, champion.y, champion.wall);
-      string projectionKey = "OrnamentProjection:ChampionMirror:F" + depth;
-      ApplyAcceptedOrnamentReference(
-          projectionKey, ref x, ref y, ref mirrored);
-      ApplyPreviewFeatureRenderOverrides(
-          projectionKey, ref x, ref y, ref mirrored);
-
-      if (depth == 1)
-      {
-        // Verified IAIDO Front F1: do not alter the existing pixels.
-        BlitWallOrnamentIntoPreview(pixels, frame, x, y, mirrored);
-        BlitWallOrnamentIntoPreview(pixels, portrait,
-            x + (frame.width - portrait.width) / 2,
-            y + (frame.height - portrait.height) / 2, mirrored);
-      }
-      else
-      {
-        // F2/F3: scale only the empty frame with the ordinary ornament
-        // distance palette. Never draw the champion portrait at these depths.
-        Texture2D scaledFrame = GetChampionMirrorScaledFrameTexture(frame, depth);
-        if (scaledFrame == null)
-        {
-          Debug.LogError("ViewEdit: Failed to scale champion mirror F"
-              + depth + ": " + champion.champion);
-          return;
-        }
-        BlitWallOrnamentIntoPreview(pixels, scaledFrame, x, y, mirrored);
-      }
-      return;
-    }
-  }
 
   private void BlitWoodRingD1FrontIntoPreview(Color32[] pixels)
   {
