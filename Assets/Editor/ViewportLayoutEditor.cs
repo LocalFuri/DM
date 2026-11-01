@@ -24224,6 +24224,20 @@ private static void HandleGameViewPointerDown(
         bool flip = false;
         ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
         ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+        if (depth == 2)
+        {
+          string message = "MIRROR F2 DRAW: champion=" + m.champion
+              + ", wall=(" + wx + "," + wy + ") " + visibleFace
+              + ", screen=(" + x + "," + y + ")"
+              + ", texture=" + artwork.width + "x" + artwork.height
+              + ", " + DescribeChampionMirrorPixelBounds(artwork)
+              + ", mirror=" + flip;
+          if (message != lastChampionMirrorF2DrawDiagnostic)
+          {
+            lastChampionMirrorF2DrawDiagnostic = message;
+            Debug.Log(message);
+          }
+        }
         BlitWallOrnamentIntoPreview(pixels, artwork, x, y, flip);
         if (depth == 1)
         {
@@ -24704,6 +24718,31 @@ private static void HandleGameViewPointerDown(
     return texture;
   }
 
+  // Diagnostic only: inspect generated F2 pixels; do not change scaling.
+  private static string DescribeChampionMirrorPixelBounds(Texture2D texture)
+  {
+    if (texture == null || !texture.isReadable) return "not readable";
+    Color32[] colors = texture.GetPixels32();
+    int minX = texture.width, minY = texture.height, maxX = -1, maxY = -1;
+    int count = 0;
+    for (int y = 0; y < texture.height; y++)
+      for (int x = 0; x < texture.width; x++)
+      {
+        if (colors[y * texture.width + x].a == 0) continue;
+        count++;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    return count == 0 ? "no opaque pixels"
+        : "opaque bounds x=" + minX + ".." + maxX + ", y=" + minY
+          + ".." + maxY + " (width=" + (maxX - minX + 1)
+          + ", height=" + (maxY - minY + 1) + ", count=" + count + ")";
+  }
+
+  private string lastChampionMirrorF2DrawDiagnostic;
+
   private Texture2D GetChampionMirrorScaledFrameTexture(Texture2D frame, int depth)
   {
     if (frame == null || !frame.isReadable || (depth != 2 && depth != 3))
@@ -24718,11 +24757,36 @@ private static void HandleGameViewPointerDown(
     WallFeatureArtworkProfile profile = GetChampionMirrorArtworkProfile(depth);
     WallOrnamentDepthSlot slot = profile.slot;
     byte[] palette = profile.distancePalette;
-    Texture2D scaled = method == 0
-        ? GenerateDmScaledWallDecoration(frame, slot.width, slot.height,
-            palette, "Champion Mirror F" + depth + " CSBwin Frame")
-        : GenerateChampionMirrorAlternativeScale(frame, slot.width, slot.height,
-            palette, method, "Champion Mirror F" + depth + " Frame");
+    // The 64x43 F1 source has transparent padding on its sides. Shrinking
+    // that padded canvas into the F2/F3 target makes the visible mirror much
+    // too narrow. Crop to the actual opaque frame BEFORE distance scaling;
+    // do not alter the full-sized F1 frame or any other ornament artwork.
+    Texture2D unpaddedFrame = CropWallDecorationToOpaqueBounds(frame);
+    bool ownsUnpaddedFrame = !ReferenceEquals(unpaddedFrame, frame);
+    // Capture diagnostic dimensions before the temporary texture is destroyed.
+    int croppedFrameWidth = unpaddedFrame.width;
+    int croppedFrameHeight = unpaddedFrame.height;
+    Texture2D scaled;
+    try
+    {
+      scaled = method == 0
+          ? GenerateDmScaledWallDecoration(unpaddedFrame, slot.width, slot.height,
+              palette, "Champion Mirror F" + depth + " CSBwin Frame")
+          : GenerateChampionMirrorAlternativeScale(unpaddedFrame, slot.width, slot.height,
+              palette, method, "Champion Mirror F" + depth + " Frame");
+    }
+    finally
+    {
+      if (ownsUnpaddedFrame)
+        UnityEngine.Object.DestroyImmediate(unpaddedFrame);
+    }
+    if (depth == 2)
+      Debug.Log("MIRROR F2 SCALE: method=" + method
+          + ", source=" + frame.width + "x" + frame.height
+          + ", cropped=" + croppedFrameWidth + "x" + croppedFrameHeight
+          + ", target=" + slot.width + "x" + slot.height
+          + ", texture=" + (scaled == null ? "null" : scaled.width + "x" + scaled.height)
+          + ", " + DescribeChampionMirrorPixelBounds(scaled));
     if (depth == 2) { cachedChampionMirrorF2Frame = scaled; cachedChampionMirrorF2Method = method; }
     else { cachedChampionMirrorF3Frame = scaled; cachedChampionMirrorF3Method = method; }
     return scaled;
