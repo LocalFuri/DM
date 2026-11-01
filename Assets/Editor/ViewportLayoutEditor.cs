@@ -245,6 +245,9 @@ public class ViewportLayoutEditor : EditorWindow
   // User-extracted original S2 artwork, drawn 1:1 (no scaling or palette conversion).
   private const string GrateS2AssetPath =
       "Assets/Art/Ornaments/Grate_S2_6x11.png";
+  // User-extracted original S3 artwork, drawn 1:1.
+  private const string GrateS3AssetPath =
+      "Assets/Art/Ornaments/Grate_S3_4x6.png";
   private const string HookSideAssetPath =
       "Assets/Art/Ornaments/Hook_Side_16x19.png";
   private const string HookS3AssetPath =
@@ -38089,7 +38092,7 @@ private static void HandleGameViewPointerDown(
     if (side3 == null
         || !side3.isReadable
         || side3.width != 4
-        || side3.height != 4)
+        || side3.height != 6)
     {
       return;
     }
@@ -38227,16 +38230,16 @@ private static void HandleGameViewPointerDown(
     if (cachedGrateSide3Texture != null)
       return cachedGrateSide3Texture;
 
-    Texture2D source = GetGrateSide1Texture();
-    if (source == null || !source.isReadable)
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(GrateS3AssetPath);
+    if (texture == null || texture.width != 4 || texture.height != 6
+        || !texture.isReadable)
+    {
+      Debug.LogError("ViewEdit: Required Grate S3 artwork missing, unreadable, "
+          + "or not 4x6: " + GrateS3AssetPath);
       return null;
+    }
 
-    cachedGrateSide3Texture = GenerateDmScaledWallDecoration(
-        source,
-        4,
-        4,
-        WallOrnamentFarColorMap,
-        "Grate Side F3 Generated from F1");
+    cachedGrateSide3Texture = texture;
     return cachedGrateSide3Texture;
   }
 
