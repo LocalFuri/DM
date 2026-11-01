@@ -242,8 +242,13 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Grate_Front_32x28.png";
   private const string GrateSide1AssetPath =
       "Assets/Art/Ornaments/Grate_Side1_16x19.png";
+  // User-extracted original S2 artwork, drawn 1:1 (no scaling or palette conversion).
+  private const string GrateS2AssetPath =
+      "Assets/Art/Ornaments/Grate_S2_6x11.png";
   private const string HookSideAssetPath =
       "Assets/Art/Ornaments/Hook_Side_16x19.png";
+  private const string HookS3AssetPath =
+      "Assets/Art/Ornaments/Hook_S3_3x5.png";
   private const string SlimeSide1AssetPath =
       "Assets/Art/Ornaments/Slime_Side_16x10.png";
   private const string PuddleF1AssetPath =
@@ -743,6 +748,7 @@ public class ViewportLayoutEditor : EditorWindow
   private const int HookD2SideRightX =
       DungeonViewportWidth - HookD2SideLeftX - HookD2SideWidth;
   private const int HookD2SideY = WoodRingD2SideY;
+  // Original CSBwin Hook S3: native, unscaled 3x5 artwork.
   private const int HookD3SideWidth = 3;
   private const int HookD3SideHeight = 5;
   private const int HookD3SideLeftX = WoodRingD3SideLeftX;
@@ -13325,6 +13331,7 @@ private static void HandleGameViewPointerDown(
       // An explicit Refresh should report Hook S2 drawing again even when
       // the render is unchanged and the Unity Console has been cleared.
       lastHookS2DrawDiagnostic = null;
+      lastHookS3DrawDiagnostic = null;
       Debug.Log("ViewEdit Refresh: requested at Level " + previewDungeonLevel
           + " X=" + previewX + " Y=" + previewY
           + " Facing=" + previewFacing);
@@ -36649,6 +36656,7 @@ private static void HandleGameViewPointerDown(
   }
 
   private string lastHookS2DrawDiagnostic;
+  private string lastHookS3DrawDiagnostic;
 
   private void BlitHookSidesAtDistance(
       Color32[] pixels,
@@ -36788,7 +36796,7 @@ private static void HandleGameViewPointerDown(
       {
         // Hook S2 diagnostic: inspect effective mirror overrides and the
         // pixels changed by the actual blit, not the source texture alone.
-        if (distance == 2)
+        if (distance == 2 || distance == 3)
         {
           int dx = rightX, dy = y;
           bool mirrored = false;
@@ -36817,15 +36825,37 @@ private static void HandleGameViewPointerDown(
               minX = Mathf.Min(minX, px); maxX = Mathf.Max(maxX, px);
               minY = Mathf.Min(minY, py); maxY = Mathf.Max(maxY, py);
             }
-          string report = "HOOK S2 DRAW: right wall=(" + rightWallTileX
+          // Report source texture and opaque dimensions on every Refresh,
+          // independently of whether the generated texture is cached.
+          Color32[] hookTexels = side.GetPixels32();
+          int opaqueCount = 0, opaqueMinX = side.width, opaqueMinY = side.height;
+          int opaqueMaxX = -1, opaqueMaxY = -1;
+          for (int ty = 0; ty < side.height; ++ty)
+            for (int tx = 0; tx < side.width; ++tx)
+              if (hookTexels[ty * side.width + tx].a != 0)
+              {
+                ++opaqueCount;
+                opaqueMinX = Mathf.Min(opaqueMinX, tx);
+                opaqueMinY = Mathf.Min(opaqueMinY, ty);
+                opaqueMaxX = Mathf.Max(opaqueMaxX, tx);
+                opaqueMaxY = Mathf.Max(opaqueMaxY, ty);
+              }
+          string opaqueSize = opaqueCount == 0 ? "none"
+              : ((opaqueMaxX - opaqueMinX + 1) + "x" + (opaqueMaxY - opaqueMinY + 1));
+          string report = "HOOK S" + distance + " DRAW: right wall=(" + rightWallTileX
               + "," + rightWallTileY + "), screen=(" + dx + "," + dy
-              + "), mirrored=" + mirrored + ", changedPixels=" + changed
+              + "), texture=" + side.width + "x" + side.height
+              + ", opaque=" + opaqueSize + ", opaquePixels=" + opaqueCount
+              + ", mirrored=" + mirrored + ", changedPixels=" + changed
               + ", changedBounds=" + (changed == 0 ? "none"
                   : (minX + "," + minY + ".." + maxX + "," + maxY));
-          if (report != lastHookS2DrawDiagnostic)
+          string previousReport = distance == 2
+              ? lastHookS2DrawDiagnostic : lastHookS3DrawDiagnostic;
+          if (report != previousReport)
           {
             Debug.Log(report);
-            lastHookS2DrawDiagnostic = report;
+            if (distance == 2) lastHookS2DrawDiagnostic = report;
+            else lastHookS3DrawDiagnostic = report;
           }
         }
         else
@@ -38026,17 +38056,21 @@ private static void HandleGameViewPointerDown(
     if (cachedHookSide3Texture != null)
       return cachedHookSide3Texture;
 
-    Texture2D source = GetHookSideTexture();
-    if (source == null || !source.isReadable)
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(HookS3AssetPath);
+    if (texture == null)
+    {
+      Debug.LogError("Hook S3: required original 3x5 asset missing: " + HookS3AssetPath);
       return null;
-
-    cachedHookSide3Texture = GenerateChampionMirrorAlternativeScale(
-        source,
-        HookD3SideWidth,
-        HookD3SideHeight,
-        WallOrnamentFarColorMap,
-        1,
-        "Hook Side F3 Nearest from F1");
+    }
+    if (texture.width != HookD3SideWidth || texture.height != HookD3SideHeight
+        || !texture.isReadable)
+    {
+      Debug.LogError("Hook S3: expected readable 3x5 texture at " + HookS3AssetPath
+          + "; actual=" + texture.width + "x" + texture.height
+          + ", readable=" + texture.isReadable);
+      return null;
+    }
+    cachedHookSide3Texture = texture;
     LogHookScaledOpaqueSize("S3", cachedHookSide3Texture);
     return cachedHookSide3Texture;
   }
@@ -38353,17 +38387,29 @@ private static void HandleGameViewPointerDown(
     if (cachedGrateSide2Texture != null)
       return cachedGrateSide2Texture;
 
-    Texture2D source = GetGrateSide1Texture();
-    if (source == null || !source.isReadable)
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(GrateS2AssetPath);
+    if (texture == null)
+    {
+      Debug.LogError("ViewEdit: required native Grate S2 artwork missing: "
+          + GrateS2AssetPath);
       return null;
+    }
+    if (texture.width != 6 || texture.height != 11)
+    {
+      Debug.LogError("ViewEdit: Grate S2 native artwork must be 6x11: "
+          + GrateS2AssetPath + " (actual " + texture.width + "x"
+          + texture.height + ").");
+      return null;
+    }
+    if (!texture.isReadable)
+    {
+      Debug.LogError("ViewEdit: Grate S2 native artwork must be readable: "
+          + GrateS2AssetPath + ". Enable Read/Write in Import Settings.");
+      return null;
+    }
 
-    cachedGrateSide2Texture = GenerateDmScaledWallDecoration(
-        source,
-        6,
-        11,
-        WallOrnamentMediumColorMap,
-        "Grate Side F2 Generated from F1");
-    return cachedGrateSide2Texture;
+    cachedGrateSide2Texture = texture;
+    return texture;
   }
 
   private void BlitGrateD1SidesIntoPreview(Color32[] pixels)
