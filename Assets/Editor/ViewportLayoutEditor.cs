@@ -1431,6 +1431,11 @@ public class ViewportLayoutEditor : EditorWindow
   // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
   // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
   // REF OrnamentProjection:ChampionMirror:F1|80|95|false|639291298300178415
+  // REF OrnamentProjection:ChampionMirror:S1:Left|41|101|false|639291362147754849
+  // REF OrnamentProjection:ChampionMirror:S1:Right|167|101|true|639291359095917323
+  // REF OrnamentProjection:ChampionMirror:S2:Right|148|110|true|639291389334906649
+  // REF OrnamentProjection:ChampionMirror:S3:Left|78|116|false|639291385825952665
+  // REF OrnamentProjection:ChampionMirror:S3:Right|138|116|true|639291392277477819
   // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
   // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274252203846657
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
@@ -20864,6 +20869,7 @@ private static void HandleGameViewPointerDown(
     BlitUnifiedChampionMirrorFrontPreview(pixels);
     BlitUnifiedChampionMirrorCornerF2Preview(pixels);
     BlitUnifiedChampionMirrorLeftF3Preview(pixels);
+    BlitUnifiedChampionMirrorS1Preview(pixels);
 
     // Wall decorations (ordinary ornaments retain their own rendering).
 
@@ -24331,6 +24337,141 @@ private static void HandleGameViewPointerDown(
     ApplyPreviewFeatureRenderOverrides(
         ManualChampionLeftF3Key, ref x, ref y, ref flip);
     BlitWallOrnamentIntoPreview(pixels, artwork, x, y, flip);
+  }
+
+  // Unified side-wall mirror drawing for S1, S2 and S3. The same visible wall
+  // face, V17 check, and shared calibration key are used by ViewEdit rows.
+  // S1 uses the original side frame; S2 uses the verified 10x23 Nearest target;
+  // S3 uses the verified 7x15 Nearest target.
+  private void BlitUnifiedChampionMirrorS1Preview(Color32[] pixels)
+  {
+    if (pixels == null || previewMiniMap == null || previewChampionMirrors == null)
+      return;
+
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    Texture2D sideArtwork = cachedChampionMirrorSideTexture;
+    if (sideArtwork == null)
+    {
+      sideArtwork = AssetDatabase.LoadAssetAtPath<Texture2D>(ChampionMirrorSideAssetPath);
+      cachedChampionMirrorSideTexture = sideArtwork;
+    }
+    if (sideArtwork == null || !sideArtwork.isReadable
+        || sideArtwork.width != 16 || sideArtwork.height != 35)
+    {
+      Debug.LogError("Unified S1/S2 mirror: required readable 16x35 artwork missing or invalid: "
+          + ChampionMirrorSideAssetPath);
+      return;
+    }
+
+    for (int depth = 1; depth <= 3; ++depth)
+    {
+      int corridorX = previewX + depth * fx;
+      int corridorY = previewY + depth * fy;
+      if (!PreviewTileIsOpen(corridorX, corridorY)) break;
+
+      Texture2D artwork = depth == 1
+          ? sideArtwork
+          : (depth == 2
+              ? GetUnifiedChampionS2SideFrame(sideArtwork)
+              : GetUnifiedChampionS3SideFrame(sideArtwork));
+      if (artwork == null || !artwork.isReadable) continue;
+      for (int sideIndex = 0; sideIndex < 2; ++sideIndex)
+      {
+        bool left = sideIndex == 0;
+        int wallX = corridorX + (left ? -rx : rx);
+        int wallY = corridorY + (left ? -ry : ry);
+        string requiredFace = FacingName(left
+            ? TurnPreviewFacingRight(previewFacing)
+            : TurnPreviewFacingLeft(previewFacing));
+        if (!PreviewTileIsWall(wallX, wallY)) continue;
+
+        for (int i = 0; i < previewChampionMirrors.Length; ++i)
+        {
+          ChampionMirrorPlacement candidate = previewChampionMirrors[i];
+          if (candidate == null || string.IsNullOrEmpty(candidate.champion)
+              || candidate.x != wallX || candidate.y != wallY
+              || !IsVisibleSideWallFace(candidate.wall, requiredFace,
+                  candidate.x, candidate.y)
+              || IsPreviewChampionTaken(candidate.champion)
+              || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+                  "ChampionMirror", candidate.x, candidate.y, candidate.wall))
+              || !IsSharedWallFeatureVisible(candidate.x, candidate.y,
+                  candidate.wall, true, 0, depth))
+            continue;
+
+          string key = "OrnamentProjection:ChampionMirror:S" + depth + ":"
+              + (left ? "Left" : "Right");
+          int x = depth == 1
+              ? (left ? HookD1SideLeftX : HookD1SideRightX)
+              : (left ? HookD2SideLeftX : HookD2SideRightX);
+          int y = depth == 1
+              ? HookD1SideY - (artwork.height - 19) / 2
+              : HookD2SideY - (artwork.height - HookD2SideHeight) / 2;
+          bool flip = !left;
+          ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
+          ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+          BlitWallOrnamentIntoPreview(pixels, artwork, x, y, flip);
+          break;
+        }
+      }
+    }
+  }
+
+  // Shared side scaling: S2 is fixed to the verified Nearest 10x23 result;
+  // S3 uses the same verified Nearest method at 7x15.
+  private const int ChampionMirrorS2TargetWidth = 10;
+  private const int ChampionMirrorS2TargetHeight = 23;
+  private const int ChampionMirrorS3TargetWidth = 7;
+  private const int ChampionMirrorS3TargetHeight = 15;
+  private Texture2D cachedUnifiedChampionS2SideFrame;
+  private Texture2D cachedUnifiedChampionS3SideFrame;
+
+  private Texture2D GetUnifiedChampionS2SideFrame(Texture2D source)
+  {
+    if (cachedUnifiedChampionS2SideFrame != null)
+      return cachedUnifiedChampionS2SideFrame;
+    Texture2D result = GenerateChampionMirrorAlternativeScale(
+        source,
+        ChampionMirrorS2TargetWidth,
+        ChampionMirrorS2TargetHeight,
+        WallOrnamentMediumColorMap,
+        1,
+        "Champion Mirror S2 Side Frame");
+    cachedUnifiedChampionS2SideFrame = result;
+    if (result != null)
+    {
+      // Report opaque bounds: target texture size is not necessarily visible size.
+      Color32[] sample = result.GetPixels32();
+      int minX = result.width, minY = result.height, maxX = -1, maxY = -1;
+      for (int py = 0; py < result.height; py++)
+        for (int px = 0; px < result.width; px++)
+          if (sample[py * result.width + px].a != 0)
+          {
+            minX = Mathf.Min(minX, px); maxX = Mathf.Max(maxX, px);
+            minY = Mathf.Min(minY, py); maxY = Mathf.Max(maxY, py);
+          }
+      Debug.Log("MIRROR S2 SIZE: method=1 source=" + source.width + "x" + source.height
+          + " target=" + result.width + "x" + result.height
+          + " visible=" + (maxX < 0 ? "none" : ((maxX - minX + 1) + "x" + (maxY - minY + 1)))
+          + " opaqueBounds=" + (maxX < 0 ? "none" : (minX + "," + minY + ".." + maxX + "," + maxY)));
+    }
+    return result;
+  }
+
+  private Texture2D GetUnifiedChampionS3SideFrame(Texture2D source)
+  {
+    if (cachedUnifiedChampionS3SideFrame != null)
+      return cachedUnifiedChampionS3SideFrame;
+    Texture2D result = GenerateChampionMirrorAlternativeScale(
+        source,
+        ChampionMirrorS3TargetWidth,
+        ChampionMirrorS3TargetHeight,
+        WallOrnamentFarColorMap,
+        1,
+        "Champion Mirror S3 Side Frame");
+    cachedUnifiedChampionS3SideFrame = result;
+    return result;
   }
 
   private Texture2D GetChampionMirrorFrontTexture()
