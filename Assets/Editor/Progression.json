@@ -752,5 +752,14 @@
     ],
     "preserve": "Do not modify verified V17 wall geometry/rendering, CSBwin floor scaling, floor pickups, or existing working ornament placement; no silent asset/data fallbacks; Unity tools stay directly in Assets/Editor.",
     "grid_rule": "Only simple square grids for visual map explanation: cyan player, white visible open, gray visible walls, black invisible with no coordinates; orientation always player-relative."
+  },
+  "viewedit_grate_short_label_naming_20261101": {
+    "purpose": "Compact clear ViewEdit labels for front-facing Grate rows.",
+    "rule": "Use format 'Grate F1 13,5 W', 'Grate F2 14,5 W', 'Grate F3 x,y D' for front-facing Grate rows.",
+    "notes": [
+      "Use object name + front perspective + player X,Y + facing abbreviation.",
+      "Do not use brackets, slashes, or redundant words like Front in the compact front Grate label.",
+      "Direction abbreviations remain N, E, S, W."
+    ]
   }
 }

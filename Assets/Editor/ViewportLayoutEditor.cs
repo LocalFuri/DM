@@ -240,7 +240,10 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ManaclesD3FrontHeight = 20;
   private const string GrateFrontAssetPath =
       "Assets/Art/Ornaments/Grate_F1_32x28.png";
-  // Preserve the pre-existing F2/F3 scaling source; changing F1 artwork must not change distant Grates.
+  // Dedicated Atari F2 front image, drawn 1:1.
+  private const string GrateF2FrontAssetPath =
+      "Assets/Art/Ornaments/Grate_F2_21x13.png";
+  // Preserve the pre-existing generated F3 path until a dedicated F3 front asset is supplied.
   private const string GrateDistantScalingSourceAssetPath =
       "Assets/Art/Ornaments/Grate_Front_32x28.png";
   private const string GrateSide1AssetPath =
@@ -26627,9 +26630,19 @@ private static void HandleGameViewPointerDown(
             ornament, out string projectionName, out _))
       return false;
 
-    string name = projectionName == "Grate - Front F1"
-        ? "Grate F1 " + previewX + "," + previewY + " " + ShortDirectionLabel(FacingName(previewFacing))
-        : projectionName.Replace("Grate - Side3", "Grate - S3") + " [" + previewX + "," + previewY + "] (" + ShortDirectionLabel(FacingName(previewFacing)) + ")";
+    string name;
+    if (projectionName.StartsWith("Grate - Front F", System.StringComparison.Ordinal))
+    {
+      string shortProjection = projectionName.Replace("Grate - Front ", "Grate ");
+      name = shortProjection + " " + previewX + "," + previewY + " "
+          + ShortDirectionLabel(FacingName(previewFacing));
+    }
+    else
+    {
+      name = projectionName.Replace("Grate - Side3", "Grate - S3")
+          + " [" + previewX + "," + previewY + "] ("
+          + ShortDirectionLabel(FacingName(previewFacing)) + ")";
+    }
     return DrawWallOrnamentCalibrationRow(ornament, name);
   }
 
@@ -38795,15 +38808,6 @@ private static void HandleGameViewPointerDown(
       return;
     }
 
-    Texture2D grateFront = GetGrateFront3Texture();
-    if (grateFront == null
-        || !grateFront.isReadable
-        || grateFront.width != 14
-        || grateFront.height != 9)
-    {
-      return;
-    }
-
     DungeonMap.GetForwardOffset(
         previewFacing,
         out int forwardX,
@@ -38864,6 +38868,13 @@ private static void HandleGameViewPointerDown(
 
       if (!placementMatches)
         continue;
+
+      // Only request F3 artwork when the JSON geometry and ornament
+      // placement actually require a visible front F3 Grate.
+      Texture2D grateFront = GetGrateFront3Texture();
+      if (grateFront == null || !grateFront.isReadable
+          || grateFront.width != 14 || grateFront.height != 9)
+        return;
 
       BlitOrnamentPieceIntoPreview(
             pixels, grateFront, ornament,
@@ -38978,17 +38989,16 @@ private static void HandleGameViewPointerDown(
     if (cachedGrateFront2Texture != null)
       return cachedGrateFront2Texture;
 
-    Texture2D source = GetGrateDistantScalingSourceTexture();
-    if (source == null || !source.isReadable)
+    Texture2D texture =
+        AssetDatabase.LoadAssetAtPath<Texture2D>(GrateF2FrontAssetPath);
+    if (texture == null || texture.width != 21 || texture.height != 13)
+    {
+      Debug.LogError("Grate F2 must exist as a 21x13 texture: "
+          + GrateF2FrontAssetPath);
       return null;
-
-    cachedGrateFront2Texture = GenerateDmScaledWallDecoration(
-        source,
-        21,
-        13,
-        WallOrnamentMediumColorMap,
-        "Grate F2 Generated from F1");
-    return cachedGrateFront2Texture;
+    }
+    cachedGrateFront2Texture = texture;
+    return texture;
   }
 
   private void BlitGrateD1FrontIntoPreview(Color32[] pixels)
@@ -40700,7 +40710,7 @@ private static void HandleGameViewPointerDown(
         GrateDistantScalingSourceAssetPath);
     if (texture == null || texture.width != 32 || texture.height != 28)
     {
-      Debug.LogError("Grate F2/F3 source must exist as a 32x28 texture: "
+      Debug.LogError("Grate F3 source must exist as a 32x28 texture: "
           + GrateDistantScalingSourceAssetPath);
       return null;
     }
