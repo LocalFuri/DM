@@ -248,6 +248,9 @@ public class ViewportLayoutEditor : EditorWindow
   // User-extracted original S3 artwork, drawn 1:1.
   private const string GrateS3AssetPath =
       "Assets/Art/Ornaments/Grate_S3_4x6.png";
+  // Dedicated right-hand corner artwork; independent of the verified S2/S3 art.
+  private const string GrateF2SideAssetPath =
+      "Assets/Art/Ornaments/Grate_F2_Side_20x13.png";
   private const string HookSideAssetPath =
       "Assets/Art/Ornaments/Hook_Side_16x19.png";
   private const string HookS3AssetPath =
@@ -362,6 +365,10 @@ public class ViewportLayoutEditor : EditorWindow
   // (81,96). That face is wall tile (13,10) North. The art is the left-wall
   // perspective, so only the right blit is mirrored.
   // Framebuffer Y = 200 - 96 - 4 = 100.
+  // Initial right-edge location, adjustable with the independent ViewEdit Apply row.
+  private const int GrateF2SideCornerX = DungeonViewportWidth - 10;
+  private const int GrateF2SideCornerY = 83;
+
   private const int GrateD3SideLeftX = 81;
   private const int GrateD3SideRightX =
       DungeonViewportWidth - GrateD3SideLeftX - 4;
@@ -1449,6 +1456,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:ChampionMirror:S3:Right|138|116|true|639291392277477819
   // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
   // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274252203846657
+  // REF OrnamentProjection:Grate:F2SideCorner|204|74|false|639291560292692480
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
   // REF OrnamentProjection:Hook:F2|103|111|false|639272438417071479
   // REF OrnamentProjection:Hook:S1|160|109|true|639271634293923485
@@ -1851,6 +1859,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedGrateSide2Texture;
   [System.NonSerialized]
   private Texture2D cachedGrateSide3Texture;
+  [System.NonSerialized]
+  private Texture2D cachedGrateF2SideTexture;
   [System.NonSerialized]
   private Texture2D cachedHookSideTexture;
   [System.NonSerialized]
@@ -20936,6 +20946,7 @@ private static void HandleGameViewPointerDown(
     BlitWoodRingD2SidesIntoPreview(pixels);
     BlitHookD2SidesIntoPreview(pixels);
     BlitGrateD2SidesIntoPreview(pixels);
+    BlitGrateF2SideCornerIntoPreview(pixels);
     BlitHookStyleD1SidesIntoPreview(pixels);
     BlitManaclesD2SidesIntoPreview(pixels);
     BlitManaclesD1SidesIntoPreview(pixels);
@@ -25835,6 +25846,13 @@ private static void HandleGameViewPointerDown(
     string viewedWallSide = FacingName(previewFacing);
     string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
 
+    if (IsGrateF2SideCornerVisible(ornament))
+    {
+      projectionName = "Grate - F2 Side Corner";
+      renderMirror = false;
+      return true;
+    }
+
     // Front F1.
     int d1X = previewX + forwardX;
     int d1Y = previewY + forwardY;
@@ -26042,6 +26060,8 @@ private static void HandleGameViewPointerDown(
               ornament, out string projectionName, out renderMirror))
         return false;
 
+      if (projectionName == "Grate - F2 Side Corner")
+      { renderX = GrateF2SideCornerX; renderY = GrateF2SideCornerY; return true; }
       if (projectionName == "Grate - Front F1")
       { renderX = GrateD1FrontX; renderY = GrateD1FrontY; return true; }
       if (projectionName == "Grate - Front F2")
@@ -26278,7 +26298,8 @@ private static void HandleGameViewPointerDown(
               ornament, out string grateProjectionName, out _))
         return false;
 
-      string grateSlot = grateProjectionName == "Grate - Front F1" ? "F1"
+      string grateSlot = grateProjectionName == "Grate - F2 Side Corner" ? "F2SideCorner"
+          : grateProjectionName == "Grate - Front F1" ? "F1"
           : grateProjectionName == "Grate - Front F2" ? "F2"
           : grateProjectionName == "Grate - Front F3" ? "F3"
           : grateProjectionName == "Grate - Side1" ? "S1"
@@ -38240,6 +38261,68 @@ private static void HandleGameViewPointerDown(
 
     cachedGrateSide3Texture = texture;
     return cachedGrateSide3Texture;
+  }
+
+  // Face at the *front* of the right-hand D2 side tile, not the standard
+  // side-facing wall ornament. The map-relative test rotates with the party.
+  // It is deliberately separate from the already verified S3 Grate pass.
+  private bool IsGrateF2SideCornerVisible(WallOrnamentPlacement ornament)
+  {
+    if (!IsGrateOrnament(ornament) || previewMiniMap == null)
+      return false;
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    for (int step = 1; step <= 2; step++)
+    {
+      int x = previewX + fx * step;
+      int y = previewY + fy * step;
+      if (!previewMiniMap.IsInside(x, y)
+          || previewMiniMap.GetTile(x, y).Type == DungeonTileType.Wall)
+        return false;
+    }
+    int tileX = previewX + fx * 2 + rx;
+    int tileY = previewY + fy * 2 + ry;
+    return previewMiniMap.IsInside(tileX, tileY)
+        && string.Equals(ornament.wall, OppositeFacingName(previewFacing),
+            System.StringComparison.OrdinalIgnoreCase)
+        && ornament.x == tileX && ornament.y == tileY;
+  }
+
+  private Texture2D GetGrateF2SideCornerTexture()
+  {
+    if (cachedGrateF2SideTexture != null)
+      return cachedGrateF2SideTexture;
+    Texture2D image = AssetDatabase.LoadAssetAtPath<Texture2D>(GrateF2SideAssetPath);
+    if (image == null || image.width != 20 || image.height != 13 || !image.isReadable)
+    {
+      Debug.LogError("ViewEdit: Grate F2 Side requires readable native 20x13 asset: "
+          + GrateF2SideAssetPath);
+      return null;
+    }
+    cachedGrateF2SideTexture = image;
+    return image;
+  }
+
+  private void BlitGrateF2SideCornerIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewWallOrnaments == null)
+      return;
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!IsGrateF2SideCornerVisible(ornament))
+        continue;
+      if (!IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+              "Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
+      Texture2D image = GetGrateF2SideCornerTexture();
+      if (image == null)
+        return;
+      BlitOrnamentPieceIntoPreview(pixels, image, ornament,
+          GrateF2SideCornerX, GrateF2SideCornerY, false);
+      return;
+    }
   }
 
   private void BlitGrateD2SidesIntoPreview(Color32[] pixels)
