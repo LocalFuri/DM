@@ -1433,6 +1433,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:ChampionMirror:F1|80|95|false|639291298300178415
   // REF OrnamentProjection:ChampionMirror:S1:Left|41|101|false|639291362147754849
   // REF OrnamentProjection:ChampionMirror:S1:Right|167|101|true|639291359095917323
+  // REF OrnamentProjection:ChampionMirror:S2:Left|66|110|false|639291379156807561
   // REF OrnamentProjection:ChampionMirror:S2:Right|148|110|true|639291389334906649
   // REF OrnamentProjection:ChampionMirror:S3:Left|78|116|false|639291385825952665
   // REF OrnamentProjection:ChampionMirror:S3:Right|138|116|true|639291392277477819
@@ -1442,6 +1443,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Hook:F2|103|111|false|639272438417071479
   // REF OrnamentProjection:Hook:S1|160|109|true|639271634293923485
   // REF OrnamentProjection:Hook:S1:Left|48|107|false
+  // REF OrnamentProjection:Hook:S2|152|117|true|639291413858377486
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
   // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
@@ -1653,6 +1655,40 @@ public class ViewportLayoutEditor : EditorWindow
           cachedAcceptedOrnamentReferences[projectionKey] = backup;
           recoveredAnything = true;
         }
+      }
+    }
+
+    // Recover all shared champion mirror projection calibrations as well.
+    // Previously only ordinary ornament family keys were probed here, so
+    // replacing this .cs could silently lose newly Applied S2/S3 Left/Right
+    // positions even though their EditorPrefs backups still existed.
+    string[] mirrorProjectionKeys =
+    {
+      "OrnamentProjection:ChampionMirror:F1",
+      "OrnamentProjection:ChampionMirror:F2",
+      "OrnamentProjection:ChampionMirror:F3",
+      "OrnamentProjection:ChampionMirror:S1:Left",
+      "OrnamentProjection:ChampionMirror:S1:Right",
+      "OrnamentProjection:ChampionMirror:S2:Left",
+      "OrnamentProjection:ChampionMirror:S2:Right",
+      "OrnamentProjection:ChampionMirror:S3:Left",
+      "OrnamentProjection:ChampionMirror:S3:Right"
+    };
+    for (int i = 0; i < mirrorProjectionKeys.Length; ++i)
+    {
+      string projectionKey = mirrorProjectionKeys[i];
+      if (!TryGetBackedUpOrnamentReference(
+              projectionKey, out AcceptedOrnamentReference backup))
+        continue;
+      long backupRevision =
+          GetBackedUpOrnamentReferenceRevision(projectionKey);
+      backup.revision = backupRevision;
+      if (!cachedAcceptedOrnamentReferences.TryGetValue(
+              projectionKey, out AcceptedOrnamentReference sourceValue)
+          || (backupRevision > 0 && backupRevision > sourceValue.revision))
+      {
+        cachedAcceptedOrnamentReferences[projectionKey] = backup;
+        recoveredAnything = true;
       }
     }
 
@@ -36608,6 +36644,8 @@ private static void HandleGameViewPointerDown(
         HookD2SideY);
   }
 
+  private string lastHookS2DrawDiagnostic;
+
   private void BlitHookSidesAtDistance(
       Color32[] pixels,
       int distance,
@@ -36744,8 +36782,51 @@ private static void HandleGameViewPointerDown(
 
       if (matchesRight && !rightDrawn)
       {
-        BlitOrnamentPieceIntoPreview(
-            pixels, side, ornament, rightX, y, false);
+        // Hook S2 diagnostic: inspect effective mirror overrides and the
+        // pixels changed by the actual blit, not the source texture alone.
+        if (distance == 2)
+        {
+          int dx = rightX, dy = y;
+          bool mirrored = false;
+          string key = MakePreviewFeatureKey(
+              "Ornament", ornament.x, ornament.y, ornament.wall);
+          if (TryGetWallOrnamentProjectionOverrideDescriptor(
+                  ornament, out string projectionKey, out _))
+          {
+            key = projectionKey;
+            ApplyAcceptedOrnamentReference(key, ref dx, ref dy, ref mirrored);
+          }
+          ApplyPreviewFeatureRenderOverrides(key, ref dx, ref dy, ref mirrored);
+          Color32[] before = (Color32[])pixels.Clone();
+          BlitOrnamentPieceIntoPreview(
+              pixels, side, ornament, rightX, y, false);
+          int changed = 0, minX = 320, minY = 200, maxX = -1, maxY = -1;
+          for (int py = 0; py < 200; ++py)
+            for (int px = 0; px < DungeonViewportWidth; ++px)
+            {
+              int index = py * 320 + px;
+              if (index >= pixels.Length) continue;
+              Color32 a = before[index], b = pixels[index];
+              if (a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a)
+                continue;
+              ++changed;
+              minX = Mathf.Min(minX, px); maxX = Mathf.Max(maxX, px);
+              minY = Mathf.Min(minY, py); maxY = Mathf.Max(maxY, py);
+            }
+          string report = "HOOK S2 DRAW: right wall=(" + rightWallTileX
+              + "," + rightWallTileY + "), screen=(" + dx + "," + dy
+              + "), mirrored=" + mirrored + ", changedPixels=" + changed
+              + ", changedBounds=" + (changed == 0 ? "none"
+                  : (minX + "," + minY + ".." + maxX + "," + maxY));
+          if (report != lastHookS2DrawDiagnostic)
+          {
+            Debug.Log(report);
+            lastHookS2DrawDiagnostic = report;
+          }
+        }
+        else
+          BlitOrnamentPieceIntoPreview(
+              pixels, side, ornament, rightX, y, false);
         rightDrawn = true;
       }
 
@@ -37778,6 +37859,28 @@ private static void HandleGameViewPointerDown(
     return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 4;
   }
 
+  // Diagnostic only: measure actual opaque Hook bounds after Nearest scaling.
+  private static void LogHookScaledOpaqueSize(string perspective, Texture2D texture)
+  {
+    if (texture == null || !texture.isReadable) return;
+    Color32[] pixels = texture.GetPixels32();
+    int minX = texture.width, minY = texture.height, maxX = -1, maxY = -1;
+    int count = 0;
+    for (int y = 0; y < texture.height; y++)
+      for (int x = 0; x < texture.width; x++)
+        if (pixels[y * texture.width + x].a != 0)
+        {
+          count++;
+          minX = Mathf.Min(minX, x); maxX = Mathf.Max(maxX, x);
+          minY = Mathf.Min(minY, y); maxY = Mathf.Max(maxY, y);
+        }
+    Debug.Log("HOOK SIZE " + perspective + ": texture="
+        + texture.width + "x" + texture.height
+        + " opaque=" + (maxX < 0 ? "none" : (maxX - minX + 1) + "x" + (maxY - minY + 1))
+        + " bounds=" + (maxX < 0 ? "none" : minX + "," + minY + ".." + maxX + "," + maxY)
+        + " pixels=" + count + " method=Nearest");
+  }
+
   private Texture2D GetHookGeneratedF2FrontTexture()
   {
     if (cachedHookGeneratedF2FrontTexture != null)
@@ -37788,12 +37891,15 @@ private static void HandleGameViewPointerDown(
       return null;
 
     cachedHookGeneratedF2FrontTexture =
-        GenerateWallOrnamentForDepth(
+        GenerateChampionMirrorAlternativeScale(
             source,
-            HookFrontWallOrnamentSet.f2,
+            HookFrontWallOrnamentSet.f2.width,
+            HookFrontWallOrnamentSet.f2.height,
             WallOrnamentMediumColorMap,
-            "Hook F2 Generated from F1");
+            1,
+            "Hook F2 Nearest from F1");
 
+    LogHookScaledOpaqueSize("F2", cachedHookGeneratedF2FrontTexture);
     return cachedHookGeneratedF2FrontTexture;
   }
 
@@ -37887,12 +37993,27 @@ private static void HandleGameViewPointerDown(
     if (source == null || !source.isReadable)
       return null;
 
-    cachedHookSide2Texture = GenerateDmScaledWallDecoration(
-        source,
-        HookD2SideWidth,
-        HookD2SideHeight,
-        WallOrnamentMediumColorMap,
-        "Hook Side F2 Generated from F1");
+    // The 16x19 source contains transparent outer margins. Scale its opaque
+    // bounding rectangle so the S2 target is a 6x10 VISIBLE image, not a
+    // 6x10 canvas containing a narrower Hook. Do not affect S1 or S3.
+    Texture2D cropped = CropWallDecorationToOpaqueBounds(source);
+    bool ownsCrop = !ReferenceEquals(cropped, source);
+    try
+    {
+      cachedHookSide2Texture = GenerateChampionMirrorAlternativeScale(
+          cropped,
+          HookD2SideWidth,
+          HookD2SideHeight,
+          WallOrnamentMediumColorMap,
+          1,
+          "Hook Side S2 Nearest Opaque Bounds");
+    }
+    finally
+    {
+      if (ownsCrop)
+        UnityEngine.Object.DestroyImmediate(cropped);
+    }
+    LogHookScaledOpaqueSize("S2", cachedHookSide2Texture);
     return cachedHookSide2Texture;
   }
 
@@ -37905,12 +38026,14 @@ private static void HandleGameViewPointerDown(
     if (source == null || !source.isReadable)
       return null;
 
-    cachedHookSide3Texture = GenerateDmScaledWallDecoration(
+    cachedHookSide3Texture = GenerateChampionMirrorAlternativeScale(
         source,
         HookD3SideWidth,
         HookD3SideHeight,
         WallOrnamentFarColorMap,
-        "Hook Side F3 Generated from F1");
+        1,
+        "Hook Side F3 Nearest from F1");
+    LogHookScaledOpaqueSize("S3", cachedHookSide3Texture);
     return cachedHookSide3Texture;
   }
 
