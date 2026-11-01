@@ -1430,6 +1430,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
   // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
   // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
+  // REF OrnamentProjection:ChampionMirror:F1|80|95|false|639291298300178415
   // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
   // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274252203846657
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
@@ -20857,7 +20858,12 @@ private static void HandleGameViewPointerDown(
     // Ordinary wall-ornament passes must still execute even when strict
     // manual calibration mode is active; do not return before those passes.
 
-    // Wall decorations (champion mirrors are intentionally not drawn).
+    // Unified mirror preview, first stage: the same front-wall geometry,
+    // calibration key and artwork selection for every champion.  It also
+    // runs before a calibration exists so ViewEdit can visually position it.
+    BlitUnifiedChampionMirrorFrontPreview(pixels);
+
+    // Wall decorations (ordinary ornaments retain their own rendering).
 
     // Large wall fixtures.
     BlitViAltarD3FrontIntoPreview(pixels);
@@ -24165,6 +24171,77 @@ private static void HandleGameViewPointerDown(
   }
 
 
+
+  // New unified champion mirror preview: no champion-specific branches.
+  // Uses the existing physical wall-face visibility and shared F1/F2/F3
+  // projection calibration keys.  Side projections will be added through
+  // this same system after the front projection has been verified.
+  private void BlitUnifiedChampionMirrorFrontPreview(Color32[] pixels)
+  {
+    if (pixels == null || previewMiniMap == null
+        || previewChampionMirrors == null) return;
+
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    string visibleFace = OppositeFacingName(previewFacing);
+    for (int depth = 1; depth <= 3; depth++)
+    {
+      bool interrupted = false;
+      for (int step = 1; step < depth; step++)
+        if (!PreviewTileIsOpen(previewX + fx * step, previewY + fy * step))
+          interrupted = true;
+      if (interrupted) break;
+      int wx = previewX + fx * depth;
+      int wy = previewY + fy * depth;
+      if (!PreviewTileIsWall(wx, wy)) continue;
+
+      for (int i = 0; i < previewChampionMirrors.Length; i++)
+      {
+        ChampionMirrorPlacement m = previewChampionMirrors[i];
+        if (m == null || string.IsNullOrEmpty(m.champion)
+            || m.x != wx || m.y != wy
+            || !string.Equals(m.wall, visibleFace,
+                System.StringComparison.OrdinalIgnoreCase)
+            || IsPreviewChampionTaken(m.champion)
+            || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+                "ChampionMirror", m.x, m.y, m.wall))
+            || !IsSharedWallFeatureVisible(
+                m.x, m.y, m.wall, true, depth, 0)) continue;
+
+        Texture2D frame = GetChampionMirrorFrontTexture();
+        if (frame == null) return; // Missing artwork is already reported.
+        WallFeatureArtworkProfile profile = GetChampionMirrorArtworkProfile(depth);
+        Texture2D artwork = depth == 1 ? frame
+            : GetChampionMirrorScaledFrameTexture(frame, depth);
+        if (artwork == null || !artwork.isReadable)
+        {
+          Debug.LogError("Unified mirror preview: missing readable F"
+              + depth + " frame for " + m.champion);
+          return;
+        }
+        string key = "OrnamentProjection:ChampionMirror:F" + depth;
+        int x = profile.slot.x;
+        int y = profile.slot.y;
+        bool flip = false;
+        ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
+        ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+        BlitWallOrnamentIntoPreview(pixels, artwork, x, y, flip);
+        if (depth == 1)
+        {
+          Texture2D portrait = GetChampionPortraitTexture(m.champion);
+          if (portrait == null || !portrait.isReadable)
+            Debug.LogError("Unified mirror preview: missing readable portrait: "
+                + m.champion);
+          else
+            BlitWallOrnamentIntoPreview(pixels, portrait,
+                x + (frame.width - portrait.width) / 2,
+                y + (frame.height - portrait.height) / 2, flip);
+        }
+        return;
+      }
+      // A solid front wall terminates central-line visibility.
+      break;
+    }
+  }
 
   private Texture2D GetChampionMirrorFrontTexture()
   {
