@@ -26551,7 +26551,7 @@ private static void HandleGameViewPointerDown(
             ornament, out string projectionName, out _))
       return false;
 
-    string name = projectionName + " [" + ornament.x + "," + ornament.y + "] (" + ShortDirectionLabel(FacingName(previewFacing)) + ")";
+    string name = projectionName.Replace("Grate - Side3", "Grate - S3") + " [" + ornament.x + "," + ornament.y + "] (" + ShortDirectionLabel(FacingName(previewFacing)) + ")";
     return DrawWallOrnamentCalibrationRow(ornament, name);
   }
 

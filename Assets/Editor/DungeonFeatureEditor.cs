@@ -1094,7 +1094,7 @@ public class DungeonFeatureEditor : EditorWindow
     // Reserve sufficient horizontal space for one row of item previews.
     List<OriginalWallOrnamentMarker> selectedOrnaments = GetSelectedWallOrnaments();
     float floorReserve = showMultiItemPreview
-        ? GetSelectedFloorItemPopupWidth(previewRecords.Count) + 16f * mapZoom
+        ? GetSelectedFloorItemPopupWidth(previewRecords.Count) + 16f
         : 0f;
     float popupReserve = Mathf.Max(floorReserve,
         selectedOrnaments.Count > 0 ? 170f * mapZoom : 0f);
@@ -1211,7 +1211,7 @@ public class DungeonFeatureEditor : EditorWindow
     for (int i = 0; i < lines.Length; i++)
       textWidth = Mathf.Max(textWidth,
           nameStyle.CalcSize(new GUIContent(lines[i])).x);
-    return (Mathf.Ceil(textWidth) + 2f) * mapZoom;
+    return Mathf.Ceil(textWidth) + 2f;
   }
 
   private float GetSelectedFloorItemPopupWidth(int itemCount)
@@ -1221,18 +1221,19 @@ public class DungeonFeatureEditor : EditorWindow
       return 0f;
     float width = 14f + Mathf.Max(0, itemCount - 1) * 2f;
     for (int i = 0; i < records.Count; i++)
-      width += GetFloorItemPopupBlockWidth(records[i]) / mapZoom;
-    return width * mapZoom;
+      width += GetFloorItemPopupBlockWidth(records[i]);
+    return width;
   }
 
   private Rect GetSelectedFloorItemPopupRect(Rect mapRect, int itemCount)
   {
-    float unit = mapZoom;
+    // The map may zoom, but the inspection panel stays at editor GUI 1:1.
+    const float unit = 1f;
     float width = GetSelectedFloorItemPopupWidth(itemCount);
     float height = 7f * unit * 2f + 18f * unit + 64f * unit;
-    float x = mapRect.xMax + 8f * unit;
-    float y = mapRect.y - (LabelTopMargin + OutsideFeatureVerticalMargin) * unit
-        + 2f * unit;
+    float x = mapRect.xMax + 8f;
+    float y = mapRect.y - (LabelTopMargin + OutsideFeatureVerticalMargin) * mapZoom
+        + 2f;
     return new Rect(x, y, width, height);
   }
 
@@ -1256,14 +1257,14 @@ public class DungeonFeatureEditor : EditorWindow
 
     // Fully opaque backing and thin border.
     EditorGUI.DrawRect(popup, new Color(0.15f, 0.15f, 0.15f, 1f));
-    float border = Mathf.Max(1f, mapZoom);
+    float border = 1f;
     Color borderColor = new Color(0.45f, 0.45f, 0.45f, 1f);
     EditorGUI.DrawRect(new Rect(popup.x, popup.y, popup.width, border), borderColor);
     EditorGUI.DrawRect(new Rect(popup.x, popup.yMax - border, popup.width, border), borderColor);
     EditorGUI.DrawRect(new Rect(popup.x, popup.y, border, popup.height), borderColor);
     EditorGUI.DrawRect(new Rect(popup.xMax - border, popup.y, border, popup.height), borderColor);
 
-    float unit = mapZoom;
+    const float unit = 1f;
     float padding = 7f * unit;
     float headingHeight = 18f * unit;
     float iconSize = 32f * unit;
