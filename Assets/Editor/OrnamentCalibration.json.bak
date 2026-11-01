@@ -1,0 +1,47 @@
+{
+    "version": 1,
+    "entries": [
+        {
+            "key": "OrnamentClass:1:ChampionMirror:CornerFrontF2:Left",
+            "x": -23,
+            "y": 104,
+            "mirror": false
+        },
+        {
+            "key": "OrnamentClass:2:Manacles:CornerFrontF2:Left",
+            "x": -41,
+            "y": 93,
+            "mirror": false
+        },
+        {
+            "key": "OrnamentClass:3:Hook:CornerFrontF2:Left",
+            "x": -9,
+            "y": 111,
+            "mirror": false
+        },
+        {
+            "key": "OrnamentClass:4:WoodRing:CornerFrontF2:Left",
+            "x": -8,
+            "y": 111,
+            "mirror": false
+        },
+        {
+            "key": "OrnamentClass:5:Slime:CornerFrontF2:Left",
+            "x": 3,
+            "y": 74,
+            "mirror": false
+        },
+        {
+            "key": "OrnamentClass:6:Grate:CornerFrontF2:Left",
+            "x": -3,
+            "y": 75,
+            "mirror": false
+        },
+        {
+            "key": "OrnamentClass:7:EmptyTorchHolder:CornerFrontF2:Left",
+            "x": 2,
+            "y": 93,
+            "mirror": false
+        }
+    ]
+}

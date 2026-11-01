@@ -20862,6 +20862,7 @@ private static void HandleGameViewPointerDown(
     // calibration key and artwork selection for every champion.  It also
     // runs before a calibration exists so ViewEdit can visually position it.
     BlitUnifiedChampionMirrorFrontPreview(pixels);
+    BlitUnifiedChampionMirrorCornerF2Preview(pixels);
 
     // Wall decorations (ordinary ornaments retain their own rendering).
 
@@ -24257,6 +24258,42 @@ private static void HandleGameViewPointerDown(
       }
       // A solid front wall terminates central-line visibility.
       break;
+    }
+  }
+
+  // Front-facing wall mirrors at the end of an open side lane share the
+  // established corner-F2 geometry and projection calibration with every
+  // champion.  This is one generic draw path, not a WUUF special case.
+  private void BlitUnifiedChampionMirrorCornerF2Preview(Color32[] pixels)
+  {
+    if (pixels == null || previewMiniMap == null) return;
+    for (int sideIndex = 0; sideIndex < 2; ++sideIndex)
+    {
+      bool left = sideIndex == 0;
+      if (!TryGetSideLaneFrontF2Mirror(left,
+              out ChampionMirrorPlacement mirror, out bool nearCorner))
+        continue;
+      Texture2D artwork = nearCorner
+          ? GetOriginalCornerF2MirrorFrame()
+          : GetChampionMirrorScaledFrameTexture(
+              GetChampionMirrorFrontTexture(), 2);
+      if (artwork == null || !artwork.isReadable) continue;
+      string key = nearCorner
+          ? GetChampionMirrorClass1CornerF2Key(left)
+          : GetSideLaneFrontF2MirrorProjectionKey(left);
+      int x, y;
+      if (nearCorner)
+        GetOriginalCornerF2DrawPosition(5, left,
+            artwork.width, artwork.height, out x, out y);
+      else
+      {
+        x = left ? HookD2SideLeftX : HookD2SideRightX;
+        y = HookD2SideY - (artwork.height - HookD2SideHeight) / 2;
+      }
+      bool flip = false;
+      ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
+      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+      BlitPieceIntoPreview(pixels, artwork, x, y, flip);
     }
   }
 
