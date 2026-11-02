@@ -1473,7 +1473,6 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Hook:S1|160|109|true|639271634293923485
   // REF OrnamentProjection:Hook:S1:Left|48|107|false
   // REF OrnamentProjection:Hook:S2|152|117|true|639291413858377486
-  // REF OrnamentProjection:Hook:S2:Left|66|117|false|639292457181302560
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
   // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
@@ -16829,7 +16828,25 @@ private static void HandleGameViewPointerDown(
 
       if (!TryResolveExtractedChampionMirrorWall(
               champion, out int wallX, out int wallY, out string wallSide))
+      {
+        // Diagnostic only: identify unresolved mirrors without guessing a
+        // physical wall face or weakening the existing V17 occlusion rules.
+        if (string.Equals(champion.name, "ELIJA",
+                System.StringComparison.OrdinalIgnoreCase))
+        {
+          Debug.LogWarning("ELIJA MIRROR TRACE: unresolved adjacent wall at ("
+              + champion.x + "," + champion.y + "); "
+              + "verified-face file=" + ChampionMirrorVerifiedFacesPath
+              + " present=" + File.Exists(ChampionMirrorVerifiedFacesPath)
+              + ". No mirror placement generated.");
+        }
         continue;
+      }
+      if (string.Equals(champion.name, "ELIJA",
+              System.StringComparison.OrdinalIgnoreCase))
+        Debug.Log("ELIJA MIRROR TRACE: resolved physical wall=(" + wallX + ","
+            + wallY + ") face=" + wallSide
+            + " viewing floor=(" + champion.x + "," + champion.y + ")");
 
       mirrors.Add(new ChampionMirrorPlacement
       {
@@ -20944,6 +20961,7 @@ private static void HandleGameViewPointerDown(
   private void BlitV17FarWallFeaturesAtDepth(Color32[] pixels)
   {
     BlitUnifiedChampionMirrorLeftF3Preview(pixels);
+    BlitUnifiedChampionMirrorExtendedSideLaneF3Preview(pixels);
     BlitViAltarD3FrontIntoPreview(pixels);
     BlitWoodRingD3SidesIntoPreview(pixels);
     BlitHookD3SidesIntoPreview(pixels);
@@ -21002,6 +21020,40 @@ private static void HandleGameViewPointerDown(
     // Mirror data and calibration controls remain for a unified renderer.
     // Ordinary wall-ornament passes must still execute even when strict
     // manual calibration mode is active; do not return before those passes.
+
+    // Diagnostic-only: runs at the START of the mirror rendering pass,
+    // before any projection rejects the candidate. No rendering behavior changes.
+    if (previewDungeonLevel == 0 && previewX == 10 && previewY == 4
+        && previewFacing == DungeonFacing.South)
+    {
+      int elijaCount = 0;
+      if (previewChampionMirrors != null)
+      {
+        for (int diag = 0; diag < previewChampionMirrors.Length; ++diag)
+        {
+          ChampionMirrorPlacement m = previewChampionMirrors[diag];
+          if (m == null || !string.Equals(m.champion, "ELIJA",
+                  System.StringComparison.OrdinalIgnoreCase))
+            continue;
+          ++elijaCount;
+          Debug.Log("ELIJA MIRROR TRACE: entry wall=(" + m.x + ","
+              + m.y + ") face=" + m.wall
+              + " viewingFloor=(" + m.viewingFloorX + ","
+              + m.viewingFloorY + ")"
+              + " wallTile=" + PreviewTileIsWall(m.x, m.y)
+              + " taken=" + IsPreviewChampionTaken(m.champion)
+              + " enabled=" + IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+                  "ChampionMirror", m.x, m.y, m.wall)));
+        }
+      }
+      Debug.LogWarning("ELIJA MIRROR TRACE: render entry; "
+          + "level=0 player=(10,4) facing=South"
+          + " mirrorEntries=" + (previewChampionMirrors == null
+              ? -1 : previewChampionMirrors.Length)
+          + " elijaEntries=" + elijaCount
+          + " verifiedFacesFile=" + ChampionMirrorVerifiedFacesPath
+          + " exists=" + File.Exists(ChampionMirrorVerifiedFacesPath));
+    }
 
     // Unified mirror preview, first stage: the same front-wall geometry,
     // calibration key and artwork selection for every champion.  It also
@@ -24499,6 +24551,196 @@ private static void HandleGameViewPointerDown(
     ApplyPreviewFeatureRenderOverrides(
         ManualChampionLeftF3Key, ref x, ref y, ref flip);
     BlitWallOrnamentIntoPreview(pixels, artwork, x, y, flip);
+  }
+
+
+  // A wall TWO lateral cells from the player can appear through an open
+  // parallel lane at F3. This is a generic rotation-invariant projection:
+  // use the actual solid wall face, never a champion name or absolute tile.
+  // Paint during the far V17 feature stage so later near walls can occlude it.
+  private void BlitUnifiedChampionMirrorExtendedSideLaneF3Preview(Color32[] pixels)
+  {
+    if (pixels == null || previewMiniMap == null || previewChampionMirrors == null)
+      return;
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    // Do not invent a passage across a solid tile. Depth 3 is the only
+    // currently referenced extended-lane slot; require a continuous lane.
+    for (int sideIndex = 0; sideIndex < 2; ++sideIndex)
+    {
+      bool left = sideIndex == 0;
+      int side = left ? -1 : 1;
+      bool open = true;
+      for (int depth = 1; depth <= 3; ++depth)
+      {
+        int laneX = previewX + fx * depth + rx * side;
+        int laneY = previewY + fy * depth + ry * side;
+        if (!PreviewTileIsOpen(laneX, laneY))
+        {
+          open = false;
+          break;
+        }
+      }
+      if (!open) continue;
+      int wallX = previewX + fx * 3 + rx * side * 2;
+      int wallY = previewY + fy * 3 + ry * side * 2;
+      if (!PreviewTileIsWall(wallX, wallY)) continue;
+      string face = FacingName(left
+          ? TurnPreviewFacingRight(previewFacing)
+          : TurnPreviewFacingLeft(previewFacing));
+      // The wall must face into the open parallel lane.
+      if (!PreviewTileIsOpen(wallX - rx * side, wallY - ry * side))
+        continue;
+      for (int i = 0; i < previewChampionMirrors.Length; ++i)
+      {
+        ChampionMirrorPlacement m = previewChampionMirrors[i];
+        if (m == null || string.IsNullOrEmpty(m.champion)
+            || m.x != wallX || m.y != wallY
+            || !string.Equals(m.wall, face,
+                System.StringComparison.OrdinalIgnoreCase)
+            || IsPreviewChampionTaken(m.champion)
+            || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+                "ChampionMirror", m.x, m.y, m.wall)))
+          continue;
+        Texture2D original = cachedChampionMirrorSideTexture;
+        if (original == null)
+        {
+          original = AssetDatabase.LoadAssetAtPath<Texture2D>(
+              ChampionMirrorSideAssetPath);
+          cachedChampionMirrorSideTexture = original;
+        }
+        if (original == null || !original.isReadable)
+        {
+          Debug.LogError("Extended side-lane mirror: required side artwork missing: "
+              + ChampionMirrorSideAssetPath);
+          return;
+        }
+        Texture2D artwork = GetUnifiedChampionS3SideFrame(original);
+        if (artwork == null || !artwork.isReadable) return;
+        // Separate key: no changes to confirmed ordinary S3 calibrations.
+        string key = "OrnamentProjection:ChampionMirror:ExtendedLaneF3:"
+            + (left ? "Left" : "Right");
+        // Initial reference position from the supplied Atari comparison;
+        // subsequent verified adjustments are stored via existing calibration.
+        int x = left ? 16 : 194;
+        int y = 70;
+        bool flip = !left;
+        ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
+        ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+        BlitWallOrnamentIntoPreview(pixels, artwork, x, y, flip);
+        Debug.Log("EXTENDED V17 MIRROR: champion=" + m.champion
+            + " wall=(" + wallX + "," + wallY + ") face=" + face
+            + " side=" + (left ? "Left" : "Right")
+            + " F3 artwork=" + artwork.width + "x" + artwork.height);
+        break;
+      }
+    }
+  }
+
+  // ViewEdit counterpart of the extended F3 side-lane renderer. Use exactly
+  // the same lane, wall-face and enable rules, and the same calibration key.
+  private void DrawChampionMirrorExtendedSideLaneF3Rows()
+  {
+    if (previewMiniMap == null || previewChampionMirrors == null) return;
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
+    featureStyle.normal.textColor = Color.yellow;
+    for (int sideIndex = 0; sideIndex < 2; ++sideIndex)
+    {
+      bool left = sideIndex == 0;
+      int side = left ? -1 : 1;
+      bool open = true;
+      for (int depth = 1; depth <= 3; ++depth)
+      {
+        if (!PreviewTileIsOpen(previewX + fx * depth + rx * side,
+                               previewY + fy * depth + ry * side))
+        { open = false; break; }
+      }
+      if (!open) continue;
+      int wallX = previewX + fx * 3 + rx * side * 2;
+      int wallY = previewY + fy * 3 + ry * side * 2;
+      if (!PreviewTileIsWall(wallX, wallY)
+          || !PreviewTileIsOpen(wallX - rx * side, wallY - ry * side))
+        continue;
+      string face = FacingName(left
+          ? TurnPreviewFacingRight(previewFacing)
+          : TurnPreviewFacingLeft(previewFacing));
+      for (int i = 0; i < previewChampionMirrors.Length; ++i)
+      {
+        ChampionMirrorPlacement m = previewChampionMirrors[i];
+        if (m == null || string.IsNullOrEmpty(m.champion)
+            || m.x != wallX || m.y != wallY
+            || !string.Equals(m.wall, face,
+                 System.StringComparison.OrdinalIgnoreCase)
+            || IsPreviewChampionTaken(m.champion)) continue;
+
+        string visibilityKey = MakePreviewFeatureKey(
+            "ChampionMirror", m.x, m.y, m.wall);
+        string key = "OrnamentProjection:ChampionMirror:ExtendedLaneF3:"
+            + (left ? "Left" : "Right");
+        int x = left ? 16 : 194;
+        int y = 70;
+        bool mirror = !left;
+        ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+        int defaultX = x, defaultY = y;
+        bool defaultMirror = mirror;
+        ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+        int editX = x, editY = y;
+        EditorGUILayout.BeginHorizontal();
+        string label = m.champion.ToUpperInvariant() + " - Extended "
+            + (left ? "Left" : "Right") + " F3 (" + m.x + ","
+            + m.y + " " + ShortDirectionLabel(m.wall) + ")";
+        GUILayout.Label(label, featureStyle,
+            GUILayout.Width(Mathf.Ceil(featureStyle.CalcSize(new GUIContent(label)).x) + 6f));
+        bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
+        bool nowEnabled = EditorGUILayout.ToggleLeft("Set", wasEnabled,
+            GUILayout.Width(55f));
+        bool changedX = DrawIntStepperInline("X", ref editX, snap,
+            x != defaultX, true, 24f, 24f);
+        bool changedY = DrawIntStepperInline("Y", ref editY, snap,
+            y != defaultY, true, 24f, 24f);
+        bool editMirror = EditorGUILayout.ToggleLeft("Mirror", mirror,
+            GUILayout.Width(66f));
+        bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+        NoteContentRight();
+        EditorGUILayout.EndHorizontal();
+        if (nowEnabled != wasEnabled)
+          SetPreviewFeatureEnabled(visibilityKey, nowEnabled);
+        if (apply)
+        {
+          if (SaveAcceptedOrnamentReference(key, editX, editY, editMirror))
+          {
+            previewFeaturePositionOverrides.Remove(key);
+            previewFeatureMirrorOverrides.Remove(key);
+          }
+        }
+        else
+        {
+          if ((changedX && editX != x) || (changedY && editY != y))
+          {
+            if (editX == defaultX && editY == defaultY)
+              previewFeaturePositionOverrides.Remove(key);
+            else
+              previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
+          }
+          if (editMirror != mirror)
+          {
+            if (editMirror == defaultMirror)
+              previewFeatureMirrorOverrides.Remove(key);
+            else previewFeatureMirrorOverrides[key] = editMirror;
+          }
+        }
+        if (apply || nowEnabled != wasEnabled || changedX || changedY
+            || editMirror != mirror)
+        {
+          RefreshEditModePreview();
+          RepaintGameViews();
+          Repaint();
+        }
+        break;
+      }
+    }
   }
 
   // Unified side-wall mirror drawing for S1, S2 and S3. The same visible wall
@@ -28483,6 +28725,7 @@ private static void HandleGameViewPointerDown(
     // The new F1-only champion mirror uses the ordinary wall-ornament projection.
     DrawChampionMirrorFrontCalibrationRows();
     DrawChampionMirrorSideCalibrationRows();
+    DrawChampionMirrorExtendedSideLaneF3Rows();
     DrawChampionMirrorSideLaneFrontF2Rows();
     DrawManualChampionLeftF3Row();
     DrawManaclesClass2CornerF2CalibrationRow();
