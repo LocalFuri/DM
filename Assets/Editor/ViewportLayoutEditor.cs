@@ -1473,6 +1473,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Hook:S1|160|109|true|639271634293923485
   // REF OrnamentProjection:Hook:S1:Left|48|107|false
   // REF OrnamentProjection:Hook:S2|152|117|true|639291413858377486
+  // REF OrnamentProjection:Hook:S2:Left|66|117|false|639292457181302560
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
   // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
