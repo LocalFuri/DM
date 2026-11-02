@@ -20046,6 +20046,8 @@ private static void HandleGameViewPointerDown(
       bool viewport17NativeD3Drawn = false;
       bool viewport17NativeD2Drawn = false;
       bool viewport17NativeD1Drawn = false;
+      bool v17FarFeaturesDrawn = false;
+      bool v17MidFeaturesDrawn = false;
       // Draw the S1 floor plate once, immediately before the first near wall.
       // This is not conditional on any wall's Enabled setting.
       bool pressurePadS1Drawn = false;
@@ -20120,6 +20122,15 @@ private static void HandleGameViewPointerDown(
           continue;
         }
 
+        // Complete far-distance wall features before nearer D2 wall surfaces.
+        if (viewport17WallAuthorityActive && !v17FarFeaturesDrawn
+            && piece != null && IsNormalWallPiece(piece)
+            && GetNormalWallRenderDepth(piece) <= 2)
+        {
+          BlitV17FarWallFeaturesAtDepth(pixels);
+          v17FarFeaturesDrawn = true;
+        }
+
         // V17 F2 cutover: wait until painter order reaches depth 2, then draw
         // the original DOS D2 L/C/R artwork once. This preserves all depth-3
         // drawing behind it and all F1/F0 drawing in front of it.
@@ -20150,6 +20161,15 @@ private static void HandleGameViewPointerDown(
                 || IsWallF2RightPiece(piece)))
         {
           continue;
+        }
+
+        // Complete middle-distance wall features before nearer D1 wall surfaces.
+        if (viewport17WallAuthorityActive && !v17MidFeaturesDrawn
+            && piece != null && IsNormalWallPiece(piece)
+            && GetNormalWallRenderDepth(piece) <= 1)
+        {
+          BlitV17MidWallFeaturesAtDepth(pixels);
+          v17MidFeaturesDrawn = true;
         }
 
         // V17 F1 cutover: draw the original DOS D1 L/C/R artwork once when
@@ -20808,6 +20828,13 @@ private static void HandleGameViewPointerDown(
         }
       }
 
+      // If a wall depth has no editor card, still render its features once.
+      // This fallback is kept inside the wall pass, never after UI overlays.
+      if (viewport17WallAuthorityActive && !v17FarFeaturesDrawn)
+        BlitV17FarWallFeaturesAtDepth(pixels);
+      if (viewport17WallAuthorityActive && !v17MidFeaturesDrawn)
+        BlitV17MidWallFeaturesAtDepth(pixels);
+
       // Maps without near wall cards still draw the independently detected S1.
       if (!pressurePadS1Drawn)
         BlitPressurePadS1IntoPreview(pixels);
@@ -20910,6 +20937,39 @@ private static void HandleGameViewPointerDown(
     editModePreviewTexture.Apply(false);
   }
 
+  // V17 wall ornament painter stages. Keep all X/Y/manual calibration and
+  // visibility checks inside the existing individual blitters unchanged.
+  // Render only after that depth's walls but before closer walls.
+  private void BlitV17FarWallFeaturesAtDepth(Color32[] pixels)
+  {
+    BlitUnifiedChampionMirrorLeftF3Preview(pixels);
+    BlitViAltarD3FrontIntoPreview(pixels);
+    BlitWoodRingD3SidesIntoPreview(pixels);
+    BlitHookD3SidesIntoPreview(pixels);
+    BlitGrateD3SidesIntoPreview(pixels);
+    BlitWoodRingD3FrontIntoPreview(pixels);
+    BlitManaclesD3FrontIntoPreview(pixels);
+    BlitSlimeD3FrontIntoPreview(pixels);
+    BlitGrateD3FrontIntoPreview(pixels);
+    BlitViAltarS3IntoPreview(pixels);
+  }
+
+  private void BlitV17MidWallFeaturesAtDepth(Color32[] pixels)
+  {
+    BlitViAltarD2FrontIntoPreview(pixels);
+    BlitSlimeD2SidesIntoPreview(pixels);
+    BlitWoodRingD2SidesIntoPreview(pixels);
+    BlitHookD2SidesIntoPreview(pixels);
+    BlitGrateD2SidesIntoPreview(pixels);
+    BlitManaclesD2SidesIntoPreview(pixels);
+    BlitWoodRingD2FrontIntoPreview(pixels);
+    BlitManaclesD2FrontIntoPreview(pixels);
+    BlitSlimeD2FrontIntoPreview(pixels);
+    BlitHookD2FrontIntoPreview(pixels);
+    BlitGrateD2FrontIntoPreview(pixels);
+    BlitViAltarS2IntoPreview(pixels);
+  }
+
   private const string StrictManualOrnamentPref = "DM.ViewEdit.StrictManualOrnaments";
   private static bool StrictManualOrnamentMode
   {
@@ -20925,6 +20985,13 @@ private static void HandleGameViewPointerDown(
   /// </summary>
   private void BlitPostMapFeaturesAndOrnamentsIntoPreview(Color32[] pixels)
   {
+    // In non-V17 layouts, retain the legacy complete post-wall ornament pass.
+    if (!IsViewport17WallAuthorityActive())
+    {
+      BlitV17FarWallFeaturesAtDepth(pixels);
+      BlitV17MidWallFeaturesAtDepth(pixels);
+    }
+
     // Floor features first, so wall-mounted artwork can sit above them.
     BlitPuddlesIntoPreview(pixels);
     BlitMossIntoPreview(pixels);
@@ -20940,53 +21007,53 @@ private static void HandleGameViewPointerDown(
     // runs before a calibration exists so ViewEdit can visually position it.
     BlitUnifiedChampionMirrorFrontPreview(pixels);
     BlitUnifiedChampionMirrorCornerF2Preview(pixels);
-    BlitUnifiedChampionMirrorLeftF3Preview(pixels);
+    // BlitUnifiedChampionMirrorLeftF3Preview moved to the appropriate V17 depth stage.
     BlitUnifiedChampionMirrorS1Preview(pixels);
 
     // Wall decorations (ordinary ornaments retain their own rendering).
 
     // Large wall fixtures.
-    BlitViAltarD3FrontIntoPreview(pixels);
-    BlitViAltarD2FrontIntoPreview(pixels);
+    // BlitViAltarD3FrontIntoPreview moved to the appropriate V17 depth stage.
+    // BlitViAltarD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitViAltarD1FrontIntoPreview(pixels);
 
     // Hall / dungeon wall ornaments. Keep the existing verified order.
-    BlitWoodRingD3SidesIntoPreview(pixels);
-    BlitHookD3SidesIntoPreview(pixels);
-    BlitGrateD3SidesIntoPreview(pixels);
-    BlitSlimeD2SidesIntoPreview(pixels);
-    BlitWoodRingD2SidesIntoPreview(pixels);
-    BlitHookD2SidesIntoPreview(pixels);
-    BlitGrateD2SidesIntoPreview(pixels);
+    // BlitWoodRingD3SidesIntoPreview moved to the appropriate V17 depth stage.
+    // BlitHookD3SidesIntoPreview moved to the appropriate V17 depth stage.
+    // BlitGrateD3SidesIntoPreview moved to the appropriate V17 depth stage.
+    // BlitSlimeD2SidesIntoPreview moved to the appropriate V17 depth stage.
+    // BlitWoodRingD2SidesIntoPreview moved to the appropriate V17 depth stage.
+    // BlitHookD2SidesIntoPreview moved to the appropriate V17 depth stage.
+    // BlitGrateD2SidesIntoPreview moved to the appropriate V17 depth stage.
     BlitGrateF2SideCornerIntoPreview(pixels);
     BlitGrateF3SideCornerIntoPreview(pixels);
     BlitHookStyleD1SidesIntoPreview(pixels);
-    BlitManaclesD2SidesIntoPreview(pixels);
+    // BlitManaclesD2SidesIntoPreview moved to the appropriate V17 depth stage.
     BlitManaclesD1SidesIntoPreview(pixels);
     BlitGrateD1SidesIntoPreview(pixels);
     BlitSlimeD1SidesIntoPreview(pixels);
-    BlitWoodRingD3FrontIntoPreview(pixels);
-    BlitWoodRingD2FrontIntoPreview(pixels);
+    // BlitWoodRingD3FrontIntoPreview moved to the appropriate V17 depth stage.
+    // BlitWoodRingD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitWoodRingD1FrontIntoPreview(pixels);
 
     BlitOrnamentCornerFrontF2IntoPreview(pixels);
 
-    BlitManaclesD3FrontIntoPreview(pixels);
-    BlitManaclesD2FrontIntoPreview(pixels);
+    // BlitManaclesD3FrontIntoPreview moved to the appropriate V17 depth stage.
+    // BlitManaclesD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitManaclesD1FrontIntoPreview(pixels);
-    BlitSlimeD3FrontIntoPreview(pixels);
-    BlitSlimeD2FrontIntoPreview(pixels);
+    // BlitSlimeD3FrontIntoPreview moved to the appropriate V17 depth stage.
+    // BlitSlimeD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitSlimeD1FrontIntoPreview(pixels);
-    BlitHookD2FrontIntoPreview(pixels);
+    // BlitHookD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitHookD1FrontIntoPreview(pixels);
-    BlitGrateD3FrontIntoPreview(pixels);
-    BlitGrateD2FrontIntoPreview(pixels);
+    // BlitGrateD3FrontIntoPreview moved to the appropriate V17 depth stage.
+    // BlitGrateD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitGrateD1FrontIntoPreview(pixels);
     BlitEmptyTorchHolderF1IntoPreview(pixels);
 
     // Vi Altar side projections. Draw far-to-near.
-    BlitViAltarS3IntoPreview(pixels);
-    BlitViAltarS2IntoPreview(pixels);
+    // BlitViAltarS3IntoPreview moved to the appropriate V17 depth stage.
+    // BlitViAltarS2IntoPreview moved to the appropriate V17 depth stage.
     BlitViAltarS1IntoPreview(pixels);
 
     // Floor items occupy the final viewport feature layer. In particular,
@@ -23262,6 +23329,18 @@ private static void HandleGameViewPointerDown(
     int side = left ? -1 : 1;
     int diagonalFloorX = previewX + fx + rx * side;
     int diagonalFloorY = previewY + fy + ry * side;
+    // A solid front F2 wall closes the view when the nearer center F1
+    // square is open. Do not let the lateral-corner ornament pass draw
+    // through that wall just because the diagonal F1 square is floor.
+    // When front F1 itself is a wall, preserve the independently verified
+    // near-corner edge treatment (V17 exposed border strip).
+    int frontF1X = previewX + fx;
+    int frontF1Y = previewY + fy;
+    int frontF2X = previewX + 2 * fx;
+    int frontF2Y = previewY + 2 * fy;
+    if (PreviewTileIsOpen(frontF1X, frontF1Y)
+        && PreviewTileIsWall(frontF2X, frontF2Y))
+      return false;
     // The front-facing wall at the far end of the diagonal open cell.
     if (wallX != diagonalFloorX + fx
         || wallY != diagonalFloorY + fy
@@ -26408,6 +26487,23 @@ private static void HandleGameViewPointerDown(
       {
         overrideKey = "OrnamentProjection:Hook:S1:Left";
         projectionSuffix = " / S1 Left";
+        return true;
+      }
+    }
+
+    // Hook S2 also requires independent left/right calibration. A Hook
+    // stored on the corridor square's East boundary while facing South
+    // belongs to the LEFT wall. The previously shared Hook:S2 key was
+    // calibrated for the right side (X=152), incorrectly moving a valid
+    // left-side Hook onto the right wall. Preserve the right-side key.
+    if (IsHookOrnament(ornament) && slot == "S2")
+    {
+      string leftFace = FacingName(TurnPreviewFacingLeft(previewFacing));
+      if (string.Equals(mapFace, leftFace,
+          System.StringComparison.OrdinalIgnoreCase))
+      {
+        overrideKey = "OrnamentProjection:Hook:S2:Left";
+        projectionSuffix = " / S2 Left";
         return true;
       }
     }
