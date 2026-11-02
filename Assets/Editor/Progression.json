@@ -761,5 +761,52 @@
       "Do not use brackets, slashes, or redundant words like Front in the compact front Grate label.",
       "Direction abbreviations remain N, E, S, W."
     ]
+  },
+  "session_start_map_loading_rule_20261102": {
+    "date": "2026-11-02",
+    "status": "User confirmed",
+    "trigger": "At each new session, user supplies the current Progression.json or ZIP and asks for yesterday's summary.",
+    "mandatory_workflow": [
+      "Read the provided Progression.json completely before reporting the previous day's progress.",
+      "Identify the latest dated, confirmed working checkpoint, active level, last player X/Y, and facing; do not use an older baseline when newer confirmed information exists.",
+      "Read the corresponding DungeonMaster_LevelXX.json for that active level before reporting any map geometry, reachable direction, V17 wall geometry, or ornament visibility.",
+      "Verify tile_grid indexing: tile_grid[Y][X], X increases right, Y increases down, and normalize facing N/E/S/W correctly.",
+      "Explicitly distinguish JSON-confirmed floor/wall geometry from any inferred or unverified feature/visibility.",
+      "If the necessary level JSON is not available, locate the exact file in available user files, otherwise request it; never guess tile accessibility.",
+      "In the session-start summary, display the active level, last checkpoint viewpoint, last confirmed task, and next actions.",
+      "Use the latest confirmed instruction when checkpoints conflict; keep older historical entries intact.",
+      "When a new viewpoint is confirmed, update the current active map viewpoint in Progression.json rather than leaving the former viewpoint as default."
+    ],
+    "current_active_map": {
+      "level": 0,
+      "player_x": 12,
+      "player_y": 14,
+      "facing": "W",
+      "status": "Current viewpoint requested by user; geometry checked against DungeonMaster_Level00.json",
+      "map_file": "DungeonMaster_Level00.json",
+      "geometry_confirmed": {
+        "F0": {
+          "x": 12,
+          "y": 14,
+          "tile_value": 32,
+          "type": "floor"
+        },
+        "F1": {
+          "x": 11,
+          "y": 14,
+          "tile_value": 32,
+          "type": "floor",
+          "can_step_west": true
+        },
+        "F2": {
+          "x": 10,
+          "y": 14,
+          "tile_value": 7,
+          "type": "wall"
+        }
+      },
+      "note": "The earlier claim that (11,14) was a wall was incorrect; the original JSON shows a floor. Do not copy or rely on that incorrect diagram."
+    },
+    "verification_scope": "Geometry only; no object visibility or gameplay condition certified solely by tile values."
   }
 }
