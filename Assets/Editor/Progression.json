@@ -808,5 +808,51 @@
       "note": "The earlier claim that (11,14) was a wall was incorrect; the original JSON shows a floor. Do not copy or rely on that incorrect diagram."
     },
     "verification_scope": "Geometry only; no object visibility or gameplay condition certified solely by tile values."
+  },
+  "csbwin_mechanics_research_20261102": {
+    "date": "2026-11-02",
+    "status": "Permanent technical reference. Do not edit the reports. Do not implement these mechanics in this change.",
+    "folder": "C:\\Unity\\DM\\Research_Results\\",
+    "visual_authority": "The original Atari Dungeon Master remains the authoritative visual reference.",
+    "preserve": "Preserve all existing verified Unity functionality.",
+    "consult_before_implementing": [
+      "game timing",
+      "lighting",
+      "food",
+      "water",
+      "mana",
+      "health",
+      "stamina"
+    ],
+    "reports": [
+      {
+        "file": "00_Research_Index.md",
+        "role": "Index, source identification, and outstanding questions"
+      },
+      {
+        "file": "01_Game_Time_and_Timers.md",
+        "role": "Ticks, speed table, sleep, pause, and movement timing"
+      },
+      {
+        "file": "02_Lighting_and_Darkness.md",
+        "role": "Torches, light and darkness spells, palette thresholds"
+      },
+      {
+        "file": "03_Food_and_Water.md",
+        "role": "Consumption algorithm and FoodValue table"
+      },
+      {
+        "file": "04_Mana_Regeneration.md",
+        "role": "Wisdom, mastery, random112, and stamina cost"
+      },
+      {
+        "file": "05_Health_and_Stamina.md",
+        "role": "Health regen, stamina recovery, load, and step cooldown"
+      },
+      {
+        "file": "06_Other_Time_Dependent_Mechanics.md",
+        "role": "Poison, shields, Freeze Life, missiles, and monster timers"
+      }
+    ]
   }
 }
