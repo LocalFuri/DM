@@ -24473,8 +24473,11 @@ private static void HandleGameViewPointerDown(
           ChampionMirrorPlacement candidate = previewChampionMirrors[i];
           if (candidate == null || string.IsNullOrEmpty(candidate.champion)
               || candidate.x != wallX || candidate.y != wallY
-              || !IsVisibleSideWallFace(candidate.wall, requiredFace,
-                  candidate.x, candidate.y)
+              // S1/S2/S3 side artwork belongs only to the physical side
+              // face. Perpendicular east/west front faces use the separate
+              // corner-F2 projection, never an additional S2 image.
+              || !string.Equals(candidate.wall, requiredFace,
+                  System.StringComparison.OrdinalIgnoreCase)
               || IsPreviewChampionTaken(candidate.champion)
               || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
                   "ChampionMirror", candidate.x, candidate.y, candidate.wall))
@@ -28197,8 +28200,10 @@ private static void HandleGameViewPointerDown(
           ChampionMirrorPlacement candidate = previewChampionMirrors[i];
           if (candidate == null || string.IsNullOrEmpty(candidate.champion)
               || candidate.x != wallX || candidate.y != wallY
-              || !IsVisibleSideWallFace(candidate.wall, wallFace,
-                  candidate.x, candidate.y)
+              // Match the S1/S2/S3 painter: a perpendicular front
+              // face must not create a second side mirror ViewEdit row.
+              || !string.Equals(candidate.wall, wallFace,
+                  System.StringComparison.OrdinalIgnoreCase)
               || IsPreviewChampionTaken(candidate.champion))
             continue;
           if (!IsSharedWallFeatureVisible(candidate.x, candidate.y,
