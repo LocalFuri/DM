@@ -1458,6 +1458,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
   // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
   // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
+  // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Right|202|116|true|639292495819863123
   // REF OrnamentProjection:ChampionMirror:F1|80|95|false|639291298300178415
   // REF OrnamentProjection:ChampionMirror:S1:Left|41|101|false|639291362147754849
   // REF OrnamentProjection:ChampionMirror:S1:Right|167|101|true|639291359095917323
@@ -1473,6 +1474,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Hook:S1|160|109|true|639271634293923485
   // REF OrnamentProjection:Hook:S1:Left|48|107|false
   // REF OrnamentProjection:Hook:S2|152|117|true|639291413858377486
+  // REF OrnamentProjection:Hook:S2:Left|66|117|false|639292496524583345
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
   // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
