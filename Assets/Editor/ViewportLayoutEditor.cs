@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -23157,6 +23157,15 @@ private static void HandleGameViewPointerDown(
     int dy = wallY - previewY;
     int depth = dx * fx + dy * fy;
     int lane = dx * rx + dy * ry;
+    // A D1 side-wall artwork slot represents the wall face facing INTO the
+    // player's corridor.  A perpendicular end face (facing back toward the
+    // player) is not that surface: a neighbouring open square must not make
+    // it visible through the corner.  Leave separately resolved F2 corner
+    // projections and the original V17 wall drawing unchanged.
+    if (depth == 1 && (lane == -1 || lane == 1)
+        && string.Equals(physicalFace, OppositeFacingName(previewFacing),
+            System.StringComparison.OrdinalIgnoreCase))
+      return false;
     string family = null;
     // The end face of an immediately adjacent corner wall belongs to the
     // drawn D1 side wall strip, even though the feature artwork is front-on.

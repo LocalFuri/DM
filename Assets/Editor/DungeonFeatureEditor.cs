@@ -1498,6 +1498,54 @@ public class DungeonFeatureEditor : EditorWindow
         CellSize,
         CellSize);
     EditorGUI.DrawRect(cell, new Color(0f, 1f, 1f, 1f));
+
+    // The dark arrow is centered on the cyan player tile and follows the
+    // same selectedFacing synchronized with ViewEdit. No map data is changed.
+    Vector2[] northArrow =
+    {
+      new Vector2(-0.12f,  0.30f),
+      new Vector2( 0.12f,  0.30f),
+      new Vector2( 0.12f, -0.06f),
+      new Vector2( 0.30f, -0.06f),
+      new Vector2( 0.00f, -0.38f),
+      new Vector2(-0.30f, -0.06f),
+      new Vector2(-0.12f, -0.06f)
+    };
+
+    Vector3[] vertices = new Vector3[northArrow.Length];
+    for (int i = 0; i < northArrow.Length; i++)
+    {
+      float x = northArrow[i].x;
+      float y = northArrow[i].y;
+      float rotatedX = x;
+      float rotatedY = y;
+      switch (selectedFacing)
+      {
+        case DungeonFacing.East:
+          rotatedX = -y;
+          rotatedY = x;
+          break;
+        case DungeonFacing.South:
+          rotatedX = -x;
+          rotatedY = -y;
+          break;
+        case DungeonFacing.West:
+          rotatedX = y;
+          rotatedY = -x;
+          break;
+      }
+      vertices[i] = new Vector3(
+          cell.center.x + rotatedX * CellSize,
+          cell.center.y + rotatedY * CellSize,
+          0f);
+    }
+
+    Handles.BeginGUI();
+    Color previousColor = Handles.color;
+    Handles.color = new Color(0.05f, 0.15f, 0.20f, 1f);
+    Handles.DrawAAConvexPolygon(vertices);
+    Handles.color = previousColor;
+    Handles.EndGUI();
   }
 
   private void DrawChampionMirrorMarkers(Rect mapRect)
