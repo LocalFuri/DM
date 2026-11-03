@@ -3427,6 +3427,21 @@ public class ViewportLayoutEditor : EditorWindow
             || piece.Name == "LeftS3"))
       return false;
 
+    if (showOnlyWallsNeededForCurrentPose && showWallsActivFilter
+        && IsViewport17WallAuthorityActive()
+        && (IsNormalWallPiece(piece) || piece.Name == "LeftS3"
+            || piece.Name == "RightS3"))
+    {
+      // The compositor is the sole authority for active V17 wall rows.
+      // An override or a sticky editor card may never resurrect a non-blitted
+      // wall. The explicit All Walls mode is the inspection escape hatch.
+      string drawnFamily = GetViewport17NormalWallFamily(piece);
+      if (string.IsNullOrEmpty(drawnFamily))
+        drawnFamily = piece.Name;
+      if (!WasV17WallBlittedOnScreen(drawnFamily))
+        return true;
+    }
+
     if (showOnlyWallsNeededForCurrentPose
         && (IsWallEditorPiece(piece) || IsBlackDoorEditorPiece(piece)))
     {
@@ -3987,6 +4002,14 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
+    if (showOnlyWallsNeededForCurrentPose && showWallsActivFilter
+        && IsViewport17WallAuthorityActive())
+    {
+      string family = GetViewport17NormalWallFamily(piece);
+      if (string.IsNullOrEmpty(family))
+        family = piece.Name;
+      return resolvedState.Enabled && WasV17WallBlittedOnScreen(family);
+    }
     return resolvedState.Enabled;
   }
 
@@ -20007,6 +20030,38 @@ private static void HandleGameViewPointerDown(
     return false;
   }
 
+  // Global V17 ViewEdit policy: a wall card in Active Walls mode must
+  // correspond to an on-screen wall blit, not to a selection, checkbox,
+  // saved override, or a blit entirely outside the dungeon viewport.
+  private bool WasV17WallBlittedOnScreen(string family)
+  {
+    if (string.IsNullOrEmpty(family))
+      return false;
+    string prefix = family == "FrontF3" ? "FrontF3 " : family + "  ";
+    for (int i = 0; i < v17DrawnWalls.Count; i++)
+    {
+      string entry = v17DrawnWalls[i];
+      if (!entry.StartsWith(prefix, System.StringComparison.Ordinal))
+        continue;
+      int xAt = entry.IndexOf(" X=", System.StringComparison.Ordinal);
+      int yAt = entry.IndexOf(" Y=", System.StringComparison.Ordinal);
+      int wAt = entry.IndexOf(" W=", System.StringComparison.Ordinal);
+      if (xAt < 0 || yAt < 0 || wAt < 0)
+        continue;
+      int x, y, width;
+      if (!int.TryParse(entry.Substring(xAt + 3, yAt - xAt - 3), out x)
+          || !int.TryParse(entry.Substring(yAt + 3, wAt - yAt - 3), out y)
+          || !int.TryParse(entry.Substring(wAt + 3), out width))
+        continue;
+      // A wall may have a valid draw command yet contribute no screen pixels.
+      // The dungeon art occupies X=0..223 and Y=33..168.
+      if (width > 0 && x < DungeonViewportWidth && x + width > 0
+          && y < 169 && y + 49 > 33)
+        return true;
+    }
+    return false;
+  }
+
   private void DrawV17ActualWallRows()
   {
     if (!IsViewport17WallAuthorityActive())
@@ -20014,16 +20069,7 @@ private static void HandleGameViewPointerDown(
     // ViewEdit must list only images that the V17 compositor actually blitted
     // for this pose. The preview switch alone does not make a wall visible.
     // Reuse the compositor's recorded draw, not a second geometry decision.
-    bool frontF3EdgeDrawn = false;
-    for (int i = 0; i < v17DrawnWalls.Count; i++)
-    {
-      if (v17DrawnWalls[i].StartsWith(
-              "FrontF3 D3 edge crop  ", System.StringComparison.Ordinal))
-      {
-        frontF3EdgeDrawn = true;
-        break;
-      }
-    }
+    bool frontF3EdgeDrawn = WasV17WallBlittedOnScreen("FrontF3 D3 edge crop");
     if (!frontF3EdgeDrawn)
       return;
     GUILayout.Space(2f);
