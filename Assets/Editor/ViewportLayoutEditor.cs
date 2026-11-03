@@ -1093,6 +1093,36 @@ public class ViewportLayoutEditor : EditorWindow
   private bool previewMiniMapMuted;
 
   [System.Serializable]
+  private sealed class WallInscriptionMapRoot
+  {
+    public WallInscriptionEntry[] wall_inscriptions;
+  }
+
+  [System.Serializable]
+  private sealed class WallInscriptionSourceLocation
+  {
+    public int x;
+    public int y;
+    public string dir;
+  }
+
+  [System.Serializable]
+  private sealed class WallInscriptionEntry
+  {
+    public int x;
+    public int y;
+    public string dir;
+    public int Visible;
+    public int TextDataWordOffset;
+    public string Text;
+    public WallInscriptionSourceLocation SourceMapLocation;
+  }
+
+  // Inscription source ownership is the original DAT TextString wall tile.
+  // User-verified adjacent corridor coordinates remain the public ViewEdit label.
+  private WallInscriptionEntry[] previewWallInscriptions = new WallInscriptionEntry[0];
+  private const string InscriptionFontPath = "Assets/Art/Fonts/Inscription_Font_288x8.png";
+
   private sealed class ChampionMirrorMapRoot
   {
     public ChampionMirrorPlacement[] championMirrors;
@@ -1488,7 +1518,6 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:WoodRing:F3|105|117|false
   // REF OrnamentProjection:WoodRing:S1|49|110|false
   // REF OrnamentProjection:WoodRing:S1:Right|161|108|true
-  // REF WallMirror_LeftS3_L0_X12_Y9_F3|1|57|false|639293330736016909
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
@@ -17180,6 +17209,12 @@ private static void HandleGameViewPointerDown(
       LoadPreviewDoorTilesFromMap(previewMiniMap);
       previewDungeonLevel = level;
 
+      WallInscriptionMapRoot inscriptionRoot =
+          JsonUtility.FromJson<WallInscriptionMapRoot>(json);
+      previewWallInscriptions = inscriptionRoot != null
+          && inscriptionRoot.wall_inscriptions != null
+          ? inscriptionRoot.wall_inscriptions : new WallInscriptionEntry[0];
+
       ChampionMirrorMapRoot mirrorRoot =
           JsonUtility.FromJson<ChampionMirrorMapRoot>(json);
       previewChampionMirrors = LoadChampionMirrorsForPreviewLevel(
@@ -21310,6 +21345,7 @@ private static void HandleGameViewPointerDown(
     // BlitGrateD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitGrateD1FrontIntoPreview(pixels);
     BlitEmptyTorchHolderF1IntoPreview(pixels);
+    BlitWallInscriptionsIntoPreview(pixels);
 
     // Vi Altar side projections. Draw far-to-near.
     // BlitViAltarS3IntoPreview moved to the appropriate V17 depth stage.
@@ -28918,6 +28954,177 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Wall inscriptions are rendered only on a V17-authorized front face.
+  // Text containing unverified DAT control codes remains data-only; it is not
+  // silently changed into an arbitrary replacement glyph.
+  private bool TryGetInscriptionFrontProjection(
+      WallInscriptionEntry inscription, out int depth)
+  {
+    depth = 0;
+    if (inscription == null || inscription.Visible == 0
+        || string.IsNullOrEmpty(inscription.Text)
+        || inscription.Text.IndexOf('<') >= 0)
+      return false;
+
+    int wallX = inscription.SourceMapLocation != null
+        ? inscription.SourceMapLocation.x : inscription.x;
+    int wallY = inscription.SourceMapLocation != null
+        ? inscription.SourceMapLocation.y : inscription.y;
+    string face = inscription.SourceMapLocation != null
+        ? inscription.SourceMapLocation.dir : inscription.dir;
+    string physicalFace = face == "N" ? "North"
+        : face == "S" ? "South" : face == "E" ? "East"
+        : face == "W" ? "West" : face;
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    int dx = wallX - previewX, dy = wallY - previewY;
+    depth = dx * fx + dy * fy;
+    if (depth < 1 || depth > 3 || dx * rx + dy * ry != 0
+        || !string.Equals(physicalFace, OppositeFacingName(previewFacing),
+            System.StringComparison.OrdinalIgnoreCase))
+      return false;
+    return IsSharedWallFeatureVisible(wallX, wallY, physicalFace, true);
+  }
+
+  private static string InscriptionProjectionKey(WallInscriptionEntry entry, int depth)
+  {
+    return "Inscription:" + entry.TextDataWordOffset + ":F" + depth;
+  }
+
+  private static void GetInscriptionDefaultPosition(
+      WallInscriptionEntry entry, int depth, out int x, out int y, out int scale)
+  {
+    // First-placement defaults are intentionally adjustable, not calibrated
+    // pixel-exact originals. Nearest-neighbour character raster only.
+    scale = depth == 1 ? 1 : depth;
+    string[] lines = entry.Text.Split('\n');
+    int maxLength = 0;
+    for (int i = 0; i < lines.Length; i++)
+      maxLength = System.Math.Max(maxLength, lines[i].Length);
+    int width = (maxLength * 8 + scale - 1) / scale;
+    x = (DungeonViewportWidth - width) / 2;
+    y = depth == 1 ? 92 : depth == 2 ? 106 : 112;
+  }
+
+  private void BlitWallInscriptionsIntoPreview(Color32[] pixels)
+  {
+    if (previewWallInscriptions == null || previewWallInscriptions.Length == 0)
+      return;
+    Texture2D alphabet = null;
+    Color32[] glyphs = null;
+    foreach (WallInscriptionEntry entry in previewWallInscriptions)
+    {
+      if (!TryGetInscriptionFrontProjection(entry, out int depth))
+        continue;
+      string key = InscriptionProjectionKey(entry, depth);
+      if (!IsPreviewFeatureEnabled(key)) continue;
+      if (alphabet == null)
+      {
+        alphabet = AssetDatabase.LoadAssetAtPath<Texture2D>(InscriptionFontPath);
+        if (alphabet == null || alphabet.width != 288 || alphabet.height != 8
+            || !alphabet.isReadable)
+        {
+          Debug.LogError("WALL INSCRIPTION: missing/unreadable 288x8 font: "
+              + InscriptionFontPath + ". Enable Read/Write; Point filtering; no compression.");
+          return;
+        }
+        glyphs = alphabet.GetPixels32();
+      }
+      GetInscriptionDefaultPosition(entry, depth,
+          out int x, out int y, out int scale);
+      bool mirror = false;
+      ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+      string[] lines = entry.Text.ToUpperInvariant().Split('\n');
+      for (int row = 0; row < lines.Length; row++)
+      {
+        string line = lines[row];
+        for (int n = 0; n < line.Length; n++)
+        {
+          char letter = line[n];
+          if (letter == ' ') continue;
+          if (letter < 'A' || letter > 'Z')
+          {
+            Debug.LogError("WALL INSCRIPTION: unsupported glyph '" + letter
+                + "' at offset " + entry.TextDataWordOffset);
+            continue;
+          }
+          int letterIndex = letter - 'A';
+          int w = (8 + scale - 1) / scale;
+          for (int yy = 0; yy < w; yy++)
+            for (int xx = 0; xx < w; xx++)
+            {
+              int tx = x + n * w + xx;
+              int ty = y - row * w + yy;
+              if (tx < 0 || tx >= DungeonViewportWidth || ty < 0
+                  || ty >= PreviewHeight) continue;
+              Color32 c = glyphs[(yy * scale) * alphabet.width
+                  + letterIndex * 8 + xx * scale];
+              if (c.a > 0)
+                pixels[ty * PreviewWidth + tx] = c;
+            }
+        }
+      }
+    }
+  }
+
+  private void DrawWallInscriptionRows()
+  {
+    if (previewWallInscriptions == null) return;
+    foreach (WallInscriptionEntry entry in previewWallInscriptions)
+    {
+      if (!TryGetInscriptionFrontProjection(entry, out int depth)) continue;
+      string key = InscriptionProjectionKey(entry, depth);
+      GetInscriptionDefaultPosition(entry, depth,
+          out int baseX, out int baseY, out int ignoredScale);
+      bool baseMirror = false;
+      ApplyAcceptedOrnamentReference(key, ref baseX, ref baseY, ref baseMirror);
+      int x = baseX, y = baseY;
+      bool mirror = baseMirror;
+      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+      EditorGUILayout.BeginHorizontal();
+      GUIStyle green = new GUIStyle(EditorStyles.boldLabel);
+      green.normal.textColor = Color.green;
+      string title = entry.Text.Replace('\n', ' ');
+      if (title.Length > 27) title = title.Substring(0, 27) + "...";
+      GUILayout.Label("Inscription " + title + " [" + entry.x + ","
+          + entry.y + "] (" + entry.dir + ") / F" + depth,
+          green, GUILayout.Width(375f));
+      bool enabled = IsPreviewFeatureEnabled(key);
+      bool newEnabled = EditorGUILayout.ToggleLeft("Set", enabled, GUILayout.Width(45f));
+      GUILayout.Label("X", GUILayout.Width(15f));
+      int newX = EditorGUILayout.IntField(x, GUILayout.Width(42f));
+      GUILayout.Label("Y", GUILayout.Width(15f));
+      int newY = EditorGUILayout.IntField(y, GUILayout.Width(42f));
+      bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+      NoteContentRight();
+      EditorGUILayout.EndHorizontal();
+      bool changed = false;
+      if (enabled != newEnabled)
+      {
+        SetPreviewFeatureEnabled(key, newEnabled);
+        changed = true;
+      }
+      if (newX != x || newY != y)
+      {
+        previewFeaturePositionOverrides[key] = new Vector2Int(newX, newY);
+        changed = true;
+      }
+      if (apply && SaveAcceptedOrnamentReference(key, newX, newY, false))
+      {
+        previewFeaturePositionOverrides.Remove(key);
+        previewFeatureMirrorOverrides.Remove(key);
+        changed = true;
+      }
+      if (changed)
+      {
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
+    }
+  }
+
   private void DrawCurrentPoseFeatureRows()
   {
     EnsurePreviewMiniMapLoaded();
@@ -28925,6 +29132,7 @@ private static void HandleGameViewPointerDown(
       return;
 
     DrawGenericThrowViewEditControls();
+    DrawWallInscriptionRows();
 
     // Loose-item calibrations from the original Level 0 DUNGEON.DAT.
     DrawFloorItemRows();
