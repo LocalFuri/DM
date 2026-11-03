@@ -854,5 +854,111 @@
         "role": "Poison, shields, Freeze Life, missiles, and monster timers"
       }
     ]
+  },
+  "altar_of_beer_implementation_handoff_20261103": {
+    "document_type": "Dungeon Master Unity implementation handoff",
+    "created_date": "2026-11-03",
+    "feature": "Altar of Beer",
+    "status": "Design decisions confirmed; Unity implementation not yet performed",
+    "integration": {
+      "existing_project_progression": "C:\\Unity\\DM\\Assets\\Editor\\Progression.json",
+      "instruction": "At home, provide this JSON alongside current Progression.json and project code to implement. Do not overwrite Progression.json with this standalone file. Newest confirmed decisions take precedence.",
+      "preserve": [
+        "Generic V17 geometry, clipping, occlusion and direction-dependent visibility sourced from DungeonMaster_LevelXX.json",
+        "Existing altar interactions, inventory/cursor/pickup, champion death/resurrection and overload movement machinery where applicable",
+        "No fabricated sprite substitutions or silent missing-asset fallbacks",
+        "Existing file timestamps for unchanged files and Europe/Berlin timestamps for changed files"
+      ]
+    },
+    "naming": {
+      "display_name": "Altar of Beer",
+      "replaces_display_name": "Altar of Vi",
+      "notes": "Update project-facing labels consistently. Keep compatibility with existing underlying identifiers/data until inspected; avoid unsafe blind replacements."
+    },
+    "alcove_interaction": {
+      "on_click": "If production is available and no glass is already in the alcove, trigger bottle-opening sound, show empty glass inside altar alcove, then fill magically.",
+      "glass_position": "Inside altar alcove, not automatically attached to mouse cursor",
+      "filling": {
+        "animation": "Six-stage pixel-art filling sprite sheet, same frame dimensions and precisely identical glass silhouette/position; only beer and foam change.",
+        "target_duration_seconds": 3,
+        "frames": [
+          "empty",
+          "20%",
+          "40%",
+          "60%",
+          "80%",
+          "full with foam"
+        ],
+        "pickup": "Only the completed full glass may be picked up, via existing cursor/inventory handling",
+        "duplication": "Maximum one beer glass in alcove at a time; no repeated click duplication"
+      },
+      "quota": "Per production cycle, maximum number of filled and picked-up beers equals current party size (normally 4); quota counts collected glasses, not clicks.",
+      "cooldown": {
+        "duration_minutes": 15,
+        "clock": "Dungeon Master in-game time, not wall clock",
+        "start_event": "When last permitted beer glass is collected",
+        "after_expiry": "Next production cycle becomes available",
+        "persistence": "Save altar cycle and cooldown state; each altar independent",
+        "party_size_changes": "Exact handling of party-size changes during a cycle to be defined before implementation"
+      }
+    },
+    "drinking": {
+      "effect_every_glass": "Set consuming champion WATER to full capacity and consume the glass",
+      "per_champion_counter": "Track beer count per champion for the relevant cooldown/drinking window; exact counter reset semantics at cycle boundary to verify in code",
+      "beer_1": {
+        "movement": "normal",
+        "status_line_template": "{ChampionName} is feeling much stronger than before!",
+        "example": "Wuuf is feeling much stronger than before!",
+        "other_stat_bonus": "No separate strength increase specified"
+      },
+      "beer_2": {
+        "movement_stats_color": "yellow",
+        "movement_effect": "Same real movement penalty/handling as overloading; retain distinct drunk state so discarding items does not cure it"
+      },
+      "beer_3": {
+        "movement_stats_color": "red",
+        "movement_effect": "Severe drunkenness; exact additional movement penalty not yet specified"
+      },
+      "beer_4": {
+        "effect": "Champion dies immediately via the existing standard enemy-like champion death flow",
+        "status_line_template": "{ChampionName} died due to drinking problems!",
+        "example": "Wuuf died due to drinking problems!",
+        "resurrection": "While the relevant altar's 15-minute cooldown is ACTIVE, beer-death champion CANNOT be revived. AFTER this cooldown expires, champion CAN be revived using normal resurrection mechanism. Other death causes unaffected. This is the corrected rule superseding the previously discussed inverse."
+      }
+    },
+    "art": {
+      "empty_glass": "User approved generated glass image intended for altar world/alcove, NOT the 16x16 inventory icon; source available in earlier chat or user's saved assets",
+      "prototype_filling_sheet": "BeerGlass_Filling_6Frames_48x56.png, prototype only; generated frames do not preserve the identical glass silhouette, so must be corrected before final pixel-exact implementation",
+      "suggested_assets_folder": "Assets/Art/Items/Beer/",
+      "final_art_rule": "All six frames identical canvas size, exact registration, transparent backgrounds, only contents/foam change; use point filtering/no compression"
+    },
+    "audio": {
+      "accepted_filling": "Beer Pouring Into Glass 170427_1449 (real recorded pouring from Pixabay, selected and approved by user)",
+      "accepted_drinking": "User found convincing drinking sound and will trim with Audacity; exact final file name is not known yet",
+      "accepted_or_candidate_opening": "User reports all assets obtained, including realistic bottle-opening/activation sound; exact chosen filename and recording not yet specified",
+      "sequence": [
+        "Mouse click altar -> beer bottle opening sound",
+        "Glass appears and 3-second pouring/filling animation + approved pouring recording",
+        "When champion consumes beer -> selected drinking recording"
+      ],
+      "folder_suggestion": "Assets/Audio/Beer/",
+      "note": "Do not use earlier synthetic effects; user rejected them as unrealistic. Inspect actual filenames before wiring references. Check recording licenses for shipped game."
+    },
+    "implementation_steps": [
+      "Import verified final sprites and actual audio files into Unity; ensure point-filtering and suitable WAV settings.",
+      "Rename altar UI label to Altar of Beer, retaining existing data compatibility.",
+      "Integrate alcove click, empty glass display, opening cue, six-frame filling animation and pouring cue into existing wall ornament/altar rendering via V17 rules.",
+      "Enable pickup only once full; create beer item and consume via existing inventory system.",
+      "Track per-altar production quotas/cooldown on game-time clock and persist state.",
+      "Track per-champion drinks; apply water refill, status line, yellow/red overloaded-style movement cues, fourth-beer death.",
+      "Block revival of beer-death champions only during corresponding altar cooldown; unblock once expired.",
+      "Test champion counts 1-4, quota edge cases, movement behavior, death/resurrection boundary, save/load, visibility and audio timing."
+    ],
+    "not_yet_decided": [
+      "Exact beer-count reset time and behavior if someone drinks earlier-produced beers across cycles",
+      "Additional mechanical penalty on third beer beyond red movement stats",
+      "Party-size changes during an altar production cycle",
+      "Exact filenames and durations of final opening and drinking sounds"
+    ]
   }
 }
