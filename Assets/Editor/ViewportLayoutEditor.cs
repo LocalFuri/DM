@@ -1458,6 +1458,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
   // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
   // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
+  // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Left|12|115|false|639293307223336439
   // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Right|202|116|true|639292495819863123
   // REF OrnamentProjection:ChampionMirror:F1|80|95|false|639291298300178415
   // REF OrnamentProjection:ChampionMirror:S1:Left|41|101|false|639291362147754849
@@ -1703,7 +1704,12 @@ public class ViewportLayoutEditor : EditorWindow
       "OrnamentProjection:ChampionMirror:S2:Left",
       "OrnamentProjection:ChampionMirror:S2:Right",
       "OrnamentProjection:ChampionMirror:S3:Left",
-      "OrnamentProjection:ChampionMirror:S3:Right"
+      "OrnamentProjection:ChampionMirror:S3:Right",
+      // Extended F3 lanes use the same Apply/EditorPrefs backup mechanism.
+      // Include both sides so replacing this C# file cannot silently lose
+      // their applied X/Y/Mirror values.
+      "OrnamentProjection:ChampionMirror:ExtendedLaneF3:Left",
+      "OrnamentProjection:ChampionMirror:ExtendedLaneF3:Right"
     };
     for (int i = 0; i < mirrorProjectionKeys.Length; ++i)
     {
@@ -24734,10 +24740,11 @@ private static void HandleGameViewPointerDown(
         ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
         ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
         BlitWallOrnamentIntoPreview(pixels, artwork, x, y, flip);
-        Debug.Log("EXTENDED V17 MIRROR: champion=" + m.champion
+        Debug.Log("<color=#FFA500>EXTENDED V17 MIRROR: champion=" + m.champion
             + " wall=(" + wallX + "," + wallY + ") face=" + face
             + " side=" + (left ? "Left" : "Right")
-            + " F3 artwork=" + artwork.width + "x" + artwork.height);
+            + " F3 artwork=" + artwork.width + "x" + artwork.height
+            + "</color>");
         break;
       }
     }
