@@ -1465,7 +1465,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:ChampionMirror:S1:Right|167|101|true|639291359095917323
   // REF OrnamentProjection:ChampionMirror:S2:Left|66|110|false|639291379156807561
   // REF OrnamentProjection:ChampionMirror:S2:Right|148|110|true|639291389334906649
-  // REF OrnamentProjection:ChampionMirror:S3:Left|84|116|false|639293310397231011
+  // REF OrnamentProjection:ChampionMirror:S3:Left|84|116|false|639293326829241417
   // REF OrnamentProjection:ChampionMirror:S3:Right|138|116|true|639291392277477819
   // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
   // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274252203846657
@@ -1488,6 +1488,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:WoodRing:F3|105|117|false
   // REF OrnamentProjection:WoodRing:S1|49|110|false
   // REF OrnamentProjection:WoodRing:S1:Right|161|108|true
+  // REF WallMirror_LeftS3_L0_X12_Y9_F3|1|57|false|639293330736016909
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
@@ -1747,16 +1748,27 @@ public class ViewportLayoutEditor : EditorWindow
         + "_F" + (int)previewFacing;
   }
 
-  private bool TryGetAppliedLeftS3Mirror(out bool mirror)
+  private bool TryGetAppliedLeftS3Calibration(
+      out int x, out int displayY, out bool mirror)
   {
+    x = 0;
+    displayY = 57;
     mirror = false;
     EnsureAcceptedOrnamentReferencesLoaded();
     if (!cachedAcceptedOrnamentReferences.TryGetValue(
             GetLeftS3MirrorCalibrationKey(),
             out AcceptedOrnamentReference reference))
       return false;
+    x = reference.x;
+    displayY = reference.y;
     mirror = reference.mirror;
     return true;
+  }
+
+  private bool TryGetAppliedLeftS3Mirror(out bool mirror)
+  {
+    return TryGetAppliedLeftS3Calibration(
+        out int ignoredX, out int ignoredY, out mirror);
   }
 
   private void ApplyAcceptedOrnamentReference(
@@ -5046,18 +5058,45 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (piece.Name == "LeftS3")
     {
-      // Mirrors are normally only live ViewEdit tests. Explicit Apply accepts
-      // this one pose's choice and writes it into the source-backed references.
-      bool leftS3MirrorPending =
-          previewMirrorOverrideByPiece.ContainsKey(piece);
-      using (new EditorGUI.DisabledScope(!leftS3MirrorPending))
+      // The same Apply action must persist X/Y and Mirror. X/Y use the
+      // displayed top-down coordinate system; the compositor converts Y.
+      bool leftS3Pending =
+          previewMirrorOverrideByPiece.ContainsKey(piece)
+          || previewPositionOverrideByPiece.ContainsKey(piece);
+      using (new EditorGUI.DisabledScope(!leftS3Pending))
       {
         if (GUILayout.Button("Apply", GUILayout.Width(52f)))
         {
-          if (SaveAcceptedOrnamentReference(
-                  GetLeftS3MirrorCalibrationKey(), 0, 57, mirrorAfter))
+          int saveX = 0;
+          int saveY = 57;
+          bool saveMirror = mirrorAfter;
+          if (TryGetAppliedLeftS3Calibration(
+                  out int appliedX, out int appliedY, out bool appliedMirror))
           {
+            saveX = appliedX;
+            saveY = appliedY;
+          }
+          if (TryGetResolvedNormalWallState(
+                  piece, out ResolvedNormalWallState saveState))
+          {
+            saveX = saveState.X;
+            saveY = UnityYToDisplayY(
+                saveState.Y, GetPieceHeightForEditorY(piece));
+          }
+          if (previewPositionOverrideByPiece.TryGetValue(
+                  piece, out Vector2Int editedPosition))
+          {
+            saveX = editedPosition.x;
+            saveY = UnityYToDisplayY(
+                editedPosition.y, GetPieceHeightForEditorY(piece));
+          }
+          if (SaveAcceptedOrnamentReference(
+                  GetLeftS3MirrorCalibrationKey(), saveX, saveY, saveMirror))
+          {
+            previewPositionOverrideByPiece.Remove(piece);
+            previewPositionReferenceByPiece.Remove(piece);
             previewMirrorOverrideByPiece.Remove(piece);
+            previewPositionChangedThisFrame = true;
             previewMirrorChangedThisFrame = true;
             RefreshTemporaryNormalWallPreview();
           }
@@ -14843,8 +14882,10 @@ private static void HandleGameViewPointerDown(
         IsViewport17LeftS3OpenLeftD3CenterFront(inspection);
     bool leftS3NearCenterFullD3Edge =
         IsViewport17LeftS3NearCenterFullD3Edge(inspection);
-    // The open-center/open-right D3 terminator uses FrontF3 instead.
-    if ((leftS3D3Terminator && !IsViewport17LeftD3FrontF3Extension(inspection))
+    // Verified at 12,9 West: the open-center/open-right D3 terminator still
+    // needs LeftS3 visible. FrontF3 extension may also exist, but it must not
+    // suppress the LeftS3 side-face for this geometry class.
+    if (leftS3D3Terminator
         || leftS3D2FrontEdge
         || leftS3OuterD2Fingerprint
         || leftS3D3FullFrontEdge
@@ -18530,14 +18571,22 @@ private static void HandleGameViewPointerDown(
                 : GetSideWallMirrorFromPose();
         ApplyViewport17NativeManualControls(
             "LeftS3", ref leftS3Enabled, ref leftS3Mirror);
-        // Persisted pose-specific calibration wins over the automatic recipe;
-        // any current ViewEdit checkbox preview is layered on top later.
-        if (TryGetAppliedLeftS3Mirror(out bool appliedLeftS3Mirror))
+        // Apply stores actual LeftS3 X/Y/Mirror for this pose, not just Mirror.
+        // The accepted position must reach the compositor as well as ViewEdit.
+        int leftS3X = 0;
+        int leftS3DisplayY = 57;
+        if (TryGetAppliedLeftS3Calibration(
+                out int appliedLeftS3X, out int appliedLeftS3DisplayY,
+                out bool appliedLeftS3Mirror))
+        {
+          leftS3X = appliedLeftS3X;
+          leftS3DisplayY = appliedLeftS3DisplayY;
           leftS3Mirror = appliedLeftS3Mirror;
+        }
         state.Enabled = leftS3Enabled;
-        state.X = 0;
+        state.X = leftS3X;
         state.Y = DisplayYToUnityY(
-            57, GetPieceHeightForEditorY(piece));
+            leftS3DisplayY, GetPieceHeightForEditorY(piece));
         state.Mirror = leftS3Mirror;
         resolvedNormalWallByPiece[piece] = state;
         continue;
