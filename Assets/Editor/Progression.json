@@ -1009,5 +1009,89 @@
     ],
     "implementation_status": "Research only. No Unity gameplay implementation.",
     "integration_note": "Cursor reports both Markdown files saved in CSBWin-master. Copy 07_Combat_Mechanics.md and updated 00_Research_Index.md to Unity Research_Results before committing; they are not in this ZIP. Keep 308 raw table values in the Markdown report."
+  },
+  "csbwin_monster_ai_research_20261103": {
+    "date": "2026-11-03",
+    "status": "Cursor reports research completed and saved; Unity implementation pending. Original report not independently rechecked for this update.",
+    "report": "Research_Results/08_Monster_AI_and_Behavior.md",
+    "index": "Research_Results/00_Research_Index.md",
+    "original_research_source": "C:\\!!!Stick\\Coder\\DM\\CSBWin-master\\Research_Results\\",
+    "unity_research_destination": "C:\\Unity\\DM\\Research_Results\\",
+    "source_graphic": "graphics.dat graphic 0x22F",
+    "reported_findings": [
+      "27 monster type records decoded; types 5 and 25 unnamed; 25 and 26 similar to Lord Chaos except graphic word zero.",
+      "Hit points calculated as baseHealth times generator multiplier plus random term.",
+      "No general path search: sight, smell, footprints and random legal steps drive movement.",
+      "Detection responds to facing, all-around sight, darkness, seeing in dark, invisibility; smell does not check invisibility.",
+      "Movement and attacks use game timers; Freeze Life delays non-invincible groups by 4 ticks; party sleep does not suspend monster timers.",
+      "One group record holds up to four members: size 0 has four, size 1 two, size 2 one.",
+      "Black Flame move time 255 prevents ordinary stepping; InitialChecks can substitute 100 when computing delays."
+    ],
+    "unresolved": [
+      "Names for types 5 and 25.",
+      "Mapping of compass position nibbles 0-3 to screen subtile corners: top left, top right, bottom left, bottom right (graphic 0x22E not decoded).",
+      "Every use of fire and poison resistance nibbles.",
+      "Meaning of word2 bit 3.",
+      "Atari comparison of fear 0/3 test."
+    ],
+    "integration": "Copy the report and updated research index into Unity Research_Results separately. Preserve all existing reports and Unity source. Research only, do not implement or guess unresolved mechanics."
+  },
+  "v17_verified_milestones_20261103": {
+    "date": "2026-11-03",
+    "status": "Six Level 0 views explicitly approved by user. Source code not included in this Progression ZIP.",
+    "approved_views": [
+      {
+        "level": 0,
+        "x": 12,
+        "y": 14,
+        "facing": "W",
+        "subject": "LeftS3 8-pixel fragment; supplemental V17 fingerprint"
+      },
+      {
+        "level": 0,
+        "x": 10,
+        "y": 4,
+        "facing": "S",
+        "subject": "Perspective and wall geometry"
+      },
+      {
+        "level": 0,
+        "x": 13,
+        "y": 12,
+        "facing": "W",
+        "subject": "WUUF LeftF2 mirror and perspective"
+      },
+      {
+        "level": 0,
+        "x": 14,
+        "y": 12,
+        "facing": "W",
+        "subject": "FrontF3 diagonal 8-pixel gap"
+      },
+      {
+        "level": 0,
+        "x": 12,
+        "y": 9,
+        "facing": "W",
+        "subject": "LeftS3 geometry and applied X=1 calibration"
+      },
+      {
+        "level": 0,
+        "x": 13,
+        "y": 9,
+        "facing": "S",
+        "subject": "SONJA Extended LeftS3 mirror and recovered applied calibration"
+      }
+    ],
+    "permanent_rules": [
+      "Derive map and rotated relative geometry from DungeonMaster_LevelXX.json (indexed Y then X); use exact tile verification table to cross-check ViewEdit and Dungeon Features.",
+      "Keep existing generic V17 geometry, visibility, clipping and occlusion authoritative. Add only verified missing wall components using rotation-independent wall/floor/dont-care supplemental fingerprints; never coordinate-specific overrides.",
+      "Normal ViewEdit Active Walls shows only wall images with actual on-screen V17 compositor draw records, not selection, Set checkboxes, sticky or manual overrides; explicit All Walls mode is distinct.",
+      "LeftS3 Apply must persist X, Y and Mirror; Refresh verifies persistence. Preserve confirmed settings on code replacement.",
+      "Recovery of Extended Left/Right F3 calibration uses both ExtendedLaneF3:Left and ExtendedLaneF3:Right keys; project-file persistence is a possible future improvement.",
+      "Orange console diagnostics identify extended V17 mirror cases without altering renderer decisions.",
+      "Do not repeat the six approved checkpoints absent a new discrepancy."
+    ],
+    "implementation_note": "Verified through user testing in Unity on 2026-11-03. Preserve current approved ViewportLayoutEditor.cs in Git. This section documents verified work, not new code changes."
   }
 }
