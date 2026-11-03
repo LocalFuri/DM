@@ -1458,14 +1458,14 @@ public class ViewportLayoutEditor : EditorWindow
   // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
   // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
   // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
-  // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Left|12|115|false|639293307223336439
+  // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Left|12|117|false|639293308574207999
   // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Right|202|116|true|639292495819863123
   // REF OrnamentProjection:ChampionMirror:F1|80|95|false|639291298300178415
   // REF OrnamentProjection:ChampionMirror:S1:Left|41|101|false|639291362147754849
   // REF OrnamentProjection:ChampionMirror:S1:Right|167|101|true|639291359095917323
   // REF OrnamentProjection:ChampionMirror:S2:Left|66|110|false|639291379156807561
   // REF OrnamentProjection:ChampionMirror:S2:Right|148|110|true|639291389334906649
-  // REF OrnamentProjection:ChampionMirror:S3:Left|78|116|false|639291385825952665
+  // REF OrnamentProjection:ChampionMirror:S3:Left|84|116|false|639293310397231011
   // REF OrnamentProjection:ChampionMirror:S3:Right|138|116|true|639291392277477819
   // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
   // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274252203846657
