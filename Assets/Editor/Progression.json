@@ -960,5 +960,54 @@
       "Party-size changes during an altar production cycle",
       "Exact filenames and durations of final opening and drinking sounds"
     ]
+  },
+  "csbwin_combat_mechanics_research_20261103": {
+    "date": "2026-11-03",
+    "status": "Cursor completed and saved research; Unity combat implementation pending",
+    "report": "Research_Results/07_Combat_Mechanics.md",
+    "index": "Research_Results/00_Research_Index.md",
+    "original_research_source": "C:\\!!!Stick\\Coder\\DM\\CSBWin-master\\Research_Results\\",
+    "unity_research_destination": "C:\\Unity\\DM\\Research_Results\\",
+    "source_graphic": "graphics.dat graphic 0x230; 1055 compressed bytes, 1256 decompressed bytes",
+    "verified_tables": {
+      "attack_methods": 44,
+      "entries_per_table": 44,
+      "total_values": 308,
+      "names": [
+        "experienceForAttacking",
+        "SkillNumber",
+        "Byte20090",
+        "Byte20046",
+        "Byte20002",
+        "Byte19958",
+        "Byte19914"
+      ]
+    },
+    "findings": [
+      "Weapon damage depends on Strength, weight, mastery, stamina, armor, attack power and randomness.",
+      "Accuracy depends on Quickness/Dexterity, Luck and randomness; no separate conventional critical-hit multiplier.",
+      "Physical attacks can incur both attack-processing stamina and action-table stamina costs.",
+      "Temporary armor modifiers in Byte20090 are signed; Block +36, Parry +29.",
+      "Attack method cooldowns are in game ticks; throwing uses its own timing.",
+      "Skill experience is awarded for actions and combat circumstances; no separate kill XP bonus."
+    ],
+    "approved_decision": {
+      "mechanic": "Anti-Fire and Anti-Magic",
+      "use": "CSBwin corrected attribute-based damage calculation, not the reported Atari ST compiler bug",
+      "source": "TAG016426 Character.cpp",
+      "formula": "if (170 - currentAttribute >= 16) damage = damage * (170 - currentAttribute) / 128; else damage = damage / 8; use integer arithmetic",
+      "attributes": {
+        "Anti-Fire": 6,
+        "Anti-Magic": 5
+      }
+    },
+    "other_atari_csbwin_differences": "Remain undecided.",
+    "unresolved": [
+      "Other graphics contain weapon and monster numerical properties not yet extracted.",
+      "Monster hit-location mask mapping not verified.",
+      "Shooting overwrite and word64 differences not checked against Atari binary."
+    ],
+    "implementation_status": "Research only. No Unity gameplay implementation.",
+    "integration_note": "Cursor reports both Markdown files saved in CSBWin-master. Copy 07_Combat_Mechanics.md and updated 00_Research_Index.md to Unity Research_Results before committing; they are not in this ZIP. Keep 308 raw table values in the Markdown report."
   }
 }
