@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -5350,6 +5350,19 @@ public class ViewportLayoutEditor : EditorWindow
       }
     }
     EditorGUIUtility.labelWidth = savedXyLabelWidth;
+
+    // W is a read-only diagnostic from the actual V17 blit record.
+    // It does not change the image, clipping, layout, or saved calibration.
+    if (IsViewport17WallAuthorityActive() && IsNormalWallPiece(piece))
+    {
+      string drawnFamily = piece.Name;
+      bool widthAvailable = TryGetV17ActuallyDrawnWidth(
+          drawnFamily, out int drawnWidth);
+      GUILayout.Space(7f);
+      EditorGUILayout.LabelField(
+          widthAvailable ? "W " + drawnWidth : "W -",
+          GUILayout.Width(48f), GUILayout.ExpandWidth(false));
+    }
 
     if (compactSideWallHeader
         || compactFrontWallHeader
@@ -13450,23 +13463,71 @@ private static void HandleGameViewPointerDown(
   {
     DrawPreviewMiniMap();
   }
-  // -------------------------------------------------------------------------
-  // Generic original-style viewport inspection model.
-  //
-  // This is the generic Viewport-17 geometry model used by production wall
-  // selection/rendering.
-  //
-  // 16 sampled map tiles (19-slot viewport = 16 tiles + 3 D0 faces):
-  //   D3: [-2,3] [-1,3] [0,3] [1,3] [2,3]
-  //   D2: [-2,2] [-1,2] [0,2] [1,2] [2,2]
-  //   D1:        [-1,1] [0,1] [1,1]
-  //   D0:        [-1,0] [0,0] [1,0]
-  //
-  // plus 3 D0 face evaluations:
-  //   BACK        -> probe [0,-1]
-  //   LEFT INNER  -> boundary between party [0,0] and left neighbor [-1,0]
-  //   RIGHT INNER -> boundary between party [0,0] and right neighbor [1,0]
-  // -------------------------------------------------------------------------
+
+  // Supplemental geometry fingerprints are internal V17 recognition rules.
+  // They do not add UI and never replace map-derived visibility/occlusion.
+  // An entry may specify Wall, Open, or Any for each relevant sampled tile.
+  private enum V17FingerprintTile { Any, Open, Wall }
+
+  private struct V17FingerprintRequirement
+  {
+    public int LocalX;
+    public int Depth;
+    public V17FingerprintTile Required;
+
+    public V17FingerprintRequirement(int x, int depth, V17FingerprintTile required)
+    {
+      LocalX = x;
+      Depth = depth;
+      Required = required;
+    }
+  }
+
+  private static bool MatchesV17Fingerprint(
+      Viewport17Inspection inspection,
+      V17FingerprintRequirement[] requirements)
+  {
+    if (inspection.Cells == null || requirements == null)
+      return false;
+
+    for (int i = 0; i < requirements.Length; i++)
+    {
+      V17FingerprintRequirement requirement = requirements[i];
+      if (requirement.Required == V17FingerprintTile.Any)
+        continue;
+      // Missing map samples must NOT silently count as open.
+      if (!TryFindViewport17Cell(inspection.Cells,
+          requirement.LocalX, requirement.Depth, out Viewport17Cell cell))
+        return false;
+      bool solid = IsViewport17Solid(cell);
+      if ((requirement.Required == V17FingerprintTile.Wall) != solid)
+        return false;
+    }
+    return true;
+  }
+
+  // Supplemental fingerprint: exposed far-left D2 outer edge, visually
+  // checked against original Atari at Level 0 (12,14) W. All coordinates below
+  // are viewer-relative, never level coordinates, and rotate with facing.
+  // D2 far-left wall bounds an open D0-D2 left lane; D2 center is a wall,
+  // while D1 center is open and D1 right is closed. Other tiles don't matter.
+  private static readonly V17FingerprintRequirement[] s_leftS3OuterD2Edge =
+  {
+    new V17FingerprintRequirement(-1, 0, V17FingerprintTile.Open),
+    new V17FingerprintRequirement(-1, 1, V17FingerprintTile.Open),
+    new V17FingerprintRequirement(-1, 2, V17FingerprintTile.Open),
+    new V17FingerprintRequirement( 0, 1, V17FingerprintTile.Open),
+    new V17FingerprintRequirement( 1, 1, V17FingerprintTile.Wall),
+    new V17FingerprintRequirement( 0, 2, V17FingerprintTile.Wall),
+    new V17FingerprintRequirement(-2, 2, V17FingerprintTile.Wall)
+  };
+
+  private static bool IsV17LeftS3OuterD2Fingerprint(
+      Viewport17Inspection inspection)
+  {
+    return MatchesV17Fingerprint(inspection, s_leftS3OuterD2Edge);
+  }
+
   private enum Viewport17CellState
   {
     Open,
@@ -14746,6 +14807,7 @@ private static void HandleGameViewPointerDown(
         && IsViewport17LaneOpenAt(inspection, -1, 2)
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3));
     bool leftS3D2FrontEdge = IsViewport17LeftS3D2FrontEdge(inspection);
+    bool leftS3OuterD2Fingerprint = IsV17LeftS3OuterD2Fingerprint(inspection);
     bool leftS3D3FullFrontEdge =
         IsViewport17LeftS3D3FullFrontEdge(inspection);
     bool leftS3OpenLeftD3CenterFront =
@@ -14755,6 +14817,7 @@ private static void HandleGameViewPointerDown(
     // The open-center/open-right D3 terminator uses FrontF3 instead.
     if ((leftS3D3Terminator && !IsViewport17LeftD3FrontF3Extension(inspection))
         || leftS3D2FrontEdge
+        || leftS3OuterD2Fingerprint
         || leftS3D3FullFrontEdge
         || leftS3OpenLeftD3CenterFront
         || leftS3NearCenterFullD3Edge)
@@ -14780,6 +14843,8 @@ private static void HandleGameViewPointerDown(
               "LeftS3",
               leftS3D2FrontEdge
                   ? "LEFT S3 D2 FRONT EDGE"
+                  : leftS3OuterD2Fingerprint
+                      ? "LEFT S3 OUTER D2 FINGERPRINT"
                   : leftS3NearCenterFullD3Edge
                       ? "LEFT S3 NEAR CENTER FULL D3 EDGE"
                       : leftS3D3FullFrontEdge
@@ -15463,7 +15528,8 @@ private static void HandleGameViewPointerDown(
           && (IsViewport17LeftS3D2FrontEdge(inspection)
               || IsViewport17LeftS3D3FullFrontEdge(inspection)
               || IsViewport17LeftS3NearCenterFullD3Edge(inspection)
-              || IsViewport17LeftS3OpenLeftD3CenterFront(inspection)))
+              || IsViewport17LeftS3OpenLeftD3CenterFront(inspection)
+              || IsV17LeftS3OuterD2Fingerprint(inspection)))
       {
         command.Sequence = finalCommands.Count;
         finalCommands.Add(command);
@@ -19906,6 +19972,33 @@ private static void HandleGameViewPointerDown(
     string entry = family + "  X=" + x + " Y=" + y + " W=" + width;
     if (!v17DrawnWalls.Contains(entry))
       v17DrawnWalls.Add(entry);
+  }
+
+  // Diagnostic only: show the width that the V17 compositor actually blitted.
+  // Do not infer width from an editor placeholder or a mirrored source sprite.
+  private bool TryGetV17ActuallyDrawnWidth(string family, out int width)
+  {
+    width = 0;
+    if (string.IsNullOrEmpty(family))
+      return false;
+
+    string prefix = family + "  ";
+    for (int i = v17DrawnWalls.Count - 1; i >= 0; i--)
+    {
+      string entry = v17DrawnWalls[i];
+      if (!entry.StartsWith(prefix, System.StringComparison.Ordinal))
+        continue;
+      int marker = entry.LastIndexOf(" W=", System.StringComparison.Ordinal);
+      if (marker < 0)
+        continue;
+      if (int.TryParse(entry.Substring(marker + 3), out int drawnWidth)
+          && drawnWidth > 0)
+      {
+        width = drawnWidth;
+        return true;
+      }
+    }
+    return false;
   }
 
   private void DrawV17ActualWallRows()
