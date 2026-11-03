@@ -13472,6 +13472,9 @@ private static void HandleGameViewPointerDown(
       Debug.Log("ViewEdit Refresh: requested at Level " + previewDungeonLevel
           + " X=" + previewX + " Y=" + previewY
           + " Facing=" + previewFacing);
+      // Refresh the inscription data from the same authoritative Level JSON used
+      // for the map. Refresh must not reuse a stale in-memory inscription array.
+      ReloadWallInscriptionsFromLevelJson();
       if (Application.isPlaying)
       {
         Debug.LogWarning("ViewEdit Refresh: edit-mode preview redraw is unavailable in Play mode.");
@@ -13479,6 +13482,9 @@ private static void HandleGameViewPointerDown(
       else
       {
         RefreshEditModePreview();
+        Debug.Log("INSCRIPTION REFRESH EXIT: texture=" + (editModePreviewTexture != null)
+            + " drawnWalls=" + v17DrawnWalls.Count
+            + " fontPath=" + InscriptionFontPath);
         RepaintGameViews();
         Repaint();
         Debug.Log("ViewEdit Refresh: redraw completed (inspect LeftF2 POSE/comparison diagnostics above).");
@@ -17185,6 +17191,53 @@ private static void HandleGameViewPointerDown(
     });
   }
 
+  // Inscription data is loaded strictly from DungeonMaster_LevelXX.json;
+  // no synthetic records or coordinates are supplied when the field is absent.
+  private bool ReloadWallInscriptionsFromLevelJson()
+  {
+    string path = PreviewLevelMapPaths[previewDungeonLevel];
+    if (!File.Exists(path))
+    {
+      previewWallInscriptions = new WallInscriptionEntry[0];
+      Debug.LogError("WALL INSCRIPTION DATA MISSING: Level " + previewDungeonLevel
+          + " map does not exist: " + path);
+      return false;
+    }
+
+    try
+    {
+      string json = File.ReadAllText(path);
+      bool hasInscriptionsKey = json.IndexOf("\"wall_inscriptions\"",
+          System.StringComparison.Ordinal) >= 0;
+      Debug.Log("INSCRIPTION SOURCE: level=" + previewDungeonLevel
+          + " path=" + path + " bytes=" + new FileInfo(path).Length
+          + " wall_inscriptions=" + hasInscriptionsKey);
+      WallInscriptionMapRoot root =
+          JsonUtility.FromJson<WallInscriptionMapRoot>(json);
+      if (root == null || root.wall_inscriptions == null)
+      {
+        previewWallInscriptions = new WallInscriptionEntry[0];
+        Debug.LogError("WALL INSCRIPTION DATA MISSING: " + path
+            + " has no wall_inscriptions array. Install the corrected Level 0"
+            + " JSON included with this patch; no records were invented.");
+        return false;
+      }
+      previewWallInscriptions = root.wall_inscriptions;
+      Debug.Log("INSCRIPTION DATA LOADED: level=" + previewDungeonLevel
+          + " count=" + previewWallInscriptions.Length + " from " + path);
+      if (previewDungeonLevel == 0 && previewWallInscriptions.Length != 4)
+        Debug.LogWarning("WALL INSCRIPTION: Level 0 expected four text entries"
+            + " but got " + previewWallInscriptions.Length + " from " + path);
+      return true;
+    }
+    catch (System.Exception ex)
+    {
+      previewWallInscriptions = new WallInscriptionEntry[0];
+      Debug.LogError("WALL INSCRIPTION DATA ERROR: " + path + " — " + ex.Message);
+      return false;
+    }
+  }
+
   private bool TryLoadPreviewLevel(int level)
   {
     if (level < 0 || level >= PreviewLevelMapPaths.Length)
@@ -17209,11 +17262,7 @@ private static void HandleGameViewPointerDown(
       LoadPreviewDoorTilesFromMap(previewMiniMap);
       previewDungeonLevel = level;
 
-      WallInscriptionMapRoot inscriptionRoot =
-          JsonUtility.FromJson<WallInscriptionMapRoot>(json);
-      previewWallInscriptions = inscriptionRoot != null
-          && inscriptionRoot.wall_inscriptions != null
-          ? inscriptionRoot.wall_inscriptions : new WallInscriptionEntry[0];
+      ReloadWallInscriptionsFromLevelJson();
 
       ChampionMirrorMapRoot mirrorRoot =
           JsonUtility.FromJson<ChampionMirrorMapRoot>(json);
@@ -28983,7 +29032,21 @@ private static void HandleGameViewPointerDown(
         || !string.Equals(physicalFace, OppositeFacingName(previewFacing),
             System.StringComparison.OrdinalIgnoreCase))
       return false;
-    return IsSharedWallFeatureVisible(wallX, wallY, physicalFace, true);
+    bool visible = IsSharedWallFeatureVisible(wallX, wallY, physicalFace, true);
+    if (inscription.TextDataWordOffset == 85 && previewDungeonLevel == 0
+        && previewX == 8 && previewY == 4
+        && string.Equals(FacingName(previewFacing), "South",
+            System.StringComparison.OrdinalIgnoreCase))
+    {
+      Debug.Log("INSCRIPTION CHECK HALL OF CHAMPIONS: source wall=("
+          + wallX + "," + wallY + ") face=" + physicalFace
+          + " depth=" + depth
+          + " wallTile=" + PreviewTileIsWall(wallX, wallY)
+          + " V17active=" + IsViewport17WallAuthorityActive()
+          + " visible=" + visible
+          + " drawnWalls=" + string.Join(" | ", v17DrawnWalls.ToArray()));
+    }
+    return visible;
   }
 
   private static string InscriptionProjectionKey(WallInscriptionEntry entry, int depth)
@@ -29008,6 +29071,17 @@ private static void HandleGameViewPointerDown(
 
   private void BlitWallInscriptionsIntoPreview(Color32[] pixels)
   {
+    if (previewDungeonLevel == 0 && previewX == 8 && previewY == 4
+        && string.Equals(FacingName(previewFacing), "South",
+            System.StringComparison.OrdinalIgnoreCase))
+      Debug.Log("INSCRIPTION DATA: count="
+          + (previewWallInscriptions == null ? -1 : previewWallInscriptions.Length)
+          + " font asset=" + InscriptionFontPath);
+    // A ViewEdit window may be restored without calling TryLoadPreviewLevel.
+    // In that case resolve the authoritative file before rendering, rather
+    // than silently leaving the inscription list empty.
+    if (previewWallInscriptions == null || previewWallInscriptions.Length == 0)
+      ReloadWallInscriptionsFromLevelJson();
     if (previewWallInscriptions == null || previewWallInscriptions.Length == 0)
       return;
     Texture2D alphabet = null;
@@ -29029,6 +29103,8 @@ private static void HandleGameViewPointerDown(
           return;
         }
         glyphs = alphabet.GetPixels32();
+        if (previewDungeonLevel == 0 && previewX == 8 && previewY == 4)
+          Debug.Log("INSCRIPTION FONT READY: 288x8, readable; drawing text");
       }
       GetInscriptionDefaultPosition(entry, depth,
           out int x, out int y, out int scale);
@@ -29055,7 +29131,10 @@ private static void HandleGameViewPointerDown(
             for (int xx = 0; xx < w; xx++)
             {
               int tx = x + n * w + xx;
-              int ty = y - row * w + yy;
+              // Keep adjacent inscription lines visually separated.
+              // Screen Y is bottom-origin in this preview pixel buffer.
+              const int inscriptionLineGap = 3;
+              int ty = y - row * (w + inscriptionLineGap) + yy;
               if (tx < 0 || tx >= DungeonViewportWidth || ty < 0
                   || ty >= PreviewHeight) continue;
               Color32 c = glyphs[(yy * scale) * alphabet.width
@@ -29093,9 +29172,17 @@ private static void HandleGameViewPointerDown(
       bool enabled = IsPreviewFeatureEnabled(key);
       bool newEnabled = EditorGUILayout.ToggleLeft("Set", enabled, GUILayout.Width(45f));
       GUILayout.Label("X", GUILayout.Width(15f));
+      bool xMinus = GUILayout.Button("-", GUILayout.Width(21f));
       int newX = EditorGUILayout.IntField(x, GUILayout.Width(42f));
+      bool xPlus = GUILayout.Button("+", GUILayout.Width(21f));
       GUILayout.Label("Y", GUILayout.Width(15f));
+      bool yMinus = GUILayout.Button("-", GUILayout.Width(21f));
       int newY = EditorGUILayout.IntField(y, GUILayout.Width(42f));
+      bool yPlus = GUILayout.Button("+", GUILayout.Width(21f));
+      if (xMinus) newX--;
+      if (xPlus) newX++;
+      if (yMinus) newY--;
+      if (yPlus) newY++;
       bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
       NoteContentRight();
       EditorGUILayout.EndHorizontal();

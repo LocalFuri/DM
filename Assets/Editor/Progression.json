@@ -1093,5 +1093,108 @@
       "Do not repeat the six approved checkpoints absent a new discrepancy."
     ],
     "implementation_note": "Verified through user testing in Unity on 2026-11-03. Preserve current approved ViewportLayoutEditor.cs in Git. This section documents verified work, not new code changes."
+  },
+  "wall_inscriptions_level00_20261103": {
+    "date": "2026-11-03",
+    "status": "Level 0 inscription data and first F1 rendering demonstrated in Unity; exact position/typography final visual approval pending; development stopping for today",
+    "source_data": {
+      "file": "Assets/Data/Maps/DungeonMaster_Level00.json",
+      "origin": "Decoded encoded TextString records from uploaded DUNGEON.DAT with original map references; previous source-file-size mismatch must be kept in mind if re-extracting data",
+      "encoding": "Original compact 5-bit alphabet text with line break and terminator; use underlying map data rather than inventing placements",
+      "inscriptions": [
+        {
+          "level": 0,
+          "x": 8,
+          "y": 4,
+          "face": "S",
+          "text": "HALL OF\nCHAMPIONS",
+          "visible": true,
+          "source_reference": {
+            "x": 8,
+            "y": 5,
+            "face": "N",
+            "TextDataWordOffset": 85
+          },
+          "note": "User confirmed placement (8,4) S; opposite side of boundary is original source record (8,5) N."
+        },
+        {
+          "level": 0,
+          "x": 5,
+          "y": 17,
+          "face": "W",
+          "text": "VI\nALTAR OF\nREBIRTH",
+          "visible": true,
+          "status": "Original extracted text, not yet visually verified"
+        },
+        {
+          "level": 0,
+          "x": 9,
+          "y": 1,
+          "face": "N",
+          "text": "Firestaff message",
+          "visible": true,
+          "status": "Special character/control codes unresolved; do not guess"
+        },
+        {
+          "level": 0,
+          "x": 1,
+          "y": 4,
+          "face": "N",
+          "text": "WELCOME BACK\nBRAVE\nADVENTURERS",
+          "visible": false,
+          "status": "Hidden flag preserved; exact punctuation to verify"
+        }
+      ],
+      "record_counts": {
+        "TextString_total": 28,
+        "wall_inscriptions": 4,
+        "visible_wall_inscriptions": 3,
+        "remaining_champion_texts": 24
+      }
+    },
+    "font": {
+      "asset": "Assets/Art/Fonts/Inscription_Font_288x8.png",
+      "sheet_size_px": [
+        288,
+        8
+      ],
+      "glyph_cell_px": [
+        8,
+        8
+      ],
+      "alphabet": "A-Z first 26 cells; use original shared sprite sheet, not 26 PNGs",
+      "line_gap_px": 3,
+      "line_start_step_px": 11,
+      "line_gap_note": "User verified 3-pixel vertical separation on Nov 3; most recent delivered ViewportLayoutEditor.cs patch sets the gap to 3, Unity verification after this latest patch not yet reported."
+    },
+    "rendering": {
+      "code": "Assets/Editor/ViewportLayoutEditor.cs",
+      "status": "F1 HALL OF CHAMPIONS text visible in Unity screenshot; comparison with original supplied",
+      "placement": "Same V17 wall geometry and map-derived visibility/clipping/occlusion as wall ornaments; preserve rendering hierarchy: draw F1 glyphs after F1 wall but do not overlay occluding nearer walls on F2/F3",
+      "viewedit": "Green inscription label (not green artwork), e.g. Inscription HALL OF CHAMPIONS [8,4] (S) / F1; Set/X/Y/Apply and one-pixel X/Y adjustment buttons added; Apply intended to persist calibrations.",
+      "observed_initial_position": {
+        "x": 76,
+        "y": 92,
+        "note": "Shown in ViewEdit screenshot before final manual calibration; do not treat as approved"
+      },
+      "verification": "User screenshot shows text in Unity at intended F1 wall; final glyph spacing and exact X/Y alignment to original still pending",
+      "other_perspectives": "Side F1 / F2 / F3 inscription rendering not yet verified; preserve V17 architecture, do not hardcode per-player coordinates."
+    },
+    "console_diagnostics": {
+      "decision": "No longer need inscription-specific temporary diagnostic Console output; remove/disable INSCRIPTION DATA, INSCRIPTION REFRESH, INSCRIPTION SOURCE, INSCRIPTION CHECK, INSCRIPTION FONT and similar debugging chatter in next C# cleanup without changing functional error reporting.",
+      "implementation_status": "User request recorded in Progression.json; debug log removal has NOT been applied in this JSON-only deliverable. Do not claim Console is already silent."
+    },
+    "preserve": [
+      "Do not modify verified V17 geometry or occlusion logic",
+      "Use same source sprite sheet rather than individual PNGs",
+      "No silent data or asset fallbacks",
+      "Keep existing gameplay/project data and six approved V17 checkpoints"
+    ],
+    "next_session": [
+      "Remove now-unnecessary inscription-only diagnostic console messages, preserving useful actual errors.",
+      "Confirm 3-pixel multiline gap in Unity.",
+      "Calibrate HALL OF CHAMPIONS F1 X/Y against original and press Apply; verify persistent Refresh.",
+      "Test inscription visibility and occlusion at other distances/orientations after F1 approved."
+    ]
   }
 }

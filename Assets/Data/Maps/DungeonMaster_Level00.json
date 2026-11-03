@@ -589,7 +589,14 @@
         "Next": 65534,
         "TextDataWordOffset": 539,
         "Unreferenced": 0,
-        "Visible": 0
+        "Visible": 0,
+        "DecodedText": "WELCOME BACK\nBRAVE\nADVENTURERS<27>",
+        "DecodedControlCodes": [
+          {
+            "code": 27,
+            "character_index": 30
+          }
+        ]
       }
     },
     {
@@ -876,7 +883,9 @@
         "Next": 65534,
         "TextDataWordOffset": 1548,
         "Unreferenced": 0,
-        "Visible": 1
+        "Visible": 1,
+        "DecodedText": "VI\nALTAR OF\nREBIRTH",
+        "DecodedControlCodes": []
       }
     },
     {
@@ -1279,7 +1288,9 @@
         "Next": 65534,
         "TextDataWordOffset": 85,
         "Unreferenced": 0,
-        "Visible": 1
+        "Visible": 1,
+        "DecodedText": "HALL OF\nCHAMPIONS",
+        "DecodedControlCodes": []
       }
     },
     {
@@ -1501,7 +1512,26 @@
         "Next": 3725,
         "TextDataWordOffset": 1627,
         "Unreferenced": 0,
-        "Visible": 1
+        "Visible": 1,
+        "DecodedText": "IT IS TOO BAD YOU\nDID NOT DISCOVER\n<30>CTRUE SECRET\nOF <30>CFIRESTAFF<27>\nNOW THAT I HAVE\nIT I HAVE NO\nFURTHER NEED FOR\nYOU<30>B",
+        "DecodedControlCodes": [
+          {
+            "code": 30,
+            "character_index": 35
+          },
+          {
+            "code": 30,
+            "character_index": 52
+          },
+          {
+            "code": 27,
+            "character_index": 63
+          },
+          {
+            "code": 30,
+            "character_index": 114
+          }
+        ]
       }
     },
     {
@@ -4105,13 +4135,22 @@
         "Next": 65534,
         "TextDataWordOffset": 539,
         "Unreferenced": 0,
-        "Visible": 0
+        "Visible": 0,
+        "DecodedText": "WELCOME BACK\nBRAVE\nADVENTURERS<27>",
+        "DecodedControlCodes": [
+          {
+            "code": 27,
+            "character_index": 30
+          }
+        ]
       },
       {
         "Next": 65534,
         "TextDataWordOffset": 1548,
         "Unreferenced": 0,
-        "Visible": 1
+        "Visible": 1,
+        "DecodedText": "VI\nALTAR OF\nREBIRTH",
+        "DecodedControlCodes": []
       },
       {
         "Next": 65534,
@@ -4141,7 +4180,9 @@
         "Next": 65534,
         "TextDataWordOffset": 85,
         "Unreferenced": 0,
-        "Visible": 1
+        "Visible": 1,
+        "DecodedText": "HALL OF\nCHAMPIONS",
+        "DecodedControlCodes": []
       },
       {
         "Next": 65534,
@@ -4153,7 +4194,26 @@
         "Next": 3725,
         "TextDataWordOffset": 1627,
         "Unreferenced": 0,
-        "Visible": 1
+        "Visible": 1,
+        "DecodedText": "IT IS TOO BAD YOU\nDID NOT DISCOVER\n<30>CTRUE SECRET\nOF <30>CFIRESTAFF<27>\nNOW THAT I HAVE\nIT I HAVE NO\nFURTHER NEED FOR\nYOU<30>B",
+        "DecodedControlCodes": [
+          {
+            "code": 30,
+            "character_index": 35
+          },
+          {
+            "code": 30,
+            "character_index": 52
+          },
+          {
+            "code": 27,
+            "character_index": 63
+          },
+          {
+            "code": 30,
+            "character_index": 114
+          }
+        ]
       },
       {
         "Next": 65534,
@@ -6034,5 +6094,89 @@
       "y": 9,
       "dir": "N"
     }
-  ]
+  ],
+  "wall_inscriptions": [
+    {
+      "x": 1,
+      "y": 4,
+      "cell": 0,
+      "dir": "N",
+      "TextDataWordOffset": 539,
+      "Visible": 0,
+      "Text": "WELCOME BACK\nBRAVE\nADVENTURERS<27>",
+      "ControlCodes": [
+        {
+          "code": 27,
+          "character_index": 30
+        }
+      ],
+      "SourceRecordType": "TextString"
+    },
+    {
+      "x": 5,
+      "y": 17,
+      "cell": 3,
+      "dir": "W",
+      "TextDataWordOffset": 1548,
+      "Visible": 1,
+      "Text": "VI\nALTAR OF\nREBIRTH",
+      "ControlCodes": [],
+      "SourceRecordType": "TextString"
+    },
+    {
+      "x": 8,
+      "y": 4,
+      "cell": 2,
+      "dir": "S",
+      "TextDataWordOffset": 85,
+      "Visible": 1,
+      "Text": "HALL OF\nCHAMPIONS",
+      "ControlCodes": [],
+      "SourceRecordType": "TextString",
+      "SourceMapLocation": {
+        "x": 8,
+        "y": 5,
+        "cell": 0,
+        "dir": "N"
+      },
+      "PlacementVerification": "User verified: inscription is on south face of tile (8,4); original text-object source record is (8,5) N on the opposite side of the same boundary."
+    },
+    {
+      "x": 9,
+      "y": 1,
+      "cell": 0,
+      "dir": "N",
+      "TextDataWordOffset": 1627,
+      "Visible": 1,
+      "Text": "IT IS TOO BAD YOU\nDID NOT DISCOVER\n<30>CTRUE SECRET\nOF <30>CFIRESTAFF<27>\nNOW THAT I HAVE\nIT I HAVE NO\nFURTHER NEED FOR\nYOU<30>B",
+      "ControlCodes": [
+        {
+          "code": 30,
+          "character_index": 35
+        },
+        {
+          "code": 30,
+          "character_index": 52
+        },
+        {
+          "code": 27,
+          "character_index": 63
+        },
+        {
+          "code": 30,
+          "character_index": 114
+        }
+      ],
+      "SourceRecordType": "TextString"
+    }
+  ],
+  "wall_inscriptions_metadata": {
+    "source": "DUNGEON.DAT encoded text pool, cross-referenced with Level00 located_things",
+    "text_pool_byte_offset": 11345,
+    "text_code_encoding": "16-bit big-endian words; 3 five-bit characters per word; 0-25 A-Z, 26 space, 28 newline, 31 end",
+    "unknown_control_codes": "Other five-bit values preserved in <number> notation; do not render as literal text until verified",
+    "note": "Original uploaded DAT is 42025 bytes, while this JSON records a 33357-byte source. Matching TextDataWordOffset references validated, but full map-source equivalence not established.",
+    "render_rule": "Use wall_inscriptions as authoritative placement overrides (with Visible=1 and V17 visibility/clipping). Do not independently render text again from located_things; located_things is retained as raw source data.",
+    "placement_note": "HALL OF CHAMPIONS display placement corrected by user to (8,4) S; underlying located_things (8,5) N source record intentionally left unchanged for traceability."
+  }
 }
