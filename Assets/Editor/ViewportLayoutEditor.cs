@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -19912,9 +19912,20 @@ private static void HandleGameViewPointerDown(
   {
     if (!IsViewport17WallAuthorityActive())
       return;
-    bool geometryActive = !previewDisableAllWalls
-        && IsViewport17LeftD3FrontF3Extension(BuildViewport17Inspection());
-    if (!geometryActive && !previewAllowFrontF3Left16)
+    // ViewEdit must list only images that the V17 compositor actually blitted
+    // for this pose. The preview switch alone does not make a wall visible.
+    // Reuse the compositor's recorded draw, not a second geometry decision.
+    bool frontF3EdgeDrawn = false;
+    for (int i = 0; i < v17DrawnWalls.Count; i++)
+    {
+      if (v17DrawnWalls[i].StartsWith(
+              "FrontF3 D3 edge crop  ", System.StringComparison.Ordinal))
+      {
+        frontF3EdgeDrawn = true;
+        break;
+      }
+    }
+    if (!frontF3EdgeDrawn)
       return;
     GUILayout.Space(2f);
     // Present the native V17 wall exactly where ordinary wall cards appear.
