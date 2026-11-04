@@ -1535,12 +1535,12 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Hook:S2:Left|66|117|false|639292496524583345
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
-  // REF OrnamentProjection:Manacles:S3:Left|80|120|false|639294236749226243
   // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
   // REF OrnamentProjection:Moss:F3|108|96|false|639267381805114279
   // REF OrnamentProjection:Puddle:F1L|0|57|false|639276809435648392
   // REF OrnamentProjection:Slime:F2|104|74|false
   // REF OrnamentProjection:Slime:F3|106|93|false|639267208231012151
+  // REF OrnamentProjection:Slime:S1|47|63|false|639294238214805388
   // REF OrnamentProjection:WoodRing:F1|98|104|false
   // REF OrnamentProjection:WoodRing:F2|103|111|false
   // REF OrnamentProjection:WoodRing:F3|105|117|false
@@ -27657,7 +27657,7 @@ private static void HandleGameViewPointerDown(
   }
 
   private void DrawCompactPuddleRow(string displayName, string key,
-      int depth, int lane)
+      int depth, int lane, int mapX, int mapY)
   {
     if (!TryGetPuddleProjection(depth, lane, out int codedX, out int codedY))
     {
@@ -27682,30 +27682,34 @@ private static void HandleGameViewPointerDown(
     nameStyle.hover.textColor = puddleColor;
     nameStyle.focused.textColor = puddleColor;
     nameStyle.clipping = TextClipping.Clip;
-    GUILayout.Label(displayName, nameStyle, GUILayout.Width(118f));
-
-    bool enabledBefore = IsPreviewFeatureEnabled(key);
-    bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
+    string perspective = lane == 0 ? "F" + depth : "S" + depth;
+    string caption = "Puddle [" + mapX + "," + mapY + "] ("
+        + ShortDirectionLabel(FacingName(previewFacing)) + ") / "
+        + perspective;
+    GUILayout.Label(caption, nameStyle,
+        GUILayout.Width(nameStyle.CalcSize(new GUIContent(caption)).x + 6f));
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int editX = x;
     bool changedX = DrawIntStepperInline(
-        "X", ref editX, snap, x != defaultX, true, 25f, 25f);
+        "X", ref editX, snap, x != defaultX, true, 24f, 24f);
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     int editY = y;
     bool changedY = DrawIntStepperInline(
-        "Y", ref editY, snap, y != defaultY, true, 25f, 25f);
+        "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
+    bool editMirror = mirror;
+    if (lane != 0)
+    {
+      GUILayout.Space(6f);
+      editMirror = EditorGUILayout.ToggleLeft(
+          "Mirror", mirror, GUILayout.Width(66f));
+    }
+    bool changedMirror = editMirror != mirror;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
     NoteContentRight();
     EditorGUIUtility.labelWidth = savedLabelWidth;
     EditorGUILayout.EndHorizontal();
 
     bool refresh = false;
-    if (enabledBefore != enabledAfter)
-    {
-      SetPreviewFeatureEnabled(key, enabledAfter);
-      previewEnabledChangedThisFrame = true;
-      refresh = true;
-    }
     if (changedX || changedY)
     {
       previewFeaturePositionOverrides[projectionKey] =
@@ -27713,10 +27717,17 @@ private static void HandleGameViewPointerDown(
       previewPositionChangedThisFrame = true;
       refresh = true;
     }
+    if (changedMirror)
+    {
+      previewFeatureMirrorOverrides[projectionKey] = editMirror;
+      previewMirrorChangedThisFrame = true;
+      refresh = true;
+    }
     if (apply && SaveAcceptedOrnamentReference(
-            projectionKey, editX, editY, mirror))
+            projectionKey, editX, editY, editMirror))
     {
       previewFeaturePositionOverrides.Remove(projectionKey);
+      previewFeatureMirrorOverrides.Remove(projectionKey);
       refresh = true;
     }
     if (refresh)
@@ -29820,7 +29831,7 @@ private static void HandleGameViewPointerDown(
         string key = MakePreviewFeatureKey("Puddle", x, y, null);
         string puddleDepth = "F" + depth;
         string puddleSide = lane < 0 ? " L" : lane > 0 ? " R" : "";
-        DrawCompactPuddleRow("Puddle " + puddleDepth + puddleSide, key, depth, lane);
+        DrawCompactPuddleRow("Puddle " + puddleDepth + puddleSide, key, depth, lane, x, y);
       }
     }
 
