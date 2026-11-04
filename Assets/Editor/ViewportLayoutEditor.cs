@@ -1506,8 +1506,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF FloorItemProjection:TorchDown:F1:Right|133|157|false|639275097288040421
   // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
   // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
-  // REF Inscription:10004:F1|69|105|false|639294150346336026
-  // REF Inscription:1548:F1|84|118|false|639294149273309515
+  // REF Inscription:1548:F1|83|118|false|639294167351643687
   // REF Inscription:85:F1|76|118|false|639294110666408029
   // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
   // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Left|12|117|false|639293308574207999
@@ -29171,6 +29170,14 @@ private static void HandleGameViewPointerDown(
 
   private static string InscriptionProjectionKey(WallInscriptionEntry entry, int depth)
   {
+    // F1 inscription calibrations are shared by number of text lines.
+    // INS1 and INS2 have verified references; other lengths remain individual.
+    if (depth == 1 && !string.IsNullOrEmpty(entry.Text))
+    {
+      int lineCount = entry.Text.Split('\n').Length;
+      if (lineCount == 1) return "Inscription:INS1:F1";
+      if (lineCount == 2) return "Inscription:INS2:F1";
+    }
     return "Inscription:" + entry.TextDataWordOffset + ":F" + depth;
   }
 
@@ -29187,6 +29194,19 @@ private static void HandleGameViewPointerDown(
     int width = (maxLength * 8 + scale - 1) / scale;
     x = (DungeonViewportWidth - width) / 2;
     y = depth == 1 ? 92 : depth == 2 ? 106 : 112;
+    // INS1: verified reference THE VAULT, Level 02 (11,14) S, F1.
+    // Saved class calibration, when present, still takes precedence.
+    if (depth == 1 && lines.Length == 1)
+    {
+      x = 76;
+      y = 111;
+    }
+    // INS2: verified reference HALL OF CHAMPIONS, Level 00 (8,4) S, F1.
+    if (depth == 1 && lines.Length == 2)
+    {
+      x = 76;
+      y = 118;
+    }
   }
 
   private void BlitWallInscriptionsIntoPreview(Color32[] pixels)
