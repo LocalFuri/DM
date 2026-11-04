@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -196,6 +196,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Hook_Front_28x28.png";
   private const string ManaclesF1AssetPath =
       "Assets/Art/Ornaments/Manacles_F1.png";
+  private const string ManaclesF3AssetPath =
+      "Assets/Art/Ornaments/Manacles_F3_9x5.png";
   private const string ManaclesS1AssetPath =
       "Assets/Art/Ornaments/Manacles_S1.png";
 
@@ -1531,8 +1533,6 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
   // REF OrnamentProjection:Moss:F3|108|96|false|639267381805114279
   // REF OrnamentProjection:Puddle:F1L|0|57|false|639276809435648392
-  // REF OrnamentProjection:Puddle:F2|99|82|false|639294199546840811
-  // REF OrnamentProjection:Puddle:F3|100|95|false|639294201825858326
   // REF OrnamentProjection:Slime:F2|104|74|false
   // REF OrnamentProjection:Slime:F3|106|93|false|639267208231012151
   // REF OrnamentProjection:WoodRing:F1|98|104|false
@@ -38673,17 +38673,21 @@ private static void HandleGameViewPointerDown(
     if (cachedManaclesGeneratedF3FrontTexture != null)
       return cachedManaclesGeneratedF3FrontTexture;
 
-    Texture2D source = GetManaclesF1Texture();
-    if (source == null || !source.isReadable)
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(ManaclesF3AssetPath);
+    if (texture == null)
+    {
+      Debug.LogError("Manacles F3: Missing native perspective asset: "
+          + ManaclesF3AssetPath);
       return null;
-
-    cachedManaclesGeneratedF3FrontTexture = GenerateDmScaledWallDecoration(
-        source,
-        ManaclesD3FrontWidth,
-        ManaclesD3FrontHeight,
-        WallOrnamentFarColorMap,
-        "Manacles F3 Generated from F1");
-    return cachedManaclesGeneratedF3FrontTexture;
+    }
+    if (texture.width != 9 || texture.height != 5 || !texture.isReadable)
+    {
+      Debug.LogError("Manacles F3: Expected readable 9x5 asset at "
+          + ManaclesF3AssetPath);
+      return null;
+    }
+    cachedManaclesGeneratedF3FrontTexture = texture;
+    return texture;
   }
 
   private void BlitManaclesD2FrontIntoPreview(Color32[] pixels)
