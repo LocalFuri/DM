@@ -61,14 +61,18 @@ public class DungeonFeatureEditor : EditorWindow
     if (entries.Count == 0)
       return;
 
-    // Inspection details remain at 1:1 GUI pixels even when map is fit-to-window.
-    const float unit = 1f;
+    // The inspection panel must stay at native UI size even when the map fits.
+    float unit = 1f;
     float width = 235f * unit;
     GUIStyle bodyStyle = new GUIStyle(EditorStyles.label)
     {
       alignment = TextAnchor.UpperLeft,
       wordWrap = false,
       normal = { textColor = Color.white }
+    };
+    GUIStyle centeredInscriptionStyle = new GUIStyle(bodyStyle)
+    {
+      alignment = TextAnchor.UpperCenter
     };
     GUIStyle titleStyle = new GUIStyle(EditorStyles.boldLabel)
     {
@@ -84,20 +88,7 @@ public class DungeonFeatureEditor : EditorWindow
     }
     Rect panel = new Rect(mapRect.xMax + 8f,
         mapRect.y - (LabelTopMargin + OutsideFeatureVerticalMargin) * mapZoom
-            + 2f, width, height);
-
-    // Match the thin orange connector of the multiple-floor-items preview.
-    Vector3 tileCenter = new Vector3(
-        mapRect.x + (inspectedInscriptionX + 0.5f) * CellSize,
-        mapRect.y + (inspectedInscriptionY + 0.5f) * CellSize, 0f);
-    Vector3 panelEnd = new Vector3(panel.xMin, panel.center.y, 0f);
-    Handles.BeginGUI();
-    Color previous = Handles.color;
-    Handles.color = new Color(1f, 0.55f, 0f, 1f);
-    Handles.DrawAAPolyLine(3f, tileCenter, panelEnd);
-    Handles.color = previous;
-    Handles.EndGUI();
-
+            + 2f * mapZoom, width, height);
     EditorGUI.DrawRect(panel, new Color(0.15f, 0.15f, 0.15f, 1f));
     Color border = new Color(0.45f, 0.45f, 0.45f, 1f);
     EditorGUI.DrawRect(new Rect(panel.x, panel.y, panel.width, 1f), border);
@@ -119,7 +110,7 @@ public class DungeonFeatureEditor : EditorWindow
           ? "[Text missing in DungeonInscriptions.json]" : entry.text;
       int lines = inscriptionText.Split('\n').Length;
       GUI.Label(new Rect(panel.x + 7f * unit, y, width - 14f * unit,
-          lines * lineHeight), inscriptionText, bodyStyle);
+          lines * lineHeight), inscriptionText, centeredInscriptionStyle);
       y += lines * lineHeight + 6f * unit;
     }
   }
@@ -1273,7 +1264,9 @@ public class DungeonFeatureEditor : EditorWindow
         : 0f;
     float popupReserve = Mathf.Max(floorReserve,
         selectedOrnaments.Count > 0 ? 170f * mapZoom : 0f);
-    if (GetInscriptionRecordsAt(inspectedInscriptionX, inspectedInscriptionY).Count > 0)
+    List<DungeonInscriptionRecord> selectedInscriptions =
+        GetInscriptionRecordsAt(inspectedInscriptionX, inspectedInscriptionY);
+    if (selectedInscriptions.Count > 0)
       popupReserve = Mathf.Max(popupReserve, 250f);
     float contentWidth =
         LabelLeftMargin * mapZoom
@@ -1284,6 +1277,19 @@ public class DungeonFeatureEditor : EditorWindow
         + OutsideFeatureVerticalMargin * mapZoom
         + mapPixelHeight
         + OutsideFeatureVerticalMargin * mapZoom;
+    if (selectedInscriptions.Count > 0)
+    {
+      // Reserve full-height scrollable space for the unscaled INS panel.
+      float inscriptionPanelHeight = 30f;
+      foreach (DungeonInscriptionRecord entry in selectedInscriptions)
+      {
+        int lines = string.IsNullOrEmpty(entry.text) ? 1
+            : entry.text.Split('\n').Length;
+        inscriptionPanelHeight += (lines + 2) * 16f + 9f;
+      }
+      contentHeight = Mathf.Max(contentHeight,
+          2f * mapZoom + inscriptionPanelHeight + 8f);
+    }
 
     mapScroll = EditorGUILayout.BeginScrollView(mapScroll);
 
