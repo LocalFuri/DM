@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -1506,6 +1506,8 @@ public class ViewportLayoutEditor : EditorWindow
   // REF FloorItemProjection:TorchDown:F1:Right|133|157|false|639275097288040421
   // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
   // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
+  // REF Inscription:10004:F1|69|105|false|639294150346336026
+  // REF Inscription:1548:F1|84|118|false|639294149273309515
   // REF Inscription:85:F1|76|118|false|639294110666408029
   // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
   // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Left|12|117|false|639293308574207999
@@ -29260,7 +29262,9 @@ private static void HandleGameViewPointerDown(
               // Keep adjacent inscription lines visually separated.
               // Screen Y is bottom-origin in this preview pixel buffer.
               const int inscriptionLineGap = 3;
-              int ty = y - row * (w + inscriptionLineGap) + yy;
+              // Exactly three lines: 3 px after line 1, 6 px after line 2.
+              int extraThirdLineGap = lines.Length == 3 && row == 2 ? 3 : 0;
+              int ty = y - row * (w + inscriptionLineGap) - extraThirdLineGap + yy;
               if (tx < 0 || tx >= DungeonViewportWidth || ty < 0
                   || ty >= PreviewHeight) continue;
               Color32 c = glyphs[(yy * scale) * alphabet.width
