@@ -10,6 +10,165 @@ public class DungeonFeatureEditor : EditorWindow
       "Assets/Data/Maps/DungeonMaster_Level00.json";
   private const string DungeonFeaturePlacementsPath =
       "Assets/Data/Features/DungeonFeaturePlacements.json";
+  private const string DungeonInscriptionsPath =
+      "Assets/Editor/DungeonInscriptions.json";
+
+  [System.Serializable]
+  private sealed class DungeonInscriptionRecord
+  {
+    public int level;
+    public int x;
+    public int y;
+    public string wall;
+    public bool initiallyHidden;
+    public string text;
+  }
+
+  [System.Serializable]
+  private sealed class DungeonInscriptionCollection
+  {
+    public DungeonInscriptionRecord[] inscriptions;
+  }
+
+  private List<DungeonInscriptionRecord> GetInscriptionRecordsAt(int x, int y)
+  {
+    List<DungeonInscriptionRecord> matches = new List<DungeonInscriptionRecord>();
+    if (!File.Exists(DungeonInscriptionsPath))
+      return matches;
+    try
+    {
+      DungeonInscriptionCollection data = JsonUtility.FromJson<DungeonInscriptionCollection>(
+          File.ReadAllText(DungeonInscriptionsPath));
+      if (data != null && data.inscriptions != null)
+      {
+        foreach (DungeonInscriptionRecord record in data.inscriptions)
+          if (record != null && record.level == currentDungeonLevel
+              && record.x == x && record.y == y)
+            matches.Add(record);
+      }
+    }
+    catch (System.Exception ex)
+    {
+      Debug.LogError("Dungeon Features: Unable to read inscription details: " + ex);
+    }
+    return matches;
+  }
+
+  private void DrawSelectedInscriptionPreview(Rect mapRect)
+  {
+    List<DungeonInscriptionRecord> entries = GetInscriptionRecordsAt(
+        inspectedInscriptionX, inspectedInscriptionY);
+    if (entries.Count == 0)
+      return;
+
+    float unit = mapZoom;
+    float width = 235f * unit;
+    GUIStyle bodyStyle = new GUIStyle(EditorStyles.label)
+    {
+      alignment = TextAnchor.UpperLeft,
+      wordWrap = false,
+      normal = { textColor = Color.white }
+    };
+    GUIStyle titleStyle = new GUIStyle(EditorStyles.boldLabel)
+    {
+      normal = { textColor = Color.white }
+    };
+    float lineHeight = 16f * unit;
+    float height = 30f * unit;
+    foreach (DungeonInscriptionRecord entry in entries)
+    {
+      int lines = string.IsNullOrEmpty(entry.text) ? 1
+          : entry.text.Split('\n').Length;
+      height += (lines + 2) * lineHeight + 9f * unit;
+    }
+    Rect panel = new Rect(mapRect.xMax + 8f * unit,
+        mapRect.y - (LabelTopMargin + OutsideFeatureVerticalMargin) * unit
+            + 2f * unit, width, height);
+    EditorGUI.DrawRect(panel, new Color(0.15f, 0.15f, 0.15f, 1f));
+    Color border = new Color(0.45f, 0.45f, 0.45f, 1f);
+    EditorGUI.DrawRect(new Rect(panel.x, panel.y, panel.width, 1f), border);
+    EditorGUI.DrawRect(new Rect(panel.x, panel.yMax - 1f, panel.width, 1f), border);
+    EditorGUI.DrawRect(new Rect(panel.x, panel.y, 1f, panel.height), border);
+    EditorGUI.DrawRect(new Rect(panel.xMax - 1f, panel.y, 1f, panel.height), border);
+    float y = panel.y + 6f * unit;
+    GUI.Label(new Rect(panel.x + 7f * unit, y, width - 14f * unit,
+        20f * unit), "INS (" + inspectedInscriptionX + ","
+        + inspectedInscriptionY + ") – " + entries.Count, titleStyle);
+    y += 24f * unit;
+    foreach (DungeonInscriptionRecord entry in entries)
+    {
+      string status = entry.initiallyHidden ? "Hidden initially" : "Visible initially";
+      GUI.Label(new Rect(panel.x + 7f * unit, y, width - 14f * unit,
+          lineHeight), "Wall: " + entry.wall + "  |  " + status, bodyStyle);
+      y += lineHeight + 3f * unit;
+      string inscriptionText = string.IsNullOrEmpty(entry.text)
+          ? "[Text missing in DungeonInscriptions.json]" : entry.text;
+      int lines = inscriptionText.Split('\n').Length;
+      GUI.Label(new Rect(panel.x + 7f * unit, y, width - 14f * unit,
+          lines * lineHeight), inscriptionText, bodyStyle);
+      y += lines * lineHeight + 6f * unit;
+    }
+  }
+
+  private void DrawInscriptionMarkers(Rect mapRect)
+  {
+    if (!File.Exists(DungeonInscriptionsPath))
+    {
+      Debug.LogError("Dungeon Features: Missing inscription positions: "
+          + DungeonInscriptionsPath);
+      return;
+    }
+
+    DungeonInscriptionCollection data;
+    try
+    {
+      data = JsonUtility.FromJson<DungeonInscriptionCollection>(
+          File.ReadAllText(DungeonInscriptionsPath));
+    }
+    catch (System.Exception ex)
+    {
+      Debug.LogError("Dungeon Features: Cannot parse inscription positions: " + ex);
+      return;
+    }
+    if (data == null || data.inscriptions == null)
+    {
+      Debug.LogError("Dungeon Features: Inscription positions contain no inscriptions array.");
+      return;
+    }
+
+    GUIStyle style = new GUIStyle(GUI.skin.label)
+    {
+      alignment = TextAnchor.MiddleCenter,
+      fontStyle = FontStyle.Bold,
+      fontSize = Mathf.Max(5, Mathf.RoundToInt(11f * mapZoom)),
+      clipping = TextClipping.Clip,
+      padding = new RectOffset(0, 0, 0, 0)
+    };
+    style.normal.textColor = Color.white;
+    HashSet<string> drawn = new HashSet<string>();
+    foreach (DungeonInscriptionRecord entry in data.inscriptions)
+    {
+      if (entry == null || entry.level != currentDungeonLevel)
+        continue;
+      if (!map.IsInside(entry.x, entry.y))
+      {
+        Debug.LogError("Dungeon Features: Inscription outside level "
+            + entry.level + " at " + entry.x + "," + entry.y);
+        continue;
+      }
+      string tileKey = entry.x + "," + entry.y;
+      if (!drawn.Add(tileKey))
+        continue; // Multiple inscriptions can share one tile (Level 12).
+      Rect tile = new Rect(mapRect.x + entry.x * CellSize,
+          mapRect.y + entry.y * CellSize, CellSize, CellSize);
+      Rect marker = new Rect(tile.x + 2f * mapZoom,
+          tile.y + 8f * mapZoom,
+          tile.width - 4f * mapZoom, 16f * mapZoom);
+      EditorGUI.DrawRect(marker, new Color(0f, 0f, 0.9f, 1f));
+      GUI.Label(marker, "INS", style);
+    }
+  }
+
   private const int HallOfChampionsLevel = 0;
   private const int MaxDungeonLevel = 13;
   private const string MossF1AssetName = "Moss_F1_56x19";
@@ -192,6 +351,8 @@ public class DungeonFeatureEditor : EditorWindow
   private int inspectedFloorItemY = -1;
   private int inspectedOrnamentX = -1;
   private int inspectedOrnamentY = -1;
+  private int inspectedInscriptionX = -1;
+  private int inspectedInscriptionY = -1;
 
   private static bool IsFloorItemRecordType(string recordType)
   {
@@ -1098,6 +1259,8 @@ public class DungeonFeatureEditor : EditorWindow
         : 0f;
     float popupReserve = Mathf.Max(floorReserve,
         selectedOrnaments.Count > 0 ? 170f * mapZoom : 0f);
+    if (GetInscriptionRecordsAt(inspectedInscriptionX, inspectedInscriptionY).Count > 0)
+      popupReserve = Mathf.Max(popupReserve, 250f * mapZoom);
     float contentWidth =
         LabelLeftMargin * mapZoom
         + Mathf.Max(map.Width, OutsideNameColumnX + 2) * CellSize
@@ -1160,13 +1323,21 @@ public class DungeonFeatureEditor : EditorWindow
     DrawOriginalWallOrnamentIcons(mapRect);
     DrawVerifiedChampionTileHighlights(mapRect);
     DrawChampionMirrorMarkers(mapRect);
+    DrawInscriptionMarkers(mapRect);
     // The click may have selected a new tile during this GUI event. Read the
     // current inspection state now, instead of using the previous frame's data.
-    List<FloorItemPlacementRecord> currentPopupRecords = GetInspectedFloorItems();
-    if (currentPopupRecords != null && currentPopupRecords.Count > 1)
-      DrawSelectedFloorItemsPopup(mapRect, currentPopupRecords);
+    // INS inspection has priority over item and ornament previews.
+    // The inscription panel must appear even on a tile with other features.
+    if (GetInscriptionRecordsAt(inspectedInscriptionX, inspectedInscriptionY).Count > 0)
+      DrawSelectedInscriptionPreview(mapRect);
     else
-      DrawSelectedWallOrnamentPreview(mapRect);
+    {
+      List<FloorItemPlacementRecord> currentPopupRecords = GetInspectedFloorItems();
+      if (currentPopupRecords != null && currentPopupRecords.Count > 1)
+        DrawSelectedFloorItemsPopup(mapRect, currentPopupRecords);
+      else
+        DrawSelectedWallOrnamentPreview(mapRect);
+    }
 
     // Always paint the player tile LAST: no floor, ornament, champion or
     // preview layer may hide the cyan player location.
@@ -2975,6 +3146,27 @@ public class DungeonFeatureEditor : EditorWindow
       return;
 
     bool doubleClick = current.clickCount == 2;
+    // Single-click INS inspection takes precedence over wall ornaments.
+    // Double-click behavior remains unchanged.
+    if (!doubleClick && GetInscriptionRecordsAt(x, y).Count > 0)
+    {
+      inspectedInscriptionX = x;
+      inspectedInscriptionY = y;
+      inspectedOrnamentX = -1;
+      inspectedOrnamentY = -1;
+      inspectedFloorItemX = -1;
+      inspectedFloorItemY = -1;
+      current.Use();
+      GUI.changed = true;
+      Repaint();
+      return;
+    }
+    if (inspectedInscriptionX != x || inspectedInscriptionY != y)
+    {
+      inspectedInscriptionX = -1;
+      inspectedInscriptionY = -1;
+    }
+
     // Single-click inspection must never teleport the player into a wall.
     // A second click retains the original wall-ornament teleport behavior.
     if (!doubleClick && resolvedWallOrnaments != null)

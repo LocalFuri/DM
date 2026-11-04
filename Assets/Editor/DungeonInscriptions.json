@@ -1,0 +1,540 @@
+{
+  "inscriptions": [
+    {
+      "level": 0,
+      "x": 9,
+      "y": 1,
+      "wall": "N",
+      "initiallyHidden": false,
+      "text": "IT IS TOO BAD YOU\nDID NOT DISCOVER\nTHE TRUE SECRET\nOF THE FIRESTAFF.\nNOW THAT I HAVE\nIT I HAVE NO\nFURTHER NEED FOR\nYOU"
+    },
+    {
+      "level": 0,
+      "x": 1,
+      "y": 4,
+      "wall": "N",
+      "initiallyHidden": true,
+      "text": "WELCOME BACK\nBRAVE\nADVENTURERS."
+    },
+    {
+      "level": 0,
+      "x": 8,
+      "y": 4,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "HALL OF\nCHAMPIONS"
+    },
+    {
+      "level": 0,
+      "x": 4,
+      "y": 17,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "VI\nALTAR OF\nREBIRTH"
+    },
+    {
+      "level": 1,
+      "x": 29,
+      "y": 2,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "STEP INSIDE\nTAKE A RIDE"
+    },
+    {
+      "level": 1,
+      "x": 22,
+      "y": 8,
+      "wall": "W",
+      "initiallyHidden": false,
+      "text": "THIS WALL SAYS\nNOTHING"
+    },
+    {
+      "level": 1,
+      "x": 13,
+      "y": 16,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "TO CLOSE PIT\nLEAVE A\nVALUABLE\nON FLOOR"
+    },
+    {
+      "level": 1,
+      "x": 18,
+      "y": 26,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "THIS FOUNTAIN\nACCEPTS ONE\nWISH."
+    },
+    {
+      "level": 1,
+      "x": 28,
+      "y": 27,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "NONE SHALL\nPASS"
+    },
+    {
+      "level": 2,
+      "x": 15,
+      "y": 8,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "HIT AND RUN"
+    },
+    {
+      "level": 2,
+      "x": 13,
+      "y": 12,
+      "wall": "W",
+      "initiallyHidden": false,
+      "text": "THE MATRIX"
+    },
+    {
+      "level": 2,
+      "x": 15,
+      "y": 12,
+      "wall": "W",
+      "initiallyHidden": false,
+      "text": "TIME IS OF\nTHE ESSENCE"
+    },
+    {
+      "level": 2,
+      "x": 9,
+      "y": 14,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "YOU MUST PAY\nFOR YOUR\nENTRANCE."
+    },
+    {
+      "level": 2,
+      "x": 11,
+      "y": 14,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "THE VAULT"
+    },
+    {
+      "level": 2,
+      "x": 17,
+      "y": 14,
+      "wall": "N",
+      "initiallyHidden": false,
+      "text": "ROOM OF THE\nGEM"
+    },
+    {
+      "level": 2,
+      "x": 20,
+      "y": 14,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "STEP RIGHT UP\nGOING DOWN..."
+    },
+    {
+      "level": 2,
+      "x": 7,
+      "y": 16,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "CAST YOUR\nINFLUENCE\nCAST YOUR\nMIGHT"
+    },
+    {
+      "level": 2,
+      "x": 11,
+      "y": 16,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "CHAMBERS OF\nTHE GUARDIAN"
+    },
+    {
+      "level": 2,
+      "x": 17,
+      "y": 16,
+      "wall": "N",
+      "initiallyHidden": false,
+      "text": "CREATURE\nCAVERN"
+    },
+    {
+      "level": 2,
+      "x": 14,
+      "y": 18,
+      "wall": "W",
+      "initiallyHidden": false,
+      "text": "CHOOSE YOUR\nDOOR\nCHOOSE YOUR\nFATE"
+    },
+    {
+      "level": 2,
+      "x": 27,
+      "y": 29,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "VI\nALTAR OF\nREBIRTH"
+    },
+    {
+      "level": 3,
+      "x": 6,
+      "y": 3,
+      "wall": "S",
+      "initiallyHidden": true,
+      "text": "YOU WILL\nREGRET THAT."
+    },
+    {
+      "level": 3,
+      "x": 8,
+      "y": 3,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "THIS IS MY\nPRISONER. LET\nHIM SUFFER."
+    },
+    {
+      "level": 3,
+      "x": 29,
+      "y": 7,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "SHORTCUT"
+    },
+    {
+      "level": 3,
+      "x": 14,
+      "y": 17,
+      "wall": "E",
+      "initiallyHidden": true,
+      "text": "SHORTCUT BACK"
+    },
+    {
+      "level": 3,
+      "x": 30,
+      "y": 30,
+      "wall": "N",
+      "initiallyHidden": false,
+      "text": "PREPARE TO\nMEET YOUR DOOM"
+    },
+    {
+      "level": 3,
+      "x": 23,
+      "y": 31,
+      "wall": "W",
+      "initiallyHidden": false,
+      "text": "DONT LET A\nCLOSED DOOR\nSTOP YOU"
+    },
+    {
+      "level": 4,
+      "x": 12,
+      "y": 12,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "TREASURE\nSTORES"
+    },
+    {
+      "level": 4,
+      "x": 8,
+      "y": 27,
+      "wall": "W",
+      "initiallyHidden": false,
+      "text": "STORE ROOMS"
+    },
+    {
+      "level": 5,
+      "x": 14,
+      "y": 4,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "HA HA HA"
+    },
+    {
+      "level": 5,
+      "x": 18,
+      "y": 9,
+      "wall": "W",
+      "initiallyHidden": false,
+      "text": "TEST YOUR\nSTRENGTH"
+    },
+    {
+      "level": 5,
+      "x": 20,
+      "y": 12,
+      "wall": "N",
+      "initiallyHidden": false,
+      "text": "I HATE COWARDS"
+    },
+    {
+      "level": 5,
+      "x": 20,
+      "y": 13,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "IF YOU WANT TO\nSTAY ALIVE YOU\nBETTER TURN\nAND RUN"
+    },
+    {
+      "level": 5,
+      "x": 20,
+      "y": 14,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "I DONT LIKE TO\nBE IGNORED"
+    },
+    {
+      "level": 5,
+      "x": 19,
+      "y": 17,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "THE GRAVE OF\nKING MILIAS\nTHE GOLDEN\nWHO EVEN"
+    },
+    {
+      "level": 5,
+      "x": 8,
+      "y": 18,
+      "wall": "N",
+      "initiallyHidden": false,
+      "text": "I AM ALL\nI AM NONE"
+    },
+    {
+      "level": 5,
+      "x": 11,
+      "y": 18,
+      "wall": "N",
+      "initiallyHidden": false,
+      "text": "A GOLDEN\nHEAD AND TAIL\nBUT NO\nBODY"
+    },
+    {
+      "level": 5,
+      "x": 19,
+      "y": 18,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "IN DEATH\nTHIRSTS FOR\nBULLION."
+    },
+    {
+      "level": 5,
+      "x": 7,
+      "y": 20,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "THE RIDDLE\nROOM"
+    },
+    {
+      "level": 5,
+      "x": 17,
+      "y": 21,
+      "wall": "N",
+      "initiallyHidden": false,
+      "text": "THE GRAVE OF\nKING FILIUS\nEXPLORER OF\nCOMBINATIONS"
+    },
+    {
+      "level": 5,
+      "x": 8,
+      "y": 22,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "HARD AS ROCKS\nBLUE AS SKY\nTWINKLE IN\nWOMANS EYE"
+    },
+    {
+      "level": 5,
+      "x": 11,
+      "y": 22,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "I ARCH YET\nHAVE NO BACK"
+    },
+    {
+      "level": 5,
+      "x": 25,
+      "y": 28,
+      "wall": "W",
+      "initiallyHidden": false,
+      "text": "ALTAR OF VI"
+    },
+    {
+      "level": 6,
+      "x": 4,
+      "y": 1,
+      "wall": "N",
+      "initiallyHidden": false,
+      "text": "SUNDRY\nSUPPLIES"
+    },
+    {
+      "level": 6,
+      "x": 9,
+      "y": 2,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "FIRE\nELEMENTS"
+    },
+    {
+      "level": 6,
+      "x": 13,
+      "y": 2,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "EARTH\nELEMENTS"
+    },
+    {
+      "level": 6,
+      "x": 17,
+      "y": 2,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "AIR\nELEMENTS"
+    },
+    {
+      "level": 6,
+      "x": 21,
+      "y": 2,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "WATER\nELEMENTS"
+    },
+    {
+      "level": 6,
+      "x": 4,
+      "y": 3,
+      "wall": "W",
+      "initiallyHidden": false,
+      "text": "CLEAN FLASKS"
+    },
+    {
+      "level": 6,
+      "x": 5,
+      "y": 3,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "NOTES\nSCROLLS\nFORMULAS\nSPELLS"
+    },
+    {
+      "level": 6,
+      "x": 5,
+      "y": 5,
+      "wall": "N",
+      "initiallyHidden": false,
+      "text": "DANGER\n\nENTER WITH\nCAUTION"
+    },
+    {
+      "level": 6,
+      "x": 28,
+      "y": 6,
+      "wall": "W",
+      "initiallyHidden": true,
+      "text": "READING ROOM\n\nKEEP OUT"
+    },
+    {
+      "level": 6,
+      "x": 26,
+      "y": 23,
+      "wall": "W",
+      "initiallyHidden": false,
+      "text": "THE TOMB OF\nTHE FIRESTAFF"
+    },
+    {
+      "level": 8,
+      "x": 16,
+      "y": 5,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "WHAT IS UNDER\nFOOT IS SOON\nOVERHEAD"
+    },
+    {
+      "level": 8,
+      "x": 23,
+      "y": 15,
+      "wall": "N",
+      "initiallyHidden": false,
+      "text": "LIGHTER THAN\nA FEATHER"
+    },
+    {
+      "level": 8,
+      "x": 7,
+      "y": 29,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "WHEN IS ROCK\nNOT ROCK"
+    },
+    {
+      "level": 9,
+      "x": 3,
+      "y": 12,
+      "wall": "W",
+      "initiallyHidden": false,
+      "text": "CHOOSE A DOOR"
+    },
+    {
+      "level": 9,
+      "x": 14,
+      "y": 12,
+      "wall": "N",
+      "initiallyHidden": false,
+      "text": "BEWARE MY\nTWISTED HUMOR\nTHE DECEIVER\nTHE SNAKE"
+    },
+    {
+      "level": 9,
+      "x": 22,
+      "y": 13,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "ZOOOOOM"
+    },
+    {
+      "level": 10,
+      "x": 9,
+      "y": 0,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "CLOCKWISE"
+    },
+    {
+      "level": 10,
+      "x": 0,
+      "y": 3,
+      "wall": "S",
+      "initiallyHidden": false,
+      "text": "TURN BACK"
+    },
+    {
+      "level": 10,
+      "x": 20,
+      "y": 25,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "ENLARGE\nMY\nVIEW"
+    },
+    {
+      "level": 11,
+      "x": 24,
+      "y": 10,
+      "wall": "E",
+      "initiallyHidden": false,
+      "text": "COWARDS WILL\nBE HUNTED DOWN\nAND\nKILLED"
+    },
+    {
+      "level": 12,
+      "x": 0,
+      "y": 0,
+      "wall": "N",
+      "initiallyHidden": true,
+      "text": "ATHANK YOU MY\nFRIENDS.  YOU\nHAVE BANISHED\nCHAOS AND\nREJECTED THE\nFALSE PATH OF\nUNCOMPROMISING\nORDER."
+    },
+    {
+      "level": 12,
+      "x": 0,
+      "y": 0,
+      "wall": "N",
+      "initiallyHidden": true,
+      "text": "BONLY BY LEARNING\nTHE TRUTH AND\nSEEKING THE PATH\nOF BALANCE\nDID YOU GUESS THE\nTRUE NATURE OF\nTHE FIRESTAFF."
+    },
+    {
+      "level": 12,
+      "x": 0,
+      "y": 0,
+      "wall": "N",
+      "initiallyHidden": true,
+      "text": "CBY YOUR BRAVE\nDEEDS I AM MADE\nWHOLE AGAIN AND\nHARMONY IS\nRESTORED TO THE\nWORLD."
+    },
+    {
+      "level": 12,
+      "x": 0,
+      "y": 0,
+      "wall": "N",
+      "initiallyHidden": true,
+      "text": "DYOUR NAMES WILL\nBE RECORDED IN\nTHE GREAT HALL\nAND REMEMBERED BY\nTHE FUTURE\nGENERATIONS YOU\nHAVE MADE\nPOSSIBLE."
+    }
+  ]
+}

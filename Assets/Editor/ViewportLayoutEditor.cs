@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -1093,6 +1093,25 @@ public class ViewportLayoutEditor : EditorWindow
   private bool previewMiniMapMuted;
 
   [System.Serializable]
+  private sealed class InscriptionPositionRoot
+  {
+    public InscriptionPositionEntry[] inscriptions;
+  }
+
+  [System.Serializable]
+  private sealed class InscriptionPositionEntry
+  {
+    public int level;
+    public int x;
+    public int y;
+    public string wall;
+    public string text;
+    public bool initiallyHidden;
+  }
+
+  private const string InscriptionPositionsPath =
+      "Assets/Editor/DungeonInscriptions.json";
+
   private sealed class WallInscriptionMapRoot
   {
     public WallInscriptionEntry[] wall_inscriptions;
@@ -17192,8 +17211,8 @@ private static void HandleGameViewPointerDown(
     });
   }
 
-  // Inscription data is loaded strictly from DungeonMaster_LevelXX.json;
-  // no synthetic records or coordinates are supplied when the field is absent.
+  // Level 0 retains its verified map inscription metadata; other levels load
+  // the complete researched inscription dataset separately from map geometry.
   private bool ReloadWallInscriptionsFromLevelJson()
   {
     string path = PreviewLevelMapPaths[previewDungeonLevel];
@@ -17215,15 +17234,99 @@ private static void HandleGameViewPointerDown(
           + " wall_inscriptions=" + hasInscriptionsKey);
       WallInscriptionMapRoot root =
           JsonUtility.FromJson<WallInscriptionMapRoot>(json);
+      // Keep Level 0's existing verified source-wall coordinates, stable
+      // TextDataWordOffset keys and accepted HALL OF CHAMPIONS calibration.
+      if (previewDungeonLevel != 0)
+      {
+        if (!File.Exists(InscriptionPositionsPath))
+        {
+          previewWallInscriptions = new WallInscriptionEntry[0];
+          Debug.LogError("WALL INSCRIPTION DATA MISSING: " + InscriptionPositionsPath);
+          return false;
+        }
+        InscriptionPositionRoot positions =
+            JsonUtility.FromJson<InscriptionPositionRoot>(
+                File.ReadAllText(InscriptionPositionsPath));
+        if (positions == null || positions.inscriptions == null)
+        {
+          previewWallInscriptions = new WallInscriptionEntry[0];
+          Debug.LogError("WALL INSCRIPTION DATA INVALID: " + InscriptionPositionsPath);
+          return false;
+        }
+        var selected = new List<WallInscriptionEntry>();
+        for (int i = 0; i < positions.inscriptions.Length; i++)
+        {
+          InscriptionPositionEntry item = positions.inscriptions[i];
+          if (item.level != previewDungeonLevel) continue;
+          if (string.IsNullOrEmpty(item.text))
+          {
+            Debug.LogError("WALL INSCRIPTION TEXT MISSING: level=" + item.level
+                + " tile=" + item.x + "," + item.y);
+            return false;
+          }
+          // Source entries are wall-facing reading locations (the map
+          // metadata is not changed). Resolve the actual wall tile below.
+          selected.Add(new WallInscriptionEntry {
+            x = item.x, y = item.y, dir = item.wall,
+            Text = item.text, Visible = item.initiallyHidden ? 0 : 1,
+            TextDataWordOffset = 10000 + i
+          });
+        }
+        previewWallInscriptions = selected.ToArray();
+        return true;
+      }
       if (root == null || root.wall_inscriptions == null)
       {
         previewWallInscriptions = new WallInscriptionEntry[0];
-        Debug.LogError("WALL INSCRIPTION DATA MISSING: " + path
-            + " has no wall_inscriptions array. Install the corrected Level 0"
-            + " JSON included with this patch; no records were invented.");
+        Debug.LogError("WALL INSCRIPTION DATA MISSING: Level 00 map's verified inscriptions");
         return false;
       }
       previewWallInscriptions = root.wall_inscriptions;
+      // Level 00 still carries original DAT coordinates for several texts.
+      // Reconcile the Altar inscription with the verified reading-tile
+      // coordinate in DungeonInscriptions.json. Keep the original record's
+      // stable offset/calibration key and all other Level 00 records intact.
+      if (File.Exists(InscriptionPositionsPath))
+      {
+        InscriptionPositionRoot authoritative =
+            JsonUtility.FromJson<InscriptionPositionRoot>(
+                File.ReadAllText(InscriptionPositionsPath));
+        if (authoritative != null && authoritative.inscriptions != null)
+        {
+          InscriptionPositionEntry altar = null;
+          foreach (InscriptionPositionEntry item in authoritative.inscriptions)
+            if (item.level == 0 && item.x == 4 && item.y == 17
+                && item.wall == "E")
+            {
+              altar = item;
+              break;
+            }
+          if (altar != null)
+          {
+            bool updated = false;
+            foreach (WallInscriptionEntry entry in previewWallInscriptions)
+            {
+              if (entry == null || string.IsNullOrEmpty(entry.Text)
+                  || !entry.Text.ToUpperInvariant().Contains("ALTAR OF"))
+                continue;
+              entry.x = altar.x;
+              entry.y = altar.y;
+              entry.dir = altar.wall;
+              entry.SourceMapLocation = null;
+              entry.Text = altar.text;
+              entry.Visible = altar.initiallyHidden ? 0 : 1;
+              updated = true;
+              break;
+            }
+            if (!updated)
+              Debug.LogError("INSCRIPTION: Level 00 Altar record was not found"
+                  + " in the existing wall_inscriptions array.");
+          }
+          else
+            Debug.LogError("INSCRIPTION: missing Level 00 (4,17) E in "
+                + InscriptionPositionsPath);
+        }
+      }
       Debug.Log("INSCRIPTION DATA LOADED: level=" + previewDungeonLevel
           + " count=" + previewWallInscriptions.Length + " from " + path);
       if (previewDungeonLevel == 0 && previewWallInscriptions.Length != 4)
@@ -29022,6 +29125,20 @@ private static void HandleGameViewPointerDown(
         ? inscription.SourceMapLocation.y : inscription.y;
     string face = inscription.SourceMapLocation != null
         ? inscription.SourceMapLocation.dir : inscription.dir;
+    // Extracted location may designate the floor tile from which a wall is
+    // read. Preserve wall tiles as-is; for floor tiles use the adjacent
+    // wall in the recorded viewing direction. Never synthesize a wall.
+    if (inscription.SourceMapLocation == null && !PreviewTileIsWall(wallX, wallY))
+    {
+      int ox = face == "E" ? 1 : face == "W" ? -1 : 0;
+      int oy = face == "S" ? 1 : face == "N" ? -1 : 0;
+      int adjacentX = wallX + ox, adjacentY = wallY + oy;
+      if (!PreviewTileIsWall(adjacentX, adjacentY)) return false;
+      wallX = adjacentX;
+      wallY = adjacentY;
+      face = face == "N" ? "S" : face == "S" ? "N"
+          : face == "E" ? "W" : face == "W" ? "E" : face;
+    }
     string physicalFace = face == "N" ? "North"
         : face == "S" ? "South" : face == "E" ? "East"
         : face == "W" ? "West" : face;
@@ -29126,13 +29243,15 @@ private static void HandleGameViewPointerDown(
         {
           char letter = line[n];
           if (letter == ' ') continue;
-          if (letter < 'A' || letter > 'Z')
+          // Original inscription alphabet has letters plus punctuation.
+          // Slot 27 is '.'; unsupported characters are reported, not guessed.
+          if ((letter < 'A' || letter > 'Z') && letter != '.')
           {
             Debug.LogError("WALL INSCRIPTION: unsupported glyph '" + letter
                 + "' at offset " + entry.TextDataWordOffset);
             continue;
           }
-          int letterIndex = letter - 'A';
+          int letterIndex = letter == '.' ? 27 : letter - 'A';
           int w = (8 + scale - 1) / scale;
           for (int yy = 0; yy < w; yy++)
             for (int xx = 0; xx < w; xx++)
