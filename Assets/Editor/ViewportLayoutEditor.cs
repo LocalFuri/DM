@@ -29166,19 +29166,21 @@ private static void HandleGameViewPointerDown(
       green.normal.textColor = Color.green;
       string title = entry.Text.Replace('\n', ' ');
       if (title.Length > 27) title = title.Substring(0, 27) + "...";
-      GUILayout.Label("Inscription " + title + " [" + entry.x + ","
-          + entry.y + "] (" + entry.dir + ") / F" + depth,
-          green, GUILayout.Width(375f));
+      string caption = title + " " + entry.x + "," + entry.y + " "
+          + entry.dir + " F" + depth;
+      // Fit the label to its actual text instead of reserving a fixed 375 px.
+      float captionWidth = green.CalcSize(new GUIContent(caption)).x + 3f;
+      GUILayout.Label(caption, green, GUILayout.Width(captionWidth));
       bool enabled = IsPreviewFeatureEnabled(key);
-      bool newEnabled = EditorGUILayout.ToggleLeft("Set", enabled, GUILayout.Width(45f));
-      GUILayout.Label("X", GUILayout.Width(15f));
-      bool xMinus = GUILayout.Button("-", GUILayout.Width(21f));
-      int newX = EditorGUILayout.IntField(x, GUILayout.Width(42f));
-      bool xPlus = GUILayout.Button("+", GUILayout.Width(21f));
-      GUILayout.Label("Y", GUILayout.Width(15f));
-      bool yMinus = GUILayout.Button("-", GUILayout.Width(21f));
-      int newY = EditorGUILayout.IntField(y, GUILayout.Width(42f));
-      bool yPlus = GUILayout.Button("+", GUILayout.Width(21f));
+      bool newEnabled = EditorGUILayout.ToggleLeft("Set", enabled, GUILayout.Width(39f));
+      GUILayout.Label("X", GUILayout.Width(11f));
+      bool xMinus = GUILayout.Button("-", GUILayout.Width(19f));
+      int newX = EditorGUILayout.IntField(x, GUILayout.Width(27f));
+      bool xPlus = GUILayout.Button("+", GUILayout.Width(19f));
+      GUILayout.Label("Y", GUILayout.Width(11f));
+      bool yMinus = GUILayout.Button("-", GUILayout.Width(19f));
+      int newY = EditorGUILayout.IntField(y, GUILayout.Width(27f));
+      bool yPlus = GUILayout.Button("+", GUILayout.Width(19f));
       if (xMinus) newX--;
       if (xPlus) newX++;
       if (yMinus) newY--;
