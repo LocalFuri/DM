@@ -78,14 +78,19 @@ public class DungeonFeatureEditor : EditorWindow
     {
       normal = { textColor = Color.white }
     };
-    float lineHeight = 16f * unit;
-    float height = 30f * unit;
+    float lineHeight = Mathf.Max(16f, centeredInscriptionStyle.lineHeight);
+    // Measure every actual text row; multiple inscriptions on one tile are supported.
+    float height = 6f + 24f; // top inset + title
     foreach (DungeonInscriptionRecord entry in entries)
     {
-      int lines = string.IsNullOrEmpty(entry.text) ? 1
-          : entry.text.Split('\n').Length;
-      height += (lines + 2) * lineHeight + 9f * unit;
+      string inscriptionText = string.IsNullOrEmpty(entry.text)
+          ? "[Text missing in DungeonInscriptions.json]" : entry.text;
+      string[] rows = inscriptionText.Replace("\\r\\n", "\\n")
+          .Replace("\\r", "\\n").Split('\n');
+      height += lineHeight + 3f; // wall/direction/status
+      height += rows.Length * lineHeight + 6f; // text rows and bottom gap
     }
+    height += 6f; // ensure the bottom line never touches the border
     Rect panel = new Rect(mapRect.xMax + 8f,
         mapRect.y - (LabelTopMargin + OutsideFeatureVerticalMargin) * mapZoom
             + 2f * mapZoom, width, height);
@@ -108,10 +113,15 @@ public class DungeonFeatureEditor : EditorWindow
       y += lineHeight + 3f * unit;
       string inscriptionText = string.IsNullOrEmpty(entry.text)
           ? "[Text missing in DungeonInscriptions.json]" : entry.text;
-      int lines = inscriptionText.Split('\n').Length;
-      GUI.Label(new Rect(panel.x + 7f * unit, y, width - 14f * unit,
-          lines * lineHeight), inscriptionText, centeredInscriptionStyle);
-      y += lines * lineHeight + 6f * unit;
+      string[] rows = inscriptionText.Replace("\\r\\n", "\\n")
+          .Replace("\\r", "\\n").Split('\n');
+      foreach (string row in rows)
+      {
+        GUI.Label(new Rect(panel.x + 7f, y, width - 14f, lineHeight),
+            row, centeredInscriptionStyle);
+        y += lineHeight;
+      }
+      y += 6f;
     }
   }
 
@@ -3230,6 +3240,61 @@ public class DungeonFeatureEditor : EditorWindow
       GUI.changed = true;
       Repaint();
       return;
+    }
+
+    // INS markers specify a wall-facing direction. Navigation from these
+    // markers must not inherit the previous camera orientation.
+    if (doubleClick)
+    {
+      List<DungeonInscriptionRecord> inscriptionEntries =
+          GetInscriptionRecordsAt(x, y);
+      if (inscriptionEntries.Count > 0)
+      {
+        DungeonInscriptionRecord entry = inscriptionEntries[0];
+        if (!TryFloorItemFacing(entry.wall, out DungeonFacing inscriptionFacing))
+        {
+          Debug.LogError("Dungeon Features: Invalid inscription direction at ("
+              + x + "," + y + "): " + entry.wall);
+          current.Use();
+          return;
+        }
+
+        int viewX = x;
+        int viewY = y;
+        DungeonFacing viewFacing = inscriptionFacing;
+        if (!map.CanEnter(viewX, viewY))
+        {
+          // For inscriptions attached to a stone tile, 'wall' describes
+          // the physical face. Stand beside that face and look back at it.
+          switch (inscriptionFacing)
+          {
+            case DungeonFacing.North: viewY--; viewFacing = DungeonFacing.South; break;
+            case DungeonFacing.East: viewX++; viewFacing = DungeonFacing.West; break;
+            case DungeonFacing.South: viewY++; viewFacing = DungeonFacing.North; break;
+            case DungeonFacing.West: viewX--; viewFacing = DungeonFacing.East; break;
+          }
+        }
+        if (!map.IsInside(viewX, viewY) || !map.CanEnter(viewX, viewY))
+        {
+          Debug.LogError("Dungeon Features: No walkable INS viewing tile for ("
+              + x + "," + y + ") " + entry.wall + ". Teleport cancelled.");
+          current.Use();
+          return;
+        }
+
+        selectedX = viewX;
+        selectedY = viewY;
+        selectedFacing = viewFacing;
+        EditorPrefs.SetInt(ViewEditPreviewLevelKey, currentDungeonLevel);
+        EditorPrefs.SetInt(ViewEditPreviewXKey, viewX);
+        EditorPrefs.SetInt(ViewEditPreviewYKey, viewY);
+        EditorPrefs.SetInt(ViewEditPreviewFacingKey, (int)viewFacing);
+        current.Use();
+        GUI.changed = true;
+        Repaint();
+        CloseAfterGridTeleport();
+        return;
+      }
     }
 
     // Double-click navigation only accepts a walkable destination. A single

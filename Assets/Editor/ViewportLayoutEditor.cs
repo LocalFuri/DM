@@ -1506,7 +1506,6 @@ public class ViewportLayoutEditor : EditorWindow
   // REF FloorItemProjection:TorchDown:F1:Right|133|157|false|639275097288040421
   // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
   // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
-  // REF Inscription:1548:F1|83|118|false|639294167351643687
   // REF Inscription:85:F1|76|118|false|639294110666408029
   // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
   // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Left|12|117|false|639293308574207999
@@ -1532,6 +1531,8 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
   // REF OrnamentProjection:Moss:F3|108|96|false|639267381805114279
   // REF OrnamentProjection:Puddle:F1L|0|57|false|639276809435648392
+  // REF OrnamentProjection:Puddle:F2|99|82|false|639294199546840811
+  // REF OrnamentProjection:Puddle:F3|100|95|false|639294201825858326
   // REF OrnamentProjection:Slime:F2|104|74|false
   // REF OrnamentProjection:Slime:F3|106|93|false|639267208231012151
   // REF OrnamentProjection:WoodRing:F1|98|104|false
@@ -14128,6 +14129,28 @@ private static void HandleGameViewPointerDown(
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3));
   }
 
+  // Original Level 0 (8,4) South geometry class: an open left lane
+  // remains visible through D3 alongside a center front wall beginning at
+  // D1 and continuing through D3. The far-left 8px LeftS3 edge is visible.
+  // This is strictly viewer-relative and applies to matching layouts in
+  // any level/facing; the verified calibration stays X=0, Y=57.
+  private static bool IsViewport17LeftS3OpenLeftNearFront(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null)
+      return false;
+
+    return IsViewport17LaneOpenAt(inspection, -1, 0)
+        && IsViewport17LaneOpenAt(inspection, -1, 1)
+        && IsViewport17LaneOpenAt(inspection, -1, 2)
+        && IsViewport17LaneOpenAt(inspection, -1, 3)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 1))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 2))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 1))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 2));
+  }
+
   private static bool IsViewport17RightS3D3FrontEdge(
       Viewport17Inspection inspection)
   {
@@ -14938,6 +14961,8 @@ private static void HandleGameViewPointerDown(
         IsViewport17LeftS3OpenLeftD3CenterFront(inspection);
     bool leftS3NearCenterFullD3Edge =
         IsViewport17LeftS3NearCenterFullD3Edge(inspection);
+    bool leftS3OpenLeftNearFront =
+        IsViewport17LeftS3OpenLeftNearFront(inspection);
     // Verified at 12,9 West: the open-center/open-right D3 terminator still
     // needs LeftS3 visible. FrontF3 extension may also exist, but it must not
     // suppress the LeftS3 side-face for this geometry class.
@@ -14946,13 +14971,16 @@ private static void HandleGameViewPointerDown(
         || leftS3OuterD2Fingerprint
         || leftS3D3FullFrontEdge
         || leftS3OpenLeftD3CenterFront
-        || leftS3NearCenterFullD3Edge)
+        || leftS3NearCenterFullD3Edge
+        || leftS3OpenLeftNearFront)
     {
       Viewport17Cell primaryCell = leftS3D3Terminator || leftS3D3FullFrontEdge || leftS3NearCenterFullD3Edge
           ? FindViewport17Cell(inspection.Cells, -1, 3)
           : leftS3OpenLeftD3CenterFront
               ? FindViewport17Cell(inspection.Cells, 0, 3)
-              : FindViewport17Cell(inspection.Cells, 0, 2);
+              : leftS3OpenLeftNearFront
+                  ? FindViewport17Cell(inspection.Cells, 0, 3)
+                  : FindViewport17Cell(inspection.Cells, 0, 2);
       Viewport17Cell adjacentCell = leftS3D3Terminator || leftS3D3FullFrontEdge || leftS3NearCenterFullD3Edge
           ? FindViewport17Cell(inspection.Cells, 0, 3)
           : FindViewport17Cell(inspection.Cells, -1, 2);
@@ -14977,7 +15005,9 @@ private static void HandleGameViewPointerDown(
                           ? "LEFT S3 D3 FULL FRONT EDGE"
                       : leftS3OpenLeftD3CenterFront
                           ? "LEFT S3 OPEN LEFT D3 CENTER"
-                          : "LEFT S3 STRIP",
+                          : leftS3OpenLeftNearFront
+                              ? "LEFT S3 OPEN LEFT NEAR FRONT"
+                              : "LEFT S3 STRIP",
               "LEFT",
               leftS3Surface);
       leftS3Command.Sequence = commands.Count;
