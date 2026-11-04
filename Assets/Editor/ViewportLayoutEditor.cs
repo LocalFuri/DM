@@ -1487,6 +1487,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF FloorItemProjection:TorchDown:F1:Right|133|157|false|639275097288040421
   // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
   // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
+  // REF Inscription:85:F1|76|118|false|639294110666408029
   // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
   // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Left|12|117|false|639293308574207999
   // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Right|202|116|true|639292495819863123
@@ -29112,9 +29113,15 @@ private static void HandleGameViewPointerDown(
       ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
       ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
       string[] lines = entry.Text.ToUpperInvariant().Split('\n');
+      int glyphWidth = (8 + scale - 1) / scale;
+      int longestLine = 0;
+      foreach (string inscriptionLine in lines)
+        longestLine = System.Math.Max(longestLine, inscriptionLine.Length);
       for (int row = 0; row < lines.Length; row++)
       {
         string line = lines[row];
+        // X positions the full inscription block; center each line within it.
+        int lineX = x + ((longestLine - line.Length) * glyphWidth) / 2;
         for (int n = 0; n < line.Length; n++)
         {
           char letter = line[n];
@@ -29130,7 +29137,7 @@ private static void HandleGameViewPointerDown(
           for (int yy = 0; yy < w; yy++)
             for (int xx = 0; xx < w; xx++)
             {
-              int tx = x + n * w + xx;
+              int tx = lineX + n * w + xx;
               // Keep adjacent inscription lines visually separated.
               // Screen Y is bottom-origin in this preview pixel buffer.
               const int inscriptionLineGap = 3;
