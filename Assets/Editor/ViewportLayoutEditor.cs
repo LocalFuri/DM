@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -200,6 +200,11 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Manacles_F3_9x5.png";
   private const string ManaclesS1AssetPath =
       "Assets/Art/Ornaments/Manacles_S1.png";
+  private const string ManaclesS3AssetPath =
+      "Assets/Art/Ornaments/Manacles_S3_9x5.png";
+  // Manacles S3 requires manual X/Y calibration in ViewEdit; no guessed offsets.
+  private const int ManaclesS3Width = 9;
+  private const int ManaclesS3Height = 5;
 
   // D1 side manacles use the native 32x42 S1 graphic 1:1.
   // Measured on the original (4,10) North left wall, then shifted
@@ -1530,6 +1535,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Hook:S2:Left|66|117|false|639292496524583345
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
+  // REF OrnamentProjection:Manacles:S3:Left|80|120|false|639294236749226243
   // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
   // REF OrnamentProjection:Moss:F3|108|96|false|639267381805114279
   // REF OrnamentProjection:Puddle:F1L|0|57|false|639276809435648392
@@ -21394,6 +21400,7 @@ private static void HandleGameViewPointerDown(
     BlitGrateD3SidesIntoPreview(pixels);
     BlitWoodRingD3FrontIntoPreview(pixels);
     BlitManaclesD3FrontIntoPreview(pixels);
+    BlitManaclesD3SidesIntoPreview(pixels);
     BlitSlimeD3FrontIntoPreview(pixels);
     BlitGrateD3FrontIntoPreview(pixels);
     BlitViAltarS3IntoPreview(pixels);
@@ -26880,7 +26887,7 @@ private static void HandleGameViewPointerDown(
     int maxSideDepth = IsWoodRingOrnament(ornament) ? 3
         : IsHookOrnament(ornament) ? 3
         : IsSlimeOrnament(ornament) ? 2
-        : IsManaclesOrnament(ornament) ? 2
+        : IsManaclesOrnament(ornament) ? 3
         : IsViAltarOrnament(ornament) ? 0 : 0;
     if (maxFrontDepth == 0)
       return false;
@@ -27043,6 +27050,7 @@ private static void HandleGameViewPointerDown(
       renderMirror = !isLeft;
       if (sideDepth == 1) { renderX = isLeft ? ManaclesD1SideLeftX : ManaclesD1SideRightX; renderY = ManaclesD1SideY; return true; }
       if (sideDepth == 2) { renderX = isLeft ? ManaclesD2SideLeftX : ManaclesD2SideRightX; renderY = ManaclesD2SideY; return true; }
+      if (sideDepth == 3) { renderX = 0; renderY = 0; return true; } // Uncalibrated: use Apply.
     }
 
     return false;
@@ -27106,7 +27114,7 @@ private static void HandleGameViewPointerDown(
     int maxSideDepth = IsWoodRingOrnament(ornament) ? 3
         : IsHookOrnament(ornament) ? 3
         : IsSlimeOrnament(ornament) ? 2
-        : IsManaclesOrnament(ornament) ? 2
+        : IsManaclesOrnament(ornament) ? 3
         : IsViAltarOrnament(ornament) ? 0 : 0;
     if (maxFrontDepth == 0)
       return false;
@@ -27193,6 +27201,17 @@ private static void HandleGameViewPointerDown(
         projectionSuffix = " / S1 Right";
         return true;
       }
+    }
+
+    // S3 Manacles have separate physical left/right calibration references.
+    if (IsManaclesOrnament(ornament) && slot == "S3")
+    {
+      bool onLeft = string.Equals(mapFace,
+          FacingName(TurnPreviewFacingLeft(previewFacing)),
+          System.StringComparison.OrdinalIgnoreCase);
+      overrideKey = "OrnamentProjection:Manacles:S3:" + (onLeft ? "Left" : "Right");
+      projectionSuffix = " / S3 " + (onLeft ? "Left" : "Right");
+      return true;
     }
 
     overrideKey = "OrnamentProjection:" + family + ":" + slot;
@@ -29564,7 +29583,7 @@ private static void HandleGameViewPointerDown(
             : IsHookOrnament(ornament) ? 2 : IsSlimeOrnament(ornament) ? 3 : 0;
         int standardSideDepth = IsWoodRingOrnament(ornament)
             ? 3
-            : IsHookOrnament(ornament) ? 3 : IsSlimeOrnament(ornament) ? 2 : 0;
+            : IsHookOrnament(ornament) ? 3 : IsSlimeOrnament(ornament) ? 2 : IsManaclesOrnament(ornament) ? 3 : 0;
         if (standardFrontDepth > 0
             && TryGetStandardWallOrnamentProjectionInCurrentPose(
                 ornament,
@@ -29688,8 +29707,30 @@ private static void HandleGameViewPointerDown(
                           System.StringComparison.OrdinalIgnoreCase));
             }
 
+            bool visibleAsS3 = false;
             if (!visibleAsF1 && !visibleAsF2 && !visibleAsF3
-                && !visibleAsS1 && !visibleAsS2)
+                && !visibleAsS1 && !visibleAsS2 && d2Open)
+            {
+              DungeonMap.GetRightOffset(previewFacing,
+                  out int manaclesRightX, out int manaclesRightY);
+              int d3X = previewX + manaclesForwardX * 3;
+              int d3Y = previewY + manaclesForwardY * 3;
+              bool d3Open = PreviewTileIsOpen(d3X, d3Y);
+              string leftFace = FacingName(TurnPreviewFacingRight(previewFacing));
+              string rightFace = FacingName(TurnPreviewFacingLeft(previewFacing));
+              visibleAsS3 = d3Open && (
+                  (ornament.x == d3X - manaclesRightX
+                   && ornament.y == d3Y - manaclesRightY
+                   && string.Equals(ornament.wall, leftFace,
+                       System.StringComparison.OrdinalIgnoreCase))
+               || (ornament.x == d3X + manaclesRightX
+                   && ornament.y == d3Y + manaclesRightY
+                   && string.Equals(ornament.wall, rightFace,
+                       System.StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (!visibleAsF1 && !visibleAsF2 && !visibleAsF3
+                && !visibleAsS1 && !visibleAsS2 && !visibleAsS3)
               continue;
 
             displayMapX = previewX;
@@ -29699,6 +29740,8 @@ private static void HandleGameViewPointerDown(
                 ? " / S1"
                 : visibleAsS2
                     ? " / S2"
+                    : visibleAsS3
+                        ? " / S3"
                     : visibleAsF1
                         ? " / F1"
                         : visibleAsF2 ? " / F2" : " / F3";
@@ -38246,6 +38289,81 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  private Texture2D GetManaclesS3Texture()
+  {
+    Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(ManaclesS3AssetPath);
+    if (tex == null || tex.width != ManaclesS3Width || tex.height != ManaclesS3Height)
+    {
+      Debug.LogError("Manacles S3 needs 9x5 native PNG at " + ManaclesS3AssetPath);
+      return null;
+    }
+    if (!tex.isReadable)
+    {
+      Debug.LogError("Manacles S3 must have Read/Write Enabled: " + ManaclesS3AssetPath);
+      return null;
+    }
+    return tex;
+  }
+
+  private void BlitManaclesD3SidesIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null || previewWallOrnaments == null)
+      return;
+    Texture2D side = GetManaclesS3Texture();
+    if (side == null)
+      return;
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    // Each nearer corridor tile and the S3 center tile must be open.
+    for (int depth = 1; depth <= 3; depth++)
+      if (!PreviewTileIsOpen(previewX + fx * depth, previewY + fy * depth))
+        return;
+    int cx = previewX + fx * 3, cy = previewY + fy * 3;
+    int lx = cx - rx, ly = cy - ry;
+    int rtx = cx + rx, rty = cy + ry;
+    bool hasLeft = PreviewTileIsWall(lx, ly);
+    bool hasRight = PreviewTileIsWall(rtx, rty);
+    string leftFace = FacingName(TurnPreviewFacingRight(previewFacing));
+    string rightFace = FacingName(TurnPreviewFacingLeft(previewFacing));
+    string leftBoundary = FacingName(TurnPreviewFacingLeft(previewFacing));
+    string rightBoundary = FacingName(TurnPreviewFacingRight(previewFacing));
+    bool drawnLeft = false, drawnRight = false;
+    foreach (WallOrnamentPlacement ornament in previewWallOrnaments)
+    {
+      if (ornament == null || !IsManaclesOrnament(ornament)
+          || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+              "Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
+      bool left = hasLeft && (ornament.wallTilePlacement
+          ? ornament.x == lx && ornament.y == ly
+            && string.Equals(ornament.wall, leftFace,
+                System.StringComparison.OrdinalIgnoreCase)
+          : ornament.x == cx && ornament.y == cy
+            && string.Equals(ornament.wall, leftBoundary,
+                System.StringComparison.OrdinalIgnoreCase));
+      bool right = hasRight && (ornament.wallTilePlacement
+          ? ornament.x == rtx && ornament.y == rty
+            && string.Equals(ornament.wall, rightFace,
+                System.StringComparison.OrdinalIgnoreCase)
+          : ornament.x == cx && ornament.y == cy
+            && string.Equals(ornament.wall, rightBoundary,
+                System.StringComparison.OrdinalIgnoreCase));
+      // No invented default coordinates: both sides start at (0,0) until
+      // their S3 projection is calibrated through ViewEdit / Apply.
+      if (left && !drawnLeft)
+      {
+        BlitOrnamentPieceIntoPreview(pixels, side, ornament, 0, 0, false);
+        drawnLeft = true;
+      }
+      if (right && !drawnRight)
+      {
+        BlitOrnamentPieceIntoPreview(pixels, side, ornament, 0, 0, true);
+        drawnRight = true;
+      }
+    }
+  }
+
   private void BlitManaclesD2SidesIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -38597,10 +38715,6 @@ private static void HandleGameViewPointerDown(
       return;
     }
 
-    Texture2D manacles = GetManaclesGeneratedF3FrontTexture();
-    if (manacles == null || !manacles.isReadable)
-      return;
-
     DungeonMap.GetForwardOffset(
         previewFacing,
         out int forwardX,
@@ -38662,6 +38776,11 @@ private static void HandleGameViewPointerDown(
       if (!placementMatches)
         continue;
 
+      // Load the F3 front image only when an actual F3 front ornament
+      // is visible. S3 side Manacles use their own dedicated S3 asset.
+      Texture2D manacles = GetManaclesGeneratedF3FrontTexture();
+      if (manacles == null || !manacles.isReadable)
+        return;
       BlitOrnamentPieceIntoPreview(
           pixels, manacles, ornament, ManaclesD3FrontX, ManaclesD3FrontY, false);
       return;
@@ -41708,7 +41827,7 @@ private static void HandleGameViewPointerDown(
             ornament.wallTilePlacement,
             IsHookOrnament(ornament) ? 2 : 3,
             IsViAltarOrnament(ornament) ? 0
-              : (IsSlimeOrnament(ornament) || IsManaclesOrnament(ornament)) ? 2 : 3))
+              : IsSlimeOrnament(ornament) ? 2 : 3))
       return;
 
     string key = MakePreviewFeatureKey(
