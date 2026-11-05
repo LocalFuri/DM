@@ -11557,6 +11557,10 @@ private static void HandleGameViewPointerDown(
       case "POTIONEMPTY":
         // Canonical 16x16 inventory sprite: Potion_Empty_16x16.png.
         return "Potion Empty";
+      case "WATERSKIN":
+        // Exact inventory sprite identity: Waterskin_full_16x16.png.
+        // Ground F1 artwork remains separately registered.
+        return "Waterskin Full";
       case "TORCH":
         // A champion's starting torch is initialized with full fuel (15).
         // Show the bright inventory graphic rather than the unlit graphic.
