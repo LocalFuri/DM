@@ -1515,7 +1515,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF FloorItemProjection:TorchDown:F1:Right|133|157|false|639275097288040421
   // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
   // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
-  // REF Inscription:1548:F1|80|118|false|639295060777302488
+  // REF Inscription:1548:F1|80|117|false|639294981993770953
   // REF Inscription:85:F1|76|118|false|639294110666408029
   // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
   // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Left|12|117|false|639293308574207999
