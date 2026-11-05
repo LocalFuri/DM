@@ -1288,5 +1288,104 @@
       "Verify INS panel native zoom, dynamic multiline height, and INS click-to-face behavior in Unity."
     ],
     "deliveries": "Use Europe/Berlin CET/CEST for modified files and ZIP-entry timestamps; preserve untouched file dates; no changelog files."
+  },
+  "daily_progress_20261105": {
+    "date": "2026-11-05",
+    "status": "End-of-day checkpoint. Resume tomorrow from the verified Torch Holder S1 rendering at Level 0 (4,13) South.",
+    "latest_verified_checkpoint": {
+      "feature": "Torch Holder S1",
+      "level": 0,
+      "player_tile": [
+        4,
+        13
+      ],
+      "facing": "South",
+      "perspective": "S1 Right (East wall)",
+      "artwork": "Torch_Holder_S1_32x48.png",
+      "rendering": "Native 32x48 at 1:1; user explicitly confirmed perfect match to original.",
+      "verification": "APPROVED; do not re-test unless a discrepancy appears."
+    },
+    "other_verified_today": [
+      {
+        "feature": "Puddle",
+        "level": 0,
+        "player_tile": [
+          4,
+          13
+        ],
+        "facing": "North",
+        "result": "User verified puddle renders correctly."
+      },
+      {
+        "feature": "Altar inscription mortar correction",
+        "level": 0,
+        "inscription": "VI / ALTAR OF / REBIRTH",
+        "test_view": {
+          "player_tile": [
+            4,
+            17
+          ],
+          "facing": "East",
+          "perspective": "F1"
+        },
+        "mortar_patch": {
+          "x": 111,
+          "y": 65,
+          "width": 3,
+          "height": 26,
+          "coordinate_system": "224x136 dungeon viewport, origin at top-left"
+        },
+        "colors_to_replace_rgb": [
+          [
+            255,
+            255,
+            255
+          ],
+          [
+            109,
+            109,
+            109
+          ]
+        ],
+        "replacement_rgb": [
+          182,
+          182,
+          182
+        ],
+        "activation": "Only on the relevant visible F1 inscription wall; no ordinary Front F1 changes.",
+        "result": "User explicitly approved the pixel match. Inscription text restored to active; final text appearance not separately confirmed."
+      },
+      {
+        "feature": "Waterskin pickup and inventory",
+        "level": 0,
+        "test_view": {
+          "player_tile": [
+            4,
+            15
+          ],
+          "facing": "West"
+        },
+        "ground_full": "Waterskin_full_48x13.png",
+        "ground_empty": "Waterskin_empty_48x14.png",
+        "inventory": "Waterskin_full_16x16.png",
+        "result": "User verified pickup/inventory works. Full/empty state selection is not yet a generic automatic behavior."
+      }
+    ],
+    "other_work": {
+      "water_skin_registry": "Waterskin ground F1 full and empty artwork registered; inventory sprite alias for canonical Waterskin registered. ViewEdit Waterskin and Stairs Down row gaps corrected in C# deliveries; visual verification of these UI changes not explicitly recorded.",
+      "inscription_mortar_strategy": "Selective RGB replacement in calibrated rectangles on inscription-bearing F1 walls; original wall PNG and generic V17 untouched. Further inscriptions require original screenshot and per-inscription calibration; support multiple rectangles if needed.",
+      "level01_29_2_E_inscription": "STEP INSIDE / TAKE A RIDE mortar experiment deliberately UNDONE. Restore previous approved Altar-only version; postpone until original screenshot is available. Do not use the experimental Level 1 ZIP.",
+      "inscription_ui": "ViewEdit Inscription Active green checkmark row and Set checkbox implemented; Altar Set re-enabled after patch test.",
+      "known_unresolved": "Scroll ground F1 item registry mapping was reported missing earlier; resolution not confirmed.",
+      "manacles": "Manacles S3 Game View at Level 0 (4,12) North has not been explicitly confirmed in this conversation."
+    },
+    "resume_from": [
+      "Continue from approved Torch Holder S1 (Level 0, 4,13 South), without repeating its verification.",
+      "Use latest verified torch-holder C# version, keeping Altar 3x26 mortar correction and working Waterskin inventory registration.",
+      "Do not introduce Level 1 STEP INSIDE mortar fix until original Atari screenshot is supplied.",
+      "Preserve map-derived rotation-independent V17 geometry, no fallback artwork, accepted calibrations, and root-level tools."
+    ],
+    "most_recent_torch_source_zip": "ViewportLayoutEditor_Torch_Holder_S1_32x48_20261105.zip",
+    "delivery_rules": "Use Europe/Berlin file and ZIP timestamps; unchanged files preserve original dates. No changelog files."
   }
 }
