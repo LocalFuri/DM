@@ -35503,7 +35503,12 @@ private static void HandleGameViewPointerDown(
       bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
       if (enabledAfter)
       {
-        if (depth == FloorItemDepth.SameTile)
+        // Waterskin F1 uses the same editable X/Y + Apply row as other
+        // registered F1 ground items, including when projected one tile ahead.
+        // Keep the shared F1 placement-region calibration authoritative.
+        if (depth == FloorItemDepth.SameTile
+            || (depthLabel == "F1"
+                && item.type.StartsWith("Waterskin", System.StringComparison.OrdinalIgnoreCase)))
           DrawRegisteredF1FloorCalibration(item.type, isRight);
         else
         {

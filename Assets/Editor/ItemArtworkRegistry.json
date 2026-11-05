@@ -341,6 +341,18 @@
             "groundF1Path": "Assets/Art/Weapons/Axe_F1_64x17.png",
             "width": 64,
             "height": 17
+        },
+        {
+            "itemType": "Waterskin",
+            "groundF1Path": "Assets/Art/Misc/Waterskin_full_48x13.png",
+            "width": 48,
+            "height": 13
+        },
+        {
+            "itemType": "Waterskin Empty",
+            "groundF1Path": "Assets/Art/Misc/Waterskin_empty_48x14.png",
+            "width": 48,
+            "height": 14
         }
     ],
     "groundF1Anchors": {
