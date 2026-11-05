@@ -21559,6 +21559,10 @@ private static void HandleGameViewPointerDown(
     // Only invoke inscription drawing when an actual, enabled, map-derived
     // inscription projects onto the currently visible front wall.
     // In particular, ordinary Front F1 walls never enter the inscription pass.
+    // Repair only the measured mortar joint on the wall that carries the
+    // Altar inscription. This runs with Set unchecked, so the wall can be
+    // inspected without text. Other Front F1 walls are never altered.
+    PatchAltarInscriptionMortarJoint(pixels);
     if (HasVisibleEnabledWallInscriptionAtPreviewPose())
       BlitWallInscriptionsIntoPreview(pixels);
 
@@ -29332,6 +29336,65 @@ private static void HandleGameViewPointerDown(
         return true;
     }
     return false;
+  }
+
+  // Diagnostic patch, isolated by the authoritative visible inscription.
+  // X/Y are dungeon-viewport-local, measured from its top-left corner.
+  // Does NOT depend on the Set checkbox: the text can remain hidden.
+  private void PatchAltarInscriptionMortarJoint(Color32[] pixels)
+  {
+    if (pixels == null || pixels.Length != PreviewWidth * PreviewHeight
+        || previewDungeonLevel != 0)
+      return;
+    if (previewWallInscriptions == null || previewWallInscriptions.Length == 0)
+      ReloadWallInscriptionsFromLevelJson();
+    if (previewWallInscriptions == null) return;
+
+    bool altarF1Visible = false;
+    foreach (WallInscriptionEntry entry in previewWallInscriptions)
+    {
+      if (string.IsNullOrEmpty(entry.Text)) continue;
+      string inscription = entry.Text.ToUpperInvariant()
+          .Replace("\r", " ").Replace("\n", " ");
+      if (!inscription.Contains("ALTAR OF") || !inscription.Contains("REBIRTH"))
+        continue;
+      if (TryGetInscriptionFrontProjection(entry, out int depth) && depth == 1)
+      {
+        altarF1Visible = true;
+        break;
+      }
+    }
+    if (!altarF1Visible) return;
+
+    const int localX = 111;
+    const int localY = 64;
+    const int width = 3;
+    const int height = 28;
+    // The 224x136 dungeon viewport begins at screen Y=33.
+    const int viewportScreenTop = 33;
+    int changed = 0;
+    Color32 stone = new Color32(182, 182, 182, 255);
+    for (int dy = 0; dy < height; dy++)
+    {
+      int screenY = viewportScreenTop + localY + dy;
+      int bufferY = PreviewHeight - 1 - screenY;
+      if (bufferY < 0 || bufferY >= PreviewHeight) continue;
+      for (int dx = 0; dx < width; dx++)
+      {
+        int x = localX + dx;
+        if (x < 0 || x >= DungeonViewportWidth) continue;
+        int pixelIndex = bufferY * PreviewWidth + x;
+        Color32 color = pixels[pixelIndex];
+        bool white = color.r == 255 && color.g == 255 && color.b == 255;
+        bool dark = color.r == 109 && color.g == 109 && color.b == 109;
+        if (!white && !dark) continue;
+        pixels[pixelIndex] = stone;
+        changed++;
+      }
+    }
+    Debug.Log("ALTAR MORTAR DIAGNOSTIC: F1 inscription visible, "
+        + "Set=" + altarInscriptionSet + " local X=111..113 Y=64..91 "
+        + "(screen Y=97..124), pixels replaced=" + changed);
   }
 
   private void BlitWallInscriptionsIntoPreview(Color32[] pixels)
