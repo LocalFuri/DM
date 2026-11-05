@@ -29367,9 +29367,9 @@ private static void HandleGameViewPointerDown(
     if (!altarF1Visible) return;
 
     const int localX = 111;
-    const int localY = 64;
+    const int localY = 65;
     const int width = 3;
-    const int height = 28;
+    const int height = 26;
     // The 224x136 dungeon viewport begins at screen Y=33.
     const int viewportScreenTop = 33;
     int changed = 0;
@@ -29393,8 +29393,8 @@ private static void HandleGameViewPointerDown(
       }
     }
     Debug.Log("ALTAR MORTAR DIAGNOSTIC: F1 inscription visible, "
-        + "Set=" + altarInscriptionSet + " local X=111..113 Y=64..91 "
-        + "(screen Y=97..124), pixels replaced=" + changed);
+        + "Set=" + altarInscriptionSet + " local X=111..113 Y=65..90 "
+        + "(screen Y=98..123), pixels replaced=" + changed);
   }
 
   private void BlitWallInscriptionsIntoPreview(Color32[] pixels)
