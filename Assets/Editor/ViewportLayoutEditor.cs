@@ -33254,10 +33254,12 @@ private static void HandleGameViewPointerDown(
       return;
 
     EditorGUILayout.BeginHorizontal();
-    EditorGUILayout.LabelField(
-        "Stairs Down F1 152x92",
-        GetPieceFamilyHeaderStyle(Color.magenta),
-        GUILayout.Width(190f));
+    const string stairsDownCaption = "Stairs Down F1 152x92";
+    GUIStyle stairsDownStyle = GetPieceFamilyHeaderStyle(Color.magenta);
+    GUILayout.Label(
+        stairsDownCaption,
+        stairsDownStyle,
+        GUILayout.Width(stairsDownStyle.CalcSize(new GUIContent(stairsDownCaption)).x + 4f));
 
     float savedLabelWidth = EditorGUIUtility.labelWidth;
     const float ToggleBoxWidth = 18f;
@@ -33274,7 +33276,7 @@ private static void HandleGameViewPointerDown(
         GUILayout.Width(enabledLabelWidth + ToggleBoxWidth),
         GUILayout.ExpandWidth(false));
 
-    GUILayout.Space(10f);
+    GUILayout.Space(3f);
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
 
@@ -35482,11 +35484,16 @@ private static void HandleGameViewPointerDown(
       pickableLabelStyle.clipping = TextClipping.Clip;
       // Show the descriptive item text in the requested order:
       // item name [distance] [left/right] [direction].
-      GUILayout.Label(
-          item.type + " [" + depthLabel + "] [" + (isRight ? "R" : "L")
-          + "] [" + item.cell + "]",
-          pickableLabelStyle,
-          GUILayout.Width(220f));
+      string floorItemCaption = item.type + " [" + depthLabel + "] ["
+          + (isRight ? "R" : "L") + "] [" + item.cell + "]";
+      // Keep the Waterskin controls directly after its caption, like the
+      // compact Stairs Down row. Leave all other item-row widths unchanged.
+      float floorItemCaptionWidth =
+          item.type.StartsWith("Waterskin", System.StringComparison.OrdinalIgnoreCase)
+          ? pickableLabelStyle.CalcSize(new GUIContent(floorItemCaption)).x + 5f
+          : 220f;
+      GUILayout.Label(floorItemCaption, pickableLabelStyle,
+          GUILayout.Width(floorItemCaptionWidth));
 
       // Diagnostics run independently of the Set toggle so an inactive row
       // cannot silently suppress the calibration-loading error report.
