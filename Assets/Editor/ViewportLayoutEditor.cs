@@ -1369,7 +1369,7 @@ public class ViewportLayoutEditor : EditorWindow
   private readonly HashSet<string> previewDisabledFeatureKeys =
       new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
   // Altar inscription starts unchecked; its Set checkbox may enable it temporarily.
-  private bool altarInscriptionSet = false;
+  private bool altarInscriptionSet = true;
   // Temporary per-pose manual renderer selection for stairs reference images.
   // The ordinary Enabled checkbox remains the feature visibility control;
   // this separate set answers only whether ViewEdit should force the exact
@@ -1515,7 +1515,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF FloorItemProjection:TorchDown:F1:Right|133|157|false|639275097288040421
   // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
   // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
-  // REF Inscription:1548:F1|80|117|false|639294981993770953
+  // REF Inscription:1548:F1|80|118|false|639295060777302488
   // REF Inscription:85:F1|76|118|false|639294110666408029
   // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
   // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Left|12|117|false|639293308574207999
@@ -21560,8 +21560,7 @@ private static void HandleGameViewPointerDown(
     // inscription projects onto the currently visible front wall.
     // In particular, ordinary Front F1 walls never enter the inscription pass.
     // Repair only the measured mortar joint on the wall that carries the
-    // Altar inscription. This runs with Set unchecked, so the wall can be
-    // inspected without text. Other Front F1 walls are never altered.
+    // Altar inscription, before drawing text. Other Front F1 walls are never altered.
     PatchAltarInscriptionMortarJoint(pixels);
     if (HasVisibleEnabledWallInscriptionAtPreviewPose())
       BlitWallInscriptionsIntoPreview(pixels);
@@ -26598,7 +26597,7 @@ private static void HandleGameViewPointerDown(
         + ":" + (wall ?? string.Empty);
   }
 
-  // Only the Level 0 Front F1 Altar inscription starts with Set unchecked.
+  // Level 0 Front F1 Altar inscription defaults to Set checked.
   // Match the actual inscription record, not a player-view coordinate.
   private bool IsAltarInscriptionF1Key(string key)
   {
