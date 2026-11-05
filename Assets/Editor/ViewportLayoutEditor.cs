@@ -1529,6 +1529,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:ChampionMirror:S3:Right|138|116|true|639291392277477819
   // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
   // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274252203846657
+  // REF OrnamentProjection:EmptyTorchHolder:S1:Right|162|82|true|639295125027429246
   // REF OrnamentProjection:Grate:F2SideCorner|204|74|false|639291560292692480
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
   // REF OrnamentProjection:Hook:F2|103|111|false|639272438417071479
@@ -21560,6 +21561,7 @@ private static void HandleGameViewPointerDown(
     // BlitGrateD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitGrateD1FrontIntoPreview(pixels);
     BlitEmptyTorchHolderF1IntoPreview(pixels);
+    BlitTorchHolderS1IntoPreview(pixels);
     // Only invoke inscription drawing when an actual, enabled, map-derived
     // inscription projects onto the currently visible front wall.
     // In particular, ordinary Front F1 walls never enter the inscription pass.
@@ -29599,6 +29601,7 @@ private static void HandleGameViewPointerDown(
     // Loose-item calibrations from the original Level 0 DUNGEON.DAT.
     DrawFloorItemRows();
     DrawTorchDownCalibrationRow();
+    DrawTorchHolderS1CalibrationRows();
 
     // The new F1-only champion mirror uses the ordinary wall-ornament projection.
     DrawChampionMirrorFrontCalibrationRows();
@@ -41937,6 +41940,130 @@ private static void HandleGameViewPointerDown(
         && ornament.x == wallX && ornament.y == wallY
         && string.Equals(ornament.wall, OppositeFacingName(previewFacing),
             System.StringComparison.OrdinalIgnoreCase);
+  }
+
+  // Native Atari S1 torch-holder art. Never substitute F1 or scaled art.
+  private const string TorchHolderS1Asset = "Torch_Holder_S1_32x48.png";
+  private const string TorchHolderS1CalibrationKey =
+      "OrnamentProjection:EmptyTorchHolder:S1";
+
+  private bool TryGetTorchHolderS1Projection(
+      WallOrnamentPlacement ornament, out bool onRight)
+  {
+    onRight = false;
+    if (ornament == null || !ornament.wallTilePlacement
+        || !string.Equals(ornament.type, "EmptyTorchHolder",
+            System.StringComparison.OrdinalIgnoreCase))
+      return false;
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null) return false;
+
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    int cx = previewX + fx, cy = previewY + fy;
+    if (!previewMiniMap.IsInside(cx, cy)
+        || previewMiniMap.GetTile(cx, cy).Type == DungeonTileType.Wall)
+      return false;
+
+    int lx = cx - rx, ly = cy - ry;
+    int sx = cx + rx, sy = cy + ry;
+    bool left = previewMiniMap.IsInside(lx, ly)
+        && previewMiniMap.GetTile(lx, ly).Type == DungeonTileType.Wall
+        && ornament.x == lx && ornament.y == ly
+        && string.Equals(ornament.wall,
+            FacingName(TurnPreviewFacingRight(previewFacing)),
+            System.StringComparison.OrdinalIgnoreCase);
+    bool right = previewMiniMap.IsInside(sx, sy)
+        && previewMiniMap.GetTile(sx, sy).Type == DungeonTileType.Wall
+        && ornament.x == sx && ornament.y == sy
+        && string.Equals(ornament.wall,
+            FacingName(TurnPreviewFacingLeft(previewFacing)),
+            System.StringComparison.OrdinalIgnoreCase);
+    if (!left && !right) return false;
+    onRight = right;
+    return true;
+  }
+
+  private void BlitTorchHolderS1IntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || previewWallOrnaments == null) return;
+    Texture2D image = null;
+    foreach (WallOrnamentPlacement ornament in previewWallOrnaments)
+    {
+      if (!TryGetTorchHolderS1Projection(ornament, out bool onRight))
+        continue;
+      string featureKey = MakePreviewFeatureKey(
+          "Ornament", ornament.x, ornament.y, ornament.wall);
+      if (!IsPreviewFeatureEnabled(featureKey)
+          || !IsPreviewFeatureEnabled(TorchHolderS1CalibrationKey))
+        continue;
+      if (image == null)
+        image = FindExactTorchTexture(TorchHolderS1Asset, 32, 48);
+      if (image == null) return; // Exact asset required. No fallback.
+      // These are initial UI calibration values, NOT verified Atari positions.
+      int x = onRight ? 160 : 32;
+      int y = 81;
+      bool mirror = !onRight;
+      ApplyAcceptedOrnamentReference(
+          TorchHolderS1CalibrationKey + (onRight ? ":Right" : ":Left"),
+          ref x, ref y, ref mirror);
+      ApplyPreviewFeatureRenderOverrides(
+          TorchHolderS1CalibrationKey + (onRight ? ":Right" : ":Left"),
+          ref x, ref y, ref mirror);
+      BlitPieceIntoPreview(pixels, image, x, y, mirror);
+    }
+  }
+
+  private void DrawTorchHolderS1CalibrationRows()
+  {
+    if (previewWallOrnaments == null) return;
+    foreach (WallOrnamentPlacement ornament in previewWallOrnaments)
+    {
+      if (!TryGetTorchHolderS1Projection(ornament, out bool onRight))
+        continue;
+      string key = TorchHolderS1CalibrationKey + (onRight ? ":Right" : ":Left");
+      int x = onRight ? 160 : 32;
+      int y = 81;
+      bool mirror = !onRight;
+      ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+      int defaultX = x, defaultY = y;
+      bool acceptedMirror = mirror;
+      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+      EditorGUILayout.BeginHorizontal();
+      GUIStyle labelStyle = new GUIStyle(EditorStyles.boldLabel);
+      labelStyle.normal.textColor = Color.yellow;
+      string label = "Torch Holder S1 " + (onRight ? "Right" : "Left");
+      GUILayout.Label(label, labelStyle,
+          GUILayout.Width(labelStyle.CalcSize(new GUIContent(label)).x + 4f));
+      int newX = x, newY = y;
+      bool cx = DrawIntStepperInline("X", ref newX, snap,
+          x != defaultX, true, 24f, 24f);
+      bool cy = DrawIntStepperInline("Y", ref newY, snap,
+          y != defaultY, true, 24f, 24f);
+      bool newMirror = EditorGUILayout.ToggleLeft(
+          "Mirror", mirror, GUILayout.Width(66f));
+      bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+      EditorGUILayout.EndHorizontal();
+      if (apply)
+      {
+        if (SaveAcceptedOrnamentReference(key, newX, newY, newMirror))
+        {
+          previewFeaturePositionOverrides.Remove(key);
+          previewFeatureMirrorOverrides.Remove(key);
+          RefreshEditModePreview();
+          RepaintGameViews();
+          Repaint();
+        }
+      }
+      else if (cx || cy || newMirror != mirror)
+      {
+        previewFeaturePositionOverrides[key] = new Vector2Int(newX, newY);
+        previewFeatureMirrorOverrides[key] = newMirror;
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
+    }
   }
 
   // Empty torch holders are wall ornaments, not floor items. The position and
