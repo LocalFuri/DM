@@ -1535,12 +1535,13 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Hook:S2:Left|66|117|false|639292496524583345
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
+  // REF OrnamentProjection:Manacles:S3:Left|80|120|false|639294967082566971
   // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
   // REF OrnamentProjection:Moss:F3|108|96|false|639267381805114279
   // REF OrnamentProjection:Puddle:F1L|0|57|false|639276809435648392
   // REF OrnamentProjection:Slime:F2|104|74|false
   // REF OrnamentProjection:Slime:F3|106|93|false|639267208231012151
-  // REF OrnamentProjection:Slime:S1|47|63|false|639294238214805388
+  // REF OrnamentProjection:Slime:S1|47|63|false|639294243043337674
   // REF OrnamentProjection:WoodRing:F1|98|104|false
   // REF OrnamentProjection:WoodRing:F2|103|111|false
   // REF OrnamentProjection:WoodRing:F3|105|117|false
@@ -1845,6 +1846,22 @@ public class ViewportLayoutEditor : EditorWindow
         x = jsonCalibration.x;
         y = jsonCalibration.y;
         mirror = jsonCalibration.mirror;
+      }
+      else if (projectionKey.StartsWith("OrnamentClass:Puddle:",
+          System.StringComparison.Ordinal))
+      {
+        // Preserve existing Puddle calibrations saved by the older
+        // source-embedded Apply mechanism until a JSON Apply replaces them.
+        string legacyKey = "OrnamentProjection:Puddle:"
+            + projectionKey.Substring("OrnamentClass:Puddle:".Length);
+        EnsureAcceptedOrnamentReferencesLoaded();
+        if (cachedAcceptedOrnamentReferences.TryGetValue(
+            legacyKey, out AcceptedOrnamentReference legacy))
+        {
+          x = legacy.x;
+          y = legacy.y;
+          mirror = legacy.mirror;
+        }
       }
       return;
     }
@@ -27613,7 +27630,7 @@ private static void HandleGameViewPointerDown(
   // X/Y are framebuffer bottom-left coordinates, not dungeon-map coordinates.
   private string PuddleProjectionKey(int depth, int lane)
   {
-    return "OrnamentProjection:Puddle:F" + depth
+    return "OrnamentClass:Puddle:F" + depth
         + (lane < 0 ? "L" : lane > 0 ? "R" : "");
   }
 

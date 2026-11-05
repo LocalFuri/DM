@@ -1196,5 +1196,97 @@
       "Calibrate HALL OF CHAMPIONS F1 X/Y against original and press Apply; verify persistent Refresh.",
       "Test inscription visibility and occlusion at other distances/orientations after F1 approved."
     ]
+  },
+  "daily_progress_20261104": {
+    "date": "2026-11-04",
+    "status": "Daily checkpoint; preserve prior verified work. Some delivered source patches are not yet Unity-verified.",
+    "inscriptions": {
+      "research": {
+        "report": "C:/Unity/DM/Research_Results/09_Wall_Inscription_Positions.md",
+        "total": 67,
+        "hidden_initially": 8,
+        "champion_text_records_excluded": 24,
+        "note": "Cursor extracted positions/text across Levels 00-13; level 07 and 13 contain none."
+      },
+      "data": "Assets/Editor/DungeonInscriptions.json",
+      "dungeon_features": {
+        "label": "INS",
+        "background": "blue",
+        "font": "white",
+        "features": [
+          "Clicking INS shows inscription data in right information panel",
+          "Center inscription lines in the panel",
+          "At fit zoom, panel should remain native size and dynamically accommodate the actual number of lines (including multiple inscriptions on one tile)",
+          "INS double-click should face the inscription; preserve walkable placement and generic map geometry"
+        ],
+        "verification": "Source patches supplied; final integrated behavior still needs testing in Unity."
+      },
+      "game_view": {
+        "font": "Assets/Art/Fonts/Inscription_Font_288x8.png",
+        "text_lines": "Each line independently centered; original line breaks preserved.",
+        "three_line_spacing_px": {
+          "between_1_and_2": 3,
+          "between_2_and_3": 6
+        },
+        "level00_8_4_S": "HALL OF\\nCHAMPIONS: user approved F1 appearance and Apply.",
+        "level00_4_17_E": "VI\\nALTAR OF\\nREBIRTH: three-line layout agreed; Game View visibility/placement needs confirmation.",
+        "reference_classes_F1": {
+          "INS1": {
+            "lines": 1,
+            "x": 76,
+            "y": 111,
+            "reference": "THE VAULT (Level 02, 11,14 S)"
+          },
+          "INS2": {
+            "lines": 2,
+            "x": 76,
+            "y": 118,
+            "reference": "HALL OF CHAMPIONS (Level 00, 8,4 S)"
+          },
+          "INS3_plus": "Calibrate later; do not guess."
+        },
+        "rule": "Classes based on exact number of inscription lines; keep each perspective separately calibrated; no automatic wrapping."
+      }
+    },
+    "teleporters": {
+      "research": "C:/Unity/DM/Research_Results/10_Teleporters.md",
+      "placed": 175,
+      "initially_active": 114,
+      "visible_flag": 85,
+      "active_and_visible": 57,
+      "audible": 79,
+      "self_destination": 22,
+      "absolute_facing": 13,
+      "with_working_actuator": 70,
+      "implementation": "Research only; do not change teleport gameplay from this research without separately approved implementation."
+    },
+    "v17": {
+      "level00_8_4_S": "Missing LeftS3 fragment addressed by generic geometry patch, not yet conclusively approved in Game View.",
+      "policy": "Preserve six previously approved Nov 3 viewpoints and generic V17 map-based rotation-invariant visibility and occlusion; never patch by player coordinates."
+    },
+    "ornaments": {
+      "manacles": {
+        "front_F3_asset": "Assets/Art/Ornaments/Manacles_F3_9x5.png",
+        "side_S3_asset": "Assets/Art/Ornaments/Manacles_S3_9x5.png",
+        "side_S3_dimensions_px": [
+          9,
+          5
+        ],
+        "note": "F1–F3 always front; S1–S3 always side Left/Right. Dedicated Manacles S3 implemented in ViewEdit; visibility and draw path patched; Game View outcome still needs confirmation at Level 00 (4,12) N."
+      },
+      "puddle": {
+        "assets": "Dedicated native-size 1:1 perspective images; F1/F2/F3 independent.",
+        "persistence": "Puddle Apply now uses Assets/Editor/OrnamentCalibration.json with same calibration keys in ViewEdit/Game View.",
+        "verified_view": "User reports puddle rendering matches original at Level 00 (4,13) N after X/Y Apply.",
+        "clarification": "At Level 00 (4,12) N the discussed puddle is F2, NOT S2. Do not change S2 geometry for this issue."
+      }
+    },
+    "next_actions": [
+      "Verify latest Manacles S3 patch in actual Game View at (4,12) N and calibrate via Apply.",
+      "Check approved puddle (4,13) N remains correct after projection-sync update.",
+      "Finish Altar of Vi inscription Game View and F1 class calibrations; avoid touching verified HALL OF CHAMPIONS.",
+      "Verify INS panel native zoom, dynamic multiline height, and INS click-to-face behavior in Unity."
+    ],
+    "deliveries": "Use Europe/Berlin CET/CEST for modified files and ZIP-entry timestamps; preserve untouched file dates; no changelog files."
   }
 }
