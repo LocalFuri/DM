@@ -1368,6 +1368,8 @@ public class ViewportLayoutEditor : EditorWindow
   // feature returns to the renderer's code-assigned default state.
   private readonly HashSet<string> previewDisabledFeatureKeys =
       new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+  // Altar inscription starts unchecked; its Set checkbox may enable it temporarily.
+  private bool altarInscriptionSet = false;
   // Temporary per-pose manual renderer selection for stairs reference images.
   // The ordinary Enabled checkbox remains the feature visibility control;
   // this separate set answers only whether ViewEdit should force the exact
@@ -1513,6 +1515,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF FloorItemProjection:TorchDown:F1:Right|133|157|false|639275097288040421
   // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
   // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
+  // REF Inscription:1548:F1|80|117|false|639294981993770953
   // REF Inscription:85:F1|76|118|false|639294110666408029
   // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
   // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Left|12|117|false|639293308574207999
@@ -21553,7 +21556,11 @@ private static void HandleGameViewPointerDown(
     // BlitGrateD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitGrateD1FrontIntoPreview(pixels);
     BlitEmptyTorchHolderF1IntoPreview(pixels);
-    BlitWallInscriptionsIntoPreview(pixels);
+    // Only invoke inscription drawing when an actual, enabled, map-derived
+    // inscription projects onto the currently visible front wall.
+    // In particular, ordinary Front F1 walls never enter the inscription pass.
+    if (HasVisibleEnabledWallInscriptionAtPreviewPose())
+      BlitWallInscriptionsIntoPreview(pixels);
 
     // Vi Altar side projections. Draw far-to-near.
     // BlitViAltarS3IntoPreview moved to the appropriate V17 depth stage.
@@ -26587,8 +26594,29 @@ private static void HandleGameViewPointerDown(
         + ":" + (wall ?? string.Empty);
   }
 
+  // Only the Level 0 Front F1 Altar inscription starts with Set unchecked.
+  // Match the actual inscription record, not a player-view coordinate.
+  private bool IsAltarInscriptionF1Key(string key)
+  {
+    if (previewDungeonLevel != 0 || string.IsNullOrEmpty(key)
+        || previewWallInscriptions == null)
+      return false;
+    foreach (WallInscriptionEntry entry in previewWallInscriptions)
+    {
+      if (string.IsNullOrEmpty(entry.Text)) continue;
+      string inscription = entry.Text.ToUpperInvariant()
+          .Replace("\r", " ").Replace("\n", " ");
+      if (inscription.Contains("ALTAR OF") && inscription.Contains("REBIRTH")
+          && string.Equals(key, InscriptionProjectionKey(entry, 1),
+              System.StringComparison.OrdinalIgnoreCase))
+        return true;
+    }
+    return false;
+  }
+
   private bool IsPreviewFeatureEnabled(string key)
   {
+    if (IsAltarInscriptionF1Key(key)) return altarInscriptionSet;
     return string.IsNullOrEmpty(key)
         || !previewDisabledFeatureKeys.Contains(key);
   }
@@ -26597,7 +26625,11 @@ private static void HandleGameViewPointerDown(
   {
     if (string.IsNullOrEmpty(key))
       return;
-
+    if (IsAltarInscriptionF1Key(key))
+    {
+      altarInscriptionSet = enabled;
+      return;
+    }
     if (enabled)
       previewDisabledFeatureKeys.Remove(key);
     else
@@ -29286,6 +29318,22 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  private bool HasVisibleEnabledWallInscriptionAtPreviewPose()
+  {
+    if (previewWallInscriptions == null || previewWallInscriptions.Length == 0)
+      ReloadWallInscriptionsFromLevelJson();
+    if (previewWallInscriptions == null) return false;
+
+    foreach (WallInscriptionEntry entry in previewWallInscriptions)
+    {
+      if (!TryGetInscriptionFrontProjection(entry, out int depth))
+        continue;
+      if (IsPreviewFeatureEnabled(InscriptionProjectionKey(entry, depth)))
+        return true;
+    }
+    return false;
+  }
+
   private void BlitWallInscriptionsIntoPreview(Color32[] pixels)
   {
     if (previewDungeonLevel == 0 && previewX == 8 && previewY == 4
@@ -29333,6 +29381,26 @@ private static void HandleGameViewPointerDown(
       int longestLine = 0;
       foreach (string inscriptionLine in lines)
         longestLine = System.Math.Max(longestLine, inscriptionLine.Length);
+      // Diagnostic only: report the exact screen rectangle of the third line.
+      // Do not modify wall pixels; keep the original masonry fully intact.
+      if (depth == 1 && lines.Length == 3 &&
+          previewDungeonLevel == 0 && previewX == 4 && previewY == 17 &&
+          string.Equals(FacingName(previewFacing), "East",
+              System.StringComparison.OrdinalIgnoreCase))
+      {
+        const int lineGap = 3;
+        int thirdLineBottomY = y - 2 * (glyphWidth + lineGap) - 3;
+        string thirdLine = lines[2];
+        int thirdLineX = x + ((longestLine - thirdLine.Length) * glyphWidth) / 2;
+        Debug.Log("INSCRIPTION MORTAR DIAGNOSTIC: F1 third line '"
+            + thirdLine + "' screen X=" + thirdLineX + ".."
+            + (thirdLineX + thirdLine.Length * glyphWidth - 1)
+            + " bottom-origin Y=" + thirdLineBottomY + ".."
+            + (thirdLineBottomY + glyphWidth - 1)
+            + " screen top-origin Y=" + (PreviewHeight - thirdLineBottomY - glyphWidth)
+            + ".." + (PreviewHeight - 1 - thirdLineBottomY)
+            + "; masonry unchanged.");
+      }
       for (int row = 0; row < lines.Length; row++)
       {
         string line = lines[row];
@@ -29388,6 +29456,18 @@ private static void HandleGameViewPointerDown(
       int x = baseX, y = baseY;
       bool mirror = baseMirror;
       ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+      // Status row for the current Front inscription. This is display-only;
+      // the existing Set checkbox below remains the enable/disable control.
+      bool inscriptionActive = IsPreviewFeatureEnabled(key);
+      EditorGUILayout.BeginHorizontal();
+      GUIStyle inscriptionStatusStyle = new GUIStyle(EditorStyles.boldLabel);
+      inscriptionStatusStyle.normal.textColor = inscriptionActive
+          ? Color.green : Color.gray;
+      GUILayout.Label(inscriptionActive ? "\u2713 Inscription Active"
+                                    : "Inscription Inactive",
+          inscriptionStatusStyle);
+      EditorGUILayout.EndHorizontal();
+
       EditorGUILayout.BeginHorizontal();
       GUIStyle green = new GUIStyle(EditorStyles.boldLabel);
       green.normal.textColor = Color.green;
