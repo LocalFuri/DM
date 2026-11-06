@@ -4427,7 +4427,7 @@ public class ViewportLayoutEditor : EditorWindow
       GUI.Label(toggleRect, "✓", checkStyle);
     }
 
-    GUILayout.Space(6f);
+    GUILayout.Space(1f);
     return value;
   }
 
@@ -27362,8 +27362,8 @@ private static void HandleGameViewPointerDown(
         displayName ?? string.Empty, @"\[(.*?)\]", "$1");
     compactDisplayName = System.Text.RegularExpressions.Regex.Replace(
         compactDisplayName, @"\((N|S|E|W)\)", "$1");
-    ornamentCaptionColumnWidth = Mathf.Max(ViewEditItemCaptionColumn,
-        featureStyle.CalcSize(new GUIContent(compactDisplayName)).x + 6f);
+    ornamentCaptionColumnWidth =
+        featureStyle.CalcSize(new GUIContent(compactDisplayName)).x + 4f;
     GUILayout.Label(
         compactDisplayName,
         featureStyle,
@@ -27375,8 +27375,7 @@ private static void HandleGameViewPointerDown(
       string hookVisibilityKey = MakePreviewFeatureKey(
           "Ornament", ornament.x, ornament.y, ornament.wall);
       bool wasEnabled = IsPreviewFeatureEnabled(hookVisibilityKey);
-      bool nowEnabled = EditorGUILayout.ToggleLeft(
-          "Set", wasEnabled, GUILayout.Width(46f));
+      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
       if (nowEnabled != wasEnabled)
       {
         SetPreviewFeatureEnabled(hookVisibilityKey, nowEnabled);
@@ -27393,8 +27392,7 @@ private static void HandleGameViewPointerDown(
       string grateVisibilityKey = MakePreviewFeatureKey(
           "Ornament", ornament.x, ornament.y, ornament.wall);
       bool wasEnabled = IsPreviewFeatureEnabled(grateVisibilityKey);
-      bool nowEnabled = EditorGUILayout.ToggleLeft(
-          "Set", wasEnabled, GUILayout.Width(46f));
+      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
       if (nowEnabled != wasEnabled)
       {
         SetPreviewFeatureEnabled(grateVisibilityKey, nowEnabled);
@@ -32566,9 +32564,7 @@ private static void HandleGameViewPointerDown(
     float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
     GUI.contentColor = stairsdownS2Enabled != acceptedEnabled ? Color.red : oldContentColor;
-    bool enabled = DrawMouseOnlyToggle(
-        "Set", stairsdownS2Enabled, stairsdownS2Enabled,
-        GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
+    bool enabled = DrawCompactMouseOnlyToggle("Set", stairsdownS2Enabled, false);
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     GUI.contentColor = stairsdownS2X != acceptedX ? Color.red : oldContentColor;
     int x = stairsdownS2X;
@@ -33006,9 +33002,7 @@ private static void HandleGameViewPointerDown(
     float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
     GUI.contentColor = stairsS3RightSouthEnabled != acceptedEnabled ? Color.red : oldContentColor;
-    bool enabled = DrawMouseOnlyToggle(
-        "Set", stairsS3RightSouthEnabled, stairsS3RightSouthEnabled,
-        GUILayout.Width(enabledWidth + 18f), GUILayout.ExpandWidth(false));
+    bool enabled = DrawCompactMouseOnlyToggle("Set", stairsS3RightSouthEnabled, false);
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     GUI.contentColor = stairsS3RightSouthX != acceptedX ? Color.red : oldContentColor;
     int x = stairsS3RightSouthX;
@@ -35188,6 +35182,8 @@ private static void HandleGameViewPointerDown(
     int editY = Mathf.RoundToInt(calculated.yMin);
     bool changedY = DrawIntStepperInline("Y", ref editY, snap,
         editY != originalY, true, 25f, 25f);
+    using (new EditorGUI.DisabledScope(true))
+      EditorGUILayout.ToggleLeft(new GUIContent("Mirror", "Not available for this floor projection"), false, GUILayout.Width(66f));
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
     NoteContentRight();
     EditorGUIUtility.labelWidth = oldWidth;
@@ -35504,8 +35500,7 @@ private static void HandleGameViewPointerDown(
       string floorItemCaption = item.type + " " + depthLabel + " "
           + (isRight ? "Right" : "Left") + " " + item.cell;
       // Keep Set immediately after each item caption, regardless of item type.
-      float floorItemCaptionWidth = Mathf.Max(ViewEditItemCaptionColumn,
-          pickableLabelStyle.CalcSize(new GUIContent(floorItemCaption)).x + 5f);
+      float floorItemCaptionWidth = pickableLabelStyle.CalcSize(new GUIContent(floorItemCaption)).x + 4f;
       GUILayout.Label(floorItemCaption, pickableLabelStyle,
           GUILayout.Width(floorItemCaptionWidth));
 
@@ -42041,10 +42036,9 @@ private static void HandleGameViewPointerDown(
       labelStyle.normal.textColor = Color.yellow;
       string label = "Torch Holder S1 " + (onRight ? "Right" : "Left");
       GUILayout.Label(label, labelStyle,
-          GUILayout.Width(Mathf.Max(ViewEditItemCaptionColumn,
-              labelStyle.CalcSize(new GUIContent(label)).x + 4f)));
+          GUILayout.Width(labelStyle.CalcSize(new GUIContent(label)).x + 4f));
       bool wasEnabled = IsPreviewFeatureEnabled(key);
-      bool newEnabled = EditorGUILayout.ToggleLeft("Set", wasEnabled, GUILayout.Width(46f));
+      bool newEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
       if (newEnabled != wasEnabled)
       {
         SetPreviewFeatureEnabled(key, newEnabled);
