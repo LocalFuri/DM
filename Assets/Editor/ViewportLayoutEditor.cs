@@ -34347,9 +34347,9 @@ private static void HandleGameViewPointerDown(
     float previousLabelWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth = 12f;
     GUI.color = x != baseX ? changedColor : normalColor;
-    bool steppedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, 22f);
+    bool steppedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, ViewEditCoordinateInputWidth);
     GUI.color = y != baseY ? changedColor : normalColor;
-    bool steppedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, 22f);
+    bool steppedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, ViewEditCoordinateInputWidth);
     EditorGUIUtility.labelWidth = previousLabelWidth;
     GUI.color = normalColor;
     GUILayout.Label("W", GUILayout.Width(14f));
@@ -35200,11 +35200,11 @@ private static void HandleGameViewPointerDown(
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int editX = Mathf.RoundToInt(calculated.xMin);
     bool changedX = DrawIntStepperInline("X", ref editX, snap,
-        editX != originalX, true, 25f, 25f);
+        editX != originalX, true, 25f, ViewEditCoordinateInputWidth);
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     int editY = Mathf.RoundToInt(calculated.yMin);
     bool changedY = DrawIntStepperInline("Y", ref editY, snap,
-        editY != originalY, true, 25f, 25f);
+        editY != originalY, true, 25f, ViewEditCoordinateInputWidth);
     using (new EditorGUI.DisabledScope(true))
       EditorGUILayout.ToggleLeft(new GUIContent("Mirror", "Not available for this floor projection"), false, GUILayout.Width(56f));
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
@@ -35280,9 +35280,9 @@ private static void HandleGameViewPointerDown(
     float previousLabelWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth = 12f;
     GUI.color = x != baseX ? Color.red : normalColor;
-    bool changedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, 22f);
+    bool changedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, ViewEditCoordinateInputWidth);
     GUI.color = y != baseY ? Color.red : normalColor;
-    bool changedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, 22f);
+    bool changedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, ViewEditCoordinateInputWidth);
     GUI.color = normalColor;
     EditorGUIUtility.labelWidth = previousLabelWidth;
     bool apply = GUILayout.Toggle(false, "Apply", GUILayout.Width(58f));
@@ -35341,9 +35341,9 @@ private static void HandleGameViewPointerDown(
     float previousLabelWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth = 12f;
     GUI.color = x != baseX ? Color.red : normalColor;
-    bool changedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, 22f);
+    bool changedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, ViewEditCoordinateInputWidth);
     GUI.color = y != baseY ? Color.red : normalColor;
-    bool changedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, 22f);
+    bool changedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, ViewEditCoordinateInputWidth);
     GUI.color = normalColor;
     EditorGUIUtility.labelWidth = previousLabelWidth;
     // Keep the F1 item row visually consistent; mirroring is not editable here.
@@ -35432,9 +35432,9 @@ private static void HandleGameViewPointerDown(
     float previousLabelWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth = 12f;
     GUI.color = x != baseX ? Color.red : normalColor;
-    bool changedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, 22f);
+    bool changedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, ViewEditCoordinateInputWidth);
     GUI.color = y != baseY ? Color.red : normalColor;
-    bool changedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, 22f);
+    bool changedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, ViewEditCoordinateInputWidth);
     GUI.color = normalColor;
     EditorGUIUtility.labelWidth = previousLabelWidth;
     bool apply = GUILayout.Toggle(false, "Apply", GUILayout.Width(58f));
@@ -42473,7 +42473,7 @@ private static void HandleGameViewPointerDown(
   }
 
   // Uniform width of editable X/Y number boxes throughout ViewEdit.
-  private const float ViewEditCoordinateInputWidth = 36f;
+  private const float ViewEditCoordinateInputWidth = 25f;
 
   private static int DrawDelayedIntFieldMaybeRed(
       string label,
