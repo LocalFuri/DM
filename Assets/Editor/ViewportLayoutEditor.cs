@@ -24134,6 +24134,15 @@ private static void HandleGameViewPointerDown(
         new List<OrnamentCalibrationJsonEntry>();
   }
 
+  // A successful ViewEdit persistence write must carry a fresh filesystem
+  // modification time. UTC is stored by the filesystem; Windows displays
+  // it in the machine's local time zone (Europe/Berlin on the project PC).
+  private static void WriteViewEditTextWithTimestamp(string path, string contents)
+  {
+    File.WriteAllText(path, contents);
+    File.SetLastWriteTimeUtc(path, System.DateTime.UtcNow);
+  }
+
   private const string OrnamentClassJsonPath = "Assets/Editor/OrnamentCalibration.json";
 
   private static bool IsOrnamentClassCalibrationKey(string key)
@@ -24198,7 +24207,7 @@ private static void HandleGameViewPointerDown(
     string temp = OrnamentClassJsonPath + ".tmp";
     try
     {
-      File.WriteAllText(temp, JsonUtility.ToJson(data, true));
+      WriteViewEditTextWithTimestamp(temp, JsonUtility.ToJson(data, true));
       // File.Replace can fail for an asset under Unity/Windows even when
       // the temporary JSON was written successfully. Preserve the prior
       // calibration data before replacing the destination.
@@ -30466,7 +30475,7 @@ private static void HandleGameViewPointerDown(
           + (pressurePadF1Enabled ? "true" : "false");
       string updated = source.Substring(0, start) + accepted + source.Substring(end);
       if (updated != source)
-        File.WriteAllText(sourcePath, updated);
+        WriteViewEditTextWithTimestamp(sourcePath, updated);
       // Do not report success unless the permanent .cs value really matches.
       if (!TryReadSavedStairCalibration("PressurePadF1Accepted", out string verified)
           || verified != accepted)
@@ -30638,7 +30647,7 @@ private static void HandleGameViewPointerDown(
           + (pressurePadF2Enabled ? "true" : "false");
       string updated = source.Substring(0, start) + accepted + source.Substring(end);
       if (updated != source)
-        File.WriteAllText(sourcePath, updated);
+        WriteViewEditTextWithTimestamp(sourcePath, updated);
       // Do not report success unless the permanent .cs value really matches.
       if (!TryReadSavedStairCalibration("PressurePadF2Accepted", out string verified)
           || verified != accepted)
@@ -30810,7 +30819,7 @@ private static void HandleGameViewPointerDown(
           + (pressurePadF3Enabled ? "true" : "false");
       string updated = source.Substring(0, start) + accepted + source.Substring(end);
       if (updated != source)
-        File.WriteAllText(sourcePath, updated);
+        WriteViewEditTextWithTimestamp(sourcePath, updated);
       // Do not report success unless the permanent .cs value really matches.
       if (!TryReadSavedStairCalibration("PressurePadF3Accepted", out string verified)
           || verified != accepted)
@@ -30983,7 +30992,7 @@ private static void HandleGameViewPointerDown(
           + (pressurePadS1Enabled ? "true" : "false");
       string updated = source.Substring(0, start) + accepted + source.Substring(end);
       if (updated != source)
-        File.WriteAllText(sourcePath, updated);
+        WriteViewEditTextWithTimestamp(sourcePath, updated);
       // Do not report success unless the permanent .cs value really matches.
       if (!TryReadSavedStairCalibration("PressurePadS1Accepted", out string verified)
           || verified != accepted)
@@ -31122,7 +31131,7 @@ private static void HandleGameViewPointerDown(
           + (stairsUpF1Enabled ? "true" : "false");
       string updated = source.Substring(0, start) + accepted + source.Substring(end);
       if (updated != source)
-        File.WriteAllText(sourcePath, updated);
+        WriteViewEditTextWithTimestamp(sourcePath, updated);
       // Apply succeeds only if the accepted value was actually written.
       // Do not acknowledge a failed write or silently use stale EditorPrefs.
       string persistedSource = File.ReadAllText(sourcePath);
@@ -31284,7 +31293,7 @@ private static void HandleGameViewPointerDown(
           + (stairsUpFrontS1Enabled ? "true" : "false");
       string updated = source.Substring(0, start) + accepted + source.Substring(end);
       if (updated != source)
-        File.WriteAllText(sourcePath, updated);
+        WriteViewEditTextWithTimestamp(sourcePath, updated);
       EditorPrefs.SetInt(StairsUpFrontS1Prefs + "X", stairsUpFrontS1X);
       EditorPrefs.SetInt(StairsUpFrontS1Prefs + "Y", stairsUpFrontS1Y);
       EditorPrefs.SetBool(StairsUpFrontS1Prefs + "Mirror", stairsUpFrontS1Mirror);
@@ -31415,7 +31424,7 @@ private static void HandleGameViewPointerDown(
           + (stairsUpFrontS1LeftEnabled ? "true" : "false");
       string updated = source.Substring(0, start) + accepted + source.Substring(end);
       if (updated != source)
-        File.WriteAllText(sourcePath, updated);
+        WriteViewEditTextWithTimestamp(sourcePath, updated);
       EditorPrefs.SetInt(StairsUpFrontS1LeftPrefs + "X", stairsUpFrontS1LeftX);
       EditorPrefs.SetInt(StairsUpFrontS1LeftPrefs + "Y", stairsUpFrontS1LeftY);
       EditorPrefs.SetBool(StairsUpFrontS1LeftPrefs + "Mirror", stairsUpFrontS1LeftMirror);
@@ -31571,7 +31580,7 @@ private static void HandleGameViewPointerDown(
           + (stairsUpFrontS2Enabled ? "true" : "false");
       string updated = source.Substring(0, valueStart) + accepted + source.Substring(end);
       if (updated != source)
-        File.WriteAllText(sourcePath, updated);
+        WriteViewEditTextWithTimestamp(sourcePath, updated);
       EditorPrefs.SetInt(StairsUpFrontS2Prefs + "X", stairsUpFrontS2X);
       EditorPrefs.SetInt(StairsUpFrontS2Prefs + "Y", stairsUpFrontS2Y);
       EditorPrefs.SetBool(StairsUpFrontS2Prefs + "Mirror", stairsUpFrontS2Mirror);
@@ -31707,7 +31716,7 @@ private static void HandleGameViewPointerDown(
           + (stairsUpFrontS2RightEnabled ? "true" : "false");
       string updated = source.Substring(0, valueStart) + accepted + source.Substring(end);
       if (updated != source)
-        File.WriteAllText(sourcePath, updated);
+        WriteViewEditTextWithTimestamp(sourcePath, updated);
       EditorPrefs.SetInt(StairsUpFrontS2RightPrefs + "X", stairsUpFrontS2RightX);
       EditorPrefs.SetInt(StairsUpFrontS2RightPrefs + "Y", stairsUpFrontS2RightY);
       EditorPrefs.SetBool(StairsUpFrontS2RightPrefs + "Mirror", stairsUpFrontS2RightMirror);
@@ -31862,7 +31871,7 @@ private static void HandleGameViewPointerDown(
           + (stairsUpFrontS3Enabled ? "true" : "false");
       string updated = source.Substring(0, valueStart) + accepted + source.Substring(end);
       if (updated != source)
-        File.WriteAllText(sourcePath, updated);
+        WriteViewEditTextWithTimestamp(sourcePath, updated);
       EditorPrefs.SetInt(StairsUpFrontS3Prefs + "X", stairsUpFrontS3X);
       EditorPrefs.SetInt(StairsUpFrontS3Prefs + "Y", stairsUpFrontS3Y);
       EditorPrefs.SetBool(StairsUpFrontS3Prefs + "Mirror", stairsUpFrontS3Mirror);
@@ -31998,7 +32007,7 @@ private static void HandleGameViewPointerDown(
           + (stairsUpFrontS3RightEnabled ? "true" : "false");
       string updated = source.Substring(0, valueStart) + accepted + source.Substring(end);
       if (updated != source)
-        File.WriteAllText(sourcePath, updated);
+        WriteViewEditTextWithTimestamp(sourcePath, updated);
       EditorPrefs.SetInt(StairsUpFrontS3RightPrefs + "X", stairsUpFrontS3RightX);
       EditorPrefs.SetInt(StairsUpFrontS3RightPrefs + "Y", stairsUpFrontS3RightY);
       EditorPrefs.SetBool(StairsUpFrontS3RightPrefs + "Mirror", stairsUpFrontS3RightMirror);
@@ -32145,7 +32154,7 @@ private static void HandleGameViewPointerDown(
           + "|" + (enabled ? "true" : "false");
       string updated = source.Substring(0, valueStart) + accepted + source.Substring(end);
       if (updated != source)
-        File.WriteAllText(sourcePath, updated);
+        WriteViewEditTextWithTimestamp(sourcePath, updated);
       // Verify the persistent .cs write before marking the calibration applied.
       string persisted = File.ReadAllText(sourcePath);
       if (persisted != updated)
@@ -32359,7 +32368,7 @@ private static void HandleGameViewPointerDown(
           + "|" + (enabled ? "true" : "false");
       string updated = source.Substring(0, valueStart) + accepted + source.Substring(end);
       if (updated != source)
-        File.WriteAllText(sourcePath, updated);
+        WriteViewEditTextWithTimestamp(sourcePath, updated);
       // Verify the persistent .cs write before marking the calibration applied.
       string persisted = File.ReadAllText(sourcePath);
       if (persisted != updated)
@@ -32590,7 +32599,7 @@ private static void HandleGameViewPointerDown(
           + "|" + (stairsdownS2Enabled ? "true" : "false");
       string updated = source.Substring(0, valueBegin) + accepted + source.Substring(valueEnd);
       if (updated != source)
-        File.WriteAllText(assetPath, updated);
+        WriteViewEditTextWithTimestamp(assetPath, updated);
       // Preserve values through the pending Unity domain/script reload.
       EditorPrefs.SetInt(StairsdownS2PrefsPrefix + "X", stairsdownS2X);
       EditorPrefs.SetInt(StairsdownS2PrefsPrefix + "Y", stairsdownS2TopY);
@@ -32696,7 +32705,7 @@ private static void HandleGameViewPointerDown(
           + "|" + (stairsdownS2F2NorthEnabled ? "true" : "false");
       string updated = source.Substring(0, valueBegin) + accepted + source.Substring(valueEnd);
       if (updated != source)
-        File.WriteAllText(assetPath, updated);
+        WriteViewEditTextWithTimestamp(assetPath, updated);
       // Preserve values through the pending Unity domain/script reload.
       EditorPrefs.SetInt(StairsdownS2F2NorthPrefsPrefix + "X", stairsdownS2F2NorthX);
       EditorPrefs.SetInt(StairsdownS2F2NorthPrefsPrefix + "Y", stairsdownS2F2NorthTopY);
@@ -32805,7 +32814,7 @@ private static void HandleGameViewPointerDown(
           + "|" + (stairsdownS2LeftEnabled ? "true" : "false");
       string updated = source.Substring(0, valueBegin) + accepted + source.Substring(valueEnd);
       if (updated != source)
-        File.WriteAllText(assetPath, updated);
+        WriteViewEditTextWithTimestamp(assetPath, updated);
       // Preserve values through the pending Unity domain/script reload.
       EditorPrefs.SetInt(StairsdownS2LeftPrefsPrefix + "X", stairsdownS2LeftX);
       EditorPrefs.SetInt(StairsdownS2LeftPrefsPrefix + "Y", stairsdownS2LeftTopY);
@@ -32911,7 +32920,7 @@ private static void HandleGameViewPointerDown(
           + "|" + (stairsS0D2NorthEnabled ? "true" : "false");
       string updated = source.Substring(0, valueBegin) + accepted + source.Substring(valueEnd);
       if (updated != source)
-        File.WriteAllText(assetPath, updated);
+        WriteViewEditTextWithTimestamp(assetPath, updated);
       // Preserve values through the pending Unity domain/script reload.
       EditorPrefs.SetInt(StairsS0D2NorthPrefsPrefix + "X", stairsS0D2NorthX);
       EditorPrefs.SetInt(StairsS0D2NorthPrefsPrefix + "Y", stairsS0D2NorthTopY);
@@ -33020,7 +33029,7 @@ private static void HandleGameViewPointerDown(
           + "|" + (stairsS3RightSouthEnabled ? "true" : "false");
       string updated = source.Substring(0, valueBegin) + accepted + source.Substring(valueEnd);
       if (updated != source)
-        File.WriteAllText(assetPath, updated);
+        WriteViewEditTextWithTimestamp(assetPath, updated);
       // Preserve values through the pending Unity domain/script reload.
       EditorPrefs.SetInt(StairsS3RightSouthPrefsPrefix + "X", stairsS3RightSouthX);
       EditorPrefs.SetInt(StairsS3RightSouthPrefsPrefix + "Y", stairsS3RightSouthTopY);
@@ -34058,7 +34067,7 @@ private static void HandleGameViewPointerDown(
     anchor.y += shift.y;
     try
     {
-      File.WriteAllText(ItemArtworkRegistryPath, JsonUtility.ToJson(registry, true) + "\n");
+      WriteViewEditTextWithTimestamp(ItemArtworkRegistryPath, JsonUtility.ToJson(registry, true) + "\n");
       AssetDatabase.ImportAsset(ItemArtworkRegistryPath);
       return true;
     }
@@ -34332,7 +34341,7 @@ private static void HandleGameViewPointerDown(
       saved.verified = true;
       entries.Add(saved);
       db.entries = entries.ToArray();
-      File.WriteAllText(FloorProjectionCalibrationPath, JsonUtility.ToJson(db, true) + "\n");
+      WriteViewEditTextWithTimestamp(FloorProjectionCalibrationPath, JsonUtility.ToJson(db, true) + "\n");
       AssetDatabase.ImportAsset(FloorProjectionCalibrationPath, ImportAssetOptions.ForceUpdate);
       floorProjectionDrafts.Remove(key);
       return true;
