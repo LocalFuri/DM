@@ -27292,14 +27292,34 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  // Shared layout for the compact item/ornament calibration rows.
-  // Set begins at the same X coordinate even when captions differ in length.
-  private static float GetViewEditItemCaptionWidth(GUIStyle style, string caption)
+  // The currently displayed item rows share one caption column. Recompute
+  // when the map pose changes; never pin it to a particular item (Waterskin).
+  private float viewEditItemCaptionMaxWidth;
+  private int viewEditItemCaptionPoseX = int.MinValue;
+  private int viewEditItemCaptionPoseY = int.MinValue;
+  private DungeonFacing viewEditItemCaptionPoseFacing;
+
+  private float GetViewEditItemCaptionWidth(GUIStyle style, string caption)
   {
-    // One common column for the item rows. Waterskin is the current longest
-    // description; retain enough width if another item is longer later.
-    float longest = style.CalcSize(new GUIContent("Waterskin F1 Right N")).x;
-    return Mathf.Max(longest, style.CalcSize(new GUIContent(caption)).x) + 4f;
+    if (viewEditItemCaptionPoseX != previewX
+        || viewEditItemCaptionPoseY != previewY
+        || viewEditItemCaptionPoseFacing != previewFacing)
+    {
+      viewEditItemCaptionPoseX = previewX;
+      viewEditItemCaptionPoseY = previewY;
+      viewEditItemCaptionPoseFacing = previewFacing;
+      viewEditItemCaptionMaxWidth = 0f;
+    }
+
+    float measured = style.CalcSize(new GUIContent(caption ?? string.Empty)).x + 4f;
+    if (measured > viewEditItemCaptionMaxWidth)
+    {
+      viewEditItemCaptionMaxWidth = measured;
+      // Earlier rows in this GUI pass may have used the previous maximum.
+      // Repaint once more so ALL Set columns use the new longest caption.
+      Repaint();
+    }
+    return viewEditItemCaptionMaxWidth;
   }
 
   private bool DrawWallOrnamentCalibrationRow(
