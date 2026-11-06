@@ -353,6 +353,12 @@
             "groundF1Path": "Assets/Art/Misc/Waterskin_empty_48x14.png",
             "width": 48,
             "height": 14
+        },
+        {
+            "itemType": "Scroll",
+            "groundF1Path": "Assets/Art/Misc/Scroll_F1_48x8.png",
+            "width": 48,
+            "height": 8
         }
     ],
     "groundF1Anchors": {
