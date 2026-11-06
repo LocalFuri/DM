@@ -33766,6 +33766,9 @@ private static void HandleGameViewPointerDown(
     public string groundF1Path;
     public int width;
     public int height;
+    public string groundF2Path;
+    public int widthF2;
+    public int heightF2;
   }
 
   private GroundArtworkRegistry ReadGroundArtworkRegistry()
@@ -34126,6 +34129,51 @@ private static void HandleGameViewPointerDown(
     return TryGetAutomaticF1FloorItemRect(item.type, isRight, texture, out rect);
   }
 
+  // Registered F2 image: native 1:1 artwork only. Keep the existing F2
+  // visibility, floor subtile, pile, and X/Y calibration paths unchanged.
+  // A missing registered F2 texture is an error, never an F1 fallback.
+  private bool TryBlitRegisteredF2FloorItem(
+      Color32[] pixels, FloorItemPlacement item, Texture2D sourceF1,
+      Vector2Int pileOffset)
+  {
+    GroundArtworkEntry entry = GetRegisteredGroundArtwork(item.type);
+    if (entry == null || string.IsNullOrEmpty(entry.groundF2Path))
+      return false; // Items not yet migrated keep their existing F2 renderer.
+
+    if (entry.widthF2 <= 0 || entry.heightF2 <= 0)
+    {
+      ReportFloorItemTextureProblem(item.type, entry.groundF2Path,
+          "has invalid dedicated F2 dimensions");
+      return true;
+    }
+    Texture2D f2 = AssetDatabase.LoadAssetAtPath<Texture2D>(entry.groundF2Path);
+    if (f2 == null || !f2.isReadable
+        || f2.width != entry.widthF2 || f2.height != entry.heightF2)
+    {
+      ReportFloorItemTextureProblem(item.type, entry.groundF2Path,
+          "F2 texture missing, not readable, or dimensions mismatch; expected "
+          + entry.widthF2 + "x" + entry.heightF2);
+      return true;
+    }
+
+    if (!TryGetCsbF2Rect(item, sourceF1, out Rect predicted, out bool mirror))
+      return true;
+    int corner = GetFloorScreenCorner(item);
+    FloorProjectionCalibrationEntry saved = corner < 0 ? null :
+        FindFloorProjectionCalibration(item.type, "F2", corner);
+    int x = saved != null ? saved.x : Mathf.RoundToInt(predicted.center.x - f2.width * 0.5f);
+    int y = saved != null ? saved.y : Mathf.RoundToInt(predicted.yMax - f2.height);
+    if (corner >= 0 && saved == null)
+    {
+      // Keep the F2 control's uncalibrated coordinates consistent with the
+      // image's native width and height (not the CSBwin scaled dimensions).
+    }
+    BlitPieceIntoPreview(pixels, f2, x + pileOffset.x,
+        PreviewHeight - y - f2.height - pileOffset.y,
+        saved != null ? saved.mirror : mirror);
+    return true;
+  }
+
   // Cleanup stage: render only the generic near-floor projection.
   // Distant items remain in the source data, but await CSBwin projection.
   private void BlitProjectedFloorItem(
@@ -34155,6 +34203,10 @@ private static void HandleGameViewPointerDown(
               false);
         return;
       }
+      if (string.Equals(GetViewEditFloorItemDistance(item), "F2",
+              System.StringComparison.Ordinal)
+          && TryBlitRegisteredF2FloorItem(pixels, item, texture, pileOffset))
+        return;
       BlitCsbF2Item(pixels, item, texture, pileOffset);
       return;
     }
@@ -34393,13 +34445,7 @@ private static void HandleGameViewPointerDown(
     bool steppedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, ViewEditCoordinateInputWidth);
     EditorGUIUtility.labelWidth = previousLabelWidth;
     GUI.color = normalColor;
-    GUILayout.Label("W", GUILayout.Width(14f));
-    GUI.color = w != baseW ? changedColor : normalColor;
-    w = EditorGUILayout.IntField(w, GUILayout.Width(22f));
-    GUI.color = normalColor;
-    GUILayout.Label("H", GUILayout.Width(12f));
-    GUI.color = h != baseH ? changedColor : normalColor;
-    h = EditorGUILayout.IntField(h, GUILayout.Width(22f));
+    // Image dimensions are determined by artwork, not edited in ViewEdit.
     GUI.color = m != baseMirror ? changedColor : normalColor;
     m = EditorGUILayout.ToggleLeft("Mirror", m, GUILayout.Width(56f));
     GUI.color = normalColor;
@@ -35618,8 +35664,10 @@ private static void HandleGameViewPointerDown(
               else
                 GUILayout.Label("Unsupported depth " + depthLabel, GUILayout.Width(160f));
             }
+            else if (depthLabel == "F2")
+              DrawF2FloorCalibration(item, ground);
             else
-              GUILayout.Label("CSBwin F3 test", GUILayout.Width(120f));
+              GUILayout.Label("F3 calibration pending", GUILayout.Width(150f));
           }
         }
       }
