@@ -27412,6 +27412,24 @@ private static void HandleGameViewPointerDown(
       }
     }
 
+    // The F1 Torch Holder uses the same placement visibility gate as its
+    // renderer. Include its Set control in the shared ViewEdit row layout.
+    if (!string.IsNullOrEmpty(displayName)
+        && displayName.StartsWith("TorchHolder ", System.StringComparison.Ordinal))
+    {
+      string holderVisibilityKey = MakePreviewFeatureKey(
+          "Ornament", ornament.x, ornament.y, ornament.wall);
+      bool wasEnabled = IsPreviewFeatureEnabled(holderVisibilityKey);
+      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
+      if (nowEnabled != wasEnabled)
+      {
+        SetPreviewFeatureEnabled(holderVisibilityKey, nowEnabled);
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
+    }
+
     // Hook toggles use the placement visibility key checked by the renderer.
     if (IsHookOrnament(ornament))
     {
@@ -27466,7 +27484,7 @@ private static void HandleGameViewPointerDown(
             || projectionSuffix == " / F2"
             || projectionSuffix == " / F3");
     bool editMirror = mirror;
-    if (frontOrnamentProjection)
+    if (frontOrnamentProjection || IsEmptyTorchHolderF1Visible(ornament))
     {
       using (new EditorGUI.DisabledScope(true))
         EditorGUILayout.ToggleLeft("Mirror", false, GUILayout.Width(56f));
@@ -33130,20 +33148,12 @@ private static void HandleGameViewPointerDown(
     featureStyle.normal.textColor = Color.magenta;
     featureStyle.hover.textColor = Color.magenta;
     featureStyle.focused.textColor = Color.magenta;
-    float captionWidth = featureStyle.CalcSize(
-        new GUIContent("Stairs_down_S1")).x;
-    GUILayout.Label("Stairs_down_S1", featureStyle,
-        GUILayout.Width(captionWidth));
-
-    GUILayout.Space(8f);
-    float enabledLabelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("Set")).x;
-    EditorGUIUtility.labelWidth = enabledLabelWidth;
+    const string caption = "Stairs S1";
+    GUILayout.Label(caption, featureStyle,
+        GUILayout.Width(GetViewEditItemCaptionWidth(featureStyle, caption)));
     GUI.contentColor = stairsS1PreviewEnabled != savedEnabled ? Color.red : originalContentColor;
-    bool updatedEnabled = DrawMouseOnlyToggle(
-        "Set", stairsS1PreviewEnabled, stairsS1PreviewEnabled,
-        GUILayout.Width(enabledLabelWidth + 18f),
-        GUILayout.ExpandWidth(false));
+    bool updatedEnabled = DrawCompactMouseOnlyToggle(
+        "Set", stairsS1PreviewEnabled, false);
     if (updatedEnabled != stairsS1PreviewEnabled)
     {
       stairsS1PreviewEnabled = updatedEnabled;
@@ -33165,7 +33175,6 @@ private static void HandleGameViewPointerDown(
     bool yChanged = DrawIntStepperInline(
         "Y", ref y, snap, stairsS1TopY != savedY, true, 24f, 24f);
 
-    GUILayout.Space(6f);
     GUI.contentColor = stairsS1Mirror != savedMirror ? Color.red : originalContentColor;
     bool updatedMirror = EditorGUILayout.ToggleLeft(
         "Mirror", stairsS1Mirror, GUILayout.Width(56f));
@@ -33217,20 +33226,12 @@ private static void HandleGameViewPointerDown(
     style.normal.textColor = Color.magenta;
     style.hover.textColor = Color.magenta;
     style.focused.textColor = Color.magenta;
-    float captionWidth = style.CalcSize(
-        new GUIContent("Stairs_down_S1")).x;
-    GUILayout.Label("Stairs_down_S1", style,
-        GUILayout.Width(captionWidth));
-
-    GUILayout.Space(8f);
-    float enabledLabelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("Set")).x;
-    EditorGUIUtility.labelWidth = enabledLabelWidth;
+    const string caption = "Stairs S1";
+    GUILayout.Label(caption, style,
+        GUILayout.Width(GetViewEditItemCaptionWidth(style, caption)));
     GUI.contentColor = stairsS1LeftPreviewEnabled != savedEnabled ? Color.red : originalContentColor;
-    bool updatedEnabled = DrawMouseOnlyToggle(
-        "Set", stairsS1LeftPreviewEnabled, stairsS1LeftPreviewEnabled,
-        GUILayout.Width(enabledLabelWidth + 18f),
-        GUILayout.ExpandWidth(false));
+    bool updatedEnabled = DrawCompactMouseOnlyToggle(
+        "Set", stairsS1LeftPreviewEnabled, false);
     if (updatedEnabled != stairsS1LeftPreviewEnabled)
     {
       stairsS1LeftPreviewEnabled = updatedEnabled;
@@ -33251,7 +33252,6 @@ private static void HandleGameViewPointerDown(
     bool yChanged = DrawIntStepperInline(
         "Y", ref y, snap, stairsS1LeftTopY != savedY, true, 24f, 24f);
 
-    GUILayout.Space(6f);
     GUI.contentColor = stairsS1LeftMirror != savedMirror ? Color.red : originalContentColor;
     bool mirror = EditorGUILayout.ToggleLeft(
         "Mirror", stairsS1LeftMirror, GUILayout.Width(56f));
