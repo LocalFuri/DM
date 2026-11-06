@@ -21,6 +21,28 @@
             "height": 4,
             "mirror": false,
             "verified": true
+        },
+        {
+            "itemType": "Scroll",
+            "view": "F2",
+            "corner": 3,
+            "x": 77,
+            "y": 116,
+            "width": 48,
+            "height": 8,
+            "mirror": false,
+            "verified": true
+        },
+        {
+            "itemType": "Waterskin",
+            "view": "F2",
+            "corner": 2,
+            "x": 129,
+            "y": 114,
+            "width": 48,
+            "height": 13,
+            "mirror": false,
+            "verified": true
         }
     ]
 }

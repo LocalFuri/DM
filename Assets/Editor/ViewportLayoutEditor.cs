@@ -34157,7 +34157,11 @@ private static void HandleGameViewPointerDown(
     }
 
     if (!TryGetCsbF2Rect(item, sourceF1, out Rect predicted, out bool mirror))
+    {
+      Debug.LogError("DEDICATED F2: Registered artwork for " + item.type
+          + " could not be positioned by the existing F2 anchor algorithm.");
       return true;
+    }
     int corner = GetFloorScreenCorner(item);
     FloorProjectionCalibrationEntry saved = corner < 0 ? null :
         FindFloorProjectionCalibration(item.type, "F2", corner);
@@ -34182,6 +34186,13 @@ private static void HandleGameViewPointerDown(
   {
     if (depth == FloorItemDepth.TwoAhead)
     {
+      // The visible subtile may be labelled F2 even when the underlying
+      // tile is TwoAhead. Apply exactly the same F2 artwork selection
+      // already used for OneAhead; do not change map geometry.
+      if (string.Equals(GetViewEditFloorItemDistance(item), "F2",
+              System.StringComparison.Ordinal)
+          && TryBlitRegisteredF2FloorItem(pixels, item, texture, pileOffset))
+        return;
       TraceSwordF3(item, "F3 projection APPROVED; cell=" + item.cell
           + ", facing=" + previewFacing);
       BlitCsbF3Item(pixels, item, texture, pileOffset);
@@ -34440,9 +34451,9 @@ private static void HandleGameViewPointerDown(
     float previousLabelWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth = 12f;
     GUI.color = x != baseX ? changedColor : normalColor;
-    bool steppedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, ViewEditCoordinateInputWidth);
+    bool steppedX = DrawIntStepperInline("X", ref x, snap, false, true, 24f, ViewEditCoordinateInputWidth);
     GUI.color = y != baseY ? changedColor : normalColor;
-    bool steppedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, ViewEditCoordinateInputWidth);
+    bool steppedY = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, ViewEditCoordinateInputWidth);
     EditorGUIUtility.labelWidth = previousLabelWidth;
     GUI.color = normalColor;
     // Image dimensions are determined by artwork, not edited in ViewEdit.
