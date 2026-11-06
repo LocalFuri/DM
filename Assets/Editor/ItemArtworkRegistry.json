@@ -358,17 +358,20 @@
             "itemType": "Scroll",
             "groundF1Path": "Assets/Art/Misc/Scroll_F1_48x8.png",
             "width": 48,
-            "height": 8
+            "height": 8,
+            "groundF2Path": "Assets/Art/Misc/Scroll_F2_31x7.png",
+            "widthF2": 31,
+            "heightF2": 7
         }
     ],
     "groundF1Anchors": {
         "left": {
-            "x": 72,
-            "y": 145
+            "x": 68,
+            "y": 163
         },
         "right": {
             "x": 154,
-            "y": 145
+            "y": 163
         }
     }
 }
