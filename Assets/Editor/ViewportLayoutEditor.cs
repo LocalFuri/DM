@@ -24697,7 +24697,7 @@ private static void HandleGameViewPointerDown(
       bool yChanged = DrawIntStepperInline(
           "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
       bool editMirror = EditorGUILayout.ToggleLeft(
-          "Mirror", flip, GUILayout.Width(66f));
+          "Mirror", flip, GUILayout.Width(56f));
       bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
       NoteContentRight();
       EditorGUILayout.EndHorizontal();
@@ -24810,7 +24810,7 @@ private static void HandleGameViewPointerDown(
         x != savedX, true, 24f, 24f);
     bool changeY = DrawIntStepperInline("Y", ref editY, snap,
         y != savedY, true, 24f, 24f);
-    bool editMirror = EditorGUILayout.ToggleLeft("Mirror", flip, GUILayout.Width(66f));
+    bool editMirror = EditorGUILayout.ToggleLeft("Mirror", flip, GUILayout.Width(56f));
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
     NoteContentRight();
     EditorGUILayout.EndHorizontal();
@@ -25169,7 +25169,7 @@ private static void HandleGameViewPointerDown(
         bool changedY = DrawIntStepperInline("Y", ref editY, snap,
             y != defaultY, true, 24f, 24f);
         bool editMirror = EditorGUILayout.ToggleLeft("Mirror", mirror,
-            GUILayout.Width(66f));
+            GUILayout.Width(56f));
         bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
         NoteContentRight();
         EditorGUILayout.EndHorizontal();
@@ -27426,7 +27426,7 @@ private static void HandleGameViewPointerDown(
     if (!frontOrnamentProjection)
     {
       editMirror = EditorGUILayout.ToggleLeft(
-          "Mirror", mirror, GUILayout.Width(66f));
+          "Mirror", mirror, GUILayout.Width(56f));
     }
     bool mirrorChanged = editMirror != mirror;
     bool applyClicked = false;
@@ -27768,7 +27768,7 @@ private static void HandleGameViewPointerDown(
     {
       GUILayout.Space(6f);
       editMirror = EditorGUILayout.ToggleLeft(
-          "Mirror", mirror, GUILayout.Width(66f));
+          "Mirror", mirror, GUILayout.Width(56f));
     }
     bool changedMirror = editMirror != mirror;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
@@ -29155,7 +29155,7 @@ private static void HandleGameViewPointerDown(
         bool yChanged = DrawIntStepperInline(
             "Y", ref editY, snap, y != defaultY, true, 24f, 24f);
         bool editMirror = EditorGUILayout.ToggleLeft(
-            "Mirror", mirror, GUILayout.Width(66f));
+            "Mirror", mirror, GUILayout.Width(56f));
         bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
         NoteContentRight();
         EditorGUIUtility.labelWidth = oldLabelWidth;
@@ -30442,9 +30442,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = pressurePadF1Y != acceptedY ? Color.red : oldColor;
     int y = pressurePadF1Y;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = pressurePadF1Mirror != acceptedMirror ? Color.red : oldColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", pressurePadF1Mirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", pressurePadF1Mirror, GUILayout.Width(56f));
     GUI.contentColor = oldColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -30615,9 +30614,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = pressurePadF2Y != acceptedY ? Color.red : oldColor;
     int y = pressurePadF2Y;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = pressurePadF2Mirror != acceptedMirror ? Color.red : oldColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", pressurePadF2Mirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", pressurePadF2Mirror, GUILayout.Width(56f));
     GUI.contentColor = oldColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -30788,9 +30786,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = pressurePadF3Y != acceptedY ? Color.red : oldColor;
     int y = pressurePadF3Y;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = pressurePadF3Mirror != acceptedMirror ? Color.red : oldColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", pressurePadF3Mirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", pressurePadF3Mirror, GUILayout.Width(56f));
     GUI.contentColor = oldColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -30962,9 +30959,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = pressurePadS1Y != acceptedY ? Color.red : oldColor;
     int y = pressurePadS1Y;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = pressurePadS1Mirror != acceptedMirror ? Color.red : oldColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", pressurePadS1Mirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", pressurePadS1Mirror, GUILayout.Width(56f));
     GUI.contentColor = oldColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -31105,9 +31101,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = stairsUpF1Y != acceptedY ? Color.red : oldColor;
     int y = stairsUpF1Y;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = stairsUpF1Mirror != acceptedMirror ? Color.red : oldColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpF1Mirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpF1Mirror, GUILayout.Width(56f));
     GUI.contentColor = oldColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -31258,9 +31253,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = stairsUpFrontS1Y != acceptedY ? Color.red : oldColor;
     int y = stairsUpFrontS1Y;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = stairsUpFrontS1Mirror != acceptedMirror ? Color.red : oldColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpFrontS1Mirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpFrontS1Mirror, GUILayout.Width(56f));
     GUI.contentColor = oldColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -31390,9 +31384,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = stairsUpFrontS1LeftY != acceptedY ? Color.red : oldColor;
     int y = stairsUpFrontS1LeftY;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = stairsUpFrontS1LeftMirror != acceptedMirror ? Color.red : oldColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpFrontS1LeftMirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpFrontS1LeftMirror, GUILayout.Width(56f));
     GUI.contentColor = oldColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -31547,9 +31540,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = stairsUpFrontS2Y != acceptedY ? Color.red : oldColor;
     int y = stairsUpFrontS2Y;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = stairsUpFrontS2Mirror != acceptedMirror ? Color.red : oldColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpFrontS2Mirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpFrontS2Mirror, GUILayout.Width(56f));
     GUI.contentColor = oldColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -31684,9 +31676,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = stairsUpFrontS2RightY != acceptedY ? Color.red : oldColor;
     int y = stairsUpFrontS2RightY;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = stairsUpFrontS2RightMirror != acceptedMirror ? Color.red : oldColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpFrontS2RightMirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpFrontS2RightMirror, GUILayout.Width(56f));
     GUI.contentColor = oldColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -31840,9 +31831,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = stairsUpFrontS3Y != acceptedY ? Color.red : oldColor;
     int y = stairsUpFrontS3Y;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = stairsUpFrontS3Mirror != acceptedMirror ? Color.red : oldColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpFrontS3Mirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpFrontS3Mirror, GUILayout.Width(56f));
     GUI.contentColor = oldColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -31977,9 +31967,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = stairsUpFrontS3RightY != acceptedY ? Color.red : oldColor;
     int y = stairsUpFrontS3RightY;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = stairsUpFrontS3RightMirror != acceptedMirror ? Color.red : oldColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpFrontS3RightMirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsUpFrontS3RightMirror, GUILayout.Width(56f));
     GUI.contentColor = oldColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -32182,9 +32171,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = currentY != acceptedY ? Color.red : oldColor;
     int y = currentY;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = currentMirror != acceptedMirror ? Color.red : oldColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", currentMirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", currentMirror, GUILayout.Width(56f));
     GUI.contentColor = oldColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -32355,9 +32343,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = currentY != acceptedY ? Color.red : oldColor;
     int y = currentY;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = currentMirror != acceptedMirror ? Color.red : oldColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", currentMirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", currentMirror, GUILayout.Width(56f));
     GUI.contentColor = oldColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -32573,9 +32560,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = stairsdownS2TopY != acceptedY ? Color.red : oldContentColor;
     int y = stairsdownS2TopY;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = stairsdownS2Mirror != acceptedMirror ? Color.red : oldContentColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsdownS2Mirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsdownS2Mirror, GUILayout.Width(56f));
     GUI.contentColor = oldContentColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -32683,9 +32669,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = stairsdownS2F2NorthTopY != acceptedY ? Color.red : oldContentColor;
     int y = stairsdownS2F2NorthTopY;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = stairsdownS2F2NorthMirror != acceptedMirror ? Color.red : oldContentColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsdownS2F2NorthMirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsdownS2F2NorthMirror, GUILayout.Width(56f));
     GUI.contentColor = oldContentColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -32793,9 +32778,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = stairsdownS2LeftTopY != acceptedY ? Color.red : oldContentColor;
     int y = stairsdownS2LeftTopY;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = stairsdownS2LeftMirror != acceptedMirror ? Color.red : oldContentColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsdownS2LeftMirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsdownS2LeftMirror, GUILayout.Width(56f));
     GUI.contentColor = oldContentColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -32903,9 +32887,8 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = stairsS0D2NorthTopY != acceptedY ? Color.red : oldContentColor;
     int y = stairsS0D2NorthTopY;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = stairsS0D2NorthMirror != acceptedMirror ? Color.red : oldContentColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsS0D2NorthMirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsS0D2NorthMirror, GUILayout.Width(56f));
     GUI.contentColor = oldContentColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -33012,7 +32995,7 @@ private static void HandleGameViewPointerDown(
     int y = stairsS3RightSouthTopY;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
     GUI.contentColor = stairsS3RightSouthMirror != acceptedMirror ? Color.red : oldContentColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsS3RightSouthMirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsS3RightSouthMirror, GUILayout.Width(56f));
     GUI.contentColor = oldContentColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -33064,9 +33047,8 @@ private static void HandleGameViewPointerDown(
     EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
     int y = stairsD0LTopY;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, stairsD0LTopY != savedY, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = stairsD0LMirror != savedMirror ? Color.red : originalContentColor;
-    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsD0LMirror, GUILayout.Width(66f));
+    bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsD0LMirror, GUILayout.Width(56f));
     GUI.contentColor = originalContentColor;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f), GUILayout.ExpandWidth(false));
     NoteContentRight();
@@ -33145,7 +33127,7 @@ private static void HandleGameViewPointerDown(
     GUILayout.Space(6f);
     GUI.contentColor = stairsS1Mirror != savedMirror ? Color.red : originalContentColor;
     bool updatedMirror = EditorGUILayout.ToggleLeft(
-        "Mirror", stairsS1Mirror, GUILayout.Width(66f));
+        "Mirror", stairsS1Mirror, GUILayout.Width(56f));
     bool mirrorChanged = updatedMirror != stairsS1Mirror;
     GUI.contentColor = originalContentColor;
     bool apply = GUILayout.Button("Apply",
@@ -33231,7 +33213,7 @@ private static void HandleGameViewPointerDown(
     GUILayout.Space(6f);
     GUI.contentColor = stairsS1LeftMirror != savedMirror ? Color.red : originalContentColor;
     bool mirror = EditorGUILayout.ToggleLeft(
-        "Mirror", stairsS1LeftMirror, GUILayout.Width(66f));
+        "Mirror", stairsS1LeftMirror, GUILayout.Width(56f));
     bool mirrorChanged = mirror != stairsS1LeftMirror;
     GUI.contentColor = originalContentColor;
     bool apply = GUILayout.Button("Apply",
@@ -34337,7 +34319,7 @@ private static void HandleGameViewPointerDown(
     GUI.color = h != baseH ? changedColor : normalColor;
     h = EditorGUILayout.IntField(h, GUILayout.Width(22f));
     GUI.color = m != baseMirror ? changedColor : normalColor;
-    m = EditorGUILayout.ToggleLeft("Mirror", m, GUILayout.Width(65f));
+    m = EditorGUILayout.ToggleLeft("Mirror", m, GUILayout.Width(56f));
     GUI.color = normalColor;
     bool changed = EditorGUI.EndChangeCheck() || steppedX || steppedY;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
@@ -35183,7 +35165,7 @@ private static void HandleGameViewPointerDown(
     bool changedY = DrawIntStepperInline("Y", ref editY, snap,
         editY != originalY, true, 25f, 25f);
     using (new EditorGUI.DisabledScope(true))
-      EditorGUILayout.ToggleLeft(new GUIContent("Mirror", "Not available for this floor projection"), false, GUILayout.Width(66f));
+      EditorGUILayout.ToggleLeft(new GUIContent("Mirror", "Not available for this floor projection"), false, GUILayout.Width(56f));
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
     NoteContentRight();
     EditorGUIUtility.labelWidth = oldWidth;
@@ -42052,7 +42034,7 @@ private static void HandleGameViewPointerDown(
       bool cy = DrawIntStepperInline("Y", ref newY, snap,
           y != defaultY, true, 24f, 24f);
       bool newMirror = EditorGUILayout.ToggleLeft(
-          "Mirror", mirror, GUILayout.Width(66f));
+          "Mirror", mirror, GUILayout.Width(56f));
       bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
       EditorGUILayout.EndHorizontal();
       if (apply)
