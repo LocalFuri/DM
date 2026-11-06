@@ -1387,5 +1387,96 @@
     ],
     "most_recent_torch_source_zip": "ViewportLayoutEditor_Torch_Holder_S1_32x48_20261105.zip",
     "delivery_rules": "Use Europe/Berlin file and ZIP timestamps; unchanged files preserve original dates. No changelog files."
+  },
+  "daily_progress_20261106": {
+    "date": "2026-11-06",
+    "status": "End-of-day log based on user reports and delivered files. Do not treat unverified C# patches as approved Unity behavior.",
+    "current_focus": "Replace inaccurate CSBwin floor-item downscaling with manually cropped original Atari perspective PNGs at native 1:1, one item and distance at a time.",
+    "approved_rules": [
+      "Original Atari visual appearance is authoritative; CSBwin is a research reference for mechanics, not a reliable automatic perspective-artwork scaler.",
+      "Dedicated F1/F2/F3 and relevant S1/S2/S3 PNG artwork, original dimensions, native 1:1; no silent artwork fallback.",
+      "Keep generic V17/map-based visibility, clipping, occlusion, facing rotation and pickup logic unchanged when changing perspective artwork.",
+      "Make only one isolated C# change per iteration; test Unity before moving to the next change. Do NOT reinstall broad F2/F3/S3 loader or shared ViewEdit UI refactoring previously reversed.",
+      "ViewEdit X/Y numeric edit boxes consistently 25 pixels wide, including wall and item controls; respect Snap 1 or Snap 8 for X/Y stepper buttons.",
+      "Desired future Apply persistence: X/Y/Mirror -> Apply -> JSON -> Refresh, with no C# source rewriting; preserve all previous calibrations. This standardization is not complete.",
+      "Deliver modified files with correct Europe/Berlin filesystem/ZIP timestamps, preserve unchanged meaningful timestamps; omit changelogs."
+    ],
+    "scroll": {
+      "F1": {
+        "art": "Assets/Art/Misc/Scroll_F1_48x8.png",
+        "registry": "Registered; no longer missing in the updated registry."
+      },
+      "F2": {
+        "art": "Assets/Art/Misc/Scroll_F2_21x4.png",
+        "dimensions_px": [
+          21,
+          4
+        ],
+        "previous_discarded_candidate": "Scroll_F2_31x7.png",
+        "registration": "Updated in ItemArtworkRegistry.json",
+        "test_view": {
+          "level": 0,
+          "player_tile": [
+            4,
+            13
+          ],
+          "facing": "South",
+          "label": "Scroll F2 Left E"
+        },
+        "loader": "Focused C# native-F2 loader and depth-band correction delivered; Console initially reported path/name or Read/Write/dimension mismatch. User corrected the PNG filename. Later ViewEdit screenshot shows F2 calibration X/Y controls and no missing-texture diagnostic; exact pixel-perfect artwork appearance NOT explicitly approved.",
+        "snap": "F2 control previously hardcoded +/-1 even at Snap 8; targeted patch delivered to use selected snap, not yet explicitly user-verified."
+      },
+      "reading": "POSTPONED; eye inspection and action-hand parchment/text reading not implemented. Cursor research completed, supplied in chat."
+    },
+    "waterskin": {
+      "F1": {
+        "art": "Assets/Art/Misc/Waterskin_full_48x13.png",
+        "inventory": "Waterskin_full_16x16.png",
+        "issue": "X/Y edit and Apply initially failed to move floor image; generic F1 source update delivered but no final explicit verification."
+      },
+      "F2": {
+        "art": "Assets/Art/Misc/Waterskin_F2_17x6.png",
+        "dimensions_px": [
+          17,
+          6
+        ],
+        "registration": "ItemArtworkRegistry.json ZIP delivered; no explicit Unity visual verification yet",
+        "test_view": {
+          "level": 0,
+          "player_tile": [
+            4,
+            13
+          ],
+          "facing": "South",
+          "label": "Waterskin F2 Right N"
+        }
+      },
+      "mechanics": "Cursor requested to research drinking/water restoration, full/partial/empty states, refill and associated graphics. Research report not yet provided."
+    },
+    "viewedit": {
+      "UI": "User requested consistent item rows: Description, Set checkbox, X/Y, Mirror, Apply; align Set to longest currently visible description. Uniform X/Y boxes at 25px accepted by user.",
+      "failure_and_rollback": "Broad shared UI refactor made Unity crash; user restored prior Git baseline. Do not reapply ViewEdit Shared UI patch.",
+      "hook": "Hook S1 Left Level 0 (4,14) South Apply did not retain saved X/Y (reported twice). Uploaded current C# source analyzed; targeted Hook-JSON Apply patch delivered; persistence not confirmed by user. Other legacy source-rewriting Apply handlers remain.",
+      "timestamps": "User reported automatic saves did not correctly timestamp modified files. Explicit timestamp helper C# ZIP delivered; normal File.WriteAllText should already update timestamps, so verify actual Apply write and modification time. Runtime validation pending.",
+      "F2_rows": "Removed obsolete CSBwin F3 test labels and exposed F2 item X/Y/Mirror/Apply controls via focused patch. Later screenshot demonstrates F2 rows visible; save/persistence and exact positioning not fully approved."
+    },
+    "cursor_research": {
+      "scroll": "Source investigation delivered on 2026-11-06 (4-byte dbSCROLL, action-hand and Eye reading, 5-bit text and parchment). Defer implementation.",
+      "stairs": "Source investigation delivered on 2026-11-06: stairs are map cells, direction and axis bits, level-relative absolute-coordinate transfer, original Atari exit-facing logic differs from CSBwin rewrite. Research only; not implemented.",
+      "waterskin": "Prompt supplied; await actual Cursor findings."
+    },
+    "pending_verifications": [
+      "Check Scroll F2 (21x4) native artwork and X/Y Apply/Snap 8 at Level 0 (4,13) South; do not mark exact Atari visual approval without user confirmation.",
+      "Check Waterskin F2 (17x6) native artwork at Level 0 (4,13) South.",
+      "Check Hook S1 Left calibration persistence after Refresh and Unity restart; inspect OrnamentCalibration.json.",
+      "Verify generic F1 Waterskin anchor change and Apply persist rather than only X/Y edits turning red.",
+      "Audit legacy C# constant-writing Apply handlers and migrate one family at a time to JSON, preserving approved data and avoiding broad refactoring."
+    ],
+    "latest_artifact_references": {
+      "F2_CSharp": "ViewportLayoutEditor_F2_Respect_Snap_20261106.zip (later targeted correction; check installed working file against it)",
+      "Scroll_F2_CSharp": "ViewportLayoutEditor_Scroll_F2_Band_Fix_20261106.zip",
+      "Waterskin_F2_Registry": "ItemArtworkRegistry_Waterskin_F2_17x6_20261106.zip",
+      "warning": "The user may have installed a different combination or newer local versions. Obtain current files before merging further patches. Do not assume all distributed ZIPs are installed."
+    }
   }
 }
