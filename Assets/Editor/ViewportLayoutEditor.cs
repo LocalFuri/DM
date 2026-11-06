@@ -27294,7 +27294,13 @@ private static void HandleGameViewPointerDown(
 
   // Shared layout for the compact item/ornament calibration rows.
   // Set begins at the same X coordinate even when captions differ in length.
-  private const float ViewEditItemCaptionColumn = 200f;
+  private static float GetViewEditItemCaptionWidth(GUIStyle style, string caption)
+  {
+    // One common column for the item rows. Waterskin is the current longest
+    // description; retain enough width if another item is longer later.
+    float longest = style.CalcSize(new GUIContent("Waterskin F1 Right N")).x;
+    return Mathf.Max(longest, style.CalcSize(new GUIContent(caption)).x) + 4f;
+  }
 
   private bool DrawWallOrnamentCalibrationRow(
       WallOrnamentPlacement ornament,
@@ -27363,7 +27369,7 @@ private static void HandleGameViewPointerDown(
     compactDisplayName = System.Text.RegularExpressions.Regex.Replace(
         compactDisplayName, @"\((N|S|E|W)\)", "$1");
     ornamentCaptionColumnWidth =
-        featureStyle.CalcSize(new GUIContent(compactDisplayName)).x + 4f;
+        GetViewEditItemCaptionWidth(featureStyle, compactDisplayName);
     GUILayout.Label(
         compactDisplayName,
         featureStyle,
@@ -32546,8 +32552,7 @@ private static void HandleGameViewPointerDown(
     style.focused.textColor = Color.magenta;
     const string caption = "Stairsdown_S2";
     GUILayout.Label(caption, style,
-        GUILayout.Width(Mathf.Max(ViewEditItemCaptionColumn,
-            style.CalcSize(new GUIContent(caption)).x)));
+        GUILayout.Width(GetViewEditItemCaptionWidth(style, caption)));
     float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
     GUI.contentColor = stairsdownS2Enabled != acceptedEnabled ? Color.red : oldContentColor;
@@ -35305,6 +35310,10 @@ private static void HandleGameViewPointerDown(
     bool changedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, 22f);
     GUI.color = normalColor;
     EditorGUIUtility.labelWidth = previousLabelWidth;
+    // Keep the F1 item row visually consistent; mirroring is not editable here.
+    using (new EditorGUI.DisabledScope(true))
+      EditorGUILayout.ToggleLeft(new GUIContent("Mirror", "Not available for this floor projection"),
+          false, GUILayout.Width(56f));
     bool apply = GUILayout.Toggle(false, "Apply", GUILayout.Width(58f));
     if (changedX || changedY || apply)
     {
@@ -35482,7 +35491,7 @@ private static void HandleGameViewPointerDown(
       string floorItemCaption = item.type + " " + depthLabel + " "
           + (isRight ? "Right" : "Left") + " " + item.cell;
       // Keep Set immediately after each item caption, regardless of item type.
-      float floorItemCaptionWidth = pickableLabelStyle.CalcSize(new GUIContent(floorItemCaption)).x + 4f;
+      float floorItemCaptionWidth = GetViewEditItemCaptionWidth(pickableLabelStyle, floorItemCaption);
       GUILayout.Label(floorItemCaption, pickableLabelStyle,
           GUILayout.Width(floorItemCaptionWidth));
 
@@ -42018,7 +42027,7 @@ private static void HandleGameViewPointerDown(
       labelStyle.normal.textColor = Color.yellow;
       string label = "Torch Holder S1 " + (onRight ? "Right" : "Left");
       GUILayout.Label(label, labelStyle,
-          GUILayout.Width(labelStyle.CalcSize(new GUIContent(label)).x + 4f));
+          GUILayout.Width(GetViewEditItemCaptionWidth(labelStyle, label)));
       bool wasEnabled = IsPreviewFeatureEnabled(key);
       bool newEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
       if (newEnabled != wasEnabled)
