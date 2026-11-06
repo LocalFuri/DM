@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -1534,8 +1534,8 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
   // REF OrnamentProjection:Hook:F2|103|111|false|639272438417071479
   // REF OrnamentProjection:Hook:S1|160|109|true|639271634293923485
-  // REF OrnamentProjection:Hook:S1:Left|48|107|false
-  // REF OrnamentProjection:Hook:S2|152|117|true|639291413858377486
+  // REF OrnamentProjection:Hook:S1:Left|48|109|false|639295856627771313
+  // REF OrnamentProjection:Hook:S2|152|116|true|639295857292727952
   // REF OrnamentProjection:Hook:S2:Left|66|117|false|639292496524583345
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
