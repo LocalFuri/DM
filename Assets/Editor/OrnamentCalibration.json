@@ -60,6 +60,12 @@
             "x": 99,
             "y": 82,
             "mirror": false
+        },
+        {
+            "key": "OrnamentProjection:Hook:S1:Left",
+            "x": 48,
+            "y": 109,
+            "mirror": false
         }
     ]
 }

@@ -1534,7 +1534,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
   // REF OrnamentProjection:Hook:F2|103|111|false|639272438417071479
   // REF OrnamentProjection:Hook:S1|160|109|true|639271634293923485
-  // REF OrnamentProjection:Hook:S1:Left|48|109|false|639295856627771313
+  // REF OrnamentProjection:Hook:S1:Left|48|108|false|639295865315074352
   // REF OrnamentProjection:Hook:S2|152|116|true|639295857292727952
   // REF OrnamentProjection:Hook:S2:Left|66|117|false|639292496524583345
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
@@ -1869,6 +1869,22 @@ public class ViewportLayoutEditor : EditorWindow
       }
       return;
     }
+    // Hook S1 Left is calibrated through the JSON store, not by rewriting
+    // this editor script (which causes a domain reload during Apply).
+    // Preserve the previously approved source-embedded value as a fallback
+    // until the first successful JSON Apply.
+    if (string.Equals(projectionKey, "OrnamentProjection:Hook:S1:Left",
+        System.StringComparison.Ordinal))
+    {
+      if (TryGetOrnamentClassJson(projectionKey,
+          out AcceptedOrnamentReference hookJson))
+      {
+        x = hookJson.x;
+        y = hookJson.y;
+        mirror = hookJson.mirror;
+        return;
+      }
+    }
     EnsureAcceptedOrnamentReferencesLoaded();
     if (cachedAcceptedOrnamentReferences.TryGetValue(
             projectionKey, out AcceptedOrnamentReference accepted))
@@ -1887,7 +1903,9 @@ public class ViewportLayoutEditor : EditorWindow
   {
     if (string.IsNullOrEmpty(projectionKey))
       return false;
-    if (IsOrnamentClassCalibrationKey(projectionKey))
+    if (IsOrnamentClassCalibrationKey(projectionKey)
+        || string.Equals(projectionKey, "OrnamentProjection:Hook:S1:Left",
+            System.StringComparison.Ordinal))
       return SaveOrnamentClassJson(projectionKey, x, y, mirror);
 
     string assetPath = GetThisEditorSourceAssetPath();
@@ -34114,6 +34132,20 @@ private static void HandleGameViewPointerDown(
     }
     if (depth == FloorItemDepth.OneAhead)
     {
+      // A near subtile of the next map tile is still visible as F1.
+      // Use the same shared F1 anchor and calibration as a same-tile F1
+      // item, regardless of item type. Other visible bands keep their
+      // existing distance-specific projections.
+      if (string.Equals(GetViewEditFloorItemDistance(item), "F1",
+              System.StringComparison.Ordinal))
+      {
+        if (TryGetF1FloorItemRect(item, isRight, texture, out Rect f1Rect))
+          BlitPieceIntoPreview(pixels, texture,
+              Mathf.RoundToInt(f1Rect.xMin) + pileOffset.x,
+              PreviewHeight - Mathf.RoundToInt(f1Rect.yMin) - texture.height - pileOffset.y,
+              false);
+        return;
+      }
       BlitCsbF2Item(pixels, item, texture, pileOffset);
       return;
     }
@@ -35546,12 +35578,10 @@ private static void HandleGameViewPointerDown(
       bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
       if (enabledAfter)
       {
-        // Waterskin F1 uses the same editable X/Y + Apply row as other
-        // registered F1 ground items, including when projected one tile ahead.
-        // Keep the shared F1 placement-region calibration authoritative.
-        if (depth == FloorItemDepth.SameTile
-            || (depthLabel == "F1"
-                && item.type.StartsWith("Waterskin", System.StringComparison.OrdinalIgnoreCase)))
+        // All visible F1 floor items share the same anchor and X/Y + Apply
+        // controls, including near subtiles located one map tile ahead.
+        if (depthLabel == "F1" &&
+            (depth == FloorItemDepth.SameTile || depth == FloorItemDepth.OneAhead))
           DrawRegisteredF1FloorCalibration(item.type, isRight);
         else
         {

@@ -54,6 +54,12 @@
             "x": 100,
             "y": 95,
             "mirror": false
+        },
+        {
+            "key": "OrnamentClass:Puddle:F2",
+            "x": 99,
+            "y": 82,
+            "mirror": false
         }
     ]
 }
