@@ -27292,6 +27292,10 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Shared layout for the compact item/ornament calibration rows.
+  // Set begins at the same X coordinate even when captions differ in length.
+  private const float ViewEditItemCaptionColumn = 200f;
+
   private bool DrawWallOrnamentCalibrationRow(
       WallOrnamentPlacement ornament,
       string displayName)
@@ -27358,8 +27362,8 @@ private static void HandleGameViewPointerDown(
         displayName ?? string.Empty, @"\[(.*?)\]", "$1");
     compactDisplayName = System.Text.RegularExpressions.Regex.Replace(
         compactDisplayName, @"\((N|S|E|W)\)", "$1");
-    ornamentCaptionColumnWidth =
-        featureStyle.CalcSize(new GUIContent(compactDisplayName)).x + 6f;
+    ornamentCaptionColumnWidth = Mathf.Max(ViewEditItemCaptionColumn,
+        featureStyle.CalcSize(new GUIContent(compactDisplayName)).x + 6f);
     GUILayout.Label(
         compactDisplayName,
         featureStyle,
@@ -27372,7 +27376,7 @@ private static void HandleGameViewPointerDown(
           "Ornament", ornament.x, ornament.y, ornament.wall);
       bool wasEnabled = IsPreviewFeatureEnabled(hookVisibilityKey);
       bool nowEnabled = EditorGUILayout.ToggleLeft(
-          "Set", wasEnabled, GUILayout.Width(76f));
+          "Set", wasEnabled, GUILayout.Width(46f));
       if (nowEnabled != wasEnabled)
       {
         SetPreviewFeatureEnabled(hookVisibilityKey, nowEnabled);
@@ -27390,7 +27394,7 @@ private static void HandleGameViewPointerDown(
           "Ornament", ornament.x, ornament.y, ornament.wall);
       bool wasEnabled = IsPreviewFeatureEnabled(grateVisibilityKey);
       bool nowEnabled = EditorGUILayout.ToggleLeft(
-          "Set", wasEnabled, GUILayout.Width(50f));
+          "Set", wasEnabled, GUILayout.Width(46f));
       if (nowEnabled != wasEnabled)
       {
         SetPreviewFeatureEnabled(grateVisibilityKey, nowEnabled);
@@ -27423,7 +27427,6 @@ private static void HandleGameViewPointerDown(
     bool editMirror = mirror;
     if (!frontOrnamentProjection)
     {
-      GUILayout.Space(6f);
       editMirror = EditorGUILayout.ToggleLeft(
           "Mirror", mirror, GUILayout.Width(66f));
     }
@@ -32558,8 +32561,8 @@ private static void HandleGameViewPointerDown(
     style.focused.textColor = Color.magenta;
     const string caption = "Stairsdown_S2";
     GUILayout.Label(caption, style,
-        GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
-    GUILayout.Space(8f);
+        GUILayout.Width(Mathf.Max(ViewEditItemCaptionColumn,
+            style.CalcSize(new GUIContent(caption)).x)));
     float enabledWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
     EditorGUIUtility.labelWidth = enabledWidth;
     GUI.contentColor = stairsdownS2Enabled != acceptedEnabled ? Color.red : oldContentColor;
@@ -33014,7 +33017,6 @@ private static void HandleGameViewPointerDown(
     GUI.contentColor = stairsS3RightSouthTopY != acceptedY ? Color.red : oldContentColor;
     int y = stairsS3RightSouthTopY;
     bool yChanged = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, 24f);
-    GUILayout.Space(6f);
     GUI.contentColor = stairsS3RightSouthMirror != acceptedMirror ? Color.red : oldContentColor;
     bool mirror = EditorGUILayout.ToggleLeft("Mirror", stairsS3RightSouthMirror, GUILayout.Width(66f));
     GUI.contentColor = oldContentColor;
@@ -35502,8 +35504,8 @@ private static void HandleGameViewPointerDown(
       string floorItemCaption = item.type + " " + depthLabel + " "
           + (isRight ? "Right" : "Left") + " " + item.cell;
       // Keep Set immediately after each item caption, regardless of item type.
-      float floorItemCaptionWidth =
-          pickableLabelStyle.CalcSize(new GUIContent(floorItemCaption)).x + 5f;
+      float floorItemCaptionWidth = Mathf.Max(ViewEditItemCaptionColumn,
+          pickableLabelStyle.CalcSize(new GUIContent(floorItemCaption)).x + 5f);
       GUILayout.Label(floorItemCaption, pickableLabelStyle,
           GUILayout.Width(floorItemCaptionWidth));
 
@@ -42039,7 +42041,17 @@ private static void HandleGameViewPointerDown(
       labelStyle.normal.textColor = Color.yellow;
       string label = "Torch Holder S1 " + (onRight ? "Right" : "Left");
       GUILayout.Label(label, labelStyle,
-          GUILayout.Width(labelStyle.CalcSize(new GUIContent(label)).x + 4f));
+          GUILayout.Width(Mathf.Max(ViewEditItemCaptionColumn,
+              labelStyle.CalcSize(new GUIContent(label)).x + 4f)));
+      bool wasEnabled = IsPreviewFeatureEnabled(key);
+      bool newEnabled = EditorGUILayout.ToggleLeft("Set", wasEnabled, GUILayout.Width(46f));
+      if (newEnabled != wasEnabled)
+      {
+        SetPreviewFeatureEnabled(key, newEnabled);
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+      }
       int newX = x, newY = y;
       bool cx = DrawIntStepperInline("X", ref newX, snap,
           x != defaultX, true, 24f, 24f);
