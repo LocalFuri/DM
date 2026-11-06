@@ -27352,8 +27352,16 @@ private static void HandleGameViewPointerDown(
     if (IsGrateOrnament(ornament))
       ornamentCaptionColumnWidth =
           featureStyle.CalcSize(new GUIContent(displayName)).x + 6f;
+    // Presentation only: remove coordinate/direction brackets from the row.
+    // Keep the stored name, keys and V17 ornament placement unchanged.
+    string compactDisplayName = System.Text.RegularExpressions.Regex.Replace(
+        displayName ?? string.Empty, @"\[(.*?)\]", "$1");
+    compactDisplayName = System.Text.RegularExpressions.Regex.Replace(
+        compactDisplayName, @"\((N|S|E|W)\)", "$1");
+    ornamentCaptionColumnWidth =
+        featureStyle.CalcSize(new GUIContent(compactDisplayName)).x + 6f;
     GUILayout.Label(
-        displayName,
+        compactDisplayName,
         featureStyle,
         GUILayout.Width(ornamentCaptionColumnWidth));
 
@@ -32988,7 +32996,7 @@ private static void HandleGameViewPointerDown(
     style.normal.textColor = Color.magenta;
     style.hover.textColor = Color.magenta;
     style.focused.textColor = Color.magenta;
-    const string caption = "Stairsdown_S3 Right (16x5)";
+    const string caption = "Stairs Down S3 Right";
     GUILayout.Label(caption, style,
         GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
@@ -35491,14 +35499,11 @@ private static void HandleGameViewPointerDown(
       pickableLabelStyle.clipping = TextClipping.Clip;
       // Show the descriptive item text in the requested order:
       // item name [distance] [left/right] [direction].
-      string floorItemCaption = item.type + " [" + depthLabel + "] ["
-          + (isRight ? "R" : "L") + "] [" + item.cell + "]";
-      // Keep the Waterskin controls directly after its caption, like the
-      // compact Stairs Down row. Leave all other item-row widths unchanged.
+      string floorItemCaption = item.type + " " + depthLabel + " "
+          + (isRight ? "Right" : "Left") + " " + item.cell;
+      // Keep Set immediately after each item caption, regardless of item type.
       float floorItemCaptionWidth =
-          item.type.StartsWith("Waterskin", System.StringComparison.OrdinalIgnoreCase)
-          ? pickableLabelStyle.CalcSize(new GUIContent(floorItemCaption)).x + 5f
-          : 220f;
+          pickableLabelStyle.CalcSize(new GUIContent(floorItemCaption)).x + 5f;
       GUILayout.Label(floorItemCaption, pickableLabelStyle,
           GUILayout.Width(floorItemCaptionWidth));
 
