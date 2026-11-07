@@ -33783,6 +33783,9 @@ private static void HandleGameViewPointerDown(
     public string groundF2Path;
     public int widthF2;
     public int heightF2;
+    public string groundF3Path;
+    public int widthF3;
+    public int heightF3;
   }
 
   private GroundArtworkRegistry ReadGroundArtworkRegistry()
@@ -34002,12 +34005,13 @@ private static void HandleGameViewPointerDown(
       string pileKey = item.x + ":" + item.y + ":" + item.cell;
       pileCounts.TryGetValue(pileKey, out int indexInPile);
       pileCounts[pileKey] = indexInPile + 1;
-      // Dedicated F2 uses exclusively its saved/draft ViewEdit X/Y.
-      bool dedicatedF2 = GetViewEditFloorItemDistance(item) == "F2"
-          && HasDedicatedF2Artwork(item.type);
+      string projectionBand = GetViewEditFloorItemDistance(item);
+      bool dedicatedF2 = projectionBand == "F2" && HasDedicatedF2Artwork(item.type);
+      bool dedicatedF3 = projectionBand == "F3" && HasDedicatedF3Artwork(item.type);
       Vector2Int pileOffset = Vector2Int.zero;
-      if (!dedicatedF2 && !TryGetPileAlignedOffset(item, items, depth, indexInPile,
-          out pileOffset))
+      if (!dedicatedF2 && !dedicatedF3
+          && !TryGetPileAlignedOffset(item, items, depth, indexInPile,
+              out pileOffset))
       {
         continue;
       }
@@ -34164,6 +34168,68 @@ private static void HandleGameViewPointerDown(
     return entry != null && !string.IsNullOrEmpty(entry.groundF2Path);
   }
 
+  private readonly HashSet<string> missingDedicatedF3Calibrations =
+      new HashSet<string>(System.StringComparer.Ordinal);
+  private readonly HashSet<string> missingDedicatedProjectionArtwork =
+      new HashSet<string>(System.StringComparer.Ordinal);
+
+  private void ReportMissingDedicatedF3Calibration(FloorItemPlacement item, int corner)
+  {
+    string key = FloorCalibrationKey(item.type, "F3", corner);
+    if (missingDedicatedF3Calibrations.Add(key))
+      Debug.LogError("DEDICATED F3 CALIBRATION MISSING: " + key
+          + ". Set X/Y in ViewEdit and press Apply. No CSBwin position fallback.");
+  }
+
+  private void ReportMissingDedicatedProjectionArtwork(FloorItemPlacement item, string view)
+  {
+    string key = FloorCalibrationKey(item.type, view, GetFloorScreenCorner(item));
+    if (missingDedicatedProjectionArtwork.Add(key))
+      Debug.LogError("DEDICATED " + view + " ARTWORK MISSING: " + item.type
+          + " requires registered native " + view + " artwork. Old CSBwin render is disabled.");
+  }
+
+  private bool HasDedicatedF3Artwork(string itemType)
+  {
+    GroundArtworkEntry entry = GetRegisteredGroundArtwork(itemType);
+    return entry != null && !string.IsNullOrEmpty(entry.groundF3Path);
+  }
+
+  private bool TryBlitRegisteredF3FloorItem(Color32[] pixels, FloorItemPlacement item)
+  {
+    GroundArtworkEntry entry = GetRegisteredGroundArtwork(item.type);
+    if (entry == null || string.IsNullOrEmpty(entry.groundF3Path))
+      return false;
+
+    if (entry.widthF3 <= 0 || entry.heightF3 <= 0)
+    {
+      ReportFloorItemTextureProblem(item.type, entry.groundF3Path,
+          "has invalid dedicated F3 dimensions");
+      return true;
+    }
+    Texture2D f3 = AssetDatabase.LoadAssetAtPath<Texture2D>(entry.groundF3Path);
+    if (f3 == null || !f3.isReadable
+        || f3.width != entry.widthF3 || f3.height != entry.heightF3)
+    {
+      ReportFloorItemTextureProblem(item.type, entry.groundF3Path,
+          "F3 texture missing, not readable, or dimensions mismatch; expected "
+          + entry.widthF3 + "x" + entry.heightF3);
+      return true;
+    }
+
+    int corner = GetFloorScreenCorner(item);
+    FloorProjectionCalibrationEntry saved = corner < 0 ? null :
+        FindFloorProjectionCalibration(item.type, "F3", corner);
+    if (saved == null)
+    {
+      ReportMissingDedicatedF3Calibration(item, corner);
+      return true;
+    }
+    BlitPieceIntoPreview(pixels, f3, saved.x,
+        PreviewHeight - saved.y - f3.height, saved.mirror);
+    return true;
+  }
+
   // Registered F2 image: native 1:1 artwork and explicit ViewEdit X/Y.
   // Keep the existing F2 visibility and floor subtile geometry unchanged.
   // A missing registered F2 texture is an error, never an F1 fallback.
@@ -34215,24 +34281,23 @@ private static void HandleGameViewPointerDown(
   {
     if (depth == FloorItemDepth.TwoAhead)
     {
-      // The visible subtile may be labelled F2 even when the underlying
-      // tile is TwoAhead. Apply exactly the same F2 artwork selection
-      // already used for OneAhead; do not change map geometry.
-      if (string.Equals(GetViewEditFloorItemDistance(item), "F2",
-              System.StringComparison.Ordinal)
-          && TryBlitRegisteredF2FloorItem(pixels, item, texture, pileOffset))
+      string distance = GetViewEditFloorItemDistance(item);
+      if (string.Equals(distance, "F2", System.StringComparison.Ordinal))
+      {
+        if (TryBlitRegisteredF2FloorItem(pixels, item, texture, pileOffset)) return;
+        ReportMissingDedicatedProjectionArtwork(item, "F2");
         return;
-      TraceSwordF3(item, "F3 projection APPROVED; cell=" + item.cell
-          + ", facing=" + previewFacing);
-      BlitCsbF3Item(pixels, item, texture, pileOffset);
+      }
+      if (string.Equals(distance, "F3", System.StringComparison.Ordinal))
+      {
+        if (TryBlitRegisteredF3FloorItem(pixels, item)) return;
+        ReportMissingDedicatedProjectionArtwork(item, "F3");
+        return;
+      }
       return;
     }
     if (depth == FloorItemDepth.OneAhead)
     {
-      // A near subtile of the next map tile is still visible as F1.
-      // Use the same shared F1 anchor and calibration as a same-tile F1
-      // item, regardless of item type. Other visible bands keep their
-      // existing distance-specific projections.
       if (string.Equals(GetViewEditFloorItemDistance(item), "F1",
               System.StringComparison.Ordinal))
       {
@@ -34244,10 +34309,12 @@ private static void HandleGameViewPointerDown(
         return;
       }
       if (string.Equals(GetViewEditFloorItemDistance(item), "F2",
-              System.StringComparison.Ordinal)
-          && TryBlitRegisteredF2FloorItem(pixels, item, texture, pileOffset))
+              System.StringComparison.Ordinal))
+      {
+        if (TryBlitRegisteredF2FloorItem(pixels, item, texture, pileOffset)) return;
+        ReportMissingDedicatedProjectionArtwork(item, "F2");
         return;
-      BlitCsbF2Item(pixels, item, texture, pileOffset);
+      }
       return;
     }
     if (depth != FloorItemDepth.SameTile) return;
@@ -35489,19 +35556,18 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  // Consistent Hook-style controls for all F3 floor items. The existing F3
-  // artwork path is preserved; these controls calibrate its visible position.
+  // Consistent Hook-style controls for all F3 floor items.
+  // Dedicated native F3 artwork uses explicit ViewEdit X/Y + Mirror only.
   private void DrawGenericF3FloorCalibration(FloorItemPlacement item, Texture2D texture)
   {
     DiscardFloorDraftsAfterTileChange();
     int corner = GetFloorScreenCorner(item);
-    if (corner < 0 || texture == null) return;
+    if (corner < 0) return;
     string key = FloorCalibrationKey(item.type, "F3", corner);
     FloorProjectionCalibrationEntry accepted =
         FindSavedFloorProjectionCalibration(item.type, "F3", corner);
     FloorProjectionCalibrationEntry current =
         FindFloorProjectionCalibration(item.type, "F3", corner);
-    // No guessed initial coordinates: a new calibration starts unset at 0/32.
     int x = current != null ? current.x : 0;
     int y = current != null ? current.y : 32;
     bool mirror = current != null && current.mirror;
@@ -35521,22 +35587,22 @@ private static void HandleGameViewPointerDown(
     GUI.color = oldColor;
     EditorGUIUtility.labelWidth = oldLabelWidth;
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    GroundArtworkEntry entry = GetRegisteredGroundArtwork(item.type);
+    bool hasDedicatedF3 = entry != null && !string.IsNullOrEmpty(entry.groundF3Path);
     if (changedX || changedY || changedMirror || apply)
     {
-      // Save the existing rendered dimensions. Position/mirror changes must
-      // not silently modify the size or the source image.
       int w = current != null ? current.width : 0;
       int h = current != null ? current.height : 0;
       if (w <= 0 || h <= 0)
       {
-        if (!TryGetCsbF3RectBase(item, texture, out Rect visible, out _))
+        if (!hasDedicatedF3 || entry.widthF3 <= 0 || entry.heightF3 <= 0)
         {
-          Debug.LogError("F3 CALIBRATION: cannot determine current displayed size for "
+          Debug.LogError("F3 CALIBRATION: dedicated F3 artwork is not registered for "
               + item.type + ". No calibration was saved.");
           return;
         }
-        w = Mathf.RoundToInt(visible.width);
-        h = Mathf.RoundToInt(visible.height);
+        w = entry.widthF3;
+        h = entry.heightF3;
       }
       var updated = new FloorProjectionCalibrationEntry {
         itemType = item.type, view = "F3", corner = corner,
@@ -35548,7 +35614,9 @@ private static void HandleGameViewPointerDown(
       if (apply) SaveFloorProjectionCalibration(updated);
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
-    if (accepted == null)
+    if (!hasDedicatedF3)
+      GUILayout.Label("No dedicated F3 art", EditorStyles.miniLabel);
+    else if (accepted == null)
       GUILayout.Label("Calibration missing", EditorStyles.miniLabel);
   }
 

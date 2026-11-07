@@ -43,6 +43,17 @@
             "height": 7,
             "mirror": false,
             "verified": true
+        },
+        {
+            "itemType": "Waterskin",
+            "view": "F3",
+            "corner": 2,
+            "x": 122,
+            "y": 98,
+            "width": 12,
+            "height": 5,
+            "mirror": false,
+            "verified": true
         }
     ]
 }

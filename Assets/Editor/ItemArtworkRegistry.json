@@ -344,12 +344,15 @@
         },
         {
             "itemType": "Waterskin",
-            "groundF1Path": "Assets/Art/Misc/Waterskin_full_48x13.png",
+            "groundF1Path": "Assets/Art/Misc/Waterskin_Full_F1_48x13.png",
             "width": 48,
             "height": 13,
             "groundF2Path": "Assets/Art/Misc/Waterskin_F2_19x7.png",
             "widthF2": 19,
-            "heightF2": 7
+            "heightF2": 7,
+            "groundF3Path": "Assets/Art/Misc/Waterskin_F3_12x5.png",
+            "widthF3": 12,
+            "heightF3": 5
         },
         {
             "itemType": "Waterskin Empty",
@@ -364,7 +367,10 @@
             "height": 8,
             "groundF2Path": "Assets/Art/Misc/Scroll_F2_21x4.png",
             "widthF2": 21,
-            "heightF2": 4
+            "heightF2": 4,
+            "groundF3Path": "Assets/Art/Misc/Scroll_F3_12x4.png",
+            "widthF3": 12,
+            "heightF3": 4
         }
     ],
     "groundF1Anchors": {
