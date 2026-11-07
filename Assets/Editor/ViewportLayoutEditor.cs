@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -26413,10 +26413,24 @@ private static void HandleGameViewPointerDown(
     stairsLevel0S0RightY = EditorPrefs.GetInt(StairsLevel0S0RightPrefs + "Y", 109);
     stairsLevel0S0RightMirror = EditorPrefs.GetBool(StairsLevel0S0RightPrefs + "Mirror", true);
     stairsLevel0S0RightEnabled = EditorPrefs.GetBool(StairsLevel0S0RightPrefs + "Enabled", true);
-    stairsS3RightSouthX = EditorPrefs.GetInt(StairsS3RightSouthPrefsPrefix + "X", 152);
-    stairsS3RightSouthTopY = EditorPrefs.GetInt(StairsS3RightSouthPrefsPrefix + "Y", 80);
-    stairsS3RightSouthMirror = EditorPrefs.GetBool(StairsS3RightSouthPrefsPrefix + "Mirror", true);
-    stairsS3RightSouthEnabled = EditorPrefs.GetBool(StairsS3RightSouthPrefsPrefix + "Enabled", true);
+    // Initialize from the last applied calibration in source, not stale EditorPrefs.
+    // Otherwise X/Y can appear red on startup without any user edits.
+    string[] stairsS3Saved = StairsS3RightSouthAccepted.Split('|');
+    if (stairsS3Saved.Length == 4
+        && int.TryParse(stairsS3Saved[0], out int stairsS3SavedX)
+        && int.TryParse(stairsS3Saved[1], out int stairsS3SavedY)
+        && bool.TryParse(stairsS3Saved[2], out bool stairsS3SavedMirror)
+        && bool.TryParse(stairsS3Saved[3], out bool stairsS3SavedEnabled))
+    {
+      stairsS3RightSouthX = stairsS3SavedX;
+      stairsS3RightSouthTopY = stairsS3SavedY;
+      stairsS3RightSouthMirror = stairsS3SavedMirror;
+      stairsS3RightSouthEnabled = stairsS3SavedEnabled;
+    }
+    else
+    {
+      Debug.LogError("STAIRS S3 RIGHT SOUTH: invalid accepted calibration in .cs");
+    }
     stairsS1X = EditorPrefs.GetInt(StairsS1PrefsPrefix + "X", StairsDownRightD1X);
     stairsS1TopY = EditorPrefs.GetInt(StairsS1PrefsPrefix + "Y", StairsDownRightD1DisplayY);
     stairsS1Mirror = EditorPrefs.GetBool(StairsS1PrefsPrefix + "Mirror", false);
@@ -34156,21 +34170,32 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
-    if (!TryGetCsbF2Rect(item, sourceF1, out Rect predicted, out bool mirror))
-    {
-      Debug.LogError("DEDICATED F2: Registered artwork for " + item.type
-          + " could not be positioned by the existing F2 anchor algorithm.");
-      return true;
-    }
+    // A manually accepted ViewEdit calibration is authoritative. Do not
+    // require the legacy CSBwin predictor to succeed before using it.
     int corner = GetFloorScreenCorner(item);
     FloorProjectionCalibrationEntry saved = corner < 0 ? null :
         FindFloorProjectionCalibration(item.type, "F2", corner);
-    int x = saved != null ? saved.x : Mathf.RoundToInt(predicted.center.x - f2.width * 0.5f);
-    int y = saved != null ? saved.y : Mathf.RoundToInt(predicted.yMax - f2.height);
-    if (corner >= 0 && saved == null)
+    int x, y;
+    bool mirror;
+    if (saved != null)
     {
-      // Keep the F2 control's uncalibrated coordinates consistent with the
-      // image's native width and height (not the CSBwin scaled dimensions).
+      x = saved.x;
+      y = saved.y;
+      mirror = saved.mirror;
+    }
+    else
+    {
+      // Preserve existing automatic positioning only for uncalibrated items;
+      // missing table data must never silently invent coordinates.
+      if (!TryGetCsbF2Rect(item, sourceF1, out Rect predicted, out mirror))
+      {
+        Debug.LogError("DEDICATED F2: " + item.type
+            + " has no saved F2 calibration and the F2 anchor could not be resolved."
+            + " corner=" + corner + ", item=" + item.instanceId);
+        return true;
+      }
+      x = Mathf.RoundToInt(predicted.center.x - f2.width * 0.5f);
+      y = Mathf.RoundToInt(predicted.yMax - f2.height);
     }
     BlitPieceIntoPreview(pixels, f2, x + pileOffset.x,
         PreviewHeight - y - f2.height - pileOffset.y,

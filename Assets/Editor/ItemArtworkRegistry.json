@@ -347,9 +347,9 @@
             "groundF1Path": "Assets/Art/Misc/Waterskin_full_48x13.png",
             "width": 48,
             "height": 13,
-            "groundF2Path": "Assets/Art/Misc/Waterskin_F2_17x6.png",
+            "groundF2Path": "Assets/Art/Misc/Waterskin_F2_17x7.png",
             "widthF2": 17,
-            "heightF2": 6
+            "heightF2": 7
         },
         {
             "itemType": "Waterskin Empty",
