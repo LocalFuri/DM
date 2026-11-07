@@ -34002,8 +34002,12 @@ private static void HandleGameViewPointerDown(
       string pileKey = item.x + ":" + item.y + ":" + item.cell;
       pileCounts.TryGetValue(pileKey, out int indexInPile);
       pileCounts[pileKey] = indexInPile + 1;
-      if (!TryGetPileAlignedOffset(item, items, depth, indexInPile,
-          out Vector2Int pileOffset))
+      // Dedicated F2 uses exclusively its saved/draft ViewEdit X/Y.
+      bool dedicatedF2 = GetViewEditFloorItemDistance(item) == "F2"
+          && HasDedicatedF2Artwork(item.type);
+      Vector2Int pileOffset = Vector2Int.zero;
+      if (!dedicatedF2 && !TryGetPileAlignedOffset(item, items, depth, indexInPile,
+          out pileOffset))
       {
         continue;
       }
@@ -34143,8 +34147,25 @@ private static void HandleGameViewPointerDown(
     return TryGetAutomaticF1FloorItemRect(item.type, isRight, texture, out rect);
   }
 
-  // Registered F2 image: native 1:1 artwork only. Keep the existing F2
-  // visibility, floor subtile, pile, and X/Y calibration paths unchanged.
+  private readonly HashSet<string> missingDedicatedF2Calibrations =
+      new HashSet<string>(System.StringComparer.Ordinal);
+
+  private void ReportMissingDedicatedF2Calibration(FloorItemPlacement item, int corner)
+  {
+    string key = FloorCalibrationKey(item.type, "F2", corner);
+    if (missingDedicatedF2Calibrations.Add(key))
+      Debug.LogError("DEDICATED F2 CALIBRATION MISSING: " + key
+          + ". Set X/Y in ViewEdit and press Apply. No CSBwin position fallback.");
+  }
+
+  private bool HasDedicatedF2Artwork(string itemType)
+  {
+    GroundArtworkEntry entry = GetRegisteredGroundArtwork(itemType);
+    return entry != null && !string.IsNullOrEmpty(entry.groundF2Path);
+  }
+
+  // Registered F2 image: native 1:1 artwork and explicit ViewEdit X/Y.
+  // Keep the existing F2 visibility and floor subtile geometry unchanged.
   // A missing registered F2 texture is an error, never an F1 fallback.
   private bool TryBlitRegisteredF2FloorItem(
       Color32[] pixels, FloorItemPlacement item, Texture2D sourceF1,
@@ -34170,36 +34191,19 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
-    // A manually accepted ViewEdit calibration is authoritative. Do not
-    // require the legacy CSBwin predictor to succeed before using it.
+    // Dedicated native F2 artwork uses only explicit ViewEdit coordinates.
+    // Drafts are permitted for live calibration; no CSBwin position predictor.
     int corner = GetFloorScreenCorner(item);
     FloorProjectionCalibrationEntry saved = corner < 0 ? null :
         FindFloorProjectionCalibration(item.type, "F2", corner);
-    int x, y;
-    bool mirror;
-    if (saved != null)
+    if (saved == null)
     {
-      x = saved.x;
-      y = saved.y;
-      mirror = saved.mirror;
+      ReportMissingDedicatedF2Calibration(item, corner);
+      return true;
     }
-    else
-    {
-      // Preserve existing automatic positioning only for uncalibrated items;
-      // missing table data must never silently invent coordinates.
-      if (!TryGetCsbF2Rect(item, sourceF1, out Rect predicted, out mirror))
-      {
-        Debug.LogError("DEDICATED F2: " + item.type
-            + " has no saved F2 calibration and the F2 anchor could not be resolved."
-            + " corner=" + corner + ", item=" + item.instanceId);
-        return true;
-      }
-      x = Mathf.RoundToInt(predicted.center.x - f2.width * 0.5f);
-      y = Mathf.RoundToInt(predicted.yMax - f2.height);
-    }
-    BlitPieceIntoPreview(pixels, f2, x + pileOffset.x,
-        PreviewHeight - y - f2.height - pileOffset.y,
-        saved != null ? saved.mirror : mirror);
+    // Do not add CSBwin pile displacements to explicitly calibrated art.
+    BlitPieceIntoPreview(pixels, f2, saved.x,
+        PreviewHeight - saved.y - f2.height, saved.mirror);
     return true;
   }
 
@@ -34446,6 +34450,52 @@ private static void HandleGameViewPointerDown(
         previewFacing == DungeonFacing.South ? 2 : 3;
     return (absolute - facing + 4) & 3;
   }
+  // Dedicated F2 artwork: no predictor, fixed native dimensions and editable X/Y.
+  private void DrawDedicatedF2FloorCalibration(FloorItemPlacement item)
+  {
+    DiscardFloorDraftsAfterTileChange();
+    int corner = GetFloorScreenCorner(item);
+    if (corner < 0) return;
+    GroundArtworkEntry artwork = GetRegisteredGroundArtwork(item.type);
+    if (artwork == null || artwork.widthF2 <= 0 || artwork.heightF2 <= 0) return;
+    string key = FloorCalibrationKey(item.type, "F2", corner);
+    FloorProjectionCalibrationEntry accepted =
+        FindSavedFloorProjectionCalibration(item.type, "F2", corner);
+    FloorProjectionCalibrationEntry current =
+        FindFloorProjectionCalibration(item.type, "F2", corner);
+    int x = current != null ? current.x : 0;
+    int y = current != null ? current.y : 0;
+    bool mirror = current != null && current.mirror;
+    Color normal = GUI.color;
+    float previousLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth = 12f;
+    GUI.color = accepted != null && x != accepted.x ? Color.red : normal;
+    bool changedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, ViewEditCoordinateInputWidth);
+    GUI.color = accepted != null && y != accepted.y ? Color.red : normal;
+    bool changedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, ViewEditCoordinateInputWidth);
+    EditorGUIUtility.labelWidth = previousLabelWidth;
+    GUI.color = normal;
+    EditorGUI.BeginChangeCheck();
+    mirror = EditorGUILayout.ToggleLeft("Mirror", mirror, GUILayout.Width(56f));
+    bool changedMirror = EditorGUI.EndChangeCheck();
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    if (changedX || changedY || changedMirror || apply)
+    {
+      var updated = new FloorProjectionCalibrationEntry {
+        itemType = item.type, view = "F2", corner = corner, x = x, y = y,
+        width = artwork.widthF2, height = artwork.heightF2,
+        mirror = mirror, verified = false
+      };
+      if (changedX || changedY || changedMirror)
+        floorProjectionDrafts[key] = updated;
+      if (apply && SaveFloorProjectionCalibration(updated))
+        missingDedicatedF2Calibrations.Remove(key);
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+    if (accepted == null)
+      GUILayout.Label("F2 calibration missing", EditorStyles.miniLabel);
+  }
+
   private void DrawF2FloorCalibration(FloorItemPlacement item, Texture2D texture)
   {
     DiscardFloorDraftsAfterTileChange();
@@ -35679,7 +35729,9 @@ private static void HandleGameViewPointerDown(
           Texture2D ground = GetFloorItemTexture(item);
           if (ground != null && depth == FloorItemDepth.OneAhead)
           {
-            if (string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase)
+            if (depthLabel == "F2" && HasDedicatedF2Artwork(item.type))
+              DrawDedicatedF2FloorCalibration(item);
+            else if (string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase)
                 && depthLabel == "F2")
               DrawSamuraiSwordF2Position(item, ground);
             else if (depthLabel == "F1")
@@ -35689,7 +35741,9 @@ private static void HandleGameViewPointerDown(
           }
           else if (ground != null && depth == FloorItemDepth.TwoAhead)
           {
-            if (string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase))
+            if (depthLabel == "F2" && HasDedicatedF2Artwork(item.type))
+              DrawDedicatedF2FloorCalibration(item);
+            else if (string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase))
             {
               if (depthLabel == "F2")
                 DrawSamuraiSwordF2Position(item, ground);
