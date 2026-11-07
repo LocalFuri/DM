@@ -34470,9 +34470,9 @@ private static void HandleGameViewPointerDown(
     float previousLabelWidth = EditorGUIUtility.labelWidth;
     EditorGUIUtility.labelWidth = 12f;
     GUI.color = accepted != null && x != accepted.x ? Color.red : normal;
-    bool changedX = DrawIntStepperInline("X", ref x, 1, false, true, 24f, ViewEditCoordinateInputWidth);
+    bool changedX = DrawIntStepperInline("X", ref x, snap, false, true, 24f, ViewEditCoordinateInputWidth);
     GUI.color = accepted != null && y != accepted.y ? Color.red : normal;
-    bool changedY = DrawIntStepperInline("Y", ref y, 1, false, true, 24f, ViewEditCoordinateInputWidth);
+    bool changedY = DrawIntStepperInline("Y", ref y, snap, false, true, 24f, ViewEditCoordinateInputWidth);
     EditorGUIUtility.labelWidth = previousLabelWidth;
     GUI.color = normal;
     EditorGUI.BeginChangeCheck();
@@ -34942,20 +34942,26 @@ private static void HandleGameViewPointerDown(
         scaled[y * width + x] = c;
       }
     }
-    // Sword-only F3 ViewEdit calibration: adjust position, never scaling.
-    // Draft changes show immediately and are discarded on moving tiles;
-    // only the Apply checkbox persists them to the calibration JSON.
-    if (string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase))
+    // Apply explicit ViewEdit placement to all F3 items, not only swords.
+    // Preserve F1/F2 sword-specific calibrations for those visible bands.
+    int calibratedCorner = GetFloorScreenCorner(item);
+    string calibratedBand = GetViewEditFloorItemDistance(item);
+    FloorProjectionCalibrationEntry placement = FindFloorProjectionCalibration(
+        item.type, calibratedBand, calibratedCorner);
+    if (placement != null)
     {
-      int corner = GetFloorScreenCorner(item);
-      FloorProjectionCalibrationEntry calibration = FindFloorProjectionCalibration(item.type, "F3", corner);
-      string visibleBand = GetViewEditFloorItemDistance(item);
-      if (visibleBand == "F2" || visibleBand == "F1")
-        calibration = FindFloorProjectionCalibration(item.type, visibleBand, corner);
-      if (calibration != null)
+      rect.x = placement.x;
+      rect.y = placement.y;
+      // The mirrored artwork is flipped after palette conversion below.
+      if (placement.mirror != mirror)
       {
-        rect.x = calibration.x;
-        rect.y = calibration.y;
+        for (int row = 0; row < height; row++)
+          for (int col = 0; col < width / 2; col++)
+          {
+            int a = row * width + col;
+            int b = row * width + (width - 1 - col);
+            Color32 tmp = scaled[a]; scaled[a] = scaled[b]; scaled[b] = tmp;
+          }
       }
     }
     int left = Mathf.RoundToInt(rect.x) + pileOffset.x;
@@ -35483,6 +35489,69 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Consistent Hook-style controls for all F3 floor items. The existing F3
+  // artwork path is preserved; these controls calibrate its visible position.
+  private void DrawGenericF3FloorCalibration(FloorItemPlacement item, Texture2D texture)
+  {
+    DiscardFloorDraftsAfterTileChange();
+    int corner = GetFloorScreenCorner(item);
+    if (corner < 0 || texture == null) return;
+    string key = FloorCalibrationKey(item.type, "F3", corner);
+    FloorProjectionCalibrationEntry accepted =
+        FindSavedFloorProjectionCalibration(item.type, "F3", corner);
+    FloorProjectionCalibrationEntry current =
+        FindFloorProjectionCalibration(item.type, "F3", corner);
+    // No guessed initial coordinates: a new calibration starts unset at 0/32.
+    int x = current != null ? current.x : 0;
+    int y = current != null ? current.y : 32;
+    bool mirror = current != null && current.mirror;
+    Color oldColor = GUI.color;
+    float oldLabelWidth = EditorGUIUtility.labelWidth;
+    EditorGUIUtility.labelWidth = 12f;
+    GUI.color = accepted != null && x != accepted.x ? Color.red : oldColor;
+    bool changedX = DrawIntStepperInline("X", ref x, snap, false, true, 24f,
+        ViewEditCoordinateInputWidth);
+    GUI.color = accepted != null && y != accepted.y ? Color.red : oldColor;
+    bool changedY = DrawIntStepperInline("Y", ref y, snap, false, true, 24f,
+        ViewEditCoordinateInputWidth);
+    GUI.color = accepted != null && mirror != accepted.mirror ? Color.red : oldColor;
+    EditorGUI.BeginChangeCheck();
+    mirror = EditorGUILayout.ToggleLeft("Mirror", mirror, GUILayout.Width(56f));
+    bool changedMirror = EditorGUI.EndChangeCheck();
+    GUI.color = oldColor;
+    EditorGUIUtility.labelWidth = oldLabelWidth;
+    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+    if (changedX || changedY || changedMirror || apply)
+    {
+      // Save the existing rendered dimensions. Position/mirror changes must
+      // not silently modify the size or the source image.
+      int w = current != null ? current.width : 0;
+      int h = current != null ? current.height : 0;
+      if (w <= 0 || h <= 0)
+      {
+        if (!TryGetCsbF3RectBase(item, texture, out Rect visible, out _))
+        {
+          Debug.LogError("F3 CALIBRATION: cannot determine current displayed size for "
+              + item.type + ". No calibration was saved.");
+          return;
+        }
+        w = Mathf.RoundToInt(visible.width);
+        h = Mathf.RoundToInt(visible.height);
+      }
+      var updated = new FloorProjectionCalibrationEntry {
+        itemType = item.type, view = "F3", corner = corner,
+        x = x, y = y, width = w, height = h,
+        mirror = mirror, verified = false
+      };
+      if (changedX || changedY || changedMirror)
+        floorProjectionDrafts[key] = updated;
+      if (apply) SaveFloorProjectionCalibration(updated);
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+    if (accepted == null)
+      GUILayout.Label("Calibration missing", EditorStyles.miniLabel);
+  }
+
   private bool samuraiF2RowDiagnosticLogged;
   private bool samuraiF2CalibrationDiagnosticLogged;
   // Samurai Sword F2 has its own position draft and saved calibration.
@@ -35757,7 +35826,7 @@ private static void HandleGameViewPointerDown(
             else if (depthLabel == "F2")
               DrawF2FloorCalibration(item, ground);
             else
-              GUILayout.Label("F3 calibration pending", GUILayout.Width(150f));
+              DrawGenericF3FloorCalibration(item, ground);
           }
         }
       }
