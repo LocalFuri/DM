@@ -1478,5 +1478,40 @@
       "Waterskin_F2_Registry": "ItemArtworkRegistry_Waterskin_F2_17x6_20261106.zip",
       "warning": "The user may have installed a different combination or newer local versions. Obtain current files before merging further patches. Do not assume all distributed ZIPs are installed."
     }
+  },
+  "github_external_project_rebuild_guidance_20261107": {
+    "date": "2026-11-07",
+    "status": "User-requested mandatory instruction for future GitHub restoration/reconstruction/build tasks OUTSIDE Unity",
+    "scope": "Applies to external projects such as CSBwin, GitHub repositories, GitHub Actions, Visual Studio, local Windows builds, diagnostic binaries, and source restoration. Does not replace the separate Unity editing/delivery workflow.",
+    "user_experience": "User rarely works with Visual Studio and finds GitHub navigation confusing. Give detailed, exact click-by-click instructions, ONE action per message. Wait for screenshot or confirmation of the result before the next step. Never assume familiarity with Git branches, commits, workflow artifacts, MSBuild output, or Explorer paths.",
+    "mandatory_guidance": [
+      "Start by stating the exact objective and whether the goal is to download source, download a compiled EXE, restore an older modification, patch source, run a local Visual Studio rebuild, or trigger a GitHub Actions build. These are different operations; do not mix them.",
+      "Before instructing a rebuild, determine which exact repository, branch, commit SHA, project/solution, and source folder produced the user’s CURRENT WORKING binary. A matching executable filename is not enough. Establish current working features (e.g. CSBwin Level/X/Y overlay) and preserve them.",
+      "Never overwrite a known-good working executable or its game folder during experiments. Create a separate clearly named test directory/executable; back up original EXE, required data files and configuration before testing. Preserve installed programs and user modifications.",
+      "Distinguish GitHub repository Code page from Actions run page: Code -> green Code -> Download ZIP exports SOURCE at the selected branch/commit; Actions -> run -> Artifacts -> down-arrow downloads COMPILED BUILD OUTPUT, generally not source. Explain exactly which option to select and why.",
+      "For exact historical source, visit the intended commit (or tree/<full SHA>), choose Browse files, then green Code -> Download ZIP. Verify the selected SHA/branch visually before downloading. Do not assume main includes changes from another branch. A GitHub Actions run has the originating commit SHA and may provide artifacts independently.",
+      "When navigating GitHub, provide positional UI clues taken from the user’s latest screenshot; avoid generic menu descriptions and do not direct user to download an Actions artifact when source is needed. One click at a time; request screenshot only after the current action.",
+      "A successful GitHub Actions build does not prove a local Visual Studio solution will reproduce the same behavior. Match the actual source revision and build configuration first; local source may differ from GitHub, and local uncommitted changes may be absent.",
+      "Before patching C++ source, inspect the exact file from the exact working version, keep backups and verify inserted patch location/count. If a script reports 0 matches or refuses to patch, treat it as a safe failure, DO NOT guess or force edits. Check the source and adapt carefully.",
+      "Explain Visual Studio steps precisely when needed: File -> Open -> Project/Solution (.sln), select Debug/x64 as intended, Build -> Rebuild Solution, View -> Output -> Build, verify succeeded/failed and compiler errors; locate EXE using build output or project Output Directory, not by guessing a filename/path.",
+      "For GitHub Actions workflow modifications, inspect .github/workflows/*.yml build steps, configuration and artifacts; distinguish workflow-run success from program correctness; download and validate generated binary before changing the working install.",
+      "For CSBwin diagnostic experiments, preserve the old coordinate/status display while adding new diagnostics (such as Waterskin F2 bitmap capture). Keep diagnostic branch/output distinct from the user’s reference game. Ensure no Unity files are edited.",
+      "When giving a Windows command, state the directory in which to run it, explain placeholders and why it is needed, and ask for console output before advancing. Avoid combining a long series of unverified operations.",
+      "When producing files, provide only final actionable project files or one necessary diagnostic script; do not overload the user with internal research ZIPs. State clearly where to put each file, whether to overwrite something (default no), and how to undo the change.",
+      "At completion, record exact repo/branch/SHA, build configuration, verification outcome, binary location, backups and rollback steps. Explicitly distinguish confirmed working features from unverified diagnostics."
+    ],
+    "reference_case_20261107": {
+      "repository": "LocalFuri/CSBwin-position-status",
+      "branches_seen": [
+        "main",
+        "bread-f2-diagnostic"
+      ],
+      "github_actions_run": "Build CSBwin for Windows #31, commit 4c959bf, branch bread-f2-diagnostic (user screenshot)",
+      "known_good_behavior": "Previously working CSBWin_Debug_X64.exe has Level/X/Y overlay; user restored it after local rebuild lost overlay.",
+      "unverified_assumption": "Source that produced the overlay has NOT yet been conclusively identified; do not assume artifact #31 or commit 4c959bf necessarily includes it until checked.",
+      "local_source": "C:\\!!!Stick\\Coder\\DM\\CSBWin-master\\",
+      "current_patch": "Code51a4.cpp patched locally to capture Waterskin F2; backup Code51a4.cpp.before_waterskin_capture exists; new locally compiled EXE did not show old Level/X/Y overlay.",
+      "next_safe_step": "Obtain exact source ZIP at commit 4c959bf separately from Actions artifact, inspect actual coordinate-display implementation before merging capture patch; keep working EXE untouched."
+    }
   }
 }
