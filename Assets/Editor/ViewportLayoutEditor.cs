@@ -34263,7 +34263,8 @@ private static void HandleGameViewPointerDown(
     // native F3 may be far-side of cell 3 or near-side of cell 0.
     int relativeCell = tileDistance == 1 ? 6 :
         tileDistance == 2 ? 3 : tileDistance == 3 ? 0 : -1;
-    if (relativeCell < 0 || (distance == 2 && tileDistance != 2 && tileDistance != 1)
+    if (relativeCell < 0 || (distance == 1 && tileDistance != 1)
+        || (distance == 2 && tileDistance != 2 && tileDistance != 1)
         || (distance == 3 && tileDistance != 2 && tileDistance != 3))
       return false;
     CsbViewportCell[] cells = csbViewportTable.classes[graphic.viewportPositionClass].cells;
@@ -34275,7 +34276,7 @@ private static void HandleGameViewPointerDown(
 
     // The trace's distance index is chosen by subtile proximity as well as tile distance.
     // The dedicated native PNG already has its final F2/F3 dimensions: never shrink it again.
-    int offsetRow = distance == 2 ? 1 : 2;
+    int offsetRow = distance - 1;
     int offsetSlot = (absoluteCorner & 1) << 3;
     Vector2Int delta = csbFloorOffsetRows[offsetRow][offsetSlot];
     int left = point.x + delta.x - art.width / 2 + 1;
@@ -34434,11 +34435,18 @@ private static void HandleGameViewPointerDown(
       if (string.Equals(GetViewEditFloorItemDistance(item), "F1",
               System.StringComparison.Ordinal))
       {
-        if (TryGetF1FloorItemRect(item, isRight, texture, out Rect f1Rect))
+        // One-tile-ahead F1 uses CSBwin's graphic-class/relative-cell/subtile
+        // table and its native first-object offset, not the shared F0 anchor.
+        // Do not silently fall back to the old F1 position when tables fail.
+        if (TryGetNativeCsbFloorRect(item, texture, 1,
+            out Rect f1Rect, out bool f1Mirror))
           BlitPieceIntoPreview(pixels, texture,
               Mathf.RoundToInt(f1Rect.xMin) + pileOffset.x,
               PreviewHeight - Mathf.RoundToInt(f1Rect.yMin) - texture.height - pileOffset.y,
-              false);
+              f1Mirror);
+        else
+          ReportCsbF2Issue("Cannot calculate native F1 placement for " + item.type
+              + " at " + item.x + "," + item.y + " (" + item.cell + ")");
         return;
       }
       if (string.Equals(GetViewEditFloorItemDistance(item), "F2",
@@ -34854,10 +34862,19 @@ private static void HandleGameViewPointerDown(
         previewFacing == DungeonFacing.South ? 2 : 3;
     int relCorner = (absCorner - facingCorner + 4) & 3;
     CsbViewportCell[] cells = csbViewportTable.classes[graphic.viewportPositionClass].cells;
-    if (cells == null || cells.Length != 10 || cells[6]?.positions == null
-        || cells[6].positions.Length != 5)
-    { ReportCsbF2Issue("Invalid F2 viewport positions table."); return false; }
-    CsbViewportCell cell = cells[6];
+    // F2 may be the far half of the adjacent tile (cell 6) OR the
+    // near half of the second tile (cell 3). Both require the F2 artwork,
+    // but the latter must not use the unscaled near-half-of-cell-6 path.
+    GetFloorItemViewBasis(previewFacing,
+        out int fwdX, out int fwdY, out _, out _);
+    int mapTilesAhead = (item.x - previewX) * fwdX
+        + (item.y - previewY) * fwdY;
+    int relativeCell = mapTilesAhead == 1 ? 6 : mapTilesAhead == 2 ? 3 : -1;
+    if (relativeCell < 0 || cells == null || cells.Length != 10
+        || cells[relativeCell]?.positions == null
+        || cells[relativeCell].positions.Length != 5)
+    { ReportCsbF2Issue("Invalid F2 relative cell or viewport positions table."); return false; }
+    CsbViewportCell cell = cells[relativeCell];
     CsbViewportPoint point = cell.positions[relCorner];
     if (!point.valid || point.y == 0)
     {
@@ -34871,12 +34888,11 @@ private static void HandleGameViewPointerDown(
             + ", valid=" + point.valid + ", x=" + point.x + ", y=" + point.y);
       return false;
     }
-    bool near = relCorner >= 2;
-    // CSBwin cell 6 (one tile ahead): far corners use distance 1 (20/32),
-    // near corners use distance 0 (native dimensions). This deliberately
-    // retains the existing CSBwin table X and bottom-scanline Y anchors.
-    int numerator = near ? 32 : 20;
-    int rounding = near ? 0 : 10;
+    bool nativeNearCorner = relativeCell == 6 && relCorner >= 2;
+    // Only the near half of cell 6 uses native F1 dimensions. Cell 3 is
+    // farther away: even its near corners must be projected at F2 size.
+    int numerator = nativeNearCorner ? 32 : 20;
+    int rounding = nativeNearCorner ? 0 : 10;
     // Source PNGs hold visible pixels rather than original padded bitplanes.
     // Keep their artwork sizes generic; no per-item correction.
     int width = Mathf.Max(1, (texture.width * numerator + rounding) / 32);
@@ -35344,7 +35360,13 @@ private static void HandleGameViewPointerDown(
         previewFacing == DungeonFacing.East ? 1 :
         previewFacing == DungeonFacing.South ? 2 : 3;
     int screenCorner = (absoluteCorner - facingIndex + 4) & 3;
-    bool mediumDistance = screenCorner < 2;
+    GetFloorItemViewBasis(previewFacing,
+        out int fwdX, out int fwdY, out _, out _);
+    int mapTilesAhead = (item.x - previewX) * fwdX
+        + (item.y - previewY) * fwdY;
+    // Near corners in cell 3 are still F2-sized. Do not reuse the native
+    // image path reserved for near corners of cell 6.
+    bool mediumDistance = mapTilesAhead == 2 || screenCorner < 2;
     // The registry is the single authoritative link between a floor item and
     // its CSBwin padded artwork; do not search filenames or silently substitute.
     bool hasOriginalPaddedGraphic = false;
@@ -40989,7 +41011,8 @@ private static void HandleGameViewPointerDown(
     if (depth == FloorItemDepth.SameTile)
       return TryGetF1FloorItemRect(item, right, texture, out rect);
     if (depth == FloorItemDepth.OneAhead)
-      return TryGetCsbF2Rect(item, texture, out rect, out bool unusedMirror);
+      return TryGetNativeCsbFloorRect(item, texture, 1,
+          out rect, out bool unusedMirror);
     return false;
   }
 
