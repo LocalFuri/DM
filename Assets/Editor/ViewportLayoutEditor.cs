@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -41204,7 +41204,10 @@ private static void HandleGameViewPointerDown(
     return false;
   }
 
-  // Experimental one-step throw: not a floor item until an explicit future landing.
+  // Hero-independent CSBwin missile movement experiment.
+  // Strength, mastery, item weight and random launch power are deliberately deferred.
+  private const int TestThrowInitialRange = 44; // Apple trace reference, not an item property.
+  private const int TestThrowDecay = 10;         // Test value, not champion-derived.
   private sealed class SuspendedThrownItem
   {
     internal string id;
@@ -41216,7 +41219,8 @@ private static void HandleGameViewPointerDown(
     internal bool releaseCaptured;
     internal double landingTime;
     internal int flightStage;
-    internal int maxFlightTiles;
+    internal int remainingRange, decay;
+    internal DungeonFacing direction;
     internal ThrownItemSoundCategory impactCategory;
     internal int forwardX, forwardY;
     internal bool torch;
@@ -41227,23 +41231,25 @@ private static void HandleGameViewPointerDown(
   private readonly List<SuspendedThrownItem> suspendedThrownItems =
       new List<SuspendedThrownItem>();
 
-  // Legacy flight list remains empty during this experimental test.
   private sealed class GenericThrowInFlight { internal string id; }
   private readonly List<GenericThrowInFlight> genericThrowsInFlight =
       new List<GenericThrowInFlight>();
 
-  // Throw classes: swords fly up to six tiles; all armor flies up to three.
-  // Other item types retain their existing three-tile limit until weight
-  // and class rules have been specified. Do not infer a weight here.
-  private static int ThrowRangeForItem(string itemType)
+  private static int ThrowCornerIndex(string corner)
   {
-    if (IsThrowArmorItem(itemType)) return 3;
-    switch (NormalizeChampionAssetKey(itemType ?? string.Empty))
+    switch (corner)
     {
-      case "SWORD": case "SAMURAISWORD": case "SHORTSWORD": case "LONGSWORD":
-        return 6;
-      default: return 3;
+      case "N": return 0;
+      case "E": return 1;
+      case "S": return 2;
+      case "W": return 3;
+      default: throw new System.ArgumentException("Invalid thrown item corner: " + corner);
     }
+  }
+
+  private static string ThrowCornerName(int index)
+  {
+    return new[] { "N", "E", "S", "W" }[index & 3];
   }
 
   // Reuse the existing head/torso/legs/feet equipment classification,
@@ -41276,13 +41282,13 @@ private static void HandleGameViewPointerDown(
     if (item == null) return false;
     item.displayY = Mathf.Clamp(y, 0f, PreviewHeight - 1f);
     item.releaseCaptured = true;
-    item.landingTime = EditorApplication.timeSinceStartup + 1.0;
+    item.landingTime = EditorApplication.timeSinceStartup + GenericThrowStepSeconds;
     // Play the shared Combat_Attack sound exactly once, on mouse release.
     PlayItemThrowSound();
     Debug.Log("THROW RELEASE TEST: objectId=" + item.id
         + " releaseY=" + item.displayY.ToString("F1")
         + " tile=(" + item.tileX + "," + item.tileY + ")"
-        + " range=" + item.maxFlightTiles + " tiles; 1 second per tile -> LAND");
+        + " remainingRange=" + item.remainingRange + " decay=" + item.decay);
     RefreshEditModePreview();
     return true;
   }
@@ -41298,27 +41304,46 @@ private static void HandleGameViewPointerDown(
     {
       SuspendedThrownItem item = suspendedThrownItems[i];
       if (!item.releaseCaptured || now < item.landingTime) continue;
-      // Each stage is displayed for one full second before advancing.
-      // Do not enter solid dungeon tiles; an obstruction ends the flight.
-      if (item.flightStage < item.maxFlightTiles)
+      // CSBwin Timer.cpp MissileTimer: TT_Missile0 first moves without energy
+      // decay. Later events test range <= decay BEFORE the next subtile step.
+      bool land = item.flightStage > 0 && item.remainingRange <= item.decay;
+      if (!land)
       {
-        int nextX = item.tileX + item.forwardX;
-        int nextY = item.tileY + item.forwardY;
-        EnsurePreviewMiniMapLoaded();
-        if (previewMiniMap != null && PreviewTileIsOpen(nextX, nextY))
+        if (item.flightStage > 0) item.remainingRange -= item.decay;
+        int dir = ((int)item.direction) & 3;
+        int oldCorner = ThrowCornerIndex(item.landingCorner);
+        bool leavingCell = dir == oldCorner || ((dir + 1) & 3) == oldCorner;
+        if (leavingCell)
         {
-          item.tileX = nextX;
-          item.tileY = nextY;
+          int nextX = item.tileX + item.forwardX;
+          int nextY = item.tileY + item.forwardY;
+          EnsurePreviewMiniMapLoaded();
+          if (previewMiniMap == null || !PreviewTileIsOpen(nextX, nextY))
+          {
+            Debug.Log("THROW BLOCKED: objectId=" + item.id
+                + " attempted tile=(" + nextX + "," + nextY + ")");
+            land = true;
+          }
+          else
+          {
+            item.tileX = nextX;
+            item.tileY = nextY;
+          }
+        }
+        if (!land)
+        {
+          int newCorner = ((dir & 1) == (oldCorner & 1))
+              ? ((oldCorner + 3) & 3) : ((oldCorner + 1) & 3);
+          item.landingCorner = ThrowCornerName(newCorner);
           item.flightStage++;
-          item.landingTime = now + 1.0;
-          Debug.Log("THROW FLIGHT: objectId=" + item.id
-              + " stage=F" + item.flightStage + " tile=(" + item.tileX
-              + "," + item.tileY + ") Y=" + item.displayY.ToString("F1"));
+          item.landingTime = now + GenericThrowStepSeconds;
+          Debug.Log("THROW SUBTILE: objectId=" + item.id
+              + " step=" + item.flightStage + " tile=(" + item.tileX
+              + "," + item.tileY + ") corner=" + item.landingCorner
+              + " range=" + item.remainingRange);
           changed = true;
           continue;
         }
-        Debug.Log("THROW FLIGHT BLOCKED: objectId=" + item.id
-            + " at F" + item.flightStage + "; landing on current tile");
       }
       if (!previewItemInstances.TryGetValue(item.id, out ItemInstance physical))
       {
@@ -41364,7 +41389,8 @@ private static void HandleGameViewPointerDown(
       MoveItemInstance(physical, "Floor", level: item.level,
           tileX: item.tileX, tileY: item.tileY, corner: corner);
       // Wall collision or maximum-range landing: play the category's impact once.
-      PlayItemLandingThudSound(item.impactCategory, item.flightStage);
+      PlayItemLandingThudSound(item.impactCategory,
+          Mathf.Clamp((item.flightStage + 1) / 2, 0, MaximumItemThrowDistance));
       suspendedThrownItems.RemoveAt(i);
       Debug.Log("THROW LAND AFTER FLIGHT: objectId=" + item.id
           + " level=" + item.level + " tile=(" + item.tileX
@@ -41498,7 +41524,7 @@ private static void HandleGameViewPointerDown(
       previewHeldChampionCursor = null;
       previewHeldChampionSourceSlot = new Vector2Int(-1, -1);
     }
-    int destX = previewX + fx, destY = previewY + fy;
+    int destX = previewX, destY = previewY;
     MoveItemInstance(physical, "SuspendedThrow", level: previewDungeonLevel,
         tileX: destX, tileY: destY);
     suspendedThrownItems.Add(new SuspendedThrownItem {
@@ -41508,7 +41534,8 @@ private static void HandleGameViewPointerDown(
       displayY = y, releaseCaptured = false, torch = heldTorch,
       championName = thrownChampionName, championItemIndex = thrownChampionIndex,
       championSourceSlot = thrownChampionSlot,
-      flightStage = 1, maxFlightTiles = ThrowRangeForItem(physical.ItemType),
+      flightStage = 0, remainingRange = TestThrowInitialRange,
+      decay = TestThrowDecay, direction = previewFacing,
       impactCategory = ThrowImpactCategoryForItem(physical.ItemType),
       forwardX = fx, forwardY = fy
     });
@@ -41516,9 +41543,9 @@ private static void HandleGameViewPointerDown(
     HideHeldItemPointerOverlay();
     Debug.Log("THROW FLIGHT START F1: objectId=" + id
         + " start=(" + previewX + "," + previewY + ")"
-        + " advanced=(" + destX + "," + destY + ")"
-        + " waiting for mouse UP; range=" + ThrowRangeForItem(physical.ItemType)
-        + " tiles, each 1 second");
+        + " launchTile=(" + destX + "," + destY + ")"
+        + " waiting for mouse UP; testRange=" + TestThrowInitialRange
+        + " testDecay=" + TestThrowDecay);
     RefreshEditModePreview();
     return true;
   }
@@ -41849,9 +41876,13 @@ private static void HandleGameViewPointerDown(
       owner.SetChampionHeldItemOverEye(false);
     // The cursor must disappear only for the duration of the pressed Eye
     // inspection, and reappear as soon as the button is released.
-    s_heldItemPointerOverlay.style.display = owner.championHeldItemOverEye
-        ? UnityEngine.UIElements.DisplayStyle.None
-        : UnityEngine.UIElements.DisplayStyle.Flex;
+    bool showHeldArtwork = !owner.championHeldItemOverEye;
+    s_heldItemPointerOverlay.style.display = showHeldArtwork
+        ? UnityEngine.UIElements.DisplayStyle.Flex
+        : UnityEngine.UIElements.DisplayStyle.None;
+    // The UITK overlay paints the item, but it does not automatically hide
+    // the OS cursor. Hide the pointer only while the item sprite is visible.
+    Cursor.visible = !showHeldArtwork;
     s_heldItemPointerOverlay.BringToFront();
   }
 
@@ -41884,6 +41915,7 @@ private static void HandleGameViewPointerDown(
 
   private static void HideHeldItemPointerOverlay()
   {
+    Cursor.visible = true;
     if (s_heldItemPointerOverlay != null)
       s_heldItemPointerOverlay.RemoveFromHierarchy();
     s_heldItemPointerOverlay = null;
@@ -41933,8 +41965,9 @@ private static void HandleGameViewPointerDown(
     {
       if (s_heldItemPointerOverlay != null)
         s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.None;
+      Cursor.visible = true;
       owner.SetChampionHeldItemOverEye(false);
-        return;
+      return;
     }
     UpdateHeldItemPointerOverlay(s_hookedGameView, local);
 #endif
@@ -41961,6 +41994,7 @@ private static void HandleGameViewPointerDown(
     if (owner != null) owner.SetChampionHeldItemOverEye(false);
     if (s_heldItemPointerOverlay != null)
       s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.None;
+    Cursor.visible = true;
   }
 
   private string MakeTorchHolderInstanceKey(WallOrnamentPlacement ornament)
