@@ -41549,6 +41549,54 @@ private static void HandleGameViewPointerDown(
     return captured;
   }
 
+  // Experimental DOS/FTL visual projection for APPLE FLIGHT ONLY.
+  // Stable visible-pixel rectangles measured from the native 320x200 DOSBox
+  // recording. Stage zero retains the established CSBwin launch projection;
+  // stages 1..5 use the five measured stable frames. The one-frame transition
+  // is excluded because it has not been verified as a genuine perspective stage.
+  // This NEVER changes map coordinates, collisions, timing, or floor placement.
+  private static readonly int[] DosAppleFlightX = { 148, 140, 134, 131, 128 };
+  private static readonly int[] DosAppleFlightY = { 69, 71, 74, 75, 75 };
+  private static readonly int[] DosAppleFlightW = { 15, 13, 10, 8, 6 };
+  private static readonly int[] DosAppleFlightH = { 12, 10, 7, 6, 5 };
+
+  private bool TryGetDosAppleFlightRect(SuspendedThrownItem item, out Rect rect)
+  {
+    rect = new Rect();
+    if (item == null || item.flightStage < 1) return false;
+    if (!previewItemInstances.TryGetValue(item.id, out ItemInstance instance)
+        || instance == null || !string.Equals(instance.ItemType, "Apple",
+          System.StringComparison.OrdinalIgnoreCase)) return false;
+    int stage = Mathf.Clamp(item.flightStage - 1, 0, DosAppleFlightX.Length - 1);
+    int width = DosAppleFlightW[stage];
+    // Recorded DOS example was a right-side throw. Reflect around the 224px
+    // viewport center for left-side throws, without altering logical subtiles.
+    int x = item.right ? DosAppleFlightX[stage]
+        : 224 - DosAppleFlightX[stage] - width;
+    rect = new Rect(x, DosAppleFlightY[stage], width, DosAppleFlightH[stage]);
+    return true;
+  }
+
+  // Work from the SINGLE existing texture; crop its transparent border in
+  // memory for flying sprites only. Floor blits continue using padded artwork.
+  private static bool TryGetFlyingVisiblePixels(Color32[] pixels, int width, int height,
+      out RectInt bounds)
+  {
+    int minX = width, minY = height, maxX = -1, maxY = -1;
+    for (int y = 0; y < height; y++)
+      for (int x = 0; x < width; x++)
+        if (pixels[y * width + x].a != 0)
+        {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+    bounds = maxX < minX ? new RectInt() :
+        new RectInt(minX, minY, maxX - minX + 1, maxY - minY + 1);
+    return maxX >= minX;
+  }
+
   // Visual overlay only. Never put suspended items in the floor collection.
   private void BlitSuspendedThrownItemsIntoPreview(Color32[] pixels)
   {
@@ -41563,7 +41611,11 @@ private static void HandleGameViewPointerDown(
       // The silent wall drop is transferred instantly; it must never enter
       // this visual-flight path.
       if (item.silentWallDrop) continue;
-      if (!TryGetOriginalMissileRect(item, out Rect sprite)) continue;
+      bool dosApple = TryGetDosAppleFlightRect(item, out Rect sprite);
+      if (!dosApple && !TryGetOriginalMissileRect(item, out sprite)) continue;
+      RectInt visible = new RectInt(0, 0, tex.width, tex.height);
+      if (dosApple && !TryGetFlyingVisiblePixels(src, tex.width, tex.height,
+          out visible)) continue;
       int drawW = Mathf.RoundToInt(sprite.width);
       int drawH = Mathf.RoundToInt(sprite.height);
       int left = Mathf.RoundToInt(sprite.x);
@@ -41572,12 +41624,14 @@ private static void HandleGameViewPointerDown(
       {
         int dy = PreviewHeight - top - drawH + sy;
         if (dy < 0 || dy >= PreviewHeight) continue;
-        int sourceY = Mathf.Min(tex.height - 1, sy * tex.height / drawH);
+        int sourceY = visible.y + Mathf.Min(visible.height - 1,
+            sy * visible.height / drawH);
         for (int sx = 0; sx < drawW; ++sx)
         {
           int dx = left + sx;
           if (dx < 0 || dx >= 224) continue;
-          int sourceX = Mathf.Min(tex.width - 1, sx * tex.width / drawW);
+          int sourceX = visible.x + Mathf.Min(visible.width - 1,
+              sx * visible.width / drawW);
           Color32 c = src[sourceY * tex.width + sourceX];
           if (c.a != 0) pixels[dy * PreviewWidth + dx] = c;
         }
