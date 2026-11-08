@@ -41523,22 +41523,46 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
-  // All manual drops land on the player's F1 tile. Viewport horizontal half
-  // chooses the floor corner; it never determines a different map tile.
-  // Keep this independent from throw trajectories and F2/F3 rendering.
+  // Original CSBwin Mouse.cpp DropAreas; logical coordinates are 320x200,
+  // origin at upper-left. Inclusive bounds, checked in original slot order.
+  // slot 0/1 = current tile; slot 2/3 = one tile forward.
+  // The original world-space corner is (facing + slot) & 3 (N,E,S,W).
   private bool TryResolveManualF1Drop(float logicalX, float logicalY,
       out int tileX, out int tileY, out string corner)
   {
     tileX = previewX;
     tileY = previewY;
     corner = null;
-    if (championSheetVisible || logicalX < 0f || logicalX >= 224f
-        || logicalY < 0f || logicalY >= 169f)
-      return false;
+    if (championSheetVisible) return false;
+
+    int slot = -1;
+    if (logicalY >= 148f && logicalY < 169f)
+    {
+      if (logicalX >= 24f && logicalX < 112f) slot = 0;
+      else if (logicalX >= 112f && logicalX < 200f) slot = 1;
+    }
+    else if (logicalY >= 122f && logicalY < 148f)
+    {
+      if (logicalX >= 112f && logicalX < 184f) slot = 2;
+      else if (logicalX >= 40f && logicalX < 112f) slot = 3;
+    }
+    if (slot < 0) return false;
+
+    if (slot >= 2)
+    {
+      DungeonMap.GetForwardOffset(previewFacing, out int dx, out int dy);
+      tileX += dx;
+      tileY += dy;
+    }
     EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null || !PreviewTileIsOpen(tileX, tileY))
-      return false;
-    corner = FloorCornerForFacing(previewFacing, logicalX >= 112f);
+    if (previewMiniMap == null || !PreviewTileIsOpen(tileX, tileY)) return false;
+
+    int facingIndex = previewFacing == DungeonFacing.North ? 0
+        : previewFacing == DungeonFacing.East ? 1
+        : previewFacing == DungeonFacing.South ? 2 : 3;
+    int cornerIndex = (facingIndex + slot) & 3;
+    corner = cornerIndex == 0 ? "N" : cornerIndex == 1 ? "E"
+        : cornerIndex == 2 ? "S" : "W";
     return true;
   }
 
@@ -41599,13 +41623,6 @@ private static void HandleGameViewPointerDown(
     };
     Texture2D groundTexture = GetFloorItemTexture(floorItem);
     if (groundTexture == null) return true;
-    if (!TryGetF1FloorItemRect(floorItem, x >= 112f,
-        groundTexture, out Rect unusedF1Rect))
-    {
-      Debug.LogError("CHAMPION F1 DROP: missing calibrated placement for '"
-          + floorItem.type + "'; item remains on cursor.");
-      return true;
-    }
     ItemInstance droppedInstance = EnsureChampionItemInstance(
         previewHeldChampionName, previewHeldChampionItemIndex,
         itemName, previewHeldChampionSourceSlot);
@@ -41657,20 +41674,11 @@ private static void HandleGameViewPointerDown(
       return false;
     }
 
-    // F1 only: the cursor side determines the floor corner, never an item
-    // visible at F2/F3. Reuse the same F1 geometry as render/pickup.
+    // Validate the registered ground artwork before moving the item.
     Texture2D texture = GetFloorItemTexture(previewHeldFloorItem);
     if (texture == null)
     {
       Debug.LogError("F1 FLOOR DROP: missing world artwork for '"
-          + previewHeldFloorItem.type + "'; item remains on cursor.");
-      return true;
-    }
-    bool right = x >= 112f;
-    if (!TryGetF1FloorItemRect(previewHeldFloorItem, right, texture, out Rect unusedRect))
-    {
-      Debug.LogError("F1 FLOOR DROP: missing calibrated F1 "
-          + (right ? "right" : "left") + " placement for '"
           + previewHeldFloorItem.type + "'; item remains on cursor.");
       return true;
     }
@@ -42015,15 +42023,10 @@ private static void HandleGameViewPointerDown(
     ClearStaleHeldTorchState();
     if (!HasPickedUpTorchOnCursor() || championSheetVisible)
       return false;
-    // Logical mouse coordinates use the full 320x200 Game image. Accept
-    // ceiling, wall and floor clicks across the dungeon's left 224 pixels;
-    // all three surfaces drop the torch on the player's current floor tile.
+    // Use the same original CSBwin F0/F1 drop regions as all other items.
     // Returning the torch to its holder is tested first by the click handler.
-    if (logicalX < 0 || logicalX >= 224 || logicalY < 0 || logicalY >= 169)
-      return false;
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null || !PreviewTileIsOpen(previewX, previewY))
-      return false;
+    if (!TryResolveManualF1Drop(logicalX, logicalY,
+        out int dropX, out int dropY, out string dropCorner)) return false;
     // Do not modify occupancy/hand state if ground artwork is unavailable.
     if (GetTorchGroundTexture() == null)
       return true;
@@ -42038,23 +42041,22 @@ private static void HandleGameViewPointerDown(
       Debug.LogError("ITEM INSTANCE: missing torch " + id);
       return true;
     }
-    bool right = logicalX >= 112;
     previewDroppedTorches.Add(id, new DroppedTorch
     {
-      id = id, level = previewDungeonLevel, x = previewX, y = previewY,
-      corner = FloorCornerForFacing(previewFacing, right)
+      id = id, level = previewDungeonLevel, x = dropX, y = dropY,
+      corner = dropCorner
     });
     previewDroppedTorchOrder.Add(id);
     MoveItemInstance(droppedTorchInstance, "Floor", level: previewDungeonLevel,
-        tileX: previewX, tileY: previewY,
-        corner: FloorCornerForFacing(previewFacing, right));
+        tileX: dropX, tileY: dropY,
+        corner: dropCorner);
     previewHeldTorchId = null;
     previewHeldTorchCursor = null;
     Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     HideHeldItemPointerOverlay();
     RefreshEditModePreview();
     Debug.Log("TORCH DROP: moved existing " + id + " onto level "
-        + previewDungeonLevel + " tile " + previewX + "," + previewY
+        + previewDungeonLevel + " tile " + dropX + "," + dropY
         + " corner " + previewDroppedTorches[id].corner);
     return true;
   }
