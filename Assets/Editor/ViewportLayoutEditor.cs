@@ -41482,7 +41482,9 @@ private static void HandleGameViewPointerDown(
         Debug.LogError("THROW LAND: missing item instance " + item.id);
         continue;
       }
-      string corner = item.landingCorner;
+      string corner = item.silentWallDrop
+          ? item.landingCorner
+          : FloorForwardVisibleCornerForFacing(item.direction, item.right);
       // Prefer the physical item's saved type, not a newly allocated object.
       if (item.torch)
       {
@@ -41529,7 +41531,8 @@ private static void HandleGameViewPointerDown(
       suspendedThrownItems.RemoveAt(i);
       Debug.Log("THROW LAND AFTER FLIGHT: objectId=" + item.id
           + " level=" + item.level + " tile=(" + item.tileX
-          + "," + item.tileY + ") corner=" + corner);
+          + "," + item.tileY + ") floorCorner=" + corner
+          + (item.silentWallDrop ? "" : " (from missileCorner=" + item.landingCorner + ")"));
       changed = true;
     }
     if (changed) { RefreshEditModePreview(); RepaintGameViews(); Repaint(); }
@@ -42196,12 +42199,29 @@ private static void HandleGameViewPointerDown(
   private static string FloorCornerForFacing(DungeonFacing facing, bool right)
   {
     // N/E/S/W are NW/NE/SE/SW map-space corners.
+    // This helper is for the player's CURRENT tile when dropping onto an F1 wall:
+    // choose the two FRONT corners of the current square.
     switch (facing)
     {
       case DungeonFacing.North: return right ? "E" : "N";
       case DungeonFacing.East:  return right ? "S" : "E";
       case DungeonFacing.South: return right ? "W" : "S";
       default:                  return right ? "N" : "W";
+    }
+  }
+
+  private static string FloorForwardVisibleCornerForFacing(DungeonFacing facing, bool right)
+  {
+    // For a landed thrown item, use the two VISIBLE corners of the TARGET tile
+    // directly ahead in that lane. This converts the transient missile lane into
+    // the ordinary floor-item corner system. The missile subtile trace remains
+    // unchanged; only the final floor placement uses this mapping.
+    switch (facing)
+    {
+      case DungeonFacing.North: return right ? "S" : "W";
+      case DungeonFacing.East:  return right ? "W" : "N";
+      case DungeonFacing.South: return right ? "E" : "N";
+      default:                  return right ? "S" : "E";
     }
   }
 
