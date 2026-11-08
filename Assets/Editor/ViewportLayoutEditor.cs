@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -41204,6 +41204,127 @@ private static void HandleGameViewPointerDown(
     return false;
   }
 
+  // CSBwin DrawSingleObject(..., drawingMissiles=true): use the original
+  // relative-cell/subtile viewport X anchor; missiles have a constant viewport
+  // bottom Y=47 and DO NOT receive ordinary floor-pile small offsets.
+  // Do not extrapolate F3 beyond the last visible perspective cell.
+  private bool TryGetOriginalMissileRect(SuspendedThrownItem item, out Rect rect)
+  {
+    rect = new Rect();
+    if (item == null || item.texture == null || !EnsureCsbF2Tables()) return false;
+    int facing = ((int)item.direction) & 3;
+    int corner = ThrowCornerIndex(item.landingCorner);
+    int relativeCorner = (corner - facing + 4) & 3;
+    int depth = (item.tileX - previewX) * item.forwardX
+        + (item.tileY - previewY) * item.forwardY;
+    // This straight-ahead missile renderer covers the front-center cells.
+    // Side cells and distances beyond F3 must be handled by the original
+    // visibility rules; never freeze the sprite at a default F3 coordinate.
+    int lateral = (item.tileX - previewX) * (-item.forwardY)
+        + (item.tileY - previewY) * item.forwardX;
+    if (depth < 0 || depth > 3 || lateral != 0) return false;
+    int relativeCell = 9 - depth * 3;
+
+    // Resolve the original graphic's positioning class. No guessed mapping.
+    string itemType = null;
+    if (previewItemInstances.TryGetValue(item.id, out ItemInstance physical)
+        && physical != null) itemType = physical.ItemType;
+    if (string.IsNullOrEmpty(itemType)) return false;
+    CsbObjectDescriptionRecord found = null;
+    DungeonOriginalItemLoader.Record original = null;
+    foreach (DungeonOriginalItemLoader.Record entry in DungeonOriginalItemLoader.Load())
+      if (entry.id == item.id) { original = entry; break; }
+    foreach (CsbObjectDescriptionRecord entry in csbObjectTable.entries)
+    {
+      if (entry == null) continue;
+      bool matches = original != null
+          ? entry.dbSubtype == original.thing.Type && string.Equals(
+              (entry.dbCategory ?? "").Trim(), (original.recordType ?? "").Trim(),
+              System.StringComparison.OrdinalIgnoreCase)
+          : string.Equals((DungeonOriginalItemLoader.DecodeFloorItemName(
+              entry.dbCategory, entry.dbSubtype) ?? "").Trim(), itemType.Trim(),
+              System.StringComparison.OrdinalIgnoreCase);
+      if (!matches) continue;
+      if (found != null && found.graphicClassIndex != entry.graphicClassIndex)
+      {
+        Debug.LogError("MISSILE VISUAL: ambiguous original graphic class for " + itemType);
+        return false;
+      }
+      found = entry;
+    }
+    if (found == null || found.graphicClassIndex < 0
+        || found.graphicClassIndex >= csbGraphicTable.entries.Length)
+    {
+      Debug.LogError("MISSILE VISUAL: missing original graphic class for " + itemType);
+      return false;
+    }
+    CsbGraphicClassRecord graphic = csbGraphicTable.entries[found.graphicClassIndex];
+    if (graphic == null || graphic.viewportPositionClass < 0
+        || graphic.viewportPositionClass >= csbViewportTable.classes.Length) return false;
+    CsbViewportCell[] cells = csbViewportTable.classes[graphic.viewportPositionClass].cells;
+    if (cells == null || relativeCell >= cells.Length || cells[relativeCell] == null
+        || cells[relativeCell].positions == null
+        || relativeCorner >= cells[relativeCell].positions.Length) return false;
+    CsbViewportPoint point = cells[relativeCell].positions[relativeCorner];
+    if (point == null || !point.valid || point.x == 0) return false;
+
+    bool nearSide = relativeCorner >= 2;
+    int scale = depth == 0 || (depth == 1 && nearSide) ? 32
+        : depth == 1 || (depth == 2 && nearSide) ? 20 : 16;
+    int rounding = scale == 20 ? 10 : scale == 16 ? 8 : 0;
+    int width = Mathf.Max(1, (item.texture.width * scale + rounding) / 32);
+    int height = Mathf.Max(1, (item.texture.height * scale + rounding) / 32);
+    // The CSBwin viewport starts at logical screen Y=32 in our 320x200 image.
+    int x = point.x - width / 2 + 1;
+    int top = 32 + 47 - height + 1;
+    rect = new Rect(x, top, width, height);
+    return true;
+  }
+
+  // Diagnostic only: records Unity's throw states for comparison with CSBwin.
+  // File is placed at the Unity project root (one directory above Assets).
+  private const string UnityThrowTraceFileName = "Unity_Throw_Movement_Trace.csv";
+  private static string UnityThrowTraceCsv(string value)
+  {
+    return "\"" + (value ?? "").Replace("\"", "\"\"") + "\"";
+  }
+  private void TraceUnityThrow(string evt, SuspendedThrownItem item, string detail = "")
+  {
+    if (item == null || item.silentWallDrop) return; // Wall drops are instantaneous, not flights.
+    try
+    {
+      string path = Path.GetFullPath(Path.Combine(Application.dataPath, "..", UnityThrowTraceFileName));
+      bool header = !File.Exists(path) || new FileInfo(path).Length == 0;
+      using (StreamWriter writer = new StreamWriter(path, true))
+      {
+        if (header) writer.WriteLine("event,unity_seconds,level,item_id,item_type,map_x,map_y,subtile,direction,range,decay,step,mouse_y,screen_x,screen_y,screen_w,screen_h,detail");
+        string itemType = "";
+        if (previewItemInstances.TryGetValue(item.id, out ItemInstance instance) && instance != null)
+          itemType = instance.ItemType;
+        int corner = ThrowCornerIndex(item.landingCorner);
+        bool drawn = TryGetOriginalMissileRect(item, out Rect sprite);
+        int w = drawn ? Mathf.RoundToInt(sprite.width) : 0;
+        int h = drawn ? Mathf.RoundToInt(sprite.height) : 0;
+        int sx = drawn ? Mathf.RoundToInt(sprite.x) : -1;
+        int sy = drawn ? Mathf.RoundToInt(sprite.y) : -1;
+        writer.WriteLine(string.Join(",", new string[] {
+          evt,
+          EditorApplication.timeSinceStartup.ToString("F6", System.Globalization.CultureInfo.InvariantCulture),
+          item.level.ToString(), UnityThrowTraceCsv(item.id), UnityThrowTraceCsv(itemType),
+          item.tileX.ToString(), item.tileY.ToString(), corner.ToString(),
+          (((int)item.direction) & 3).ToString(), item.remainingRange.ToString(),
+          item.decay.ToString(), item.flightStage.ToString(),
+          item.displayY.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
+          sx.ToString(), sy.ToString(), w.ToString(), h.ToString(), UnityThrowTraceCsv(detail)
+        }));
+      }
+    }
+    catch (System.Exception ex)
+    {
+      Debug.LogError("UNITY THROW TRACE: could not write CSV: " + ex.Message);
+    }
+  }
+
   // Hero-independent CSBwin missile movement experiment.
   // Strength, mastery, item weight and random launch power are deliberately deferred.
   private const int TestThrowInitialRange = 44; // Apple trace reference, not an item property.
@@ -41286,6 +41407,7 @@ private static void HandleGameViewPointerDown(
     item.displayY = Mathf.Clamp(y, 0f, PreviewHeight - 1f);
     item.releaseCaptured = true;
     item.landingTime = EditorApplication.timeSinceStartup + GenericThrowStepSeconds;
+    TraceUnityThrow("RELEASE", item, "mouse button released");
     // Play the shared Combat_Attack sound exactly once, on mouse release.
     PlayItemThrowSound();
     Debug.Log("THROW RELEASE TEST: objectId=" + item.id
@@ -41308,6 +41430,7 @@ private static void HandleGameViewPointerDown(
       SuspendedThrownItem item = suspendedThrownItems[i];
       if (!item.releaseCaptured) continue;
       if (!item.silentWallDrop && now < item.landingTime) continue;
+      if (!item.silentWallDrop) TraceUnityThrow("TICK_BEGIN", item);
       if (!item.silentWallDrop)
       {
       // CSBwin Timer.cpp MissileTimer: TT_Missile0 first moves without energy
@@ -41326,6 +41449,7 @@ private static void HandleGameViewPointerDown(
           EnsurePreviewMiniMapLoaded();
           if (previewMiniMap == null || !PreviewTileIsOpen(nextX, nextY))
           {
+            TraceUnityThrow("BLOCKED", item, "next tile=" + nextX + ":" + nextY);
             Debug.Log("THROW BLOCKED: objectId=" + item.id
                 + " attempted tile=(" + nextX + "," + nextY + ")");
             land = true;
@@ -41343,6 +41467,7 @@ private static void HandleGameViewPointerDown(
           item.landingCorner = ThrowCornerName(newCorner);
           item.flightStage++;
           item.landingTime = now + GenericThrowStepSeconds;
+          TraceUnityThrow("STEP_END", item);
           Debug.Log("THROW SUBTILE: objectId=" + item.id
               + " step=" + item.flightStage + " tile=(" + item.tileX
               + "," + item.tileY + ") corner=" + item.landingCorner
@@ -41399,6 +41524,8 @@ private static void HandleGameViewPointerDown(
       if (!item.silentWallDrop)
         PlayItemLandingThudSound(item.impactCategory,
             Mathf.Clamp((item.flightStage + 1) / 2, 0, MaximumItemThrowDistance));
+      TraceUnityThrow("LAND", item, item.silentWallDrop ? "silent wall drop" :
+          (item.remainingRange <= item.decay ? "range exhausted" : "blocked or other"));
       suspendedThrownItems.RemoveAt(i);
       Debug.Log("THROW LAND AFTER FLIGHT: objectId=" + item.id
           + " level=" + item.level + " tile=(" + item.tileX
@@ -41431,26 +41558,14 @@ private static void HandleGameViewPointerDown(
       Texture2D tex = item.texture;
       if (!tex.isReadable) continue;
       Color32[] src = tex.GetPixels32();
-      // Stage-dependent perspective preview; retain exact mouse-release Y.
-      float scale = item.silentWallDrop ? 1f : item.flightStage == 1 ? 1f
-          : (item.flightStage == 2 ? 0.625f : 0.4f);
-      int drawW = Mathf.Max(1, Mathf.RoundToInt(tex.width * scale));
-      int drawH = Mathf.Max(1, Mathf.RoundToInt(tex.height * scale));
-      int midX = item.silentWallDrop ? (item.right ? 152 : 72)
-          : item.flightStage == 1 ? (item.right ? 152 : 72)
-          : item.flightStage == 2 ? (item.right ? 137 : 87)
-          : (item.right ? 128 : 96);
-      int left = midX - drawW / 2;
-      float visualY = item.displayY;
-      if (item.silentWallDrop)
-      {
-        float progress = Mathf.Clamp01((float)((EditorApplication.timeSinceStartup
-            - item.wallDropStartTime) / 0.35));
-        visualY = Mathf.Lerp(item.wallStartY, 155f, progress);
-      }
-      int top = item.silentWallDrop
-          ? Mathf.RoundToInt(PreviewHeight - visualY - drawH / 2f)
-          : Mathf.RoundToInt(visualY) - drawH / 2;
+      // The silent wall drop is transferred instantly; it must never enter
+      // this visual-flight path.
+      if (item.silentWallDrop) continue;
+      if (!TryGetOriginalMissileRect(item, out Rect sprite)) continue;
+      int drawW = Mathf.RoundToInt(sprite.width);
+      int drawH = Mathf.RoundToInt(sprite.height);
+      int left = Mathf.RoundToInt(sprite.x);
+      int top = Mathf.RoundToInt(sprite.y);
       for (int sy = 0; sy < drawH; ++sy)
       {
         int dy = PreviewHeight - top - drawH + sy;
@@ -41487,7 +41602,7 @@ private static void HandleGameViewPointerDown(
     // F1 wall click uses the wall's own Y interval, not the adjustable throw
     // limit or CSBwin floor-drop areas. Mouse Y NEVER selects a landing tile.
     bool frontWall = !PreviewTileIsOpen(previewX + fx, previewY + fy);
-    bool silentWallDrop = frontWall && y >= 32f && y < 122f;
+    bool silentWallDrop = frontWall && y >= 32f && y < 169f;
     bool yAllowed = silentWallDrop || (y >= 0f && y <= GenericThrowMouseYMax);
     bool xAllowed = x >= 32f && x <= 191f;
     Debug.Log("THROW MOUSE CHECK: x=" + x.ToString("F1")
@@ -41554,11 +41669,11 @@ private static void HandleGameViewPointerDown(
     suspendedThrownItems.Add(new SuspendedThrownItem {
       id = id, texture = texture, level = previewDungeonLevel,
       tileX = destX, tileY = destY, right = x >= 112f,
-      // Fixed front-left/front-right corners of CURRENT tile. For North:
-      // left=W, right=E. Neither tile nor corner depends on mouse Y.
-      landingCorner = silentWallDrop
-          ? ThrowCornerName((((int)previewFacing) + (x >= 112f ? 1 : 3)) & 3)
-          : FloorCornerForFacing(previewFacing, x >= 112f),
+      // On a wall drop choose the two FRONT corners of the current tile.
+      // N/E/S/W subtile names represent NW/NE/SE/SW, respectively.
+      // Thus facing North uses N (front-left), E (front-right), not W.
+      // Mouse Y never influences tile or corner.
+      landingCorner = FloorCornerForFacing(previewFacing, x >= 112f),
       displayY = y, releaseCaptured = silentWallDrop,
       silentWallDrop = silentWallDrop, wallStartY = y,
       wallDropStartTime = EditorApplication.timeSinceStartup,
@@ -41573,6 +41688,9 @@ private static void HandleGameViewPointerDown(
     });
     Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     HideHeldItemPointerOverlay();
+    if (!silentWallDrop)
+      TraceUnityThrow("LAUNCH", suspendedThrownItems[suspendedThrownItems.Count - 1],
+          "press; waiting for release");
     if (silentWallDrop)
       Debug.Log("SILENT WALL DROP: objectId=" + id
           + " at tile=(" + previewX + "," + previewY + ")"
