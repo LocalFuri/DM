@@ -1498,7 +1498,8 @@
       "For CSBwin diagnostic experiments, preserve the old coordinate/status display while adding new diagnostics (such as Waterskin F2 bitmap capture). Keep diagnostic branch/output distinct from the user’s reference game. Ensure no Unity files are edited.",
       "When giving a Windows command, state the directory in which to run it, explain placeholders and why it is needed, and ask for console output before advancing. Avoid combining a long series of unverified operations.",
       "When producing files, provide only final actionable project files or one necessary diagnostic script; do not overload the user with internal research ZIPs. State clearly where to put each file, whether to overwrite something (default no), and how to undo the change.",
-      "At completion, record exact repo/branch/SHA, build configuration, verification outcome, binary location, backups and rollback steps. Explicitly distinguish confirmed working features from unverified diagnostics."
+      "At completion, record exact repo/branch/SHA, build configuration, verification outcome, binary location, backups and rollback steps. Explicitly distinguish confirmed working features from unverified diagnostics.",
+      "MANDATORY for every copy, move, extract, overwrite, replacement, or executable deployment instruction: ALWAYS show the COMPLETE ABSOLUTE WINDOWS SOURCE FILE PATH and COMPLETE ABSOLUTE WINDOWS DESTINATION FILE PATH, separately labeled FROM and TO (including drive, all folder names, and filename). Never say only “the game folder”, “there”, or provide a filename without its destination. Determine the user’s real destination directory first if it is not known; NEVER invent or assume it. Show clearly which executable is being replaced and which backup is protected. Give just ONE action per message and wait for confirmation."
     ],
     "reference_case_20261107": {
       "repository": "LocalFuri/CSBwin-position-status",
@@ -1512,6 +1513,61 @@
       "local_source": "C:\\!!!Stick\\Coder\\DM\\CSBWin-master\\",
       "current_patch": "Code51a4.cpp patched locally to capture Waterskin F2; backup Code51a4.cpp.before_waterskin_capture exists; new locally compiled EXE did not show old Level/X/Y overlay.",
       "next_safe_step": "Obtain exact source ZIP at commit 4c959bf separately from Actions artifact, inspect actual coordinate-display implementation before merging capture patch; keep working EXE untouched."
-    }
+    },
+    "copy_instruction_format": "FROM: C:\\!!!Stick\\Coder\\DM\\CSBWin-master\\Game\\CSBWin_Debug_X64.exe\nTO: <USER-CONFIRMED COMPLETE GAME DIRECTORY>\\CSBWin_Debug_X64.exe\nIf TO is not known, first ask only for that absolute folder path; do not issue a copy instruction until it is known.",
+    "updated_20261107": "User explicitly requested mandatory full FROM and TO absolute Windows paths on every future external project copy/rebuild instruction."
+  },
+  "csbwin_external_rebuild_checkpoint_20261107": {
+    "date": "2026-11-07",
+    "status": "End-of-day checkpoint. Visual Studio relocation and Debug/x64 rebuild CONFIRMED by user screenshot. Runtime verification of the newly rebuilt EXE remains PENDING.",
+    "scope": "EXTERNAL CSBwin development project ONLY; do not treat this as a change to Unity floor rendering or approved Atari-style artwork.",
+    "canonical_paths": {
+      "combined_source_and_game_folder": "C:\\!!!Stick\\Coder\\DM\\CSBWin_DM\\",
+      "solution": "C:\\!!!Stick\\Coder\\DM\\CSBWin_DM\\CSBWin.sln",
+      "source_cpp": "C:\\!!!Stick\\Coder\\DM\\CSBWin_DM\\Code51a4.cpp",
+      "compiled_executable": "C:\\!!!Stick\\Coder\\DM\\CSBWin_DM\\CSBWin_Debug_X64.exe",
+      "game_data": "C:\\!!!Stick\\Coder\\DM\\CSBWin_DM\\graphics.dat",
+      "original_source_folder_retained": "C:\\!!!Stick\\Coder\\DM\\CSBWin-master\\",
+      "game_backup_folder_user_created": "C:\\!!!Stick\\Coder\\DM\\CSBWin_DM_BACKUP\\"
+    },
+    "confirmed_today": [
+      "User asked for ONE folder holding source code, Visual Studio solution, compiled executable and game data, rather than a separate source folder and game execution folder.",
+      "Used Total Commander, not Windows Explorer, to copy contents of CSBWin-master into CSBWin_DM. Screenshot subsequently showed source .cpp files and other project files in CSBWin_DM.",
+      "User confirmed a backup of the former game folder as CSBWin_DM_BACKUP before combining files. Retain backups and old source; do not delete automatically.",
+      "Opened CSBWin.sln in the combined folder; first rebuild failed with MSB8020 because Platform Toolset v145 was not installed.",
+      "Project > Properties > Configuration Properties > General > Platform Toolset changed from v145 (not installed) to Visual Studio 2022 (v143); saved; successful rebuild followed.",
+      "Changed Project > Properties > Configuration Properties > General > Output Directory from $(SolutionDir)Game\\ to $(SolutionDir), saved.",
+      "Final Build Output screenshot: C:\\!!!Stick\\Coder\\DM\\CSBWin_DM\\CSBWin_Debug_X64.exe; Rebuild All: 1 succeeded, 0 failed, 0 skipped. Therefore new Debug x64 EXE is produced directly beside the game data, no more manual EXE copy required."
+    ],
+    "visual_studio_settings": {
+      "active_configuration": "Debug",
+      "active_platform": "x64",
+      "platform_toolset": "Visual Studio 2022 (v143)",
+      "output_directory": "$(SolutionDir)",
+      "target_name": "$(ProjectName)_Debug_X64",
+      "build_command": "Build > Rebuild Solution"
+    },
+    "csbwin_floor_export_research": {
+      "target": "Offline research/export tool for F2/F3 floor item graphics; keep Unity renderer unchanged and retain user-approved native-artwork workflow.",
+      "confirmed_floor_captures": [
+        "Waterskin G367 F2 30x8 planar, compared byte-for-byte with prior targeted capture",
+        "Waterskin G367 F3 24x6 planar captured",
+        "Bread G387 F2 20x9 planar captured"
+      ],
+      "palette_issue": "Bread_F2_20x9_PROVISIONAL.png was explicitly rejected by user as visually wrong. Do not reuse or approve it. Existing screenshot and F1 artwork show initial inferred RGB mapping was unverified. Determine actual CSBwin output palette and compare screenshot against planar bitmap before claiming pixel-exact result.",
+      "prior_diagnostics": "CSB_Floor_Exporter.log uploads showed only Waterskin G367 F2/F3, no Bread entries; last Code51a4.cpp replacement labeled Floor Diagnostic v3 intended to log all floor graphics. It compiled in old location; new combined-folder EXE build succeeded but its runtime behavior has not yet been tested.",
+      "do_not_assume": "Do not claim Bread palette .palette.txt exists or that exported Bread artwork is correct until user confirms file and validation."
+    },
+    "resume_tomorrow": {
+      "first_step_ONE_action_only": "Launch C:\\!!!Stick\\Coder\\DM\\CSBWin_DM\\CSBWin_Debug_X64.exe directly from the combined folder. Ask user to report whether game starts and Level / X / Y display works.",
+      "after_confirmed": "Return to Bread F2 palette diagnostics. Ensure correct newly built executable and correct working directory; inspect CSB_Floor_Exporter.log and corresponding .palette.txt in C:\\!!!Stick\\Coder\\DM\\CSBWin_DM\\ (not invented filenames), then validate RGB mapping source and screenshot. One action per turn.",
+      "warning": "Build success is confirmed; EXE runtime/game execution and new diagnostic output are NOT YET verified. Do not re-verify already approved Unity checkpoints."
+    },
+    "user_workflow_rules_addendum": [
+      "STRICT one step/action per message. User explicitly requested this again during Total Commander/Visual Studio migration; no stacks of substeps.",
+      "For every file copy or move, display complete absolute FROM and TO paths (full file names) and note replacement/backup. Do not say merely game folder. Canonical combined folder is CSBWin_DM.",
+      "Use actual application shown in screenshot (Total Commander) instead of assuming Windows Explorer; no vague terminology (e.g. CSBWin project vs folder) when a complete folder path is required.",
+      "The build output and game executable now share the same folder; do not instruct copying EXE from Game\\ to elsewhere unless later configuration changes."
+    ]
   }
 }
