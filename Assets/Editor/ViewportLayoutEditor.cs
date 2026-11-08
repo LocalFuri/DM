@@ -28,6 +28,22 @@ public class ViewportLayoutEditor : EditorWindow
   // inheriting the earlier unverified 40-ms experiment or old slow values.
   private const string PrefsGenericThrowFlightY = "ViewportLayoutEditor.GenericThrowFlightY";
   private const string PrefsGenericThrowMouseYMax = "ViewportLayoutEditor.GenericThrowMouseYMax";
+  // DOS-style Apple flying perspective: editor calibration, flight-only.
+  // Full 320x200 coordinates; the 224px-wide dungeon has center X=112.
+  private const string PrefsDosAppleVanishingX = "ViewportLayoutEditor.DosAppleVanishingX";
+  private const string PrefsDosAppleVanishingY = "ViewportLayoutEditor.DosAppleVanishingY";
+  private static int DosAppleVanishingX
+  {
+    get { return Mathf.Clamp(EditorPrefs.GetInt(PrefsDosAppleVanishingX, 112), 0, 223); }
+    set { EditorPrefs.SetInt(PrefsDosAppleVanishingX, Mathf.Clamp(value, 0, 223)); }
+  }
+  private static int DosAppleVanishingY
+  {
+    get { return Mathf.Clamp(EditorPrefs.GetInt(PrefsDosAppleVanishingY, 80), 32, 168); }
+    set { EditorPrefs.SetInt(PrefsDosAppleVanishingY, Mathf.Clamp(value, 32, 168)); }
+  }
+  private bool dosAppleVanishingDraftInitialized;
+  private int dosAppleVanishingDraftX, dosAppleVanishingDraftY;
   private static int GenericThrowMouseYMax
   {
     get { return Mathf.Clamp(EditorPrefs.GetInt(PrefsGenericThrowMouseYMax, 100), 0, 200); }
@@ -29343,6 +29359,39 @@ private static void HandleGameViewPointerDown(
       RepaintGameViews();
       Repaint();
     }
+
+    // Separate DOS Apple flying-only calibration. Changes are drafts until Apply;
+    // none of the floor positions, wall layout, flight ticks or landing logic use it.
+    if (!dosAppleVanishingDraftInitialized)
+    {
+      dosAppleVanishingDraftX = DosAppleVanishingX;
+      dosAppleVanishingDraftY = DosAppleVanishingY;
+      dosAppleVanishingDraftInitialized = true;
+    }
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label("Apple flight line", EditorStyles.boldLabel, GUILayout.Width(110f));
+    GUILayout.Label("Vanishing X", GUILayout.Width(72f));
+    int proposedX = EditorGUILayout.IntField(dosAppleVanishingDraftX, GUILayout.Width(55f));
+    GUILayout.Space(8f);
+    GUILayout.Label("Vanishing Y", GUILayout.Width(95f));
+    int proposedY = EditorGUILayout.IntField(dosAppleVanishingDraftY, GUILayout.Width(48f));
+    GUILayout.Space(8f);
+    bool applyAppleLine = GUILayout.Button("Apply", GUILayout.Width(58f));
+    NoteContentRight();
+    EditorGUILayout.EndHorizontal();
+    if (proposedX != dosAppleVanishingDraftX || proposedY != dosAppleVanishingDraftY)
+    {
+      dosAppleVanishingDraftX = Mathf.Clamp(proposedX, 0, 223);
+      dosAppleVanishingDraftY = Mathf.Clamp(proposedY, 32, 168);
+    }
+    if (applyAppleLine)
+    {
+      DosAppleVanishingX = dosAppleVanishingDraftX;
+      DosAppleVanishingY = dosAppleVanishingDraftY;
+      Debug.Log("DOS APPLE FLIGHT LINE: vanishing point=(" + DosAppleVanishingX
+          + "," + DosAppleVanishingY + "); flight visual only");
+      RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
   }
 
   // Wall inscriptions are rendered only on a V17-authorized front face.
@@ -41555,10 +41604,15 @@ private static void HandleGameViewPointerDown(
   // stages 1..5 use the five measured stable frames. The one-frame transition
   // is excluded because it has not been verified as a genuine perspective stage.
   // This NEVER changes map coordinates, collisions, timing, or floor placement.
-  private static readonly int[] DosAppleFlightX = { 148, 140, 134, 131, 128 };
-  private static readonly int[] DosAppleFlightY = { 69, 71, 74, 75, 75 };
+  // DOS video gives five STABLE sprite sizes; preserve all of them.
+  // The first stable right-hand stage has visible center (155.5, 75).
+  // Each later center is on the SAME line toward the configurable vanishing
+  // point, with perspective progress tied to relative visible sprite width.
+  // Thus changing X/Y rotates the whole path without a per-stage X/Y guess.
   private static readonly int[] DosAppleFlightW = { 15, 13, 10, 8, 6 };
   private static readonly int[] DosAppleFlightH = { 12, 10, 7, 6, 5 };
+  private const float DosAppleStartCenterX = 155.5f;
+  private const float DosAppleStartCenterY = 75.0f;
 
   private bool TryGetDosAppleFlightRect(SuspendedThrownItem item, out Rect rect)
   {
@@ -41567,13 +41621,20 @@ private static void HandleGameViewPointerDown(
     if (!previewItemInstances.TryGetValue(item.id, out ItemInstance instance)
         || instance == null || !string.Equals(instance.ItemType, "Apple",
           System.StringComparison.OrdinalIgnoreCase)) return false;
-    int stage = Mathf.Clamp(item.flightStage - 1, 0, DosAppleFlightX.Length - 1);
+    int stage = Mathf.Clamp(item.flightStage - 1, 0, DosAppleFlightW.Length - 1);
     int width = DosAppleFlightW[stage];
-    // Recorded DOS example was a right-side throw. Reflect around the 224px
-    // viewport center for left-side throws, without altering logical subtiles.
-    int x = item.right ? DosAppleFlightX[stage]
-        : 224 - DosAppleFlightX[stage] - width;
-    rect = new Rect(x, DosAppleFlightY[stage], width, DosAppleFlightH[stage]);
+    int height = DosAppleFlightH[stage];
+    float scale = width / (float)DosAppleFlightW[0];
+    float vanishingX = DosAppleVanishingX;
+    float vanishingY = DosAppleVanishingY;
+    float centerX = vanishingX + (DosAppleStartCenterX - vanishingX) * scale;
+    float centerY = vanishingY + (DosAppleStartCenterY - vanishingY) * scale;
+    // Right-hand measured flight is the reference; mirror its center for
+    // screen-left throws, using the SAME 224px viewport center as before.
+    if (!item.right) centerX = 224f - centerX;
+    int x = Mathf.RoundToInt(centerX - width * 0.5f);
+    int y = Mathf.RoundToInt(centerY - height * 0.5f);
+    rect = new Rect(x, y, width, height);
     return true;
   }
 
