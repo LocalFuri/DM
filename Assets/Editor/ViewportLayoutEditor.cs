@@ -41342,7 +41342,7 @@ private static void HandleGameViewPointerDown(
     if (item == null || item.silentWallDrop) return; // Wall drops are instantaneous, not flights.
     try
     {
-      string path = Path.GetFullPath(Path.Combine(Application.dataPath, "..", UnityThrowTraceFileName));
+      string path = Path.GetFullPath(Path.Combine(Application.dataPath, "Editor", UnityThrowTraceFileName));
       bool header = !File.Exists(path) || new FileInfo(path).Length == 0;
       using (StreamWriter writer = new StreamWriter(path, true))
       {
@@ -41457,14 +41457,40 @@ private static void HandleGameViewPointerDown(
     item.releaseCaptured = true;
     item.landingTime = EditorApplication.timeSinceStartup + GenericThrowStepSeconds;
     TraceUnityThrow("RELEASE", item, "mouse button released");
-    // Play the shared Combat_Attack sound exactly once, on mouse release.
-    PlayItemThrowSound();
+    // Start the throw sound with the first visible release-frame update.
+    // Do not add a fixed audio delay or alter flight physics.
     Debug.Log("THROW RELEASE TEST: objectId=" + item.id
         + " releaseY=" + item.displayY.ToString("F1")
         + " tile=(" + item.tileX + "," + item.tileY + ")"
         + " remainingRange=" + item.remainingRange + " decay=" + item.decay);
     RefreshEditModePreview();
+    RepaintGameViews();
+    Repaint();
+    ScheduleThrowSoundWithReleaseFrame();
     return true;
+  }
+
+  // Editor repaint is asynchronous. Queue sound at the next editor update,
+  // alongside the first release-frame presentation; do not delay it by an
+  // arbitrary number of milliseconds. The release sprite is already active.
+  private int pendingReleaseFrameThrowSounds;
+  private void ScheduleThrowSoundWithReleaseFrame()
+  {
+    ++pendingReleaseFrameThrowSounds;
+    if (pendingReleaseFrameThrowSounds == 1)
+    {
+      EditorApplication.update -= PlayPendingReleaseFrameThrowSound;
+      EditorApplication.update += PlayPendingReleaseFrameThrowSound;
+    }
+  }
+
+  private void PlayPendingReleaseFrameThrowSound()
+  {
+    EditorApplication.update -= PlayPendingReleaseFrameThrowSound;
+    int soundsToPlay = pendingReleaseFrameThrowSounds;
+    pendingReleaseFrameThrowSounds = 0;
+    for (int i = 0; i < soundsToPlay; ++i)
+      PlayItemThrowSound();
   }
 
   // After the original missile ticks, transfer the SAME physical item
@@ -41618,10 +41644,12 @@ private static void HandleGameViewPointerDown(
   private bool TryGetDosAppleFlightRect(SuspendedThrownItem item, out Rect rect)
   {
     rect = new Rect();
-    if (item == null || item.flightStage < 1) return false;
+    if (item == null || item.flightStage < 0) return false;
     if (!previewItemInstances.TryGetValue(item.id, out ItemInstance instance)
         || instance == null || !string.Equals(instance.ItemType, "Apple",
           System.StringComparison.OrdinalIgnoreCase)) return false;
+    // Stage 0 is the release frame. It must be visible before audio starts.
+    // Stage 1 uses the same first measured DOS sprite, then advances normally.
     int stage = Mathf.Clamp(item.flightStage - 1, 0, DosAppleFlightW.Length - 1);
     int width = DosAppleFlightW[stage];
     int height = DosAppleFlightH[stage];
