@@ -1,0 +1,7 @@
+sequence,DOS_start_frame,DOS_end_frame_exclusive,DOS_start_relative_s,DOS_hold_ms,Unity_start_frame,Unity_start_relative_s,Unity_hold_ms,note
+1,136,157,0.0000,299.6,0,0.0000,497.3,
+2,157,169,0.2996,171.2,17,0.4973,246.3,DOS red-blob detected; frame 157 may include sprite transition/partial overlap
+3,169,185,0.4708,228.3,27,0.7436,233.5,
+4,185,201,0.6991,228.3,36,0.9771,235.5,
+5,201,215,0.9274,199.8,46,1.2125,248.5,
+6,215,231,1.1272,228.3,56,1.4610,not recorded,

@@ -1578,5 +1578,65 @@
     "exampleIncorrect": "Tools/Dungeon Master/Apple Video Comparison",
     "implementation": "Use a top-level Unity MenuItem path for each Editor tool. Do not change unrelated tool code or menus.",
     "scope": "All existing tools when modified and all future Dungeon Master Unity Editor tools."
+  },
+  "checkpoint20261108_appleDosUnity": {
+    "date": "2026-11-08",
+    "purpose": "Exact resume point for November 9: DOS AVI vs Unity Apple throwing comparison",
+    "status": "DOS sixth visible flying-Apple image confirmed; Unity has five visible stages. Do not change physics before inspecting renderer.",
+    "dosReference": {
+      "totalVisibleStages": 6,
+      "keyFrames": {
+        "136": "first visible Apple",
+        "156": "end of first stage",
+        "157": "next distant image",
+        "169": "smaller image",
+        "185": "further flight",
+        "201": "small distant Apple",
+        "215": "sixth visible image starts",
+        "230": "sixth image remains",
+        "231": "Apple disappears"
+      },
+      "firstStageMsApprox": 300,
+      "visibleDurationSecondsApprox": 1.355
+    },
+    "unityRightSideTest": {
+      "visibleStages": 5,
+      "recording": "Apple_20261108_224952.zip",
+      "automaticReleaseScreenX": 160,
+      "automaticReleaseScreenY": 100,
+      "firstStageMsApprox": 497,
+      "visibleDurationSecondsApprox": 1.461,
+      "note": "X 160 selects right-side path; earlier X 96 was left-side. This is a controlled diagnostic, not proof the physics is final."
+    },
+    "horizontalComparison": {
+      "dosX": [
+        148,
+        140,
+        134,
+        131,
+        128
+      ],
+      "unityRightX": [
+        148,
+        143,
+        136,
+        131,
+        126
+      ],
+      "conclusion": "right-side horizontal positions close; preserve until further investigation"
+    },
+    "storedReports": [
+      "Assets/Editor/Apple_Throw_Timing.csv",
+      "Assets/Editor/Apple_Throw_Timing_Report.md"
+    ],
+    "nextTask": "Inspect actual Unity throwing simulation and viewport render stage logic. Determine whether sixth distance/flight stage exists internally but is not drawn, or simulation itself only has five. Compare corresponding DOS stage; only then propose minimal evidence-based correction. Do not redo completed comparisons.",
+    "preserve": [
+      "No speculative physics edits",
+      "Apple Video Comparison directly under top-level Tools menu",
+      "Save diagnostic reports and CSV directly in Assets/Editor, no subfolders",
+      "Only necessary changed files in ZIP, no README",
+      "Preserve verified V17 geometry, floor item rules, flight trajectory, and audio until evidence supports change"
+    ],
+    "verificationNote": "Sixth DOS visible image is confirmed; it appears airborne, but precise final landing event and sound synchronization remain unverified."
   }
 }

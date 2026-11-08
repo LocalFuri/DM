@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -2231,6 +2231,57 @@ public class ViewportLayoutEditor : EditorWindow
       previewDisabledFeatureKeys.Remove(GetFloorItemFeatureKey(item));
   }
 
+  // Reference-video test startup: transfer an existing authored Apple into
+  // the normal item cursor. No toolbar button, synthetic item or fallback art.
+  // The original floor instance ID stays authoritative through throwing.
+  private void PlaceExistingAppleInMouseHandForComparison()
+  {
+    if (HasAnyItemOnCursor()) return;
+    FloorItemPlacement apple = null;
+    foreach (FloorItemPlacement source in HallOfChampionsFloorItems)
+    {
+      if (source.level == previewDungeonLevel
+          && string.Equals(source.type, "Apple",
+              System.StringComparison.OrdinalIgnoreCase)
+          && !previewPickedFloorItemIds.Contains(GetFloorItemInstanceId(source)))
+      {
+        apple = source;
+        break;
+      }
+    }
+    if (apple == null)
+    {
+      Debug.LogError("APPLE VIDEO COMPARISON: no original Apple on level "
+          + previewDungeonLevel + "; cannot put one in the hand without "
+          + "creating a new item. No fallback used.");
+      return;
+    }
+    Texture2D cursor = GetChampionInventoryItemTexture("Apple");
+    if (cursor == null || !cursor.isReadable
+        || cursor.width != 16 || cursor.height != 16)
+    {
+      Debug.LogError("APPLE VIDEO COMPARISON: missing readable Apple 16x16 "
+          + "inventory sprite; original Apple stays on the floor.");
+      return;
+    }
+    string id = GetFloorItemInstanceId(apple);
+    ItemInstance instance = EnsureWorldItemInstance(id, apple.type, "Floor",
+        apple.level, apple.x, apple.y, apple.cell);
+    if (instance == null) return;
+    MoveItemInstance(instance, "Cursor");
+    previewPickedFloorItemIds.Add(id);
+    previewHeldFloorItemId = id;
+    previewHeldFloorItem = new FloorItemPlacement {
+      level = apple.level, type = apple.type, x = apple.x, y = apple.y,
+      cell = apple.cell, instanceId = id
+    };
+    previewHeldFloorItemCursor = cursor;
+    previewFloorPickupCompleted = true;
+    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+    Debug.Log("APPLE VIDEO COMPARISON: existing Apple " + id
+        + " transferred to mouse hand; ready to throw.");
+  }
+
   [MenuItem("Tools/Check Original Ground Items", false, 120)]
   private static void CheckOriginalGroundItemsMenu()
   {
@@ -2838,6 +2889,7 @@ public class ViewportLayoutEditor : EditorWindow
     // reload. EditorWindow state may survive compilation, including picked-up
     // IDs or hidden feature flags from an earlier test session.
     RestoreOriginalFloorTestItemsAfterReload();
+    PlaceExistingAppleInMouseHandForComparison();
     LoadPressurePadF1AcceptedCalibration();
     LoadPressurePadF2AcceptedCalibration();
     LoadPressurePadF3AcceptedCalibration();
@@ -41744,6 +41796,35 @@ private static void HandleGameViewPointerDown(
         }
       }
     }
+  }
+
+  // One-click DOS comparison. Uses the ordinary item/throw/release/landing
+  // pathways; never creates an Apple or bypasses the missile physics.
+  public bool BeginAppleVideoComparisonThrow()
+  {
+    if (suspendedThrownItems.Count != 0)
+    {
+      Debug.LogError("APPLE VIDEO COMPARISON: a throw is already in progress.");
+      return false;
+    }
+    PlaceExistingAppleInMouseHandForComparison();
+    if (previewHeldFloorItem == null ||
+        !string.Equals(previewHeldFloorItem.type, "Apple",
+            System.StringComparison.OrdinalIgnoreCase))
+    {
+      Debug.LogError("APPLE VIDEO COMPARISON: an Apple is not in the mouse hand.");
+      return false;
+    }
+    // DOS-video comparison diagnostic: test right-side release (x >= 112).
+    // This selects the existing right-hand flight path; no physics changes.
+    // The DOS source hand is not independently confirmed yet.
+    if (!TryThrowHeldItemFromViewport(160f, 100f)) return false;
+    return CaptureSuspendedThrowRelease(100f);
+  }
+
+  public bool AppleVideoComparisonThrowIsActive()
+  {
+    return suspendedThrownItems.Count != 0;
   }
 
   // Mouse DOWN starts one map-tile advance; mouse UP freezes its screen Y.
