@@ -41329,9 +41329,10 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
-  // Diagnostic only: records Unity's throw states for comparison with CSBwin.
-  // File is placed at the Unity project root (one directory above Assets).
-  private const string UnityThrowTraceFileName = "Unity_Throw_Movement_Trace.csv";
+  // Diagnostic of the ACTUAL flying sprite rectangle, after the chosen flight
+  // projection. A separate filename prevents mixing old CSBwin-based rectangles
+  // with the new DOS Apple measurements. Floor graphics are not affected.
+  private const string UnityThrowTraceFileName = "Unity_DOS_Flight_Trace.csv";
   private static string UnityThrowTraceCsv(string value)
   {
     return "\"" + (value ?? "").Replace("\"", "\"\"") + "\"";
@@ -41350,7 +41351,7 @@ private static void HandleGameViewPointerDown(
         if (previewItemInstances.TryGetValue(item.id, out ItemInstance instance) && instance != null)
           itemType = instance.ItemType;
         int corner = ThrowCornerIndex(item.landingCorner);
-        bool drawn = TryGetOriginalMissileRect(item, out Rect sprite);
+        bool drawn = TryGetActiveFlyingRect(item, out Rect sprite);
         int w = drawn ? Mathf.RoundToInt(sprite.width) : 0;
         int h = drawn ? Mathf.RoundToInt(sprite.height) : 0;
         int sx = drawn ? Mathf.RoundToInt(sprite.x) : -1;
@@ -41658,6 +41659,20 @@ private static void HandleGameViewPointerDown(
     return maxX >= minX;
   }
 
+  // The SAME selection is used for drawing and CSV output. For Apple flights,
+  // DOS projection is authoritative and never falls through to CSBwin positions.
+  // Other thrown items keep their existing behavior until their DOS projection
+  // has been measured and verified independently.
+  private bool TryGetActiveFlyingRect(SuspendedThrownItem item, out Rect rect)
+  {
+    if (item != null && previewItemInstances.TryGetValue(item.id,
+        out ItemInstance instance) && instance != null
+        && string.Equals(instance.ItemType, "Apple",
+            System.StringComparison.OrdinalIgnoreCase))
+      return TryGetDosAppleFlightRect(item, out rect);
+    return TryGetOriginalMissileRect(item, out rect);
+  }
+
   // Visual overlay only. Never put suspended items in the floor collection.
   private void BlitSuspendedThrownItemsIntoPreview(Color32[] pixels)
   {
@@ -41672,8 +41687,11 @@ private static void HandleGameViewPointerDown(
       // The silent wall drop is transferred instantly; it must never enter
       // this visual-flight path.
       if (item.silentWallDrop) continue;
-      bool dosApple = TryGetDosAppleFlightRect(item, out Rect sprite);
-      if (!dosApple && !TryGetOriginalMissileRect(item, out sprite)) continue;
+      bool dosApple = previewItemInstances.TryGetValue(item.id,
+          out ItemInstance spriteInstance) && spriteInstance != null
+          && string.Equals(spriteInstance.ItemType, "Apple",
+              System.StringComparison.OrdinalIgnoreCase);
+      if (!TryGetActiveFlyingRect(item, out Rect sprite)) continue;
       RectInt visible = new RectInt(0, 0, tex.width, tex.height);
       if (dosApple && !TryGetFlyingVisiblePixels(src, tex.width, tex.height,
           out visible)) continue;
