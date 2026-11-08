@@ -54,6 +54,17 @@
             "height": 5,
             "mirror": false,
             "verified": true
+        },
+        {
+            "itemType": "Scroll",
+            "view": "F3",
+            "corner": 3,
+            "x": 88,
+            "y": 100,
+            "width": 24,
+            "height": 4,
+            "mirror": false,
+            "verified": true
         }
     ]
 }
