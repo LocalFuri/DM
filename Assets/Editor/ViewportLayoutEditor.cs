@@ -35016,18 +35016,28 @@ private static void HandleGameViewPointerDown(
         previewFacing == DungeonFacing.East ? 1 :
         previewFacing == DungeonFacing.South ? 2 : 3;
     int relCorner = (absCorner - facingCorner + 4) & 3;
+    // The F3 band has two physical positions: far half of tile 2 (cell 3),
+    // or near half of tile 3 (cell 0). Use the actual tile's native CSBwin
+    // viewport cell, never move a cell-3 sprite with a guessed pixel offset.
+    GetFloorItemViewBasis(previewFacing,
+        out int fwdX, out int fwdY, out _, out _);
+    int tileDistance = (item.x - previewX) * fwdX
+        + (item.y - previewY) * fwdY;
+    int viewportCell = tileDistance == 2 ? 3 : tileDistance == 3 ? 0 : -1;
+    if (viewportCell < 0)
+    { ReportCsbF3Issue("Unsupported F3 tile distance " + tileDistance); return false; }
     CsbViewportCell[] cells = csbViewportTable.classes[graphic.viewportPositionClass].cells;
-    if (cells == null || cells.Length != 10 || cells[3]?.positions == null
-        || cells[3].positions.Length != 5)
-    { ReportCsbF3Issue("Invalid F3 viewport positions table."); return false; }
-    CsbViewportCell cell = cells[3];
+    if (cells == null || cells.Length != 10 || cells[viewportCell]?.positions == null
+        || cells[viewportCell].positions.Length != 5)
+    { ReportCsbF3Issue("Invalid F3 viewport positions table for cell " + viewportCell); return false; }
+    CsbViewportCell cell = cells[viewportCell];
     CsbViewportPoint point = cell.positions[relCorner];
     if (!point.valid || point.y == 0)
     {
       TraceSwordF3(item, "F3 VIEWPORT REJECT: cell=" + item.cell
           + ", absCorner=" + absCorner + ", relativeCorner=" + relCorner
           + ", facing=" + previewFacing + ", viewportClass="
-          + graphic.viewportPositionClass + ", tableCell=3, valid="
+          + graphic.viewportPositionClass + ", tableCell=" + viewportCell + ", valid="
           + point.valid + ", x=" + point.x + ", y=" + point.y);
       if (string.Equals(item.type, "Club", System.StringComparison.OrdinalIgnoreCase))
         Debug.LogWarning("CLUB F2 TRACE: viewport position rejected; class="
@@ -35039,10 +35049,6 @@ private static void HandleGameViewPointerDown(
     // The near half of a tile THREE squares ahead is the last visible F3
     // band. Give it the far (16/32) scale instead of the medium F2-sized
     // (20/32) scale. Preserve the already-established two-tile F3 path.
-    GetFloorItemViewBasis(previewFacing,
-        out int fwdX, out int fwdY, out _, out _);
-    int tileDistance = (item.x - previewX) * fwdX
-        + (item.y - previewY) * fwdY;
     bool thirdTileNear = tileDistance == 3 && near;
     int numerator = thirdTileNear ? 16 : (near ? 20 : 16);
     int rounding = thirdTileNear ? 8 : (near ? 10 : 8);
@@ -35067,16 +35073,6 @@ private static void HandleGameViewPointerDown(
     // Its horizontal anchor is the center; vertical anchor is the bottom scanline.
     // Keep this F3 calculation independent of the verified F2 code.
     int left = point.x + firstObjectOffset.x - (width / 2) + 1;
-    // Provisional third-tile near-subtile calibration against the supplied
-    // original CSBwin screenshot at (11,4), facing West. This is a generic
-    // floor-depth adjustment, never a Samurai Sword special case. Do not
-    // affect the established one-/two-tile F1/F2 positions or nearer F3.
-    // The original third-tile anchor still needs source-code verification.
-    if (thirdTileNear)
-    {
-      left += 7;
-      top -= 13;
-    }
     rect = new Rect(left, top, width, height);
     mirror = (graphic.flags & 1) != 0 && (relCorner == 1 || relCorner == 2);
     return true;
@@ -42220,7 +42216,7 @@ private static void HandleGameViewPointerDown(
     {
       case DungeonFacing.North: return right ? "S" : "W";
       case DungeonFacing.East:  return right ? "W" : "N";
-      case DungeonFacing.South: return right ? "E" : "N";
+      case DungeonFacing.South: return right ? "N" : "E";
       default:                  return right ? "S" : "E";
     }
   }
