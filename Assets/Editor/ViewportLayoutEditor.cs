@@ -22,7 +22,9 @@ public class ViewportLayoutEditor : EditorWindow
   private const double TurningDelaySeconds = 0.150;
 
   // Generic throwing controls; independent of movement/turn throttling.
-  private const string PrefsGenericThrowDelayMs = "ViewportLayoutEditor.GenericThrowDelayMs";
+  private const string PrefsGenericThrowDelayMs = "ViewportLayoutEditor.GenericThrowDelayMs.V2";
+  // V2 preference starts with the faster observed CSBwin throw speed; do not
+  // inherit the old slow test value stored under GenericThrowDelayMs.
   private const string PrefsGenericThrowFlightY = "ViewportLayoutEditor.GenericThrowFlightY";
   private const string PrefsGenericThrowMouseYMax = "ViewportLayoutEditor.GenericThrowMouseYMax";
   private static int GenericThrowMouseYMax
@@ -32,7 +34,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
   private static int GenericThrowDelayMs
   {
-    get { return Mathf.Clamp(EditorPrefs.GetInt(PrefsGenericThrowDelayMs, 200), 20, 2000); }
+    get { return Mathf.Clamp(EditorPrefs.GetInt(PrefsGenericThrowDelayMs, 40), 20, 2000); }
     set { EditorPrefs.SetInt(PrefsGenericThrowDelayMs, Mathf.Clamp(value, 20, 2000)); }
   }
   private static int GenericThrowFlightYOffset
@@ -41414,8 +41416,8 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
-  // Keep a released throw at the release Y for exactly one second, then
-  // transfer the SAME physical item instance into the normal floor system.
+  // After the original missile ticks, transfer the SAME physical item
+  // instance into the normal floor system. Timing is configured by ViewEdit.
   private void UpdateSuspendedThrowLandings()
   {
     if (suspendedThrownItems.Count == 0) return;
