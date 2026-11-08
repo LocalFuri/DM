@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -41217,6 +41217,9 @@ private static void HandleGameViewPointerDown(
     internal string landingCorner;
     internal float displayY;
     internal bool releaseCaptured;
+    internal bool silentWallDrop;
+    internal float wallStartY;
+    internal double wallDropStartTime;
     internal double landingTime;
     internal int flightStage;
     internal int remainingRange, decay;
@@ -41303,7 +41306,10 @@ private static void HandleGameViewPointerDown(
     for (int i = suspendedThrownItems.Count - 1; i >= 0; --i)
     {
       SuspendedThrownItem item = suspendedThrownItems[i];
-      if (!item.releaseCaptured || now < item.landingTime) continue;
+      if (!item.releaseCaptured) continue;
+      if (!item.silentWallDrop && now < item.landingTime) continue;
+      if (!item.silentWallDrop)
+      {
       // CSBwin Timer.cpp MissileTimer: TT_Missile0 first moves without energy
       // decay. Later events test range <= decay BEFORE the next subtile step.
       bool land = item.flightStage > 0 && item.remainingRange <= item.decay;
@@ -41344,6 +41350,7 @@ private static void HandleGameViewPointerDown(
           changed = true;
           continue;
         }
+      }
       }
       if (!previewItemInstances.TryGetValue(item.id, out ItemInstance physical))
       {
@@ -41389,8 +41396,9 @@ private static void HandleGameViewPointerDown(
       MoveItemInstance(physical, "Floor", level: item.level,
           tileX: item.tileX, tileY: item.tileY, corner: corner);
       // Wall collision or maximum-range landing: play the category's impact once.
-      PlayItemLandingThudSound(item.impactCategory,
-          Mathf.Clamp((item.flightStage + 1) / 2, 0, MaximumItemThrowDistance));
+      if (!item.silentWallDrop)
+        PlayItemLandingThudSound(item.impactCategory,
+            Mathf.Clamp((item.flightStage + 1) / 2, 0, MaximumItemThrowDistance));
       suspendedThrownItems.RemoveAt(i);
       Debug.Log("THROW LAND AFTER FLIGHT: objectId=" + item.id
           + " level=" + item.level + " tile=(" + item.tileX
@@ -41424,15 +41432,25 @@ private static void HandleGameViewPointerDown(
       if (!tex.isReadable) continue;
       Color32[] src = tex.GetPixels32();
       // Stage-dependent perspective preview; retain exact mouse-release Y.
-      float scale = item.flightStage == 1 ? 1f
+      float scale = item.silentWallDrop ? 1f : item.flightStage == 1 ? 1f
           : (item.flightStage == 2 ? 0.625f : 0.4f);
       int drawW = Mathf.Max(1, Mathf.RoundToInt(tex.width * scale));
       int drawH = Mathf.Max(1, Mathf.RoundToInt(tex.height * scale));
-      int midX = item.flightStage == 1 ? (item.right ? 152 : 72)
+      int midX = item.silentWallDrop ? (item.right ? 152 : 72)
+          : item.flightStage == 1 ? (item.right ? 152 : 72)
           : item.flightStage == 2 ? (item.right ? 137 : 87)
           : (item.right ? 128 : 96);
       int left = midX - drawW / 2;
-      int top = Mathf.RoundToInt(item.displayY) - drawH / 2;
+      float visualY = item.displayY;
+      if (item.silentWallDrop)
+      {
+        float progress = Mathf.Clamp01((float)((EditorApplication.timeSinceStartup
+            - item.wallDropStartTime) / 0.35));
+        visualY = Mathf.Lerp(item.wallStartY, 155f, progress);
+      }
+      int top = item.silentWallDrop
+          ? Mathf.RoundToInt(PreviewHeight - visualY - drawH / 2f)
+          : Mathf.RoundToInt(visualY) - drawH / 2;
       for (int sy = 0; sy < drawH; ++sy)
       {
         int dy = PreviewHeight - top - drawH + sy;
@@ -41463,18 +41481,24 @@ private static void HandleGameViewPointerDown(
     ClearStaleHeldTorchState();
     bool heldTorch = HasPickedUpTorchOnCursor();
     if (!heldWorld && !heldChampion && !heldTorch) return false;
-    bool yAllowed = y >= 0f && y <= GenericThrowMouseYMax;
-    bool xAllowed = x >= 32f && x <= 191f;
-    Debug.Log("THROW MOUSE CHECK: x=" + x.ToString("F1")
-        + " y=" + y.ToString("F1") + " allowedY=0.." + GenericThrowMouseYMax
-        + " Y=" + (yAllowed ? "PASS" : "BLOCK")
-        + " X=" + (xAllowed ? "PASS" : "BLOCK")
-        + " result=" + (xAllowed && yAllowed ? "THROW AREA" : "NO THROW"));
-    if (!yAllowed || !xAllowed) return false;
     EnsurePreviewMiniMapLoaded();
     DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    if (previewMiniMap == null || !PreviewTileIsOpen(previewX + fx, previewY + fy))
-      return false;
+    if (previewMiniMap == null) return false;
+    // F1 wall click uses the wall's own Y interval, not the adjustable throw
+    // limit or CSBwin floor-drop areas. Mouse Y NEVER selects a landing tile.
+    bool frontWall = !PreviewTileIsOpen(previewX + fx, previewY + fy);
+    bool silentWallDrop = frontWall && y >= 32f && y < 122f;
+    bool yAllowed = silentWallDrop || (y >= 0f && y <= GenericThrowMouseYMax);
+    bool xAllowed = x >= 32f && x <= 191f;
+    Debug.Log("THROW MOUSE CHECK: x=" + x.ToString("F1")
+        + " y=" + y.ToString("F1") + " Y=" + (yAllowed ? "PASS" : "BLOCK")
+        + " X=" + (xAllowed ? "PASS" : "BLOCK")
+        + " wallDrop=" + silentWallDrop);
+    if (!yAllowed || !xAllowed) return false;
+    // On a front wall, never reinterpret a lower click as a floor drop into
+    // another tile. The ordinary four-region floor drop handler remains
+    // responsible for clicks outside the wall / throwing regions.
+    if (frontWall && !silentWallDrop) return false;
 
     string id;
     Texture2D texture;
@@ -41530,8 +41554,16 @@ private static void HandleGameViewPointerDown(
     suspendedThrownItems.Add(new SuspendedThrownItem {
       id = id, texture = texture, level = previewDungeonLevel,
       tileX = destX, tileY = destY, right = x >= 112f,
-      landingCorner = FloorCornerForFacing(previewFacing, x >= 112f),
-      displayY = y, releaseCaptured = false, torch = heldTorch,
+      // Fixed front-left/front-right corners of CURRENT tile. For North:
+      // left=W, right=E. Neither tile nor corner depends on mouse Y.
+      landingCorner = silentWallDrop
+          ? ThrowCornerName((((int)previewFacing) + (x >= 112f ? 1 : 3)) & 3)
+          : FloorCornerForFacing(previewFacing, x >= 112f),
+      displayY = y, releaseCaptured = silentWallDrop,
+      silentWallDrop = silentWallDrop, wallStartY = y,
+      wallDropStartTime = EditorApplication.timeSinceStartup,
+      landingTime = silentWallDrop ? EditorApplication.timeSinceStartup : 0,
+      torch = heldTorch,
       championName = thrownChampionName, championItemIndex = thrownChampionIndex,
       championSourceSlot = thrownChampionSlot,
       flightStage = 0, remainingRange = TestThrowInitialRange,
@@ -41541,12 +41573,22 @@ private static void HandleGameViewPointerDown(
     });
     Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     HideHeldItemPointerOverlay();
-    Debug.Log("THROW FLIGHT START F1: objectId=" + id
+    if (silentWallDrop)
+      Debug.Log("SILENT WALL DROP: objectId=" + id
+          + " at tile=(" + previewX + "," + previewY + ")"
+          + " corner=" + suspendedThrownItems[suspendedThrownItems.Count - 1].landingCorner);
+    else Debug.Log("THROW FLIGHT START F1: objectId=" + id
         + " start=(" + previewX + "," + previewY + ")"
         + " launchTile=(" + destX + "," + destY + ")"
         + " waiting for mouse UP; testRange=" + TestThrowInitialRange
         + " testDecay=" + TestThrowDecay);
-    RefreshEditModePreview();
+    if (silentWallDrop)
+    {
+      // Immediately transfer the same item to the selected floor subtile.
+      // No suspended frame, timer delay, throw sound or landing sound.
+      UpdateSuspendedThrowLandings();
+    }
+    else RefreshEditModePreview();
     return true;
   }
 
@@ -41876,13 +41918,9 @@ private static void HandleGameViewPointerDown(
       owner.SetChampionHeldItemOverEye(false);
     // The cursor must disappear only for the duration of the pressed Eye
     // inspection, and reappear as soon as the button is released.
-    bool showHeldArtwork = !owner.championHeldItemOverEye;
-    s_heldItemPointerOverlay.style.display = showHeldArtwork
-        ? UnityEngine.UIElements.DisplayStyle.Flex
-        : UnityEngine.UIElements.DisplayStyle.None;
-    // The UITK overlay paints the item, but it does not automatically hide
-    // the OS cursor. Hide the pointer only while the item sprite is visible.
-    Cursor.visible = !showHeldArtwork;
+    s_heldItemPointerOverlay.style.display = owner.championHeldItemOverEye
+        ? UnityEngine.UIElements.DisplayStyle.None
+        : UnityEngine.UIElements.DisplayStyle.Flex;
     s_heldItemPointerOverlay.BringToFront();
   }
 
@@ -41915,7 +41953,6 @@ private static void HandleGameViewPointerDown(
 
   private static void HideHeldItemPointerOverlay()
   {
-    Cursor.visible = true;
     if (s_heldItemPointerOverlay != null)
       s_heldItemPointerOverlay.RemoveFromHierarchy();
     s_heldItemPointerOverlay = null;
@@ -41965,9 +42002,8 @@ private static void HandleGameViewPointerDown(
     {
       if (s_heldItemPointerOverlay != null)
         s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.None;
-      Cursor.visible = true;
       owner.SetChampionHeldItemOverEye(false);
-      return;
+        return;
     }
     UpdateHeldItemPointerOverlay(s_hookedGameView, local);
 #endif
@@ -41994,7 +42030,6 @@ private static void HandleGameViewPointerDown(
     if (owner != null) owner.SetChampionHeldItemOverEye(false);
     if (s_heldItemPointerOverlay != null)
       s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.None;
-    Cursor.visible = true;
   }
 
   private string MakeTorchHolderInstanceKey(WallOrnamentPlacement ornament)
