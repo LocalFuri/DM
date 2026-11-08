@@ -34195,6 +34195,96 @@ private static void HandleGameViewPointerDown(
     return entry != null && !string.IsNullOrEmpty(entry.groundF3Path);
   }
 
+  // Automatic native floor artwork positioning from the original CSBwin
+  // viewportPosition and smallOffsets tables. Existing ViewEdit calibrations
+  // still take priority. This method does NOT change map visibility or artwork.
+  private bool TryGetNativeCsbFloorRect(FloorItemPlacement item, Texture2D art,
+      int distance, out Rect rect, out bool mirror)
+  {
+    rect = new Rect();
+    mirror = false;
+    if (item == null || art == null || !EnsureCsbF2Tables()
+        || !EnsureCsbFloorOffsetsLoaded()) return false;
+
+    CsbObjectDescriptionRecord descriptor = null;
+    DungeonOriginalItemLoader.Record original = null;
+    foreach (DungeonOriginalItemLoader.Record record in DungeonOriginalItemLoader.Load())
+      if (record.id == item.instanceId) { original = record; break; }
+    if (original != null)
+    {
+      foreach (CsbObjectDescriptionRecord candidate in csbObjectTable.entries)
+        if (candidate != null && candidate.dbSubtype == original.thing.Type
+            && string.Equals((candidate.dbCategory ?? "").Trim(),
+                (original.recordType ?? "").Trim(),
+                System.StringComparison.OrdinalIgnoreCase))
+        { descriptor = candidate; break; }
+    }
+    else
+    {
+      foreach (CsbObjectDescriptionRecord candidate in csbObjectTable.entries)
+      {
+        if (candidate == null) continue;
+        string decoded = DungeonOriginalItemLoader.DecodeFloorItemName(
+            candidate.dbCategory, candidate.dbSubtype);
+        bool bow = string.Equals(item.type, "Bow", System.StringComparison.OrdinalIgnoreCase)
+            && string.Equals(candidate.dbCategory, "Weapon", System.StringComparison.OrdinalIgnoreCase)
+            && candidate.dbSubtype == 25;
+        if (!bow && !string.Equals(decoded, item.type,
+            System.StringComparison.OrdinalIgnoreCase)) continue;
+        if (descriptor != null && descriptor.graphicClassIndex != candidate.graphicClassIndex)
+        {
+          ReportCsbF2Issue("Ambiguous native graphic class for " + item.type);
+          return false;
+        }
+        descriptor = candidate;
+      }
+    }
+    if (descriptor == null || descriptor.graphicClassIndex < 0
+        || descriptor.graphicClassIndex >= csbGraphicTable.entries.Length)
+    {
+      ReportCsbF2Issue("Missing native graphic descriptor for " + item.type);
+      return false;
+    }
+    CsbGraphicClassRecord graphic = csbGraphicTable.entries[descriptor.graphicClassIndex];
+    if (graphic == null || graphic.viewportPositionClass < 0
+        || graphic.viewportPositionClass >= csbViewportTable.classes.Length) return false;
+
+    int absoluteCorner = CsbFloorAbsoluteCorner(item.cell);
+    if (absoluteCorner < 0) return false;
+    int facing = previewFacing == DungeonFacing.North ? 0 :
+        previewFacing == DungeonFacing.East ? 1 :
+        previewFacing == DungeonFacing.South ? 2 : 3;
+    int relativeCorner = (absoluteCorner - facing + 4) & 3;
+    GetFloorItemViewBasis(previewFacing, out int fx, out int fy, out _, out _);
+    int tileDistance = (item.x - previewX) * fx + (item.y - previewY) * fy;
+
+    // CSBwin trace: center lane = relative cells 6 (near), 3, 0 (far).
+    // Native F2 may be a far-side subtile of cell 6 or near-side of cell 3;
+    // native F3 may be far-side of cell 3 or near-side of cell 0.
+    int relativeCell = tileDistance == 1 ? 6 :
+        tileDistance == 2 ? 3 : tileDistance == 3 ? 0 : -1;
+    if (relativeCell < 0 || (distance == 2 && tileDistance != 2 && tileDistance != 1)
+        || (distance == 3 && tileDistance != 2 && tileDistance != 3))
+      return false;
+    CsbViewportCell[] cells = csbViewportTable.classes[graphic.viewportPositionClass].cells;
+    if (cells == null || cells.Length <= relativeCell || cells[relativeCell] == null
+        || cells[relativeCell].positions == null
+        || cells[relativeCell].positions.Length <= relativeCorner) return false;
+    CsbViewportPoint point = cells[relativeCell].positions[relativeCorner];
+    if (point == null || !point.valid || point.y == 0) return false;
+
+    // The trace's distance index is chosen by subtile proximity as well as tile distance.
+    // The dedicated native PNG already has its final F2/F3 dimensions: never shrink it again.
+    int offsetRow = distance == 2 ? 1 : 2;
+    int offsetSlot = (absoluteCorner & 1) << 3;
+    Vector2Int delta = csbFloorOffsetRows[offsetRow][offsetSlot];
+    int left = point.x + delta.x - art.width / 2 + 1;
+    int top = 32 + point.y + delta.y - art.height + 1;
+    rect = new Rect(left, top, art.width, art.height);
+    mirror = (graphic.flags & 1) != 0 && (relativeCorner == 1 || relativeCorner == 2);
+    return true;
+  }
+
   private bool TryBlitRegisteredF3FloorItem(Color32[] pixels, FloorItemPlacement item)
   {
     GroundArtworkEntry entry = GetRegisteredGroundArtwork(item.type);
@@ -34222,7 +34312,13 @@ private static void HandleGameViewPointerDown(
         FindFloorProjectionCalibration(item.type, "F3", corner);
     if (saved == null)
     {
-      ReportMissingDedicatedF3Calibration(item, corner);
+      if (!TryGetNativeCsbFloorRect(item, f3, 3, out Rect automatic, out bool autoMirror))
+      {
+        ReportMissingDedicatedF3Calibration(item, corner);
+        return true;
+      }
+      BlitPieceIntoPreview(pixels, f3, Mathf.RoundToInt(automatic.x),
+          PreviewHeight - Mathf.RoundToInt(automatic.y) - f3.height, autoMirror);
       return true;
     }
     BlitPieceIntoPreview(pixels, f3, saved.x,
@@ -34264,7 +34360,13 @@ private static void HandleGameViewPointerDown(
         FindFloorProjectionCalibration(item.type, "F2", corner);
     if (saved == null)
     {
-      ReportMissingDedicatedF2Calibration(item, corner);
+      if (!TryGetNativeCsbFloorRect(item, f2, 2, out Rect automatic, out bool autoMirror))
+      {
+        ReportMissingDedicatedF2Calibration(item, corner);
+        return true;
+      }
+      BlitPieceIntoPreview(pixels, f2, Mathf.RoundToInt(automatic.x),
+          PreviewHeight - Mathf.RoundToInt(automatic.y) - f2.height, autoMirror);
       return true;
     }
     // Do not add CSBwin pile displacements to explicitly calibrated art.
@@ -34279,6 +34381,37 @@ private static void HandleGameViewPointerDown(
       Color32[] pixels, FloorItemPlacement item, Texture2D texture,
       FloorItemDepth depth, bool isRight, Vector2Int pileOffset)
   {
+    // First opt-in for automatic F2/F3 artwork generation: Apple only.
+    // Use its explicitly registered F1 source with the existing CSBwin
+    // perspective renderer; do not demand dedicated F2/F3 PNGs.
+    // Other item types, including verified native Scroll artwork, are untouched.
+    if (item != null && string.Equals(item.type, "Apple",
+            System.StringComparison.OrdinalIgnoreCase))
+    {
+      string appleBand = GetViewEditFloorItemDistance(item);
+      if (string.Equals(appleBand, "F2", System.StringComparison.Ordinal))
+      {
+        if (texture == null || !texture.isReadable)
+        {
+          ReportFloorItemTextureProblem(item.type, "registered F1 texture",
+              "cannot generate Apple F2 from a missing or unreadable F1 texture");
+          return;
+        }
+        BlitCsbF2Item(pixels, item, texture, pileOffset);
+        return;
+      }
+      if (string.Equals(appleBand, "F3", System.StringComparison.Ordinal))
+      {
+        if (texture == null || !texture.isReadable)
+        {
+          ReportFloorItemTextureProblem(item.type, "registered F1 texture",
+              "cannot generate Apple F3 from a missing or unreadable F1 texture");
+          return;
+        }
+        BlitCsbF3Item(pixels, item, texture, pileOffset);
+        return;
+      }
+    }
     if (depth == FloorItemDepth.TwoAhead)
     {
       string distance = GetViewEditFloorItemDistance(item);
