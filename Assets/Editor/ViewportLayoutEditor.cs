@@ -22,9 +22,10 @@ public class ViewportLayoutEditor : EditorWindow
   private const double TurningDelaySeconds = 0.150;
 
   // Generic throwing controls; independent of movement/turn throttling.
-  private const string PrefsGenericThrowDelayMs = "ViewportLayoutEditor.GenericThrowDelayMs.V2";
-  // V2 preference starts with the faster observed CSBwin throw speed; do not
-  // inherit the old slow test value stored under GenericThrowDelayMs.
+  private const string PrefsGenericThrowDelayMs = "ViewportLayoutEditor.GenericThrowDelayMs.V3";
+  // V3 preference uses the measured CSBwin Normal-speed missile timer interval
+  // (five timer gaps measured at 236.2 ms on 2026-11-08). A new key avoids
+  // inheriting the earlier unverified 40-ms experiment or old slow values.
   private const string PrefsGenericThrowFlightY = "ViewportLayoutEditor.GenericThrowFlightY";
   private const string PrefsGenericThrowMouseYMax = "ViewportLayoutEditor.GenericThrowMouseYMax";
   private static int GenericThrowMouseYMax
@@ -34,7 +35,7 @@ public class ViewportLayoutEditor : EditorWindow
   }
   private static int GenericThrowDelayMs
   {
-    get { return Mathf.Clamp(EditorPrefs.GetInt(PrefsGenericThrowDelayMs, 40), 20, 2000); }
+    get { return Mathf.Clamp(EditorPrefs.GetInt(PrefsGenericThrowDelayMs, 236), 20, 2000); }
     set { EditorPrefs.SetInt(PrefsGenericThrowDelayMs, Mathf.Clamp(value, 20, 2000)); }
   }
   private static int GenericThrowFlightYOffset
