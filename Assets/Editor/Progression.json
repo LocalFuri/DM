@@ -1569,5 +1569,14 @@
       "Use actual application shown in screenshot (Total Commander) instead of assuming Windows Explorer; no vague terminology (e.g. CSBWin project vs folder) when a complete folder path is required.",
       "The build output and game executable now share the same folder; do not instruct copying EXE from Game\\ to elsewhere unless later configuration changes."
     ]
+  },
+  "unity_editor_top_level_tools_menu_rule_20261108": {
+    "status": "active_permanent_rule",
+    "confirmedDate": "2026-11-08",
+    "instruction": "All Unity Editor tools must appear directly in the top-level Tools menu. Never nest tools in submenus such as Tools/Dungeon Master or other menu subfolders.",
+    "exampleCorrect": "Tools/Apple Video Comparison",
+    "exampleIncorrect": "Tools/Dungeon Master/Apple Video Comparison",
+    "implementation": "Use a top-level Unity MenuItem path for each Editor tool. Do not change unrelated tool code or menus.",
+    "scope": "All existing tools when modified and all future Dungeon Master Unity Editor tools."
   }
 }
