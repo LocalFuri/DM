@@ -25192,11 +25192,6 @@ private static void HandleGameViewPointerDown(
         ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
         ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
         BlitWallOrnamentIntoPreview(pixels, artwork, x, y, flip);
-        Debug.Log("<color=#FFA500>EXTENDED V17 MIRROR: champion=" + m.champion
-            + " wall=(" + wallX + "," + wallY + ") face=" + face
-            + " side=" + (left ? "Left" : "Right")
-            + " F3 artwork=" + artwork.width + "x" + artwork.height
-            + "</color>");
         break;
       }
     }
