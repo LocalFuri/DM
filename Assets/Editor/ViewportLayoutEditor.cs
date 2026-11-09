@@ -217,9 +217,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Manacles_F1.png";
   private const string ManaclesS1AssetPath =
       "Assets/Art/Ornaments/Manacles_S1.png";
-  // S3 side artwork is generated from S1; retain manual ViewEdit X/Y calibration.
-  private const int ManaclesS3Width = 9;
-  private const int ManaclesS3Height = 5;
+  // Side S3 artwork is generated from S1 at the exact CSBwin decoration
+  // table size. The table also controls its absolute screen placement.
 
   // D1 side manacles use the native 32x42 S1 graphic 1:1.
   // Measured on the original (4,10) North left wall, then shifted
@@ -23923,6 +23922,34 @@ private static void HandleGameViewPointerDown(
   // Original F2 front-left and front-right source cropping: the bitmap is
   // scaled for center F2 (relative 8); 7/9 choose cropped rectangles.
   // Preserve actual CSBWin rectangle bounds. Other distances are unchanged.
+  // CSBwin wall-decoration group 1, relative positions 5/6 = S2 left/right.
+  // Positions are local to the 224x136 dungeon area, whose screen top is 33.
+  // Do not use the old distance-extrapolated S2 position or ViewEdit offsets.
+  private static void GetManaclesSideS2Rect(
+      bool left, out int x, out int y, out int width, out int height)
+  {
+    OriginalWallDecorationRect rect = GetOriginalWallDecorationRect(
+        1, left ? 5 : 6);
+    width = rect.x2 - rect.x1 + 1;
+    height = rect.height;
+    x = rect.x1;
+    y = DisplayYToUnityY(rect.y1 + 33, height);
+  }
+
+  // CSBwin wall-decoration group 1, relative positions 0/1 = S3 left/right.
+  // Positions are local to the 224x136 dungeon area, whose screen top is 33.
+  // Do not use the old distance-extrapolated S3 position or ViewEdit offsets.
+  private static void GetManaclesSideS3Rect(
+      bool left, out int x, out int y, out int width, out int height)
+  {
+    OriginalWallDecorationRect rect = GetOriginalWallDecorationRect(
+        1, left ? 0 : 1);
+    width = rect.x2 - rect.x1 + 1;
+    height = rect.height;
+    x = rect.x1;
+    y = DisplayYToUnityY(rect.y1 + 33, height);
+  }
+
   private static void GetManaclesFrontF2Rect(
       out int x, out int y, out int width, out int height)
   {
@@ -27232,24 +27259,16 @@ private static void HandleGameViewPointerDown(
       }
       if (sideDepth == 2)
       {
-        GetDistanceDerivedManaclesSidePlacement(
-            ManaclesD2SideWidth,
-            ManaclesD2SideHeight,
-            isLeft,
-            out renderX,
-            out renderY,
-            out renderMirror);
+        GetManaclesSideS2Rect(
+            isLeft, out renderX, out renderY, out _, out _);
+        renderMirror = !isLeft;
         return true;
       }
       if (sideDepth == 3)
       {
-        GetDistanceDerivedManaclesSidePlacement(
-            ManaclesS3Width,
-            ManaclesS3Height,
-            isLeft,
-            out renderX,
-            out renderY,
-            out renderMirror);
+        GetManaclesSideS3Rect(
+            isLeft, out renderX, out renderY, out _, out _);
+        renderMirror = !isLeft;
         return true;
       }
     }
@@ -39122,9 +39141,11 @@ private static void HandleGameViewPointerDown(
       return null;
     }
 
+    GetManaclesSideS3Rect(
+        true, out _, out _, out int width, out int height);
     cachedManaclesGeneratedD3SideTexture = GenerateManaclesSideScaled(
-        source, ManaclesS3Width, ManaclesS3Height,
-        "Manacles S3 Generated from S1");
+        source, width, height,
+        "Manacles S3 Generated from S1 CSBwin geometry");
     return cachedManaclesGeneratedD3SideTexture;
   }
 
@@ -39170,8 +39191,7 @@ private static void HandleGameViewPointerDown(
           : ornament.x == cx && ornament.y == cy
             && string.Equals(ornament.wall, rightBoundary,
                 System.StringComparison.OrdinalIgnoreCase));
-      // No invented default coordinates: both sides start at (0,0) until
-      // their S3 projection is calibrated through ViewEdit / Apply.
+      // CSBwin table supplies each S3 position, not a saved calibration.
       if ((left && !drawnLeft) || (right && !drawnRight))
       {
         // Generate S3 only when the map/feature checks require a draw.
@@ -39182,20 +39202,27 @@ private static void HandleGameViewPointerDown(
       }
       if (left && !drawnLeft)
       {
-        GetDistanceDerivedManaclesSidePlacement(
-            side.width, side.height, true,
-            out int renderX, out int renderY, out bool renderMirror);
-        BlitOrnamentPieceIntoPreview(
-            pixels, side, ornament, renderX, renderY, renderMirror);
+        if (IsSharedWallFeatureVisible(
+                ornament.x, ornament.y, ornament.wall,
+                ornament.wallTilePlacement, 3, 3))
+        {
+          GetManaclesSideS3Rect(
+              true, out int renderX, out int renderY, out _, out _);
+          // V17-gated direct blit: no legacy calibration/preview overrides.
+          BlitPieceIntoPreview(pixels, side, renderX, renderY, false);
+        }
         drawnLeft = true;
       }
       if (right && !drawnRight)
       {
-        GetDistanceDerivedManaclesSidePlacement(
-            side.width, side.height, false,
-            out int renderX, out int renderY, out bool renderMirror);
-        BlitOrnamentPieceIntoPreview(
-            pixels, side, ornament, renderX, renderY, renderMirror);
+        if (IsSharedWallFeatureVisible(
+                ornament.x, ornament.y, ornament.wall,
+                ornament.wallTilePlacement, 3, 3))
+        {
+          GetManaclesSideS3Rect(
+              false, out int renderX, out int renderY, out _, out _);
+          BlitPieceIntoPreview(pixels, side, renderX, renderY, true);
+        }
         drawnRight = true;
       }
     }
@@ -39275,21 +39302,28 @@ private static void HandleGameViewPointerDown(
 
       if (matchesLeft && !leftDrawn)
       {
-        GetDistanceDerivedManaclesSidePlacement(
-            side.width, side.height, true,
-            out int renderX, out int renderY, out bool renderMirror);
-        BlitOrnamentPieceIntoPreview(
-            pixels, side, ornament, renderX, renderY, renderMirror);
+        if (IsSharedWallFeatureVisible(
+                ornament.x, ornament.y, ornament.wall,
+                ornament.wallTilePlacement, 3, 3))
+        {
+          GetManaclesSideS2Rect(
+              true, out int renderX, out int renderY, out _, out _);
+          // V17-gated direct blit: no legacy calibration/preview overrides.
+          BlitPieceIntoPreview(pixels, side, renderX, renderY, false);
+        }
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        GetDistanceDerivedManaclesSidePlacement(
-            side.width, side.height, false,
-            out int renderX, out int renderY, out bool renderMirror);
-        BlitOrnamentPieceIntoPreview(
-            pixels, side, ornament, renderX, renderY, renderMirror);
+        if (IsSharedWallFeatureVisible(
+                ornament.x, ornament.y, ornament.wall,
+                ornament.wallTilePlacement, 3, 3))
+        {
+          GetManaclesSideS2Rect(
+              false, out int renderX, out int renderY, out _, out _);
+          BlitPieceIntoPreview(pixels, side, renderX, renderY, true);
+        }
         rightDrawn = true;
       }
 
@@ -39307,11 +39341,13 @@ private static void HandleGameViewPointerDown(
     if (source == null || !source.isReadable)
       return null;
 
+    GetManaclesSideS2Rect(
+        true, out _, out _, out int width, out int height);
     cachedManaclesGeneratedD2SideTexture = GenerateManaclesSideScaled(
         source,
-        ManaclesD2SideWidth,
-        ManaclesD2SideHeight,
-        "Manacles S2 Generated from S1");
+        width,
+        height,
+        "Manacles S2 Generated from S1 CSBwin geometry");
     return cachedManaclesGeneratedD2SideTexture;
   }
 
