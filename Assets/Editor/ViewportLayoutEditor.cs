@@ -219,9 +219,7 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Manacles_F3_9x5.png";
   private const string ManaclesS1AssetPath =
       "Assets/Art/Ornaments/Manacles_S1.png";
-  private const string ManaclesS3AssetPath =
-      "Assets/Art/Ornaments/Manacles_S3_9x5.png";
-  // Manacles S3 requires manual X/Y calibration in ViewEdit; no guessed offsets.
+  // S3 side artwork is generated from S1; retain manual ViewEdit X/Y calibration.
   private const int ManaclesS3Width = 9;
   private const int ManaclesS3Height = 5;
 
@@ -1987,6 +1985,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedManaclesS1Texture;
   [System.NonSerialized]
   private Texture2D cachedManaclesGeneratedD2SideTexture;
+  [System.NonSerialized]
+  private Texture2D cachedManaclesGeneratedD3SideTexture;
   [System.NonSerialized]
   private Texture2D cachedManaclesGeneratedF2FrontTexture;
   [System.NonSerialized]
@@ -17174,23 +17174,8 @@ private static void HandleGameViewPointerDown(
       {
         // Diagnostic only: identify unresolved mirrors without guessing a
         // physical wall face or weakening the existing V17 occlusion rules.
-        if (string.Equals(champion.name, "ELIJA",
-                System.StringComparison.OrdinalIgnoreCase))
-        {
-          Debug.LogWarning("ELIJA MIRROR TRACE: unresolved adjacent wall at ("
-              + champion.x + "," + champion.y + "); "
-              + "verified-face file=" + ChampionMirrorVerifiedFacesPath
-              + " present=" + File.Exists(ChampionMirrorVerifiedFacesPath)
-              + ". No mirror placement generated.");
-        }
         continue;
       }
-      if (string.Equals(champion.name, "ELIJA",
-              System.StringComparison.OrdinalIgnoreCase))
-        Debug.Log("ELIJA MIRROR TRACE: resolved physical wall=(" + wallX + ","
-            + wallY + ") face=" + wallSide
-            + " viewing floor=(" + champion.x + "," + champion.y + ")");
-
       mirrors.Add(new ChampionMirrorPlacement
       {
         champion = champion.name,
@@ -17377,11 +17362,6 @@ private static void HandleGameViewPointerDown(
     try
     {
       string json = File.ReadAllText(path);
-      bool hasInscriptionsKey = json.IndexOf("\"wall_inscriptions\"",
-          System.StringComparison.Ordinal) >= 0;
-      Debug.Log("INSCRIPTION SOURCE: level=" + previewDungeonLevel
-          + " path=" + path + " bytes=" + new FileInfo(path).Length
-          + " wall_inscriptions=" + hasInscriptionsKey);
       WallInscriptionMapRoot root =
           JsonUtility.FromJson<WallInscriptionMapRoot>(json);
       // Keep Level 0's existing verified source-wall coordinates, stable
@@ -17477,8 +17457,6 @@ private static void HandleGameViewPointerDown(
                 + InscriptionPositionsPath);
         }
       }
-      Debug.Log("INSCRIPTION DATA LOADED: level=" + previewDungeonLevel
-          + " count=" + previewWallInscriptions.Length + " from " + path);
       if (previewDungeonLevel == 0 && previewWallInscriptions.Length != 4)
         Debug.LogWarning("WALL INSCRIPTION: Level 0 expected four text entries"
             + " but got " + previewWallInscriptions.Length + " from " + path);
@@ -21566,40 +21544,6 @@ private static void HandleGameViewPointerDown(
     // Mirror data and calibration controls remain for a unified renderer.
     // Ordinary wall-ornament passes must still execute even when strict
     // manual calibration mode is active; do not return before those passes.
-
-    // Diagnostic-only: runs at the START of the mirror rendering pass,
-    // before any projection rejects the candidate. No rendering behavior changes.
-    if (previewDungeonLevel == 0 && previewX == 10 && previewY == 4
-        && previewFacing == DungeonFacing.South)
-    {
-      int elijaCount = 0;
-      if (previewChampionMirrors != null)
-      {
-        for (int diag = 0; diag < previewChampionMirrors.Length; ++diag)
-        {
-          ChampionMirrorPlacement m = previewChampionMirrors[diag];
-          if (m == null || !string.Equals(m.champion, "ELIJA",
-                  System.StringComparison.OrdinalIgnoreCase))
-            continue;
-          ++elijaCount;
-          Debug.Log("ELIJA MIRROR TRACE: entry wall=(" + m.x + ","
-              + m.y + ") face=" + m.wall
-              + " viewingFloor=(" + m.viewingFloorX + ","
-              + m.viewingFloorY + ")"
-              + " wallTile=" + PreviewTileIsWall(m.x, m.y)
-              + " taken=" + IsPreviewChampionTaken(m.champion)
-              + " enabled=" + IsPreviewFeatureEnabled(MakePreviewFeatureKey(
-                  "ChampionMirror", m.x, m.y, m.wall)));
-        }
-      }
-      Debug.LogWarning("ELIJA MIRROR TRACE: render entry; "
-          + "level=0 player=(10,4) facing=South"
-          + " mirrorEntries=" + (previewChampionMirrors == null
-              ? -1 : previewChampionMirrors.Length)
-          + " elijaEntries=" + elijaCount
-          + " verifiedFacesFile=" + ChampionMirrorVerifiedFacesPath
-          + " exists=" + File.Exists(ChampionMirrorVerifiedFacesPath));
-    }
 
     // Unified mirror preview, first stage: the same front-wall geometry,
     // calibration key and artwork selection for every champion.  It also
@@ -39070,20 +39014,25 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  private Texture2D GetManaclesS3Texture()
+  // Use the existing S1-to-S2 palette-preserving distance scaler for S3 too.
+  // This replaces the obsolete standalone Manacles_S3_9x5.png dependency.
+  private Texture2D GetManaclesGeneratedD3SideTexture()
   {
-    Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(ManaclesS3AssetPath);
-    if (tex == null || tex.width != ManaclesS3Width || tex.height != ManaclesS3Height)
+    if (cachedManaclesGeneratedD3SideTexture != null)
+      return cachedManaclesGeneratedD3SideTexture;
+
+    Texture2D source = GetManaclesS1Texture();
+    if (source == null || !source.isReadable)
     {
-      Debug.LogError("Manacles S3 needs 9x5 native PNG at " + ManaclesS3AssetPath);
+      Debug.LogError("Manacles S3: requires readable native S1 artwork at "
+          + ManaclesS1AssetPath);
       return null;
     }
-    if (!tex.isReadable)
-    {
-      Debug.LogError("Manacles S3 must have Read/Write Enabled: " + ManaclesS3AssetPath);
-      return null;
-    }
-    return tex;
+
+    cachedManaclesGeneratedD3SideTexture = GenerateManaclesSideScaled(
+        source, ManaclesS3Width, ManaclesS3Height,
+        "Manacles S3 Generated from S1");
+    return cachedManaclesGeneratedD3SideTexture;
   }
 
   private void BlitManaclesD3SidesIntoPreview(Color32[] pixels)
@@ -39132,9 +39081,9 @@ private static void HandleGameViewPointerDown(
       // their S3 projection is calibrated through ViewEdit / Apply.
       if ((left && !drawnLeft) || (right && !drawnRight))
       {
-        // Only require the native S3 asset when a Manacles ornament is visible.
+        // Generate S3 only when the map/feature checks require a draw.
         if (side == null)
-          side = GetManaclesS3Texture();
+          side = GetManaclesGeneratedD3SideTexture();
         if (side == null)
           return;
       }
