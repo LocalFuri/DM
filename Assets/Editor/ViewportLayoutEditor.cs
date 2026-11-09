@@ -39096,9 +39096,6 @@ private static void HandleGameViewPointerDown(
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null || previewWallOrnaments == null)
       return;
-    Texture2D side = GetManaclesS3Texture();
-    if (side == null)
-      return;
     DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
     DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
     // Each nearer corridor tile and the S3 center tile must be open.
@@ -39115,6 +39112,7 @@ private static void HandleGameViewPointerDown(
     string leftBoundary = FacingName(TurnPreviewFacingLeft(previewFacing));
     string rightBoundary = FacingName(TurnPreviewFacingRight(previewFacing));
     bool drawnLeft = false, drawnRight = false;
+    Texture2D side = null;
     foreach (WallOrnamentPlacement ornament in previewWallOrnaments)
     {
       if (ornament == null || !IsManaclesOrnament(ornament)
@@ -39137,6 +39135,14 @@ private static void HandleGameViewPointerDown(
                 System.StringComparison.OrdinalIgnoreCase));
       // No invented default coordinates: both sides start at (0,0) until
       // their S3 projection is calibrated through ViewEdit / Apply.
+      if ((left && !drawnLeft) || (right && !drawnRight))
+      {
+        // Only require the native S3 asset when a Manacles ornament is visible.
+        if (side == null)
+          side = GetManaclesS3Texture();
+        if (side == null)
+          return;
+      }
       if (left && !drawnLeft)
       {
         BlitOrnamentPieceIntoPreview(pixels, side, ornament, 0, 0, false);
