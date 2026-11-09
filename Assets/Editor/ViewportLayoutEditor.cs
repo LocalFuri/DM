@@ -1556,7 +1556,6 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:Hook:S2:Left|66|117|false|639292496524583345
   // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
   // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
-  // REF OrnamentProjection:Manacles:S3:Left|80|120|false|639294967082566971
   // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
   // REF OrnamentProjection:Moss:F3|108|96|false|639267381805114279
   // REF OrnamentProjection:Puddle:F1L|0|57|false|639276809435648392
@@ -1850,6 +1849,27 @@ public class ViewportLayoutEditor : EditorWindow
         out int ignoredX, out int ignoredY, out mirror);
   }
 
+  private static bool IsDistanceDerivedManaclesSideProjectionKey(
+      string projectionKey)
+  {
+    return string.Equals(
+            projectionKey,
+            "OrnamentProjection:Manacles:S2:Left",
+            System.StringComparison.Ordinal)
+        || string.Equals(
+            projectionKey,
+            "OrnamentProjection:Manacles:S2:Right",
+            System.StringComparison.Ordinal)
+        || string.Equals(
+            projectionKey,
+            "OrnamentProjection:Manacles:S3:Left",
+            System.StringComparison.Ordinal)
+        || string.Equals(
+            projectionKey,
+            "OrnamentProjection:Manacles:S3:Right",
+            System.StringComparison.Ordinal);
+  }
+
   private void ApplyAcceptedOrnamentReference(
       string projectionKey,
       ref int x,
@@ -1857,6 +1877,9 @@ public class ViewportLayoutEditor : EditorWindow
       ref bool mirror)
   {
     if (string.IsNullOrEmpty(projectionKey))
+      return;
+
+    if (IsDistanceDerivedManaclesSideProjectionKey(projectionKey))
       return;
 
     if (IsOrnamentClassCalibrationKey(projectionKey))
@@ -26931,6 +26954,43 @@ private static void HandleGameViewPointerDown(
     return false;
   }
 
+  private static int GetDistanceDerivedManaclesSideLeftX(int targetWidth)
+  {
+    float scaleX = (float)targetWidth / ManaclesD1SideWidth;
+    float mediumScaleX = (float)ManaclesD2SideWidth / ManaclesD1SideWidth;
+    float vanishX =
+        (ManaclesD2SideLeftX - mediumScaleX * ManaclesD1SideLeftX)
+        / (1f - mediumScaleX);
+    return Mathf.RoundToInt(
+        vanishX + (ManaclesD1SideLeftX - vanishX) * scaleX);
+  }
+
+  private static int GetDistanceDerivedManaclesSideY(int targetHeight)
+  {
+    float scaleY = (float)targetHeight / ManaclesD1SideHeight;
+    float mediumScaleY = (float)ManaclesD2SideHeight / ManaclesD1SideHeight;
+    float vanishY =
+        (ManaclesD2SideY - mediumScaleY * ManaclesD1SideY)
+        / (1f - mediumScaleY);
+    return Mathf.RoundToInt(
+        vanishY + (ManaclesD1SideY - vanishY) * scaleY);
+  }
+
+  private static void GetDistanceDerivedManaclesSidePlacement(
+      int targetWidth,
+      int targetHeight,
+      bool isLeft,
+      out int renderX,
+      out int renderY,
+      out bool renderMirror)
+  {
+    renderX = GetDistanceDerivedManaclesSideLeftX(targetWidth);
+    if (!isLeft)
+      renderX = DungeonViewportWidth - renderX - targetWidth;
+    renderY = GetDistanceDerivedManaclesSideY(targetHeight);
+    renderMirror = !isLeft;
+  }
+
   private bool TryGetWallOrnamentCalibrationDefaults(
       WallOrnamentPlacement ornament,
       out int renderX,
@@ -27155,10 +27215,35 @@ private static void HandleGameViewPointerDown(
     }
     if (IsManaclesOrnament(ornament))
     {
-      renderMirror = !isLeft;
-      if (sideDepth == 1) { renderX = isLeft ? ManaclesD1SideLeftX : ManaclesD1SideRightX; renderY = ManaclesD1SideY; return true; }
-      if (sideDepth == 2) { renderX = isLeft ? ManaclesD2SideLeftX : ManaclesD2SideRightX; renderY = ManaclesD2SideY; return true; }
-      if (sideDepth == 3) { renderX = 0; renderY = 0; return true; } // Uncalibrated: use Apply.
+      if (sideDepth == 1)
+      {
+        renderMirror = !isLeft;
+        renderX = isLeft ? ManaclesD1SideLeftX : ManaclesD1SideRightX;
+        renderY = ManaclesD1SideY;
+        return true;
+      }
+      if (sideDepth == 2)
+      {
+        GetDistanceDerivedManaclesSidePlacement(
+            ManaclesD2SideWidth,
+            ManaclesD2SideHeight,
+            isLeft,
+            out renderX,
+            out renderY,
+            out renderMirror);
+        return true;
+      }
+      if (sideDepth == 3)
+      {
+        GetDistanceDerivedManaclesSidePlacement(
+            ManaclesS3Width,
+            ManaclesS3Height,
+            isLeft,
+            out renderX,
+            out renderY,
+            out renderMirror);
+        return true;
+      }
     }
 
     return false;
@@ -39089,12 +39174,20 @@ private static void HandleGameViewPointerDown(
       }
       if (left && !drawnLeft)
       {
-        BlitOrnamentPieceIntoPreview(pixels, side, ornament, 0, 0, false);
+        GetDistanceDerivedManaclesSidePlacement(
+            side.width, side.height, true,
+            out int renderX, out int renderY, out bool renderMirror);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side, ornament, renderX, renderY, renderMirror);
         drawnLeft = true;
       }
       if (right && !drawnRight)
       {
-        BlitOrnamentPieceIntoPreview(pixels, side, ornament, 0, 0, true);
+        GetDistanceDerivedManaclesSidePlacement(
+            side.width, side.height, false,
+            out int renderX, out int renderY, out bool renderMirror);
+        BlitOrnamentPieceIntoPreview(
+            pixels, side, ornament, renderX, renderY, renderMirror);
         drawnRight = true;
       }
     }
@@ -39174,15 +39267,21 @@ private static void HandleGameViewPointerDown(
 
       if (matchesLeft && !leftDrawn)
       {
+        GetDistanceDerivedManaclesSidePlacement(
+            side.width, side.height, true,
+            out int renderX, out int renderY, out bool renderMirror);
         BlitOrnamentPieceIntoPreview(
-            pixels, side, ornament, ManaclesD2SideLeftX, ManaclesD2SideY, false);
+            pixels, side, ornament, renderX, renderY, renderMirror);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
+        GetDistanceDerivedManaclesSidePlacement(
+            side.width, side.height, false,
+            out int renderX, out int renderY, out bool renderMirror);
         BlitOrnamentPieceIntoPreview(
-            pixels, side, ornament, ManaclesD2SideRightX, ManaclesD2SideY, true);
+            pixels, side, ornament, renderX, renderY, renderMirror);
         rightDrawn = true;
       }
 
