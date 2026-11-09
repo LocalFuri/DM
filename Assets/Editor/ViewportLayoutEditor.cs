@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -244,14 +244,9 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonViewportWidth - ManaclesD2SideLeftX - ManaclesD2SideWidth;
   private const int ManaclesD2SideY = 101;
 
-  // F2 manacles are generated from the 92x52 F1 source.
-  // Measured on the original (5,9) West view: centered on the 224px
-  // viewport, screen top-left (83, 76), so framebuffer bottom-left
-  // Y = 200 - 76 - 31 = 93.
-  private const int ManaclesD2FrontX = 83;
-  private const int ManaclesD2FrontY = 93;
-  private const int ManaclesD2FrontWidth = 58;
-  private const int ManaclesD2FrontHeight = 31;
+  // Front F2 Manacles: geometry comes from the CSBwin wall decoration
+  // rectangle table, group 1 (Manacles), relative position 8 (center F2).
+  // No manually measured X/Y or independent target image dimensions.
 
   // F3 manacles are generated from the same 92x52 F1 source.
   // Measured on the original (6,9) West view: screen top-left (93, 73),
@@ -1526,10 +1521,6 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   // BEGIN APPLIED ORNAMENT REFERENCES
-  // REF FloorItemProjection:TorchDown:F1:Left|31|157|false|639275095915837870
-  // REF FloorItemProjection:TorchDown:F1:Right|133|157|false|639275097288040421
-  // REF FloorItemProjection:TorchDown:F2:Left|66|126|false|639275200044132424
-  // REF FloorItemProjection:TorchDown:F2:Right|122|126|false|639275198828300761
   // REF Inscription:1548:F1|80|117|false|639294981993770953
   // REF Inscription:85:F1|76|118|false|639294110666408029
   // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
@@ -1543,28 +1534,6 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:ChampionMirror:S3:Left|84|116|false|639293326829241417
   // REF OrnamentProjection:ChampionMirror:S3:Right|138|116|true|639291392277477819
   // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
-  // REF OrnamentProjection:EmptyTorchHolder:F1|100|76|false|639274252203846657
-  // REF OrnamentProjection:EmptyTorchHolder:S1:Right|162|82|true|639295125027429246
-  // REF OrnamentProjection:Grate:F2SideCorner|204|74|false|639291560292692480
-  // REF OrnamentProjection:Hook:F1|98|103|false|639270835247090347
-  // REF OrnamentProjection:Hook:F2|103|111|false|639272438417071479
-  // REF OrnamentProjection:Hook:S1|160|109|true|639271634293923485
-  // REF OrnamentProjection:Hook:S1:Left|48|108|false|639295865315074352
-  // REF OrnamentProjection:Hook:S2|152|116|true|639295857292727952
-  // REF OrnamentProjection:Hook:S2:Left|66|117|false|639292496524583345
-  // REF OrnamentProjection:Manacles:F2|83|95|false|639267252259958065
-  // REF OrnamentProjection:Manacles:F3|94|107|false|639267253262160129
-  // REF OrnamentProjection:Moss:F1|84|52|false|639267286827842544
-  // REF OrnamentProjection:Moss:F3|108|96|false|639267381805114279
-  // REF OrnamentProjection:Puddle:F1L|0|57|false|639276809435648392
-  // REF OrnamentProjection:Slime:F2|104|74|false
-  // REF OrnamentProjection:Slime:F3|106|93|false|639267208231012151
-  // REF OrnamentProjection:Slime:S1|47|63|false|639294243043337674
-  // REF OrnamentProjection:WoodRing:F1|98|104|false
-  // REF OrnamentProjection:WoodRing:F2|103|111|false
-  // REF OrnamentProjection:WoodRing:F3|105|117|false
-  // REF OrnamentProjection:WoodRing:S1|49|110|false
-  // REF OrnamentProjection:WoodRing:S1:Right|161|108|true
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
@@ -1715,57 +1684,10 @@ public class ViewportLayoutEditor : EditorWindow
 
     // Probe every generic ornament family/slot. This also migrates references
     // saved by the earlier EditorPrefs-only Apply implementation.
-    string[] families =
-    {
-      "WoodRing", "Hook", "Slime", "Manacles", "ViAltar", "Grate",
-      "EmptyTorchHolder"
-    };
-    string[] slots =
-    {
-      "F1", "F2", "F3", "S1", "S2", "S3"
-    };
-
+    // Ordinary wall/floor ornament references are sourced from the current
+    // code and explicit future Apply writes, not restored from old EditorPrefs.
+    // Champion mirror backups remain supported below.
     bool recoveredAnything = false;
-    for (int familyIndex = 0; familyIndex < families.Length; familyIndex++)
-    {
-      for (int slotIndex = 0; slotIndex < slots.Length; slotIndex++)
-      {
-        string projectionKey =
-            "OrnamentProjection:" + families[familyIndex]
-            + ":" + slots[slotIndex];
-
-        if (!TryGetBackedUpOrnamentReference(
-                projectionKey,
-                out AcceptedOrnamentReference backup))
-        {
-          continue;
-        }
-
-        long backupRevision =
-            GetBackedUpOrnamentReferenceRevision(projectionKey);
-        backup.revision = backupRevision;
-
-        if (!cachedAcceptedOrnamentReferences.TryGetValue(
-                projectionKey,
-                out AcceptedOrnamentReference sourceValue))
-        {
-          // Legacy backup with no revision is still valuable if the source
-          // has completely lost this key.
-          cachedAcceptedOrnamentReferences[projectionKey] = backup;
-          recoveredAnything = true;
-          continue;
-        }
-
-        // Newer Apply operations carry a revision. If an older source file is
-        // restored later, the backup wins and repairs the source automatically.
-        if (backupRevision > 0
-            && backupRevision > sourceValue.revision)
-        {
-          cachedAcceptedOrnamentReferences[projectionKey] = backup;
-          recoveredAnything = true;
-        }
-      }
-    }
 
     // Recover all shared champion mirror projection calibrations as well.
     // Previously only ordinary ornament family keys were probed here, so
@@ -2896,6 +2818,7 @@ public class ViewportLayoutEditor : EditorWindow
     // Script recompilation can restore transient EditorWindow cursor fields.
     // Never start a new editor session carrying champion equipment.
     ResetChampionEquipmentCursorAfterReload();
+    ResetFloorWallOrnamentCalibrationsOnce();
     titleContent = new GUIContent("ViewEdit");
     wantsMouseMove = true;
 
@@ -24000,6 +23923,17 @@ private static void HandleGameViewPointerDown(
   // Original F2 front-left and front-right source cropping: the bitmap is
   // scaled for center F2 (relative 8); 7/9 choose cropped rectangles.
   // Preserve actual CSBWin rectangle bounds. Other distances are unchanged.
+  private static void GetManaclesFrontF2Rect(
+      out int x, out int y, out int width, out int height)
+  {
+    OriginalWallDecorationRect rect = GetOriginalWallDecorationRect(1, 8);
+    width = rect.x2 - rect.x1 + 1;
+    height = rect.height;
+    x = rect.x1;
+    // Table Y is measured from the top of the dungeon viewport (Y=33).
+    y = DisplayYToUnityY(rect.y1 + 33, height);
+  }
+
   private static void GetOriginalCornerF2DrawPosition(
       int group, bool left, int bitmapWidth, int bitmapHeight,
       out int x, out int y)
@@ -24179,6 +24113,77 @@ private static void HandleGameViewPointerDown(
   }
 
   private const string OrnamentClassJsonPath = "Assets/Editor/OrnamentCalibration.json";
+
+  private const string FloorWallOrnamentResetPrefsKey =
+      "DM.ViewEdit.FloorWallOrnamentsReset20261109.V1";
+
+  // One-time migration: retain champion-mirror and wall geometry calibration.
+  // Clear only manually accepted floor and ordinary wall ornament positions.
+  private static void ResetFloorWallOrnamentCalibrationsOnce()
+  {
+    if (EditorPrefs.GetBool(FloorWallOrnamentResetPrefsKey, false))
+      return;
+
+    // JSON class calibration entries can contain both champion mirrors and
+    // ordinary ornaments. Preserve the entire champion group.
+    if (File.Exists(OrnamentClassJsonPath))
+    {
+      if (!TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore data))
+        return;
+      int oldCount = data.entries.Count;
+      data.entries.RemoveAll(entry => entry != null
+          && !string.IsNullOrEmpty(entry.key)
+          && !entry.key.Contains(":ChampionMirror:"));
+      if (data.entries.Count != oldCount)
+      {
+        string backup = OrnamentClassJsonPath + ".before-floor-wall-reset.bak";
+        try
+        {
+          File.Copy(OrnamentClassJsonPath, backup, true);
+          WriteViewEditTextWithTimestamp(
+              OrnamentClassJsonPath, JsonUtility.ToJson(data, true));
+        }
+        catch (System.Exception ex)
+        {
+          Debug.LogError("ViewEdit ornament reset failed: " + ex.Message);
+          return;
+        }
+      }
+    }
+
+    // Remove the backups of old floor/ornament reference entries so a domain
+    // reload cannot reintroduce stale coordinates.
+    string[] families =
+    {
+      "WoodRing", "Hook", "Slime", "Manacles", "ViAltar", "Grate",
+      "EmptyTorchHolder", "Moss", "Puddle"
+    };
+    string[] slots = { "F1", "F2", "F3", "S1", "S2", "S3" };
+    string[] sides = { "", ":Left", ":Right" };
+    string[] suffixes = { "X", "Y", "Mirror", "Revision" };
+    for (int f = 0; f < families.Length; f++)
+      for (int d = 0; d < slots.Length; d++)
+        for (int side = 0; side < sides.Length; side++)
+          for (int field = 0; field < suffixes.Length; field++)
+            EditorPrefs.DeleteKey(GetAppliedOrnamentReferencePrefsKey(
+                "OrnamentProjection:" + families[f] + ":"
+                + slots[d] + sides[side], suffixes[field]));
+    string[] floorKeys =
+    {
+      "FloorItemProjection:TorchDown:F1:Left",
+      "FloorItemProjection:TorchDown:F1:Right",
+      "FloorItemProjection:TorchDown:F2:Left",
+      "FloorItemProjection:TorchDown:F2:Right"
+    };
+    for (int k = 0; k < floorKeys.Length; k++)
+      for (int field = 0; field < suffixes.Length; field++)
+        EditorPrefs.DeleteKey(GetAppliedOrnamentReferencePrefsKey(
+            floorKeys[k], suffixes[field]));
+
+    acceptedOrnamentReferencesLoaded = false;
+    cachedAcceptedOrnamentReferences.Clear();
+    EditorPrefs.SetBool(FloorWallOrnamentResetPrefsKey, true);
+  }
 
   private static bool IsOrnamentClassCalibrationKey(string key)
   {
@@ -27135,7 +27140,12 @@ private static void HandleGameViewPointerDown(
           renderY = 77;
           return true;
         }
-        if (frontDepth == 2) { renderX = ManaclesD2FrontX; renderY = ManaclesD2FrontY; return true; }
+        if (frontDepth == 2)
+        {
+          GetManaclesFrontF2Rect(
+              out renderX, out renderY, out _, out _);
+          return true;
+        }
         if (frontDepth == 3) { renderX = ManaclesD3FrontX; renderY = ManaclesD3FrontY; return true; }
       }
       if (IsViAltarOrnament(ornament))
@@ -39712,8 +39722,10 @@ private static void HandleGameViewPointerDown(
       if (!placementMatches)
         continue;
 
+      GetManaclesFrontF2Rect(
+          out int renderX, out int renderY, out _, out _);
       BlitOrnamentPieceIntoPreview(
-          pixels, manacles, ornament, ManaclesD2FrontX, ManaclesD2FrontY, false);
+          pixels, manacles, ornament, renderX, renderY, false);
       return;
     }
   }
@@ -39747,10 +39759,12 @@ private static void HandleGameViewPointerDown(
     if (source == null || !source.isReadable)
       return null;
 
+    GetManaclesFrontF2Rect(
+        out _, out _, out int targetWidth, out int targetHeight);
     cachedManaclesGeneratedF2FrontTexture = GenerateDmScaledWallDecoration(
         source,
-        ManaclesD2FrontWidth,
-        ManaclesD2FrontHeight,
+        targetWidth,
+        targetHeight,
         WallOrnamentMediumColorMap,
         "Manacles F2 Generated from F1");
     return cachedManaclesGeneratedF2FrontTexture;
