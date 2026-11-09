@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -43143,9 +43143,17 @@ private static void HandleGameViewPointerDown(
     int x = defaultX;
     int y = defaultY;
     bool mirror = defaultMirror;
-    if (hasGenericProjection)
-      ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+    // Front F2 Manacles use the renderer's native position (83,93),
+    // not an old saved or temporary ViewEdit calibration.
+    bool useBuiltInManaclesF2 = IsManaclesOrnament(ornament)
+        && string.Equals(key, "OrnamentProjection:Manacles:F2",
+            System.StringComparison.Ordinal);
+    if (!useBuiltInManaclesF2)
+    {
+      if (hasGenericProjection)
+        ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+    }
     BlitPieceIntoPreview(pixels, texture, x, y, mirror);
   }
 
