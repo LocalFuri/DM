@@ -1,5 +1,42 @@
 {
   "date": "2026-10-28",
+  "todo_manacles_dos_f1_s2_20261109": {
+    "category": "To do List",
+    "priority": 1,
+    "resumeFirst": true,
+    "date": "2026-11-09",
+    "targetResumeDate": "2026-11-10",
+    "status": "NEXT — highest priority when resuming; no rendering code change until comparison",
+    "title": "Manacles: identify original DOS F1→S2 graphics/scaling from lossless screenshots",
+    "referenceAuthority": "Original FTL DOS Dungeon Master (not CSBwin)",
+    "testPose": {
+      "level": 0,
+      "playerTile": [
+        4,
+        11
+      ],
+      "facing": "North",
+      "ornament": "Manacles Left S2"
+    },
+    "userWillProvide": [
+      "Original DOS Manacles F1 screenshot at native 320×200 PNG, no resizing/filtering",
+      "Original DOS Manacles S2 screenshot at native 320×200 PNG, no resizing/filtering"
+    ],
+    "optionalComparison": "Unity Game View of same S2 position at native 320×200 PNG",
+    "investigation": [
+      "Compare exact F1 and S2 visible pixels, shape, chain detail, transparency, colours and bounding boxes",
+      "Determine whether DOS uses a separately stored perspective image or a scaling/shrink algorithm; do not assume simple shrink",
+      "Compare current GenerateManaclesSideScaled() output against original DOS S2 pixel-by-pixel",
+      "Isolate image-generation mismatch from placement/palette differences, then propose minimal fix"
+    ],
+    "currentState": "S2 result visually differs from both DOS and CSBwin. Latest S2 cleanup removed the legacy placement/override path and uses CSBwin table geometry, but S2 artwork is not approved; S3 also not approved. Do not treat CSBwin as authoritative for this comparison.",
+    "guardrails": [
+      "Do not modify rendering until DOS screenshot comparison reveals the cause",
+      "Keep existing V17 geometry, clipping, normal walls and champion mirrors",
+      "Keep approved Manacles F1 and F3 untouched",
+      "Do not revive postponed Apple subtile scaling task"
+    ]
+  },
   "project": "Dungeon Master Unity",
   "checkpoint": "2026-10-27 end-of-day: FrontF3 wall at Level 0 (11,4) West visually verified; next investigate wall at Level 0 (10,4) South tomorrow.",
   "verified_today": [
@@ -57,6 +94,7 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
+    "NEXT RESUME PRIORITY (2026-11-10): Obtain original FTL DOS lossless 320x200 PNG Manacles F1 and Left S2 (Level 0, player 4,11 North for S2), compare pixels/scaling, then consider changes; do not edit renderer before comparison.",
     "Preserve user-accepted F2 scaling and wall rendering. Do not chase pixel details for Bread/Apple/Cheese/Club.",
     "Inspect latest F2 POSITION TRACE for misaligned centred floor item; distinguish true floor-cell anchor from mortar-joint visual before generic X correction.",
     "After approved F2 visual ground-contact check, commit Unity source and Progression.json to Git.",
