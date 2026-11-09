@@ -2889,7 +2889,6 @@ public class ViewportLayoutEditor : EditorWindow
     // reload. EditorWindow state may survive compilation, including picked-up
     // IDs or hidden feature flags from an earlier test session.
     RestoreOriginalFloorTestItemsAfterReload();
-    PlaceExistingAppleInMouseHandForComparison();
     LoadPressurePadF1AcceptedCalibration();
     LoadPressurePadF2AcceptedCalibration();
     LoadPressurePadF3AcceptedCalibration();
