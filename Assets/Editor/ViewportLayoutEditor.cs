@@ -215,8 +215,6 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Hook_Front_28x28.png";
   private const string ManaclesF1AssetPath =
       "Assets/Art/Ornaments/Manacles_F1.png";
-  private const string ManaclesF3AssetPath =
-      "Assets/Art/Ornaments/Manacles_F3_9x5.png";
   private const string ManaclesS1AssetPath =
       "Assets/Art/Ornaments/Manacles_S1.png";
   // S3 side artwork is generated from S1; retain manual ViewEdit X/Y calibration.
@@ -39611,8 +39609,7 @@ private static void HandleGameViewPointerDown(
       if (!placementMatches)
         continue;
 
-      // Load the F3 front image only when an actual F3 front ornament
-      // is visible. S3 side Manacles use their own dedicated S3 asset.
+      // Generate F3 from the native F1 front sprite only when visible.
       Texture2D manacles = GetManaclesGeneratedF3FrontTexture();
       if (manacles == null || !manacles.isReadable)
         return;
@@ -39627,21 +39624,21 @@ private static void HandleGameViewPointerDown(
     if (cachedManaclesGeneratedF3FrontTexture != null)
       return cachedManaclesGeneratedF3FrontTexture;
 
-    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(ManaclesF3AssetPath);
-    if (texture == null)
+    Texture2D source = GetManaclesF1Texture();
+    if (source == null || !source.isReadable)
     {
-      Debug.LogError("Manacles F3: Missing native perspective asset: "
-          + ManaclesF3AssetPath);
+      Debug.LogError("Manacles F3: requires readable native F1 artwork at "
+          + ManaclesF1AssetPath);
       return null;
     }
-    if (texture.width != 9 || texture.height != 5 || !texture.isReadable)
-    {
-      Debug.LogError("Manacles F3: Expected readable 9x5 asset at "
-          + ManaclesF3AssetPath);
-      return null;
-    }
-    cachedManaclesGeneratedF3FrontTexture = texture;
-    return texture;
+
+    cachedManaclesGeneratedF3FrontTexture = GenerateDmScaledWallDecoration(
+        source,
+        ManaclesD3FrontWidth,
+        ManaclesD3FrontHeight,
+        WallOrnamentFarColorMap,
+        "Manacles F3 Generated from F1");
+    return cachedManaclesGeneratedF3FrontTexture;
   }
 
   private void BlitManaclesD2FrontIntoPreview(Color32[] pixels)
@@ -43143,12 +43140,14 @@ private static void HandleGameViewPointerDown(
     int x = defaultX;
     int y = defaultY;
     bool mirror = defaultMirror;
-    // Front F2 Manacles use the renderer's native position (83,93),
-    // not an old saved or temporary ViewEdit calibration.
-    bool useBuiltInManaclesF2 = IsManaclesOrnament(ornament)
-        && string.Equals(key, "OrnamentProjection:Manacles:F2",
-            System.StringComparison.Ordinal);
-    if (!useBuiltInManaclesF2)
+    // Front F2 and F3 Manacles use native renderer positions rather than
+    // saved or temporary ViewEdit calibration overrides.
+    bool useBuiltInManaclesFrontDistance = IsManaclesOrnament(ornament)
+        && (string.Equals(key, "OrnamentProjection:Manacles:F2",
+                System.StringComparison.Ordinal)
+            || string.Equals(key, "OrnamentProjection:Manacles:F3",
+                System.StringComparison.Ordinal));
+    if (!useBuiltInManaclesFrontDistance)
     {
       if (hasGenericProjection)
         ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
