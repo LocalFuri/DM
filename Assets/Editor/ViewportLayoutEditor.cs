@@ -41679,17 +41679,18 @@ private static void HandleGameViewPointerDown(
 
   // Experimental DOS/FTL visual projection for APPLE FLIGHT ONLY.
   // Stable visible-pixel rectangles measured from the native 320x200 DOSBox
-  // recording. Stage zero retains the established CSBwin launch projection;
-  // stages 1..5 use the five measured stable frames. The one-frame transition
-  // is excluded because it has not been verified as a genuine perspective stage.
+  // recording. Simulation stages 0..5 display the six observed positions;
+  // stage 0 is the initial release image and stage 5 is the final image.
   // This NEVER changes map coordinates, collisions, timing, or floor placement.
-  // DOS video gives five STABLE sprite sizes; preserve all of them.
+  // The last two DOS stages have the SAME 6x5 observed silhouette, but
+  // the sixth is 3 pixels farther left and 1 pixel lower (right-hand throw).
   // The first stable right-hand stage has visible center (155.5, 75).
   // Each later center is on the SAME line toward the configurable vanishing
   // point, with perspective progress tied to relative visible sprite width.
-  // Thus changing X/Y rotates the whole path without a per-stage X/Y guess.
-  private static readonly int[] DosAppleFlightW = { 15, 13, 10, 8, 6 };
-  private static readonly int[] DosAppleFlightH = { 12, 10, 7, 6, 5 };
+  // Preserve this projection for stages 0..4; the sixth has its own
+  // measured small translation, mirrored horizontally for left-side throws.
+  private static readonly int[] DosAppleFlightW = { 15, 13, 10, 8, 6, 6 };
+  private static readonly int[] DosAppleFlightH = { 12, 10, 7, 6, 5, 5 };
   private const float DosAppleStartCenterX = 155.5f;
   private const float DosAppleStartCenterY = 75.0f;
 
@@ -41701,8 +41702,8 @@ private static void HandleGameViewPointerDown(
         || instance == null || !string.Equals(instance.ItemType, "Apple",
           System.StringComparison.OrdinalIgnoreCase)) return false;
     // Stage 0 is the release frame. It must be visible before audio starts.
-    // Stage 1 uses the same first measured DOS sprite, then advances normally.
-    int stage = Mathf.Clamp(item.flightStage - 1, 0, DosAppleFlightW.Length - 1);
+    // Every simulation stage gets its own DOS image; do not repeat stage 0.
+    int stage = Mathf.Clamp(item.flightStage, 0, DosAppleFlightW.Length - 1);
     int width = DosAppleFlightW[stage];
     int height = DosAppleFlightH[stage];
     float scale = width / (float)DosAppleFlightW[0];
@@ -41715,6 +41716,11 @@ private static void HandleGameViewPointerDown(
     if (!item.right) centerX = 224f - centerX;
     int x = Mathf.RoundToInt(centerX - width * 0.5f);
     int y = Mathf.RoundToInt(centerY - height * 0.5f);
+    if (stage == 5)
+    {
+      x += item.right ? -3 : 3;
+      y += 1;
+    }
     rect = new Rect(x, y, width, height);
     return true;
   }
