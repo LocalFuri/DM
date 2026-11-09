@@ -1638,5 +1638,16 @@
       "Preserve verified V17 geometry, floor item rules, flight trajectory, and audio until evidence supports change"
     ],
     "verificationNote": "Sixth DOS visible image is confirmed; it appears airborne, but precise final landing event and sound synchronization remain unverified."
+  },
+  "windows_pc_local_timestamp_rule_20261109": {
+    "status": "active permanent rule",
+    "confirmedDate": "2026-11-09",
+    "instruction": "Always timestamp every changed or newly generated Dungeon Master Unity file, including Progression.json and ZIP entries, with the actual local date and time as displayed by the user's Windows PC. Use Europe/Berlin CET/CEST automatically, not UTC, and do not reuse an older source-file timestamp.",
+    "implementation": "For each modified output, set the file modification time to the actual current instant and encode its Europe/Berlin wall-clock date/time in the ZIP entry. ZIP timestamps have no timezone; verify Windows Explorer shows the expected German local time. Unchanged files retain their original modification timestamps.",
+    "format": "DD.MM.YYYY HH:MM:SS (24-hour PC local time)",
+    "relatedRules": [
+      "zip_delivery_file_timestamp_rule_20261028",
+      "german_file_timestamp_rule_20261029"
+    ]
   }
 }
