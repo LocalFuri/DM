@@ -39940,28 +39940,6 @@ private static void HandleGameViewPointerDown(
     return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 4;
   }
 
-  // Diagnostic only: measure actual opaque Hook bounds after Nearest scaling.
-  private static void LogHookScaledOpaqueSize(string perspective, Texture2D texture)
-  {
-    if (texture == null || !texture.isReadable) return;
-    Color32[] pixels = texture.GetPixels32();
-    int minX = texture.width, minY = texture.height, maxX = -1, maxY = -1;
-    int count = 0;
-    for (int y = 0; y < texture.height; y++)
-      for (int x = 0; x < texture.width; x++)
-        if (pixels[y * texture.width + x].a != 0)
-        {
-          count++;
-          minX = Mathf.Min(minX, x); maxX = Mathf.Max(maxX, x);
-          minY = Mathf.Min(minY, y); maxY = Mathf.Max(maxY, y);
-        }
-    Debug.Log("HOOK SIZE " + perspective + ": texture="
-        + texture.width + "x" + texture.height
-        + " opaque=" + (maxX < 0 ? "none" : (maxX - minX + 1) + "x" + (maxY - minY + 1))
-        + " bounds=" + (maxX < 0 ? "none" : minX + "," + minY + ".." + maxX + "," + maxY)
-        + " pixels=" + count + " method=Nearest");
-  }
-
   private Texture2D GetHookGeneratedF2FrontTexture()
   {
     if (cachedHookGeneratedF2FrontTexture != null)
@@ -39980,7 +39958,6 @@ private static void HandleGameViewPointerDown(
             1,
             "Hook F2 Nearest from F1");
 
-    LogHookScaledOpaqueSize("F2", cachedHookGeneratedF2FrontTexture);
     return cachedHookGeneratedF2FrontTexture;
   }
 
@@ -40094,7 +40071,6 @@ private static void HandleGameViewPointerDown(
       if (ownsCrop)
         UnityEngine.Object.DestroyImmediate(cropped);
     }
-    LogHookScaledOpaqueSize("S2", cachedHookSide2Texture);
     return cachedHookSide2Texture;
   }
 
@@ -40118,7 +40094,6 @@ private static void HandleGameViewPointerDown(
       return null;
     }
     cachedHookSide3Texture = texture;
-    LogHookScaledOpaqueSize("S3", cachedHookSide3Texture);
     return cachedHookSide3Texture;
   }
 
