@@ -1649,5 +1649,52 @@
       "zip_delivery_file_timestamp_rule_20261028",
       "german_file_timestamp_rule_20261029"
     ]
+  },
+  "todo_dos_apple_floor_subtile_scaling_20261109": {
+    "category": "To do List",
+    "date": "2026-11-09",
+    "status": "POSTPONED — do not implement until user explicitly resumes",
+    "title": "Investigate DOS-style distance scaling for floor items by subtile, starting with Apple",
+    "objective": "Optional experiment to reproduce FTL DOS Apple floor-size differences using the existing six-stage Apple throwing nearest-neighbor scaler, without replacing the working CSBwin-based floor rendering.",
+    "referenceTest": {
+      "level": 0,
+      "playerTile": [
+        4,
+        10
+      ],
+      "facing": "North",
+      "dosScreenshots": [
+        "4,10 north - apple left top.png",
+        "4,10 north - apple left bottom.png"
+      ],
+      "topLeftVisibleBoundsPx": [
+        13,
+        10
+      ],
+      "bottomLeftVisibleBoundsPx": [
+        15,
+        12
+      ],
+      "note": "DOS screenshots show smaller Apple at top-left and full-size Apple at bottom-left. Dimensions alone do not prove algorithm identity."
+    },
+    "observations": [
+      "At player (4,10) North, recorded drop at tile (4,9), corner W for screen click X=77.2 Y=138.9; other drop at tile (4,10), corner E (screen X=154.4 Y=153.8).",
+      "The initial test looked for the Apple on the player tile and did not activate for tile (4,9).",
+      "Subsequent targeted F1 test was not accepted; user requested revert.",
+      "Original CSBwin rendering is preferred unless DOS-specific path is demonstrated correct."
+    ],
+    "currentState": "Reverted to ViewportLayoutEditor.cs from 2026-11-09 18:48:02 backup. No experimental DOS Apple scaling or diagnostic should remain. Existing throwing animation and floor placement remain as previously working.",
+    "resumeTasks": [
+      "Inspect live floor-subtile identification and actual drawing path, including which tile and corner maps to visual top-left vs bottom-left.",
+      "Compare the actual throwing scaler pixel output against both user-provided DOS Apple screenshots; use only those references.",
+      "If justified, isolate Apple-only optional Top Left scaling, compare in Game View, and do not alter other floor items or verified placements.",
+      "Do not revive the experiment without user request."
+    ],
+    "guardrails": [
+      "Do not modify existing CSBwin floor scaling by default.",
+      "Do not alter throwing animation, projectile physics, V17 geometry, clipping, or approved item calibrations.",
+      "Avoid per-coordinate hardcoded runtime exceptions; a successful design must work generically by subtile and viewing direction.",
+      "Keep Manacles S3 asset registration separate from this task."
+    ]
   }
 }
