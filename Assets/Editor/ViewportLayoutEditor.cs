@@ -957,6 +957,15 @@ public class ViewportLayoutEditor : EditorWindow
   private bool fitWidthToContent;
   private float fittedContentRight;
 
+  // TEMPORARY Hook-only virtual-camera Y projection. Never serialized to
+  // calibration JSON or EditorPrefs; off is the safe default after reload.
+  private bool hookProjectionExperimentEnabled;
+  private float hookProjectionHorizonTopY = 72f;
+  private float hookProjectionVerticalFov = 65f;
+  private float hookProjectionMountHeight = 0f;
+  private float hookProjectionS1Distance = 1.5f;
+  private float hookProjectionDistanceStep = 1f;
+
   private bool hookedViewEditGlobalNavigation;
 
   private static int s_viewEditGlobalNavOwners;
@@ -13543,6 +13552,42 @@ private static void HandleGameViewPointerDown(
     {
       StrictManualOrnamentMode = strictAfter;
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
+    }
+
+    // TEMPORARY: Hook S1/S2/S3 vertical-position experiment only.
+    // No changes are saved to ViewEdit calibration or renderer assets.
+    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+    bool projectedHook = EditorGUILayout.ToggleLeft(
+        "Hook 3D Projection (temporary Y only)",
+        hookProjectionExperimentEnabled);
+    bool projectionChanged = projectedHook != hookProjectionExperimentEnabled;
+    hookProjectionExperimentEnabled = projectedHook;
+    if (hookProjectionExperimentEnabled)
+    {
+      EditorGUI.BeginChangeCheck();
+      hookProjectionHorizonTopY = EditorGUILayout.Slider(
+          "Horizon top Y", hookProjectionHorizonTopY, 0f, 199f);
+      hookProjectionVerticalFov = EditorGUILayout.Slider(
+          "Vertical FOV", hookProjectionVerticalFov, 30f, 110f);
+      hookProjectionMountHeight = EditorGUILayout.Slider(
+          "Mount height (tiles)", hookProjectionMountHeight, -1f, 1f);
+      hookProjectionS1Distance = EditorGUILayout.Slider(
+          "S1 distance (tiles)", hookProjectionS1Distance, 0.5f, 4f);
+      hookProjectionDistanceStep = EditorGUILayout.Slider(
+          "Distance step (tiles)", hookProjectionDistanceStep, 0.5f, 2f);
+      projectionChanged |= EditorGUI.EndChangeCheck();
+      EditorGUILayout.LabelField(
+          "Projected top Y: S1 " + GetHookProjectedTopY(1)
+          + "  S2 " + GetHookProjectedTopY(2)
+          + "  S3 " + GetHookProjectedTopY(3), EditorStyles.miniLabel);
+    }
+    EditorGUILayout.EndVertical();
+    if (projectionChanged)
+    {
+      // Rebuild preview from the existing calibrated state. No Apply / save.
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
     }
 
     // Explicit ViewEdit redraw: allows diagnostic capture at the current pose
@@ -43407,6 +43452,48 @@ private static void HandleGameViewPointerDown(
     BlitPieceIntoPreview(pixels, texture, x, actualY, mirror);
   }
 
+  // Screen projection is top-origin, but BlitPieceIntoPreview uses a
+  // bottom-origin framebuffer Y: 200 - topY - spriteHeight.
+  // This only determines an ornament's Y, never its size or visibility.
+  private int GetHookProjectedTopY(int sideDepth)
+  {
+    float focalPixels = (PreviewHeight * 0.5f)
+        / Mathf.Tan(hookProjectionVerticalFov * 0.5f * Mathf.Deg2Rad);
+    float distance = hookProjectionS1Distance
+        + (sideDepth - 1) * hookProjectionDistanceStep;
+    float topY = hookProjectionHorizonTopY
+        - focalPixels * hookProjectionMountHeight / distance;
+    return Mathf.RoundToInt(topY);
+  }
+
+  private bool TryGetHookProjectionExperimentY(
+      WallOrnamentPlacement ornament, string projectionKey,
+      Texture2D texture, out int projectedBottomY)
+  {
+    projectedBottomY = 0;
+    if (!hookProjectionExperimentEnabled || !IsHookOrnament(ornament)
+        || texture == null || string.IsNullOrEmpty(projectionKey))
+      return false;
+    const string prefix = "OrnamentProjection:Hook:S";
+    if (!projectionKey.StartsWith(prefix,
+        System.StringComparison.Ordinal))
+      return false;
+    int depthCharAt = prefix.Length;
+    if (projectionKey.Length <= depthCharAt)
+      return false;
+    char depthChar = projectionKey[depthCharAt];
+    if (depthChar < '1' || depthChar > '3')
+      return false;
+    // Keys are Hook:S1, Hook:S1:Left, ...; do not touch other keys.
+    if (projectionKey.Length > depthCharAt + 1
+        && projectionKey[depthCharAt + 1] != ':')
+      return false;
+    int depth = depthChar - '0';
+    projectedBottomY = PreviewHeight - GetHookProjectedTopY(depth)
+        - texture.height;
+    return true;
+  }
+
   private void BlitOrnamentPieceIntoPreview(
       Color32[] pixels,
       Texture2D texture,
@@ -43462,6 +43549,11 @@ private static void HandleGameViewPointerDown(
         ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
       ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
     }
+    // Temporary projection wins only for visible Hook S1/S2/S3, after all
+    // normal calibration was read. Off immediately restores original Y.
+    if (TryGetHookProjectionExperimentY(
+            ornament, key, texture, out int experimentY))
+      y = experimentY;
     BlitPieceIntoPreview(pixels, texture, x, y, mirror);
   }
 
