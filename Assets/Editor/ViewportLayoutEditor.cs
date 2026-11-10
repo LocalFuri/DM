@@ -965,6 +965,11 @@ public class ViewportLayoutEditor : EditorWindow
   private float hookProjectionMountHeight = 0f;
   private float hookProjectionS1Distance = 1.5f;
   private float hookProjectionDistanceStep = 1f;
+  // Independent, opt-in second-category trial. Never replaces saved positions.
+  private bool manaclesProjectionExperimentEnabled;
+  // Full 320x200 Game View coordinates: CSBwin viewport Y=38 + viewport top Y=33.
+  private float manaclesProjectionHorizonTopY = 71f;
+  private float manaclesProjectionMountHeight = 0f;
 
   private bool hookedViewEditGlobalNavigation;
 
@@ -13554,7 +13559,7 @@ private static void HandleGameViewPointerDown(
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
 
-    // TEMPORARY: Hook S1/S2/S3 vertical-position experiment only.
+    // TEMPORARY: shared side-wall Y-projection experiments (Hook + Manacles).
     // No changes are saved to ViewEdit calibration or renderer assets.
     EditorGUILayout.BeginVertical(EditorStyles.helpBox);
     bool projectedHook = EditorGUILayout.ToggleLeft(
@@ -13580,6 +13585,31 @@ private static void HandleGameViewPointerDown(
           "Projected top Y: S1 " + GetHookProjectedTopY(1)
           + "  S2 " + GetHookProjectedTopY(2)
           + "  S3 " + GetHookProjectedTopY(3), EditorStyles.miniLabel);
+    }
+    // Second ornament trial: shared projection formula, independent anchor.
+    // The approved Manacles remain unchanged unless explicitly enabled.
+    bool projectedManacles = EditorGUILayout.ToggleLeft(
+        "Manacles S1/S2/S3 3D Y (experimental)",
+        manaclesProjectionExperimentEnabled);
+    projectionChanged |= projectedManacles != manaclesProjectionExperimentEnabled;
+    manaclesProjectionExperimentEnabled = projectedManacles;
+    if (manaclesProjectionExperimentEnabled)
+    {
+      EditorGUI.BeginChangeCheck();
+      manaclesProjectionHorizonTopY = EditorGUILayout.Slider(
+          "Manacles screen top Y (320x200)", manaclesProjectionHorizonTopY, 0f, 199f);
+      manaclesProjectionMountHeight = EditorGUILayout.Slider(
+          "Manacles mount height (tiles)", manaclesProjectionMountHeight,
+          -1f, 1f);
+      projectionChanged |= EditorGUI.EndChangeCheck();
+      EditorGUILayout.LabelField(
+          "Manacles projected top Y: S1 " + GetWallProjectedTopY(
+              1, manaclesProjectionHorizonTopY, manaclesProjectionMountHeight)
+          + "  S2 " + GetWallProjectedTopY(
+              2, manaclesProjectionHorizonTopY, manaclesProjectionMountHeight)
+          + "  S3 " + GetWallProjectedTopY(
+              3, manaclesProjectionHorizonTopY, manaclesProjectionMountHeight),
+          EditorStyles.miniLabel);
     }
     EditorGUILayout.EndVertical();
     if (projectionChanged)
@@ -39357,7 +39387,8 @@ private static void HandleGameViewPointerDown(
           GetManaclesSideS3Rect(
               true, out int renderX, out int renderY, out _, out _);
           // V17-gated direct blit: no legacy calibration/preview overrides.
-          BlitPieceIntoPreview(pixels, side, renderX, renderY, false);
+          BlitPieceIntoPreview(pixels, side, renderX,
+              GetOptionalManaclesDirectSideY(3, side, renderY), false);
         }
         drawnLeft = true;
       }
@@ -39369,7 +39400,8 @@ private static void HandleGameViewPointerDown(
         {
           GetManaclesSideS3Rect(
               false, out int renderX, out int renderY, out _, out _);
-          BlitPieceIntoPreview(pixels, side, renderX, renderY, true);
+          BlitPieceIntoPreview(pixels, side, renderX,
+              GetOptionalManaclesDirectSideY(3, side, renderY), true);
         }
         drawnRight = true;
       }
@@ -39457,7 +39489,8 @@ private static void HandleGameViewPointerDown(
           GetManaclesSideS2Rect(
               true, out int renderX, out int renderY, out _, out _);
           // V17-gated direct blit: no legacy calibration/preview overrides.
-          BlitPieceIntoPreview(pixels, side, renderX, renderY, false);
+          BlitPieceIntoPreview(pixels, side, renderX,
+              GetOptionalManaclesDirectSideY(2, side, renderY), false);
         }
         leftDrawn = true;
       }
@@ -39470,7 +39503,8 @@ private static void HandleGameViewPointerDown(
         {
           GetManaclesSideS2Rect(
               false, out int renderX, out int renderY, out _, out _);
-          BlitPieceIntoPreview(pixels, side, renderX, renderY, true);
+          BlitPieceIntoPreview(pixels, side, renderX,
+              GetOptionalManaclesDirectSideY(2, side, renderY), true);
         }
         rightDrawn = true;
       }
@@ -43452,46 +43486,80 @@ private static void HandleGameViewPointerDown(
     BlitPieceIntoPreview(pixels, texture, x, actualY, mirror);
   }
 
-  // Screen projection is top-origin, but BlitPieceIntoPreview uses a
-  // bottom-origin framebuffer Y: 200 - topY - spriteHeight.
-  // This only determines an ornament's Y, never its size or visibility.
-  private int GetHookProjectedTopY(int sideDepth)
+  // Shared projection math for wall-mounted sprite tops; no geometry,
+  // scaling, visibility, or calibration changes. Each artwork category may
+  // define its own horizon/attachment height while using the same camera.
+  private int GetWallProjectedTopY(
+      int sideDepth, float topHorizon, float mountHeight)
   {
     float focalPixels = (PreviewHeight * 0.5f)
         / Mathf.Tan(hookProjectionVerticalFov * 0.5f * Mathf.Deg2Rad);
     float distance = hookProjectionS1Distance
         + (sideDepth - 1) * hookProjectionDistanceStep;
-    float topY = hookProjectionHorizonTopY
-        - focalPixels * hookProjectionMountHeight / distance;
-    return Mathf.RoundToInt(topY);
+    return Mathf.RoundToInt(topHorizon - focalPixels * mountHeight / distance);
   }
 
-  private bool TryGetHookProjectionExperimentY(
+  private int GetHookProjectedTopY(int sideDepth)
+  {
+    return GetWallProjectedTopY(
+        sideDepth, hookProjectionHorizonTopY, hookProjectionMountHeight);
+  }
+
+  private static bool TryParseSideProjectionDepth(
+      string projectionKey, string ornamentName, out int depth)
+  {
+    depth = 0;
+    if (string.IsNullOrEmpty(projectionKey))
+      return false;
+    string prefix = "OrnamentProjection:" + ornamentName + ":S";
+    if (!projectionKey.StartsWith(prefix, System.StringComparison.Ordinal)
+        || projectionKey.Length <= prefix.Length)
+      return false;
+    char c = projectionKey[prefix.Length];
+    if (c < '1' || c > '3')
+      return false;
+    if (projectionKey.Length > prefix.Length + 1
+        && projectionKey[prefix.Length + 1] != ':')
+      return false;
+    depth = c - '0';
+    return true;
+  }
+
+  private bool TryGetOrnamentProjectionExperimentY(
       WallOrnamentPlacement ornament, string projectionKey,
       Texture2D texture, out int projectedBottomY)
   {
     projectedBottomY = 0;
-    if (!hookProjectionExperimentEnabled || !IsHookOrnament(ornament)
-        || texture == null || string.IsNullOrEmpty(projectionKey))
+    if (ornament == null || texture == null)
       return false;
-    const string prefix = "OrnamentProjection:Hook:S";
-    if (!projectionKey.StartsWith(prefix,
-        System.StringComparison.Ordinal))
-      return false;
-    int depthCharAt = prefix.Length;
-    if (projectionKey.Length <= depthCharAt)
-      return false;
-    char depthChar = projectionKey[depthCharAt];
-    if (depthChar < '1' || depthChar > '3')
-      return false;
-    // Keys are Hook:S1, Hook:S1:Left, ...; do not touch other keys.
-    if (projectionKey.Length > depthCharAt + 1
-        && projectionKey[depthCharAt + 1] != ':')
-      return false;
-    int depth = depthChar - '0';
-    projectedBottomY = PreviewHeight - GetHookProjectedTopY(depth)
-        - texture.height;
-    return true;
+    if (hookProjectionExperimentEnabled && IsHookOrnament(ornament)
+        && TryParseSideProjectionDepth(projectionKey, "Hook", out int hookDepth))
+    {
+      projectedBottomY = PreviewHeight - GetHookProjectedTopY(hookDepth)
+          - texture.height;
+      return true;
+    }
+    if (manaclesProjectionExperimentEnabled && IsManaclesOrnament(ornament)
+        && TryParseSideProjectionDepth(
+            projectionKey, "Manacles", out int manaclesDepth))
+    {
+      projectedBottomY = PreviewHeight - GetWallProjectedTopY(
+          manaclesDepth, manaclesProjectionHorizonTopY,
+          manaclesProjectionMountHeight) - texture.height;
+      return true;
+    }
+    return false;
+  }
+
+  // Manacles S2/S3 bypass the shared blit function in the legacy renderer.
+  // Apply the same optional Y projection to their direct blits only.
+  private int GetOptionalManaclesDirectSideY(int depth, Texture2D texture, int originalY)
+  {
+    if (!manaclesProjectionExperimentEnabled || texture == null)
+      return originalY;
+    return PreviewHeight - GetWallProjectedTopY(
+        depth, manaclesProjectionHorizonTopY,
+        manaclesProjectionMountHeight) - texture.height;
   }
 
   private void BlitOrnamentPieceIntoPreview(
@@ -43549,9 +43617,9 @@ private static void HandleGameViewPointerDown(
         ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
       ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
     }
-    // Temporary projection wins only for visible Hook S1/S2/S3, after all
-    // normal calibration was read. Off immediately restores original Y.
-    if (TryGetHookProjectionExperimentY(
+    // Opt-in projection changes Y only, after normal calibration.
+    // Off immediately restores original approved positions.
+    if (TryGetOrnamentProjectionExperimentY(
             ornament, key, texture, out int experimentY))
       y = experimentY;
     BlitPieceIntoPreview(pixels, texture, x, y, mirror);
