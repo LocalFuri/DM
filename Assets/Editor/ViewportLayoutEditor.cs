@@ -1548,6 +1548,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:ChampionMirror:S3:Right|138|116|true|639291392277477819
   // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
   // REF OrnamentProjection:Hook:S2:Left|66|117|false|639299399669516077
+  // REF OrnamentProjection:Manacles:S3:Left|79|108|false|639299448141357825
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
@@ -13589,7 +13590,7 @@ private static void HandleGameViewPointerDown(
     // Second ornament trial: shared projection formula, independent anchor.
     // The approved Manacles remain unchanged unless explicitly enabled.
     bool projectedManacles = EditorGUILayout.ToggleLeft(
-        "Manacles S1/S2/S3 3D Y (experimental)",
+        "Manacles S3 3D Y + ViewEdit X/Y (experimental)",
         manaclesProjectionExperimentEnabled);
     projectionChanged |= projectedManacles != manaclesProjectionExperimentEnabled;
     manaclesProjectionExperimentEnabled = projectedManacles;
@@ -13603,13 +13604,9 @@ private static void HandleGameViewPointerDown(
           -1f, 1f);
       projectionChanged |= EditorGUI.EndChangeCheck();
       EditorGUILayout.LabelField(
-          "Manacles projected top Y: S1 " + GetWallProjectedTopY(
-              1, manaclesProjectionHorizonTopY, manaclesProjectionMountHeight)
-          + "  S2 " + GetWallProjectedTopY(
-              2, manaclesProjectionHorizonTopY, manaclesProjectionMountHeight)
-          + "  S3 " + GetWallProjectedTopY(
-              3, manaclesProjectionHorizonTopY, manaclesProjectionMountHeight),
-          EditorStyles.miniLabel);
+          "Manacles projected S3 top Y: " + GetWallProjectedTopY(
+              3, manaclesProjectionHorizonTopY, manaclesProjectionMountHeight)
+          + "  (S1/S2 stay unchanged)", EditorStyles.miniLabel);
     }
     EditorGUILayout.EndVertical();
     if (projectionChanged)
@@ -27587,7 +27584,26 @@ private static void HandleGameViewPointerDown(
     int defaultX = codedX;
     int defaultY = codedY;
     bool defaultMirror = codedMirror;
-    if (hasGenericProjection)
+    // S3 experiment: use the projected top as the editable ViewEdit baseline.
+    // The normal S3 rendering is untouched while projection is Off.
+    bool experimentalManaclesS3 = manaclesProjectionExperimentEnabled
+        && IsManaclesOrnament(ornament)
+        && (string.Equals(key, "OrnamentProjection:Manacles:S3:Left",
+                System.StringComparison.Ordinal)
+            || string.Equals(key, "OrnamentProjection:Manacles:S3:Right",
+                System.StringComparison.Ordinal));
+    if (experimentalManaclesS3)
+    {
+      Texture2D s3Texture = GetManaclesGeneratedD3SideTexture();
+      if (s3Texture != null)
+        defaultY = PreviewHeight - GetWallProjectedTopY(
+            3, manaclesProjectionHorizonTopY,
+            manaclesProjectionMountHeight) - s3Texture.height;
+      // S3 calibrations are applied only when its experiment is On.
+      ApplyManaclesS3AcceptedReference(
+          key, ref defaultX, ref defaultY, ref defaultMirror);
+    }
+    else if (hasGenericProjection)
       ApplyAcceptedOrnamentReference(
           key, ref defaultX, ref defaultY, ref defaultMirror);
 
@@ -39386,9 +39402,10 @@ private static void HandleGameViewPointerDown(
         {
           GetManaclesSideS3Rect(
               true, out int renderX, out int renderY, out _, out _);
-          // V17-gated direct blit: no legacy calibration/preview overrides.
-          BlitPieceIntoPreview(pixels, side, renderX,
-              GetOptionalManaclesDirectSideY(3, side, renderY), false);
+          bool renderMirror = false;
+          ApplyManaclesS3ExperimentalPlacement(
+              ornament, side, ref renderX, ref renderY, ref renderMirror);
+          BlitPieceIntoPreview(pixels, side, renderX, renderY, renderMirror);
         }
         drawnLeft = true;
       }
@@ -39400,8 +39417,10 @@ private static void HandleGameViewPointerDown(
         {
           GetManaclesSideS3Rect(
               false, out int renderX, out int renderY, out _, out _);
-          BlitPieceIntoPreview(pixels, side, renderX,
-              GetOptionalManaclesDirectSideY(3, side, renderY), true);
+          bool renderMirror = true;
+          ApplyManaclesS3ExperimentalPlacement(
+              ornament, side, ref renderX, ref renderY, ref renderMirror);
+          BlitPieceIntoPreview(pixels, side, renderX, renderY, renderMirror);
         }
         drawnRight = true;
       }
@@ -43539,9 +43558,11 @@ private static void HandleGameViewPointerDown(
           - texture.height;
       return true;
     }
+    // S1 and approved S2 always retain their existing Y positions.
     if (manaclesProjectionExperimentEnabled && IsManaclesOrnament(ornament)
         && TryParseSideProjectionDepth(
-            projectionKey, "Manacles", out int manaclesDepth))
+            projectionKey, "Manacles", out int manaclesDepth)
+        && manaclesDepth == 3)
     {
       projectedBottomY = PreviewHeight - GetWallProjectedTopY(
           manaclesDepth, manaclesProjectionHorizonTopY,
@@ -43551,11 +43572,45 @@ private static void HandleGameViewPointerDown(
     return false;
   }
 
-  // Manacles S2/S3 bypass the shared blit function in the legacy renderer.
-  // Apply the same optional Y projection to their direct blits only.
-  private int GetOptionalManaclesDirectSideY(int depth, Texture2D texture, int originalY)
+  // Save/load Manacles S3 calibration only for the opt-in experiment.
+  // Its original automatic S3 position remains available with the toggle Off.
+  private void ApplyManaclesS3AcceptedReference(
+      string key, ref int x, ref int y, ref bool mirror)
+  {
+    if (string.IsNullOrEmpty(key))
+      return;
+    EnsureAcceptedOrnamentReferencesLoaded();
+    if (cachedAcceptedOrnamentReferences.TryGetValue(
+        key, out AcceptedOrnamentReference accepted))
+    {
+      x = accepted.x;
+      y = accepted.y;
+      mirror = accepted.mirror;
+    }
+  }
+
+  // The S3 sprite uses a direct V17-gated drawing path. Make the existing
+  // ViewEdit X/Y/Mirror fields effective AFTER applying the experimental Y.
+  private void ApplyManaclesS3ExperimentalPlacement(
+      WallOrnamentPlacement ornament, Texture2D texture,
+      ref int x, ref int y, ref bool mirror)
   {
     if (!manaclesProjectionExperimentEnabled || texture == null)
+      return;
+    y = PreviewHeight - GetWallProjectedTopY(
+        3, manaclesProjectionHorizonTopY,
+        manaclesProjectionMountHeight) - texture.height;
+    if (!TryGetWallOrnamentProjectionOverrideDescriptor(
+        ornament, out string key, out _))
+      return;
+    ApplyManaclesS3AcceptedReference(key, ref x, ref y, ref mirror);
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+  }
+
+  // Manacles S2 bypasses the shared blit function and remains untouched.
+  private int GetOptionalManaclesDirectSideY(int depth, Texture2D texture, int originalY)
+  {
+    if (!manaclesProjectionExperimentEnabled || depth != 3 || texture == null)
       return originalY;
     return PreviewHeight - GetWallProjectedTopY(
         depth, manaclesProjectionHorizonTopY,
@@ -43621,7 +43676,17 @@ private static void HandleGameViewPointerDown(
     // Off immediately restores original approved positions.
     if (TryGetOrnamentProjectionExperimentY(
             ornament, key, texture, out int experimentY))
+    {
       y = experimentY;
+      if (manaclesProjectionExperimentEnabled
+          && IsManaclesOrnament(ornament)
+          && key.StartsWith("OrnamentProjection:Manacles:S3:",
+              System.StringComparison.Ordinal))
+      {
+        ApplyManaclesS3AcceptedReference(key, ref x, ref y, ref mirror);
+        ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+      }
+    }
     BlitPieceIntoPreview(pixels, texture, x, y, mirror);
   }
 
