@@ -39450,26 +39450,136 @@ private static void HandleGameViewPointerDown(
     return cachedManaclesGeneratedD2SideTexture;
   }
 
-  // S2 live shrink recovered from CSBwin's runtime pixel trace for graphic
-  // 193 at Level 0 (4,11), facing North. The native 32x42 S1 PNG contains
-  // exactly the same indexed art as the original 32x48 graphic with two
-  // transparent rows above and four below (480/480 sampled indices verified).
-  // Only S2 uses this proven path; S1, F1/F3, and S3 remain unchanged.
-  private static Texture2D GenerateManaclesS2FromNativeS1(
-      Texture2D source, int targetWidth, int targetHeight)
+  // Shared, cache-friendly ornament perspective texture generator.
+  // The default profile uses center-sampled nearest-neighbor and preserves
+  // the original RGB values. All dimensions are explicit; the caller still
+  // performs V17 visibility, occlusion, and viewport clipping independently.
+  private enum OrnamentPixelSampling
   {
-    if (source == null || !source.isReadable)
-      return null;
-    if (source.width != 32 || source.height != 42
-        || targetWidth != 16 || targetHeight != 30)
+    NearestCenter,
+    ApprovedManaclesS2
+  }
+
+  private static Texture2D BuildWallOrnamentPerspectiveTexture(
+      Texture2D source,
+      int canvasWidth,
+      int canvasHeight,
+      int paddingLeft,
+      int paddingTop,
+      int targetWidth,
+      int targetHeight,
+      bool mirror,
+      string textureName,
+      OrnamentPixelSampling sampling = OrnamentPixelSampling.NearestCenter,
+      Color32[] indexedPalette = null,
+      byte[] paletteMap = null)
+  {
+    if (source == null || !source.isReadable
+        || canvasWidth <= 0 || canvasHeight <= 0
+        || targetWidth <= 0 || targetHeight <= 0
+        || paddingLeft < 0 || paddingTop < 0
+        || source.width + paddingLeft > canvasWidth
+        || source.height + paddingTop > canvasHeight)
     {
-      Debug.LogError("Manacles S2 live scaling: unexpected source or "
-          + "destination dimensions. Expected 32x42 -> 16x30.");
+      Debug.LogError("Wall ornament perspective: invalid source, "
+          + "canvas, padding, or target dimensions for " + textureName);
+      return null;
+    }
+    if ((indexedPalette == null) != (paletteMap == null))
+    {
+      Debug.LogError("Wall ornament perspective: palette and color map "
+          + "must both be set, or both omitted, for " + textureName);
+      return null;
+    }
+    if (sampling == OrnamentPixelSampling.ApprovedManaclesS2
+        && (canvasWidth != 32 || canvasHeight != 48
+            || paddingLeft != 0 || paddingTop != 2
+            || targetWidth != 16 || targetHeight != 30))
+    {
+      Debug.LogError("Approved Manacles S2 sampling requires "
+          + "32x48 canvas, top padding 2, and 16x30 output.");
       return null;
     }
 
-    // Exact palette 11946 read at runtime, not rounded stage-1 approximations.
-    // These values are used after applying CSBwin's medium-distance color map.
+    Color32[] src = source.GetPixels32();
+    Color32[] dst = new Color32[targetWidth * targetHeight];
+    const int manaclesS2VerticalStep = 104832;
+    for (int topY = 0; topY < targetHeight; topY++)
+    {
+      int canvasY = sampling == OrnamentPixelSampling.ApprovedManaclesS2
+          ? (int)(((long)topY * manaclesS2VerticalStep + 0x4000) >> 16)
+          : (int)(((long)(2 * topY + 1) * canvasHeight)
+              / (2L * targetHeight));
+      int localY = canvasY - paddingTop;
+      if (localY < 0 || localY >= source.height)
+        continue;
+      int srcRow = (source.height - 1 - localY) * source.width;
+      int dstRow = (targetHeight - 1 - topY) * targetWidth;
+      for (int x = 0; x < targetWidth; x++)
+      {
+        int canvasX = sampling == OrnamentPixelSampling.ApprovedManaclesS2
+            ? 2 * x + 1
+            : (int)(((long)(2 * x + 1) * canvasWidth)
+                / (2L * targetWidth));
+        int localX = canvasX - paddingLeft;
+        if (localX < 0 || localX >= source.width)
+          continue;
+        Color32 color = src[srcRow + localX];
+        if (color.a == 0)
+          continue;
+        if (indexedPalette != null)
+        {
+          int paletteIndex = -1;
+          for (int i = 0; i < indexedPalette.Length; i++)
+          {
+            Color32 candidate = indexedPalette[i];
+            if (color.r == candidate.r && color.g == candidate.g
+                && color.b == candidate.b)
+            {
+              paletteIndex = i;
+              break;
+            }
+          }
+          if (paletteIndex < 0 || paletteIndex >= paletteMap.Length
+              || paletteMap[paletteIndex] >= indexedPalette.Length)
+          {
+            Debug.LogError("Wall ornament perspective: unknown palette "
+                + "color at (" + localX + "," + localY + ") for "
+                + textureName);
+            return null;
+          }
+          int mappedIndex = paletteMap[paletteIndex];
+          if (mappedIndex == 10) // Original ornament transparency key.
+            continue;
+          color = indexedPalette[mappedIndex];
+        }
+        int targetX = mirror ? targetWidth - 1 - x : x;
+        dst[dstRow + targetX] = color;
+      }
+    }
+    Texture2D result = new Texture2D(
+        targetWidth, targetHeight, TextureFormat.RGBA32, false);
+    result.name = textureName;
+    result.filterMode = FilterMode.Point;
+    result.wrapMode = TextureWrapMode.Clamp;
+    result.SetPixels32(dst);
+    result.Apply(false, false);
+    return result;
+  }
+
+  // Approved Manacles S2 is intentionally a compatibility profile: the
+  // shared helper can use our simpler nearest-neighbor rule for new ornaments
+  // while reproducing the already verified S2 output without any changes.
+  private static Texture2D GenerateManaclesS2FromNativeS1(
+      Texture2D source, int targetWidth, int targetHeight)
+  {
+    if (source == null || !source.isReadable
+        || source.width != 32 || source.height != 42
+        || targetWidth != 16 || targetHeight != 30)
+    {
+      Debug.LogError("Manacles S2 live scaling: expected 32x42 -> 16x30.");
+      return null;
+    }
     Color32[] runtimePalette = {
       new Color32(0, 0, 0, 255),
       new Color32(109, 109, 109, 255),
@@ -39488,59 +39598,11 @@ private static void HandleGameViewPointerDown(
       new Color32(0, 0, 255, 255),
       new Color32(255, 255, 255, 255)
     };
-    Color32[] src = source.GetPixels32();
-    Color32[] dst = new Color32[targetWidth * targetHeight];
-    // CSBwin's measured fixed-step source coordinates, top down:
-    // x = 1,3,...,31; y = 0,1,3,5,...,46 in the padded 32x48 canvas.
-    // Use the original 16.16 vertical step and verified phase (0x4000).
-    const int verticalStep = 104832;
-    const int topTransparentRows = 2;
-    for (int topY = 0; topY < targetHeight; topY++)
-    {
-      int originalY = (int)(((long)topY * verticalStep + 0x4000) >> 16);
-      int sourceTopY = originalY - topTransparentRows;
-      if (sourceTopY < 0 || sourceTopY >= source.height)
-        continue;
-      int sourceUnityY = source.height - 1 - sourceTopY;
-      int targetUnityY = targetHeight - 1 - topY;
-      for (int x = 0; x < targetWidth; x++)
-      {
-        Color32 color = src[sourceUnityY * source.width + (2 * x + 1)];
-        if (color.a == 0)
-          continue;
-        // The same original palette is used for S1, so exact RGB lookup
-        // is preferable to nearest-colour guesses. Fail visibly if it changes.
-        int originalIndex = -1;
-        for (int i = 0; i < runtimePalette.Length; i++)
-        {
-          Color32 candidate = runtimePalette[i];
-          if (color.r == candidate.r && color.g == candidate.g
-              && color.b == candidate.b)
-          {
-            originalIndex = i;
-            break;
-          }
-        }
-        if (originalIndex < 0)
-        {
-          Debug.LogError("Manacles S2: source pixel is not in the verified "
-              + "CSBwin palette at (" + (2 * x + 1) + "," + sourceTopY + ").");
-          return null;
-        }
-        int mappedIndex = WallOrnamentMediumColorMap[originalIndex];
-        if (mappedIndex == 10) // CSBwin's transparent colour
-          continue;
-        dst[targetUnityY * targetWidth + x] = runtimePalette[mappedIndex];
-      }
-    }
-    Texture2D result = new Texture2D(
-        targetWidth, targetHeight, TextureFormat.RGBA32, false);
-    result.name = "Manacles S2 CSBwin Live ShrinkBLT";
-    result.filterMode = FilterMode.Point;
-    result.wrapMode = TextureWrapMode.Clamp;
-    result.SetPixels32(dst);
-    result.Apply(false, false);
-    return result;
+    return BuildWallOrnamentPerspectiveTexture(
+        source, 32, 48, 0, 2, targetWidth, targetHeight, false,
+        "Manacles S2 Approved Live Perspective",
+        OrnamentPixelSampling.ApprovedManaclesS2,
+        runtimePalette, WallOrnamentMediumColorMap);
   }
 
   // The shared wall-ornament shrink remaps this side graphic's metal greys
