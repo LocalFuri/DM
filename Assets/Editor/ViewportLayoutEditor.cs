@@ -39143,10 +39143,112 @@ private static void HandleGameViewPointerDown(
 
     GetManaclesSideS3Rect(
         true, out _, out _, out int width, out int height);
-    cachedManaclesGeneratedD3SideTexture = GenerateManaclesSideScaled(
-        source, width, height,
-        "Manacles S3 Generated from S1 CSBwin geometry");
+    cachedManaclesGeneratedD3SideTexture = GenerateManaclesS3FromNativeS1(
+        source, width, height);
     return cachedManaclesGeneratedD3SideTexture;
+  }
+
+  // S3 exact live shrink, verified against the 180-pixel CSBwin runtime
+  // trace for graphic 193 at Level 0 (4,12) facing North. The native 32x42
+  // Manacles_S1 artwork occupies rows 2..43 of the original 32x48 image.
+  // Do not change the approved S2 scaling path.
+  private static Texture2D GenerateManaclesS3FromNativeS1(
+      Texture2D source, int targetWidth, int targetHeight)
+  {
+    if (source == null || !source.isReadable)
+      return null;
+    if (source.width != 32 || source.height != 42
+        || targetWidth != 9 || targetHeight != 20)
+    {
+      Debug.LogError("Manacles S3 live scaling: expected 32x42 -> 9x20.");
+      return null;
+    }
+
+    // Active Palette11946, captured during the S3 rendering call.
+    Color32[] runtimePalette = {
+      new Color32(0, 0, 0, 255),
+      new Color32(109, 109, 109, 255),
+      new Color32(145, 145, 145, 255),
+      new Color32(109, 36, 0, 255),
+      new Color32(0, 218, 218, 255),
+      new Color32(145, 72, 0, 255),
+      new Color32(0, 145, 0, 255),
+      new Color32(0, 218, 0, 255),
+      new Color32(255, 0, 0, 255),
+      new Color32(255, 182, 0, 255),
+      new Color32(218, 145, 109, 255),
+      new Color32(255, 255, 0, 255),
+      new Color32(72, 72, 72, 255),
+      new Color32(182, 182, 182, 255),
+      new Color32(0, 0, 255, 255),
+      new Color32(255, 255, 255, 255)
+    };
+
+    const int paddedSourceWidth = 32;
+    const int paddedSourceHeight = 48;
+    const int topTransparentRows = 2;
+    // CSBwin Graphics.cpp ShrinkBLT uses 16.16 fixed-point steps,
+    // truncated at 1/1024 of a source pixel before the << 6 shift.
+    int horizontalStep = (int)CsbShrinkFixedStep(
+        paddedSourceWidth, targetWidth);
+    int verticalStep = (int)CsbShrinkFixedStep(
+        paddedSourceHeight, targetHeight);
+    int horizontalStart = (horizontalStep >> 1) + 0x7fff;
+    int verticalStart = (verticalStep >> 1) + 0x7fff;
+
+    Color32[] src = source.GetPixels32();
+    Color32[] dst = new Color32[targetWidth * targetHeight];
+    for (int topY = 0; topY < targetHeight; topY++)
+    {
+      // The row-base adjustment (-1) matches CSBwin's ShrinkBLT source
+      // pointer advancement. Verified against all 20 traced source rows.
+      int paddedTopY = (int)(
+          ((long)verticalStart + (long)topY * verticalStep) >> 16) - 1;
+      int sourceTopY = paddedTopY - topTransparentRows;
+      if (sourceTopY < 0 || sourceTopY >= source.height)
+        continue;
+      int sourceUnityY = source.height - 1 - sourceTopY;
+      int dstUnityY = targetHeight - 1 - topY;
+      for (int x = 0; x < targetWidth; x++)
+      {
+        int paddedX = (int)(
+            ((long)horizontalStart + (long)x * horizontalStep) >> 16);
+        Color32 color = src[sourceUnityY * source.width + paddedX];
+        if (color.a == 0)
+          continue;
+
+        int sourceIndex = -1;
+        for (int i = 0; i < runtimePalette.Length; i++)
+        {
+          Color32 candidate = runtimePalette[i];
+          if (color.r == candidate.r && color.g == candidate.g
+              && color.b == candidate.b)
+          {
+            sourceIndex = i;
+            break;
+          }
+        }
+        if (sourceIndex < 0)
+        {
+          Debug.LogError("Manacles S3: unrecognized source palette color "
+              + "at (" + paddedX + "," + sourceTopY + ").");
+          return null;
+        }
+        int mappedIndex = WallOrnamentFarColorMap[sourceIndex];
+        if (mappedIndex == 10)
+          continue;
+        dst[dstUnityY * targetWidth + x] = runtimePalette[mappedIndex];
+      }
+    }
+
+    Texture2D result = new Texture2D(
+        targetWidth, targetHeight, TextureFormat.RGBA32, false);
+    result.name = "Manacles S3 CSBwin Live ShrinkBLT";
+    result.filterMode = FilterMode.Point;
+    result.wrapMode = TextureWrapMode.Clamp;
+    result.SetPixels32(dst);
+    result.Apply(false, false);
+    return result;
   }
 
   private void BlitManaclesD3SidesIntoPreview(Color32[] pixels)
