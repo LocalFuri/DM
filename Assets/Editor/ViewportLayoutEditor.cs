@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -1533,6 +1533,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:ChampionMirror:S3:Left|84|116|false|639293326829241417
   // REF OrnamentProjection:ChampionMirror:S3:Right|138|116|true|639291392277477819
   // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
+  // REF OrnamentProjection:Hook:S2:Left|66|117|false|639299399669516077
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
@@ -40395,20 +40396,24 @@ private static void HandleGameViewPointerDown(
     if (source == null || !source.isReadable)
       return null;
 
-    // The 16x19 source contains transparent outer margins. Scale its opaque
-    // bounding rectangle so the S2 target is a 6x10 VISIBLE image, not a
-    // 6x10 canvas containing a narrower Hook. Do not affect S1 or S3.
+    // Generic wall-ornament S2 test: scale the visible Hook shape using
+    // center-sampled nearest neighbor with original RGB and transparency.
+    // Existing V17 visibility, calibrated X/Y, and mirror controls stay in
+    // the normal blit path. Manacles S2 remains on its approved profile.
     Texture2D cropped = CropWallDecorationToOpaqueBounds(source);
     bool ownsCrop = !ReferenceEquals(cropped, source);
     try
     {
-      cachedHookSide2Texture = GenerateChampionMirrorAlternativeScale(
+      cachedHookSide2Texture = BuildWallOrnamentPerspectiveTexture(
           cropped,
+          cropped.width,
+          cropped.height,
+          0,
+          0,
           HookD2SideWidth,
           HookD2SideHeight,
-          WallOrnamentMediumColorMap,
-          1,
-          "Hook Side S2 Nearest Opaque Bounds");
+          false,
+          "Hook Side S2 Generic Nearest");
     }
     finally
     {
