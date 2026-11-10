@@ -39343,12 +39343,102 @@ private static void HandleGameViewPointerDown(
 
     GetManaclesSideS2Rect(
         true, out _, out _, out int width, out int height);
-    cachedManaclesGeneratedD2SideTexture = GenerateManaclesSideScaled(
-        source,
-        width,
-        height,
-        "Manacles S2 Generated from S1 CSBwin geometry");
+    cachedManaclesGeneratedD2SideTexture = GenerateManaclesS2FromNativeS1(
+        source, width, height);
     return cachedManaclesGeneratedD2SideTexture;
+  }
+
+  // S2 live shrink recovered from CSBwin's runtime pixel trace for graphic
+  // 193 at Level 0 (4,11), facing North. The native 32x42 S1 PNG contains
+  // exactly the same indexed art as the original 32x48 graphic with two
+  // transparent rows above and four below (480/480 sampled indices verified).
+  // Only S2 uses this proven path; S1, F1/F3, and S3 remain unchanged.
+  private static Texture2D GenerateManaclesS2FromNativeS1(
+      Texture2D source, int targetWidth, int targetHeight)
+  {
+    if (source == null || !source.isReadable)
+      return null;
+    if (source.width != 32 || source.height != 42
+        || targetWidth != 16 || targetHeight != 30)
+    {
+      Debug.LogError("Manacles S2 live scaling: unexpected source or "
+          + "destination dimensions. Expected 32x42 -> 16x30.");
+      return null;
+    }
+
+    // Exact palette 11946 read at runtime, not rounded stage-1 approximations.
+    // These values are used after applying CSBwin's medium-distance color map.
+    Color32[] runtimePalette = {
+      new Color32(0, 0, 0, 255),
+      new Color32(109, 109, 109, 255),
+      new Color32(145, 145, 145, 255),
+      new Color32(109, 36, 0, 255),
+      new Color32(0, 218, 218, 255),
+      new Color32(145, 72, 0, 255),
+      new Color32(0, 145, 0, 255),
+      new Color32(0, 218, 0, 255),
+      new Color32(255, 0, 0, 255),
+      new Color32(255, 182, 0, 255),
+      new Color32(218, 145, 109, 255),
+      new Color32(255, 255, 0, 255),
+      new Color32(72, 72, 72, 255),
+      new Color32(182, 182, 182, 255),
+      new Color32(0, 0, 255, 255),
+      new Color32(255, 255, 255, 255)
+    };
+    Color32[] src = source.GetPixels32();
+    Color32[] dst = new Color32[targetWidth * targetHeight];
+    // CSBwin's measured fixed-step source coordinates, top down:
+    // x = 1,3,...,31; y = 0,1,3,5,...,46 in the padded 32x48 canvas.
+    // Use the original 16.16 vertical step and verified phase (0x4000).
+    const int verticalStep = 104832;
+    const int topTransparentRows = 2;
+    for (int topY = 0; topY < targetHeight; topY++)
+    {
+      int originalY = (int)(((long)topY * verticalStep + 0x4000) >> 16);
+      int sourceTopY = originalY - topTransparentRows;
+      if (sourceTopY < 0 || sourceTopY >= source.height)
+        continue;
+      int sourceUnityY = source.height - 1 - sourceTopY;
+      int targetUnityY = targetHeight - 1 - topY;
+      for (int x = 0; x < targetWidth; x++)
+      {
+        Color32 color = src[sourceUnityY * source.width + (2 * x + 1)];
+        if (color.a == 0)
+          continue;
+        // The same original palette is used for S1, so exact RGB lookup
+        // is preferable to nearest-colour guesses. Fail visibly if it changes.
+        int originalIndex = -1;
+        for (int i = 0; i < runtimePalette.Length; i++)
+        {
+          Color32 candidate = runtimePalette[i];
+          if (color.r == candidate.r && color.g == candidate.g
+              && color.b == candidate.b)
+          {
+            originalIndex = i;
+            break;
+          }
+        }
+        if (originalIndex < 0)
+        {
+          Debug.LogError("Manacles S2: source pixel is not in the verified "
+              + "CSBwin palette at (" + (2 * x + 1) + "," + sourceTopY + ").");
+          return null;
+        }
+        int mappedIndex = WallOrnamentMediumColorMap[originalIndex];
+        if (mappedIndex == 10) // CSBwin's transparent colour
+          continue;
+        dst[targetUnityY * targetWidth + x] = runtimePalette[mappedIndex];
+      }
+    }
+    Texture2D result = new Texture2D(
+        targetWidth, targetHeight, TextureFormat.RGBA32, false);
+    result.name = "Manacles S2 CSBwin Live ShrinkBLT";
+    result.filterMode = FilterMode.Point;
+    result.wrapMode = TextureWrapMode.Clamp;
+    result.SetPixels32(dst);
+    result.Apply(false, false);
+    return result;
   }
 
   // The shared wall-ornament shrink remaps this side graphic's metal greys
