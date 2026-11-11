@@ -27579,6 +27579,31 @@ private static void HandleGameViewPointerDown(
       projectionSuffix = resolvedProjectionSuffix;
     }
 
+    // S2 Manacles are blitted directly using the CSBwin rectangle, not
+    // ViewEdit calibration. Show that exact renderer position in ViewEdit;
+    // do not expose misleading persistent X/Y edits for this slot.
+    bool fixedManaclesS2 = IsManaclesOrnament(ornament)
+        && (string.Equals(key, "OrnamentProjection:Manacles:S2",
+                System.StringComparison.Ordinal)
+            || string.Equals(key, "OrnamentProjection:Manacles:S2:Left",
+                System.StringComparison.Ordinal)
+            || string.Equals(key, "OrnamentProjection:Manacles:S2:Right",
+                System.StringComparison.Ordinal));
+    if (fixedManaclesS2)
+    {
+      bool s2Left = !key.EndsWith(":Right", System.StringComparison.Ordinal);
+      // The ordinary S2 key can be shared across sides; derive the current
+      // physical face rather than assuming the left rectangle.
+      if (string.Equals(key, "OrnamentProjection:Manacles:S2",
+          System.StringComparison.Ordinal))
+        s2Left = string.Equals(ornament.wall,
+            FacingName(TurnPreviewFacingLeft(previewFacing)),
+            System.StringComparison.OrdinalIgnoreCase);
+      GetManaclesSideS2Rect(s2Left, out codedX, out codedY, out _, out _);
+      previewFeaturePositionOverrides.Remove(key);
+      previewFeatureMirrorOverrides.Remove(key);
+    }
+
     // The accepted generic reference becomes the baseline. Red indicates only
     // values that differ from this accepted reference.
     int defaultX = codedX;
@@ -27603,7 +27628,7 @@ private static void HandleGameViewPointerDown(
       ApplyManaclesS3AcceptedReference(
           key, ref defaultX, ref defaultY, ref defaultMirror);
     }
-    else if (hasGenericProjection)
+    else if (hasGenericProjection && !fixedManaclesS2)
       ApplyAcceptedOrnamentReference(
           key, ref defaultX, ref defaultY, ref defaultMirror);
 
@@ -27718,6 +27743,9 @@ private static void HandleGameViewPointerDown(
       }
     }
 
+    // The S2 renderer owns its CSBwin X/Y; present them read-only.
+    if (fixedManaclesS2)
+      EditorGUI.BeginDisabledGroup(true);
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int editX = x;
@@ -27729,6 +27757,9 @@ private static void HandleGameViewPointerDown(
     int editY = y;
     bool yChanged = DrawIntStepperInline(
         "Y", ref editY, snap, y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
+
+    if (fixedManaclesS2)
+      EditorGUI.EndDisabledGroup();
 
     // Front-facing ornament projections never expose a Mirror checkbox.
     // Retain the stored mirror value unchanged for calibration compatibility;
@@ -27764,6 +27795,16 @@ private static void HandleGameViewPointerDown(
 
     if (applyClicked)
     {
+      if (fixedManaclesS2)
+      {
+        // Never persist an offset which the actual S2 renderer ignores.
+        previewFeaturePositionOverrides.Remove(key);
+        previewFeatureMirrorOverrides.Remove(key);
+        RefreshEditModePreview();
+        RepaintGameViews();
+        Repaint();
+        return true;
+      }
       // Apply is the acceptance action: the current X/Y/Mirror become the new
       // persistent generic reference for this ornament family + projection.
       if (SaveAcceptedOrnamentReference(key, editX, editY, editMirror))
