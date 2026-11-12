@@ -1774,5 +1774,90 @@
       "No Unity code changes are part of this Progression.json-only update.",
       "Avoid manual debugger navigation that repeats the unproductive November 11 attempts."
     ]
+  },
+  "checkpoint_20261112_dosbox_x_vga_probe_stage1": {
+    "category": "Checkpoint and To do List",
+    "date": "2026-11-12",
+    "recordedAtLocal": "2026-11-12 23:17:43",
+    "timezone": "Europe/Berlin",
+    "priority": 1,
+    "status": "STAGE 1 VERIFIED — custom DOSBox-X compiles, runs, and produces a VGA handler CSV; NEXT: improve instrumentation to isolate Dungeon Master drawing",
+    "title": "DOSBox-X original Dungeon Master rendering trace — reproducible VGA probe checkpoint",
+    "objective": "Reverse-engineer original DOS graphics positioning, dimensions, clipping and pixel scaling of wall ornaments, beginning with Manacles S2; eventually use evidence to inform Unity F2/F3/S2/S3 without disturbing approved rendering.",
+    "testPose": {
+      "level": 0,
+      "playerTile": [
+        4,
+        11
+      ],
+      "facing": "North",
+      "subject": "Manacles S2"
+    },
+    "confirmed20261112": [
+      "DOSBox-X 2026.10.01 source archive downloaded and extracted separately from the installed emulator.",
+      "Source root: C:\\!!!Stick\\Coder\\DM\\DOSBox-X-Source\\joncampbell123-dosbox-x-b6abbd5\\",
+      "Opened Visual Studio solution vs\\dosbox-x.sln in Visual Studio 2026. Set Release / x64 and changed main and relevant libraries from missing v142 to installed v143 (Visual Studio 2022) toolset.",
+      "Clean VS rebuild succeeded: 8 succeeded, 0 failed, 2 skipped.",
+      "Custom executable launched and showed Z:\\> prompt from bin\\x64\\Release\\dosbox-x.exe; this is SEPARATE from C:\\Program Files\\DOSBox-X\\dosbox-x.exe.",
+      "Modified source installed in src\\hardware\\vga_memory.cpp from DOSBox-X_VGA_Probe_20261112-225610.zip, followed by successful Rebuild Solution (8 succeeded, 0 failed, 2 skipped).",
+      "Launched Dungeon Master inside modified custom DOSBox-X: mount c \"C:\\!!!Stick\\Coder\\DM\"; c:; cd DM1; DM; choose 1, 6, 1; Resume saved game at Level 0 (4,11) North.",
+      "First diagnostic CSV produced at C:\\Unity\\DM\\Assets\\Editor\\DOSBox_VGA_Handler_Log.csv and uploaded to ChatGPT.",
+      "Verified CSV has samples for unchained handler (write_count milestones 1 through 262144, vga_mode 10) and chained handler (through 524288, vga_mode 3), confirming instrumentation works. These are sampled counters, not exact totals or proof which handler drew Manacles.",
+      "Verified DOSBox-X v6 MAX auto launcher successfully starts original installed DOSBox-X with native AUTOTYPE and selections 1,6,1. Startup experiment 0.5 sec initial delay, 0.1 sec between inputs. Do not alter this approved launcher."
+    ],
+    "filesAndPaths": {
+      "sourceRoot": "C:\\!!!Stick\\Coder\\DM\\DOSBox-X-Source\\joncampbell123-dosbox-x-b6abbd5\\",
+      "solution": "C:\\!!!Stick\\Coder\\DM\\DOSBox-X-Source\\joncampbell123-dosbox-x-b6abbd5\\vs\\dosbox-x.sln",
+      "instrumentedSource": "C:\\!!!Stick\\Coder\\DM\\DOSBox-X-Source\\joncampbell123-dosbox-x-b6abbd5\\src\\hardware\\vga_memory.cpp",
+      "customExe": "C:\\!!!Stick\\Coder\\DM\\DOSBox-X-Source\\joncampbell123-dosbox-x-b6abbd5\\bin\\x64\\Release\\dosbox-x.exe",
+      "originalInstalledExe": "C:\\Program Files\\DOSBox-X\\dosbox-x.exe",
+      "dosGameFolder": "C:\\!!!Stick\\Coder\\DM\\DM1\\",
+      "mostRecentDosSaveSource": "C:\\!!!Stick\\Coder\\DM\\DM_D-Fend\\DMSAVE.DAT",
+      "dosSaveCopiedTo": "C:\\!!!Stick\\Coder\\DM\\DM1\\DMSAVE.DAT",
+      "logFile": "C:\\Unity\\DM\\Assets\\Editor\\DOSBox_VGA_Handler_Log.csv",
+      "probeDelivery": "DOSBox-X_VGA_Probe_20261112-225610.zip",
+      "verifiedWorkingLauncher": "Launch_Dungeon_Master_DOSBox-X_Auto_v6_MAX.zip"
+    },
+    "csvEvidence": {
+      "header": [
+        "handler",
+        "write_count",
+        "emulated_address_hex",
+        "value_hex",
+        "vga_mode",
+        "write_mode",
+        "chained",
+        "plane_mask"
+      ],
+      "observedHandlers": [
+        "unchained",
+        "chained"
+      ],
+      "unchainedLargestSampledWriteCount": 262144,
+      "chainedLargestSampledWriteCount": 524288,
+      "interpretation": "Both paths recorded; no event-time attribution or CPU CS:IP yet. Cannot yet say which draws Manacles.",
+      "limitations": [
+        "Sampling represents milestones rather than complete per-write trace.",
+        "No CPU address or timestamp/event boundary in stage 1 CSV.",
+        "No confirmed Manacles draw routine, X/Y dimensions, source image or scaling algorithm yet."
+      ]
+    },
+    "exactResumeTomorrow": [
+      "Do NOT repeat Visual Studio setup, toolset retargeting, DOSBox-X source extraction, manual debugger experiments, or v6 MAX launcher development.",
+      "START HERE: use the existing modified vga_memory.cpp from the known ZIP as the baseline (or ask user to upload their current on-disk version if it differs). Inspect the existing probe code before making changes.",
+      "Design stage-2 logger for short controlled rendering capture, including CPU CS:IP at relevant memory writes, destination physical/planar address, value, handler, timestamps/frame or event boundaries if feasible; avoid enormous files and account for multiple VGA access paths.",
+      "Plan a reproducible trigger at Level 0 (4,11) facing North: pause/capture a single redraw caused by a controlled movement or turn and return, while differentiating display refresh from game drawing. First verify if/how writes can be tied to viewport redraw.",
+      "Generate a minimal source-only timestamped ZIP, modify only independent DOSBox-X source (never original installed DOSBox-X or Unity code), rebuild in Visual Studio Release/x64 v143, then verify new diagnostic CSV in C:\\Unity\\DM\\Assets\\Editor\\.",
+      "Analyze trace to identify genuine Manacles-related write/call pattern before claiming any exact source image, scaling, X/Y or clipping; proceed incrementally."
+    ],
+    "guardrails": [
+      "One task at a time; instructions in short individual steps.",
+      "Keep installed DOSBox-X and approved v6 MAX launcher untouched.",
+      "Keep approved Unity Manacles S2 renderer unchanged; do not re-test verified checkpoints without discrepancy.",
+      "No fallback guesses presented as measurements.",
+      "Use local Windows Europe/Berlin timestamps for JSON and ZIP deliverables; timestamp unchanged source separately only if modified.",
+      "All logs and CSV diagnostics go under C:\\Unity\\DM\\Assets\\Editor\\.",
+      "Do not include README.txt in ZIP deliveries."
+    ]
   }
 }

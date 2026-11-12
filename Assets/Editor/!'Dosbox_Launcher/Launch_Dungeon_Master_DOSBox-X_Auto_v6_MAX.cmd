@@ -14,7 +14,7 @@ if not exist "%DMROOT%\DM1\DM.EXE" (
   pause
   exit /b 1
 )
-rem Faster timing: 1.5-second initial wait; 0.25-second spacing between inputs.
+rem Faster timing: 0.5-second initial wait; 0.10-second spacing between inputs.
 rem Graphics 1, Enter; sound 6, Enter; controls 1, Enter.
-start "Dungeon Master - DOSBox-X" "%DOSBOX%" -fastlaunch -c "mount c %DMROOT%" -c "c:" -c "cd DM1" -c "Z:\BIN\AUTOTYPE -w 1.5 -p 0.25 1 enter 6 enter 1 enter" -c "DM"
+start "Dungeon Master - DOSBox-X" "%DOSBOX%" -fastlaunch -c "mount c %DMROOT%" -c "c:" -c "cd DM1" -c "Z:\BIN\AUTOTYPE -w 0.5 -p 0.10 1 enter 6 enter 1 enter" -c "DM"
 endlocal
