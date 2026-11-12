@@ -1734,5 +1734,45 @@
       "Avoid per-coordinate hardcoded runtime exceptions; a successful design must work generically by subtile and viewing direction.",
       "Keep Manacles S3 asset registration separate from this task."
     ]
+  },
+  "todo_dosbox_original_rendering_instrumentation_20261112": {
+    "category": "To do List",
+    "date": "2026-11-12",
+    "recordedAtLocal": "2026-11-12 18:39:01",
+    "timezone": "Europe/Berlin",
+    "priority": 1,
+    "status": "PENDING — DOSBox debugger reached; Manacles rendering routine and pixel scaling not yet identified",
+    "title": "Instrument original DOS Dungeon Master drawing operations in DOSBox for F2/F3/S2/S3 accuracy",
+    "purpose": "Capture actual rendering behavior rather than manually guessing perspective scaling and placement for Unity.",
+    "reference": "Original FTL DOS Dungeon Master; use working one-click launcher for ordinary reference play, debugger/instrumented build separately.",
+    "testPose": {
+      "level": 0,
+      "playerTile": [
+        4,
+        11
+      ],
+      "facing": "North",
+      "subject": "Manacles S2"
+    },
+    "attemptOn20261111": [
+      "Original DOS game ran under DOSBox at the Manacles S2 test pose.",
+      "Entered DOSBox debugger and observed CPU registers and assembly instructions.",
+      "Observed xchg al,ah / stosw / loop, but did not establish that these belong to the Manacles drawing routine.",
+      "Manual debugger navigation/stepping did not yield reliable rendering details; no pixel coordinates, scaling algorithm or graphics source identified.",
+      "Automated graphics/code capture was considered; initial screenshot capture ran into a permissions problem and was not completed."
+    ],
+    "nextSteps": [
+      "Investigate a repeatable DOSBox instrumentation/trace method instead of manual single-stepping.",
+      "Identify game rendering calls or framebuffer writes while displaying Manacles S2; narrow traces to a single frame/region where possible.",
+      "Record observable source/destination pixel positions, clip region, bounding box, dimensions and palette behavior; distinguish evidence from hypotheses.",
+      "Determine whether F2/F3/S2/S3 use stored art or runtime shrink/scaling, and compare against DOS lossless 320x200 captures.",
+      "Only after the algorithm is established propose the smallest generic Unity renderer change; do not alter approved Manacles S2 or V17 rendering without evidence."
+    ],
+    "guardrails": [
+      "Preserve verified Manacles S2 generic scaling (approved November 10) and other approved F1/F3 rendering.",
+      "Manacles S3 X/Y fine-tuning remains a separate unfinished Unity task.",
+      "No Unity code changes are part of this Progression.json-only update.",
+      "Avoid manual debugger navigation that repeats the unproductive November 11 attempts."
+    ]
   }
 }
