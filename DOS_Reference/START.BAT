@@ -1,0 +1,2 @@
+dm.exe
+exit
