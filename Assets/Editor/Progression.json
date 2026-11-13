@@ -1859,5 +1859,26 @@
       "All logs and CSV diagnostics go under C:\\Unity\\DM\\Assets\\Editor\\.",
       "Do not include README.txt in ZIP deliveries."
     ]
+  },
+  "dosbox_x_original_dm_paths_verified_20261113": {
+    "date": "2026-11-13",
+    "recordedAtLocal": "2026-11-13T17:49:57+01:00",
+    "timezone": "Europe/Berlin",
+    "status": "verified from D-Fend Reloaded program settings and Dungeon Master profile screenshots; DOSBox-X mount not yet verified",
+    "dfendBaseFolder": "C:\\Users\\Localghost\\D-Fend Reloaded",
+    "dfendGameFolder": "C:\\Users\\Localghost\\D-Fend Reloaded\\VirtualHD",
+    "dfendGameDataFolder": "C:\\Users\\Localghost\\D-Fend Reloaded\\GameData",
+    "originalDmGameFolder": "C:\\Users\\Localghost\\D-Fend Reloaded\\VirtualHD\\Dungeon Master",
+    "originalDmExecutable": "C:\\Users\\Localghost\\D-Fend Reloaded\\VirtualHD\\Dungeon Master\\dm.exe",
+    "dosboxXMountCommand": "mount c \"C:\\Users\\Localghost\\D-Fend Reloaded\\VirtualHD\\Dungeon Master\"",
+    "dosboxXSourceRoot": "C:\\!!!Stick\\Coder\\DM\\DOSBox-X-Source\\joncampbell123-dosbox-x-b6abbd5",
+    "dosboxXExecutable": "C:\\!!!Stick\\Coder\\DM\\DOSBox-X-Source\\joncampbell123-dosbox-x-b6abbd5\\bin\\x64\\Release\\dosbox-x.exe",
+    "stage2BuildResult": "Rebuild All 8 succeeded, 0 failed, 2 skipped on 2026-11-13 at 17:33 Berlin; Stage 2 DOSBox-X opened successfully",
+    "nextStep": "In newly built DOSBox-X run mount command above and confirm it succeeds; then continue test without repeating D-Fend path discovery.",
+    "rule": "Keep these canonical Windows paths in future Progression.json checkpoints to avoid rediscovering among multiple dm.exe installations.",
+    "originalDmSaveFile": "C:\\Users\\Localghost\\D-Fend Reloaded\\VirtualHD\\Dungeon Master\\DMSave.dat",
+    "saveFileStatus": "Exact DMSave.dat path supplied by user 2026-11-13; not independently opened by assistant.",
+    "captureFolderRule": "Do not record screenshot/capture paths in Progression.json; D-Fend frontend displays captures.",
+    "updatedAtLocal": "2026-11-13T18:02:20+01:00"
   }
 }
