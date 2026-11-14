@@ -1,12 +1,12 @@
 {
-  "date": "2026-10-28",
+  "date": "2026-11-13",
   "todo_manacles_dos_f1_s2_20261109": {
     "category": "To do List",
-    "priority": 1,
-    "resumeFirst": true,
+    "priority": 0,
+    "resumeFirst": false,
     "date": "2026-11-09",
     "targetResumeDate": "2026-11-10",
-    "status": "NEXT — highest priority when resuming; no rendering code change until comparison",
+    "status": "SUPERSEDED — S2 approved in Unity; DOS assembly reverse engineering stopped; current priority is Manacles S3 calibration",
     "title": "Manacles: identify original DOS F1→S2 graphics/scaling from lossless screenshots",
     "referenceAuthority": "Original FTL DOS Dungeon Master (not CSBwin)",
     "testPose": {
@@ -94,6 +94,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
+    "CURRENT TOP PRIORITY 2026-11-13: Return to Unity Manacles S3 calibration. Check why S3 X/Y is not adjustable in ViewEdit and fix with the smallest source change; preserve approved S2/F1/F3.",
+    "Original DOS reference now copied to C:\\Unity\\DM\\DOS_Reference; Progression.json stays under C:\\Unity\\DM\\Assets\\Editor.",
+    "DOSBox-X reverse engineering discontinued; no more Stage 4B build troubleshooting unless user explicitly asks.",
     "NEXT RESUME PRIORITY (2026-11-10): Obtain original FTL DOS lossless 320x200 PNG Manacles F1 and Left S2 (Level 0, player 4,11 North for S2), compare pixels/scaling, then consider changes; do not edit renderer before comparison.",
     "Preserve user-accepted F2 scaling and wall rendering. Do not chase pixel details for Bread/Apple/Cheese/Club.",
     "Inspect latest F2 POSITION TRACE for misaligned centred floor item; distinguish true floor-cell anchor from mortar-joint visual before generic X correction.",
@@ -1740,8 +1743,8 @@
     "date": "2026-11-12",
     "recordedAtLocal": "2026-11-12 18:39:01",
     "timezone": "Europe/Berlin",
-    "priority": 1,
-    "status": "PENDING — DOSBox debugger reached; Manacles rendering routine and pixel scaling not yet identified",
+    "priority": 0,
+    "status": "STOPPED BY USER 2026-11-13 — do not resume DOSBox-X reverse engineering without an explicit new request",
     "title": "Instrument original DOS Dungeon Master drawing operations in DOSBox for F2/F3/S2/S3 accuracy",
     "purpose": "Capture actual rendering behavior rather than manually guessing perspective scaling and placement for Unity.",
     "reference": "Original FTL DOS Dungeon Master; use working one-click launcher for ordinary reference play, debugger/instrumented build separately.",
@@ -1880,5 +1883,34 @@
     "saveFileStatus": "Exact DMSave.dat path supplied by user 2026-11-13; not independently opened by assistant.",
     "captureFolderRule": "Do not record screenshot/capture paths in Progression.json; D-Fend frontend displays captures.",
     "updatedAtLocal": "2026-11-13T18:02:20+01:00"
+  },
+  "checkpoint_20261113_dosbox_exit_and_manacles_s3_resume": {
+    "date": "2026-11-13",
+    "recordedAtLocal": "2026-11-13T19:46:50+01:00",
+    "timezone": "Europe/Berlin",
+    "status": "DOSBox-X tracing discontinued at user request; resume Unity Manacles S3 calibration",
+    "decision": "Stop VGA/CPU instruction tracing and further DOSBox-X rebuilds; cost outweighs uncertain value of reconstructing original FTL DOS scaling code. Keep archived traces; no further DOSBox-X code changes unless explicitly requested.",
+    "results": {
+      "stage1": "VGA handlers traced",
+      "stage2": "CPU CS:EIP trace generated",
+      "stage3": "120000 consecutive VGA writes; frequent 0859:0217 and 0859:021A",
+      "stage4": "CPU segment snapshot not obtained",
+      "stage4B": "Build failed (1 failed); no successful Stage4B executable verified"
+    },
+    "referenceGame": {
+      "projectGameFolder": "C:\\Unity\\DM\\DOS_Reference",
+      "executable": "C:\\Unity\\DM\\DOS_Reference\\DM.EXE",
+      "saveFile": "C:\\Unity\\DM\\DOS_Reference\\DMSave.dat",
+      "verified": "Game launched with START.BAT, 1/6/1, saved position level 0 (4,11) North",
+      "note": "D-Fend source installation remains separately present; project reference was copied and verified"
+    },
+    "filesPolicy": {
+      "progressionPath": "C:\\Unity\\DM\\Assets\\Editor\\Progression.json",
+      "diagnosticsFolder": "C:\\Unity\\DM\\Assets\\Editor",
+      "doNotStoreScreenshotCapturePath": true
+    },
+    "approvedUnity": "Preserve Manacles F1, F3, S2 and generic shared ornaments path; do not retest or alter approved results without evidence of discrepancy",
+    "nextTask": "Manacles S3: enable visible X/Y calibration in ViewEdit, compare to original DOS visual reference and refine S3 only; verify with Unity Game View; avoid any position-specific hardcoded workaround.",
+    "neededInputs": "Latest Unity ViewportLayoutEditor and ornament/renderer source ZIP before changing code; no Unity sources included in this Progression ZIP."
   }
 }
