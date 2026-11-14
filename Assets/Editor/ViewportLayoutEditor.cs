@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -27609,22 +27609,23 @@ private static void HandleGameViewPointerDown(
     int defaultX = codedX;
     int defaultY = codedY;
     bool defaultMirror = codedMirror;
-    // S3 experiment: use the projected top as the editable ViewEdit baseline.
-    // The normal S3 rendering is untouched while projection is Off.
-    bool experimentalManaclesS3 = manaclesProjectionExperimentEnabled
-        && IsManaclesOrnament(ornament)
+    // S3 uses the CSBwin position when the projection experiment is Off,
+    // but its ViewEdit X/Y calibration must work in either mode.
+    bool isManaclesS3 = IsManaclesOrnament(ornament)
         && (string.Equals(key, "OrnamentProjection:Manacles:S3:Left",
                 System.StringComparison.Ordinal)
             || string.Equals(key, "OrnamentProjection:Manacles:S3:Right",
                 System.StringComparison.Ordinal));
-    if (experimentalManaclesS3)
+    if (isManaclesS3)
     {
-      Texture2D s3Texture = GetManaclesGeneratedD3SideTexture();
-      if (s3Texture != null)
-        defaultY = PreviewHeight - GetWallProjectedTopY(
-            3, manaclesProjectionHorizonTopY,
-            manaclesProjectionMountHeight) - s3Texture.height;
-      // S3 calibrations are applied only when its experiment is On.
+      if (manaclesProjectionExperimentEnabled)
+      {
+        Texture2D s3Texture = GetManaclesGeneratedD3SideTexture();
+        if (s3Texture != null)
+          defaultY = PreviewHeight - GetWallProjectedTopY(
+              3, manaclesProjectionHorizonTopY,
+              manaclesProjectionMountHeight) - s3Texture.height;
+      }
       ApplyManaclesS3AcceptedReference(
           key, ref defaultX, ref defaultY, ref defaultMirror);
     }
@@ -43613,8 +43614,8 @@ private static void HandleGameViewPointerDown(
     return false;
   }
 
-  // Save/load Manacles S3 calibration only for the opt-in experiment.
-  // Its original automatic S3 position remains available with the toggle Off.
+  // Load accepted Manacles S3 calibration independently of the optional
+  // perspective-Y experiment. Left/right have separate ViewEdit references.
   private void ApplyManaclesS3AcceptedReference(
       string key, ref int x, ref int y, ref bool mirror)
   {
@@ -43630,17 +43631,18 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  // The S3 sprite uses a direct V17-gated drawing path. Make the existing
-  // ViewEdit X/Y/Mirror fields effective AFTER applying the experimental Y.
+  // The S3 sprite uses a direct V17-gated drawing path. Always apply
+  // its accepted ViewEdit X/Y/Mirror, regardless of the 3D-Y experiment.
   private void ApplyManaclesS3ExperimentalPlacement(
       WallOrnamentPlacement ornament, Texture2D texture,
       ref int x, ref int y, ref bool mirror)
   {
-    if (!manaclesProjectionExperimentEnabled || texture == null)
+    if (texture == null)
       return;
-    y = PreviewHeight - GetWallProjectedTopY(
-        3, manaclesProjectionHorizonTopY,
-        manaclesProjectionMountHeight) - texture.height;
+    if (manaclesProjectionExperimentEnabled)
+      y = PreviewHeight - GetWallProjectedTopY(
+          3, manaclesProjectionHorizonTopY,
+          manaclesProjectionMountHeight) - texture.height;
     if (!TryGetWallOrnamentProjectionOverrideDescriptor(
         ornament, out string key, out _))
       return;
