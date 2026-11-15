@@ -9999,8 +9999,6 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  private static bool chaniRankV2DiagnosticLogged;
-
   private void PaintChampionEyeStatsPanel(Color32[] pixels)
   {
     if (pixels == null || pixels.Length != PreviewWidth * PreviewHeight)
@@ -10009,19 +10007,6 @@ private static void HandleGameViewPointerDown(
     HeroDefinition hero = HeroDatabase.GetByName(championSheetName);
     if (hero == null || hero.Attributes == null)
       return;
-
-    // Diagnostic only: confirms this exact source is running when CHANI's Eye panel opens.
-    // Never changes champion data or rank calculations.
-    if (!chaniRankV2DiagnosticLogged && string.Equals(hero.Name, "CHANI", System.StringComparison.OrdinalIgnoreCase))
-    {
-      chaniRankV2DiagnosticLogged = true;
-      int[] fighter = hero.Skills != null ? hero.Skills.Fighter : null;
-      int[] wizard = hero.Skills != null ? hero.Skills.Wizard : null;
-      Debug.Log("[CHANI RANK V2 ACTIVE] Hero=" + hero.Name
-          + " FighterHidden=" + (fighter == null ? "MISSING" : string.Join(",", System.Array.ConvertAll(fighter, n => n.ToString())))
-          + " WizardHidden=" + (wizard == null ? "MISSING" : string.Join(",", System.Array.ConvertAll(wizard, n => n.ToString())))
-          + " ExpectedWithThisCode=NOVICE FIGHTER / APPRENTICE WIZARD");
-    }
 
     // Same 116x73 screen rectangle as the Resurrect/Reincarnate panel.
     // Coordinates are screen-top based, matching the original 320x200 view.
@@ -33812,19 +33797,6 @@ private static void HandleGameViewPointerDown(
     return items.ToArray();
   }
 
-  // Temporary diagnostic for the verified Samurai Sword F3 subtile regression.
-  // Logs only state changes to avoid flooding Unity's Console.
-  private static readonly HashSet<string> swordF3TraceKeys =
-      new HashSet<string>(System.StringComparer.Ordinal);
-  private static void TraceSwordF3(FloorItemPlacement item, string detail)
-  {
-    if (item == null || !string.Equals(item.type, "Samurai Sword",
-        System.StringComparison.OrdinalIgnoreCase)) return;
-    string key = item.instanceId + "|" + detail;
-    // Temporarily silence Samurai Sword F3 trace during ornament calibration.
-    swordF3TraceKeys.Add(key);
-  }
-
   private bool TryProjectFloorItem(
       FloorItemPlacement item,
       out FloorItemDepth depth,
@@ -33847,26 +33819,12 @@ private static void HandleGameViewPointerDown(
     int forwardDistance = dx * forwardX + dy * forwardY;
     int lateralTileDistance = dx * rightX + dy * rightY;
 
-    if (string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase)
-        && forwardDistance >= 1)
-      TraceSwordF3(item, "pose=(" + previewX + "," + previewY + ") "
-          + previewFacing + ", item=(" + item.x + "," + item.y + ") cell="
-          + item.cell + ", forward=" + forwardDistance
-          + ", lateral=" + lateralTileDistance
-          + ", rangeAccepted=" + (forwardDistance <= 3 && forwardDistance >= 0
-              && lateralTileDistance == 0));
-
     // The S3 side lanes are visible through the adjacent side opening,
     // followed by open D1/D2 tiles in that lane. A front-center wall
     // does not block the side corridor (e.g. Level 0, 5,11 North).
     bool sideS3 = forwardDistance == 2 && Mathf.Abs(lateralTileDistance) == 1;
     if (!sideS3 && (lateralTileDistance != 0 || forwardDistance < 0 || forwardDistance > 3))
-    {
-      TraceSwordF3(item, "PROJECTION REJECT: cell=" + item.cell
-          + ", facing=" + previewFacing + ", forward=" + forwardDistance
-          + ", lateral=" + lateralTileDistance);
       return false;
-    }
     if (sideS3)
     {
       int laneX = rightX * lateralTileDistance;
@@ -33899,10 +33857,7 @@ private static void HandleGameViewPointerDown(
     // Its far half would be F4 and must remain outside the viewport.
     // Do not alter the previously tested 0/1/2-tile projection paths.
     if (forwardDistance == 3 && cornerForward >= 0)
-    {
-      TraceSwordF3(item, "F4 REJECT: distant far half, cell=" + item.cell);
       return false;
-    }
 
     // A floor item on the player's own tile must be in the half facing
     // the viewer. Turning away from a dropped item must not make the same
@@ -33926,11 +33881,7 @@ private static void HandleGameViewPointerDown(
     // Keep the forward-distance classifications and original artwork
     // scaling/palette paths unchanged.
     if (cornerLateral == 0)
-    {
-      TraceSwordF3(item, "CORNER REJECT: cell=" + item.cell
-          + ", facing=" + previewFacing + ", cornerLateral=0");
       return false;
-    }
 
     if (sideS3)
     {
@@ -35165,17 +35116,7 @@ private static void HandleGameViewPointerDown(
     CsbViewportCell cell = cells[relativeCell];
     CsbViewportPoint point = cell.positions[relCorner];
     if (!point.valid || point.y == 0)
-    {
-      TraceSwordF3(item, "F3 viewport position REJECTED: positionClass="
-          + graphic.viewportPositionClass + ", relCorner=" + relCorner
-          + ", valid=" + point.valid + ", x=" + point.x + ", y=" + point.y
-          + ", source=" + texture.width + "x" + texture.height);
-      if (string.Equals(item.type, "Club", System.StringComparison.OrdinalIgnoreCase))
-        Debug.LogWarning("CLUB F2 TRACE: viewport position rejected; class="
-            + graphic.viewportPositionClass + ", corner=" + relCorner
-            + ", valid=" + point.valid + ", x=" + point.x + ", y=" + point.y);
       return false;
-    }
     bool nativeNearCorner = relativeCell == 6 && relCorner >= 2;
     // Only the near half of cell 6 uses native F1 dimensions. Cell 3 is
     // farther away: even its near corners must be projected at F2 size.
@@ -35202,20 +35143,6 @@ private static void HandleGameViewPointerDown(
     // Its horizontal anchor is the center; vertical anchor is the bottom scanline.
     // Keep the established F2 scaling and Y calculation unchanged.
     int left = point.x + firstObjectOffset.x - (width / 2) + 1;
-    // Diagnostic only: report the complete F2 vertical equation without
-    // changing the accepted renderer or its existing offset selection.
-    if (string.Equals(item.type, "Club", System.StringComparison.OrdinalIgnoreCase))
-      Debug.Log("CLUB F2 Y TRACE: item=" + item.instanceId
-          + ", viewportY=" + point.y
-          + ", viewportOffsetTop=32"
-          + ", offsetTableRow=1"
-          + ", offsetIndex=" + initialSmallOffset
-          + ", offsetY=" + firstObjectOffset.y
-          + ", scaledHeight=" + height
-          + ", calculatedTop=" + top
-          + ", calculatedBottom=" + (top + height - 1)
-          + ", absCorner=" + absCorner + ", relativeCorner=" + relCorner
-          + ", formula=32+viewportY+offsetY-height+1");
     rect = new Rect(left, top, width, height);
     mirror = (graphic.flags & 1) != 0 && (relCorner == 1 || relCorner == 2);
     return true;
@@ -35321,18 +35248,7 @@ private static void HandleGameViewPointerDown(
     CsbViewportCell cell = cells[viewportCell];
     CsbViewportPoint point = cell.positions[relCorner];
     if (!point.valid || point.y == 0)
-    {
-      TraceSwordF3(item, "F3 VIEWPORT REJECT: cell=" + item.cell
-          + ", absCorner=" + absCorner + ", relativeCorner=" + relCorner
-          + ", facing=" + previewFacing + ", viewportClass="
-          + graphic.viewportPositionClass + ", tableCell=" + viewportCell + ", valid="
-          + point.valid + ", x=" + point.x + ", y=" + point.y);
-      if (string.Equals(item.type, "Club", System.StringComparison.OrdinalIgnoreCase))
-        Debug.LogWarning("CLUB F2 TRACE: viewport position rejected; class="
-            + graphic.viewportPositionClass + ", corner=" + relCorner
-            + ", valid=" + point.valid + ", x=" + point.x + ", y=" + point.y);
       return false;
-    }
     bool near = relCorner >= 2;
     // The near half of a tile THREE squares ahead is the last visible F3
     // band. Give it the far (16/32) scale instead of the medium F2-sized
@@ -35378,11 +35294,7 @@ private static void HandleGameViewPointerDown(
       Texture2D texture, Vector2Int pileOffset)
   {
     if (!TryGetCsbF3RectBase(item, texture, out Rect rect, out bool mirror))
-    {
-      TraceSwordF3(item, "F3 RECT REJECTED: cell=" + item.cell
-          + ", facing=" + previewFacing);
       return;
-    }
     int width = Mathf.RoundToInt(rect.width);
     int height = Mathf.RoundToInt(rect.height);
     if (width < 1 || height < 1)
@@ -35466,9 +35378,6 @@ private static void HandleGameViewPointerDown(
     }
     int left = Mathf.RoundToInt(rect.x) + pileOffset.x;
     int top = Mathf.RoundToInt(rect.y) - pileOffset.y;
-    TraceSwordF3(item, "F3 BLIT: relCorner=" + relCorner
-        + ", rect=" + left + "," + top + "," + width + "x" + height
-        + ", map=" + (relCorner < 2 ? "far" : "medium"));
     for (int y = 0; y < height; y++)
     {
       int topY = top + height - 1 - y;
@@ -35529,50 +35438,6 @@ private static void HandleGameViewPointerDown(
     int mortarRelativeCorner = (mortarCorner - mortarFacing + 4) & 3;
     if (mortarRelativeCorner == 0) rect.x += 5f;
     else if (mortarRelativeCorner == 1) rect.x -= 5f;
-    // Diagnostic: compare this item's floor sub-cell and CSBwin position
-    // against the front-wall mortar joint without altering any pixels.
-    int absoluteCorner = CsbFloorAbsoluteCorner(item.cell);
-    int facingIndex = previewFacing == DungeonFacing.North ? 0 :
-        previewFacing == DungeonFacing.East ? 1 :
-        previewFacing == DungeonFacing.South ? 2 : 3;
-    int relativeCorner = (absoluteCorner - facingIndex + 4) & 3;
-    string f2PositionTrace = "F2 POSITION TRACE: type=" + item.type
-        + ", cell=" + item.cell
-        + ", relativeCorner=" + relativeCorner
-        + ", left=" + rect.x
-        + ", center=" + (rect.x + rect.width * 0.5f)
-        + ", top=" + rect.y
-        + ", width=" + rect.width
-        + ", height=" + rect.height;
-    // Diagnostic only. Run for every successfully resolved Cheese F2 rectangle;
-    // do not re-project the item or assume a particular FloorItemDepth value.
-    if (string.Equals(item.type, "Cheese", System.StringComparison.OrdinalIgnoreCase))
-    {
-      GroundArtworkRegistry groundRegistry = ReadGroundArtworkRegistry();
-      GroundF1Anchor anchorL = groundRegistry == null || groundRegistry.groundF1Anchors == null
-          ? null : groundRegistry.groundF1Anchors.left;
-      GroundF1Anchor anchorR = groundRegistry == null || groundRegistry.groundF1Anchors == null
-          ? null : groundRegistry.groundF1Anchors.right;
-      string alignmentTrace = "F1/F2 ALIGNMENT TRACE: type=" + item.type
-          + ", F1LeftAnchor=" + (anchorL == null ? "MISSING" : (anchorL.x + "," + anchorL.y))
-          + ", F1RightAnchor=" + (anchorR == null ? "MISSING" : (anchorR.x + "," + anchorR.y))
-          + ", F2CsbCenterX=" + (rect.x + rect.width * 0.5f)
-          + ", F2CsbTopY=" + rect.y
-          + ", relativeCorner=" + relativeCorner
-          + ", sourceWidth=" + texture.width
-          + ", scaledWidth=" + rect.width
-          + ", correctionApplied=far left +8 / far right -8 (Unity DM wall)";
-      if (alignmentTrace != lastF1F2AlignmentTrace)
-      {
-        lastF1F2AlignmentTrace = alignmentTrace;
-        Debug.Log(alignmentTrace);
-      }
-    }
-    if (f2PositionTrace != lastF2PositionTrace)
-    {
-      lastF2PositionTrace = f2PositionTrace;
-      Debug.Log(f2PositionTrace);
-    }
     // Keep F2 sword placement independent of the saved F3 calibration.
     // Preserve existing F2 geometry and scaling for all other items.
     // F2 calibration applies only at visible F2 distance. A sword in the
@@ -35595,9 +35460,6 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
-  private static string lastF2PositionTrace;
-  private static string lastF1F2AlignmentTrace;
-
   // Original (CSBwin) d.Byte5728: decoded Atari graphics.dat resource 558
   // (0x22E), offsets 1518..1533. Byte values are palette indices * 10.
   // Applies only to F3 far corners (0,1), at 16/32 scale.
@@ -35616,23 +35478,11 @@ private static void HandleGameViewPointerDown(
     return (((long)source << 10) / destination & 0xffffL) << 6;
   }
 
-  // Diagnostic only: avoid repeated Console output on every preview repaint.
-  private static string lastBreadF2SamplingDiagnostic;
-  private static string breadF2DebugPngPath;
-
   private void BlitCsbF2Item(Color32[] pixels, FloorItemPlacement item,
       Texture2D texture, Vector2Int pileOffset)
   {
-    bool traceClub = string.Equals(item.type, "Club", System.StringComparison.OrdinalIgnoreCase);
     if (!TryGetCsbF2Rect(item, texture, out Rect rect, out bool mirror))
-    {
-      if (traceClub) Debug.LogWarning("CLUB F2 TRACE: rectangle lookup failed; item="
-          + item.instanceId + ", source=" + texture.width + "x" + texture.height);
       return;
-    }
-    if (traceClub) Debug.Log("CLUB F2 TRACE: rectangle resolved; item="
-        + item.instanceId + ", source=" + texture.width + "x" + texture.height
-        + ", rect=" + rect + ", mirror=" + mirror);
     int width = Mathf.RoundToInt(rect.width);
     int height = Mathf.RoundToInt(rect.height);
     // CSBwin Code51a4.cpp: cell 6 far corners (0,1) use distance 1
@@ -35760,79 +35610,10 @@ private static void HandleGameViewPointerDown(
         }
         scaled[y * width + x] = originalPalette[CsbFloorMediumPalette[paletteIndex]];
       }
-    // Bread F2 sampling diagnostic only. Does not modify scaling, palette or placement.
-    if (string.Equals(item.type, "Bread",
-        System.StringComparison.OrdinalIgnoreCase))
-    {
-      int minVisibleX = width, maxVisibleX = -1, minVisibleY = height, maxVisibleY = -1;
-      int visiblePixels = 0;
-      for (int sy = 0; sy < height; sy++)
-        for (int sx = 0; sx < width; sx++)
-          if (scaled[sy * width + sx].a != 0)
-          {
-            visiblePixels++;
-            minVisibleX = Mathf.Min(minVisibleX, sx);
-            maxVisibleX = Mathf.Max(maxVisibleX, sx);
-            minVisibleY = Mathf.Min(minVisibleY, sy);
-            maxVisibleY = Mathf.Max(maxVisibleY, sy);
-          }
-      string diagnostic = "BREAD F2 SAMPLING: item=" + item.instanceId
-          + ", mediumDistance=" + mediumDistance
-          + ", corner=" + screenCorner
-          + ", padded=" + hasOriginalPaddedGraphic
-          + ", method=" + (hasOriginalPaddedGraphic ? "CSBwin fixed step top-down rows" : "alternative")
-          + ", source=" + texture.width + "x" + texture.height
-          + ", output=" + width + "x" + height
-          + ", stepX=" + stepX + ", stepY=" + stepY
-          + ", phaseOffset16_16=" + horizontalPhaseOffset
-          + ", mirror=" + mirror
-          + ", visibleBounds=" + (maxVisibleX < 0 ? "empty"
-              : (minVisibleX + "," + minVisibleY + ".." + maxVisibleX + "," + maxVisibleY))
-          + ", visibleWidth=" + (maxVisibleX < 0 ? 0 : maxVisibleX - minVisibleX + 1)
-          + ", opaquePixels=" + visiblePixels
-          + ", firstObjectOffset=" + (csbFloorOffsetRows == null ? "unloaded"
-              : csbFloorOffsetRows[1][(absoluteCorner & 1) << 3].ToString())
-          + ", rect=" + rect.x + "," + rect.y
-          + ", pileOffset=" + pileOffset.x + "," + pileOffset.y;
-      string debugDirectory = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Assets", "Editor");
-      breadF2DebugPngPath = System.IO.Path.Combine(debugDirectory, "Bread_F2_Debug.png");
-      if (!System.IO.Directory.Exists(debugDirectory))
-        System.IO.Directory.CreateDirectory(debugDirectory);
-      Texture2D breadDebugTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
-      breadDebugTexture.filterMode = FilterMode.Point;
-      breadDebugTexture.wrapMode = TextureWrapMode.Clamp;
-      breadDebugTexture.SetPixels32(scaled);
-      breadDebugTexture.Apply(false, false);
-      System.IO.File.WriteAllBytes(breadF2DebugPngPath, breadDebugTexture.EncodeToPNG());
-      DestroyImmediate(breadDebugTexture);
-      // Diagnostic export only: preserve the original registered 32x16 RGBA
-      // pixels for comparison against CSBwin's indexed source bitplanes.
-      string sourceDebugPath = System.IO.Path.Combine(debugDirectory, "Bread_F2_Source_Debug.png");
-      Texture2D sourceDebugTexture = new Texture2D(texture.width, texture.height,
-          TextureFormat.RGBA32, false);
-      sourceDebugTexture.filterMode = FilterMode.Point;
-      sourceDebugTexture.SetPixels32(src);
-      sourceDebugTexture.Apply(false, false);
-      System.IO.File.WriteAllBytes(sourceDebugPath, sourceDebugTexture.EncodeToPNG());
-      DestroyImmediate(sourceDebugTexture);
-      diagnostic += ", sourceDebugPng=" + sourceDebugPath.Replace('\\', '/');
-      diagnostic += ", debugPng=" + breadF2DebugPngPath.Replace('\\', '/');
-      if (lastBreadF2SamplingDiagnostic != diagnostic)
-      {
-        lastBreadF2SamplingDiagnostic = diagnostic;
-        Debug.Log(diagnostic);
-      }
-    }
     // Preview pixels use bottom-origin indexing; CSBwin table coordinates are
     // top-origin. Clip against the 224x136 viewport to avoid the HUD.
     int targetX = Mathf.RoundToInt(rect.x) + pileOffset.x;
     int targetTop = Mathf.RoundToInt(rect.y) - pileOffset.y;
-    int clubOpaque = 0, clubDrawn = 0;
-    int clubMinWrittenY = int.MaxValue, clubMaxWrittenY = int.MinValue;
-    int clubMinWrittenX = int.MaxValue, clubMaxWrittenX = int.MinValue;
-    if (traceClub)
-      for (int i = 0; i < scaled.Length; i++)
-        if (scaled[i].a != 0) clubOpaque++;
     for (int y = 0; y < height; y++)
     {
       int screenTop = targetTop + (height - 1 - y);
@@ -35846,25 +35627,8 @@ private static void HandleGameViewPointerDown(
         int screenY = PreviewHeight - 1 - screenTop;
         if (screenY < 0 || screenY >= PreviewHeight) continue;
         pixels[screenY * PreviewWidth + screenX] = c;
-        if (traceClub)
-        {
-          clubDrawn++;
-          clubMinWrittenY = Mathf.Min(clubMinWrittenY, screenTop);
-          clubMaxWrittenY = Mathf.Max(clubMaxWrittenY, screenTop);
-          clubMinWrittenX = Mathf.Min(clubMinWrittenX, screenX);
-          clubMaxWrittenX = Mathf.Max(clubMaxWrittenX, screenX);
-        }
       }
     }
-    if (traceClub)
-      Debug.Log("CLUB F2 TRACE: scaled=" + width + "x" + height
-          + ", opaque=" + clubOpaque + ", actuallyWritten=" + clubDrawn
-          + ", topLeft=" + targetX + "," + targetTop
-          + ", visibleTopY=" + (clubDrawn == 0 ? "none" : clubMinWrittenY.ToString())
-          + ", visibleBottomY=" + (clubDrawn == 0 ? "none" : clubMaxWrittenY.ToString())
-          + ", visibleLeftX=" + (clubDrawn == 0 ? "none" : clubMinWrittenX.ToString())
-          + ", visibleRightX=" + (clubDrawn == 0 ? "none" : clubMaxWrittenX.ToString())
-          + ", viewport top bounds=32..167; screen x=0..223");
   }
 
   private void DrawRegisteredF1FloorCalibration(string itemType, bool isRight)
@@ -36059,7 +35823,6 @@ private static void HandleGameViewPointerDown(
       GUILayout.Label("Calibration missing", EditorStyles.miniLabel);
   }
 
-  private bool samuraiF2RowDiagnosticLogged;
   private bool samuraiF2CalibrationDiagnosticLogged;
   // Samurai Sword F2 has its own position draft and saved calibration.
   // F3 remains completely independent and does not share X/Y values.
@@ -36226,10 +35989,6 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  // Log a sword's visible F1/F2/F3 band only when it changes.
-  // Kept separate from the existing F3 rendering diagnostics.
-  private string lastSamuraiSwordBandTrace = "";
-
   private void DrawFloorItemRows()
   {
     EnsurePreviewMiniMapLoaded();
@@ -36251,20 +36010,6 @@ private static void HandleGameViewPointerDown(
       EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
 
       string depthLabel = GetViewEditFloorItemDistance(item);
-      if (string.Equals(item.type, "Samurai Sword",
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        string traceKey = item.instanceId + "|" + depthLabel;
-        if (traceKey != lastSamuraiSwordBandTrace)
-        {
-          lastSamuraiSwordBandTrace = traceKey;
-          int traceCorner = GetFloorScreenCorner(item);
-          FloorProjectionCalibrationEntry savedTrace =
-              traceCorner < 0 ? null :
-              FindSavedFloorProjectionCalibration(item.type, depthLabel, traceCorner);
-          // Temporary Samurai Sword distance logging disabled for ornament calibration.
-        }
-      }
       // One compact ViewEdit line per pickable item: name, Set, X, Y, Apply.
       // Map coordinates and the redundant second calibration line are omitted.
       GUIStyle pickableLabelStyle = new GUIStyle(EditorStyles.boldLabel);
@@ -36280,17 +36025,6 @@ private static void HandleGameViewPointerDown(
       GUILayout.Label(floorItemCaption, pickableLabelStyle,
           GUILayout.Width(floorItemCaptionWidth));
 
-      // Diagnostics run independently of the Set toggle so an inactive row
-      // cannot silently suppress the calibration-loading error report.
-      if (string.Equals(item.type, "Samurai Sword", System.StringComparison.OrdinalIgnoreCase)
-          && depthLabel == "F2" && !samuraiF2RowDiagnosticLogged)
-      {
-        samuraiF2RowDiagnosticLogged = true;
-        int rowCorner = GetFloorScreenCorner(item);
-        FloorProjectionCalibrationEntry loaded = rowCorner < 0 ? null
-            : FindSavedFloorProjectionCalibration(item.type, "F2", rowCorner);
-        // Temporary Samurai Sword F2 row warning disabled for ornament calibration.
-      }
       bool enabledBefore = IsPreviewFeatureEnabled(key);
       bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
       if (enabledAfter)
