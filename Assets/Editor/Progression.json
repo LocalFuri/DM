@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-13",
+  "date": "2026-11-15",
   "todo_manacles_dos_f1_s2_20261109": {
     "category": "To do List",
     "priority": 0,
@@ -1912,5 +1912,24 @@
     "approvedUnity": "Preserve Manacles F1, F3, S2 and generic shared ornaments path; do not retest or alter approved results without evidence of discrepancy",
     "nextTask": "Manacles S3: enable visible X/Y calibration in ViewEdit, compare to original DOS visual reference and refine S3 only; verify with Unity Game View; avoid any position-specific hardcoded workaround.",
     "neededInputs": "Latest Unity ViewportLayoutEditor and ornament/renderer source ZIP before changing code; no Unity sources included in this Progression ZIP."
+  },
+  "windows_powershell_admin_direct_launch_20261115": {
+    "category": "Windows 11 troubleshooting instruction / Lexware recovery",
+    "date": "2026-11-15",
+    "recordedAtLocal": "2026-11-15T23:53:23+01:00",
+    "timezone": "Europe/Berlin",
+    "status": "Preferred launch instructions recorded; user has not yet confirmed successful admin launch via this method",
+    "instruction": "To open Windows PowerShell elevated without confusing key combinations: 1. Press Windows+R. 2. Enter exactly: powershell -Command \"Start-Process powershell -Verb RunAs\" 3. Click OK. 4. Approve the User Account Control dialog by clicking Ja. 5. Confirm the new window title begins Administrator: Windows PowerShell.",
+    "avoid": "Do not instruct Ctrl+Shift+Enter from an existing PowerShell prompt or use convoluted alternatives unless direct route fails. Give only one step at a time when user requests it.",
+    "explanation": "Win+R alone is not an elevated shell. PowerShell `>>` is a continuation prompt, not admin status; Ctrl+C returns to normal PS prompt. `net session` Systemfehler 5 / Zugriff verweigert means insufficient privileges, not loss of data.",
+    "recovery_context": {
+      "application": "Lexware",
+      "backup_file": "LFO3100_261114_162448.zip",
+      "backup_path": "C:\\!!!STICK\\!BUCHHALTUNG\\LEXWARE-SICHERUNG\\LFO3100_261114_162448.zip",
+      "backup_date": "2026-11-14 16:24",
+      "user_goal": "Restore backup from yesterday without uninstalling Lexware; no speculative changes or file-by-file searches",
+      "error": "Es können keine SQLite Datendateien gefunden werden.",
+      "warning": "Backup existence does not establish restore success. Never delete protected backup; verify proper restore method before destructive actions."
+    }
   }
 }

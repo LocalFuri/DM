@@ -1,0 +1,1857 @@
+using System.IO;
+using DM.Dungeon;
+using DM.Rendering;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class ViewportLayoutEditor : EditorWindow
+{
+  private static readonly int[] SnapValues = { 1, 2, 4, 8 };
+
+  private const string PrefsLayoutGuidKey = "ViewportLayoutEditor.LayoutGuid";
+  private const string PrefsGraphicsGuidKey =
+      "ViewportLayoutEditor.GraphicsGuid";
+  private const string PrefsPreviewXKey = "ViewportLayoutEditor.PreviewX";
+  private const string PrefsPreviewYKey = "ViewportLayoutEditor.PreviewY";
+  private const string PrefsPreviewFacingKey =
+      "ViewportLayoutEditor.PreviewFacing";
+  private const string PrefsSelectedPieceIndexKey =
+      "ViewportLayoutEditor.SelectedPieceIndex";
+
+  private const string HallOfChampionsMapPath =
+      "Assets/Data/Maps/HallOfChampions.json";
+
+  private const string DefaultViewportLayoutPath =
+      "Assets/Dungeon Master/ViewportLayout.asset";
+
+  private const int PreviewWidth = 320;
+  private const int PreviewHeight = 200;
+
+  [System.NonSerialized]
+  private ViewportLayout layout;
+  [System.NonSerialized]
+  private DungeonGraphics graphics;
+  private Vector2 editorScroll;
+  private string pieceSearchFilter = string.Empty;
+  private bool[] rememberedEnabledStates;
+  private int snap = 1;
+
+  // Single source of truth for selection.
+  private int selectedPieceIndex;
+  private bool selectionChangedThisFrame;
+
+  private RawImage cachedViewportImage;
+
+  private Texture2D editModePreviewTexture;
+  private Texture savedViewportTexture;
+  private bool viewportTextureStolen;
+
+  // Edit Mode map-pose preview (Hall of Champions).
+  private int previewX = 1;
+  private int previewY = 2;
+  private DungeonFacing previewFacing = DungeonFacing.South;
+  private DungeonMap previewMiniMap;
+  private string previewMiniMapLoadError;
+  private Vector2 previewMiniMapScroll;
+
+  // Temporary 320×200 presentation (restored on close / Play Mode).
+  private bool presentationOverrideActive;
+  private bool canvasScalerStateSaved;
+  private CanvasScaler.ScaleMode savedScalerMode;
+  private float savedScalerScaleFactor;
+  private Vector2 savedScalerReferenceResolution;
+  private float savedScalerMatchWidthOrHeight;
+  private bool viewportRectSaved;
+  private RectTransformSnapshot savedViewportRect;
+  private bool gameplayRootRectSaved;
+  private RectTransformSnapshot savedGameplayRootRect;
+  private RectTransform cachedGameplayRoot;
+
+  private Image cachedMovementArrows;
+  private bool movementArrowsStateSaved;
+  private bool savedMovementArrowsActive;
+  private Transform savedMovementArrowsParent;
+  private int savedMovementArrowsSiblingIndex;
+  private RectTransformSnapshot savedMovementArrowsRect;
+  private bool savedMovementArrowsPreserveAspect;
+  private FilterMode savedMovementArrowsFilterMode;
+  private bool movementArrowsFilterSaved;
+  private Texture savedMovementArrowsFilterTexture;
+
+  private struct RectTransformSnapshot
+  {
+    public Vector2 AnchorMin;
+    public Vector2 AnchorMax;
+    public Vector2 Pivot;
+    public Vector2 AnchoredPosition;
+    public Vector2 SizeDelta;
+    public Vector3 LocalScale;
+    public Quaternion LocalRotation;
+    public Vector2 OffsetMin;
+    public Vector2 OffsetMax;
+
+    public static RectTransformSnapshot Capture(RectTransform rect)
+    {
+      return new RectTransformSnapshot
+      {
+        AnchorMin = rect.anchorMin,
+        AnchorMax = rect.anchorMax,
+        Pivot = rect.pivot,
+        AnchoredPosition = rect.anchoredPosition,
+        SizeDelta = rect.sizeDelta,
+        LocalScale = rect.localScale,
+        LocalRotation = rect.localRotation,
+        OffsetMin = rect.offsetMin,
+        OffsetMax = rect.offsetMax
+      };
+    }
+
+    public void Apply(RectTransform rect)
+    {
+      rect.localRotation = LocalRotation;
+      rect.localScale = LocalScale;
+      rect.anchorMin = AnchorMin;
+      rect.anchorMax = AnchorMax;
+      rect.pivot = Pivot;
+      rect.anchoredPosition = AnchoredPosition;
+      rect.sizeDelta = SizeDelta;
+      // Stretch layouts need offsets restored after sizeDelta.
+      if (AnchorMin != AnchorMax)
+      {
+        rect.offsetMin = OffsetMin;
+        rect.offsetMax = OffsetMax;
+      }
+    }
+  }
+
+  [MenuItem("Tools/Viewport Layout Editor")]
+  public static void Open()
+  {
+    GetWindow<ViewportLayoutEditor>("Viewport Layout");
+  }
+
+  private void OnEnable()
+  {
+    wantsMouseMove = true;
+    RestorePersistedAssets();
+    ReloadLayoutFromDisk();
+    RestoreSessionPrefs();
+    EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
+    // Force a fresh compose from the loaded asset Enabled flags.
+    DestroyEditModePreviewTextureOnly();
+    RefreshEditModePreview();
+  }
+
+  private void OnDisable()
+  {
+    SaveAssetGuid(PrefsLayoutGuidKey, layout);
+    SaveAssetGuid(PrefsGraphicsGuidKey, graphics);
+    SaveSessionPrefs();
+
+    EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+    RestoreViewportTextureAndDestroyPreview();
+    RepaintGameViews();
+  }
+
+  private void HandlePlayModeStateChanged(PlayModeStateChange state)
+  {
+    cachedViewportImage = null;
+
+    if (state == PlayModeStateChange.ExitingEditMode
+        || state == PlayModeStateChange.EnteredPlayMode)
+    {
+      // Hand the RawImage back to the scene RenderTexture before Play runs.
+      RestoreViewportTextureAndDestroyPreview();
+    }
+
+    if (state == PlayModeStateChange.EnteredEditMode)
+      RefreshEditModePreview();
+
+    if (state == PlayModeStateChange.ExitingPlayMode)
+      RepaintGameViews();
+  }
+
+  private void OnGUI()
+  {
+    selectionChangedThisFrame = false;
+
+    // Arrow Up/Down must be handled before BeginScrollView — otherwise the
+    // scroll view consumes them for scrolling and HandlePreviewMoveKeyboard
+    // never sees a usable KeyDown (Left/Right strafe is unaffected).
+    if (layout != null)
+      HandlePreviewMoveKeyboard();
+
+    editorScroll = EditorGUILayout.BeginScrollView(editorScroll);
+
+    EditorGUI.BeginChangeCheck();
+    ViewportLayout newLayout = (ViewportLayout)EditorGUILayout.ObjectField(
+        "Viewport Layout",
+        layout,
+        typeof(ViewportLayout),
+        false);
+    if (EditorGUI.EndChangeCheck())
+    {
+      layout = newLayout;
+      rememberedEnabledStates = null;
+      selectedPieceIndex = 0;
+      SaveAssetGuid(PrefsLayoutGuidKey, layout);
+      SaveSessionPrefs();
+      RefreshEditModePreview();
+    }
+
+    EditorGUI.BeginChangeCheck();
+    DungeonGraphics newGraphics = (DungeonGraphics)EditorGUILayout.ObjectField(
+        "Dungeon Graphics",
+        graphics,
+        typeof(DungeonGraphics),
+        false);
+    if (EditorGUI.EndChangeCheck())
+    {
+      graphics = newGraphics;
+      SaveAssetGuid(PrefsGraphicsGuidKey, graphics);
+      RefreshEditModePreview();
+    }
+
+    if (layout == null)
+    {
+      EditorGUILayout.HelpBox("Select a ViewportLayout asset.", MessageType.Info);
+      EditorGUILayout.EndScrollView();
+      return;
+    }
+
+    if (graphics == null)
+    {
+      EditorGUILayout.HelpBox(
+          "Select a DungeonGraphics asset (textures for the Edit Mode preview).",
+          MessageType.Warning);
+    }
+
+    bool layoutEditable = !Application.isPlaying;
+    if (!layoutEditable)
+    {
+      EditorGUILayout.HelpBox(
+          "ViewportLayout.asset is read-only in Play Mode. "
+              + "Stop Play to edit and save layout coordinates/visibility.",
+          MessageType.Warning);
+    }
+
+    ClampSelectedPieceIndex();
+    HandlePreviewFacingKeyboard();
+    HandlePreviewStrafeKeyboard();
+
+    DrawMapPosePreviewControls();
+
+    using (new EditorGUI.DisabledScope(!layoutEditable))
+    {
+      EditorGUI.BeginChangeCheck();
+
+      if (layoutEditable)
+        Undo.RecordObject(layout, "Viewport Layout Change");
+
+      DrawSnapToolbar();
+
+      using (new EditorGUI.DisabledScope(rememberedEnabledStates == null))
+      {
+        if (GUILayout.Button("Restore Enabled States"))
+        {
+          RestoreEnabledStates();
+          PersistChanges();
+        }
+      }
+
+      EditorGUILayout.Space();
+      pieceSearchFilter = EditorGUILayout.TextField(
+          "Search Pieces",
+          pieceSearchFilter);
+      HandlePieceSearchKeyboard();
+
+      EditorGUILayout.LabelField("Pieces (render order)", EditorStyles.boldLabel);
+
+      bool changed = false;
+
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (!PieceMatchesSearchFilter(piece))
+          continue;
+
+        bool isSelected = i == selectedPieceIndex;
+        DrawPieceCard(i, piece, isSelected, ref changed);
+      }
+
+      if (EditorGUI.EndChangeCheck() || changed)
+        PersistChanges();
+    }
+
+    EditorGUILayout.EndScrollView();
+
+    if (selectionChangedThisFrame)
+    {
+      RefreshEditModePreview();
+      Repaint();
+    }
+  }
+
+  private bool PieceMatchesSearchFilter(ViewportPiece piece)
+  {
+    if (string.IsNullOrWhiteSpace(pieceSearchFilter))
+      return true;
+
+    if (piece == null)
+      return false;
+
+    string name = piece.Name ?? string.Empty;
+    return name.IndexOf(
+               pieceSearchFilter.Trim(),
+               System.StringComparison.OrdinalIgnoreCase)
+           >= 0;
+  }
+
+  private void HandlePieceSearchKeyboard()
+  {
+    Event current = Event.current;
+    if (current.type != EventType.KeyDown)
+      return;
+
+    if (focusedWindow != this)
+      return;
+
+    if (current.keyCode != KeyCode.Escape)
+      return;
+
+    if (string.IsNullOrEmpty(pieceSearchFilter))
+      return;
+
+    pieceSearchFilter = string.Empty;
+    current.Use();
+    GUI.FocusControl(null);
+    Repaint();
+  }
+
+  private void DrawPieceCard(
+      int index,
+      ViewportPiece piece,
+      bool isSelected,
+      ref bool changed)
+  {
+    Color previousBg = GUI.backgroundColor;
+    if (isSelected)
+      GUI.backgroundColor = new Color(0.2f, 0.55f, 1f, 1f);
+
+    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+    GUI.backgroundColor = previousBg;
+
+    EditorGUILayout.BeginHorizontal();
+    EditorGUILayout.LabelField(
+        isSelected ? $"▶ {piece.Name}" : piece.Name,
+        EditorStyles.boldLabel);
+    if (GUILayout.Button("Select", GUILayout.Width(60)))
+      SelectPiece(index);
+    EditorGUILayout.EndHorizontal();
+
+    EditorGUI.BeginChangeCheck();
+    piece.Name = EditorGUILayout.TextField("Name", piece.Name);
+    piece.Enabled = EditorGUILayout.Toggle("Enabled", piece.Enabled);
+    piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup("Graphic", piece.Graphic);
+    piece.MirrorHorizontally = EditorGUILayout.Toggle(
+        "Mirror Horizontally",
+        piece.MirrorHorizontally);
+
+    if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
+    {
+      EditorGUILayout.HelpBox(
+          "Ceiling/Floor Mirror follows the shared environment phase "
+              + "(same parity as F1 A/B) at runtime.",
+          MessageType.None);
+    }
+
+    if (EditorGUI.EndChangeCheck())
+    {
+      SelectPiece(index);
+      changed = true;
+    }
+
+    if (DrawIntStepper("X", ref piece.X, snap))
+    {
+      SelectPiece(index);
+      changed = true;
+    }
+
+    if (DrawIntStepper("Y", ref piece.Y, snap))
+    {
+      SelectPiece(index);
+      changed = true;
+    }
+
+    EditorGUILayout.BeginHorizontal();
+
+    using (new EditorGUI.DisabledScope(index <= 0))
+    {
+      if (GUILayout.Button("Move Up"))
+      {
+        SwapPieces(index, index - 1);
+        if (selectedPieceIndex == index)
+          SelectPiece(index - 1);
+        else if (selectedPieceIndex == index - 1)
+          SelectPiece(index);
+        changed = true;
+      }
+    }
+
+    using (new EditorGUI.DisabledScope(index >= layout.Pieces.Count - 1))
+    {
+      if (GUILayout.Button("Move Down"))
+      {
+        SwapPieces(index, index + 1);
+        if (selectedPieceIndex == index)
+          SelectPiece(index + 1);
+        else if (selectedPieceIndex == index + 1)
+          SelectPiece(index);
+        changed = true;
+      }
+    }
+
+    if (GUILayout.Button("Solo"))
+    {
+      SelectPiece(index);
+      SoloPiece(index);
+      changed = true;
+    }
+
+    EditorGUILayout.EndHorizontal();
+    EditorGUILayout.EndVertical();
+  }
+
+  private void SelectPiece(int index)
+  {
+    if (layout == null || layout.Pieces.Count == 0)
+    {
+      selectedPieceIndex = 0;
+      selectionChangedThisFrame = true;
+      SaveSessionPrefs();
+      GUI.FocusControl(null);
+      return;
+    }
+
+    int clamped = Mathf.Clamp(index, 0, layout.Pieces.Count - 1);
+    if (clamped != selectedPieceIndex)
+      selectionChangedThisFrame = true;
+
+    selectedPieceIndex = clamped;
+    SaveSessionPrefs();
+    GUI.FocusControl(null);
+  }
+
+  private void HandlePreviewFacingKeyboard()
+  {
+    Event current = Event.current;
+    if (current.type != EventType.KeyDown)
+      return;
+
+    if (focusedWindow != this)
+      return;
+
+    if (EditorGUIUtility.editingTextField)
+      return;
+
+    DungeonFacing nextFacing;
+    switch (current.keyCode)
+    {
+      case KeyCode.Delete:
+        nextFacing = TurnPreviewFacingLeft(previewFacing);
+        break;
+      case KeyCode.PageDown:
+        nextFacing = TurnPreviewFacingRight(previewFacing);
+        break;
+      default:
+        return;
+    }
+
+    current.Use();
+
+    if (nextFacing == previewFacing)
+      return;
+
+    // Preserve Preview X / Preview Y; only facing changes.
+    SwitchPreviewPose(previewX, previewY, nextFacing);
+    TryRefocusPreviewWindow();
+  }
+
+  private void HandlePreviewStrafeKeyboard()
+  {
+    Event current = Event.current;
+    if (current.type != EventType.KeyDown)
+      return;
+
+    if (focusedWindow != this)
+      return;
+
+    if (EditorGUIUtility.editingTextField)
+      return;
+
+    int strafeSign;
+    switch (current.keyCode)
+    {
+      case KeyCode.LeftArrow:
+        strafeSign = -1; // left relative to facing
+        break;
+      case KeyCode.RightArrow:
+        strafeSign = 1; // right relative to facing
+        break;
+      default:
+        return;
+    }
+
+    current.Use();
+
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return;
+
+    DungeonMap.GetRightOffset(
+        previewFacing,
+        out int rightX,
+        out int rightY);
+
+    int nextX = previewX + rightX * strafeSign;
+    int nextY = previewY + rightY * strafeSign;
+
+    if (!previewMiniMap.CanEnter(nextX, nextY))
+      return;
+
+    // Keep Preview Facing unchanged.
+    SwitchPreviewPose(nextX, nextY, previewFacing);
+    TryRefocusPreviewWindow();
+  }
+
+  private void HandlePreviewMoveKeyboard()
+  {
+    Event current = Event.current;
+    if (current.type != EventType.KeyDown)
+      return;
+
+    if (focusedWindow != this)
+      return;
+
+    if (EditorGUIUtility.editingTextField)
+      return;
+
+    int moveSign;
+    switch (current.keyCode)
+    {
+      case KeyCode.UpArrow:
+        moveSign = 1; // forward relative to facing
+        break;
+      case KeyCode.DownArrow:
+        moveSign = -1; // backward relative to facing
+        break;
+      default:
+        return;
+    }
+
+    current.Use();
+
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing,
+        out int forwardX,
+        out int forwardY);
+
+    int nextX = previewX + forwardX * moveSign;
+    int nextY = previewY + forwardY * moveSign;
+
+    if (!previewMiniMap.CanEnter(nextX, nextY))
+      return;
+
+    // Keep Preview Facing unchanged.
+    int oldX = previewX;
+    int oldY = previewY;
+    SwitchPreviewPose(nextX, nextY, previewFacing);
+    Debug.Log(
+        $"Viewport move: ({oldX},{oldY}) → ({previewX},{previewY}), "
+            + $"Facing={previewFacing}");
+    TryRefocusPreviewWindow();
+  }
+
+  private void TryRefocusPreviewWindow()
+  {
+    if (EditorGUIUtility.editingTextField)
+      return;
+
+    Focus();
+  }
+
+  /// <summary>
+  /// Recompose for the current pose and push that Texture2D onto the live
+  /// Game View dungeon RawImage. Always re-finds the RawImage (no cache).
+  /// </summary>
+  private void PresentEditModePreviewToGameView()
+  {
+    if (Application.isPlaying || layout == null || graphics == null)
+      return;
+
+    LogAllSceneRawImages("PresentEditModePreviewToGameView BEFORE assign");
+
+    RawImage dungeonImage = FindLiveDungeonViewportRawImage();
+    if (dungeonImage == null)
+    {
+      Debug.LogWarning(
+          "PresentEditModePreviewToGameView: DungeonViewport RawImage not found.");
+      return;
+    }
+
+    cachedViewportImage = dungeonImage;
+
+    EnsureEditModePreviewTexture();
+    if (editModePreviewTexture == null)
+      return;
+
+    ComposeEditModePreview();
+    if (editModePreviewTexture == null)
+      return;
+
+    editModePreviewTexture.Apply(false);
+
+    StealViewportTextureIfNeeded(dungeonImage);
+    ApplyExact320x200EditModePresentation(dungeonImage);
+
+    // Presentation may rebuild hierarchy — resolve the live RawImage again.
+    dungeonImage = FindLiveDungeonViewportRawImage();
+    if (dungeonImage == null)
+      return;
+
+    cachedViewportImage = dungeonImage;
+
+    // Force a reference change so RawImage/Canvas pick up in-place pixel updates.
+    // Avoid uvRect / SetAllDirty here — those hit NRE when canvas is unset.
+    dungeonImage.texture = Texture2D.whiteTexture;
+    dungeonImage.texture = editModePreviewTexture;
+
+    LogAssignedRawImage(dungeonImage);
+
+    if (dungeonImage.canvas != null)
+      Canvas.ForceUpdateCanvases();
+
+    MaintainMovementArrowsPreview();
+    LogAllSceneRawImages("PresentEditModePreviewToGameView AFTER assign");
+    RepaintGameViews();
+  }
+
+  private static void LogAllSceneRawImages(string phase)
+  {
+    RawImage[] images = Object.FindObjectsByType<RawImage>(
+        FindObjectsInactive.Include);
+    Debug.Log(
+        $"[RawImage inventory] {phase}: count={images.Length}");
+
+    for (int i = 0; i < images.Length; i++)
+    {
+      RawImage image = images[i];
+      if (image == null)
+      {
+        Debug.Log($"[RawImage inventory] [{i}] <null>");
+        continue;
+      }
+
+      Texture tex = image.texture;
+      string texName = tex != null ? tex.name : "<null>";
+      string texId = tex != null ? tex.GetEntityId().ToString() : "0";
+      Debug.Log(
+          $"[RawImage inventory] [{i}] name={image.gameObject.name} "
+          + $"path={GetGameObjectHierarchyPath(image.gameObject)} "
+          + $"enabled={image.enabled} "
+          + $"activeSelf={image.gameObject.activeSelf} "
+          + $"activeInHierarchy={image.gameObject.activeInHierarchy} "
+          + $"texture={texName} textureEntityId={texId}");
+    }
+  }
+
+  private void LogAssignedRawImage(RawImage dungeonImage)
+  {
+    if (dungeonImage == null)
+    {
+      Debug.LogWarning(
+          "[PresentEditModePreviewToGameView] assigned RawImage: <null>");
+      return;
+    }
+
+    Texture tex = dungeonImage.texture;
+    string texName = tex != null ? tex.name : "<null>";
+    string texId = tex != null ? tex.GetEntityId().ToString() : "0";
+    string previewId = editModePreviewTexture != null
+        ? editModePreviewTexture.GetEntityId().ToString()
+        : "0";
+    Debug.Log(
+        "[PresentEditModePreviewToGameView] ASSIGNED RawImage "
+        + $"name={dungeonImage.gameObject.name} "
+        + $"path={GetGameObjectHierarchyPath(dungeonImage.gameObject)} "
+        + $"enabled={dungeonImage.enabled} "
+        + $"texture={texName} textureEntityId={texId} "
+        + $"editModePreviewTextureEntityId={previewId}");
+  }
+
+  private static string GetGameObjectHierarchyPath(GameObject go)
+  {
+    if (go == null)
+      return "<null>";
+
+    System.Text.StringBuilder sb = new System.Text.StringBuilder(go.name);
+    Transform parent = go.transform.parent;
+    while (parent != null)
+    {
+      sb.Insert(0, parent.name + "/");
+      parent = parent.parent;
+    }
+
+    return sb.ToString();
+  }
+
+  /// <summary>
+  /// Fresh lookup of the RawImage actually shown in Game View (by name).
+  /// Does not use cachedViewportImage.
+  /// </summary>
+  private RawImage FindLiveDungeonViewportRawImage()
+  {
+    RawImage[] images = Object.FindObjectsByType<RawImage>(
+        FindObjectsInactive.Exclude);
+
+    foreach (RawImage image in images)
+    {
+      if (image == null)
+        continue;
+
+      if (image.gameObject.name == "DungeonViewport")
+        return image;
+    }
+
+    // Prefer the RawImage currently displaying our preview texture.
+    foreach (RawImage image in images)
+    {
+      if (image == null)
+        continue;
+
+      if (editModePreviewTexture != null
+          && image.texture == editModePreviewTexture)
+      {
+        return image;
+      }
+    }
+
+    foreach (RawImage image in images)
+    {
+      if (image == null)
+        continue;
+
+      if (image.texture is RenderTexture)
+        return image;
+    }
+
+    return null;
+  }
+
+  private static DungeonFacing TurnPreviewFacingLeft(DungeonFacing facing)
+  {
+    return facing switch
+    {
+      DungeonFacing.North => DungeonFacing.West,
+      DungeonFacing.West => DungeonFacing.South,
+      DungeonFacing.South => DungeonFacing.East,
+      DungeonFacing.East => DungeonFacing.North,
+      _ => facing
+    };
+  }
+
+  private static DungeonFacing TurnPreviewFacingRight(DungeonFacing facing)
+  {
+    return facing switch
+    {
+      DungeonFacing.North => DungeonFacing.East,
+      DungeonFacing.East => DungeonFacing.South,
+      DungeonFacing.South => DungeonFacing.West,
+      DungeonFacing.West => DungeonFacing.North,
+      _ => facing
+    };
+  }
+
+  private void ClampSelectedPieceIndex()
+  {
+    if (layout == null || layout.Pieces.Count == 0)
+    {
+      selectedPieceIndex = 0;
+      return;
+    }
+
+    selectedPieceIndex = Mathf.Clamp(
+        selectedPieceIndex,
+        0,
+        layout.Pieces.Count - 1);
+  }
+
+  private void RestorePersistedAssets()
+  {
+    string savedLayoutGuid =
+        EditorPrefs.GetString(PrefsLayoutGuidKey, string.Empty);
+
+    layout = LoadViewportLayoutByGuid(savedLayoutGuid);
+
+    if (layout == null)
+    {
+      layout = AssetDatabase.LoadAssetAtPath<ViewportLayout>(
+          DefaultViewportLayoutPath);
+    }
+
+    if (layout == null)
+      layout = FindSingleViewportLayoutAsset();
+
+    if (layout != null)
+      SaveAssetGuid(PrefsLayoutGuidKey, layout);
+
+    graphics = LoadDungeonGraphicsByGuid(
+        EditorPrefs.GetString(PrefsGraphicsGuidKey, string.Empty));
+
+    if (graphics == null)
+      graphics = FindSingleDungeonGraphicsAsset();
+
+    if (graphics != null)
+      SaveAssetGuid(PrefsGraphicsGuidKey, graphics);
+  }
+
+  /// <summary>
+  /// Re-load ViewportLayout from disk so Edit Mode preview matches the .asset
+  /// Enabled flags (avoids stale in-memory ScriptableObject state).
+  /// </summary>
+  private void ReloadLayoutFromDisk()
+  {
+    if (layout == null)
+      return;
+
+    string path = AssetDatabase.GetAssetPath(layout);
+    if (string.IsNullOrEmpty(path))
+      return;
+
+    AssetDatabase.ImportAsset(
+        path,
+        ImportAssetOptions.ForceUpdate
+            | ImportAssetOptions.ForceSynchronousImport);
+
+    ViewportLayout reloaded =
+        AssetDatabase.LoadAssetAtPath<ViewportLayout>(path);
+    if (reloaded != null)
+      layout = reloaded;
+  }
+
+  private void DestroyEditModePreviewTextureOnly()
+  {
+    if (editModePreviewTexture == null)
+      return;
+
+    Object.DestroyImmediate(editModePreviewTexture);
+    editModePreviewTexture = null;
+  }
+
+  private void RestoreSessionPrefs()
+  {
+    // Always open at the fixed startup pose — do not restore last preview pose.
+    previewX = 1;
+    previewY = 2;
+    previewFacing = DungeonFacing.South;
+
+    selectedPieceIndex = EditorPrefs.GetInt(PrefsSelectedPieceIndexKey, 0);
+    ClampSelectedPieceIndex();
+  }
+
+  private void SaveSessionPrefs()
+  {
+    EditorPrefs.SetInt(PrefsPreviewXKey, previewX);
+    EditorPrefs.SetInt(PrefsPreviewYKey, previewY);
+    EditorPrefs.SetInt(PrefsPreviewFacingKey, (int)previewFacing);
+    EditorPrefs.SetInt(PrefsSelectedPieceIndexKey, selectedPieceIndex);
+  }
+
+  private static ViewportLayout LoadViewportLayoutByGuid(string guid)
+  {
+    if (string.IsNullOrEmpty(guid))
+      return null;
+
+    string path = AssetDatabase.GUIDToAssetPath(guid);
+    if (string.IsNullOrEmpty(path))
+      return null;
+
+    ViewportLayout loaded =
+        AssetDatabase.LoadAssetAtPath<ViewportLayout>(path);
+    if (loaded != null)
+      return loaded;
+
+    Object[] assets = AssetDatabase.LoadAllAssetsAtPath(path);
+    for (int i = 0; i < assets.Length; i++)
+    {
+      if (assets[i] is ViewportLayout viewportLayout)
+        return viewportLayout;
+    }
+
+    return null;
+  }
+
+  private static ViewportLayout FindSingleViewportLayoutAsset()
+  {
+    string[] guids = AssetDatabase.FindAssets("t:ViewportLayout");
+    if (guids == null || guids.Length != 1)
+      return null;
+
+    string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+    if (string.IsNullOrEmpty(path))
+      return null;
+
+    return AssetDatabase.LoadAssetAtPath<ViewportLayout>(path);
+  }
+
+  private static DungeonGraphics LoadDungeonGraphicsByGuid(string guid)
+  {
+    if (string.IsNullOrEmpty(guid))
+      return null;
+
+    string path = AssetDatabase.GUIDToAssetPath(guid);
+    if (string.IsNullOrEmpty(path))
+      return null;
+
+    return AssetDatabase.LoadAssetAtPath<DungeonGraphics>(path);
+  }
+
+  private static DungeonGraphics FindSingleDungeonGraphicsAsset()
+  {
+    string[] guids = AssetDatabase.FindAssets("t:DungeonGraphics");
+    if (guids == null || guids.Length != 1)
+      return null;
+
+    string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+    if (string.IsNullOrEmpty(path))
+      return null;
+
+    return AssetDatabase.LoadAssetAtPath<DungeonGraphics>(path);
+  }
+
+  private static void SaveAssetGuid(string prefsKey, Object asset)
+  {
+    if (asset == null)
+    {
+      EditorPrefs.SetString(prefsKey, string.Empty);
+      return;
+    }
+
+    string path = AssetDatabase.GetAssetPath(asset);
+    if (string.IsNullOrEmpty(path))
+    {
+      EditorPrefs.SetString(prefsKey, string.Empty);
+      return;
+    }
+
+    string guid = AssetDatabase.AssetPathToGUID(path);
+    EditorPrefs.SetString(prefsKey, guid ?? string.Empty);
+  }
+
+  private void DrawSnapToolbar()
+  {
+    EditorGUILayout.BeginHorizontal();
+    EditorGUILayout.LabelField("Snap", GUILayout.Width(36));
+
+    foreach (int value in SnapValues)
+    {
+      bool selected = snap == value;
+      GUIStyle style = selected
+          ? EditorStyles.miniButtonMid
+          : EditorStyles.miniButton;
+
+      Color previousColor = GUI.backgroundColor;
+      if (selected)
+        GUI.backgroundColor = new Color(0.4f, 0.7f, 1f);
+
+      if (GUILayout.Toggle(selected, value.ToString(), style, GUILayout.Width(28))
+          && !selected)
+      {
+        snap = value;
+      }
+
+      GUI.backgroundColor = previousColor;
+    }
+
+    EditorGUILayout.EndHorizontal();
+  }
+
+  private bool TryGetViewportRawImage(out RawImage viewportImage)
+  {
+    if (cachedViewportImage == null)
+      cachedViewportImage = FindViewportRawImage();
+
+    // Unity fake-null: drop a destroyed cached reference.
+    if (cachedViewportImage == null)
+    {
+      viewportImage = null;
+      return false;
+    }
+
+    viewportImage = cachedViewportImage;
+    return true;
+  }
+
+  private RawImage FindViewportRawImage()
+  {
+    RawImage[] images = Object.FindObjectsByType<RawImage>(
+        FindObjectsInactive.Exclude);
+
+    foreach (RawImage image in images)
+    {
+      if (image == null)
+        continue;
+
+      if (image.gameObject.name == "DungeonViewport")
+        return image;
+    }
+
+    foreach (RawImage image in images)
+    {
+      if (image == null)
+        continue;
+
+      if (image.texture is RenderTexture)
+        return image;
+
+      // After the first steal, the dungeon RawImage holds our preview Texture2D
+      // (not a RenderTexture) — still treat it as the viewport target.
+      if (editModePreviewTexture != null
+          && image.texture == editModePreviewTexture)
+      {
+        return image;
+      }
+    }
+
+    return null;
+  }
+
+  private static void RepaintGameViews()
+  {
+    EditorWindow[] windows =
+        Resources.FindObjectsOfTypeAll<EditorWindow>();
+
+    foreach (EditorWindow window in windows)
+    {
+      if (window != null && window.GetType().Name == "GameView")
+        window.Repaint();
+    }
+  }
+
+  private void DrawMapPosePreviewControls()
+  {
+    EditorGUILayout.Space();
+    EditorGUILayout.LabelField(
+        "Map Pose Preview",
+        EditorStyles.boldLabel);
+    EditorGUILayout.HelpBox(
+        "Preview X / Y / Facing move the map pose. "
+            + "Layout pieces come from the selected ViewportLayout asset.",
+        MessageType.None);
+
+    int editX = previewX;
+    int editY = previewY;
+    DungeonFacing editFacing = previewFacing;
+    EditorGUI.BeginChangeCheck();
+    editX = EditorGUILayout.IntField("Preview X", editX);
+    editY = EditorGUILayout.IntField("Preview Y", editY);
+    editFacing = (DungeonFacing)EditorGUILayout.EnumPopup(
+        "Preview Facing",
+        editFacing);
+    if (EditorGUI.EndChangeCheck())
+      SwitchPreviewPose(editX, editY, editFacing);
+
+    DrawPreviewMiniMap();
+  }
+
+  private void DrawPreviewMiniMap()
+  {
+    EditorGUILayout.Space();
+    EditorGUILayout.LabelField("Mini-map", EditorStyles.boldLabel);
+
+    EnsurePreviewMiniMapLoaded();
+
+    if (previewMiniMap == null)
+    {
+      EditorGUILayout.HelpBox(
+          string.IsNullOrEmpty(previewMiniMapLoadError)
+              ? "Could not load Hall of Champions map."
+              : previewMiniMapLoadError,
+          MessageType.Warning);
+      return;
+    }
+
+    previewMiniMapScroll = DungeonMiniMapGui.Draw(
+        previewMiniMap,
+        previewX,
+        previewY,
+        previewFacing,
+        previewMiniMapScroll,
+        interactive: true,
+        out DungeonMiniMapGui.InteractionResult interaction
+    );
+
+    if (interaction.HasHover
+        && Event.current.type == EventType.MouseMove)
+    {
+      Repaint();
+    }
+
+    if (interaction.ClickedOpenTile)
+      ApplyPreviewPoseFromMiniMapClick(
+          interaction.ClickX,
+          interaction.ClickY);
+  }
+
+  private void ApplyPreviewPoseFromMiniMapClick(int x, int y)
+  {
+    // Preview Facing is unchanged.
+    SwitchPreviewPose(x, y, previewFacing);
+    TryRefocusPreviewWindow();
+  }
+
+  private void SwitchPreviewPose(int newX, int newY, DungeonFacing newFacing)
+  {
+    if (newX == previewX && newY == previewY && newFacing == previewFacing)
+      return;
+
+    previewX = newX;
+    previewY = newY;
+    previewFacing = newFacing;
+    SaveSessionPrefs();
+
+    if (previewMiniMap != null)
+      previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
+
+    RefreshEditModePreview();
+    GUI.changed = true;
+    Repaint();
+  }
+
+  private void EnsurePreviewMiniMapLoaded()
+  {
+    if (previewMiniMap != null)
+      return;
+
+    if (!File.Exists(HallOfChampionsMapPath))
+    {
+      previewMiniMapLoadError =
+          "Map not found at " + HallOfChampionsMapPath;
+      return;
+    }
+
+    try
+    {
+      string json = File.ReadAllText(HallOfChampionsMapPath);
+      previewMiniMap = DungeonMap.LoadFromJsonText(json);
+      previewMiniMapLoadError = null;
+    }
+    catch (System.Exception ex)
+    {
+      previewMiniMap = null;
+      previewMiniMapLoadError = ex.Message;
+    }
+  }
+
+  private void SoloPiece(int soloIndex)
+  {
+    Undo.RecordObject(layout, "Viewport Layout Solo Piece");
+
+    rememberedEnabledStates = new bool[layout.Pieces.Count];
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+      rememberedEnabledStates[i] = layout.Pieces[i].Enabled;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      piece.Enabled =
+          i == soloIndex || IsFloorOrCeiling(piece)
+          || piece.Graphic == DungeonGraphicType.MovementArrows;
+    }
+  }
+
+  private void RestoreEnabledStates()
+  {
+    if (rememberedEnabledStates == null)
+      return;
+
+    Undo.RecordObject(layout, "Viewport Layout Restore Enabled");
+
+    int count = Mathf.Min(
+        rememberedEnabledStates.Length,
+        layout.Pieces.Count);
+
+    for (int i = 0; i < count; i++)
+      layout.Pieces[i].Enabled = rememberedEnabledStates[i];
+  }
+
+  private static bool IsFloorOrCeiling(ViewportPiece piece)
+  {
+    return piece.Graphic == DungeonGraphicType.Floor
+        || piece.Graphic == DungeonGraphicType.Ceiling
+        || piece.Name == "Floor"
+        || piece.Name == "Ceiling";
+  }
+
+  private void PersistChanges()
+  {
+    if (Application.isPlaying || layout == null)
+      return;
+
+    EditorUtility.SetDirty(layout);
+    AssetDatabase.SaveAssets();
+    RefreshDungeonRenderer();
+    RefreshEditModePreview();
+  }
+
+  private void SwapPieces(int indexA, int indexB)
+  {
+    Undo.RecordObject(layout, "Viewport Layout Reorder");
+
+    ViewportPiece temp = layout.Pieces[indexA];
+    layout.Pieces[indexA] = layout.Pieces[indexB];
+    layout.Pieces[indexB] = temp;
+  }
+
+  private void RefreshEditModePreview()
+  {
+    if (Application.isPlaying)
+      return;
+
+    if (layout == null || graphics == null)
+    {
+      RestoreViewportTextureAndDestroyPreview();
+      RepaintGameViews();
+      return;
+    }
+
+    if (!TryGetViewportRawImage(out RawImage dungeonImage))
+      return;
+
+    EnsureEditModePreviewTexture();
+    ComposeEditModePreview();
+    StealViewportTextureIfNeeded(dungeonImage);
+    ApplyExact320x200EditModePresentation(dungeonImage);
+
+    // Compose updates pixels in-place on the same Texture2D instance. Re-assigning
+    // the identical reference is a no-op for RawImage, so force a reference change.
+    if (editModePreviewTexture == null)
+      return;
+
+    dungeonImage.texture = Texture2D.whiteTexture;
+    dungeonImage.texture = editModePreviewTexture;
+    if (dungeonImage.canvas != null)
+      Canvas.ForceUpdateCanvases();
+
+    MaintainMovementArrowsPreview();
+    RepaintGameViews();
+  }
+
+  private void ApplyExact320x200EditModePresentation(RawImage dungeonImage)
+  {
+    if (dungeonImage == null)
+      return;
+
+    ApplyConstantPixelCanvasScaler(dungeonImage);
+
+    RectTransform gameplayRoot = FindGameplayRoot(dungeonImage);
+    if (gameplayRoot != null)
+    {
+      if (!gameplayRootRectSaved)
+      {
+        savedGameplayRootRect =
+            RectTransformSnapshot.Capture(gameplayRoot);
+        gameplayRootRectSaved = true;
+        cachedGameplayRoot = gameplayRoot;
+      }
+
+      ApplyCentered320x200Rect(gameplayRoot);
+    }
+
+    RectTransform viewportRect = dungeonImage.rectTransform;
+    if (!viewportRectSaved)
+    {
+      savedViewportRect = RectTransformSnapshot.Capture(viewportRect);
+      viewportRectSaved = true;
+    }
+
+    ApplyCentered320x200Rect(viewportRect);
+    presentationOverrideActive = true;
+  }
+
+  private void MaintainMovementArrowsPreview()
+  {
+    if (Application.isPlaying)
+    {
+      RestoreMovementArrowsOverride();
+      return;
+    }
+
+    if (layout == null
+        || graphics == null
+        || !presentationOverrideActive)
+    {
+      RestoreMovementArrowsOverride();
+      return;
+    }
+
+    if (!TryGetViewportRawImage(out RawImage dungeonImage))
+    {
+      RestoreMovementArrowsOverride();
+      return;
+    }
+
+    ViewportPiece arrowsPiece = FindMovementArrowsPiece();
+    if (arrowsPiece == null)
+    {
+      RestoreMovementArrowsOverride();
+      return;
+    }
+
+    Image arrows = FindMovementArrowsImage();
+    if (arrows == null)
+      return;
+
+    CaptureMovementArrowsStateIfNeeded(arrows);
+
+    RectTransform arrowsRect = arrows.rectTransform;
+    if (arrowsRect.parent != dungeonImage.rectTransform)
+      arrowsRect.SetParent(dungeonImage.rectTransform, false);
+
+    MovementArrowsLayout.Apply(
+        arrows,
+        arrowsPiece.X,
+        arrowsPiece.Y,
+        arrowsPiece.Enabled);
+
+    arrowsRect.SetAsLastSibling();
+  }
+
+  private ViewportPiece FindMovementArrowsPiece()
+  {
+    if (layout == null || layout.Pieces == null)
+      return null;
+
+    for (int i = 0; i < layout.Pieces.Count; i++)
+    {
+      ViewportPiece piece = layout.Pieces[i];
+      if (piece != null
+          && piece.Graphic == DungeonGraphicType.MovementArrows)
+      {
+        return piece;
+      }
+    }
+
+    return null;
+  }
+
+  private static Image FindMovementArrowsImage()
+  {
+    Image[] images = Object.FindObjectsByType<Image>(
+        FindObjectsInactive.Include);
+
+    for (int i = 0; i < images.Length; i++)
+    {
+      Image image = images[i];
+      if (image != null && image.gameObject.name == "MovementArrows")
+        return image;
+    }
+
+    return null;
+  }
+
+  private void CaptureMovementArrowsStateIfNeeded(Image arrows)
+  {
+    if (movementArrowsStateSaved || arrows == null)
+      return;
+
+    RectTransform rect = arrows.rectTransform;
+    savedMovementArrowsActive = arrows.gameObject.activeSelf;
+    savedMovementArrowsParent = rect.parent;
+    savedMovementArrowsSiblingIndex = rect.GetSiblingIndex();
+    savedMovementArrowsRect = RectTransformSnapshot.Capture(rect);
+    savedMovementArrowsPreserveAspect = arrows.preserveAspect;
+
+    Texture texture = arrows.mainTexture;
+    if (texture != null)
+    {
+      savedMovementArrowsFilterTexture = texture;
+      savedMovementArrowsFilterMode = texture.filterMode;
+      movementArrowsFilterSaved = true;
+    }
+
+    cachedMovementArrows = arrows;
+    movementArrowsStateSaved = true;
+  }
+
+  private void RestoreMovementArrowsOverride()
+  {
+    if (!movementArrowsStateSaved)
+      return;
+
+    Image arrows = cachedMovementArrows;
+    if (arrows == null)
+      arrows = FindMovementArrowsImage();
+
+    if (arrows != null)
+    {
+      RectTransform arrowsRect = arrows.rectTransform;
+
+      if (savedMovementArrowsParent != null)
+        arrowsRect.SetParent(savedMovementArrowsParent, false);
+      else if (arrowsRect.parent != null)
+        arrowsRect.SetParent(null, false);
+
+      savedMovementArrowsRect.Apply(arrowsRect);
+
+      int siblingCount = arrowsRect.parent != null
+          ? arrowsRect.parent.childCount
+          : 0;
+      if (siblingCount > 0)
+      {
+        arrowsRect.SetSiblingIndex(
+            Mathf.Clamp(
+                savedMovementArrowsSiblingIndex,
+                0,
+                siblingCount - 1));
+      }
+
+      arrows.preserveAspect = savedMovementArrowsPreserveAspect;
+      arrows.gameObject.SetActive(savedMovementArrowsActive);
+    }
+
+    if (movementArrowsFilterSaved
+        && savedMovementArrowsFilterTexture != null)
+    {
+      savedMovementArrowsFilterTexture.filterMode =
+          savedMovementArrowsFilterMode;
+    }
+
+    movementArrowsStateSaved = false;
+    movementArrowsFilterSaved = false;
+    savedMovementArrowsFilterTexture = null;
+    savedMovementArrowsParent = null;
+    cachedMovementArrows = null;
+  }
+
+  private void ApplyConstantPixelCanvasScaler(RawImage dungeonImage)
+  {
+    if (dungeonImage.canvas == null)
+      return;
+
+    CanvasScaler scaler =
+        dungeonImage.canvas.GetComponent<CanvasScaler>();
+    if (scaler == null)
+      return;
+
+    if (!canvasScalerStateSaved)
+    {
+      savedScalerMode = scaler.uiScaleMode;
+      savedScalerScaleFactor = scaler.scaleFactor;
+      savedScalerReferenceResolution = scaler.referenceResolution;
+      savedScalerMatchWidthOrHeight = scaler.matchWidthOrHeight;
+      canvasScalerStateSaved = true;
+    }
+
+    scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+    scaler.scaleFactor = 1f;
+  }
+
+  private static void ApplyCentered320x200Rect(RectTransform rect)
+  {
+    rect.anchorMin = new Vector2(0.5f, 0.5f);
+    rect.anchorMax = new Vector2(0.5f, 0.5f);
+    rect.pivot = new Vector2(0.5f, 0.5f);
+    rect.anchoredPosition = Vector2.zero;
+    rect.sizeDelta = new Vector2(PreviewWidth, PreviewHeight);
+    rect.localScale = Vector3.one;
+    rect.localRotation = Quaternion.identity;
+  }
+
+  private static RectTransform FindGameplayRoot(RawImage dungeonImage)
+  {
+    if (dungeonImage == null)
+      return null;
+
+    Transform t = dungeonImage.transform;
+    while (t != null)
+    {
+      if (t.name == "GameplayRoot")
+        return t as RectTransform;
+      t = t.parent;
+    }
+
+    if (dungeonImage.canvas == null)
+      return null;
+
+    Transform found =
+        dungeonImage.canvas.transform.Find("GameplayRoot");
+    return found as RectTransform;
+  }
+
+  private void RestoreEditModePresentationOverrides()
+  {
+    RestoreMovementArrowsOverride();
+
+    if (!presentationOverrideActive
+        && !canvasScalerStateSaved
+        && !viewportRectSaved
+        && !gameplayRootRectSaved)
+    {
+      return;
+    }
+
+    RawImage dungeonImage = null;
+    TryGetViewportRawImage(out dungeonImage);
+
+    if (viewportRectSaved && dungeonImage != null)
+      savedViewportRect.Apply(dungeonImage.rectTransform);
+
+    if (canvasScalerStateSaved
+        && dungeonImage != null
+        && dungeonImage.canvas != null)
+    {
+      CanvasScaler scaler =
+          dungeonImage.canvas.GetComponent<CanvasScaler>();
+      if (scaler != null)
+      {
+        scaler.uiScaleMode = savedScalerMode;
+        scaler.scaleFactor = savedScalerScaleFactor;
+        scaler.referenceResolution =
+            savedScalerReferenceResolution;
+        scaler.matchWidthOrHeight =
+            savedScalerMatchWidthOrHeight;
+      }
+    }
+
+    if (gameplayRootRectSaved)
+    {
+      RectTransform gameplayRoot = cachedGameplayRoot;
+      if (gameplayRoot == null && dungeonImage != null)
+        gameplayRoot = FindGameplayRoot(dungeonImage);
+
+      if (gameplayRoot != null)
+        savedGameplayRootRect.Apply(gameplayRoot);
+    }
+
+    canvasScalerStateSaved = false;
+    viewportRectSaved = false;
+    gameplayRootRectSaved = false;
+    cachedGameplayRoot = null;
+    presentationOverrideActive = false;
+  }
+
+  private void EnsureEditModePreviewTexture()
+  {
+    if (editModePreviewTexture != null
+        && editModePreviewTexture.width == PreviewWidth
+        && editModePreviewTexture.height == PreviewHeight)
+    {
+      return;
+    }
+
+    if (editModePreviewTexture != null)
+      Object.DestroyImmediate(editModePreviewTexture);
+
+    editModePreviewTexture = new Texture2D(
+        PreviewWidth,
+        PreviewHeight,
+        TextureFormat.RGBA32,
+        false)
+    {
+      name = "ViewportLayoutEditModePreview",
+      filterMode = FilterMode.Point,
+      wrapMode = TextureWrapMode.Clamp,
+      hideFlags = HideFlags.HideAndDontSave
+    };
+  }
+
+  private void ComposeEditModePreview()
+  {
+    Color32 magenta = new Color32(255, 0, 255, 255);
+    Color32[] pixels = new Color32[PreviewWidth * PreviewHeight];
+    for (int i = 0; i < pixels.Length; i++)
+      pixels[i] = magenta;
+
+    // Temporary pose for visibility/mirror only — never write the layout asset.
+    DungeonMap poseMap = TryGetPreviewPoseMap();
+
+    if (layout != null && layout.Pieces != null)
+    {
+      for (int i = 0; i < layout.Pieces.Count; i++)
+      {
+        ViewportPiece piece = layout.Pieces[i];
+        if (!ShouldDrawPieceAtPreviewPose(piece, poseMap))
+          continue;
+
+        if (piece.Graphic == DungeonGraphicType.MovementArrows)
+          continue;
+
+        Texture2D texture = graphics.GetTexture(piece.Graphic);
+        if (texture == null)
+          continue;
+
+        bool mirror = GetPreviewMirror(piece, poseMap);
+
+        if (StraightF1WallLogic.IsStraightF1FrontGraphic(piece.Graphic))
+        {
+          StraightF1WallLogic.BlitWrapToBuffer(
+              texture,
+              pixels,
+              PreviewWidth,
+              PreviewHeight,
+              piece.Y,
+              mirror);
+          continue;
+        }
+
+        if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
+        {
+          StraightF1WallLogic.BlitViewportComponentToBuffer(
+              texture,
+              pixels,
+              PreviewWidth,
+              PreviewHeight,
+              piece.X,
+              piece.Y,
+              mirror);
+          continue;
+        }
+
+        Texture2D mask =
+            graphics.GetMask(piece.Graphic, out bool flipMaskX);
+        BlitPieceIntoPreview(
+            pixels,
+            texture,
+            mask,
+            flipMaskX,
+            piece.X,
+            piece.Y,
+            mirror);
+      }
+    }
+
+    DungeonBitmapFont bitmapFont =
+        Object.FindAnyObjectByType<DungeonBitmapFont>();
+    if (bitmapFont != null)
+    {
+      // First hero-name frame: 43×7 inside Champion Status Slot 1
+      // (layout X=0,Y=171). Lighter band is texture top → FB Y 193..199.
+      const int frameX = 0;
+      const int frameY = 193;
+      const int frameWidth = 43;
+      const int frameHeight = 7;
+      const int localX = -1;
+      const int localY = 0;
+      const int championNameAdvance = 6;
+
+      Color32 halkGold = new Color32(255, 182, 0, 255);
+
+      bitmapFont.DrawText(
+          pixels,
+          PreviewWidth,
+          PreviewHeight,
+          "HALK",
+          frameX + localX,
+          frameY + localY,
+          halkGold,
+          frameX,
+          frameY,
+          frameWidth,
+          frameHeight,
+          championNameAdvance
+      );
+    }
+
+    editModePreviewTexture.SetPixels32(pixels);
+    editModePreviewTexture.Apply(false);
+  }
+
+  /// <summary>
+  /// Preview draw gate via shared ViewportPatternCatalog.
+  /// Does not write piece.Enabled / Mirror / X / Y.
+  /// </summary>
+  private bool ShouldDrawPieceAtPreviewPose(
+      ViewportPiece piece,
+      DungeonMap poseMap)
+  {
+    if (poseMap == null)
+    {
+      if (piece == null)
+        return false;
+
+      if (piece.Graphic == DungeonGraphicType.None)
+        return false;
+
+      return piece.Enabled;
+    }
+
+    return ViewportPatternCatalog.ShouldDrawPiece(
+        piece,
+        poseMap,
+        previewX,
+        previewY,
+        previewFacing,
+        warnUnknownKeyInEditor: true);
+  }
+
+  /// <summary>
+  /// Preview-only mirror from the piece's authored MirrorHorizontally flag.
+  /// Does not write the layout asset or apply pose phase overrides.
+  /// </summary>
+  private static bool GetPreviewMirror(ViewportPiece piece, DungeonMap poseMap)
+  {
+    if (piece == null)
+      return false;
+
+    return piece.MirrorHorizontally;
+  }
+
+  private DungeonMap TryGetPreviewPoseMap()
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null)
+      return null;
+
+    previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
+    return previewMiniMap;
+  }
+
+  private static void BlitPieceIntoPreview(
+      Color32[] dest,
+      Texture2D source,
+      Texture2D mask,
+      bool flipMaskHorizontal,
+      int destinationX,
+      int destinationY,
+      bool mirrorHorizontally = false)
+  {
+    if (!source.isReadable)
+      return;
+
+    Color32[] sourcePixels = source.GetPixels32();
+    Color32[] maskPixels = null;
+    bool useMask = false;
+
+    if (mask != null
+        && mask.isReadable
+        && mask.width == source.width
+        && mask.height == source.height)
+    {
+      maskPixels = mask.GetPixels32();
+      useMask = true;
+    }
+
+    for (int sourceY = 0; sourceY < source.height; sourceY++)
+    {
+      int targetY = destinationY + sourceY;
+      if (targetY < 0 || targetY >= PreviewHeight)
+        continue;
+
+      for (int column = 0; column < source.width; column++)
+      {
+        int sourceX = mirrorHorizontally
+            ? source.width - 1 - column
+            : column;
+        int targetX = destinationX + column;
+        if (targetX < 0 || targetX >= PreviewWidth)
+          continue;
+
+        if (useMask)
+        {
+          int maskX = flipMaskHorizontal
+              ? mask.width - 1 - sourceX
+              : sourceX;
+          Color32 maskColour =
+              maskPixels[sourceY * mask.width + maskX];
+          if (maskColour.r < 128
+              && maskColour.g < 128
+              && maskColour.b < 128)
+          {
+            continue;
+          }
+        }
+
+        Color32 sourceColour =
+            sourcePixels[sourceY * source.width + sourceX];
+        if (sourceColour.a == 0)
+          continue;
+
+        dest[targetY * PreviewWidth + targetX] = sourceColour;
+      }
+    }
+  }
+
+  private void StealViewportTextureIfNeeded(RawImage dungeonImage)
+  {
+    if (viewportTextureStolen)
+      return;
+
+    savedViewportTexture = dungeonImage.texture;
+    viewportTextureStolen = true;
+  }
+
+  private void RestoreViewportTextureAndDestroyPreview()
+  {
+    RestoreEditModePresentationOverrides();
+
+    if (TryGetViewportRawImage(out RawImage dungeonImage)
+        && viewportTextureStolen)
+    {
+      dungeonImage.texture = savedViewportTexture;
+    }
+
+    savedViewportTexture = null;
+    viewportTextureStolen = false;
+    cachedViewportImage = null;
+
+    if (editModePreviewTexture != null)
+    {
+      Object.DestroyImmediate(editModePreviewTexture);
+      editModePreviewTexture = null;
+    }
+  }
+
+  private static void RefreshDungeonRenderer()
+  {
+    if (!Application.isPlaying)
+      return;
+
+    DungeonRenderer renderer =
+        Object.FindAnyObjectByType<DungeonRenderer>();
+
+    if (renderer == null)
+      return;
+
+    renderer.RequestRedraw();
+  }
+
+  private static bool DrawIntStepper(string label, ref int value, int step)
+  {
+    EditorGUILayout.BeginHorizontal();
+    value = EditorGUILayout.IntField(label, value);
+
+    bool changed = false;
+
+    if (GUILayout.Button($"-{step}", GUILayout.Width(36)))
+    {
+      value -= step;
+      changed = true;
+    }
+
+    if (GUILayout.Button($"+{step}", GUILayout.Width(36)))
+    {
+      value += step;
+      changed = true;
+    }
+
+    EditorGUILayout.EndHorizontal();
+    return changed;
+  }
+}

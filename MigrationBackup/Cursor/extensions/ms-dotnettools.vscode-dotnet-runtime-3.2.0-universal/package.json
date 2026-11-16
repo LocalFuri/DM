@@ -1,0 +1,417 @@
+{
+	"name": "vscode-dotnet-runtime",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/dotnet/vscode-dotnet-runtime.git"
+	},
+	"bugs": {
+		"url": "https://github.com/dotnet/vscode-dotnet-runtime/issues"
+	},
+	"license": "MIT",
+	"author": "Microsoft Corporation",
+	"displayName": ".NET Install Tool",
+	"description": "This extension installs and manages different versions of the .NET SDK and Runtime.",
+	"connectionString": "InstrumentationKey=02dc18e0-7494-43b2-b2a3-18ada5fcb522;IngestionEndpoint=https://westus2-0.in.applicationinsights.azure.com/;LiveEndpoint=https://westus2.livediagnostics.monitor.azure.com/;ApplicationId=e8e56970-a18a-4101-b7d1-1c5dd7c29eeb",
+	"icon": "images/dotnetIcon.png",
+	"version": "3.2.0",
+	"publisher": "ms-dotnettools",
+	"engines": {
+		"vscode": "^1.101.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"keywords": [
+		".NET",
+		".NET Core",
+		"dotnet",
+		"Extension Authoring",
+		"runtime"
+	],
+	"capabilities": {
+		"untrustedWorkspaces": {
+			"supported": "limited",
+			"description": "Workspace and folder values that select existing .NET executables, bypass path validation, or configure a proxy are ignored until the workspace is trusted. User-level values and automatic .NET acquisition remain available.",
+			"restrictedConfigurations": [
+				"dotnetAcquisitionExtension.existingDotnetPath",
+				"dotnetAcquisitionExtension.sharedExistingDotnetPath",
+				"dotnetAcquisitionExtension.proxyUrl",
+				"dotnetAcquisitionExtension.allowInvalidPaths"
+			]
+		},
+		"virtualWorkspaces": true
+	},
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"main": "./dist/extension.js",
+	"types": "./dist/extension.d.ts",
+	"contributes": {
+		"languageModelTools": [
+			{
+				"name": "install_dotnet_sdk",
+				"when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
+				"displayName": "Install .NET SDK",
+				"toolReferenceName": "installDotNetSdk",
+				"canBeReferencedInPrompt": true,
+				"icon": "$(tools)",
+				"userDescription": "Installs a .NET SDK system-wide for building and running .NET projects",
+				"modelDescription": "Installs .NET SDK system-wide (requires admin). Use when user wants to install, set up, or add .NET. Supports Windows, macOS, Ubuntu, Debian, RHEL; returns manual instructions for unsupported platforms or versions. Install exactly what user requests, even EOL/preview. Version resolution when not specified by user: (1) TargetFramework in .csproj (net8.0→'8'), (2) global.json, (3) call recommendedDotNetSdkVersion. Formats: '6', '6.0', '6.0.1xx'.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"version": {
+							"type": "string",
+							"description": "The .NET SDK version. Examples: '6', '6.0', '6.0.1xx'. Install exactly what user requests, even if EOL."
+						},
+						"architecture": {
+							"type": "string",
+							"enum": [
+								"x64",
+								"x86",
+								"arm64"
+							],
+							"description": "CPU architecture. Do NOT provide unless the user explicitly requests a specific architecture. Default: current system architecture. Cross-architecture installs are not supported."
+						}
+					},
+					"required": [
+						"version"
+					]
+				}
+			},
+			{
+				"name": "list_available_dotnet_versions_to_install",
+				"when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
+				"displayName": "List Available .NET Versions",
+				"toolReferenceName": "listDotNetVersions",
+				"canBeReferencedInPrompt": true,
+				"icon": "$(list-unordered)",
+				"userDescription": "Lists available .NET SDK and Runtime versions that can be installed",
+				"modelDescription": "Lists .NET SDK or Runtime versions available from Microsoft with support phase (active/maintenance/eol). Use when user asks what versions exist. To pick a version to install, prefer recommendedDotNetSdkVersion (Linux-aware). Results are NOT filtered by what the current machine can actually install or update to. Default: SDKs. Set listRuntimes=true for runtimes.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"listRuntimes": {
+							"type": "boolean",
+							"description": "If true, lists runtime versions. Default: SDK versions."
+						}
+					}
+				}
+			},
+			{
+				"name": "recommended_dotnet_sdk_version",
+				"when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
+				"displayName": "Recommended .NET SDK Version",
+				"toolReferenceName": "recommendedDotNetSdkVersion",
+				"canBeReferencedInPrompt": true,
+				"icon": "$(star)",
+				"userDescription": "Returns the recommended .NET SDK version to install for this machine (Linux-aware: returns the feature band the distro actually packages).",
+				"modelDescription": "Returns the recommended .NET SDK version for the current machine. On Linux this returns the feature band the distro packages (e.g. '10.0.1xx'), not necessarily the newest patch on dotnet.microsoft.com.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {}
+				}
+			},
+			{
+				"name": "find_dotnet_executable_path",
+				"when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
+				"displayName": "Find .NET Path",
+				"toolReferenceName": "findDotNetPath",
+				"canBeReferencedInPrompt": true,
+				"icon": "$(search)",
+				"userDescription": "Finds the path to a .NET installation that meets specified requirements",
+				"modelDescription": "Checks if .NET is already installed before suggesting installation. Use when user asks 'is .NET installed?', 'where is dotnet?', or before calling installDotNetSdk. Searches: existingDotnetPath → PATH → DOTNET_ROOT → extension-managed installs. Extension-managed local installs are NOT on PATH.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"version": {
+							"type": "string",
+							"description": "Minimum .NET version required (e.g., '8.0')"
+						},
+						"mode": {
+							"type": "string",
+							"enum": [
+								"sdk",
+								"runtime",
+								"aspnetcore"
+							],
+							"description": "SDK or runtime. Default: 'runtime'."
+						},
+						"architecture": {
+							"type": "string",
+							"enum": [
+								"x64",
+								"x86",
+								"arm64"
+							],
+							"description": "CPU architecture. Default: current system architecture."
+						}
+					},
+					"required": [
+						"version"
+					]
+				}
+			},
+			{
+				"name": "uninstall_system_dotnet_sdk",
+				"when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
+				"displayName": "Uninstall System .NET SDK",
+				"toolReferenceName": "uninstallSystemDotNetSdk",
+				"canBeReferencedInPrompt": true,
+				"icon": "$(trash)",
+				"userDescription": "Uninstalls a system-wide (machine) .NET SDK version",
+				"modelDescription": "Uninstalls a SYSTEM-WIDE (machine) .NET SDK only. Use ONLY for SDKs installed in system locations such as Windows 'C:\\Program Files\\dotnet', macOS '/usr/local/share/dotnet', or Linux '/usr/lib/dotnet', '/usr/share/dotnet', '/usr/lib64/dotnet'. Do NOT use for runtimes, and do NOT use for VS Code-managed (local) installs under a user directory or an extension '.dotnet' folder — those are not system SDKs. Call listInstalledDotNetVersions first to get the exact version. System-wide uninstalls require admin/root. Supports Windows, macOS, Ubuntu, Debian, RHEL; returns manual instructions for unsupported platforms.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"version": {
+							"type": "string",
+							"description": "The system .NET SDK version to uninstall. Call listInstalledDotNetVersions first."
+						},
+						"architecture": {
+							"type": "string",
+							"enum": [
+								"x64",
+								"x86",
+								"arm64"
+							],
+							"description": "CPU architecture. Do NOT provide unless the user explicitly requests a specific architecture. Default: current system architecture. Cross-architecture uninstalls are not supported."
+						}
+					},
+					"required": [
+						"version"
+					]
+				}
+			},
+			{
+				"name": "uninstall_vscode_owned_dotnet_runtime",
+				"when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
+				"displayName": "Uninstall VS Code .NET Runtime",
+				"toolReferenceName": "uninstallVSCodeDotNetRuntime",
+				"canBeReferencedInPrompt": true,
+				"icon": "$(trash)",
+				"userDescription": "Uninstalls a VS Code-managed (local) .NET runtime version",
+				"modelDescription": "Uninstalls a VS Code-managed (local) .NET runtime or ASP.NET Core runtime only. Use when the user wants to remove a runtime that this extension installed locally (under the extension's '.dotnet' folder). Do NOT use for SDKs. Do NOT use for system-wide runtimes — those must be removed via the OS package manager or the installer they came from. Call listInstalledDotNetVersions first to get the exact version and mode.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"version": {
+							"type": "string",
+							"description": "The VS Code-managed runtime version to uninstall. Call listInstalledDotNetVersions first."
+						},
+						"mode": {
+							"type": "string",
+							"enum": [
+								"runtime",
+								"aspnetcore"
+							],
+							"description": "runtime (.NET runtime) or aspnetcore (ASP.NET Core runtime). Default: 'runtime'."
+						}
+					},
+					"required": [
+						"version"
+					]
+				}
+			},
+			{
+				"name": "get_settings_info_for_dotnet_installation_management",
+				"when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
+				"displayName": "Get .NET Install Tool Guide",
+				"toolReferenceName": "getDotNetSettingsInfo",
+				"canBeReferencedInPrompt": true,
+				"icon": "$(info)",
+				"userDescription": "Get information about .NET Install Tool settings, installation types, and troubleshooting",
+				"modelDescription": "Returns .NET Install Tool settings guide and current config. Use when user asks about .NET settings, troubleshooting, existingDotnetPath, 'C# extension can't find .NET', or extension configuration. Covers: existingDotnetPath (extension runtime only — NOT project SDK, use global.json), local vs global installs, common fixes.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {}
+				}
+			},
+			{
+				"name": "list_installed_dotnet_versions",
+				"when": "config.dotnetAcquisitionExtension.enableLanguageModelTools",
+				"displayName": "List Installed .NET Versions",
+				"toolReferenceName": "listInstalledDotNetVersions",
+				"canBeReferencedInPrompt": true,
+				"icon": "$(list-tree)",
+				"userDescription": "Lists .NET SDK or Runtime versions that are currently installed on the system",
+				"modelDescription": "Lists .NET SDKs and runtimes currently installed on the system. Use when user asks 'what .NET do I have?', 'which versions are installed?', or before uninstall. Default: queries PATH. Pass dotnetPath for a specific executable. Windows Desktop Runtime not tracked — use 'dotnet --list-runtimes' in terminal if needed for that.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"dotnetPath": {
+							"type": "string",
+							"description": "Path to a dotnet executable to query. Default: PATH lookup."
+						},
+						"mode": {
+							"type": "string",
+							"enum": [
+								"sdk",
+								"runtime",
+								"aspnetcore"
+							],
+							"description": "Omit for both SDKs and Runtimes. Set to filter."
+						}
+					}
+				}
+			}
+		],
+		"commands": [
+			{
+				"command": "dotnet.reportIssue",
+				"title": "Report an issue with the .NET Install Tool.",
+				"category": ".NET Install Tool"
+			},
+			{
+				"command": "dotnet.acquireGlobalSDKPublic",
+				"title": "Install the .NET SDK System-Wide.",
+				"category": ".NET Install Tool"
+			},
+			{
+				"command": "dotnet.uninstallPublic",
+				"title": "Uninstall .NET.",
+				"category": ".NET Install Tool"
+			},
+			{
+				"command": "dotnet.resetData",
+				"title": "Reset Extension Data (Uninstalls All Installations, Which May Cause Other Extensions To Fail. Uninstall Dependent Extensions First)",
+				"category": ".NET Install Tool",
+				"enablement": "config.dotnetAcquisitionExtension.showResetDataCommand"
+			}
+		],
+		"configuration": {
+			"title": ".NET Install Tool",
+			"properties": {
+				"dotnetAcquisitionExtension.enableLanguageModelTools": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable AI-powered language model tools for .NET management (install, uninstall, list versions, etc.) in GitHub Copilot and agent mode. Set to false to hide all .NET tools from the LLM. Restart VS Code to apply changes."
+				},
+				"dotnetAcquisitionExtension.enableTelemetry": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable Telemetry for the .NET Install Tool. Restart VS Code to apply changes."
+				},
+				"dotnetAcquisitionExtension.enablePreviewFeatures": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable Preview Features for the Extension. Restart VS Code to apply changes."
+				},
+				"dotnetAcquisitionExtension.installTimeoutValue": {
+					"type": "number",
+					"default": 600,
+					"description": "Timeout for installing .NET in seconds."
+				},
+				"dotnetAcquisitionExtension.existingDotnetPath": {
+					"type": "array",
+					"markdownDescription": "The path to an existing .NET host executable for an extension's code to run under, not for your project to run under.\nRestart VS Code to apply changes.\n\n⚠️ This is NOT the .NET Runtime that your project will use to run. Extensions such as `C#`, `C# DevKit`, and more have components written in .NET. This .NET PATH is the `dotnet.exe` that these extensions will use to run their code, not your code.\n\nUsing a path value in which .NET does not meet the requirements of a specific extension will cause that extension to fail.\n\n🚀 The version of .NET that is used for your project is determined by the .NET host, or dotnet.exe. The .NET host picks a runtime based on your project. To use a specific version of .NET for your project, install the .NET SDK using the `.NET Install Tool - Install SDK System-Wide` command, install .NET manually using [our instructions](https://dotnet.microsoft.com/download), or edit your PATH environment variable to point to a `dotnet.exe` that has an `/sdk/` folder with only one SDK.",
+					"description": "The path to an existing .NET host executable for an extension's code to run under, not for your project to run under.\nRestart VS Code to apply changes.\n\n⚠️ This is NOT the .NET Runtime that your project will use to run. Extensions such as 'C#', 'C# DevKit', and more have components written in .NET. This .NET PATH is the 'dotnet.exe' that these extensions will use to run their code, not your code.\n\nUsing a path value in which .NET does not meet the requirements of a specific extension will cause that extension to fail.\n\n🚀 The version of .NET that is used for your project is determined by the .NET host, or dotnet.exe. The .NET host picks a runtime based on your project. To use a specific version of .NET for your project, install the .NET SDK using the '.NET Install Tool - Install SDK System-Wide' command, use the instructions at https://dotnet.microsoft.com/download to manually install the .NET SDK, or edit your PATH environment variable to point to a 'dotnet.exe' that has an '/sdk/' folder with only one SDK.",
+					"examples": [
+						"C:\\Program Files\\dotnet\\dotnet.exe",
+						"/usr/local/share/dotnet/dotnet",
+						"/usr/lib/dotnet/dotnet"
+					]
+				},
+				"dotnetAcquisitionExtension.sharedExistingDotnetPath": {
+					"type": "string",
+					"description": "The path of a preexisting .NET Runtime for ALL VS Code extensions to use for their internal components. This does NOT control the SDK or runtime used by your projects. Restart VS Code to apply changes.",
+					"examples": [
+						"C:\\Program Files\\dotnet\\dotnet.exe",
+						"/usr/local/share/dotnet/dotnet",
+						"/usr/lib/dotnet/dotnet"
+					]
+				},
+				"dotnetAcquisitionExtension.proxyUrl": {
+					"type": "string",
+					"description": "URL to a proxy if you use one, such as: https://proxy:port"
+				},
+				"dotnetAcquisitionExtension.allowInvalidPaths": {
+					"type": "boolean",
+					"description": "If you'd like to continue using a .NET path that is not meant to be used for an extension and may cause instability (please read above about the existingDotnetPath setting) then set this to true and restart."
+				},
+				"dotnetAcquisitionExtension.cacheTimeToLiveMultiplier": {
+					"type": "number",
+					"default": 1,
+					"description": "To improve performance, the results of checking .NET Installations may be cached. If you're facing issues with an install not being detected, try setting this to 0.5, or 0; or increasing the number to improve performance. Restart to change."
+				},
+				"dotnetAcquisitionExtension.showResetDataCommand": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show the command to reset extension data in the command palette. Restart VS Code and remove dependent extensions first."
+				},
+				"dotnetAcquisitionExtension.suppressOutput": {
+					"type": "boolean",
+					"default": false,
+					"description": "Hide all messages in the output window from our extension. Error pop-ups from APIs that other extensions request we display will still appear."
+				},
+				"dotnetAcquisitionExtension.highVerbosity": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable this to show more detailed output from our extension."
+				},
+				"dotnetAcquisitionExtension.runtimeUpdateDelaySeconds": {
+					"type": "number",
+					"default": 300,
+					"description": "The amount of seconds to wait before trying to update the .NET Runtime for the day."
+				}
+			}
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile-all && npm install && webpack --mode production && dotnet build ../msbuild/signJs --property jsOutputPath=..\\..\\vscode-dotnet-runtime-extension\\dist -bl -v:normal",
+		"compile": "npm run clean && tsc -p ./",
+		"watch": "npm run compile && tsc -watch -p ./",
+		"test": "npm run compile --silent && node ./dist/test/functional/runTest.js",
+		"test:lm-tools": "npm run compile --silent && node ./dist/test/functional/runLmToolsTest.js",
+		"clean": "npx rimraf dist",
+		"compile-all": "cd ../vscode-dotnet-runtime-library && npm install && npm run compile && cd ../vscode-dotnet-runtime-extension && npm install && npm run compile",
+		"lint": "eslint -c .eslintrc.js --ext=.ts vscode-dotnet-runtime-library/src/**/*.ts vscode-dotnet-runtime-extension/src/**/*.ts --ignore-pattern \"**/test/\" --fix",
+		"webpack": "webpack --mode development"
+	},
+	"dependencies": {
+		"axios": "^1.15.1",
+		"axios-cache-interceptor": "^1.11.4",
+		"axios-retry": "^3.9.1",
+		"https-proxy-agent": "^7.0.2",
+		"open": "^8.4.0",
+		"shelljs": "^0.8.5",
+		"vscode-dotnet-runtime-library": "file:../vscode-dotnet-runtime-library"
+	},
+	"devDependencies": {
+		"@types/chai": "^4.3.5",
+		"@types/chai-as-promised": "^7.1.8",
+		"@types/mocha": "^9.0.0",
+		"@types/node": "^22.19.9",
+		"@types/source-map-support": "^0.5.10",
+		"@types/vscode": "^1.101.0",
+		"@vscode/test-electron": "^3.1.0",
+		"@vscode/vsce": "^3.7.1",
+		"chai": "4.3.4",
+		"copy-webpack-plugin": "^14.0.0",
+		"glob": "^13.0.6",
+		"mocha": "^11.7.5",
+		"rimraf": "^6.1.3",
+		"ts-loader": "^9.5.1",
+		"typescript": "^5.5.4",
+		"webpack": "^5.88.2",
+		"webpack-cli": "^4.9.1",
+		"webpack-permissions-plugin": "^1.0.9"
+	},
+	"overrides": {
+		"fast-uri": "^3.1.2",
+		"serialize-javascript": "^7.0.3"
+	},
+	"resolutions": {
+		"fast-uri": "^3.1.2",
+		"serialize-javascript": "^7.0.3"
+	},
+	"__metadata": {
+		"id": "1aab81a1-b3d9-4aef-976b-577d5d90fe3f",
+		"publisherDisplayName": "Microsoft",
+		"publisherId": "d05e23de-3974-4ff0-8d47-23ee77830092",
+		"isPreReleaseVersion": false,
+		"installedTimestamp": 1790179960868,
+		"targetPlatform": "universal",
+		"size": 5838069
+	}
+}

@@ -1,0 +1,9 @@
+{
+    "text2code.showLogoutWelcomeView": false,
+    "text2code.showLoginWelcomeView": true,
+    "security.workspace.trust.untrustedFiles": "open",
+    "workbench.settings.applyToAllProfiles": [
+        "typescript.suggest.enabled"
+    ],
+    "workbench.preferredLightColorTheme": "Visual Studio Dark"
+}
