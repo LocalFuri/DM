@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-15",
+  "date": "2026-11-16",
   "todo_manacles_dos_f1_s2_20261109": {
     "category": "To do List",
     "priority": 0,
@@ -94,6 +94,7 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
+    "CURRENT TOP PRIORITY 2026-11-16: CSBwin ornaments — inspect Cursor's graphic 0x22e table research; reprocess Ring G4 using exact source offsets; compare Hook/Ring output against the live CSBwin viewport. Research backed up to GitHub; do not change approved Unity calibration yet.",
     "CURRENT TOP PRIORITY 2026-11-13: Return to Unity Manacles S3 calibration. Check why S3 X/Y is not adjustable in ViewEdit and fix with the smallest source change; preserve approved S2/F1/F3.",
     "Original DOS reference now copied to C:\\Unity\\DM\\DOS_Reference; Progression.json stays under C:\\Unity\\DM\\Assets\\Editor.",
     "DOSBox-X reverse engineering discontinued; no more Stage 4B build troubleshooting unless user explicitly asks.",
@@ -1931,5 +1932,67 @@
       "error": "Es können keine SQLite Datendateien gefunden werden.",
       "warning": "Backup existence does not establish restore success. Never delete protected backup; verify proper restore method before destructive actions."
     }
+  },
+  "checkpoint_20261116_csbwin_ornament_research_git_archive": {
+    "category": "Research checkpoint and next actions",
+    "date": "2026-11-16",
+    "recordedAtLocal": "2026-11-16T19:04:03+01:00",
+    "timezone": "Europe/Berlin",
+    "status": "CSBwin ornament research archived locally and pushed to GitHub; live-game pixel accuracy still awaits verification",
+    "projectRoot": "C:\\Unity\\DM",
+    "permanentArchive": "C:\\Unity\\DM\\Research_Results\\CSBwin_Ornaments",
+    "temporaryExtractionFolder": "C:\\Unity\\DM\\CSBwin_Extractions",
+    "archiveFolders": [
+      "Original_Extractions",
+      "Hook_G2",
+      "Ring_G4",
+      "Tools",
+      "Source_Snapshots"
+    ],
+    "researchDocument": "C:\\Unity\\DM\\Research_Results\\11_CSBwin_Ornament_Rendering.md",
+    "researchDocumentStatus": "Downloaded and copied into research folder; user reported successful local git add and documentation commit",
+    "git": {
+      "repository": "https://github.com/LocalFuri/DM.git",
+      "branch": "main",
+      "archiveCommitShort": "66908",
+      "archiveCommitMessage": "Research: Archive CSBwin ornament extraction and reconstruction",
+      "pushStatus": "Verified successful from Git Bash output on 2026-11-16",
+      "remoteTracking": "main tracks origin/main",
+      "pushTipAbbreviated": "e961474",
+      "note": "The GitHub push includes committed objects only, not untracked MigrationBackup or unrelated uncommitted changes."
+    },
+    "completed": [
+      "Restored original CSBwin stone walls after disabling diagnostic grey-wall test.",
+      "Updated CSBwin controls: arrow keys move/strafe, Delete turns left, Page Down turns right, Escape waiting/freeze mode; user approved.",
+      "Identified relative positions 0..12 for ornament perspectives using Cursor's CSBwin source research.",
+      "Decoded extracted 4-bit planar ornament bitmaps and runtime palettes.",
+      "Reconstructed Hook G2 perspective package and implemented reusable Python post-processing script.",
+      "Prepared CSBwin Ring G4 package; user approved switching from DOS PC Ring style to CSBwin Ring style.",
+      "User copied original extractions, Hook and Ring packages, and Python tool into Research_Results.",
+      "User committed research files and pushed main to GitHub."
+    ],
+    "importantFindings": [
+      "CSBwin's exporter captures an intermediate pFinalBitmap, not final viewport pixels.",
+      "F1 ornament rendering uses near-wall graphics at 1:1; F2/F3 use ShrinkBLT scaling and color mapping.",
+      "Palette index 10 is transparent; index 0 is opaque and must not be discarded.",
+      "S3-right P01 and S2-right P06 require source-X offsets after mirroring.",
+      "Some F2/F3 front slices use a shared cache and different source slices.",
+      "Later archive contained G2 ordinal entries with non-Hook graphic ID 188 at P02/P07; these were excluded from the Hook set."
+    ],
+    "limitations": [
+      "Pixel-perfect equivalence against live CSBwin has not yet been verified.",
+      "Cursor's research reported that the graphics.dat 0x22e placement/color tables had not yet been decompressed.",
+      "No Unity ornament integration was carried out in this research phase.",
+      "Unrelated Unity changes, deleted Apple reference frames, and untracked MigrationBackup remained after research commit; do not automatically stage or restore."
+    ],
+    "nextActions": [
+      "Check Cursor's follow-up extraction of graphics.dat 0x22e placement and color tables, if available.",
+      "Reprocess Ring G4 with the validated source-offset-aware post-processor.",
+      "Compare Hook G2 and Ring G4 against live CSBwin viewport output to establish pixel accuracy.",
+      "Update 00_Research_Index.md to include research document 11.",
+      "Commit and push this updated Progression.json together with any updated research documents.",
+      "Preserve approved Unity calibration and defer implementation until reference results are verified."
+    ],
+    "workflowRule": "CSBwin_Extractions is volatile/overwritten. Copy useful captures into version-controlled Research_Results, preserve original inputs and reconstruction scripts, update Progression.json, commit and push. Check Git exclusions before claiming backup."
   }
 }
