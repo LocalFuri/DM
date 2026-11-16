@@ -1,0 +1,105 @@
+﻿placement_set,relative_position,slot_name,graphic_22e_offset,x1,x2,y1,y2,visible_width,visible_height,bitmap_stride_bytes,bitmap_height,stride_capacity_pixels,minimum_4bpp_stride_bytes,rectangle_height_equals_bitmap_height,stride_can_hold_visible_width,runtime_override_special_case
+0,0,S3 Left,2410,80,83,41,45,4,5,8,5,16,8,True,True,False
+0,1,S3 Right,2416,140,143,41,45,4,5,8,5,16,8,True,True,False
+0,2,F3 Left Slice,2422,16,29,39,50,14,12,8,12,16,8,True,True,False
+0,3,F3 Center,2428,107,120,39,50,14,12,8,12,16,8,True,True,False
+0,4,F3 Right Slice,2434,187,200,39,50,14,12,8,12,16,8,True,True,False
+0,5,S2 Left,2440,67,77,40,49,11,10,8,10,16,8,True,True,False
+0,6,S2 Right,2446,146,156,40,49,11,10,8,10,16,8,True,True,False
+0,7,F2 Left Slice,2452,0,17,38,55,18,18,16,18,32,16,True,True,False
+0,8,F2 Center,2458,102,123,38,55,22,18,16,18,32,16,True,True,False
+0,9,F2 Right Slice,2464,206,223,38,55,18,18,16,18,32,16,True,True,False
+0,10,S1 Left,2470,48,63,38,56,16,19,8,19,16,8,True,True,False
+0,11,S1 Right,2476,160,175,38,56,16,19,8,19,16,8,True,True,False
+0,12,F1 Center,2482,96,127,36,63,32,28,16,28,32,16,True,True,False
+1,0,S3 Left,2488,74,82,41,60,9,20,8,20,16,8,True,True,False
+1,1,S3 Right,2494,141,149,41,60,9,20,8,20,16,8,True,True,False
+1,2,F3 Left Slice,2500,1,47,37,63,47,27,24,27,48,24,True,True,False
+1,3,F3 Center,2506,88,134,37,63,47,27,24,27,48,24,True,True,False
+1,4,F3 Right Slice,2512,171,217,37,63,47,27,24,27,48,24,True,True,False
+1,5,S2 Left,2518,61,76,38,67,16,30,8,30,16,8,True,True,False
+1,6,S2 Right,2524,147,162,38,67,16,30,8,30,16,8,True,True,False
+1,7,F2 Left Slice,2530,0,43,37,73,44,37,32,37,64,24,True,True,False
+1,8,F2 Center,2536,80,143,37,73,64,37,32,37,64,32,True,True,False
+1,9,F2 Right Slice,2542,180,223,37,73,44,37,32,37,64,24,True,True,False
+1,10,S1 Left,2548,32,63,36,83,32,48,16,48,32,16,True,True,False
+1,11,S1 Right,2554,160,191,36,83,32,48,16,48,32,16,True,True,False
+1,12,F1 Center,2560,64,159,36,91,96,56,48,56,96,48,True,True,False
+2,0,S3 Left,2566,80,83,66,70,4,5,8,5,16,8,True,True,False
+2,1,S3 Right,2572,140,143,66,70,4,5,8,5,16,8,True,True,False
+2,2,F3 Left Slice,2578,16,29,64,75,14,12,8,12,16,8,True,True,False
+2,3,F3 Center,2584,106,119,64,75,14,12,8,12,16,8,True,True,False
+2,4,F3 Right Slice,2590,187,200,64,75,14,12,8,12,16,8,True,True,False
+2,5,S2 Left,2596,67,77,74,83,11,10,8,10,16,8,True,True,False
+2,6,S2 Right,2602,146,156,74,83,11,10,8,10,16,8,True,True,False
+2,7,F2 Left Slice,2608,0,17,73,90,18,18,16,18,32,16,True,True,False
+2,8,F2 Center,2614,100,121,73,90,22,18,16,18,32,16,True,True,False
+2,9,F2 Right Slice,2620,206,223,73,90,18,18,16,18,32,16,True,True,False
+2,10,S1 Left,2626,48,63,84,102,16,19,8,19,16,8,True,True,False
+2,11,S1 Right,2632,160,175,84,102,16,19,8,19,16,8,True,True,False
+2,12,F1 Center,2638,96,127,92,119,32,28,16,28,32,16,True,True,False
+3,0,S3 Left,2644,80,83,49,53,4,5,8,5,16,8,True,True,False
+3,1,S3 Right,2650,140,143,49,53,4,5,8,5,16,8,True,True,False
+3,2,F3 Left Slice,2656,16,29,50,61,14,12,8,12,16,8,True,True,False
+3,3,F3 Center,2662,106,119,50,61,14,12,8,12,16,8,True,True,False
+3,4,F3 Right Slice,2668,187,200,50,61,14,12,8,12,16,8,True,True,False
+3,5,S2 Left,2674,67,77,53,62,11,10,8,10,16,8,True,True,False
+3,6,S2 Right,2680,146,156,53,62,11,10,8,10,16,8,True,True,False
+3,7,F2 Left Slice,2686,0,17,55,72,18,18,16,18,32,16,True,True,False
+3,8,F2 Center,2692,100,121,55,72,22,18,16,18,32,16,True,True,False
+3,9,F2 Right Slice,2698,206,223,55,72,18,18,16,18,32,16,True,True,False
+3,10,S1 Left,2704,48,63,57,75,16,19,8,19,16,8,True,True,False
+3,11,S1 Right,2710,160,175,57,75,16,19,8,19,16,8,True,True,False
+3,12,F1 Center,2716,96,127,64,91,32,28,16,28,32,16,True,True,False
+4,0,S3 Left,2722,75,90,40,44,16,5,8,5,16,8,True,True,False
+4,1,S3 Right,2728,133,148,40,44,16,5,8,5,16,8,True,True,False
+4,2,F3 Left Slice,2734,1,48,44,49,48,6,24,6,48,24,True,True,False
+4,3,F3 Center,2740,88,135,44,49,48,6,24,6,48,24,True,True,False
+4,4,F3 Right Slice,2746,171,218,44,49,48,6,24,6,48,24,True,True,False
+4,5,S2 Left,2752,60,77,40,46,18,7,16,7,32,16,True,True,False
+4,6,S2 Right,2758,146,163,40,46,18,7,16,7,32,16,True,True,False
+4,7,F2 Left Slice,2764,0,35,43,50,36,8,32,8,64,24,True,True,False
+4,8,F2 Center,2770,80,143,43,50,64,8,32,8,64,32,True,True,False
+4,9,F2 Right Slice,2776,184,223,43,50,40,8,32,8,64,24,True,True,False
+4,10,S1 Left,2782,32,63,41,52,32,12,16,12,32,16,True,True,False
+4,11,S1 Right,2788,160,191,41,52,32,12,16,12,32,16,True,True,False
+4,12,F1 Center,2794,64,159,41,52,96,12,48,12,96,48,True,True,False
+5,0,S3 Left,2800,78,85,36,51,8,16,8,16,16,8,True,True,False
+5,1,S3 Right,2806,138,145,36,51,8,16,8,16,16,8,True,True,False
+5,2,F3 Left Slice,2812,10,41,34,53,32,20,16,20,32,16,True,True,False
+5,3,F3 Center,2818,98,129,34,53,32,20,16,20,32,16,True,True,False
+5,4,F3 Right Slice,2824,179,210,34,53,32,20,16,20,32,16,True,True,False
+5,5,S2 Left,2830,66,75,34,56,10,23,8,23,16,8,True,True,False
+5,6,S2 Right,2836,147,157,34,56,11,23,8,23,16,8,True,True,False
+5,7,F2 Left Slice,2842,0,26,33,61,27,29,24,29,48,16,True,True,False
+5,8,F2 Center,2848,91,133,33,61,43,29,24,29,48,24,True,True,False
+5,9,F2 Right Slice,2854,194,223,33,61,30,29,24,29,48,16,True,True,False
+5,10,S1 Left,2860,41,56,31,65,16,35,8,35,16,8,True,True,False
+5,11,S1 Right,2866,167,182,31,65,16,35,8,35,16,8,True,True,False
+5,12,F1 Center,2872,80,143,29,71,64,43,32,43,64,32,True,True,False
+6,0,S3 Left,2878,75,82,25,75,8,51,8,51,16,8,True,True,False
+6,1,S3 Right,2884,142,149,25,75,8,51,8,51,16,8,True,True,False
+6,2,F3 Left Slice,2890,12,60,25,75,49,51,32,51,64,32,True,True,False
+6,3,F3 Center,2896,88,136,25,75,49,51,32,51,64,32,True,True,False
+6,4,F3 Right Slice,2902,163,211,25,75,49,51,32,51,64,32,True,True,False
+6,5,S2 Left,2908,64,73,20,90,10,71,8,71,16,8,True,True,False
+6,6,S2 Right,2914,150,159,20,90,10,71,8,71,16,8,True,True,False
+6,7,F2 Left Slice,2920,0,38,20,90,39,71,32,71,64,24,True,True,False
+6,8,F2 Center,2926,82,142,20,90,61,71,32,71,64,32,True,True,False
+6,9,F2 Right Slice,2932,184,223,20,90,40,71,32,71,64,24,True,True,False
+6,10,S1 Left,2938,41,56,9,119,16,111,8,111,16,8,True,True,False
+6,11,S1 Right,2944,169,184,9,119,16,111,8,111,16,8,True,True,False
+6,12,F1 Center,2950,64,159,9,119,96,111,48,111,96,48,True,True,False
+7,0,S3 Left,2956,74,85,25,75,12,51,8,51,16,8,True,True,False
+7,1,S3 Right,2962,137,149,25,75,13,51,8,51,16,8,True,True,False
+7,2,F3 Left Slice,2968,0,83,25,75,84,51,48,51,96,48,True,True,False
+7,3,F3 Center,2974,74,149,25,75,76,51,48,51,96,40,True,True,True
+7,4,F3 Right Slice,2980,139,223,25,75,85,51,48,51,96,48,True,True,True
+7,5,S2 Left,2986,60,77,20,90,18,71,16,71,32,16,True,True,False
+7,6,S2 Right,2992,146,163,20,90,18,71,16,71,32,16,True,True,False
+7,7,F2 Left Slice,2998,0,74,20,90,75,71,56,71,112,40,True,True,False
+7,8,F2 Center,3004,60,163,20,90,104,71,56,71,112,56,True,True,False
+7,9,F2 Right Slice,3010,149,223,20,90,75,71,56,71,112,40,True,True,False
+7,10,S1 Left,3016,32,63,9,119,32,111,16,111,32,16,True,True,False
+7,11,S1 Right,3022,160,191,9,119,32,111,16,111,32,16,True,True,False
+7,12,F1 Center,3028,32,191,9,119,160,111,80,111,160,80,True,True,False

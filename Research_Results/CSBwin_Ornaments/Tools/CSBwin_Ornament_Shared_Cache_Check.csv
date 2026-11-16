@@ -1,0 +1,17 @@
+﻿placement_set,shared_positions,same_bitmap_stride,same_bitmap_height,visible_widths,bitmap_strides,bitmap_heights,all_visible_widths_fit_stride,special_runtime_override
+0,2/3/4,True,True,14/14/14,8/8/8,12/12/12,True,False
+0,7/8/9,True,True,18/22/18,16/16/16,18/18/18,True,False
+1,2/3/4,True,True,47/47/47,24/24/24,27/27/27,True,False
+1,7/8/9,True,True,44/64/44,32/32/32,37/37/37,True,False
+2,2/3/4,True,True,14/14/14,8/8/8,12/12/12,True,False
+2,7/8/9,True,True,18/22/18,16/16/16,18/18/18,True,False
+3,2/3/4,True,True,14/14/14,8/8/8,12/12/12,True,False
+3,7/8/9,True,True,18/22/18,16/16/16,18/18/18,True,False
+4,2/3/4,True,True,48/48/48,24/24/24,6/6/6,True,False
+4,7/8/9,True,True,36/64/40,32/32/32,8/8/8,True,False
+5,2/3/4,True,True,32/32/32,16/16/16,20/20/20,True,False
+5,7/8/9,True,True,27/43/30,24/24/24,29/29/29,True,False
+6,2/3/4,True,True,49/49/49,32/32/32,51/51/51,True,False
+6,7/8/9,True,True,39/61/40,32/32/32,71/71/71,True,False
+7,2/3/4,True,True,84/76/85,48/48/48,51/51/51,True,True
+7,7/8/9,True,True,75/104/75,56/56/56,71/71/71,True,False

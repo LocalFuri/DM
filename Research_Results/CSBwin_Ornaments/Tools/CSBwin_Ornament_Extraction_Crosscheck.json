@@ -1,0 +1,912 @@
+[
+  {
+    "file": "CSB_Ornament_G10_P00.txt",
+    "graphic_ordinal": 10,
+    "graphic_id": 207,
+    "relative_position": 0,
+    "matching_placement_sets": [
+      5
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G10_P01.txt",
+    "graphic_ordinal": 10,
+    "graphic_id": 207,
+    "relative_position": 1,
+    "matching_placement_sets": [
+      5
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G10_P02.txt",
+    "graphic_ordinal": 10,
+    "graphic_id": 208,
+    "relative_position": 2,
+    "matching_placement_sets": [
+      5
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G10_P05.txt",
+    "graphic_ordinal": 10,
+    "graphic_id": 207,
+    "relative_position": 5,
+    "matching_placement_sets": [
+      5
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G10_P06.txt",
+    "graphic_ordinal": 10,
+    "graphic_id": 207,
+    "relative_position": 6,
+    "matching_placement_sets": [
+      5
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G10_P07.txt",
+    "graphic_ordinal": 10,
+    "graphic_id": 208,
+    "relative_position": 7,
+    "matching_placement_sets": [
+      5
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G10_P10.txt",
+    "graphic_ordinal": 10,
+    "graphic_id": 207,
+    "relative_position": 10,
+    "matching_placement_sets": [
+      5
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G10_P11.txt",
+    "graphic_ordinal": 10,
+    "graphic_id": 207,
+    "relative_position": 11,
+    "matching_placement_sets": [
+      5
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G11_P00.txt",
+    "graphic_ordinal": 11,
+    "graphic_id": 209,
+    "relative_position": 0,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G11_P01.txt",
+    "graphic_ordinal": 11,
+    "graphic_id": 209,
+    "relative_position": 1,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G11_P03.txt",
+    "graphic_ordinal": 11,
+    "graphic_id": 122,
+    "relative_position": 3,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G11_P05.txt",
+    "graphic_ordinal": 11,
+    "graphic_id": 209,
+    "relative_position": 5,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G11_P08.txt",
+    "graphic_ordinal": 11,
+    "graphic_id": 122,
+    "relative_position": 8,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G11_P10.txt",
+    "graphic_ordinal": 11,
+    "graphic_id": 209,
+    "relative_position": 10,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G11_P11.txt",
+    "graphic_ordinal": 11,
+    "graphic_id": 209,
+    "relative_position": 11,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G12_P00.txt",
+    "graphic_ordinal": 12,
+    "graphic_id": 131,
+    "relative_position": 0,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G12_P03.txt",
+    "graphic_ordinal": 12,
+    "graphic_id": 132,
+    "relative_position": 3,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G12_P05.txt",
+    "graphic_ordinal": 12,
+    "graphic_id": 131,
+    "relative_position": 5,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G12_P08.txt",
+    "graphic_ordinal": 12,
+    "graphic_id": 132,
+    "relative_position": 8,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G12_P10.txt",
+    "graphic_ordinal": 12,
+    "graphic_id": 131,
+    "relative_position": 10,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G12_P11.txt",
+    "graphic_ordinal": 12,
+    "graphic_id": 131,
+    "relative_position": 11,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G12_P12.txt",
+    "graphic_ordinal": 12,
+    "graphic_id": 132,
+    "relative_position": 12,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G1_P00.txt",
+    "graphic_ordinal": 1,
+    "graphic_id": 187,
+    "relative_position": 0,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G1_P01.txt",
+    "graphic_ordinal": 1,
+    "graphic_id": 187,
+    "relative_position": 1,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G1_P02.txt",
+    "graphic_ordinal": 1,
+    "graphic_id": 188,
+    "relative_position": 2,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G1_P03.txt",
+    "graphic_ordinal": 1,
+    "graphic_id": 188,
+    "relative_position": 3,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G1_P05.txt",
+    "graphic_ordinal": 1,
+    "graphic_id": 187,
+    "relative_position": 5,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G1_P06.txt",
+    "graphic_ordinal": 1,
+    "graphic_id": 187,
+    "relative_position": 6,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G1_P07.txt",
+    "graphic_ordinal": 1,
+    "graphic_id": 188,
+    "relative_position": 7,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G1_P08.txt",
+    "graphic_ordinal": 1,
+    "graphic_id": 188,
+    "relative_position": 8,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G1_P10.txt",
+    "graphic_ordinal": 1,
+    "graphic_id": 187,
+    "relative_position": 10,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G1_P11.txt",
+    "graphic_ordinal": 1,
+    "graphic_id": 187,
+    "relative_position": 11,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G1_P12.txt",
+    "graphic_ordinal": 1,
+    "graphic_id": 188,
+    "relative_position": 12,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G2_P00.txt",
+    "graphic_ordinal": 2,
+    "graphic_id": 129,
+    "relative_position": 0,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G2_P01.txt",
+    "graphic_ordinal": 2,
+    "graphic_id": 129,
+    "relative_position": 1,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G2_P02.txt",
+    "graphic_ordinal": 2,
+    "graphic_id": 188,
+    "relative_position": 2,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G2_P03.txt",
+    "graphic_ordinal": 2,
+    "graphic_id": 130,
+    "relative_position": 3,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G2_P04.txt",
+    "graphic_ordinal": 2,
+    "graphic_id": 130,
+    "relative_position": 4,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G2_P05.txt",
+    "graphic_ordinal": 2,
+    "graphic_id": 129,
+    "relative_position": 5,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G2_P06.txt",
+    "graphic_ordinal": 2,
+    "graphic_id": 129,
+    "relative_position": 6,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G2_P07.txt",
+    "graphic_ordinal": 2,
+    "graphic_id": 188,
+    "relative_position": 7,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G2_P08.txt",
+    "graphic_ordinal": 2,
+    "graphic_id": 130,
+    "relative_position": 8,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G2_P09.txt",
+    "graphic_ordinal": 2,
+    "graphic_id": 130,
+    "relative_position": 9,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G2_P10.txt",
+    "graphic_ordinal": 2,
+    "graphic_id": 129,
+    "relative_position": 10,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G2_P11.txt",
+    "graphic_ordinal": 2,
+    "graphic_id": 129,
+    "relative_position": 11,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G2_P12.txt",
+    "graphic_ordinal": 2,
+    "graphic_id": 130,
+    "relative_position": 12,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G3_P01.txt",
+    "graphic_ordinal": 3,
+    "graphic_id": 191,
+    "relative_position": 1,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G3_P02.txt",
+    "graphic_ordinal": 3,
+    "graphic_id": 192,
+    "relative_position": 2,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G3_P04.txt",
+    "graphic_ordinal": 3,
+    "graphic_id": 192,
+    "relative_position": 4,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G3_P06.txt",
+    "graphic_ordinal": 3,
+    "graphic_id": 189,
+    "relative_position": 6,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G3_P07.txt",
+    "graphic_ordinal": 3,
+    "graphic_id": 192,
+    "relative_position": 7,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G3_P09.txt",
+    "graphic_ordinal": 3,
+    "graphic_id": 190,
+    "relative_position": 9,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G3_P10.txt",
+    "graphic_ordinal": 3,
+    "graphic_id": 189,
+    "relative_position": 10,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G3_P11.txt",
+    "graphic_ordinal": 3,
+    "graphic_id": 189,
+    "relative_position": 11,
+    "matching_placement_sets": [
+      2
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G4_P00.txt",
+    "graphic_ordinal": 4,
+    "graphic_id": 133,
+    "relative_position": 0,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G4_P01.txt",
+    "graphic_ordinal": 4,
+    "graphic_id": 133,
+    "relative_position": 1,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G4_P03.txt",
+    "graphic_ordinal": 4,
+    "graphic_id": 134,
+    "relative_position": 3,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G4_P05.txt",
+    "graphic_ordinal": 4,
+    "graphic_id": 133,
+    "relative_position": 5,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G4_P06.txt",
+    "graphic_ordinal": 4,
+    "graphic_id": 133,
+    "relative_position": 6,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G4_P08.txt",
+    "graphic_ordinal": 4,
+    "graphic_id": 134,
+    "relative_position": 8,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G4_P10.txt",
+    "graphic_ordinal": 4,
+    "graphic_id": 133,
+    "relative_position": 10,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G4_P11.txt",
+    "graphic_ordinal": 4,
+    "graphic_id": 133,
+    "relative_position": 11,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G4_P12.txt",
+    "graphic_ordinal": 4,
+    "graphic_id": 134,
+    "relative_position": 12,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G5_P01.txt",
+    "graphic_ordinal": 5,
+    "graphic_id": 125,
+    "relative_position": 1,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G5_P03.txt",
+    "graphic_ordinal": 5,
+    "graphic_id": 126,
+    "relative_position": 3,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G5_P06.txt",
+    "graphic_ordinal": 5,
+    "graphic_id": 125,
+    "relative_position": 6,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G5_P08.txt",
+    "graphic_ordinal": 5,
+    "graphic_id": 126,
+    "relative_position": 8,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G5_P11.txt",
+    "graphic_ordinal": 5,
+    "graphic_id": 125,
+    "relative_position": 11,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G5_P12.txt",
+    "graphic_ordinal": 5,
+    "graphic_id": 126,
+    "relative_position": 12,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G6_P00.txt",
+    "graphic_ordinal": 6,
+    "graphic_id": 239,
+    "relative_position": 0,
+    "matching_placement_sets": [
+      7
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G6_P01.txt",
+    "graphic_ordinal": 6,
+    "graphic_id": 239,
+    "relative_position": 1,
+    "matching_placement_sets": [
+      7
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G6_P03.txt",
+    "graphic_ordinal": 6,
+    "graphic_id": 240,
+    "relative_position": 3,
+    "matching_placement_sets": [
+      7
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G6_P04.txt",
+    "graphic_ordinal": 6,
+    "graphic_id": 240,
+    "relative_position": 4,
+    "matching_placement_sets": [
+      7
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G7_P00.txt",
+    "graphic_ordinal": 7,
+    "graphic_id": 197,
+    "relative_position": 0,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G7_P03.txt",
+    "graphic_ordinal": 7,
+    "graphic_id": 220,
+    "relative_position": 3,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G7_P05.txt",
+    "graphic_ordinal": 7,
+    "graphic_id": 197,
+    "relative_position": 5,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G7_P08.txt",
+    "graphic_ordinal": 7,
+    "graphic_id": 220,
+    "relative_position": 8,
+    "matching_placement_sets": [
+      0
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G7_P10.txt",
+    "graphic_ordinal": 7,
+    "graphic_id": 197,
+    "relative_position": 10,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G7_P12.txt",
+    "graphic_ordinal": 7,
+    "graphic_id": 198,
+    "relative_position": 12,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G8_P01.txt",
+    "graphic_ordinal": 8,
+    "graphic_id": 213,
+    "relative_position": 1,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G8_P06.txt",
+    "graphic_ordinal": 8,
+    "graphic_id": 213,
+    "relative_position": 6,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G8_P11.txt",
+    "graphic_ordinal": 8,
+    "graphic_id": 213,
+    "relative_position": 11,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G8_P12.txt",
+    "graphic_ordinal": 8,
+    "graphic_id": 214,
+    "relative_position": 12,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G9_P00.txt",
+    "graphic_ordinal": 9,
+    "graphic_id": 193,
+    "relative_position": 0,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G9_P01.txt",
+    "graphic_ordinal": 9,
+    "graphic_id": 193,
+    "relative_position": 1,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G9_P03.txt",
+    "graphic_ordinal": 9,
+    "graphic_id": 194,
+    "relative_position": 3,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G9_P05.txt",
+    "graphic_ordinal": 9,
+    "graphic_id": 193,
+    "relative_position": 5,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G9_P06.txt",
+    "graphic_ordinal": 9,
+    "graphic_id": 193,
+    "relative_position": 6,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G9_P08.txt",
+    "graphic_ordinal": 9,
+    "graphic_id": 194,
+    "relative_position": 8,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G9_P10.txt",
+    "graphic_ordinal": 9,
+    "graphic_id": 193,
+    "relative_position": 10,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  },
+  {
+    "file": "CSB_Ornament_G9_P12.txt",
+    "graphic_ordinal": 9,
+    "graphic_id": 194,
+    "relative_position": 12,
+    "matching_placement_sets": [
+      1
+    ],
+    "matched": true
+  }
+]
