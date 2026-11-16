@@ -2833,7 +2833,6 @@ public class ViewportLayoutEditor : EditorWindow
     // Script recompilation can restore transient EditorWindow cursor fields.
     // Never start a new editor session carrying champion equipment.
     ResetChampionEquipmentCursorAfterReload();
-    ResetFloorWallOrnamentCalibrationsOnce();
     titleContent = new GUIContent("ViewEdit");
     wantsMouseMove = true;
 
