@@ -212,7 +212,7 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ViAltarEngineF3FrontX = 91;
   private const int ViAltarEngineF3FrontY = 105;
   private const string HookFrontAssetPath =
-      "Assets/Art/Ornaments/Hook_Front_28x28.png";
+      "Assets/Art/Ornaments/Hook_F1_32x28.png";
   private const string ManaclesF1AssetPath =
       "Assets/Art/Ornaments/Manacles_F1.png";
   private const string ManaclesS1AssetPath =
@@ -40172,7 +40172,7 @@ private static void HandleGameViewPointerDown(
     }
 
     Texture2D front = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        "Assets/Art/Ornaments/Hook_Front_32x28.png");
+        "Assets/Art/Ornaments/Hook_F1_32x28.png");
     Texture2D side = AssetDatabase.LoadAssetAtPath<Texture2D>(HookSideAssetPath);
     if (front == null || side == null || !front.isReadable || !side.isReadable
         || front.width != 32 || front.height != 28
@@ -40319,38 +40319,15 @@ private static void HandleGameViewPointerDown(
 
     Texture2D texture =
         AssetDatabase.LoadAssetAtPath<Texture2D>(HookFrontAssetPath);
-    if (texture != null && texture.width == 28 && texture.height == 28)
+    if (texture == null || texture.width != 32 || texture.height != 28)
     {
-      cachedHookFrontTexture = texture;
-      return texture;
+      Debug.LogError("Hook F1: required original 32x28 CSBwin front asset missing "
+          + "or has wrong dimensions: " + HookFrontAssetPath);
+      return null;
     }
 
-    // Filename-independent fallback inside Assets/Art/Ornaments.
-    string[] guids = AssetDatabase.FindAssets(
-        "Hook t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 28 || candidate.height != 28)
-        continue;
-
-      if (path.IndexOf(
-              "hook",
-              System.StringComparison.OrdinalIgnoreCase) < 0
-          || path.IndexOf(
-              "front",
-              System.StringComparison.OrdinalIgnoreCase) < 0)
-      {
-        continue;
-      }
-
-      cachedHookFrontTexture = candidate;
-      return candidate;
-    }
-
-    return null;
+    cachedHookFrontTexture = texture;
+    return texture;
   }
 
   private Texture2D GetHookSideTexture()
