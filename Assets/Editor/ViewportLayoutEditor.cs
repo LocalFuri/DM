@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -38913,15 +38913,78 @@ private static void HandleGameViewPointerDown(
 
   }
 
+  // Explicit, read-only diagnostic: unlike the render-stage logging, this can
+  // always be invoked from Tools, even if a depth-stage callback was skipped.
+  [MenuItem("Tools/Hook F3 Trace Current View", false, 182)]
+  private static void TraceHookF3CurrentViewFromMenu()
+  {
+    ViewportLayoutEditor window = FindOpenViewEditWindow();
+    if (window == null)
+    {
+      Debug.LogWarning("[Hook F3 Manual Trace] ViewEdit is not open. "
+          + "Open Tools > ViewEdit, then run this command again.");
+      return;
+    }
+
+    Debug.Log("[Hook F3 Manual Trace] ViewEdit state: level="
+        + window.previewDungeonLevel + " x=" + window.previewX
+        + " y=" + window.previewY + " facing=" + window.previewFacing
+        + "; V17=" + window.IsViewport17WallAuthorityActive()
+        + "; previewMiniMap=" + (window.previewMiniMap != null)
+        + "; ornamentCount=" + (window.previewWallOrnaments == null
+            ? -1 : window.previewWallOrnaments.Length));
+
+    // This calls the existing Hook F3 blitter against a disposable buffer,
+    // not the live viewport. Nothing is saved or displayed.
+    // The existing Hook-only diagnostic prints the exact gate/result at the
+    // test pose. The unconditional start/end messages prove menu execution.
+    Color32[] scratch = new Color32[PreviewWidth * PreviewHeight];
+    try
+    {
+      window.lastHookF3TraceMessage = null;
+      window.BlitHookD3FrontIntoPreview(scratch);
+      Debug.Log("[Hook F3 Manual Trace] Hook F3 test call finished; "
+          + "no live pixels, scenes, or calibrations were changed.");
+    }
+    catch (System.Exception error)
+    {
+      Debug.LogError("[Hook F3 Manual Trace] Hook F3 test threw: " + error);
+    }
+  }
+
   // Hook F3 uses the existing F3 slot and code-generated front artwork.
   // Keep the same V17 depth ordering and placement/calibration blitter as F2.
+  // Diagnostic only: deduplicates messages across repaint operations.
+  // Does not alter any visibility, texture, or blitting decisions.
+  private string lastHookF3TraceMessage;
+
+  private void TraceHookF3AtTestPose(string message)
+  {
+    if (previewDungeonLevel != 1 || previewX != 18 || previewY != 17
+        || previewFacing != DungeonFacing.West)
+      return;
+    if (string.Equals(lastHookF3TraceMessage, message,
+        System.StringComparison.Ordinal))
+      return;
+    lastHookF3TraceMessage = message;
+    Debug.Log("[Hook F3 Diagnostic] " + message);
+  }
+
+  // Hook F3 uses the existing F3 slot and code-generated front artwork.
+  // The additional diagnostic logs run only at Level 1 (18,17) West.
   private void BlitHookD3FrontIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null
         || previewWallOrnaments == null
         || previewWallOrnaments.Length == 0)
+    {
+      TraceHookF3AtTestPose("ENTRY; missing previewMiniMap="
+          + (previewMiniMap == null)
+          + "; missing/empty previewWallOrnaments="
+          + (previewWallOrnaments == null || previewWallOrnaments.Length == 0));
       return;
+    }
 
     DungeonMap.GetForwardOffset(
         previewFacing, out int forwardX, out int forwardY);
@@ -38932,54 +38995,84 @@ private static void HandleGameViewPointerDown(
     int wallTileX = previewX + forwardX * 3;
     int wallTileY = previewY + forwardY * 3;
 
-    if (!previewMiniMap.IsInside(d1X, d1Y)
-        || previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d2X, d2Y)
-        || previewMiniMap.GetTile(d2X, d2Y).Type == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(wallTileX, wallTileY))
+    bool d1Inside = previewMiniMap.IsInside(d1X, d1Y);
+    bool d1Blocked = d1Inside
+        && previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall;
+    bool d2Inside = previewMiniMap.IsInside(d2X, d2Y);
+    bool d2Blocked = d2Inside
+        && previewMiniMap.GetTile(d2X, d2Y).Type == DungeonTileType.Wall;
+    bool f3Inside = previewMiniMap.IsInside(wallTileX, wallTileY);
+    if (!d1Inside || d1Blocked || !d2Inside || d2Blocked || !f3Inside)
+    {
+      TraceHookF3AtTestPose("BLOCKED: D1=" + d1X + "," + d1Y
+          + " inside=" + d1Inside + " wall=" + d1Blocked
+          + "; D2=" + d2X + "," + d2Y
+          + " inside=" + d2Inside + " wall=" + d2Blocked
+          + "; F3=" + wallTileX + "," + wallTileY
+          + " inside=" + f3Inside);
       return;
+    }
 
     string viewedWallSide = FacingName(previewFacing);
     string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+    int hooksFound = 0;
+    System.Text.StringBuilder hookChecks = new System.Text.StringBuilder();
 
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = previewWallOrnaments[i];
-      if (ornament != null
-          && !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
-              "Ornament", ornament.x, ornament.y, ornament.wall)))
-        continue;
       if (!IsHookOrnament(ornament))
         continue;
+      hooksFound++;
+      bool enabled = IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+          "Ornament", ornament.x, ornament.y, ornament.wall));
+      bool placementMatches = ornament.wallTilePlacement
+          ? ornament.x == wallTileX && ornament.y == wallTileY
+              && string.Equals(ornament.wall, visiblePhysicalWallFace,
+                  System.StringComparison.OrdinalIgnoreCase)
+          : ornament.x == d2X && ornament.y == d2Y
+              && string.Equals(ornament.wall, viewedWallSide,
+                  System.StringComparison.OrdinalIgnoreCase);
 
-      bool placementMatches;
-      if (ornament.wallTilePlacement)
-      {
-        placementMatches = ornament.x == wallTileX
-            && ornament.y == wallTileY
-            && string.Equals(ornament.wall, visiblePhysicalWallFace,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-      else
-      {
-        placementMatches = ornament.x == d2X
-            && ornament.y == d2Y
-            && string.Equals(ornament.wall, viewedWallSide,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-      if (!placementMatches)
+      if (hookChecks.Length > 0)
+        hookChecks.Append(" | ");
+      hookChecks.Append("#").Append(i)
+          .Append(" at=").Append(ornament.x).Append(",").Append(ornament.y)
+          .Append(" face=").Append(ornament.wall)
+          .Append(" wallTilePlacement=").Append(ornament.wallTilePlacement)
+          .Append(" enabled=").Append(enabled)
+          .Append(" match=").Append(placementMatches);
+
+      // Preserve the original feature-enabled gate and matching behavior.
+      if (!enabled || !placementMatches)
         continue;
 
       Texture2D hookFront = GetHookGeneratedF3FrontTexture();
       if (hookFront == null || !hookFront.isReadable)
+      {
+        TraceHookF3AtTestPose("MATCHED but F3 texture missing/unreadable. "
+            + hookChecks.ToString());
         return;
+      }
+      TraceHookF3AtTestPose("BLIT reached; texture=" + hookFront.width
+          + "x" + hookFront.height
+          + "; target=" + HookFrontWallOrnamentSet.f3.x
+          + "," + HookFrontWallOrnamentSet.f3.y
+          + "; Hook candidates: " + hookChecks.ToString());
       BlitOrnamentPieceIntoPreview(pixels, hookFront, ornament,
           HookFrontWallOrnamentSet.f3.x,
           HookFrontWallOrnamentSet.f3.y, false);
       return;
     }
-  }
 
+    TraceHookF3AtTestPose("NO MATCH; D1=" + d1X + "," + d1Y
+        + " D2=" + d2X + "," + d2Y
+        + " F3=" + wallTileX + "," + wallTileY
+        + "; expected physical face=" + visiblePhysicalWallFace
+        + ", boundary face=" + viewedWallSide
+        + "; Hook candidates=" + hooksFound
+        + (hooksFound > 0 ? "; " + hookChecks.ToString() : ""));
+  }
   private void BlitHookD2FrontIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -43626,7 +43719,7 @@ private static void HandleGameViewPointerDown(
         && !IsSharedWallFeatureVisible(
             ornament.x, ornament.y, ornament.wall,
             ornament.wallTilePlacement,
-            IsHookOrnament(ornament) ? 2 : 3,
+            3,
             IsViAltarOrnament(ornament) ? 0
               : IsSlimeOrnament(ornament) ? 2 : 3))
       return;
