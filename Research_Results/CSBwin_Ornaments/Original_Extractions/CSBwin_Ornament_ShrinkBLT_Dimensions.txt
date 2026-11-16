@@ -1,0 +1,165 @@
+graphicOrdinal=9 relativePosition=3 graphicID=194 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=47 destinationHeightPixels=27
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=FarColorMapping derivedGraphicIndex=37
+
+graphicOrdinal=9 relativePosition=8 graphicID=194 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=64 destinationHeightPixels=37
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=MediumColorMapping derivedGraphicIndex=39
+
+graphicOrdinal=9 relativePosition=3 graphicID=194 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=47 destinationHeightPixels=27
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=FarColorMapping derivedGraphicIndex=37
+
+graphicOrdinal=9 relativePosition=8 graphicID=194 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=64 destinationHeightPixels=37
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=MediumColorMapping derivedGraphicIndex=39
+
+graphicOrdinal=9 relativePosition=3 graphicID=194 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=47 destinationHeightPixels=27
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=FarColorMapping derivedGraphicIndex=37
+
+graphicOrdinal=9 relativePosition=8 graphicID=194 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=64 destinationHeightPixels=37
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=MediumColorMapping derivedGraphicIndex=39
+
+graphicOrdinal=9 relativePosition=3 graphicID=194 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=47 destinationHeightPixels=27
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=FarColorMapping derivedGraphicIndex=37
+
+graphicOrdinal=9 relativePosition=8 graphicID=194 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=64 destinationHeightPixels=37
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=MediumColorMapping derivedGraphicIndex=39
+
+graphicOrdinal=5 relativePosition=3 graphicID=126 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=47 destinationHeightPixels=27
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=FarColorMapping derivedGraphicIndex=21
+
+graphicOrdinal=5 relativePosition=8 graphicID=126 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=64 destinationHeightPixels=37
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=MediumColorMapping derivedGraphicIndex=23
+
+graphicOrdinal=11 relativePosition=8 graphicID=122 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=64 destinationHeightPixels=37
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=MediumColorMapping derivedGraphicIndex=47
+
+graphicOrdinal=11 relativePosition=3 graphicID=122 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=47 destinationHeightPixels=27
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=FarColorMapping derivedGraphicIndex=45
+
+graphicOrdinal=9 relativePosition=3 graphicID=194 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=47 destinationHeightPixels=27
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=FarColorMapping derivedGraphicIndex=37
+
+graphicOrdinal=9 relativePosition=3 graphicID=194 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=47 destinationHeightPixels=27
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=FarColorMapping derivedGraphicIndex=37
+
+graphicOrdinal=9 relativePosition=8 graphicID=194 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=64 destinationHeightPixels=37
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=MediumColorMapping derivedGraphicIndex=39
+
+graphicOrdinal=5 relativePosition=3 graphicID=126 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=47 destinationHeightPixels=27
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=FarColorMapping derivedGraphicIndex=21
+
+graphicOrdinal=4 relativePosition=8 graphicID=134 extendedWallDec=0
+sourceWidthPixels=32 sourceHeightPixels=28 destinationWidthPixels=22 destinationHeightPixels=18
+sourceDescriptorWidthBytes=16 sourceDescriptorHeight=28 sourceGraphicWidthPixelsRoundedBytes=16
+colorMap=MediumColorMapping derivedGraphicIndex=19
+
+graphicOrdinal=12 relativePosition=3 graphicID=132 extendedWallDec=0
+sourceWidthPixels=32 sourceHeightPixels=28 destinationWidthPixels=14 destinationHeightPixels=12
+sourceDescriptorWidthBytes=16 sourceDescriptorHeight=28 sourceGraphicWidthPixelsRoundedBytes=16
+colorMap=FarColorMapping derivedGraphicIndex=49
+
+graphicOrdinal=12 relativePosition=8 graphicID=132 extendedWallDec=0
+sourceWidthPixels=32 sourceHeightPixels=28 destinationWidthPixels=22 destinationHeightPixels=18
+sourceDescriptorWidthBytes=16 sourceDescriptorHeight=28 sourceGraphicWidthPixelsRoundedBytes=16
+colorMap=MediumColorMapping derivedGraphicIndex=51
+
+graphicOrdinal=1 relativePosition=3 graphicID=188 extendedWallDec=0
+sourceWidthPixels=32 sourceHeightPixels=28 destinationWidthPixels=14 destinationHeightPixels=12
+sourceDescriptorWidthBytes=16 sourceDescriptorHeight=28 sourceGraphicWidthPixelsRoundedBytes=16
+colorMap=FarColorMapping derivedGraphicIndex=5
+
+graphicOrdinal=2 relativePosition=8 graphicID=130 extendedWallDec=0
+sourceWidthPixels=32 sourceHeightPixels=28 destinationWidthPixels=22 destinationHeightPixels=18
+sourceDescriptorWidthBytes=16 sourceDescriptorHeight=28 sourceGraphicWidthPixelsRoundedBytes=16
+colorMap=MediumColorMapping derivedGraphicIndex=11
+
+graphicOrdinal=2 relativePosition=3 graphicID=130 extendedWallDec=0
+sourceWidthPixels=32 sourceHeightPixels=28 destinationWidthPixels=14 destinationHeightPixels=12
+sourceDescriptorWidthBytes=16 sourceDescriptorHeight=28 sourceGraphicWidthPixelsRoundedBytes=16
+colorMap=FarColorMapping derivedGraphicIndex=9
+
+graphicOrdinal=4 relativePosition=3 graphicID=134 extendedWallDec=0
+sourceWidthPixels=32 sourceHeightPixels=28 destinationWidthPixels=14 destinationHeightPixels=12
+sourceDescriptorWidthBytes=16 sourceDescriptorHeight=28 sourceGraphicWidthPixelsRoundedBytes=16
+colorMap=FarColorMapping derivedGraphicIndex=17
+
+graphicOrdinal=4 relativePosition=8 graphicID=134 extendedWallDec=0
+sourceWidthPixels=32 sourceHeightPixels=28 destinationWidthPixels=22 destinationHeightPixels=18
+sourceDescriptorWidthBytes=16 sourceDescriptorHeight=28 sourceGraphicWidthPixelsRoundedBytes=16
+colorMap=MediumColorMapping derivedGraphicIndex=19
+
+graphicOrdinal=11 relativePosition=3 graphicID=122 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=47 destinationHeightPixels=27
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=FarColorMapping derivedGraphicIndex=45
+
+graphicOrdinal=11 relativePosition=8 graphicID=122 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=64 destinationHeightPixels=37
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=MediumColorMapping derivedGraphicIndex=47
+
+graphicOrdinal=7 relativePosition=3 graphicID=220 extendedWallDec=0
+sourceWidthPixels=32 sourceHeightPixels=28 destinationWidthPixels=14 destinationHeightPixels=12
+sourceDescriptorWidthBytes=16 sourceDescriptorHeight=28 sourceGraphicWidthPixelsRoundedBytes=16
+colorMap=FarColorMapping derivedGraphicIndex=29
+
+graphicOrdinal=7 relativePosition=8 graphicID=220 extendedWallDec=0
+sourceWidthPixels=32 sourceHeightPixels=28 destinationWidthPixels=22 destinationHeightPixels=18
+sourceDescriptorWidthBytes=16 sourceDescriptorHeight=28 sourceGraphicWidthPixelsRoundedBytes=16
+colorMap=MediumColorMapping derivedGraphicIndex=31
+
+graphicOrdinal=12 relativePosition=3 graphicID=132 extendedWallDec=0
+sourceWidthPixels=32 sourceHeightPixels=28 destinationWidthPixels=14 destinationHeightPixels=12
+sourceDescriptorWidthBytes=16 sourceDescriptorHeight=28 sourceGraphicWidthPixelsRoundedBytes=16
+colorMap=FarColorMapping derivedGraphicIndex=49
+
+graphicOrdinal=12 relativePosition=8 graphicID=132 extendedWallDec=0
+sourceWidthPixels=32 sourceHeightPixels=28 destinationWidthPixels=22 destinationHeightPixels=18
+sourceDescriptorWidthBytes=16 sourceDescriptorHeight=28 sourceGraphicWidthPixelsRoundedBytes=16
+colorMap=MediumColorMapping derivedGraphicIndex=51
+
+graphicOrdinal=1 relativePosition=3 graphicID=188 extendedWallDec=0
+sourceWidthPixels=32 sourceHeightPixels=28 destinationWidthPixels=14 destinationHeightPixels=12
+sourceDescriptorWidthBytes=16 sourceDescriptorHeight=28 sourceGraphicWidthPixelsRoundedBytes=16
+colorMap=FarColorMapping derivedGraphicIndex=5
+
+graphicOrdinal=1 relativePosition=8 graphicID=188 extendedWallDec=0
+sourceWidthPixels=32 sourceHeightPixels=28 destinationWidthPixels=22 destinationHeightPixels=18
+sourceDescriptorWidthBytes=16 sourceDescriptorHeight=28 sourceGraphicWidthPixelsRoundedBytes=16
+colorMap=MediumColorMapping derivedGraphicIndex=7
+
+graphicOrdinal=5 relativePosition=3 graphicID=126 extendedWallDec=0
+sourceWidthPixels=96 sourceHeightPixels=56 destinationWidthPixels=47 destinationHeightPixels=27
+sourceDescriptorWidthBytes=48 sourceDescriptorHeight=56 sourceGraphicWidthPixelsRoundedBytes=48
+colorMap=FarColorMapping derivedGraphicIndex=21
+
