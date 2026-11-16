@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -1951,6 +1951,8 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedManaclesGeneratedF3FrontTexture;
   [System.NonSerialized]
   private Texture2D cachedHookGeneratedF2FrontTexture;
+  [System.NonSerialized]
+  private Texture2D cachedHookGeneratedF3FrontTexture;
   [System.NonSerialized]
   private Texture2D cachedGrateFrontTexture;
   [System.NonSerialized]
@@ -21490,6 +21492,7 @@ private static void HandleGameViewPointerDown(
     BlitHookD3SidesIntoPreview(pixels);
     BlitGrateD3SidesIntoPreview(pixels);
     BlitWoodRingD3FrontIntoPreview(pixels);
+    BlitHookD3FrontIntoPreview(pixels);
     BlitManaclesD3FrontIntoPreview(pixels);
     BlitManaclesD3SidesIntoPreview(pixels);
     BlitSlimeD3FrontIntoPreview(pixels);
@@ -38910,6 +38913,73 @@ private static void HandleGameViewPointerDown(
 
   }
 
+  // Hook F3 uses the existing F3 slot and code-generated front artwork.
+  // Keep the same V17 depth ordering and placement/calibration blitter as F2.
+  private void BlitHookD3FrontIntoPreview(Color32[] pixels)
+  {
+    EnsurePreviewMiniMapLoaded();
+    if (previewMiniMap == null
+        || previewWallOrnaments == null
+        || previewWallOrnaments.Length == 0)
+      return;
+
+    DungeonMap.GetForwardOffset(
+        previewFacing, out int forwardX, out int forwardY);
+    int d1X = previewX + forwardX;
+    int d1Y = previewY + forwardY;
+    int d2X = previewX + forwardX * 2;
+    int d2Y = previewY + forwardY * 2;
+    int wallTileX = previewX + forwardX * 3;
+    int wallTileY = previewY + forwardY * 3;
+
+    if (!previewMiniMap.IsInside(d1X, d1Y)
+        || previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(d2X, d2Y)
+        || previewMiniMap.GetTile(d2X, d2Y).Type == DungeonTileType.Wall
+        || !previewMiniMap.IsInside(wallTileX, wallTileY))
+      return;
+
+    string viewedWallSide = FacingName(previewFacing);
+    string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament != null
+          && !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
+              "Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
+      if (!IsHookOrnament(ornament))
+        continue;
+
+      bool placementMatches;
+      if (ornament.wallTilePlacement)
+      {
+        placementMatches = ornament.x == wallTileX
+            && ornament.y == wallTileY
+            && string.Equals(ornament.wall, visiblePhysicalWallFace,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      else
+      {
+        placementMatches = ornament.x == d2X
+            && ornament.y == d2Y
+            && string.Equals(ornament.wall, viewedWallSide,
+                System.StringComparison.OrdinalIgnoreCase);
+      }
+      if (!placementMatches)
+        continue;
+
+      Texture2D hookFront = GetHookGeneratedF3FrontTexture();
+      if (hookFront == null || !hookFront.isReadable)
+        return;
+      BlitOrnamentPieceIntoPreview(pixels, hookFront, ornament,
+          HookFrontWallOrnamentSet.f3.x,
+          HookFrontWallOrnamentSet.f3.y, false);
+      return;
+    }
+  }
+
   private void BlitHookD2FrontIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -40289,6 +40359,30 @@ private static void HandleGameViewPointerDown(
         + "No rendering, calibration, or asset modifications. "
         + "RGB differences can reflect captured CSBwin lighting palette; "
         + "mirrored and front-slice positions are not tested by this tool.");
+  }
+
+  private Texture2D GetHookGeneratedF3FrontTexture()
+  {
+    if (cachedHookGeneratedF3FrontTexture != null)
+      return cachedHookGeneratedF3FrontTexture;
+
+    Texture2D source = GetHookFrontTexture();
+    if (source == null || !source.isReadable)
+    {
+      Debug.LogError("Hook F3: required readable 32x28 front source missing: "
+          + HookFrontAssetPath);
+      return null;
+    }
+
+    cachedHookGeneratedF3FrontTexture = GenerateDmScaledWallDecoration(
+        source,
+        HookFrontWallOrnamentSet.f3.width,
+        HookFrontWallOrnamentSet.f3.height,
+        WallOrnamentFarColorMap,
+        "Hook F3 Generated From F1");
+    if (cachedHookGeneratedF3FrontTexture == null)
+      Debug.LogError("Hook F3: failed to generate from " + HookFrontAssetPath);
+    return cachedHookGeneratedF3FrontTexture;
   }
 
   private Texture2D GetHookGeneratedF2FrontTexture()
