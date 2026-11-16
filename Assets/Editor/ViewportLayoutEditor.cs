@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -40158,6 +40158,139 @@ private static void HandleGameViewPointerDown(
     return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 4;
   }
 
+  // Hook G2 isolated verification only. Nothing here is called by normal
+  // viewport rendering; running the menu item reads archived reference PNGs
+  // and prints differences without editing assets or calibrations.
+  [MenuItem("Tools/CSBwin Hook G2 Compare Pixels", false, 181)]
+  private static void CompareHookG2PixelsReadOnly()
+  {
+    const string archiveRoot = "Research_Results/CSBwin_Ornaments/Hook_G2";
+    if (!Directory.Exists(archiveRoot))
+    {
+      Debug.LogError("Hook G2 comparison: missing research folder: " + archiveRoot);
+      return;
+    }
+
+    Texture2D front = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        "Assets/Art/Ornaments/Hook_Front_32x28.png");
+    Texture2D side = AssetDatabase.LoadAssetAtPath<Texture2D>(HookSideAssetPath);
+    if (front == null || side == null || !front.isReadable || !side.isReadable
+        || front.width != 32 || front.height != 28
+        || side.width != 16 || side.height != 19)
+    {
+      Debug.LogError("Hook G2 comparison: requires readable 32x28 front and "
+          + "16x19 side source PNGs at the configured Hook asset paths.");
+      return;
+    }
+
+    // Stable representative positions: no mirrored source-offset crop or
+    // shared F2/F3 front-slice cache. Other positions remain untested.
+    int[] positions = { 0, 3, 5, 8, 10, 12 };
+    int checkedCount = 0;
+    for (int i = 0; i < positions.Length; i++)
+    {
+      int position = positions[i];
+      bool isFront = position == 3 || position == 8 || position == 12;
+      Texture2D source = isFront ? front : side;
+      OriginalWallDecorationRect rect = GetOriginalWallDecorationRect(0, position);
+      int width = rect.x2 - rect.x1 + 1;
+      int height = rect.y2 - rect.y1 + 1;
+      string referenceName = "Hook_G2_P" + position.ToString("00") + "_*_Viewport.png";
+      string[] matches = Directory.GetFiles(
+          archiveRoot, referenceName, SearchOption.AllDirectories);
+      if (matches.Length != 1)
+      {
+        Debug.LogError("Hook G2 comparison: expected exactly one "
+            + referenceName + " in " + archiveRoot + ", found " + matches.Length);
+        return;
+      }
+
+      Texture2D reference = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+      try
+      {
+        if (!reference.LoadImage(File.ReadAllBytes(matches[0]), false)
+            || reference.width != width || reference.height != height)
+        {
+          Debug.LogError("Hook G2 comparison: invalid reference dimensions: "
+              + matches[0] + " (expected " + width + "x" + height + ")");
+          return;
+        }
+
+        Color32[] actual = reference.GetPixels32();
+        Color32[] original = source.GetPixels32();
+        Color32[] palette = DungeonViewportLightPalettes[0];
+        byte[] map = position < 5 ? WallOrnamentFarColorMap
+            : position < 10 ? WallOrnamentMediumColorMap : null;
+        int sourceWidth = isFront ? 32 : 16;
+        int sourceHeight = source.height;
+        int stepX = ((sourceWidth << 10) / width) << 6;
+        int stepY = ((sourceHeight << 10) / height) << 6;
+        int startX = (stepX >> 1) + 0x7fff;
+        int startY = (stepY >> 1) + 0x7fff;
+        int alphaDiff = 0;
+        int colorDiff = 0;
+        int unknownPalette = 0;
+        for (int y = 0; y < height; y++)
+        {
+          int sourceTopY = position >= 10 ? y : (startY + y * stepY) >> 16;
+          for (int x = 0; x < width; x++)
+          {
+            int sourceX = position >= 10 ? x : (startX + x * stepX) >> 16;
+            bool inside = sourceX >= 0 && sourceX < source.width
+                && sourceTopY >= 0 && sourceTopY < sourceHeight;
+            Color32 expected = new Color32(0, 0, 0, 0);
+            if (inside)
+            {
+              Color32 input = original[(sourceHeight - 1 - sourceTopY)
+                  * source.width + sourceX];
+              if (input.a != 0)
+              {
+                int sourceIndex = -1;
+                for (int paletteIndex = 0; paletteIndex < 16; paletteIndex++)
+                {
+                  Color32 candidate = palette[paletteIndex];
+                  if (input.r == candidate.r && input.g == candidate.g
+                      && input.b == candidate.b)
+                  {
+                    sourceIndex = paletteIndex;
+                    break;
+                  }
+                }
+                if (sourceIndex < 0)
+                {
+                  unknownPalette++;
+                  continue;  // Strictly no nearest-colour fallback.
+                }
+                int mappedIndex = map == null ? sourceIndex : map[sourceIndex];
+                if (mappedIndex != 10)
+                  expected = palette[mappedIndex];
+              }
+            }
+            Color32 observed = actual[(height - 1 - y) * width + x];
+            if ((expected.a == 0) != (observed.a == 0)) alphaDiff++;
+            else if (expected.a != 0 && (expected.r != observed.r
+                || expected.g != observed.g || expected.b != observed.b))
+              colorDiff++;
+          }
+        }
+        checkedCount++;
+        Debug.Log("Hook G2 comparison P" + position.ToString("00")
+            + " " + width + "x" + height + ": alpha mismatches=" + alphaDiff
+            + ", RGB mismatches=" + colorDiff
+            + ", unknown source palette pixels=" + unknownPalette
+            + ". Reference=" + matches[0]);
+      }
+      finally
+      {
+        UnityEngine.Object.DestroyImmediate(reference);
+      }
+    }
+    Debug.Log("Hook G2: compared " + checkedCount + " representative positions. "
+        + "No rendering, calibration, or asset modifications. "
+        + "RGB differences can reflect captured CSBwin lighting palette; "
+        + "mirrored and front-slice positions are not tested by this tool.");
+  }
+
   private Texture2D GetHookGeneratedF2FrontTexture()
   {
     if (cachedHookGeneratedF2FrontTexture != null)
@@ -40301,21 +40434,26 @@ private static void HandleGameViewPointerDown(
     if (cachedHookSide3Texture != null)
       return cachedHookSide3Texture;
 
-    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(HookS3AssetPath);
-    if (texture == null)
+    // Generate Hook S3 from the original side-view source instead of loading
+    // an obsolete distance-specific 3x5 PNG. Keep the existing dimensions,
+    // placement, visibility and calibration paths unchanged. This result
+    // still needs comparison against the captured CSBwin S3 pixels.
+    Texture2D source = GetHookSideTexture();
+    if (source == null || !source.isReadable)
     {
-      Debug.LogError("Hook S3: required original 3x5 asset missing: " + HookS3AssetPath);
+      Debug.LogError("Hook S3: required readable 16x19 side source missing: "
+          + HookSideAssetPath);
       return null;
     }
-    if (texture.width != HookD3SideWidth || texture.height != HookD3SideHeight
-        || !texture.isReadable)
-    {
-      Debug.LogError("Hook S3: expected readable 3x5 texture at " + HookS3AssetPath
-          + "; actual=" + texture.width + "x" + texture.height
-          + ", readable=" + texture.isReadable);
-      return null;
-    }
-    cachedHookSide3Texture = texture;
+
+    cachedHookSide3Texture = GenerateDmScaledWallDecoration(
+        source,
+        HookD3SideWidth,
+        HookD3SideHeight,
+        WallOrnamentFarColorMap,
+        "Hook S3 Generated From Side");
+    if (cachedHookSide3Texture == null)
+      Debug.LogError("Hook S3: failed to generate 3x5 from " + HookSideAssetPath);
     return cachedHookSide3Texture;
   }
 
