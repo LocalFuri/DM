@@ -94,6 +94,7 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
+    "TOP PRIORITY ON RESUME 2026-11-17: Hook F3 vertical mismatch — Unity Hook approximately 4 px lower than CSBwin at Level 1 (18,17) West; Hook #70 on (15,17) East; texture and X/scaling correct. Trace CSBwin Y placement vs Unity F3 destination and calibration offsets. DO NOT change scaling, V17, or approved Hook/Manacles; do not blindly subtract 4.",
     "CURRENT TOP PRIORITY 2026-11-16: CSBwin ornaments — inspect Cursor's graphic 0x22e table research; reprocess Ring G4 using exact source offsets; compare Hook/Ring output against the live CSBwin viewport. Research backed up to GitHub; do not change approved Unity calibration yet.",
     "CURRENT TOP PRIORITY 2026-11-13: Return to Unity Manacles S3 calibration. Check why S3 X/Y is not adjustable in ViewEdit and fix with the smallest source change; preserve approved S2/F1/F3.",
     "Original DOS reference now copied to C:\\Unity\\DM\\DOS_Reference; Progression.json stays under C:\\Unity\\DM\\Assets\\Editor.",
@@ -1994,5 +1995,94 @@
       "Preserve approved Unity calibration and defer implementation until reference results are verified."
     ],
     "workflowRule": "CSBwin_Extractions is volatile/overwritten. Copy useful captures into version-controlled Research_Results, preserve original inputs and reconstruction scripts, update Progression.json, commit and push. Check Git exclusions before claiming backup."
+  },
+  "checkpoint_20261116_endofday_hook_f3_y_alignment": {
+    "date": "2026-11-16",
+    "savedAtLocal": "2026-11-16T22:48:47+01:00",
+    "timezone": "Europe/Berlin",
+    "status": "END OF DAY — ready to resume from Hook F3 vertical-placement discrepancy; no further Unity edits performed by this checkpoint",
+    "exactResumeTask": "Investigate why Hook F3 appears approximately 4 pixels too low relative to CSBwin, while keeping approved scaling and all other ornaments unchanged.",
+    "testPose": {
+      "level": 1,
+      "x": 18,
+      "y": 17,
+      "facing": "West",
+      "expectedF3WallTile": {
+        "x": 15,
+        "y": 17,
+        "face": "East"
+      },
+      "hookPlacementId": 70
+    },
+    "liveTrace": {
+      "hookCandidateMatch": true,
+      "enabled": true,
+      "wallTilePlacement": true,
+      "f3BlitterReached": true,
+      "generatedTexture": "14x12",
+      "diagnosticTarget": "105,113 (source log; verify coordinate system before interpreting)",
+      "traceFunction": "TraceHookF3AtTestPose / BlitHookD3FrontIntoPreview",
+      "note": "Hook F3 was initially invisible because a shared visibility limit treated Hook as max depth 2; one-line depth correction to 3 made it appear."
+    },
+    "visualComparison": {
+      "reference": "CSBwin Hook F3 screenshot, distinct map geometry from Unity screenshot",
+      "unity": "Unity Hook F3 screenshot, Level 1 (18,17) West",
+      "hookPixels": {
+        "csbwin": {
+          "xLeft": 106,
+          "xRight": 117,
+          "yTop": 40,
+          "yBottom": 45
+        },
+        "unity": {
+          "xLeft": 106,
+          "xRight": 117,
+          "yTop": 44,
+          "yBottom": 49
+        }
+      },
+      "interpretation": "Hook visible image same measured width/height, matching X, Unity about 4px lower; user estimated 3–5px visually. Compare image-local/viewport coordinates and tile mortar lines before committing offset.",
+      "confidence": "Screenshot-based comparison; two different maps; do not treat the offsets as universal without tracing drawing pipeline."
+    },
+    "approved": [
+      "Hook F1 original CSBwin front source Hook_F1_32x28.png — visible and visually approved; keep its exact filename.",
+      "Hook F2 code-generated downscale visually perfect versus CSBwin (shape/size/colors); preserve.",
+      "Hook F3 code-generated downscale visually perfect (size/shape/colors), but vertical position not approved; preserve scaling, correct Y only after tracing.",
+      "Hook S2 code-generated perspective visually approved; preserve.",
+      "Hook S3 code-generated from Hook_Side_16x19.png visually approved; prior missing Hook_S3_3x5.png dependency fixed.",
+      "Manacles F2 and F3 visually excellent and approved; do not change or retest without discrepancy."
+    ],
+    "technicalFacts": [
+      "Hook F3 visibility limit in shared ornament path changed from depth 2 to 3; Hook now appears at test pose.",
+      "CSBwin placement graphic 0x22e was successfully decoded: 104 placement records, Medium/Far maps, placement set lookup, derived offsets. Research archive under Research_Results/CSBwin_Ornaments.",
+      "Unity embedded original placement records and color maps already agree with recovered CSBwin data; do not add duplicate loader.",
+      "Approved architecture: one original front and side source asset per ornament, code-generated distance views, not dedicated F2/F3/S2/S3 images.",
+      "Cursor reports can become stale if Unity source changes during its audit. For this next issue work without Cursor on same file.",
+      "Unity automatic calibration reset call in OnEnable was disabled for PC migration; approved manual calibrations remain protected."
+    ],
+    "tomorrowFirstSteps": [
+      "Obtain CURRENT local ViewportLayoutEditor.cs as a ZIP (after Hook_F3_Visibility_Depth_Fix_20261116.zip was installed); use as only code baseline, avoid old snapshots.",
+      "Trace F3 CSBwin placement rectangle (correct placement set for Hook), Unity F3 hard-coded position, and Y offsets applied by blitter, 136px viewport coordinate conversion, and saved ViewEdit calibration.",
+      "Diagnose whether +4px is from stored calibration or code placement; do not blindly subtract 4.",
+      "Prepare minimal Hook F3-only correction if evidence confirms cause, leaving F1/F2/S2/S3, Manacles, V17 and scaling untouched.",
+      "Test at Level 1 X18/Y17 West, compare Hook relative to stone-wall courses and screenshots; only approve Y after verification."
+    ],
+    "files": {
+      "unityRenderer": "C:\\Unity\\DM\\Assets\\Editor\\ViewportLayoutEditor.cs",
+      "researchArchive": "C:\\Unity\\DM\\Research_Results\\CSBwin_Ornaments",
+      "researchDocument": "C:\\Unity\\DM\\Research_Results\\11_CSBwin_Ornament_Rendering.md",
+      "csbwinOriginalTablesArchive": "C:\\Unity\\DM\\Research_Results\\CSBwin_Ornaments\\Tools",
+      "progression": "C:\\Unity\\DM\\Assets\\Editor\\Progression.json",
+      "lastDeliveredHookVisibilityFix": "Hook_F3_Visibility_Depth_Fix_20261116.zip",
+      "lastDeliveredDiagnostic": "Hook_F3_Manual_Trace_20261116.zip"
+    },
+    "rules": [
+      "Do not change any approved ornament calibration without the user explicitly requesting it.",
+      "User handles Git add/commit/push after each change; avoid unnecessary instructions.",
+      "Only one actor may modify a given file at a time; current Hook F3 work is ChatGPT only, no parallel Cursor inspection of ViewportLayoutEditor.cs.",
+      "No fallback asset guessing; missing assets produce explicit errors.",
+      "All new/changed delivery timestamps use Windows local Europe/Berlin time.",
+      "Research must stay in Git-backed Research_Results; CSBwin_Extractions is volatile."
+    ]
   }
 }
