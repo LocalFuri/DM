@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -38913,6 +38913,75 @@ private static void HandleGameViewPointerDown(
 
   }
 
+  // Read-only F2 diagnostic. Alt+J avoids the existing Hook F3 Alt+H shortcut.
+  [MenuItem("Tools/Hook F2 Trace Current View &j", false, 183)]
+  private static void TraceHookF2CurrentViewFromMenu()
+  {
+    ViewportLayoutEditor window = FindOpenViewEditWindow();
+    if (window == null)
+    {
+      Debug.LogWarning("[Hook F2 Trace] ViewEdit is not open. Open Tools > ViewEdit first.");
+      return;
+    }
+
+    Debug.Log("[Hook F2 Trace] ViewEdit: level=" + window.previewDungeonLevel
+        + " x=" + window.previewX + " y=" + window.previewY
+        + " facing=" + window.previewFacing
+        + "; V17=" + window.IsViewport17WallAuthorityActive());
+    Debug.Log("[Hook F2 Trace] Source=" + HookFrontAssetPath
+        + "; expected source=32x28; scaler=GenerateDmScaledWallDecoration (ShrinkBLT)"
+        + "; palette=WallOrnamentMediumColorMap"
+        + "; defaults=" + HookFrontWallOrnamentSet.f2.x + ","
+        + HookFrontWallOrnamentSet.f2.y);
+
+    Texture2D source = window.GetHookFrontTexture();
+    Debug.Log("[Hook F2 Trace] Actual source="
+        + (source == null ? "MISSING" : source.width + "x" + source.height
+            + "; readable=" + source.isReadable));
+    Texture2D scaled = window.GetHookGeneratedF2FrontTexture();
+    if (scaled != null && scaled.isReadable)
+    {
+      Color32[] texels = scaled.GetPixels32();
+      int opaque = 0;
+      int minX = scaled.width, minY = scaled.height, maxX = -1, maxY = -1;
+      for (int y = 0; y < scaled.height; y++)
+        for (int x = 0; x < scaled.width; x++)
+        {
+          if (texels[y * scaled.width + x].a == 0) continue;
+          opaque++;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      Debug.Log("[Hook F2 Trace] Generated texture=" + scaled.width + "x"
+          + scaled.height + "; nontransparentPixels=" + opaque
+          + "; localBoundsBottomUp=" + (opaque == 0 ? "empty"
+              : minX + "," + minY + ".." + maxX + "," + maxY));
+    }
+    else
+      Debug.LogWarning("[Hook F2 Trace] Generated F2 texture unavailable/unreadable.");
+
+    Color32[] scratch = new Color32[PreviewWidth * PreviewHeight];
+    window.hookF2ManualTraceActive = true;
+    try
+    {
+      window.BlitHookD2FrontIntoPreview(scratch);
+      Debug.Log("[Hook F2 Trace] Diagnostic completed on scratch pixels only;"
+          + " no live pixels, scene, or calibration changes.");
+    }
+    catch (System.Exception error)
+    {
+      Debug.LogError("[Hook F2 Trace] Failed: " + error);
+    }
+    finally
+    {
+      window.hookF2ManualTraceActive = false;
+    }
+  }
+
+  private bool hookF2ManualTraceActive;
+
   // Explicit, read-only diagnostic: unlike the render-stage logging, this can
   // always be invoked from Tools, even if a depth-stage callback was skipped.
   [MenuItem("Tools/Hook F3 Trace Current View &h", false, 182)]
@@ -39092,12 +39161,18 @@ private static void HandleGameViewPointerDown(
         || previewWallOrnaments == null
         || previewWallOrnaments.Length == 0)
     {
+      if (hookF2ManualTraceActive)
+        Debug.Log("[Hook F2 Trace] BLOCKED: minimap/ornament data unavailable.");
       return;
     }
 
     Texture2D hookFront = GetHookGeneratedF2FrontTexture();
     if (hookFront == null || !hookFront.isReadable)
+    {
+      if (hookF2ManualTraceActive)
+        Debug.Log("[Hook F2 Trace] BLOCKED: generated texture missing/unreadable.");
       return;
+    }
 
     DungeonMap.GetForwardOffset(
         previewFacing,
@@ -39118,6 +39193,11 @@ private static void HandleGameViewPointerDown(
         || previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall
         || !previewMiniMap.IsInside(wallTileX, wallTileY))
     {
+      if (hookF2ManualTraceActive)
+        Debug.Log("[Hook F2 Trace] BLOCKED: D1=" + d1X + "," + d1Y
+            + " inside=" + previewMiniMap.IsInside(d1X, d1Y)
+            + "; F2=" + wallTileX + "," + wallTileY
+            + " inside=" + previewMiniMap.IsInside(wallTileX, wallTileY));
       return;
     }
 
@@ -39161,11 +39241,20 @@ private static void HandleGameViewPointerDown(
       if (!placementMatches)
         continue;
 
+      if (hookF2ManualTraceActive)
+        Debug.Log("[Hook F2 Trace] MATCH: ornament #" + i
+            + " at=" + ornament.x + "," + ornament.y
+            + " face=" + ornament.wall
+            + "; wallTilePlacement=" + ornament.wallTilePlacement);
       BlitOrnamentPieceIntoPreview(
           pixels, hookFront, ornament,
           HookFrontWallOrnamentSet.f2.x, HookFrontWallOrnamentSet.f2.y, false);
       return;
     }
+    if (hookF2ManualTraceActive)
+      Debug.Log("[Hook F2 Trace] NO MATCH: F2=" + wallTileX + ","
+          + wallTileY + " wallFace=" + visiblePhysicalWallFace
+          + "; boundaryFace=" + viewedWallSide);
   }
 
   // Use the existing S1-to-S2 palette-preserving distance scaler for S3 too.
@@ -40499,14 +40588,12 @@ private static void HandleGameViewPointerDown(
     if (source == null || !source.isReadable)
       return null;
 
-    cachedHookGeneratedF2FrontTexture =
-        GenerateChampionMirrorAlternativeScale(
-            source,
-            HookFrontWallOrnamentSet.f2.width,
-            HookFrontWallOrnamentSet.f2.height,
-            WallOrnamentMediumColorMap,
-            1,
-            "Hook F2 Nearest from F1");
+    cachedHookGeneratedF2FrontTexture = GenerateDmScaledWallDecoration(
+        source,
+        HookFrontWallOrnamentSet.f2.width,
+        HookFrontWallOrnamentSet.f2.height,
+        WallOrnamentMediumColorMap,
+        "Hook F2 ShrinkBLT from F1");
 
     return cachedHookGeneratedF2FrontTexture;
   }
@@ -43797,6 +43884,17 @@ private static void HandleGameViewPointerDown(
           + "; X=" + x + "; Y(bottom-up)=" + y
           + "; Y(top-down)=" + (PreviewHeight - y - texture.height)
           + "; size=" + texture.width + "x" + texture.height
+          + "; mirror=" + mirror);
+    if (hookF2ManualTraceActive && IsHookOrnament(ornament))
+      Debug.Log("[Hook F2 Trace] Final placement: key=" + key
+          + "; genericProjection=" + hasGenericProjection
+          + "; defaults=" + defaultX + "," + defaultY
+          + "; finalBottomUp=" + x + "," + y
+          + "; screenTop=" + (texture == null ? -1
+              : PreviewHeight - y - texture.height)
+          + "; size=" + (texture == null ? "null"
+              : texture.width + "x" + texture.height)
+          + "; delta=" + (x - defaultX) + "," + (y - defaultY)
           + "; mirror=" + mirror);
     BlitPieceIntoPreview(pixels, texture, x, y, mirror);
   }

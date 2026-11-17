@@ -2195,6 +2195,15 @@
         "firstRecordedForRetention": "2026-11-17",
         "keepVisibleInSummariesThrough": "2026-11-24",
         "evidence": "Unity Tools-menu screenshot"
+      },
+      {
+        "menuPath": "Tools/Hook F2 Trace Current View",
+        "shortcut": "Alt+J",
+        "purpose": "Read-only Hook F2 source image, ShrinkBLT scaler, generated pixel alpha bounds, wall/ornament matching and final blit/calibration coordinates, without modifying Game View",
+        "originalImplementationDate": "2026-11-17",
+        "firstRecordedForRetention": "2026-11-17",
+        "keepVisibleInSummariesThrough": "2026-11-24",
+        "evidence": "ViewportLayoutEditor.cs updated in Hook_F2_Trace_20261117.zip"
       }
     ]
   },
@@ -2269,5 +2278,16 @@
       "Keep diagnostic Tools entries visible at least 7 days from implementation/first recorded date per retention rule",
       "User manages Git commits; do not repeatedly prompt"
     ]
+  },
+  "hook_f2_diagnostic_checkpoint_20261117": {
+    "date": "2026-11-17",
+    "status": "Diagnostic prepared; awaiting Unity compilation and Console results",
+    "reference": "Original DOS PC running under D-Fend",
+    "observations": "After F2 ShrinkBLT test, Hook F2 still differs in visible pixel pattern and X/Y position; approved Hook F3 must remain unchanged.",
+    "sourceZip": "Hook_F2_ShrinkBLT_Test_20261117.zip",
+    "traceMenuPath": "Tools/Hook F2 Trace Current View",
+    "shortcut": "Alt+J",
+    "traceScope": "Read-only F2 source, palette/scaler, texture 19x18, nontransparent bounds, matched ornament, calibration and screen position",
+    "nextAction": "Install updated ViewportLayoutEditor.cs, allow Unity recompile, invoke Alt+J while F2 Hook is visible and share Console."
   }
 }
