@@ -2289,5 +2289,15 @@
     "shortcut": "Alt+J",
     "traceScope": "Read-only F2 source, palette/scaler, texture 19x18, nontransparent bounds, matched ornament, calibration and screen position",
     "nextAction": "Install updated ViewportLayoutEditor.cs, allow Unity recompile, invoke Alt+J while F2 Hook is visible and share Console."
+  },
+  "hook_f2_zero_bias_experiment_20261117": {
+    "timestamp_local": "2026-11-17T21:06:59+01:00",
+    "status": "test awaiting Unity/DOS screenshot comparison; not approved",
+    "purpose": "Isolate F2 ShrinkBLT extra 0x7fff start-rounding bias as possible cause of DOS pixel-pattern mismatch",
+    "change": "GetHookGeneratedF2FrontTexture only: pass roundBiasOverride: 0 to GenerateDmScaledWallDecoration; keep medium palette, 19x18 dimensions and X/Y unchanged",
+    "protected": "Hook F3 DOS pixel-perfect approved; no change to F3, common scaler, other ornaments or V17",
+    "test": "Replace ViewportLayoutEditor.cs; recompile; recapture Unity Hook F2 same view as original DOS screenshot; compare pattern before attempting placement changes",
+    "diagnostics": "Tools/Hook F2 Trace Current View (Alt+J); Tools/Hook F3 Trace Current View (Alt+H), retained for minimum seven days following implementation",
+    "rollback": "Restore prior ViewportLayoutEditor.cs from Hook_F2_Trace_20261117.zip if zero-bias pattern worsens"
   }
 }

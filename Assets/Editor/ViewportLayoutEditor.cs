@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -40593,7 +40593,8 @@ private static void HandleGameViewPointerDown(
         HookFrontWallOrnamentSet.f2.width,
         HookFrontWallOrnamentSet.f2.height,
         WallOrnamentMediumColorMap,
-        "Hook F2 ShrinkBLT from F1");
+        "Hook F2 ShrinkBLT zero-bias TEST from F1",
+        roundBiasOverride: 0);
 
     return cachedHookGeneratedF2FrontTexture;
   }
