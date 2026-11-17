@@ -39066,9 +39066,14 @@ private static void HandleGameViewPointerDown(
           + "; target=" + HookFrontWallOrnamentSet.f3.x
           + "," + HookFrontWallOrnamentSet.f3.y
           + "; Hook candidates: " + hookChecks.ToString());
+      // CSBwin group 0, relative position 3: F3 top is Y=39 in the
+      // 224x136 dungeon viewport. Convert to the full 320x200 framebuffer.
+      // Apply this only to Hook F3; the shared coordinate set also serves Ring.
+      int hookF3OriginalY = DisplayYToUnityY(
+          GetOriginalWallDecorationRect(0, 3).y1 + 32, hookFront.height);
       BlitOrnamentPieceIntoPreview(pixels, hookFront, ornament,
           HookFrontWallOrnamentSet.f3.x,
-          HookFrontWallOrnamentSet.f3.y, false);
+          hookF3OriginalY, false);
       return;
     }
 

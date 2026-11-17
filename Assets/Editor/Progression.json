@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-16",
+  "date": "2026-11-17",
   "todo_manacles_dos_f1_s2_20261109": {
     "category": "To do List",
     "priority": 0,
@@ -2196,6 +2196,78 @@
         "keepVisibleInSummariesThrough": "2026-11-24",
         "evidence": "Unity Tools-menu screenshot"
       }
+    ]
+  },
+  "checkpoint_20261117_hook_f3_dos_vs_csbwin_research": {
+    "category": "Major research checkpoint — Hook F3 original DOS vs CSBwin vs Unity",
+    "date": "2026-11-17",
+    "recordedAtLocal": "2026-11-17T20:34:25+01:00",
+    "timezone": "Europe/Berlin",
+    "status": "Original DOS reference comparison strongly supports a pixel-accurate Unity Hook F3; final +1 pixel change delivered but not yet visually confirmed in Unity",
+    "testPose": {
+      "level": 1,
+      "playerX": 18,
+      "playerY": 17,
+      "facing": "West",
+      "target": "Hook F3"
+    },
+    "sourceRoles": {
+      "DOS": "Original PC Dungeon Master viewed via D-Fend/DOSBox; authoritative visual reference",
+      "CSBwin": "Paul Stevens port/source for recovering rendering and scaling behavior; runtime output is an independently tested comparison, not automatically the pixel-accuracy reference",
+      "Unity": "Own reproduction using CSBwin-derived graphics/scaling data, compared to original DOS"
+    },
+    "pixelComparisonBeforeFinalOnePixelFix": {
+      "DOS": {
+        "visibleBrownPixelCount": 55,
+        "visibleBoundsFullScreen": {
+          "left": 106,
+          "right": 117,
+          "top": 73,
+          "bottom": 78
+        }
+      },
+      "Unity": {
+        "visibleBrownPixelCount": 55,
+        "visibleBoundsFullScreen": {
+          "left": 106,
+          "right": 117,
+          "top": 74,
+          "bottom": 79
+        }
+      },
+      "CSBwin": {
+        "visibleBrownPixelCount": 44,
+        "visibleBoundsAlignedToFullScreen": {
+          "left": 108,
+          "right": 118,
+          "top": 74,
+          "bottom": 79
+        }
+      },
+      "interpretation": "User-supplied screenshot comparison: Unity and original DOS visible brown Hook pixels match in shape, count, color, and X, with Unity one pixel too low; CSBwin runtime differs for this Hook. These are specific image comparisons, not a general proof for every ornament."
+    },
+    "diagnostic": {
+      "tool": "Tools/Hook F3 Trace Current View",
+      "shortcut": "Alt+H",
+      "details": "F3 blit reached; texture 14x12; generic key OrnamentProjection:Hook:F3; defaults and afterCalibration 105,113; zero calibration offset; earlier code correction increased Unity bottom-up Y to 116 and top-down Y to 72"
+    },
+    "changesPreparedToday": [
+      "Hook F3 projection depth 2→3 consistency fix",
+      "Hook F3 expanded diagnostic and Alt+H menu shortcut",
+      "Hook F3 table-derived 3-pixel upward Y fix",
+      "Hook F3 final additional 1-pixel upward correction (Unity bottom-up Y 116→117; expected screen-top Y 71)"
+    ],
+    "finalCorrectionStatus": "ZIP delivered Hook_F3_Final_One_Pixel_Y_20261117.zip; awaiting visual confirmation after Unity compilation. Do not mark final Hook F3 DOS-verified until user confirms.",
+    "workingHypothesis": "CSBwin-derived code/scaling can reproduce DOS Hook F3 pixels even where current CSBwin runtime Hook output differs. Root cause of the CSBwin difference is unproven; could involve source rectangle, scaling implementation, crop/clipping or placement. Do NOT claim Paul Stevens implemented the algorithm incorrectly without code-level evidence.",
+    "nextActions": [
+      "After recompilation, visually confirm final Hook F3 one-pixel correction against original DOS at reference pose",
+      "Once confirmed, mark Hook F3 as original-DOS verified and preserve approved size/placement",
+      "For future ornaments use original DOS as final visual reference and CSBwin source as research input; test each case independently"
+    ],
+    "constraints": [
+      "Do not modify approved Manacles/Hook F1/F2/S2/S3, Ring, V17 or other rendering paths during F3 test",
+      "Keep diagnostic Tools entries visible at least 7 days from implementation/first recorded date per retention rule",
+      "User manages Git commits; do not repeatedly prompt"
     ]
   }
 }
