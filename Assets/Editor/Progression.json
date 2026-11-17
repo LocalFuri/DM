@@ -38,7 +38,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-10-27 end-of-day: FrontF3 wall at Level 0 (11,4) West visually verified; next investigate wall at Level 0 (10,4) South tomorrow.",
+  "checkpoint": "2026-11-17 end of day: Hook F3 DOS-verified and protected. Hook F2 0x5700 vertical-sampling test not approved; keep 0x7FFF baseline. Next: research DOS F2 vertical source sampling without renderer edits.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -94,6 +94,7 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
+    "AUTHORITATIVE NEXT RESUME 2026-11-18: Hook F2 — reconstruct DOS vertical source-row/ShrinkBLT sampling; keep 0x7FFF F2 baseline; 0x5700 RGB 215/342 vs baseline 213/342 is an unapproved experiment; inspect research-only data at C:\\Unity\\DM\\Research_Results\\Hook_F2\\. Protect DOS-perfect Hook F3 14×12 X105 Unity bottom-up Y117. See end_of_day_20261117_hook_f2_resume_20261118; older items below are historical, not the immediate task.",
     "TOP PRIORITY ON RESUME 2026-11-17: Hook F3 vertical mismatch — Unity Hook approximately 4 px lower than CSBwin at Level 1 (18,17) West; Hook #70 on (15,17) East; texture and X/scaling correct. Trace CSBwin Y placement vs Unity F3 destination and calibration offsets. DO NOT change scaling, V17, or approved Hook/Manacles; do not blindly subtract 4.",
     "CURRENT TOP PRIORITY 2026-11-16: CSBwin ornaments — inspect Cursor's graphic 0x22e table research; reprocess Ring G4 using exact source offsets; compare Hook/Ring output against the live CSBwin viewport. Research backed up to GitHub; do not change approved Unity calibration yet.",
     "CURRENT TOP PRIORITY 2026-11-13: Return to Unity Manacles S3 calibration. Check why S3 X/Y is not adjustable in ViewEdit and fix with the smallest source change; preserve approved S2/F1/F3.",
@@ -2102,11 +2103,12 @@
     "tools": [
       {
         "menuPath": "Tools/Hook F3 Trace Current View",
-        "purpose": "Trace current Hook F3 rendering in Unity Console; relevant to current F3 Y-offset investigation",
+        "purpose": "Read-only F3 blit, 14×12 texture and coordinates diagnostic; F3 now DOS-approved and protected",
         "originalImplementationDate": "unverified",
         "firstRecordedForRetention": "2026-11-17",
         "keepVisibleInSummariesThrough": "2026-11-24",
-        "evidence": "current ViewportLayoutEditor.cs and screenshot"
+        "evidence": "Hook F3 source-level diagnostics and DOS comparison 2026-11-17; tool implementation date not independently confirmed",
+        "shortcut": "Alt+H"
       },
       {
         "menuPath": "Tools/CSBwin Hook G2 Compare Pixels",
@@ -2320,7 +2322,8 @@
     "purpose": "Trace each of the 342 target texels to source 32x28 coordinate, palette, and generated RGBA; compare with original DOS Hook F2 pixels.",
     "reference_findings": "DOS reference brown pixels=101; best F2 ShrinkBLT=119; best alignment shift x=0 y=-3 on viewport screenshots; overlap=97; 22 extra Unity brown, 4 missing DOS brown.",
     "retention": "Display this extra tool in daily progress for at least 7 days from 2026-11-17 (through 2026-11-24).",
-    "safety": "No F2 render modification; protected DOS-verified Hook F3 unchanged; write only diagnostic outputs under Assets/Editor."
+    "safety": "No F2 render modification; protected DOS-verified Hook F3 unchanged; write only diagnostic outputs under Assets/Editor.",
+    "supersededBy": "end_of_day_20261117_hook_f2_resume_20261118 (intermediate state preserved for history)"
   },
   "hook_f2_source_row_investigation_20261117": {
     "status": "Diagnostic prepared; no renderer changes",
@@ -2328,6 +2331,69 @@
     "hypothesis": "The sampling source row or source-pixel/palette path differs at row y=12; cannot verify from previously sampled-only CSV, because original neighboring source rows were not exported.",
     "diagnostic": "Tools > Hook F2 Trace Current View (Alt+J) now additionally exports original Hook_F1_32x28 artwork as Hook_F2_Original_Source_32x28.png beside existing Hook_F2_PixelTrace.csv and Hook_F2_Generated_19x18.png under Assets/Editor.",
     "next_action": "Run Alt+J once, upload newly generated Hook_F2_Original_Source_32x28.png. Compare neighboring source rows against DOS and choose evidence-based correction. Preserve Hook F3.",
-    "tool_retention": "Keep this Alt+J diagnostic visible in daily summaries for at least seven days after the new export enhancement on 2026-11-17."
+    "tool_retention": "Keep this Alt+J diagnostic visible in daily summaries for at least seven days after the new export enhancement on 2026-11-17.",
+    "supersededBy": "end_of_day_20261117_hook_f2_resume_20261118 (intermediate state preserved for history)"
+  },
+  "end_of_day_20261117_hook_f2_resume_20261118": {
+    "savedAtLocal": "2026-11-17T23:36:39+01:00",
+    "status": "END-OF-DAY AUTHORITATIVE RESUME CHECKPOINT; supersedes earlier same-day F2 diagnostic pending steps and old next_actions top priorities",
+    "achievementToday": [
+      "Hook F3 matched original DOS pixel-for-pixel and user approved; texture 14×12, X=105, Unity bottom-up Y=117; preserve as protected baseline.",
+      "Hook F2 investigated against original DOS with exported original Hook F1 source, pixel trace and 19×18 generation; confirms F2 still does not match DOS exactly.",
+      "Hook F2 0x7FFF baseline vs 0x5700 start-bias experiment RGB comparison: 213/342 vs 215/342 exact RGB respectively; 0x5700 gain is insufficient and NOT a final approved correction.",
+      "Earlier zero-bias (0) trial was worse than baseline and was reverted. Do not reapply.",
+      "Hook F2 source-row / sampling discrepancy remains the active investigation; F2 X/Y placement corrections must wait for correct pixel pattern.",
+      "Retained Hook F2 Trace Current View (Alt+J) and Hook F3 Trace Current View (Alt+H) under top-level Tools menu and in seven-day tools retention register.",
+      "Located existing permanent research directory C:\\Unity\\DM\\Research_Results\\. Research-only Hook F2 full RGB study belongs in C:\\Unity\\DM\\Research_Results\\Hook_F2\\."
+    ],
+    "explicitlyNotApproved": [
+      "Do not claim 0x5700 tested as final or change running Unity F2 bias from 0x7FFF solely based on 215/342 RGB count.",
+      "Do not modify or reverify DOS-verified Hook F3 unless a new discrepancy appears.",
+      "Research ZIP is NOT an Assets/Editor code replacement and should not trigger Unity recompilation."
+    ],
+    "tomorrowFirstTask": "Reconstruct the original DOS Hook F2 vertical ShrinkBLT sampling / source-row mapping using existing original 32×28 Hook source, full RGB per-pixel study and DOS comparison; identify why rows differ, especially y=12. No renderer edit until the mechanism is demonstrated.",
+    "tomorrowSteps": [
+      "Open latest Progression.json and this checkpoint first; distinguish DOS reference from CSBwin research rendering.",
+      "Consult research artifacts in C:\\Unity\\DM\\Research_Results\\Hook_F2\\ (if extracted). Use existing pixel-trace/source PNGs rather than re-running earlier tests without cause.",
+      "Evaluate source-row mapping, ShrinkBLT vertical accumulator / 0x7FFF behavior, masking/black vs transparent pixel selection and palette before proposing a surgical F2-only change.",
+      "Only after defensible prediction prepare an isolated reversible F2-only patch, and test the same original DOS reference viewport; correct pattern before X/Y.",
+      "Keep F3, V17, other ornaments, accepted Manacles and generic scaler untouched; no silent fallbacks."
+    ],
+    "protectedHookF3": {
+      "approved": "original DOS pixel-perfect",
+      "texture": "14×12",
+      "x": 105,
+      "unityBottomUpY": 117
+    },
+    "hookF2": {
+      "status": "research in progress, unapproved",
+      "texture": "19×18",
+      "baselineBias": "0x7FFF",
+      "experimentalBias": "0x5700",
+      "baselineExactRGB": "213/342",
+      "experimentalExactRGB": "215/342",
+      "reference": "Original DOS PC Dungeon Master"
+    },
+    "researchOnlyFilesInstruction": "Full RGB study ZIP, if used, extract under C:\\Unity\\DM\\Research_Results\\Hook_F2\\; do not install into Assets/Editor.",
+    "toolsKeepVisibleThrough": "2026-11-24",
+    "sourceOfTruth": "This latest checkpoint overrides prior dated top-priority text within next_actions and earlier 2026-11-17 intermediate diagnostic checkpoints."
+  },
+  "todo_20261118_total_commander_wincmd_git_integration": {
+    "createdAtLocal": "2026-11-17T23:41:25+01:00",
+    "status": "PENDING — agreed November 17; do not claim implemented",
+    "priority": "Tomorrow November 18, 2026, after or alongside Hook F2 research; separate configuration task",
+    "goal": "Store Total Commander’s active wincmd.ini inside the Dungeon Master Git repository and make subsequent configuration edits automatically appear as Git changes.",
+    "currentlyReportedUserConfig": "C:\\Users\\Localghost\\AppData\\Roaming\\GHISLER\\wincmd.ini",
+    "intendedTrackedFile": "C:\\Unity\\DM\\Tools\\TotalCommander\\wincmd.ini",
+    "preferredImplementation": "Preserve current settings, verify which INI Total Commander actually uses, place a copy in repo, configure Total Commander launcher to use that file directly using the supported /i= parameter. Avoid hard-link dependency because replacing INI may break it.",
+    "tomorrowSteps": [
+      "Verify current active INI file and Total Commander startup/shortcut command, without changing anything.",
+      "Inspect INI for passwords, credentials, tokens, private paths, and other secrets before putting it into Git (especially if repository is shared).",
+      "Create Tools\\TotalCommander inside project, copy the original INI without losing existing settings, and point Total Commander at the Git-tracked configuration (using /i=).",
+      "Restart Total Commander and confirm it reads the intended file; change a harmless setting and verify Git sees the modification.",
+      "Verify normal startup / shortcuts and rollback method; only then consider task implemented."
+    ],
+    "notYetDone": "No config file moved/copied, no hard link created, no shortcut changed, and no Git commit performed.",
+    "workingStyle": "Guide user one step at a time and keep unrelated Unity/CSBwin files untouched."
   }
 }
