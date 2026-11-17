@@ -27138,7 +27138,7 @@ private static void HandleGameViewPointerDown(
     }
 
     int maxFrontDepth = IsWoodRingOrnament(ornament) ? 3
-        : IsHookOrnament(ornament) ? 2
+        : IsHookOrnament(ornament) ? 3
         : IsSlimeOrnament(ornament) ? 3
         : IsManaclesOrnament(ornament) ? 3
         : IsViAltarOrnament(ornament) ? 3 : 0;
@@ -27387,7 +27387,7 @@ private static void HandleGameViewPointerDown(
     }
 
     int maxFrontDepth = IsWoodRingOrnament(ornament) ? 3
-        : IsHookOrnament(ornament) ? 2
+        : IsHookOrnament(ornament) ? 3
         : IsSlimeOrnament(ornament) ? 3
         : IsManaclesOrnament(ornament) ? 3
         : IsViAltarOrnament(ornament) ? 3 : 0;
