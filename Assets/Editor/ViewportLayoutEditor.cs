@@ -38915,7 +38915,7 @@ private static void HandleGameViewPointerDown(
 
   // Explicit, read-only diagnostic: unlike the render-stage logging, this can
   // always be invoked from Tools, even if a depth-stage callback was skipped.
-  [MenuItem("Tools/Hook F3 Trace Current View", false, 182)]
+  [MenuItem("Tools/Hook F3 Trace Current View &h", false, 182)]
   private static void TraceHookF3CurrentViewFromMenu()
   {
     ViewportLayoutEditor window = FindOpenViewEditWindow();
@@ -38939,6 +38939,7 @@ private static void HandleGameViewPointerDown(
     // The existing Hook-only diagnostic prints the exact gate/result at the
     // test pose. The unconditional start/end messages prove menu execution.
     Color32[] scratch = new Color32[PreviewWidth * PreviewHeight];
+    window.hookF3ManualTraceActive = true;
     try
     {
       window.lastHookF3TraceMessage = null;
@@ -38950,6 +38951,10 @@ private static void HandleGameViewPointerDown(
     {
       Debug.LogError("[Hook F3 Manual Trace] Hook F3 test threw: " + error);
     }
+    finally
+    {
+      window.hookF3ManualTraceActive = false;
+    }
   }
 
   // Hook F3 uses the existing F3 slot and code-generated front artwork.
@@ -38957,11 +38962,13 @@ private static void HandleGameViewPointerDown(
   // Diagnostic only: deduplicates messages across repaint operations.
   // Does not alter any visibility, texture, or blitting decisions.
   private string lastHookF3TraceMessage;
+  private bool hookF3ManualTraceActive;
 
   private void TraceHookF3AtTestPose(string message)
   {
-    if (previewDungeonLevel != 1 || previewX != 18 || previewY != 17
-        || previewFacing != DungeonFacing.West)
+    if (!hookF3ManualTraceActive
+        && (previewDungeonLevel != 1 || previewX != 18 || previewY != 17
+            || previewFacing != DungeonFacing.West))
       return;
     if (string.Equals(lastHookF3TraceMessage, message,
         System.StringComparison.Ordinal))
@@ -43750,6 +43757,21 @@ private static void HandleGameViewPointerDown(
         ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
       ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
     }
+    // Read-only manual diagnostics: record the exact coordinates after
+    // accepted calibration and temporary ViewEdit overrides.
+    if (hookF3ManualTraceActive && IsHookOrnament(ornament))
+    {
+      Debug.Log("[Hook F3 Manual Trace] Placement: key=" + key
+          + "; genericProjection=" + hasGenericProjection
+          + "; texture=" + (texture == null ? "null"
+              : texture.width + "x" + texture.height)
+          + "; defaults=" + defaultX + "," + defaultY
+          + "; afterCalibration=" + x + "," + y
+          + "; Y top-down=" + (texture == null ? -1
+              : PreviewHeight - y - texture.height)
+          + "; deltaFromDefault=" + (x - defaultX) + "," + (y - defaultY)
+          + "; mirror=" + mirror);
+    }
     // Opt-in projection changes Y only, after normal calibration.
     // Off immediately restores original approved positions.
     if (TryGetOrnamentProjectionExperimentY(
@@ -43765,6 +43787,12 @@ private static void HandleGameViewPointerDown(
         ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
       }
     }
+    if (hookF3ManualTraceActive && IsHookOrnament(ornament))
+      Debug.Log("[Hook F3 Manual Trace] Final draw: key=" + key
+          + "; X=" + x + "; Y(bottom-up)=" + y
+          + "; Y(top-down)=" + (PreviewHeight - y - texture.height)
+          + "; size=" + texture.width + "x" + texture.height
+          + "; mirror=" + mirror);
     BlitPieceIntoPreview(pixels, texture, x, y, mirror);
   }
 
