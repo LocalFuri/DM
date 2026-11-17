@@ -10,7 +10,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-// CHATGPT_BUILD_F1_MINIMAP_ALGORITHM_STAGE1_20260830_AB
+// CHATGPT_BUILD_F1_MINIMAP_ALGORITHM_STAGE1_20260830_AC
 public class ViewportLayoutEditor : EditorWindow
 {
   private static readonly int[] SnapValues = { 1, 8 };
@@ -38958,6 +38958,67 @@ private static void HandleGameViewPointerDown(
           + scaled.height + "; nontransparentPixels=" + opaque
           + "; localBoundsBottomUp=" + (opaque == 0 ? "empty"
               : minX + "," + minY + ".." + maxX + "," + maxY));
+
+      // Read-only pixel-source export for the DOS comparison. This does not
+      // replace sprites, update calibration, or alter the live framebuffer.
+      // Unity texture rows and source coordinates here are bottom-up.
+      if (source != null && source.isReadable)
+      {
+        try
+        {
+          string exportFolder = "Assets/Editor";
+          string csvPath = exportFolder + "/Hook_F2_PixelTrace.csv";
+          string pngPath = exportFolder + "/Hook_F2_Generated_19x18.png";
+          Color32[] originalPixels = source.GetPixels32();
+          int stepX = ((source.width << 10) / scaled.width) << 6;
+          int stepY = ((source.height << 10) / scaled.height) << 6;
+          int startX = (stepX >> 1) + 0x7fff;
+          int startY = (stepY >> 1) + 0x5700; // Match F2-only experimental Y bias.
+          Color32[] brightPalette = DungeonViewportLightPalettes[0];
+          System.Text.StringBuilder csv = new System.Text.StringBuilder();
+          csv.AppendLine("targetX,targetYBottomUp,targetYTopDown,sourceX,sourceYBottomUp,sourcePaletteIndex,mappedPaletteIndex,sourceRGBA,generatedRGBA");
+          for (int ty = 0; ty < scaled.height; ty++)
+          {
+            int sy = Mathf.Clamp((startY + ty * stepY) >> 16,
+                0, source.height - 1);
+            for (int tx = 0; tx < scaled.width; tx++)
+            {
+              int sx = Mathf.Clamp((startX + tx * stepX) >> 16,
+                  0, source.width - 1);
+              Color32 src = originalPixels[sy * source.width + sx];
+              Color32 dst = texels[ty * scaled.width + tx];
+              int paletteIndex = src.a == 0 ? -1
+                  : FindExactDmPaletteIndexOrNearest(src, brightPalette);
+              int mappedIndex = paletteIndex < 0 ? -1
+                  : Mathf.Clamp(WallOrnamentMediumColorMap[paletteIndex], 0, 15);
+              csv.Append(tx).Append(',').Append(ty).Append(',')
+                  .Append(scaled.height - 1 - ty).Append(',')
+                  .Append(sx).Append(',').Append(sy).Append(',')
+                  .Append(paletteIndex).Append(',').Append(mappedIndex).Append(',')
+                  .Append(src.r).Append(':').Append(src.g).Append(':')
+                  .Append(src.b).Append(':').Append(src.a).Append(',')
+                  .Append(dst.r).Append(':').Append(dst.g).Append(':')
+                  .Append(dst.b).Append(':').Append(dst.a).AppendLine();
+            }
+          }
+          System.IO.File.WriteAllText(csvPath, csv.ToString());
+          System.IO.File.WriteAllBytes(pngPath, scaled.EncodeToPNG());
+          // Also export the unmodified original F1 source. The sampled-pixel
+          // CSV alone cannot reveal neighboring rows that DOS may select.
+          // Export-only: no changes to artwork, caches, or live rendering.
+          string sourcePngPath = exportFolder + "/Hook_F2_Original_Source_32x28.png";
+          System.IO.File.WriteAllBytes(sourcePngPath, source.EncodeToPNG());
+          Debug.Log("[Hook F2 Trace] Original F1 source export: " + sourcePngPath);
+          Debug.Log("[Hook F2 Trace] Pixel exports: " + csvPath
+              + " and " + pngPath + "; rows="
+              + (scaled.width * scaled.height) + "; stepX=" + stepX
+              + "; stepY=" + stepY + "; biasX=0x7FFF; biasY=0x5700 (test)");
+        }
+        catch (System.Exception exportError)
+        {
+          Debug.LogError("[Hook F2 Trace] Pixel export failed: " + exportError);
+        }
+      }
     }
     else
       Debug.LogWarning("[Hook F2 Trace] Generated F2 texture unavailable/unreadable.");
@@ -40593,8 +40654,8 @@ private static void HandleGameViewPointerDown(
         HookFrontWallOrnamentSet.f2.width,
         HookFrontWallOrnamentSet.f2.height,
         WallOrnamentMediumColorMap,
-        "Hook F2 ShrinkBLT zero-bias TEST from F1",
-        roundBiasOverride: 0);
+        "Hook F2 ShrinkBLT from F1",
+        0x5700); // F2-only DOS source-row sampling experiment; F3 unaffected.
 
     return cachedHookGeneratedF2FrontTexture;
   }

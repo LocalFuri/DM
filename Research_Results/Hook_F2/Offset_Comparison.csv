@@ -1,0 +1,4 @@
+Test,VerticalBias,OpaqueRGBMatches,OpaquePixels,Notes
+Original,0x7FFF,154,193,Current established baseline
+Zero,0x0000,163,191,Changes alpha coverage
+BestTest,0x5700,169,193,Best found at fixed horizontal source selection; tied with other offsets
