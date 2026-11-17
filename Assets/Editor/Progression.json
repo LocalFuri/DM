@@ -2084,5 +2084,118 @@
       "All new/changed delivery timestamps use Windows local Europe/Berlin time.",
       "Research must stay in Git-backed Research_Results; CSBwin_Extractions is volatile."
     ]
+  },
+  "unity_extra_tools_seven_day_progression_rule_20261117": {
+    "category": "Permanent project operating rule — Unity Editor extra tools retention",
+    "date": "2026-11-17",
+    "recordedAtLocal": "2026-11-17T19:08:02+01:00",
+    "status": "ACTIVE — user explicitly requested 2026-11-17",
+    "instruction": "Every newly introduced extra Unity Editor tool / diagnostic command must be recorded in Assets/Editor/Progression.json with its exact Tools menu path, purpose, implementation date (when verified), and retention deadline; keep it presented in daily Progression summaries for AT LEAST 7 calendar days after implementation, including when focus shifts. Do not silently omit or prune an item sooner. Keep tools in top-level Tools menu per existing 2026-11-08 rule.",
+    "unknownDatePolicy": "If actual implementation date is not independently verified, mark it unknown; use first observed/recorded date as conservative retention start and never invent an implementation date.",
+    "dailySummaryRequirement": "Include an Extra Unity Editor Tools section listing tracked tools until their notBefore date has passed. Expiration of seven days does not imply automatic tool deletion."
+  },
+  "unity_extra_tools_retention_register_20261117": {
+    "date": "2026-11-17",
+    "recordedAtLocal": "2026-11-17T19:08:02+01:00",
+    "note": "Initial snapshot from observed Tools menu and actual MenuItem annotations. Some entries are established project tools, not necessarily newly implemented. The precise original implementation dates were not validated.",
+    "retentionNotBefore": "2026-11-24",
+    "tools": [
+      {
+        "menuPath": "Tools/Hook F3 Trace Current View",
+        "purpose": "Trace current Hook F3 rendering in Unity Console; relevant to current F3 Y-offset investigation",
+        "originalImplementationDate": "unverified",
+        "firstRecordedForRetention": "2026-11-17",
+        "keepVisibleInSummariesThrough": "2026-11-24",
+        "evidence": "current ViewportLayoutEditor.cs and screenshot"
+      },
+      {
+        "menuPath": "Tools/CSBwin Hook G2 Compare Pixels",
+        "purpose": "Compare CSBwin Hook G2 pixel output; diagnostic",
+        "originalImplementationDate": "unverified",
+        "firstRecordedForRetention": "2026-11-17",
+        "keepVisibleInSummariesThrough": "2026-11-24",
+        "evidence": "current ViewportLayoutEditor.cs and screenshot"
+      },
+      {
+        "menuPath": "Tools/Hook Perspective Experiment",
+        "purpose": "Experimental Hook perspective diagnostic",
+        "originalImplementationDate": "unverified",
+        "firstRecordedForRetention": "2026-11-17",
+        "keepVisibleInSummariesThrough": "2026-11-24",
+        "evidence": "Unity Tools-menu screenshot"
+      },
+      {
+        "menuPath": "Tools/Apple Video Comparison",
+        "purpose": "Apple throw reference-video comparison",
+        "originalImplementationDate": "unverified",
+        "firstRecordedForRetention": "2026-11-17",
+        "keepVisibleInSummariesThrough": "2026-11-24",
+        "evidence": "Unity Tools-menu screenshot"
+      },
+      {
+        "menuPath": "Tools/Apply Pixel-Art Import Settings",
+        "purpose": "Apply pixel-art import settings",
+        "originalImplementationDate": "unverified",
+        "firstRecordedForRetention": "2026-11-17",
+        "keepVisibleInSummariesThrough": "2026-11-24",
+        "evidence": "Unity Tools-menu screenshot"
+      },
+      {
+        "menuPath": "Tools/Fix Sword Original F1 Registration",
+        "purpose": "Repair original sword F1 registration",
+        "originalImplementationDate": "unverified",
+        "firstRecordedForRetention": "2026-11-17",
+        "keepVisibleInSummariesThrough": "2026-11-24",
+        "evidence": "Unity Tools-menu screenshot"
+      },
+      {
+        "menuPath": "Tools/Rename Original Floor Art F0 to F1",
+        "purpose": "Rename floor-art naming F0 to F1",
+        "originalImplementationDate": "unverified",
+        "firstRecordedForRetention": "2026-11-17",
+        "keepVisibleInSummariesThrough": "2026-11-24",
+        "evidence": "Unity Tools-menu screenshot"
+      },
+      {
+        "menuPath": "Tools/Check Original Ground Items",
+        "purpose": "Check original ground item artwork entries",
+        "originalImplementationDate": "unverified",
+        "firstRecordedForRetention": "2026-11-17",
+        "keepVisibleInSummariesThrough": "2026-11-24",
+        "evidence": "current ViewportLayoutEditor.cs and screenshot"
+      },
+      {
+        "menuPath": "Tools/Restore Original Ground Items",
+        "purpose": "Restore original ground item artwork entries",
+        "originalImplementationDate": "unverified",
+        "firstRecordedForRetention": "2026-11-17",
+        "keepVisibleInSummariesThrough": "2026-11-24",
+        "evidence": "current ViewportLayoutEditor.cs and screenshot"
+      },
+      {
+        "menuPath": "Tools/Audio Settings",
+        "purpose": "Audio settings editor",
+        "originalImplementationDate": "unverified",
+        "firstRecordedForRetention": "2026-11-17",
+        "keepVisibleInSummariesThrough": "2026-11-24",
+        "evidence": "current ViewportLayoutEditor.cs and screenshot"
+      },
+      {
+        "menuPath": "Tools/ViewEdit",
+        "purpose": "Viewport layout editor",
+        "originalImplementationDate": "unverified",
+        "firstRecordedForRetention": "2026-11-17",
+        "keepVisibleInSummariesThrough": "2026-11-24",
+        "evidence": "current ViewportLayoutEditor.cs and screenshot"
+      },
+      {
+        "menuPath": "Tools/Dungeon Feature Editor",
+        "purpose": "Dungeon feature editor",
+        "originalImplementationDate": "unverified",
+        "firstRecordedForRetention": "2026-11-17",
+        "keepVisibleInSummariesThrough": "2026-11-24",
+        "evidence": "Unity Tools-menu screenshot"
+      }
+    ]
   }
 }

@@ -10,7 +10,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-// CHATGPT_BUILD_F1_MINIMAP_ALGORITHM_STAGE1_20260830_AA
+// CHATGPT_BUILD_F1_MINIMAP_ALGORITHM_STAGE1_20260830_AB
 public class ViewportLayoutEditor : EditorWindow
 {
   private static readonly int[] SnapValues = { 1, 8 };
