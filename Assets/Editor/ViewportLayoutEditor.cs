@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -328,13 +328,11 @@ public class ViewportLayoutEditor : EditorWindow
   private const int HookD1FrontY = 100;
 
   // Hook / coordinate-set-0 front at distance 2.
-  // The original slot is 22x18 for a 32x28 source. Our Hook_Front_28x28
-  // asset is the tight crop of that source (2 transparent columns removed
-  // on each side), so its visible F2 result is 19x18 and starts one pixel
-  // inside the original slot.
+  // CSBwin F2 front-wall descriptor uses a 22x18 destination for the
+  // original 32x28 source. Keep the existing F2 X/Y until the visual test.
   private const int HookD2FrontX = 103;
   private const int HookD2FrontY = 108;
-  private const int HookD2FrontWidth = 19;
+  private const int HookD2FrontWidth = 22;
   private const int HookD2FrontHeight = 18;
 
   // Coordinate-set-0 front at distance 3. The original box is 16x12.
@@ -38968,12 +38966,13 @@ private static void HandleGameViewPointerDown(
         {
           string exportFolder = "Assets/Editor";
           string csvPath = exportFolder + "/Hook_F2_PixelTrace.csv";
-          string pngPath = exportFolder + "/Hook_F2_Generated_19x18.png";
+          string pngPath = exportFolder + "/Hook_F2_Generated_"
+              + scaled.width + "x" + scaled.height + ".png";
           Color32[] originalPixels = source.GetPixels32();
           int stepX = ((source.width << 10) / scaled.width) << 6;
           int stepY = ((source.height << 10) / scaled.height) << 6;
           int startX = (stepX >> 1) + 0x7fff;
-          int startY = (stepY >> 1) + 0x5700; // Match F2-only experimental Y bias.
+          int startY = (stepY >> 1) + 0x7fff; // Match the restored F2 baseline.
           Color32[] brightPalette = DungeonViewportLightPalettes[0];
           System.Text.StringBuilder csv = new System.Text.StringBuilder();
           csv.AppendLine("targetX,targetYBottomUp,targetYTopDown,sourceX,sourceYBottomUp,sourcePaletteIndex,mappedPaletteIndex,sourceRGBA,generatedRGBA");
@@ -39012,7 +39011,7 @@ private static void HandleGameViewPointerDown(
           Debug.Log("[Hook F2 Trace] Pixel exports: " + csvPath
               + " and " + pngPath + "; rows="
               + (scaled.width * scaled.height) + "; stepX=" + stepX
-              + "; stepY=" + stepY + "; biasX=0x7FFF; biasY=0x5700 (test)");
+              + "; stepY=" + stepY + "; biasX=0x7FFF; biasY=0x7FFF (baseline)");
         }
         catch (System.Exception exportError)
         {
@@ -40654,8 +40653,7 @@ private static void HandleGameViewPointerDown(
         HookFrontWallOrnamentSet.f2.width,
         HookFrontWallOrnamentSet.f2.height,
         WallOrnamentMediumColorMap,
-        "Hook F2 ShrinkBLT from F1",
-        0x5700); // F2-only DOS source-row sampling experiment; F3 unaffected.
+        "Hook F2 ShrinkBLT from F1"); // Default medium-distance bias 0x7FFF; F3 unaffected.
 
     return cachedHookGeneratedF2FrontTexture;
   }

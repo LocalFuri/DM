@@ -1,0 +1,3 @@
+graphicID,graphicOrdinal,relativePosition,rectX1,rectX2,rectY1,rectY2,bitmapByteWidth,bitmapHeight,destinationWidth,destinationHeight,extended,derivedIndex,cacheFresh,exportStatus,bytesWritten,rawFile,mediumColorMapHex
+130,2,8,102,123,38,55,16,18,22,18,0,11,1,written,288,CSBwin_F2_G130_R8_Derived.bin,00780A1E281E3C46325A646E00148C82
+130,2,8,102,123,38,55,16,18,22,18,0,11,0,already_captured,0,,00780A1E281E3C46325A646E00148C82

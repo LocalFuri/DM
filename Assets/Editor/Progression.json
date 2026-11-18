@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-17",
+  "date": "2026-11-18",
   "todo_manacles_dos_f1_s2_20261109": {
     "category": "To do List",
     "priority": 0,
@@ -38,7 +38,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-17 end of day: Hook F3 DOS-verified and protected. Hook F2 0x5700 vertical-sampling test not approved; keep 0x7FFF baseline. Next: research DOS F2 vertical source sampling without renderer edits.",
+  "checkpoint": "2026-11-18 end of day: CSBwin Hook F2 V4 final-blit diagnostic working; graphic 130 at relative position 8 drawn X102–123 Y38–55, before/after viewport captures saved. Next: decode viewport captures, compare actual pixels with DOS, CSBwin and Unity, then isolate F2-only correction. Unity 22x18 change remains experimental; F3 protected.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -94,6 +94,8 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
+    "AUTHORITATIVE NEXT RESUME 2026-11-19: Hook F2 — decode CSBwin V4 final viewport before/after captures in Hook_F2(2).zip; verify changed pixels and compare to DOS, CSBwin live and Unity; identify scaling/transparent-pad issue before any new Unity change. Current 22x18 0x7FFF Unity patch is experimental, visibly too big/low. Keep approved Hook F3 untouched. See end_of_day_20261118_hook_f2_finalblit_resume_20261119.",
+    "Total Commander wincmd.ini manual-copy workflow already chosen; automated /i= plan superseded. No additional setup work unless requested.",
     "AUTHORITATIVE NEXT RESUME 2026-11-18: Hook F2 — reconstruct DOS vertical source-row/ShrinkBLT sampling; keep 0x7FFF F2 baseline; 0x5700 RGB 215/342 vs baseline 213/342 is an unapproved experiment; inspect research-only data at C:\\Unity\\DM\\Research_Results\\Hook_F2\\. Protect DOS-perfect Hook F3 14×12 X105 Unity bottom-up Y117. See end_of_day_20261117_hook_f2_resume_20261118; older items below are historical, not the immediate task.",
     "TOP PRIORITY ON RESUME 2026-11-17: Hook F3 vertical mismatch — Unity Hook approximately 4 px lower than CSBwin at Level 1 (18,17) West; Hook #70 on (15,17) East; texture and X/scaling correct. Trace CSBwin Y placement vs Unity F3 destination and calibration offsets. DO NOT change scaling, V17, or approved Hook/Manacles; do not blindly subtract 4.",
     "CURRENT TOP PRIORITY 2026-11-16: CSBwin ornaments — inspect Cursor's graphic 0x22e table research; reprocess Ring G4 using exact source offsets; compare Hook/Ring output against the live CSBwin viewport. Research backed up to GitHub; do not change approved Unity calibration yet.",
@@ -2380,12 +2382,12 @@
   },
   "todo_20261118_total_commander_wincmd_git_integration": {
     "createdAtLocal": "2026-11-17T23:41:25+01:00",
-    "status": "PENDING — agreed November 17; do not claim implemented",
-    "priority": "Tomorrow November 18, 2026, after or alongside Hook F2 research; separate configuration task",
+    "status": "SUPERSEDED — manual DM project copy already created by user; automatic integration cancelled 2026-11-18",
+    "priority": "Closed as automatic configuration task; do not schedule again",
     "goal": "Store Total Commander’s active wincmd.ini inside the Dungeon Master Git repository and make subsequent configuration edits automatically appear as Git changes.",
     "currentlyReportedUserConfig": "C:\\Users\\Localghost\\AppData\\Roaming\\GHISLER\\wincmd.ini",
     "intendedTrackedFile": "C:\\Unity\\DM\\Tools\\TotalCommander\\wincmd.ini",
-    "preferredImplementation": "Preserve current settings, verify which INI Total Commander actually uses, place a copy in repo, configure Total Commander launcher to use that file directly using the supported /i= parameter. Avoid hard-link dependency because replacing INI may break it.",
+    "preferredImplementation": "User manually copies/transfers wincmd.ini to the DM project and updates it manually. Do not configure /i= or automatic active-config relocation unless explicitly requested.",
     "tomorrowSteps": [
       "Verify current active INI file and Total Commander startup/shortcut command, without changing anything.",
       "Inspect INI for passwords, credentials, tokens, private paths, and other secrets before putting it into Git (especially if repository is shared).",
@@ -2394,6 +2396,65 @@
       "Verify normal startup / shortcuts and rollback method; only then consider task implemented."
     ],
     "notYetDone": "No config file moved/copied, no hard link created, no shortcut changed, and no Git commit performed.",
-    "workingStyle": "Guide user one step at a time and keep unrelated Unity/CSBwin files untouched."
+    "workingStyle": "Guide user one step at a time and keep unrelated Unity/CSBwin files untouched.",
+    "supersededAtLocal": "2026-11-18T23:03:48+01:00",
+    "manualWorkflowConfirmed": true
+  },
+  "end_of_day_20261118_hook_f2_finalblit_resume_20261119": {
+    "category": "Authoritative end-of-day checkpoint and next actions",
+    "date": "2026-11-18",
+    "savedAtLocal": "2026-11-18T23:03:48+01:00",
+    "timezone": "Europe/Berlin",
+    "status": "END OF DAY — authoritative resume for Thursday November 19, 2026; supersedes older Hook F2 next-action instructions",
+    "userConfirmedReference": {
+      "level": 1,
+      "playerX": 1,
+      "playerY": 3,
+      "facing": "N",
+      "unityHookOrnamentNumber": 43,
+      "ornamentTile": [
+        1,
+        1
+      ],
+      "ornamentFace": "South",
+      "unityPerspective": "F2",
+      "note": "Supersedes earlier Level 1 (18,17) West and interim Level 1 (1,3) West positions."
+    },
+    "resultsToday": [
+      "Original DOS, live CSBwin and Unity Hook F2 screenshots supplied and compared at reference position. The orange part measured 12x6 DOS, 11x6 CSBwin, 15x9 Unity initial 19x18, and 18x10 Unity experimental 22x18. Compare image coordinate frames carefully; these are orange bounding boxes, not full bitmap dimensions.",
+      "Unity Hook F2 trace confirmed MATCH ornament #43 at (1,1) South; generic F2 projection; source 32x28 and initially generated 19x18 at experimental biasY=0x5700. Existing viewport screenshot vertical-offset conversion was checked.",
+      "CSBwin source DrawWallDecoration and ShrinkBLT examined. ShrinkBLT sampling starts with bias 0x7FFF. Descriptors at F2 report source 32x28, destination rectangle 22x18, medium palette; do not infer visible motif size from destination alone.",
+      "Current-session CSBwin logging identifies graphicID=130, ordinal=2, relativePosition=8 as the exported Hook candidate, replacing earlier speculative identification of graphic 132. Graphic 132 entries in previous cumulative logs were not definitive for current session.",
+      "V3 derived bitmap export succeeded: CSBwin_F2_G130_R8_Derived.bin, 288 bytes. It did not by itself prove which pixels were blitted to final viewport.",
+      "Unity F2-only patch Hook_F2_Unity_22x18_Baseline_20261118.zip installed and recompilation verified from Console. Changed F2 generated texture to 22x18 and biasY back to 0x7FFF; trace reports 211 nontransparent pixels; kept F2 X/Y unchanged. Visual review showed Hook orange area grew to 18x10 and was still too low versus DOS. EXPERIMENTAL, NOT APPROVED. F3 unaffected.",
+      "CSBwin V4 diagnostic was initially absent from user source file (V3 still installed), corrected with Hook_F2_V4_Install_Confirmed.zip. User subsequently supplied Hook_F2(2).zip containing seven current diagnostic files timestamped 22:54:26, confirming V4 executed.",
+      "V4 CSBwin_F2_FinalBlit_V4.csv directly records graphicID=130, ordinal=2, relativePosition=8, rectX1=102,rectX2=123,rectY1=38,rectY2=55,srcOffsetX=0,srcOffsetY=0,srcByteWidth=16,dstByteWidth=112,transparentIndex=10,derivedIndex=11; beforeStatus and afterStatus written, 15232 bytes each.",
+      "V4 before and after viewport captures are 224x136 packed-planar snapshots: CSBwin_F2_G130_Viewport_Before_V4.bin and ...After_V4.bin. Previous result reported 220 changed screen pixels, bounded X104–121 Y38–55; this should be independently reconfirmed while decoding before making fixes.",
+      "Total Commander plan changed by user: wincmd.ini copy already placed in DM project; manual transfer/update chosen. Automatic /i= configuration relocation cancelled; do not pursue unless user requests."
+    ],
+    "filesToResume": {
+      "authoritativeLatestDiagnosticZip": "Hook_F2(2).zip",
+      "v4SourcePatch": "Hook_F2_V4_Install_Confirmed.zip",
+      "unityExperimentalPatch": "Hook_F2_Unity_22x18_Baseline_20261118.zip",
+      "comparisonImage": "Hook_F2_Comparison_20261118.png",
+      "diagnosticsDirectoryWindows": "C:\\Unity\\DM\\Research_Results\\Hook_F2\\",
+      "sourceProgressionBase": "Progression(20261117-234125)(1).zip"
+    },
+    "tomorrowFirstTask": "Decode the V4 CSBwin before/after 15,232-byte packed planar viewport captures into per-pixel indices, isolate the final Hook blit via exact pixel difference, and align with DOS and Unity reference screenshots. Determine why bitmap 22x18 has a much smaller visible orange motif; only then propose the smallest F2-specific reversible Unity correction.",
+    "tomorrowProcedure": [
+      "Read this checkpoint and the seven files in Hook_F2(2).zip; no more CSBwin rebuilds/screenshots unless decoding exposes missing information.",
+      "Parse V4 CSV (graphicID 130 relativePosition 8 X102–123 Y38–55) and decode before/after planar captures; verify viewport storage layout and compare changed indexed pixels rather than estimating by orange color only.",
+      "Compare reconstructed on-screen Hook with original DOS screenshot image(20261118-181016).png, CSBwin image(20261118-211637).png, Unity experimental image(20261118-213238).png, and available Unity Hook F2 texture/trace. Distinguish screenshot coordinate conventions.",
+      "If necessary inspect color mapping and palette transformation in CSBwin code and original Hook 32x28 artwork. Do not assume generic 22x18 target is correct just because CSBwin uses a 22x18 destination rectangle.",
+      "Prepare single localized F2-only renderer correction AFTER pixel cause established. Do not modify F3, V17, approved Manacles, other ornaments, door handling, or unrelated systems.",
+      "Confirm in Unity once at Level 1 (1,3) North. Do not mark Hook F2 approved before explicit user verification."
+    ],
+    "protected": {
+      "HookF3": "Original DOS-approved Hook F3 remains 14x12 X105 Unity bottom-up Y117; do not change or reverify absent discrepancy.",
+      "UnityF2": "22x18 0x7FFF is experimental and visibly worse than DOS; do not call it a fix.",
+      "doors": "User has not implemented door rendering; movement north at test location blocked; do not change doors/movement for Hook research.",
+      "UnityTools": "Tools > Hook F2 Trace Current View (Alt+J) and Tools > Hook F3 Trace Current View (Alt+H) remain tracked in the seven-day retention register; no new Unity Tools entry added in this session."
+    },
+    "certaintyNotes": "CSV and files verify V4 execution, sizes and draw metadata. Reported 220 changed pixels is from prior comparison and must be corroborated in byte decoding. CSBwin source export graphic 130 corresponds to rendered decoration at test scene, but do not conflate full derived rectangle with orange Hook motif."
   }
 }
