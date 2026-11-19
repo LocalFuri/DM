@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-18",
+  "date": "2026-11-19",
   "todo_manacles_dos_f1_s2_20261109": {
     "category": "To do List",
     "priority": 0,
@@ -38,7 +38,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-18 end of day: CSBwin Hook F2 V4 final-blit diagnostic working; graphic 130 at relative position 8 drawn X102–123 Y38–55, before/after viewport captures saved. Next: decode viewport captures, compare actual pixels with DOS, CSBwin and Unity, then isolate F2-only correction. Unity 22x18 change remains experimental; F3 protected.",
+  "checkpoint": "2026-11-19 END OF DAY: Hook F2 and F3 visually approved from native DOS 28x28 front source; Manacles F2 remains NOT approved, investigation into exact DOS source-dimension, scaling and placement rules. Resume with source-level investigation, no Unity edits yet.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -94,21 +94,11 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "AUTHORITATIVE NEXT RESUME 2026-11-19: Hook F2 — decode CSBwin V4 final viewport before/after captures in Hook_F2(2).zip; verify changed pixels and compare to DOS, CSBwin live and Unity; identify scaling/transparent-pad issue before any new Unity change. Current 22x18 0x7FFF Unity patch is experimental, visibly too big/low. Keep approved Hook F3 untouched. See end_of_day_20261118_hook_f2_finalblit_resume_20261119.",
-    "Total Commander wincmd.ini manual-copy workflow already chosen; automated /i= plan superseded. No additional setup work unless requested.",
-    "AUTHORITATIVE NEXT RESUME 2026-11-18: Hook F2 — reconstruct DOS vertical source-row/ShrinkBLT sampling; keep 0x7FFF F2 baseline; 0x5700 RGB 215/342 vs baseline 213/342 is an unapproved experiment; inspect research-only data at C:\\Unity\\DM\\Research_Results\\Hook_F2\\. Protect DOS-perfect Hook F3 14×12 X105 Unity bottom-up Y117. See end_of_day_20261117_hook_f2_resume_20261118; older items below are historical, not the immediate task.",
-    "TOP PRIORITY ON RESUME 2026-11-17: Hook F3 vertical mismatch — Unity Hook approximately 4 px lower than CSBwin at Level 1 (18,17) West; Hook #70 on (15,17) East; texture and X/scaling correct. Trace CSBwin Y placement vs Unity F3 destination and calibration offsets. DO NOT change scaling, V17, or approved Hook/Manacles; do not blindly subtract 4.",
-    "CURRENT TOP PRIORITY 2026-11-16: CSBwin ornaments — inspect Cursor's graphic 0x22e table research; reprocess Ring G4 using exact source offsets; compare Hook/Ring output against the live CSBwin viewport. Research backed up to GitHub; do not change approved Unity calibration yet.",
-    "CURRENT TOP PRIORITY 2026-11-13: Return to Unity Manacles S3 calibration. Check why S3 X/Y is not adjustable in ViewEdit and fix with the smallest source change; preserve approved S2/F1/F3.",
-    "Original DOS reference now copied to C:\\Unity\\DM\\DOS_Reference; Progression.json stays under C:\\Unity\\DM\\Assets\\Editor.",
-    "DOSBox-X reverse engineering discontinued; no more Stage 4B build troubleshooting unless user explicitly asks.",
-    "NEXT RESUME PRIORITY (2026-11-10): Obtain original FTL DOS lossless 320x200 PNG Manacles F1 and Left S2 (Level 0, player 4,11 North for S2), compare pixels/scaling, then consider changes; do not edit renderer before comparison.",
-    "Preserve user-accepted F2 scaling and wall rendering. Do not chase pixel details for Bread/Apple/Cheese/Club.",
-    "Inspect latest F2 POSITION TRACE for misaligned centred floor item; distinguish true floor-cell anchor from mortar-joint visual before generic X correction.",
-    "After approved F2 visual ground-contact check, commit Unity source and Progression.json to Git.",
-    "Then develop F3/S1/S2/S3 using generic CSBwin scaling and depth/cell ground-contact model; no per-item offsets.",
-    "Keep old pending ViewEdit Delay On/Off and Dungeon Features F1 item navigation patches unverified until explicitly tested.",
-    "Wall to-do: Level 0, tile (11,4), West — inspect/address wall (specific change to confirm)."
+    "AUTHORITATIVE NEXT RESUME 2026-11-20: Manacles F2 only — determine original DOS F2 scaling/placement mathematically using native DOS Manacles F1 92x52, original DOS screenshot, and DOS-specific renderer source; do not make Manacles-specific hardcoded corrections from visual fitting.",
+    "Inspect DOS-specific isDrawnWallOrnAnAlcove / blitToBitmapShrinkWithPalChange in merged ScummVM DOS-support PR #7777 or original DOS executable; establish whether DOS replaces F2 destination record or only uses native DOS source width/height. Tie actual Manacles ornament 36 / coordinate set 1 / F2 center position 8 to DOS rendering parameters.",
+    "Cross-validate any source-derived Manacles F2 target rectangle, sampling and palette/transparency against 224x136 same-view Unity and DOS screenshots. Earlier 60x38 at X82/Y39 bias=0 is a screenshot-fit candidate only and must not become a special case without independent rule.",
+    "After defensible general rule exists, prepare a minimal isolated Manacles F2 test, preserve already approved Hook F2/F3 and existing Manacles F1/S2/S3 and wall/V17 code. Obtain user Unity compile and visual approval.",
+    "Only after Manacles F2 approval proceed to Manacles F3; then assess generic DOS-native source path across ornaments. Hook side views deferred by user."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -2456,5 +2446,169 @@
       "UnityTools": "Tools > Hook F2 Trace Current View (Alt+J) and Tools > Hook F3 Trace Current View (Alt+H) remain tracked in the seven-day retention register; no new Unity Tools entry added in this session."
     },
     "certaintyNotes": "CSV and files verify V4 execution, sizes and draw metadata. Reported 220 changed pixels is from prior comparison and must be corroborated in byte decoding. CSBwin source export graphic 130 corresponds to rendered decoration at test scene, but do not conflate full derived rectangle with orange Hook motif."
+  },
+  "end_of_day_20261119_hook_approved_manacles_f2_resume_20261120": {
+    "category": "Authoritative end-of-day checkpoint and next actions",
+    "date": "2026-11-19",
+    "savedAtLocal": "2026-11-19T22:33:53+01:00",
+    "timezone": "Europe/Berlin",
+    "status": "END OF DAY — authoritative resume for Friday November 20, 2026. Supersedes older Hook F2/F3 development next actions and speculative Manacles F2 correction proposals.",
+    "sourceOfTruth": {
+      "fullDisplay": "320x200",
+      "dungeonViewport": "224x136",
+      "viewportTopInFullDisplay": 33,
+      "coordinateConvention": "viewport top-left X right/Y down, Unity screen Y bottom-up",
+      "sourceGraphics": "original PC DOS GRAPHICS.DAT preferred for front F1 ornaments; storage padding must not dictate native artwork dimensions"
+    },
+    "hookFinalApproved": {
+      "status": "USER APPROVED Hook F2 and F3 on Nov 19; protect both from regression",
+      "originalDOSfrontSource": "Assets/Art/Ornaments/Hook_F1_DOS_28x28.png",
+      "sourceDimensions": [
+        28,
+        28
+      ],
+      "CSBwinLegacySource": "Hook_F1_32x28.png with 2 transparent columns on left and right; no longer the source for approved Hook F2/F3 paths",
+      "F2": {
+        "outputSize": [
+          18,
+          18
+        ],
+        "viewportTopLeft": [
+          103,
+          38
+        ],
+        "scaling": "GenerateDmScaledWallDecoration / ShrinkBLT using native DOS 28x28, bias=0, topDown=true, medium palette",
+        "source": "native DOS 28x28 no virtual padding",
+        "result": "matching DOS position/shape/width/height; three brown pixel differences explicitly accepted by user; no hand-edit pixels or manual X/Y calibration",
+        "trace": "Tools > Hook F2 Trace Current View: source 28x28, generated 18x18, 191 nontransparent pixels, final bottom-up X103/Y112 before viewport-origin fix, delta=0; subsequent +1 framebuffer origin correction compiled and screenshot verified; Y must derive from viewport top=33, not manual offset",
+        "verification": "User provided final Unity vs DOS screenshot at 224x136 after viewport-origin fix; visually approved."
+      },
+      "F3": {
+        "outputSize": [
+          14,
+          12
+        ],
+        "source": "same native DOS Hook F1 28x28 file as F2; virtual 2-column transparent padding per side used mathematically for legacy F3 source sampling",
+        "result": "user-provided Unity vs PC DOS 224x136 screenshots matched visible Hook brown and black pixels exactly: 55 brown pixels, 29 black, brown X106..117 Y40..45, 0 Hook pixel differences",
+        "verification": "Unity compilation successful after Hook_F3_DOS_Source_VirtualPadding_20261119.zip; user screenshots 20261119-200406 and 200530 compared; preserve current approved renderer"
+      },
+      "sourceCodeBaseline": "Hook_F3_DOS_Source_VirtualPadding_20261119.zip installed & compiled; existing F2 viewport origin correction retained (Hook_F2_Viewport_Origin_Correction_20261119.zip). Do not assume original ViewportLayoutEditor(20261119-173237).zip is latest working source.",
+      "designPolicy": "Use current Hook F2/F3 as a protected prototype for common DOS-native-ornament renderer. Generic method may use perspective data and virtual padding where justified; do not embed hand-drawn F2/F3 or per-ornament hacks. Generic rule not yet proven across other ornaments.",
+      "sideViews": "Hook S1/S2/S3 intentionally postponed; user will compare Hook side positions later."
+    },
+    "manaclesF2Current": {
+      "status": "IN RESEARCH; Unity current F2 visibly differs from original DOS; no Unity Manacles source or asset modifications have been made in this phase",
+      "sourceArtwork": {
+        "DOS_GRAPHICS_DAT": "GRAPHICS(20261119-201903).DAT",
+        "DOSfrontResource": 332,
+        "DOSfrontDimensions": [
+          92,
+          52
+        ],
+        "UnitySource": "Assets/Art/Ornaments/Manacles_F1.png",
+        "sourcePolicy": "User confirmed original DOS image is 92x52 (NOT 95x52, NOT 96x56); ignore inherited 96x56 legacy dimensions as source image size; original DOS resource 331 is side 32x42, deferred"
+      },
+      "referenceScreenshots": {
+        "unity": "image(20261119-203653).png",
+        "dos": "image(20261119-203816).png",
+        "viewport": [
+          224,
+          136
+        ]
+      },
+      "observedScreenshot": {
+        "unityBrownPixels": 251,
+        "dosBrownPixels": 237,
+        "unityBrownBoundingBox": [
+          80,
+          42,
+          141,
+          55
+        ],
+        "dosBrownBoundingBox": [
+          83,
+          44,
+          140,
+          56
+        ],
+        "interpretation": "Current Unity visible Manacles is too large/high/left compared with DOS; color and black chain differences also visible; values measured on screenshots, not proof of original destination rectangle."
+      },
+      "currentUnityPath": {
+        "function": "GetManaclesGeneratedF2FrontTexture via GenerateDmScaledWallDecoration; GetManaclesFrontF2Rect",
+        "coordinateSet": 1,
+        "f2CenterRelativePosition": 8,
+        "ornamentId": 36,
+        "oldDestination": [
+          80,
+          37,
+          64,
+          37
+        ],
+        "note": "Table data is CSBwin-derived; do not conflate with proven DOS rectangle; no F2 Manacles Trace Current View menu command established."
+      },
+      "researchCandidate": {
+        "nativeDOSsource": [
+          92,
+          52
+        ],
+        "candidateOutput": [
+          60,
+          38
+        ],
+        "candidateViewportPosition": [
+          82,
+          39
+        ],
+        "bias": 0,
+        "brownAgreement": "208 / 237 DOS brown pixels; 10 extra and 29 missing (39 total). Candidate is screenshot-fit only; unapproved; do not hardcode."
+      },
+      "rejectedSimpleHypothesis": {
+        "test": "Retain 64x37 destination, virtual-transparent-padding around native 92x52 source",
+        "result": "Closest tested variant matched 194 / 237 DOS brown pixels with 66 total brown-pixel mismatches; worse than fitted 60x38 39-mismatch candidate",
+        "interpretation": "Padding alone does not resolve Manacles F2; cannot conclude other DOS sampling rules from this test."
+      },
+      "sourceResearch": {
+        "dosLayoutResource": 696,
+        "resourceSizeBytes": 9160,
+        "screenDimensions": "320x200 at byte offsets 0x64..0x67",
+        "viewportDimensions": "224x136 at 0x74..0x77",
+        "status": "Layout hierarchy only partially interpreted; neither Manacles F2 rectangle nor link to record is verified",
+        "scummvmPR": "https://github.com/scummvm/scummvm/pull/7777",
+        "findings": "isDrawnWallOrnAnAlcove separates raw source dimensions, shrink/palette conversion and perspective destination record; DOS support changes inherited Amiga source dims to native DOS dimensions; exact DOS F2 destination rule NOT yet retrieved",
+        "legacyDataWarning": "Legacy group 1 F1 dimension 96x56 is not DOS Manacles artwork; user explicitly chose native 92x52, discard legacy dimensions as source basis."
+      }
+    },
+    "filesToResume": {
+      "currentProgressionBase": "Progression(20261119-171307).zip, containing Progression.json dated 2026-11-18 23:03 (now updated here)",
+      "currentUnityInstalledBaseline": "Hook_F3_DOS_Source_VirtualPadding_20261119.zip (includes earlier approved Hook F2 DOS path and viewport-origin correction), user confirmed Unity compiled and F3 DOS match",
+      "manaclesDOSOriginal": "GRAPHICS(20261119-201903).DAT and Manacles_DOS_Original_20261119.zip",
+      "manaclesF2Research": [
+        "Manacles_F2_DOS_Prototype_Research_20261119.zip",
+        "Manacles_F2_DOS_Layout_Research_20261119.zip",
+        "Manacles_F2_DOS_Layout_Structure_20261119.zip",
+        "Manacles_F2_DOS_Source_Trace_20261119.zip",
+        "Manacles_F2_Ornament_Record_Trace_20261119.zip",
+        "Manacles_F2_Native_DOS_Padding_Test_20261119-222357.zip"
+      ],
+      "researchDirectory": "C:\\Unity\\DM\\Research_Results\\Manacles_F2\\",
+      "progressionWindowsPath": "C:\\Unity\\DM\\Assets\\Editor\\Progression.json",
+      "note": "Research ZIPs named here may have been delivered but should not be assumed copied to local Windows project unless user confirmed."
+    },
+    "tomorrowFirstTask": "Resume DOS-specific isDrawnWallOrnAnAlcove tracing from ScummVM merged DOS PR #7777 and original DOS data. Derive Manacles F2 output dimensions, placement and sampling from general formula/source data (native F1 92x52). Do not chase arbitrary 60x38 screenshot-fit or add Manacles-specific exceptions.",
+    "tomorrowProcedure": [
+      "Read this checkpoint and relevant research reports, not outdated November 18 Hook instructions.",
+      "Obtain actual DOS-specific wall-ornament drawing/scaling source or trace from executable before claiming native DOS F2 destination. Resource 696 alone has not resolved it.",
+      "Once established, generate a pixel comparison against original 224x136 DOS screenshot and current Unity screenshot; describe prediction vs measured facts.",
+      "Only then prepare minimal reversible Manacles F2-only Unity patch; no changes to Hook F2/F3, Manacles F1/S2/S3, V17 walls, calibrations, doors or unrelated code.",
+      "After user Unity compilation and visual approval, mark Manacles F2 done; Manacles F3 next. Do not resume Hook side views until user requests."
+    ],
+    "operatingRules": {
+      "doNotAskForAlreadyProvided": "Original DOS GRAPHICS.DAT, Manacles F1 extracted PNG, screenshots, and earlier Unity source were supplied. Request newer current Unity .cs only if preparing a patch requiring fresh baseline after further edits.",
+      "avoidManualTweaks": "User wants algorithmic rule, no manual coordinate nudges/hand-tuned artifact pixels.",
+      "noFallback": "Missing artwork/data -> explicit errors.",
+      "delivery": "ZIP file(s) at root, no README; preserve exact paths and use Europe/Berlin filesystem timestamps for edited files.",
+      "approvedCheckpoints": "Do not re-test accepted Hook F2/F3 or accepted Manacles side views unless actual discrepancy."
+    },
+    "certaintyNotes": "Do not claim 60x38 was extracted from DOS source; screenshot-fit only. Do not claim resource 696 maps Manacles placement yet. ScummVM DOS source supports native source dimensions but exact Manacles DOS destination has not been source-confirmed. No Unity Manacles F2 change performed today."
   }
 }
