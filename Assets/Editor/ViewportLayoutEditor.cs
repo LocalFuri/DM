@@ -213,6 +213,10 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ViAltarEngineF3FrontY = 105;
   private const string HookFrontAssetPath =
       "Assets/Art/Ornaments/Hook_F1_32x28.png";
+  // Native PC DOS image, used solely for the approved Hook F2 experiment.
+  // F1/F3 and all other ornaments continue to use their existing assets.
+  private const string HookDosF2AssetPath =
+      "Assets/Art/Ornaments/Hook_F1_DOS_28x28.png";
   private const string ManaclesF1AssetPath =
       "Assets/Art/Ornaments/Manacles_F1.png";
   private const string ManaclesS1AssetPath =
@@ -334,6 +338,22 @@ public class ViewportLayoutEditor : EditorWindow
   private const int HookD2FrontY = 108;
   private const int HookD2FrontWidth = 22;
   private const int HookD2FrontHeight = 18;
+
+  // Original DOS 224x136 viewport: 18x18 Hook at (103,38) top-down.
+  // Unity preview uses 200-pixel, bottom-up Y: 200-(32+38+18)=112.
+  // Keep HookD2Front* unchanged: Wood Ring shares that CSBwin profile.
+  private const int HookDosF2X = 103;
+  private const int HookDosF2Width = 18;
+  private const int HookDosF2Height = 18;
+  // DOS reference is measured inside the 224x136 dungeon viewport.
+  // The viewport begins at full-screen row 33 (not row 32).
+  // Derive bottom-up placement from the scaled bitmap height, rather than
+  // introducing an independent one-pixel calibration offset.
+  private const int HookDosF2ViewportTop = 33;
+  private const int HookDosF2ViewportY = 38;
+  private const int HookDosF2Y = PreviewHeight
+      - (HookDosF2ViewportTop + HookDosF2ViewportY)
+      - HookDosF2Height;
 
   // Coordinate-set-0 front at distance 3. The original box is 16x12.
   // The 28-wide F1 crop drops one pixel on each side, so the drawn
@@ -27188,7 +27208,7 @@ private static void HandleGameViewPointerDown(
       if (IsHookOrnament(ornament))
       {
         if (frontDepth == 1) { renderX = HookD1FrontX; renderY = HookD1FrontY; return true; }
-        if (frontDepth == 2) { renderX = HookD2FrontX; renderY = HookD2FrontY; return true; }
+        if (frontDepth == 2) { renderX = HookDosF2X; renderY = HookDosF2Y; return true; }
       }
       if (IsSlimeOrnament(ornament))
       {
@@ -38933,13 +38953,12 @@ private static void HandleGameViewPointerDown(
         + " x=" + window.previewX + " y=" + window.previewY
         + " facing=" + window.previewFacing
         + "; V17=" + window.IsViewport17WallAuthorityActive());
-    Debug.Log("[Hook F2 Trace] Source=" + HookFrontAssetPath
-        + "; expected source=32x28; scaler=GenerateDmScaledWallDecoration (ShrinkBLT)"
-        + "; palette=WallOrnamentMediumColorMap"
-        + "; defaults=" + HookFrontWallOrnamentSet.f2.x + ","
-        + HookFrontWallOrnamentSet.f2.y);
+    Debug.Log("[Hook F2 Trace] Source=" + HookDosF2AssetPath
+        + "; expected source=28x28; scaler=GenerateDmScaledWallDecoration (ShrinkBLT)"
+        + "; palette=WallOrnamentMediumColorMap; bias=0; topDown=true"
+        + "; defaults=" + HookDosF2X + "," + HookDosF2Y);
 
-    Texture2D source = window.GetHookFrontTexture();
+    Texture2D source = window.GetHookDosF2SourceTexture();
     Debug.Log("[Hook F2 Trace] Actual source="
         + (source == null ? "MISSING" : source.width + "x" + source.height
             + "; readable=" + source.isReadable));
@@ -38978,15 +38997,17 @@ private static void HandleGameViewPointerDown(
           Color32[] originalPixels = source.GetPixels32();
           int stepX = ((source.width << 10) / scaled.width) << 6;
           int stepY = ((source.height << 10) / scaled.height) << 6;
-          int startX = (stepX >> 1) + 0x7fff;
-          int startY = (stepY >> 1) + 0x7fff; // Match the restored F2 baseline.
+          int startX = (stepX >> 1);  // Native DOS F2: zero rounding bias.
+          int startY = (stepY >> 1);
           Color32[] brightPalette = DungeonViewportLightPalettes[0];
           System.Text.StringBuilder csv = new System.Text.StringBuilder();
           csv.AppendLine("targetX,targetYBottomUp,targetYTopDown,sourceX,sourceYBottomUp,sourcePaletteIndex,mappedPaletteIndex,sourceRGBA,generatedRGBA");
           for (int ty = 0; ty < scaled.height; ty++)
           {
-            int sy = Mathf.Clamp((startY + ty * stepY) >> 16,
+            int topDownY = scaled.height - 1 - ty;
+            int syTopDown = Mathf.Clamp((startY + topDownY * stepY) >> 16,
                 0, source.height - 1);
+            int sy = source.height - 1 - syTopDown;
             for (int tx = 0; tx < scaled.width; tx++)
             {
               int sx = Mathf.Clamp((startX + tx * stepX) >> 16,
@@ -39012,13 +39033,13 @@ private static void HandleGameViewPointerDown(
           // Also export the unmodified original F1 source. The sampled-pixel
           // CSV alone cannot reveal neighboring rows that DOS may select.
           // Export-only: no changes to artwork, caches, or live rendering.
-          string sourcePngPath = exportFolder + "/Hook_F2_Original_Source_32x28.png";
+          string sourcePngPath = exportFolder + "/Hook_F2_DOS_Source_28x28.png";
           System.IO.File.WriteAllBytes(sourcePngPath, source.EncodeToPNG());
           Debug.Log("[Hook F2 Trace] Original F1 source export: " + sourcePngPath);
           Debug.Log("[Hook F2 Trace] Pixel exports: " + csvPath
               + " and " + pngPath + "; rows="
               + (scaled.width * scaled.height) + "; stepX=" + stepX
-              + "; stepY=" + stepY + "; biasX=0x7FFF; biasY=0x7FFF (baseline)");
+              + "; stepY=" + stepY + "; biasX=0; biasY=0; sampleTopDown=true (DOS F2 candidate)");
         }
         catch (System.Exception exportError)
         {
@@ -39315,7 +39336,7 @@ private static void HandleGameViewPointerDown(
             + "; wallTilePlacement=" + ornament.wallTilePlacement);
       BlitOrnamentPieceIntoPreview(
           pixels, hookFront, ornament,
-          HookFrontWallOrnamentSet.f2.x, HookFrontWallOrnamentSet.f2.y, false);
+          HookDosF2X, HookDosF2Y, false);
       return;
     }
     if (hookF2ManualTraceActive)
@@ -40651,19 +40672,47 @@ private static void HandleGameViewPointerDown(
     if (cachedHookGeneratedF2FrontTexture != null)
       return cachedHookGeneratedF2FrontTexture;
 
-    Texture2D source = GetHookFrontTexture();
-    if (source == null || !source.isReadable)
+    // Do not trim/pad dynamically: use the verified native DOS 28x28 file
+    // and fail explicitly if it is missing or has been changed in size.
+    Texture2D source = GetHookDosF2SourceTexture();
+    if (source == null)
       return null;
 
     cachedHookGeneratedF2FrontTexture = GenerateDmScaledWallDecoration(
         source,
-        HookFrontWallOrnamentSet.f2.width,
-        HookFrontWallOrnamentSet.f2.height,
+        HookDosF2Width,
+        HookDosF2Height,
         WallOrnamentMediumColorMap,
-        "Hook F2 ShrinkBLT from F1",
-        sampleTopDown: true); // Match CSBwin rows; F3 unchanged.
-
+        "Hook F2 DOS native 28x28 to 18x18",
+        roundBiasOverride: 0,
+        sampleTopDown: true);
+    if (cachedHookGeneratedF2FrontTexture == null)
+      Debug.LogError("Hook F2: DOS-native scaling failed: " + HookDosF2AssetPath);
     return cachedHookGeneratedF2FrontTexture;
+  }
+
+  private Texture2D GetHookDosF2SourceTexture()
+  {
+    // Decode file bytes directly because newly imported Unity PNGs may
+    // default to Read/Write disabled. Do not alter importer settings.
+    if (!System.IO.File.Exists(HookDosF2AssetPath))
+    {
+      Debug.LogError("Hook F2: required native DOS source missing: "
+          + HookDosF2AssetPath);
+      return null;
+    }
+    Texture2D source = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+    if (!UnityEngine.ImageConversion.LoadImage(source,
+            System.IO.File.ReadAllBytes(HookDosF2AssetPath), false)
+        || source.width != 28 || source.height != 28)
+    {
+      Debug.LogError("Hook F2: native DOS image could not decode as 28x28: "
+          + HookDosF2AssetPath);
+      UnityEngine.Object.DestroyImmediate(source);
+      return null;
+    }
+    source.filterMode = FilterMode.Point;
+    return source;
   }
 
   private Texture2D GetHookFrontTexture()
