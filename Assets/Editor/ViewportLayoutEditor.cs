@@ -37352,14 +37352,18 @@ private static void HandleGameViewPointerDown(
       byte[] colorMap,
       string textureName,
       int? roundBiasOverride = null,
-      bool sampleTopDown = false)
+      bool sampleTopDown = false,
+      int virtualPaddingLeft = 0,
+      int virtualPaddingRight = 0)
   {
     if (source == null
         || !source.isReadable
         || targetWidth <= 0
         || targetHeight <= 0
         || colorMap == null
-        || colorMap.Length < 16)
+        || colorMap.Length < 16
+        || virtualPaddingLeft < 0
+        || virtualPaddingRight < 0)
     {
       return null;
     }
@@ -37374,7 +37378,11 @@ private static void HandleGameViewPointerDown(
     // F2 keeps the rounded start (step/2 + 0x7fff). F3 uses step/2 alone:
     // the extra round pulls in the gray highlight row (which the far map
     // turns black) and the green pixels beside the yellow gems.
-    int stepX = ((source.width << 10) / targetWidth) << 6;
+    // Transparent source margins can be represented without altering the
+    // native DOS art. They affect ShrinkBLT's sample spacing, not its pixels.
+    int samplingSourceWidth = source.width + virtualPaddingLeft
+        + virtualPaddingRight;
+    int stepX = ((samplingSourceWidth << 10) / targetWidth) << 6;
     int stepY = ((source.height << 10) / targetHeight) << 6;
     bool farDistance = ReferenceEquals(colorMap, WallOrnamentFarColorMap);
     int roundBias = roundBiasOverride ?? (farDistance ? 0 : 0x7fff);
@@ -37399,9 +37407,15 @@ private static void HandleGameViewPointerDown(
       for (int x = 0; x < targetWidth; x++)
       {
         int sourceX = (startX + x * stepX) >> 16;
-        sourceX = Mathf.Clamp(sourceX, 0, source.width - 1);
+        sourceX = Mathf.Clamp(sourceX, 0, samplingSourceWidth - 1);
+        int nativeSourceX = sourceX - virtualPaddingLeft;
+        if (nativeSourceX < 0 || nativeSourceX >= source.width)
+        {
+          targetPixels[targetRow + x] = new Color32(0, 0, 0, 0);
+          continue;
+        }
 
-        Color32 sourcePixel = sourcePixels[sourceRow + sourceX];
+        Color32 sourcePixel = sourcePixels[sourceRow + nativeSourceX];
         if (sourcePixel.a == 0)
         {
           targetPixels[targetRow + x] = new Color32(0, 0, 0, 0);
@@ -40648,22 +40662,30 @@ private static void HandleGameViewPointerDown(
     if (cachedHookGeneratedF3FrontTexture != null)
       return cachedHookGeneratedF3FrontTexture;
 
-    Texture2D source = GetHookFrontTexture();
-    if (source == null || !source.isReadable)
-    {
-      Debug.LogError("Hook F3: required readable 32x28 front source missing: "
-          + HookFrontAssetPath);
+    // F2 and F3 share the verified native DOS 28x28 image. F3's existing
+    // 32-wide sampling grid is retained as *virtual* transparent padding:
+    // two transparent columns to the left and right, without a second asset.
+    Texture2D source = GetHookDosF2SourceTexture();
+    if (source == null)
       return null;
-    }
 
-    cachedHookGeneratedF3FrontTexture = GenerateDmScaledWallDecoration(
-        source,
-        HookFrontWallOrnamentSet.f3.width,
-        HookFrontWallOrnamentSet.f3.height,
-        WallOrnamentFarColorMap,
-        "Hook F3 Generated From F1");
+    try
+    {
+      cachedHookGeneratedF3FrontTexture = GenerateDmScaledWallDecoration(
+          source,
+          HookFrontWallOrnamentSet.f3.width,
+          HookFrontWallOrnamentSet.f3.height,
+          WallOrnamentFarColorMap,
+          "Hook F3 Generated From DOS F1 With Virtual Padding",
+          virtualPaddingLeft: 2,
+          virtualPaddingRight: 2);
+    }
+    finally
+    {
+      UnityEngine.Object.DestroyImmediate(source);
+    }
     if (cachedHookGeneratedF3FrontTexture == null)
-      Debug.LogError("Hook F3: failed to generate from " + HookFrontAssetPath);
+      Debug.LogError("Hook F3: failed to generate from " + HookDosF2AssetPath);
     return cachedHookGeneratedF3FrontTexture;
   }
 
