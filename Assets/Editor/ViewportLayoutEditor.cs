@@ -37331,7 +37331,8 @@ private static void HandleGameViewPointerDown(
       int targetHeight,
       byte[] colorMap,
       string textureName,
-      int? roundBiasOverride = null)
+      int? roundBiasOverride = null,
+      bool sampleTopDown = false)
   {
     if (source == null
         || !source.isReadable
@@ -37364,8 +37365,14 @@ private static void HandleGameViewPointerDown(
 
     for (int y = 0; y < targetHeight; y++)
     {
-      int sourceY = (startY + y * stepY) >> 16;
+      // GetPixels32() rows are bottom-up. CSBwin's ShrinkBLT samples
+      // top-down. Hook F2 uses the source/top-down orientation so both
+      // the sampled source row and target row are mirrored together.
+      int samplingY = sampleTopDown ? (targetHeight - 1 - y) : y;
+      int sourceY = (startY + samplingY * stepY) >> 16;
       sourceY = Mathf.Clamp(sourceY, 0, source.height - 1);
+      if (sampleTopDown)
+        sourceY = source.height - 1 - sourceY;
       int sourceRow = sourceY * source.width;
       int targetRow = y * targetWidth;
 
@@ -40653,7 +40660,8 @@ private static void HandleGameViewPointerDown(
         HookFrontWallOrnamentSet.f2.width,
         HookFrontWallOrnamentSet.f2.height,
         WallOrnamentMediumColorMap,
-        "Hook F2 ShrinkBLT from F1"); // Default medium-distance bias 0x7FFF; F3 unaffected.
+        "Hook F2 ShrinkBLT from F1",
+        sampleTopDown: true); // Match CSBwin rows; F3 unchanged.
 
     return cachedHookGeneratedF2FrontTexture;
   }
