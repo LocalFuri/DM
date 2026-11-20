@@ -1,0 +1,35 @@
+Dungeon Master DOS - GRAPHICS.DAT Resource 696 Extraction
+Research timestamp (Europe/Berlin): 20.11.2026 19:50:38 CET
+Source archive: GRAPHICS(5).ZIP
+Source inner file: GRAPHICS.DAT
+Source file size: 363417 bytes
+Source archive format marker: 0x8001 (little endian)
+Resource count: 713
+Resource 696 offset within GRAPHICS.DAT: 293487 (0x47A6F)
+Resource 696 size: 9160 bytes
+Resource 696 signature: 0xFC0D
+Resource 696 SHA256: 2e14e0ff83bf72ecb1290db2976d24c571615822fccb489d003dcae08c674f9f
+
+Confirmed structure:
+- The file has 713 indexed resources.
+- The file has a consistent 8-byte-per-resource directory section.
+- Resource 696 is stored uncompressed in this file (stored size = original size).
+- The layout block begins with 0xFC0D, followed by range tables.
+- The first 11 pairs of zone ranges cover 1116 zone identifiers.
+- Each mapped zone occupies 8 bytes (four 16-bit words) in the sequential record area.
+- The zone semantics, alignment, parent resolution, and any later payload bytes must be decoded from the relevant engine code. Do not interpret raw numbers as screen X/Y/W/H without this step.
+
+Candidate reference records (based on prior ReDMCSB zone-index assumptions):
+- Hook F3: zone 1009; byte offset in resource 4496; raw u16 (0, 4, 207, 57); raw i16 (0, 4, 207, 57)
+- Hook F2: zone 1014; byte offset in resource 4536; raw u16 (0, 4, 65503, 60); raw i16 (0, 4, -33, 60)
+- Manacles F2: zone 1029; byte offset in resource 4656; raw u16 (0, 4, 154, 45); raw i16 (0, 4, 154, 45)
+
+Important limitations:
+- These zone IDs rely on the perspective-index and coordinate-category mapping from prior research and must be independently checked against the original DOS code.
+- This binary is DATA, not executable downscaling code.
+- The experimentally approved Hook F2/F3 and Manacles F2 geometry must remain protected. No Unity or artwork changes made.
+- The target is a single generic scaler and generic placement resolver; never hardcode ornament-specific corrections.
+- Geometry X/Y/width/height has priority over individual pixel matching.
+
+Next action:
+Interpret the 8-byte records using original COORD.C F0635_CalculateAlignment and parent-zone logic, validate indices against DUNVIEW.C, then compare generated rectangles against the three reference cases.

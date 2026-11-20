@@ -1,28 +1,49 @@
-# Generic DOS wall-ornament renderer — source audit
+# Generic DOS Ornament Geometry — research continuation
 
-Local checkpoint: 20.11.2026 18:44:50 CET
+Checkpoint: 20.11.2026 18:57:25 CET
 
-## Verified from uploaded Unity code
+Priority: X/Y/width/height before per-pixel matching. No per-ornament hardcoded corrections.
 
-- Shared pixel scaling helper: `GenerateDmScaledWallDecoration`.
-- **Manacles F2**: `GetManaclesFrontF2Rect` specifies a screenshot-derived **60 x 35** at viewport **X=82, Y=40**, with half-step source sampling. This is a dedicated ornament branch, not a generic DOS rule.
-- **Hook F2**: DOS-native **28 x 28** source -> **18 x 18**, top-left viewport **X=103, Y=38**, half-step source sampling.
-- **Hook F3**: the 28 x 28 source is sampled with 2 virtual transparent columns on each side, giving a 32-column sampling grid, then output **14 x 12**. This padding is explicitly Hook-specific today.
-- **Manacles F3**: fixed output **38 x 20** with viewport top-left **(93,73)** in the code, approved previously. Not modified.
-- Viewport is **224 x 136**, starting at full-frame **Y=33**; Unity uses bottom-up drawing Y.
+## New source-level finding
+ReDMCSB source discussion cites the original renderer lookup:
+`ZONE = C1004_ZONE_WALL_ORNAMENT + CoordinateSet * 15 + ViewWallIndex`.
+This identifies 15 perspective zones/category (rather than the 13 rows in ScummVM's inherited common wall-ornament coordinate sets).
+Source: https://www.dungeon-master.com/forum/viewtopic.php?start=30&t=29805
 
-## Verified from outside DOS-port research
+ReDMCSB reverse-engineering discussion also cites engine 3.x scale factors D2 21/32 and D3 14/32. Treat as documented ratio but not yet fully validated integer rounding/positioning rule.
 
-ScummVM's PC DOS port describes a layout hierarchy in original graphic resource **696** with `getCoord`, `getLayoutRecord`, and `getZoneBox`, calculating location and clipping. It also replaced hardcoded Amiga source dimensions with native DOS dimensions for distant wall ornaments. See https://blogs.scummvm.org/mohit/2026/08/22/dm-dos/ .
+## Shared F2 width + X inference
+Hook native width 28: 28*21/32=18.375 -> approved displayed width 18; center X=(224-18)/2=103.
+Manacles native width 92: 92*21/32=60.375 -> tested width 60; center X=(224-60)/2=82.
+This is evidence for a shared horizontal rule, not proof of a complete generic rectangle algorithm. Do not implement ornament-specific overrides.
 
-**Limitation:** This public summary does not prove which DOS layout record drives each ornament's perspective rectangle. We cannot infer a universal 60 x 35 Manacles rule or 2-column Hook F3 virtual padding from this description. A screenshot fit is not a formula.
+## Known blockers
+- Manacles source H 52: 52*21/32=34.125, vs experimental F2 rectangle H35; determine height rounding and layout rules.
+- Hook F3 28*14/32=12.25 but approved output width14. A 32-wide logical source grid yields width14; why/how the logical padding is selected remains unproven. Do not infer per-item logic.
+- Exact Y placement must be derived from DOS zone layout, not screenshot fits.
+- ScummVM `wallOrnamentCoordSets[8][13][6]` is not an authoritative original-DOS zone record.
 
-## Recommended next technical work
+## Source / map category verification
+ScummVM g194_WallOrnCoordSetIndices assigns ornament #04 Hook category 0 and ornament #36 Manacles category 1; `loadCurrentMapGraphics` loads the per-map ornament index then maps it to category. See https://raw.githubusercontent.com/scummvm/scummvm/master/engines/dm/gfx.cpp.
 
-1. Trace/decode the PC DOS wall-ornament coordinate records and the mapping from wall position/depth/ornament class to rectangle.
-2. Identify whether source artwork uses a padded logical sampling canvas and whether it is derived from a source category or DOS asset metadata.
-3. Separate `ResolveWallOrnamentRect(type/slot/distance, DOS-layout)` from `ScalePaletteAndBlit(source, rect, palette, transparent-key)`.
-4. Test the resolver without item-name exceptions against Hook F2, Hook F3, Manacles F2 and Manacles F3. The primary pass criteria are X/Y/width/height, then pixel-level differences.
-5. Only replace the experimental per-item paths when the shared resolver passes those regression cases.
+## Next precise task
+Use ReDMCSB COORD.C, DUNVIEW.C, DEFS.H and DOS layout resource 696 to decode zone base C1004, the 15 view offsets, parent-relative rectangle and clipped drawing geometry. Verify Hook F2/F3 and Manacles F2 and protected Manacles F3. Change no Unity code until a shared resolver passes geometry regression checks.
 
-No Unity code or art changed at this checkpoint.
+## Delivery
+No Unity code, artwork, or existing approved test cases changed in this checkpoint.
+
+## Additional research — 20.11.2026 18:59:08 CET
+
+The original DOS/engine 3.x layout uses LAY1 resource 696 with a parent-relative zone alignment system, not just fixed destination rectangles. ReDMCSB names the resolver F0635_CalculateAlignment. Its documented alignment commands include CENTER (0), corners (1-4), edge centers (5-8), DIMENSIONS (9), and margin-alignment modes (10-18). The calculation follows parent zones until a root parent 0.
+
+Wall ornament zone lookup: 1004 + coordinate_set*15 + view_wall_index. The 15 zones per class must be decoded and their parent-relative alignment resolved. The exact raw zone records/parent chains for Hook F2, Hook F3 and Manacles F2 have NOT yet been extracted, so the original DOS final X/Y/W/H is NOT proven.
+
+The source audit at https://github.com/levincem/dungeonMaster-codex/blob/main/docs/ORIGINAL_DATA_AUDIT.md independently reports resource 696 as a 9160-byte/4580-word composition/layout container; this third-party decode is partial and is not a substitute for checking the exact original executable.
+
+Currently supported shared hypothesis: F2 width=floor(sourceWidth*21/32), horizontal center x=(224-width)/2: Hook 28->18, x103; Manacles 92->60, x82. Height and Y positioning not established; current Manacles 60x35 at (82,40) is a regression target, not an ornament-specific rule to bake in. Hook F3 logical 32-column sampler not generalized.
+
+Next: decode parent-relative LAY1 zones for the 15 view indices and determine exact height/vertical anchor; offline tests must reproduce all three reference cases before changing Unity. No code/artwork changed.
+
+Sources:
+- https://www.dungeon-master.com/forum/viewtopic.php?start=30&t=29805
+- https://github.com/levincem/dungeonMaster-codex/blob/main/docs/ORIGINAL_DATA_AUDIT.md
