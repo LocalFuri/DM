@@ -1,4 +1,22 @@
 {
+  "session_start_protocol": {
+    "mandatory": true,
+    "priority": "highest",
+    "effective_from": "2026-11-20 17:45:11 CET",
+    "instructions": [
+      "At the start of every new Dungeon Master session, request or open the latest Assets/Editor/Progression.json before technical work.",
+      "Read the complete Progression.json and apply all permanent rules, including rules in older dated entries; do not read only the newest checkpoint.",
+      "Never rely exclusively on ChatGPT memory or the prior conversation; Progression.json is the project handoff source of truth.",
+      "Summarize or confirm the mandatory project rules before modifying code or generating deliverables.",
+      "Resume from the latest saved checkpoint, preserving all approved implementations and regression checkpoints.",
+      "All newly created or modified deliverable files must have actual filesystem modification timestamps set to the correct Europe/Berlin local date and time; ensure relevant ZIP entry timestamps agree.",
+      "Preserve timestamps for unchanged files; timestamp ZIP filenames and verify timestamps before delivery.",
+      "Every file in a delivered ZIP must be at the ZIP root (no subfolders or folder prefixes); verify archive entry paths before delivery.",
+      "Do not silently override approved algorithms, rules, or data; explain conflicting instructions before changing protected work."
+    ],
+    "limitation": "This protocol applies once Progression.json is supplied/read; a rule inside the file alone cannot trigger loading an absent file.",
+    "recommended_new_session_message": "Dungeon Master — read the complete Progression.json, apply all permanent rules, and continue from the latest checkpoint."
+  },
   "date": "2026-11-19",
   "todo_manacles_dos_f1_s2_20261109": {
     "category": "To do List",
@@ -2610,5 +2628,39 @@
       "approvedCheckpoints": "Do not re-test accepted Hook F2/F3 or accepted Manacles side views unless actual discrepancy."
     },
     "certaintyNotes": "Do not claim 60x38 was extracted from DOS source; screenshot-fit only. Do not claim resource 696 maps Manacles placement yet. ScummVM DOS source supports native source dimensions but exact Manacles DOS destination has not been source-confirmed. No Unity Manacles F2 change performed today."
+  },
+  "manacles_f2_code_review_20261120": {
+    "date": "2026-11-20 17:39:08 CET",
+    "status": "RESEARCH ONLY — no Unity changes, no verified original DOS destination rectangle",
+    "verifiedFromUploadedSource": {
+      "file": "ViewportLayoutEditor.cs, upload Manacles_F1.zip",
+      "nativePNG": "Assets/Art/Ornaments/Manacles_F1.png actual attached PNG 92x52 indexed",
+      "destination": "GetManaclesFrontF2Rect -> OriginalWallDecorationPositions[1][8] = x1 80, x2 143, y1 37, y2 73, height 37 -> 64x37, viewport-relative x=80 y=37",
+      "scale": "GetManaclesGeneratedF2FrontTexture -> GenerateDmScaledWallDecoration(source,64,37,WallOrnamentMediumColorMap) default bias 0x7fff and sampleTopDown=false",
+      "approvedHookContrast": "Hook F2 uses native DOS 28x28 -> 18x18, roundBiasOverride=0, sampleTopDown=true, destination x=103 viewport y=38; do not edit Hook.",
+      "originalTable": "OriginalWallDecorationPositions comment explicitly says CSBwin graphics.dat graphic 558, not DOS layout resource 696."
+    },
+    "outsideResearch": "ScummVM DOS version development writeup (2026-08-22) confirms DOS layout tree graphic 696 and original DOS source dimensions in isDrawnWallOrnAnAlcove; does not supply verified Manacles-specific rectangle or pixel results. https://blogs.scummvm.org/mohit/2026/08/22/dm-dos/",
+    "nextAction": "Retrieve and inspect actual DOS-specific isDrawnWallOrnAnAlcove, its destination coordinate selection, and resource 696 as needed. Do not change Unity or assume 60x38 candidate is source-derived. Reconcile any referenced 95x52 measurement with attached actual 92x52 asset before modifying artwork.",
+    "approvedProtected": "Hook F2/F3; Manacles F1, S2/S3; V17; all saved calibrations."
+  },
+  "zip_delivery_flat_root_rule_20261120": {
+    "mandatory": true,
+    "priority": "highest",
+    "effective_from": "2026-11-20 17:48:48 CET",
+    "rule": "Every delivered ZIP archive must store every contained file directly at the ZIP archive root. Never include directory entries or folder prefixes in ZIP entry names; never nest files in folders inside a ZIP.",
+    "examples": {
+      "correct": [
+        "Progression.json",
+        "ViewportLayoutEditor.cs",
+        "Manacles_F1.png"
+      ],
+      "incorrect": [
+        "Assets/Editor/Progression.json",
+        "Assets/Art/Ornaments/Manacles_F1.png"
+      ]
+    },
+    "scope": "All future Dungeon Master project ZIP deliverables, including Progression.json, code, image assets and research outputs. The intended project destination paths may be described separately outside the ZIP.",
+    "verification": "Before delivery inspect the ZIP entry names and confirm none contain / or \\."
   }
 }
