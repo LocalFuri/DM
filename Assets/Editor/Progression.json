@@ -56,7 +56,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-19 END OF DAY: Hook F2 and F3 visually approved from native DOS 28x28 front source; Manacles F2 remains NOT approved, investigation into exact DOS source-dimension, scaling and placement rules. Resume with source-level investigation, no Unity edits yet.",
+  "checkpoint": "2026-11-20 Manacles F2 screenshot-fit 60x35 X82 Y40 HALF-STEP TEST prepared, NOT approved. Native source 92x52 unchanged, Hook F2/F3 approved and protected. Await user Unity screenshot comparison.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -2688,5 +2688,22 @@
     "basis": "https://raw.githubusercontent.com/scummvm/scummvm/master/engines/dm/gfx.cpp lines 4157-4177 (ScummVM implementation, not proof of original DOS executable).",
     "prior_test": "Previous half-step F2 experiment rejected: Unity brown count 286, bbox X81..142 Y41..55 vs DOS count237 bbox X83..140 Y44..56.",
     "next_step": "Install ViewportLayoutEditor.cs and Progression.json from flat ZIP into Assets/Editor; screenshot Manacles F2 in Unity, compare against DOS before approval."
+  },
+  "manacles_f2_screenshot_candidate_test_20261120": {
+    "date_local": "2026-11-20 18:24:06 CET",
+    "status": "EXPERIMENTAL TEST, NOT APPROVED; screenshot-derived candidate, not independently proven DOS algorithm",
+    "scope": "Manacles Front F2 only; 92x52 native source unchanged; Hook and other perspectives untouched",
+    "candidate": {
+      "target_width": 60,
+      "target_height": 35,
+      "viewport_x": 82,
+      "viewport_top_y": 40,
+      "sampling": "half-step, no extra 0x7fff bias, top-down"
+    },
+    "reason": "Previous two screenshots showed zero-start 64x37 Unity did not match original DOS. Earlier candidate comparison claimed 233/237 brown-pixel overlap, 4 missing and 1 extra; metric is unverified in complete full-image comparison.",
+    "limitations": "A screenshot fit is not evidence of a universal DOS-native destination rule; still need chain/body/palette comparison and source-code derivation before acceptance.",
+    "next_step": "Extract ViewportLayoutEditor.cs and Progression.json directly to Assets/Editor; recompile Unity; capture matching Manacles F2 view; compare with existing original PC DOS reference; if mismatch do not approve.",
+    "rollback": "Restore previous ViewportLayoutEditor.cs and Progression.json from Manacles_F2_TrueZeroAccumulator_Test_20261120-181324.zip if needed.",
+    "zip_rule": "All files at archive root; file modification and ZIP member timestamps in Europe/Berlin local time."
   }
 }

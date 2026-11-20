@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -247,9 +247,9 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonViewportWidth - ManaclesD2SideLeftX - ManaclesD2SideWidth;
   private const int ManaclesD2SideY = 101;
 
-  // Front F2 Manacles: geometry comes from the CSBwin wall decoration
-  // rectangle table, group 1 (Manacles), relative position 8 (center F2).
-  // No manually measured X/Y or independent target image dimensions.
+  // Front F2 Manacles: temporary DOS screenshot-fit experiment only.
+  // Current candidate 60x35 at viewport top-left (82,40), half-step sampling.
+  // Do not approve or generalize without complete DOS comparison.
 
   // F3 manacles are generated from the same 92x52 F1 source.
   // Measured on the original (6,9) West view: screen top-left (93, 73),
@@ -24031,12 +24031,13 @@ private static void HandleGameViewPointerDown(
   private static void GetManaclesFrontF2Rect(
       out int x, out int y, out int width, out int height)
   {
-    OriginalWallDecorationRect rect = GetOriginalWallDecorationRect(1, 8);
-    width = rect.x2 - rect.x1 + 1;
-    height = rect.height;
-    x = rect.x1;
-    // Table Y is measured from the top of the dungeon viewport (Y=33).
-    y = DisplayYToUnityY(rect.y1 + 33, height);
+    // EXPERIMENT ONLY (2026-11-20): screenshot-derived DOS F2 candidate.
+    // NOT verified from the original executable or accepted as a generic rule.
+    // The original 64x37 CSBwin-derived rectangle remains the baseline.
+    width = 60;
+    height = 35;
+    x = 82;
+    y = DisplayYToUnityY(33 + 40, height);
   }
 
   private static void GetOriginalCornerF2DrawPosition(
@@ -40302,7 +40303,7 @@ private static void HandleGameViewPointerDown(
         "Manacles F2 Generated from F1",
         roundBiasOverride: 0,
         sampleTopDown: true,
-        sampleFromPixelZero: true);
+        sampleFromPixelZero: false);
     return cachedManaclesGeneratedF2FrontTexture;
   }
 
