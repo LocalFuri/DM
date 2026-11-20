@@ -2662,5 +2662,31 @@
     },
     "scope": "All future Dungeon Master project ZIP deliverables, including Progression.json, code, image assets and research outputs. The intended project destination paths may be described separately outside the ZIP.",
     "verification": "Before delivery inspect the ZIP entry names and confirm none contain / or \\."
+  },
+  "manacles_f2_dos_sampling_test_20261120": {
+    "date_local": "2026-11-20 17:58:27 CET",
+    "status": "TEST ONLY — not approved; Unity visual confirmation pending",
+    "native_source": "Assets/Art/Ornaments/Manacles_F1.png (92x52, unchanged)",
+    "source_code": "ViewportLayoutEditor.cs",
+    "method": "GetManaclesGeneratedF2FrontTexture",
+    "change": "Call GenerateDmScaledWallDecoration with roundBiasOverride: 0 and sampleTopDown: true for Manacles F2 only.",
+    "retained_geometry": "64x37 at viewport X=80, Y=37 (not asserted as original executable truth).",
+    "basis": "ScummVM DOS path uses native source dimensions, 64x37 coordinate set, zero-origin nearest-neighbor fixed-step shrink. ScummVM recreation is not proof of identical original DOS executable behavior.",
+    "protected": "Hook F2/F3 unchanged. Manacles F1/F3/S2/S3 unchanged. No artwork edits. No other sampling defaults modified.",
+    "next_step": "Install test script, recompile, compare Manacles F2 at exact same pose with original PC DOS screenshot. Report mismatch or approval; do not treat test as verified automatically.",
+    "archive_rule": "All files at root of ZIP; timestamps Europe/Berlin local; no README."
+  },
+  "manacles_f2_true_zero_accumulator_test_20261120": {
+    "date_local": "2026-11-20 18:13:24 CET",
+    "status": "TEST ONLY — requires user DOS screenshot comparison; not approved",
+    "reason": "Previous roundBiasOverride:0 still initialized the scaler at step/2. Actual ScummVM DOS shrink initializes scaleX and scaleY counters at zero. This test isolates that difference.",
+    "source": "Manacles_F1.png 92x52 unchanged",
+    "implementation": "Optional sampleFromPixelZero=false added as last parameter to GenerateDmScaledWallDecoration; enabled only in GetManaclesGeneratedF2FrontTexture",
+    "geometry": "Unchanged: 64x37 F2 rectangle, viewport X80 Y37",
+    "color": "Medium-distance palette unchanged",
+    "protected": "Hook F1/F2/F3, all other ornaments, Manacles other distances unchanged",
+    "basis": "https://raw.githubusercontent.com/scummvm/scummvm/master/engines/dm/gfx.cpp lines 4157-4177 (ScummVM implementation, not proof of original DOS executable).",
+    "prior_test": "Previous half-step F2 experiment rejected: Unity brown count 286, bbox X81..142 Y41..55 vs DOS count237 bbox X83..140 Y44..56.",
+    "next_step": "Install ViewportLayoutEditor.cs and Progression.json from flat ZIP into Assets/Editor; screenshot Manacles F2 in Unity, compare against DOS before approval."
   }
 }

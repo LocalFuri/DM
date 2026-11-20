@@ -37354,7 +37354,8 @@ private static void HandleGameViewPointerDown(
       int? roundBiasOverride = null,
       bool sampleTopDown = false,
       int virtualPaddingLeft = 0,
-      int virtualPaddingRight = 0)
+      int virtualPaddingRight = 0,
+      bool sampleFromPixelZero = false)
   {
     if (source == null
         || !source.isReadable
@@ -37386,8 +37387,10 @@ private static void HandleGameViewPointerDown(
     int stepY = ((source.height << 10) / targetHeight) << 6;
     bool farDistance = ReferenceEquals(colorMap, WallOrnamentFarColorMap);
     int roundBias = roundBiasOverride ?? (farDistance ? 0 : 0x7fff);
-    int startX = (stepX >> 1) + roundBias;
-    int startY = (stepY >> 1) + roundBias;
+    // ScummVM's DOS shrink reference starts source accumulators at zero.
+    // Keep the existing sampling rule for all approved ornaments.
+    int startX = sampleFromPixelZero ? 0 : (stepX >> 1) + roundBias;
+    int startY = sampleFromPixelZero ? 0 : (stepY >> 1) + roundBias;
 
     Color32[] brightPalette = DungeonViewportLightPalettes[0];
 
@@ -40296,7 +40299,10 @@ private static void HandleGameViewPointerDown(
         targetWidth,
         targetHeight,
         WallOrnamentMediumColorMap,
-        "Manacles F2 Generated from F1");
+        "Manacles F2 Generated from F1",
+        roundBiasOverride: 0,
+        sampleTopDown: true,
+        sampleFromPixelZero: true);
     return cachedManaclesGeneratedF2FrontTexture;
   }
 
