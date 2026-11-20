@@ -2705,5 +2705,23 @@
     "next_step": "Extract ViewportLayoutEditor.cs and Progression.json directly to Assets/Editor; recompile Unity; capture matching Manacles F2 view; compare with existing original PC DOS reference; if mismatch do not approve.",
     "rollback": "Restore previous ViewportLayoutEditor.cs and Progression.json from Manacles_F2_TrueZeroAccumulator_Test_20261120-181324.zip if needed.",
     "zip_rule": "All files at archive root; file modification and ZIP member timestamps in Europe/Berlin local time."
+  },
+  "generic_dos_ornament_renderer_audit_20261120": {
+    "date_local": "2026-11-20T18:44:50+01:00",
+    "priority": "high",
+    "status": "SOURCE AUDIT COMPLETE, GENERIC DOS RECTANGLE RULE NOT YET PROVEN; NO RENDERER MODIFICATION",
+    "goal": "Single DOS-native perspective layout + shared shrink/palette/blit algorithm for approximately 180 ornaments; no ornament-specific rendering or placement corrections.",
+    "verified_from_uploaded_ViewportLayoutEditor_cs": {
+      "generic_scaler": "GenerateDmScaledWallDecoration is shared but caller passes ornament-specific destination parameters and sampling settings.",
+      "manacles_f2": "GetManaclesFrontF2Rect currently returns screenshot-fit 60x35 at viewport (82,40); GetManaclesGeneratedF2FrontTexture uses half-step, roundBiasOverride=0, sampleTopDown=true.",
+      "hook_f2": "GetHookGeneratedF2FrontTexture uses 28x28 source, 18x18 destination, roundBiasOverride=0, sampleTopDown=true; X=103 viewport Y=38.",
+      "hook_f3": "GetHookGeneratedF3FrontTexture uses a 28x28 source with virtualPaddingLeft=2 and virtualPaddingRight=2; 14x12 destination.",
+      "manacles_f3": "Current explicit constants 38x20 at viewport (93,73); approved prior checkpoint; must not change.",
+      "coordinate_rule": "Viewport top in 320x200 image is row 33; convert viewport top-down Y to Unity bottom-up Y using image height."
+    },
+    "outside_research": "ScummVM DOS port implements layout tree using graphics resource 696 (getCoord/getLayoutRecord/getZoneBox); distant wall ornaments use DOS native artwork dimensions. Reference https://blogs.scummvm.org/mohit/2026/08/22/dm-dos/. This does not by itself prove exact original executable ornament rectangles or a formula for each slot.",
+    "required_next_step": "Decode/trace DOS ornament layout records and derive a geometry mapping by class/slot, not by unique ornament. Validate against Hook F2/F3 and Manacles F2 (and approved Manacles F3); if not consistent, isolate original DOS logic discrepancy before coding.",
+    "regression_acceptance": "No object-name conditions; no manual per-ornament X/Y/width/height overrides; exact geometry takes precedence over pixel color differences. Preserve all approved baselines.",
+    "constraints": "No Unity artwork or rendering code changes in this research checkpoint. ZIP all files in root and timestamp Europe/Berlin."
   }
 }

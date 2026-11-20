@@ -1,0 +1,28 @@
+# Generic DOS wall-ornament renderer — source audit
+
+Local checkpoint: 20.11.2026 18:44:50 CET
+
+## Verified from uploaded Unity code
+
+- Shared pixel scaling helper: `GenerateDmScaledWallDecoration`.
+- **Manacles F2**: `GetManaclesFrontF2Rect` specifies a screenshot-derived **60 x 35** at viewport **X=82, Y=40**, with half-step source sampling. This is a dedicated ornament branch, not a generic DOS rule.
+- **Hook F2**: DOS-native **28 x 28** source -> **18 x 18**, top-left viewport **X=103, Y=38**, half-step source sampling.
+- **Hook F3**: the 28 x 28 source is sampled with 2 virtual transparent columns on each side, giving a 32-column sampling grid, then output **14 x 12**. This padding is explicitly Hook-specific today.
+- **Manacles F3**: fixed output **38 x 20** with viewport top-left **(93,73)** in the code, approved previously. Not modified.
+- Viewport is **224 x 136**, starting at full-frame **Y=33**; Unity uses bottom-up drawing Y.
+
+## Verified from outside DOS-port research
+
+ScummVM's PC DOS port describes a layout hierarchy in original graphic resource **696** with `getCoord`, `getLayoutRecord`, and `getZoneBox`, calculating location and clipping. It also replaced hardcoded Amiga source dimensions with native DOS dimensions for distant wall ornaments. See https://blogs.scummvm.org/mohit/2026/08/22/dm-dos/ .
+
+**Limitation:** This public summary does not prove which DOS layout record drives each ornament's perspective rectangle. We cannot infer a universal 60 x 35 Manacles rule or 2-column Hook F3 virtual padding from this description. A screenshot fit is not a formula.
+
+## Recommended next technical work
+
+1. Trace/decode the PC DOS wall-ornament coordinate records and the mapping from wall position/depth/ornament class to rectangle.
+2. Identify whether source artwork uses a padded logical sampling canvas and whether it is derived from a source category or DOS asset metadata.
+3. Separate `ResolveWallOrnamentRect(type/slot/distance, DOS-layout)` from `ScalePaletteAndBlit(source, rect, palette, transparent-key)`.
+4. Test the resolver without item-name exceptions against Hook F2, Hook F3, Manacles F2 and Manacles F3. The primary pass criteria are X/Y/width/height, then pixel-level differences.
+5. Only replace the experimental per-item paths when the shared resolver passes those regression cases.
+
+No Unity code or art changed at this checkpoint.
