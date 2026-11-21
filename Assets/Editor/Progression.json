@@ -3692,5 +3692,26 @@
     ],
     "next": "Identify relevant branch / actual nonzero renderer argument; no more arbitrary DOSBox-X breakpoints, no Unity edits",
     "report": "DOS_FIRES_Argument_Production_Audit_20261121-185138.txt"
+  },
+  "research_20261121_ornament_branch_dispatch_map": {
+    "date": "2026-11-21",
+    "scope": "read-only original FIRES offline disassembly, no Unity edits",
+    "source_files": [
+      "DOS_FIRES_Ornament_Argument_Branch_Map_20261121.txt",
+      "DOS_FIRES_Ornament_Branch_Map_Check_20261121.py"
+    ],
+    "verified": [
+      "114C:1408 derives dispatch group from byte returned at 114C:1439 via 114C:04B9, shifted right five and stored at output +00",
+      "CS:182E seven-way dispatch: groups 0..6 -> 1468,1696,1623,1736,176F,1718,1652",
+      "CS:1826 group-0 secondary four-way dispatch: 147A,14A4,14CE,14F8",
+      "Group 1 calls 114C:12C1 at 16BA using flag bit 3 and writes its result to output+0A at 16C3",
+      "Other paths can write output+0A at 16F0 or conditionally set bit15 at 1815",
+      "2A64:3478 passes caller output+0A as first argument to renderer 2A64:10E6"
+    ],
+    "unverified": [
+      "Hook F2 specific group and nonzero ornament ID",
+      "runtime draw rectangle for Hook/Manacles F2/F3"
+    ],
+    "next": "Inspect helper 114C:04B9 and source map data for chosen Hook F2 position, obtain nonzero renderer argument; no random debugger breakpoints or Unity corrections"
   }
 }
