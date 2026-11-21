@@ -56,7 +56,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-21: Corrected shared F0635 parent-kind-9 clipping in offline 900-record ornament geometry; 43 clipped records, 20 corrected visible-width values, 12 synthetic clip cases and 225 alignment tests pass. Hook and Manacles existing rectangles unchanged. Original Unity not modified. Next: DOS visual validation and special alignment / pixel rendering.",
+  "checkpoint": "2026-11-21: Hook F2 191/191 visible DOS bitmap pixels matched by native indexed 6-bit renderer; Unity missing three x=118 pixels. Read-only Unity source audit identifies precise cause: current 16-bit step for 28->18 chooses source column 24 at output x15 versus original FIRES 6-bit step choosing column 23. No Unity edits. Next: integrate generic 6-bit indexed path only after additional view validation.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -112,9 +112,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Audit F0635 clipping calculations against the complete 900-record geometry set for the original X720 DOS branch.",
-    "Visually verify Hook and Manacles S2/S3 calculated X/Y/W/H against original PC DOS captures; retain approved Unity results unchanged.",
-    "Implement bitmap scaling and palette handling offline, using the same generic rules for all ornament types; do not introduce per-ornament corrections."
+    "Verify recovered 6-bit indexed renderer against original DOS Hook F3, Manacles F3, S2/S3 screenshots; geometry/clipping remain separate.",
+    "Replace 16-bit ornament scaling only via shared generic source-indexed 6-bit routine after regression tests, not three-pixel Hook patch.",
+    "Maintain Europe/Berlin timestamps recursively for every ZIP member and preserve existing flat-root ZIP convention."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -3915,5 +3915,246 @@
     ],
     "next": "Visually check clipped DOS examples, then complete special F0635 paths and pixel scaling before Unity integration",
     "unity_modified": false
+  },
+  "research_20261121_f0791_mirrored_clipping_audit": {
+    "date_local": "2026-11-21T19:40:22+01:00",
+    "status": "F0791 source offset correction verified offline; not pixel renderer or DOS screenshot approved",
+    "source_files": [
+      "DUNVIEW.C F0791",
+      "COORD.C F0635",
+      "DOS_All_Ornament_Geometry_F0635_Corrected_20261121.csv"
+    ],
+    "results": {
+      "geometry_records_checked": 900,
+      "partially_clipped": 43,
+      "mirrored_and_clipped_ordinary_rows": 0,
+      "synthetic_flip_clipping_cases": 4
+    },
+    "rule": "On horizontal flip, source_x = bitmap_width - clipped_width - F0635_source_x; vertical analogue",
+    "files": [
+      "Research_Results/DOS_F0791_Mirrored_Clipping_Research_20261121.txt",
+      "Research_Results/DOS_F0791_Flip_Clipping_Audit_20261121.py",
+      "Research_Results/DOS_F0791_Flip_Clipping_Audit_Results_20261121.json"
+    ],
+    "next": "Offline implementation/verification of F0129 palette-changing shrink and F0132 blit pixels; maintain no fallback and no Unity edits"
+  },
+  "research_20261121_palette_and_native_index_extraction": {
+    "date": "2026-11-21",
+    "status": "Source palette maps verified; native index extraction utility prepared but not yet run against user PC dmcsb; F0129 resampling unverified",
+    "scope": "research only; no Unity source changes; no approximate pixel sampling accepted as original",
+    "verified_palette_maps": {
+      "F2_D2": [
+        0,
+        12,
+        1,
+        3,
+        4,
+        3,
+        6,
+        7,
+        5,
+        9,
+        10,
+        11,
+        0,
+        2,
+        14,
+        13
+      ],
+      "F3_D3": [
+        0,
+        0,
+        12,
+        3,
+        4,
+        3,
+        0,
+        6,
+        3,
+        9,
+        10,
+        11,
+        0,
+        1,
+        0,
+        2
+      ]
+    },
+    "graphic_index": 332,
+    "dimensions": [
+      92,
+      52
+    ],
+    "deliverables": [
+      "DOS_Extract_Indexed_Manacles_332_20261121.py",
+      "RUN_DOS_MANACLES_INDEXED_20261121.bat",
+      "DOS_Manacles_Indexed_Extraction_Research_20261121.txt"
+    ],
+    "next_action": "Run extractor on original GRAPHICS_DOS.ZIP using installed dmcsb.image_indexed; inspect index histograms and preserved native pixels; then derive exact F0129 sample stepping from engine or known source; validate against original DOS pixels without ad hoc RGB correction."
+  },
+  "research_20261121_f0129_scummvm_fixedpoint_crosscheck": {
+    "date": "2026-11-21",
+    "status": "Three indexed-pixel sampling candidates measured against original DOS Manacles F2; none exact; research only, no Unity changes",
+    "new_external_source": "ScummVM 2026 engines/dm/gfx.cpp blitToBitmapShrinkWithPalChange; engines/dm/gfx.h kScaleThreshold=32768",
+    "metrics_brown_mask": {
+      "edge": {
+        "match": 205,
+        "extra": 73,
+        "missing": 32
+      },
+      "center": {
+        "match": 216,
+        "extra": 16,
+        "missing": 21
+      },
+      "scummvm_fixedpoint": {
+        "match": 203,
+        "extra": 77,
+        "missing": 34
+      }
+    },
+    "critical_warning": "ScummVM is a modern reimplementation, not proof of original DOS F0129; no sampling algorithm is validated, and brown-class score is not full-pixel accuracy",
+    "next_step": "Recover original DOS F0129 inner pixel loop, or capture native derived bitmap at shrink output; verify exact original indexed pixels before Unity changes",
+    "files": [
+      "Research_Results/DOS_F0129_FixedPoint_Crosscheck_20261121.py",
+      "Research_Results/DOS_F0129_FixedPoint_Crosscheck_20261121.json",
+      "Research_Results/DOS_F0129_FixedPoint_Crosscheck_20261121.txt"
+    ]
+  },
+  "dos_f0129_exact_6bit_20261121": {
+    "timestamp": "2026-11-21 20:30:16 CET",
+    "source_image_offset": "0x23858",
+    "helpers": [
+      "0x236EC",
+      "0x2379D"
+    ],
+    "formula": "step=(source<<6)//destination; src=((step>>1)+i*step)>>6",
+    "manacles_F2": {
+      "native": [
+        92,
+        52
+      ],
+      "output": [
+        60,
+        34
+      ],
+      "xy": [
+        82,
+        40
+      ],
+      "steps": [
+        98,
+        97
+      ],
+      "visible_matched": 702,
+      "visible_total": 702,
+      "visible_mismatches": 0,
+      "transparent_positions": 1338
+    },
+    "status": "exact visible DOS match for Manacles F2 only; other perspectives pending",
+    "deliverables": [
+      "DOS_F0129_Exact_6bit_Research_20261121.txt",
+      "DOS_F0129_Exact_6bit_Manacles_F2_Verification_20261121.py",
+      "DOS_F0129_Exact_6bit_Manacles_F2_20261121.json"
+    ],
+    "no_unity_changes": true
+  },
+  "dos_generic_6bit_indexed_batch_20261121": {
+    "timestamp": "2026-11-21 CET",
+    "status": "generic indexed pixel generation prepared and tested; F2 exact verified previously, F3 unverified prediction",
+    "unchanged_algorithm": "step=(source<<6)//dest; pixel=((step>>1)+i*step)>>6",
+    "input_graphics": "GRAPHICS_DOS.ZIP",
+    "input_geometry": "DOS_All_Ornament_Geometry_F0635_Corrected_20261121.csv",
+    "native_extraction": "dmcsb.image_indexed() installed on user Windows PC; unavailable on local container",
+    "focus": "Hook and Manacles 15 views each (30 rows); --all gives 900 records",
+    "manacles_F2": {
+      "native": [
+        92,
+        52
+      ],
+      "destination": [
+        60,
+        34
+      ],
+      "visible": 702,
+      "transparent": 1338,
+      "validation": "matches established DOS screenshot pixel verification"
+    },
+    "manacles_F3": {
+      "native": [
+        92,
+        52
+      ],
+      "destination": [
+        40,
+        22
+      ],
+      "visible": 298,
+      "transparent": 582,
+      "validation": "not independently verified against DOS reference"
+    },
+    "deliverables": [
+      "DOS_Generic_6bit_Indexed_Renderer_20261121.py",
+      "RUN_DOS_6BIT_INDEXED_20261121.bat",
+      "DOS_6bit_Generic_Renderer_Continuation_20261121.txt"
+    ],
+    "next_step": "Generate indexed outputs from original graphics on Windows; compare Hook F2 and Manacles F3 against exact DOS references; independently verify side-view mirror and clipping; no Unity change",
+    "no_unity_changes": true,
+    "no_ornament_specific_adjustments": true
+  },
+  "zip_recursive_timestamp_rule_20261121": {
+    "status": "implemented and mandatory",
+    "recorded_at": "2026-11-21 20:41:52 CET",
+    "rule": "Every newly generated or changed file must receive the actual Europe/Berlin modification timestamp, including every file recursively inside any delivered ZIP subfolder.",
+    "coverage": "All file entries, at every nesting depth; filesystem mtime and ZIP entry date/time must correspond (ZIP DOS time has 2-second resolution).",
+    "new_or_modified_files": "Stamp at actual creation/modification time; never reuse old template date or ZIP date as a substitute.",
+    "unchanged_files": "Preserve their original meaningful modification times and avoid re-shipping unchanged files where possible.",
+    "zip_layout_precedence": "The mandatory 2026-11-20 flat ZIP root rule remains the default. If a future explicitly requested package requires nested folders, recursively timestamp and audit those entries too.",
+    "delivery_validation": "Enumerate and check every ZIP entry recursively; verify no duplicate filenames, valid timestamps, CRC and expected structure. Compare to source mtimes during package creation.",
+    "timezone": "Europe/Berlin CET/CEST; local wall-clock timestamps are recorded in ZIP metadata because ZIP has no timezone field.",
+    "tool": "DOS_ZIP_Timestamp_Tool_20261121.py",
+    "acceptance_test": "Nested test archive passed 3 levels; flat ZIP test passed; unchanged source mtime preserved.",
+    "next_task": "Resume the generic DOS 6-bit indexed batch from dos_generic_6bit_indexed_batch_20261121, then verify Hook F2 and Manacles F3 against DOS references; no Unity edits yet."
+  },
+  "research_20261121_hook_f2_unity_root_cause": {
+    "date_local": "2026-11-21T20:58:06+01:00",
+    "status": "read-only source-code diagnosis; Unity unchanged",
+    "unity_source": "ViewportLayoutEditor(20261121-112906).zip / ViewportLayoutEditor.cs",
+    "routine": "GenerateDmScaledWallDecoration / GetHookGeneratedF2FrontTexture",
+    "source_size": [
+      28,
+      28
+    ],
+    "target_size": [
+      18,
+      18
+    ],
+    "unity_step_x_16bit": 101888,
+    "original_dos_step_x_6bit": 99,
+    "different_output_column": 15,
+    "unity_source_column": 24,
+    "original_dos_source_column": 23,
+    "screen_x": 118,
+    "reported_mismatched_screen_positions": [
+      [
+        118,
+        42
+      ],
+      [
+        118,
+        48
+      ],
+      [
+        118,
+        49
+      ]
+    ],
+    "original_indexed_render_matches_dos_visible_pixels": [
+      191,
+      191
+    ],
+    "confidence": "16-bit vs 6-bit stepping causes differing source selection at x15; complete multi-view regression not yet run",
+    "no_unity_edits": true,
+    "next_action": "Generalize fixed 6-bit indexed scaler, validate across F3 and S2/S3 and protect existing approved geometry/mirroring."
   }
 }

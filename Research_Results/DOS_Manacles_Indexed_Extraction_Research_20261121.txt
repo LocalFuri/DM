@@ -1,0 +1,29 @@
+Dungeon Master PC DOS ornament research — 2026-11-21
+TASK: preserve native graphic 332 indexed pixels, independently of RGB palette decoding.
+
+GROUNDING:
+- Original GRAPHICS.DAT: Manacles front candidate graphic 332, metadata 92x52.
+- Original DUNVIEW.C / previous verified palette audit:
+  F2 D2 LUT: 0,12,1,3,4,3,6,7,5,9,10,11,0,2,14,13
+  F3 D3 LUT: 0,0,12,3,4,3,0,6,3,9,10,11,0,1,0,2
+- Index 10 is preserved by both LUTs and serves as the blit transparency index.
+- The previously made RGB candidate comparison omitted the palette LUT and cannot validate sampling.
+
+EXTRACTOR:
+DOS_Extract_Indexed_Manacles_332_20261121.py
+- Reads one original GRAPHICS.DAT from GRAPHICS_DOS.ZIP.
+- Uses dmcsb.open_graphics(...).image_indexed(332), not to_pil()/RGBA.
+- Checks 92x52 size, exactly 4784 unpacked pixels, every index in [0,15].
+- Saves native index bytes as .bin and a lossless indexed PNG with ARTIFICIAL grayscale for inspection. The PNG palette is not claimed to be original DOS RGB.
+- Saves native-size D2 and D3 index-remapped copies, preserving indices.
+- Saves precise per-index histograms and transparency counts.
+- Does NOT resample to 60x34, choose edge vs center, or claim exact F0129 semantics.
+
+RUN ON USER PC (dmcsb already installed):
+1. Extract this package into C:\Unity\DM\Research_Results\.
+2. Double-click RUN_DOS_MANACLES_INDEXED_20261121.bat.
+3. Upload DOS_Manacles332_Indexed_20261121_Report.json and/or PNG/BIN output.
+
+NEXT RESEARCH TASK:
+Inspect original F0129 implementation (including stepping, source-index order and mapping application) or use full-color indexed comparisons against original 224x136 DOS reference. Pixel-for-pixel acceptance only; no visual guesses or ornament-specific corrections.
+No Unity files modified.

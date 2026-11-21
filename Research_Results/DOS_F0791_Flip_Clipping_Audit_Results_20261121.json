@@ -1,0 +1,1248 @@
+{
+  "records": 900,
+  "partially_clipped_records": 43,
+  "mirrored_visible_records": 240,
+  "mirrored_and_clipped_records": 0,
+  "source_code": "DUNVIEW.C F0791_DUNGEONVIEW_DrawBitmapXX (X463 branch)",
+  "source_verified_rule": "Flipped horizontal source start = original width - visible width - F0635 source_x; vertical analogue",
+  "synthetic_flip_clip_cases": [
+    {
+      "bitmap_rect": [
+        -4,
+        20,
+        14,
+        12
+      ],
+      "visible_rect": [
+        0,
+        20,
+        10,
+        12
+      ],
+      "flip_x": true,
+      "flip_y": false,
+      "f0635_source": [
+        4,
+        0
+      ],
+      "f0791_blit_source": [
+        0,
+        0
+      ],
+      "first_drawn_source_pixel": [
+        9,
+        0
+      ]
+    },
+    {
+      "bitmap_rect": [
+        218,
+        20,
+        14,
+        12
+      ],
+      "visible_rect": [
+        218,
+        20,
+        6,
+        12
+      ],
+      "flip_x": true,
+      "flip_y": false,
+      "f0635_source": [
+        0,
+        0
+      ],
+      "f0791_blit_source": [
+        8,
+        0
+      ],
+      "first_drawn_source_pixel": [
+        13,
+        0
+      ]
+    },
+    {
+      "bitmap_rect": [
+        30,
+        -6,
+        14,
+        12
+      ],
+      "visible_rect": [
+        30,
+        0,
+        14,
+        6
+      ],
+      "flip_x": true,
+      "flip_y": true,
+      "f0635_source": [
+        0,
+        6
+      ],
+      "f0791_blit_source": [
+        0,
+        0
+      ],
+      "first_drawn_source_pixel": [
+        13,
+        5
+      ]
+    },
+    {
+      "bitmap_rect": [
+        220,
+        131,
+        14,
+        12
+      ],
+      "visible_rect": [
+        220,
+        131,
+        4,
+        5
+      ],
+      "flip_x": true,
+      "flip_y": true,
+      "f0635_source": [
+        0,
+        0
+      ],
+      "f0791_blit_source": [
+        10,
+        7
+      ],
+      "first_drawn_source_pixel": [
+        13,
+        11
+      ]
+    }
+  ],
+  "clipped_records": [
+    {
+      "type": "0",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -19,
+        37,
+        59,
+        37
+      ],
+      "visible_rect": [
+        0,
+        37,
+        40,
+        37
+      ],
+      "pre_flip_source": [
+        19,
+        0
+      ],
+      "final_source": [
+        19,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "0",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        187,
+        37,
+        59,
+        37
+      ],
+      "visible_rect": [
+        187,
+        37,
+        37,
+        37
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "1",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -21,
+        38,
+        59,
+        37
+      ],
+      "visible_rect": [
+        0,
+        38,
+        38,
+        37
+      ],
+      "pre_flip_source": [
+        21,
+        0
+      ],
+      "final_source": [
+        21,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "1",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        184,
+        38,
+        59,
+        37
+      ],
+      "visible_rect": [
+        184,
+        38,
+        40,
+        37
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "2",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -23,
+        38,
+        63,
+        37
+      ],
+      "visible_rect": [
+        0,
+        38,
+        40,
+        37
+      ],
+      "pre_flip_source": [
+        23,
+        0
+      ],
+      "final_source": [
+        23,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "2",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        182,
+        38,
+        63,
+        37
+      ],
+      "visible_rect": [
+        182,
+        38,
+        42,
+        37
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "3",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -23,
+        38,
+        63,
+        37
+      ],
+      "visible_rect": [
+        0,
+        38,
+        40,
+        37
+      ],
+      "pre_flip_source": [
+        23,
+        0
+      ],
+      "final_source": [
+        23,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "3",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        182,
+        38,
+        63,
+        37
+      ],
+      "visible_rect": [
+        182,
+        38,
+        42,
+        37
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "12",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        204,
+        75,
+        21,
+        18
+      ],
+      "visible_rect": [
+        204,
+        75,
+        20,
+        18
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "18",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -1,
+        38,
+        21,
+        17
+      ],
+      "visible_rect": [
+        0,
+        38,
+        20,
+        17
+      ],
+      "pre_flip_source": [
+        1,
+        0
+      ],
+      "final_source": [
+        1,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "22",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -1,
+        38,
+        21,
+        18
+      ],
+      "visible_rect": [
+        0,
+        38,
+        20,
+        18
+      ],
+      "pre_flip_source": [
+        1,
+        0
+      ],
+      "final_source": [
+        1,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "26",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -1,
+        38,
+        21,
+        17
+      ],
+      "visible_rect": [
+        0,
+        38,
+        20,
+        17
+      ],
+      "pre_flip_source": [
+        1,
+        0
+      ],
+      "final_source": [
+        1,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "27",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -1,
+        38,
+        21,
+        17
+      ],
+      "visible_rect": [
+        0,
+        38,
+        20,
+        17
+      ],
+      "pre_flip_source": [
+        1,
+        0
+      ],
+      "final_source": [
+        1,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "28",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -1,
+        38,
+        21,
+        17
+      ],
+      "visible_rect": [
+        0,
+        38,
+        20,
+        17
+      ],
+      "pre_flip_source": [
+        1,
+        0
+      ],
+      "final_source": [
+        1,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "32",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -1,
+        38,
+        21,
+        17
+      ],
+      "visible_rect": [
+        0,
+        38,
+        20,
+        17
+      ],
+      "pre_flip_source": [
+        1,
+        0
+      ],
+      "final_source": [
+        1,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "34",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        204,
+        80,
+        21,
+        13
+      ],
+      "visible_rect": [
+        204,
+        80,
+        20,
+        13
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "35",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -23,
+        38,
+        63,
+        37
+      ],
+      "visible_rect": [
+        0,
+        38,
+        40,
+        37
+      ],
+      "pre_flip_source": [
+        23,
+        0
+      ],
+      "final_source": [
+        23,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "35",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        182,
+        38,
+        63,
+        37
+      ],
+      "visible_rect": [
+        182,
+        38,
+        42,
+        37
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "36",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -21,
+        40,
+        60,
+        34
+      ],
+      "visible_rect": [
+        0,
+        40,
+        39,
+        34
+      ],
+      "pre_flip_source": [
+        21,
+        0
+      ],
+      "final_source": [
+        21,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "36",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        184,
+        40,
+        60,
+        34
+      ],
+      "visible_rect": [
+        184,
+        40,
+        40,
+        34
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "37",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -20,
+        39,
+        58,
+        36
+      ],
+      "visible_rect": [
+        0,
+        39,
+        38,
+        36
+      ],
+      "pre_flip_source": [
+        20,
+        0
+      ],
+      "final_source": [
+        20,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "37",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        185,
+        39,
+        58,
+        36
+      ],
+      "visible_rect": [
+        185,
+        39,
+        39,
+        36
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "39",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -11,
+        39,
+        39,
+        35
+      ],
+      "visible_rect": [
+        0,
+        39,
+        28,
+        35
+      ],
+      "pre_flip_source": [
+        11,
+        0
+      ],
+      "final_source": [
+        11,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "39",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        194,
+        39,
+        39,
+        35
+      ],
+      "visible_rect": [
+        194,
+        39,
+        30,
+        35
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "40",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -22,
+        43,
+        58,
+        2
+      ],
+      "visible_rect": [
+        0,
+        43,
+        36,
+        2
+      ],
+      "pre_flip_source": [
+        22,
+        0
+      ],
+      "final_source": [
+        22,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "40",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        188,
+        43,
+        58,
+        2
+      ],
+      "visible_rect": [
+        188,
+        43,
+        36,
+        2
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "41",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -25,
+        41,
+        63,
+        6
+      ],
+      "visible_rect": [
+        0,
+        41,
+        38,
+        6
+      ],
+      "pre_flip_source": [
+        25,
+        0
+      ],
+      "final_source": [
+        25,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "41",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        185,
+        41,
+        63,
+        6
+      ],
+      "visible_rect": [
+        185,
+        41,
+        39,
+        6
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "42",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -23,
+        40,
+        59,
+        8
+      ],
+      "visible_rect": [
+        0,
+        40,
+        36,
+        8
+      ],
+      "pre_flip_source": [
+        23,
+        0
+      ],
+      "final_source": [
+        23,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "42",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        187,
+        40,
+        59,
+        8
+      ],
+      "visible_rect": [
+        187,
+        40,
+        37,
+        8
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "43",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -11,
+        34,
+        31,
+        28
+      ],
+      "visible_rect": [
+        0,
+        34,
+        20,
+        28
+      ],
+      "pre_flip_source": [
+        11,
+        0
+      ],
+      "final_source": [
+        11,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "43",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        199,
+        34,
+        31,
+        28
+      ],
+      "visible_rect": [
+        199,
+        34,
+        25,
+        28
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "48",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -1,
+        41,
+        21,
+        11
+      ],
+      "visible_rect": [
+        0,
+        41,
+        20,
+        11
+      ],
+      "pre_flip_source": [
+        1,
+        0
+      ],
+      "final_source": [
+        1,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "50",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        205,
+        75,
+        20,
+        18
+      ],
+      "visible_rect": [
+        205,
+        75,
+        19,
+        18
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "55",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        205,
+        75,
+        20,
+        18
+      ],
+      "visible_rect": [
+        205,
+        75,
+        19,
+        18
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "56",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -24,
+        20,
+        63,
+        73
+      ],
+      "visible_rect": [
+        0,
+        20,
+        39,
+        73
+      ],
+      "pre_flip_source": [
+        24,
+        0
+      ],
+      "final_source": [
+        24,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "56",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        182,
+        20,
+        63,
+        73
+      ],
+      "visible_rect": [
+        182,
+        20,
+        42,
+        73
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "57",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -24,
+        20,
+        63,
+        73
+      ],
+      "visible_rect": [
+        0,
+        20,
+        39,
+        73
+      ],
+      "pre_flip_source": [
+        24,
+        0
+      ],
+      "final_source": [
+        24,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "57",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        182,
+        20,
+        63,
+        73
+      ],
+      "visible_rect": [
+        182,
+        20,
+        42,
+        73
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "58",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -24,
+        20,
+        63,
+        73
+      ],
+      "visible_rect": [
+        0,
+        20,
+        39,
+        73
+      ],
+      "pre_flip_source": [
+        24,
+        0
+      ],
+      "final_source": [
+        24,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "58",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        182,
+        20,
+        63,
+        73
+      ],
+      "visible_rect": [
+        182,
+        20,
+        42,
+        73
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "59",
+      "view": "9",
+      "view_name": "D2 left front",
+      "original_bitmap": [
+        -45,
+        20,
+        105,
+        73
+      ],
+      "visible_rect": [
+        0,
+        20,
+        60,
+        73
+      ],
+      "pre_flip_source": [
+        45,
+        0
+      ],
+      "final_source": [
+        45,
+        0
+      ],
+      "flip_x": false
+    },
+    {
+      "type": "59",
+      "view": "11",
+      "view_name": "D2 right front",
+      "original_bitmap": [
+        161,
+        20,
+        105,
+        73
+      ],
+      "visible_rect": [
+        161,
+        20,
+        63,
+        73
+      ],
+      "pre_flip_source": [
+        0,
+        0
+      ],
+      "final_source": [
+        0,
+        0
+      ],
+      "flip_x": false
+    }
+  ],
+  "limitations": [
+    "No decoded pixel colors",
+    "No runtime screenshot match",
+    "No V17 occlusion",
+    "All 900 live ordinary records have zero mirror+viewport-clip overlap"
+  ]
+}

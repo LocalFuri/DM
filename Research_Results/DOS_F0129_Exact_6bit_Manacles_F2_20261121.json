@@ -1,0 +1,207 @@
+{
+  "source": "DOS_Manacles332_Indexed_20261121.bin",
+  "native_size": [
+    92,
+    52
+  ],
+  "reference": "DOS_Manacles_F2_Original_Reference_20261121.png",
+  "reference_crop_xywh": [
+    82,
+    40,
+    60,
+    34
+  ],
+  "FIRES_offsets": {
+    "main": "0x23858",
+    "unmapped": "0x236EC",
+    "palette": "0x2379D"
+  },
+  "sampling": {
+    "fixed_point_bits": 6,
+    "x_step": 98,
+    "y_step": 97,
+    "x_source_positions": [
+      0,
+      2,
+      3,
+      5,
+      6,
+      8,
+      9,
+      11,
+      13,
+      14,
+      16,
+      17,
+      19,
+      20,
+      22,
+      23,
+      25,
+      26,
+      28,
+      29,
+      31,
+      32,
+      34,
+      35,
+      37,
+      39,
+      40,
+      42,
+      43,
+      45,
+      46,
+      48,
+      49,
+      51,
+      52,
+      54,
+      55,
+      57,
+      58,
+      60,
+      62,
+      63,
+      65,
+      66,
+      68,
+      69,
+      71,
+      72,
+      74,
+      75,
+      77,
+      78,
+      80,
+      81,
+      83,
+      84,
+      86,
+      88,
+      89,
+      91
+    ],
+    "y_source_positions": [
+      0,
+      2,
+      3,
+      5,
+      6,
+      8,
+      9,
+      11,
+      12,
+      14,
+      15,
+      17,
+      18,
+      20,
+      21,
+      23,
+      25,
+      26,
+      28,
+      29,
+      31,
+      32,
+      34,
+      35,
+      37,
+      38,
+      40,
+      41,
+      43,
+      44,
+      46,
+      47,
+      49,
+      50
+    ]
+  },
+  "palette_lut_F2": [
+    0,
+    12,
+    1,
+    3,
+    4,
+    3,
+    6,
+    7,
+    5,
+    9,
+    10,
+    11,
+    0,
+    2,
+    14,
+    13
+  ],
+  "visible_pixels": 702,
+  "transparent_pixels": 1338,
+  "verified_nontransparent_pixels": 702,
+  "brown_pixels": 237,
+  "brown_pixel_mismatches": 0,
+  "visible_pixel_mismatches": 0,
+  "per_index": {
+    "0": {
+      "pixels": 297,
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "exact_match_pixels": 297
+    },
+    "1": {
+      "pixels": 59,
+      "rgb": [
+        109,
+        109,
+        109
+      ],
+      "exact_match_pixels": 59
+    },
+    "2": {
+      "pixels": 54,
+      "rgb": [
+        146,
+        146,
+        146
+      ],
+      "exact_match_pixels": 54
+    },
+    "3": {
+      "pixels": 237,
+      "rgb": [
+        109,
+        36,
+        0
+      ],
+      "exact_match_pixels": 237
+    },
+    "12": {
+      "pixels": 37,
+      "rgb": [
+        73,
+        73,
+        73
+      ],
+      "exact_match_pixels": 37
+    },
+    "13": {
+      "pixels": 18,
+      "rgb": [
+        182,
+        182,
+        182
+      ],
+      "exact_match_pixels": 18
+    }
+  },
+  "limits": [
+    "Transparency correctly selects unchanged wall background; this test does not reconstruct a separate background image.",
+    "Validated only at Manacles center F2 and these six visible output color indices.",
+    "F3, side views, other ornaments, and clipping interactions still require independent DOS reference checks."
+  ]
+}

@@ -1,0 +1,54 @@
+DUNGEON MASTER PC DOS — GENERIC 6-BIT INDEXED RENDERER CONTINUATION
+Date: 2026-11-21. Research only. Do not modify Unity or original DOS installation.
+
+INPUTS
+- GRAPHICS_DOS.ZIP: original 713-graphic DOS GRAPHICS.DAT.
+- DOS_All_Ornament_Geometry_F0635_Corrected_20261121.csv: existing checked geometry CSV for 60 types x 15 views.
+- DOS_Manacles332_Indexed_20261121.bin: original native 92x52 image, original 4-bit palette indices.
+- DOS_F0129_Exact_6bit_Verification_Package_20261121.zip: original exact F2 verification and FIRES evidence.
+
+IMPLEMENTED
+- Generic, data-driven extraction of each required original native graphic through dmcsb.image_indexed(), preserving the 0..15 indices.
+- Shared 6-bit DOS shrink: step=(native_dimension<<6)//destination_dimension;
+  sample_coordinate=((step>>1)+output_coordinate*step)>>6.
+- Original D2/D3 palette index lookup tables. No RGB interpolation.
+- Horizontal mirroring for the side-view rows flagged by the geometry CSV.
+- Separately generated full scaled index image and viewport-clipped visible index image.
+- No fallback for missing graphics, geometry, incompatible dimensions or invalid indexes.
+- Outputs raw pixel-index .bin, diagnostic palette-index PNG with transparency 10, and per-view JSON manifest.
+
+MANACLES REGRESSION
+Graphic 332 native indexed bitmap: 92x52.
+F2: output 60x34; step X=98, step Y=97; palette D2.
+F2: transparent=1338, visible=702. Pixel histogram 0=297,1=59,2=54,3=237,10=1338,12=37,13=18.
+Matches the previous 702/702 visible-pixel exact DOS screenshot verification.
+F3: output 40x22; step X=147, step Y=151; palette D3.
+F3: transparent=582, visible=298. Index histogram 0=166,1=8,2=15,3=89,10=582,12=20.
+F3 is a PREDICTION. No independent original F3 screenshot verified.
+
+FILES
+- DOS_Generic_6bit_Indexed_Renderer_20261121.py
+- RUN_DOS_6BIT_INDEXED_20261121.bat
+- DOS_All_Ornament_Geometry_F0635_Corrected_20261121.csv
+- DOS_Manacles_F2_6bit_Indexed_Prediction_20261121.bin
+- DOS_Manacles_F3_6bit_Indexed_Prediction_20261121.bin
+
+RUN ON WINDOWS (dmcsb and Pillow already installed)
+Put the ZIP contents in C:\Unity\DM\Research_Results, alongside GRAPHICS_DOS.ZIP.
+Double-click RUN_DOS_6BIT_INDEXED_20261121.bat.
+Creates DOS_6bit_Indexed_Output_20261121 with 30 views (Hook + Manacles).
+To create the complete 900-view output, run the script with --all instead of the default focus selection.
+
+VALIDATION LIMITS
+- Pixel-exact match is established independently only for Manacles center F2.
+- Other views are generated using the same source-based rules but not independently validated against DOS screenshots.
+- This is a sprite-index and clipping prototype, not a full dungeon compositing or wall-occlusion implementation.
+- The palette for output PNGs is diagnostic grayscale, NOT DOS RGB. Binary files contain exact mapped indices.
+- Original color indices and background composition must be verified in real DOS for additional perspectives.
+- Mirror/clipping order should be independently checked where a mirrored sprite intersects a clipping boundary.
+- No Unity edits and no individual ornament-specific corrections.
+
+NEXT
+1. Run batch from original graphics; inspect Hook F2 and Manacles F3 outputs.
+2. Obtain PC DOS reference images for those positions and test exact pixels, not visual preference.
+3. Independently verify S2/S3, mirroring, and clipping/occlusion before Unity integration.

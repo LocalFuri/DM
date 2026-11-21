@@ -1,0 +1,24 @@
+Dungeon Master — F0129/F0132 offline pixel-candidate checkpoint
+2026-11-21
+
+Evidence:
+- Verified source call site: DUNVIEW.C function F0675 calls F0129_VIDEO_BlitShrinkWithPaletteChanges with source width/height, scaled destination width/height (M078), and palette-change pointer.
+- F0791 delegates placement and clipping to F0635, then calls F0132_VIDEO_Blit with transparency and optional horizontal mirroring.
+- The uploaded ReDMCSB source bundle supplies the declarations and call sites but not the actual implementations of F0129 or F0132. Therefore the exact DOS pixel sampling and palette-replacement rules remain UNVERIFIED.
+- Previously corrected 900-record coordinate CSV is reused verbatim and is NOT recalculated or silently changed here.
+
+New reproducible experiment:
+- A Python tool decodes native graphics with the dmcsb package installed on the user's PC.
+- For Hook type 4 and Manacles type 36, it renders center-front F2/F3 and left/right S2/S3, 12 cases in total.
+- Two distinct pixel sampling HYPOTHESES are rendered side by side: edge-based floor(dst*src/dest) and center-based floor((dst+.5)*src/dest).
+- The native bitmap metadata, original geometry CSV, horizontal mirroring and clipping drive the output for both ornaments. No ornament-specific placement exceptions are used.
+- No DOS palette-change mapping is applied. Decoded colors are kept as supplied by dmcsb and are not an assertion about the original DOS perspective palette.
+- Synthetic tests passed for both scaling candidates, mirror+clip, and 224x136 output.
+
+How to run (Windows):
+1. Extract the package ZIP directly into C:\Unity\DM\Research_Results\ (no nested folders).
+2. Double-click RUN_DOS_PIXEL_CANDIDATES.bat.
+3. Upload DOS_Ornament_Pixel_Candidates_20261121_Comparison.png for visual comparison.
+This does not change the game, DOSBox-X, or Unity.
+
+Next: compare candidates against original DOS screen pixel captures, identify the source-selection rule and palette changes from evidence, then implement only the established shared renderer behavior.

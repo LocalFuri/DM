@@ -1,0 +1,63 @@
+{
+  "inputs": {
+    "indexed_source": "DOS_Manacles332_Indexed_20261121.bin",
+    "source_size": [
+      92,
+      52
+    ],
+    "reference": "image(20261121-185132).png",
+    "reference_crop": [
+      82,
+      40,
+      60,
+      34
+    ],
+    "reference_brown_rgb": [
+      109,
+      36,
+      0
+    ],
+    "reference_brown_count": 237
+  },
+  "palette_lut_f2": [
+    0,
+    12,
+    1,
+    3,
+    4,
+    3,
+    6,
+    7,
+    5,
+    9,
+    10,
+    11,
+    0,
+    2,
+    14,
+    13
+  ],
+  "metrics": {
+    "edge_exact_fraction": {
+      "matching_brown": 205,
+      "extra_brown": 73,
+      "missing_brown": 32,
+      "f1": 0.796117
+    },
+    "center_exact_fraction": {
+      "matching_brown": 216,
+      "extra_brown": 16,
+      "missing_brown": 21,
+      "f1": 0.921109
+    },
+    "scummvm_2026_fixedpoint_32768": {
+      "matching_brown": 203,
+      "extra_brown": 77,
+      "missing_brown": 34,
+      "f1": 0.7853
+    }
+  },
+  "source": "https://raw.githubusercontent.com/scummvm/scummvm/master/engines/dm/gfx.cpp, blitToBitmapShrinkWithPalChange (accessed November 21 2026)",
+  "scope": "Only brown-mask agreement for one ornament. No exact DOS F0129 implementation or full-pixel comparison.",
+  "conclusion": "2026 ScummVM fixed-point sampling does not match the original DOS brown mask; cannot be accepted as original DOS behavior."
+}

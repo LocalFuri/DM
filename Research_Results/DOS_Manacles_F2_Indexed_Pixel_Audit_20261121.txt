@@ -1,0 +1,18 @@
+Dungeon Master — Manacles F2 native indexed pixel audit (2026-11-21)
+
+Inputs: DOS_Manacles332_Indexed_20261121.bin (92x52), original PC DOS 224x136 screenshot (image(20261121-185132).png).
+Read-only audit; no Unity or DOS modifications.
+
+Verified: 4,784 bytes, each 0..15; histogram EXACTLY matches extracted report; transparent index 10 occurs 3,166 times.
+F2 palette LUT: [0,12,1,3,4,3,6,7,5,9,10,11,0,2,14,13].
+Reference rectangle tested: X=82 Y=40 width=60 height=34.
+Reference distinct brown RGB value (109,36,0): 237 pixels.
+Predicted brown = scaled indexed pixels where remapped palette index == 3.
+
+Test result (binary brown mask):
+  edge: matching=205, extra=73, missed=32, F1=0.7961
+  center: matching=216, extra=16, missed=21, F1=0.9211
+
+CONCLUSION: Center sampling plus the correct palette remap is clearly closer on the brown-class mask, but still has 16 spurious and 21 missed brown pixels. A single-color metric is NOT a full pixel match and cannot establish the exact F0129 algorithm. The actual DOS shrink/phase and palette-index selection must still be recovered or demonstrated across multiple graphics. No recommendation to change Unity.
+
+Source of this audit's color classification: original PC DOS screenshot. Background grays are not treated as an exhaustive per-pixel truth mask; avoid overclaiming the other colors.

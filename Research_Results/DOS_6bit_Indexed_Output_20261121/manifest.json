@@ -1,0 +1,1046 @@
+{
+  "status": "UNVERIFIED except Manacles F2 regression",
+  "sampling": "FIRES 6-bit integer step, half-step start",
+  "palette": "D2/D3 LUT mapped after sampling",
+  "caveats": [
+    "No independent DOS screenshot match for F3 or S2/S3",
+    "No wall occlusion compositing",
+    "Mirror-before/after-clipping implementation requires independent side-view reference",
+    "Palette PNG is diagnostic grayscale; .bin retains correct DOS palette indices"
+  ],
+  "rows": [
+    {
+      "type": 4,
+      "view": 0,
+      "graphic": 267,
+      "origin": [
+        24,
+        38
+      ],
+      "size": [
+        13,
+        8
+      ],
+      "visible_origin": [
+        24,
+        38
+      ],
+      "visible_size": [
+        13,
+        8
+      ],
+      "transparent": 60,
+      "source": [
+        14,
+        19
+      ],
+      "sampled_index_histogram": {
+        "12": 6,
+        "10": 60,
+        "0": 19,
+        "3": 18,
+        "2": 1
+      }
+    },
+    {
+      "type": 4,
+      "view": 1,
+      "graphic": 267,
+      "origin": [
+        185,
+        39
+      ],
+      "size": [
+        13,
+        8
+      ],
+      "visible_origin": [
+        185,
+        39
+      ],
+      "visible_size": [
+        13,
+        8
+      ],
+      "transparent": 60,
+      "source": [
+        14,
+        19
+      ],
+      "sampled_index_histogram": {
+        "10": 60,
+        "12": 6,
+        "3": 18,
+        "2": 1,
+        "0": 19
+      }
+    },
+    {
+      "type": 4,
+      "view": 2,
+      "graphic": 267,
+      "origin": [
+        82,
+        39
+      ],
+      "size": [
+        6,
+        8
+      ],
+      "visible_origin": [
+        82,
+        39
+      ],
+      "visible_size": [
+        6,
+        8
+      ],
+      "transparent": 27,
+      "source": [
+        14,
+        19
+      ],
+      "sampled_index_histogram": {
+        "12": 3,
+        "10": 27,
+        "3": 9,
+        "0": 9
+      }
+    },
+    {
+      "type": 4,
+      "view": 3,
+      "graphic": 267,
+      "origin": [
+        136,
+        39
+      ],
+      "size": [
+        6,
+        8
+      ],
+      "visible_origin": [
+        136,
+        39
+      ],
+      "visible_size": [
+        6,
+        8
+      ],
+      "transparent": 27,
+      "source": [
+        14,
+        19
+      ],
+      "sampled_index_histogram": {
+        "10": 27,
+        "12": 3,
+        "3": 9,
+        "0": 9
+      }
+    },
+    {
+      "type": 4,
+      "view": 4,
+      "graphic": 268,
+      "origin": [
+        39,
+        38
+      ],
+      "size": [
+        12,
+        12
+      ],
+      "visible_origin": [
+        39,
+        38
+      ],
+      "visible_size": [
+        12,
+        12
+      ],
+      "transparent": 47,
+      "source": [
+        28,
+        28
+      ],
+      "sampled_index_histogram": {
+        "10": 47,
+        "12": 11,
+        "1": 2,
+        "3": 55,
+        "0": 29
+      }
+    },
+    {
+      "type": 4,
+      "view": 5,
+      "graphic": 268,
+      "origin": [
+        106,
+        38
+      ],
+      "size": [
+        12,
+        12
+      ],
+      "visible_origin": [
+        106,
+        38
+      ],
+      "visible_size": [
+        12,
+        12
+      ],
+      "transparent": 47,
+      "source": [
+        28,
+        28
+      ],
+      "sampled_index_histogram": {
+        "10": 47,
+        "12": 11,
+        "1": 2,
+        "3": 55,
+        "0": 29
+      }
+    },
+    {
+      "type": 4,
+      "view": 6,
+      "graphic": 268,
+      "origin": [
+        174,
+        38
+      ],
+      "size": [
+        12,
+        12
+      ],
+      "visible_origin": [
+        174,
+        38
+      ],
+      "visible_size": [
+        12,
+        12
+      ],
+      "transparent": 47,
+      "source": [
+        28,
+        28
+      ],
+      "sampled_index_histogram": {
+        "10": 47,
+        "12": 11,
+        "1": 2,
+        "3": 55,
+        "0": 29
+      }
+    },
+    {
+      "type": 4,
+      "view": 7,
+      "graphic": 267,
+      "origin": [
+        66,
+        39
+      ],
+      "size": [
+        9,
+        12
+      ],
+      "visible_origin": [
+        66,
+        39
+      ],
+      "visible_size": [
+        9,
+        12
+      ],
+      "transparent": 61,
+      "source": [
+        14,
+        19
+      ],
+      "sampled_index_histogram": {
+        "1": 3,
+        "10": 61,
+        "0": 22,
+        "3": 19,
+        "13": 2,
+        "2": 1
+      }
+    },
+    {
+      "type": 4,
+      "view": 8,
+      "graphic": 267,
+      "origin": [
+        149,
+        39
+      ],
+      "size": [
+        9,
+        12
+      ],
+      "visible_origin": [
+        149,
+        39
+      ],
+      "visible_size": [
+        9,
+        12
+      ],
+      "transparent": 61,
+      "source": [
+        14,
+        19
+      ],
+      "sampled_index_histogram": {
+        "10": 61,
+        "1": 3,
+        "3": 19,
+        "0": 22,
+        "13": 2,
+        "2": 1
+      }
+    },
+    {
+      "type": 4,
+      "view": 9,
+      "graphic": 268,
+      "origin": [
+        1,
+        38
+      ],
+      "size": [
+        18,
+        18
+      ],
+      "visible_origin": [
+        1,
+        38
+      ],
+      "visible_size": [
+        18,
+        18
+      ],
+      "transparent": 133,
+      "source": [
+        28,
+        28
+      ],
+      "sampled_index_histogram": {
+        "10": 133,
+        "2": 6,
+        "3": 101,
+        "0": 64,
+        "1": 14,
+        "12": 5,
+        "13": 1
+      }
+    },
+    {
+      "type": 4,
+      "view": 10,
+      "graphic": 268,
+      "origin": [
+        103,
+        38
+      ],
+      "size": [
+        18,
+        18
+      ],
+      "visible_origin": [
+        103,
+        38
+      ],
+      "visible_size": [
+        18,
+        18
+      ],
+      "transparent": 133,
+      "source": [
+        28,
+        28
+      ],
+      "sampled_index_histogram": {
+        "10": 133,
+        "2": 6,
+        "3": 101,
+        "0": 64,
+        "1": 14,
+        "12": 5,
+        "13": 1
+      }
+    },
+    {
+      "type": 4,
+      "view": 11,
+      "graphic": 268,
+      "origin": [
+        205,
+        38
+      ],
+      "size": [
+        18,
+        18
+      ],
+      "visible_origin": [
+        205,
+        38
+      ],
+      "visible_size": [
+        18,
+        18
+      ],
+      "transparent": 133,
+      "source": [
+        28,
+        28
+      ],
+      "sampled_index_histogram": {
+        "10": 133,
+        "2": 6,
+        "3": 101,
+        "0": 64,
+        "1": 14,
+        "12": 5,
+        "13": 1
+      }
+    },
+    {
+      "type": 4,
+      "view": 12,
+      "graphic": 267,
+      "origin": [
+        48,
+        39
+      ],
+      "size": [
+        14,
+        19
+      ],
+      "visible_origin": [
+        48,
+        39
+      ],
+      "visible_size": [
+        14,
+        19
+      ],
+      "transparent": 157,
+      "source": [
+        14,
+        19
+      ],
+      "sampled_index_histogram": {
+        "2": 12,
+        "10": 157,
+        "12": 12,
+        "5": 38,
+        "3": 5,
+        "15": 3,
+        "0": 38,
+        "13": 1
+      }
+    },
+    {
+      "type": 4,
+      "view": 13,
+      "graphic": 267,
+      "origin": [
+        163,
+        39
+      ],
+      "size": [
+        14,
+        19
+      ],
+      "visible_origin": [
+        163,
+        39
+      ],
+      "visible_size": [
+        14,
+        19
+      ],
+      "transparent": 157,
+      "source": [
+        14,
+        19
+      ],
+      "sampled_index_histogram": {
+        "10": 157,
+        "2": 12,
+        "3": 5,
+        "5": 38,
+        "12": 12,
+        "15": 3,
+        "0": 38,
+        "13": 1
+      }
+    },
+    {
+      "type": 4,
+      "view": 14,
+      "graphic": 268,
+      "origin": [
+        98,
+        36
+      ],
+      "size": [
+        28,
+        28
+      ],
+      "visible_origin": [
+        98,
+        36
+      ],
+      "visible_size": [
+        28,
+        28
+      ],
+      "transparent": 294,
+      "source": [
+        28,
+        28
+      ],
+      "sampled_index_histogram": {
+        "10": 294,
+        "2": 38,
+        "13": 12,
+        "3": 56,
+        "5": 229,
+        "12": 121,
+        "0": 16,
+        "1": 17,
+        "15": 1
+      }
+    },
+    {
+      "type": 36,
+      "view": 0,
+      "graphic": 331,
+      "origin": [
+        7,
+        39
+      ],
+      "size": [
+        30,
+        18
+      ],
+      "visible_origin": [
+        7,
+        39
+      ],
+      "visible_size": [
+        30,
+        18
+      ],
+      "transparent": 357,
+      "source": [
+        32,
+        42
+      ],
+      "sampled_index_histogram": {
+        "10": 357,
+        "0": 101,
+        "1": 27,
+        "3": 36,
+        "12": 18,
+        "2": 1
+      }
+    },
+    {
+      "type": 36,
+      "view": 1,
+      "graphic": 331,
+      "origin": [
+        187,
+        41
+      ],
+      "size": [
+        30,
+        18
+      ],
+      "visible_origin": [
+        187,
+        41
+      ],
+      "visible_size": [
+        30,
+        18
+      ],
+      "transparent": 357,
+      "source": [
+        32,
+        42
+      ],
+      "sampled_index_histogram": {
+        "10": 357,
+        "0": 101,
+        "1": 27,
+        "3": 36,
+        "12": 18,
+        "2": 1
+      }
+    },
+    {
+      "type": 36,
+      "view": 2,
+      "graphic": 331,
+      "origin": [
+        77,
+        40
+      ],
+      "size": [
+        14,
+        18
+      ],
+      "visible_origin": [
+        77,
+        40
+      ],
+      "visible_size": [
+        14,
+        18
+      ],
+      "transparent": 170,
+      "source": [
+        32,
+        42
+      ],
+      "sampled_index_histogram": {
+        "10": 170,
+        "1": 12,
+        "0": 49,
+        "3": 15,
+        "12": 6
+      }
+    },
+    {
+      "type": 36,
+      "view": 3,
+      "graphic": 331,
+      "origin": [
+        134,
+        41
+      ],
+      "size": [
+        14,
+        18
+      ],
+      "visible_origin": [
+        134,
+        41
+      ],
+      "visible_size": [
+        14,
+        18
+      ],
+      "transparent": 170,
+      "source": [
+        32,
+        42
+      ],
+      "sampled_index_histogram": {
+        "10": 170,
+        "1": 12,
+        "0": 49,
+        "3": 15,
+        "12": 6
+      }
+    },
+    {
+      "type": 36,
+      "view": 4,
+      "graphic": 332,
+      "origin": [
+        24,
+        39
+      ],
+      "size": [
+        40,
+        22
+      ],
+      "visible_origin": [
+        24,
+        39
+      ],
+      "visible_size": [
+        40,
+        22
+      ],
+      "transparent": 582,
+      "source": [
+        92,
+        52
+      ],
+      "sampled_index_histogram": {
+        "10": 582,
+        "2": 15,
+        "0": 166,
+        "3": 89,
+        "12": 20,
+        "1": 8
+      }
+    },
+    {
+      "type": 36,
+      "view": 5,
+      "graphic": 332,
+      "origin": [
+        92,
+        39
+      ],
+      "size": [
+        40,
+        22
+      ],
+      "visible_origin": [
+        92,
+        39
+      ],
+      "visible_size": [
+        40,
+        22
+      ],
+      "transparent": 582,
+      "source": [
+        92,
+        52
+      ],
+      "sampled_index_histogram": {
+        "10": 582,
+        "2": 15,
+        "0": 166,
+        "3": 89,
+        "12": 20,
+        "1": 8
+      }
+    },
+    {
+      "type": 36,
+      "view": 6,
+      "graphic": 332,
+      "origin": [
+        160,
+        39
+      ],
+      "size": [
+        40,
+        22
+      ],
+      "visible_origin": [
+        160,
+        39
+      ],
+      "visible_size": [
+        40,
+        22
+      ],
+      "transparent": 582,
+      "source": [
+        92,
+        52
+      ],
+      "sampled_index_histogram": {
+        "10": 582,
+        "2": 15,
+        "0": 166,
+        "3": 89,
+        "12": 20,
+        "1": 8
+      }
+    },
+    {
+      "type": 36,
+      "view": 7,
+      "graphic": 331,
+      "origin": [
+        57,
+        40
+      ],
+      "size": [
+        21,
+        27
+      ],
+      "visible_origin": [
+        57,
+        40
+      ],
+      "visible_size": [
+        21,
+        27
+      ],
+      "transparent": 376,
+      "source": [
+        32,
+        42
+      ],
+      "sampled_index_histogram": {
+        "10": 376,
+        "0": 89,
+        "12": 17,
+        "2": 29,
+        "3": 38,
+        "1": 15,
+        "13": 3
+      }
+    },
+    {
+      "type": 36,
+      "view": 8,
+      "graphic": 331,
+      "origin": [
+        144,
+        40
+      ],
+      "size": [
+        21,
+        27
+      ],
+      "visible_origin": [
+        144,
+        40
+      ],
+      "visible_size": [
+        21,
+        27
+      ],
+      "transparent": 376,
+      "source": [
+        32,
+        42
+      ],
+      "sampled_index_histogram": {
+        "10": 376,
+        "2": 29,
+        "0": 89,
+        "12": 17,
+        "3": 38,
+        "1": 15,
+        "13": 3
+      }
+    },
+    {
+      "type": 36,
+      "view": 9,
+      "graphic": 332,
+      "origin": [
+        -21,
+        40
+      ],
+      "size": [
+        60,
+        34
+      ],
+      "visible_origin": [
+        0,
+        40
+      ],
+      "visible_size": [
+        39,
+        34
+      ],
+      "transparent": 1338,
+      "source": [
+        92,
+        52
+      ],
+      "sampled_index_histogram": {
+        "10": 1338,
+        "13": 18,
+        "0": 297,
+        "3": 237,
+        "1": 59,
+        "2": 54,
+        "12": 37
+      }
+    },
+    {
+      "type": 36,
+      "view": 10,
+      "graphic": 332,
+      "origin": [
+        82,
+        40
+      ],
+      "size": [
+        60,
+        34
+      ],
+      "visible_origin": [
+        82,
+        40
+      ],
+      "visible_size": [
+        60,
+        34
+      ],
+      "transparent": 1338,
+      "source": [
+        92,
+        52
+      ],
+      "sampled_index_histogram": {
+        "10": 1338,
+        "13": 18,
+        "0": 297,
+        "3": 237,
+        "1": 59,
+        "2": 54,
+        "12": 37
+      }
+    },
+    {
+      "type": 36,
+      "view": 11,
+      "graphic": 332,
+      "origin": [
+        184,
+        40
+      ],
+      "size": [
+        60,
+        34
+      ],
+      "visible_origin": [
+        184,
+        40
+      ],
+      "visible_size": [
+        40,
+        34
+      ],
+      "transparent": 1338,
+      "source": [
+        92,
+        52
+      ],
+      "sampled_index_histogram": {
+        "10": 1338,
+        "13": 18,
+        "0": 297,
+        "3": 237,
+        "1": 59,
+        "2": 54,
+        "12": 37
+      }
+    },
+    {
+      "type": 36,
+      "view": 12,
+      "graphic": 331,
+      "origin": [
+        30,
+        40
+      ],
+      "size": [
+        32,
+        42
+      ],
+      "visible_origin": [
+        30,
+        40
+      ],
+      "visible_size": [
+        32,
+        42
+      ],
+      "transparent": 882,
+      "source": [
+        32,
+        42
+      ],
+      "sampled_index_histogram": {
+        "10": 882,
+        "12": 70,
+        "13": 66,
+        "1": 43,
+        "5": 15,
+        "3": 81,
+        "2": 42,
+        "15": 6,
+        "0": 139
+      }
+    },
+    {
+      "type": 36,
+      "view": 13,
+      "graphic": 331,
+      "origin": [
+        162,
+        40
+      ],
+      "size": [
+        32,
+        42
+      ],
+      "visible_origin": [
+        162,
+        40
+      ],
+      "visible_size": [
+        32,
+        42
+      ],
+      "transparent": 882,
+      "source": [
+        32,
+        42
+      ],
+      "sampled_index_histogram": {
+        "10": 882,
+        "1": 43,
+        "13": 66,
+        "12": 70,
+        "3": 81,
+        "2": 42,
+        "5": 15,
+        "15": 6,
+        "0": 139
+      }
+    },
+    {
+      "type": 36,
+      "view": 14,
+      "graphic": 332,
+      "origin": [
+        66,
+        38
+      ],
+      "size": [
+        92,
+        52
+      ],
+      "visible_origin": [
+        66,
+        38
+      ],
+      "visible_size": [
+        92,
+        52
+      ],
+      "transparent": 3166,
+      "source": [
+        92,
+        52
+      ],
+      "sampled_index_histogram": {
+        "10": 3166,
+        "15": 44,
+        "12": 412,
+        "5": 79,
+        "13": 132,
+        "2": 118,
+        "3": 487,
+        "1": 120,
+        "0": 226
+      }
+    }
+  ]
+}

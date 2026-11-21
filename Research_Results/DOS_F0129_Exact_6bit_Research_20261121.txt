@@ -1,0 +1,45 @@
+DUNGEON MASTER — DOS F0129 PIXEL SHRINK — 21 NOVEMBER 2026
+Research-only; Unity and the DOS installation remain untouched.
+
+PRIMARY EVIDENCE
+Unpacked FIRES load image: DOS_FIRES_Engine_Image_20261121.bin
+Shrink routine: offset 0x23858 (16-bit x86)
+Non-remapped 4-bit pair-copy helper: 0x236EC
+Palette-remapped 4-bit pair-copy helper: 0x2379D
+Real reference: 224x136 original DOS image image(20261121-185132).png
+Original indexed native graphic: DOS_Manacles332_Indexed_20261121.bin, 92x52.
+
+MACHINE CODE — VERIFIED
+0x2389B: MOV AX,[BP+0E]; 0x2389E: SHL AX,6;
+0x238A2: CWD; 0x238A3: IDIV WORD PTR [BP+12]
+-> X step = floor((source_width << 6)/destination_width).
+0x238A9...0x238B2 -> Y step = floor((source_height << 6)/destination_height).
+0x238B5: SHR AX,1, initializes vertical accumulator to half Y step.
+0x236F4..0x236F9, 0x237A5..0x237AA initialize horizontal accumulator to half X step.
+Each pixel source position is determined by accumulator >> 6 and then incremented by the precomputed step. The routine processes pixels in packed 4-bit pairs.
+0x238C3..0x238DF selects non-palette helper 0x236EC or palette helper 0x2379D using the palette-table pointer.
+0x237D?–0x23830 (palette helper) performs 4-bit palette-table substitution for each selected source nibble.
+
+MANACLES F2 CASE
+Source: 92x52; destination 60x34, screen rectangle X82/Y40.
+X step = floor(92*64/60) = 98.
+Y step = floor(52*64/34) = 97.
+Source X = ((98//2) + x*98)>>6.
+Source Y = ((97//2) + y*97)>>6.
+F2 palette LUT: [0,12,1,3,4,3,6,7,5,9,10,11,0,2,14,13].
+
+EXACT VERIFICATION
+Output pixels: 2,040 (60x34).
+Transparent index 10: 1,338 positions, composited from existing wall.
+Visible output pixels: 702, all 702 have RGB exactly matching original PC DOS screenshot at the corresponding coordinate.
+Visible mismatches: 0.
+Original brown mask: 237/237 matching; extra brown: 0; missing brown: 0.
+Observed output RGB mappings: 0=(0,0,0),1=(109,109,109),2=(146,146,146),3=(109,36,0),12=(73,73,73),13=(182,182,182).
+These color values are directly observed at each corresponding indexed pixel; no tolerance, image adjustment, or visual approximation was used.
+
+BOUNDARIES OF EVIDENCE
+This verifies Manacles center F2's scaled foreground and transparency index positions. The transparent locations show the existing reference wall and cannot be independently verified as an isolated source image from that screenshot. This is not proof of exact F3, side S2/S3, clipping under occlusion, all palettes, or all 60 ornaments.
+Next: generate F3/S2/S3 using this identical generic 6-bit implementation and independently compare against DOS captures. No per-ornament corrections.
+
+REPRODUCIBILITY
+Run DOS_F0129_Exact_6bit_Manacles_F2_Verification_20261121.py in the same folder as DOS_Manacles332_Indexed_20261121.bin and DOS_Manacles_F2_Original_Reference_20261121.png. It produces DOS_F0129_Exact_6bit_Manacles_F2_20261121.json and asserts zero visible-pixel discrepancies.

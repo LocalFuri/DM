@@ -1,0 +1,10 @@
+Dungeon Master DOS Hook F2: generated native-index rendering vs screenshots
+2026-11-21
+
+Original indexed batch view: Hook type 04, slot 10, graphic 268.
+Position (103,38), bitmap 18 x 18, total 324 indices, 191 visible indices and 133 transparent indices (10).
+DOS screenshot: 191/191 rendered non-transparent pixels match expected color at exact coordinates, zero mismatches.
+Unity screenshot: 188/191 pixels match, and missing (118,42), (118,48), (118,49), all expected palette index 3 (brown).
+For indices 1,2,12,13, the expected RGB values are derived from observed screenshot palettes; the DOS wall is darkened by one stage. All RGB expectations were checked individually.
+The DOS screenshot matches the generic six-bit output fully. Do not change the generic scaling algorithm to remedy this Unity mismatch. Current Unity display has not yet integrated or been proven to use this generic renderer; the cause of its omissions remains to be established by checking current Unity renderer source.
+No Unity code modified.

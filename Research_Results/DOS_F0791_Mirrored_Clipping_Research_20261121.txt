@@ -1,0 +1,50 @@
+Dungeon Master PC DOS — F0791 mirrored clipping source-offset audit
+Date: 2026-11-21 (Europe/Berlin)
+RESEARCH ONLY. NO UNITY EDITS.
+
+Input files (directly inspected):
+- DUNVIEW.C from DUNVIEW.ZIP, function F0791_DUNGEONVIEW_DrawBitmapXX
+- COORD.C from DUNVIEW.ZIP, function F0635_
+- DOS_All_Ornament_Geometry_F0635_Corrected_20261121.csv (900 records)
+
+Finding:
+F0635 returns destination position and non-flipped source trim offsets. F0791 then
+adjusts those source offsets if the bitmap is horizontally and/or vertically flipped.
+For ordinary unshifted bitmap rendering:
+    final_source_x = bitmap_width - clipped_width - source_x     if horizontally flipped
+                     source_x                                 otherwise
+    final_source_y = bitmap_height - clipped_height - source_y   if vertically flipped
+                     source_y                                 otherwise
+This is reconstructed from the actual L2449/L2450 handling in DUNVIEW.C F0791.
+It is not an ornament-specific correction. Simply clipping a mirrored bitmap and
+using the unflipped source offset will select the wrong source pixels near edges.
+
+Audit results:
+- 900 geometry records checked; 43 partially clipped by the 224x136 viewport.
+- No record is both mirrored and viewport clipped in this particular ordinary
+  60-type x 15-view-position dataset. Consequently a spreadsheet-only check of
+  these 900 placements cannot exercise the mirrored clipping rule.
+- Four synthetic combinations of left/right/top/bottom clipping with horizontal
+  and vertical mirroring were verified for source-bound validity and ordering.
+- Example: bitmap X=-4, W=14, visible X=0, W=10. F0635 source_x=4;
+  horizontal flip F0791 source start = 14-10-4 = 0. The first drawn source pixel
+  on the mirrored output is source X=9, NOT X=13.
+- Example: bitmap X=218, W=14, visible W=6. F0635 source_x=0;
+  horizontal flip F0791 source start = 14-6-0 = 8. The first drawn source pixel
+  on the mirrored output is source X=13.
+
+Deliverables:
+- DOS_F0791_Flip_Clipping_Audit_20261121.py
+- DOS_F0791_Flip_Clipping_Audit_Results_20261121.json
+
+Scope limitation:
+This is verified source-level source-offset arithmetic and a synthetic regression,
+not a direct runtime capture or pixel-identical reproduction. The palette-changing
+F0129_VIDEO_BlitShrinkWithPaletteChanges and the F0132_VIDEO_Blit pixel sampling
+still require separate implementation/verification. Also not modeled: wall
+occlusion, shifting special-case layout records 10..18, text/door-specific flags.
+
+Next technical task:
+Implement and test the actual DOS pixel shrinking/palette transformation offline,
+then compare several front/side pixels with a DOS reference image. Do not change
+approved Unity rendering until the generic algorithm passes comparisons.

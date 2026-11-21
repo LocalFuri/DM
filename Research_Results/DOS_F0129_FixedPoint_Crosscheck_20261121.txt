@@ -1,0 +1,38 @@
+Dungeon Master PC DOS — F0129 fixed-point cross-check (2026-11-21)
+
+OBJECTIVE
+Find a source-supported, universal pixel shrink method; accept only an exact DOS reference match. Read-only investigation; no Unity edits.
+
+INPUTS
+- DOS_Manacles332_Indexed_20261121.bin (92 x 52 original indexed graphic 332, 4,784 pixels)
+- image(20261121-185132).png, original PC DOS reference image, viewport rectangle at (82,40), 60 x 34
+- Original F2 palette remap [0,12,1,3,4,3,6,7,5,9,10,11,0,2,14,13]
+- Public ScummVM 2026 implementation of DisplayMan::blitToBitmapShrinkWithPalChange:
+  https://github.com/scummvm/scummvm/blob/master/engines/dm/gfx.cpp
+  kScaleThreshold=32768 in engines/dm/gfx.h
+
+NEW SOURCE FINDING
+ScummVM now has a complete C++ implementation of the shrink-with-palette operation, unlike the older snapshot that had DUMMY CODE. It rounds destination width to an even value, sets a fixed-point step:
+    stepX = floor(32768*srcWidth/dstWidth)
+    stepY = floor(32768*srcHeight/dstHeight)
+Then samples source at:
+    srcX = floor(dstX*stepX/32768)
+    srcY = floor(dstY*stepY/32768)
+It maps the sampled palette index through the palette remap (in its representation, palette entries are multiplied by 10). This is a CURRENT SCUMMVM REIMPLEMENTATION, not proof of original compiled DOS F0129 behavior.
+
+RESULTS: brown-class pixels only (RGB 109,36,0 in original screenshot)
+Reference brown: 237 pixels. Target area X=82 Y=40 W=60 H=34.
+Method                      matching   extra   missing   F1
+Edge exact fraction             205      73        32   79.61%
+Center exact fraction           216      16        21   92.11%
+ScummVM fixed-point 32768       203      77        34   78.53%
+
+Key diagnosis: fixed-point edge sampling is NOT the same as exact-fraction edge sampling for this 92->60,52->34 reduction. It selects the preceding source X at destination columns 15,30,45 and the preceding source Y at destination row 17, owing to truncation of the fixed-point step.
+
+CONCLUSION
+The ScummVM C++ routine is a valuable documented, testable generic baseline, but it does not match the original DOS Manacles F2 brown-pixel mask. None of these three candidates is accepted as the original DOS shrink algorithm; neither color-class F1 nor visual preference is proof. Need original DOS machine-code F0129 or exact output from its intermediate scaled bitmap, then all-index pixel comparison. Existing source-derived geometry and clipping remain separate issues. No ornament-specific workarounds. No Unity modifications.
+
+FILES
+DOS_F0129_FixedPoint_Crosscheck_20261121.py
+DOS_F0129_FixedPoint_Crosscheck_20261121.json
+DOS_F0129_FixedPoint_Crosscheck_20261121.txt
