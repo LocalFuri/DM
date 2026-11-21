@@ -1,0 +1,53 @@
+Dungeon Master PC DOS — Compiled ornament renderer identified
+Date: 2026-11-21
+Scope: offline reverse engineering, no changes to Unity or to DOS installation.
+
+Inputs:
+- DOS_FIRES_Engine_Image_20261121.bin (167,984-byte unpacked load image)
+- DUNVIEW.ZIP / DUNVIEW.C (ReDMCSB reconstructed source)
+- DOS_FIRES_Far_Calls_20261121.csv
+- DM_CODE.BI 4 KB snapshot and previous verified relocation/load mapping
+
+Main finding:
+  At load-image offset 0x1D886, a routine beginning PUSH BP; MOV BP,SP;
+  SUB SP,006A matches F0107_DUNGEONVIEW_IsDrawnWallOrnamentAnAlcove_CPSF.
+  Evidence within the same routine:
+  0x1D89D DEC SI                       — zero-based ornament ordinal
+  0x1D8B6 MOV AX,[BX+3F70]           — ornament coordinate-set index
+  0x1D8BA MOV DX,000F                 — 15 entries per coordinate set
+  0x1D8BD IMUL DX
+  0x1D8BF ADD AX,DI                   — perspective view index
+  0x1D8C1 ADD AX,03EC                 — base layout zone index 1004
+  0x1DA17..0x1DA37                   — perspective-specific selection
+  0x1DA3F..0x1DA68                   — D3 scale 000E (14) / D2 0015 (21)
+  0x1DA93 CALL 0x1D68A               — scaled-bitmap acquisition (source-equivalent candidate)
+  0x1DB31 CALL 0x1D783               — final layout/blit wrapper (source-equivalent candidate)
+  The caller passes two arguments; the function returns with RETF.
+
+15 near calls (E8 signed relative) from the same code region have destination 0x1D886:
+  0x1F219, 0x1F36D, 0x1F4C4, 0x1F4D1, 0x1F64D,
+  0x1F65A, 0x1F7F6, 0x1FA66, 0x1FA73, 0x1FC0B,
+  0x1FC18, 0x1FDAE, 0x1FF69, 0x20107, 0x20379.
+
+Runtime address:
+  Prior valid DOS run established load segment 0x0DEA.
+  Routine is in compiled segment 0x1C7A, offset 0x10E6, yielding
+    2A64:10E6  (0x0DEA + 0x1C7A = 0x2A64)
+  WARNING: DOSBox-X was closed. This is a CALCULATED address based on the
+  prior run. Confirm the load segment is unchanged before installing a
+  breakpoint in a new run. Do not set memory/video breakpoint A000:0B24.
+
+Confidence and limits:
+- Routine identity supported by multiple joint instructions and 15 call sites.
+- Layout and scale constants 15, 1004, 14 and 21 are found in compiled engine.
+- No live breakpoint at this function has yet been triggered.
+- Hook/Manacles final live rectangles have NOT yet been measured.
+- Unity rendering must remain unchanged pending live verification.
+
+Next action:
+1. Re-launch DOSBox-X and original game only when ready for a targeted trace.
+2. Confirm DOS engine load segment using a known live code/relocation mapping.
+3. Set BP at [load_segment + 0x1C7A]:10E6 (2A64:10E6 ONLY if prior load segment repeats).
+4. Resume and cause a redraw near Hook F2; on hit capture CS:IP, SI, DI, stack params.
+5. Follow the routine into scaling and DrawBitmapXX to record actual indices,
+   scales and X/Y/W/H. Verify all four Hook/Manacles candidates.

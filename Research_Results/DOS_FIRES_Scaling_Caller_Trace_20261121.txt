@@ -1,0 +1,29 @@
+Dungeon Master PC DOS — FIRES scaling helper caller trace
+Date: 2026-11-21 (Europe/Berlin)
+Scope: offline static analysis; no Unity or DOS executable changes.
+
+Inputs:
+- User's unpacked FIRES executable, DOS_FIRES_Unpacked_20261121.zip / FIRES_UNPACKED.EXE
+- DOS_FIRES_Far_Calls_20261121.csv
+- DOS_FIRES_Scaled_Size_Helper_Research_20261121.txt
+
+Machine-code observations (FIRES load-image offsets, not file offsets):
+1. The helper at 0x1C7A6 has 16 relocation-backed FAR CALL sites, all within 0x244A5–0x24A4A. There are no other identified relocation-backed direct FAR CALL sites to this target in the existing call index.
+2. The first two call sites, 0x244A5 and 0x244E4, push literal scales 0x000E (14) and 0x0015 (21). At each call, the other two arguments are read as words from a native-graphic dimension metadata table addressed through DS:[0x34EA] (used as a far pointer).
+3. Both calls are in a loop over DI=15..16, and each resulting AX value is written into a size table reached via DS:[0x34D4].
+4. Other sites, including 0x24570/0x24606/0x246B6/0x2470A/0x24760, similarly obtain dimensions from the metadata table and scale values from data tables, then store AX into the same result table. Several branches are conditioned on per-entry flags.
+5. The final ten sites (0x2489A–0x24A4A) repeatedly push 14 and 21 and store results in the same size table. In this block, native graphic indices are derived through an entry table at DS:0x2DA3; the code increments its output table index after each calculation and gates optional entries on flags 0x08, 0x10, and 0x20.
+
+Inference (not a verified source-level symbol):
+The 16 calls form graphics scaled-buffer size precomputation / allocation bookkeeping. They are not evidence of a runtime ornament blit or F0107. This is consistent with helper 0x1C7A6 returning buffer units rather than pixels/coordinates.
+
+Consequence for debugger tracing:
+Do NOT place a breakpoint on 0x1C7A6 (translated to 2A64:0006) expecting Hook F2 X/Y/width/height. It may be invoked during graphics initialization and produce allocation sizes for various graphics, not per-frame draw rectangles.
+
+Next offline research:
+Find the runtime *consumer* of the DS:0x34D4 scaled-buffer-size table, and trace the graphic-index and view-slot selection to draw/alignment code. Need positive evidence of current ornament graphic index, scaling, and layout record before proposing a runtime breakpoint.
+
+Status:
+- Observed compiled scale constants 14/21; association with target ornament renders remains conditional.
+- Hook F2/F3 and Manacles F2/F3 runtime rectangles remain UNVERIFIED.
+- No Unity changes and no new DOSBox-X session needed.

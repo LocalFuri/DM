@@ -56,7 +56,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-21: live FIRES relocation verification complete; no confirmed ornament routine breakpoint; offline trace next.",
+  "checkpoint": "2026-11-21: Offline static match of compiled FIRES ornament drawing F0107 at load-image offset 0x1D886. Joint evidence: ordinal decrement, coordinate-set *15 + view index +1004, scales F3=14 and F2=21, subsequent scaled-bitmap and blit calls, 15 near-call sites. Prior-run calculated debugger address 2A64:10E6; MUST reverify load segment on restart. No Unity edits; no live rectangle verified.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -112,8 +112,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Trace ornament drawing routine in unpacked FIRES offline and validate a candidate breakpoint before restarting DOSBox-X.",
-    "Verify Hook/Manacles F2/F3 geometry with real runtime evidence; no hardcoded ornament corrections."
+    "When ready for targeted DOSBox-X tracing, reverify runtime load segment (previously 0x0DEA), then set BP at [load+0x1C7A]:10E6 (previous run 2A64:10E6).",
+    "Capture actual Hook F2/F3 and Manacles F2/F3 bitmap index, scaling, and final clipped rectangle from F0107 and descendant drawing calls.",
+    "Implement generic renderer only after live DOS verification, without ornament-specific corrections or touching approved Unity views."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -3532,5 +3533,140 @@
       "DOS_FIRES_Runtime_Address_Map_20261121.py"
     ],
     "next_action": "Offline control-flow matching of F0675/F0107 compiled instructions and static verification of a rendering breakpoint."
+  },
+  "dos_fires_far_call_index_20261121": {
+    "date": "2026-11-21 17:10:40 CET",
+    "source": "FIRES_UNPACKED.EXE and DUNVIEW.C",
+    "status": "offline research, no verified ornament breakpoint",
+    "measurements": {
+      "MZ_relocations": 2518,
+      "relocation_backed_far_call_candidates": 2442,
+      "distinct_targets": 393
+    },
+    "outputs": [
+      "DOS_FIRES_Far_Call_Research_20261121.txt",
+      "DOS_FIRES_Far_Call_Index_20261121.py",
+      "DOS_FIRES_Far_Calls_20261121.csv",
+      "DOS_FIRES_Far_Call_Targets_20261121.csv"
+    ],
+    "next": "Match candidate call path with F0107/F0675 through code semantics and source conditions; no live DOSBox until reliable target."
+  },
+  "dos_fires_scaled_size_helper_20261121": {
+    "date": "2026-11-21T17:15:19+01:00",
+    "status": "Compiled scaled-bitmap buffer-size helper identified and signature verified; ornament-rendering routine NOT identified; research only, no Unity or game changes",
+    "sources": [
+      "FIRES_UNPACKED.EXE",
+      "DOS_FIRES_Far_Calls_20261121.csv",
+      "DUNVIEW.C"
+    ],
+    "verified": {
+      "load_image_offset_hex": "1C7A6",
+      "far_offset": "1C7A:0006",
+      "runtime_address_from_verified_load_origin": "2A64:0006",
+      "relocation_backed_far_calls": 16,
+      "compiled_operations": [
+        "dimension*scale",
+        "add scale>>1",
+        "shift right 5",
+        "round scaled width upward to even",
+        "multiply half rounded width by scaled height"
+      ]
+    },
+    "interpretation": "Likely scaled bitmap buffer allocation size helper. Contains scale values 21/14 among call sites; not sufficient to identify F0107/F0675 or live ornament rectangle.",
+    "research_files": [
+      "DOS_FIRES_Scaled_Size_Helper_Research_20261121.txt",
+      "DOS_FIRES_Scaled_Size_Helper_20261121.py"
+    ],
+    "next": "Follow the 16 callers into enclosing view/graphics routines and verify wall ornament index 259 and view slots before suggesting a live breakpoint."
+  },
+  "dos_fires_scaling_caller_trace_20261121": {
+    "date": "2026-11-21T17:18:14+01:00",
+    "scope": "Offline static analysis of all 16 relocation-backed callers of compiled helper 0x1C7A6; no game or Unity changes",
+    "verified": {
+      "helper_load_image_offset": "0x1C7A6",
+      "caller_offsets": [
+        "0x244A5",
+        "0x244E4",
+        "0x24570",
+        "0x24606",
+        "0x246B6",
+        "0x2470A",
+        "0x24760",
+        "0x247EF",
+        "0x2489A",
+        "0x248D3",
+        "0x24917",
+        "0x24950",
+        "0x24994",
+        "0x249CD",
+        "0x24A11",
+        "0x24A4A"
+      ],
+      "range": "0x244A5-0x24A4A",
+      "first_two_call_scale_literals": [
+        14,
+        21
+      ],
+      "native_dimension_metadata_pointer": "DS:0x34EA",
+      "size_result_table_pointer": "DS:0x34D4",
+      "conditional_flags_later_block": [
+        "0x08",
+        "0x10",
+        "0x20"
+      ]
+    },
+    "interpretation": "The shared helper is used to precompute scaled graphics buffer storage sizes in a table; not proven to be a per-frame draw path. Do not use it as Hook F2 runtime drawing breakpoint.",
+    "unknowns": [
+      "actual runtime ornament drawing entry point",
+      "graphic-selection and perspective mapping for live draw",
+      "live Hook/Manacles F2/F3 rectangles"
+    ],
+    "next": "Find the consumers of scaled size table DS:0x34D4 and establish a positive connection to F0107/F0675 drawing and layout calls before any debugger breakpoint.",
+    "research_files": [
+      "DOS_FIRES_Scaling_Caller_Trace_20261121.txt",
+      "DOS_FIRES_Scaling_Caller_Check_20261121.py"
+    ],
+    "unity_modified": false
+  },
+  "dos_fires_scaled_size_table_consumer_trace_20261121": {
+    "status": "verified offline code-path evidence; ornament renderer still unidentified",
+    "files": [
+      "DOS_FIRES_Scaled_Size_Table_Consumer_Trace_20261121.txt",
+      "DOS_FIRES_Scaled_Size_Table_Consumer_Audit_20261121.py"
+    ],
+    "observations": [
+      "FIRES load image 0x09118/0x0911B initializes pointer at DS:34D4",
+      "28 direct LES BX,DS:[34D4] references: 27 stores and one reader at 0x0B0A1",
+      "0x0B05B reads precomputed size[DI], adds 20 bytes, rounds even, and calls allocation routine at 0x09AE9",
+      "Six relocation-backed FAR CALL sites to 0x0B05B: 0x03193, 0x16F0F, 0x1D6C3, 0x1E093, 0x1EFBD, 0x202AC"
+    ],
+    "interpretation": "DS:34D4 is a bitmap buffer-size table feeding allocation/cache operations, not final ornament viewport geometry",
+    "caveats": [
+      "Static read only, no DOSBox runtime verification",
+      "Direct byte-pattern analysis may miss indirect references",
+      "No verified compiled F0107/F0635 ornament rendering address yet"
+    ],
+    "next": "Trace source-linked ornament graphic-pair (base 259), view-index and resource-696 layout access in compiled FIRES; require positive call-flow evidence before runtime breakpoint",
+    "unity_edited": false
+  },
+  "dos_fires_ornament_renderer_20261121": {
+    "status": "static-identification-confirmed_runtime-breakpoint-not-yet-tested",
+    "image_offset_hex": "1D886",
+    "compiled_segment_hex": "1C7A",
+    "segment_offset_hex": "10E6",
+    "prior_runtime_load_segment_hex": "0DEA",
+    "prior_run_calculated_debug_address": "2A64:10E6",
+    "signature": {
+      "layout_multiplier": 15,
+      "zone_base": 1004,
+      "f2_scale": 21,
+      "f3_scale": 14,
+      "call_sites": 15
+    },
+    "files": [
+      "DOS_FIRES_Ornament_Renderer_Identification_20261121.txt",
+      "DOS_FIRES_Ornament_Renderer_Check_20261121.py"
+    ],
+    "notes": "Previous DOSBox-X session closed, confirm load segment in any new run before BP; these remain static code matches, not runtime rect measurements."
   }
 }
