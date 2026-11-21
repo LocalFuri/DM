@@ -1,0 +1,35 @@
+Dungeon Master — FIRES Relocation-Backed FAR CALL Index
+Date: 2026-11-21 17:10:40 CET
+Research only; NO Unity files or DOS game files changed.
+
+INPUTS
+- User-provided DMSAVE.zip and decompressed DOS_FIRES_Unpacked_20261121.zip.
+- User-provided DUNVIEW.C/COORD.C reconstructed source (DUNVIEW.ZIP).
+- Previously verified DM_CODE.BI relocation offset mapping.
+
+NEW OFFLINE FINDINGS (source-derived / measured)
+- FIRES_UNPACKED.EXE size: 178224 bytes; MZ header: 10240 bytes.
+- Original MZ relocation table: 2518 entries.
+- Enumerated relocation-backed candidate immediate FAR CALL instructions, each with opcode 9A and a relocated segment operand.
+- 2442 such call sites; 393 distinct target image offsets; all 2442 targets fall inside the unpacked load image.
+- High-frequency targets include 0x00A6F (100 candidates), 0x17071 (85), 0x03DC1 (77), 0x23400 (51), 0x23411 (50).
+- These target frequencies do NOT identify any function by name. Relocations provide strong evidence of real far pointers, but a full control-flow disassembly is needed to eliminate possible data false positives and determine call-site contexts.
+- Live address mapping remains: runtime load segment 0x0DEA; runtime linear image offset = (CS-0x0DEA)*16 + IP, valid for addresses inside the loaded image.
+
+RECONSTRUCTED SOURCE CONDITIONS (not yet matched to machine code)
+- F0107_DUNGEONVIEW_IsDrawnWallOrnamentAnAlcove_CPSF chooses side/front bitmap conditional on ViewWallIndex.
+- For resource-696-compatible source family, normal F3 uses scale 14; normal F2 uses scale 21, with a special D3 side view using separate 30/14 scaling.
+- Therefore the F2/F3 front bitmap prediction cannot automatically be generalized to side slots.
+
+OUTPUTS
+- DOS_FIRES_Far_Calls_20261121.csv: each candidate call site, far target segment:offset and image offset.
+- DOS_FIRES_Far_Call_Targets_20261121.csv: target frequency overview.
+- DOS_FIRES_Far_Call_Index_20261121.py: read-only regeneration tool, requires unpacked FIRES_UNPACKED.EXE.
+
+BOUNDARIES
+- NONE of the 393 targets is verified as F0107 or F0675.
+- No debugger breakpoint is ready. Do NOT restart DOSBox-X or set a random breakpoint.
+- Hook F2/F3 and Manacles F2/F3 rectangles remain predictions, not live runtime measurements.
+
+NEXT
+Offline: determine function boundaries and call-site context around candidate FAR CALL targets; match the compiled wall ornament view-index and native-bitmap selection logic to reconstructed source. Require two independent signatures or confirmed control flow before proposing a runtime breakpoint.
