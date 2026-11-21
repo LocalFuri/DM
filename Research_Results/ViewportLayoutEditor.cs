@@ -253,11 +253,11 @@ public class ViewportLayoutEditor : EditorWindow
 
   // F3 manacles are generated from the same 92x52 F1 source.
   // Measured on the original (6,9) West view: screen top-left (93, 73),
-  // size 38x20, framebuffer bottom-left Y = 200 - 73 - 20 = 107.
-  private const int ManaclesD3FrontX = 93;
-  private const int ManaclesD3FrontY = 107;
-  private const int ManaclesD3FrontWidth = 38;
-  private const int ManaclesD3FrontHeight = 20;
+  // size 40x22, framebuffer bottom-left Y = 200 - 72 - 22 = 106.
+  private const int ManaclesD3FrontX = 92;
+  private const int ManaclesD3FrontY = 106;
+  private const int ManaclesD3FrontWidth = 40;
+  private const int ManaclesD3FrontHeight = 22;
   private const string GrateFrontAssetPath =
       "Assets/Art/Ornaments/Grate_F1_32x28.png";
   // Dedicated Atari F2 front image, drawn 1:1.
@@ -789,20 +789,16 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonViewportWidth - WoodRingD3SideLeftX - 3;
   private const int WoodRingD3SideY = 122;
 
-  // Hook D2 blits native Hook_Side2_5x10.png 1:1. The file is 6x10 and is the
-  // right-wall crop from player pose (15,9) West (wall tile (13,8) South),
-  // so the right slot is unflipped and the left slot is mirrored. Left X and
-  // framebuffer Y match the Wood Ring D2 column (screen top-left 73). Right X
-  // is the 224px viewport mirror.
-  // Hook D3 blits native Hook_Side3_5x10.png 1:1. The file is 3x5 and is also
-  // a right-wall crop, placed in the Wood Ring D3 box. Same mirror rule.
-  private const int HookD2SideWidth = 6;
-  // TEMPORARY size experiment: original S2 target 6x10; test 6x12.
+  // Original DOS S2 Hook layout: the unpadded 14x19 side artwork is
+  // rendered as a 9x12 bitmap at x=66 (left) / x=149 (right).
+  // The framebuffer uses bottom-up Y; Y=116 is display Y=39 for 12px.
+  // Keep Hook S3 and the Wood Ring S2 rectangle unchanged.
+  private const int HookD2SideWidth = 9;
   private const int HookD2SideHeight = 12;
   private const int HookD2SideLeftX = WoodRingD2SideLeftX;
   private const int HookD2SideRightX =
       DungeonViewportWidth - HookD2SideLeftX - HookD2SideWidth;
-  private const int HookD2SideY = WoodRingD2SideY;
+  private const int HookD2SideY = 116;
   // Original CSBwin Hook S3: native, unscaled 3x5 artwork.
   private const int HookD3SideWidth = 3;
   private const int HookD3SideHeight = 5;
@@ -1565,7 +1561,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:ChampionMirror:S3:Left|84|116|false|639293326829241417
   // REF OrnamentProjection:ChampionMirror:S3:Right|138|116|true|639291392277477819
   // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
-  // REF OrnamentProjection:Hook:S2:Left|66|117|false|639299399669516077
+  // REF OrnamentProjection:Hook:S2:Left|66|116|false|639299399669516077
   // REF OrnamentProjection:Manacles:S3:Left|79|108|false|639299448141357825
   // END APPLIED ORNAMENT REFERENCES
 
@@ -24000,18 +23996,17 @@ private static void HandleGameViewPointerDown(
   // Original F2 front-left and front-right source cropping: the bitmap is
   // scaled for center F2 (relative 8); 7/9 choose cropped rectangles.
   // Preserve actual CSBWin rectangle bounds. Other distances are unchanged.
-  // CSBwin wall-decoration group 1, relative positions 5/6 = S2 left/right.
-  // Positions are local to the 224x136 dungeon area, whose screen top is 33.
-  // Do not use the old distance-extrapolated S2 position or ViewEdit offsets.
+  // PC DOS S2 side geometry derived from the ornament layout: the
+  // original 32x42 Manacles_S1 source scales to 21x27 at distance 2.
+  // Coordinates are within the 224x136 dungeon viewport (screen top +33).
+  // Keep S3 and the legacy distance-projection constants unchanged.
   private static void GetManaclesSideS2Rect(
       bool left, out int x, out int y, out int width, out int height)
   {
-    OriginalWallDecorationRect rect = GetOriginalWallDecorationRect(
-        1, left ? 5 : 6);
-    width = rect.x2 - rect.x1 + 1;
-    height = rect.height;
-    x = rect.x1;
-    y = DisplayYToUnityY(rect.y1 + 33, height);
+    width = 21;
+    height = 27;
+    x = left ? 57 : 144;
+    y = DisplayYToUnityY(33 + 40, height);
   }
 
   // CSBwin wall-decoration group 1, relative positions 0/1 = S3 left/right.
@@ -24035,7 +24030,7 @@ private static void HandleGameViewPointerDown(
     // NOT verified from the original executable or accepted as a generic rule.
     // The original 64x37 CSBwin-derived rectangle remains the baseline.
     width = 60;
-    height = 35;
+    height = 34;
     x = 82;
     y = DisplayYToUnityY(33 + 40, height);
   }
@@ -27585,8 +27580,8 @@ private static void HandleGameViewPointerDown(
       projectionSuffix = resolvedProjectionSuffix;
     }
 
-    // S2 Manacles are blitted directly using the CSBwin rectangle, not
-    // ViewEdit calibration. Show that exact renderer position in ViewEdit;
+    // S2 Manacles are blitted using the DOS rectangle, not ViewEdit
+    // calibration. Show the exact renderer position in ViewEdit;
     // do not expose misleading persistent X/Y edits for this slot.
     bool fixedManaclesS2 = IsManaclesOrnament(ornament)
         && (string.Equals(key, "OrnamentProjection:Manacles:S2",
@@ -27750,7 +27745,7 @@ private static void HandleGameViewPointerDown(
       }
     }
 
-    // The S2 renderer owns its CSBwin X/Y; present them read-only.
+    // The S2 renderer owns its DOS X/Y; present them read-only.
     if (fixedManaclesS2)
       EditorGUI.BeginDisabledGroup(true);
     EditorGUIUtility.labelWidth =
@@ -39686,8 +39681,12 @@ private static void HandleGameViewPointerDown(
 
     GetManaclesSideS2Rect(
         true, out _, out _, out int width, out int height);
-    cachedManaclesGeneratedD2SideTexture = GenerateManaclesS2FromNativeS1(
-        source, width, height);
+    // Reuse the same DOS 6-bit shrink routine as the verified front views.
+    // Native 32x42 side image; medium palette, zero bias, top-down sampling.
+    cachedManaclesGeneratedD2SideTexture = GenerateDmScaledWallDecoration(
+        source, width, height, WallOrnamentMediumColorMap,
+        "Manacles S2 DOS 6-bit Side", roundBiasOverride: 0,
+        sampleTopDown: true);
     return cachedManaclesGeneratedD2SideTexture;
   }
 
@@ -39806,44 +39805,6 @@ private static void HandleGameViewPointerDown(
     result.SetPixels32(dst);
     result.Apply(false, false);
     return result;
-  }
-
-  // Approved Manacles S2 is intentionally a compatibility profile: the
-  // shared helper can use our simpler nearest-neighbor rule for new ornaments
-  // while reproducing the already verified S2 output without any changes.
-  private static Texture2D GenerateManaclesS2FromNativeS1(
-      Texture2D source, int targetWidth, int targetHeight)
-  {
-    if (source == null || !source.isReadable
-        || source.width != 32 || source.height != 42
-        || targetWidth != 16 || targetHeight != 30)
-    {
-      Debug.LogError("Manacles S2 live scaling: expected 32x42 -> 16x30.");
-      return null;
-    }
-    Color32[] runtimePalette = {
-      new Color32(0, 0, 0, 255),
-      new Color32(109, 109, 109, 255),
-      new Color32(145, 145, 145, 255),
-      new Color32(109, 36, 0, 255),
-      new Color32(0, 218, 218, 255),
-      new Color32(145, 72, 0, 255),
-      new Color32(0, 145, 0, 255),
-      new Color32(0, 218, 0, 255),
-      new Color32(255, 0, 0, 255),
-      new Color32(255, 182, 0, 255),
-      new Color32(218, 145, 109, 255),
-      new Color32(255, 255, 0, 255),
-      new Color32(72, 72, 72, 255),
-      new Color32(182, 182, 182, 255),
-      new Color32(0, 0, 255, 255),
-      new Color32(255, 255, 255, 255)
-    };
-    return BuildWallOrnamentPerspectiveTexture(
-        source, 32, 48, 0, 2, targetWidth, targetHeight, false,
-        "Manacles S2 Approved Live Perspective",
-        OrnamentPixelSampling.ApprovedManaclesS2,
-        runtimePalette, WallOrnamentMediumColorMap);
   }
 
   // The shared wall-ornament shrink remaps this side graphic's metal greys
@@ -40178,7 +40139,9 @@ private static void HandleGameViewPointerDown(
         ManaclesD3FrontWidth,
         ManaclesD3FrontHeight,
         WallOrnamentFarColorMap,
-        "Manacles F3 Generated from F1");
+        "Manacles F3 Generated from F1",
+        roundBiasOverride: 0,
+        sampleTopDown: true);
     return cachedManaclesGeneratedF3FrontTexture;
   }
 
@@ -40808,24 +40771,24 @@ private static void HandleGameViewPointerDown(
     if (source == null || !source.isReadable)
       return null;
 
-    // Generic wall-ornament S2 test: scale the visible Hook shape using
-    // center-sampled nearest neighbor with original RGB and transparency.
-    // Existing V17 visibility, calibrated X/Y, and mirror controls stay in
-    // the normal blit path. Manacles S2 remains on its approved profile.
+    // Use the original 14x19 unpadded side art, not the legacy
+    // center-nearest S2 approximation. The recovered 6-bit scaler is shared
+    // with Hook/Manacles F2/F3 and Manacles S2; no Hook-specific pixel rules.
     Texture2D cropped = CropWallDecorationToOpaqueBounds(source);
     bool ownsCrop = !ReferenceEquals(cropped, source);
     try
     {
-      cachedHookSide2Texture = BuildWallOrnamentPerspectiveTexture(
-          cropped,
-          cropped.width,
-          cropped.height,
-          0,
-          0,
-          HookD2SideWidth,
-          HookD2SideHeight,
-          false,
-          "Hook Side S2 Generic Nearest");
+      if (cropped == null || cropped.width != 14 || cropped.height != 19)
+      {
+        Debug.LogError("Hook S2: expected 14x19 unpadded side source; got "
+            + (cropped == null ? "null"
+                : cropped.width + "x" + cropped.height));
+        return null;
+      }
+      cachedHookSide2Texture = GenerateDmScaledWallDecoration(
+          cropped, HookD2SideWidth, HookD2SideHeight,
+          WallOrnamentMediumColorMap, "Hook S2 DOS 6-bit Side",
+          roundBiasOverride: 0, sampleTopDown: true);
     }
     finally
     {

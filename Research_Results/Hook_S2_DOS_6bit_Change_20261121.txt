@@ -1,0 +1,22 @@
+DUNGEON MASTER — HOOK S2 — DOS 6-BIT PATH REPLACEMENT
+Created: 2026-11-21 23:53:03 +0100 (Europe/Berlin)
+
+BASELINE: latest Manacles S2 successful installed source SHA-256 472b361bd3cc60687bb43e89fa1dd9837e5317175864f924ee788e70d6207e53
+PATCHED: SHA-256 aad9222b174d02a9e3502574f4ac86810eac0cc0e5b060ac403ebe1228c8df30
+
+Changes ONLY:
+- Hook S2 bitmap dimensions 6x12 -> 9x12; left x=66, right x=149, framebuffer Y=116 (display y=39).
+- Replace nearest-center, crop-first Hook S2 renderer with shared DOS 6-bit, medium palette, zero bias, top-down.
+- Require cropped native Hook side artwork to be 14x19; missing/wrong dimensions raise a Unity Console error, never fallback.
+- Update previously saved Hook S2 LEFT accepted calibration Y 117 -> 116, retain its previous mirror=false and X=66 so left-side behavior is preserved.
+
+Important: The saved calibration is preserved, NOT removed; separate external override data may still affect the live position. Verify in GameView. Right side still subject to independent saved overrides.
+No edits to Manacles F2/F3/S2/S3, Hook F2/F3/S3, shared scaling method, walls or feature logic.
+
+INSTALL:
+Extract the package files into the same folder (e.g. C:\Unity\DM\Research_Results) and run:
+python "C:\Unity\DM\Research_Results\Apply_Hook_S2_DOS_6bit_20261121.py"
+Installer refuses to replace unexpected current source and creates a timestamped backup.
+
+VALIDATION: exact byte-diff and SHA checks performed; script syntax checked.
+Unity compilation and Hook S2 DOS screenshot geometry NOT yet verified.

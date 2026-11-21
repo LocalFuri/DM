@@ -1,0 +1,32 @@
+Dungeon Master — Manacles S2 left/right path replacement (2026-11-21)
+
+Input: ViewportLayoutEditor(20261121-221513).zip / ViewportLayoutEditor.cs
+Original SHA256: 79ef26c637bce51c226f8699a6ab29690183dca20380ae97238b87df7565fc2f
+Patched  SHA256: 472b361bd3cc60687bb43e89fa1dd9837e5317175864f924ee788e70d6207e53
+
+CHANGE A: GetManaclesSideS2Rect — switch CSBwin rect to DOS-derived
+  left X=57, right X=144; viewport top Y=40; width=21; height=27.
+  Unity framebuffer Y derives from DisplayYToUnityY(33 + 40, 27).
+CHANGE B: GetManaclesGeneratedD2SideTexture — use shared
+  GenerateDmScaledWallDecoration from native Manacles_S1 32x42,
+  medium-distance palette LUT, roundBiasOverride=0, sampleTopDown=true.
+CHANGE C: Remove old Manacles-specific S2 16x30 compatibility generator.
+CHANGE D: Update two misleading ViewEdit comments (read-only position).
+
+PRESERVED: F2/F3, Manacles S3, Hook, wall and V17 gates,
+  blit mirroring, asset paths, and existing shared 6-bit implementation.
+  Existing side extrapolation constants were left alone to protect S3.
+
+CAVEAT: DOS side rectangle 21x27 derives from prior geometry analysis;
+  it still requires Unity screenshot comparison with original DOS S2.
+  No Unity compilation was available in the offline environment.
+
+INSTALL:
+Extract files at ZIP root into C:\Unity\DM\Research_Results\
+Run in PowerShell:
+python "C:\Unity\DM\Research_Results\Apply_Manacles_S2_DOS_6bit_20261121.py"
+Script verifies source and payload SHA256, creates original backup,
+updates Unity source, and stamps it with local modification time.
+
+TIMESTAMPS: newly generated delivery files carry Europe/Berlin local
+modified timestamps; archive entry timestamps are verified recursively.
