@@ -1,0 +1,44 @@
+Dungeon Master PC DOS — F0635 viewport clipping regression
+2026-11-21 (Europe/Berlin)
+RESEARCH ONLY — NO UNITY SOURCE CHANGES
+
+Scope:
+- Original source: COORD.C F0635_ X720_I34E_I34M_P31J normal layout records 0..8,
+  parent records 1 (origin translation) and 9 (224x136 clipping container).
+- Original data: user-supplied GRAPHICS.DAT, resource 696, 60 ornament types x 15 view slots.
+
+Correction:
+The previous generic geometry prototype incorrectly used the ornament's accumulated
+screen coordinates to calculate the parent record 9 clipping rectangle. F0635 instead
+positions the clipping rectangle from the IMMEDIATE child layout record and the parent
+container dimensions. The viewport clip is [0,224) x [0,136), not translated to
+follow the ornament. The new script calculates visible X,Y,Width,Height and source
+X/Y trim separately from the underlying uncut bitmap rectangle.
+
+Verification:
+- Recalculated 900 geometry records.
+- Found 43 rows for which some viewport clipping is necessary.
+- Relative to previous CSV, 20 rows have corrected visible-width fields;
+  underlying bitmap coordinates and dimensions remain unchanged.
+- All 900 rows' clipping output agrees with independent rectangle intersection.
+- 12 synthetic edge-crossing tests, 225 alignment-mode/size checks passed.
+- Example: bitmap X=187 width=59 -> visible X=187 width=37 (right edge 224).
+- Hook/Manacles F2/F3/S2/S3 rows unchanged.
+
+Files:
+DOS_Generic_Ornament_Geometry_F0635_Fix_20261121.py
+DOS_F0635_Clipping_Regression_20261121.py
+DOS_All_Ornament_Geometry_F0635_Corrected_20261121.csv
+DOS_F0635_Clipping_Regression_Results_20261121.json
+
+Limits:
+- This is not a full pixel renderer; no native bitmap sampling/palette comparison.
+- Layered wall occlusion and special F0635 record kinds 10..18 or shift flags are
+  still unsupported. Never silently substitute results from this subset.
+- All values are source-derived candidates, not confirmed DOS runtime rectangles.
+- Approved Unity calibration, art and rendering remain unchanged.
+
+Recommended next stage:
+- Validate nontrivial clipped placements against original DOS screenshots,
+  then implement/verify special alignment modes and visible bitmap pixels
+  before porting generic geometry into Unity.

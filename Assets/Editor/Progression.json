@@ -56,7 +56,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-21: first offline generic geometry prototype calculates 900 rows (60 types x 15 view slots) using 713-graphic DOS metadata, resource696 and 60-element source coordinate-set mapping. Hook/Manacles center-front values generated; S2/S3 and exact F0635+pixel blitter remain unverified. No Unity changes.",
+  "checkpoint": "2026-11-21: Corrected shared F0635 parent-kind-9 clipping in offline 900-record ornament geometry; 43 clipped records, 20 corrected visible-width values, 12 synthetic clip cases and 225 alignment tests pass. Hook and Manacles existing rectangles unchanged. Original Unity not modified. Next: DOS visual validation and special alignment / pixel rendering.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -112,9 +112,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "When ready for targeted DOSBox-X tracing, reverify runtime load segment (previously 0x0DEA), then set BP at [load+0x1C7A]:10E6 (previous run 2A64:10E6).",
-    "Capture actual Hook F2/F3 and Manacles F2/F3 bitmap index, scaling, and final clipped rectangle from F0107 and descendant drawing calls.",
-    "Implement generic renderer only after live DOS verification, without ornament-specific corrections or touching approved Unity views."
+    "Audit F0635 clipping calculations against the complete 900-record geometry set for the original X720 DOS branch.",
+    "Visually verify Hook and Manacles S2/S3 calculated X/Y/W/H against original PC DOS captures; retain approved Unity results unchanged.",
+    "Implement bitmap scaling and palette handling offline, using the same generic rules for all ornament types; do not introduce per-ornament corrections."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -3795,5 +3795,125 @@
       "Unity integration"
     ],
     "unity_changes": false
+  },
+  "research_20261121_side_view_geometry_audit": {
+    "status": "source and geometry batch verified, not live screenshot-approved",
+    "audit_date": "2026-11-21 19:31:53 CET",
+    "files": [
+      "Research_Results/DOS_Ornament_Side_View_Audit_20261121.py",
+      "Research_Results/DOS_Ornament_Side_View_480_20261121.csv",
+      "Research_Results/DOS_Ornament_Side_View_Verification_20261121.txt"
+    ],
+    "views": {
+      "S3_standard": [
+        2,
+        3
+      ],
+      "S3_far_edge": [
+        0,
+        1
+      ],
+      "S2": [
+        7,
+        8
+      ],
+      "S1": [
+        12,
+        13
+      ]
+    },
+    "checked_side_rows": 480,
+    "checked_wall_layout_parent_chains": 900,
+    "s2_s3_samples": {
+      "Hook_S2_left": [
+        66,
+        39,
+        9,
+        12
+      ],
+      "Hook_S2_right": [
+        149,
+        39,
+        9,
+        12
+      ],
+      "Hook_S3_left": [
+        82,
+        39,
+        6,
+        8
+      ],
+      "Hook_S3_right": [
+        136,
+        39,
+        6,
+        8
+      ],
+      "Manacles_S2_left": [
+        57,
+        40,
+        21,
+        27
+      ],
+      "Manacles_S2_right": [
+        144,
+        40,
+        21,
+        27
+      ],
+      "Manacles_S3_left": [
+        77,
+        40,
+        14,
+        18
+      ],
+      "Manacles_S3_right": [
+        134,
+        41,
+        14,
+        18
+      ]
+    },
+    "limitations": [
+      "No DOS screenshot verification",
+      "No pixel shrink/palette conversion",
+      "No full wall occlusion model",
+      "Full F0635 exceptional modes not ported"
+    ],
+    "unity_changes": false
+  },
+  "research_20261121_f0635_viewport_clipping_correction": {
+    "date_local": "2026-11-21T19:37:35+01:00",
+    "status": "Offline geometry correction and regression completed, not yet DOS screenshot validated; NO Unity changes",
+    "source": "COORD.C F0635_ X720 branch, GRAPHICS.DAT resource 696",
+    "correction": "Parent record kind 9 viewport clipping uses immediate child layout record, not accumulated ornament X/Y",
+    "validated": {
+      "ornament_records": 900,
+      "records_requiring_viewport_clipping": 43,
+      "changed_visible_width_rows": 20,
+      "artificial_edge_tests": 12,
+      "alignment_cases": 225
+    },
+    "example": {
+      "bitmap_x": 187,
+      "bitmap_width": 59,
+      "viewport_right_exclusive": 224,
+      "visible_width": 37
+    },
+    "files": [
+      "Research_Results/DOS_F0635_Viewport_Clipping_Correction_20261121.txt",
+      "Research_Results/DOS_Generic_Ornament_Geometry_F0635_Fix_20261121.py",
+      "Research_Results/DOS_F0635_Clipping_Regression_20261121.py",
+      "Research_Results/DOS_All_Ornament_Geometry_F0635_Corrected_20261121.csv",
+      "Research_Results/DOS_F0635_Clipping_Regression_Results_20261121.json"
+    ],
+    "limits": [
+      "No bitmap pixel output/palette conversion",
+      "No V17 layered occlusion",
+      "F0635 special record kinds 10..18 and shifts not ported",
+      "Not live verified"
+    ],
+    "next": "Visually check clipped DOS examples, then complete special F0635 paths and pixel scaling before Unity integration",
+    "unity_modified": false
   }
 }

@@ -1,0 +1,51 @@
+DUNGEON MASTER — DOS S1/S2/S3 SIDE-VIEW GEOMETRY AUDIT
+Date: 2026-11-21 | Offline research only; Unity unchanged
+
+INPUTS
+- Original GRAPHICS_DOS.ZIP: 713 image metadata pairs and LAY1 resource696 (1133 records)
+- ReDMCSB DUNVIEW.C, COORD.C and DEFS.H, X720_I34E_I34M_P31J branch
+- Previously generated 900-row DOS_All_Ornament_Geometry_20261121.csv
+
+SOURCE VIEW INDICES (X720 branch)
+S3 standard: 2=D3L_RIGHT; 3=D3R_LEFT; F3 far-edge 0=D3L2_RIGHT and 1=D3R2_LEFT
+S2: 7=D2L_RIGHT; 8=D2R_LEFT
+S1: 12=D1L_RIGHT; 13=D1R_LEFT
+Side bitmap uses first native ornament graphic (base index=259+2*type), not the front image.
+Mirrored slots: 1,3,8,13; the mirror flag is a rendering operation, not a change to the rectangle position.
+S3 far-edge 0/1 has asymmetric scaling: horizontal 30/32, vertical 14/32.
+S3 standard 2/3: 14/32 for both axes.
+S2 7/8: 21/32 for both axes.
+S1 12/13: native size (32/32).
+
+AUDIT OUTPUT
+Validated 900 of 900 wall-layout parent chains: each child has parent record 4 (type1, offset0,0) then record3 (type9, viewport 224x136).
+Validated all 480 side slots (60 types * 8 side views) for native index, mirror, scale, view name, and zone formula.
+No side-view records from the 900-row prototype require clipping against the 224x136 outer viewport. This does NOT establish full V17 wall occlusion, or pixel blitter behavior.
+
+CALCULATED SAMPLES (viewport-relative; X,Y,W,H)
+Hook type4 native side image 267=14x19:
+ S2 left index7  = 66,39,9,12
+ S2 right index8 = 149,39,9,12 mirrored
+ S3 left index2  = 82,39,6,8
+ S3 right index3 = 136,39,6,8 mirrored
+Manacles type36 native side image 331=32x42:
+ S2 left index7  = 57,40,21,27
+ S2 right index8 = 144,40,21,27 mirrored
+ S3 left index2  = 77,40,14,18
+ S3 right index3 = 134,41,14,18 mirrored
+
+IMPORTANT LIMITATIONS
+- This verifies the selected source branch and validates the prototype calculations against layout parent records; it does not establish pixel-for-pixel DOS rendering equivalence.
+- ReDMCSB F0635 supports additional record kinds 10..18 and shift modes; those are not implemented in the prototype. The 900 audited wall ornament zones use record kinds 0/5/7 and share parent record types 1/9. The limited path is sufficient for these simple layout records only.
+- Bitmap shrinking, transparent palette, and actual wall occlusion are not implemented in the offline geometry prototype.
+- Validation with real DOS captures is required before Unity integration; do not introduce ornament-specific corrections.
+
+FILES
+DOS_Ornament_Side_View_Audit_20261121.py (read-only reproducer)
+DOS_Ornament_Side_View_480_20261121.csv (all 480 side-view rectangles)
+DOS_Ornament_Side_View_Verification_20261121.txt (this report)
+
+NEXT
+1. Audit complete F0635 for the 900-wall-zone path, especially inclusive/exclusive clipping math.
+2. Compare Hook and Manacles S2/S3 with original DOS screenshots, using X/Y/W/H priority.
+3. Implement DOS shrink/palette conversion offline, before Unity integration.

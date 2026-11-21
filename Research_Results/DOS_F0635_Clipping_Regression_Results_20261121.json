@@ -1,0 +1,178 @@
+{
+  "records_checked": 900,
+  "nontrivial_viewport_clips": 43,
+  "artificial_clipping_cases": 12,
+  "alignment_cases": 225,
+  "source_path": "COORD.C F0635_ X720_I34E_I34M_P31J final clip branch",
+  "synthetic_results": [
+    {
+      "input": [
+        -4,
+        20,
+        14,
+        12
+      ],
+      "result": [
+        0,
+        20,
+        10,
+        12,
+        4,
+        0
+      ]
+    },
+    {
+      "input": [
+        218,
+        20,
+        14,
+        12
+      ],
+      "result": [
+        218,
+        20,
+        6,
+        12,
+        0,
+        0
+      ]
+    },
+    {
+      "input": [
+        30,
+        -6,
+        14,
+        12
+      ],
+      "result": [
+        30,
+        0,
+        14,
+        6,
+        0,
+        6
+      ]
+    },
+    {
+      "input": [
+        30,
+        131,
+        14,
+        12
+      ],
+      "result": [
+        30,
+        131,
+        14,
+        5,
+        0,
+        0
+      ]
+    },
+    {
+      "input": [
+        -5,
+        -7,
+        14,
+        12
+      ],
+      "result": [
+        0,
+        0,
+        9,
+        5,
+        5,
+        7
+      ]
+    },
+    {
+      "input": [
+        220,
+        131,
+        14,
+        12
+      ],
+      "result": [
+        220,
+        131,
+        4,
+        5,
+        0,
+        0
+      ]
+    },
+    {
+      "input": [
+        -20,
+        20,
+        14,
+        12
+      ],
+      "result": null
+    },
+    {
+      "input": [
+        224,
+        20,
+        14,
+        12
+      ],
+      "result": null
+    },
+    {
+      "input": [
+        20,
+        -30,
+        14,
+        12
+      ],
+      "result": null
+    },
+    {
+      "input": [
+        20,
+        136,
+        14,
+        12
+      ],
+      "result": null
+    },
+    {
+      "input": [
+        0,
+        0,
+        224,
+        136
+      ],
+      "result": [
+        0,
+        0,
+        224,
+        136,
+        0,
+        0
+      ]
+    },
+    {
+      "input": [
+        0,
+        0,
+        225,
+        137
+      ],
+      "result": [
+        0,
+        0,
+        224,
+        136,
+        0,
+        0
+      ]
+    }
+  ],
+  "limit": [
+    "no layered V17 occlusion",
+    "no palette/bitmap pixel rendering",
+    "does not port F0635 special record 10..18 or shift flag"
+  ]
+}
