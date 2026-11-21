@@ -56,7 +56,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-20: generic DOS geometry: resource696 23 ranges/1133 records verified, sets 0/1 F1/F2/F3 centers decoded. Hook F2 center rule matches; Hook F3 4px Y discrepancy unresolved; Manacles F2 60x34 at X82 Y40 candidate NOT approved. No Unity changes.",
+  "checkpoint": "2026-11-21: DM.EXE (11471 bytes) inspected statically; matches documented PC DOS distribution; MAIN ENGINE resides in separate FIRES (documented 94779 bytes). Waiting for same-installation FIRES to verify X720 branch. No Unity changes.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -3059,5 +3059,417 @@
       "DOS_Ornament_Layout_Calculator.py"
     ],
     "next": "Verify actual original DOS F0791 -> F0635 bitmap argument geometry and map coordinate sets, especially F3 4px Y discrepancy, before a Unity change."
+  },
+  "dos_resource696_parent_chain_audit_20261121": {
+    "timestamp_europe_berlin": "2026-11-21",
+    "status": "resource independently decoded from uploaded GRAPHICS_DOS.ZIP; research only; no Unity changes",
+    "resource": {
+      "file": "GRAPHICS.DAT",
+      "offset": 293487,
+      "bytes": 9160,
+      "ranges": 23,
+      "records": 1133
+    },
+    "parent_chains": {
+      "hook_f3": [
+        [
+          1009,
+          0,
+          4,
+          112,
+          44
+        ],
+        [
+          4,
+          1,
+          3,
+          0,
+          0
+        ],
+        [
+          3,
+          9,
+          0,
+          224,
+          136
+        ]
+      ],
+      "hook_f2": [
+        [
+          1014,
+          0,
+          4,
+          112,
+          47
+        ],
+        [
+          4,
+          1,
+          3,
+          0,
+          0
+        ],
+        [
+          3,
+          9,
+          0,
+          224,
+          136
+        ]
+      ],
+      "manacles_f3": [
+        [
+          1024,
+          0,
+          4,
+          112,
+          50
+        ],
+        [
+          4,
+          1,
+          3,
+          0,
+          0
+        ],
+        [
+          3,
+          9,
+          0,
+          224,
+          136
+        ]
+      ],
+      "manacles_f2": [
+        [
+          1029,
+          0,
+          4,
+          112,
+          57
+        ],
+        [
+          4,
+          1,
+          3,
+          0,
+          0
+        ],
+        [
+          3,
+          9,
+          0,
+          224,
+          136
+        ]
+      ]
+    },
+    "finding": "Parent chains add zero coordinates, and 224x136 clipping does not alter test rectangles. Hook F3 +4 Y discrepancy cannot come from these parent records.",
+    "unresolved": "Confirm executable branch/version; verify live scaled bitmap W/H and F0791 call, Hook F3 DOS screenshot vs Unity approved position; Manacles F2 height 34 vs 35 and F3 size remain unverified.",
+    "files": [
+      "DOS_Resource696_Parent_Chain_Verification_20261121.txt",
+      "DOS_Resource696_Extractor.py"
+    ],
+    "rule": "One generic engine; no ornament-specific placement corrections; preserve Unity."
+  },
+  "dos_scaling_and_hook_f3_correction_20261121": {
+    "date": "2026-11-21",
+    "status": "RESEARCH ONLY — no Unity changes",
+    "finding": "Earlier Hook F3 +4 discrepancy was comparing legacy HookD3FrontY=113 (viewport top 42) with DOS layout top 38. Current active BlitHookD3FrontIntoPreview computes bottom-up Y=117 -> viewport top=38 for 14x12. The active path therefore matches resource696 zone1009 prediction (105,38,14,12).",
+    "source_trace": "DUNVIEW.C F0107 conditional X720 branch: layout 15 records/set, F3 scale14, F2 scale21; X508 branch: 13 records/set, F3 scale16, F2 scale20. F0675 uses M078_SCALED_DIMENSION and calls F0129; F0791 calls F0635 then blits.",
+    "conditional_geometries": {
+      "Hook F2 28x28 at21": "103,38 18x18",
+      "Hook F3 32x28 virtual source at14": "105,38 14x12",
+      "Manacles F2 92x52 at21": "82,40 60x34",
+      "Manacles F3 92x52 at14": "92,39 40x22 — NOT VERIFIED"
+    },
+    "caution": "Superseded for macro uncertainty: M078 macro is now VERIFIED in uploaded DEFS.H line 2208; runtime source bitmaps/executable branch still not verified.",
+    "research_file": "DOS_Ornament_Scaling_And_HookF3_Correction_20261121.txt",
+    "next": "Locate scaling macro definition; validate runtime dimensions and native bitmap selection; build shared F2/F3 regression, no ornament-specific code."
+  },
+  "dos_scaling_macro_verified_20261121": {
+    "date": "2026-11-21",
+    "status": "HEADER SOURCE VERIFIED / NO UNITY CHANGES",
+    "source_archive": "I34E_I34M_P20JA_P20JB_P31J.ZIP",
+    "source_file": "DEFS.H",
+    "source_line": 2208,
+    "exact_macro": "#define M078_SCALED_DIMENSION(dimension, scale) (((dimension * scale) + (scale >> 1)) >> 5)",
+    "branch": "X720_I34E_I34M_P31J: F2 scale=21, F3 scale=14; X508_P20JA_P20JB alternative: F2 scale=20, F3 scale=16",
+    "conditional_geometry": {
+      "Hook_F2": "28x28 -> 18x18, layout center 112,47 -> x103 y38",
+      "Hook_F3": "32x28 padded -> 14x12, layout center 112,44 -> x105 y38",
+      "Manacles_F2": "92x52 -> 60x34, layout center 112,57 -> x82 y40",
+      "Manacles_F3": "92x52 -> 40x22, layout center 112,50 -> x92 y39"
+    },
+    "precision": "Exact mathematical macro outputs for stated assumed source sizes. Runtime source bitmap selection and exact DOS executable branch not yet proven; Manacles F3 rectangle is candidate only.",
+    "next": "Trace actual bitmap source sizes through F0489/F0675; verify branch and runtime F0791/F0635/visible clipping, then compare live DOS and Unity. Do not introduce per-ornament fixes.",
+    "research_file": "DOS_Scaling_M078_Macro_Verification_20261121.txt"
+  },
+  "dos_native_bitmap_header_audit_20261121": {
+    "timestamp_europe_berlin": "2026-11-21T13:11:29+01:00",
+    "status": "Research-only; code path verified, actual per-ornament native bitmap header data NOT verified; no Unity changes",
+    "source_files": [
+      "DUNVIEW.C",
+      "COORD.C",
+      "DEFS.H",
+      "GRAPHICS.DAT"
+    ],
+    "confirmed": "F0675 takes bitmap from F0489, reads M100/M101 header dimensions, applies M078, then shrink; F0791/F0635 align and blit",
+    "conditional_branch": "X720 15-slot LAY1 (F2=21,F3=14); do not assume matches P20JA/P20JB 13-slot PC executable",
+    "hypothetical_source_sizes": {
+      "92x52": {
+        "F2": [
+          60,
+          34
+        ],
+        "F3": [
+          40,
+          22
+        ]
+      },
+      "95x52": {
+        "F2": [
+          62,
+          34
+        ],
+        "F3": [
+          41,
+          22
+        ]
+      },
+      "28x28": {
+        "F2": [
+          18,
+          18
+        ],
+        "F3": [
+          12,
+          12
+        ]
+      },
+      "32x28": {
+        "F2": [
+          21,
+          18
+        ],
+        "F3": [
+          14,
+          12
+        ]
+      }
+    },
+    "blocker": "native bitmap index and per-view source bitmap dimensions not directly confirmed from supplied sources; check MEMORY.C, metadata initialization, native graphic decoder or instrument runtime",
+    "report_filename": "DOS_Ornament_Native_Bitmap_Header_Audit_20261121-131129.txt",
+    "unity_changes": false,
+    "next": "Trace F0489_MEMORY_GetNativeBitmapOrGraphic and G0101_as_CurrentMapWallOrnamentsInfo native-graphic indexing using same-version source; verify target executable branch and original DOS F2/F3 rectangles before generic implementation"
+  },
+  "dos_memory_native_graphic_metadata_audit_20261121": {
+    "date": "2026-11-21",
+    "status": "SOURCE AND GRAPHICS.DAT V1 METADATA VERIFIED; ORNAMENT TYPE/BRANCH REMAIN TO VERIFY; NO UNITY CHANGES",
+    "source": "MEMORY.ZIP/MEMORY.C; DUNVIEW.ZIP/DUNVIEW.C; I34E_I34M_P20JA_P20JB_P31J.ZIP/DEFS.H; GRAPHICS_DOS.ZIP/GRAPHICS.DAT",
+    "findings": [
+      "F0489 caches native graphics; writes dimensions to cache block+12/+14; bitmap pointer=block+16 and M100/M101 read the same fields",
+      "GRAPHICS.DAT version1 contains 713 graphics and 713 width/height metadata pairs starting at offset 2856",
+      "Graphic 331=32x42; 332=92x52; 267=14x19; 268=28x28; 283=16x19; 284=32x28",
+      "X720 first wall ornament graphic index=259; baseIndex=259+2*ornamentType; front and side may use different graphic indices"
+    ],
+    "unverified": [
+      "Graphic332 association to Manacles; Hook actual indices",
+      "DOS executable branch (X720 21/14 vs X508 20/16)",
+      "final on-screen F2/F3 rectangles"
+    ],
+    "next": "Identify graphic 558 ornament type/index mapping; then verify source indices and perspective selection before implementing a generic renderer",
+    "report": "Research_Results/DOS_MEMORY_Native_Graphic_Metadata_Audit_20261121.txt"
+  },
+  "dos_ornament_graphic_pair_mapping_20261121": {
+    "date": "2026-11-21",
+    "status": "Research only; source-verified graphic pair arithmetic and DAT metadata; Hook/Manacles identity not proven",
+    "verified": [
+      "X720 wall ornament nativeBase=259+2*ornamentType, type from map G0261",
+      "type 4 graphics 267 14x19 and 268 28x28",
+      "type 12 graphics 283 16x19 and 284 32x28",
+      "type 36 graphics 331 32x42 and 332 92x52",
+      "G0194 Graphic558 coordinate sets are not type-to-name mapping"
+    ],
+    "open": [
+      "Resolve Hook and Manacles named ornament types from original map indices or verified native bitmap pixels",
+      "Verify runtime DOS branch and selection of front/side source graphic",
+      "Validate complete computed rectangles against original DOS before Unity modifications"
+    ],
+    "researchFiles": [
+      "Research_Results/DOS_Ornament_GraphicIndex_Mapping_20261121.txt",
+      "Research_Results/DOS_Ornament_Graphic_Pairs_20261121.py"
+    ],
+    "unityChanges": false
+  },
+  "dos_ornament_pixel_identity_check_20261121": {
+    "date": "2026-11-21",
+    "status": "Research only; candidate native pair metadata verified; pixel identity pending decoder execution",
+    "originalSources": [
+      "GRAPHICS_DOS.ZIP / GRAPHICS.DAT",
+      "DUNVIEW.ZIP / DUNVIEW.C",
+      "MEMORY.ZIP / MEMORY.C",
+      "I34E_I34M_P20JA_P20JB_P31J.ZIP / DEFS.H"
+    ],
+    "confirmed": [
+      "types 4,12,22,36 native pair metadata enumerated from source DAT",
+      "types 12 and 22 have identical native dimensions but identity cannot be assigned by size",
+      "candidate contact-sheet script prepared and validated syntactically"
+    ],
+    "notConfirmed": [
+      "actual pixel identity of Hook and Manacles",
+      "PC DOS executable render branch",
+      "final F2/F3 bitmap rectangles"
+    ],
+    "environmentLimitation": "dmcsb package not installed and download unavailable here; contact sheet not produced",
+    "files": [
+      "Research_Results/DOS_Ornament_Pixel_Identity_Research_20261121.txt",
+      "Research_Results/DOS_Ornament_Pixel_Identity_Check_20261121.py"
+    ],
+    "next": [
+      "Run script with dmcsb 0.2.1 and Pillow against GRAPHICS_DOS.ZIP and inspect output PNG",
+      "Identify exact Hook/Manacles indexes from pixel comparison",
+      "Confirm executable branch before Unity change"
+    ],
+    "unityChanges": false
+  },
+  "dos_ornament_pixel_identity_confirmed_20261121": {
+    "timestamp_europe_berlin": "2026-11-21T13:38:14.408628+01:00",
+    "status": "contact-sheet visual identification; research only; NO Unity edits",
+    "identifications": {
+      "Hook": {
+        "type": 4,
+        "side_graphic": 267,
+        "front_graphic": 268,
+        "front_dimensions": [
+          28,
+          28
+        ]
+      },
+      "Manacles": {
+        "type": 36,
+        "side_graphic": 331,
+        "front_graphic": 332,
+        "front_dimensions": [
+          92,
+          52
+        ]
+      },
+      "Not_hook": [
+        284,
+        304
+      ]
+    },
+    "conditional_X720_dimensions": {
+      "Hook_F2": [
+        18,
+        18
+      ],
+      "Hook_F3": [
+        12,
+        12
+      ],
+      "Manacles_F2": [
+        60,
+        34
+      ],
+      "Manacles_F3": [
+        40,
+        22
+      ]
+    },
+    "correction": "Hook F3 earlier 14x12 assumed graphic 284; contact sheet reveals graphic 284 is slime; actual Hook front graphic 268 scales to 12x12 under X720 F3=14",
+    "next_action": "verify matching executable/conditional branch and live DOS geometry; leave approved Unity untouched",
+    "report": "DOS_Ornament_Pixel_Identification_20261121.txt"
+  },
+  "dos_executable_branch_verification_20261121": {
+    "date": "2026-11-21",
+    "status": "research only; no Unity edits",
+    "evidence": [
+      "DUNVIEW.C separate X508 vs X720 ornament layout and scaling code",
+      "DEFS.H first ornament index 121 vs 259; M078 scaling macro",
+      "GRAPHICS.DAT 713 graphics and LAY1 696; matching X720 branch"
+    ],
+    "x508_p20ja_p20jb": {
+      "firstWallOrnamentGraphic": 121,
+      "layoutEntriesPerSet": 13,
+      "F2scale": 20,
+      "F3scale": 16
+    },
+    "x720_i34e_i34m_p31j": {
+      "firstWallOrnamentGraphic": 259,
+      "layoutEntriesPerSet": 15,
+      "F2scale": 21,
+      "F3scale": 14
+    },
+    "x720_predicted_viewport_rects": {
+      "Hook_F2": [
+        103,
+        38,
+        18,
+        18
+      ],
+      "Hook_F3": [
+        106,
+        38,
+        12,
+        12
+      ],
+      "Manacles_F2": [
+        82,
+        40,
+        60,
+        34
+      ],
+      "Manacles_F3": [
+        92,
+        39,
+        40,
+        22
+      ]
+    },
+    "unresolved": "Exact executable used for live DOS reference screenshots not provided; predictions not verified actual runtime rectangles.",
+    "next": "Identify original DOS reference EXE and asset pairing, then compare live rectangles; do not modify Unity yet.",
+    "research_report": "C:/Unity/DM/Research_Results/DOS_Ornament_Executable_Branch_Verification_20261121.txt",
+    "recorded_at_berlin": "2026-11-21T13:41:25+01:00"
+  },
+  "dos_executable_static_audit_20261121": {
+    "date": "2026-11-21",
+    "status": "research-only",
+    "uploaded_executable": "DM.EXE",
+    "size_bytes": 11471,
+    "sha256": "4c79b43276f1eb3191d496ba71f8e4c03380d252193561bc6bba6017ef554db4",
+    "uploaded_graphics_size_bytes": 363417,
+    "finding": "DM.EXE matches documented 1992 11471-byte DOS launcher; accompanying FIRES file contains main engine logic, and its upload is required to independently verify branch instructions. Size match with 363417-byte GRAPHICS.DAT supports same release family, not proof.",
+    "next_action": "Request FIRES from the same DOSBox installation; statically inspect, then compare with ReDMCSB version-specific scaling and layout branches. No Unity changes."
+  },
+  "dos_fires_lz91_static_verification_20261121": {
+    "date": "2026-11-21",
+    "status": "packed executable identified; NOT unpacked; runtime branch not confirmed; research-only; no Unity changes",
+    "source": "DMSAVE.zip / fires",
+    "fires_bytes": 94779,
+    "fires_sha256": "ebf84045c3edbce7690b826eadbea2e278fbb4c0a3cc19a470552586f37712eb",
+    "mz_signature": true,
+    "lz91_signature_offset": "0x1C",
+    "graphics_sha256": "2c3aa836925c64c09402bafb03c645932bd03c4f003ad9a86542383b078ecf8e",
+    "graphics_matches_prior_GRAPHICS_DOS_ZIP": true,
+    "next_step": "Statically unpack copy of fires using LZEXE v0.91-compatible unpacker, then verify renderer branch and scale constants",
+    "report": "Research_Results/DOS_FIRES_LZ91_Static_Verification_20261121.txt"
+  },
+  "dos_fires_unpacked_verified_20261121": {
+    "date": "2026-11-21",
+    "status": "UNLZEXE successfully unpacked a copy of FIRES; MZ header validated; PC DOS rendering branch NOT YET CONFIRMED; no Unity changes",
+    "source_archives": [
+      "DMSAVE.zip",
+      "unlzexe-master.zip"
+    ],
+    "packed_size_bytes": 94779,
+    "packed_sha256": "ebf84045c3edbce7690b826eadbea2e278fbb4c0a3cc19a470552586f37712eb",
+    "unpacked_size_bytes": 178224,
+    "unpacked_sha256": "fc79ac65046e3d96c189ac3dd20ad40bacb8debee2cd1c7d2c33ca2d8f82fe94",
+    "research_report": "Research_Results/DOS_FIRES_Unpacking_Verification_20261121.txt",
+    "unpacked_archive": "DOS_FIRES_Unpacked_20261121.zip",
+    "next_task": "Statically disassemble/dynamically trace exact 16-bit DOS bitmap scaling/placement functions, establish correct branch and verify Hook/Manacles F2/F3 rectangles without special-case code",
+    "unity_modified": false
   }
 }

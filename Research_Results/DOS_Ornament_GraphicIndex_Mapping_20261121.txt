@@ -1,0 +1,39 @@
+DUNGEON MASTER — DOS WALL ORNAMENT GRAPHIC INDEX MAPPING
+Date: 2026-11-21 (Europe/Berlin)
+Status: Source and GRAPHICS.DAT metadata verified; ornament names not independently confirmed.
+No Unity changes.
+
+INPUTS:
+  DUNVIEW.ZIP / DUNVIEW.C and COORD.C
+  MEMORY.ZIP / MEMORY.C
+  I34E_I34M_P20JA_P20JB_P31J.ZIP / DEFS.H
+  GRAPHICS_DOS.ZIP / GRAPHICS.DAT (363417 bytes, v1, 713 graphics)
+
+VERIFIED SOURCE PATH:
+  DUNVIEW.C map initialization:
+    ornamentType = G0261_auc_CurrentMapWallOrnamentIndices[mapOrnamentOrdinal]
+    nativeBaseIndex = M615_GRAPHIC_FIRST_WALL_ORNAMENT + 2 * ornamentType
+  DEFS.H (X720_I34E_I34M_P31J branch): M615 = 259
+  DUNVIEW.C F0107 selects nativeBaseIndex or nativeBaseIndex+1 according to front/side view and other special handling, and uses F0675 at F2/F3.
+  Graphic558 coordinate-set table G0194 assigns geometric coordinate sets by ornament type; it is not a name-to-graphic lookup.
+  The map's G0261 entries identify ornament types. Type/name pairing requires map data or corroborated graphic extraction.
+
+VERIFIED V1 GRAPHICS.DAT HEADER PAIRS (LITTLE ENDIAN):
+  Ornament type 4: graphics 267=14x19, 268=28x28
+  Ornament type 12: graphics 283=16x19, 284=32x28
+  Ornament type 36: graphics 331=32x42, 332=92x52
+  Graphic index 558 is itself 16x7 in GRAPHICS.DAT; reconstructed source label 'Graphic558' describes historical data tables, not necessarily this graphic's current metadata entry.
+
+CONDITIONAL SCALING (X720 branch, M078_SCALED_DIMENSION(dim,scale) = ((dim*scale)+(scale>>1))>>5):
+  Graphics 268 (28x28): F2 scale 21 -> 18x18, F3 scale 14 -> 12x12
+  Graphics 284 (32x28): F2 -> 21x18, F3 -> 14x12
+  Graphics 332 (92x52): F2 -> 60x34, F3 -> 40x22
+  These are dimensions only IF that graphic is the runtime-selected graphic at that view. The front/side source selection must be established before assigning a rectangle.
+
+LIMITS:
+  Neither the graphic dimensions nor G0194 alone prove Hook=type4/type12 or Manacles=type36.
+  Runtime DOS version branch selection remains to be checked. The X508 PC branch uses base index 121 with different scaling and coordinate-set cardinalities; do not transfer 713-graphic branch calculations to it unconditionally.
+  Previous Manacles F2 approved geometry remains protected. Do not substitute 60x34 without live DOS validation.
+
+NEXT:
+  Obtain map ornamental index/type data for verified Hook and Manacles positions, or decode and visually identify the native graphic pairs 267/268, 283/284, 331/332. Then identify the runtime selected side/front graphic for each perspective and compare the full scaled/aligned rectangles with DOS reference screenshots.

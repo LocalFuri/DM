@@ -1,0 +1,40 @@
+DUNGEON MASTER — DOS SCALING MACRO VERIFICATION
+2026-11-21 | RESEARCH ONLY — NO UNITY CHANGES
+
+SOURCE
+  Uploaded: I34E_I34M_P20JA_P20JB_P31J.ZIP
+  DEFS.H line 2208:
+  #define M078_SCALED_DIMENSION(dimension, scale) (((dimension * scale) + (scale >> 1)) >> 5)
+
+MEANING
+  Integer-valued calculation: floor((dimension * scale + floor(scale/2))/32).
+  Not floating-point rounding. Exact integer order matters.
+
+CONDITIONAL SCALE DEFINITIONS (DEFS.H lines 2187–2196)
+  #ifdef X508_P20JA_P20JB: M637_SCALE_14_16=16, M638_SCALE_21_20=20
+  #ifdef X720_I34E_I34M_P31J: M637_SCALE_14_16=14, M638_SCALE_21_20=21
+  The resource-696-compatible X720 path is used for the following candidate checks;
+  determine the exact target executable branch before implementing.
+
+SCALING CHECKS WITH CURRENTLY ASSUMED SOURCE BITMAP INPUTS
+  Hook F2     source 28x28, scale21: width=(28*21+10)>>5=18, height=18
+  Hook F3     source 32x28 padded, scale14: width=(32*14+7)>>5=14, height=(28*14+7)>>5=12
+  Manacles F2 source 92x52, scale21: width=(92*21+10)>>5=60, height=(52*21+10)>>5=34
+  Manacles F3 source 92x52, scale14: width=(92*14+7)>>5=40, height=(52*14+7)>>5=22
+
+RESOURCE 696 PARENT-CHAIN / CENTERED ALIGNMENT CANDIDATES
+  Hook F2:     center (112,47) -> rect (103,38,18,18)
+  Hook F3:     center (112,44) -> rect (105,38,14,12)
+  Manacles F2: center (112,57) -> rect (82,40,60,34)
+  Manacles F3: center (112,50) -> rect (92,39,40,22)
+
+IMPORTANT QUALIFICATION
+  Arithmetic is conclusively sourced to the header. Actual native bitmap dimensions,
+  version/branch selection, and complete runtime destination rectangles remain to be
+  independently verified. Manacles F3 result is NOT approved. Avoid any hardcoding.
+  Existing active Unity Hook F3 is already consistent with Y=38; do not change it.
+
+NEXT
+  Trace exact native bitmap sizes through F0489_MEMORY_GetNativeBitmapOrGraphic
+  and F0675_DUNGEONVIEW_GetScaledBitmap; crosscheck target executable/branch;
+  confirm DOS screen rectangles on Manacles F2/F3 before modifying Unity.

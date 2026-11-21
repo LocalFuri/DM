@@ -1,0 +1,26 @@
+DUNGEON MASTER — DOS ORNAMENT PIXEL IDENTITY RESEARCH
+2026-11-21 — Research only; NO Unity modifications.
+
+ORIGINAL FILES REOPENED:
+GRAPHICS_DOS.ZIP / GRAPHICS.DAT; DUNVIEW.ZIP / DUNVIEW.C;
+MEMORY.ZIP / MEMORY.C; I34E_I34M_P20JA_P20JB_P31J.ZIP / DEFS.H.
+
+VERIFIED FROM THE ORIGINAL DOS GRAPHICS METADATA:
+Type 4: 267 14x19 side, 268 28x28 front.
+Type 12: 283 16x19 side, 284 32x28 front.
+Type 22: 303 16x19 side, 304 32x28 front.
+Type 36: 331 32x42 side, 332 92x52 front.
+
+IDENTITY STILL UNRESOLVED:
+The data do not establish that type 4, 12, or 22 is Hook, nor that type 36 is Manacles. An exact dimension match is insufficient. Earlier Hook F2 18x18 and F3 14x12 assumptions require separate source/version validation.
+
+NEW TOOL:
+DOS_Ornament_Pixel_Identity_Check_20261121.py generates a labeled contact sheet of eight specific candidate native graphics from the supplied DOS GRAPHICS.DAT, plus dimensions JSON. It reads and checks metadata locally and uses the public dmcsb package to decompress the native PC image format. Uses dmcsb 0.2.1 and Pillow, installed on the machine running the script. Script refuses incompatible DAT formats rather than silently substituting graphics.
+
+LIMITATION:
+The dmcsb package was unavailable in this execution environment and external package downloads failed, so the actual candidate image pixels have NOT been decoded or visually verified here. The contact-sheet file has therefore NOT been generated. This is not a completed identity test.
+
+NEXT:
+1. Execute the script locally against GRAPHICS_DOS.ZIP once dependencies are installed.
+2. Compare its contact sheet with known DOS Hook / Manacles sprites and verify actual index-to-name identity.
+3. Confirm the target DOS executable branch before adopting dimensions or changing Unity.

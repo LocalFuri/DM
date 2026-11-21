@@ -1,0 +1,30 @@
+DUNGEON MASTER — ORIGINAL PC DOS ORNAMENT PIXEL IDENTIFICATION
+Date: 2026-11-21 | Research only; Unity unchanged
+Evidence: User-generated 1080x480 candidate contact sheet extracted from DOS GRAPHICS.DAT, uploaded as DOS_Ornament_Candidate_Contact_Sheet_20261121.zip.
+
+VISUAL IDENTIFICATION:
+- Ornament type 4: graphic 267 (14x19) side, 268 (28x28) front. Image 268 depicts the wall hook on a mounted wooden plate; Hook identification visually confirmed.
+- Ornament type 36: graphic 331 (32x42) side, 332 (92x52) front. Image 332 depicts two hanging manacles/chains; Manacles identification visually confirmed.
+- Type 12, graphic 284 (32x28), depicts green slime, not Hook.
+- Type 22, graphic 304 (32x28), depicts a different framed wall feature, not Hook.
+
+SOURCE-VERIFIED SCALING CALCULATION (X720 15-entry layout branch only):
+M078_SCALED_DIMENSION(d,s) = ((d*s + (s>>1)) >> 5)
+Scale F2 = 21; F3 = 14.
+Hook native front 28x28 => F2 18x18; F3 12x12.
+Manacles native front 92x52 => F2 60x34; F3 40x22.
+
+CONDITIONAL RECTANGLES USING EARLIER LAY1 CENTER RECORDS (centered alignment, no crop):
+Hook F2 center (112,47): x=103,y=38,w=18,h=18.
+Hook F3 center (112,44): x=106,y=38,w=12,h=12.
+Manacles F2 center (112,57): x=82,y=40,w=60,h=34.
+Manacles F3 center (112,50): x=92,y=39,w=40,h=22.
+These rectangles are calculations, NOT verified live rendered DOS rectangles.
+
+IMPORTANT CORRECTION:
+Earlier Hook F3 dimensions 14x12 were calculated from graphic 284 (32x28), which is slime, not Hook. Earlier claim of Hook F3 14x12 as native DOS-scaled bitmap therefore cannot stand. Approved Unity appearance/geometry is unchanged; do not change Unity based on this research alone.
+
+OPEN TASKS:
+1. Independently confirm this GRAPHICS.DAT and LAY1 record branch matches target PC DOS executable.
+2. Verify actual runtime graphic selection, palette/transparency and any clipping.
+3. Compare calculated rectangles with live PC DOS screenshots; do not introduce individual per-ornament geometry fixes.

@@ -1,0 +1,42 @@
+DUNGEON MASTER — ORIGINAL DOS MEMORY.C / GRAPHICS.DAT METADATA AUDIT
+Date: 2026-11-21 (Europe/Berlin)
+STATUS: Original source path and graphic metadata independently verified; individual ornament graphic identity / exact DOS runtime branch not yet proven. NO UNITY CHANGES.
+
+SOURCE INPUTS
+- MEMORY.ZIP / MEMORY.C (uploaded 2026-11-21)
+- DUNVIEW.ZIP / DUNVIEW.C, COORD.C
+- I34E_I34M_P20JA_P20JB_P31J.ZIP / DEFS.H
+- GRAPHICS_DOS.ZIP / GRAPHICS.DAT (363,417 bytes)
+
+SOURCE TRACE
+MEMORY.C F0489_MEMORY_GetNativeBitmapOrGraphic(index):
+1. If already cached, returns M085_USED_BLOCK_BITMAP(cache block).
+2. Otherwise accesses G0636_ppuc_Graphics[index], allocates cache block, and sets
+   M106_USED_BLOCK_BITMAP_WIDTH(block) = M105_GRAPHIC_PIXEL_WIDTH(graphic)
+   M107_USED_BLOCK_BITMAP_HEIGHT(block) = M089_GRAPHIC_HEIGHT(graphic)
+3. Expands graphic via F0466_EXPAND_GraphicToBitmap and returns bitmap pointer.
+DEFS.H: M085_USED_BLOCK_BITMAP(block) = block + 16; width/height are at block+12/+14, which correspond to bitmapPointer-4/-2 (M100_PIXEL_WIDTH and M101_PIXEL_HEIGHT).
+DUNVIEW.C F0675 then reads M100/M101 and applies M078_SCALED_DIMENSION to write the scaled destination bitmap header.
+
+GRAPHICS.DAT V1 METADATA DIRECTLY DECODED
+First two little-endian words: 0x8001, 713 (new format version 1, 713 graphics).
+After the two 713-element 16-bit compressed/decompressed length tables, 713 width/height records are stored as little-endian 16-bit pairs, starting at byte offset 2856.
+Graphic 331 dimensions = 32x42; graphic 332 dimensions = 92x52.
+Graphic 267 dimensions = 14x19; graphic 268 = 28x28.
+Graphic 283 dimensions = 16x19; graphic 284 = 32x28.
+These are actual graphics.dat metadata entries, NOT yet proven associations to Hook or Manacles. The file itself has both 28x28 and 32x28 source graphic records (on distinct graphic indices).
+
+ORNAMENT INDEX TRACE
+DUNVIEW.C map setup derives a native graphic index as:
+  M615_GRAPHIC_FIRST_WALL_ORNAMENT + 2 * ornamentType
+For the 713-graphic X720 branch, M615 = 259; graphic 332 would correspond to the second graphic for ornamentType 36 (331/332 pair). Verifying whether Manacles maps to type 36 requires graphics 558 ornament definitions or another authoritative source.
+DUNVIEW.C F0107 can increment the base native bitmap index for certain front views, meaning a single ornament's front and side source headers may differ.
+The X720 branch uses scale F2 21 and F3 14, while P20JA/P20JB uses F2 20 and F3 16. Confirm target executable's branch before implementing.
+
+CONDITIONAL TESTS ONLY (if ornament source actually graphic 332 = 92x52 and scale=21/14)
+  F2: 60x34 ; F3: 40x22
+  with previously decoded layout centers, predicted F2 rectangle (82,40,60,34), F3 (92,39,40,22).
+These are not runtime-verified rendered rectangles. In particular, do not overwrite a previously user-approved F2 Manacles geometry based only on this research.
+
+NEXT ACTION
+Locate/decode GRAPHIC 558 (ornament index/name/type mapping) to identify precise native indices for Hook and Manacles; verify view selection (front vs side) and target DOS branch. Then run full generic layout/alignment/scaling computation and compare with DOS screenshots. No Unity changes until verified.

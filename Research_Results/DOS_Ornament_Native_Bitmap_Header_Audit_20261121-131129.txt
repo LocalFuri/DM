@@ -1,0 +1,48 @@
+DUNGEON MASTER — ORIGINAL DOS NATIVE BITMAP HEADER AUDIT
+Research timestamp: 2026-11-21T13:11:29+01:00
+STATUS: SOURCE PATH VERIFIED; NATIVE HEADER VALUES NOT YET VERIFIED. NO UNITY CHANGES.
+
+INPUTS INSPECTED
+DUNVIEW.ZIP/DUNVIEW.C, COORD.C
+I34E_I34M_P20JA_P20JB_P31J.ZIP/DEFS.H
+GRAPHICS_DOS.ZIP/GRAPHICS.DAT; prior verified resource-696 decoding
+Progression_20261121_M078_Verified.zip/Progression.json
+
+ORIGINAL SOURCE FINDINGS
+DEFS.H around 2927:
+ #define M100_PIXEL_WIDTH(block) (*((int16_t*)(block) - 2))
+ #define M101_PIXEL_HEIGHT(block) (*((int16_t*)(block) - 1))
+DEFS.H line 2208:
+ #define M078_SCALED_DIMENSION(dimension, scale) (((dimension * scale) + (scale >> 1)) >> 5)
+DUNVIEW.C F0107:
+ NativeBitmapIndex = G0101_as_CurrentMapWallOrnamentsInfo[ornamentIndex].NativeBitmapIndex;
+ Select F3/F2 native bitmap by view-wall index; certain branches increment the native index for front views.
+ X508_P20JA_P20JB uses scale F3=16, F2=20 and zone set stride 13.
+ X720_I34E_I34M_P31J uses scale F3=14, F2=21 and zone set stride 15.
+DUNVIEW.C F0675:
+ F0489_MEMORY_GetNativeBitmapOrGraphic(nativeIndex) returns the bitmap pointer;
+ M100/M101 read its header width/height;
+ destination width/height are assigned with M078(sourceWidth/Height,scale);
+ F0129_VIDEO_BlitShrinkWithPaletteChanges scales and recolors pixels;
+ F0791 calls F0635 to resolve alignment and clipping, then F0132 blits.
+
+IMPORTANT: The actual bitmap pointer and the header values for Hook/Manacles in the original DOS runtime are NOT recoverable solely from these declarations. They require identifying the correct native graphic index / graphic table, or measuring the live engine. Resource 696 is a layout resource, NOT a list of native bitmap dimensions. Explicit native bitmap index values cannot be asserted from the current files alone.
+
+EXACT CONDITIONAL SCALE CALCULATIONS (resource-696-compatible X720 branch):
+ native size 92x52: F2(21)=60x34; F3(14)=40x22
+ native size 95x52: F2(21)=62x34; F3(14)=41x22
+ native size 28x28: F2(21)=18x18; F3(14)=12x12
+ native size 32x28: F2(21)=21x18; F3(14)=14x12
+
+CONDITIONAL CENTERED VIEWPORT RECTANGLES USING VERIFIED RESOURCE 696 CENTER RECORDS
+ Hook F2 center (112,47) with 18x18 -> (103,38,18,18)
+ Hook F3 center (112,44) with 14x12 -> (105,38,14,12)
+ Manacles F2 center (112,57) with 60x34 -> (82,40,60,34)
+ Manacles F3 center (112,50) with 40x22 -> (92,39,40,22)
+ The Hook F3 14x12 requires a 32x28 header if scale is 14; a 28x28 header would yield 12x12. This must be understood via view-specific native index/padding before generalizing.
+
+VERSION WARNING
+ The extracted 15-slot resource 696 is associated with X720 branch; the named P20JA/P20JB branch is 13-slot and uses 16/20 scales. Do not mix branch-specific formulas. Proving that the current PC DOS game executes the X720 branch is a separate task.
+
+NEXT RECOMMENDED ACTION
+ Determine F0489_MEMORY_GetNativeBitmapOrGraphic loading and G0101_as_CurrentMapWallOrnamentsInfo bitmap-index setup. For source-code reconstruction, obtain MEMORY.C and map/graphic-loading implementation source from same ReDMCSB variant. For incontrovertible runtime evidence, instrument/log native bitmap index, source width/height, scale, layout zone, destination width/height and final F0635 rectangle at Hook and Manacles F2/F3. Compare against captured original DOS screenshots. Do not modify Unity or approved Hook positions yet.

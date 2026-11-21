@@ -1,0 +1,35 @@
+DUNGEON MASTER — DOS ORNAMENT PAIR IDENTITY AND SCALING CONSISTENCY
+Date: 2026-11-21 (Europe/Berlin)
+Scope: Research only. No Unity source changes.
+
+PRIMARY SOURCES READ:
+- GRAPHICS_DOS.ZIP / GRAPHICS.DAT (v1, 713 graphics)
+- DUNVIEW.ZIP / DUNVIEW.C
+- I34E_I34M_P20JA_P20JB_P31J.ZIP / DEFS.H
+- ViewportLayoutEditor(20261121-112906).zip / ViewportLayoutEditor.cs
+
+SOURCE-VERIFIED RULES, conditional on X720_I34E_I34M_P31J:
+- M615_GRAPHIC_FIRST_WALL_ORNAMENT = 259.
+- DUNVIEW.C map setup: nativeBase = 259 + 2 * ornamentType.
+- F0107: central front D1 increments native bitmap index by 1; central front D2/D3 also increment it by 1 under X720. Thus D2/D3 central-front use the SAME second graphic for a given type (except special inscription logic). Side walls use first graphic where selected by source conditions; mirror and exceptions apply.
+- F2 uses scale 21; F3 uses scale 14; M078 dimension macro is ((dimension*scale)+(scale>>1))>>5.
+
+EXHAUSTIVE MATCHES AMONG ORNAMENT TYPES 0..59, USING ACTUAL DAT HEADER DIMENSIONS:
+- 16x19 side + 32x28 front: type 12 -> graphics 283/284; type 22 -> graphics 303/304. Dimensions DO NOT select between them.
+- 32x42 side + 92x52 front: type 36 -> graphics 331/332. Unique matching PAIR; still need named identity via pixels/map.
+- 14x19 side + 28x28 front: type 4 -> graphics 267/268. Unique matching pair.
+
+CRITICAL SCALE-CONSISTENCY CHECK:
+- If Hook front graphic is 28x28 (graphic 268, ornament type 4): F2 -> 18x18; F3 -> 12x12.
+- If Hook front graphic is 32x28 (graphic 284 OR 304, types 12/22): F2 -> 21x18; F3 -> 14x12.
+- Consequently, earlier Hook F2 18x18 and Hook F3 14x12 cannot BOTH arise by uniformly scaling one unchanged native front bitmap using X720 scales 21/14. This is a contradiction among our earlier assumptions, not a license to alter approved Unity geometry. It may reflect a mismatch of source versions, artwork, or what was measured (bitmap vs visible pixels), or an incorrect named graphic identification.
+- If Manacles type 36 is correct, front graphic 332 92x52 -> F2 60x34 and F3 40x22. Earlier F3 38x20 could represent a different measured bounding box or image/crop; not verified as original bitmap geometry.
+
+IMPORTANT VERSION WARNING:
+- The original source also contains the X508_P20JA_P20JB PC branch (different base/index sets, scales 20/16), so the X720 branch cannot be asserted as the actual running PC DOS executable merely because the GRAPHICS.DAT contains 713 graphics. Check the game version/build and graphics association before applying derived dimensions to Unity.
+
+NEXT:
+1. Identify named Hook and Manacles from actual decoded bitmap pixels, or from the map's G0261 ornament-type table (a map file plus decoding path).
+2. Determine DOS executable version and branch.
+3. Validate both bitmap rectangles and visible ink bounds separately against DOS screenshots.
+4. Only then consider a shared generic renderer. Do not introduce ornament-specific fixes or change Unity now.

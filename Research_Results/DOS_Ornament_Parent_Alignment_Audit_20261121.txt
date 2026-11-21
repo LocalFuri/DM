@@ -1,0 +1,43 @@
+DUNGEON MASTER — ORIGINAL DOS ORNAMENT ALIGNMENT AUDIT
+Date: 2026-11-21 (Europe/Berlin)
+Sources: uploaded DUNVIEW.ZIP: COORD.C and DUNVIEW.C; uploaded Progression(20261121-112523).zip for prior checkpoints.
+Research only. No Unity source modified. All rectangle values below are viewport-relative.
+
+1. VERIFIED SOURCE FACTS
+DUNVIEW.C lines 1721-1726:
+  #ifdef X508_P20JA_P20JB
+  zone = 1004 + coordinateSet * 13 + viewWallIndex;
+  #ifdef X720_I34E_I34M_P31J
+  zone = 1004 + coordinateSet * 15 + viewWallIndex;
+IMPORTANT: prior generic use of 15 for DOS is not justified; choose the branch corresponding to the targeted PC DOS build.
+
+DUNVIEW.C lines 1860-1881:
+  X508 branch: F3 scale=16, F2 scale=20.
+  X720 branch: F3 scale=14, F2 scale=21.
+  F0675_DUNGEONVIEW_GetScaledBitmap creates bitmap with dimensions used for alignment.
+DUNVIEW.C lines 1606-1667:
+  F0791_DUNGEONVIEW_DrawBitmapXX calls F0635_(bitmap, zone, ..., &sourceX, &sourceY), then F0132_VIDEO_Blit; bitmap alignment and clipping happen before blit.
+COORD.C lines 1813-2159:
+  F0635_ resolves LAYOUT_RECORD with F0634_GetLayoutRecord; applies parent-relative offsets, special 10..18 margin alignment rules, bounds and clipping.
+  For alignment record type 0 (CENTER):
+       left = effectiveX - ((width + 1) >> 1)
+       top  = effectiveY - ((height + 1) >> 1)
+  This formula holds for centered alignment only; other modes 1..8 have different formulas.
+  Parent resolution can alter effectiveX and effectiveY; viewport clipping may alter top/left and visible width/height.
+  For PC X508, rectangle uses inclusive left/right/top/bottom fields, and positive clip excess is returned to the blitter as source offsets.
+
+2. CONDITIONAL CENTERING CHECKS (NOT FULL ORIGINAL-DOS PROOFS)
+Given earlier extracted values, assuming each is already the FINAL effective center, type=0, and no clipping:
+ Hook F2: center (112,47), bitmap 18x18 -> left 103 top 38.
+ Hook F3: center (112,44), bitmap 14x12 -> left 105 top 38.
+ Manacles F2: center (112,57), bitmap 60x34 -> left 82 top 40.
+ Manacles F2: center (112,57), bitmap 60x35 -> left 82 top 39 (NOT 40).
+ Manacles F3: no verified size in this audit, so no rectangle can be asserted.
+If Manacles F2 visibly requires 60x35 and top=40, either effective center differs, record is not center, clipping intervenes, or previous measurements/assumptions differ. Do not mark verified.
+
+3. WHY THE HOOK F3 4-PIXEL DISCREPANCY IS NOT YET FULLY RESOLVED
+The center-only result is top=38, whereas earlier Unity renderer research records a Hook F3 viewport top=42.
+This proves a difference between the candidate and saved Unity placement, NOT that 38 is the final original DOS result. To establish DOS top, resolve actual LAY1 record and every parent record for the correct PC build and view slot, and use scaled bitmap dimensions obtained from that build. The currently uploaded source ZIP does not contain resource 696 (LAY1) bytes or a record dump, so complete numeric parent-chain execution cannot yet be performed.
+
+4. NEXT TECHNICAL STEP
+Supply GRAPHICS.DAT containing original DOS layout resource 696, or the previously extracted 23-range/1133-record LAY1 dump containing record indices/types/parent indices/data values, plus relevant coordinate-set and view-index mapping. Trace all four target zones: Hook F2, Hook F3, Manacles F2, Manacles F3. Do not patch Unity or ornament-specific offsets until all match independently.
