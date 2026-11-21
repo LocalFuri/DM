@@ -1,0 +1,49 @@
+DUNGEON MASTER PC DOS — GENERIC ORNAMENT LAY1 RESEARCH
+Date: 20 November 2026 (Europe/Berlin)
+Priority: placement X/Y/width/height; individual pixel matches secondary.
+No Unity code or artwork modified.
+
+RE-VERIFIED DIRECTLY FROM USER-PROVIDED ORIGINAL DOS RESOURCE 696
+GRAPHICS(5).ZIP -> GRAPHICS.DAT -> resource 696, signature 0xFC0D, 9160 bytes.
+There are 23 indexed ranges and 1133 8-byte records. Each record has four signed little-endian 16-bit fields (type, parent, data1, data2).
+
+Research source for 15-perspective mapping:
+https://www.dungeon-master.com/forum/viewtopic.php?start=30&t=29805
+View index: 0 FgD1, 1 FdD1, 2 CgD3, 3 CdD3, 4 FgD3, 5 FD3, 6 FdD3, 7 CgD2, 8 CdD2, 9 FgD2, 10 FD2, 11 FdD2, 12 CgD1, 13 CdD1, 14 FD1.
+The original DOS zone lookup discussed there is: 1004 + coordinateSet*15 + viewIndex.
+
+CENTER ZONES, FULL RELEVANT FRONT DISTANCES
+Set 0, F3/front (index 5):  zone 1009 = (type0,parent4,112,44).
+Set 0, F2/front (index10):  zone 1014 = (type0,parent4,112,47).
+Set 0, F1/front (index14):  zone 1018 = (type0,parent4,112,50).
+Set 1, F3/front (index 5):  zone 1024 = (type0,parent4,112,50).
+Set 1, F2/front (index10):  zone 1029 = (type0,parent4,112,57).
+Set 1, F1/front (index14):  zone 1033 = (type0,parent4,112,64).
+Viewport parent zone 4=(type1,parent3,0,0); zone 3=(type9,parent0,224,136).
+Coordinate-set-to-ornament mapping comes from separate previous research and has NOT been independently decoded from the DOS map metadata in this check.
+
+VALIDATION AGAINST PROVISIONAL CENTER-ALIGNMENT FORMULA
+X = centerX - floor((destWidth+1)/2)
+Y = centerY - floor((destHeight+1)/2)
+
+Hook F2, category 0, 18x18 -> X=103 Y=38; agrees with reference.
+Hook F3, category 0, 14x12 -> X=105 Y=38; APPROVED UNITY reference X=105 Y=42. UNRESOLVED 4-PIXEL Y DIFFERENCE.
+Manacles F2, category 1, 60x34 -> X=82 Y=40; candidate geometry and matches reference top-left, but nominal 34-pixel output NOT YET APPROVED by DOS screenshot test.
+Manacles F2, category 1, 60x35 -> X=82 Y=39; previous experimental Unity position X=82 Y=40. UNRESOLVED 1-PIXEL OFFSET WITH 35px.
+
+LIMITS / WHAT WE DID NOT ESTABLISH
+- LAY1 centers are validated data; they do not prove the final on-screen rectangle without full original F0791/F0635 drawing logic.
+- The drawing routine may pass different logical/stored bitmap dimensions or apply clipping. Hook F3 logical padding and 4px Y mismatch still require the actual source path.
+- Fixed distance scale factors (21/32 and 14/32) are documented externally, but their integer rounding, source stride, and destination height must be verified for this DOS version.
+- Do not replace approved Hook F2/F3 or Manacles provisional F2 with calculated coordinates until resolved.
+- No ornament-name special cases, manual coordinate fixes, or artwork edits.
+
+DELIVERABLE
+DOS_Ornament_Layout_Calculator.py is a research-only generic diagnostic. It accepts resource 696 binary and a coordinate set and view index, optionally a KNOWN destination width and height. It reports the zone center and a provisional centered rectangle. It does NOT calculate a shrink size and does NOT patch Unity.
+Examples after placing the existing extracted 696 binary in the same research folder:
+python DOS_Ornament_Layout_Calculator.py DOS_LAY1_Resource696_20261120-195038.bin --set 0 --view-index 5 --width 14 --height 12
+python DOS_Ornament_Layout_Calculator.py DOS_LAY1_Resource696_20261120-195038.bin --set 1 --view-index 10 --width 60 --height 34
+python DOS_Ornament_Layout_Calculator.py DOS_LAY1_Resource696_20261120-195038.bin --set 0 --all
+
+NEXT RESEARCH TASK
+Obtain and inspect actual ReDMCSB_WIP20210206 DUNVIEW.C and COORD.C rendering path, especially F0791_DUNGEONVIEW_DrawBitmapXX -> F0635_CalculateAlignment. Verify exact Hook F3 bitmap argument dimensions/clipping and version-specific map coordinate-set metadata. Then separately test Manacles F2 nominal height34 in Unity only if this logic supports it.

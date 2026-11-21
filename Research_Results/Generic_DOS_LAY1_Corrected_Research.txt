@@ -1,0 +1,49 @@
+DUNGEON MASTER PC DOS — GENERIC ORNAMENT LAY1 RECORD AUDIT
+Research time: 20.11.2026 20:29:09 CET
+Source: user-supplied GRAPHICS(5).ZIP / GRAPHICS.DAT, extracted resource 696
+SHA256 resource 696: 2e14e0ff83bf72ecb1290db2976d24c571615822fccb489d003dcae08c674f9f
+
+IMPORTANT CORRECTION TO PREVIOUS REPORT
+The prior DOS_LAY1_Resource696_Research_20261120-195038.txt incorrectly used record offsets 4496, 4536, 4656. Those bytes DO NOT belong to the three named zones. The resource has TWENTY-THREE (23) range pairs (u16 at byte offset 2), NOT 11. Total records across all 23 ranges: 1133. Record table starts at offset 96. Records are four signed little-endian 16-bit words (type, parent, data1, data2).
+
+CORRECT RAW RECORDS (resource-relative byte offsets)
+  Zone 1009 Hook F3:     offset 4632; (type=0, parent=4, data1=112, data2=44)
+  Zone 1014 Hook F2:     offset 4672; (type=0, parent=4, data1=112, data2=47)
+  Zone 1029 Manacles F2: offset 4792; (type=0, parent=4, data1=112, data2=57)
+  Zone    4 parent:      offset  120; (type=1, parent=3, data1=0, data2=0)
+  Zone    3 viewport:    offset  112; (type=9, parent=0, data1=224, data2=136)
+
+RESEARCHED EXTERNAL ENGINE LOGIC (ReDMCSB / community source, not independently compiled original DOS binary)
+  OrnamentZone = 1004 + CoordinateSet*15 + ViewWallIndex.
+  ViewWallIndex: Front F3=5; Front F2=10.
+  CoordinateSet from prior ScummVM mapping (still requires version-specific confirmation): Hook=0, Manacles=1.
+  Alignment type 0 is CENTER. F0635_CalcAlignment final alignment code uses:
+     left = center_x - ((width+1) >> 1)
+     top  = center_y - ((height+1) >> 1)
+  Source: https://www.dungeon-master.com/forum/viewtopic.php?p=163630
+
+INDEPENDENT GEOMETRY PREDICTIONS using these records and previous approved/test dimensions:
+  Hook F2: 18x18 -> X=103, Y=38 (zone 1014); previous Unity test X=103, Y=38
+  Hook F3: 14x12 -> X=105, Y=38 (zone 1009)
+  Manacles F2: 60x35 -> X=82, Y=39 (zone 1029); previous Unity test X=82, Y=40
+
+INTERPRETATION
+- Hook F2: computed X=103,Y=38 agrees with approved test geometry exactly.
+- Manacles F2: computed X=82,Y=39 vs experimentally approved provisional Unity rectangle X=82,Y=40 (1 px Y discrepancy). This is NOT an acceptable pretext for a Manacles-specific correction; investigate coordinate convention, clipping/texture transparent borders, and DOS render invocation.
+- Hook F3: computed X=105,Y=38 from supplied dimensions 14x12. Compare with actual approved Hook F3 rendered rectangle in Unity and DOS before claiming validation.
+- F2 scale 21/32 yields floor(28*21/32)=18 and floor(92*21/32)=60, consistent for widths; 52*21/32=34.125 does not itself explain experimental Manacles height 35. Height rounding and/or logical source padding remains open.
+- Hook F3: 28*14/32=12.25, not 14. Native width vs virtual padded stride MUST be derived from generic DOS image handling before claiming universal rule.
+- The original GRAPHICS.DAT is layout DATA, not the scaling routine.
+
+STOP CONDITIONS
+- Do not change Unity while geometry discrepancy/height formula remain unresolved.
+- Do not add per-ornament Hook or Manacles special cases. X/Y/width/height have priority over pixel-perfect mask.
+- Do not modify original source artwork.
+- Do not regress approved Hook F2/F3, or provisional Manacles F2.
+
+NEXT ACTION
+1. Validate coordinate-set assignments from ORIGINAL PC DOS map/runtime metadata (not ScummVM alone).
+2. Recover actual Hook F3 output rectangle from existing Unity implementation and compare X105 Y38.
+3. Follow original DOS F0791_DUNGEONVIEW_DrawBitmapXX into F0635_CalcAlignment to establish whether its runtime width/height differ from experimental rectangle, including a possible 1px vertical discrepancy.
+4. Derive shared height rounding and 32-column logical source handling for F3 from the DOS engine source.
+5. Only then implement generic Unity renderer, regression testing all three scenarios.

@@ -56,7 +56,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-20 Manacles F2 screenshot-fit 60x35 X82 Y40 HALF-STEP TEST prepared, NOT approved. Native source 92x52 unchanged, Hook F2/F3 approved and protected. Await user Unity screenshot comparison.",
+  "checkpoint": "2026-11-20: generic DOS geometry: resource696 23 ranges/1133 records verified, sets 0/1 F1/F2/F3 centers decoded. Hook F2 center rule matches; Hook F3 4px Y discrepancy unresolved; Manacles F2 60x34 at X82 Y40 candidate NOT approved. No Unity changes.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -2880,5 +2880,184 @@
     "next_task": "Decode three zones and parent chains; build generic geometry resolver; no ornament-specific exceptions",
     "unchanged": "Unity/artwork/approved Hook and Manacles rendering",
     "research_file": "Generic_DOS_Ornament_Zone_Indices.txt"
+  },
+  "generic_dos_layout_resource696_corrected_20261120": {
+    "timestamp_local": "20.11.2026 20:29:09 CET",
+    "status": "research; no Unity edits",
+    "primary_source": "GRAPHICS(5).ZIP / GRAPHICS.DAT resource 696",
+    "correction": "Prior zone raw records were extracted from wrong offsets because range count was mistaken for 11; actual 23 ranges; record data begins at offset 96.",
+    "verified_records": {
+      "zone1009_hook_f3": [
+        0,
+        4,
+        112,
+        44
+      ],
+      "zone1014_hook_f2": [
+        0,
+        4,
+        112,
+        47
+      ],
+      "zone1029_manacles_f2": [
+        0,
+        4,
+        112,
+        57
+      ],
+      "zone4_parent": [
+        1,
+        3,
+        0,
+        0
+      ],
+      "zone3_viewport": [
+        9,
+        0,
+        224,
+        136
+      ]
+    },
+    "derived_geometry": {
+      "hook_f2": [
+        103,
+        38,
+        18,
+        18
+      ],
+      "hook_f3_candidate": [
+        105,
+        38,
+        14,
+        12
+      ],
+      "manacles_f2_lay1": [
+        82,
+        39,
+        60,
+        35
+      ]
+    },
+    "discrepancy": "Manacles F2 layout predicts Y=39 while accepted provisional Unity test is Y=40. Hook F3 needs validation. Generic height and F3 virtual padding unresolved.",
+    "priority": "X/Y/width/height first; pixel details secondary; no per-ornament adjustments for ~180 future items",
+    "deliverable_report": "Generic_DOS_LAY1_Corrected_Research.txt",
+    "next_action": "Verify original DOS runtime coordinate category & draw function width/height inputs; resolve 1px Y discrepancy and Hook F3 before touching Unity."
+  },
+  "generic_dos_layout_height_and_f3_audit_20261120": {
+    "timestamp_europe_berlin": "20.11.2026 20:54:52 CET",
+    "status": "Research only; no Unity/artwork modified. 34-pixel Manacles F2 generic-height candidate not yet Unity-tested; Hook F3 DOS-zone Y discrepancy identified.",
+    "priority": "Generic X/Y/width/height from DOS layout and scaling. No individual Hook/Manacles code corrections. Pixel matching secondary.",
+    "source_files": [
+      "GRAPHICS(5).ZIP / GRAPHICS.DAT resource 696",
+      "manacles_candidate_build/ViewportLayoutEditor.cs (latest provided experimental test)",
+      "Manacles_F1.png 92x52",
+      "user Unity/DOS F2 screenshots 20261120"
+    ],
+    "dos_layout_records": {
+      "Hook F2": [
+        0,
+        4,
+        112,
+        47
+      ],
+      "Hook F3": [
+        0,
+        4,
+        112,
+        44
+      ],
+      "Manacles F2": [
+        0,
+        4,
+        112,
+        57
+      ]
+    },
+    "f2_scale_hypothesis": "floor(source_dimension * 21/32); verified against Hook F2 28x28 => 18x18 and Manacles width 92 => 60; Manacles height 52 => 34 is newly tested computationally, not yet approved in Unity.",
+    "geometry_predictions": {
+      "Hook F2": [
+        103,
+        38,
+        18,
+        18
+      ],
+      "Manacles F2 nominal candidate": [
+        82,
+        40,
+        60,
+        34
+      ],
+      "Hook F3 from tentative zone interpretation": [
+        105,
+        38,
+        14,
+        12
+      ],
+      "Hook F3 current Unity viewport coordinates": [
+        105,
+        42,
+        14,
+        12
+      ]
+    },
+    "manacles_f2_evidence": "When sampling 92x52 at 60x34 and placing at (82,40), original alpha source has occupied bottom Y=73; 60x35 at same location occupied bottom Y=74. Latest DOS image chain ends Y=73, latest Unity at Y=74. Source brown mask candidate 34 height differs more than 35-pixel version, so full pixel match not asserted.",
+    "hook_f3_discrepancy": "Viewport top Y from Unity HookD3FrontY=113 in 200 pixel framebuffer, full screen Y=200-113-12=75, viewport top starts 33 => Y=42. Zone 1009 center (112,44) 14x12 yields X=105,Y=38. 4px vertical mismatch; investigate layout index, viewport conversion, source v3-specific differences and draw function before generic rollout.",
+    "next_steps": [
+      "Do not edit Unity in this research checkpoint.",
+      "Verify original DOS drawing routine height rounding/width logical stride.",
+      "Resolve Hook F3 4px Y discrepancy from code/runtime layout, do not add special-case offset.",
+      "Run controlled 60x34 Manacles F2 Unity test only when ready, check full ornament extents.",
+      "Build shared geometry regression table then replace special-case code only when all cases pass."
+    ],
+    "research_file": "Generic_DOS_Height_F3_Research.txt"
+  },
+  "generic_dos_layout_resolver_checkpoint_20261120": {
+    "timestamp_europe_berlin": "20.11.2026 22:56:37 CET",
+    "status": "Research only; no Unity modifications",
+    "source": "Original DOS GRAPHICS.DAT resource 696 extracted from GRAPHICS(5).ZIP",
+    "validated_structure": {
+      "signature": "0xFC0D",
+      "ranges": 23,
+      "records": 1133,
+      "record_bytes": 8
+    },
+    "center_records": {
+      "set0_F3_zone1009": [
+        112,
+        44
+      ],
+      "set0_F2_zone1014": [
+        112,
+        47
+      ],
+      "set0_F1_zone1018": [
+        112,
+        50
+      ],
+      "set1_F3_zone1024": [
+        112,
+        50
+      ],
+      "set1_F2_zone1029": [
+        112,
+        57
+      ],
+      "set1_F1_zone1033": [
+        112,
+        64
+      ]
+    },
+    "geometry_checks": {
+      "Hook_F2_18x18": "predicted 103,38 matches reference",
+      "Hook_F3_14x12": "predicted 105,38 vs approved 105,42; unresolved",
+      "Manacles_F2_60x34": "predicted 82,40; 34-height not approved",
+      "Manacles_F2_60x35": "predicted 82,39 vs experimental 82,40"
+    },
+    "rule": "No per-ornament correction; X/Y/W/H before pixel-level differences. Keep approved Hook perspectives and provisional Manacles F2 untouched.",
+    "new_research_files": [
+      "Generic_DOS_Layout_Resolver_Research.txt",
+      "DOS_Ornament_Layout_Calculator.py"
+    ],
+    "next": "Verify actual original DOS F0791 -> F0635 bitmap argument geometry and map coordinate sets, especially F3 4px Y discrepancy, before a Unity change."
   }
 }
