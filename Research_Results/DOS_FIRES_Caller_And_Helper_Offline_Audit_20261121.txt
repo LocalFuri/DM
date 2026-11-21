@@ -1,0 +1,76 @@
+Dungeon Master PC DOS — Offline caller/helper audit
+Date: 2026-11-21
+Scope: original FIRES 16-bit load image; no Unity or DOS installation changes.
+
+SOURCE MATERIAL INSPECTED
+- DOS_FIRES_Engine_Image_20261121.bin (167,984 bytes)
+- DUNVIEW.ZIP source reference, and prior verified load-image mapping
+- DOSBox-X screenshots showing a paused live renderer at 2A64:10EE and caller disassembly at 2A64:33ED–356A.
+
+1. HELPER AT 2A64:1854 (load-image offset 0x1DFF4)
+Disassembled actual 16-bit bytes with objdump -D -b binary -m i8086 -M intel.
+Function has a conventional far-call stack frame and returns with RETF at 2A64:1980.
+Inputs are at [BP+06] (far pointer to a record) and [BP+0A] (a word argument).
+- LES BX,[BP+06] then reads ES:[BX+04] and ES:[BX+05] into local words.
+- Calls a far processing/helper routine at compiled 12F9:035E.
+- Examines a record byte at ES:[BX+03]; if 0xFF initializes a zero pointer,
+  otherwise uses globals DS:3FD6/3FD8 and other graphics helpers.
+- Reads ES:[BX] and adds 0x004C (76) before a graphics lookup.
+- Reads ES:[BX+02] and ES:[BX+01], and calls further graphics functions.
+- Calls another far function at compiled 2390:000D, then restores and RETF.
+In the caller's conditional path at 2A64:3545, this helper receives a pointer
+calculated as DS:2A77 + 8 * signed byte at DS:2A68, plus word 0x02C7 (711).
+Interpretation: record-driven graphic processing; this is NOT sufficient to identify
+it as the Hook or Manacles renderer. The conditional path executes only if the
+caller-local word [BP-0E] equals 5. No evidence that the paused F0107 call entered
+this path.
+
+2. STRUCTURE-PREPARATION ROUTINE AT 114C:1408 (load-image offset 0x4A28)
+At 2A64:3404 the caller passes a far pointer to a 14-byte local buffer
+(starting at caller [BP-0E]) to 114C:1408, along with other caller arguments.
+Confirmed compiled instructions in the actual load image:
+  114C:1408 PUSH BP / MOV BP,SP / SUB SP,0010 / PUSH SI / PUSH DI
+  114C:143F MOV [BP-05],AL                 ; saves computed byte
+  114C:1444 LES BX,[BP+06]                ; output structure pointer
+  114C:1447 MOV ES:[BX+02],AX             ; writes second word of buffer
+  114C:144B MOV AL,[BP-05]
+  114C:1450 MOV CL,05
+  114C:1452 SAR AX,CL                     ; signed top-three-bit group
+  114C:1454 MOV ES:[BX],AX                ; writes first word of buffer
+  114C:1459 CMP BX,0006 / JBE 1461
+  114C:1463 JMP near word CS:[BX+182E]   ; dispatches by group
+The caller later reads [BP-0E] as a branch selector. This is the first word
+of that output buffer and is calculated from the upper bits of the computed byte.
+The renderer's first argument [BP-04] is 10 bytes into that same 14-byte
+caller buffer; its precise initialization has NOT yet been identified.
+
+3. VALIDATED RUNTIME FACTS, NOT OVER-INTERPRETED
+- The original 2A64:10E6 breakpoint was hit during the current session.
+- Runtime observed first-argument zero (renderer early-exit), second arguments
+  included 0008 and 000B; these are not Hook/Manacles measurements.
+- While showing the caller in Code Overview, debugger effective-address annotations
+  show the PAUSED renderer's BP, not the caller's BP. These displayed values must
+  not be used as caller locals.
+- Calls to 2A64:10E6 are associated with the view dispatcher, but no live nonzero
+  ornament call or final X/Y/W/H has yet been captured.
+
+4. NEXT OFFLINE RESEARCH
+Disassemble the remainder of 114C:1408 through its RETF; identify writes to
+output buffer offsets +08 and +0A (which correspond to caller BP-06 and BP-04).
+Map those fields to actual ornament selection before another live trace.
+Do not claim 2A64:1854 is F0635 or F0791, and do not change Unity yet.
+
+5. FOLLOW-UP: FIRST-ARGUMENT OUTPUT FIELD +0A NOW LOCATED
+Full disassembly of 114C:1408 through 114C:1824 confirms three write sites:
+  114C:16C3 MOV ES:[BX+0A],AX — AX is returned from 114C:12C1 after a
+              series of parameters including a nibble from DS:[3436]+0B.
+  114C:16F0 MOV ES:[BX+0A],AX — AX is a masked high nibble from
+              ES:[BX+05] obtained through helper 114C:07A1.
+  114C:1815 MOV ES:[BX+0A],AX — modifies an existing word by OR 8000h,
+              conditionally setting its high bit.
+The caller's [BP-04] is the output field at +0A in its buffer [BP-0E].
+Consequently, the renderer's zero first argument is a valid outcome of this
+field-generation logic, not evidence that the renderer identity or breakpoint
+is wrong. Which branch represents Hook F2 remains unverified.
+NOTE: These three sites were located after the initial overview. They supersede
+the earlier statement in section 2 that the +0A assignment had not been found.

@@ -3668,5 +3668,17 @@
       "DOS_FIRES_Ornament_Renderer_Check_20261121.py"
     ],
     "notes": "Previous DOSBox-X session closed, confirm load segment in any new run before BP; these remain static code matches, not runtime rect measurements."
+  },
+  "research_20261121_caller_helper_offline_audit": {
+    "status": "offline disassembly verified, renderer input still unverified",
+    "source": "DOS_FIRES_Caller_And_Helper_Offline_Audit_20261121.txt",
+    "findings": [
+      "2A64:1854 record-driven graphic helper receives far record pointer and word argument; not established as ornament renderer",
+      "114C:1408 writes first and second words into 14-byte output structure; first word is computed byte arithmetic-shifted by 5 and selects dispatch",
+      "Caller [BP-04] corresponds to output structure offset +0A; assignment not yet traced",
+      "Live 2A64:10E6 breakpoint was hit, but observed first argument zero; no final ornament rectangles measured",
+      "Further disassembly of 114C:1408 finds writes to output buffer +0A at 114C:16C3, 16F0, and 1815; the last can set bit 15. Caller [BP-04] is this field."
+    ],
+    "next_action": "Map branch selection and value semantics at 114C:12C1 / 07A1; distinguish actual Hook F2 call from zero ornament IDs; preserve paused DOSBox-X and Unity untouched."
   }
 }
