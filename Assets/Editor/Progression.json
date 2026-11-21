@@ -56,7 +56,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-21: DM.EXE (11471 bytes) inspected statically; matches documented PC DOS distribution; MAIN ENGINE resides in separate FIRES (documented 94779 bytes). Waiting for same-installation FIRES to verify X720 branch. No Unity changes.",
+  "checkpoint": "2026-11-21: live FIRES relocation verification complete; no confirmed ornament routine breakpoint; offline trace next.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -112,11 +112,8 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "AUTHORITATIVE NEXT RESUME 2026-11-20: Manacles F2 only — determine original DOS F2 scaling/placement mathematically using native DOS Manacles F1 92x52, original DOS screenshot, and DOS-specific renderer source; do not make Manacles-specific hardcoded corrections from visual fitting.",
-    "Inspect DOS-specific isDrawnWallOrnAnAlcove / blitToBitmapShrinkWithPalChange in merged ScummVM DOS-support PR #7777 or original DOS executable; establish whether DOS replaces F2 destination record or only uses native DOS source width/height. Tie actual Manacles ornament 36 / coordinate set 1 / F2 center position 8 to DOS rendering parameters.",
-    "Cross-validate any source-derived Manacles F2 target rectangle, sampling and palette/transparency against 224x136 same-view Unity and DOS screenshots. Earlier 60x38 at X82/Y39 bias=0 is a screenshot-fit candidate only and must not become a special case without independent rule.",
-    "After defensible general rule exists, prepare a minimal isolated Manacles F2 test, preserve already approved Hook F2/F3 and existing Manacles F1/S2/S3 and wall/V17 code. Obtain user Unity compile and visual approval.",
-    "Only after Manacles F2 approval proceed to Manacles F3; then assess generic DOS-native source path across ornaments. Hook side views deferred by user."
+    "Trace ornament drawing routine in unpacked FIRES offline and validate a candidate breakpoint before restarting DOSBox-X.",
+    "Verify Hook/Manacles F2/F3 geometry with real runtime evidence; no hardcoded ornament corrections."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -3471,5 +3468,69 @@
     "unpacked_archive": "DOS_FIRES_Unpacked_20261121.zip",
     "next_task": "Statically disassemble/dynamically trace exact 16-bit DOS bitmap scaling/placement functions, establish correct branch and verify Hook/Manacles F2/F3 rectangles without special-case code",
     "unity_modified": false
+  },
+  "dos_fires_16bit_disassembly_audit_20261121": {
+    "date": "2026-11-21",
+    "status": "Research only; no Unity changes; machine-code branch not conclusively identified",
+    "input": "User-supplied DMSAVE.zip/fires, unpacked by UNLZEXE into FIRES_UNPACKED.EXE",
+    "mz": {
+      "file_bytes": 178224,
+      "header_bytes": 10240,
+      "load_image_bytes": 167984,
+      "relocations": 2518,
+      "entry_cs": 0,
+      "entry_ip": 0,
+      "sha256": "fc79ac65046e3d96c189ac3dd20ad40bacb8debee2cd1c7d2c33ca2d8f82fe94"
+    },
+    "verified": "16-bit x86 disassembly generated from load image (header removed). Source shows branch scales 21/14 versus 20/16. No machine-code attribution established yet.",
+    "pending": "Find actual rendering routine/scale arguments in FIRES by control-flow trace or live DOSBox instrumentation; then verify Hook and Manacles F2/F3 rectangles.",
+    "report": "Research_Results/DOS_FIRES_16bit_Disassembly_Audit_20261121.txt",
+    "rules": "No per-ornament correction; keep existing approved Unity rendering unchanged."
+  },
+  "dos_fires_wall_ornament_source_trace_20261121": {
+    "timestamp_europe_berlin": "2026-11-21T14:09:47.645470+01:00",
+    "status": "Research only; original DOS executable ornament routine still not conclusively located; no Unity changes",
+    "source": "Uploaded DUNVIEW.C F0107, unpacked FIRES program load image",
+    "verified": [
+      "wall ornament selected native bitmap depends on map ordinal and exact wall view index",
+      "X508 uses 13 zones per set and F2/F3 scales 20/16",
+      "X720 uses 15 zones per set and F2/F3 scales 21/14",
+      "X720 special earliest views use horizontal scale 30, vertical 14",
+      "unpacked engine image SHA256 dbffccaef5275e0c9dc6273570eb921656e9feedc11d6d0af35f7e41b192472c"
+    ],
+    "correction": "Earlier universal claim both F2/F3 always use front native graphic is over-general; front/side selection follows exact view index and branch",
+    "unverified": "executable instruction-level call path and live DOS rectangles",
+    "next": "reconstruct segment-relative call path or capture DOSBox debugger trace; record native index, scale, zone and final clipped rectangle",
+    "report": "DOS_FIRES_Wall_Ornament_Source_Trace_20261121-140947.txt"
+  },
+  "dos_fires_live_relocation_verification_20261121": {
+    "status": "Verified relocation and live code offset translation; ornament drawing function still unidentified",
+    "inputs": [
+      "DM_CODE.BI",
+      "DOS_FIRES_Engine_Image_20261121.bin",
+      "DOS_FIRES_Unpacked_20261121.zip"
+    ],
+    "verified": [
+      "4096 byte live dump 114C:0000 equals FIRES load image at offset 0x3620 except 20 MZ relocation words (40 bytes)",
+      "all 20 changed words match the original executable relocation table",
+      "all 20 relocated words carry +0x0DEA",
+      "runtime image base segment 0x0DEA",
+      "runtime 114C:145C -> FIRES image offset 0x4A7C / unpacked EXE offset 0x727C"
+    ],
+    "not_verified": [
+      "ornament draw function address",
+      "runtime Hook F2/F3 and Manacles F2/F3 rectangles",
+      "whether VGA watchpoint A000:0B24 ever triggers"
+    ],
+    "notes": [
+      "DOSBox-X sessions were closed by user after black screen; do not ask to reopen before identifying targeted breakpoint offline",
+      "Unity files not modified",
+      "use explicit absolute host paths for MEMDUMPBIN; Process Monitor showed relative filenames tried to write to Program Files"
+    ],
+    "research_files": [
+      "DOS_FIRES_Runtime_Relocation_Verification_20261121.txt",
+      "DOS_FIRES_Runtime_Address_Map_20261121.py"
+    ],
+    "next_action": "Offline control-flow matching of F0675/F0107 compiled instructions and static verification of a rendering breakpoint."
   }
 }

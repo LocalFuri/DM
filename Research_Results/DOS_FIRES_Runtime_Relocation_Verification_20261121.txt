@@ -1,0 +1,40 @@
+Dungeon Master PC DOS — Offline FIRES runtime mapping
+Date: 2026-11-21
+Research-only. Original game and Unity code unchanged.
+
+INPUT FILES (provided by user earlier in this conversation)
+- DM_CODE.BI: 4096-byte live DOSBox-X memory export from 114C:0000
+- DOS_FIRES_Engine_Image_20261121.bin: 167984-byte unpacked FIRES load image
+- DOS_FIRES_Unpacked_20261121.zip: original decompressed MZ executable with its DOS relocation table
+- DUNVIEW.ZIP: reconstructed DUNVIEW.C and COORD.C (reference source, not a binary symbol map)
+
+NEW VERIFIED RESULTS
+1. The exact 4096-byte runtime block corresponds to load-image offsets 0x3620 through 0x461F.
+2. 4056 bytes compare exactly; 40 bytes differ.
+3. The 40 differing bytes form exactly 20 16-bit relocation words.
+4. ALL 20 word offsets are present in FIRES_UNPACKED.EXE's ORIGINAL MZ relocation table:
+   0x3634, 0x36F7, 0x3798, 0x37DD, 0x38B9, 0x391D, 0x3935,
+   0x3E0D, 0x3FC7, 0x4080, 0x417F, 0x43F4, 0x4409, 0x4415,
+   0x4420, 0x4440, 0x449B, 0x44AD, 0x44B8, 0x4611.
+5. At every relocated word, runtime value - unloaded value = +0x0DEA (mod 65536).
+6. Therefore the FIRES load-image begins at runtime segment 0DEA:0000.
+   Runtime CS:IP -> load-image offset = (CS - 0x0DEA)*16 + IP.
+   For instance 114C:0000 -> 0x3620 and 114C:145C -> 0x4A7C.
+   The latter is at byte offset 0x727C in FIRES_UNPACKED.EXE (including 0x2800 MZ header).
+7. At 114C:145C, the unloaded image begins 76 03 E9 B8 03 D1 E3 2E FF A7 2E 18...
+   matching the user's live debugger screenshot beginning with JBE/JMP/SHL.
+
+LIMITATIONS / WHAT IS NOT VERIFIED
+- Nothing in this 4KB comparison identifies the ornament drawing or shrinking routine.
+- 114C:145C is a confirmed execution address, not a valid ornament-rendering breakpoint.
+- The VGA-memory breakpoint A000:0B24 was speculative; it was not shown to intercept an ornament draw.
+- A black DOSBox-X window was reported before that breakpoint; do not assume causality.
+- Predicted Hook and Manacles rectangles remain reconstructed-source predictions, not measured runtime values.
+
+NEXT TECHNICAL RECOMMENDATION
+Continue OFFLINE with control-flow reconstruction. Find a distinctive instruction sequence in the reconstructed F0675/F0107 call chain, search for a compiled equivalent in the unpacked engine, follow call references, and validate addresses in disassembly before asking the user to run DOSBox-X again. Do not set random VGA or code breakpoints.
+
+FILE USAGE
+- Save this report and DOS_FIRES_Runtime_Address_Map_20261121.py to C:\Unity\DM\Research_Results\.
+- The Python verifier expects DM_CODE.BI, DOS_FIRES_Engine_Image_20261121.bin, and DOS_FIRES_Unpacked_20261121.zip alongside it.
+- Run: python DOS_FIRES_Runtime_Address_Map_20261121.py 114C:145C
