@@ -4156,5 +4156,21 @@
     "confidence": "16-bit vs 6-bit stepping causes differing source selection at x15; complete multi-view regression not yet run",
     "no_unity_edits": true,
     "next_action": "Generalize fixed 6-bit indexed scaler, validate across F3 and S2/S3 and protect existing approved geometry/mirroring."
+  },
+  "research_20261121_shared_dos6bit_unity_patch": {
+    "date": "2026-11-21",
+    "status": "prepared_not_installed_or_unity_compiled",
+    "source_file": "ViewportLayoutEditor.cs",
+    "source_sha256": "5c336937eb03d0ea991b6b5bd7c610cc4c26a032b01725ccccd9ad53b746e4da",
+    "patched_sha256": "39024b22164d1daa30371c5b5a4bd20e4ef491d0a9ae4c5f6c8dd5a5783094c6",
+    "scope": "Shared 6-bit F0129 source-row/column sampling in GenerateDmScaledWallDecoration; all caller signatures and color/transparency/placement untouched",
+    "implementation": "Checksum-guarded Windows patch script with automatic original backup",
+    "caveats": [
+      "Changes other decorations using shared method; run Unity regression checks",
+      "Legacy caller round biases preserved by nearest 6-bit scaling; not independently DOS-confirmed for all cases",
+      "Current source remains RGBA, not raw indexed graphic renderer"
+    ],
+    "next_step": "Run guarded patch on exact matching Unity source; compile, verify Hook F2 and Manacles F2, then F3 and side views without per-ornament hacks",
+    "timestamp_rule": "Recursive ZIP entry time and generated filesystem last-modified must be Europe/Berlin."
   }
 }

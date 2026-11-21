@@ -1,0 +1,29 @@
+DUNGEON MASTER UNITY - ORIGINAL DOS 6-BIT SHARED SCALER PATCH
+Date: 2026-11-21 Europe/Berlin
+
+SOURCE: ViewportLayoutEditor(20261121-112906).zip, ViewportLayoutEditor.cs
+SHA256 source: 5c336937eb03d0ea991b6b5bd7c610cc4c26a032b01725ccccd9ad53b746e4da
+SHA256 patched: 39024b22164d1daa30371c5b5a4bd20e4ef491d0a9ae4c5f6c8dd5a5783094c6
+
+PATCH: one shared method GenerateDmScaledWallDecoration(), source-column and source-row sampling only.
+Before: 16-bit step = floor(source*1024/dest)*64, index=((step/2)+i*step)>>16
+After :  6-bit step = floor(source*64/dest), index=((step/2)+i*step)>>6
+Kept: Color32 input / palette matching, transparency index 10, top-down orientation,
+virtual padding, placement, clipping, mirroring, all caller signatures, caches.
+Existing legacy start biases converted from 16-bit to 6-bit units by nearest rounding;
+these optional biases are NOT independently proven identical to FIRES for every ornament.
+No single-ornament pixel corrections are present.
+
+SANITY CHECK: Hook F2 28->18, destination X15 selects source X23, not X24.
+Manacles F2 source sizes and original medium-distance map remain unchanged.
+
+IMPORTANT LIMITATIONS:
+- This source patch has not been compiled or executed in Unity.
+- Other ornaments use the shared method and may change; compare approved views before acceptance.
+- This is NOT a fully indexed renderer; existing Color32-to-DOS-palette matching remains.
+- Applying over a newer modified Unity source is prohibited by the checksum tool.
+- Do not include .bak files in Git commits unintentionally.
+
+INSTALL: unzip at a temporary folder, run Apply_DOS_6bit_Shared_Scaler_20261121.py
+on your Windows PC where C:\Unity\DM is present. It creates a backup first.
+If SHA mismatch, do NOT force copy; provide the newest ViewportLayoutEditor.cs.

@@ -37373,25 +37373,22 @@ private static void HandleGameViewPointerDown(
     Color32[] sourcePixels = source.GetPixels32();
     Color32[] targetPixels = new Color32[targetWidth * targetHeight];
 
-    // CSBwin ShrinkBLT:
-    // step = (((sourceSize << 10) / destinationSize) << 6)
-    //      = floor(sourceSize * 65536 / destinationSize)
-    // The integer source coordinate is the upper 16 bits of the accumulator.
-    // F2 keeps the rounded start (step/2 + 0x7fff). F3 uses step/2 alone:
-    // the extra round pulls in the gray highlight row (which the far map
-    // turns black) and the green pixels beside the yellow gems.
-    // Transparent source margins can be represented without altering the
-    // native DOS art. They affect ShrinkBLT's sample spacing, not its pixels.
+    // Original PC DOS FIRES F0129 pixel selector (6 fractional bits).
+    // Truncation occurs BEFORE stepping: 28 -> 18 must sample source X=23
+    // at destination X=15, rather than X=24 as in the old 16-bit routine.
+    // Keep existing optional legacy start-bias inputs for other established
+    // decoration placements until their DOS views are independently tested.
     int samplingSourceWidth = source.width + virtualPaddingLeft
         + virtualPaddingRight;
-    int stepX = ((samplingSourceWidth << 10) / targetWidth) << 6;
-    int stepY = ((source.height << 10) / targetHeight) << 6;
+    int stepX = (int)(((long)samplingSourceWidth << 6) / targetWidth);
+    int stepY = (int)(((long)source.height << 6) / targetHeight);
     bool farDistance = ReferenceEquals(colorMap, WallOrnamentFarColorMap);
-    int roundBias = roundBiasOverride ?? (farDistance ? 0 : 0x7fff);
-    // ScummVM's DOS shrink reference starts source accumulators at zero.
-    // Keep the existing sampling rule for all approved ornaments.
-    int startX = sampleFromPixelZero ? 0 : (stepX >> 1) + roundBias;
-    int startY = sampleFromPixelZero ? 0 : (stepY >> 1) + roundBias;
+    int legacyRoundBias = roundBiasOverride ?? (farDistance ? 0 : 0x7fff);
+    int roundBias6 = legacyRoundBias >= 0
+        ? (legacyRoundBias + 512) / 1024
+        : -((-legacyRoundBias + 512) / 1024);
+    int startX = sampleFromPixelZero ? 0 : (stepX >> 1) + roundBias6;
+    int startY = sampleFromPixelZero ? 0 : (stepY >> 1) + roundBias6;
 
     Color32[] brightPalette = DungeonViewportLightPalettes[0];
 
@@ -37401,7 +37398,7 @@ private static void HandleGameViewPointerDown(
       // top-down. Hook F2 uses the source/top-down orientation so both
       // the sampled source row and target row are mirrored together.
       int samplingY = sampleTopDown ? (targetHeight - 1 - y) : y;
-      int sourceY = (startY + samplingY * stepY) >> 16;
+      int sourceY = (int)(((long)startY + (long)samplingY * stepY) >> 6);
       sourceY = Mathf.Clamp(sourceY, 0, source.height - 1);
       if (sampleTopDown)
         sourceY = source.height - 1 - sourceY;
@@ -37410,7 +37407,7 @@ private static void HandleGameViewPointerDown(
 
       for (int x = 0; x < targetWidth; x++)
       {
-        int sourceX = (startX + x * stepX) >> 16;
+        int sourceX = (int)(((long)startX + (long)x * stepX) >> 6);
         sourceX = Mathf.Clamp(sourceX, 0, samplingSourceWidth - 1);
         int nativeSourceX = sourceX - virtualPaddingLeft;
         if (nativeSourceX < 0 || nativeSourceX >= source.width)

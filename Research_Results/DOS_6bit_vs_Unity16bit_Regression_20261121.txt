@@ -1,0 +1,54 @@
+DUNGEON MASTER PC DOS - UNIVERSAL ORNAMENT SCALER REGRESSION
+2026-11-21 Europe/Berlin
+
+SOURCE INPUTS
+DOS_6bit_Indexed_Output_20261121.zip (30 generated views)
+DOS_All_Ornament_Geometry_F0635_Corrected_20261121.csv
+DOS_Manacles332_Indexed_20261121.bin (native source verification)
+
+METHOD
+Original indexed native bitmaps 267,268,331,332 were recovered from the
+native-dimension view entries 12 (side) and 14 (front) within the archive.
+Graphic 332 matches the separately supplied native 92x52 bitmap byte-for-byte.
+Using original perspective-specific LUTs and mirrored/clipped geometry,
+compared the generated DOS 6-bit sample-coordinate indices with the earlier
+16-bit approximate source-coordinate formula documented in the Hook F2 audit:
+DOS: step=floor(src_dim*64/dest_dim), source=((step//2)+i*step)>>6
+16bit: step=floor(src_dim*1024/dest_dim)*64,
+       source=((step//2)+i*step)>>16
+No filter, no per-ornament corrections, no RGB conversions.
+Every regenerated 6-bit bitmap was byte-for-byte equal to its corresponding
+batch BIN file. Indexed palette value 10 is transparent.
+
+INDEPENDENT CONFIRMATION
+Hook F2 center (view 10, 28x28 -> 18x18): exactly THREE differing pixels.
+Coordinates: (118,42) DOS=3 old16=2;
+             (118,48) DOS=3 old16=2;
+             (118,49) DOS=3 old16=0.
+Those are the three observed Hook F2 screenshot differences.
+
+TARGETED PREDICTIONS FOR NEXT SCREENSHOT TESTS
+Manacles F3 center (view 5; 92x52 -> 40x22): 13 indexed pixel differences,
+only at screen X=115 (one pixel) and X=125 (12 pixels). Output source columns
+23 and 33 are where 6-bit and 16-bit sampling diverge. Three involve
+transparency index 10. These are predictions, NOT yet independently matched
+against PC DOS F3 screenshot or verified actual Unity F3 rendering.
+Manacles S2 left (view 7; 32x42 -> 21x27): 14 pixel differences.
+Hook S2 left (view 7; 14x19 -> 9x12): 1 pixel difference.
+Manacles S3 left (view 2; 32x42 -> 14x18): zero differences between these
+sampling methods; this does NOT independently validate DOS geometry/mirroring.
+Hook F3 center (view 5; 28x28 -> 12x12): zero sampling differences.
+
+CAUTIONS
+The 16-bit path in this report is a faithful implementation of the documented
+source-coordinate formula, not a full live Unity scene render. Some current
+Unity paths may involve other palette/clipping/occlusion behavior. Thus counts
+are predictive, and lack of difference between two implementations does NOT
+prove either original DOS match in an untested view.
+
+NEXT INDEPENDENT CHECK
+Capture original PC DOS Manacles F3 and current Unity Manacles F3 at identical
+position; compare ornament indices/colors independent of wall darkening stage.
+Check especially X=115,125. Then check side S2 with actual DOS screenshot,
+including mirror and wall clipping. Do not edit Unity or alter universal scaler
+until independent geometry/transparency checks are complete.

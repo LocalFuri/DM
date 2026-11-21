@@ -1,0 +1,1792 @@
+{
+  "description": "Source-derived sample-coordinate comparison only; not a comparison with actual Unity code output, and not independent original DOS F3/S2/S3 validation",
+  "original_F1_graphic_332_matches_user_bin": true,
+  "entries": [
+    {
+      "type": 4,
+      "view": 0,
+      "graphic": 267,
+      "position": [
+        24,
+        38
+      ],
+      "dimensions": [
+        13,
+        8
+      ],
+      "source": [
+        14,
+        19
+      ],
+      "mirror": false,
+      "clipped": [
+        13,
+        8
+      ],
+      "x_cols_different": [
+        7
+      ],
+      "y_rows_different": [],
+      "pixel_differences": 1,
+      "visible_pixel_differences": 1,
+      "differences_by_dos_index": {
+        "10": 1
+      },
+      "first_differences": [
+        {
+          "x": 31,
+          "y": 43,
+          "dos_index": 10,
+          "unity16_index": 0
+        }
+      ]
+    },
+    {
+      "type": 4,
+      "view": 1,
+      "graphic": 267,
+      "position": [
+        185,
+        39
+      ],
+      "dimensions": [
+        13,
+        8
+      ],
+      "source": [
+        14,
+        19
+      ],
+      "mirror": true,
+      "clipped": [
+        13,
+        8
+      ],
+      "x_cols_different": [
+        7
+      ],
+      "y_rows_different": [],
+      "pixel_differences": 1,
+      "visible_pixel_differences": 1,
+      "differences_by_dos_index": {
+        "10": 1
+      },
+      "first_differences": [
+        {
+          "x": 190,
+          "y": 44,
+          "dos_index": 10,
+          "unity16_index": 0
+        }
+      ]
+    },
+    {
+      "type": 4,
+      "view": 2,
+      "graphic": 267,
+      "position": [
+        82,
+        39
+      ],
+      "dimensions": [
+        6,
+        8
+      ],
+      "source": [
+        14,
+        19
+      ],
+      "mirror": false,
+      "clipped": [
+        6,
+        8
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [],
+      "pixel_differences": 0,
+      "visible_pixel_differences": 0,
+      "differences_by_dos_index": {},
+      "first_differences": []
+    },
+    {
+      "type": 4,
+      "view": 3,
+      "graphic": 267,
+      "position": [
+        136,
+        39
+      ],
+      "dimensions": [
+        6,
+        8
+      ],
+      "source": [
+        14,
+        19
+      ],
+      "mirror": true,
+      "clipped": [
+        6,
+        8
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [],
+      "pixel_differences": 0,
+      "visible_pixel_differences": 0,
+      "differences_by_dos_index": {},
+      "first_differences": []
+    },
+    {
+      "type": 4,
+      "view": 4,
+      "graphic": 268,
+      "position": [
+        39,
+        38
+      ],
+      "dimensions": [
+        12,
+        12
+      ],
+      "source": [
+        28,
+        28
+      ],
+      "mirror": false,
+      "clipped": [
+        12,
+        12
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [],
+      "pixel_differences": 0,
+      "visible_pixel_differences": 0,
+      "differences_by_dos_index": {},
+      "first_differences": []
+    },
+    {
+      "type": 4,
+      "view": 5,
+      "graphic": 268,
+      "position": [
+        106,
+        38
+      ],
+      "dimensions": [
+        12,
+        12
+      ],
+      "source": [
+        28,
+        28
+      ],
+      "mirror": false,
+      "clipped": [
+        12,
+        12
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [],
+      "pixel_differences": 0,
+      "visible_pixel_differences": 0,
+      "differences_by_dos_index": {},
+      "first_differences": []
+    },
+    {
+      "type": 4,
+      "view": 6,
+      "graphic": 268,
+      "position": [
+        174,
+        38
+      ],
+      "dimensions": [
+        12,
+        12
+      ],
+      "source": [
+        28,
+        28
+      ],
+      "mirror": false,
+      "clipped": [
+        12,
+        12
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [],
+      "pixel_differences": 0,
+      "visible_pixel_differences": 0,
+      "differences_by_dos_index": {},
+      "first_differences": []
+    },
+    {
+      "type": 4,
+      "view": 7,
+      "graphic": 267,
+      "position": [
+        66,
+        39
+      ],
+      "dimensions": [
+        9,
+        12
+      ],
+      "source": [
+        14,
+        19
+      ],
+      "mirror": false,
+      "clipped": [
+        9,
+        12
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [
+        9
+      ],
+      "pixel_differences": 1,
+      "visible_pixel_differences": 1,
+      "differences_by_dos_index": {
+        "10": 1
+      },
+      "first_differences": [
+        {
+          "x": 70,
+          "y": 48,
+          "dos_index": 10,
+          "unity16_index": 0
+        }
+      ]
+    },
+    {
+      "type": 4,
+      "view": 8,
+      "graphic": 267,
+      "position": [
+        149,
+        39
+      ],
+      "dimensions": [
+        9,
+        12
+      ],
+      "source": [
+        14,
+        19
+      ],
+      "mirror": true,
+      "clipped": [
+        9,
+        12
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [
+        9
+      ],
+      "pixel_differences": 1,
+      "visible_pixel_differences": 1,
+      "differences_by_dos_index": {
+        "10": 1
+      },
+      "first_differences": [
+        {
+          "x": 153,
+          "y": 48,
+          "dos_index": 10,
+          "unity16_index": 0
+        }
+      ]
+    },
+    {
+      "type": 4,
+      "view": 9,
+      "graphic": 268,
+      "position": [
+        1,
+        38
+      ],
+      "dimensions": [
+        18,
+        18
+      ],
+      "source": [
+        28,
+        28
+      ],
+      "mirror": false,
+      "clipped": [
+        18,
+        18
+      ],
+      "x_cols_different": [
+        15
+      ],
+      "y_rows_different": [
+        15
+      ],
+      "pixel_differences": 3,
+      "visible_pixel_differences": 3,
+      "differences_by_dos_index": {
+        "3": 3
+      },
+      "first_differences": [
+        {
+          "x": 16,
+          "y": 42,
+          "dos_index": 3,
+          "unity16_index": 2
+        },
+        {
+          "x": 16,
+          "y": 48,
+          "dos_index": 3,
+          "unity16_index": 2
+        },
+        {
+          "x": 16,
+          "y": 49,
+          "dos_index": 3,
+          "unity16_index": 0
+        }
+      ]
+    },
+    {
+      "type": 4,
+      "view": 10,
+      "graphic": 268,
+      "position": [
+        103,
+        38
+      ],
+      "dimensions": [
+        18,
+        18
+      ],
+      "source": [
+        28,
+        28
+      ],
+      "mirror": false,
+      "clipped": [
+        18,
+        18
+      ],
+      "x_cols_different": [
+        15
+      ],
+      "y_rows_different": [
+        15
+      ],
+      "pixel_differences": 3,
+      "visible_pixel_differences": 3,
+      "differences_by_dos_index": {
+        "3": 3
+      },
+      "first_differences": [
+        {
+          "x": 118,
+          "y": 42,
+          "dos_index": 3,
+          "unity16_index": 2
+        },
+        {
+          "x": 118,
+          "y": 48,
+          "dos_index": 3,
+          "unity16_index": 2
+        },
+        {
+          "x": 118,
+          "y": 49,
+          "dos_index": 3,
+          "unity16_index": 0
+        }
+      ]
+    },
+    {
+      "type": 4,
+      "view": 11,
+      "graphic": 268,
+      "position": [
+        205,
+        38
+      ],
+      "dimensions": [
+        18,
+        18
+      ],
+      "source": [
+        28,
+        28
+      ],
+      "mirror": false,
+      "clipped": [
+        18,
+        18
+      ],
+      "x_cols_different": [
+        15
+      ],
+      "y_rows_different": [
+        15
+      ],
+      "pixel_differences": 3,
+      "visible_pixel_differences": 3,
+      "differences_by_dos_index": {
+        "3": 3
+      },
+      "first_differences": [
+        {
+          "x": 220,
+          "y": 42,
+          "dos_index": 3,
+          "unity16_index": 2
+        },
+        {
+          "x": 220,
+          "y": 48,
+          "dos_index": 3,
+          "unity16_index": 2
+        },
+        {
+          "x": 220,
+          "y": 49,
+          "dos_index": 3,
+          "unity16_index": 0
+        }
+      ]
+    },
+    {
+      "type": 4,
+      "view": 12,
+      "graphic": 267,
+      "position": [
+        48,
+        39
+      ],
+      "dimensions": [
+        14,
+        19
+      ],
+      "source": [
+        14,
+        19
+      ],
+      "mirror": false,
+      "clipped": [
+        14,
+        19
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [],
+      "pixel_differences": 0,
+      "visible_pixel_differences": 0,
+      "differences_by_dos_index": {},
+      "first_differences": []
+    },
+    {
+      "type": 4,
+      "view": 13,
+      "graphic": 267,
+      "position": [
+        163,
+        39
+      ],
+      "dimensions": [
+        14,
+        19
+      ],
+      "source": [
+        14,
+        19
+      ],
+      "mirror": true,
+      "clipped": [
+        14,
+        19
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [],
+      "pixel_differences": 0,
+      "visible_pixel_differences": 0,
+      "differences_by_dos_index": {},
+      "first_differences": []
+    },
+    {
+      "type": 4,
+      "view": 14,
+      "graphic": 268,
+      "position": [
+        98,
+        36
+      ],
+      "dimensions": [
+        28,
+        28
+      ],
+      "source": [
+        28,
+        28
+      ],
+      "mirror": false,
+      "clipped": [
+        28,
+        28
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [],
+      "pixel_differences": 0,
+      "visible_pixel_differences": 0,
+      "differences_by_dos_index": {},
+      "first_differences": []
+    },
+    {
+      "type": 36,
+      "view": 0,
+      "graphic": 331,
+      "position": [
+        7,
+        39
+      ],
+      "dimensions": [
+        30,
+        18
+      ],
+      "source": [
+        32,
+        42
+      ],
+      "mirror": false,
+      "clipped": [
+        30,
+        18
+      ],
+      "x_cols_different": [
+        23
+      ],
+      "y_rows_different": [],
+      "pixel_differences": 2,
+      "visible_pixel_differences": 2,
+      "differences_by_dos_index": {
+        "3": 1,
+        "10": 1
+      },
+      "first_differences": [
+        {
+          "x": 30,
+          "y": 42,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 30,
+          "y": 44,
+          "dos_index": 10,
+          "unity16_index": 0
+        }
+      ]
+    },
+    {
+      "type": 36,
+      "view": 1,
+      "graphic": 331,
+      "position": [
+        187,
+        41
+      ],
+      "dimensions": [
+        30,
+        18
+      ],
+      "source": [
+        32,
+        42
+      ],
+      "mirror": true,
+      "clipped": [
+        30,
+        18
+      ],
+      "x_cols_different": [
+        23
+      ],
+      "y_rows_different": [],
+      "pixel_differences": 2,
+      "visible_pixel_differences": 2,
+      "differences_by_dos_index": {
+        "3": 1,
+        "10": 1
+      },
+      "first_differences": [
+        {
+          "x": 193,
+          "y": 44,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 193,
+          "y": 46,
+          "dos_index": 10,
+          "unity16_index": 0
+        }
+      ]
+    },
+    {
+      "type": 36,
+      "view": 2,
+      "graphic": 331,
+      "position": [
+        77,
+        40
+      ],
+      "dimensions": [
+        14,
+        18
+      ],
+      "source": [
+        32,
+        42
+      ],
+      "mirror": false,
+      "clipped": [
+        14,
+        18
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [],
+      "pixel_differences": 0,
+      "visible_pixel_differences": 0,
+      "differences_by_dos_index": {},
+      "first_differences": []
+    },
+    {
+      "type": 36,
+      "view": 3,
+      "graphic": 331,
+      "position": [
+        134,
+        41
+      ],
+      "dimensions": [
+        14,
+        18
+      ],
+      "source": [
+        32,
+        42
+      ],
+      "mirror": true,
+      "clipped": [
+        14,
+        18
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [],
+      "pixel_differences": 0,
+      "visible_pixel_differences": 0,
+      "differences_by_dos_index": {},
+      "first_differences": []
+    },
+    {
+      "type": 36,
+      "view": 4,
+      "graphic": 332,
+      "position": [
+        24,
+        39
+      ],
+      "dimensions": [
+        40,
+        22
+      ],
+      "source": [
+        92,
+        52
+      ],
+      "mirror": false,
+      "clipped": [
+        40,
+        22
+      ],
+      "x_cols_different": [
+        23,
+        33
+      ],
+      "y_rows_different": [],
+      "pixel_differences": 13,
+      "visible_pixel_differences": 13,
+      "differences_by_dos_index": {
+        "0": 4,
+        "2": 3,
+        "3": 2,
+        "10": 3,
+        "12": 1
+      },
+      "first_differences": [
+        {
+          "x": 57,
+          "y": 42,
+          "dos_index": 12,
+          "unity16_index": 2
+        },
+        {
+          "x": 57,
+          "y": 43,
+          "dos_index": 0,
+          "unity16_index": 1
+        },
+        {
+          "x": 57,
+          "y": 44,
+          "dos_index": 2,
+          "unity16_index": 1
+        },
+        {
+          "x": 47,
+          "y": 45,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 57,
+          "y": 46,
+          "dos_index": 0,
+          "unity16_index": 1
+        },
+        {
+          "x": 57,
+          "y": 47,
+          "dos_index": 2,
+          "unity16_index": 1
+        },
+        {
+          "x": 57,
+          "y": 48,
+          "dos_index": 0,
+          "unity16_index": 12
+        },
+        {
+          "x": 57,
+          "y": 49,
+          "dos_index": 3,
+          "unity16_index": 2
+        },
+        {
+          "x": 57,
+          "y": 50,
+          "dos_index": 10,
+          "unity16_index": 1
+        },
+        {
+          "x": 57,
+          "y": 51,
+          "dos_index": 2,
+          "unity16_index": 1
+        },
+        {
+          "x": 57,
+          "y": 52,
+          "dos_index": 0,
+          "unity16_index": 12
+        },
+        {
+          "x": 57,
+          "y": 55,
+          "dos_index": 10,
+          "unity16_index": 0
+        },
+        {
+          "x": 57,
+          "y": 59,
+          "dos_index": 10,
+          "unity16_index": 0
+        }
+      ]
+    },
+    {
+      "type": 36,
+      "view": 5,
+      "graphic": 332,
+      "position": [
+        92,
+        39
+      ],
+      "dimensions": [
+        40,
+        22
+      ],
+      "source": [
+        92,
+        52
+      ],
+      "mirror": false,
+      "clipped": [
+        40,
+        22
+      ],
+      "x_cols_different": [
+        23,
+        33
+      ],
+      "y_rows_different": [],
+      "pixel_differences": 13,
+      "visible_pixel_differences": 13,
+      "differences_by_dos_index": {
+        "0": 4,
+        "2": 3,
+        "3": 2,
+        "10": 3,
+        "12": 1
+      },
+      "first_differences": [
+        {
+          "x": 125,
+          "y": 42,
+          "dos_index": 12,
+          "unity16_index": 2
+        },
+        {
+          "x": 125,
+          "y": 43,
+          "dos_index": 0,
+          "unity16_index": 1
+        },
+        {
+          "x": 125,
+          "y": 44,
+          "dos_index": 2,
+          "unity16_index": 1
+        },
+        {
+          "x": 115,
+          "y": 45,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 125,
+          "y": 46,
+          "dos_index": 0,
+          "unity16_index": 1
+        },
+        {
+          "x": 125,
+          "y": 47,
+          "dos_index": 2,
+          "unity16_index": 1
+        },
+        {
+          "x": 125,
+          "y": 48,
+          "dos_index": 0,
+          "unity16_index": 12
+        },
+        {
+          "x": 125,
+          "y": 49,
+          "dos_index": 3,
+          "unity16_index": 2
+        },
+        {
+          "x": 125,
+          "y": 50,
+          "dos_index": 10,
+          "unity16_index": 1
+        },
+        {
+          "x": 125,
+          "y": 51,
+          "dos_index": 2,
+          "unity16_index": 1
+        },
+        {
+          "x": 125,
+          "y": 52,
+          "dos_index": 0,
+          "unity16_index": 12
+        },
+        {
+          "x": 125,
+          "y": 55,
+          "dos_index": 10,
+          "unity16_index": 0
+        },
+        {
+          "x": 125,
+          "y": 59,
+          "dos_index": 10,
+          "unity16_index": 0
+        }
+      ]
+    },
+    {
+      "type": 36,
+      "view": 6,
+      "graphic": 332,
+      "position": [
+        160,
+        39
+      ],
+      "dimensions": [
+        40,
+        22
+      ],
+      "source": [
+        92,
+        52
+      ],
+      "mirror": false,
+      "clipped": [
+        40,
+        22
+      ],
+      "x_cols_different": [
+        23,
+        33
+      ],
+      "y_rows_different": [],
+      "pixel_differences": 13,
+      "visible_pixel_differences": 13,
+      "differences_by_dos_index": {
+        "0": 4,
+        "2": 3,
+        "3": 2,
+        "10": 3,
+        "12": 1
+      },
+      "first_differences": [
+        {
+          "x": 193,
+          "y": 42,
+          "dos_index": 12,
+          "unity16_index": 2
+        },
+        {
+          "x": 193,
+          "y": 43,
+          "dos_index": 0,
+          "unity16_index": 1
+        },
+        {
+          "x": 193,
+          "y": 44,
+          "dos_index": 2,
+          "unity16_index": 1
+        },
+        {
+          "x": 183,
+          "y": 45,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 193,
+          "y": 46,
+          "dos_index": 0,
+          "unity16_index": 1
+        },
+        {
+          "x": 193,
+          "y": 47,
+          "dos_index": 2,
+          "unity16_index": 1
+        },
+        {
+          "x": 193,
+          "y": 48,
+          "dos_index": 0,
+          "unity16_index": 12
+        },
+        {
+          "x": 193,
+          "y": 49,
+          "dos_index": 3,
+          "unity16_index": 2
+        },
+        {
+          "x": 193,
+          "y": 50,
+          "dos_index": 10,
+          "unity16_index": 1
+        },
+        {
+          "x": 193,
+          "y": 51,
+          "dos_index": 2,
+          "unity16_index": 1
+        },
+        {
+          "x": 193,
+          "y": 52,
+          "dos_index": 0,
+          "unity16_index": 12
+        },
+        {
+          "x": 193,
+          "y": 55,
+          "dos_index": 10,
+          "unity16_index": 0
+        },
+        {
+          "x": 193,
+          "y": 59,
+          "dos_index": 10,
+          "unity16_index": 0
+        }
+      ]
+    },
+    {
+      "type": 36,
+      "view": 7,
+      "graphic": 331,
+      "position": [
+        57,
+        40
+      ],
+      "dimensions": [
+        21,
+        27
+      ],
+      "source": [
+        32,
+        42
+      ],
+      "mirror": false,
+      "clipped": [
+        21,
+        27
+      ],
+      "x_cols_different": [
+        12,
+        14
+      ],
+      "y_rows_different": [
+        15,
+        24,
+        26
+      ],
+      "pixel_differences": 14,
+      "visible_pixel_differences": 14,
+      "differences_by_dos_index": {
+        "0": 7,
+        "2": 2,
+        "3": 2,
+        "10": 3
+      },
+      "first_differences": [
+        {
+          "x": 69,
+          "y": 44,
+          "dos_index": 0,
+          "unity16_index": 3
+        },
+        {
+          "x": 71,
+          "y": 44,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 69,
+          "y": 46,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 69,
+          "y": 47,
+          "dos_index": 0,
+          "unity16_index": 3
+        },
+        {
+          "x": 69,
+          "y": 48,
+          "dos_index": 0,
+          "unity16_index": 10
+        },
+        {
+          "x": 65,
+          "y": 55,
+          "dos_index": 0,
+          "unity16_index": 12
+        },
+        {
+          "x": 66,
+          "y": 55,
+          "dos_index": 2,
+          "unity16_index": 1
+        },
+        {
+          "x": 67,
+          "y": 55,
+          "dos_index": 2,
+          "unity16_index": 1
+        },
+        {
+          "x": 77,
+          "y": 55,
+          "dos_index": 10,
+          "unity16_index": 0
+        },
+        {
+          "x": 69,
+          "y": 62,
+          "dos_index": 0,
+          "unity16_index": 10
+        },
+        {
+          "x": 69,
+          "y": 63,
+          "dos_index": 0,
+          "unity16_index": 10
+        },
+        {
+          "x": 65,
+          "y": 64,
+          "dos_index": 10,
+          "unity16_index": 0
+        },
+        {
+          "x": 69,
+          "y": 64,
+          "dos_index": 0,
+          "unity16_index": 10
+        },
+        {
+          "x": 65,
+          "y": 66,
+          "dos_index": 10,
+          "unity16_index": 0
+        }
+      ]
+    },
+    {
+      "type": 36,
+      "view": 8,
+      "graphic": 331,
+      "position": [
+        144,
+        40
+      ],
+      "dimensions": [
+        21,
+        27
+      ],
+      "source": [
+        32,
+        42
+      ],
+      "mirror": true,
+      "clipped": [
+        21,
+        27
+      ],
+      "x_cols_different": [
+        12,
+        14
+      ],
+      "y_rows_different": [
+        15,
+        24,
+        26
+      ],
+      "pixel_differences": 14,
+      "visible_pixel_differences": 14,
+      "differences_by_dos_index": {
+        "0": 7,
+        "2": 2,
+        "3": 2,
+        "10": 3
+      },
+      "first_differences": [
+        {
+          "x": 150,
+          "y": 44,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 152,
+          "y": 44,
+          "dos_index": 0,
+          "unity16_index": 3
+        },
+        {
+          "x": 152,
+          "y": 46,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 152,
+          "y": 47,
+          "dos_index": 0,
+          "unity16_index": 3
+        },
+        {
+          "x": 152,
+          "y": 48,
+          "dos_index": 0,
+          "unity16_index": 10
+        },
+        {
+          "x": 144,
+          "y": 55,
+          "dos_index": 10,
+          "unity16_index": 0
+        },
+        {
+          "x": 154,
+          "y": 55,
+          "dos_index": 2,
+          "unity16_index": 1
+        },
+        {
+          "x": 155,
+          "y": 55,
+          "dos_index": 2,
+          "unity16_index": 1
+        },
+        {
+          "x": 156,
+          "y": 55,
+          "dos_index": 0,
+          "unity16_index": 12
+        },
+        {
+          "x": 152,
+          "y": 62,
+          "dos_index": 0,
+          "unity16_index": 10
+        },
+        {
+          "x": 152,
+          "y": 63,
+          "dos_index": 0,
+          "unity16_index": 10
+        },
+        {
+          "x": 152,
+          "y": 64,
+          "dos_index": 0,
+          "unity16_index": 10
+        },
+        {
+          "x": 156,
+          "y": 64,
+          "dos_index": 10,
+          "unity16_index": 0
+        },
+        {
+          "x": 156,
+          "y": 66,
+          "dos_index": 10,
+          "unity16_index": 0
+        }
+      ]
+    },
+    {
+      "type": 36,
+      "view": 9,
+      "graphic": 332,
+      "position": [
+        -21,
+        40
+      ],
+      "dimensions": [
+        60,
+        34
+      ],
+      "source": [
+        92,
+        52
+      ],
+      "mirror": false,
+      "clipped": [
+        39,
+        34
+      ],
+      "x_cols_different": [
+        23,
+        38,
+        53,
+        55
+      ],
+      "y_rows_different": [
+        10,
+        12,
+        14,
+        27,
+        29,
+        31,
+        33
+      ],
+      "pixel_differences": 58,
+      "visible_pixel_differences": 44,
+      "differences_by_dos_index": {
+        "0": 29,
+        "1": 6,
+        "3": 11,
+        "10": 4,
+        "12": 6,
+        "13": 2
+      },
+      "first_differences": [
+        {
+          "x": 32,
+          "y": 44,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 17,
+          "y": 45,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 32,
+          "y": 45,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 2,
+          "y": 46,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 32,
+          "y": 46,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 32,
+          "y": 47,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 17,
+          "y": 48,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 32,
+          "y": 48,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 32,
+          "y": 49,
+          "dos_index": 0,
+          "unity16_index": 2
+        },
+        {
+          "x": -14,
+          "y": 50,
+          "dos_index": 0,
+          "unity16_index": 13
+        },
+        {
+          "x": -5,
+          "y": 50,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": -4,
+          "y": 50,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 4,
+          "y": 50,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 5,
+          "y": 50,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 6,
+          "y": 50,
+          "dos_index": 0,
+          "unity16_index": 3
+        }
+      ]
+    },
+    {
+      "type": 36,
+      "view": 10,
+      "graphic": 332,
+      "position": [
+        82,
+        40
+      ],
+      "dimensions": [
+        60,
+        34
+      ],
+      "source": [
+        92,
+        52
+      ],
+      "mirror": false,
+      "clipped": [
+        60,
+        34
+      ],
+      "x_cols_different": [
+        23,
+        38,
+        53,
+        55
+      ],
+      "y_rows_different": [
+        10,
+        12,
+        14,
+        27,
+        29,
+        31,
+        33
+      ],
+      "pixel_differences": 58,
+      "visible_pixel_differences": 58,
+      "differences_by_dos_index": {
+        "0": 29,
+        "1": 6,
+        "3": 11,
+        "10": 4,
+        "12": 6,
+        "13": 2
+      },
+      "first_differences": [
+        {
+          "x": 135,
+          "y": 44,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 120,
+          "y": 45,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 135,
+          "y": 45,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 105,
+          "y": 46,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 135,
+          "y": 46,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 135,
+          "y": 47,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 120,
+          "y": 48,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 135,
+          "y": 48,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 135,
+          "y": 49,
+          "dos_index": 0,
+          "unity16_index": 2
+        },
+        {
+          "x": 89,
+          "y": 50,
+          "dos_index": 0,
+          "unity16_index": 13
+        },
+        {
+          "x": 98,
+          "y": 50,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 99,
+          "y": 50,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 107,
+          "y": 50,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 108,
+          "y": 50,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 109,
+          "y": 50,
+          "dos_index": 0,
+          "unity16_index": 3
+        }
+      ]
+    },
+    {
+      "type": 36,
+      "view": 11,
+      "graphic": 332,
+      "position": [
+        184,
+        40
+      ],
+      "dimensions": [
+        60,
+        34
+      ],
+      "source": [
+        92,
+        52
+      ],
+      "mirror": false,
+      "clipped": [
+        40,
+        34
+      ],
+      "x_cols_different": [
+        23,
+        38,
+        53,
+        55
+      ],
+      "y_rows_different": [
+        10,
+        12,
+        14,
+        27,
+        29,
+        31,
+        33
+      ],
+      "pixel_differences": 58,
+      "visible_pixel_differences": 29,
+      "differences_by_dos_index": {
+        "0": 29,
+        "1": 6,
+        "3": 11,
+        "10": 4,
+        "12": 6,
+        "13": 2
+      },
+      "first_differences": [
+        {
+          "x": 237,
+          "y": 44,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 222,
+          "y": 45,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 237,
+          "y": 45,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 207,
+          "y": 46,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 237,
+          "y": 46,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 237,
+          "y": 47,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 222,
+          "y": 48,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 237,
+          "y": 48,
+          "dos_index": 1,
+          "unity16_index": 2
+        },
+        {
+          "x": 237,
+          "y": 49,
+          "dos_index": 0,
+          "unity16_index": 2
+        },
+        {
+          "x": 191,
+          "y": 50,
+          "dos_index": 0,
+          "unity16_index": 13
+        },
+        {
+          "x": 200,
+          "y": 50,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 201,
+          "y": 50,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 209,
+          "y": 50,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 210,
+          "y": 50,
+          "dos_index": 3,
+          "unity16_index": 0
+        },
+        {
+          "x": 211,
+          "y": 50,
+          "dos_index": 0,
+          "unity16_index": 3
+        }
+      ]
+    },
+    {
+      "type": 36,
+      "view": 12,
+      "graphic": 331,
+      "position": [
+        30,
+        40
+      ],
+      "dimensions": [
+        32,
+        42
+      ],
+      "source": [
+        32,
+        42
+      ],
+      "mirror": false,
+      "clipped": [
+        32,
+        42
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [],
+      "pixel_differences": 0,
+      "visible_pixel_differences": 0,
+      "differences_by_dos_index": {},
+      "first_differences": []
+    },
+    {
+      "type": 36,
+      "view": 13,
+      "graphic": 331,
+      "position": [
+        162,
+        40
+      ],
+      "dimensions": [
+        32,
+        42
+      ],
+      "source": [
+        32,
+        42
+      ],
+      "mirror": true,
+      "clipped": [
+        32,
+        42
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [],
+      "pixel_differences": 0,
+      "visible_pixel_differences": 0,
+      "differences_by_dos_index": {},
+      "first_differences": []
+    },
+    {
+      "type": 36,
+      "view": 14,
+      "graphic": 332,
+      "position": [
+        66,
+        38
+      ],
+      "dimensions": [
+        92,
+        52
+      ],
+      "source": [
+        92,
+        52
+      ],
+      "mirror": false,
+      "clipped": [
+        92,
+        52
+      ],
+      "x_cols_different": [],
+      "y_rows_different": [],
+      "pixel_differences": 0,
+      "visible_pixel_differences": 0,
+      "differences_by_dos_index": {},
+      "first_differences": []
+    }
+  ]
+}
