@@ -24035,7 +24035,7 @@ private static void HandleGameViewPointerDown(
     // NOT verified from the original executable or accepted as a generic rule.
     // The original 64x37 CSBwin-derived rectangle remains the baseline.
     width = 60;
-    height = 35;
+    height = 34;
     x = 82;
     y = DisplayYToUnityY(33 + 40, height);
   }

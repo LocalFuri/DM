@@ -1,0 +1,15 @@
+Dungeon Master — 2026-11-21 Manacles F2 height correction
+
+Evidence: DOS generated indexed output is 60x34, while Unity GetManaclesFrontF2Rect used width=60, height=35.
+The F2 DOS pixel reference vs Unity differs at (131,56) and (131,57) in opposite directions, consistent with vertical sampling step from incorrect destination height.
+Minimal source change: inside GetManaclesFrontF2Rect only, height = 35; -> height = 34;
+Keep width=60, x=82 and y=DisplayYToUnityY(33+40,height) unchanged. The displayed top stays at y=73; converted Unity y will change to preserve that display top.
+Generic 6-bit scaler and source PNG untouched.
+Expected existing source SHA256: 39024b22164d1daa30371c5b5a4bd20e4ef491d0a9ae4c5f6c8dd5a5783094c6
+Patched source SHA256: 57dafedb0e98afe6fbbd1bb1f3ca03e6235f16d293619dbbb385f05605974910
+The install script refuses unexpected source SHA256, creates a unique timestamped .bak and atomically replaces ONLY the one-line-patched source bytes.
+Do not manually overwrite ViewportLayoutEditor.cs. Run script from any PowerShell working directory.
+PowerShell command:
+python "C:\Unity\DM\Research_Results\Apply_Manacles_F2_Height_34_20261121.py"
+Then verify Unity recompiled without errors and compare Manacles F2 screenshot to DOS at (131,56) and (131,57). Other approved views require regression verification.
+No Unity edits have been made by this package. Installation is the user's action.

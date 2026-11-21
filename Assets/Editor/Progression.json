@@ -56,7 +56,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-21: Hook F2 191/191 visible DOS bitmap pixels matched by native indexed 6-bit renderer; Unity missing three x=118 pixels. Read-only Unity source audit identifies precise cause: current 16-bit step for 28->18 chooses source column 24 at output x15 versus original FIRES 6-bit step choosing column 23. No Unity edits. Next: integrate generic 6-bit indexed path only after additional view validation.",
+  "checkpoint": "2026-11-21: Hook F2 exact after shared DOS 6-bit patch; Manacles F2 still differs by swapped brown/transparent pixels at (131,56)/(131,57). Root cause found: Manacles front F2 rectangle height 35 in Unity vs DOS 34. One-line guarded patch prepared, not yet installed.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -4172,5 +4172,35 @@
     ],
     "next_step": "Run guarded patch on exact matching Unity source; compile, verify Hook F2 and Manacles F2, then F3 and side views without per-ornament hacks",
     "timestamp_rule": "Recursive ZIP entry time and generated filesystem last-modified must be Europe/Berlin."
+  },
+  "manacles_f2_height_34_correction_20261121": {
+    "date": "2026-11-21",
+    "status": "one-line guarded patch prepared; pending user installation and Unity screenshot confirmation",
+    "method": "GetManaclesFrontF2Rect in Assets/Editor/ViewportLayoutEditor.cs",
+    "old": {
+      "width": 60,
+      "height": 35,
+      "x": 82,
+      "display_top_y": 73
+    },
+    "new": {
+      "width": 60,
+      "height": 34,
+      "x": 82,
+      "display_top_y": 73
+    },
+    "reason": "Original DOS native indexed scaled F2 view measures 60x34. Unity 60x35 changes vertical source-row sampling and explains two opposing pixel mismatches at x=131.",
+    "guard": {
+      "expected_sha256": "39024b22164d1daa30371c5b5a4bd20e4ef491d0a9ae4c5f6c8dd5a5783094c6",
+      "result_sha256": "57dafedb0e98afe6fbbd1bb1f3ca03e6235f16d293619dbbb385f05605974910",
+      "backup": "ViewportLayoutEditor.cs.before_manacles_f2_height_YYYYMMDD-HHMMSS.bak"
+    },
+    "install": "python \"C:\\Unity\\DM\\Research_Results\\Apply_Manacles_F2_Height_34_20261121.py\"",
+    "verification": [
+      "Unity recompiles without errors",
+      "Manacles F2 pixels at (131,56) and (131,57) match original DOS screenshot",
+      "Hook F2 remains exact",
+      "No changes to shared 6-bit algorithm, coordinates, mirroring or source artwork"
+    ]
   }
 }
