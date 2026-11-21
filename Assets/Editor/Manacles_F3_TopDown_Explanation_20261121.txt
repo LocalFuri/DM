@@ -1,0 +1,12 @@
+Manacles F3 DOS 6-bit sampler correction (21 November 2026)
+
+Existing Unity screenshot: 87 brown pixels. DOS reference: 89. All 10 differing brown pixels occur on output row Y=44.
+
+Exact cause: Unity GetManaclesGeneratedF3FrontTexture() did not supply sampleTopDown:true. Unity GetPixels32 reads bottom-up and its 6-bit integer rounding is not perfectly symmetric under reversal. With source height=52 and target height=22, top-down destination row 5 selects DOS source row 12 while Unity selected source row 13. Their brown patterns exactly reproduce the screenshot mismatch. Another differing source row at screen Y=55 has no brown-pixel differences, but may affect other colors.
+
+Fix: at the Manacles F3 caller, append roundBiasOverride:0, sampleTopDown:true. This is the same established calling convention already used for Manacles F2 and Hook F2. Do NOT modify universal sampling or geometry or source graphics.
+
+After running patch and Unity recompilation, compare a fresh screenshot against the original DOS F3 image. Until then complete RGB match is pending.
+
+PowerShell command:
+python "C:\Unity\DM\Research_Results\Apply_Manacles_F3_TopDown_20261121.py"

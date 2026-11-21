@@ -4175,7 +4175,7 @@
   },
   "manacles_f2_height_34_correction_20261121": {
     "date": "2026-11-21",
-    "status": "one-line guarded patch prepared; pending user installation and Unity screenshot confirmation",
+    "status": "installed by user; Unity compiled without errors; screenshot brown and black pixels confirmed DOS-identical",
     "method": "GetManaclesFrontF2Rect in Assets/Editor/ViewportLayoutEditor.cs",
     "old": {
       "width": 60,
@@ -4202,5 +4202,31 @@
       "Hook F2 remains exact",
       "No changes to shared 6-bit algorithm, coordinates, mirroring or source artwork"
     ]
+  },
+  "manacles_f3_dos_geometry_20261121": {
+    "date": "2026-11-21",
+    "status": "patch prepared; pending user installation, Unity compile, screenshot test",
+    "evidence": "Legacy F3 38x20 x93/top40 produces exactly all 110 Unity brown pixels; DOS rectangle 40x22 x92/top39 produces exactly all 89 PC DOS brown pixels with same 6-bit sampler",
+    "source": "Assets/Editor/ViewportLayoutEditor.cs ManaclesD3FrontX/Y/Width/Height",
+    "old": {
+      "x": 93,
+      "display_top": 40,
+      "width": 38,
+      "height": 20,
+      "framebuffer_y": 107
+    },
+    "new": {
+      "x": 92,
+      "display_top": 39,
+      "width": 40,
+      "height": 22,
+      "framebuffer_y": 106
+    },
+    "guard": {
+      "expected_sha256": "57dafedb0e98afe6fbbd1bb1f3ca03e6235f16d293619dbbb385f05605974910",
+      "patched_sha256": "b688856d76be66a8507c2154d77b46e80cd93f9e80a07b39a5a48011e916f73b"
+    },
+    "next": "Apply guarded single-purpose script, allow Unity compile, capture F3 screenshot and compare all visible indices",
+    "rule": "Europe/Berlin timestamps recursively on all ZIP entries; unchanged files retain timestamps when copied"
   }
 }

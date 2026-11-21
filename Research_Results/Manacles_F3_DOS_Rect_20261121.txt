@@ -1,0 +1,11 @@
+Manacles F3 DOS geometry root cause — 2026-11-21
+
+Source: ViewportLayoutEditor.cs; ManaclesD3FrontX=93, Y=107, Width=38, Height=20.
+Original DOS center F3: X=92, display-top Y=39, Width=40, Height=22.
+After patch framebuffer bottom-left Y=200-(33+39)-22=106.
+
+Applying the SAME original 6-bit sampling to 38x20 at (93,40) gives exactly all 110 Unity screenshot brown pixels.
+Applying it to 40x22 at (92,39) gives exactly all 89 DOS screenshot brown pixels.
+This establishes cause of brown silhouette mismatch. Full nonbrown palette equality still requires verification.
+The patch changes only four constants and a comment; 6-bit scaler, Manacles F2 60x34, Hook F2 untouched.
+Run: python "C:\Unity\DM\Research_Results\Apply_Manacles_F3_DOS_Rect_20261121.py"

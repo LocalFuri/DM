@@ -1,0 +1,38 @@
+{
+  "date": "2026-11-21",
+  "finding": "Manacles F3 mismatch due to obsolete Unity rectangle, not DOS sampling",
+  "unity_original": {
+    "x": 93,
+    "display_top_y": 40,
+    "width": 38,
+    "height": 20,
+    "framebuffer_bottom_left_y": 107,
+    "brown_pixels": 110,
+    "matches_unity_screenshot": true
+  },
+  "dos": {
+    "x": 92,
+    "display_top_y": 39,
+    "width": 40,
+    "height": 22,
+    "framebuffer_bottom_left_y": 106,
+    "brown_pixels": 89,
+    "matches_dos_screenshot": true
+  },
+  "same_shared_6bit_sampler": true,
+  "full_ornament_rgb_match": "not checked; transparent overlays differ against corridor backgrounds",
+  "patch": {
+    "method": "Change four ManaclesD3Front constants and associated stale comment only",
+    "old_sha256": "57dafedb0e98afe6fbbd1bb1f3ca03e6235f16d293619dbbb385f05605974910",
+    "new_sha256": "b688856d76be66a8507c2154d77b46e80cd93f9e80a07b39a5a48011e916f73b",
+    "backup": "timestamped .bak in Assets/Editor",
+    "test": "checksum-guarded simulated installation, idempotence check passed",
+    "unity_compilation": "pending user installation"
+  },
+  "constraints": [
+    "No renderer algorithm changes",
+    "No ornament-specific pixel changes",
+    "Requires screenshot re-verification after patch",
+    "ZIP entries and filesystem timestamps Europe/Berlin"
+  ]
+}

@@ -253,11 +253,11 @@ public class ViewportLayoutEditor : EditorWindow
 
   // F3 manacles are generated from the same 92x52 F1 source.
   // Measured on the original (6,9) West view: screen top-left (93, 73),
-  // size 38x20, framebuffer bottom-left Y = 200 - 73 - 20 = 107.
-  private const int ManaclesD3FrontX = 93;
-  private const int ManaclesD3FrontY = 107;
-  private const int ManaclesD3FrontWidth = 38;
-  private const int ManaclesD3FrontHeight = 20;
+  // size 40x22, framebuffer bottom-left Y = 200 - 72 - 22 = 106.
+  private const int ManaclesD3FrontX = 92;
+  private const int ManaclesD3FrontY = 106;
+  private const int ManaclesD3FrontWidth = 40;
+  private const int ManaclesD3FrontHeight = 22;
   private const string GrateFrontAssetPath =
       "Assets/Art/Ornaments/Grate_F1_32x28.png";
   // Dedicated Atari F2 front image, drawn 1:1.
@@ -40178,7 +40178,9 @@ private static void HandleGameViewPointerDown(
         ManaclesD3FrontWidth,
         ManaclesD3FrontHeight,
         WallOrnamentFarColorMap,
-        "Manacles F3 Generated from F1");
+        "Manacles F3 Generated from F1",
+        roundBiasOverride: 0,
+        sampleTopDown: true);
     return cachedManaclesGeneratedF3FrontTexture;
   }
 

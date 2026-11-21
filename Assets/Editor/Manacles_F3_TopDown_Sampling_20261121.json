@@ -1,0 +1,41 @@
+{
+  "date": "2026-11-21",
+  "issue": "Manacles F3 mismatches at image row y=44 after correct 40x22 geometry",
+  "original_source": "Manacles indexed graphic 332, 92x52",
+  "fixed_rectangle": {
+    "x": 92,
+    "y": 39,
+    "width": 40,
+    "height": 22
+  },
+  "machine_code_pixel_selection": "6-bit step and half-step initial bias",
+  "root_cause": "Unity Manacles F3 call did not supply sampleTopDown:true, so bottom-up GetPixels32 mapping selected source row 13 instead of DOS row 12 at screen y=44",
+  "vertical_source_row_at_screen_y44": {
+    "original_dos": 12,
+    "current_unity": 13,
+    "after_correction": 12
+  },
+  "other_different_source_rows": {
+    "screen_y55": {
+      "dos": 38,
+      "unity": 39
+    }
+  },
+  "brown_pixel_tests": {
+    "unity_before": 87,
+    "dos_reference": 89,
+    "different_pixels_before": 10,
+    "predicted_different_brown_pixels_after": 0,
+    "matching_brown_pixels_after": 89,
+    "predicted_dos_brown_mask_matches_reference": true
+  },
+  "patch": {
+    "old_sha256": "b688856d76be66a8507c2154d77b46e80cd93f9e80a07b39a5a48011e916f73b",
+    "new_sha256": "79ef26c637bce51c226f8699a6ab29690183dca20380ae97238b87df7565fc2f",
+    "single_caller_change": "append roundBiasOverride:0, sampleTopDown:true to GetManaclesGeneratedF3FrontTexture() GenerateDmScaledWallDecoration call",
+    "backup": "timestamped source copy",
+    "safe_reinstall": "verified",
+    "mismatched_source": "refused"
+  },
+  "caveat": "Brown ornament mask match proven from screenshots. All RGB/palette pixels still require an independent screenshot after Unity patch."
+}
