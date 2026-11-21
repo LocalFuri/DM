@@ -1,0 +1,49 @@
+Dungeon Master PC DOS — Front-wall ordinal and F2 view-index identification
+Date: 2026-11-21
+Scope: Original user-supplied ReDMCSB DUNVIEW.C and DEFS.H, unpacked original FIRES code and previous live DOSBox-X observations. READ ONLY. No Unity or DOS game modification.
+
+1. IMPORTANT CORRECTION TO PRIOR RESEARCH
+The high-three-bit dispatch in live function 114C:1408 is a dungeon SQUARE-TYPE dispatch, not a set of seven ornament categories. Group 0 is WALL. The wall branch prepares several face-oriented ornament ordinals. Previous descriptions of all offsets +06/+08/+0A/+0C as equivalent wall ornaments omitted that the first is the BACK face in this branch.
+
+2. ORIGINAL DEFS.H SOURCE, BRANCH X720_I34E_I34M_P31J
+The square-aspect record has seven 16-bit entries (14 bytes):
++00 word index 0 = C0_ELEMENT (square type)
++02 word index 1 = C1_SQUARE (square data)
++04 word index 2 = M550_FIRST_THING
++06 word index 3 = C3_BACK_WALL_ORNAMENT_ORDINAL
++08 word index 4 = M551_RIGHT_WALL_ORNAMENT_ORDINAL
++0A word index 5 = M552_FRONT_WALL_ORNAMENT_ORDINAL
++0C word index 6 = M553_LEFT_WALL_ORNAMENT_ORDINAL
+
+3. VERIFIED LIVE CALLER MAPPING
+The caller function 2A64:33ED reserves 0Eh local bytes beginning at [BP-0E]. The first ornament argument pushed at 2A64:3474 as [BP-04] is local record offset +0A: the FRONT-WALL ORNAMENT ORDINAL. It is NOT the native GRAPHICS.DAT image index. The second argument is the VIEW WALL INDEX.
+
+The original DUNVIEW.C F0107 declaration names the two parameters P0116_i_WallOrnamentOrdinal and P0117_i_ViewWallIndex. It explicitly checks whether ordinal is zero and returns immediately. For a nonzero ordinal it subtracts one before indexing G0101_as_CurrentMapWallOrnamentsInfo and selecting its native bitmap index and coordinate set. Thus ordinal zero = absent wall ornament. A nonzero ordinal is a per-map one-based identifier, not the global type index.
+
+4. VIEW INDEX (15-ENTRY BRANCH) — KEY NEW FINDING
+From original DEFS.H, branch X720_I34E_I34M_P31J:
+0 = D3L2_RIGHT
+1 = D3R2_LEFT
+2 = D3L_RIGHT
+3 = D3R_LEFT
+4 = D3L_FRONT
+5 = D3C_FRONT
+6 = D3R_FRONT
+7 = D2L_RIGHT
+8 = D2R_LEFT
+9 = D2L_FRONT
+10 = D2C_FRONT
+11 = D2R_FRONT
+12 = D1L_RIGHT
+13 = D1R_LEFT
+14 = D1C_FRONT
+
+Live calls seen earlier with second arguments 0008 and 000B are D2R_LEFT and D2R_FRONT, respectively. They do NOT identify the center F2 front wall. For the Hook at CENTER F2, the target view index is decimal 10, hexadecimal 000A. Thus the observed 0008/000B calls with first argument zero can naturally refer to empty noncentral wall faces.
+
+This is a source-defined index correspondence, not a proof of which tile the player is facing. Verify player position, view, and map square before expecting a nonzero Hook ordinal.
+
+5. NEXT RUNTIME CHECK
+At a pause at renderer entry 2A64:10E6, read two 16-bit stack arguments without single-stepping: [SS:SP+04] = ordinal, [SS:SP+06] = view index (FAR CALL return address occupies four bytes). Alternatively, after PUSH BP / MOV BP,SP: [BP+06] = ordinal, [BP+08] = view index. Focus on an entry with view index 000A and nonzero ordinal. Then step through the actual scaling/alignment/drawing path and capture X/Y/W/H. Do not insert random VGA memory breakpoints. Recheck runtime code address if DOSBox-X has been restarted.
+
+VERIFICATION BOUNDARY
+The layout index names and offset meanings are confirmed by DEFS.H and DUNVIEW.C. The paused game has not yet produced a verified nonzero Hook F2 call or final DOS rectangle. No Unity changes.

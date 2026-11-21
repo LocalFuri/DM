@@ -1,0 +1,37 @@
+Dungeon Master PC DOS — consolidated evidence for a generic wall-ornament renderer
+Date: 2026-11-21
+Scope: read-only review of the uploaded original fires binary, original DMSAVE.zip distribution, graphics data, reconstructed ReDMCSB DUNVIEW.C and COORD.C, DEFS.H, and earlier disassembly research. No Unity modifications.
+
+1. Identity and consistency checks (performed on actual bytes)
+- New uploaded /mnt/data/fires: 94,779 bytes; SHA256 ebf84045c3edbce7690b826eadbea2e278fbb4c0a3cc19a470552586f37712eb.
+- It is BYTE-IDENTICAL to DMSAVE.zip member 'fires'. The upload is the same engine analyzed earlier, not a newly different binary.
+- DMSAVE.zip contains dm.exe (11,471 bytes), fires (94,779 bytes), data/GRAPHICS.DAT (363,417 bytes), and data/DUNGEON.DAT (33,357 bytes).
+- The DMSAVE.zip GRAPHICS.DAT is BYTE-IDENTICAL to GRAPHICS_DOS.ZIP's GRAPHICS.DAT.
+- The FIRES unpacked executable is 178,224 bytes (previous output). Engine is LZEXE 0.91 packed; original is not modified.
+
+2. Algorithm pipeline from DUNVIEW.C, COORD.C and DEFS.H
+A. Dungeon square data and direction select the appropriate wall-face ornament ORDINAL. Ordinal zero means absent ornament. Current-map ornament index = ordinal minus one (DUNVIEW.C F0107 around lines 1711-1717). This is NOT a native image index.
+B. Per-map wall-ornament info supplies NativeBitmapIndex and CoordinateSet (DUNVIEW.C around lines 1716-1725). The 15-entry graphics/layout branch computes ZoneIndex = 1004 + CoordinateSet*15 + ViewWallIndex.
+C. The chosen view index determines front/side bitmap selection, horizontal mirroring, ordinary F2/F3 scale, and special extreme-side D3 behavior (DUNVIEW.C around lines 1828-1884). Ordinary D2 uses 21/32; D3 uses 14/32. Extreme D3 outer side views use horizontal 30, vertical 14 with special palette rules. D1 uses native bitmap.
+D. F0675_DUNGEONVIEW_GetScaledBitmap reads M100_PIXEL_WIDTH / M101_PIXEL_HEIGHT from the NATIVE bitmap, caches/creates scaled bitmap and passes it to F0129_VIDEO_BlitShrinkWithPaletteChanges. DEFS.H macro M078_SCALED_DIMENSION = ((dimension*scale)+(scale>>1))>>5. Distinguish padded/native bitmap bounds from the opaque pixel bounds.
+E. F0791_DUNGEONVIEW_DrawBitmapXX passes actual bitmap dimensions plus the layout zone into F0635_ in COORD.C. F0635_ follows layout records and parent regions, performs alignment and clipping. Final blit is F0132_VIDEO_Blit. This is the appropriate shared code to port; do not infer sprite positions solely from an un-clipped center formula.
+F. Resource 696 in GRAPHICS.DAT is the 15-entry branch layout resource and was previously decoded into 23 ranges and 1,133 records. A correct implementation must parse resource 696, not hardcode Hook/Manacles positions.
+
+3. Specific evidence already established through actual runtime and disassembly
+- Unpacked FIRES function load-image offset 0x1D886 corresponds to the F0107 wall-ornament renderer, with independently inspected compiled instructions for 15-entry index / +1004, scale 21/14, and calls to bitmap/scaling/drawing helpers.
+- Earlier live DOSBox-X session verified a 64-of-64-byte match at 2A64:10E6 and hit a code breakpoint there.
+- Renderer stack arguments are (wall ornament ordinal, view index); zero ordinal takes an early return. Earlier observed runtime view indices 0008 and 000B both had ordinal zero, so they are NOT positive Hook F2 measurements.
+- Observed center-front D2/F2 view index is 000A per source-defined 15-entry view table; this is a target index, not proof the game was rendering Hook then.
+- Hook/Manacles candidate dimensions and rectangles from prior research remain PREDICTIONS until each native bitmap mapping, actual view selection, clipping, and the engine build are checked on an actual draw. Do not silently elevate them to measured DOS values.
+
+4. Key conclusion
+These inputs together document a GENERIC, DATA-DRIVEN rendering pipeline. Original FIRES corroborates the reconstructed branch, while GRAPHICS.DAT supplies sprites and layout records and DUNGEON.DAT supplies ornament placements. The evidence argues for implementing the shared algorithm once, not for instruction-by-instruction manual tracing of 180 ornaments.
+
+5. Practical next action (without repeating a multi-hour debugger session)
+- Build an offline reference implementation of exactly DUNVIEW.C F0107/F0675/F0791, COORD.C F0635, and DEFS.H integer macros with the 15-entry branch selected.
+- Feed actual source bitmap dimensions + resource 696 records, then emit detailed per-ornament view-index, native bitmap index, flip, scale, unclipped rectangle and clipped rectangle.
+- Validate against two approved comparison subjects (Hook and Manacles) at front F2/F3 and side S2/S3. Do not use per-ornament corrections.
+- The remaining input to fully automate appearance is decoding the DOS sprite pixel data and palette-change/shrink blit exactly. Accurate rendered pixels and border clipping need independent visual tests even if the geometry matches.
+- Only after these checks should integration into Unity begin.
+
+No Unity files, original DOS files, or game saves were changed.

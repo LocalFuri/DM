@@ -56,7 +56,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-21: Offline compiled code traces renderer argument through 114C:1408 +0A. 114C:12C1 returns zero for input [BP+06]=0; branch 16C3 stores that result. 114C:07A1 is generic packed graphics-record pointer lookup. Which branch selects Hook F2 remains unverified. No Unity modifications.",
+  "checkpoint": "2026-11-21: first offline generic geometry prototype calculates 900 rows (60 types x 15 view slots) using 713-graphic DOS metadata, resource696 and 60-element source coordinate-set mapping. Hook/Manacles center-front values generated; S2/S3 and exact F0635+pixel blitter remain unverified. No Unity changes.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -3713,5 +3713,87 @@
       "runtime draw rectangle for Hook/Manacles F2/F3"
     ],
     "next": "Inspect helper 114C:04B9 and source map data for chosen Hook F2 position, obtain nonzero renderer argument; no random debugger breakpoints or Unity corrections"
+  },
+  "research_20261121_wall_square_ornament_selection": {
+    "date": "2026-11-21",
+    "status": "read-only offline disassembly; wall branch and four ornament outputs identified; Hook F2 value still unverified",
+    "source": "DMSAVE.zip / fires unpacked to dos_research_work/fires.img; DUNVIEW.ZIP / DUNVIEW.C",
+    "verified": [
+      "114C:1408 top-three-bit dispatcher represents dungeon square type, not ornament class",
+      "group 0 WALL branch at 114C:1468 uses four-orientation jump table",
+      "114C:1305 calls 12C1 four times and writes ordinal candidates to output +06/+08/+0A/+0C",
+      "caller 2A64:3474 passes output +0A to 2A64:10E6"
+    ],
+    "not_verified": [
+      "precise Hook F2 nonzero ordinal at runtime",
+      "actual F2/F3 final DOS draw rectangles"
+    ],
+    "next_action": "Map Hook F2 tile wall bits and ordinal from DUNGEON.DAT or safe targeted runtime observation; do not set A000 memory breakpoints.",
+    "deliverable": "DOS_FIRES_Wall_Ornament_Selection_20261121.txt",
+    "unity_modified": false
+  },
+  "research_20261121_front_wall_ordinal_view_index": {
+    "date": "2026-11-21",
+    "status": "DEFS.H verified front wall ordinal and 15-slot view index; no live nonzero Hook F2 rectangle yet; research only",
+    "report": "DOS_FIRES_Front_Wall_Ordinal_And_ViewIndex_20261121.txt",
+    "verified": [
+      "7-word square aspect: offsets +06 back, +08 right, +0A front, +0C left",
+      "2A64:3474 pushes [BP-04] = record +0A = front ornament ordinal",
+      "F0107 ordinal is 1-based, zero means absent",
+      "15-entry branch D2C_FRONT index 10 (0x000A), D2R_LEFT index 8, D2R_FRONT index 11"
+    ],
+    "next": "Capture one function call at 2A64:10E6 with view index 000A and nonzero ordinal; verify live rectangles before changing Unity",
+    "rules": [
+      "Do not alter approved Hook/Manacles Unity rendering",
+      "Do not set speculative A000 video memory breakpoints"
+    ]
+  },
+  "research_20261121_generic_ornament_geometry_prototype": {
+    "status": "offline prototype, not final renderer",
+    "files": [
+      "Research_Results/DOS_Generic_Ornament_Geometry_20261121.py",
+      "Research_Results/DOS_All_Ornament_Geometry_20261121.csv",
+      "Research_Results/DOS_Hook_Geometry.csv",
+      "Research_Results/DOS_Manacles_Geometry.csv",
+      "Research_Results/DOS_Generic_Ornament_Geometry_Report_20261121.txt"
+    ],
+    "input": "713 GRAPHICS.DAT, resource696 offset 293487 / 1133 records, DUNVIEW.C G0194 sets",
+    "generated_rows": 900,
+    "types": 60,
+    "views_per_type": 15,
+    "validated_examples": {
+      "Hook_F2": [
+        103,
+        38,
+        18,
+        18
+      ],
+      "Hook_F3": [
+        106,
+        38,
+        12,
+        12
+      ],
+      "Manacles_F2": [
+        82,
+        40,
+        60,
+        34
+      ],
+      "Manacles_F3": [
+        92,
+        39,
+        40,
+        22
+      ]
+    },
+    "unresolved": [
+      "exact F0635 complete behavior",
+      "all S2/S3 side slot mappings",
+      "runtime DOS rectangle validation",
+      "native bitmap pixels/palette/transparency/shrinker",
+      "Unity integration"
+    ],
+    "unity_changes": false
   }
 }

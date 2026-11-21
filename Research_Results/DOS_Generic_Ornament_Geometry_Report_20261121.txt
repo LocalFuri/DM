@@ -1,0 +1,51 @@
+DUNGEON MASTER — GENERIC DOS WALL-ORNAMENT GEOMETRY PROTOTYPE
+Date: 2026-11-21
+Scope: OFFLINE RESEARCH ONLY. No Unity edits.
+
+INPUTS
+- Original uploaded GRAPHICS_DOS.ZIP / GRAPHICS.DAT, 713-graphic branch.
+- Original ReDMCSB DUNVIEW.C, COORD.C, DEFS.H (X720_I34E_I34M_P31J branch).
+- Layout resource 696, found at byte offset 293487, contains 1133 eight-byte layout records.
+
+IMPLEMENTATION
+DOS_Generic_Ornament_Geometry_20261121.py
+- Validates that the graphics file reports version 8001h and 713 graphics.
+- Reads 713 native width/height pairs from the metadata table.
+- Extracts and validates all 1133 layout records from resource 696.
+- Uses the original 60-value ornament coordinate-set array G0194 in DUNVIEW.C; no per-ornament placement overrides required.
+- Selects a graphic from each native wall-ornament pair, using view-specific front/side selection.
+- Applies M078_SCALED_DIMENSION ((dimension * scale + (scale >> 1)) >> 5).
+- Computes basic alignment and clip rectangles for the modeled layout cases.
+- Outputs original image rectangle, clipped rectangle, source offsets, native graphic index, native dimensions, scales and mirror flag for each view.
+- --all generated 900 records (60 ornament types x 15 view slots) without processing exceptions.
+
+CENTER-FRONT SAMPLE GEOMETRY (all X/Y viewport-relative)
+Hook, ornament type 4, coordinate set 0, graphic index 268 (28x28):
+  D1 center front view 14: 98,36,28,28
+  D2 center front view 10: 103,38,18,18
+  D3 center front view 5: 106,38,12,12
+Manacles, ornament type 36, coordinate set 1, graphic index 332 (92x52):
+  D1 center front view 14: 66,38,92,52
+  D2 center front view 10: 82,40,60,34
+  D3 center front view 5: 92,39,40,22
+
+CAVEATS — THIS IS NOT A FINAL COMPLETE RENDERER
+- Coordinates are calculated from source data; NOT yet independently measured against all DOS runtime scenes.
+- Pixel decoding, palette mapping, transparent color, and pixel resampling not implemented.
+- Complete COORD.C F0635 corner cases, nested clipping, zone shifts, and inscription-specific behavior are not implemented; unsupported record types raise errors.
+- View-to-side mappings must still be validated with original DOS screenshots for S2 and S3 and with the full original source dispatch, particularly special distant-side cases.
+- Native-vs-visible sprite dimensions and resource conversion must not be conflated.
+- This outputs 60 ornament TYPES across 15 views, not 180 confirmed unique runtime item placements.
+- No fallback guesses are silently substituted for missing input.
+
+USAGE (run in a folder containing the script and graphics ZIP):
+  python DOS_Generic_Ornament_Geometry_20261121.py GRAPHICS_DOS.ZIP --all
+  python DOS_Generic_Ornament_Geometry_20261121.py GRAPHICS_DOS.ZIP --type 4 --label Hook
+  python DOS_Generic_Ornament_Geometry_20261121.py GRAPHICS_DOS.ZIP --type 36 --label Manacles
+
+NEXT
+1. Verify S2/S3 original view indices and origin/clipping against the complete DOS source.
+2. Implement exact F0635 (including all needed alignment and clipping cases).
+3. Compare computed rectangles against Hook and Manacles DOS screenshots.
+4. Implement original pixel resampling and palette conversion in the same offline engine.
+5. Only integrate into Unity after validation; no ornament-specific hardcoding.
