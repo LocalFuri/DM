@@ -56,7 +56,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-21: Offline static match of compiled FIRES ornament drawing F0107 at load-image offset 0x1D886. Joint evidence: ordinal decrement, coordinate-set *15 + view index +1004, scales F3=14 and F2=21, subsequent scaled-bitmap and blit calls, 15 near-call sites. Prior-run calculated debugger address 2A64:10E6; MUST reverify load segment on restart. No Unity edits; no live rectangle verified.",
+  "checkpoint": "2026-11-21: Offline compiled code traces renderer argument through 114C:1408 +0A. 114C:12C1 returns zero for input [BP+06]=0; branch 16C3 stores that result. 114C:07A1 is generic packed graphics-record pointer lookup. Which branch selects Hook F2 remains unverified. No Unity modifications.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -3680,5 +3680,17 @@
       "Further disassembly of 114C:1408 finds writes to output buffer +0A at 114C:16C3, 16F0, and 1815; the last can set bit 15. Caller [BP-04] is this field."
     ],
     "next_action": "Map branch selection and value semantics at 114C:12C1 / 07A1; distinguish actual Hook F2 call from zero ornament IDs; preserve paused DOSBox-X and Unity untouched."
+  },
+  "research_20261121_renderer_argument_production_audit": {
+    "timestamp_local": "2026-11-21 18:51:38 CET",
+    "source": "actual unpacked FIRES load image plus previous caller audit",
+    "verified": [
+      "114C:12C1 returns zero immediately when [BP+06] is zero; otherwise it performs a calculated lookup via 114C:1292 and threshold comparison",
+      "114C:07A1 decodes graphic record group from bits 10..13 and index from bits 0..9; computes far pointer via group base and stride",
+      "114C:1408 at 16B5 masks a local byte with 0008, calls 12C1 at 16BA, and stores AX at output +0A (16C3); zero flag leads to zero output in that branch",
+      "Other output +0A writes at 16F0 and 1815 exist; identity of branch used at Hook F2 not proven"
+    ],
+    "next": "Identify relevant branch / actual nonzero renderer argument; no more arbitrary DOSBox-X breakpoints, no Unity edits",
+    "report": "DOS_FIRES_Argument_Production_Audit_20261121-185138.txt"
   }
 }

@@ -1,0 +1,57 @@
+Dungeon Master — FIRES renderer argument-production audit
+Date: 2026-11-21 18:51:38 CET
+Source: actual decompressed FIRES load image, /mnt/data/dos_research_work/fires.img
+Baseline: Progression_20261121_Caller_Helper_Offline_Audit.zip
+Scope: offline static research only; no Unity or DOSBox-X modifications.
+
+NEW MACHINE-CODE FINDINGS
+
+1. Function 114C:12C1 (load-image offset 0x48E1)
+   12C5 CMP WORD PTR [BP+06],0000
+   12C9 JE 1300
+   12CB..12F0 builds three lookup arguments using DS:0CC7, DS:3498,
+              DS:349A, and parameters at BP+0A/BP+0C/BP+0E.
+   12F0 CALL 114C:1292
+   12F8 CMP AX,[BP+08]
+   12FB JGE 1300
+   12FD INC AX
+   1300 XOR AX,AX
+   1304 RETF
+   Verified: input word [BP+06]=0 forces return AX=0, while other
+   paths can also return 0 depending on the lookup and threshold.
+   This routine is NOT yet identified as a wall-ornament-only function.
+
+2. Function 114C:07A1 (load-image offset 0x3DC1)
+   07A8 AND BX,3C00
+   07AE SHR BX,0A
+   07B2..07B4 scale group index by 4
+   07B6/07BA load base far pointer from DS:33F2/DS:33F0 group table
+   07BE..07C6 extract same encoded group and read stride from DS:00B0+group
+   07CC AND CX,03FF
+   07D6 IMUL CX
+   07DB ADD AX,DX
+   07E0 RETF
+   Verified: decodes an encoded word into a group (bits 10..13)
+   and within-group index (bits 0..9), calculates a far record address.
+   It is a generic encoded-record translator, not unique to Hook.
+
+3. Function 114C:1408 output-field +0A (caller [BP-04])
+   16B5 AND AX,0008
+   16B8 PUSH AX         ; first input for 12C1 at callee [BP+06]
+   16BA CALL 12C1
+   16C3 MOV ES:[BX+0A],AX
+   Therefore, in the branch ending at 16C3, if local flag bit 8 is
+   clear, the call to 12C1 returns zero and field +0A becomes zero.
+   However, branches writing +0A at 16F0 (masked high nibble from a
+   graphic record) and 1815 (sets bit 8000h) also exist. Static
+   analysis alone cannot tell which branch corresponds to Hook F2.
+
+WHAT IS NOT YET PROVEN
+- That any recorded zero-argument call was supposed to draw Hook F2.
+- Native sprite index or full rendered rectangle for Hook/Manacles.
+- Which actual map/record event generates a nonzero renderer argument.
+
+RECOMMENDED NEXT
+Find the caller context/branch conditions controlling whether 1408 uses
+16C3 or 16F0, and capture a nonzero F0107 invocation after placing the
+party at an unambiguous ornament-visible reference. Do not change Unity.
