@@ -280,8 +280,6 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Grate_F3_Side_14x8.png";
   private const string HookSideAssetPath =
       "Assets/Art/Ornaments/Hook_S1_14x19.png";
-  private const string HookS3AssetPath =
-      "Assets/Art/Ornaments/Hook_S3_3x5.png";
   private const string SlimeSide1AssetPath =
       "Assets/Art/Ornaments/Slime_Side_16x10.png";
   private const string PuddleF1AssetPath =
@@ -292,8 +290,6 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Puddle_F2.png";
   private const string PuddleF3AssetPath =
       "Assets/Art/Ornaments/Puddle_F3.png";
-  private const string PuddleS1AssetPath =
-      "Assets/Art/Ornaments/Puddle_S1.png";
   private const string PuddleS2AssetPath =
       "Assets/Art/Ornaments/Puddle_S2.png";
 
@@ -2015,8 +2011,6 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedPuddleF2Texture;
   [System.NonSerialized]
   private Texture2D cachedPuddleF3Texture;
-  [System.NonSerialized]
-  private Texture2D cachedPuddleS1Texture;
   [System.NonSerialized]
   private Texture2D cachedPuddleS2Texture;
   private Texture2D cachedMossF1Texture;
@@ -26971,43 +26965,6 @@ private static void HandleGameViewPointerDown(
     return false;
   }
 
-  private static int GetDistanceDerivedManaclesSideLeftX(int targetWidth)
-  {
-    float scaleX = (float)targetWidth / ManaclesD1SideWidth;
-    float mediumScaleX = (float)ManaclesD2SideWidth / ManaclesD1SideWidth;
-    float vanishX =
-        (ManaclesD2SideLeftX - mediumScaleX * ManaclesD1SideLeftX)
-        / (1f - mediumScaleX);
-    return Mathf.RoundToInt(
-        vanishX + (ManaclesD1SideLeftX - vanishX) * scaleX);
-  }
-
-  private static int GetDistanceDerivedManaclesSideY(int targetHeight)
-  {
-    float scaleY = (float)targetHeight / ManaclesD1SideHeight;
-    float mediumScaleY = (float)ManaclesD2SideHeight / ManaclesD1SideHeight;
-    float vanishY =
-        (ManaclesD2SideY - mediumScaleY * ManaclesD1SideY)
-        / (1f - mediumScaleY);
-    return Mathf.RoundToInt(
-        vanishY + (ManaclesD1SideY - vanishY) * scaleY);
-  }
-
-  private static void GetDistanceDerivedManaclesSidePlacement(
-      int targetWidth,
-      int targetHeight,
-      bool isLeft,
-      out int renderX,
-      out int renderY,
-      out bool renderMirror)
-  {
-    renderX = GetDistanceDerivedManaclesSideLeftX(targetWidth);
-    if (!isLeft)
-      renderX = DungeonViewportWidth - renderX - targetWidth;
-    renderY = GetDistanceDerivedManaclesSideY(targetHeight);
-    renderMirror = !isLeft;
-  }
-
   private bool TryGetWallOrnamentCalibrationDefaults(
       WallOrnamentPlacement ornament,
       out int renderX,
@@ -37517,68 +37474,6 @@ private static void HandleGameViewPointerDown(
         "VI Altar Engine F3 42x24");
     return cachedViAltarEngineF3TestTexture;
   }
-
-  /// <summary>
-  /// Applies a Dungeon Master distance colour map to an already-sized wall
-  /// decoration. Pixel positions are preserved 1:1; there is no scaling.
-  /// </summary>
-  private static Texture2D ApplyDmWallDecorationColorMap(
-      Texture2D source,
-      byte[] colorMap,
-      string textureName)
-  {
-    if (source == null
-        || !source.isReadable
-        || colorMap == null
-        || colorMap.Length < 16)
-    {
-      return null;
-    }
-
-    Color32[] sourcePixels = source.GetPixels32();
-    Color32[] targetPixels = new Color32[sourcePixels.Length];
-    Color32[] brightPalette = DungeonViewportLightPalettes[0];
-
-    for (int i = 0; i < sourcePixels.Length; i++)
-    {
-      Color32 sourcePixel = sourcePixels[i];
-      if (sourcePixel.a == 0)
-      {
-        targetPixels[i] = new Color32(0, 0, 0, 0);
-        continue;
-      }
-
-      int sourcePaletteIndex = FindExactDmPaletteIndexOrNearest(
-          sourcePixel,
-          brightPalette);
-      int mappedPaletteIndex = colorMap[sourcePaletteIndex];
-      mappedPaletteIndex = Mathf.Clamp(mappedPaletteIndex, 0, 15);
-
-      // Original wall-decoration blit uses palette index 10 as transparent.
-      if (mappedPaletteIndex == 10)
-      {
-        targetPixels[i] = new Color32(0, 0, 0, 0);
-        continue;
-      }
-
-      Color32 mapped = brightPalette[mappedPaletteIndex];
-      mapped.a = sourcePixel.a;
-      targetPixels[i] = mapped;
-    }
-
-    Texture2D generated = new Texture2D(
-        source.width,
-        source.height,
-        TextureFormat.RGBA32,
-        false);
-    generated.name = textureName;
-    generated.filterMode = FilterMode.Point;
-    generated.wrapMode = TextureWrapMode.Clamp;
-    generated.SetPixels32(targetPixels);
-    generated.Apply(false, false);
-    return generated;
-  }
-
 
   /// <summary>
   /// Unity-friendly port of CSBwin Graphics.cpp ShrinkBLT for an already

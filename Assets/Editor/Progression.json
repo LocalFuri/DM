@@ -4412,5 +4412,47 @@
       "Level 0 (15,9) West: Hook S3 right Mirror checked, rendered graphic unchanged",
       "Unity compile and ViewEdit persistence still to be verified"
     ]
+  },
+  "ornament_dead_code_cleanup_phase1_20261122": {
+    "date_local": "2026-11-22 19:31:48 CET",
+    "status": "PREPARED — Unity compilation and visual regression pending",
+    "scope": [
+      "Assets/Editor/ViewportLayoutEditor.cs",
+      "Assets/Editor/Progression.json"
+    ],
+    "audit_basis": "Cursor read-only legacy/hardcoded ornament audit, 2026-11-22; verified occurrences in latest Hook mirror UI cleanup source",
+    "removed": [
+      "GetDistanceDerivedManaclesSideLeftX",
+      "GetDistanceDerivedManaclesSideY",
+      "GetDistanceDerivedManaclesSidePlacement",
+      "ApplyDmWallDecorationColorMap",
+      "HookS3AssetPath",
+      "PuddleS1AssetPath",
+      "cachedPuddleS1Texture"
+    ],
+    "preserved": [
+      "GenerateWallOrnamentForDepth (unused but possible future generic entry point)",
+      "GenerateDmScaledWallDecoration shared DOS 6-bit scaler",
+      "Hook S1/S2/S3 mirror correction",
+      "Grate S2/S3 render + global X/Y offsets",
+      "V17 wall rules and cyan preview/click sound"
+    ],
+    "verification_required": [
+      "Unity Console compilation has zero errors",
+      "Level 0 (10,9) East Hook S3 left mirror unchecked and correct pixels",
+      "Level 0 (15,9) West Hook right mirror checked",
+      "Grate S2/S3 placement and Apply persistence",
+      "V17 S3 strips unchanged"
+    ],
+    "next_cleanup": "Inspect and migrate one active legacy rendering path only after current regression passes; do not delete shared generic wrapper or tested artwork."
+  },
+  "ornament_dead_code_cleanup_phase1_cs0579_fix_20261122": {
+    "date_local": "2026-11-22 19:34:39 CET",
+    "status": "CS0579 duplicate attribute corrected; Unity recompilation pending",
+    "error": "Assets/Editor/ViewportLayoutEditor.cs(2015,4): CS0579 Duplicate 'System.NonSerialized' attribute",
+    "cause": "Removal of cachedPuddleS1Texture left its NonSerialized attribute attached to cachedPuddleS2Texture, which already had its own attribute.",
+    "fix": "Removed only the redundant [System.NonSerialized] line; retained the remaining attribute and cachedPuddleS2Texture field.",
+    "preserved": "No active renderer, calibration, Hook mirroring or V17 wall changes.",
+    "verification": "Recompile in Unity; verify error CS0579 is gone."
   }
 }
