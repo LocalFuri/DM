@@ -263,10 +263,11 @@ public class ViewportLayoutEditor : EditorWindow
   // Grate F2 and F3 are generated from the original DOS 32x20 F1 artwork.
   // No pre-scaled or CSBwin artwork dependencies for the front views.
   private const string GrateSide1AssetPath =
-      "Assets/Art/Ornaments/Grate_Side1_16x19.png";
-  // User-extracted original S2 artwork, drawn 1:1 (no scaling or palette conversion).
-  private const string GrateS2AssetPath =
-      "Assets/Art/Ornaments/Grate_S2_6x11.png";
+      "Assets/Art/Ornaments/Grate_S1_16x19.png";
+  // Grate S2 is generated from the native 16x19 S1 using the shared
+  // DOS 6-bit sampler (no dedicated pre-scaled S2 artwork).
+  private const int GrateD2SideWidth = 10;
+  private const int GrateD2SideHeight = 12;
   // User-extracted original S3 artwork, drawn 1:1.
   private const string GrateS3AssetPath =
       "Assets/Art/Ornaments/Grate_S3_4x6.png";
@@ -390,13 +391,12 @@ public class ViewportLayoutEditor : EditorWindow
       224 - GrateD1SideLeftX - 16;
   private const int GrateD1SideY = 63;
 
-  // Original DOS Grate D2 side placement. In the supplied (15,9) West
-  // original screenshot Grate_Side2_6x11.png occupies the left D2 side
-  // slot at screen top-left (66,106). Texture2D framebuffer Y is therefore
-  // 200 - 106 - 11 = 83. The right slot is the exact 224px viewport mirror.
-  private const int GrateD2SideLeftX = 66;
+  // Provisional full DOS S2 bitmap alignment: preserve the center of the
+  // previously accepted 6px opaque region (X=66..71), now in a 10px bitmap.
+  // Keep the measured bottom framebuffer Y=83 pending the DOS S2 comparison.
+  private const int GrateD2SideLeftX = 64;
   private const int GrateD2SideRightX =
-      DungeonViewportWidth - GrateD2SideLeftX - 6;
+      DungeonViewportWidth - GrateD2SideLeftX - GrateD2SideWidth;
   private const int GrateD2SideY = 83;
 
   // Original DOS Grate D3 side. In the supplied (16,9) West screenshot
@@ -40726,8 +40726,7 @@ private static void HandleGameViewPointerDown(
     Texture2D image = AssetDatabase.LoadAssetAtPath<Texture2D>(GrateF2SideAssetPath);
     if (image == null || image.width != 20 || image.height != 13 || !image.isReadable)
     {
-      Debug.LogError("ViewEdit: Grate F2 Side requires readable native 20x13 asset: "
-          + GrateF2SideAssetPath);
+      ReportMissingGrateArtwork(GrateF2SideAssetPath);
       return null;
     }
     cachedGrateF2SideTexture = image;
@@ -40831,8 +40830,8 @@ private static void HandleGameViewPointerDown(
     Texture2D side2 = GetGrateSide2Texture();
     if (side2 == null
         || !side2.isReadable
-        || side2.width != 6
-        || side2.height != 11)
+        || side2.width != GrateD2SideWidth
+        || side2.height != GrateD2SideHeight)
     {
       return;
     }
@@ -40940,7 +40939,7 @@ private static void HandleGameViewPointerDown(
 
       if (matchesLeft && !leftDrawn)
       {
-        // Native Side2 art is the left-wall perspective.
+        // Generated native DOS S2 art is the left-wall perspective.
         BlitOrnamentPieceIntoPreview(
             pixels, side2, ornament,
             GrateD2SideLeftX, GrateD2SideY, false);
@@ -40965,28 +40964,26 @@ private static void HandleGameViewPointerDown(
     if (cachedGrateSide2Texture != null)
       return cachedGrateSide2Texture;
 
-    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(GrateS2AssetPath);
-    if (texture == null)
+    Texture2D source = GetGrateSide1Texture();
+    if (source == null)
     {
-      ReportMissingGrateArtwork(GrateS2AssetPath);
+      ReportMissingGrateArtwork(GrateSide1AssetPath);
       return null;
     }
-    if (texture.width != 6 || texture.height != 11)
+    if (!source.isReadable)
     {
-      Debug.LogError("ViewEdit: Grate S2 native artwork must be 6x11: "
-          + GrateS2AssetPath + " (actual " + texture.width + "x"
-          + texture.height + ").");
-      return null;
-    }
-    if (!texture.isReadable)
-    {
-      Debug.LogError("ViewEdit: Grate S2 native artwork must be readable: "
-          + GrateS2AssetPath + ". Enable Read/Write in Import Settings.");
+      ReportMissingGrateArtwork(GrateSide1AssetPath + " (unreadable)");
       return null;
     }
 
-    cachedGrateSide2Texture = texture;
-    return texture;
+    // Exactly the same 6-bit DOS scaler and medium-distance palette used
+    // for the verified Hook S2 and Manacles S2. Geometry is still checked
+    // separately against the DOS PC screenshot.
+    cachedGrateSide2Texture = GenerateDmScaledWallDecoration(
+        source, GrateD2SideWidth, GrateD2SideHeight,
+        WallOrnamentMediumColorMap, "Grate S2 DOS 6-bit Side",
+        roundBiasOverride: 0, sampleTopDown: true);
+    return cachedGrateSide2Texture;
   }
 
   private void BlitGrateD1SidesIntoPreview(Color32[] pixels)
@@ -41137,23 +41134,9 @@ private static void HandleGameViewPointerDown(
       return texture;
     }
 
-    string[] guids = AssetDatabase.FindAssets(
-        "Grate t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 16 || candidate.height != 19)
-        continue;
-
-      string lower = path.ToLowerInvariant();
-      if (!lower.Contains("grate") || !lower.Contains("side1"))
-        continue;
-
-      cachedGrateSide1Texture = candidate;
-      return candidate;
-    }
+    // Native S1 is the only accepted source; never select a similarly
+    // named image as a silent fallback.
+    ReportMissingGrateArtwork(GrateSide1AssetPath);
 
     return null;
   }
