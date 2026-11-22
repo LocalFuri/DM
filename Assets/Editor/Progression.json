@@ -4360,5 +4360,41 @@
       "Check right sides before acceptance"
     ],
     "note": "S3 and S1 screenshot accuracy not yet verified. Do not mark as approved."
+  },
+  "dos_geometry_s3_patch_20261122": {
+    "status": "DELIVERED, NOT YET COMPILED/VERIFIED IN UNITY",
+    "source_sha256_before": "312c2be6e5f707516a97818fa297c7f7de994bdecff8c72c16d1e9370860e45e",
+    "scope": "Hook S3 and Manacles S3 only, shared layout resource 696 + existing DOS 6-bit sampler",
+    "source_native_sizes": {
+      "Hook S1": [
+        14,
+        19
+      ],
+      "Manacles S1": [
+        32,
+        42
+      ]
+    },
+    "expected_left_rects_viewport": {
+      "Hook S3": [
+        82,
+        39,
+        6,
+        8
+      ],
+      "Manacles S3": [
+        77,
+        40,
+        14,
+        18
+      ]
+    },
+    "s2_unchanged": true,
+    "s3_right_not_yet_approved": true,
+    "notes": [
+      "Run Unity compile and DOS screenshot comparisons before accepting",
+      "Old accepted Manacles S3 calibration may override computed DOS baseline; inspect if mismatch",
+      "All prior accepted views remain authoritative; no change to common sampling implementation"
+    ]
   }
 }

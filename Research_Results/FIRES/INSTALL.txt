@@ -1,0 +1,16 @@
+Dungeon Master DOS shared geometry patch — 22 Nov 2026
+
+Files:
+ ViewportLayoutEditor.cs  -> C:\Unity\DM\Assets\Editor\
+ DosOrnamentLayout696.cs -> C:\Unity\DM\Assets\Editor\
+ DOS_Resource696.bin    -> C:\Unity\DM\Assets\Editor\
+ Progression.json       -> C:\Unity\DM\Assets\Editor\
+
+Source used: original 2026-11-22 Hook-native update package; SHA256 of source text before patch:
+312c2be6e5f707516a97818fa297c7f7de994bdecff8c72c16d1e9370860e45e
+
+Change: Hook S3 full 6x8; Manacles S3 full 14x18; geometry derived
+from DOS resource 696. Existing shared 6-bit scaler is untouched.
+Hook and Manacles S2 unaffected. No unrelated ornaments edited.
+This code has not been compiled within Unity. Test S2 and S3 before approval.
+WARNING: Existing Manacles S3 accepted ViewEdit X/Y can override DOS placement.

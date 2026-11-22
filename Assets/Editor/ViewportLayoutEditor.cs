@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -800,13 +800,14 @@ public class ViewportLayoutEditor : EditorWindow
   private const int HookD2SideRightX =
       DungeonViewportWidth - HookD2SideLeftX - HookD2SideWidth;
   private const int HookD2SideY = 116;
-  // Hook S3: 3x5 view generated from the native 14x19 DOS side source.
-  private const int HookD3SideWidth = 3;
-  private const int HookD3SideHeight = 5;
-  private const int HookD3SideLeftX = WoodRingD3SideLeftX;
-  private const int HookD3SideRightX =
-      DungeonViewportWidth - HookD3SideLeftX - HookD3SideWidth;
-  private const int HookD3SideY = WoodRingD3SideY;
+  // DOS resource-696 set 0, DI=2/3. The entire source is scaled to 6x8;
+  // only the colored portion is visibly 3x5. Actual draw placement is
+  // resolved from the resource, not from these UI baseline constants.
+  private const int HookD3SideWidth = 6;
+  private const int HookD3SideHeight = 8;
+  private const int HookD3SideLeftX = 82;
+  private const int HookD3SideRightX = 136;
+  private const int HookD3SideY = 120;
 
   // Original DOS Champion front-mirror placement for a D1 center wall.
   // Measured from the original 320x200 (10,5) South ZED view:
@@ -24010,18 +24011,13 @@ private static void HandleGameViewPointerDown(
     y = DisplayYToUnityY(33 + 40, height);
   }
 
-  // CSBwin wall-decoration group 1, relative positions 0/1 = S3 left/right.
-  // Positions are local to the 224x136 dungeon area, whose screen top is 33.
-  // Do not use the old distance-extrapolated S3 position or ViewEdit offsets.
+  // Shared DOS geometry: resource 696, coordinate set 1, S3 DI=2/3.
+  // Native 32x42 source, scale 14/32 -> complete 14x18 bitmap.
   private static void GetManaclesSideS3Rect(
       bool left, out int x, out int y, out int width, out int height)
   {
-    OriginalWallDecorationRect rect = GetOriginalWallDecorationRect(
-        1, left ? 0 : 1);
-    width = rect.x2 - rect.x1 + 1;
-    height = rect.height;
-    x = rect.x1;
-    y = DisplayYToUnityY(rect.y1 + 33, height);
+    DosOrnamentLayout696.GetRect(1, left ? 2 : 3, 32, 42, 14,
+        out x, out y, out width, out height);
   }
 
   private static void GetManaclesFrontF2Rect(
@@ -38551,14 +38547,16 @@ private static void HandleGameViewPointerDown(
 
   private void BlitHookD3SidesIntoPreview(Color32[] pixels)
   {
+    // Resource 696 drives both the full bitmap size and the placement.
+    DosOrnamentLayout696.GetRect(0, 2, 14, 19, 14,
+        out int leftX, out int leftY, out int width, out int height);
+    DosOrnamentLayout696.GetRect(0, 3, 14, 19, 14,
+        out int rightX, out int rightY, out int rightW, out int rightH);
+    if (width != rightW || height != rightH || leftY != rightY)
+      throw new System.InvalidOperationException(
+          "Hook S3 left/right DOS geometry differs; split the render calls.");
     BlitHookSidesAtDistance(
-        pixels,
-        3,
-        HookD3SideWidth,
-        HookD3SideHeight,
-        HookD3SideLeftX,
-        HookD3SideRightX,
-        HookD3SideY);
+        pixels, 3, width, height, leftX, rightX, leftY);
   }
 
   private void BlitHookD2SidesIntoPreview(Color32[] pixels)
@@ -39373,114 +39371,16 @@ private static void HandleGameViewPointerDown(
 
     GetManaclesSideS3Rect(
         true, out _, out _, out int width, out int height);
-    cachedManaclesGeneratedD3SideTexture = GenerateManaclesS3FromNativeS1(
-        source, width, height);
+    cachedManaclesGeneratedD3SideTexture = GenerateDmScaledWallDecoration(
+        source, width, height, WallOrnamentFarColorMap,
+        "Manacles S3 DOS 6-bit Side", roundBiasOverride: 0,
+        sampleTopDown: true);
     return cachedManaclesGeneratedD3SideTexture;
   }
 
-  // S3 exact live shrink, verified against the 180-pixel CSBwin runtime
-  // trace for graphic 193 at Level 0 (4,12) facing North. The native 32x42
-  // Manacles_S1 artwork occupies rows 2..43 of the original 32x48 image.
-  // Do not change the approved S2 scaling path.
-  private static Texture2D GenerateManaclesS3FromNativeS1(
-      Texture2D source, int targetWidth, int targetHeight)
-  {
-    if (source == null || !source.isReadable)
-      return null;
-    if (source.width != 32 || source.height != 42
-        || targetWidth != 9 || targetHeight != 20)
-    {
-      Debug.LogError("Manacles S3 live scaling: expected 32x42 -> 9x20.");
-      return null;
-    }
-
-    // Active Palette11946, captured during the S3 rendering call.
-    Color32[] runtimePalette = {
-      new Color32(0, 0, 0, 255),
-      new Color32(109, 109, 109, 255),
-      new Color32(145, 145, 145, 255),
-      new Color32(109, 36, 0, 255),
-      new Color32(0, 218, 218, 255),
-      new Color32(145, 72, 0, 255),
-      new Color32(0, 145, 0, 255),
-      new Color32(0, 218, 0, 255),
-      new Color32(255, 0, 0, 255),
-      new Color32(255, 182, 0, 255),
-      new Color32(218, 145, 109, 255),
-      new Color32(255, 255, 0, 255),
-      new Color32(72, 72, 72, 255),
-      new Color32(182, 182, 182, 255),
-      new Color32(0, 0, 255, 255),
-      new Color32(255, 255, 255, 255)
-    };
-
-    const int paddedSourceWidth = 32;
-    const int paddedSourceHeight = 48;
-    const int topTransparentRows = 2;
-    // CSBwin Graphics.cpp ShrinkBLT uses 16.16 fixed-point steps,
-    // truncated at 1/1024 of a source pixel before the << 6 shift.
-    int horizontalStep = (int)CsbShrinkFixedStep(
-        paddedSourceWidth, targetWidth);
-    int verticalStep = (int)CsbShrinkFixedStep(
-        paddedSourceHeight, targetHeight);
-    int horizontalStart = (horizontalStep >> 1) + 0x7fff;
-    int verticalStart = (verticalStep >> 1) + 0x7fff;
-
-    Color32[] src = source.GetPixels32();
-    Color32[] dst = new Color32[targetWidth * targetHeight];
-    for (int topY = 0; topY < targetHeight; topY++)
-    {
-      // The row-base adjustment (-1) matches CSBwin's ShrinkBLT source
-      // pointer advancement. Verified against all 20 traced source rows.
-      int paddedTopY = (int)(
-          ((long)verticalStart + (long)topY * verticalStep) >> 16) - 1;
-      int sourceTopY = paddedTopY - topTransparentRows;
-      if (sourceTopY < 0 || sourceTopY >= source.height)
-        continue;
-      int sourceUnityY = source.height - 1 - sourceTopY;
-      int dstUnityY = targetHeight - 1 - topY;
-      for (int x = 0; x < targetWidth; x++)
-      {
-        int paddedX = (int)(
-            ((long)horizontalStart + (long)x * horizontalStep) >> 16);
-        Color32 color = src[sourceUnityY * source.width + paddedX];
-        if (color.a == 0)
-          continue;
-
-        int sourceIndex = -1;
-        for (int i = 0; i < runtimePalette.Length; i++)
-        {
-          Color32 candidate = runtimePalette[i];
-          if (color.r == candidate.r && color.g == candidate.g
-              && color.b == candidate.b)
-          {
-            sourceIndex = i;
-            break;
-          }
-        }
-        if (sourceIndex < 0)
-        {
-          Debug.LogError("Manacles S3: unrecognized source palette color "
-              + "at (" + paddedX + "," + sourceTopY + ").");
-          return null;
-        }
-        int mappedIndex = WallOrnamentFarColorMap[sourceIndex];
-        if (mappedIndex == 10)
-          continue;
-        dst[dstUnityY * targetWidth + x] = runtimePalette[mappedIndex];
-      }
-    }
-
-    Texture2D result = new Texture2D(
-        targetWidth, targetHeight, TextureFormat.RGBA32, false);
-    result.name = "Manacles S3 CSBwin Live ShrinkBLT";
-    result.filterMode = FilterMode.Point;
-    result.wrapMode = TextureWrapMode.Clamp;
-    result.SetPixels32(dst);
-    result.Apply(false, false);
-    return result;
-  }
-
+  // The former CSBwin 9x20 S3 ShrinkBLT path is retired. S3 now uses
+  // the very same DOS fixed-point sampler as Hook, with the full 14x18
+  // distance-3 bitmap from the native 32x42 source.
   private void BlitManaclesD3SidesIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -40770,9 +40670,8 @@ private static void HandleGameViewPointerDown(
     if (cachedHookSide3Texture != null)
       return cachedHookSide3Texture;
 
-    // Generate Hook S3 from the native DOS 14x19 side source. Preserve
-    // the shared 6-bit algorithm, S3 dimensions, position and calibration.
-    // Recheck DOS S3 screenshot after importing the native source.
+    // Full 6x8 bitmap generated from the native DOS 14x19 side source.
+    // Resource 696 independently determines its placement.
     Texture2D source = GetHookSideTexture();
     if (source == null || !source.isReadable)
     {
@@ -40786,9 +40685,10 @@ private static void HandleGameViewPointerDown(
         HookD3SideWidth,
         HookD3SideHeight,
         WallOrnamentFarColorMap,
-        "Hook S3 Generated From Side");
+        "Hook S3 DOS 6-bit Side", roundBiasOverride: 0,
+        sampleTopDown: true);
     if (cachedHookSide3Texture == null)
-      Debug.LogError("Hook S3: failed to generate 3x5 from " + HookSideAssetPath);
+      Debug.LogError("Hook S3: failed to generate 6x8 from " + HookSideAssetPath);
     return cachedHookSide3Texture;
   }
 
@@ -40939,17 +40839,34 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Missing artwork is a cyan, once-per-asset diagnostic. Do not silently
+  // substitute another texture or disable validation of existing assets.
+  private static readonly HashSet<string> loggedMissingGrateArtworkPaths =
+      new HashSet<string>(System.StringComparer.Ordinal);
+
+  private static void ReportMissingGrateArtwork(string path)
+  {
+    if (!loggedMissingGrateArtworkPaths.Add(path))
+      return;
+    Debug.Log("<color=cyan>CYAN | ViewEdit MISSING ASSET | "
+        + path + "</color>");
+  }
+
   private Texture2D GetGrateSide3Texture()
   {
     if (cachedGrateSide3Texture != null)
       return cachedGrateSide3Texture;
 
     Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(GrateS3AssetPath);
-    if (texture == null || texture.width != 4 || texture.height != 6
-        || !texture.isReadable)
+    if (texture == null)
     {
-      Debug.LogError("ViewEdit: Required Grate S3 artwork missing, unreadable, "
-          + "or not 4x6: " + GrateS3AssetPath);
+      ReportMissingGrateArtwork(GrateS3AssetPath);
+      return null;
+    }
+    if (texture.width != 4 || texture.height != 6 || !texture.isReadable)
+    {
+      Debug.LogError("ViewEdit: Grate S3 artwork must be readable and 4x6: "
+          + GrateS3AssetPath);
       return null;
     }
 
@@ -41231,8 +41148,7 @@ private static void HandleGameViewPointerDown(
     Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(GrateS2AssetPath);
     if (texture == null)
     {
-      Debug.LogError("ViewEdit: required native Grate S2 artwork missing: "
-          + GrateS2AssetPath);
+      ReportMissingGrateArtwork(GrateS2AssetPath);
       return null;
     }
     if (texture.width != 6 || texture.height != 11)
@@ -41615,9 +41531,14 @@ private static void HandleGameViewPointerDown(
 
     Texture2D texture =
         AssetDatabase.LoadAssetAtPath<Texture2D>(GrateF2FrontAssetPath);
-    if (texture == null || texture.width != 21 || texture.height != 13)
+    if (texture == null)
     {
-      Debug.LogError("Grate F2 must exist as a 21x13 texture: "
+      ReportMissingGrateArtwork(GrateF2FrontAssetPath);
+      return null;
+    }
+    if (texture.width != 21 || texture.height != 13)
+    {
+      Debug.LogError("Grate F2 must be a 21x13 texture: "
           + GrateF2FrontAssetPath);
       return null;
     }

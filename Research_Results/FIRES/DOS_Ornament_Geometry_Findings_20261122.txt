@@ -1,0 +1,59 @@
+DUNGEON MASTER DOS — DATA-DRIVEN ORNAMENT GEOMETRY REGRESSION
+Date: 2026-11-22 (Europe/Berlin)
+Status: offline research; Unity and original DOS files unchanged.
+
+Inputs
+- GRAPHICS_DOS(1).ZIP/GRAPHICS.DAT, SHA256 2c3aa836925c64c09402bafb03c645932bd03c4f003ad9a86542383b078ecf8e
+- Hook_S1_14x19.png (native 14x19 PC DOS Hook side source)
+- Hook S2 PC DOS viewport screenshot image(20261122-112500).png, 224x136
+- Hook S3 PC DOS crop image(20261122-113938).png, 148x136
+  The S3 crop originates at viewport-local X=76, Y=0 (from full-screen crop origin 76,33).
+
+Resource 696
+- Located at GRAPHICS.DAT offset 293487.
+- 23 ranges, 1133 8-byte records. Type 0 zone records point to parent 4,
+  then viewport parent 3 (224x136). No parent translation for tested views.
+
+Generic DOS rules being tested
+- Perspective zone = 1004 + coordinateSet*15 + DI.
+- Destination dimensions = ((source_dimension*scale)+(scale>>1)) >> 5.
+- 6-bit sampling step = floor(source_dimension*64/destination_dimension).
+- Source sample = floor((dest_index*step + floor(step/2))/64).
+- Centered rectangle left/top = center - ((dimension+1)>>1).
+- Source brown colors (146,73,0)/(109,36,0) compared to DOS output brown (109,36,0).
+
+Verified correspondence to DOS screenshots
+S2 Left: coordinateSet=0, DI=7, resource zone 1011 center=(71,45).
+    Scale=21/32; 14x19->9x12; full rectangle=(66,39,9,12).
+    Brown source samples=19; screenshot brown=19; 0 mismatched cells.
+S3 Left: coordinateSet=0, DI=2, resource zone 1006 center=(85,43).
+    Scale=14/32; 14x19->6x8; full rectangle=(82,39,6,8).
+    Brown source samples=9; screenshot brown=9; 0 mismatched cells.
+
+Conclusion
+The SAME generic 6-bit sampling rules and resource 696 placement rules predict all
+28 brown pixels in both screenshots, with no brown-pixel classification errors.
+The previously apparent S3 3x5 visible bound is NOT the scaling destination rectangle.
+No additional Hook-specific placement/rounding patch is justified by these tests.
+
+Limits
+- DI=7 and DI=2 are uniquely well-supported by geometry/pixel comparison but are
+  not measured live register values in FIRES. The source-to-bitmap index mapping
+  also remains to be independently verified against the running engine.
+- Brown-color classification is exact for these screenshots; this DOES NOT verify
+  all palette entries, transparent pixels, black pixels, or all clipping paths.
+- Only set 0 / left-side Hook views tested; do not generalize approval to other
+  ornament types and views without further regression tests.
+- No edits to Unity have been made in this package.
+
+Repeatable test
+  python DOS_Ornament_Geometry_Regression_20261122.py \
+    --graphics GRAPHICS_DOS.ZIP --source Hook_S1_14x19.png \
+    --s2-dos S2_DOS.png --s3-dos S3_DOS_CROPPED.png
+The utility requires Pillow and expects the original S2 viewport screenshot
+(224x136) and S3 crop (148x136, crop starts at viewport X=76).
+
+Next step
+Expose a generic read-only geometry diagnostic in Unity or a standalone tool:
+for each view index, enumerate source graphic, scale, zone center and full bitmap
+rect; check a second ornament before deciding on a production renderer change.
