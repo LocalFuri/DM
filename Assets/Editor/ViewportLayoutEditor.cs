@@ -268,9 +268,10 @@ public class ViewportLayoutEditor : EditorWindow
   // DOS 6-bit sampler (no dedicated pre-scaled S2 artwork).
   private const int GrateD2SideWidth = 10;
   private const int GrateD2SideHeight = 12;
-  // User-extracted original S3 artwork, drawn 1:1.
-  private const string GrateS3AssetPath =
-      "Assets/Art/Ornaments/Grate_S3_4x6.png";
+  // S3 is generated from native 16x19 side artwork with the shared
+  // DOS 6-bit scaling algorithm (14/32). No pre-scaled S3 asset.
+  private const int GrateD3SideWidth = 7;
+  private const int GrateD3SideHeight = 8;
   // Dedicated right-hand corner artwork; independent of the verified S2/S3 art.
   private const string GrateF2SideAssetPath =
       "Assets/Art/Ornaments/Grate_F2_Side_20x13.png";
@@ -399,11 +400,11 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonViewportWidth - GrateD2SideLeftX - GrateD2SideWidth;
   private const int GrateD2SideY = 83;
 
-  // Original DOS Grate D3 side. In the supplied (16,9) West screenshot
-  // Grate_Side3_4x4.png occupies the left D3 side slot at screen top-left
-  // (81,96). That face is wall tile (13,10) North. The art is the left-wall
-  // perspective, so only the right blit is mirrored.
-  // Framebuffer Y = 200 - 96 - 4 = 100.
+  // Native DOS S3 is a 7x8 scaled full bitmap from the 16x19 S1 source.
+  // S3 X/Y remain provisional until compared against the corresponding
+  // PC DOS S3 screenshot; do not infer position from the old 4x6 asset.
+  // Right wall mirrors the same shared scaled source.
+  // Provisional framebuffer Y retained from the legacy side placement.
   // Initial right-edge location, adjustable with the independent ViewEdit Apply row.
   private const int GrateF2SideCornerX = DungeonViewportWidth - 10;
   private const int GrateF2SideCornerY = 83;
@@ -412,7 +413,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private const int GrateD3SideLeftX = 81;
   private const int GrateD3SideRightX =
-      DungeonViewportWidth - GrateD3SideLeftX - 4;
+      DungeonViewportWidth - GrateD3SideLeftX - GrateD3SideWidth;
   private const int GrateD3SideY = 100;
 
   // Original DOS coordinate-set-0 D1 side placement (Hook / Wood Ring family).
@@ -24013,12 +24014,26 @@ private static void HandleGameViewPointerDown(
     public bool mirror;
   }
 
+  // Screen-space offsets, independent of dungeon level, tile and facing.
+  // dy is positive DOWN; ViewEdit's renderer Y coordinate increases UP.
+  [System.Serializable]
+  private class OrnamentPlacementOffsetEntry
+  {
+    public string key;
+    public string artworkSignature;
+    public int dx;
+    public int dy;
+    public bool mirror;
+  }
+
   [System.Serializable]
   private class OrnamentCalibrationJsonStore
   {
     public int version = 1;
     public List<OrnamentCalibrationJsonEntry> entries =
         new List<OrnamentCalibrationJsonEntry>();
+    public List<OrnamentPlacementOffsetEntry> offsets =
+        new List<OrnamentPlacementOffsetEntry>();
   }
 
   // A successful ViewEdit persistence write must carry a fresh filesystem
@@ -24146,6 +24161,84 @@ private static void HandleGameViewPointerDown(
         return true;
       }
     return false;
+  }
+
+  // An offset is stored per ornament projection, not per map occurrence.
+  // The source artwork size is part of the signature, preventing accidental
+  // reuse after replacing an artwork with a different native DOS size.
+  private static string GetOrnamentOffsetArtworkSignature(string key)
+  {
+    if (key.StartsWith("OrnamentProjection:Grate:S2", System.StringComparison.Ordinal)
+        || key.StartsWith("OrnamentProjection:Grate:S3", System.StringComparison.Ordinal))
+      return "Grate_S1_16x19.png:16x19";
+    // Other ornament families still use their existing accepted-reference
+    // positions until explicitly migrated/verified. An empty signature means
+    // the projection key itself defines the calibration identity.
+    return string.Empty;
+  }
+
+  private static bool TryGetOrnamentPlacementOffset(
+      string key, out OrnamentPlacementOffsetEntry offset)
+  {
+    offset = null;
+    if (string.IsNullOrEmpty(key) || !File.Exists(OrnamentClassJsonPath))
+      return false;
+    if (!TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore data)
+        || data.offsets == null)
+      return false;
+    string signature = GetOrnamentOffsetArtworkSignature(key);
+    foreach (OrnamentPlacementOffsetEntry candidate in data.offsets)
+      if (candidate != null
+          && string.Equals(candidate.key, key, System.StringComparison.OrdinalIgnoreCase)
+          && string.Equals(candidate.artworkSignature ?? string.Empty,
+              signature, System.StringComparison.Ordinal))
+      {
+        offset = candidate;
+        return true;
+      }
+    return false;
+  }
+
+  private static bool SaveOrnamentPlacementOffset(
+      string key, int dx, int dy, bool mirror)
+  {
+    if (string.IsNullOrEmpty(key)
+        || !TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore data))
+      return false;
+    if (data.offsets == null)
+      data.offsets = new List<OrnamentPlacementOffsetEntry>();
+    string signature = GetOrnamentOffsetArtworkSignature(key);
+    OrnamentPlacementOffsetEntry entry = null;
+    foreach (OrnamentPlacementOffsetEntry candidate in data.offsets)
+      if (candidate != null
+          && string.Equals(candidate.key, key, System.StringComparison.OrdinalIgnoreCase)
+          && string.Equals(candidate.artworkSignature ?? string.Empty,
+              signature, System.StringComparison.Ordinal))
+      { entry = candidate; break; }
+    if (entry == null)
+    {
+      entry = new OrnamentPlacementOffsetEntry {
+          key = key, artworkSignature = signature };
+      data.offsets.Add(entry);
+    }
+    entry.dx = dx;
+    entry.dy = dy;
+    entry.mirror = mirror;
+    string temp = OrnamentClassJsonPath + ".tmp";
+    try
+    {
+      WriteViewEditTextWithTimestamp(temp, JsonUtility.ToJson(data, true));
+      File.Copy(OrnamentClassJsonPath, OrnamentClassJsonPath + ".bak", true);
+      File.Copy(temp, OrnamentClassJsonPath, true);
+      File.Delete(temp);
+      Debug.Log("ViewEdit Apply: " + key + " offset X=" + dx + " Y=" + dy);
+      return true;
+    }
+    catch (System.Exception e)
+    {
+      Debug.LogError("ViewEdit offset Apply failed: " + e.Message);
+      return false;
+    }
   }
 
   private static bool SaveOrnamentClassJson(string key, int x, int y, bool mirror)
@@ -27422,8 +27515,8 @@ private static void HandleGameViewPointerDown(
       previewFeatureMirrorOverrides.Remove(key);
     }
 
-    // The accepted generic reference becomes the baseline. Red indicates only
-    // values that differ from this accepted reference.
+    // A saved global offset supersedes an older absolute accepted reference.
+    // Red indicates only values that differ from the current saved baseline.
     int defaultX = codedX;
     int defaultY = codedY;
     bool defaultMirror = codedMirror;
@@ -27448,8 +27541,18 @@ private static void HandleGameViewPointerDown(
           key, ref defaultX, ref defaultY, ref defaultMirror);
     }
     else if (hasGenericProjection && !fixedManaclesS2)
-      ApplyAcceptedOrnamentReference(
-          key, ref defaultX, ref defaultY, ref defaultMirror);
+    {
+      if (TryGetOrnamentPlacementOffset(key,
+          out OrnamentPlacementOffsetEntry savedOffset))
+      {
+        defaultX = codedX + savedOffset.dx;
+        defaultY = codedY - savedOffset.dy;
+        defaultMirror = savedOffset.mirror;
+      }
+      else
+        ApplyAcceptedOrnamentReference(
+            key, ref defaultX, ref defaultY, ref defaultMirror);
+    }
 
     int x = defaultX;
     int y = defaultY;
@@ -27624,9 +27727,12 @@ private static void HandleGameViewPointerDown(
         Repaint();
         return true;
       }
-      // Apply is the acceptance action: the current X/Y/Mirror become the new
-      // persistent generic reference for this ornament family + projection.
-      if (SaveAcceptedOrnamentReference(key, editX, editY, editMirror))
+      // Global offset, not a dungeon-coordinate correction. A positive dy
+      // moves artwork DOWN on screen (renderer Y is bottom-up).
+      // The new JSON offset supersedes any older absolute reference, but the
+      // legacy reference is left intact for other rendering paths.
+      if (SaveOrnamentPlacementOffset(
+          key, editX - codedX, codedY - editY, editMirror))
       {
         previewFeaturePositionOverrides.Remove(key);
         previewFeatureMirrorOverrides.Remove(key);
@@ -40525,8 +40631,8 @@ private static void HandleGameViewPointerDown(
     Texture2D side3 = GetGrateSide3Texture();
     if (side3 == null
         || !side3.isReadable
-        || side3.width != 4
-        || side3.height != 6)
+        || side3.width != GrateD3SideWidth
+        || side3.height != GrateD3SideHeight)
     {
       return;
     }
@@ -40677,20 +40783,23 @@ private static void HandleGameViewPointerDown(
     if (cachedGrateSide3Texture != null)
       return cachedGrateSide3Texture;
 
-    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(GrateS3AssetPath);
-    if (texture == null)
+    Texture2D source = GetGrateSide1Texture();
+    if (source == null)
     {
-      ReportMissingGrateArtwork(GrateS3AssetPath);
+      ReportMissingGrateArtwork(GrateSide1AssetPath);
       return null;
     }
-    if (texture.width != 4 || texture.height != 6 || !texture.isReadable)
+    if (!source.isReadable)
     {
-      Debug.LogError("ViewEdit: Grate S3 artwork must be readable and 4x6: "
-          + GrateS3AssetPath);
+      ReportMissingGrateArtwork(GrateSide1AssetPath + " (unreadable)");
       return null;
     }
 
-    cachedGrateSide3Texture = texture;
+    // Same FIRES 6-bit nearest-source sampling used by Hook and Manacles S3.
+    cachedGrateSide3Texture = GenerateDmScaledWallDecoration(
+        source, GrateD3SideWidth, GrateD3SideHeight,
+        WallOrnamentFarColorMap, "Grate S3 DOS 6-bit Side",
+        roundBiasOverride: 0, sampleTopDown: true);
     return cachedGrateSide3Texture;
   }
 
@@ -43637,7 +43746,17 @@ private static void HandleGameViewPointerDown(
     if (!useBuiltInManaclesFrontDistance)
     {
       if (hasGenericProjection)
-        ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+      {
+        if (TryGetOrnamentPlacementOffset(key,
+            out OrnamentPlacementOffsetEntry savedOffset))
+        {
+          x = defaultX + savedOffset.dx;
+          y = defaultY - savedOffset.dy;
+          mirror = savedOffset.mirror;
+        }
+        else
+          ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+      }
       ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
     }
     // Read-only manual diagnostics: record the exact coordinates after

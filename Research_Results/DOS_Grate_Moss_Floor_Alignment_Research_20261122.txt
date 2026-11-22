@@ -1,0 +1,40 @@
+DUNGEON MASTER PC DOS — Grate and Moss floor-alignment investigation
+Generated: 2026-11-22 17:11:41 CET
+STATUS: research only; Unity code and source assets are unchanged.
+
+SOURCES INSPECTED
+- Original GRAPHICS.DAT resource 696 bytes; source file DOS_Resource696.bin
+- Current Grate S2 source: Grate_S2_DOS_6bit_20261122.zip / ViewportLayoutEditor.cs
+- DosOrnamentLayout696.cs formula, previous Hook research, observed Grate constants.
+- Original recovered FIRES engine image is available, but no direct FIRES call trace identifying a Grate/Moss coordinate set was established by this audit.
+Resource SHA256: 2e14e0ff83bf72ecb1290db2976d24c571615822fccb489d003dcae08c674f9f
+Unity source SHA256 (UTF-8 decoded file): 8642140701bb96038ef44f0486954e5fb9fd40b14b7adeb6648abd777f6c584a
+
+CONFIRMED FINDINGS
+1) Resource 696 defines 23 ranges, including zones 1004..1138 with 15 perspective slots per coordinate set.
+2) Verified Hook S2 side uses coordinate set 0, DI=7 with center (71,45); Hook S3 uses set 0 DI=2 center (85,43).
+3) Other coordinate sets have much LOWER (larger-Y) side positions:
+   - set 2 DI=7 center (71,83); DI=2 center (85,68).
+   - set 6 DI=7 center (69,90); DI=2 center (79,75).
+   This proves the DOS data has multiple vertical bands; does NOT prove Grate or Moss uses set 2 or 6.
+4) Unity Grate S2 currently generates 10x12 from native Grate_S1_16x19.png using the shared 6-bit scaler,
+   but places it at fixed (left X=64, framebuffer Y=83), screen top=105.
+   Example candidate from resource set 2 DI=7: X=66, screen top=110, size=10x12, framebuffer Y=78.
+   Example candidate from resource set 6 DI=7: X=64, screen top=117, size=10x12, framebuffer Y=71.
+   These are ALTERNATIVES, not accepted placements. They differ by 5 and 12 screen pixels from Unity's current top.
+5) Unity Moss currently resolves floor ornaments via DungeonFeaturePlacements.json, not the wall ornament slot selector,
+   and uses fixed MossF1/F2/F3 ScreenTop values of 132,108,105. It is not safe to assume the Grate wall-ornament
+   mapping also applies to floor-placement Moss.
+6) Source comments document original DOS Grate S1 left at (X=47, framebuffer Y=63), 16x19; Grate S2 fixed provisional;
+   Grate S3 currently uses an older 4x4 artwork/placement path. These must remain separate until actual DOS evidence is obtained.
+
+NEEDED TO IDENTIFY THE CORRECT DOS MAPPING
+- Confirm Grate's source graphic index and coordinate-set selection in FIRES.EXE (or runtime trace).
+- Compare a native PC DOS Grate S2 screenshot at a known viewpoint, recording the full 10x12 bitmap rect,
+  not only the nontransparent pixel extents; check candidate sets 0,2,6 against its actual position.
+- Investigate Moss separately: it is a floor feature in Unity, not necessarily a wall ornament in DOS.
+- Only then replace provisional X/Y with a data-driven resource mapping; do not introduce per-ornament offsets.
+
+NO PRODUCTION CHANGE is justified yet. The new 6-bit bitmap scale is retained as-is.
+
+FULL CANDIDATE GEOMETRY CSV included for independent inspection.

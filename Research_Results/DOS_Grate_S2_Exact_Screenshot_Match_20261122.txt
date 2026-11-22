@@ -1,0 +1,44 @@
+DUNGEON MASTER PC DOS — GRATE S2 POSITION: REPRODUCIBLE SCREENSHOT MATCH
+Date: 2026-11-22 (Europe/Berlin)
+Status: DOS screenshot placement identified; FIRES coordinate-set dispatch NOT identified.
+
+INPUTS
+- Native source Grate_S1_16x19.png in Grate_S2_DOS_6bit_20261122.zip
+- PC DOS screenshot image(20261122-161336).png (224x136 viewport)
+- Unity screenshot image(20261122-161846).png (224x136 viewport)
+- Verified DOS shared 6-bit shrink: target 10x12, 6-bit half-step sample
+- Resource-696 placement candidates DOS_Grate_Side_Candidate_Rects_20261122.csv
+
+PIXEL-PATTERN RESULT
+- Grate S2 source 16x19 shrunk to 10x12.
+- Of 10x12 destination pixels, 22 sample the brown source pixels.
+- In the DOS screenshot, all 22 predicted brown samples match exactly if
+  the full scaled bitmap rectangle starts at viewport X=66, Y=72.
+  No additional brown source pixels are missing, and no screenshot brown pixels
+  inside the 10x12 rectangle are unexplained.
+- In the Unity screenshot, same pattern is at X=64,Y=72.
+- Thus DOS-vs-Unity shift in the supplied captures: X+2, Y+0.
+- The user described Y+2, but the supplied screenshots support X+2 instead;
+  verify desired correction before modifying production code.
+
+FIRES/RESOURCE-696 STATUS
+- DI=7 S2-left set0..set8 candidate top Ys: 39,48,77,52,38,40,84,32,56.
+- None yields the observed full-bitmap top Y=72.
+- Some S2 candidate X values equal 66, but none is an exact X/Y match.
+- Consequently, assigning Grate to set 2 or set 6 is NOT justified.
+- Possible causes: another positioning path, additional offsets, differing
+  perspective index, or extra composition logic in FIRES. Not determined.
+- Exact selection in the original FIRES executable remains UNPROVEN.
+
+CORRECTION TO PRIOR RESEARCH REPORT
+- For framebuffer Y=83 and height=12, viewport top must be
+  200 - 33 - 83 - 12 = 72, NOT 105.
+- Do not propagate the old erroneous top=105 or its 5px/12px comparison.
+
+S3
+- No PC DOS/Unity Grate S3 matching screenshots are available in the verified
+  materials used here. Cannot identify the exact S3 placement by analogy.
+- Need a Grate S3 DOS screenshot at a known viewpoint or a verified runtime
+  trace of the Grate coordinate-set selection.
+
+No production code changed.
