@@ -4378,5 +4378,39 @@
   "zip_documentation_rule_20261122": {
     "date": "2026-11-22",
     "rule": "Include updated Progression.json in deliverable ZIPs to document changes, instead of standalone explanatory .txt files; ZIP root entries and recursive Europe/Berlin timestamps."
+  },
+  "hook_side_viewedit_mirror_consistency_20261122": {
+    "date": "2026-11-22 19:27:27 CET",
+    "status": "IMPLEMENTED — pending Unity compile and DOS/Unity regression checks",
+    "scope": "Assets/Editor/ViewportLayoutEditor.cs",
+    "finding": "ViewEdit Hook S2/S3 calibration defaults retained legacy mirror=isLeft although live Hook rendering uses mirror=!isLeft. This caused left S3 Mirror checkbox enabled at Level 0 (10,9) East despite correct rendered pixels.",
+    "change": [
+      "Hook S2/S3 ViewEdit defaults now use mirror=!isLeft, like S1.",
+      "For Hook S1/S2/S3, ViewEdit Mirror state reflects renderer-authoritative wall side, ignoring historical mirror calibration and temporary mirror overrides; checkbox is read-only.",
+      "Hook S1/S2/S3 renderer enforces default wall-side mirroring after saved placement overrides, preserving X/Y calibration.",
+      "No DOS scaling, bitmap position, Grate, other ornaments, or V17 walls changed."
+    ],
+    "test": [
+      "Level 0 (10,9) East: Hook S3 left side should show Mirror unchecked and visually unchanged.",
+      "Level 0 (15,9) West: Hook right side should show Mirror checked and visually mirrored.",
+      "Verify Hook S1/S2 left/right checks and X/Y Apply persistence."
+    ],
+    "rules": "Left Hook sides S1/S2/S3: unmirrored; right sides: mirrored; applied globally independent of facing and map coordinates."
+  },
+  "hook_side_legacy_mirror_cleanup_20261122": {
+    "date": "2026-11-22",
+    "scope": "Assets/Editor/ViewportLayoutEditor.cs; Assets/Editor/Progression.json",
+    "purpose": "ViewEdit Hook S1/S2/S3 Mirror reflects the physically rendered side. Left is not mirrored; right is mirrored. Legacy mirror overrides are ignored, rather than retained as authoritative.",
+    "changes": [
+      "UI derives Hook side from ornament wall face and wallTilePlacement using player-relative facing",
+      "Hook Apply writes side-derived mirror value, while retaining X/Y offset values",
+      "Old in-memory Hook mirror override is cleared; active Hook rendering/scaling and V17 walls unchanged"
+    ],
+    "saved_calibration_audit": "Previously supplied OrnamentCalibration.json contains no Hook records; no other ornament entries were removed. Future existing Hook mirror values are ignored for rendering/UI, while XY remains usable.",
+    "test_views": [
+      "Level 0 (10,9) East: Hook S3 left Mirror unchecked, rendered graphic unchanged",
+      "Level 0 (15,9) West: Hook S3 right Mirror checked, rendered graphic unchanged",
+      "Unity compile and ViewEdit persistence still to be verified"
+    ]
   }
 }

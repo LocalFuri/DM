@@ -27205,14 +27205,14 @@ private static void HandleGameViewPointerDown(
       }
       if (sideDepth == 2)
       {
-        renderMirror = isLeft;
+        renderMirror = !isLeft;
         renderX = isLeft ? HookD2SideLeftX : HookD2SideRightX;
         renderY = HookD2SideY;
         return true;
       }
       if (sideDepth == 3)
       {
-        renderMirror = isLeft;
+        renderMirror = !isLeft;
         renderX = isLeft ? HookD3SideLeftX : HookD3SideRightX;
         renderY = HookD3SideY;
         return true;
@@ -27903,6 +27903,30 @@ private static void HandleGameViewPointerDown(
     int y = defaultY;
     bool mirror = defaultMirror;
     ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+    // Hook side orientation is defined by the wall side, not by legacy
+    // accepted/calibrated mirror flags. The UI must show the live blitter.
+    bool fixedHookSideMirror = IsHookOrnament(ornament)
+        && hasGenericProjection
+        && (projectionSuffix == " / S1"
+            || projectionSuffix == " / S2"
+            || projectionSuffix == " / S3"
+            || projectionSuffix == " / S2 Left");
+    if (fixedHookSideMirror)
+    {
+      // The physical wall side determines the Hook orientation. Wall-tile
+      // placements name the face pointing inward; corridor-boundary
+      // placements name the boundary pointing outward (opposite directions).
+      // Ignore previously accepted mirror values, preserving X/Y calibration.
+      string rightHookWallFace = FacingName(
+          ornament.wallTilePlacement
+              ? TurnPreviewFacingLeft(previewFacing)
+              : TurnPreviewFacingRight(previewFacing));
+      bool hookRightSide = string.Equals(ornament.wall,
+          rightHookWallFace, System.StringComparison.OrdinalIgnoreCase);
+      defaultMirror = hookRightSide;
+      mirror = hookRightSide;
+      previewFeatureMirrorOverrides.Remove(key);
+    }
 
     if (!string.IsNullOrEmpty(projectionSuffix)
         && !(IsGrateOrnament(ornament) && displayName != null && displayName.StartsWith("Grate F1 ", System.StringComparison.Ordinal))
@@ -28047,6 +28071,12 @@ private static void HandleGameViewPointerDown(
       using (new EditorGUI.DisabledScope(true))
         EditorGUILayout.ToggleLeft("Mirror", false, GUILayout.Width(56f));
     }
+    else if (fixedHookSideMirror)
+    {
+      // Read-only for Hook sides: left = off, right = on.
+      using (new EditorGUI.DisabledScope(true))
+        EditorGUILayout.ToggleLeft("Mirror", mirror, GUILayout.Width(56f));
+    }
     else
     {
       editMirror = EditorGUILayout.ToggleLeft(
@@ -28086,7 +28116,8 @@ private static void HandleGameViewPointerDown(
       // The new JSON offset supersedes any older absolute reference, but the
       // legacy reference is left intact for other rendering paths.
       if (SaveOrnamentPlacementOffset(
-          key, editX - codedX, codedY - editY, editMirror))
+          key, editX - codedX, codedY - editY,
+          fixedHookSideMirror ? defaultMirror : editMirror))
       {
         previewFeaturePositionOverrides.Remove(key);
         previewFeatureMirrorOverrides.Remove(key);
@@ -43874,10 +43905,12 @@ private static void HandleGameViewPointerDown(
         ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
       }
     }
-    // Hook S2/S3 must follow the same left/right mirror rule as S1.
+    // Hook S1/S2/S3 all follow the wall-side mirror rule.
     // Preserve accepted X/Y offsets while ignoring legacy mirror overrides.
     if (IsHookOrnament(ornament)
-        && (string.Equals(key, "OrnamentProjection:Hook:S2",
+        && (string.Equals(key, "OrnamentProjection:Hook:S1",
+                System.StringComparison.Ordinal)
+            || string.Equals(key, "OrnamentProjection:Hook:S2",
                 System.StringComparison.Ordinal)
             || string.Equals(key, "OrnamentProjection:Hook:S2:Left",
                 System.StringComparison.Ordinal)
