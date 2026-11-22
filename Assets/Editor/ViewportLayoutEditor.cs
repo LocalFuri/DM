@@ -24856,9 +24856,9 @@ private static void HandleGameViewPointerDown(
     string label = mirror.champion.ToUpperInvariant() + " - LeftF3"
         + " - (" + mirror.x + "," + mirror.y + " " + ShortDirectionLabel(mirror.wall) + ")";
     GUILayout.Label(label, style,
-        GUILayout.Width(GetViewEditYellowCaptionWidth(style, label)));
+        GUILayout.Width(Mathf.Ceil(style.CalcSize(new GUIContent(label)).x) + 6f));
     bool active = manualChampionLeftF3Preview;
-    bool selected = DrawViewEditYellowSet(active);
+    bool selected = EditorGUILayout.ToggleLeft("Set", active, GUILayout.Width(55f));
     int editX = x, editY = y;
     bool changeX = DrawIntStepperInline("X", ref editX, snap,
         x != savedX, true, 24f, ViewEditCoordinateInputWidth);
@@ -25192,9 +25192,10 @@ private static void HandleGameViewPointerDown(
             + (left ? "Left" : "Right") + " F3 (" + m.x + ","
             + m.y + " " + ShortDirectionLabel(m.wall) + ")";
         GUILayout.Label(label, featureStyle,
-            GUILayout.Width(GetViewEditYellowCaptionWidth(featureStyle, label)));
+            GUILayout.Width(Mathf.Ceil(featureStyle.CalcSize(new GUIContent(label)).x) + 6f));
         bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
-        bool nowEnabled = DrawViewEditYellowSet(wasEnabled);
+        bool nowEnabled = EditorGUILayout.ToggleLeft("Set", wasEnabled,
+            GUILayout.Width(55f));
         bool changedX = DrawIntStepperInline("X", ref editX, snap,
             x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
         bool changedY = DrawIntStepperInline("Y", ref editY, snap,
@@ -27352,20 +27353,25 @@ private static void HandleGameViewPointerDown(
   // The currently displayed item rows share one caption column. Recompute
   // when the map pose changes; never pin it to a particular item (Waterskin).
   private float viewEditItemCaptionMaxWidth;
+  private float viewEditYellowNameMaxWidth;
   private int viewEditItemCaptionPoseX = int.MinValue;
   private int viewEditItemCaptionPoseY = int.MinValue;
+  private int viewEditItemCaptionPoseLevel = int.MinValue;
   private DungeonFacing viewEditItemCaptionPoseFacing;
 
   private float GetViewEditItemCaptionWidth(GUIStyle style, string caption)
   {
     if (viewEditItemCaptionPoseX != previewX
         || viewEditItemCaptionPoseY != previewY
+        || viewEditItemCaptionPoseLevel != previewDungeonLevel
         || viewEditItemCaptionPoseFacing != previewFacing)
     {
       viewEditItemCaptionPoseX = previewX;
       viewEditItemCaptionPoseY = previewY;
+      viewEditItemCaptionPoseLevel = previewDungeonLevel;
       viewEditItemCaptionPoseFacing = previewFacing;
       viewEditItemCaptionMaxWidth = 0f;
+      viewEditYellowNameMaxWidth = 0f;
     }
 
     float measured = style.CalcSize(new GUIContent(caption ?? string.Empty)).x + 4f;
@@ -27379,34 +27385,136 @@ private static void HandleGameViewPointerDown(
     return viewEditItemCaptionMaxWidth;
   }
 
-  // One compact, dynamically measured caption column for currently visible
-  // yellow ornament AND champion rows. Measure on the Layout event, then
-  // render all rows using the same value. Recompute every GUI layout so a
-  // change of map, facing, visibility or champion name can shrink the column.
-  private float viewEditYellowCaptionWidth = 0f;
-  private float viewEditYellowObservedWidth = 0f;
-  private const float ViewEditYellowSetColumnWidth = 55f;
-
-  private float GetViewEditYellowCaptionWidth(GUIStyle style, string caption)
+  // Yellow champion and ornament captions use a shared NAME column.
+  // Only the longest currently visible name determines where the first
+  // separator begins. Keep the whole caption in the existing dynamic width
+  // column so Set / X / Y / Apply remain aligned and compact.
+  private bool DrawViewEditAlignedYellowCaption(
+      GUIStyle style, string caption, bool clickable)
   {
-    float measured = Mathf.Ceil(style.CalcSize(
-        new GUIContent(caption ?? string.Empty)).x) + 6f;
-    if (Event.current.type == EventType.Layout)
-      viewEditYellowObservedWidth = Mathf.Max(viewEditYellowObservedWidth, measured);
-    // The same cached width is used by every row in this GUI pass.
-    // A newly visible longer caption is incorporated at the next layout.
-    return Mathf.Max(viewEditYellowCaptionWidth, measured);
+    System.Text.RegularExpressions.Match parts =
+        System.Text.RegularExpressions.Regex.Match(caption ?? string.Empty,
+            @"^(?<name>.+?) - (?<depth>[FS][123][LR]?) - (?<pos>\d+,\d+ [NSEW])$",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    if (!parts.Success)
+    {
+      float fallbackWidth = GetViewEditItemCaptionWidth(style, caption);
+      if (clickable)
+        return GUILayout.Button(caption, style, GUILayout.Width(fallbackWidth));
+      GUILayout.Label(caption, style, GUILayout.Width(fallbackWidth));
+      return false;
+    }
+
+    // GetViewEditItemCaptionWidth also resets cached sizes when the pose
+    // changes. One repaint resolves rows that preceded a newly-longest name.
+    GetViewEditItemCaptionWidth(style, caption);
+    string name = parts.Groups["name"].Value;
+    string depth = parts.Groups["depth"].Value;
+    string position = parts.Groups["pos"].Value;
+    float nameWidth = style.CalcSize(new GUIContent(name)).x;
+    if (nameWidth > viewEditYellowNameMaxWidth)
+    {
+      viewEditYellowNameMaxWidth = nameWidth;
+      Repaint();
+    }
+    float separatorWidth = style.CalcSize(new GUIContent(" - ")).x;
+    float depthWidth = style.CalcSize(new GUIContent("S3R")).x;
+    float positionWidth = style.CalcSize(new GUIContent(position)).x;
+    float desiredWidth = viewEditYellowNameMaxWidth + separatorWidth
+        + depthWidth + separatorWidth + positionWidth + 4f;
+    if (desiredWidth > viewEditItemCaptionMaxWidth)
+    {
+      viewEditItemCaptionMaxWidth = desiredWidth;
+      Repaint();
+    }
+    float columnWidth = viewEditItemCaptionMaxWidth;
+    Rect bounds = GUILayoutUtility.GetRect(columnWidth,
+        EditorGUIUtility.singleLineHeight, GUILayout.Width(columnWidth));
+    bool clicked = clickable && GUI.Button(bounds, GUIContent.none, GUIStyle.none);
+    float x = bounds.x;
+    GUI.Label(new Rect(x, bounds.y, viewEditYellowNameMaxWidth, bounds.height), name, style);
+    x += viewEditYellowNameMaxWidth;
+    GUI.Label(new Rect(x, bounds.y, separatorWidth, bounds.height), " - ", style);
+    x += separatorWidth;
+    GUI.Label(new Rect(x, bounds.y, depthWidth, bounds.height), depth, style);
+    x += depthWidth;
+    GUI.Label(new Rect(x, bounds.y, separatorWidth, bounds.height), " - ", style);
+    x += separatorWidth;
+    GUI.Label(new Rect(x, bounds.y, positionWidth + 4f, bounds.height), position, style);
+    return clicked;
   }
 
-  private static bool DrawViewEditYellowSet(bool before)
+  // Presentation only. Keep ornament keys, source names and calibration
+  // geometry unchanged; labels follow NAME - DEPTH SIDE - X,Y DIRECTION.
+  private string FormatViewEditOrnamentCaption(
+      WallOrnamentPlacement ornament, string displayName,
+      string projectionSuffix, int codedX)
   {
-    // Match the champion and ordinary ornament Set-column widths exactly.
-    // Keep the original mouse-only ornament toggle and its green tick.
-    GUILayout.BeginHorizontal(GUILayout.Width(ViewEditYellowSetColumnWidth));
-    bool after = DrawCompactMouseOnlyToggle("Set", before, false);
-    GUILayout.FlexibleSpace();
-    GUILayout.EndHorizontal();
-    return after;
+    if (ornament == null || string.IsNullOrEmpty(displayName))
+      return displayName ?? string.Empty;
+
+    // Some visible Hook/Grate paths do not supply a separate generic
+    // projection suffix. Their old caption already contains / S2 or / S3.
+    // This is display formatting only; never change projection or save keys.
+    string slot = projectionSuffix ?? string.Empty;
+    if (string.IsNullOrWhiteSpace(slot))
+    {
+      System.Text.RegularExpressions.Match embeddedSlot =
+          System.Text.RegularExpressions.Regex.Match(displayName,
+              @"/\s*(?<slot>[FS][123](?:\s*(?:Left|Right))?|F[23]SideCorner)\b",
+              System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+      if (embeddedSlot.Success)
+        slot = embeddedSlot.Groups["slot"].Value;
+      else
+      {
+        System.Text.RegularExpressions.Match sideName =
+            System.Text.RegularExpressions.Regex.Match(displayName,
+                @"\b(?<kind>Side|Front)\s*(?<depth>[123])\b",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (sideName.Success)
+          slot = (sideName.Groups["kind"].Value.Equals("Side",
+              System.StringComparison.OrdinalIgnoreCase) ? "S" : "F")
+              + sideName.Groups["depth"].Value;
+      }
+    }
+
+    System.Text.RegularExpressions.Match depthMatch =
+        System.Text.RegularExpressions.Regex.Match(slot, @"[FS][123]",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    if (!depthMatch.Success)
+      return displayName;
+    string depth = depthMatch.Value.ToUpperInvariant();
+
+    // Raw placement labels use [x,y] (N), while some diagnostic labels
+    // already use x,y N. Accept both before building the aligned caption.
+    System.Text.RegularExpressions.Match position =
+        System.Text.RegularExpressions.Regex.Match(displayName,
+            @"\[?(?<x>\d+)\s*,\s*(?<y>\d+)\]?\s*\(?(?<face>[NSEW])\)?(?=\s|/|$)",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    if (!position.Success)
+      return displayName;
+
+    string side = string.Empty;
+    if (depth[0] == 'S')
+    {
+      // Screen side is independent of bitmap mirroring and saved flags.
+      bool isRight = slot.IndexOf("Right",
+              System.StringComparison.OrdinalIgnoreCase) >= 0
+          || (slot.IndexOf("Left", System.StringComparison.OrdinalIgnoreCase) < 0
+              && codedX >= DungeonViewportWidth / 2);
+      side = isRight ? "R" : "L";
+    }
+
+    string name = IsGrateOrnament(ornament) ? "Grate"
+        : IsHookOrnament(ornament) ? "Hook"
+        : IsManaclesOrnament(ornament) ? "Manacles"
+        : IsWoodRingOrnament(ornament) ? "WoodRing"
+        : IsSlimeOrnament(ornament) ? "Slime"
+        : IsViAltarOrnament(ornament) ? "Vi Altar"
+        : displayName;
+    return name + " - " + depth + side + " - "
+        + position.Groups["x"].Value + "," + position.Groups["y"].Value
+        + " " + position.Groups["face"].Value.ToUpperInvariant();
   }
 
   // Diagnostic only: click an ornament caption to inspect its actual bitmap
@@ -27892,18 +28000,31 @@ private static void HandleGameViewPointerDown(
     featureStyle.normal.textColor = Color.yellow;
     featureStyle.hover.textColor = Color.yellow;
     featureStyle.focused.textColor = Color.yellow;
+    // Keep every ornament row aligned, but make the caption column only as
+    // wide as the longest normal ornament label instead of leaving a large gap.
+    float ornamentCaptionColumnWidth =
+        featureStyle.CalcSize(
+            new GUIContent("WoodRing [1,17] (S) / S1")).x;
+    // Grate captions use their own exact width: no blank column after short
+    // labels, while longer perspective labels still remain fully readable.
+    if (IsGrateOrnament(ornament))
+      ornamentCaptionColumnWidth =
+          featureStyle.CalcSize(new GUIContent(displayName)).x + 6f;
     // Presentation only: remove coordinate/direction brackets from the row.
     // Keep the stored name, keys and V17 ornament placement unchanged.
-    string compactDisplayName = System.Text.RegularExpressions.Regex.Replace(
-        displayName ?? string.Empty, @"\[(.*?)\]", "$1");
+    string compactDisplayName = FormatViewEditOrnamentCaption(
+        ornament, displayName, projectionSuffix, codedX);
+    // Other, non-projection rows retain their previous compact caption.
+    compactDisplayName = System.Text.RegularExpressions.Regex.Replace(
+        compactDisplayName, @"\[(.*?)\]", "$1");
     compactDisplayName = System.Text.RegularExpressions.Regex.Replace(
         compactDisplayName, @"\((N|S|E|W)\)", "$1");
-    float ornamentCaptionColumnWidth =
-        GetViewEditYellowCaptionWidth(featureStyle, compactDisplayName);
+    ornamentCaptionColumnWidth =
+        GetViewEditItemCaptionWidth(featureStyle, compactDisplayName);
     // Label-sized button: clicking the yellow ornament name selects the
     // actual generated bitmap; editing controls keep their existing behavior.
-    if (GUILayout.Button(compactDisplayName, featureStyle,
-        GUILayout.Width(ornamentCaptionColumnWidth)))
+    if (DrawViewEditAlignedYellowCaption(featureStyle,
+        compactDisplayName, true))
     {
       selectedOrnamentInspectorKey = key;
       selectedOrnamentInspectorCaption = compactDisplayName;
@@ -27918,7 +28039,7 @@ private static void HandleGameViewPointerDown(
       string altarVisibilityKey = MakePreviewFeatureKey(
           "Ornament", ornament.x, ornament.y, ornament.wall);
       bool wasEnabled = IsPreviewFeatureEnabled(altarVisibilityKey);
-      bool nowEnabled = DrawViewEditYellowSet(wasEnabled);
+      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
       if (nowEnabled != wasEnabled)
       {
         SetPreviewFeatureEnabled(altarVisibilityKey, nowEnabled);
@@ -27936,7 +28057,7 @@ private static void HandleGameViewPointerDown(
       string holderVisibilityKey = MakePreviewFeatureKey(
           "Ornament", ornament.x, ornament.y, ornament.wall);
       bool wasEnabled = IsPreviewFeatureEnabled(holderVisibilityKey);
-      bool nowEnabled = DrawViewEditYellowSet(wasEnabled);
+      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
       if (nowEnabled != wasEnabled)
       {
         SetPreviewFeatureEnabled(holderVisibilityKey, nowEnabled);
@@ -27952,7 +28073,7 @@ private static void HandleGameViewPointerDown(
       string hookVisibilityKey = MakePreviewFeatureKey(
           "Ornament", ornament.x, ornament.y, ornament.wall);
       bool wasEnabled = IsPreviewFeatureEnabled(hookVisibilityKey);
-      bool nowEnabled = DrawViewEditYellowSet(wasEnabled);
+      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
       if (nowEnabled != wasEnabled)
       {
         SetPreviewFeatureEnabled(hookVisibilityKey, nowEnabled);
@@ -27969,7 +28090,7 @@ private static void HandleGameViewPointerDown(
       string grateVisibilityKey = MakePreviewFeatureKey(
           "Ornament", ornament.x, ornament.y, ornament.wall);
       bool wasEnabled = IsPreviewFeatureEnabled(grateVisibilityKey);
-      bool nowEnabled = DrawViewEditYellowSet(wasEnabled);
+      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
       if (nowEnabled != wasEnabled)
       {
         SetPreviewFeatureEnabled(grateVisibilityKey, nowEnabled);
@@ -29549,14 +29670,14 @@ private static void HandleGameViewPointerDown(
       int viewingY = champion.hasViewingFloor ? champion.viewingFloorY : champion.y - fy;
       string viewingDirection = ShortDirectionLabel(FacingName(previewFacing));
       string frontLabel = champion.champion.ToUpperInvariant() + " - F" + depth
-          + " - (" + viewingX + "," + viewingY + " " + viewingDirection + ")";
+          + " - " + viewingX + "," + viewingY + " " + viewingDirection;
       // Align champion calibration controls with the floor-item (sword) row.
       // Long labels can expand rather than being truncated.
-      GUILayout.Label(frontLabel, featureStyle,
-          GUILayout.Width(GetViewEditYellowCaptionWidth(featureStyle, frontLabel)));
+      DrawViewEditAlignedYellowCaption(featureStyle, frontLabel, false);
 
       bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
-      bool nowEnabled = DrawViewEditYellowSet(wasEnabled);
+      // Match every yellow ornament row: Set caption first, then checkbox.
+      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
 
       EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
       int editX = x;
@@ -29724,12 +29845,12 @@ private static void HandleGameViewPointerDown(
         EditorGUILayout.BeginHorizontal();
         float oldLabelWidth = EditorGUIUtility.labelWidth;
         string sideLabel = visible.champion.ToUpperInvariant() + " - S" + depth
-            + (left ? " Left" : " Right") + " - (" + viewingX + ","
-            + viewingY + " " + viewingDirection + ")";
-        GUILayout.Label(sideLabel, featureStyle,
-            GUILayout.Width(GetViewEditYellowCaptionWidth(featureStyle, sideLabel)));
+            + (left ? "L" : "R") + " - " + viewingX + ","
+            + viewingY + " " + viewingDirection;
+        DrawViewEditAlignedYellowCaption(featureStyle, sideLabel, false);
         bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
-        bool nowEnabled = DrawViewEditYellowSet(wasEnabled);
+        // Share the same compact Set column as every other yellow row.
+        bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
         EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
         int editX = x;
         bool xChanged = DrawIntStepperInline(
@@ -30206,8 +30327,6 @@ private static void HandleGameViewPointerDown(
 
   private void DrawCurrentPoseFeatureRows()
   {
-    if (Event.current.type == EventType.Layout)
-      viewEditYellowObservedWidth = 0f;
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null)
       return;
@@ -30787,13 +30906,6 @@ private static void HandleGameViewPointerDown(
       DrawStairsDownS1LeftCalibrationRow(leftStairsX, leftStairsY);
 
     // Timing is a global editor setting, so display it after every feature row.
-    if (Event.current.type == EventType.Layout
-        && Mathf.Abs(viewEditYellowCaptionWidth - viewEditYellowObservedWidth) > 0.5f)
-    {
-      viewEditYellowCaptionWidth = viewEditYellowObservedWidth;
-      Repaint();
-    }
-
   }
 
   // Same-tile right-side down-stairs detail. Detection matches its ViewEdit row.

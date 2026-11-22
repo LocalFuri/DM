@@ -4634,20 +4634,111 @@
       "Mini-map toggle for clicks outside cyan rectangle"
     ]
   },
-  "viewedit_dynamic_yellow_calibration_columns_20261122": {
-    "date": "2026-11-22",
-    "scope": "ViewportLayoutEditor.cs ViewEdit presentation only",
-    "change": "Unified yellow Champion and ordinary wall-ornament caption widths and Set columns. Visible caption maximum is recalculated every GUI Layout event, adapting when map/facing/visible ornaments change. X, Y and Apply align by using consistent shared columns.",
-    "unchanged": [
-      "DOS 6-bit scaling",
-      "ornament artwork and X/Y Apply behavior",
-      "global ornament offsets",
-      "V17 wall rendering",
-      "cyan preview and clipboard/sound",
-      "wall-piece Mirror controls"
+  "viewedit_ornament_caption_format_20261122": {
+    "date_local": "2026-11-22",
+    "status": "implemented; Unity compilation and UI check pending",
+    "scope": "Assets/Editor/ViewportLayoutEditor.cs; presentation-only ordinary ornament and Champion front/side calibration row captions",
+    "format": "NAME - S3 R - 12,9 N (depth and optional L/R follow name; position last without parentheses)",
+    "details": [
+      "Preserve original projection keys and all geometry; source displayName remains untouched",
+      "Recalculate shared caption width when player position, facing OR dungeon level changes",
+      "Keep Set/X/Y/Apply aligned across normal ornament and Champion front/side rows",
+      "Ornament inspector keeps the compact displayed title"
     ],
-    "test_status": "Source patched and inspected; Unity compilation and alignment require user verification",
-    "source_base_sha256": "4b32094c08c429c040104d4f61b41316bc70eddec71dcbdb4b2e9c90cdaf8cc7",
-    "next_check": "Verify 11,9 East (LINFLAS S1, Hook S2, Grate S2), then turn/change map and verify column resizes to the new longest yellow caption."
+    "preserved": [
+      "V17 wall geometry",
+      "DOS 6-bit renderer",
+      "ornament X/Y calibration and Apply",
+      "hero mirroring",
+      "cyan preview, clipboard and Click06.wav"
+    ],
+    "files": [
+      "ViewportLayoutEditor.cs",
+      "Progression.json"
+    ]
+  },
+  "viewedit_aligned_name_separator_caption_20261122": {
+    "date_local": "2026-11-22",
+    "status": "implemented in source; Unity compilation and dynamic alignment awaiting verification",
+    "scope": "Assets/Editor/ViewportLayoutEditor.cs — yellow Champion and ordinary ornament captions only",
+    "format": "NAME - S3R - 12,9 N (example); NAME - S2L - 13,9 N; F1/F2/F3 without side",
+    "behavior": [
+      "For the currently visible yellow Champion/ornament rows, the longest NAME determines the horizontal starting position of the first hyphen.",
+      "Place depth and optional side in a consistent-width column, then a second hyphen, then coordinate and facing.",
+      "Share the existing dynamic maximum caption width so Set/X/Y/Apply stay aligned.",
+      "Recalculate on player position, direction and dungeon-level changes; repaint if a newly encountered row expands the name column.",
+      "Yellow caption clicks still select the existing cyan bitmap inspector."
+    ],
+    "preserved": [
+      "V17 walls",
+      "DOS 6-bit ornament scaling",
+      "Hook/Grate/Manacles rendering",
+      "Global X/Y Apply calibration",
+      "Champion rendering",
+      "Cyan preview mouse actions, clipboard and Click06.wav"
+    ],
+    "files": [
+      "ViewportLayoutEditor.cs",
+      "Progression.json"
+    ]
+  },
+  "viewedit_yellow_set_column_alignment_20261122": {
+    "date": "2026-11-22",
+    "scope": "Assets/Editor/ViewportLayoutEditor.cs; ViewEdit yellow Champion and ornament rows",
+    "change": "Champion front and side calibration rows now use DrawCompactMouseOnlyToggle(\"Set\", ...) just like ordinary yellow ornament rows, so Set caption, checkbox, X, Y and Apply align under the dynamic longest-caption width.",
+    "reason": "Champion rows used EditorGUILayout.ToggleLeft, rendering [checkbox] Set with 55px width, whereas ornament rows used Set [checkbox] compact control.",
+    "preserved": [
+      "existing dynamic NAME - DEPTH - POSITION columns",
+      "existing Champion visibility keys and enabled state",
+      "X/Y/Apply calibration",
+      "DOS renderer and scaling",
+      "V17 walls",
+      "cyan preview and sounds"
+    ],
+    "unity_compile": "not tested; confirm in Unity",
+    "regression_tests": [
+      "Check LINFLAS, Hook and Grate together at current ViewEdit pose; Set/X/Y/Apply columns align",
+      "Turn and change level; shared caption width recalculates",
+      "Confirm Set toggles still work for Champions and ornaments"
+    ]
+  },
+  "viewedit_ornament_caption_fallback_alignment_20261122": {
+    "date": "2026-11-22",
+    "scope": "ViewEdit yellow ornament caption formatting only, ViewportLayoutEditor.cs",
+    "finding": "Hook and Grate rows can have a visible / S2 or / S3 suffix while the generic projection suffix is null. Earlier caption formatter returned the legacy caption instead of aligned NAME - S2R - POSITION.",
+    "change": "Parse depth/side from the existing yellow caption when a separate projection suffix is unavailable; preserve shared name-column/hyphen alignment and Set/X/Y/Apply layout.",
+    "expected_examples": [
+      "LINFLAS - S3R - 12,9 N",
+      "Hook - S2R - 13,9 N",
+      "Grate - S2L - 15,9 W"
+    ],
+    "preserved": [
+      "DOS 6-bit scaling",
+      "V17 wall rendering",
+      "calibration and Apply",
+      "mirror rules",
+      "cyan preview and sound"
+    ],
+    "unity_compile": "pending user test"
+  },
+  "viewedit_caption_raw_coordinates_parse_fix_20261122": {
+    "date": "2026-11-22",
+    "purpose": "Correct ViewEdit ornament name/depth/position caption formatting without changing renderer or calibration",
+    "finding": "Actual Hook/Grate source labels contain [x,y] (N) or [x,y] (W). The formatter only parsed unbracketed x,y N, returning legacy captions unchanged.",
+    "change": "Accept both bracketed coordinates with parenthesized facing and simple x,y N format in the same formatter. Keep shared aligned name/first hyphen and Set/X/Y/Apply columns.",
+    "expected_labels": [
+      "LINFLAS - S3R - 12,9 N",
+      "Hook - S2R - 13,9 N",
+      "Grate - S2L - 15,9 W"
+    ],
+    "preserved": [
+      "DOS renderer",
+      "V17 walls",
+      "ornament identity and calibration keys",
+      "mirroring",
+      "global X/Y offsets",
+      "cyan preview and Click06"
+    ],
+    "unity_compile": "not verified; user test required"
   }
 }
