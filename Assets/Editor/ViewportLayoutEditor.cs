@@ -18538,10 +18538,7 @@ private static void HandleGameViewPointerDown(
   private static string s_v17ActualLeftS3PaintLog;
   private static string s_v17LeftEdgeSelectionLog;
   private static string s_v17LeftEdgeBlitLog;
-  private static string s_v17MagentaRightS3RuleLog;
-  private static string s_v17MagentaLeftS3RuleLog;
-  private static string s_v17MagentaRightS3OuterDecisionLog;
-  private static string s_v17MagentaLeftS3OuterDecisionLog;
+  private static string s_v17S3ShortConsoleKey;
 
   private void ApplyViewport17LiveDrawToResolvedWalls()
   {
@@ -18556,97 +18553,20 @@ private static void HandleGameViewPointerDown(
     List<Viewport17RenderCommand> finalCommands =
         BuildViewport17FinalDrawCommands(inspection);
 
-    // Report the exact deciding tile for the D3 right-lane-end rule even
-    // when it is suppressed. This records real map coordinates and state,
-    // rather than assuming every coordinate outside the old map is a wall.
-    // No rendering state is changed by this diagnostic.
-    if (IsViewport17RightS3LaneEndCore(inspection))
+    // Log only the selected S3 piece(s), once per changed view/selection.
+    // Do not log suppressed geometry, tile details, or legacy rule names.
+    bool leftS3Selected = HasViewport17FinalFamily(finalCommands, "LeftS3");
+    bool rightS3Selected = HasViewport17FinalFamily(finalCommands, "RightS3");
+    string s3ConsoleKey = previewDungeonLevel + ":" + previewX + ":"
+        + previewY + ":" + previewFacing + ":"
+        + leftS3Selected + ":" + rightS3Selected;
+    if (s_v17S3ShortConsoleKey != s3ConsoleKey)
     {
-      bool outerSolid = IsViewport17RightS3OuterSideSolid(inspection);
-      Viewport17Cell outer = FindViewport17Cell(inspection.Cells, 2, 2);
-      string outerKey = previewDungeonLevel + ":" + previewX + ":"
-          + previewY + ":" + previewFacing + ":" + outer.MapX
-          + ":" + outer.MapY + ":" + outer.State + ":" + outerSolid;
-      if (s_v17MagentaRightS3OuterDecisionLog != outerKey)
-      {
-        s_v17MagentaRightS3OuterDecisionLog = outerKey;
-        Debug.Log("<color=#FF00FF>MAGENTA | V17 RIGHT S3 OUTER TILE | "
-            + (outerSolid ? "ALLOW" : "SUPPRESS")
-            + " | Level " + previewDungeonLevel
-            + " (" + previewX + "," + previewY + ") " + previewFacing
-            + " | local=(+2,D2) map=(" + outer.MapX + ","
-            + outer.MapY + ") state=" + outer.State
-            + " | RightS3 lane-end "
-            + (outerSolid ? "eligible" : "disabled")
-            + " | sole S3 rule</color>");
-      }
-    }
-    else
-    {
-      s_v17MagentaRightS3OuterDecisionLog = null;
-    }
-
-    // Mirror of the RightS3 outer-tile diagnostic. It reports the actual
-    // D2 outer-left tile even when the new LeftS3 lane-end rule is suppressed.
-    if (IsViewport17LeftS3LaneEndCore(inspection))
-    {
-      bool outerSolid = IsViewport17LeftS3OuterSideSolid(inspection);
-      Viewport17Cell outer = FindViewport17Cell(inspection.Cells, -2, 2);
-      string outerKey = previewDungeonLevel + ":" + previewX + ":"
-          + previewY + ":" + previewFacing + ":" + outer.MapX
-          + ":" + outer.MapY + ":" + outer.State + ":" + outerSolid;
-      if (s_v17MagentaLeftS3OuterDecisionLog != outerKey)
-      {
-        s_v17MagentaLeftS3OuterDecisionLog = outerKey;
-        Debug.Log("<color=#FF00FF>MAGENTA | V17 LEFT S3 OUTER TILE | "
-            + (outerSolid ? "ALLOW" : "SUPPRESS")
-            + " | Level " + previewDungeonLevel
-            + " (" + previewX + "," + previewY + ") " + previewFacing
-            + " | local=(-2,D2) map=(" + outer.MapX + ","
-            + outer.MapY + ") state=" + outer.State
-            + " | LeftS3 lane-end "
-            + (outerSolid ? "eligible" : "disabled")
-            + " | sole S3 rule</color>");
-      }
-    }
-    else
-    {
-      s_v17MagentaLeftS3OuterDecisionLog = null;
-    }
-
-    // Diagnostic only: the geometry-driven RightS3 rule must be observable.
-    // Once per change of viewpoint/rule; no Console spam on repaint.
-    // Do not alter surface selection, geometry, or draw order here.
-    bool magentaRightS3LaneEnd = IsViewport17RightS3RightLaneEnd(inspection);
-    bool magentaRightS3Final =
-        HasViewport17FinalFamily(finalCommands, "RightS3");
-    if (magentaRightS3Final && magentaRightS3LaneEnd)
-    {
-      string magentaRule = "RIGHT S3 LANE END";
-      string magentaKey = previewDungeonLevel + ":" + previewX + ":"
-          + previewY + ":" + previewFacing + ":" + magentaRule;
-      if (s_v17MagentaRightS3RuleLog != magentaKey)
-      {
-        s_v17MagentaRightS3RuleLog = magentaKey;
-        Debug.Log("<color=#FF00FF>MAGENTA | V17 RULE | " + magentaRule
-            + " | Level " + previewDungeonLevel
-            + " (" + previewX + "," + previewY + ") "
-            + previewFacing
-            + " | RightS3 X=216 Y=57 W=8"
-            + " | Right D0/D1/D2 open="
-            + IsViewport17LaneOpenAt(inspection, 1, 0) + "/"
-            + IsViewport17LaneOpenAt(inspection, 1, 1) + "/"
-            + IsViewport17LaneOpenAt(inspection, 1, 2)
-            + " | Right D3 wall="
-            + IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3))
-            + " | Outer-right D2 wall="
-            + IsViewport17Solid(FindViewport17Cell(inspection.Cells, 2, 2))
-            + "</color>");
-      }
-    }
-    else
-    {
-      s_v17MagentaRightS3RuleLog = null;
+      s_v17S3ShortConsoleKey = s3ConsoleKey;
+      if (leftS3Selected)
+        Debug.Log("<color=#FF00FF>LeftS3</color>");
+      if (rightS3Selected)
+        Debug.Log("<color=#FF00FF>RightS3</color>");
     }
 
     // Use the same FINAL DRAW decisions as the native V17 blitters. ViewEdit
@@ -18805,50 +18725,6 @@ private static void HandleGameViewPointerDown(
         bool unusedLeftS3Enabled = leftS3Enabled;
         ApplyViewport17NativeManualControls(
             "LeftS3", ref unusedLeftS3Enabled, ref leftS3Mirror);
-        // Diagnostic only. Distinguish a selected V17 rule from a manual
-        // ViewEdit enable; never report a manual override as a geometry rule.
-        if (leftS3Enabled)
-        {
-          string leftS3Rule = null;
-          for (int commandIndex = 0; commandIndex < finalCommands.Count; commandIndex++)
-          {
-            if (finalCommands[commandIndex].PieceFamily == "LeftS3")
-            {
-              leftS3Rule = finalCommands[commandIndex].Projection;
-              break;
-            }
-          }
-          bool leftS3FromRule = !string.IsNullOrEmpty(leftS3Rule);
-          string leftS3Reason = leftS3FromRule
-              ? leftS3Rule
-              : "LEFT S3 MANUAL ENABLE (NO FINAL V17 RULE)";
-          string leftS3Key = previewDungeonLevel + ":" + previewX + ":"
-              + previewY + ":" + previewFacing + ":" + leftS3Reason;
-          if (s_v17MagentaLeftS3RuleLog != leftS3Key)
-          {
-            s_v17MagentaLeftS3RuleLog = leftS3Key;
-            Debug.Log("<color=#FF00FF>MAGENTA | V17 "
-                + (leftS3FromRule ? "RULE" : "MANUAL") + " | "
-                + leftS3Reason
-                + " | Level " + previewDungeonLevel
-                + " (" + previewX + "," + previewY + ") "
-                + previewFacing
-                + " | LeftS3 X=0 Y=57 W=8"
-                + " | Left D0/D1/D2 open="
-                + IsViewport17LaneOpenAt(inspection, -1, 0) + "/"
-                + IsViewport17LaneOpenAt(inspection, -1, 1) + "/"
-                + IsViewport17LaneOpenAt(inspection, -1, 2)
-                + " | Left D3 wall="
-                + IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
-                + " | Outer-left D2 wall="
-                + IsViewport17Solid(FindViewport17Cell(inspection.Cells, -2, 2))
-                + "</color>");
-          }
-        }
-        else
-        {
-          s_v17MagentaLeftS3RuleLog = null;
-        }
         // Apply stores actual LeftS3 X/Y/Mirror for this pose, not just Mirror.
         // The accepted position must reach the compositor as well as ViewEdit.
         int leftS3X = 0;
