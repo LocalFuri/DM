@@ -3146,6 +3146,28 @@ public class ViewportLayoutEditor : EditorWindow
   /// <summary>
   /// Right-clicking anywhere inside ViewEdit toggles the minimap on/off.
   /// </summary>
+  private bool HandleOrnamentPreviewRightClick()
+  {
+    Event current = Event.current;
+    if (current == null || current.type != EventType.MouseDown
+        || current.button != 1
+        || string.IsNullOrEmpty(selectedOrnamentInspectorKey)
+        || !ornamentInspectorPanelScreenRectValid)
+      return false;
+
+    Vector2 screenMouse = GUIUtility.GUIToScreenPoint(current.mousePosition);
+    if (!ornamentInspectorPanelScreenRect.Contains(screenMouse))
+      return false;
+
+    // Consume this specific right-click; all other right-clicks retain
+    // the standard ViewEdit minimap toggle.
+    current.Use();
+    selectedOrnamentInspectorKey = null;
+    ornamentInspectorPanelScreenRectValid = false;
+    Repaint();
+    return true;
+  }
+
   private bool HandleViewEditRightClick()
   {
     Event current = Event.current;
@@ -3179,6 +3201,11 @@ public class ViewportLayoutEditor : EditorWindow
           monitorHeight);
 
     if (HandleViewEditRearMouseButton())
+      return;
+
+    // The cyan ornament preview owns right-clicks inside its rectangle.
+    // Check BEFORE the window-wide minimap toggle consumes MouseDown.
+    if (HandleOrnamentPreviewRightClick())
       return;
 
     if (HandleViewEditRightClick())
@@ -24718,11 +24745,9 @@ private static void HandleGameViewPointerDown(
         y = HookD2SideY - (scaled.height - HookD2SideHeight) / 2;
       }
       bool flip = false;
-      ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
+      ApplyChampionMirrorPositionOnly(key, ref x, ref y);
       int defaultX = x;
       int defaultY = y;
-      bool defaultMirror = flip;
-      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
 
       EditorGUILayout.BeginHorizontal();
       string label = mirror.champion.ToUpperInvariant()
@@ -24738,8 +24763,6 @@ private static void HandleGameViewPointerDown(
           "X", ref editX, snap, x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
       bool yChanged = DrawIntStepperInline(
           "Y", ref editY, snap, y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-      bool editMirror = EditorGUILayout.ToggleLeft(
-          "Mirror", flip, GUILayout.Width(56f));
       bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
       NoteContentRight();
       EditorGUILayout.EndHorizontal();
@@ -24747,7 +24770,7 @@ private static void HandleGameViewPointerDown(
         SetPreviewFeatureEnabled(visibilityKey, newEnabled);
       if (apply)
       {
-        if (SaveAcceptedOrnamentReference(key, editX, editY, editMirror))
+        if (SaveAcceptedOrnamentReference(key, editX, editY, false))
         {
           previewFeaturePositionOverrides.Remove(key);
           previewFeatureMirrorOverrides.Remove(key);
@@ -24765,17 +24788,8 @@ private static void HandleGameViewPointerDown(
             previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
           previewPositionChangedThisFrame = true;
         }
-        if (editMirror != flip)
-        {
-          if (editMirror == defaultMirror)
-            previewFeatureMirrorOverrides.Remove(key);
-          else
-            previewFeatureMirrorOverrides[key] = editMirror;
-          previewMirrorChangedThisFrame = true;
-        }
       }
-      if (apply || newEnabled != enabled || xChanged || yChanged
-          || editMirror != flip)
+      if (apply || newEnabled != enabled || xChanged || yChanged)
       {
         RefreshEditModePreview();
         RepaintGameViews();
@@ -24833,10 +24847,8 @@ private static void HandleGameViewPointerDown(
     if (!TryFindManualLeftF3Mirror(out ChampionMirrorPlacement mirror)) return;
     int x = 0, y = 83;
     bool flip = false;
-    ApplyAcceptedOrnamentReference(ManualChampionLeftF3Key, ref x, ref y, ref flip);
+    ApplyChampionMirrorPositionOnly(ManualChampionLeftF3Key, ref x, ref y);
     int savedX = x, savedY = y;
-    bool savedMirror = flip;
-    ApplyPreviewFeatureRenderOverrides(ManualChampionLeftF3Key, ref x, ref y, ref flip);
 
     GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
     style.normal.textColor = Color.yellow;
@@ -24852,7 +24864,6 @@ private static void HandleGameViewPointerDown(
         x != savedX, true, 24f, ViewEditCoordinateInputWidth);
     bool changeY = DrawIntStepperInline("Y", ref editY, snap,
         y != savedY, true, 24f, ViewEditCoordinateInputWidth);
-    bool editMirror = EditorGUILayout.ToggleLeft("Mirror", flip, GUILayout.Width(56f));
     bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
     NoteContentRight();
     EditorGUILayout.EndHorizontal();
@@ -24866,7 +24877,7 @@ private static void HandleGameViewPointerDown(
     if (apply)
     {
       if (SaveAcceptedOrnamentReference(
-          ManualChampionLeftF3Key, editX, editY, editMirror))
+          ManualChampionLeftF3Key, editX, editY, false))
       {
         previewFeaturePositionOverrides.Remove(ManualChampionLeftF3Key);
         previewFeatureMirrorOverrides.Remove(ManualChampionLeftF3Key);
@@ -24882,14 +24893,6 @@ private static void HandleGameViewPointerDown(
         else
           previewFeaturePositionOverrides[ManualChampionLeftF3Key] =
               new Vector2Int(editX, editY);
-        changed = true;
-      }
-      if (editMirror != flip)
-      {
-        if (editMirror == savedMirror)
-          previewFeatureMirrorOverrides.Remove(ManualChampionLeftF3Key);
-        else
-          previewFeatureMirrorOverrides[ManualChampionLeftF3Key] = editMirror;
         changed = true;
       }
     }
@@ -24953,8 +24956,7 @@ private static void HandleGameViewPointerDown(
         int x = profile.slot.x;
         int y = profile.slot.y;
         bool flip = false;
-        ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
-        ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+        ApplyChampionMirrorPositionOnly(key, ref x, ref y);
         // Front F1/F2/F3 mirror artwork is never horizontally flipped,
         // regardless of older saved calibration values.
         flip = false;
@@ -25021,8 +25023,7 @@ private static void HandleGameViewPointerDown(
         y = HookD2SideY - (artwork.height - HookD2SideHeight) / 2;
       }
       bool flip = false;
-      ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
-      ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+      ApplyChampionMirrorPositionOnly(key, ref x, ref y);
       BlitPieceIntoPreview(pixels, artwork, x, y, flip);
     }
   }
@@ -25055,10 +25056,7 @@ private static void HandleGameViewPointerDown(
     if (artwork == null || !artwork.isReadable) return;
     int x = 0, y = 83;
     bool flip = false;
-    ApplyAcceptedOrnamentReference(
-        ManualChampionLeftF3Key, ref x, ref y, ref flip);
-    ApplyPreviewFeatureRenderOverrides(
-        ManualChampionLeftF3Key, ref x, ref y, ref flip);
+    ApplyChampionMirrorPositionOnly(ManualChampionLeftF3Key, ref x, ref y);
     BlitWallOrnamentIntoPreview(pixels, artwork, x, y, flip);
   }
 
@@ -25134,8 +25132,7 @@ private static void HandleGameViewPointerDown(
         int x = left ? 16 : 194;
         int y = 70;
         bool flip = !left;
-        ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
-        ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+        ApplyChampionMirrorPositionOnly(key, ref x, ref y);
         BlitWallOrnamentIntoPreview(pixels, artwork, x, y, flip);
         break;
       }
@@ -25187,10 +25184,8 @@ private static void HandleGameViewPointerDown(
         int x = left ? 16 : 194;
         int y = 70;
         bool mirror = !left;
-        ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+        ApplyChampionMirrorPositionOnly(key, ref x, ref y);
         int defaultX = x, defaultY = y;
-        bool defaultMirror = mirror;
-        ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
         int editX = x, editY = y;
         EditorGUILayout.BeginHorizontal();
         string label = m.champion.ToUpperInvariant() + " - Extended "
@@ -25205,8 +25200,6 @@ private static void HandleGameViewPointerDown(
             x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
         bool changedY = DrawIntStepperInline("Y", ref editY, snap,
             y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-        bool editMirror = EditorGUILayout.ToggleLeft("Mirror", mirror,
-            GUILayout.Width(56f));
         bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
         NoteContentRight();
         EditorGUILayout.EndHorizontal();
@@ -25214,7 +25207,7 @@ private static void HandleGameViewPointerDown(
           SetPreviewFeatureEnabled(visibilityKey, nowEnabled);
         if (apply)
         {
-          if (SaveAcceptedOrnamentReference(key, editX, editY, editMirror))
+          if (SaveAcceptedOrnamentReference(key, editX, editY, !left))
           {
             previewFeaturePositionOverrides.Remove(key);
             previewFeatureMirrorOverrides.Remove(key);
@@ -25229,15 +25222,8 @@ private static void HandleGameViewPointerDown(
             else
               previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
           }
-          if (editMirror != mirror)
-          {
-            if (editMirror == defaultMirror)
-              previewFeatureMirrorOverrides.Remove(key);
-            else previewFeatureMirrorOverrides[key] = editMirror;
-          }
         }
-        if (apply || nowEnabled != wasEnabled || changedX || changedY
-            || editMirror != mirror)
+        if (apply || nowEnabled != wasEnabled || changedX || changedY)
         {
           RefreshEditModePreview();
           RepaintGameViews();
@@ -25321,8 +25307,7 @@ private static void HandleGameViewPointerDown(
               ? HookD1SideY - (artwork.height - 19) / 2
               : HookD2SideY - (artwork.height - HookD2SideHeight) / 2;
           bool flip = !left;
-          ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
-          ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
+          ApplyChampionMirrorPositionOnly(key, ref x, ref y);
           BlitWallOrnamentIntoPreview(pixels, artwork, x, y, flip);
           break;
         }
@@ -27400,6 +27385,10 @@ private static void HandleGameViewPointerDown(
   private string selectedOrnamentInspectorKey;
   private string selectedOrnamentInspectorCaption;
   private bool selectedOrnamentInspectorMirror;
+  // Cached in screen coordinates after IMGUI lays out the scrollable preview.
+  // Needed because OnGUI's window-wide right-click handler runs before drawing.
+  private Rect ornamentInspectorPanelScreenRect;
+  private bool ornamentInspectorPanelScreenRectValid;
   private static bool s_ornamentPreviewMissingClick06Reported;
 
   // The cyan preview is an EditorWindow control: play its feedback through
@@ -27667,18 +27656,14 @@ private static void HandleGameViewPointerDown(
 
   private void DrawSelectedOrnamentInspector()
   {
-    if (string.IsNullOrEmpty(selectedOrnamentInspectorKey)) return;
-    GUILayout.Space(4f);
-    EditorGUILayout.BeginHorizontal();
-    EditorGUILayout.LabelField("Ornament preview: "
-        + selectedOrnamentInspectorCaption, EditorStyles.boldLabel);
-    if (GUILayout.Button("Close", GUILayout.Width(55f)))
+    if (string.IsNullOrEmpty(selectedOrnamentInspectorKey))
     {
-      selectedOrnamentInspectorKey = null;
-      EditorGUILayout.EndHorizontal();
+      ornamentInspectorPanelScreenRectValid = false;
       return;
     }
-    EditorGUILayout.EndHorizontal();
+    GUILayout.Space(4f);
+    EditorGUILayout.LabelField("Ornament preview: "
+        + selectedOrnamentInspectorCaption, EditorStyles.boldLabel);
 
     Texture2D bitmap = GetSelectedOrnamentInspectorTexture();
     if (bitmap == null)
@@ -27691,7 +27676,7 @@ private static void HandleGameViewPointerDown(
 
     string previewDescription = bitmap.width + "x" + bitmap.height
         + (selectedOrnamentInspectorMirror ? " mirrored" : " unmirrored")
-        + " — click cyan preview to copy";
+        + " — left-click to copy / right-click to close";
     EditorGUILayout.LabelField(previewDescription, EditorStyles.miniLabel);
 
     // Exact ornament-sized cyan panel (at integer zoom), 4 px padding.
@@ -27709,6 +27694,14 @@ private static void HandleGameViewPointerDown(
     GUILayout.Space(indent);
     Rect panel = GUILayoutUtility.GetRect(boxWidth, boxHeight,
         GUILayout.Width(boxWidth), GUILayout.Height(boxHeight));
+    if (Event.current.type == EventType.Repaint)
+    {
+      Vector2 screenMin = GUIUtility.GUIToScreenPoint(panel.min);
+      Vector2 screenMax = GUIUtility.GUIToScreenPoint(panel.max);
+      ornamentInspectorPanelScreenRect = Rect.MinMaxRect(
+          screenMin.x, screenMin.y, screenMax.x, screenMax.y);
+      ornamentInspectorPanelScreenRectValid = true;
+    }
     EditorGUI.DrawRect(panel, Color.cyan);
     Rect drawRect = new Rect(panel.x + padding, panel.y + padding,
         bitmap.width * zoom, bitmap.height * zoom);
@@ -27721,7 +27714,8 @@ private static void HandleGameViewPointerDown(
     }
     finally { GUI.matrix = originalMatrix; }
 
-    // Make the image-sized cyan rectangle the only clipboard control.
+    // RMB is handled before the global minimap toggle at the start of OnGUI.
+    // Left-click on this exact rectangle still copies with Click06 feedback.
     if (GUI.Button(panel, GUIContent.none, GUIStyle.none))
     {
       string copyError;
@@ -29460,6 +29454,17 @@ private static void HandleGameViewPointerDown(
   }
 
 
+  // Champion mirror calibration controls position only. Historical Mirror
+  // values in accepted references or live ViewEdit overrides must never
+  // override the physical wall-side orientation chosen by the renderer.
+  private void ApplyChampionMirrorPositionOnly(
+      string key, ref int x, ref int y)
+  {
+    bool ignoredMirror = false;
+    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref ignoredMirror);
+    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref ignoredMirror);
+  }
+
   // Champion mirrors use the same wall-ornament ViewEdit calibration model.
   // F1 includes the portrait; F2/F3 show frames only. These rows change only the
   // projected ornament artwork, never the underlying V17 wall geometry.
@@ -29509,14 +29514,10 @@ private static void HandleGameViewPointerDown(
       WallOrnamentDepthSlot slot = GetChampionMirrorArtworkProfile(depth).slot;
       int defaultX = slot.x;
       int defaultY = slot.y;
-      bool defaultMirror = false;
-      ApplyAcceptedOrnamentReference(
-          projectionKey, ref defaultX, ref defaultY, ref defaultMirror);
+      ApplyChampionMirrorPositionOnly(projectionKey, ref defaultX, ref defaultY);
       int x = defaultX;
       int y = defaultY;
-      bool mirrored = defaultMirror;
-      ApplyPreviewFeatureRenderOverrides(
-          projectionKey, ref x, ref y, ref mirrored);
+
 
       EditorGUILayout.BeginHorizontal();
       float savedLabelWidth = EditorGUIUtility.labelWidth;
@@ -29660,11 +29661,9 @@ private static void HandleGameViewPointerDown(
             : depth == 2 ? HookD2SideY - (height - HookD2SideHeight) / 2
             : HookD3SideY - (height - HookD3SideHeight) / 2;
         bool mirror = !left;
-        ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
+        ApplyChampionMirrorPositionOnly(key, ref x, ref y);
         int defaultX = x;
         int defaultY = y;
-        bool defaultMirror = mirror;
-        ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
 
         // Dungeon Features stores the accessible floor location. The mirror
         // orientation is resolved from the adjacent solid-wall geometry.
@@ -29722,8 +29721,6 @@ private static void HandleGameViewPointerDown(
         int editY = y;
         bool yChanged = DrawIntStepperInline(
             "Y", ref editY, snap, y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-        bool editMirror = EditorGUILayout.ToggleLeft(
-            "Mirror", mirror, GUILayout.Width(56f));
         bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
         NoteContentRight();
         EditorGUIUtility.labelWidth = oldLabelWidth;
@@ -29733,7 +29730,7 @@ private static void HandleGameViewPointerDown(
           SetPreviewFeatureEnabled(visibilityKey, nowEnabled);
         if (apply)
         {
-          if (SaveAcceptedOrnamentReference(key, editX, editY, editMirror))
+          if (SaveAcceptedOrnamentReference(key, editX, editY, !left))
           {
             previewFeaturePositionOverrides.Remove(key);
             previewFeatureMirrorOverrides.Remove(key);
@@ -29751,17 +29748,8 @@ private static void HandleGameViewPointerDown(
               previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
             previewPositionChangedThisFrame = true;
           }
-          if (editMirror != mirror)
-          {
-            if (editMirror == defaultMirror)
-              previewFeatureMirrorOverrides.Remove(key);
-            else
-              previewFeatureMirrorOverrides[key] = editMirror;
-            previewMirrorChangedThisFrame = true;
-          }
         }
-        if (apply || nowEnabled != wasEnabled || xChanged || yChanged
-            || editMirror != mirror)
+        if (apply || nowEnabled != wasEnabled || xChanged || yChanged)
         {
           RefreshEditModePreview();
           RepaintGameViews();

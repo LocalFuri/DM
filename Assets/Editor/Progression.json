@@ -4561,5 +4561,77 @@
       "Manacles S2/S3, WoodRing and ViAltar orientations",
       "V17 walls unchanged"
     ]
+  },
+  "ornament_cleanup_phase7_champion_mirror_code_owned_20261122": {
+    "date": "2026-11-22",
+    "status": "prepared; pending Unity compilation and champion regression check",
+    "scope": "Champion Mirror ViewEdit S1/S2/S3 side, F1/F2/F3 front, side-lane corner F2, extended F3 and manual LeftF3",
+    "changes": [
+      "Removed all Champion Mirror manual Mirror checkboxes in dedicated calibration rows",
+      "Reused code-chosen wall-side orientation for drawing, ignoring saved mirror flags",
+      "Preserved X/Y accepted calibration and ViewEdit Apply controls",
+      "Preserved existing Champion Mirror artwork, scaling, offsets, wall visibility and V17 geometry"
+    ],
+    "policy": "Champion Mirror left=unmirrored, right=mirrored; direct front faces=unmirrored. No manual mirror overrides. Future generic ornament integration postponed.",
+    "verification": [
+      "Unity compilation",
+      "LINFLAS S1 Left ViewEdit checkbox absent",
+      "S1/S2/S3 left/right and F1/F2/F3 rendering",
+      "Manual LeftF3 and extended F3 orientation",
+      "X/Y Apply persistence",
+      "No V17 or Hook/Grate regression"
+    ]
+  },
+  "viewedit_ornament_preview_close_near_caption_20261122": {
+    "date_local": "2026-11-22",
+    "status": "implemented; Unity compilation awaiting user verification",
+    "scope": "Assets/Editor/ViewportLayoutEditor.cs only, ornament preview heading layout",
+    "change": "Use a natural-width bold heading label and 6px gap so Close appears directly after Ornament preview: <caption>, rather than at the far right of ViewEdit.",
+    "preserved": [
+      "Ornament drawing and calibration",
+      "DOS 6-bit scaler",
+      "V17 walls",
+      "cyan preview",
+      "clipboard copy on click",
+      "Click06.wav"
+    ],
+    "files": [
+      "ViewportLayoutEditor.cs",
+      "Progression.json"
+    ]
+  },
+  "viewedit_ornament_preview_right_click_to_close_20261122": {
+    "date_local": "2026-11-22",
+    "status": "implemented; Unity compilation and mouse interaction awaiting user verification",
+    "scope": "Assets/Editor/ViewportLayoutEditor.cs — ornament inspector UI only",
+    "change": "Remove ornament preview Close button. Right mouse down within cyan image rectangle closes preview. Left mouse click continues to copy cyan-background bitmap, show copied notice and play Click06.wav. Update caption with both actions.",
+    "preserved": [
+      "Cyan bitmap and enlargement",
+      "Left-click clipboard copy and Click06.wav",
+      "Saved ornament X/Y calibration",
+      "DOS 6-bit scaler and rendering",
+      "V17 wall geometry"
+    ],
+    "files": [
+      "ViewportLayoutEditor.cs",
+      "Progression.json"
+    ]
+  },
+  "viewedit_cyan_preview_right_click_priority_20261122": {
+    "date_local": "2026-11-22",
+    "status": "implemented; Unity compile and interaction tests pending",
+    "scope": "ViewportLayoutEditor.cs: cyan ornament inspector mouse event priority",
+    "issue": "Global HandleViewEditRightClick was consuming RMB at the top of OnGUI, preventing the cyan preview from closing.",
+    "fix": "Cache ornament preview cyan rectangle in screen coordinates on Repaint. Process RMB inside that rectangle before window-wide minimap toggling. RMB elsewhere retains minimap toggle. Left-click cyan continues clipboard copy, copied toast and Click06.wav.",
+    "files": [
+      "ViewportLayoutEditor.cs",
+      "Progression.json"
+    ],
+    "preserved": [
+      "Existing wall/ornament rendering",
+      "DOS 6-bit scaling",
+      "X/Y calibration and Apply",
+      "Mini-map toggle for clicks outside cyan rectangle"
+    ]
   }
 }
