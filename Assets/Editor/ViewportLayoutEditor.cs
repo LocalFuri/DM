@@ -18717,6 +18717,7 @@ private static void HandleGameViewPointerDown(
   private static string s_v17ActualLeftS3PaintLog;
   private static string s_v17LeftEdgeSelectionLog;
   private static string s_v17LeftEdgeBlitLog;
+  private static string s_v17MagentaRightS3RuleLog;
 
   private void ApplyViewport17LiveDrawToResolvedWalls()
   {
@@ -18730,6 +18731,45 @@ private static void HandleGameViewPointerDown(
     Viewport17Inspection inspection = BuildViewport17Inspection();
     List<Viewport17RenderCommand> finalCommands =
         BuildViewport17FinalDrawCommands(inspection);
+
+    // Diagnostic only: the geometry-driven RightS3 rule must be observable.
+    // Once per change of viewpoint/rule; no Console spam on repaint.
+    // Do not alter surface selection, geometry, or draw order here.
+    bool magentaRightS3LaneEnd = IsViewport17RightS3RightLaneEnd(inspection);
+    bool magentaRightS3D3Edge = IsViewport17RightS3D3FrontEdge(inspection);
+    bool magentaRightS3Final =
+        HasViewport17FinalFamily(finalCommands, "RightS3");
+    if (magentaRightS3Final &&
+        (magentaRightS3LaneEnd || magentaRightS3D3Edge))
+    {
+      string magentaRule = magentaRightS3LaneEnd
+          ? "RIGHT S3 RIGHT LANE END"
+          : "RIGHT S3 D3 FRONT EDGE";
+      string magentaKey = previewDungeonLevel + ":" + previewX + ":"
+          + previewY + ":" + previewFacing + ":" + magentaRule;
+      if (s_v17MagentaRightS3RuleLog != magentaKey)
+      {
+        s_v17MagentaRightS3RuleLog = magentaKey;
+        Debug.Log("<color=#FF00FF>MAGENTA | V17 RULE | " + magentaRule
+            + " | Level " + previewDungeonLevel
+            + " (" + previewX + "," + previewY + ") "
+            + previewFacing
+            + " | RightS3 X=216 Y=57 W=8"
+            + " | Right D0/D1/D2 open="
+            + IsViewport17LaneOpenAt(inspection, 1, 0) + "/"
+            + IsViewport17LaneOpenAt(inspection, 1, 1) + "/"
+            + IsViewport17LaneOpenAt(inspection, 1, 2)
+            + " | Right D3 wall="
+            + IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3))
+            + " | Outer-right D2 wall="
+            + IsViewport17Solid(FindViewport17Cell(inspection.Cells, 2, 2))
+            + "</color>");
+      }
+    }
+    else
+    {
+      s_v17MagentaRightS3RuleLog = null;
+    }
 
     // Use the same FINAL DRAW decisions as the native V17 blitters. ViewEdit
     // must be a truthful report of what Compose actually draws, not a second
