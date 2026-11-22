@@ -14304,6 +14304,24 @@ private static void HandleGameViewPointerDown(
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3));
   }
 
+  // An open right lane terminates against its far front wall at D3, while
+  // the next lane to the right is solid at D2 (including an out-of-map
+  // boundary). The far-right viewport seam is the narrow RightS3 source,
+  // NOT a full F2 outer-side wall. Classify by relative cells only.
+  private static bool IsViewport17RightS3RightLaneEnd(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null)
+      return false;
+
+    return IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 1))
+        && IsViewport17LaneOpenAt(inspection, 1, 0)
+        && IsViewport17LaneOpenAt(inspection, 1, 1)
+        && IsViewport17LaneOpenAt(inspection, 1, 2)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 2, 2));
+  }
+
   /// <summary>
   /// Open left corridor through D0/D1/D2 into a full D3 L+C+R front plane,
   /// with a nearer center front already occupying D1 or D2. Original DM then
@@ -15151,7 +15169,8 @@ private static void HandleGameViewPointerDown(
     // front block with the right lane still open.  This is the handed
     // counterpart family and keeps its own X/Y/mirror controls in ViewEdit.
     bool rightS3D3FrontEdge = IsViewport17RightS3D3FrontEdge(inspection);
-    if (rightS3D3FrontEdge)
+    bool rightS3RightLaneEnd = IsViewport17RightS3RightLaneEnd(inspection);
+    if (rightS3D3FrontEdge || rightS3RightLaneEnd)
     {
       Viewport17Cell primaryCell =
           FindViewport17Cell(inspection.Cells, 0, 3);
@@ -15168,7 +15187,9 @@ private static void HandleGameViewPointerDown(
       Viewport17RenderCommand rightS3Command =
           CreateViewport17RenderCommand(
               "RightS3",
-              "RIGHT S3 D3 FRONT EDGE",
+              rightS3RightLaneEnd
+                  ? "RIGHT S3 RIGHT LANE END"
+                  : "RIGHT S3 D3 FRONT EDGE",
               "RIGHT",
               rightS3Surface);
       rightS3Command.Sequence = commands.Count;
@@ -15829,7 +15850,8 @@ private static void HandleGameViewPointerDown(
       // L+C front block.  Preserve it before generic side occlusion removes
       // the distant side command.
       if (command.PieceFamily == "RightS3"
-          && IsViewport17RightS3D3FrontEdge(inspection))
+          && (IsViewport17RightS3D3FrontEdge(inspection)
+              || IsViewport17RightS3RightLaneEnd(inspection)))
       {
         command.Sequence = finalCommands.Count;
         finalCommands.Add(command);
@@ -18870,7 +18892,9 @@ private static void HandleGameViewPointerDown(
             HasViewport17FinalFamily(finalCommands, "RightS3");
         bool rightS3Mirror = IsViewport17RightS3D3FrontEdge(inspection)
             ? true
-            : GetSideWallMirrorFromPose();
+            : IsViewport17RightS3RightLaneEnd(inspection)
+                ? false
+                : GetSideWallMirrorFromPose();
         ApplyViewport17NativeManualControls(
             "RightS3", ref rightS3Enabled, ref rightS3Mirror);
         state.Enabled = rightS3Enabled;
