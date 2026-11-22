@@ -4633,5 +4633,21 @@
       "X/Y calibration and Apply",
       "Mini-map toggle for clicks outside cyan rectangle"
     ]
+  },
+  "viewedit_dynamic_yellow_calibration_columns_20261122": {
+    "date": "2026-11-22",
+    "scope": "ViewportLayoutEditor.cs ViewEdit presentation only",
+    "change": "Unified yellow Champion and ordinary wall-ornament caption widths and Set columns. Visible caption maximum is recalculated every GUI Layout event, adapting when map/facing/visible ornaments change. X, Y and Apply align by using consistent shared columns.",
+    "unchanged": [
+      "DOS 6-bit scaling",
+      "ornament artwork and X/Y Apply behavior",
+      "global ornament offsets",
+      "V17 wall rendering",
+      "cyan preview and clipboard/sound",
+      "wall-piece Mirror controls"
+    ],
+    "test_status": "Source patched and inspected; Unity compilation and alignment require user verification",
+    "source_base_sha256": "4b32094c08c429c040104d4f61b41316bc70eddec71dcbdb4b2e9c90cdaf8cc7",
+    "next_check": "Verify 11,9 East (LINFLAS S1, Hook S2, Grate S2), then turn/change map and verify column resizes to the new longest yellow caption."
   }
 }

@@ -24856,9 +24856,9 @@ private static void HandleGameViewPointerDown(
     string label = mirror.champion.ToUpperInvariant() + " - LeftF3"
         + " - (" + mirror.x + "," + mirror.y + " " + ShortDirectionLabel(mirror.wall) + ")";
     GUILayout.Label(label, style,
-        GUILayout.Width(Mathf.Ceil(style.CalcSize(new GUIContent(label)).x) + 6f));
+        GUILayout.Width(GetViewEditYellowCaptionWidth(style, label)));
     bool active = manualChampionLeftF3Preview;
-    bool selected = EditorGUILayout.ToggleLeft("Set", active, GUILayout.Width(55f));
+    bool selected = DrawViewEditYellowSet(active);
     int editX = x, editY = y;
     bool changeX = DrawIntStepperInline("X", ref editX, snap,
         x != savedX, true, 24f, ViewEditCoordinateInputWidth);
@@ -25192,10 +25192,9 @@ private static void HandleGameViewPointerDown(
             + (left ? "Left" : "Right") + " F3 (" + m.x + ","
             + m.y + " " + ShortDirectionLabel(m.wall) + ")";
         GUILayout.Label(label, featureStyle,
-            GUILayout.Width(Mathf.Ceil(featureStyle.CalcSize(new GUIContent(label)).x) + 6f));
+            GUILayout.Width(GetViewEditYellowCaptionWidth(featureStyle, label)));
         bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
-        bool nowEnabled = EditorGUILayout.ToggleLeft("Set", wasEnabled,
-            GUILayout.Width(55f));
+        bool nowEnabled = DrawViewEditYellowSet(wasEnabled);
         bool changedX = DrawIntStepperInline("X", ref editX, snap,
             x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
         bool changedY = DrawIntStepperInline("Y", ref editY, snap,
@@ -27380,6 +27379,36 @@ private static void HandleGameViewPointerDown(
     return viewEditItemCaptionMaxWidth;
   }
 
+  // One compact, dynamically measured caption column for currently visible
+  // yellow ornament AND champion rows. Measure on the Layout event, then
+  // render all rows using the same value. Recompute every GUI layout so a
+  // change of map, facing, visibility or champion name can shrink the column.
+  private float viewEditYellowCaptionWidth = 0f;
+  private float viewEditYellowObservedWidth = 0f;
+  private const float ViewEditYellowSetColumnWidth = 55f;
+
+  private float GetViewEditYellowCaptionWidth(GUIStyle style, string caption)
+  {
+    float measured = Mathf.Ceil(style.CalcSize(
+        new GUIContent(caption ?? string.Empty)).x) + 6f;
+    if (Event.current.type == EventType.Layout)
+      viewEditYellowObservedWidth = Mathf.Max(viewEditYellowObservedWidth, measured);
+    // The same cached width is used by every row in this GUI pass.
+    // A newly visible longer caption is incorporated at the next layout.
+    return Mathf.Max(viewEditYellowCaptionWidth, measured);
+  }
+
+  private static bool DrawViewEditYellowSet(bool before)
+  {
+    // Match the champion and ordinary ornament Set-column widths exactly.
+    // Keep the original mouse-only ornament toggle and its green tick.
+    GUILayout.BeginHorizontal(GUILayout.Width(ViewEditYellowSetColumnWidth));
+    bool after = DrawCompactMouseOnlyToggle("Set", before, false);
+    GUILayout.FlexibleSpace();
+    GUILayout.EndHorizontal();
+    return after;
+  }
+
   // Diagnostic only: click an ornament caption to inspect its actual bitmap
   // on cyan. This never changes artwork, calibration, or scene rendering.
   private string selectedOrnamentInspectorKey;
@@ -27863,24 +27892,14 @@ private static void HandleGameViewPointerDown(
     featureStyle.normal.textColor = Color.yellow;
     featureStyle.hover.textColor = Color.yellow;
     featureStyle.focused.textColor = Color.yellow;
-    // Keep every ornament row aligned, but make the caption column only as
-    // wide as the longest normal ornament label instead of leaving a large gap.
-    float ornamentCaptionColumnWidth =
-        featureStyle.CalcSize(
-            new GUIContent("WoodRing [1,17] (S) / S1")).x;
-    // Grate captions use their own exact width: no blank column after short
-    // labels, while longer perspective labels still remain fully readable.
-    if (IsGrateOrnament(ornament))
-      ornamentCaptionColumnWidth =
-          featureStyle.CalcSize(new GUIContent(displayName)).x + 6f;
     // Presentation only: remove coordinate/direction brackets from the row.
     // Keep the stored name, keys and V17 ornament placement unchanged.
     string compactDisplayName = System.Text.RegularExpressions.Regex.Replace(
         displayName ?? string.Empty, @"\[(.*?)\]", "$1");
     compactDisplayName = System.Text.RegularExpressions.Regex.Replace(
         compactDisplayName, @"\((N|S|E|W)\)", "$1");
-    ornamentCaptionColumnWidth =
-        GetViewEditItemCaptionWidth(featureStyle, compactDisplayName);
+    float ornamentCaptionColumnWidth =
+        GetViewEditYellowCaptionWidth(featureStyle, compactDisplayName);
     // Label-sized button: clicking the yellow ornament name selects the
     // actual generated bitmap; editing controls keep their existing behavior.
     if (GUILayout.Button(compactDisplayName, featureStyle,
@@ -27899,7 +27918,7 @@ private static void HandleGameViewPointerDown(
       string altarVisibilityKey = MakePreviewFeatureKey(
           "Ornament", ornament.x, ornament.y, ornament.wall);
       bool wasEnabled = IsPreviewFeatureEnabled(altarVisibilityKey);
-      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
+      bool nowEnabled = DrawViewEditYellowSet(wasEnabled);
       if (nowEnabled != wasEnabled)
       {
         SetPreviewFeatureEnabled(altarVisibilityKey, nowEnabled);
@@ -27917,7 +27936,7 @@ private static void HandleGameViewPointerDown(
       string holderVisibilityKey = MakePreviewFeatureKey(
           "Ornament", ornament.x, ornament.y, ornament.wall);
       bool wasEnabled = IsPreviewFeatureEnabled(holderVisibilityKey);
-      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
+      bool nowEnabled = DrawViewEditYellowSet(wasEnabled);
       if (nowEnabled != wasEnabled)
       {
         SetPreviewFeatureEnabled(holderVisibilityKey, nowEnabled);
@@ -27933,7 +27952,7 @@ private static void HandleGameViewPointerDown(
       string hookVisibilityKey = MakePreviewFeatureKey(
           "Ornament", ornament.x, ornament.y, ornament.wall);
       bool wasEnabled = IsPreviewFeatureEnabled(hookVisibilityKey);
-      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
+      bool nowEnabled = DrawViewEditYellowSet(wasEnabled);
       if (nowEnabled != wasEnabled)
       {
         SetPreviewFeatureEnabled(hookVisibilityKey, nowEnabled);
@@ -27950,7 +27969,7 @@ private static void HandleGameViewPointerDown(
       string grateVisibilityKey = MakePreviewFeatureKey(
           "Ornament", ornament.x, ornament.y, ornament.wall);
       bool wasEnabled = IsPreviewFeatureEnabled(grateVisibilityKey);
-      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
+      bool nowEnabled = DrawViewEditYellowSet(wasEnabled);
       if (nowEnabled != wasEnabled)
       {
         SetPreviewFeatureEnabled(grateVisibilityKey, nowEnabled);
@@ -29534,11 +29553,10 @@ private static void HandleGameViewPointerDown(
       // Align champion calibration controls with the floor-item (sword) row.
       // Long labels can expand rather than being truncated.
       GUILayout.Label(frontLabel, featureStyle,
-          GUILayout.Width(Mathf.Ceil(featureStyle.CalcSize(new GUIContent(frontLabel)).x) + 6f));
+          GUILayout.Width(GetViewEditYellowCaptionWidth(featureStyle, frontLabel)));
 
       bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
-      bool nowEnabled = EditorGUILayout.ToggleLeft(
-          "Set", wasEnabled, GUILayout.Width(55f));
+      bool nowEnabled = DrawViewEditYellowSet(wasEnabled);
 
       EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
       int editX = x;
@@ -29709,10 +29727,9 @@ private static void HandleGameViewPointerDown(
             + (left ? " Left" : " Right") + " - (" + viewingX + ","
             + viewingY + " " + viewingDirection + ")";
         GUILayout.Label(sideLabel, featureStyle,
-            GUILayout.Width(Mathf.Ceil(featureStyle.CalcSize(new GUIContent(sideLabel)).x) + 6f));
+            GUILayout.Width(GetViewEditYellowCaptionWidth(featureStyle, sideLabel)));
         bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
-        bool nowEnabled = EditorGUILayout.ToggleLeft(
-            "Set", wasEnabled, GUILayout.Width(55f));
+        bool nowEnabled = DrawViewEditYellowSet(wasEnabled);
         EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
         int editX = x;
         bool xChanged = DrawIntStepperInline(
@@ -30189,6 +30206,8 @@ private static void HandleGameViewPointerDown(
 
   private void DrawCurrentPoseFeatureRows()
   {
+    if (Event.current.type == EventType.Layout)
+      viewEditYellowObservedWidth = 0f;
     EnsurePreviewMiniMapLoaded();
     if (previewMiniMap == null)
       return;
@@ -30768,6 +30787,13 @@ private static void HandleGameViewPointerDown(
       DrawStairsDownS1LeftCalibrationRow(leftStairsX, leftStairsY);
 
     // Timing is a global editor setting, so display it after every feature row.
+    if (Event.current.type == EventType.Layout
+        && Mathf.Abs(viewEditYellowCaptionWidth - viewEditYellowObservedWidth) > 0.5f)
+    {
+      viewEditYellowCaptionWidth = viewEditYellowObservedWidth;
+      Repaint();
+    }
+
   }
 
   // Same-tile right-side down-stairs detail. Detection matches its ViewEdit row.
