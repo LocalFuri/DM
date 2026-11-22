@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -259,13 +259,9 @@ public class ViewportLayoutEditor : EditorWindow
   private const int ManaclesD3FrontWidth = 40;
   private const int ManaclesD3FrontHeight = 22;
   private const string GrateFrontAssetPath =
-      "Assets/Art/Ornaments/Grate_F1_32x28.png";
-  // Dedicated Atari F2 front image, drawn 1:1.
-  private const string GrateF2FrontAssetPath =
-      "Assets/Art/Ornaments/Grate_F2_21x13.png";
-  // Preserve the pre-existing generated F3 path until a dedicated F3 front asset is supplied.
-  private const string GrateDistantScalingSourceAssetPath =
-      "Assets/Art/Ornaments/Grate_Front_32x28.png";
+      "Assets/Art/Ornaments/Grate_F1_32x20.png";
+  // Grate F2 and F3 are generated from the original DOS 32x20 F1 artwork.
+  // No pre-scaled or CSBwin artwork dependencies for the front views.
   private const string GrateSide1AssetPath =
       "Assets/Art/Ornaments/Grate_Side1_16x19.png";
   // User-extracted original S2 artwork, drawn 1:1 (no scaling or palette conversion).
@@ -41428,7 +41424,7 @@ private static void HandleGameViewPointerDown(
     if (cachedGrateFront3Texture != null)
       return cachedGrateFront3Texture;
 
-    Texture2D source = GetGrateDistantScalingSourceTexture();
+    Texture2D source = GetGrateFrontTexture();
     if (source == null || !source.isReadable)
       return null;
 
@@ -41437,7 +41433,7 @@ private static void HandleGameViewPointerDown(
         14,
         9,
         WallOrnamentFarColorMap,
-        "Grate F3 Generated from F1");
+        "Grate F3 DOS 6-bit from native F1");
     return cachedGrateFront3Texture;
   }
 
@@ -41529,21 +41525,16 @@ private static void HandleGameViewPointerDown(
     if (cachedGrateFront2Texture != null)
       return cachedGrateFront2Texture;
 
-    Texture2D texture =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(GrateF2FrontAssetPath);
-    if (texture == null)
-    {
-      ReportMissingGrateArtwork(GrateF2FrontAssetPath);
+    Texture2D source = GetGrateFrontTexture();
+    if (source == null || !source.isReadable)
       return null;
-    }
-    if (texture.width != 21 || texture.height != 13)
-    {
-      Debug.LogError("Grate F2 must be a 21x13 texture: "
-          + GrateF2FrontAssetPath);
-      return null;
-    }
-    cachedGrateFront2Texture = texture;
-    return texture;
+
+    // Native DOS 32x20 -> F2 21x13 (scale 21/32, integer rounding).
+    cachedGrateFront2Texture = GenerateDmScaledWallDecoration(
+        source, 21, 13, WallOrnamentMediumColorMap,
+        "Grate F2 DOS 6-bit from native F1", roundBiasOverride: 0,
+        sampleTopDown: true);
+    return cachedGrateFront2Texture;
   }
 
   private void BlitGrateD1FrontIntoPreview(Color32[] pixels)
@@ -43909,19 +43900,6 @@ private static void HandleGameViewPointerDown(
     return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 34;
   }
 
-  private Texture2D GetGrateDistantScalingSourceTexture()
-  {
-    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        GrateDistantScalingSourceAssetPath);
-    if (texture == null || texture.width != 32 || texture.height != 28)
-    {
-      Debug.LogError("Grate F3 source must exist as a 32x28 texture: "
-          + GrateDistantScalingSourceAssetPath);
-      return null;
-    }
-    return texture;
-  }
-
   private Texture2D GetGrateFrontTexture()
   {
     if (cachedGrateFrontTexture != null)
@@ -43929,9 +43907,14 @@ private static void HandleGameViewPointerDown(
 
     Texture2D texture =
         AssetDatabase.LoadAssetAtPath<Texture2D>(GrateFrontAssetPath);
-    if (texture == null || texture.width != 32 || texture.height != 28)
+    if (texture == null)
     {
-      Debug.LogError("Grate F1 must exist as a 32x28 texture: "
+      ReportMissingGrateArtwork(GrateFrontAssetPath);
+      return null;
+    }
+    if (!texture.isReadable || texture.width != 32 || texture.height != 20)
+    {
+      Debug.LogError("Grate F1 must be readable 32x20 DOS artwork: "
           + GrateFrontAssetPath);
       return null;
     }

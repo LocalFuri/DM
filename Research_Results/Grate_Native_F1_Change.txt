@@ -1,0 +1,17 @@
+Grate native PC DOS F1 artwork replacement — 2026-11-22
+Source SHA256: d101a47e094a872dbee6fd68725c45988452baa47643bbfbb2c9390204403a25
+Updated SHA256: f242afdadf0f986e3dc49523e13d31381410f716d6744db0a930ebc9c9ce160c
+
+Files: ViewportLayoutEditor.cs and Grate_F1_32x20.png
+
+Scope:
+- Grate F1 source path changed from CSBwin 32x28 to native DOS 32x20.
+- F2 generated at 21x13 from native F1 with shared DOS 6-bit sampler.
+- F3 generated at existing 14x9 using the same new native F1; previous distant source retired.
+- Reuses existing medium/far palettes and existing placement constants; none recalibrated.
+- Grate F1 missing asset produces one cyan notification via ReportMissingGrateArtwork.
+- Wrong dimensions/unreadable source still produce errors; never fabricate missing art.
+- S2/S3 side Grate, Hook, Manacles, and shared scaling function untouched.
+- This has not been compiled inside Unity; compare Grate F1/F2/F3 with DOS.
+- Source file contains no automatically derived alpha; supplied RGB pixels preserved as-is.
+- Use only if installed ViewportLayoutEditor.cs is the cyan-warning revision supplied earlier.
