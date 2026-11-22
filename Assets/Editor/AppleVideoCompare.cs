@@ -306,7 +306,7 @@ public sealed class AppleVideoCompare : EditorWindow
     private bool CaptureViewportInternal(bool report)
     {
         RawImage target = null;
-        foreach (var img in UnityEngine.Object.FindObjectsByType<RawImage>(FindObjectsSortMode.None))
+        foreach (var img in UnityEngine.Object.FindObjectsByType<RawImage>())
         {
             if (img == null || img.texture == null) continue;
             if (img.gameObject.name.IndexOf("DungeonViewport", StringComparison.OrdinalIgnoreCase) >= 0) { target = img; break; }

@@ -13689,8 +13689,6 @@ private static void HandleGameViewPointerDown(
     {
       // An explicit Refresh should report Hook S2 drawing again even when
       // the render is unchanged and the Unity Console has been cleared.
-      lastHookS2DrawDiagnostic = null;
-      lastHookS3DrawDiagnostic = null;
       Debug.Log("ViewEdit Refresh: requested at Level " + previewDungeonLevel
           + " X=" + previewX + " Y=" + previewY
           + " Facing=" + previewFacing);
@@ -24801,7 +24799,6 @@ private static void HandleGameViewPointerDown(
         x = left ? HookD2SideLeftX : HookD2SideRightX;
         y = HookD2SideY - (scaled.height - HookD2SideHeight) / 2;
       }
-      bool flip = false;
       ApplyChampionMirrorPositionOnly(key, ref x, ref y);
       int defaultX = x;
       int defaultY = y;
@@ -24903,7 +24900,6 @@ private static void HandleGameViewPointerDown(
   {
     if (!TryFindManualLeftF3Mirror(out ChampionMirrorPlacement mirror)) return;
     int x = 0, y = 83;
-    bool flip = false;
     ApplyChampionMirrorPositionOnly(ManualChampionLeftF3Key, ref x, ref y);
     int savedX = x, savedY = y;
 
@@ -38896,8 +38892,6 @@ private static void HandleGameViewPointerDown(
         HookD2SideY);
   }
 
-  private string lastHookS2DrawDiagnostic;
-  private string lastHookS3DrawDiagnostic;
 
   private void BlitHookSidesAtDistance(
       Color32[] pixels,

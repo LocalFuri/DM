@@ -5016,5 +5016,84 @@
       "ZIP entries at root; no separate TXT file",
       "Use Europe/Berlin timestamps"
     ]
+  },
+  "compiler_warnings_cleanup_20261122": {
+    "date": "2026-11-22T23:14:11+01:00",
+    "status": "VERIFIED BY USER — no ViewportLayoutEditor.cs warnings remain in Unity Console as of 2026-11-22",
+    "purpose": "Remove four unused-symbol warnings from ViewportLayoutEditor.cs without affecting rendering.",
+    "changes": [
+      "Removed unused flip variables in DrawChampionMirrorSideLaneFrontF2Rows and DrawManualChampionLeftF3Row (CS0219).",
+      "Removed unused lastHookS2DrawDiagnostic and lastHookS3DrawDiagnostic fields and reset assignments (CS0414).",
+      "No changes to Hook or Grate scaling, placement, visibility, mirroring, or V17."
+    ],
+    "separateWarnings": "AppleVideoCompare.cs has two CS0618 deprecated Unity API warnings; not modified because its source is unavailable.",
+    "verification": [
+      "Compile in Unity; expect four ViewportLayoutEditor.cs warnings to disappear",
+      "Check visual results unchanged"
+    ],
+    "sourceSha256Before": "5daba566f94f2f5505fdd6740fb525fe4590e13a767cfb84ed2d45929abdd7a6",
+    "sourceSha256After": "9429ad4d0d5417c58850ad94cfba4fcf6a8faaeafa0cafedbdef0c455dad558b",
+    "verificationResult": "User confirmed warnings removed after installing cleanup; visual preservation was not independently retested."
+  },
+  "apple_video_compare_cs0618_fix_20261122": {
+    "date": "2026-11-22T23:19:19+01:00",
+    "status": "VERIFIED BY USER — all Unity Console warnings gone as of 2026-11-22",
+    "file": "Assets/Editor/AppleVideoCompare.cs",
+    "purpose": "Remove Unity 6.4 obsolete FindObjectsByType sort-mode overload (CS0618) without changing viewport capture behavior.",
+    "change": "Replace Object.FindObjectsByType<RawImage>(FindObjectsSortMode.None) with Object.FindObjectsByType<RawImage>() in CaptureViewportInternal.",
+    "behavior": "Continue searching active RawImage instances without guaranteed ordering, prioritizing DungeonViewport name then first matching 320x200 texture.",
+    "regressionChecks": [
+      "Unity compiler has no AppleVideoCompare.cs CS0618 warnings",
+      "Apple video comparison captures the same 320x200 DungeonViewport RawImage",
+      "Other editor and ornament rendering unchanged"
+    ],
+    "sourceSha256Before": "a5b1a202ef4842509a91d6808898dbc4d6f5fe2cd6326520e042f90b95cc7582",
+    "sourceSha256After": "308230399212e1452218292c800a5d8f6c81101050e1dc2c2efe23108d8cd2dd",
+    "projectRules": [
+      "Tools commands must be directly under top-level Tools",
+      "ZIP files at root with no explanatory TXT",
+      "Europe/Berlin timestamps"
+    ],
+    "verificationResult": "User explicitly confirmed all Unity Console warnings disappeared; Apple viewport comparison behavior has not been independently retested."
+  },
+  "daily_checkpoint_20261122_end_of_session": {
+    "date": "2026-11-22T23:22:44+01:00",
+    "status": "SESSION CLOSED — CONTINUE FROM THIS EXACT CHECKPOINT",
+    "verifiedByUser": [
+      "Unity Console currently contains no compilation errors or warnings after repairing CS0136 and removing CS0219, CS0414, and AppleVideoCompare.cs CS0618 warnings.",
+      "Grate S2 and S3 visually match PC DOS after ViewEdit global X/Y calibration and shared S2/S3 blitter update.",
+      "V17 wall renderer S3 shared lane-end rules and compact ViewEdit caption alignment and cyan preview behavior were previously approved."
+    ],
+    "currentImplementation": [
+      "Phase 8: source baseline research and opt-in Tools/Export Phase 8 Ornament Baseline diagnostic prepared; runtime export verification not established.",
+      "Phase 9: DOS sampling options made explicit without intended pixel changes.",
+      "Phase 10: first DOS ornament registry (Hook, Manacles, Grate) added; registry must not be mistaken for a fully generic dispatcher.",
+      "Phase 11: Grate S2/S3 native source resolution and shared depth blitter introduced; their visual output accepted by user following calibration.",
+      "Phase 11: Hook S2/S3 native side source lookup integrated through registry; Unity CS0136 name collision in shared Grate blitter corrected.",
+      "Unused ViewEdit flip locals and Hook diagnostic fields removed; AppleVideoCompare deprecated Unity overload replaced; Console clean."
+    ],
+    "nextSessionPriority": [
+      "Read this Progression.json and the latest ViewportLayoutEditor.cs before making changes.",
+      "Verify Hook S2/S3 left/right mirror orientation, scaling, visibility and placement following Phase 11 registry integration; compilation succeeded but visual regression is still pending.",
+      "Continue Cursor legacy/hardcode audit roadmap: replace ornament-specific dispatch and blitters gradually with shared registry-driven renderer, preserving verified Grate/Hook/Manacles/V17 pixel output.",
+      "Treat global ViewEdit offsets strictly as X/Y placement calibration, never as a substitute for incorrect sampling, geometry, mirroring or visibility.",
+      "Preserve all verified ViewEdit cosmetic alignment, cyan click-to-copy, Click06.wav and right-click preview/minimap event priority."
+    ],
+    "mandatoryProjectRules": [
+      "All new Unity Editor menu commands must appear directly under top-level Tools; never Tools/DM or any submenu.",
+      "Update Assets/Editor/Progression.json for every code/tool change; include tool purpose, menu name and implementation date; keep newly introduced tools in progress summaries at least 7 days.",
+      "Deliverable ZIP files contain updated C# and Progression.json at ZIP root; no separate explanatory .txt reports.",
+      "All deliverables, including every ZIP member, must carry Europe/Berlin filesystem and ZIP entry timestamps.",
+      "Do not introduce legacy or position-specific ornament scaling/visibility exceptions; use the shared DOS 6-bit algorithm and data-driven placement, with global X/Y offsets.",
+      "No silent fallback or fabricated artwork; missing assets get a short one-time cyan informational Console message.",
+      "User performs Git commits; do not overwrite verified unrelated rendering paths."
+    ],
+    "pendingVerification": [
+      "Hook S2/S3 visual check against approved DOS viewpoints after registry integration.",
+      "Phase 8 runtime baseline export command and resulting manifest/PNG verification.",
+      "Further migration of other ornaments to generic dispatcher; currently family-specific blitters still exist.",
+      "AppleVideoCompare capture behavior still untested after warning fix (only Console warning disappearance confirmed)."
+    ],
+    "note": "Do not claim all Phase 11 render paths are fully generic or that all runtime pixel hashes are verified."
   }
 }
