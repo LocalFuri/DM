@@ -4948,5 +4948,73 @@
     ],
     "sourceSha256Before": "620567712284d8dce32dd8d8eddb8e801b2cfce707fca2b1b6575d2a00d807ce",
     "sourceSha256After": "af666c69ead3009297f099765bda016c153b61499faec16bddbe377ece529095"
+  },
+  "ornament_cleanup_phase11_grate_shared_blitter_20261122": {
+    "date": "2026-11-22T22:27:15+01:00",
+    "status": "PREPARED — UNITY COMPILE AND DOS VISUAL REGRESSION REQUIRED",
+    "summary": "Consolidated duplicated Grate S2/S3 wall-side visibility, matching, and blitting into one depth-parametrized helper, preserving the depth-specific entry points.",
+    "changes": [
+      "Shared method BlitGrateSidesAtDepthIntoPreview supports D2/D3 with explicit depth, source texture and geometric constants.",
+      "Thin D2/D3 wrappers preserve calls from existing depth-stage dispatch.",
+      "Preserves center-lane checks, wall tile and boundary face matching, left/right mirror flags, final calibration, 6-bit scaling, and ordering.",
+      "No code or tool changes outside Assets/Editor/ViewportLayoutEditor.cs."
+    ],
+    "verification": [
+      "Compile in Unity 6",
+      "Compare Grate S2 and S3 against approved DOS views with saved offsets",
+      "Check both left and right sides and scene visibility"
+    ],
+    "projectRules": [
+      "Unity Tools entries top-level only",
+      "ZIP root has ViewportLayoutEditor.cs and Progression.json only",
+      "Europe/Berlin timestamps"
+    ],
+    "sourceSha256Before": "af666c69ead3009297f099765bda016c153b61499faec16bddbe377ece529095",
+    "sourceSha256After": "a535ae957e45f6ab0ee277f3fb0a400ea10c7b2cedd6f298265199902906a924"
+  },
+  "ornament_cleanup_phase11_hook_s2_s3_registry_20261122": {
+    "date": "2026-11-22T23:00:57+01:00",
+    "status": "PREPARED — UNITY COMPILATION AND HOOK S2/S3 VISUAL REGRESSION PENDING",
+    "purpose": "Route native Hook S1 (14x19) source selection through shared ornament registry for S2 and S3, without changing rendered output.",
+    "file": "Assets/Editor/ViewportLayoutEditor.cs",
+    "changes": [
+      "GetHookSideTexture now resolves Hook nativeSideSource via TryGetDosWallOrnamentRegistration and validates native dimensions.",
+      "GetHookSide2Texture/GetHookSide3Texture, DOS scaling options, position, mirroring and blitters are unchanged.",
+      "Preserves all previously approved Grate S2/S3 shared blitter logic and global X/Y offsets.",
+      "No new Unity Tools commands."
+    ],
+    "verification": [
+      "Unity compilation",
+      "Hook S2/S3 left and right side comparisons to previously approved views",
+      "Grate S2/S3 visual checks; offsets unchanged"
+    ],
+    "permanentRules": [
+      "Only top-level Tools menu items",
+      "ZIP entries at archive root",
+      "Include Progression.json, no explanatory TXT",
+      "Apply Europe/Berlin timestamp"
+    ],
+    "sourceSha256Before": "a535ae957e45f6ab0ee277f3fb0a400ea10c7b2cedd6f298265199902906a924",
+    "sourceSha256After": "1f91253ec0b7057eab7017961c1894743d3a66b68d2e72c0a826a9906a199758"
+  },
+  "ornament_phase11_cs0136_rightx_collision_fix_20261122": {
+    "date": "2026-11-22T23:07:08+01:00",
+    "status": "Source correction prepared; Unity compilation pending",
+    "unityError": "CS0136 at ViewportLayoutEditor.cs line 40830: rightX conflicts with method parameter",
+    "cause": "BlitGrateSidesAtDepthIntoPreview reused rightX for the right-side screen destination and the player-facing right-direction map offset.",
+    "correction": "Rename only the screen X parameter to rightScreenX and update its right-side blit argument. Keep local map direction rightX unchanged.",
+    "renderingImpact": "No intended pixel, X/Y, mirror, scale, calibration, or visibility changes.",
+    "sourceSha256Before": "1f91253ec0b7057eab7017961c1894743d3a66b68d2e72c0a826a9906a199758",
+    "sourceSha256After": "5daba566f94f2f5505fdd6740fb525fe4590e13a767cfb84ed2d45929abdd7a6",
+    "verification": [
+      "Unity compiles without CS0136",
+      "Grate S2 and S3 retain approved visuals",
+      "Hook S2/S3 registry lookup remains active"
+    ],
+    "projectRules": [
+      "Unity tools directly under Tools only",
+      "ZIP entries at root; no separate TXT file",
+      "Use Europe/Berlin timestamps"
+    ]
   }
 }

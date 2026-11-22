@@ -40696,18 +40696,32 @@ private static void HandleGameViewPointerDown(
     if (cachedHookSideTexture != null)
       return cachedHookSideTexture;
 
-    Texture2D texture =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(HookSideAssetPath);
-    if (texture == null || texture.width != 14 || texture.height != 19)
+    // Phase 11: resolve the same verified native Hook S1 source through
+    // the shared registry. S2/S3 sampler arguments and drawing stay intact.
+    if (!TryGetDosWallOrnamentRegistration(
+            "Hook", out DosWallOrnamentRegistration registration)
+        || string.IsNullOrEmpty(registration.nativeSideSource)
+        || registration.nativeSideWidth != 14
+        || registration.nativeSideHeight != 19)
+    {
+      Debug.LogError("Hook side: native 14x19 registration missing or invalid.");
+      return null;
+    }
+
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        registration.nativeSideSource);
+    if (texture == null
+        || texture.width != registration.nativeSideWidth
+        || texture.height != registration.nativeSideHeight)
     {
       Debug.LogError("Hook side: required native DOS 14x19 PNG missing "
-          + "or dimensions incorrect at " + HookSideAssetPath);
+          + "or dimensions incorrect at " + registration.nativeSideSource);
       return null;
     }
     if (!texture.isReadable)
     {
       Debug.LogError("Hook side: required source is not readable at "
-          + HookSideAssetPath);
+          + registration.nativeSideSource);
       return null;
     }
     cachedHookSideTexture = texture;
@@ -40790,11 +40804,19 @@ private static void HandleGameViewPointerDown(
       return;
     }
 
-    Texture2D side3 = GetGrateSide3Texture();
-    if (side3 == null
-        || !side3.isReadable
-        || side3.width != GrateD3SideWidth
-        || side3.height != GrateD3SideHeight)
+    BlitGrateSidesAtDepthIntoPreview(
+        pixels, 3, GetGrateSide3Texture(),
+        GrateD3SideLeftX, GrateD3SideRightX, GrateD3SideY);
+  }
+
+  private void BlitGrateSidesAtDepthIntoPreview(
+      Color32[] pixels, int depth, Texture2D sideTexture,
+      int leftX, int rightScreenX, int topY)
+  {
+    if (sideTexture == null
+        || !sideTexture.isReadable
+        || sideTexture.width != (depth == 3 ? GrateD3SideWidth : GrateD2SideWidth)
+        || sideTexture.height != (depth == 3 ? GrateD3SideHeight : GrateD2SideHeight))
     {
       return;
     }
@@ -40808,16 +40830,16 @@ private static void HandleGameViewPointerDown(
         out int rightX,
         out int rightY);
 
-    // D3 side faces are visible only through open D1, D2 and D3 centers.
-    int d3CenterX = previewX + forwardX * 3;
-    int d3CenterY = previewY + forwardY * 3;
-    if (!IsPreviewSideOrnamentCenterLaneOpen(forwardX, forwardY, 3))
+    // D2/D3 side faces are visible only through open intervening centers.
+    int centerX = previewX + forwardX * depth;
+    int centerY = previewY + forwardY * depth;
+    if (!IsPreviewSideOrnamentCenterLaneOpen(forwardX, forwardY, depth))
       return;
 
-    int leftWallTileX = d3CenterX - rightX;
-    int leftWallTileY = d3CenterY - rightY;
-    int rightWallTileX = d3CenterX + rightX;
-    int rightWallTileY = d3CenterY + rightY;
+    int leftWallTileX = centerX - rightX;
+    int leftWallTileY = centerY - rightY;
+    int rightWallTileX = centerX + rightX;
+    int rightWallTileY = centerY + rightY;
 
     bool leftWallExists =
         previewMiniMap.IsInside(leftWallTileX, leftWallTileY)
@@ -40875,16 +40897,16 @@ private static void HandleGameViewPointerDown(
       {
         matchesLeft =
             leftWallExists
-            && ornament.x == d3CenterX
-            && ornament.y == d3CenterY
+            && ornament.x == centerX
+            && ornament.y == centerY
             && string.Equals(
                 ornament.wall,
                 leftBoundaryDirection,
                 System.StringComparison.OrdinalIgnoreCase);
         matchesRight =
             rightWallExists
-            && ornament.x == d3CenterX
-            && ornament.y == d3CenterY
+            && ornament.x == centerX
+            && ornament.y == centerY
             && string.Equals(
                 ornament.wall,
                 rightBoundaryDirection,
@@ -40893,18 +40915,18 @@ private static void HandleGameViewPointerDown(
 
       if (matchesLeft && !leftDrawn)
       {
-        // Native Side3 art is the left-wall perspective.
+        // Native DOS side art is the left-wall perspective.
         BlitOrnamentPieceIntoPreview(
-            pixels, side3, ornament,
-            GrateD3SideLeftX, GrateD3SideY, false);
+            pixels, sideTexture, ornament,
+            leftX, topY, false);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
         BlitOrnamentPieceIntoPreview(
-            pixels, side3, ornament,
-            GrateD3SideRightX, GrateD3SideY, true);
+            pixels, sideTexture, ornament,
+            rightScreenX, topY, true);
         rightDrawn = true;
       }
 
@@ -41117,127 +41139,9 @@ private static void HandleGameViewPointerDown(
       return;
     }
 
-    Texture2D side2 = GetGrateSide2Texture();
-    if (side2 == null
-        || !side2.isReadable
-        || side2.width != GrateD2SideWidth
-        || side2.height != GrateD2SideHeight)
-    {
-      return;
-    }
-
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    // D2 side faces are visible only through open D1 and D2 center cells.
-    int d2CenterX = previewX + forwardX * 2;
-    int d2CenterY = previewY + forwardY * 2;
-    if (!IsPreviewSideOrnamentCenterLaneOpen(forwardX, forwardY, 2))
-      return;
-
-    int leftWallTileX = d2CenterX - rightX;
-    int leftWallTileY = d2CenterY - rightY;
-    int rightWallTileX = d2CenterX + rightX;
-    int rightWallTileY = d2CenterY + rightY;
-
-    bool leftWallExists =
-        previewMiniMap.IsInside(leftWallTileX, leftWallTileY)
-        && previewMiniMap.GetTile(leftWallTileX, leftWallTileY).Type
-            == DungeonTileType.Wall;
-    bool rightWallExists =
-        previewMiniMap.IsInside(rightWallTileX, rightWallTileY)
-        && previewMiniMap.GetTile(rightWallTileX, rightWallTileY).Type
-            == DungeonTileType.Wall;
-
-    string leftPhysicalFace =
-        FacingName(TurnPreviewFacingRight(previewFacing));
-    string rightPhysicalFace =
-        FacingName(TurnPreviewFacingLeft(previewFacing));
-    string leftBoundaryDirection =
-        FacingName(TurnPreviewFacingLeft(previewFacing));
-    string rightBoundaryDirection =
-        FacingName(TurnPreviewFacingRight(previewFacing));
-
-    bool leftDrawn = false;
-    bool rightDrawn = false;
-
-    for (int i = 0; i < previewWallOrnaments.Length; i++)
-    {
-      WallOrnamentPlacement ornament = previewWallOrnaments[i];
-      if (ornament != null
-          && !IsPreviewFeatureEnabled(
-              MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
-        continue;
-      if (!IsGrateOrnament(ornament))
-        continue;
-
-      bool matchesLeft;
-      bool matchesRight;
-      if (ornament.wallTilePlacement)
-      {
-        matchesLeft =
-            leftWallExists
-            && ornament.x == leftWallTileX
-            && ornament.y == leftWallTileY
-            && string.Equals(
-                ornament.wall,
-                leftPhysicalFace,
-                System.StringComparison.OrdinalIgnoreCase);
-        matchesRight =
-            rightWallExists
-            && ornament.x == rightWallTileX
-            && ornament.y == rightWallTileY
-            && string.Equals(
-                ornament.wall,
-                rightPhysicalFace,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-      else
-      {
-        matchesLeft =
-            leftWallExists
-            && ornament.x == d2CenterX
-            && ornament.y == d2CenterY
-            && string.Equals(
-                ornament.wall,
-                leftBoundaryDirection,
-                System.StringComparison.OrdinalIgnoreCase);
-        matchesRight =
-            rightWallExists
-            && ornament.x == d2CenterX
-            && ornament.y == d2CenterY
-            && string.Equals(
-                ornament.wall,
-                rightBoundaryDirection,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-
-      if (matchesLeft && !leftDrawn)
-      {
-        // Generated native DOS S2 art is the left-wall perspective.
-        BlitOrnamentPieceIntoPreview(
-            pixels, side2, ornament,
-            GrateD2SideLeftX, GrateD2SideY, false);
-        leftDrawn = true;
-      }
-
-      if (matchesRight && !rightDrawn)
-      {
-        BlitOrnamentPieceIntoPreview(
-            pixels, side2, ornament,
-            GrateD2SideRightX, GrateD2SideY, true);
-        rightDrawn = true;
-      }
-
-      if (leftDrawn && rightDrawn)
-        return;
-    }
+    BlitGrateSidesAtDepthIntoPreview(
+        pixels, 2, GetGrateSide2Texture(),
+        GrateD2SideLeftX, GrateD2SideRightX, GrateD2SideY);
   }
 
   private Texture2D GetGrateSide2Texture()
