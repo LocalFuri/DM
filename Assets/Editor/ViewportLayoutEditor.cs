@@ -39146,22 +39146,24 @@ private static void HandleGameViewPointerDown(
           string pngPath = exportFolder + "/Hook_F2_Generated_"
               + scaled.width + "x" + scaled.height + ".png";
           Color32[] originalPixels = source.GetPixels32();
-          int stepX = ((source.width << 10) / scaled.width) << 6;
-          int stepY = ((source.height << 10) / scaled.height) << 6;
-          int startX = (stepX >> 1);  // Native DOS F2: zero rounding bias.
-          int startY = (stepY >> 1);
+          // Match GenerateDmScaledWallDecoration's DOS 6-bit source
+          // selector exactly (Hook F2: zero bias, top-down sampling).
+          int stepX = (int)(((long)source.width << 6) / scaled.width);
+          int stepY = (int)(((long)source.height << 6) / scaled.height);
+          int startX = stepX >> 1;
+          int startY = stepY >> 1;
           Color32[] brightPalette = DungeonViewportLightPalettes[0];
           System.Text.StringBuilder csv = new System.Text.StringBuilder();
           csv.AppendLine("targetX,targetYBottomUp,targetYTopDown,sourceX,sourceYBottomUp,sourcePaletteIndex,mappedPaletteIndex,sourceRGBA,generatedRGBA");
           for (int ty = 0; ty < scaled.height; ty++)
           {
             int topDownY = scaled.height - 1 - ty;
-            int syTopDown = Mathf.Clamp((startY + topDownY * stepY) >> 16,
+            int syTopDown = Mathf.Clamp((startY + topDownY * stepY) >> 6,
                 0, source.height - 1);
             int sy = source.height - 1 - syTopDown;
             for (int tx = 0; tx < scaled.width; tx++)
             {
-              int sx = Mathf.Clamp((startX + tx * stepX) >> 16,
+              int sx = Mathf.Clamp((startX + tx * stepX) >> 6,
                   0, source.width - 1);
               Color32 src = originalPixels[sy * source.width + sx];
               Color32 dst = texels[ty * scaled.width + tx];
@@ -39190,7 +39192,7 @@ private static void HandleGameViewPointerDown(
           Debug.Log("[Hook F2 Trace] Pixel exports: " + csvPath
               + " and " + pngPath + "; rows="
               + (scaled.width * scaled.height) + "; stepX=" + stepX
-              + "; stepY=" + stepY + "; biasX=0; biasY=0; sampleTopDown=true (DOS F2 candidate)");
+              + "; stepY=" + stepY + "; biasX=0; biasY=0; sampleTopDown=true (live DOS 6-bit selector)");
         }
         catch (System.Exception exportError)
         {

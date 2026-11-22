@@ -4454,5 +4454,29 @@
     "fix": "Removed only the redundant [System.NonSerialized] line; retained the remaining attribute and cachedPuddleS2Texture field.",
     "preserved": "No active renderer, calibration, Hook mirroring or V17 wall changes.",
     "verification": "Recompile in Unity; verify error CS0579 is gone."
+  },
+  "ornament_cleanup_phase2_hook_f2_trace_20261122": {
+    "date_local": "2026-11-22 19:37:41 CET",
+    "status": "Implemented in source; Unity compilation and diagnostic trace validation pending",
+    "source": "Cursor ornament legacy/hardcode audit, finding C4",
+    "scope": "ViewportLayoutEditor.cs / TraceHookF2CurrentViewFromMenu diagnostic only",
+    "change": "Use exactly the live DOS 6-bit nearest-sample coordinate stepping and index shift (step=(source<<6)/dest, start=step>>1, index>>6) in Hook F2 CSV trace; preserve top-down orientation, palette, CSV columns and file export.",
+    "why": "Old trace used ((source<<10)/dest)<<6 and index>>16, which can select different pixels from live 6-bit renderer despite equivalent nominal fixed-point range.",
+    "untouched": [
+      "GenerateDmScaledWallDecoration",
+      "Hook F2/S2/S3 render paths",
+      "mirroring",
+      "global ornament offsets",
+      "Grate S2/S3",
+      "V17 walls",
+      "cyan preview and Click06.wav"
+    ],
+    "verification": [
+      "Unity Console zero compile errors",
+      "Tools/Hook F2 Trace Current View exports CSV and PNG",
+      "Compare CSV source sampling/mapped pixels with generated Hook F2 texture",
+      "Recheck Hook and Grate visual positions if necessary"
+    ],
+    "next_cleanup": "Gradually consolidate duplicated ornament dispatch only with per-perspective regression checks; do not change default sampler for other ornaments without DOS evidence."
   }
 }
