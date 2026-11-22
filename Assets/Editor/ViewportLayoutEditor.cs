@@ -3429,6 +3429,9 @@ public class ViewportLayoutEditor : EditorWindow
       previewGraphicChangedThisFrame = false;
     }
 
+    // The cyan ornament bitmap belongs directly after the final feature row,
+    // inside the same scrollable list (not docked at the window bottom).
+    DrawSelectedOrnamentInspector();
     EditorGUILayout.EndScrollView();
 
     if (scrollToBottomOnNextRepaint
@@ -27468,6 +27471,348 @@ private static void HandleGameViewPointerDown(
     return viewEditItemCaptionMaxWidth;
   }
 
+  // Diagnostic only: click an ornament caption to inspect its actual bitmap
+  // on cyan. This never changes artwork, calibration, or scene rendering.
+  private string selectedOrnamentInspectorKey;
+  private string selectedOrnamentInspectorCaption;
+  private bool selectedOrnamentInspectorMirror;
+  private static bool s_ornamentPreviewMissingClick06Reported;
+
+  // The cyan preview is an EditorWindow control: play its feedback through
+  // the existing edit-mode AudioUtil helper without entering Play Mode.
+  private void PlayOrnamentPreviewCopySound()
+  {
+    const string assetPath = "Assets/Audio/Click06.wav";
+    AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(assetPath);
+    if (clip == null)
+    {
+      if (!s_ornamentPreviewMissingClick06Reported)
+      {
+        s_ornamentPreviewMissingClick06Reported = true;
+        Debug.Log("<color=#00FFFF>ViewEdit MISSING AUDIO | " + assetPath + "</color>");
+      }
+      return; // Never substitute another click sound.
+    }
+    s_ornamentPreviewMissingClick06Reported = false;
+    PlayEditorPreviewClip(clip);
+  }
+
+  private Texture2D GetSelectedOrnamentInspectorTexture()
+  {
+    if (string.IsNullOrEmpty(selectedOrnamentInspectorKey))
+      return null;
+    string[] parts = selectedOrnamentInspectorKey.Split(':');
+    if (parts.Length < 3) return null;
+    string family = parts[1];
+    string slot = parts[2];
+    if (family == "Grate")
+    {
+      switch (slot)
+      {
+        case "S1": return GetGrateSide1Texture();
+        case "S2": return GetGrateSide2Texture();
+        case "S3": return GetGrateSide3Texture();
+        case "F1": return GetGrateFrontTexture();
+        case "F2": return GetGrateFront2Texture();
+        case "F3": return GetGrateFront3Texture();
+        case "F2SideCorner": return GetGrateF2SideCornerTexture();
+        case "F3SideCorner": return GetGrateF3SideCornerTexture();
+      }
+    }
+    if (family == "Hook")
+    {
+      switch (slot)
+      {
+        case "S1": return GetHookSideTexture();
+        case "S2": return GetHookSide2Texture();
+        case "S3": return GetHookSide3Texture();
+        case "F1": return GetHookFrontTexture();
+        case "F2": return GetHookGeneratedF2FrontTexture();
+        case "F3": return GetHookGeneratedF3FrontTexture();
+      }
+    }
+    if (family == "Manacles")
+    {
+      switch (slot)
+      {
+        case "S1": return GetManaclesS1Texture();
+        case "S2": return GetManaclesGeneratedD2SideTexture();
+        case "S3": return GetManaclesGeneratedD3SideTexture();
+        case "F1": return GetManaclesF1Texture();
+        case "F2": return GetManaclesGeneratedF2FrontTexture();
+        case "F3": return GetManaclesGeneratedF3FrontTexture();
+      }
+    }
+    if (family == "WoodRing")
+    {
+      switch (slot)
+      {
+        case "S1": return GetWoodRingSideTexture();
+        case "S2": return GetWoodRingSide2Texture();
+        case "S3": return GetWoodRingSide3Texture();
+        case "F1": return GetWoodRingFrontTexture();
+        case "F2": return GetWoodRingGeneratedF2FrontTexture();
+        case "F3": return GetWoodRingGeneratedF3FrontTexture();
+      }
+    }
+    if (family == "Slime")
+    {
+      switch (slot)
+      {
+        case "S1": return GetSlimeSide1Texture();
+        case "S2": return GetSlimeSide2Texture();
+        case "F1": return GetSlimeFrontTexture();
+        case "F2": return GetSlimeGeneratedF2FrontTexture();
+        case "F3": return GetSlimeGeneratedF3FrontTexture();
+      }
+    }
+    if (family == "ViAltar")
+    {
+      switch (slot)
+      {
+        case "S1": return GetViAltarS1Texture();
+        case "S2": return GetViAltarS2Texture();
+        case "S3": return GetViAltarS3Texture();
+        case "F1": return GetViAltarFrontTexture();
+        case "F2": return GetViAltarEngineF2TestTexture();
+        case "F3": return GetViAltarEngineF3TestTexture();
+      }
+    }
+    return null;
+  }
+
+  // Copies a real PNG image to the Windows clipboard (not a path or Base64
+  // string). CF_DIB is also offered for applications that cannot read PNG.
+#if UNITY_EDITOR_WIN
+  [DllImport("user32.dll", SetLastError = true)]
+  private static extern bool OpenClipboard(System.IntPtr hwnd);
+  [DllImport("user32.dll", SetLastError = true)]
+  private static extern bool EmptyClipboard();
+  [DllImport("user32.dll", SetLastError = true)]
+  private static extern bool CloseClipboard();
+  [DllImport("user32.dll", SetLastError = true)]
+  private static extern System.IntPtr SetClipboardData(uint format, System.IntPtr handle);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+  private static extern uint RegisterClipboardFormat(string name);
+  [DllImport("kernel32.dll", SetLastError = true)]
+  private static extern System.IntPtr GlobalAlloc(uint flags, System.UIntPtr bytes);
+  [DllImport("kernel32.dll", SetLastError = true)]
+  private static extern System.IntPtr GlobalLock(System.IntPtr handle);
+  [DllImport("kernel32.dll", SetLastError = true)]
+  private static extern bool GlobalUnlock(System.IntPtr handle);
+  [DllImport("kernel32.dll", SetLastError = true)]
+  private static extern System.IntPtr GlobalFree(System.IntPtr handle);
+
+  private static bool PutClipboardBytes(uint format, byte[] bytes)
+  {
+    const uint GMEM_MOVEABLE = 0x0002;
+    System.IntPtr handle = GlobalAlloc(GMEM_MOVEABLE, new System.UIntPtr((uint)bytes.Length));
+    if (handle == System.IntPtr.Zero) return false;
+    System.IntPtr address = GlobalLock(handle);
+    if (address == System.IntPtr.Zero)
+    {
+      GlobalFree(handle);
+      return false;
+    }
+    Marshal.Copy(bytes, 0, address, bytes.Length);
+    GlobalUnlock(handle);
+    if (SetClipboardData(format, handle) != System.IntPtr.Zero)
+      return true; // Clipboard now owns this global memory.
+    GlobalFree(handle);
+    return false;
+  }
+#endif
+
+  private static Color32[] ReadOrnamentInspectorPixels(Texture2D bitmap)
+  {
+    try { return bitmap.GetPixels32(); }
+    catch (UnityException)
+    {
+      // Importer may have made a texture non-readable. Inspect via GPU rather
+      // than modifying the artwork importer or the real drawing path.
+      RenderTexture temporary = RenderTexture.GetTemporary(
+          bitmap.width, bitmap.height, 0, RenderTextureFormat.ARGB32);
+      RenderTexture previous = RenderTexture.active;
+      Texture2D readable = null;
+      try
+      {
+        Graphics.Blit(bitmap, temporary);
+        RenderTexture.active = temporary;
+        readable = new Texture2D(bitmap.width, bitmap.height, TextureFormat.RGBA32, false);
+        readable.ReadPixels(new Rect(0, 0, bitmap.width, bitmap.height), 0, 0);
+        readable.Apply();
+        return readable.GetPixels32();
+      }
+      finally
+      {
+        RenderTexture.active = previous;
+        RenderTexture.ReleaseTemporary(temporary);
+        if (readable != null) UnityEngine.Object.DestroyImmediate(readable);
+      }
+    }
+  }
+
+  private static bool CopyOrnamentInspectorImage(
+      Texture2D bitmap, bool mirror, out string error)
+  {
+    error = null;
+#if UNITY_EDITOR_WIN
+    Texture2D copy = null;
+    try
+    {
+      // Export the rendered source bitmap at 8x nearest-neighbour enlargement:
+      // a 7x8 S3 item is easily visible when pasted into a chat.
+      const int zoom = 8;
+      int width = bitmap.width * zoom;
+      int height = bitmap.height * zoom;
+      Color32[] source = ReadOrnamentInspectorPixels(bitmap);
+      Color32[] pixels = new Color32[width * height];
+      for (int y = 0; y < height; y++)
+      for (int x = 0; x < width; x++)
+      {
+        int sx = x / zoom;
+        int sy = y / zoom;
+        if (mirror) sx = bitmap.width - 1 - sx;
+        Color32 c = source[sy * bitmap.width + sx];
+        // Diagnostic copy always composites transparent pixels over cyan.
+        float a = c.a / 255f;
+        c = new Color32((byte)Mathf.RoundToInt(c.r*a),
+            (byte)Mathf.RoundToInt(c.g*a + 255f*(1f-a)),
+            (byte)Mathf.RoundToInt(c.b*a + 255f*(1f-a)), 255);
+        pixels[y * width + x] = c;
+      }
+      copy = new Texture2D(width, height, TextureFormat.RGBA32, false);
+      copy.SetPixels32(pixels);
+      copy.Apply();
+      byte[] png = copy.EncodeToPNG();
+
+      // CF_DIB fallback. 40-byte BITMAPINFOHEADER, 32-bit BGRA bottom-up.
+      byte[] dib = new byte[40 + width * height * 4];
+      System.Buffer.BlockCopy(System.BitConverter.GetBytes(40), 0, dib, 0, 4);
+      System.Buffer.BlockCopy(System.BitConverter.GetBytes(width), 0, dib, 4, 4);
+      System.Buffer.BlockCopy(System.BitConverter.GetBytes(height), 0, dib, 8, 4);
+      System.Buffer.BlockCopy(System.BitConverter.GetBytes((short)1), 0, dib, 12, 2);
+      System.Buffer.BlockCopy(System.BitConverter.GetBytes((short)32), 0, dib, 14, 2);
+      System.Buffer.BlockCopy(System.BitConverter.GetBytes(width * height * 4), 0, dib, 20, 4);
+      int dest = 40;
+      for (int y = 0; y < height; y++)
+      for (int x = 0; x < width; x++)
+      {
+        Color32 c = pixels[y * width + x];
+        dib[dest++] = c.b; dib[dest++] = c.g;
+        dib[dest++] = c.r; dib[dest++] = c.a;
+      }
+      if (!OpenClipboard(System.IntPtr.Zero))
+      {
+        error = "Windows clipboard is busy";
+        return false;
+      }
+      try
+      {
+        if (!EmptyClipboard())
+        {
+          error = "Could not clear the Windows clipboard";
+          return false;
+        }
+        uint pngFormat = RegisterClipboardFormat("PNG");
+        bool pngOk = pngFormat != 0 && PutClipboardBytes(pngFormat, png);
+        bool dibOk = PutClipboardBytes(8 /* CF_DIB */, dib);
+        if (!pngOk && !dibOk)
+        {
+          error = "Could not write image data to clipboard";
+          return false;
+        }
+      }
+      finally { CloseClipboard(); }
+      return true;
+    }
+    catch (System.Exception ex)
+    {
+      error = ex.Message;
+      return false;
+    }
+    finally
+    {
+      if (copy != null) UnityEngine.Object.DestroyImmediate(copy);
+    }
+#else
+    error = "Copy Image currently requires Unity Editor on Windows";
+    return false;
+#endif
+  }
+
+  private void DrawSelectedOrnamentInspector()
+  {
+    if (string.IsNullOrEmpty(selectedOrnamentInspectorKey)) return;
+    GUILayout.Space(4f);
+    EditorGUILayout.BeginHorizontal();
+    EditorGUILayout.LabelField("Ornament preview: "
+        + selectedOrnamentInspectorCaption, EditorStyles.boldLabel);
+    if (GUILayout.Button("Close", GUILayout.Width(55f)))
+    {
+      selectedOrnamentInspectorKey = null;
+      EditorGUILayout.EndHorizontal();
+      return;
+    }
+    EditorGUILayout.EndHorizontal();
+
+    Texture2D bitmap = GetSelectedOrnamentInspectorTexture();
+    if (bitmap == null)
+    {
+      EditorGUILayout.HelpBox(
+          "No generated bitmap for " + selectedOrnamentInspectorKey,
+          MessageType.Info);
+      return;
+    }
+
+    string previewDescription = bitmap.width + "x" + bitmap.height
+        + (selectedOrnamentInspectorMirror ? " mirrored" : " unmirrored")
+        + " — click cyan preview to copy";
+    EditorGUILayout.LabelField(previewDescription, EditorStyles.miniLabel);
+
+    // Exact ornament-sized cyan panel (at integer zoom), 4 px padding.
+    // No full-window cyan canvas or unrelated fixed panel height.
+    const float zoom = 8f;
+    const float padding = 4f;
+    float boxWidth = bitmap.width * zoom + padding * 2f;
+    float boxHeight = bitmap.height * zoom + padding * 2f;
+    // Center the bitmap-sized preview under the description text itself,
+    // not in the full-width ViewEdit editor window.
+    float descriptionWidth = EditorStyles.miniLabel.CalcSize(
+        new GUIContent(previewDescription)).x;
+    float indent = Mathf.Max(0f, (descriptionWidth - boxWidth) * 0.5f);
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Space(indent);
+    Rect panel = GUILayoutUtility.GetRect(boxWidth, boxHeight,
+        GUILayout.Width(boxWidth), GUILayout.Height(boxHeight));
+    EditorGUI.DrawRect(panel, Color.cyan);
+    Rect drawRect = new Rect(panel.x + padding, panel.y + padding,
+        bitmap.width * zoom, bitmap.height * zoom);
+    Matrix4x4 originalMatrix = GUI.matrix;
+    try
+    {
+      if (selectedOrnamentInspectorMirror)
+        GUIUtility.ScaleAroundPivot(new Vector2(-1f, 1f), drawRect.center);
+      GUI.DrawTexture(drawRect, bitmap, ScaleMode.StretchToFill, true);
+    }
+    finally { GUI.matrix = originalMatrix; }
+
+    // Make the image-sized cyan rectangle the only clipboard control.
+    if (GUI.Button(panel, GUIContent.none, GUIStyle.none))
+    {
+      string copyError;
+      if (CopyOrnamentInspectorImage(bitmap, selectedOrnamentInspectorMirror,
+              out copyError))
+      {
+        ShowNotification(new GUIContent("copied"));
+        PlayOrnamentPreviewCopySound();
+      }
+      else
+        Debug.LogWarning("ViewEdit ornament clipboard: " + copyError);
+    }
+    EditorGUILayout.EndHorizontal();
+  }
+
   private bool DrawWallOrnamentCalibrationRow(
       WallOrnamentPlacement ornament,
       string displayName)
@@ -27591,10 +27936,16 @@ private static void HandleGameViewPointerDown(
         compactDisplayName, @"\((N|S|E|W)\)", "$1");
     ornamentCaptionColumnWidth =
         GetViewEditItemCaptionWidth(featureStyle, compactDisplayName);
-    GUILayout.Label(
-        compactDisplayName,
-        featureStyle,
-        GUILayout.Width(ornamentCaptionColumnWidth));
+    // Label-sized button: clicking the yellow ornament name selects the
+    // actual generated bitmap; editing controls keep their existing behavior.
+    if (GUILayout.Button(compactDisplayName, featureStyle,
+        GUILayout.Width(ornamentCaptionColumnWidth)))
+    {
+      selectedOrnamentInspectorKey = key;
+      selectedOrnamentInspectorCaption = compactDisplayName;
+      selectedOrnamentInspectorMirror = mirror;
+      Repaint();
+    }
 
     // Altar rows use the same Set column and per-placement visibility key
     // as other ornament rows. This is only a ViewEdit presentation change.
@@ -27702,6 +28053,9 @@ private static void HandleGameViewPointerDown(
           "Mirror", mirror, GUILayout.Width(56f));
     }
     bool mirrorChanged = editMirror != mirror;
+    if (string.Equals(selectedOrnamentInspectorKey, key,
+            System.StringComparison.Ordinal))
+      selectedOrnamentInspectorMirror = editMirror;
     bool applyClicked = false;
     if (hasGenericProjection)
     {
