@@ -40598,6 +40598,26 @@ private static void HandleGameViewPointerDown(
     return cachedHookSide3Texture;
   }
 
+  // Shared D2/D3 side-ornament visibility gate: each intervening center
+  // square must exist and be open. This is the same check previously
+  // repeated independently in the Grate S2 and S3 blitters.
+  private bool IsPreviewSideOrnamentCenterLaneOpen(
+      int forwardX, int forwardY, int depth)
+  {
+    if (previewMiniMap == null)
+      return false;
+    for (int distance = 1; distance <= depth; distance++)
+    {
+      int cellX = previewX + forwardX * distance;
+      int cellY = previewY + forwardY * distance;
+      if (!previewMiniMap.IsInside(cellX, cellY)
+          || previewMiniMap.GetTile(cellX, cellY).Type
+              == DungeonTileType.Wall)
+        return false;
+    }
+    return true;
+  }
+
   private void BlitGrateD3SidesIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -40626,25 +40646,11 @@ private static void HandleGameViewPointerDown(
         out int rightX,
         out int rightY);
 
-    // D3 side faces are visible only through open D1, D2, and D3 centers.
-    int d1CenterX = previewX + forwardX;
-    int d1CenterY = previewY + forwardY;
-    int d2CenterX = previewX + forwardX * 2;
-    int d2CenterY = previewY + forwardY * 2;
+    // D3 side faces are visible only through open D1, D2 and D3 centers.
     int d3CenterX = previewX + forwardX * 3;
     int d3CenterY = previewY + forwardY * 3;
-    if (!previewMiniMap.IsInside(d1CenterX, d1CenterY)
-        || previewMiniMap.GetTile(d1CenterX, d1CenterY).Type
-            == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d2CenterX, d2CenterY)
-        || previewMiniMap.GetTile(d2CenterX, d2CenterY).Type
-            == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d3CenterX, d3CenterY)
-        || previewMiniMap.GetTile(d3CenterX, d3CenterY).Type
-            == DungeonTileType.Wall)
-    {
+    if (!IsPreviewSideOrnamentCenterLaneOpen(forwardX, forwardY, 3))
       return;
-    }
 
     int leftWallTileX = d3CenterX - rightX;
     int leftWallTileY = d3CenterY - rightY;
@@ -40935,19 +40941,10 @@ private static void HandleGameViewPointerDown(
         out int rightY);
 
     // D2 side faces are visible only through open D1 and D2 center cells.
-    int d1CenterX = previewX + forwardX;
-    int d1CenterY = previewY + forwardY;
     int d2CenterX = previewX + forwardX * 2;
     int d2CenterY = previewY + forwardY * 2;
-    if (!previewMiniMap.IsInside(d1CenterX, d1CenterY)
-        || previewMiniMap.GetTile(d1CenterX, d1CenterY).Type
-            == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d2CenterX, d2CenterY)
-        || previewMiniMap.GetTile(d2CenterX, d2CenterY).Type
-            == DungeonTileType.Wall)
-    {
+    if (!IsPreviewSideOrnamentCenterLaneOpen(forwardX, forwardY, 2))
       return;
-    }
 
     int leftWallTileX = d2CenterX - rightX;
     int leftWallTileY = d2CenterY - rightY;

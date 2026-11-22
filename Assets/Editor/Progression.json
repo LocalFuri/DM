@@ -4500,5 +4500,26 @@
       "Checked live Manacles and Hook call counts unchanged",
       "User: recompile Unity; quick regression Hook S3 and Grate S2/S3"
     ]
+  },
+  "ornament_cleanup_phase4_shared_grate_side_corridor_20261122": {
+    "date": "2026-11-22",
+    "status": "code prepared; Unity compilation and viewpoint regression pending",
+    "cursor_audit_finding": "Duplicated per-ornament side-wall corridor visibility checks",
+    "scope": "ViewportLayoutEditor.cs Grate S2/S3 only",
+    "implementation": "Extracted the identical D1..D2 and D1..D3 open-center checks into IsPreviewSideOrnamentCenterLaneOpen(forwardX,forwardY,depth); both Grate side blitters call it.",
+    "preserved": [
+      "Existing out-of-map and wall rejection at each distance",
+      "Physical wall-face matching, X/Y and mirroring",
+      "Grate S2 dx=+2 dy=0 calibration in external OrnamentCalibration.json",
+      "Grate S3 calibration and native DOS 6-bit scaling",
+      "Hook, Manacles, V17 walls, cyan ViewEdit preview and Click06.wav"
+    ],
+    "verification": [
+      "Compile Unity; confirm zero errors",
+      "Compare Grate S2 at saved calibration viewpoint",
+      "Compare Grate S3 at 16,9 West against DOS and saved calibration",
+      "Check open and blocked center lanes"
+    ],
+    "next_step": "Only after verification, consider migrating additional side-ornament callers to this helper one at a time."
   }
 }
