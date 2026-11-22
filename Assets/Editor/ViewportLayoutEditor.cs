@@ -270,6 +270,60 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Hook_S1_14x19.png";
   private const string SlimeSide1AssetPath =
       "Assets/Art/Ornaments/Slime_Side_16x10.png";
+  // Phase 10: data-only native DOS ornament registration.
+  // This describes sources and known layout identity, not draw logic.
+  // The existing verified blitters remain the sole rendering authority.
+  // -1 means that the DOS layout group has NOT been verified; never guess.
+  private sealed class DosWallOrnamentRegistration
+  {
+    internal readonly string family;
+    internal readonly string nativeFrontSource;
+    internal readonly string nativeSideSource;
+    internal readonly int nativeSideWidth;
+    internal readonly int nativeSideHeight;
+    internal readonly int layoutGroup;
+
+    internal DosWallOrnamentRegistration(
+        string family, string nativeFrontSource, string nativeSideSource,
+        int nativeSideWidth, int nativeSideHeight, int layoutGroup)
+    {
+      this.family = family;
+      this.nativeFrontSource = nativeFrontSource;
+      this.nativeSideSource = nativeSideSource;
+      this.nativeSideWidth = nativeSideWidth;
+      this.nativeSideHeight = nativeSideHeight;
+      this.layoutGroup = layoutGroup;
+    }
+  }
+
+  private static readonly Dictionary<string, DosWallOrnamentRegistration>
+      DosWallOrnamentRegistry =
+      new Dictionary<string, DosWallOrnamentRegistration>(
+          System.StringComparer.OrdinalIgnoreCase)
+      {
+        // Hook F1 still has a separate original 32x28 asset in its live path;
+        // F2/F3 use the verified native 28x28 DOS source below.
+        { "Hook", new DosWallOrnamentRegistration(
+            "Hook", HookDosF2AssetPath, HookSideAssetPath, 14, 19, 0) },
+        { "Manacles", new DosWallOrnamentRegistration(
+            "Manacles", ManaclesF1AssetPath, ManaclesS1AssetPath,
+            32, 42, 1) },
+        { "Grate", new DosWallOrnamentRegistration(
+            "Grate", GrateFrontAssetPath, GrateSide1AssetPath,
+            16, 19, -1) }
+      };
+
+  // Intentional Phase 10 staging API: future generic dispatch resolves
+  // registered artwork and groups here, instead of naming another blitter.
+  // No active rendering call site is switched during this phase.
+  private static bool TryGetDosWallOrnamentRegistration(
+      string family, out DosWallOrnamentRegistration registration)
+  {
+    registration = null;
+    return !string.IsNullOrEmpty(family)
+        && DosWallOrnamentRegistry.TryGetValue(family, out registration);
+  }
+
   private const string PuddleF1AssetPath =
       "Assets/Art/Ornaments/Puddle_F1.png";
   private const string PuddleF1SideAssetPath =
@@ -23874,7 +23928,9 @@ private static void HandleGameViewPointerDown(
     WallFeatureArtworkProfile profile = GetChampionMirrorArtworkProfile(2);
     cachedOriginalCornerF2MirrorFrame = GenerateDmScaledWallDecoration(
         source, center.x2 - center.x1 + 1, corner.height,
-        profile.distancePalette, "Champion Mirror CSBwin Group5 F2 Frame");
+        profile.distancePalette, "Champion Mirror CSBwin Group5 F2 Frame",
+        roundBiasOverride: (ReferenceEquals(profile.distancePalette, WallOrnamentFarColorMap) ? 0 : 0x7fff),
+        sampleTopDown: false);
     return cachedOriginalCornerF2MirrorFrame;
   }
 
@@ -24710,7 +24766,9 @@ private static void HandleGameViewPointerDown(
     if (source == null) return null;
     cachedEmptyHolderClass7Front2Texture = GenerateDmScaledWallDecoration(
         source, 16, 36, WallOrnamentMediumColorMap,
-        "Empty Torch Holder F2 (Class 7 preview)");
+        "Empty Torch Holder F2 (Class 7 preview)",
+        roundBiasOverride: 0x7fff,
+        sampleTopDown: false);
     return cachedEmptyHolderClass7Front2Texture;
   }
 
@@ -25604,7 +25662,9 @@ private static void HandleGameViewPointerDown(
         HookFrontWallOrnamentSet.f3.width,
         HookFrontWallOrnamentSet.f3.height,
         WallOrnamentFarColorMap,
-        "Wood Ring F3 Generated from F1");
+        "Wood Ring F3 Generated from F1",
+        roundBiasOverride: 0,
+        sampleTopDown: false);
     return cachedWoodRingGeneratedF3FrontTexture;
   }
 
@@ -25700,7 +25760,9 @@ private static void HandleGameViewPointerDown(
         HookFrontWallOrnamentSet.f2.width,
         HookFrontWallOrnamentSet.f2.height,
         WallOrnamentMediumColorMap,
-        "Wood Ring F2 Generated from F1");
+        "Wood Ring F2 Generated from F1",
+        roundBiasOverride: 0x7fff,
+        sampleTopDown: false);
     return cachedWoodRingGeneratedF2FrontTexture;
   }
 
@@ -25885,7 +25947,9 @@ private static void HandleGameViewPointerDown(
     {
       scaled = method == 0
           ? GenerateDmScaledWallDecoration(unpaddedFrame, slot.width, slot.height,
-              palette, "Champion Mirror F" + depth + " CSBwin Frame")
+              palette, "Champion Mirror F" + depth + " CSBwin Frame",
+        roundBiasOverride: (ReferenceEquals(palette, WallOrnamentFarColorMap) ? 0 : 0x7fff),
+        sampleTopDown: false)
           : GenerateChampionMirrorAlternativeScale(unpaddedFrame, slot.width, slot.height,
               palette, method, "Champion Mirror F" + depth + " Frame");
     }
@@ -36587,7 +36651,9 @@ private static void HandleGameViewPointerDown(
         MossF2Width,
         MossF2Height,
         WallOrnamentMediumColorMap,
-        "Moss F2 Generated from F1");
+        "Moss F2 Generated from F1",
+        roundBiasOverride: 0x7fff,
+        sampleTopDown: false);
     return cachedMossF2Texture;
   }
 
@@ -37454,7 +37520,9 @@ private static void HandleGameViewPointerDown(
         slot.width,
         slot.height,
         colorMap,
-        textureName);
+        textureName,
+        roundBiasOverride: (ReferenceEquals(colorMap, WallOrnamentFarColorMap) ? 0 : 0x7fff),
+        sampleTopDown: false);
   }
 
   private static void BlitWallOrnamentIntoPreview(
@@ -37514,7 +37582,9 @@ private static void HandleGameViewPointerDown(
         ViAltarEngineF2Width,
         ViAltarEngineF2Height,
         WallOrnamentMediumColorMap,
-        "VI Altar Engine F2 64x37");
+        "VI Altar Engine F2 64x37",
+        roundBiasOverride: 0x7fff,
+        sampleTopDown: false);
     return cachedViAltarEngineF2TestTexture;
   }
 
@@ -37536,7 +37606,9 @@ private static void HandleGameViewPointerDown(
         ViAltarEngineF3Width,
         ViAltarEngineF3Height,
         WallOrnamentFarColorMap,
-        "VI Altar Engine F3 42x24");
+        "VI Altar Engine F3 42x24",
+        roundBiasOverride: 0,
+        sampleTopDown: false);
     return cachedViAltarEngineF3TestTexture;
   }
 
@@ -37884,7 +37956,9 @@ private static void HandleGameViewPointerDown(
         width,
         height,
         WallOrnamentMediumColorMap,
-        "Slime F2 Generated from F1");
+        "Slime F2 Generated from F1",
+        roundBiasOverride: 0x7fff,
+        sampleTopDown: false);
     return cachedSlimeGeneratedF2FrontTexture;
   }
 
@@ -37902,7 +37976,9 @@ private static void HandleGameViewPointerDown(
         SlimeD3FrontWidth,
         SlimeD3FrontHeight,
         WallOrnamentFarColorMap,
-        "Slime F3 Generated from F1");
+        "Slime F3 Generated from F1",
+        roundBiasOverride: 0,
+        sampleTopDown: false);
     return cachedSlimeGeneratedF3FrontTexture;
   }
 
@@ -38249,7 +38325,9 @@ private static void HandleGameViewPointerDown(
         4,
         3,
         WallOrnamentMediumColorMap,
-        "Slime Side F2 Generated from F1");
+        "Slime Side F2 Generated from F1",
+        roundBiasOverride: 0x7fff,
+        sampleTopDown: false);
     return cachedSlimeSide2Texture;
   }
 
@@ -40127,7 +40205,9 @@ private static void HandleGameViewPointerDown(
     int width = center.x2 - center.x1 + 1;
     cachedManaclesOriginalCornerF2Texture = GenerateDmScaledWallDecoration(
         source, width, corner.height, WallOrnamentMediumColorMap,
-        "Manacles CSBwin Center F2 for Corner Crop");
+        "Manacles CSBwin Center F2 for Corner Crop",
+        roundBiasOverride: 0x7fff,
+        sampleTopDown: false);
     return cachedManaclesOriginalCornerF2Texture;
   }
 
@@ -40532,7 +40612,9 @@ private static void HandleGameViewPointerDown(
           WallOrnamentFarColorMap,
           "Hook F3 Generated From DOS F1 With Virtual Padding",
           virtualPaddingLeft: 2,
-          virtualPaddingRight: 2);
+          virtualPaddingRight: 2,
+          roundBiasOverride: 0,
+          sampleTopDown: false);
     }
     finally
     {
@@ -41411,7 +41493,9 @@ private static void HandleGameViewPointerDown(
         14,
         9,
         WallOrnamentFarColorMap,
-        "Grate F3 DOS 6-bit from native F1");
+        "Grate F3 DOS 6-bit from native F1",
+        roundBiasOverride: 0,
+        sampleTopDown: false);
     return cachedGrateFront3Texture;
   }
 

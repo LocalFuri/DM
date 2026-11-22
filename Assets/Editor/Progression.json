@@ -4798,5 +4798,84 @@
       "ViewportLayoutEditor.cs",
       "Progression.json"
     ]
+  },
+  "ornament_cleanup_phase9_explicit_sampling_options_20261122": {
+    "date": "2026-11-22 21:57:41 CET",
+    "scope": "Assets/Editor/ViewportLayoutEditor.cs",
+    "purpose": "Make legacy DOS 6-bit ornament sampler call-site options explicit without changing output or scaling algorithm.",
+    "changes": [
+      "At 15 existing call sites that relied on optional defaults, pass effective roundBiasOverride and sampleTopDown explicitly.",
+      "Medium map retains 0x7fff start bias; far map retains zero; palette-variable cases choose exactly the same map-dependent bias at runtime.",
+      "sampleTopDown stays false for every previously omitted caller; explicit zero-bias top-down verified calls are untouched.",
+      "Hook F3 virtualPaddingLeft=2 and virtualPaddingRight=2 preserved. No scaling kernel, geometry, mirroring, V17 walls, menu or art changes.",
+      "Phase 8 runtime PNG/hash comparison recommended before and after future behavior-changing migrations."
+    ],
+    "modified_call_lines_before": [
+      23875,
+      24711,
+      25602,
+      25698,
+      25887,
+      36585,
+      37452,
+      37512,
+      37534,
+      37882,
+      37900,
+      38247,
+      40128,
+      40528,
+      41409
+    ],
+    "verification": "Static inspection passed. Unity compilation and visual regression pending.",
+    "tools_menu_rule": "No new tools; preserve Tools/Export Phase 8 Ornament Baseline at top level.",
+    "delivery": "ZIP root: ViewportLayoutEditor.cs and Progression.json; no TXT."
+  },
+  "ornament_cleanup_phase10_data_registry_20261122": {
+    "date": "2026-11-22 22:12:37 CET",
+    "status": "STAGED IN SOURCE; UNITY COMPILATION PENDING; NO LIVE BLITTER MIGRATED",
+    "purpose": "Introduce shared, data-only native DOS ornament registry as prerequisite for future 180-ornament generic dispatch.",
+    "scope": "Assets/Editor/ViewportLayoutEditor.cs",
+    "registrations": [
+      {
+        "family": "Hook",
+        "frontSource": "Hook_F1_DOS_28x28.png for F2/F3",
+        "sideSource": "Hook_S1_14x19.png",
+        "knownLayoutGroup": 0,
+        "note": "Live Hook F1 still uses separate Hook_F1_32x28.png"
+      },
+      {
+        "family": "Manacles",
+        "frontSource": "Manacles_F1.png",
+        "sideSource": "Manacles_S1.png",
+        "sideSize": [
+          32,
+          42
+        ],
+        "knownLayoutGroup": 1
+      },
+      {
+        "family": "Grate",
+        "frontSource": "Grate_F1_32x20.png",
+        "sideSource": "Grate_S1_16x19.png",
+        "sideSize": [
+          16,
+          19
+        ],
+        "knownLayoutGroup": null,
+        "note": "layout group not confirmed; do not guess"
+      }
+    ],
+    "changes": [
+      "Added immutable-record-style family registration and case-insensitive lookup API in ViewportLayoutEditor.cs.",
+      "Registry is intentionally data-only and not yet used by rendering paths, to retain verified output while architecture is migrated incrementally.",
+      "No live dispatch, scaling, mirroring, calibration, visibility, V17 wall or ViewEdit UI logic changed.",
+      "Next Phase 11: migrate a single small, verified projection to use registry data and compare Phase 8 runtime baselines before extending."
+    ],
+    "toolsMenuRule": "No new MenuItem introduced; new tools (if any later) must be direct Tools/<name>.",
+    "delivery": "ZIP root has ViewportLayoutEditor.cs and Progression.json; no TXT.",
+    "sourceSha256Before": "e13317dcac465c655178951f003849fb17a6cd53a57291a0655e8d5980a16bf4",
+    "sourceSha256After": "4ac46139ce03a9c6087cd6cbf5914272ed5d280303981071597e8a2aff04aef8",
+    "unityVerification": "Pending"
   }
 }
