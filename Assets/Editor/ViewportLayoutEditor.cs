@@ -18718,6 +18718,7 @@ private static void HandleGameViewPointerDown(
   private static string s_v17LeftEdgeSelectionLog;
   private static string s_v17LeftEdgeBlitLog;
   private static string s_v17MagentaRightS3RuleLog;
+  private static string s_v17MagentaLeftS3RuleLog;
 
   private void ApplyViewport17LiveDrawToResolvedWalls()
   {
@@ -18965,6 +18966,50 @@ private static void HandleGameViewPointerDown(
                 : GetSideWallMirrorFromPose();
         ApplyViewport17NativeManualControls(
             "LeftS3", ref leftS3Enabled, ref leftS3Mirror);
+        // Diagnostic only. Distinguish a selected V17 rule from a manual
+        // ViewEdit enable; never report a manual override as a geometry rule.
+        if (leftS3Enabled)
+        {
+          string leftS3Rule = null;
+          for (int commandIndex = 0; commandIndex < finalCommands.Count; commandIndex++)
+          {
+            if (finalCommands[commandIndex].PieceFamily == "LeftS3")
+            {
+              leftS3Rule = finalCommands[commandIndex].Projection;
+              break;
+            }
+          }
+          bool leftS3FromRule = !string.IsNullOrEmpty(leftS3Rule);
+          string leftS3Reason = leftS3FromRule
+              ? leftS3Rule
+              : "LEFT S3 MANUAL ENABLE (NO FINAL V17 RULE)";
+          string leftS3Key = previewDungeonLevel + ":" + previewX + ":"
+              + previewY + ":" + previewFacing + ":" + leftS3Reason;
+          if (s_v17MagentaLeftS3RuleLog != leftS3Key)
+          {
+            s_v17MagentaLeftS3RuleLog = leftS3Key;
+            Debug.Log("<color=#FF00FF>MAGENTA | V17 "
+                + (leftS3FromRule ? "RULE" : "MANUAL") + " | "
+                + leftS3Reason
+                + " | Level " + previewDungeonLevel
+                + " (" + previewX + "," + previewY + ") "
+                + previewFacing
+                + " | LeftS3 X=0 Y=57 W=8"
+                + " | Left D0/D1/D2 open="
+                + IsViewport17LaneOpenAt(inspection, -1, 0) + "/"
+                + IsViewport17LaneOpenAt(inspection, -1, 1) + "/"
+                + IsViewport17LaneOpenAt(inspection, -1, 2)
+                + " | Left D3 wall="
+                + IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
+                + " | Outer-left D2 wall="
+                + IsViewport17Solid(FindViewport17Cell(inspection.Cells, -2, 2))
+                + "</color>");
+          }
+        }
+        else
+        {
+          s_v17MagentaLeftS3RuleLog = null;
+        }
         // Apply stores actual LeftS3 X/Y/Mirror for this pose, not just Mirror.
         // The accepted position must reach the compositor as well as ViewEdit.
         int leftS3X = 0;
