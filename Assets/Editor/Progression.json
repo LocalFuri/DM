@@ -4740,5 +4740,23 @@
       "cyan preview and Click06"
     ],
     "unity_compile": "not verified; user test required"
+  },
+  "grate_f2_side_corner_native_dos_6bit_20261122": {
+    "date": "2026-11-22 21:25:11 CET",
+    "purpose": "Remove remaining legacy Grate F2 side-corner pre-scaled PNG dependency; keep distinct F2 corner rendering.",
+    "previous_problem": "ViewEdit emitted a cyan missing-asset message for Assets/Art/Ornaments/Grate_F2_Side_20x13.png despite Grate S2 using a native generated bitmap.",
+    "change": "GetGrateF2SideCornerTexture now generates 20x13 from native Grate_F1_32x20.png through GenerateDmScaledWallDecoration using medium DOS palette, zero round bias and top-down sampling; remove obsolete GrateF2SideAssetPath constant.",
+    "preserved": [
+      "right F2 corner visibility and 20x13 destination rectangle",
+      "original corner X and Y",
+      "clipping",
+      "Grate S2 and S3",
+      "Grate front F1/F2/F3",
+      "V17 walls",
+      "calibration offsets",
+      "ViewEdit previews and caption layout"
+    ],
+    "limitations": "Exact pixel correspondence for the F2 right-side corner requires DOS screenshot verification. The F3 side-corner asset path remains a separate legacy dependency, not modified in this phase.",
+    "unity_compile": "not verified; user test required"
   }
 }

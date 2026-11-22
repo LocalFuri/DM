@@ -261,9 +261,8 @@ public class ViewportLayoutEditor : EditorWindow
   // DOS 6-bit scaling algorithm (14/32). No pre-scaled S3 asset.
   private const int GrateD3SideWidth = 7;
   private const int GrateD3SideHeight = 8;
-  // Dedicated right-hand corner artwork; independent of the verified S2/S3 art.
-  private const string GrateF2SideAssetPath =
-      "Assets/Art/Ornaments/Grate_F2_Side_20x13.png";
+  // F2 right-side corner: generate a 20x13 bitmap from the native DOS F1
+  // artwork. Preserve this corner's distinct clipping/placement, not S2.
   // Independent F3 corner art; native 14x8, never rescaled.
   private const string GrateF3SideAssetPath =
       "Assets/Art/Ornaments/Grate_F3_Side_14x8.png";
@@ -40893,14 +40892,19 @@ private static void HandleGameViewPointerDown(
   {
     if (cachedGrateF2SideTexture != null)
       return cachedGrateF2SideTexture;
-    Texture2D image = AssetDatabase.LoadAssetAtPath<Texture2D>(GrateF2SideAssetPath);
-    if (image == null || image.width != 20 || image.height != 13 || !image.isReadable)
-    {
-      ReportMissingGrateArtwork(GrateF2SideAssetPath);
-      return null;
-    }
-    cachedGrateF2SideTexture = image;
-    return image;
+
+    Texture2D source = GetGrateFrontTexture();
+    if (source == null || !source.isReadable)
+      return null; // Existing native F1 loader reports missing/unreadable artwork.
+
+    // Native DOS front artwork, 32x20, through the shared 6-bit scaler.
+    // The right-hand F2 corner uses a distinct 20x13 destination rectangle;
+    // its exact source sampling still needs a PC DOS corner comparison.
+    cachedGrateF2SideTexture = GenerateDmScaledWallDecoration(
+        source, 20, 13, WallOrnamentMediumColorMap,
+        "Grate F2 side corner DOS 6-bit from native F1",
+        roundBiasOverride: 0, sampleTopDown: true);
+    return cachedGrateF2SideTexture;
   }
 
   private void BlitGrateF2SideCornerIntoPreview(Color32[] pixels)
