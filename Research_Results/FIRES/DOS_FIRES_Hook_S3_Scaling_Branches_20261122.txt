@@ -1,0 +1,108 @@
+Dungeon Master PC DOS — Hook S3: compiled ornament scaling branches
+Research date: 2026-11-22, Europe/Berlin
+READ ONLY: No Unity source, original DOS game, or original assets changed.
+
+Verified binaries:
+  FIRES_UNPACKED.EXE 178224 bytes SHA256 fc79ac65046e3d96c189ac3dd20ad40bacb8debee2cd1c7d2c33ca2d8f82fe94
+  DOS_FIRES_Engine_Image_20261122.bin 167984 bytes SHA256 dbffccaef5275e0c9dc6273570eb921656e9feedc11d6d0af35f7e41b192472c
+  Hook_S1_14x19.png native DOS source, canvas 14x19, alpha measured directly
+  PC DOS screenshot image(20261122-113938).png, cropped 148x136
+  Unity screenshot image(20261122-114105).png, cropped 148x136
+
+1. DOS compile-time pathway selection — machine instructions
+   Ornament rendering function begins at load-image offset 0x1D886.
+   At 0x1DA17 compare DI (wall perspective index) to 8,3,1 to select mirroring flags.
+   At 0x1DA3A: CMP DI,1 / JG 0x1DA52.
+   IF DI <= 1, the compiled renderer passes:
+      palette map pointer DS:0x2B67
+      vertical scale 0x000E = 14 (14/32)
+      horizontal scale 0x001E = 30 (30/32)
+      native bitmap index from [BP-0x12]
+      a preceding argument 0xFFFF
+      to scaled-bitmap acquisition 0x1D68A.
+   IF 2 <= DI <= 6: both scales 0x000E = 14, palette pointer DS:0x2B67.
+   IF DI >= 7 (within the ordinary branch): both scales 0x0015 = 21, palette pointer DS:0x2B77.
+   Native bitmap selection additionally depends on DI and table at DS:0x2AF7.
+   The machine code therefore has more than one possible D3 side scaling path.
+   It is NOT YET PROVEN which DI/branch belongs to the particular Hook S3 screenshot.
+
+2. Destination dimensions in scaled-bitmap acquisition 0x1D68A:
+      scaledDimension = ((nativeDimension * scale) + (scale >> 1)) >> 5
+   Hypothesis A: ordinary D3 scale (X=14,Y=14) gives 6x8 (from 14x19).
+   Hypothesis B: extreme side D3 scale (X=30,Y=14) gives 13x8.
+   Current Unity S3 uses direct output 3x5, NOT either DOS intermediate size.
+
+3. Direct machine-code 6-bit sampled alpha masks, before color mapping and clipping
+   Formula: step=floor((sourceDimension<<6)/destDimension); start=step>>1;
+   sourceIndex=floor((start+outputIndex*step)/64).
+
+   A: 14x19 -> 6x8, 21 opaque samples:
+   #.....
+   ###...
+   ###...
+   ###...
+   ###...
+   ####..
+   #.##..
+   #.....
+
+   B: 14x19 -> 13x8, 44 opaque samples:
+   ##...........
+   #######......
+   #######......
+   #######......
+   #######......
+   ######.......
+   ##..####.....
+   ##...........
+
+   C: current Unity 14x19 -> 3x5, 5 opaque samples:
+   ...
+   ##.
+   ##.
+   #..
+   ...
+
+4. Screenshots measured directly using exact RGB brown (109,36,0):
+   DOS:   x=6..8, y=40..44, 3x5, 9 brown pixels
+          ###
+          #..
+          #..
+          ##.
+          ##.
+   Unity: x=7..8, y=41..43, 2x3, 5 brown pixels
+          ##
+          ##
+          .#
+   Testing EVERY 3x5 rectangular subset of the raw 6x8 and 13x8 alpha masks
+   yielded ZERO exact matches with the DOS brown mask.
+   This comparison is provisional because the DOS mask is AFTER palette mapping
+   and clipping, while the simulated masks are BEFORE palette mapping.
+
+5. Final layout/blit wrapper
+   Ornament renderer at 0x1DB31 calls 0x1D783.
+   The compiled wrapper at 0x1D7BC..0x1D7D8 resolves graphic-layout zone
+   via FAR call 0x12F9:035E. At 0x1D7E3..0x1D84A it reads native bitmap
+   width/height and layout dimensions (DS:0x3FF2, DS:0x3FF4), adjusts
+   offsets according to flags in [BP+0x10], and at 0x1D878 calls
+   FAR 0x20D6:1D11 to draw/clip the bitmap.
+   This demonstrates that final layout is a distinct stage; the 3x5
+   screenshot brown bounds need not equal scaled texture width/height.
+   Neither actual Hook S3 view index nor its runtime layout record has been captured.
+
+6. Conclusions and next verification
+   - Preserve existing approved Unity renderer; do NOT replace 6-bit half-step sampling.
+   - The correct DOS intermediate size may be 6x8 OR 13x8 depending on DI.
+   - Determine the Hook S3 wall-view index DI and its native bitmap index.
+   - Decode selected layout zone 1004 + CoordinateSet*15 + DI (resource 696).
+   - Confirm palette mapping and final clipping before proposing a shared Unity change.
+   - Do not equate visible brown bounds with full bitmap dimensions.
+
+Relevant code instruction offsets:
+  0x1D8B6..1D8C1 zone formula
+  0x1DA3A..1DA50 special D3 X=30 Y=14
+  0x1DA52..1DA68 normal 14/14 or 21/21 scale selection
+  0x1DA76..1DA90 source bitmap selection / scaling arguments
+  0x1DA93 scaled bitmap acquisition
+  0x1DB31 layout wrapper
+  0x1D7E3..1D878 layout-dimension and draw handling
