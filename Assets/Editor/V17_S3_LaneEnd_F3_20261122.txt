@@ -1,0 +1,11 @@
+V17 S3 lane-end / F3 independence — 2026-11-22
+Baseline: V17_LeftS3_Mirrored_LaneEnd_20261122.zip
+S3: in a true lane-end footprint, if outer D2 tile is floor, no older LeftS3/RightS3 recipe may re-enable the strip.
+F3: LeftF3 uses X=0 in the suppressed-left-lane-end footprint when the LeftF3 wall is enabled; otherwise keeps native X=7.
+Both compositor and ViewEdit resolved X use same placement function. Manual F3 destination overrides remain authoritative.
+RightS3 / other wall geometry untouched. No map-coordinate exceptions. Four compass facings use viewer-relative cell inspection.
+Only two code paths affected: S3 final candidate acceptance and LeftF3 native destination.
+Note: Other S3 geometry classes retain their existing selection. This update requires Unity compile and DOS visual validation.
+Install: C:\Unity\DM\Assets\Editor\ViewportLayoutEditor.cs
+Original SHA256: 365369c3000324ea44f664c1b4f7e73188068ab1207bcc11c62247c04cc39126
+Output SHA256: 85dd0e346917cea5e38334143eaf1e46b4f653417e07e42f3a86e54442d49427

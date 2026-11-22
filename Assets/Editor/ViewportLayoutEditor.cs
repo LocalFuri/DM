@@ -13764,28 +13764,6 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
-  // Supplemental fingerprint: exposed far-left D2 outer edge, visually
-  // checked against original Atari at Level 0 (12,14) W. All coordinates below
-  // are viewer-relative, never level coordinates, and rotate with facing.
-  // D2 far-left wall bounds an open D0-D2 left lane; D2 center is a wall,
-  // while D1 center is open and D1 right is closed. Other tiles don't matter.
-  private static readonly V17FingerprintRequirement[] s_leftS3OuterD2Edge =
-  {
-    new V17FingerprintRequirement(-1, 0, V17FingerprintTile.Open),
-    new V17FingerprintRequirement(-1, 1, V17FingerprintTile.Open),
-    new V17FingerprintRequirement(-1, 2, V17FingerprintTile.Open),
-    new V17FingerprintRequirement( 0, 1, V17FingerprintTile.Open),
-    new V17FingerprintRequirement( 1, 1, V17FingerprintTile.Wall),
-    new V17FingerprintRequirement( 0, 2, V17FingerprintTile.Wall),
-    new V17FingerprintRequirement(-2, 2, V17FingerprintTile.Wall)
-  };
-
-  private static bool IsV17LeftS3OuterD2Fingerprint(
-      Viewport17Inspection inspection)
-  {
-    return MatchesV17Fingerprint(inspection, s_leftS3OuterD2Edge);
-  }
-
   private enum Viewport17CellState
   {
     Open,
@@ -14174,136 +14152,6 @@ private static void HandleGameViewPointerDown(
         && IsViewport17LaneOpenAt(inspection, 1, 3);
   }
 
-  private static bool IsViewport17LeftS3D2FrontEdge(
-      Viewport17Inspection inspection)
-  {
-    if (inspection.Cells == null)
-      return false;
-
-    // Verified at 10,5 East: the tiny far-left strip is LeftS3 even though
-    // the D3-left lane itself is open. It is the exposed left edge of a D2
-    // C+R front block seen through a completely open D1 span. This is a
-    // geometry class, not a pose exception.
-    return IsViewport17LaneOpenAt(inspection, -1, 0)
-        && IsViewport17LaneOpenAt(inspection, -1, 1)
-        && IsViewport17LaneOpenAt(inspection, 0, 1)
-        && IsViewport17LaneOpenAt(inspection, 1, 1)
-        && IsViewport17LaneOpenAt(inspection, -1, 2)
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 2))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 2));
-  }
-
-  /// <summary>
-  /// Verified original-DM LeftS3 full-D3-front edge geometry (7,13 East class).
-  /// The right side is closed at D0/D1, the center corridor remains open
-  /// through D2, and D3 is a full L+C+R front plane. Original DM exposes the
-  /// tiny LeftS3 strip at X=0/Y=57. This is a geometry rule, not a pose hack.
-  /// </summary>
-  private static bool IsViewport17LeftS3D3FullFrontEdge(
-      Viewport17Inspection inspection)
-  {
-    if (inspection.Cells == null)
-      return false;
-
-    return IsViewport17LaneOpenAt(inspection, -1, 0)
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 0))
-        && IsViewport17LaneOpenAt(inspection, -1, 1)
-        && IsViewport17LaneOpenAt(inspection, 0, 1)
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 1))
-        && IsViewport17LaneOpenAt(inspection, -1, 2)
-        && IsViewport17LaneOpenAt(inspection, 0, 2)
-        && IsViewport17LaneOpenAt(inspection, 1, 2)
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3));
-  }
-
-  /// <summary>
-  /// Verified original-DM LeftS3 strip beside an open left corridor and a
-  /// D3 center front (17,8 West class). The left lane stays open through D3,
-  /// so this is not the D3-left terminator. The center stays open through D2
-  /// and closes at D3. Original DM still draws the 8px strip at X=0, Y=57.
-  /// Geometry only.
-  /// </summary>
-  private static bool IsViewport17LeftS3OpenLeftD3CenterFront(
-      Viewport17Inspection inspection)
-  {
-    if (inspection.Cells == null)
-      return false;
-
-    return IsViewport17LaneOpenAt(inspection, -1, 0)
-        && IsViewport17LaneOpenAt(inspection, -1, 1)
-        && IsViewport17LaneOpenAt(inspection, -1, 2)
-        && IsViewport17LaneOpenAt(inspection, -1, 3)
-        && IsViewport17LaneOpenAt(inspection, 0, 1)
-        && IsViewport17LaneOpenAt(inspection, 0, 2)
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3));
-  }
-
-  /// <summary>
-  /// D3 full-front edge behind a near center wall, with the left lane open
-  /// through D2 (Level 0 5,11 North geometry class). The left edge remains
-  /// visible in original DM even though the D1 center is blocked.
-  /// This uses viewer-relative lanes, not absolute map axes or coordinates.
-  /// </summary>
-  private static bool IsViewport17LeftS3NearCenterFullD3Edge(
-      Viewport17Inspection inspection)
-  {
-    if (inspection.Cells == null)
-      return false;
-
-    return IsViewport17LaneOpenAt(inspection, -1, 0)
-        && IsViewport17LaneOpenAt(inspection, -1, 1)
-        && IsViewport17LaneOpenAt(inspection, -1, 2)
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 1))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 1))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3));
-  }
-
-  // Original Level 0 (8,4) South geometry class: an open left lane
-  // remains visible through D3 alongside a center front wall beginning at
-  // D1 and continuing through D3. The far-left 8px LeftS3 edge is visible.
-  // This is strictly viewer-relative and applies to matching layouts in
-  // any level/facing; the verified calibration stays X=0, Y=57.
-  private static bool IsViewport17LeftS3OpenLeftNearFront(
-      Viewport17Inspection inspection)
-  {
-    if (inspection.Cells == null)
-      return false;
-
-    return IsViewport17LaneOpenAt(inspection, -1, 0)
-        && IsViewport17LaneOpenAt(inspection, -1, 1)
-        && IsViewport17LaneOpenAt(inspection, -1, 2)
-        && IsViewport17LaneOpenAt(inspection, -1, 3)
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 1))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 2))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 1))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 2));
-  }
-
-  private static bool IsViewport17RightS3D3FrontEdge(
-      Viewport17Inspection inspection)
-  {
-    if (inspection.Cells == null)
-      return false;
-
-    // Verified at 11,5 West: the tiny far-right strip is RightS3.  It is the
-    // exposed right edge of a D3 L+C front block while the right corridor lane
-    // remains open through D3.  D1-left may already be solid; that nearer left
-    // wall does not cover the far-right edge.  Geometry only, no pose exception.
-    return IsViewport17LaneOpenAt(inspection, 1, 0)
-        && IsViewport17LaneOpenAt(inspection, 1, 1)
-        && IsViewport17LaneOpenAt(inspection, 1, 2)
-        && IsViewport17LaneOpenAt(inspection, 1, 3)
-        && IsViewport17LaneOpenAt(inspection, 0, 1)
-        && IsViewport17LaneOpenAt(inspection, 0, 2)
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3));
-  }
-
   // One mirrored S3 lane-end geometry rule for both handed sides.
   // localSide = -1 (LeftS3), +1 (RightS3). The inspection cells already
   // follow the player's facing direction (N/E/S/W).
@@ -14337,6 +14185,24 @@ private static void HandleGameViewPointerDown(
   {
     return IsViewport17S3LaneEndCore(inspection, localSide)
         && IsViewport17S3OuterSideSolid(inspection, localSide);
+  }
+
+  // The same outer-D2 tile decides the lane-end strip on either side.
+  // No other S3 projection recipes exist. Viewer-relative cells rotate
+  // with N/E/S/W.
+  private static bool IsViewport17S3LaneEndBlockedByFloor(
+      Viewport17Inspection inspection, int localSide)
+  {
+    return IsViewport17S3LaneEndCore(inspection, localSide)
+        && !IsViewport17S3OuterSideSolid(inspection, localSide);
+  }
+
+  private static int GetViewport17LeftF3LaneEndDisplayX(
+      Viewport17Inspection inspection)
+  {
+    return IsViewport17S3LaneEndBlockedByFloor(inspection, -1)
+        ? 0
+        : NativeD3LeftF3DestX;
   }
 
   private static bool IsViewport17RightS3OuterSideSolid(
@@ -15138,123 +15004,30 @@ private static void HandleGameViewPointerDown(
       }
     }
 
-    // LeftS3 is selected from viewer-relative geometry classes:
-    //   1) the narrow far-left D3 terminator strip (6,4 East class),
-    //   2) the tiny exposed left edge of a D2 C+R front block behind a fully
-    //      open D1 span (10,5 East class), and
-    //   3) the tiny far-left edge beside a full D3 L+C+R front plane when the
-    //      right side is closed at D0/D1 but the center stays open through D2
-    //      (7,13 East class), and
-    //   4) the same 8px strip when the left lane stays open through D3 and
-    //      the center closes on a D3 front wall (17,8 West class).
-    bool d3FullFrontPlane =
-        IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3));
-    bool leftS3D3Terminator =
-        !d3FullFrontPlane
-        && IsViewport17LaneOpenAt(inspection, -1, 0)
-        && IsViewport17LaneOpenAt(inspection, -1, 1)
-        && IsViewport17LaneOpenAt(inspection, -1, 2)
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
-        // A blocked D1 center makes this the lane-end geometry, not the
-        // legacy open-center terminator. In that case require outer D2 solid.
-        && (!IsViewport17LeftS3LaneEndCore(inspection)
-            || IsViewport17LeftS3OuterSideSolid(inspection));
-    bool leftS3LeftLaneEnd = IsViewport17LeftS3LeftLaneEnd(inspection);
-    bool leftS3D2FrontEdge = IsViewport17LeftS3D2FrontEdge(inspection);
-    bool leftS3OuterD2Fingerprint = IsV17LeftS3OuterD2Fingerprint(inspection);
-    bool leftS3D3FullFrontEdge =
-        IsViewport17LeftS3D3FullFrontEdge(inspection);
-    bool leftS3OpenLeftD3CenterFront =
-        IsViewport17LeftS3OpenLeftD3CenterFront(inspection);
-    bool leftS3NearCenterFullD3Edge =
-        IsViewport17LeftS3NearCenterFullD3Edge(inspection);
-    bool leftS3OpenLeftNearFront =
-        IsViewport17LeftS3OpenLeftNearFront(inspection);
-    // Verified at 12,9 West: the open-center/open-right D3 terminator still
-    // needs LeftS3 visible. FrontF3 extension may also exist, but it must not
-    // suppress the LeftS3 side-face for this geometry class.
-    if (leftS3D3Terminator
-        || leftS3LeftLaneEnd
-        || leftS3D2FrontEdge
-        || leftS3OuterD2Fingerprint
-        || leftS3D3FullFrontEdge
-        || leftS3OpenLeftD3CenterFront
-        || leftS3NearCenterFullD3Edge
-        || leftS3OpenLeftNearFront)
+    // S3 is generated by exactly one shared lane-end occupancy rule.
+    // localSide=-1 LeftS3, +1 RightS3; the inspection grid is already
+    // rotated into the player's facing, so this works for N/E/S/W.
+    for (int localSide = -1; localSide <= 1; localSide += 2)
     {
-      Viewport17Cell primaryCell = leftS3D3Terminator || leftS3D3FullFrontEdge || leftS3NearCenterFullD3Edge
-          ? FindViewport17Cell(inspection.Cells, -1, 3)
-          : leftS3OpenLeftD3CenterFront
-              ? FindViewport17Cell(inspection.Cells, 0, 3)
-              : leftS3OpenLeftNearFront
-                  ? FindViewport17Cell(inspection.Cells, 0, 3)
-                  : FindViewport17Cell(inspection.Cells, 0, 2);
-      Viewport17Cell adjacentCell = leftS3D3Terminator || leftS3D3FullFrontEdge || leftS3NearCenterFullD3Edge
-          ? FindViewport17Cell(inspection.Cells, 0, 3)
-          : FindViewport17Cell(inspection.Cells, -1, 2);
-      Viewport17Surface leftS3Surface = new Viewport17Surface
-      {
-        Type = Viewport17SurfaceType.LeftSide,
-        Depth = 3,
-        LocalX = -1,
-        PrimaryCell = primaryCell,
-        AdjacentCell = adjacentCell
-      };
-      Viewport17RenderCommand leftS3Command =
-          CreateViewport17RenderCommand(
-              "LeftS3",
-              leftS3LeftLaneEnd
-                  ? "LEFT S3 LEFT LANE END"
-                  : leftS3D2FrontEdge
-                  ? "LEFT S3 D2 FRONT EDGE"
-                  : leftS3OuterD2Fingerprint
-                      ? "LEFT S3 OUTER D2 FINGERPRINT"
-                  : leftS3NearCenterFullD3Edge
-                      ? "LEFT S3 NEAR CENTER FULL D3 EDGE"
-                      : leftS3D3FullFrontEdge
-                          ? "LEFT S3 D3 FULL FRONT EDGE"
-                      : leftS3OpenLeftD3CenterFront
-                          ? "LEFT S3 OPEN LEFT D3 CENTER"
-                          : leftS3OpenLeftNearFront
-                              ? "LEFT S3 OPEN LEFT NEAR FRONT"
-                              : "LEFT S3 STRIP",
-              "LEFT",
-              leftS3Surface);
-      leftS3Command.Sequence = commands.Count;
-      commands.Add(leftS3Command);
-    }
+      if (!IsViewport17S3LaneEnd(inspection, localSide))
+        continue;
 
-    // RightS3 verified at 11,5 West: exposed far-right edge of a D3 L+C
-    // front block with the right lane still open.  This is the handed
-    // counterpart family and keeps its own X/Y/mirror controls in ViewEdit.
-    bool rightS3D3FrontEdge = IsViewport17RightS3D3FrontEdge(inspection);
-    bool rightS3RightLaneEnd = IsViewport17RightS3RightLaneEnd(inspection);
-    if (rightS3D3FrontEdge || rightS3RightLaneEnd)
-    {
-      Viewport17Cell primaryCell =
-          FindViewport17Cell(inspection.Cells, 0, 3);
-      Viewport17Cell adjacentCell =
-          FindViewport17Cell(inspection.Cells, 1, 3);
-      Viewport17Surface rightS3Surface = new Viewport17Surface
+      Viewport17Surface s3Surface = new Viewport17Surface
       {
-        Type = Viewport17SurfaceType.RightSide,
+        Type = localSide < 0
+            ? Viewport17SurfaceType.LeftSide
+            : Viewport17SurfaceType.RightSide,
         Depth = 3,
-        LocalX = 1,
-        PrimaryCell = primaryCell,
-        AdjacentCell = adjacentCell
+        LocalX = localSide,
+        PrimaryCell = FindViewport17Cell(inspection.Cells, localSide, 3),
+        AdjacentCell = FindViewport17Cell(inspection.Cells, 2 * localSide, 2)
       };
-      Viewport17RenderCommand rightS3Command =
-          CreateViewport17RenderCommand(
-              "RightS3",
-              rightS3RightLaneEnd
-                  ? "RIGHT S3 RIGHT LANE END"
-                  : "RIGHT S3 D3 FRONT EDGE",
-              "RIGHT",
-              rightS3Surface);
-      rightS3Command.Sequence = commands.Count;
-      commands.Add(rightS3Command);
+      Viewport17RenderCommand s3Command = CreateViewport17RenderCommand(
+          localSide < 0 ? "LeftS3" : "RightS3",
+          localSide < 0 ? "LEFT S3 LANE END" : "RIGHT S3 LANE END",
+          localSide < 0 ? "LEFT" : "RIGHT", s3Surface);
+      s3Command.Sequence = commands.Count;
+      commands.Add(s3Command);
     }
 
     // D0 inner faces are nearest and therefore appended last.
@@ -15892,31 +15665,17 @@ private static void HandleGameViewPointerDown(
       bool rightSide = command.SurfaceType == Viewport17SurfaceType.RightSide;
       bool outerSide = IsViewport17OuterSideCommand(command);
 
-      // The verified 10,5-East LeftS3 strip is the exposed edge of the D2
-      // C+R front block. A nearer center front at D2 is exactly what creates
-      // this sliver, so the normal inner-side occlusion rule must not remove it.
+      // Sole S3 path. No historical exception may create or preserve an S3.
+      // In particular, a manual enable cannot replace a missing outer wall.
       if (command.PieceFamily == "LeftS3"
-          && (IsViewport17LeftS3LeftLaneEnd(inspection)
-              || IsViewport17LeftS3D2FrontEdge(inspection)
-              || IsViewport17LeftS3D3FullFrontEdge(inspection)
-              || IsViewport17LeftS3NearCenterFullD3Edge(inspection)
-              || IsViewport17LeftS3OpenLeftD3CenterFront(inspection)
-              || IsV17LeftS3OuterD2Fingerprint(inspection)))
+          || command.PieceFamily == "RightS3")
       {
-        command.Sequence = finalCommands.Count;
-        finalCommands.Add(command);
-        continue;
-      }
-
-      // The verified 11,5-West RightS3 strip is the exposed edge of the D3
-      // L+C front block.  Preserve it before generic side occlusion removes
-      // the distant side command.
-      if (command.PieceFamily == "RightS3"
-          && (IsViewport17RightS3D3FrontEdge(inspection)
-              || IsViewport17RightS3RightLaneEnd(inspection)))
-      {
-        command.Sequence = finalCommands.Count;
-        finalCommands.Add(command);
+        int localSide = command.PieceFamily == "LeftS3" ? -1 : +1;
+        if (IsViewport17S3LaneEnd(inspection, localSide))
+        {
+          command.Sequence = finalCommands.Count;
+          finalCommands.Add(command);
+        }
         continue;
       }
 
@@ -18819,7 +18578,7 @@ private static void HandleGameViewPointerDown(
             + outer.MapY + ") state=" + outer.State
             + " | RightS3 lane-end "
             + (outerSolid ? "eligible" : "disabled")
-            + " | other RightS3 rules evaluated separately</color>");
+            + " | sole S3 rule</color>");
       }
     }
     else
@@ -18847,7 +18606,7 @@ private static void HandleGameViewPointerDown(
             + outer.MapY + ") state=" + outer.State
             + " | LeftS3 lane-end "
             + (outerSolid ? "eligible" : "disabled")
-            + " | other LeftS3 rules evaluated separately</color>");
+            + " | sole S3 rule</color>");
       }
     }
     else
@@ -18859,15 +18618,11 @@ private static void HandleGameViewPointerDown(
     // Once per change of viewpoint/rule; no Console spam on repaint.
     // Do not alter surface selection, geometry, or draw order here.
     bool magentaRightS3LaneEnd = IsViewport17RightS3RightLaneEnd(inspection);
-    bool magentaRightS3D3Edge = IsViewport17RightS3D3FrontEdge(inspection);
     bool magentaRightS3Final =
         HasViewport17FinalFamily(finalCommands, "RightS3");
-    if (magentaRightS3Final &&
-        (magentaRightS3LaneEnd || magentaRightS3D3Edge))
+    if (magentaRightS3Final && magentaRightS3LaneEnd)
     {
-      string magentaRule = magentaRightS3LaneEnd
-          ? "RIGHT S3 RIGHT LANE END"
-          : "RIGHT S3 D3 FRONT EDGE";
+      string magentaRule = "RIGHT S3 LANE END";
       string magentaKey = previewDungeonLevel + ":" + previewX + ":"
           + previewY + ":" + previewFacing + ":" + magentaRule;
       if (s_v17MagentaRightS3RuleLog != magentaKey)
@@ -18906,32 +18661,6 @@ private static void HandleGameViewPointerDown(
     GetViewport17FinalFrontLanes(
         finalCommands, 3,
         out bool d3FrontLeft, out bool d3FrontCenter, out bool d3FrontRight);
-
-    // Diagnostic only. Reports the real FINAL DRAW decision once per changed state.
-    if (previewDungeonLevel == 0 && previewX == 11 && previewY == 4
-        && previewFacing == DungeonFacing.West)
-    {
-      bool d3LeftSolid = IsViewport17Solid(
-          FindViewport17Cell(inspection.Cells, -1, 3));
-      bool d3CenterSolid = IsViewport17Solid(
-          FindViewport17Cell(inspection.Cells, 0, 3));
-      bool d3RightSolid = IsViewport17Solid(
-          FindViewport17Cell(inspection.Cells, 1, 3));
-      string diagnostic = "V17 LEFT EDGE SELECT (11,4 W): D3 solid L/C/R="
-          + d3LeftSolid + "/" + d3CenterSolid + "/" + d3RightSolid
-          + " D3 front L/C/R=" + d3FrontLeft + "/" + d3FrontCenter
-          + "/" + d3FrontRight
-          + " LeftS3 final=" + HasViewport17FinalFamily(finalCommands, "LeftS3")
-          + " rules D2Edge=" + IsViewport17LeftS3D2FrontEdge(inspection)
-          + " D3Full=" + IsViewport17LeftS3D3FullFrontEdge(inspection)
-          + " OpenLeftCenter=" + IsViewport17LeftS3OpenLeftD3CenterFront(inspection)
-          + " NearCenter=" + IsViewport17LeftS3NearCenterFullD3Edge(inspection);
-      if (diagnostic != s_v17LeftEdgeSelectionLog)
-      {
-        s_v17LeftEdgeSelectionLog = diagnostic;
-        Debug.LogWarning(diagnostic);
-      }
-    }
 
     bool d1LeftEnabled =
         HasViewport17FinalFamily(finalCommands, "LeftF1") || d1FrontLeft;
@@ -19053,13 +18782,11 @@ private static void HandleGameViewPointerDown(
       {
         bool rightS3Enabled =
             HasViewport17FinalFamily(finalCommands, "RightS3");
-        bool rightS3Mirror = IsViewport17RightS3D3FrontEdge(inspection)
-            ? true
-            : IsViewport17RightS3RightLaneEnd(inspection)
-                ? false
-                : GetSideWallMirrorFromPose();
+        bool rightS3Mirror = GetSideWallMirrorFromPose();
+        // Retain ViewEdit mirror editing; visibility is geometry-only.
+        bool unusedRightS3Enabled = rightS3Enabled;
         ApplyViewport17NativeManualControls(
-            "RightS3", ref rightS3Enabled, ref rightS3Mirror);
+            "RightS3", ref unusedRightS3Enabled, ref rightS3Mirror);
         state.Enabled = rightS3Enabled;
         state.X = 216;
         state.Y = DisplayYToUnityY(
@@ -19071,23 +18798,13 @@ private static void HandleGameViewPointerDown(
 
       if (piece.Name == "LeftS3")
       {
-        bool leftS3D2FrontEdge =
-            IsViewport17LeftS3D2FrontEdge(inspection);
-        bool leftS3D3FullFrontEdge =
-            IsViewport17LeftS3D3FullFrontEdge(inspection);
-        bool leftS3OpenLeftD3CenterFront =
-            IsViewport17LeftS3OpenLeftD3CenterFront(inspection);
-        bool leftS3NearCenterFullD3Edge =
-            IsViewport17LeftS3NearCenterFullD3Edge(inspection);
         bool leftS3Enabled =
             HasViewport17FinalFamily(finalCommands, "LeftS3");
-        bool leftS3Mirror = leftS3D2FrontEdge || leftS3OpenLeftD3CenterFront
-            ? false
-            : (leftS3D3FullFrontEdge || leftS3NearCenterFullD3Edge)
-                ? true
-                : GetSideWallMirrorFromPose();
+        bool leftS3Mirror = GetSideWallMirrorFromPose();
+        // Retain ViewEdit mirror editing; visibility is geometry-only.
+        bool unusedLeftS3Enabled = leftS3Enabled;
         ApplyViewport17NativeManualControls(
-            "LeftS3", ref leftS3Enabled, ref leftS3Mirror);
+            "LeftS3", ref unusedLeftS3Enabled, ref leftS3Mirror);
         // Diagnostic only. Distinguish a selected V17 rule from a manual
         // ViewEdit enable; never report a manual override as a geometry rule.
         if (leftS3Enabled)
@@ -19225,7 +18942,7 @@ private static void HandleGameViewPointerDown(
       if (IsWallF3LeftPiece(piece))
       {
         state.Enabled = d3LeftEnabled;
-        state.X = NativeD3LeftF3DestX;
+        state.X = GetViewport17LeftF3LaneEndDisplayX(inspection);
         state.Y = DisplayYToUnityY(58, 49);
         state.Mirror = d3LeftMirror;
         resolvedNormalWallByPiece[piece] = state;
@@ -23544,7 +23261,7 @@ private static void HandleGameViewPointerDown(
         && leftSource.width == 83
         && leftSource.height == nativeHeight)
     {
-      int leftX = NativeD3LeftF3DestX;
+      int leftX = GetViewport17LeftF3LaneEndDisplayX(inspection);
       int leftY = destinationY;
       ApplyViewport17FamilyDestOverride("LeftF3", ref leftX, ref leftY);
       BlitPieceIntoPreview(
