@@ -14304,22 +14304,75 @@ private static void HandleGameViewPointerDown(
         && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 3));
   }
 
-  // An open right lane terminates against its far front wall at D3, while
-  // the next lane to the right is solid at D2 (including an out-of-map
-  // boundary). The far-right viewport seam is the narrow RightS3 source,
-  // NOT a full F2 outer-side wall. Classify by relative cells only.
+  // One mirrored S3 lane-end geometry rule for both handed sides.
+  // localSide = -1 (LeftS3), +1 (RightS3). The inspection cells already
+  // follow the player's facing direction (N/E/S/W).
+  // Outside stays solid per V17 boundary semantics; accessible floor does not.
+  private static bool IsViewport17S3OuterSideSolid(
+      Viewport17Inspection inspection, int localSide)
+  {
+    return inspection.Cells != null
+        && TryFindViewport17Cell(
+            inspection.Cells, 2 * localSide, 2, out Viewport17Cell outerCell)
+        && (outerCell.State == Viewport17CellState.Wall
+            || outerCell.State == Viewport17CellState.Outside);
+  }
+
+  // Core corridor configuration WITHOUT the outer D2 tile, allowing the
+  // Console diagnostic to report ALLOW/SUPPRESS at that deciding tile.
+  private static bool IsViewport17S3LaneEndCore(
+      Viewport17Inspection inspection, int localSide)
+  {
+    return inspection.Cells != null
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 1))
+        && IsViewport17LaneOpenAt(inspection, localSide, 0)
+        && IsViewport17LaneOpenAt(inspection, localSide, 1)
+        && IsViewport17LaneOpenAt(inspection, localSide, 2)
+        && IsViewport17Solid(
+            FindViewport17Cell(inspection.Cells, localSide, 3));
+  }
+
+  private static bool IsViewport17S3LaneEnd(
+      Viewport17Inspection inspection, int localSide)
+  {
+    return IsViewport17S3LaneEndCore(inspection, localSide)
+        && IsViewport17S3OuterSideSolid(inspection, localSide);
+  }
+
+  private static bool IsViewport17RightS3OuterSideSolid(
+      Viewport17Inspection inspection)
+  {
+    return IsViewport17S3OuterSideSolid(inspection, +1);
+  }
+
+  private static bool IsViewport17RightS3LaneEndCore(
+      Viewport17Inspection inspection)
+  {
+    return IsViewport17S3LaneEndCore(inspection, +1);
+  }
+
   private static bool IsViewport17RightS3RightLaneEnd(
       Viewport17Inspection inspection)
   {
-    if (inspection.Cells == null)
-      return false;
+    return IsViewport17S3LaneEnd(inspection, +1);
+  }
 
-    return IsViewport17Solid(FindViewport17Cell(inspection.Cells, 0, 1))
-        && IsViewport17LaneOpenAt(inspection, 1, 0)
-        && IsViewport17LaneOpenAt(inspection, 1, 1)
-        && IsViewport17LaneOpenAt(inspection, 1, 2)
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3))
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 2, 2));
+  private static bool IsViewport17LeftS3OuterSideSolid(
+      Viewport17Inspection inspection)
+  {
+    return IsViewport17S3OuterSideSolid(inspection, -1);
+  }
+
+  private static bool IsViewport17LeftS3LaneEndCore(
+      Viewport17Inspection inspection)
+  {
+    return IsViewport17S3LaneEndCore(inspection, -1);
+  }
+
+  private static bool IsViewport17LeftS3LeftLaneEnd(
+      Viewport17Inspection inspection)
+  {
+    return IsViewport17S3LaneEnd(inspection, -1);
   }
 
   /// <summary>
@@ -15103,7 +15156,12 @@ private static void HandleGameViewPointerDown(
         && IsViewport17LaneOpenAt(inspection, -1, 0)
         && IsViewport17LaneOpenAt(inspection, -1, 1)
         && IsViewport17LaneOpenAt(inspection, -1, 2)
-        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3));
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
+        // A blocked D1 center makes this the lane-end geometry, not the
+        // legacy open-center terminator. In that case require outer D2 solid.
+        && (!IsViewport17LeftS3LaneEndCore(inspection)
+            || IsViewport17LeftS3OuterSideSolid(inspection));
+    bool leftS3LeftLaneEnd = IsViewport17LeftS3LeftLaneEnd(inspection);
     bool leftS3D2FrontEdge = IsViewport17LeftS3D2FrontEdge(inspection);
     bool leftS3OuterD2Fingerprint = IsV17LeftS3OuterD2Fingerprint(inspection);
     bool leftS3D3FullFrontEdge =
@@ -15118,6 +15176,7 @@ private static void HandleGameViewPointerDown(
     // needs LeftS3 visible. FrontF3 extension may also exist, but it must not
     // suppress the LeftS3 side-face for this geometry class.
     if (leftS3D3Terminator
+        || leftS3LeftLaneEnd
         || leftS3D2FrontEdge
         || leftS3OuterD2Fingerprint
         || leftS3D3FullFrontEdge
@@ -15146,7 +15205,9 @@ private static void HandleGameViewPointerDown(
       Viewport17RenderCommand leftS3Command =
           CreateViewport17RenderCommand(
               "LeftS3",
-              leftS3D2FrontEdge
+              leftS3LeftLaneEnd
+                  ? "LEFT S3 LEFT LANE END"
+                  : leftS3D2FrontEdge
                   ? "LEFT S3 D2 FRONT EDGE"
                   : leftS3OuterD2Fingerprint
                       ? "LEFT S3 OUTER D2 FINGERPRINT"
@@ -15835,7 +15896,8 @@ private static void HandleGameViewPointerDown(
       // C+R front block. A nearer center front at D2 is exactly what creates
       // this sliver, so the normal inner-side occlusion rule must not remove it.
       if (command.PieceFamily == "LeftS3"
-          && (IsViewport17LeftS3D2FrontEdge(inspection)
+          && (IsViewport17LeftS3LeftLaneEnd(inspection)
+              || IsViewport17LeftS3D2FrontEdge(inspection)
               || IsViewport17LeftS3D3FullFrontEdge(inspection)
               || IsViewport17LeftS3NearCenterFullD3Edge(inspection)
               || IsViewport17LeftS3OpenLeftD3CenterFront(inspection)
@@ -18719,6 +18781,8 @@ private static void HandleGameViewPointerDown(
   private static string s_v17LeftEdgeBlitLog;
   private static string s_v17MagentaRightS3RuleLog;
   private static string s_v17MagentaLeftS3RuleLog;
+  private static string s_v17MagentaRightS3OuterDecisionLog;
+  private static string s_v17MagentaLeftS3OuterDecisionLog;
 
   private void ApplyViewport17LiveDrawToResolvedWalls()
   {
@@ -18732,6 +18796,64 @@ private static void HandleGameViewPointerDown(
     Viewport17Inspection inspection = BuildViewport17Inspection();
     List<Viewport17RenderCommand> finalCommands =
         BuildViewport17FinalDrawCommands(inspection);
+
+    // Report the exact deciding tile for the D3 right-lane-end rule even
+    // when it is suppressed. This records real map coordinates and state,
+    // rather than assuming every coordinate outside the old map is a wall.
+    // No rendering state is changed by this diagnostic.
+    if (IsViewport17RightS3LaneEndCore(inspection))
+    {
+      bool outerSolid = IsViewport17RightS3OuterSideSolid(inspection);
+      Viewport17Cell outer = FindViewport17Cell(inspection.Cells, 2, 2);
+      string outerKey = previewDungeonLevel + ":" + previewX + ":"
+          + previewY + ":" + previewFacing + ":" + outer.MapX
+          + ":" + outer.MapY + ":" + outer.State + ":" + outerSolid;
+      if (s_v17MagentaRightS3OuterDecisionLog != outerKey)
+      {
+        s_v17MagentaRightS3OuterDecisionLog = outerKey;
+        Debug.Log("<color=#FF00FF>MAGENTA | V17 RIGHT S3 OUTER TILE | "
+            + (outerSolid ? "ALLOW" : "SUPPRESS")
+            + " | Level " + previewDungeonLevel
+            + " (" + previewX + "," + previewY + ") " + previewFacing
+            + " | local=(+2,D2) map=(" + outer.MapX + ","
+            + outer.MapY + ") state=" + outer.State
+            + " | RightS3 lane-end "
+            + (outerSolid ? "eligible" : "disabled")
+            + " | other RightS3 rules evaluated separately</color>");
+      }
+    }
+    else
+    {
+      s_v17MagentaRightS3OuterDecisionLog = null;
+    }
+
+    // Mirror of the RightS3 outer-tile diagnostic. It reports the actual
+    // D2 outer-left tile even when the new LeftS3 lane-end rule is suppressed.
+    if (IsViewport17LeftS3LaneEndCore(inspection))
+    {
+      bool outerSolid = IsViewport17LeftS3OuterSideSolid(inspection);
+      Viewport17Cell outer = FindViewport17Cell(inspection.Cells, -2, 2);
+      string outerKey = previewDungeonLevel + ":" + previewX + ":"
+          + previewY + ":" + previewFacing + ":" + outer.MapX
+          + ":" + outer.MapY + ":" + outer.State + ":" + outerSolid;
+      if (s_v17MagentaLeftS3OuterDecisionLog != outerKey)
+      {
+        s_v17MagentaLeftS3OuterDecisionLog = outerKey;
+        Debug.Log("<color=#FF00FF>MAGENTA | V17 LEFT S3 OUTER TILE | "
+            + (outerSolid ? "ALLOW" : "SUPPRESS")
+            + " | Level " + previewDungeonLevel
+            + " (" + previewX + "," + previewY + ") " + previewFacing
+            + " | local=(-2,D2) map=(" + outer.MapX + ","
+            + outer.MapY + ") state=" + outer.State
+            + " | LeftS3 lane-end "
+            + (outerSolid ? "eligible" : "disabled")
+            + " | other LeftS3 rules evaluated separately</color>");
+      }
+    }
+    else
+    {
+      s_v17MagentaLeftS3OuterDecisionLog = null;
+    }
 
     // Diagnostic only: the geometry-driven RightS3 rule must be observable.
     // Once per change of viewpoint/rule; no Console spam on repaint.
