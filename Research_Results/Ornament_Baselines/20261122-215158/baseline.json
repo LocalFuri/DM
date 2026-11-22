@@ -1,0 +1,31 @@
+{
+    "captureStatus": "Unity-captured; DOS comparison not performed",
+    "dateLocal": "2026-11-22 21:51:58 +01:00",
+    "dungeonLevel": 0,
+    "playerX": 15,
+    "playerY": 8,
+    "facing": "West",
+    "viewportPng": "viewport_320x200.png",
+    "coordinateSystem": "x/y bottom-up for Unity buffer; screen y = 200-y-height",
+    "scope": "Shared Hook/Manacles/Grate draws plus direct Manacles S2/S3",
+    "limitations": "Sampling flags and source asset hashes not measured here; compare with Phase 8 code audit. PNG is after texture generation and mirroring, before wall occlusion/clipping.",
+    "ornaments": [
+        {
+            "family": "Grate",
+            "projectionKey": "OrnamentProjection:Grate:F1",
+            "sourceTile": "14,8 East",
+            "textureName": "Grate_F1_32x20",
+            "width": 32,
+            "height": 20,
+            "xBottomUp": 96,
+            "yBottomUp": 47,
+            "xScreen": 96,
+            "yScreen": 133,
+            "mirrored": false,
+            "opaquePixels": 640,
+            "pixelSha256": "b935dcb30fa00882ecb086b6f7b576d84a0121b67d22084cfa553c59a8d776c5",
+            "png": "ornament_01_Grate.png",
+            "note": "Exact output RGBA pixels after final mirror, before clipping/occlusion"
+        }
+    ]
+}

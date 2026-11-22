@@ -7,6 +7,7 @@
       "At the start of every new Dungeon Master session, request or open the latest Assets/Editor/Progression.json before technical work.",
       "Read the complete Progression.json and apply all permanent rules, including rules in older dated entries; do not read only the newest checkpoint.",
       "Never rely exclusively on ChatGPT memory or the prior conversation; Progression.json is the project handoff source of truth.",
+      "Check Unity Editor MenuItem paths before any new tool implementation: every tool must appear immediately under Tools (Tools/<name>), with no nested menu folders. Review the permanent 2026-11-08 and 2026-11-22 tool-menu rules each new session.",
       "Summarize or confirm the mandatory project rules before modifying code or generating deliverables.",
       "Resume from the latest saved checkpoint, preserving all approved implementations and regression checkpoints.",
       "All newly created or modified deliverable files must have actual filesystem modification timestamps set to the correct Europe/Berlin local date and time; ensure relevant ZIP entry timestamps agree.",
@@ -4758,5 +4759,44 @@
     ],
     "limitations": "Exact pixel correspondence for the F2 right-side corner requires DOS screenshot verification. The F3 side-corner asset path remains a separate legacy dependency, not modified in this phase.",
     "unity_compile": "not verified; user test required"
+  },
+  "phase8_runtime_ornament_capture_20261122": {
+    "date": "2026-11-22 21:49:21 CET",
+    "status": "IMPLEMENTED, UNITY COMPILATION AND CAPTURE TEST PENDING",
+    "purpose": "On-demand Phase 8 regression baseline for Hook/Manacles/Grate; exact mirrored RGBA bitmap PNG and SHA-256, final draw coordinates, dimensions, 320x200 viewport and JSON manifest.",
+    "editorTool": {
+      "name": "Tools/Export Phase 8 Ornament Baseline",
+      "purpose": "Capture currently visible ornament draw outputs for before/after regression tests. Only active while menu command runs.",
+      "implementationDate": "2026-11-22",
+      "retainInProgressSummariesUntil": "2026-11-29",
+      "menuCorrection": "Corrected nested Tools/DM entry to top-level Tools on 2026-11-22; runtime capture and Unity compile still require user verification."
+    },
+    "output": "Research_Results/Ornament_Baselines/<local time>/baseline.json, PNGs",
+    "limitations": "No DOS screenshot comparison, source artwork hash, sampler coefficients or calibration JSON snapshot recorded; use Phase 8 code audit for sampler options. Shared blit captures and Manacles direct S2/S3 are covered; specialized dedicated blitters may not be represented.",
+    "preserved": "All existing rendering output, S3 wall algorithm, X/Y calibration, ViewEdit cosmetic behavior and sound unchanged.",
+    "sourceSha256": "960459080d90079e9a468da45dd219afd359b47060f7fba321127b4f4d9ebfac",
+    "patchedSha256": "d74cb3ab91677a0ac3c565fc946e262e71111a7f0179758275da8bdd4dd0a065"
+  },
+  "unity_editor_tools_top_level_enforcement_20261122": {
+    "status": "ACTIVE PERMANENT — user reaffirmed 2026-11-22",
+    "priority": "mandatory project rule; review at start of every session",
+    "instruction": "All Unity Editor commands, including diagnostic and research commands, MUST use a direct top-level Tools/<Command Name> MenuItem. Never use Tools/DM/, Tools/Dungeon Master/ or any deeper submenu. Enforce this rule before each delivery, and review it at the start of every new Dungeon Master session. New tool commands must be registered in Progression.json with purpose/date and retained in daily summaries for at least seven days.",
+    "examples": {
+      "correct": "[MenuItem(\"Tools/Export Phase 8 Ornament Baseline\", false, 190)]",
+      "forbidden": "[MenuItem(\"Tools/DM/Export Phase 8 Ornament Baseline\", false, 190)]"
+    },
+    "verification": "Before shipping a Unity tool, inspect all newly introduced or changed MenuItem declarations for submenus; correct violations before delivery.",
+    "notes": "Reaffirms existing 2026-10-29 and 2026-11-08 rules. Applies to MenuItem paths, not just file storage paths."
+  },
+  "phase8_top_level_tools_menu_fix_20261122": {
+    "date": "2026-11-22",
+    "status": "SOURCE UPDATED; UNITY COMPILATION PENDING",
+    "change": "Phase 8 baseline diagnostic MenuItem moved from Tools/DM/Export Phase 8 Ornament Baseline to Tools/Export Phase 8 Ornament Baseline.",
+    "scope": "Menu path only in ViewportLayoutEditor.cs; other rendering and capture code unchanged.",
+    "permanentRule": "Top-level Tools only; loaded at each session startup via session_start_protocol.",
+    "files": [
+      "ViewportLayoutEditor.cs",
+      "Progression.json"
+    ]
   }
 }

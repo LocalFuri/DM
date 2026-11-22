@@ -39628,6 +39628,7 @@ private static void HandleGameViewPointerDown(
           bool renderMirror = false;
           ApplyManaclesS3ExperimentalPlacement(
               ornament, side, ref renderX, ref renderY, ref renderMirror);
+          Phase8CaptureOrnament("Manacles", "Manacles:S3:direct", ornament, side, renderX, renderY, renderMirror);
           BlitPieceIntoPreview(pixels, side, renderX, renderY, renderMirror);
         }
         drawnLeft = true;
@@ -39643,6 +39644,7 @@ private static void HandleGameViewPointerDown(
           bool renderMirror = true;
           ApplyManaclesS3ExperimentalPlacement(
               ornament, side, ref renderX, ref renderY, ref renderMirror);
+          Phase8CaptureOrnament("Manacles", "Manacles:S3:direct", ornament, side, renderX, renderY, renderMirror);
           BlitPieceIntoPreview(pixels, side, renderX, renderY, renderMirror);
         }
         drawnRight = true;
@@ -39731,6 +39733,8 @@ private static void HandleGameViewPointerDown(
           GetManaclesSideS2Rect(
               true, out int renderX, out int renderY, out _, out _);
           // V17-gated direct blit: no legacy calibration/preview overrides.
+          Phase8CaptureOrnament("Manacles", "Manacles:S2:direct:L", ornament, side, renderX,
+              GetOptionalManaclesDirectSideY(2, side, renderY), false);
           BlitPieceIntoPreview(pixels, side, renderX,
               GetOptionalManaclesDirectSideY(2, side, renderY), false);
         }
@@ -39745,6 +39749,8 @@ private static void HandleGameViewPointerDown(
         {
           GetManaclesSideS2Rect(
               false, out int renderX, out int renderY, out _, out _);
+          Phase8CaptureOrnament("Manacles", "Manacles:S2:direct:R", ornament, side, renderX,
+              GetOptionalManaclesDirectSideY(2, side, renderY), true);
           BlitPieceIntoPreview(pixels, side, renderX,
               GetOptionalManaclesDirectSideY(2, side, renderY), true);
         }
@@ -43750,6 +43756,177 @@ private static void HandleGameViewPointerDown(
         manaclesProjectionMountHeight) - texture.height;
   }
 
+  // Phase 8: opt-in, one-repaint ornament regression capture. This never
+  // changes the pixels that the renderer writes to the viewport.
+  private bool phase8CaptureActive;
+  private string phase8CaptureFolder;
+  private readonly System.Collections.Generic.List<Phase8OrnamentRecord>
+      phase8Captured = new System.Collections.Generic.List<Phase8OrnamentRecord>();
+
+  [System.Serializable]
+  private sealed class Phase8OrnamentRecord
+  {
+    public string family;
+    public string projectionKey;
+    public string sourceTile;
+    public string textureName;
+    public int width;
+    public int height;
+    public int xBottomUp;
+    public int yBottomUp;
+    public int xScreen;
+    public int yScreen;
+    public bool mirrored;
+    public int opaquePixels;
+    public string pixelSha256;
+    public string png;
+    public string note;
+  }
+
+  [System.Serializable]
+  private sealed class Phase8OrnamentManifest
+  {
+    public string captureStatus = "Unity-captured; DOS comparison not performed";
+    public string dateLocal;
+    public int dungeonLevel;
+    public int playerX;
+    public int playerY;
+    public string facing;
+    public string viewportPng = "viewport_320x200.png";
+    public string coordinateSystem = "x/y bottom-up for Unity buffer; screen y = 200-y-height";
+    public string scope = "Shared Hook/Manacles/Grate draws plus direct Manacles S2/S3";
+    public string limitations = "Sampling flags and source asset hashes not measured here; compare with Phase 8 code audit. PNG is after texture generation and mirroring, before wall occlusion/clipping.";
+    public Phase8OrnamentRecord[] ornaments;
+  }
+
+  [MenuItem("Tools/Export Phase 8 Ornament Baseline", false, 190)]
+  private static void ExportPhase8OrnamentBaselineFromMenu()
+  {
+    ViewportLayoutEditor window = null;
+    foreach (ViewportLayoutEditor candidate in
+        Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>())
+    {
+      window = candidate;
+      break;
+    }
+    if (window == null)
+    {
+      Debug.LogWarning("Phase 8: open ViewEdit before exporting.");
+      return;
+    }
+    if (Application.isPlaying)
+    {
+      Debug.LogWarning("Phase 8: capture is intended for Edit mode.");
+      return;
+    }
+    string root = System.IO.Path.Combine(
+        Application.dataPath, "../Research_Results/Ornament_Baselines");
+    string stamp = System.DateTime.Now.ToString("yyyyMMdd-HHmmss");
+    string folder = System.IO.Path.Combine(root, stamp);
+    System.IO.Directory.CreateDirectory(folder);
+    window.phase8CaptureFolder = folder;
+    window.phase8Captured.Clear();
+    window.phase8CaptureActive = true;
+    try
+    {
+      window.RefreshEditModePreview();
+      if (window.editModePreviewTexture == null)
+        throw new System.InvalidOperationException("No active viewport preview texture");
+      System.IO.File.WriteAllBytes(
+          System.IO.Path.Combine(folder, "viewport_320x200.png"),
+          window.editModePreviewTexture.EncodeToPNG());
+      Phase8OrnamentManifest manifest = new Phase8OrnamentManifest();
+      manifest.dateLocal = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss zzz");
+      manifest.dungeonLevel = window.previewDungeonLevel;
+      manifest.playerX = window.previewX;
+      manifest.playerY = window.previewY;
+      manifest.facing = window.previewFacing.ToString();
+      manifest.ornaments = window.phase8Captured.ToArray();
+      System.IO.File.WriteAllText(
+          System.IO.Path.Combine(folder, "baseline.json"),
+          JsonUtility.ToJson(manifest, true));
+      Debug.Log("Phase 8: exported " + manifest.ornaments.Length
+          + " ornament draws to " + folder);
+    }
+    catch (System.Exception error)
+    {
+      Debug.LogError("Phase 8 export failed: " + error.Message);
+    }
+    finally
+    {
+      window.phase8CaptureActive = false;
+      window.phase8CaptureFolder = null;
+    }
+  }
+
+  private void Phase8CaptureOrnament(
+      string family, string projectionKey, WallOrnamentPlacement ornament,
+      Texture2D texture, int x, int y, bool mirror)
+  {
+    if (!phase8CaptureActive || texture == null || !texture.isReadable)
+      return;
+    if (!(family == "Hook" || family == "Manacles" || family == "Grate"))
+      return;
+
+    Color32[] original = texture.GetPixels32();
+    Color32[] displayed = new Color32[original.Length];
+    int opaque = 0;
+    for (int row = 0; row < texture.height; row++)
+      for (int col = 0; col < texture.width; col++)
+      {
+        int srcCol = mirror ? texture.width - 1 - col : col;
+        Color32 color = original[row * texture.width + srcCol];
+        displayed[row * texture.width + col] = color;
+        if (color.a != 0) opaque++;
+      }
+    byte[] rgba = new byte[displayed.Length * 4];
+    for (int i = 0; i < displayed.Length; i++)
+    {
+      rgba[i * 4] = displayed[i].r;
+      rgba[i * 4 + 1] = displayed[i].g;
+      rgba[i * 4 + 2] = displayed[i].b;
+      rgba[i * 4 + 3] = displayed[i].a;
+    }
+    string sha;
+    using (var hasher = System.Security.Cryptography.SHA256.Create())
+      sha = System.BitConverter.ToString(hasher.ComputeHash(rgba))
+          .Replace("-", "").ToLowerInvariant();
+    int index = phase8Captured.Count + 1;
+    string filename = string.Format("ornament_{0:D2}_{1}.png", index, family);
+    Texture2D copy = new Texture2D(texture.width, texture.height,
+        TextureFormat.RGBA32, false);
+    try
+    {
+      copy.SetPixels32(displayed);
+      copy.Apply(false);
+      System.IO.File.WriteAllBytes(
+          System.IO.Path.Combine(phase8CaptureFolder, filename),
+          copy.EncodeToPNG());
+    }
+    finally
+    {
+      Object.DestroyImmediate(copy);
+    }
+    Phase8OrnamentRecord record = new Phase8OrnamentRecord();
+    record.family = family;
+    record.projectionKey = projectionKey;
+    record.sourceTile = ornament == null ? "" :
+        ornament.x + "," + ornament.y + " " + ornament.wall;
+    record.textureName = texture.name;
+    record.width = texture.width;
+    record.height = texture.height;
+    record.xBottomUp = x;
+    record.yBottomUp = y;
+    record.xScreen = x;
+    record.yScreen = PreviewHeight - y - texture.height;
+    record.mirrored = mirror;
+    record.opaquePixels = opaque;
+    record.pixelSha256 = sha;
+    record.png = filename;
+    record.note = "Exact output RGBA pixels after final mirror, before clipping/occlusion";
+    phase8Captured.Add(record);
+  }
+
   private void BlitOrnamentPieceIntoPreview(
       Color32[] pixels,
       Texture2D texture,
@@ -43866,6 +44043,13 @@ private static void HandleGameViewPointerDown(
               : texture.width + "x" + texture.height)
           + "; delta=" + (x - defaultX) + "," + (y - defaultY)
           + "; mirror=" + mirror);
+    if (phase8CaptureActive)
+    {
+      string family = IsHookOrnament(ornament) ? "Hook"
+          : IsManaclesOrnament(ornament) ? "Manacles"
+          : IsGrateOrnament(ornament) ? "Grate" : "Other";
+      Phase8CaptureOrnament(family, key, ornament, texture, x, y, mirror);
+    }
     BlitPieceIntoPreview(pixels, texture, x, y, mirror);
   }
 
