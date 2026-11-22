@@ -4521,5 +4521,45 @@
       "Check open and blocked center lanes"
     ],
     "next_step": "Only after verification, consider migrating additional side-ornament callers to this helper one at a time."
+  },
+  "ornament_cleanup_phase5_shared_wood_ring_side_corridor_20261122": {
+    "date": "2026-11-22",
+    "status": "Code prepared; Unity compilation and viewpoint regression pending",
+    "cursor_audit_finding": "Duplicated open-center visibility gates for Wood Ring S2/S3",
+    "scope": "ViewportLayoutEditor.cs Wood Ring S2 and S3 only",
+    "implementation": "Replaced identical inline D1..D2 and D1..D3 corridor checks with IsPreviewSideOrnamentCenterLaneOpen(forwardX,forwardY,depth), shared with Grate.",
+    "preserved": [
+      "Out-of-map and Wall rejection at each center tile",
+      "Wood Ring native/pre-scaled artwork selection and blitting",
+      "All placement coordinates, wall-face matching, calibration and mirroring",
+      "Grate and Hook and Manacles drawing paths",
+      "V17 wall geometry and ViewEdit cyan clipboard/Click06.wav"
+    ],
+    "verification": [
+      "Compile Unity: zero errors",
+      "Compare Wood Ring S2 and S3 at previously accepted reference positions (4,6)/(4,7) North",
+      "Ensure Grate S2/S3 still visible at previously verified positions"
+    ],
+    "next_step": "After successful regression, migrate another identical visibility gate, not scaling or artwork."
+  },
+  "ornament_mirror_code_owned_phase6_20261122": {
+    "date": "2026-11-22",
+    "status": "source patch prepared; Unity compilation and visual regression pending",
+    "scope": "wall ornament shared ViewEdit row and BlitOrnamentPieceIntoPreview only",
+    "policy": "No manual Mirror checkbox for wall ornament F1/F2/F3/S1/S2/S3. Mirror comes from renderer code; X/Y remain editable and globally calibrated.",
+    "changes": [
+      "Removed Mirror checkbox in shared wall-ornament calibration row",
+      "Saved offsets retain existing JSON schema but mirror is ignored for shared blit orientation",
+      "Shared blitter restores caller-provided orientation after legacy accepted/draft calibration",
+      "Existing X/Y Apply and Grate offsets unchanged"
+    ],
+    "caution": "Specialized direct blitters and other UI routes are not modified here; audit them before removing stored legacy mirror fields.",
+    "verification": [
+      "Unity recompilation",
+      "Hook right (15,9) West; Hook left (10,9) East",
+      "Grate S2/S3 X/Y offsets persisted",
+      "Manacles S2/S3, WoodRing and ViAltar orientations",
+      "V17 walls unchanged"
+    ]
   }
 }

@@ -27827,6 +27827,9 @@ private static void HandleGameViewPointerDown(
     int y = defaultY;
     bool mirror = defaultMirror;
     ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
+    // Mirror is derived from ornament geometry, not a saved ViewEdit draft.
+    mirror = codedMirror;
+    previewFeatureMirrorOverrides.Remove(key);
     // Hook side orientation is defined by the wall side, not by legacy
     // accepted/calibrated mirror flags. The UI must show the live blitter.
     bool fixedHookSideMirror = IsHookOrnament(ornament)
@@ -27982,31 +27985,10 @@ private static void HandleGameViewPointerDown(
     if (fixedManaclesS2)
       EditorGUI.EndDisabledGroup();
 
-    // Front-facing ornament projections never expose a Mirror checkbox.
-    // Retain the stored mirror value unchanged for calibration compatibility;
-    // side and corner perspectives continue to provide their Mirror control.
-    bool frontOrnamentProjection = hasGenericProjection
-        && (projectionSuffix == " / F1"
-            || projectionSuffix == " / F2"
-            || projectionSuffix == " / F3");
-    bool editMirror = mirror;
-    if (frontOrnamentProjection || IsEmptyTorchHolderF1Visible(ornament))
-    {
-      using (new EditorGUI.DisabledScope(true))
-        EditorGUILayout.ToggleLeft("Mirror", false, GUILayout.Width(56f));
-    }
-    else if (fixedHookSideMirror)
-    {
-      // Read-only for Hook sides: left = off, right = on.
-      using (new EditorGUI.DisabledScope(true))
-        EditorGUILayout.ToggleLeft("Mirror", mirror, GUILayout.Width(56f));
-    }
-    else
-    {
-      editMirror = EditorGUILayout.ToggleLeft(
-          "Mirror", mirror, GUILayout.Width(56f));
-    }
-    bool mirrorChanged = editMirror != mirror;
+    // Wall ornament orientation belongs to the renderer, never ViewEdit.
+    // The calibration row exposes X/Y only. Old JSON mirror fields remain
+    // readable for compatibility, but are not editable or authoritative.
+    bool editMirror = codedMirror;
     if (string.Equals(selectedOrnamentInspectorKey, key,
             System.StringComparison.Ordinal))
       selectedOrnamentInspectorMirror = editMirror;
@@ -28041,7 +28023,7 @@ private static void HandleGameViewPointerDown(
       // legacy reference is left intact for other rendering paths.
       if (SaveOrnamentPlacementOffset(
           key, editX - codedX, codedY - editY,
-          fixedHookSideMirror ? defaultMirror : editMirror))
+          codedMirror))
       {
         previewFeaturePositionOverrides.Remove(key);
         previewFeatureMirrorOverrides.Remove(key);
@@ -28055,15 +28037,6 @@ private static void HandleGameViewPointerDown(
     }
 
     bool changed = false;
-    if (mirrorChanged)
-    {
-      if (editMirror == defaultMirror)
-        previewFeatureMirrorOverrides.Remove(key);
-      else
-        previewFeatureMirrorOverrides[key] = editMirror;
-      previewMirrorChangedThisFrame = true;
-      changed = true;
-    }
     if ((xChanged && editX != x) || (yChanged && editY != y))
     {
       if (editX == defaultX && editY == defaultY)
@@ -38455,26 +38428,11 @@ private static void HandleGameViewPointerDown(
         out int rightX,
         out int rightY);
 
-    // D3 side face is visible only through open D1, D2 and D3 center cells.
-    int d1CenterX = previewX + forwardX;
-    int d1CenterY = previewY + forwardY;
-    int d2CenterX = previewX + forwardX * 2;
-    int d2CenterY = previewY + forwardY * 2;
+    // Preserve the same D1..D3 open-center check.
     int d3CenterX = previewX + forwardX * 3;
     int d3CenterY = previewY + forwardY * 3;
-
-    if (!previewMiniMap.IsInside(d1CenterX, d1CenterY)
-        || previewMiniMap.GetTile(d1CenterX, d1CenterY).Type
-            == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d2CenterX, d2CenterY)
-        || previewMiniMap.GetTile(d2CenterX, d2CenterY).Type
-            == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d3CenterX, d3CenterY)
-        || previewMiniMap.GetTile(d3CenterX, d3CenterY).Type
-            == DungeonTileType.Wall)
-    {
+    if (!IsPreviewSideOrnamentCenterLaneOpen(forwardX, forwardY, 3))
       return;
-    }
 
     int leftWallTileX = d3CenterX - rightX;
     int leftWallTileY = d3CenterY - rightY;
@@ -38602,20 +38560,11 @@ private static void HandleGameViewPointerDown(
         out int rightX,
         out int rightY);
 
-    // The D2 side face is visible only through open D1 and D2 center cells.
-    int d1CenterX = previewX + forwardX;
-    int d1CenterY = previewY + forwardY;
+    // Preserve the same D1..D2 open-center check.
     int d2CenterX = previewX + forwardX * 2;
     int d2CenterY = previewY + forwardY * 2;
-    if (!previewMiniMap.IsInside(d1CenterX, d1CenterY)
-        || previewMiniMap.GetTile(d1CenterX, d1CenterY).Type
-            == DungeonTileType.Wall
-        || !previewMiniMap.IsInside(d2CenterX, d2CenterY)
-        || previewMiniMap.GetTile(d2CenterX, d2CenterY).Type
-            == DungeonTileType.Wall)
-    {
+    if (!IsPreviewSideOrnamentCenterLaneOpen(forwardX, forwardY, 2))
       return;
-    }
 
     int leftWallTileX = d2CenterX - rightX;
     int leftWallTileY = d2CenterY - rightY;
@@ -43766,18 +43715,10 @@ private static void HandleGameViewPointerDown(
         ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
       }
     }
-    // Hook S1/S2/S3 all follow the wall-side mirror rule.
-    // Preserve accepted X/Y offsets while ignoring legacy mirror overrides.
-    if (IsHookOrnament(ornament)
-        && (string.Equals(key, "OrnamentProjection:Hook:S1",
-                System.StringComparison.Ordinal)
-            || string.Equals(key, "OrnamentProjection:Hook:S2",
-                System.StringComparison.Ordinal)
-            || string.Equals(key, "OrnamentProjection:Hook:S2:Left",
-                System.StringComparison.Ordinal)
-            || string.Equals(key, "OrnamentProjection:Hook:S3",
-                System.StringComparison.Ordinal)))
-      mirror = defaultMirror;
+    // Geometry/caller chooses the orientation for all shared wall-ornament
+    // blits. Saved legacy mirror values and temporary ViewEdit mirror drafts
+    // must never rotate a bitmap; X/Y calibration remains unaffected.
+    mirror = defaultMirror;
     if (hookF3ManualTraceActive && IsHookOrnament(ornament))
       Debug.Log("[Hook F3 Manual Trace] Final draw: key=" + key
           + "; X=" + x + "; Y(bottom-up)=" + y
