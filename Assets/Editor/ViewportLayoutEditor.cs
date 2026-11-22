@@ -40926,22 +40926,50 @@ private static void HandleGameViewPointerDown(
         + path + "</color>");
   }
 
+  // Phase 11: shared registry-backed native side artwork for Grate S2/S3.
+  // No fallback: missing, invalid, or unreadable artwork is reported in cyan.
+  // Do not cache the original source separately; AssetDatabase owns that asset.
+  private Texture2D GetRegisteredGrateNativeSideTexture()
+  {
+    if (!TryGetDosWallOrnamentRegistration(
+            "Grate", out DosWallOrnamentRegistration registration)
+        || string.IsNullOrEmpty(registration.nativeSideSource)
+        || registration.nativeSideWidth != 16
+        || registration.nativeSideHeight != 19)
+    {
+      ReportMissingGrateArtwork(
+          "DOS REGISTRY | Grate native side registration missing/invalid");
+      return null;
+    }
+
+    Texture2D source = AssetDatabase.LoadAssetAtPath<Texture2D>(
+        registration.nativeSideSource);
+    if (source == null
+        || source.width != registration.nativeSideWidth
+        || source.height != registration.nativeSideHeight)
+    {
+      ReportMissingGrateArtwork(registration.nativeSideSource);
+      return null;
+    }
+    if (!source.isReadable)
+    {
+      ReportMissingGrateArtwork(
+          registration.nativeSideSource + " (unreadable)");
+      return null;
+    }
+    return source;
+  }
+
   private Texture2D GetGrateSide3Texture()
   {
     if (cachedGrateSide3Texture != null)
       return cachedGrateSide3Texture;
 
-    Texture2D source = GetGrateSide1Texture();
+    // Common Grate native S1 loader; S2 and S3 retain distinct DOS
+    // sampling palettes, dimensions, and their existing drawing paths.
+    Texture2D source = GetRegisteredGrateNativeSideTexture();
     if (source == null)
-    {
-      ReportMissingGrateArtwork(GrateSide1AssetPath);
       return null;
-    }
-    if (!source.isReadable)
-    {
-      ReportMissingGrateArtwork(GrateSide1AssetPath + " (unreadable)");
-      return null;
-    }
 
     // Same FIRES 6-bit nearest-source sampling used by Hook and Manacles S3.
     cachedGrateSide3Texture = GenerateDmScaledWallDecoration(
@@ -41217,17 +41245,11 @@ private static void HandleGameViewPointerDown(
     if (cachedGrateSide2Texture != null)
       return cachedGrateSide2Texture;
 
-    Texture2D source = GetGrateSide1Texture();
+    // Common Grate native S1 loader; S2 and S3 retain distinct DOS
+    // sampling palettes, dimensions, and their existing drawing paths.
+    Texture2D source = GetRegisteredGrateNativeSideTexture();
     if (source == null)
-    {
-      ReportMissingGrateArtwork(GrateSide1AssetPath);
       return null;
-    }
-    if (!source.isReadable)
-    {
-      ReportMissingGrateArtwork(GrateSide1AssetPath + " (unreadable)");
-      return null;
-    }
 
     // Exactly the same 6-bit DOS scaler and medium-distance palette used
     // for the verified Hook S2 and Manacles S2. Geometry is still checked

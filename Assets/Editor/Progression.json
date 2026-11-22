@@ -4877,5 +4877,76 @@
     "sourceSha256Before": "e13317dcac465c655178951f003849fb17a6cd53a57291a0655e8d5980a16bf4",
     "sourceSha256After": "4ac46139ce03a9c6087cd6cbf5914272ed5d280303981071597e8a2aff04aef8",
     "unityVerification": "Pending"
+  },
+  "ornament_cleanup_phase11_grate_s2_registry_20261122": {
+    "date": "2026-11-22 22:14:51 CET",
+    "status": "PREPARED; UNITY COMPILATION AND PHASE 8 VISUAL REGRESSION PENDING",
+    "purpose": "First live registry-backed ornament projection, Grate S2, preserving all verified rendering values.",
+    "scope": "Assets/Editor/ViewportLayoutEditor.cs",
+    "changes": [
+      "GetGrateSide2Texture resolves native side asset path and 16x19 dimensions from DosWallOrnamentRegistry rather than a Grate-specific getter.",
+      "Invalid/missing registration or source artwork reports once in cyan and returns null; no fallback art or guessed group.",
+      "Grate S2 still scales to GrateD2SideWidth/Height with existing DOS 6-bit zero bias, top-down medium palette and unmodified drawing, mirroring and global calibration.",
+      "No other ornament projection or blitter migrated in this phase."
+    ],
+    "regressionChecks": [
+      "Unity compile without errors",
+      "Grate S2 visual compare at known viewpoint",
+      "Verify global saved dx=+2 dy=0 still applied",
+      "Review Phase 8 baseline pixel hash when available"
+    ],
+    "toolsMenuRule": "No new MenuItem; all tools must be direct Tools/<name>.",
+    "delivery": "ZIP root: ViewportLayoutEditor.cs and Progression.json only; no TXT.",
+    "sourceSha256Before": "4ac46139ce03a9c6087cd6cbf5914272ed5d280303981071597e8a2aff04aef8",
+    "sourceSha256After": "d34f8b7c1f292e1a27c7478c53cc655390de78b3f3ede1c417159de766ca9b40"
+  },
+  "ornament_cleanup_phase11_grate_s3_registry_20261122": {
+    "date": "2026-11-22 22:18:28 CET",
+    "status": "PREPARED; UNITY COMPILATION AND GRATE S3 VISUAL REGRESSION PENDING",
+    "purpose": "Second live registry-backed ornament projection: native Grate S3 side artwork lookup only.",
+    "scope": "Assets/Editor/ViewportLayoutEditor.cs",
+    "changes": [
+      "GetGrateSide3Texture now resolves native 16x19 side artwork from DosWallOrnamentRegistry, matching Phase 11 Grate S2.",
+      "Asset absence, unreadability and incorrect dimensions return null and report once in cyan; no invented artwork or fallback.",
+      "Preserved 7x8 far-distance output, DOS 6-bit scale, far palette, zero bias/top-down selection, existing blitting, mirror and saved X/Y offset logic.",
+      "No other ornament rendering paths, Tools menu items or V17 geometry changed."
+    ],
+    "regressionChecks": [
+      "Unity recompiles without errors",
+      "Compare Grate S3 at approved PC DOS viewpoint",
+      "Confirm saved Grate S2 and S3 X/Y offsets are unchanged",
+      "Verify cyan missing-asset diagnostic on missing native Grate source if relevant"
+    ],
+    "projectRules": [
+      "Tools menu items directly under Tools, no submenus",
+      "ZIP root only; Progression.json instead of TXT",
+      "Europe/Berlin timestamps for all delivered files"
+    ],
+    "sourceSha256Before": "d34f8b7c1f292e1a27c7478c53cc655390de78b3f3ede1c417159de766ca9b40",
+    "sourceSha256After": "620567712284d8dce32dd8d8eddb8e801b2cfce707fca2b1b6575d2a00d807ce"
+  },
+  "ornament_cleanup_phase11_grate_shared_source_20261122": {
+    "date": "2026-11-22T22:24:08+01:00",
+    "status": "PREPARED; UNITY COMPILATION AND VISUAL REGRESSION PENDING",
+    "purpose": "Consolidate the registry-backed Grate S2/S3 native source lookup without altering either scaling or rendering path.",
+    "scope": "Assets/Editor/ViewportLayoutEditor.cs",
+    "changes": [
+      "Introduced GetRegisteredGrateNativeSideTexture() as one shared registry lookup, dimension/readability validation and cyan diagnostic path.",
+      "GetGrateSide2Texture and GetGrateSide3Texture now call the shared source resolver.",
+      "Preserved S2 10x12 medium and S3 7x8 far textures, zero-bias top-down 6-bit scale, palettes, X/Y calibration, mirror state and blitters.",
+      "No changes to V17, other ornaments, or Unity Tools commands."
+    ],
+    "regressionChecks": [
+      "Unity compiles cleanly",
+      "Grate S2 and S3 match approved PC DOS viewpoints and retain offsets",
+      "Missing native side source produces a short cyan diagnostic without fallback"
+    ],
+    "projectRules": [
+      "New Editor commands only under top-level Tools",
+      "ZIP root entries only; code + Progression.json, no TXT",
+      "Europe/Berlin timestamps"
+    ],
+    "sourceSha256Before": "620567712284d8dce32dd8d8eddb8e801b2cfce707fca2b1b6575d2a00d807ce",
+    "sourceSha256After": "af666c69ead3009297f099765bda016c153b61499faec16bddbe377ece529095"
   }
 }
