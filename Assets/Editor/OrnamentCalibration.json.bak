@@ -21,6 +21,13 @@
             "dx": 2,
             "dy": 0,
             "mirror": false
+        },
+        {
+            "key": "OrnamentProjection:Grate:S3",
+            "artworkSignature": "Grate_S1_16x19.png:16x19",
+            "dx": 0,
+            "dy": 2,
+            "mirror": false
         }
     ]
 }
