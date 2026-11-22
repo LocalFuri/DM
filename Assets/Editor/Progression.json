@@ -4478,5 +4478,27 @@
       "Recheck Hook and Grate visual positions if necessary"
     ],
     "next_cleanup": "Gradually consolidate duplicated ornament dispatch only with per-perspective regression checks; do not change default sampler for other ornaments without DOS evidence."
+  },
+  "ornament_cleanup_phase3_dead_manacles_constants_20261122": {
+    "date_local": "2026-11-22 19:40:36 CET",
+    "status": "Prepared from Unity-compiled Phase 2 baseline; Phase 3 Unity compile pending",
+    "audit_basis": "Cursor read-only ornament legacy/hardcode audit, sections D and commented depth-stage references",
+    "removed": [
+      "Five obsolete Manacles D2 side geometry constants and explanatory comment (20x26 historical candidate; zero active references)",
+      "22 commented-out calls already moved to V17 depth stages"
+    ],
+    "preserved": [
+      "Live Manacles S2 21x27 placement and DOS six-bit renderer",
+      "Hook left/right mirroring and ViewEdit controls",
+      "Grate S2 and S3 and their global XY offsets",
+      "All V17 walls, ornament dispatch, cyan copy preview and Click06.wav",
+      "Unused generic ornament entry point retained for future migration"
+    ],
+    "verification": [
+      "Confirmed each removed constant has exactly one occurrence (its declaration) before removal",
+      "Confirmed removed V17 lines were only comments",
+      "Checked live Manacles and Hook call counts unchanged",
+      "User: recompile Unity; quick regression Hook S3 and Grate S2/S3"
+    ]
   }
 }

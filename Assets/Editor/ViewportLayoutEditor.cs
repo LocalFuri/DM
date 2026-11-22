@@ -236,17 +236,6 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonViewportWidth - ManaclesD1SideLeftX - ManaclesD1SideWidth;
   private const int ManaclesD1SideY = 84;
 
-  // D2 side manacles are scaled from Manacles_S1 with the medium palette.
-  // Measured on the original (4,11) North left wall, then shifted
-  // +2 px on X: screen top-left (57, 73), size 20x26, framebuffer
-  // bottom-left Y = 200 - 73 - 26 = 101.
-  private const int ManaclesD2SideWidth = 20;
-  private const int ManaclesD2SideHeight = 26;
-  private const int ManaclesD2SideLeftX = 57;
-  private const int ManaclesD2SideRightX =
-      DungeonViewportWidth - ManaclesD2SideLeftX - ManaclesD2SideWidth;
-  private const int ManaclesD2SideY = 101;
-
   // Front F2 Manacles: temporary DOS screenshot-fit experiment only.
   // Current candidate 60x35 at viewport top-left (82,40), half-step sampling.
   // Do not approve or generalize without complete DOS comparison.
@@ -21387,47 +21376,27 @@ private static void HandleGameViewPointerDown(
     // runs before a calibration exists so ViewEdit can visually position it.
     BlitUnifiedChampionMirrorFrontPreview(pixels);
     BlitUnifiedChampionMirrorCornerF2Preview(pixels);
-    // BlitUnifiedChampionMirrorLeftF3Preview moved to the appropriate V17 depth stage.
     BlitUnifiedChampionMirrorS1Preview(pixels);
 
     // Wall decorations (ordinary ornaments retain their own rendering).
 
     // Large wall fixtures.
-    // BlitViAltarD3FrontIntoPreview moved to the appropriate V17 depth stage.
-    // BlitViAltarD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitViAltarD1FrontIntoPreview(pixels);
 
     // Hall / dungeon wall ornaments. Keep the existing verified order.
-    // BlitWoodRingD3SidesIntoPreview moved to the appropriate V17 depth stage.
-    // BlitHookD3SidesIntoPreview moved to the appropriate V17 depth stage.
-    // BlitGrateD3SidesIntoPreview moved to the appropriate V17 depth stage.
-    // BlitSlimeD2SidesIntoPreview moved to the appropriate V17 depth stage.
-    // BlitWoodRingD2SidesIntoPreview moved to the appropriate V17 depth stage.
-    // BlitHookD2SidesIntoPreview moved to the appropriate V17 depth stage.
-    // BlitGrateD2SidesIntoPreview moved to the appropriate V17 depth stage.
     BlitGrateF2SideCornerIntoPreview(pixels);
     BlitGrateF3SideCornerIntoPreview(pixels);
     BlitHookStyleD1SidesIntoPreview(pixels);
-    // BlitManaclesD2SidesIntoPreview moved to the appropriate V17 depth stage.
     BlitManaclesD1SidesIntoPreview(pixels);
     BlitGrateD1SidesIntoPreview(pixels);
     BlitSlimeD1SidesIntoPreview(pixels);
-    // BlitWoodRingD3FrontIntoPreview moved to the appropriate V17 depth stage.
-    // BlitWoodRingD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitWoodRingD1FrontIntoPreview(pixels);
 
     BlitOrnamentCornerFrontF2IntoPreview(pixels);
 
-    // BlitManaclesD3FrontIntoPreview moved to the appropriate V17 depth stage.
-    // BlitManaclesD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitManaclesD1FrontIntoPreview(pixels);
-    // BlitSlimeD3FrontIntoPreview moved to the appropriate V17 depth stage.
-    // BlitSlimeD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitSlimeD1FrontIntoPreview(pixels);
-    // BlitHookD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitHookD1FrontIntoPreview(pixels);
-    // BlitGrateD3FrontIntoPreview moved to the appropriate V17 depth stage.
-    // BlitGrateD2FrontIntoPreview moved to the appropriate V17 depth stage.
     BlitGrateD1FrontIntoPreview(pixels);
     BlitEmptyTorchHolderF1IntoPreview(pixels);
     BlitTorchHolderS1IntoPreview(pixels);
@@ -21441,8 +21410,6 @@ private static void HandleGameViewPointerDown(
       BlitWallInscriptionsIntoPreview(pixels);
 
     // Vi Altar side projections. Draw far-to-near.
-    // BlitViAltarS3IntoPreview moved to the appropriate V17 depth stage.
-    // BlitViAltarS2IntoPreview moved to the appropriate V17 depth stage.
     BlitViAltarS1IntoPreview(pixels);
 
     // Floor items occupy the final viewport feature layer. In particular,
