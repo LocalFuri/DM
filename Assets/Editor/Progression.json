@@ -4332,5 +4332,33 @@
       "Preserve recursive Europe/Berlin timestamps on new files and every ZIP entry, including nested folders."
     ],
     "notes": "The original DOS and Unity screenshots differ in wall layout/darkening; only ornament geometry should be used for acceptance. Previous false +1 vertical diagnosis of Manacles S2 was corrected after DOS viewport crop alignment."
+  },
+  "hook_native_s1_14x19_migration_20261122": {
+    "date_local": "2026-11-22T12:21:13+01:00",
+    "status": "Patch prepared; user Unity import/compile and DOS S1/S2/S3 visual checks pending",
+    "input_source_sha256": "b8432395afe6770373dd6428892f19d4e5166ba960b3cd4a6c66888b03496987",
+    "native_dos_asset": "Assets/Art/Ornaments/Hook_S1_14x19.png",
+    "obsolete_asset_to_remove": "Assets/Art/Ornaments/Hook_Side_16x19.png",
+    "changes": [
+      "Hook source path is explicit and requires readable native 14x19 PNG; no asset-search fallback",
+      "Hook S1 geometry moves 16x19 padded box X=48 to native 14x19 X=49, mirrored right placement recalculated",
+      "Hook S2 removes old 16x19-to-14x19 crop; preserves shared 6-bit scaling inputs roundBiasOverride=0/sampleTopDown=true",
+      "Hook S3 now scales native 14x19 source while retaining shared 6-bit renderer and existing 3x5 geometry",
+      "Read-only Hook G2 diagnostic source size updated 16->14; diagnostic output should be revalidated"
+    ],
+    "untouched": [
+      "GenerateDmScaledWallDecoration shared algorithm",
+      "Hook F1/F2/F3 front",
+      "Manacles",
+      "Wall geometry and calibration"
+    ],
+    "verification_next": [
+      "Delete/retire old Hook_Side_16x19.png (and Unity .meta, through Unity Project window if practical) after installing new asset",
+      "Confirm PNG Unity import Read/Write Enabled, point filtering, no unexpected resizing",
+      "Unity compile without errors",
+      "Compare Hook S1, S2 Left and S3 Left against PC DOS, prioritizing X/Y/W/H",
+      "Check right sides before acceptance"
+    ],
+    "note": "S3 and S1 screenshot accuracy not yet verified. Do not mark as approved."
   }
 }

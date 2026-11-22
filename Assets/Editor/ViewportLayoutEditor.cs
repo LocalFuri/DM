@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -281,7 +281,7 @@ public class ViewportLayoutEditor : EditorWindow
   private const string GrateF3SideAssetPath =
       "Assets/Art/Ornaments/Grate_F3_Side_14x8.png";
   private const string HookSideAssetPath =
-      "Assets/Art/Ornaments/Hook_Side_16x19.png";
+      "Assets/Art/Ornaments/Hook_S1_14x19.png";
   private const string HookS3AssetPath =
       "Assets/Art/Ornaments/Hook_S3_3x5.png";
   private const string SlimeSide1AssetPath =
@@ -421,8 +421,9 @@ public class ViewportLayoutEditor : EditorWindow
 
   // Original DOS coordinate-set-0 D1 side placement (Hook / Wood Ring family).
   // The original D1 side box is 16x19 at left screen X=48 (right = 224-48-16).
-  // Hook now uses native Hook_Side_16x19.png 1:1 in that box.
-  // Wood Ring still uses the 14x19 cutout centered one pixel inside it.
+  // Hook uses the native DOS 14x19 side art centered in the original
+  // 16x19 D1 side box (one pixel inset on each side).
+  // Wood Ring remains at its previously approved 14x19 position.
   // Texture2D framebuffer Y = 200 - 74 - 19 = 107.
   // Dungeon viewport is X=0..223. Every left/right wall-ornament pair is the
   // same sprite mirrored around that width: rightX = 224 - leftX - spriteWidth.
@@ -735,9 +736,9 @@ public class ViewportLayoutEditor : EditorWindow
     }
   };
 
-  private const int HookD1SideLeftX = 48;
+  private const int HookD1SideLeftX = 49;
   private const int HookD1SideRightX =
-      DungeonViewportWidth - HookD1SideLeftX - 16;
+      DungeonViewportWidth - HookD1SideLeftX - 14;
   private const int HookD1SideY = 107;
   private const int WoodRingD1SideLeftX = 49;
   private const int WoodRingD1SideRightX =
@@ -799,7 +800,7 @@ public class ViewportLayoutEditor : EditorWindow
   private const int HookD2SideRightX =
       DungeonViewportWidth - HookD2SideLeftX - HookD2SideWidth;
   private const int HookD2SideY = 116;
-  // Original CSBwin Hook S3: native, unscaled 3x5 artwork.
+  // Hook S3: 3x5 view generated from the native 14x19 DOS side source.
   private const int HookD3SideWidth = 3;
   private const int HookD3SideHeight = 5;
   private const int HookD3SideLeftX = WoodRingD3SideLeftX;
@@ -38854,13 +38855,13 @@ private static void HandleGameViewPointerDown(
       if (ornament == null)
         continue;
 
-      // S1 side projection uses the native 16x19 Hook artwork.
+      // S1 side projection uses the native DOS 14x19 Hook artwork.
       // Wood Ring S1 is not rendered by this path.
       Texture2D sideTexture = null;
       int sideY = HookD1SideY;
       int sideLeftX = HookD1SideLeftX;
       int sideRightX = HookD1SideRightX;
-      int expectedWidth = 16;
+      int expectedWidth = 14;
       int expectedHeight = 19;
       if (IsHookOrnament(ornament))
       {
@@ -40509,10 +40510,10 @@ private static void HandleGameViewPointerDown(
     Texture2D side = AssetDatabase.LoadAssetAtPath<Texture2D>(HookSideAssetPath);
     if (front == null || side == null || !front.isReadable || !side.isReadable
         || front.width != 32 || front.height != 28
-        || side.width != 16 || side.height != 19)
+        || side.width != 14 || side.height != 19)
     {
       Debug.LogError("Hook G2 comparison: requires readable 32x28 front and "
-          + "16x19 side source PNGs at the configured Hook asset paths.");
+          + "14x19 side source PNG at the configured Hook asset path.");
       return;
     }
 
@@ -40554,7 +40555,7 @@ private static void HandleGameViewPointerDown(
         Color32[] palette = DungeonViewportLightPalettes[0];
         byte[] map = position < 5 ? WallOrnamentFarColorMap
             : position < 10 ? WallOrnamentMediumColorMap : null;
-        int sourceWidth = isFront ? 32 : 16;
+        int sourceWidth = isFront ? 32 : 14;
         int sourceHeight = source.height;
         int stepX = ((sourceWidth << 10) / width) << 6;
         int stepY = ((sourceHeight << 10) / height) << 6;
@@ -40729,37 +40730,20 @@ private static void HandleGameViewPointerDown(
 
     Texture2D texture =
         AssetDatabase.LoadAssetAtPath<Texture2D>(HookSideAssetPath);
-    if (texture != null && texture.width == 16 && texture.height == 19)
+    if (texture == null || texture.width != 14 || texture.height != 19)
     {
-      cachedHookSideTexture = texture;
-      return texture;
+      Debug.LogError("Hook side: required native DOS 14x19 PNG missing "
+          + "or dimensions incorrect at " + HookSideAssetPath);
+      return null;
     }
-
-    string[] guids = AssetDatabase.FindAssets(
-        "Hook t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
+    if (!texture.isReadable)
     {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 16 || candidate.height != 19)
-        continue;
-
-      if (path.IndexOf(
-              "hook",
-              System.StringComparison.OrdinalIgnoreCase) < 0
-          || path.IndexOf(
-              "side",
-              System.StringComparison.OrdinalIgnoreCase) < 0)
-      {
-        continue;
-      }
-
-      cachedHookSideTexture = candidate;
-      return candidate;
+      Debug.LogError("Hook side: required source is not readable at "
+          + HookSideAssetPath);
+      return null;
     }
-
-    return null;
+    cachedHookSideTexture = texture;
+    return texture;
   }
 
   private Texture2D GetHookSide2Texture()
@@ -40771,47 +40755,13 @@ private static void HandleGameViewPointerDown(
     if (source == null || !source.isReadable)
       return null;
 
-    // Use the original 14x19 unpadded side art, not the legacy
-    // center-nearest S2 approximation. The recovered 6-bit scaler is shared
-    // with Hook/Manacles F2/F3 and Manacles S2; no Hook-specific pixel rules.
-    // The Unity S1 asset is 16x19 with a one-column transparent left border
-    // and a one-column extra right border. DOS graphic 267 is exactly source
-    // columns 1..14 (14x19), INCLUDING its transparent trailing columns.
-    // Do not trim to opaque bounds: that incorrectly produces 9x19.
-    if (source.width != 16 || source.height != 19)
-    {
-      Debug.LogError("Hook S2: expected 16x19 padded source; got "
-          + source.width + "x" + source.height);
-      return null;
-    }
-    Color32[] fullPixels = source.GetPixels32();
-    Color32[] nativePixels = new Color32[14 * 19];
-    for (int sy = 0; sy < 19; sy++)
-      for (int sx = 0; sx < 14; sx++)
-        nativePixels[sy * 14 + sx] = fullPixels[sy * 16 + (sx + 1)];
-    Texture2D cropped = new Texture2D(14, 19, TextureFormat.RGBA32, false);
-    cropped.SetPixels32(nativePixels);
-    cropped.Apply(false, false);
-    bool ownsCrop = !ReferenceEquals(cropped, source);
-    try
-    {
-      if (cropped == null || cropped.width != 14 || cropped.height != 19)
-      {
-        Debug.LogError("Hook S2: expected 14x19 unpadded side source; got "
-            + (cropped == null ? "null"
-                : cropped.width + "x" + cropped.height));
-        return null;
-      }
-      cachedHookSide2Texture = GenerateDmScaledWallDecoration(
-          cropped, HookD2SideWidth, HookD2SideHeight,
-          WallOrnamentMediumColorMap, "Hook S2 DOS 6-bit Side",
-          roundBiasOverride: 0, sampleTopDown: true);
-    }
-    finally
-    {
-      if (ownsCrop)
-        UnityEngine.Object.DestroyImmediate(cropped);
-    }
+    // Use the original native DOS 14x19 S1 asset directly. The old Unity
+    // 16x19 wrapper and columns 1..14 crop have been retired. The shared
+    // 6-bit scaler and accepted S2 sampling arguments stay unchanged.
+    cachedHookSide2Texture = GenerateDmScaledWallDecoration(
+        source, HookD2SideWidth, HookD2SideHeight,
+        WallOrnamentMediumColorMap, "Hook S2 DOS 6-bit Side",
+        roundBiasOverride: 0, sampleTopDown: true);
     return cachedHookSide2Texture;
   }
 
@@ -40820,14 +40770,13 @@ private static void HandleGameViewPointerDown(
     if (cachedHookSide3Texture != null)
       return cachedHookSide3Texture;
 
-    // Generate Hook S3 from the original side-view source instead of loading
-    // an obsolete distance-specific 3x5 PNG. Keep the existing dimensions,
-    // placement, visibility and calibration paths unchanged. This result
-    // still needs comparison against the captured CSBwin S3 pixels.
+    // Generate Hook S3 from the native DOS 14x19 side source. Preserve
+    // the shared 6-bit algorithm, S3 dimensions, position and calibration.
+    // Recheck DOS S3 screenshot after importing the native source.
     Texture2D source = GetHookSideTexture();
     if (source == null || !source.isReadable)
     {
-      Debug.LogError("Hook S3: required readable 16x19 side source missing: "
+      Debug.LogError("Hook S3: required readable native 14x19 side source missing: "
           + HookSideAssetPath);
       return null;
     }
