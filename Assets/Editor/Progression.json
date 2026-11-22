@@ -4361,40 +4361,22 @@
     ],
     "note": "S3 and S1 screenshot accuracy not yet verified. Do not mark as approved."
   },
-  "dos_geometry_s3_patch_20261122": {
-    "status": "DELIVERED, NOT YET COMPILED/VERIFIED IN UNITY",
-    "source_sha256_before": "312c2be6e5f707516a97818fa297c7f7de994bdecff8c72c16d1e9370860e45e",
-    "scope": "Hook S3 and Manacles S3 only, shared layout resource 696 + existing DOS 6-bit sampler",
-    "source_native_sizes": {
-      "Hook S1": [
-        14,
-        19
-      ],
-      "Manacles S1": [
-        32,
-        42
-      ]
-    },
-    "expected_left_rects_viewport": {
-      "Hook S3": [
-        82,
-        39,
-        6,
-        8
-      ],
-      "Manacles S3": [
-        77,
-        40,
-        14,
-        18
-      ]
-    },
-    "s2_unchanged": true,
-    "s3_right_not_yet_approved": true,
-    "notes": [
-      "Run Unity compile and DOS screenshot comparisons before accepting",
-      "Old accepted Manacles S3 calibration may override computed DOS baseline; inspect if mismatch",
-      "All prior accepted views remain authoritative; no change to common sampling implementation"
-    ]
+  "hook_s2_s3_mirror_legacy_fix_20261122": {
+    "date": "2026-11-22",
+    "file": "Assets/Editor/ViewportLayoutEditor.cs",
+    "purpose": "Standardize Hook S2/S3 side mirroring with Hook S1 and prevent older Hook S2/S3 ViewEdit mirror overrides from reversing left/right orientation.",
+    "changes": [
+      "Hook S2/S3 left wall uses unmirrored source; right wall uses horizontally mirrored source.",
+      "Remove long Hook S2/S3 right-side diagnostic.",
+      "Preserve stored X/Y ornament calibration offsets, shared DOS 6-bit scaling, positions, and V17 walls."
+    ],
+    "reference_view": "Level 0 (15,9), facing West; check corresponding left-side Hook view after installation.",
+    "status": "Patch prepared; Unity compilation and in-editor PC DOS comparison pending user verification.",
+    "deliverable": "Hook_S2_S3_Mirror_Fix_With_Progression_20261122.zip",
+    "documentation_policy": "Progression.json is the change record; no separate explanatory TXT in the ZIP."
+  },
+  "zip_documentation_rule_20261122": {
+    "date": "2026-11-22",
+    "rule": "Include updated Progression.json in deliverable ZIPs to document changes, instead of standalone explanatory .txt files; ZIP root entries and recursive Europe/Berlin timestamps."
   }
 }

@@ -38982,81 +38982,17 @@ private static void HandleGameViewPointerDown(
 
       if (matchesLeft && !leftDrawn)
       {
-        // Supplied D2/D3 art is the right-wall crop, so the left slot is mirrored.
+        // Same wall-side convention as Hook S1: left original, right mirrored.
         BlitOrnamentPieceIntoPreview(
-            pixels, side, ornament, leftX, y, true);
+            pixels, side, ornament, leftX, y, false);
         leftDrawn = true;
       }
 
       if (matchesRight && !rightDrawn)
       {
-        // Hook S2 diagnostic: inspect effective mirror overrides and the
-        // pixels changed by the actual blit, not the source texture alone.
-        if (distance == 2 || distance == 3)
-        {
-          int dx = rightX, dy = y;
-          bool mirrored = false;
-          string key = MakePreviewFeatureKey(
-              "Ornament", ornament.x, ornament.y, ornament.wall);
-          if (TryGetWallOrnamentProjectionOverrideDescriptor(
-                  ornament, out string projectionKey, out _))
-          {
-            key = projectionKey;
-            ApplyAcceptedOrnamentReference(key, ref dx, ref dy, ref mirrored);
-          }
-          ApplyPreviewFeatureRenderOverrides(key, ref dx, ref dy, ref mirrored);
-          Color32[] before = (Color32[])pixels.Clone();
-          BlitOrnamentPieceIntoPreview(
-              pixels, side, ornament, rightX, y, false);
-          int changed = 0, minX = 320, minY = 200, maxX = -1, maxY = -1;
-          for (int py = 0; py < 200; ++py)
-            for (int px = 0; px < DungeonViewportWidth; ++px)
-            {
-              int index = py * 320 + px;
-              if (index >= pixels.Length) continue;
-              Color32 a = before[index], b = pixels[index];
-              if (a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a)
-                continue;
-              ++changed;
-              minX = Mathf.Min(minX, px); maxX = Mathf.Max(maxX, px);
-              minY = Mathf.Min(minY, py); maxY = Mathf.Max(maxY, py);
-            }
-          // Report source texture and opaque dimensions on every Refresh,
-          // independently of whether the generated texture is cached.
-          Color32[] hookTexels = side.GetPixels32();
-          int opaqueCount = 0, opaqueMinX = side.width, opaqueMinY = side.height;
-          int opaqueMaxX = -1, opaqueMaxY = -1;
-          for (int ty = 0; ty < side.height; ++ty)
-            for (int tx = 0; tx < side.width; ++tx)
-              if (hookTexels[ty * side.width + tx].a != 0)
-              {
-                ++opaqueCount;
-                opaqueMinX = Mathf.Min(opaqueMinX, tx);
-                opaqueMinY = Mathf.Min(opaqueMinY, ty);
-                opaqueMaxX = Mathf.Max(opaqueMaxX, tx);
-                opaqueMaxY = Mathf.Max(opaqueMaxY, ty);
-              }
-          string opaqueSize = opaqueCount == 0 ? "none"
-              : ((opaqueMaxX - opaqueMinX + 1) + "x" + (opaqueMaxY - opaqueMinY + 1));
-          string report = "HOOK S" + distance + " DRAW: right wall=(" + rightWallTileX
-              + "," + rightWallTileY + "), screen=(" + dx + "," + dy
-              + "), texture=" + side.width + "x" + side.height
-              + ", opaque=" + opaqueSize + ", opaquePixels=" + opaqueCount
-              + ", mirrored=" + mirrored + ", changedPixels=" + changed
-              + ", changedBounds=" + (changed == 0 ? "none"
-                  : (minX + "," + minY + ".." + maxX + "," + maxY));
-          string previousReport = distance == 2
-              ? lastHookS2DrawDiagnostic : lastHookS3DrawDiagnostic;
-          if (report != previousReport)
-          {
-            Debug.Log(report);
-            if (distance == 2) lastHookS2DrawDiagnostic = report;
-            else lastHookS3DrawDiagnostic = report;
-          }
-        }
-        else
-          BlitOrnamentPieceIntoPreview(
-              pixels, side, ornament, rightX, y, false);
+        // Use the shared Hook S1 mirror convention; no diagnostic-only blit.
+        BlitOrnamentPieceIntoPreview(
+            pixels, side, ornament, rightX, y, true);
         rightDrawn = true;
       }
 
@@ -43938,6 +43874,16 @@ private static void HandleGameViewPointerDown(
         ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
       }
     }
+    // Hook S2/S3 must follow the same left/right mirror rule as S1.
+    // Preserve accepted X/Y offsets while ignoring legacy mirror overrides.
+    if (IsHookOrnament(ornament)
+        && (string.Equals(key, "OrnamentProjection:Hook:S2",
+                System.StringComparison.Ordinal)
+            || string.Equals(key, "OrnamentProjection:Hook:S2:Left",
+                System.StringComparison.Ordinal)
+            || string.Equals(key, "OrnamentProjection:Hook:S3",
+                System.StringComparison.Ordinal)))
+      mirror = defaultMirror;
     if (hookF3ManualTraceActive && IsHookOrnament(ornament))
       Debug.Log("[Hook F3 Manual Trace] Final draw: key=" + key
           + "; X=" + x + "; Y(bottom-up)=" + y
