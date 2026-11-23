@@ -5649,5 +5649,18 @@
       "Search field, focus, click-to-replace behavior, overview zoom and connectors",
       "Wall and floor icon rendering and approved DOS ornament calibrations"
     ]
+  },
+  "dungeon_features_search_overview_show_full_tile_items_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "When floor-item search overview is active and the currently selected matching tile contains multiple floor items, the right-side overview panel now shows the full item stack for that selected tile instead of only the searched item.",
+    "preserved": [
+      "Orange connector fan-out to every matching search tile",
+      "Green rectangle on the currently selected search result",
+      "Search overview auto-fit zoom and click-to-replace-search behavior",
+      "Existing compact item popup layout and top-right preview placement",
+      "All ViewEdit / ornament renderer behavior unchanged"
+    ]
   }
 }

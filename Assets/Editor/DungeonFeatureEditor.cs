@@ -853,6 +853,18 @@ public class DungeonFeatureEditor : EditorWindow
     return records;
   }
 
+  private List<FloorItemPlacementRecord> GetFloorSearchOverviewRecords()
+  {
+    List<FloorItemPlacementRecord> records = GetInspectedFloorItems();
+    if (records != null && records.Count > 0)
+      return records;
+
+    if (floorSearchOverviewItem == null)
+      return null;
+
+    return new List<FloorItemPlacementRecord> { floorSearchOverviewItem };
+  }
+
   private static string GetFloorItemDisplayName(FloorItemPlacementRecord entry)
   {
     if (entry == null)
@@ -1784,34 +1796,20 @@ public class DungeonFeatureEditor : EditorWindow
     Handles.color = previousColor;
     Handles.EndGUI();
 
-    EditorGUI.DrawRect(panel, new Color(0.15f, 0.15f, 0.15f, 1f));
-    Color border = new Color(0.45f, 0.45f, 0.45f, 1f);
-    EditorGUI.DrawRect(new Rect(panel.x, panel.y, panel.width, 1f), border);
-    EditorGUI.DrawRect(new Rect(panel.x, panel.yMax - 1f, panel.width, 1f), border);
-    EditorGUI.DrawRect(new Rect(panel.x, panel.y, 1f, panel.height), border);
-    EditorGUI.DrawRect(new Rect(panel.xMax - 1f, panel.y, 1f, panel.height), border);
+    List<FloorItemPlacementRecord> records = GetFloorSearchOverviewRecords();
+    if (records == null || records.Count == 0)
+      return;
 
-    GUIStyle heading = new GUIStyle(EditorStyles.miniBoldLabel)
-    {
-      alignment = TextAnchor.MiddleCenter
-    };
-    GUI.Label(new Rect(panel.x + 5f, panel.y + 6f,
-        panel.width - 10f, 18f),
-        floorSearchOverviewTiles.Count + (floorSearchOverviewTiles.Count == 1
-            ? " matching tile" : " matching tiles"), heading);
-    GUIStyle itemStyle = new GUIStyle(EditorStyles.boldLabel)
-    {
-      alignment = TextAnchor.MiddleCenter,
-      normal = { textColor = Color.green },
-      wordWrap = true
-    };
-    GUI.Label(new Rect(panel.x + 5f, panel.y + 25f,
-        panel.width - 10f, 30f),
-        GetFloorItemDisplayName(floorSearchOverviewItem), itemStyle);
-    Texture2D icon = GetFloorItemInventoryMapIcon(floorSearchOverviewItem);
-    if (icon != null)
-      GUI.DrawTexture(new Rect(panel.center.x - 16f, panel.y + 62f,
-          32f, 32f), icon, ScaleMode.StretchToFill, true);
+    string header = records.Count > 1
+        ? "(" + inspectedFloorItemX + "," + inspectedFloorItemY + ")  "
+            + records.Count + (records.Count == 1 ? " item" : " items")
+        : floorSearchOverviewTiles.Count + (floorSearchOverviewTiles.Count == 1
+            ? " matching tile" : " matching tiles");
+    float width = records.Count > 1
+        ? Mathf.Max(142f, GetFloorItemPopupWidthForRecords(records, header))
+        : panelWidth;
+    panel.width = width;
+    DrawFloorItemPopupContents(panel, records, header);
   }
 
   // Searching for a wall ornament uses the same top-right overview panel and
@@ -1912,26 +1910,95 @@ public class DungeonFeatureEditor : EditorWindow
     return Mathf.Ceil(textWidth) + 8f;
   }
 
+  private float GetFloorItemPopupWidthForRecords(
+      List<FloorItemPlacementRecord> records,
+      string header)
+  {
+    if (records == null || records.Count == 0)
+      return 0f;
+
+    const float horizontalPadding = 8f;
+    const float itemGap = 2f;
+    float itemsWidth = Mathf.Max(0, records.Count - 1) * itemGap;
+    for (int i = 0; i < records.Count; i++)
+      itemsWidth += GetFloorItemPopupBlockWidth(records[i]);
+
+    GUIStyle headingStyle = new GUIStyle(EditorStyles.miniBoldLabel);
+    float headingWidth = headingStyle.CalcSize(new GUIContent(header)).x + 8f;
+    return Mathf.Ceil(2f * horizontalPadding
+        + Mathf.Max(itemsWidth, headingWidth));
+  }
+
+  private void DrawFloorItemPopupContents(
+      Rect popup,
+      List<FloorItemPlacementRecord> records,
+      string header)
+  {
+    if (records == null || records.Count == 0)
+      return;
+
+    // Fully opaque backing and thin border.
+    EditorGUI.DrawRect(popup, new Color(0.15f, 0.15f, 0.15f, 1f));
+    float border = 1f;
+    Color borderColor = new Color(0.45f, 0.45f, 0.45f, 1f);
+    EditorGUI.DrawRect(new Rect(popup.x, popup.y, popup.width, border), borderColor);
+    EditorGUI.DrawRect(new Rect(popup.x, popup.yMax - border, popup.width, border), borderColor);
+    EditorGUI.DrawRect(new Rect(popup.x, popup.y, border, popup.height), borderColor);
+    EditorGUI.DrawRect(new Rect(popup.xMax - border, popup.y, border, popup.height), borderColor);
+
+    const float unit = 1f;
+    float padding = 8f * unit;
+    float headingHeight = 18f * unit;
+    float iconSize = 32f * unit;
+    float itemGap = 2f * unit;
+    GUIStyle heading = new GUIStyle(EditorStyles.miniBoldLabel)
+    {
+      alignment = TextAnchor.MiddleLeft
+    };
+    GUI.Label(new Rect(popup.x + padding, popup.y + padding,
+        popup.width - 2f * padding, headingHeight),
+        header, heading);
+
+    GUIStyle nameStyle = new GUIStyle(EditorStyles.label)
+    {
+      alignment = TextAnchor.MiddleCenter,
+      normal = { textColor = Color.green },
+      fontStyle = FontStyle.Bold,
+      clipping = TextClipping.Clip
+    };
+
+    float rowY = popup.y + padding + headingHeight;
+    float itemX = popup.x + padding;
+    for (int i = 0; i < records.Count; i++)
+    {
+      FloorItemPlacementRecord entry = records[i];
+      float itemWidth = GetFloorItemPopupBlockWidth(entry);
+      string itemName = GetFloorItemPopupName(entry);
+      GUI.Label(new Rect(itemX, rowY,
+          itemWidth, 30f * unit),
+          new GUIContent(itemName, GetFloorItemDisplayName(entry)), nameStyle);
+
+      Rect iconRect = new Rect(
+          itemX + (itemWidth - iconSize) * 0.5f,
+          rowY + 30f * unit + 1f * unit,
+          iconSize, iconSize);
+      Texture2D texture = GetFloorItemInventoryMapIcon(entry);
+      if (texture != null)
+        GUI.DrawTexture(iconRect, texture, ScaleMode.StretchToFill, true);
+
+      itemX += itemWidth + itemGap;
+    }
+  }
+
   private float GetSelectedFloorItemPopupWidth(int itemCount)
   {
     List<FloorItemPlacementRecord> records = GetInspectedFloorItems();
     if (records == null || records.Count != itemCount)
       return 0f;
 
-    const float horizontalPadding = 8f;
-    const float itemGap = 2f;
-    float itemsWidth = Mathf.Max(0, itemCount - 1) * itemGap;
-    for (int i = 0; i < records.Count; i++)
-      itemsWidth += GetFloorItemPopupBlockWidth(records[i]);
-
-    // The header must fit even when a single item's icon/name is narrow.
-    // Include the actual selected tile coordinates and item count.
-    GUIStyle headingStyle = new GUIStyle(EditorStyles.miniBoldLabel);
     string header = "(" + inspectedFloorItemX + "," + inspectedFloorItemY
         + ")  " + itemCount + (itemCount == 1 ? " item" : " items");
-    float headingWidth = headingStyle.CalcSize(new GUIContent(header)).x + 8f;
-    return Mathf.Ceil(2f * horizontalPadding
-        + Mathf.Max(itemsWidth, headingWidth));
+    return GetFloorItemPopupWidthForRecords(records, header);
   }
 
   private Rect GetSelectedFloorItemPopupRect(Rect mapRect, int itemCount)
@@ -1961,59 +2028,9 @@ public class DungeonFeatureEditor : EditorWindow
     Handles.color = previous;
     Handles.EndGUI();
 
-    // Fully opaque backing and thin border.
-    EditorGUI.DrawRect(popup, new Color(0.15f, 0.15f, 0.15f, 1f));
-    float border = 1f;
-    Color borderColor = new Color(0.45f, 0.45f, 0.45f, 1f);
-    EditorGUI.DrawRect(new Rect(popup.x, popup.y, popup.width, border), borderColor);
-    EditorGUI.DrawRect(new Rect(popup.x, popup.yMax - border, popup.width, border), borderColor);
-    EditorGUI.DrawRect(new Rect(popup.x, popup.y, border, popup.height), borderColor);
-    EditorGUI.DrawRect(new Rect(popup.xMax - border, popup.y, border, popup.height), borderColor);
-
-    const float unit = 1f;
-    float padding = 8f * unit;
-    float headingHeight = 18f * unit;
-    float iconSize = 32f * unit;
-    float itemGap = 2f * unit;
-    GUIStyle heading = new GUIStyle(EditorStyles.miniBoldLabel)
-    {
-      alignment = TextAnchor.MiddleLeft
-    };
-    GUI.Label(new Rect(popup.x + padding, popup.y + padding,
-        popup.width - 2f * padding, headingHeight),
-        "(" + inspectedFloorItemX + "," + inspectedFloorItemY
-        + ")  " + records.Count + (records.Count == 1 ? " item" : " items"), heading);
-
-    GUIStyle nameStyle = new GUIStyle(EditorStyles.label)
-    {
-      alignment = TextAnchor.MiddleCenter,
-      normal = { textColor = Color.green },
-      fontStyle = FontStyle.Bold,
-      clipping = TextClipping.Clip
-    };
-
-    float rowY = popup.y + padding + headingHeight;
-    float itemX = popup.x + padding;
-    for (int i = 0; i < records.Count; i++)
-    {
-      FloorItemPlacementRecord entry = records[i];
-      float itemWidth = GetFloorItemPopupBlockWidth(entry);
-      string itemName = GetFloorItemPopupName(entry);
-      GUI.Label(new Rect(itemX, rowY,
-          itemWidth, 30f * unit),
-          new GUIContent(itemName, GetFloorItemDisplayName(entry)), nameStyle);
-
-      Rect iconRect = new Rect(
-          itemX + (itemWidth - iconSize) * 0.5f,
-          rowY + 30f * unit + 1f * unit,
-          iconSize, iconSize);
-      Texture2D texture = GetFloorItemInventoryMapIcon(entry);
-      if (texture != null)
-        GUI.DrawTexture(iconRect, texture, ScaleMode.StretchToFill, true);
-      // Missing art remains a Console error, never replace the icon.
-
-      itemX += itemWidth + itemGap;
-    }
+    string header = "(" + inspectedFloorItemX + "," + inspectedFloorItemY
+        + ")  " + records.Count + (records.Count == 1 ? " item" : " items");
+    DrawFloorItemPopupContents(popup, records, header);
   }
 
   private void HandleMapZoom(Rect contentRect)
