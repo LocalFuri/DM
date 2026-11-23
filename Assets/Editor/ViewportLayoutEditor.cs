@@ -41267,6 +41267,31 @@ private static void HandleGameViewPointerDown(
     return null;
   }
 
+  // Phase D1: share only the front-wall placement test across Grate F1/F2/F3.
+  // Visibility, ordering, texture selection, calibration and DOS scaling stay
+  // in the existing callers.  The corridor coordinates are supplied by each
+  // distance-specific caller to preserve its original placement rules.
+  private bool MatchesFrontWallOrnamentPlacement(
+      WallOrnamentPlacement ornament,
+      int wallTileX, int wallTileY,
+      int corridorX, int corridorY,
+      string viewedWallSide)
+  {
+    if (ornament.wallTilePlacement)
+    {
+      string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
+      return ornament.x == wallTileX
+          && ornament.y == wallTileY
+          && string.Equals(ornament.wall, visiblePhysicalWallFace,
+              System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    return ornament.x == corridorX
+        && ornament.y == corridorY
+        && string.Equals(ornament.wall, viewedWallSide,
+            System.StringComparison.OrdinalIgnoreCase);
+  }
+
   private void BlitGrateD3FrontIntoPreview(Color32[] pixels)
   {
     EnsurePreviewMiniMapLoaded();
@@ -41312,30 +41337,8 @@ private static void HandleGameViewPointerDown(
       if (!IsGrateOrnament(ornament))
         continue;
 
-      bool placementMatches;
-      if (ornament.wallTilePlacement)
-      {
-        string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
-        placementMatches =
-            ornament.x == wallTileX
-            && ornament.y == wallTileY
-            && string.Equals(
-                ornament.wall,
-                visiblePhysicalWallFace,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-      else
-      {
-        placementMatches =
-            ornament.x == d2X
-            && ornament.y == d2Y
-            && string.Equals(
-                ornament.wall,
-                viewedWallSide,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-
-      if (!placementMatches)
+      if (!MatchesFrontWallOrnamentPlacement(
+          ornament, wallTileX, wallTileY, d2X, d2Y, viewedWallSide))
         continue;
 
       // Only request F3 artwork when the JSON geometry and ornament
@@ -41422,30 +41425,8 @@ private static void HandleGameViewPointerDown(
       if (!IsGrateOrnament(ornament))
         continue;
 
-      bool placementMatches;
-      if (ornament.wallTilePlacement)
-      {
-        string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
-        placementMatches =
-            ornament.x == wallTileX
-            && ornament.y == wallTileY
-            && string.Equals(
-                ornament.wall,
-                visiblePhysicalWallFace,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-      else
-      {
-        placementMatches =
-            ornament.x == openX
-            && ornament.y == openY
-            && string.Equals(
-                ornament.wall,
-                viewedWallSide,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-
-      if (!placementMatches)
+      if (!MatchesFrontWallOrnamentPlacement(
+          ornament, wallTileX, wallTileY, openX, openY, viewedWallSide))
         continue;
 
       BlitOrnamentPieceIntoPreview(
@@ -41512,30 +41493,8 @@ private static void HandleGameViewPointerDown(
       if (!IsGrateOrnament(ornament))
         continue;
 
-      bool placementMatches;
-      if (ornament.wallTilePlacement)
-      {
-        string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
-        placementMatches =
-            ornament.x == wallTileX
-            && ornament.y == wallTileY
-            && string.Equals(
-                ornament.wall,
-                visiblePhysicalWallFace,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-      else
-      {
-        placementMatches =
-            ornament.x == previewX
-            && ornament.y == previewY
-            && string.Equals(
-                ornament.wall,
-                viewedWallSide,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-
-      if (!placementMatches)
+      if (!MatchesFrontWallOrnamentPlacement(
+          ornament, wallTileX, wallTileY, previewX, previewY, viewedWallSide))
         continue;
 
       BlitOrnamentPieceIntoPreview(

@@ -35,6 +35,13 @@
             "dx": 0,
             "dy": 1,
             "mirror": false
+        },
+        {
+            "key": "OrnamentProjection:Grate:F3",
+            "artworkSignature": "",
+            "dx": 0,
+            "dy": -1,
+            "mirror": false
         }
     ]
 }

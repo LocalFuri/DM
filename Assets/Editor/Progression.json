@@ -57,7 +57,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-23: Phase C 1:1 shared blitter consolidation prepared; awaiting Unity compilation and Champion Mirror visual verification. Previous side approvals and cyan missing-artwork diagnostics retained.",
+  "checkpoint": "2026-11-23: Phase D1 Grate F1/F2/F3 approved by user. F3 recalibrated and saved via ViewEdit Apply; protect this accepted calibration. Phase C verified, cyan diagnostics verified, Hook/Grate/Manacles S2/S3 previously approved. Next proposed: Phase D2 Hook front placement.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -113,8 +113,8 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Apply phase A and compile/verify ViewEdit, then phase B and compile/verify ornament rendering. Phase B contains A changes.",
-    "Next migration only after user approves clean compilation and visual regression; preserve all six S2/S3 side views."
+    "Preserve local Grate F3 Apply calibration (actual X/Y values not supplied in checkpoint).",
+    "Continue Phase D2 small shared Hook front-wall placement refactor only; do not change Hook DOS scaling, special positioning, side views, or approved Grate/Manacles behavior."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -5192,7 +5192,7 @@
   },
   "ornament_cleanup_20261123_phase_c_shared_1to1_blitter": {
     "date_local": "2026-11-23T18:54:27+01:00",
-    "status": "SOURCE PATCH PREPARED — UNITY COMPILATION AND CHAMPION MIRROR VISUAL CHECK PENDING",
+    "status": "USER VERIFIED — UNITY CLEAN AND CHAMPION MIRROR RENDERS CORRECTLY",
     "baseline": "DM_Cyan_Missing_Floor_Artwork_20261123.zip (includes phases A/B and cyan diagnostics)",
     "scope": [
       "Assets/Editor/ViewportLayoutEditor.cs",
@@ -5209,5 +5209,43 @@
     ],
     "validation": "Static review only; run Unity compile and champion mirror F1/F2/F3/S1/S2/S3 spot check; no automatic tests were run.",
     "next": "After verified, consider auditing and merging front/side dispatch in separate small increments; do not change hardcoded DOS coordinates without evidence."
+  },
+  "ornament_cleanup_20261123_phase_d1_grate_front_placement": {
+    "date_local": "2026-11-23T18:59:05+01:00",
+    "status": "USER VERIFIED — Grate F1, F2, F3 visually correct; Grate F3 adjusted via ViewEdit Apply and approved on 2026-11-23",
+    "scope": "ViewportLayoutEditor.cs only; Grate front F1/F2/F3 shared placement matching",
+    "changes": [
+      "Extracted identical wallTilePlacement/corridor coordinate and wall-face matching into MatchesFrontWallOrnamentPlacement",
+      "Retained original corridor/wall tile gates, feature-enabled checks, first-match return, texture selection, DOS scaler, calibration and blit order"
+    ],
+    "protected": [
+      "Hook/Grate/Manacles S2/S3 approvals",
+      "Manacles S3 recalibration",
+      "Cyan missing-artwork diagnostics",
+      "Champion Mirror Phase C",
+      "V17 geometry"
+    ],
+    "testing": "User confirms Grate F1/F2/F3 correct after installation; F3 required manual Apply adjustment. Do not reset F3 calibration in future refactors.",
+    "user_verification": {
+      "Grate F1": "approved",
+      "Grate F2": "approved",
+      "Grate F3": "approved after ViewEdit Apply recalibration",
+      "actual_xy_values": "not provided; retained in Unity calibration data, not invented in Progression.json",
+      "console": "no new report in this verification; do not claim independent compilation result"
+    }
+  },
+  "grate_front_approvals_20261123": {
+    "date_local": "2026-11-23T19:09:39+01:00",
+    "status": "APPROVED BY USER",
+    "perspectives": {
+      "F1": "approved",
+      "F2": "approved",
+      "F3": "approved after ViewEdit Apply adjustment",
+      "S2": "previously approved",
+      "S3": "previously approved"
+    },
+    "critical_preservation": "Preserve accepted Grate F3 X/Y calibration written by ViewEdit Apply in local calibration data; exact values were not supplied. Do not overwrite it during Phase D2 or other generic renderer refactors.",
+    "source_phase": "ornament_cleanup_20261123_phase_d1_grate_front_placement",
+    "next": "Phase D2: Hook front-placement sharing, with no change to verified DOS image sampling/geometry or Grate placements."
   }
 }
