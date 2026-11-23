@@ -39409,13 +39409,8 @@ private static void HandleGameViewPointerDown(
       hooksFound++;
       bool enabled = IsPreviewFeatureEnabled(MakePreviewFeatureKey(
           "Ornament", ornament.x, ornament.y, ornament.wall));
-      bool placementMatches = ornament.wallTilePlacement
-          ? ornament.x == wallTileX && ornament.y == wallTileY
-              && string.Equals(ornament.wall, visiblePhysicalWallFace,
-                  System.StringComparison.OrdinalIgnoreCase)
-          : ornament.x == d2X && ornament.y == d2Y
-              && string.Equals(ornament.wall, viewedWallSide,
-                  System.StringComparison.OrdinalIgnoreCase);
+      bool placementMatches = MatchesFrontWallOrnamentPlacement(
+          ornament, wallTileX, wallTileY, d2X, d2Y, viewedWallSide);
 
       if (hookChecks.Length > 0)
         hookChecks.Append(" | ");
@@ -39521,29 +39516,10 @@ private static void HandleGameViewPointerDown(
       if (!IsHookOrnament(ornament))
         continue;
 
-      bool placementMatches;
-      if (ornament.wallTilePlacement)
-      {
-        placementMatches =
-            ornament.x == wallTileX
-            && ornament.y == wallTileY
-            && string.Equals(
-                ornament.wall,
-                visiblePhysicalWallFace,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-      else
-      {
-        // Explicit mechanisms at F2 are stored on the open cell one step
-        // before the decorated wall boundary.
-        placementMatches =
-            ornament.x == d1X
-            && ornament.y == d1Y
-            && string.Equals(
-                ornament.wall,
-                viewedWallSide,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
+      // Explicit mechanisms at F2 are stored on the open cell one step
+      // before the decorated wall boundary; the helper preserves this rule.
+      bool placementMatches = MatchesFrontWallOrnamentPlacement(
+          ornament, wallTileX, wallTileY, d1X, d1Y, viewedWallSide);
 
       if (!placementMatches)
         continue;
@@ -40351,32 +40327,10 @@ private static void HandleGameViewPointerDown(
       if (!IsHookOrnament(ornament))
         continue;
 
-      bool placementMatches;
-      if (ornament.wallTilePlacement)
-      {
-        // Random wall-decoration bits belong to the solid wall tile. When the
-        // party looks North, for example, it sees that wall tile's South face.
-        string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
-        placementMatches =
-            ornament.x == wallTileX
-            && ornament.y == wallTileY
-            && string.Equals(
-                ornament.wall,
-                visiblePhysicalWallFace,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-      else
-      {
-        // Explicit mechanisms are stored on the passable cell and use the
-        // direction from that cell toward the wall boundary.
-        placementMatches =
-            ornament.x == previewX
-            && ornament.y == previewY
-            && string.Equals(
-                ornament.wall,
-                viewedWallSide,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
+      // Wall decorations use the physical wall face; explicit mechanisms
+      // use the current passable cell and its facing boundary.
+      bool placementMatches = MatchesFrontWallOrnamentPlacement(
+          ornament, wallTileX, wallTileY, previewX, previewY, viewedWallSide);
 
       if (!placementMatches)
         continue;
@@ -41267,7 +41221,7 @@ private static void HandleGameViewPointerDown(
     return null;
   }
 
-  // Phase D1: share only the front-wall placement test across Grate F1/F2/F3.
+  // Phases D1/D2: share front-wall placement matching for Grate and Hook F1/F2/F3.
   // Visibility, ordering, texture selection, calibration and DOS scaling stay
   // in the existing callers.  The corridor coordinates are supplied by each
   // distance-specific caller to preserve its original placement rules.

@@ -57,7 +57,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-23: Phase D1 Grate F1/F2/F3 approved by user. F3 recalibrated and saved via ViewEdit Apply; protect this accepted calibration. Phase C verified, cyan diagnostics verified, Hook/Grate/Manacles S2/S3 previously approved. Next proposed: Phase D2 Hook front placement.",
+  "checkpoint": "2026-11-23: Phase D2 Hook F1/F2/F3 shared placement matching prepared; Unity verification PENDING. Grate F1/F2/F3 user approved (F3 calibrated via Apply). Hook/Grate/Manacles S2/S3 approved. Preserve existing calibration and source behavior.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -113,8 +113,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Preserve local Grate F3 Apply calibration (actual X/Y values not supplied in checkpoint).",
-    "Continue Phase D2 small shared Hook front-wall placement refactor only; do not change Hook DOS scaling, special positioning, side views, or approved Grate/Manacles behavior."
+    "Install Phase D2 (ViewportLayoutEditor.cs and Progression.json) then confirm Unity compiles with no errors/warnings.",
+    "Verify Hook F1/F2/F3 visually; retain approved Grate F3 Apply calibration, Hook/Grate/Manacles S2/S3 and Manacles S3 calibration.",
+    "Only after approval consider extending front placement helper to other families; never alter DOS scaling/geometry without reference comparison."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -5247,5 +5248,23 @@
     "critical_preservation": "Preserve accepted Grate F3 X/Y calibration written by ViewEdit Apply in local calibration data; exact values were not supplied. Do not overwrite it during Phase D2 or other generic renderer refactors.",
     "source_phase": "ornament_cleanup_20261123_phase_d1_grate_front_placement",
     "next": "Phase D2: Hook front-placement sharing, with no change to verified DOS image sampling/geometry or Grate placements."
+  },
+  "ornament_cleanup_20261123_phase_d2_hook_front_placement": {
+    "date_local": "2026-11-23T19:12:04+01:00",
+    "status": "PATCH PREPARED — UNITY TEST PENDING",
+    "scope": "ViewportLayoutEditor.cs only: Hook F1/F2/F3 wall-face/coordinate matching",
+    "changes": [
+      "Reused MatchesFrontWallOrnamentPlacement introduced in D1 for Hook F1, F2, F3 instead of repeated wallTilePlacement branches.",
+      "Preserved Hook F1 current-cell mechanism placement, Hook F2 D1 mechanism placement and Hook F3 D2 mechanism placement, wall tile physical face and previewFacing.",
+      "Preserved each distance-specific corridor visibility checks, existing Hook trace messages and feature enabled gates, texture generation, DOS sampling, rendering coordinates, calibration and early returns."
+    ],
+    "protected": [
+      "Grate F1/F2/F3 approved; F3 Apply calibration stored externally and must not be overwritten",
+      "Hook/Grate/Manacles S2/S3 approved",
+      "Manacles S3 recalibration",
+      "Phase C Champion Mirror and cyan missing artwork diagnostics",
+      "V17 walls and all DOS 6-bit sampling"
+    ],
+    "testing": "Static source checks only; Unity compilation and visual acceptance pending."
   }
 }
