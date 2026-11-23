@@ -502,16 +502,16 @@ public class DungeonFeatureEditor : EditorWindow
     string decodedName = DecodeFloorItemName(entry.recordType, type);
     Texture2D resolved = ResolveInventoryItemIcon(decodedName, entry.recordType);
     if (resolved == null)
-      Debug.LogError("Dungeon Features: Missing 16x16 inventory map icon for '"
+      Debug.Log("<color=cyan>Dungeon Features: Missing 16x16 inventory map icon for '"
           + decodedName + "' (" + entry.recordType + " Type " + type
           + ", record " + entry.id + ", level " + entry.level
           + ", tile (" + entry.localX + "," + entry.localY
-          + ")). Check the exact asset filename in Assets; no replacement art is used.");
+          + ")). No replacement art is used.</color>");
     else if (resolved.width != 16 || resolved.height != 16)
     {
-      Debug.LogError("Dungeon Features: Inventory map icon for '" + decodedName
+      Debug.Log("<color=cyan>Dungeon Features: Inventory map icon for '" + decodedName
           + "' must be 16x16, got " + resolved.width + "x" + resolved.height
-          + " (asset " + resolved.name + ").");
+          + " (asset " + resolved.name + "). No replacement art is used.</color>");
       resolved = null;
     }
     floorItemInventoryIconCache[cacheKey] = resolved;
@@ -989,6 +989,7 @@ public class DungeonFeatureEditor : EditorWindow
   private OriginalWallOrnamentMarker wallSearchOverviewMarker;
   private bool searchOverviewActive;
   private bool focusSearchOnMouse5;
+  private bool replaceSearchTextOnNextGui;
   private bool scrollToSearchTile;
   private static readonly Color FeatureSearchBorderColor = new Color(0f, 1f, 0f, 1f);
   private int currentDungeonLevel = HallOfChampionsLevel;
@@ -1290,6 +1291,14 @@ public class DungeonFeatureEditor : EditorWindow
     // required a second press to advance to the next search result.
     Event keyEvent = Event.current;
     bool resetThisPass = false;
+    // A map click may have changed the query between GUI passes. Flush the
+    // cached IMGUI text editor before it can restore the previous word.
+    if (replaceSearchTextOnNextGui)
+    {
+      GUI.FocusControl(null);
+      replaceSearchTextOnNextGui = false;
+      focusSearchOnMouse5 = true;
+    }
     if (keyEvent.type == EventType.KeyDown
         && GUI.GetNameOfFocusedControl() == "DungeonFeaturesSearchItem")
     {
@@ -2659,7 +2668,7 @@ public class DungeonFeatureEditor : EditorWindow
   {
     string key = description + ": " + (asset ?? "<null>");
     if (missingMapIconErrors.Add(key))
-      Debug.LogError("<color=cyan>Dungeon Features: Missing " + description
+      Debug.Log("<color=cyan>Dungeon Features: Missing " + description
           + " (" + (asset ?? "<null>") + "). No substitute graphic was drawn.</color>");
   }
 
@@ -3632,6 +3641,74 @@ public class DungeonFeatureEditor : EditorWindow
     return tile != null && tile.TryGetStairsDirection(out _);
   }
 
+  // A feature clicked during search overview becomes the next search query.
+  // Prefer the feature class appropriate to the tile itself, rather than
+  // retaining the previous query (for example Hook -> Slime).
+  private string GetClickedFeatureSearchName(int x, int y)
+  {
+    DungeonTile tile = map.GetTile(x, y);
+    bool isWall = tile != null && tile.Type == DungeonTileType.Wall;
+    if (isWall && resolvedWallOrnaments != null)
+    {
+      foreach (OriginalWallOrnamentMarker marker in resolvedWallOrnaments)
+        if (marker != null && marker.X == x && marker.Y == y
+            && !string.IsNullOrWhiteSpace(marker.Type))
+          return marker.Type;
+    }
+
+    if (resolvedFloorItems.TryGetValue(PackFloorFeatureTile(x, y),
+            out List<FloorItemPlacementRecord> records) && records != null)
+    {
+      foreach (FloorItemPlacementRecord record in records)
+      {
+        if (record == null)
+          continue;
+        string name = GetFloorItemDisplayName(record);
+        if (!string.IsNullOrWhiteSpace(name))
+          return name;
+      }
+    }
+
+    if (resolvedWallOrnaments != null)
+      foreach (OriginalWallOrnamentMarker marker in resolvedWallOrnaments)
+        if (marker != null && marker.X == x && marker.Y == y
+            && !string.IsNullOrWhiteSpace(marker.Type))
+          return marker.Type;
+
+    int key = PackFloorFeatureTile(x, y);
+    if (resolvedPuddleFloors.Contains(key))
+      return "Puddle";
+    if (resolvedMossFloors.Contains(key))
+      return "Moss";
+    return null;
+  }
+
+  // Called after mouse hit-testing, avoiding a zoom change within MouseDown.
+  private void SetSearchFromClickedFeature(string itemName, int x, int y)
+  {
+    if (string.IsNullOrWhiteSpace(itemName))
+      return;
+    featureSearchText = itemName.Length <= 12
+        ? itemName : itemName.Substring(0, 12);
+    RebuildFeatureSearch();
+    for (int i = 0; i < featureSearchTiles.Count; i++)
+    {
+      if (featureSearchTiles[i].x != x || featureSearchTiles[i].y != y)
+        continue;
+      featureSearchIndex = i;
+      inspectedFloorItemX = x;
+      inspectedFloorItemY = y;
+      inspectedOrnamentX = x;
+      inspectedOrnamentY = y;
+      break;
+    }
+    // The focused IMGUI text editor may cache the old query. Release it,
+    // then use the existing deferred focus mechanism on the next repaint.
+    replaceSearchTextOnNextGui = true;
+    focusSearchOnMouse5 = true;
+    Repaint();
+  }
+
   private void HandleGridClick(Rect mapRect)
   {
     Event current = Event.current;
@@ -3647,6 +3724,38 @@ public class DungeonFeatureEditor : EditorWindow
 
     if (!map.IsInside(x, y))
       return;
+
+    // In overview mode a click on a named feature changes the search query
+    // to that feature. Empty tiles still clear the search and expand to 1x.
+    // Defer both operations until after hit-testing this MouseDown event.
+    if (searchOverviewActive && current.clickCount == 1)
+    {
+      int clickedX = x;
+      int clickedY = y;
+      string clickedName = GetClickedFeatureSearchName(x, y);
+      EditorApplication.delayCall += () =>
+      {
+        if (this == null)
+          return;
+        if (!string.IsNullOrWhiteSpace(clickedName))
+        {
+          SetSearchFromClickedFeature(clickedName, clickedX, clickedY);
+          return;
+        }
+        ResetFeatureSearch();
+        mapZoomStep = 0;
+        EditorPrefs.SetInt(MapZoomPreferenceKey, mapZoomStep);
+        float width = Mathf.Max(1f, position.width - 24f);
+        float height = Mathf.Max(1f, position.height - 125f);
+        mapScroll.x = Mathf.Max(0f,
+            LabelLeftMargin * mapZoom
+            + (clickedX + 0.5f) * CellSize - width * 0.5f);
+        mapScroll.y = Mathf.Max(0f,
+            (LabelTopMargin + OutsideFeatureVerticalMargin) * mapZoom
+            + (clickedY + 0.5f) * CellSize - height * 0.5f);
+        Repaint();
+      };
+    }
 
     bool doubleClick = current.clickCount == 2;
     // Single-click INS inspection takes precedence over wall ornaments.

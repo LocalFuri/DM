@@ -5598,5 +5598,43 @@
       "Top-aligned preview panel and map tile dimensions",
       "All ViewEdit ornament renderer, calibration, and DOS rendering behavior"
     ]
+  },
+  "dungeon_features_cyan_missing_map_art_diagnostics_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "Missing 16x16 floor inventory icons, wrong-dimension inventory icons, and missing wall/stairs/puddle/moss map icons are logged once per cached key with Debug.Log and cyan rich text instead of Debug.LogError. No fallback artwork is permitted.",
+    "preserved": [
+      "Source-data/invalid-map errors retain Error severity",
+      "No replacement artwork; missing or invalid sprites are not drawn",
+      "Existing per-key caching and deduplication",
+      "All prior Dungeon Features search and overview behavior"
+    ]
+  },
+  "dungeon_features_overview_click_reset_expand_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "Clicking an actual map tile while search overview is active keeps the tile inspection/click action, then clears Search item, returns from fit overview to normal 1x map zoom, scrolls to keep the clicked tile in view, and restores keyboard focus to Search item.",
+    "implementation": "Defers the search reset and zoom changes to EditorApplication.delayCall after the click GUI event to avoid hit-testing with mixed zoom states.",
+    "preserved": [
+      "Floor and wall item search overview",
+      "Orange matching-tile connectors and green highlight",
+      "Enter/arrow search navigation, Reset/Backspace",
+      "Original tile inspection and double-click navigation",
+      "Artwork, calibrated ornament rendering, V17 geometry and no-fallback policy"
+    ]
+  },
+  "dungeon_features_click_feature_replaces_search_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "behavior": "While search overview is active, single-clicking a tile with a floor item or wall ornament replaces the current search query with the clicked feature name (up to the 12-character field limit), rebuilds matches, selects the clicked tile, and retains search field focus. Clicking a tile without named artwork preserves the previous clear-and-expand behavior.",
+    "preserved": [
+      "Existing floor and wall overview, orange connectors, green selection, Enter and arrow navigation",
+      "No-fallback artwork and cyan diagnostics",
+      "All ornament geometry, DOS scaling, calibration and ViewEdit interaction"
+    ],
+    "example": "Searching Hook then clicking a Slime wall tile changes Search item to Slime."
   }
 }
