@@ -5416,5 +5416,21 @@
       "DOS ornament rendering, ViewEdit, all approved calibrations"
     ],
     "next_step": "Verify Leather Boots single-item popup heading and name are fully visible, and a two-item popup remains correct."
+  },
+  "dungeon_features_search_first_press_scroll_fix_20261123": {
+    "date": "2026-11-23 20:13:47 CET",
+    "status": "source corrected; Unity compilation and visual verification pending",
+    "source": "DungeonFeatureEditor.cs",
+    "symptom": "Find item next/previous selection requires a second press before the displayed map image catches up.",
+    "cause": "mapScroll was being changed after EditorGUILayout.BeginScrollView(mapScroll) had already consumed the old scroll position.",
+    "correction": "Move search-target scroll computation before BeginScrollView, preserving the exact coordinate formula, match ordering, selected inspection tile, preview, and 2px green border.",
+    "preserved": [
+      "12-character Search item field and Enter/arrow navigation",
+      "single/multiple floor item popup and orange connector",
+      "2px inward tile highlight and unchanged tile size",
+      "approved DOS renderer, manacles and grate calibrations",
+      "no changes to ViewportLayoutEditor.cs"
+    ],
+    "verify": "Enter slime or an item name with multiple hits; pressing > or Enter once must update the green outline and visible map tile on the same press."
   }
 }

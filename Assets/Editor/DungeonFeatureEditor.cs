@@ -1486,6 +1486,24 @@ public class DungeonFeatureEditor : EditorWindow
           2f * mapZoom + inscriptionPanelHeight + 8f);
     }
 
+    // Apply pending search navigation BEFORE BeginScrollView consumes mapScroll.
+    // Updating it inside an already-open scroll view makes the visible map
+    // lag one navigation press behind the selected search result.
+    if (scrollToSearchTile && featureSearchIndex >= 0
+        && featureSearchIndex < featureSearchTiles.Count)
+    {
+      Vector2Int target = featureSearchTiles[featureSearchIndex];
+      float viewWidth = Mathf.Max(1f, position.width - 24f);
+      float viewHeight = Mathf.Max(1f, position.height - 125f);
+      mapScroll.x = Mathf.Max(0f,
+          LabelLeftMargin * mapZoom
+          + (target.x + 0.5f) * CellSize - viewWidth * 0.5f);
+      mapScroll.y = Mathf.Max(0f,
+          (LabelTopMargin + OutsideFeatureVerticalMargin) * mapZoom
+          + (target.y + 0.5f) * CellSize - viewHeight * 0.5f);
+      scrollToSearchTile = false;
+    }
+
     mapScroll = EditorGUILayout.BeginScrollView(mapScroll);
 
     Rect contentRect = GUILayoutUtility.GetRect(
@@ -1504,20 +1522,6 @@ public class DungeonFeatureEditor : EditorWindow
         mapPixelHeight
     );
 
-
-    if (scrollToSearchTile && featureSearchIndex >= 0
-        && featureSearchIndex < featureSearchTiles.Count)
-    {
-      Vector2Int target = featureSearchTiles[featureSearchIndex];
-      // Scroll to the highlighted map tile without changing the player pose.
-      float viewWidth = Mathf.Max(1f, position.width - 24f);
-      float viewHeight = Mathf.Max(1f, position.height - 125f);
-      mapScroll.x = Mathf.Max(0f, mapRect.x - contentRect.x
-          + (target.x + 0.5f) * CellSize - viewWidth * 0.5f);
-      mapScroll.y = Mathf.Max(0f, mapRect.y - contentRect.y
-          + (target.y + 0.5f) * CellSize - viewHeight * 0.5f);
-      scrollToSearchTile = false;
-    }
 
     // Consume wheel events only inside the map content; elsewhere the window
     // keeps its normal scrolling behavior.
