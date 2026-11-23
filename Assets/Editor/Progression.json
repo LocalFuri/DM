@@ -5520,5 +5520,12 @@
       "DOS renderer and all approved ornament calibrations"
     ],
     "test": "In ViewEdit press either thumb button, type without clicking Search item; Enter advances one item."
+  },
+  "dungeon_features_single_item_icon_inner_gap_20261123": {
+    "date_local": "2026-11-23T20:44:34+01:00",
+    "status": "SOURCE MODIFIED — UNITY VISUAL VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "Single floor-item inventory map images are inset by 2 logical pixels per side (1 existing border + 1 additional clear pixel) scaled with map zoom, ensuring full-tile artwork does not touch cell borders.",
+    "protected": "Map tile dimensions, search highlight, multiple-item markers, search/Enter, mouse button open/focus, orange connector/popup, renderer and approved calibrations unchanged."
   }
 }

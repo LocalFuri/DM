@@ -450,7 +450,10 @@ public class DungeonFeatureEditor : EditorWindow
         Texture2D itemIcon = GetFloorItemInventoryMapIcon(list[0]);
         if (itemIcon != null)
         {
-          float iconMargin = 1f * mapZoom;
+          // Reserve the cell's existing 1px grid line plus a further 1px
+          // clear gap inside it, even for artwork that fills its source image.
+          // Inset only the single-item sprite; do not change map tile size.
+          float iconMargin = 2f * mapZoom;
           float iconSize = Mathf.Max(1f, CellSize - iconMargin * 2f);
           Rect iconRect = new Rect(
               mapRect.x + x * CellSize + iconMargin,
