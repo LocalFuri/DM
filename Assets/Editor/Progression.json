@@ -5543,5 +5543,17 @@
       "Approved calibration and V17 geometry"
     ],
     "test": "Inspect wall ornament (e.g. Hook) in Dungeon Features. It should nearly fill the map tile, leaving 1px extra clear space inside grid borders without altering tile bounds."
+  },
+  "dungeon_features_wall_item_inset_1px_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "Wall item/ornament icon margin reduced from 2 to 1 logical pixel per side (scaled with map zoom). Full available tile area maintained.",
+    "preserved": [
+      "Map tile dimensions and blue wall direction marker",
+      "Floor item spacing unchanged",
+      "Search, Enter, thumb-button shortcut, popup positioning",
+      "DOS renderer and approved calibrations"
+    ]
   }
 }

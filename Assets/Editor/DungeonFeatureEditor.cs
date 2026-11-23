@@ -2580,10 +2580,10 @@ public class DungeonFeatureEditor : EditorWindow
       DrawWallFaceDirectionMarker(cellRect, marker.Side);
 
       Texture2D texture = GetOrnamentMapIcon(marker.Type);
-      // Use the full map-tile interior for wall-item artwork, just as for
-      // single floor items: the existing 1px grid edge plus 1px clear gap.
+      // Use the full map-tile interior for wall-item artwork, leaving
+      // exactly 1px inward spacing, scaled with the map zoom.
       // No change to cell bounds or blue wall-face direction markers.
-      float iconMargin = 2f * mapZoom;
+      float iconMargin = 1f * mapZoom;
       Rect iconRect = new Rect(
           cellRect.x + iconMargin,
           cellRect.y + iconMargin,
