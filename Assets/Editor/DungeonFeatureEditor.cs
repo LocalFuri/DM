@@ -967,6 +967,13 @@ public class DungeonFeatureEditor : EditorWindow
   private int selectedX = 1;
   private int selectedY = 2;
   private DungeonFacing selectedFacing = DungeonFacing.North;
+  // Search the feature names on the currently displayed dungeon level.
+  // Searching only changes inspection/highlight; the ViewEdit player pose stays put.
+  private string featureSearchText = string.Empty;
+  private readonly List<Vector2Int> featureSearchTiles = new List<Vector2Int>();
+  private int featureSearchIndex = -1;
+  private bool scrollToSearchTile;
+  private static readonly Color FeatureSearchBorderColor = new Color(0f, 1f, 0f, 1f);
   private int currentDungeonLevel = HallOfChampionsLevel;
 
   private bool ornamentTexturesResolved;
@@ -1100,6 +1107,7 @@ public class DungeonFeatureEditor : EditorWindow
       selectedX = map.StartX;
       selectedY = map.StartY;
       selectedFacing = map.StartFacing;
+      RebuildFeatureSearch();
       return true;
     }
     catch (System.Exception ex)
@@ -1232,7 +1240,170 @@ public class DungeonFeatureEditor : EditorWindow
     GUILayout.FlexibleSpace();
     EditorGUILayout.EndHorizontal();
 
+    DrawFeatureSearchToolbar();
     DrawMapGrid();
+  }
+
+  private void DrawFeatureSearchToolbar()
+  {
+    EditorGUILayout.BeginHorizontal();
+    GUILayout.Label("Find feature", GUILayout.Width(80f));
+    EditorGUI.BeginChangeCheck();
+    string requested = EditorGUILayout.TextField(featureSearchText,
+        GUILayout.MinWidth(140f), GUILayout.MaxWidth(360f));
+    if (EditorGUI.EndChangeCheck())
+    {
+      featureSearchText = requested;
+      RebuildFeatureSearch();
+    }
+
+    bool hasMatches = featureSearchTiles.Count > 0;
+    EditorGUI.BeginDisabledGroup(!hasMatches);
+    if (GUILayout.Button("<", GUILayout.Width(25f)))
+      NavigateFeatureSearch(-1);
+    if (GUILayout.Button(">", GUILayout.Width(25f)))
+      NavigateFeatureSearch(1);
+    EditorGUI.EndDisabledGroup();
+    GUILayout.Label(string.IsNullOrWhiteSpace(featureSearchText)
+            ? "Enter item or feature name"
+            : hasMatches
+                ? (featureSearchIndex + 1) + " / " + featureSearchTiles.Count
+                : "No matches on this level",
+        EditorStyles.miniLabel, GUILayout.ExpandWidth(false));
+    GUILayout.FlexibleSpace();
+    EditorGUILayout.EndHorizontal();
+  }
+
+  private static bool FeatureNameMatches(string value, string query)
+  {
+    return !string.IsNullOrEmpty(value)
+        && value.IndexOf(query, System.StringComparison.OrdinalIgnoreCase) >= 0;
+  }
+
+  private void RebuildFeatureSearch()
+  {
+    featureSearchTiles.Clear();
+    featureSearchIndex = -1;
+    scrollToSearchTile = false;
+    if (map == null || string.IsNullOrWhiteSpace(featureSearchText))
+      return;
+
+    string query = featureSearchText.Trim();
+    HashSet<int> matched = new HashSet<int>();
+    foreach (var pair in resolvedFloorItems)
+    {
+      List<FloorItemPlacementRecord> records = pair.Value;
+      if (records == null)
+        continue;
+      foreach (FloorItemPlacementRecord item in records)
+      {
+        if (item != null && FeatureNameMatches(GetFloorItemDisplayName(item), query)
+            && map.IsInside(item.localX, item.localY))
+          matched.Add(PackFloorFeatureTile(item.localX, item.localY));
+      }
+    }
+    if (resolvedWallOrnaments != null)
+    {
+      foreach (OriginalWallOrnamentMarker ornament in resolvedWallOrnaments)
+      {
+        if (ornament != null && FeatureNameMatches(ornament.Type, query)
+            && map.IsInside(ornament.X, ornament.Y))
+          matched.Add(PackFloorFeatureTile(ornament.X, ornament.Y));
+      }
+    }
+    for (int y = 0; y < map.Height; y++)
+    {
+      for (int x = 0; x < map.Width; x++)
+      {
+        int key = PackFloorFeatureTile(x, y);
+        if ((FeatureNameMatches("Puddle", query) && resolvedPuddleFloors.Contains(key))
+            || (FeatureNameMatches("Moss", query) && resolvedMossFloors.Contains(key)))
+          matched.Add(key);
+        DungeonTile tile = map.GetTile(x, y);
+        if (tile != null && FeatureNameMatches("Stairs", query)
+            && tile.TryGetStairsDirection(out bool stairsUp)
+            && (FeatureNameMatches(stairsUp ? "Stairs Up" : "Stairs Down", query)))
+          matched.Add(key);
+      }
+    }
+    if (currentDungeonLevel == HallOfChampionsLevel)
+    {
+      foreach (ChampionMirrorMarker champion in ChampionMirrorMarkers)
+      {
+        if ((FeatureNameMatches(champion.Champion, query)
+                || FeatureNameMatches("Champion Mirror", query))
+            && map.IsInside(champion.X, champion.Y))
+          matched.Add(PackFloorFeatureTile(champion.X, champion.Y));
+      }
+    }
+    // Read the inscriptions file once per search, not once per tile/repaint.
+    if (File.Exists(DungeonInscriptionsPath))
+    {
+      try
+      {
+        DungeonInscriptionCollection inscriptions =
+            JsonUtility.FromJson<DungeonInscriptionCollection>(
+                File.ReadAllText(DungeonInscriptionsPath));
+        if (inscriptions != null && inscriptions.inscriptions != null)
+        {
+          foreach (DungeonInscriptionRecord inscription in inscriptions.inscriptions)
+          {
+            if (inscription != null && inscription.level == currentDungeonLevel
+                && map.IsInside(inscription.x, inscription.y)
+                && (FeatureNameMatches("Inscription", query)
+                    || FeatureNameMatches(inscription.text, query)))
+              matched.Add(PackFloorFeatureTile(inscription.x, inscription.y));
+          }
+        }
+      }
+      catch (System.Exception ex)
+      {
+        Debug.LogWarning("Dungeon Features: Search could not read inscriptions: "
+            + ex.Message);
+      }
+    }
+    // Stable tile order: top-to-bottom, then left-to-right. A tile with
+    // multiple matching items appears once.
+    for (int y = 0; y < map.Height; y++)
+      for (int x = 0; x < map.Width; x++)
+        if (matched.Contains(PackFloorFeatureTile(x, y)))
+          featureSearchTiles.Add(new Vector2Int(x, y));
+    if (featureSearchTiles.Count > 0)
+      NavigateFeatureSearch(1);
+  }
+
+  private void NavigateFeatureSearch(int delta)
+  {
+    if (featureSearchTiles.Count == 0)
+      return;
+    featureSearchIndex = (featureSearchIndex + delta + featureSearchTiles.Count)
+        % featureSearchTiles.Count;
+    Vector2Int tile = featureSearchTiles[featureSearchIndex];
+    inspectedFloorItemX = tile.x;
+    inspectedFloorItemY = tile.y;
+    inspectedOrnamentX = tile.x;
+    inspectedOrnamentY = tile.y;
+    inspectedInscriptionX = tile.x;
+    inspectedInscriptionY = tile.y;
+    scrollToSearchTile = true;
+    Repaint();
+  }
+
+  private void DrawFeatureSearchHighlight(Rect mapRect)
+  {
+    if (featureSearchIndex < 0 || featureSearchIndex >= featureSearchTiles.Count)
+      return;
+    Vector2Int tile = featureSearchTiles[featureSearchIndex];
+    if (!map.IsInside(tile.x, tile.y))
+      return;
+    // 1 GUI-pixel border *inside* the tile: no resizing or map-scale changes.
+    Rect rect = new Rect(mapRect.x + tile.x * CellSize,
+        mapRect.y + tile.y * CellSize, CellSize, CellSize);
+    float thickness = Mathf.Min(1f, rect.width / 2f, rect.height / 2f);
+    EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, thickness), FeatureSearchBorderColor);
+    EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - thickness, rect.width, thickness), FeatureSearchBorderColor);
+    EditorGUI.DrawRect(new Rect(rect.x, rect.y, thickness, rect.height), FeatureSearchBorderColor);
+    EditorGUI.DrawRect(new Rect(rect.xMax - thickness, rect.y, thickness, rect.height), FeatureSearchBorderColor);
   }
 
   private void SetDungeonLevelFromUi(int requestedLevel)
@@ -1320,6 +1491,20 @@ public class DungeonFeatureEditor : EditorWindow
     );
 
 
+    if (scrollToSearchTile && featureSearchIndex >= 0
+        && featureSearchIndex < featureSearchTiles.Count)
+    {
+      Vector2Int target = featureSearchTiles[featureSearchIndex];
+      // Scroll to the highlighted map tile without changing the player pose.
+      float viewWidth = Mathf.Max(1f, position.width - 24f);
+      float viewHeight = Mathf.Max(1f, position.height - 125f);
+      mapScroll.x = Mathf.Max(0f, mapRect.x - contentRect.x
+          + (target.x + 0.5f) * CellSize - viewWidth * 0.5f);
+      mapScroll.y = Mathf.Max(0f, mapRect.y - contentRect.y
+          + (target.y + 0.5f) * CellSize - viewHeight * 0.5f);
+      scrollToSearchTile = false;
+    }
+
     // Consume wheel events only inside the map content; elsewhere the window
     // keeps its normal scrolling behavior.
     HandleMapZoom(contentRect);
@@ -1372,6 +1557,7 @@ public class DungeonFeatureEditor : EditorWindow
     // Always paint the player tile LAST: no floor, ornament, champion or
     // preview layer may hide the cyan player location.
     DrawCurrentPlayerTileHighlight(mapRect);
+    DrawFeatureSearchHighlight(mapRect);
 
     EditorGUILayout.EndScrollView();
   }

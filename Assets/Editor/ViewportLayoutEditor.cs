@@ -37968,7 +37968,6 @@ private static void HandleGameViewPointerDown(
     }
 
     string viewedWallSide = FacingName(previewFacing);
-    string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
 
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
@@ -37980,27 +37979,8 @@ private static void HandleGameViewPointerDown(
       if (!IsSlimeOrnament(ornament))
         continue;
 
-      bool placementMatches;
-      if (ornament.wallTilePlacement)
-      {
-        placementMatches =
-            ornament.x == wallTileX
-            && ornament.y == wallTileY
-            && string.Equals(
-                ornament.wall,
-                visiblePhysicalWallFace,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-      else
-      {
-        placementMatches =
-            ornament.x == d2X
-            && ornament.y == d2Y
-            && string.Equals(
-                ornament.wall,
-                viewedWallSide,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
+      bool placementMatches = MatchesFrontWallOrnamentPlacement(
+          ornament, wallTileX, wallTileY, d2X, d2Y, viewedWallSide);
 
       if (!placementMatches)
         continue;
@@ -38044,7 +38024,6 @@ private static void HandleGameViewPointerDown(
     }
 
     string viewedWallSide = FacingName(previewFacing);
-    string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
 
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
@@ -38056,27 +38035,8 @@ private static void HandleGameViewPointerDown(
       if (!IsSlimeOrnament(ornament))
         continue;
 
-      bool placementMatches;
-      if (ornament.wallTilePlacement)
-      {
-        placementMatches =
-            ornament.x == wallTileX
-            && ornament.y == wallTileY
-            && string.Equals(
-                ornament.wall,
-                visiblePhysicalWallFace,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-      else
-      {
-        placementMatches =
-            ornament.x == d1X
-            && ornament.y == d1Y
-            && string.Equals(
-                ornament.wall,
-                viewedWallSide,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
+      bool placementMatches = MatchesFrontWallOrnamentPlacement(
+          ornament, wallTileX, wallTileY, d1X, d1Y, viewedWallSide);
 
       if (!placementMatches)
         continue;
@@ -38132,28 +38092,8 @@ private static void HandleGameViewPointerDown(
       if (!IsSlimeOrnament(ornament))
         continue;
 
-      bool placementMatches;
-      if (ornament.wallTilePlacement)
-      {
-        string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
-        placementMatches =
-            ornament.x == wallTileX
-            && ornament.y == wallTileY
-            && string.Equals(
-                ornament.wall,
-                visiblePhysicalWallFace,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-      else
-      {
-        placementMatches =
-            ornament.x == previewX
-            && ornament.y == previewY
-            && string.Equals(
-                ornament.wall,
-                viewedWallSide,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
+      bool placementMatches = MatchesFrontWallOrnamentPlacement(
+          ornament, wallTileX, wallTileY, previewX, previewY, viewedWallSide);
 
       if (!placementMatches)
         continue;
@@ -41161,7 +41101,7 @@ private static void HandleGameViewPointerDown(
     return null;
   }
 
-  // Phases D1/D2/D3: share front-wall placement matching for Grate, Hook and Manacles F1/F2/F3.
+  // Phases D1-D4: share front-wall placement matching for Grate, Hook, Manacles and Slime F1/F2/F3.
   // Visibility, ordering, texture selection, calibration and DOS scaling stay
   // in the existing callers.  The corridor coordinates are supplied by each
   // distance-specific caller to preserve its original placement rules.
