@@ -2269,7 +2269,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (cursor == null || !cursor.isReadable
         || cursor.width != 16 || cursor.height != 16)
     {
-      Debug.LogError("APPLE VIDEO COMPARISON: missing readable Apple 16x16 "
+      LogMissingArtworkCyan("APPLE VIDEO COMPARISON: missing readable Apple 16x16 "
           + "inventory sprite; original Apple stays on the floor.");
       return;
     }
@@ -8665,7 +8665,7 @@ private static void HandleGameViewPointerDown(
       Texture2D icon = GetChampionInventoryItemTexture(worldWeapon.originalFloor.type);
       if (icon == null || !icon.isReadable || icon.width != 16 || icon.height != 16)
       {
-        Debug.LogError("WEAPON HAND PICKUP: Missing exact 16x16 sprite; item unchanged.");
+        LogMissingArtworkCyan("WEAPON HAND PICKUP: Missing exact 16x16 sprite; item unchanged.");
         return true;
       }
       MoveItemInstance(physical, "Cursor");
@@ -8784,7 +8784,7 @@ private static void HandleGameViewPointerDown(
             || displacedTexture.width != ChampionSheetItemSize
             || displacedTexture.height != ChampionSheetItemSize)
         {
-          Debug.LogError("CHAMPION SWAP: Missing/unreadable or invalid 16x16 "
+          LogMissingArtworkCyan("CHAMPION SWAP: Missing/unreadable or invalid 16x16 "
               + "sprite for displaced item '" + displacedName
               + "'. Inventory unchanged; no fallback.");
           return true;
@@ -8850,7 +8850,7 @@ private static void HandleGameViewPointerDown(
       Texture2D sprite = GetChampionInventoryItemTexture(name);
       if (sprite == null || !sprite.isReadable || sprite.width != 16 || sprite.height != 16)
       {
-        Debug.LogError("CHAMPION TRANSFER: Missing 16x16 sprite for '" + name + "'.");
+        LogMissingArtworkCyan("CHAMPION TRANSFER: Missing 16x16 sprite for '" + name + "'.");
         return true;
       }
       ItemInstance physical = EnsureChampionItemInstance(origin.Name,
@@ -8876,7 +8876,7 @@ private static void HandleGameViewPointerDown(
         || texture.width != ChampionSheetItemSize
         || texture.height != ChampionSheetItemSize)
     {
-      Debug.LogError("CHAMPION PICKUP: Missing/unreadable or invalid inventory "
+      LogMissingArtworkCyan("CHAMPION PICKUP: Missing/unreadable or invalid inventory "
           + "sprite for '" + itemName + "'. Item remains equipped; no fallback.");
       return true;
     }
@@ -9916,7 +9916,7 @@ private static void HandleGameViewPointerDown(
     Texture2D art = previewHeldChampionCursor;
     if (art == null || !art.isReadable || art.width != 16 || art.height != 16)
     {
-      Debug.LogError("CHAMPION EYE: Required 16x16 readable held-item image is missing.");
+      LogMissingArtworkCyan("CHAMPION EYE: Required 16x16 readable held-item image is missing.");
       return;
     }
     // All dimensions use the full 320x200 screen, origin top-left.
@@ -9943,7 +9943,7 @@ private static void HandleGameViewPointerDown(
         continue;
       if (circlePath != null)
       {
-        Debug.LogError("CHAMPION EYE: Duplicate " + circleName
+        LogMissingArtworkCyan("CHAMPION EYE: Duplicate " + circleName
             + " assets found: " + circlePath + " and " + candidate);
         return;
       }
@@ -9951,13 +9951,13 @@ private static void HandleGameViewPointerDown(
     }
     if (circlePath == null)
     {
-      Debug.LogError("CHAMPION EYE: Missing required asset " + circleName);
+      LogMissingArtworkCyan("CHAMPION EYE: Missing required asset " + circleName);
       return;
     }
     Texture2D circle = AssetDatabase.LoadAssetAtPath<Texture2D>(circlePath);
     if (circle == null || !circle.isReadable || circle.width != 32 || circle.height != 27)
     {
-      Debug.LogError("CHAMPION EYE: " + circleName
+      LogMissingArtworkCyan("CHAMPION EYE: " + circleName
           + " must be a readable 32x27 Texture2D at " + circlePath);
       return;
     }
@@ -10004,7 +10004,7 @@ private static void HandleGameViewPointerDown(
         continue;
       if (inspectionSymbolPath != null)
       {
-        Debug.LogError("CHAMPION EYE: Duplicate " + inspectionSymbolName
+        LogMissingArtworkCyan("CHAMPION EYE: Duplicate " + inspectionSymbolName
             + " assets found: " + inspectionSymbolPath + " and " + candidate);
         return;
       }
@@ -10012,14 +10012,14 @@ private static void HandleGameViewPointerDown(
     }
     if (inspectionSymbolPath == null)
     {
-      Debug.LogError("CHAMPION EYE: Missing required asset " + inspectionSymbolName);
+      LogMissingArtworkCyan("CHAMPION EYE: Missing required asset " + inspectionSymbolName);
       return;
     }
     Texture2D inspectionSymbol = AssetDatabase.LoadAssetAtPath<Texture2D>(inspectionSymbolPath);
     if (inspectionSymbol == null || !inspectionSymbol.isReadable
         || inspectionSymbol.width != 16 || inspectionSymbol.height != 16)
     {
-      Debug.LogError("CHAMPION EYE: " + inspectionSymbolName
+      LogMissingArtworkCyan("CHAMPION EYE: " + inspectionSymbolName
           + " must be a readable 16x16 Texture2D at " + inspectionSymbolPath);
       return;
     }
@@ -10627,7 +10627,7 @@ private static void HandleGameViewPointerDown(
 
     if (match == null)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "[ViewportLayoutEditor] ERROR: No 32x29 Champion portrait asset found for "
           + championName + " in " + ChampionArtFolder + ".");
       return null;
@@ -10663,7 +10663,7 @@ private static void HandleGameViewPointerDown(
     if (readableCopy.width != ChampionSheetPortraitWidth
         || readableCopy.height != ChampionSheetPortraitHeight)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "[ViewportLayoutEditor] ERROR: Champion portrait must be exactly 32x29: "
           + match + " is " + readableCopy.width + "x" + readableCopy.height + ".");
       DestroyImmediate(readableCopy);
@@ -10793,7 +10793,7 @@ private static void HandleGameViewPointerDown(
               out int localX,
               out int localY))
       {
-        Debug.LogError(
+        LogMissingArtworkCyan(
             "[ViewportLayoutEditor] ERROR: No Champion-sheet slot mapping for "
             + hero.Name + " starting item '" + itemName + "'.");
         continue;
@@ -11587,7 +11587,7 @@ private static void HandleGameViewPointerDown(
     if (string.IsNullOrEmpty(spriteKey))
     {
       if (!suppressSpriteErrors)
-        Debug.LogError(
+        LogMissingArtworkCyan(
           "[ViewportLayoutEditor] ERROR: Starting item '" + objectType
           + "' has no canonical inventory sprite key.");
       return false;
@@ -11613,7 +11613,7 @@ private static void HandleGameViewPointerDown(
     if (texture.width != ChampionSheetItemSize
         || texture.height != ChampionSheetItemSize)
     {
-      Debug.LogError("[ViewportLayoutEditor] ERROR: Inventory sprite '"
+      LogMissingArtworkCyan("[ViewportLayoutEditor] ERROR: Inventory sprite '"
           + objectType + "' is " + texture.width + "x" + texture.height
           + "; exactly 16x16 is required. No fallback.");
       return false;
@@ -12198,7 +12198,7 @@ private static void HandleGameViewPointerDown(
         : Path.Combine(projectRoot, CharacterSheetAssetPath);
     if (!File.Exists(absolutePath))
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "Character Sheet ERROR: required asset not found at exact path: "
           + absolutePath);
       return null;
@@ -12222,7 +12222,7 @@ private static void HandleGameViewPointerDown(
     if (readableCopy.width != DungeonViewportWidth
         || readableCopy.height != DungeonViewportHeight)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "Character Sheet ERROR: CharacterSheet_224x136.png must be exactly "
           + DungeonViewportWidth + "x" + DungeonViewportHeight
           + " but is " + readableCopy.width + "x" + readableCopy.height
@@ -12251,7 +12251,7 @@ private static void HandleGameViewPointerDown(
         SearchOption.AllDirectories);
     if (matches == null || matches.Length == 0)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "Champion Sheet ERROR: required asset not found under Assets: "
           + ChampionEyeMovedAssetFileName);
       return null;
@@ -12268,7 +12268,7 @@ private static void HandleGameViewPointerDown(
         || readableCopy.width != 16
         || readableCopy.height != 16)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "Champion Sheet ERROR: " + ChampionEyeMovedAssetFileName
           + " must be exactly 16x16. Path: " + absolutePath);
       DestroyImmediate(readableCopy);
@@ -12295,7 +12295,7 @@ private static void HandleGameViewPointerDown(
         SearchOption.AllDirectories);
     if (matches == null || matches.Length == 0)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "Champion Sheet ERROR: required asset not found under Assets: "
           + ChampionEyeMiddleAssetFileName);
       return null;
@@ -12312,7 +12312,7 @@ private static void HandleGameViewPointerDown(
         || readableCopy.width != 16
         || readableCopy.height != 16)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "Champion Sheet ERROR: " + ChampionEyeMiddleAssetFileName
           + " must be exactly 16x16. Path: " + absolutePath);
       DestroyImmediate(readableCopy);
@@ -12429,7 +12429,7 @@ private static void HandleGameViewPointerDown(
         SearchOption.AllDirectories);
     if (matches == null || matches.Length == 0)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "Champion Sheet ERROR: required asset not found under Assets: "
           + ChampionFoodLabelAssetFileName);
       return null;
@@ -12446,7 +12446,7 @@ private static void HandleGameViewPointerDown(
         || readableCopy.width != 48
         || readableCopy.height != 9)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "Champion Sheet ERROR: " + ChampionFoodLabelAssetFileName
           + " must be exactly 48x9. Path: " + absolutePath);
       DestroyImmediate(readableCopy);
@@ -12473,7 +12473,7 @@ private static void HandleGameViewPointerDown(
         SearchOption.AllDirectories);
     if (matches == null || matches.Length == 0)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "Champion Sheet ERROR: required asset not found under Assets: "
           + ChampionWaterLabelAssetFileName);
       return null;
@@ -12490,7 +12490,7 @@ private static void HandleGameViewPointerDown(
         || readableCopy.width != 48
         || readableCopy.height != 9)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "Champion Sheet ERROR: " + ChampionWaterLabelAssetFileName
           + " must be exactly 48x9. Path: " + absolutePath);
       DestroyImmediate(readableCopy);
@@ -12525,7 +12525,7 @@ private static void HandleGameViewPointerDown(
     string absolutePath = System.IO.Path.Combine(projectRoot, assetPath);
     if (!System.IO.File.Exists(absolutePath))
     {
-      Debug.LogError("Champion eating animation ERROR: missing required asset " + assetPath);
+      LogMissingArtworkCyan("Champion eating animation ERROR: missing required asset " + assetPath);
       return null;
     }
     Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
@@ -12535,7 +12535,7 @@ private static void HandleGameViewPointerDown(
     if (!texture.LoadImage(System.IO.File.ReadAllBytes(absolutePath), false)
         || texture.width != 16 || texture.height != 16)
     {
-      Debug.LogError("Champion eating animation ERROR: expected 16x16 PNG: " + assetPath);
+      LogMissingArtworkCyan("Champion eating animation ERROR: expected 16x16 PNG: " + assetPath);
       DestroyImmediate(texture);
       return null;
     }
@@ -12570,7 +12570,7 @@ private static void HandleGameViewPointerDown(
 
     if (frame.width != mouthSize || frame.height != mouthSize)
     {
-      Debug.LogError("Champion eating animation ERROR: frame must be exactly 16x16: "
+      LogMissingArtworkCyan("Champion eating animation ERROR: frame must be exactly 16x16: "
           + frame.name);
       return;
     }
@@ -12715,7 +12715,7 @@ private static void HandleGameViewPointerDown(
         SearchOption.AllDirectories);
     if (matches == null || matches.Length == 0)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "Champion Sheet ERROR: required asset not found under Assets: "
           + ResurrectReincarnateAssetFileName);
       return null;
@@ -12732,7 +12732,7 @@ private static void HandleGameViewPointerDown(
         || readableCopy.width != 116
         || readableCopy.height != 73)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "Champion Sheet ERROR: " + ResurrectReincarnateAssetFileName
           + " must be exactly 116x73. Path: " + absolutePath);
       DestroyImmediate(readableCopy);
@@ -23432,7 +23432,7 @@ private static void HandleGameViewPointerDown(
       }
       else
       {
-        Debug.LogError(
+        LogMissingArtworkCyan(
             "V17 native D3: Front_Wall_F3_RAW_70x49.png is missing or not 70x49.");
       }
     }
@@ -23447,7 +23447,7 @@ private static void HandleGameViewPointerDown(
       if (edgeSource == null || !edgeSource.isReadable
           || edgeSource.height != nativeHeight || edgeSource.width < 16)
       {
-        Debug.LogError("V17: missing readable FrontF3 texture for D3 left edge");
+        LogMissingArtworkCyan("V17: missing readable FrontF3 texture for D3 left edge");
       }
       else
       {
@@ -23907,7 +23907,7 @@ private static void HandleGameViewPointerDown(
       return cachedOriginalCornerF2MirrorFrame;
     if (source == null || !source.isReadable)
     {
-      Debug.LogError("ViewEdit: Missing readable champion mirror F1 frame.");
+      LogMissingArtworkCyan("ViewEdit: Missing readable champion mirror F1 frame.");
       return null;
     }
     OriginalWallDecorationRect center = GetOriginalWallDecorationRect(5, 8);
@@ -24164,7 +24164,7 @@ private static void HandleGameViewPointerDown(
     {
       if (!File.Exists(OrnamentClassJsonPath))
       {
-        Debug.LogError("ViewEdit: required ornament calibration JSON missing: "
+        LogMissingArtworkCyan("ViewEdit: required ornament calibration JSON missing: "
             + OrnamentClassJsonPath);
         return false;
       }
@@ -24354,7 +24354,7 @@ private static void HandleGameViewPointerDown(
     Texture2D artwork = GetManaclesOriginalCornerF2Texture();
     if (artwork == null || !artwork.isReadable)
     {
-      Debug.LogError("ViewEdit Class 2 Manacles: required readable source artwork is missing.");
+      LogMissingArtworkCyan("ViewEdit Class 2 Manacles: required readable source artwork is missing.");
       return;
     }
     string key = GetManaclesClass2CornerF2Key(left);
@@ -24426,7 +24426,7 @@ private static void HandleGameViewPointerDown(
     Texture2D artwork = GetHookGeneratedF2FrontTexture();
     if (artwork == null || !artwork.isReadable)
     {
-      Debug.LogError("ViewEdit Class 3 Hook: required readable Hook F2 artwork is missing.");
+      LogMissingArtworkCyan("ViewEdit Class 3 Hook: required readable Hook F2 artwork is missing.");
       return;
     }
     string key = GetHookClass3CornerF2Key(left);
@@ -24496,7 +24496,7 @@ private static void HandleGameViewPointerDown(
     Texture2D artwork = GetWoodRingGeneratedF2FrontTexture();
     if (artwork == null || !artwork.isReadable)
     {
-      Debug.LogError("ViewEdit Class 4 Wooden Decoration: required readable Wood Ring F2 artwork is missing.");
+      LogMissingArtworkCyan("ViewEdit Class 4 Wooden Decoration: required readable Wood Ring F2 artwork is missing.");
       return;
     }
     string key = GetWoodenClass4CornerF2Key(left);
@@ -24566,7 +24566,7 @@ private static void HandleGameViewPointerDown(
     Texture2D artwork = GetSlimeGeneratedF2FrontTexture();
     if (artwork == null || !artwork.isReadable)
     {
-      Debug.LogError("ViewEdit Class 5 Slime: required readable Slime F2 artwork is missing.");
+      LogMissingArtworkCyan("ViewEdit Class 5 Slime: required readable Slime F2 artwork is missing.");
       return;
     }
     string key = GetSlimeClass5CornerF2Key(left);
@@ -24636,7 +24636,7 @@ private static void HandleGameViewPointerDown(
     Texture2D artwork = GetGrateFront2Texture();
     if (artwork == null || !artwork.isReadable)
     {
-      Debug.LogError("ViewEdit Class 6 Grate: required readable Grate F2 artwork is missing.");
+      LogMissingArtworkCyan("ViewEdit Class 6 Grate: required readable Grate F2 artwork is missing.");
       return;
     }
     string key = GetGrateClass6CornerF2Key(left);
@@ -24706,7 +24706,7 @@ private static void HandleGameViewPointerDown(
     Texture2D artwork = GetEmptyHolderClass7Front2Texture();
     if (artwork == null || !artwork.isReadable)
     {
-      Debug.LogError("ViewEdit Class 7 Empty Torch Holder: required readable Empty Torch Holder F2 artwork is missing.");
+      LogMissingArtworkCyan("ViewEdit Class 7 Empty Torch Holder: required readable Empty Torch Holder F2 artwork is missing.");
       return;
     }
     string key = GetEmptyHolderClass7CornerF2Key(left);
@@ -24990,7 +24990,7 @@ private static void HandleGameViewPointerDown(
             : GetChampionMirrorScaledFrameTexture(frame, depth);
         if (artwork == null || !artwork.isReadable)
         {
-          Debug.LogError("Unified mirror preview: missing readable F"
+          LogMissingArtworkCyan("Unified mirror preview: missing readable F"
               + depth + " frame for " + m.champion);
           return;
         }
@@ -25021,7 +25021,7 @@ private static void HandleGameViewPointerDown(
         {
           Texture2D portrait = GetChampionPortraitTexture(m.champion);
           if (portrait == null || !portrait.isReadable)
-            Debug.LogError("Unified mirror preview: missing readable portrait: "
+            LogMissingArtworkCyan("Unified mirror preview: missing readable portrait: "
                 + m.champion);
           else
             BlitWallOrnamentIntoPreview(pixels, portrait,
@@ -25160,7 +25160,7 @@ private static void HandleGameViewPointerDown(
         }
         if (original == null || !original.isReadable)
         {
-          Debug.LogError("Extended side-lane mirror: required side artwork missing: "
+          LogMissingArtworkCyan("Extended side-lane mirror: required side artwork missing: "
               + ChampionMirrorSideAssetPath);
           return;
         }
@@ -25296,7 +25296,7 @@ private static void HandleGameViewPointerDown(
     if (sideArtwork == null || !sideArtwork.isReadable
         || sideArtwork.width != 16 || sideArtwork.height != 35)
     {
-      Debug.LogError("Unified S1/S2 mirror: required readable 16x35 artwork missing or invalid: "
+      LogMissingArtworkCyan("Unified S1/S2 mirror: required readable 16x35 artwork missing or invalid: "
           + ChampionMirrorSideAssetPath);
       return;
     }
@@ -25424,20 +25424,20 @@ private static void HandleGameViewPointerDown(
         AssetDatabase.LoadAssetAtPath<Texture2D>(ChampionMirrorFrontAssetPath);
     if (texture == null)
     {
-      Debug.LogError("ViewEdit: Champion mirror front asset missing: "
+      LogMissingArtworkCyan("ViewEdit: Champion mirror front asset missing: "
           + ChampionMirrorFrontAssetPath + " (required 64x43).");
       return null;
     }
     if (texture.width != 64 || texture.height != 43)
     {
-      Debug.LogError("ViewEdit: Champion mirror front asset has wrong dimensions: "
+      LogMissingArtworkCyan("ViewEdit: Champion mirror front asset has wrong dimensions: "
           + ChampionMirrorFrontAssetPath + " (expected 64x43, actual "
           + texture.width + "x" + texture.height + ").");
       return null;
     }
     if (!texture.isReadable)
     {
-      Debug.LogError("ViewEdit: Champion mirror front asset is not readable: "
+      LogMissingArtworkCyan("ViewEdit: Champion mirror front asset is not readable: "
           + ChampionMirrorFrontAssetPath + ". Enable Read/Write in Import Settings.");
       return null;
     }
@@ -26565,14 +26565,14 @@ private static void HandleGameViewPointerDown(
 
     if (stairsWall == null)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "STAIRS RIGHT D1: Stairs_Down_Front_D1_32x91.png was not found.");
       return;
     }
 
     if (stairsWall.width != 32 || stairsWall.height != 91)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "STAIRS RIGHT D1: asset loaded but imported size is "
           + stairsWall.width + "x" + stairsWall.height
           + " (expected 32x91).");
@@ -26595,7 +26595,7 @@ private static void HandleGameViewPointerDown(
 
     if (stairsWall == null || !stairsWall.isReadable)
     {
-      Debug.LogError(
+      LogMissingArtworkCyan(
           "STAIRS RIGHT D1: asset is still not readable after importer refresh.");
       return;
     }
@@ -26660,13 +26660,13 @@ private static void HandleGameViewPointerDown(
         StairsDownRightD1AssetPath);
     if (texture == null || texture.width != 32 || texture.height != 91)
     {
-      Debug.LogError("STAIRS S1 LEFT: missing or invalid 32x91 PNG at "
+      LogMissingArtworkCyan("STAIRS S1 LEFT: missing or invalid 32x91 PNG at "
           + StairsDownRightD1AssetPath);
       return;
     }
     if (!texture.isReadable)
     {
-      Debug.LogError("STAIRS S1 LEFT: PNG texture must be Read/Write enabled: "
+      LogMissingArtworkCyan("STAIRS S1 LEFT: PNG texture must be Read/Write enabled: "
           + StairsDownRightD1AssetPath);
       return;
     }
@@ -28495,7 +28495,7 @@ private static void HandleGameViewPointerDown(
   {
     if (!TryGetPuddleProjection(depth, lane, out int codedX, out int codedY))
     {
-      Debug.LogError("ViewEdit Puddle: missing projection texture for " + displayName);
+      LogMissingArtworkCyan("ViewEdit Puddle: missing projection texture for " + displayName);
       return;
     }
     string projectionKey = PuddleProjectionKey(depth, lane);
@@ -30232,7 +30232,7 @@ private static void HandleGameViewPointerDown(
         if (alphabet == null || alphabet.width != 288 || alphabet.height != 8
             || !alphabet.isReadable)
         {
-          Debug.LogError("WALL INSCRIPTION: missing/unreadable 288x8 font: "
+          LogMissingArtworkCyan("WALL INSCRIPTION: missing/unreadable 288x8 font: "
               + InscriptionFontPath + ". Enable Read/Write; Point filtering; no compression.");
           return;
         }
@@ -30991,18 +30991,18 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRS D0L: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRS D0L: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 16 || sprite.height != 13)
     {
-      Debug.LogError("STAIRS D0L: expected 16x13, got "
+      LogMissingArtworkCyan("STAIRS D0L: expected 16x13, got "
           + sprite.width + "x" + sprite.height + " at " + assetPath);
       return;
     }
     if (!sprite.isReadable)
     {
-      Debug.LogError("STAIRS D0L: enable Read/Write on " + assetPath);
+      LogMissingArtworkCyan("STAIRS D0L: enable Read/Write on " + assetPath);
       return;
     }
 
@@ -31023,18 +31023,18 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRS S0 NORTH: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRS S0 NORTH: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 16 || sprite.height != 13)
     {
-      Debug.LogError("STAIRS S0 NORTH: expected 16x13, got "
+      LogMissingArtworkCyan("STAIRS S0 NORTH: expected 16x13, got "
           + sprite.width + "x" + sprite.height + " at " + assetPath);
       return;
     }
     if (!sprite.isReadable)
     {
-      Debug.LogError("STAIRS S0 NORTH: enable Read/Write on " + assetPath);
+      LogMissingArtworkCyan("STAIRS S0 NORTH: enable Read/Write on " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, stairsdownS2LeftX,
@@ -31059,17 +31059,17 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRS S0 D2 NORTH: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRS S0 D2 NORTH: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 16 || sprite.height != 5)
     {
-      Debug.LogError("STAIRS S0 D2 NORTH: expected 16x5 at " + assetPath);
+      LogMissingArtworkCyan("STAIRS S0 D2 NORTH: expected 16x5 at " + assetPath);
       return;
     }
     if (!sprite.isReadable)
     {
-      Debug.LogError("STAIRS S0 D2 NORTH: enable Read/Write on " + assetPath);
+      LogMissingArtworkCyan("STAIRS S0 D2 NORTH: enable Read/Write on " + assetPath);
       return;
     }
     // S3 artwork is already 16x5. Render native pixels without downscaling.
@@ -31131,12 +31131,12 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("PRESSURE PAD F1: missing asset: " + assetPath);
+      LogMissingArtworkCyan("PRESSURE PAD F1: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 62 || sprite.height != 21 || !sprite.isReadable)
     {
-      Debug.LogError("PRESSURE PAD F1: expected readable 62x21 image: " + assetPath);
+      LogMissingArtworkCyan("PRESSURE PAD F1: expected readable 62x21 image: " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, pressurePadF1X,
@@ -31303,12 +31303,12 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("PRESSURE PAD F2: missing asset: " + assetPath);
+      LogMissingArtworkCyan("PRESSURE PAD F2: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 42 || sprite.height != 11 || !sprite.isReadable)
     {
-      Debug.LogError("PRESSURE PAD F2: expected readable 42x11 image: " + assetPath);
+      LogMissingArtworkCyan("PRESSURE PAD F2: expected readable 42x11 image: " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, pressurePadF2X,
@@ -31475,12 +31475,12 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("PRESSURE PAD F3: missing asset: " + assetPath);
+      LogMissingArtworkCyan("PRESSURE PAD F3: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 26 || sprite.height != 6 || !sprite.isReadable)
     {
-      Debug.LogError("PRESSURE PAD F3: expected readable 26x6 image: " + assetPath);
+      LogMissingArtworkCyan("PRESSURE PAD F3: expected readable 26x6 image: " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, pressurePadF3X,
@@ -31648,12 +31648,12 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("PRESSURE PAD S1: missing asset: " + assetPath);
+      LogMissingArtworkCyan("PRESSURE PAD S1: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 60 || sprite.height != 11 || !sprite.isReadable)
     {
-      Debug.LogError("PRESSURE PAD S1: expected readable 60x11 image: " + assetPath);
+      LogMissingArtworkCyan("PRESSURE PAD S1: expected readable 60x11 image: " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, pressurePadS1X,
@@ -31787,12 +31787,12 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRS UP F1: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP F1: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 160 || sprite.height != 100 || !sprite.isReadable)
     {
-      Debug.LogError("STAIRS UP F1: expected readable 160x100 image: " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP F1: expected readable 160x100 image: " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, stairsUpF1X,
@@ -31949,12 +31949,12 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRS UP FRONT S1: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S1: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 32 || sprite.height != 100 || !sprite.isReadable)
     {
-      Debug.LogError("STAIRS UP FRONT S1: expected readable 32x100 image: " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S1: expected readable 32x100 image: " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, stairsUpFrontS1X,
@@ -32080,12 +32080,12 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRS UP FRONT S1: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S1: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 32 || sprite.height != 100 || !sprite.isReadable)
     {
-      Debug.LogError("STAIRS UP FRONT S1: expected readable 32x100 image: " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S1: expected readable 32x100 image: " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, stairsUpFrontS1LeftX,
@@ -32231,17 +32231,17 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRS UP FRONT S2: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S2: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 20 || sprite.height != 43)
     {
-      Debug.LogError("STAIRS UP FRONT S2: expected 20x43 at " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S2: expected 20x43 at " + assetPath);
       return;
     }
     if (!sprite.isReadable)
     {
-      Debug.LogError("STAIRS UP FRONT S2: enable Read/Write on " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S2: enable Read/Write on " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, stairsUpFrontS2X,
@@ -32367,17 +32367,17 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRS UP FRONT S2 RIGHT: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S2 RIGHT: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 20 || sprite.height != 43)
     {
-      Debug.LogError("STAIRS UP FRONT S2 RIGHT: expected 20x43 at " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S2 RIGHT: expected 20x43 at " + assetPath);
       return;
     }
     if (!sprite.isReadable)
     {
-      Debug.LogError("STAIRS UP FRONT S2 RIGHT: enable Read/Write on " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S2 RIGHT: enable Read/Write on " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, stairsUpFrontS2RightX,
@@ -32522,17 +32522,17 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRS UP FRONT S3: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S3: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 16 || sprite.height != 5)
     {
-      Debug.LogError("STAIRS UP FRONT S3: expected 16x5 at " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S3: expected 16x5 at " + assetPath);
       return;
     }
     if (!sprite.isReadable)
     {
-      Debug.LogError("STAIRS UP FRONT S3: enable Read/Write on " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S3: enable Read/Write on " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, stairsUpFrontS3X,
@@ -32658,17 +32658,17 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRS UP FRONT S3 RIGHT: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S3 RIGHT: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 16 || sprite.height != 5)
     {
-      Debug.LogError("STAIRS UP FRONT S3 RIGHT: expected 16x5 at " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S3 RIGHT: expected 16x5 at " + assetPath);
       return;
     }
     if (!sprite.isReadable)
     {
-      Debug.LogError("STAIRS UP FRONT S3 RIGHT: enable Read/Write on " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP FRONT S3 RIGHT: enable Read/Write on " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, stairsUpFrontS3RightX,
@@ -32796,17 +32796,17 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRS UP S2: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP S2: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 30 || sprite.height != 44)
     {
-      Debug.LogError("STAIRS UP S2: expected 30x44 at " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP S2: expected 30x44 at " + assetPath);
       return;
     }
     if (!sprite.isReadable)
     {
-      Debug.LogError("STAIRS UP S2: enable Read/Write on " + assetPath);
+      LogMissingArtworkCyan("STAIRS UP S2: enable Read/Write on " + assetPath);
       return;
     }
     if (stairsUpS2LeftEnabled)
@@ -33010,17 +33010,17 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRS DOWN LEVEL0 S0: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRS DOWN LEVEL0 S0: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 30 || sprite.height != 60)
     {
-      Debug.LogError("STAIRS DOWN LEVEL0 S0: expected 30x60 at " + assetPath);
+      LogMissingArtworkCyan("STAIRS DOWN LEVEL0 S0: expected 30x60 at " + assetPath);
       return;
     }
     if (!sprite.isReadable)
     {
-      Debug.LogError("STAIRS DOWN LEVEL0 S0: enable Read/Write on " + assetPath);
+      LogMissingArtworkCyan("STAIRS DOWN LEVEL0 S0: enable Read/Write on " + assetPath);
       return;
     }
     if (stairsLevel0S0LeftEnabled)
@@ -33181,17 +33181,17 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRS S3 RIGHT SOUTH: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRS S3 RIGHT SOUTH: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 16 || sprite.height != 5)
     {
-      Debug.LogError("STAIRS S3 RIGHT SOUTH: expected 16x5 at " + assetPath);
+      LogMissingArtworkCyan("STAIRS S3 RIGHT SOUTH: expected 16x5 at " + assetPath);
       return;
     }
     if (!sprite.isReadable)
     {
-      Debug.LogError("STAIRS S3 RIGHT SOUTH: enable Read/Write on " + assetPath);
+      LogMissingArtworkCyan("STAIRS S3 RIGHT SOUTH: enable Read/Write on " + assetPath);
       return;
     }
     // S3 artwork is already 16x5. Render native pixels without downscaling.
@@ -33210,18 +33210,18 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRSDOWN S2 F2 NORTH: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRSDOWN S2 F2 NORTH: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 20 || sprite.height != 39)
     {
-      Debug.LogError("STAIRSDOWN S2 F2 NORTH: expected 20x39, got "
+      LogMissingArtworkCyan("STAIRSDOWN S2 F2 NORTH: expected 20x39, got "
           + sprite.width + "x" + sprite.height + " at " + assetPath);
       return;
     }
     if (!sprite.isReadable)
     {
-      Debug.LogError("STAIRSDOWN S2 F2 NORTH: enable Read/Write on " + assetPath);
+      LogMissingArtworkCyan("STAIRSDOWN S2 F2 NORTH: enable Read/Write on " + assetPath);
       return;
     }
     BlitPieceIntoPreview(pixels, sprite, stairsdownS2F2NorthX,
@@ -33248,18 +33248,18 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
     if (sprite == null)
     {
-      Debug.LogError("STAIRSDOWN S2: missing asset: " + assetPath);
+      LogMissingArtworkCyan("STAIRSDOWN S2: missing asset: " + assetPath);
       return;
     }
     if (sprite.width != 20 || sprite.height != 39)
     {
-      Debug.LogError("STAIRSDOWN S2: expected 20x39, got "
+      LogMissingArtworkCyan("STAIRSDOWN S2: expected 20x39, got "
           + sprite.width + "x" + sprite.height + " at " + assetPath);
       return;
     }
     if (!sprite.isReadable)
     {
-      Debug.LogError("STAIRSDOWN S2: enable Read/Write on " + assetPath);
+      LogMissingArtworkCyan("STAIRSDOWN S2: enable Read/Write on " + assetPath);
       return;
     }
 
@@ -34325,11 +34325,18 @@ private static void HandleGameViewPointerDown(
   private readonly HashSet<string> loggedFloorItemTextureErrors =
       new HashSet<string>(System.StringComparer.Ordinal);
 
+  // Non-fatal missing/wrong-sized/unreadable artwork remains visible in cyan.
+  // All original validity checks and no-fallback returns stay unchanged.
+  private static void LogMissingArtworkCyan(string message)
+  {
+    Debug.Log("<color=cyan>CYAN | " + message + "</color>");
+  }
+
   private void ReportFloorItemTextureProblem(string itemName, string assetPath, string reason)
   {
     string key = itemName + ":" + assetPath + ":" + reason;
     if (loggedFloorItemTextureErrors.Add(key))
-      Debug.LogError("[ViewportLayoutEditor] " + itemName + " floor graphic " + reason +
+      LogMissingArtworkCyan("[ViewportLayoutEditor] " + itemName + " floor graphic " + reason +
           " at exact path '" + assetPath + "'. Check its current location and Texture Import Settings (Read/Write). No fallback will be used.");
   }
 
@@ -36212,7 +36219,7 @@ private static void HandleGameViewPointerDown(
       {
         if (!hasDedicatedF3 || entry.widthF3 <= 0 || entry.heightF3 <= 0)
         {
-          Debug.LogError("F3 CALIBRATION: dedicated F3 artwork is not registered for "
+          LogMissingArtworkCyan("F3 CALIBRATION: dedicated F3 artwork is not registered for "
               + item.type + ". No calibration was saved.");
           return;
         }
@@ -39500,7 +39507,7 @@ private static void HandleGameViewPointerDown(
     Texture2D source = GetManaclesS1Texture();
     if (source == null || !source.isReadable)
     {
-      Debug.LogError("Manacles S3: requires readable native S1 artwork at "
+      LogMissingArtworkCyan("Manacles S3: requires readable native S1 artwork at "
           + ManaclesS1AssetPath);
       return null;
     }
@@ -39947,7 +39954,7 @@ private static void HandleGameViewPointerDown(
     Texture2D source = GetManaclesF1Texture();
     if (source == null || !source.isReadable)
     {
-      Debug.LogError("Manacles F3: requires readable native F1 artwork at "
+      LogMissingArtworkCyan("Manacles F3: requires readable native F1 artwork at "
           + ManaclesF1AssetPath);
       return null;
     }
@@ -40412,7 +40419,7 @@ private static void HandleGameViewPointerDown(
       UnityEngine.Object.DestroyImmediate(source);
     }
     if (cachedHookGeneratedF3FrontTexture == null)
-      Debug.LogError("Hook F3: failed to generate from " + HookDosF2AssetPath);
+      LogMissingArtworkCyan("Hook F3: failed to generate from " + HookDosF2AssetPath);
     return cachedHookGeneratedF3FrontTexture;
   }
 
@@ -40436,7 +40443,7 @@ private static void HandleGameViewPointerDown(
         roundBiasOverride: 0,
         sampleTopDown: true);
     if (cachedHookGeneratedF2FrontTexture == null)
-      Debug.LogError("Hook F2: DOS-native scaling failed: " + HookDosF2AssetPath);
+      LogMissingArtworkCyan("Hook F2: DOS-native scaling failed: " + HookDosF2AssetPath);
     return cachedHookGeneratedF2FrontTexture;
   }
 
@@ -40446,7 +40453,7 @@ private static void HandleGameViewPointerDown(
     // default to Read/Write disabled. Do not alter importer settings.
     if (!System.IO.File.Exists(HookDosF2AssetPath))
     {
-      Debug.LogError("Hook F2: required native DOS source missing: "
+      LogMissingArtworkCyan("Hook F2: required native DOS source missing: "
           + HookDosF2AssetPath);
       return null;
     }
@@ -40455,7 +40462,7 @@ private static void HandleGameViewPointerDown(
             System.IO.File.ReadAllBytes(HookDosF2AssetPath), false)
         || source.width != 28 || source.height != 28)
     {
-      Debug.LogError("Hook F2: native DOS image could not decode as 28x28: "
+      LogMissingArtworkCyan("Hook F2: native DOS image could not decode as 28x28: "
           + HookDosF2AssetPath);
       UnityEngine.Object.DestroyImmediate(source);
       return null;
@@ -40473,7 +40480,7 @@ private static void HandleGameViewPointerDown(
         AssetDatabase.LoadAssetAtPath<Texture2D>(HookFrontAssetPath);
     if (texture == null || texture.width != 32 || texture.height != 28)
     {
-      Debug.LogError("Hook F1: required original 32x28 CSBwin front asset missing "
+      LogMissingArtworkCyan("Hook F1: required original 32x28 CSBwin front asset missing "
           + "or has wrong dimensions: " + HookFrontAssetPath);
       return null;
     }
@@ -40495,7 +40502,7 @@ private static void HandleGameViewPointerDown(
         || registration.nativeSideWidth != 14
         || registration.nativeSideHeight != 19)
     {
-      Debug.LogError("Hook side: native 14x19 registration missing or invalid.");
+      LogMissingArtworkCyan("Hook side: native 14x19 registration missing or invalid.");
       return null;
     }
 
@@ -40505,13 +40512,13 @@ private static void HandleGameViewPointerDown(
         || texture.width != registration.nativeSideWidth
         || texture.height != registration.nativeSideHeight)
     {
-      Debug.LogError("Hook side: required native DOS 14x19 PNG missing "
+      LogMissingArtworkCyan("Hook side: required native DOS 14x19 PNG missing "
           + "or dimensions incorrect at " + registration.nativeSideSource);
       return null;
     }
     if (!texture.isReadable)
     {
-      Debug.LogError("Hook side: required source is not readable at "
+      LogMissingArtworkCyan("Hook side: required source is not readable at "
           + registration.nativeSideSource);
       return null;
     }
@@ -40548,7 +40555,7 @@ private static void HandleGameViewPointerDown(
     Texture2D source = GetHookSideTexture();
     if (source == null || !source.isReadable)
     {
-      Debug.LogError("Hook S3: required readable native 14x19 side source missing: "
+      LogMissingArtworkCyan("Hook S3: required readable native 14x19 side source missing: "
           + HookSideAssetPath);
       return null;
     }
@@ -40561,7 +40568,7 @@ private static void HandleGameViewPointerDown(
         "Hook S3 DOS 6-bit Side", roundBiasOverride: 0,
         sampleTopDown: true);
     if (cachedHookSide3Texture == null)
-      Debug.LogError("Hook S3: failed to generate 6x8 from " + HookSideAssetPath);
+      LogMissingArtworkCyan("Hook S3: failed to generate 6x8 from " + HookSideAssetPath);
     return cachedHookSide3Texture;
   }
 
@@ -40890,7 +40897,7 @@ private static void HandleGameViewPointerDown(
     Texture2D image = AssetDatabase.LoadAssetAtPath<Texture2D>(GrateF3SideAssetPath);
     if (image == null || image.width != 14 || image.height != 8 || !image.isReadable)
     {
-      Debug.LogError("ViewEdit: Grate F3 Side requires readable native 14x8 asset: "
+      LogMissingArtworkCyan("ViewEdit: Grate F3 Side requires readable native 14x8 asset: "
           + GrateF3SideAssetPath);
       return null;
     }
@@ -41595,7 +41602,7 @@ private static void HandleGameViewPointerDown(
       if (cursor == null || cursor.width != 16 || cursor.height != 16
           || !cursor.isReadable)
       {
-        Debug.LogError("FLOOR ITEM PICKUP: expected readable 16x16 inventory "
+        LogMissingArtworkCyan("FLOOR ITEM PICKUP: expected readable 16x16 inventory "
             + "texture for '" + item.type + "'. No fallback used.");
         return true; // Leave the item on the ground.
       }
@@ -42220,7 +42227,7 @@ private static void HandleGameViewPointerDown(
     }
     if (texture == null || !texture.isReadable)
     {
-      Debug.LogError("THROW: missing readable item art, id=" + id);
+      LogMissingArtworkCyan("THROW: missing readable item art, id=" + id);
       return true;
     }
     string thrownChampionName = heldChampion ? previewHeldChampionName : null;
@@ -42370,7 +42377,7 @@ private static void HandleGameViewPointerDown(
     GroundArtworkEntry artwork = GetRegisteredGroundArtwork(itemName);
     if (artwork == null)
     {
-      Debug.LogError("CHAMPION FLOOR DROP: no unique registered ground artwork for '"
+      LogMissingArtworkCyan("CHAMPION FLOOR DROP: no unique registered ground artwork for '"
           + itemName + "'; item remains on cursor. No fallback.");
       return true;
     }
@@ -42440,7 +42447,7 @@ private static void HandleGameViewPointerDown(
     Texture2D texture = GetFloorItemTexture(previewHeldFloorItem);
     if (texture == null)
     {
-      Debug.LogError("F1 FLOOR DROP: missing world artwork for '"
+      LogMissingArtworkCyan("F1 FLOOR DROP: missing world artwork for '"
           + previewHeldFloorItem.type + "'; item remains on cursor.");
       return true;
     }
@@ -42539,14 +42546,14 @@ private static void HandleGameViewPointerDown(
     Texture2D heldCursor = owner.GetHeldItemCursorTexture();
     if (heldCursor == null)
     {
-      Debug.LogError("HELD ITEM CURSOR: held item has no inventory sprite.");
+      LogMissingArtworkCyan("HELD ITEM CURSOR: held item has no inventory sprite.");
       HideHeldItemPointerOverlay();
       return;
     }
     if (owner.previewHeldChampionCursor != null
         && (heldCursor.width != 16 || heldCursor.height != 16))
     {
-      Debug.LogError("CHAMPION EQUIPMENT CURSOR: Expected 16x16 inventory sprite, got "
+      LogMissingArtworkCyan("CHAMPION EQUIPMENT CURSOR: Expected 16x16 inventory sprite, got "
           + heldCursor.width + "x" + heldCursor.height + " for held item.");
       HideHeldItemPointerOverlay();
       return;
@@ -42759,7 +42766,7 @@ private static void HandleGameViewPointerDown(
     if (count != 1 || result == null || result.width != width
         || result.height != height || !result.isReadable)
     {
-      Debug.LogError("TORCH PICKUP: expected one readable " + width + "x"
+      LogMissingArtworkCyan("TORCH PICKUP: expected one readable " + width + "x"
           + height + " texture '" + name + "'; matches=" + count);
       return null;
     }
@@ -42845,7 +42852,7 @@ private static void HandleGameViewPointerDown(
     Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(TorchGroundPath);
     if (sprite == null || sprite.width != 61 || sprite.height != 7 || !sprite.isReadable)
     {
-      Debug.LogError("TORCH GROUND: expected readable 61x7 PNG at " + TorchGroundPath);
+      LogMissingArtworkCyan("TORCH GROUND: expected readable 61x7 PNG at " + TorchGroundPath);
       return null;
     }
     return sprite;
@@ -43844,7 +43851,7 @@ private static void HandleGameViewPointerDown(
     }
     if (!texture.isReadable || texture.width != 32 || texture.height != 20)
     {
-      Debug.LogError("Grate F1 must be readable 32x20 DOS artwork: "
+      LogMissingArtworkCyan("Grate F1 must be readable 32x20 DOS artwork: "
           + GrateFrontAssetPath);
       return null;
     }

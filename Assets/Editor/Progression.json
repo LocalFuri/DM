@@ -5662,5 +5662,94 @@
       "Existing compact item popup layout and top-right preview placement",
       "All ViewEdit / ornament renderer behavior unchanged"
     ]
+  },
+  "dungeon_features_selected_search_connector_pulse_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "In Dungeon Features search overview mode, keep all orange connector lines steady but pulse the currently selected result connector by animating its brightness and thickness (2px→3px, approximately 1.2 second cycle). Applies to both floor-item and wall-feature overviews.",
+    "preserved": [
+      "All non-selected orange connectors remain steady",
+      "Green selected-tile outline remains unchanged",
+      "Search overview auto-fit zoom and right-side preview panel behavior",
+      "Enter / < > / Reset / Backspace / click-to-replace-search behavior",
+      "All ViewEdit and ornament rendering logic unchanged"
+    ]
+  },
+  "dungeon_features_search_connector_width_3px_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "Increase Dungeon Features search-overview orange connector lines from 2px to 3px for immediate visibility. The selected pulsing connector now animates from about 3px to 4px.",
+    "preserved": [
+      "Selected connector pulse behavior",
+      "All non-selected overview connectors remain steady",
+      "Green selected tile highlight and right-side preview panel",
+      "Search overview zoom, navigation, and click-to-replace-search behavior",
+      "All ViewEdit and ornament rendering behavior unchanged"
+    ]
+  },
+  "dungeon_features_selected_connector_green_pulse_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "Only the selected search-result connector pulses in green (dark-to-bright green), 3–4 px width; non-selected connectors remain steady orange at 3 px. Applies to floor and wall search overview.",
+    "preserved": [
+      "Green map-tile selection rectangle",
+      "Existing search navigation, overview zoom, item previews, and orange connectors",
+      "ViewEdit/DOS ornament renderer and approved calibrations"
+    ]
+  },
+  "dungeon_features_green_pulse_wrap_restart_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "When cycling search results with Enter or < >, including last result back to first (e.g. Apple 5/5 -> 1/5), restart the selected green connector pulse at maximum brightness and thickness. The clicked-search selection also restarts the pulse.",
+    "preserved": [
+      "All result tiles maintain their order and cyclic navigation",
+      "Selected connector remains green, with 3–4 px pulse and 1.2-second cycle",
+      "Other connector lines remain steady orange at 3 px",
+      "Existing search, reset, focus, map zoom, popup, and tile-calibration behavior unchanged"
+    ]
+  },
+  "dungeon_features_selected_green_connector_5px_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "Selected green search-overview connector now pulses in brightness at a fixed 5px thickness, for both floor-item and wall-feature results. All other connectors remain steady orange at 3px. Retains pulse restart on navigation, including last-to-first wrap."
+  },
+  "dungeon_features_selected_green_connector_20px_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "Increase selected green search overview connector from 5px to a fixed 20px stroke for both floor-item and wall-feature searches, preserving the 1.2 second green brightness pulse and selection wrap-around reset.",
+    "preserved": [
+      "All non-selected connectors remain steady orange at 3px",
+      "Green map tile selection rectangle unchanged",
+      "All search controls, right-hand item preview and DOS renderer unaffected"
+    ]
+  },
+  "dungeon_features_selected_green_connector_5px_correction_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "Correct selected connector stroke from fixed 20px to fixed 5px for both floor and wall search overviews; green brightness continues pulsing, other orange connectors remain at 3px.",
+    "preserved": [
+      "Selection pulse restart including result wrap-around",
+      "Search controls and map layout",
+      "All existing progression history"
+    ]
+  },
+  "viewport_missing_artwork_cyan_diagnostics_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "ViewportLayoutEditor.cs",
+    "change": "Converted the shared Gold Key / ground-artwork registry diagnostic and 129 other missing, unreadable, wrong-size or unmapped visual artwork diagnostics from Debug.LogError to cyan Debug.Log messages. 130 artwork-only call sites changed, with a shared LogMissingArtworkCyan formatting method.",
+    "preserved": [
+      "No-fallback policy and all missing/invalid asset validation checks",
+      "Actual data-load, calibration save, gameplay-state, and other operational errors remain red",
+      "DOS 6-bit scaling, V17 rendering, Hook/Grate/Manacles/Slime perspectives and calibrations untouched",
+      "Latest DungeonFeatureEditor search and green 5px pulse checkpoint untouched"
+    ]
   }
 }

@@ -1009,6 +1009,9 @@ public class DungeonFeatureEditor : EditorWindow
   private string featureSearchText = string.Empty;
   private readonly List<Vector2Int> featureSearchTiles = new List<Vector2Int>();
   private int featureSearchIndex = -1;
+  // Reset the selected green connector's pulse whenever navigation changes
+  // the highlighted tile, including wrapping from the last match to the first.
+  private double selectedConnectorPulseStartTime;
   // Matching floor-item or wall-ornament tiles can share one right-side
   // preview and orange-connector overview; other feature searches keep their
   // original single-tile behavior.
@@ -1093,7 +1096,7 @@ public class DungeonFeatureEditor : EditorWindow
   {
     bool changed = SyncLevelFromViewEdit();
     changed |= SyncSelectionFromViewEdit();
-    if (changed)
+    if (changed || searchOverviewActive)
       Repaint();
   }
 
@@ -1546,6 +1549,9 @@ public class DungeonFeatureEditor : EditorWindow
       return;
     featureSearchIndex = (featureSearchIndex + delta + featureSearchTiles.Count)
         % featureSearchTiles.Count;
+    // Restart the bright-green phase for every selected match, especially
+    // when Enter wraps e.g. Apple 5/5 -> Apple 1/5.
+    selectedConnectorPulseStartTime = EditorApplication.timeSinceStartup;
     Vector2Int tile = featureSearchTiles[featureSearchIndex];
     inspectedFloorItemX = tile.x;
     inspectedFloorItemY = tile.y;
@@ -1768,6 +1774,29 @@ public class DungeonFeatureEditor : EditorWindow
     }
   }
 
+  private bool TryGetSelectedSearchTile(out Vector2Int tile)
+  {
+    if (featureSearchIndex >= 0 && featureSearchIndex < featureSearchTiles.Count)
+    {
+      tile = featureSearchTiles[featureSearchIndex];
+      return true;
+    }
+
+    tile = default;
+    return false;
+  }
+
+  private float GetSelectedSearchConnectorPulse()
+  {
+    const double pulsePeriodSeconds = 1.2d;
+    double elapsed = System.Math.Max(0d,
+        EditorApplication.timeSinceStartup - selectedConnectorPulseStartTime);
+    double phase = (elapsed % pulsePeriodSeconds) / pulsePeriodSeconds;
+    // Cosine starts at maximum brightness and width on selection, rather
+    // than inheriting an arbitrary dim phase from the global editor clock.
+    return 0.5f + 0.5f * Mathf.Cos((float)(phase * 2d * System.Math.PI));
+  }
+
   // Searching for a floor item shows one item preview at the right and
   // connects EVERY matching floor tile to it. Coordinates remain in GUI
   // space (after EndScrollView), so the panel can sit at the window top.
@@ -1781,17 +1810,36 @@ public class DungeonFeatureEditor : EditorWindow
     float mapRight = mapRect.xMax - mapScroll.x + scrollViewport.x;
     Rect panel = new Rect(mapRight + 8f, 29f, panelWidth, panelHeight);
     Vector3 connectorEnd = new Vector3(panel.xMin, panel.center.y, 0f);
+    bool hasSelectedTile = TryGetSelectedSearchTile(out Vector2Int selectedTile);
+    float pulse = GetSelectedSearchConnectorPulse();
     Handles.BeginGUI();
     Color previousColor = Handles.color;
-    Handles.color = new Color(1f, 0.55f, 0f, 1f);
+    Color baseConnectorColor = new Color(1f, 0.55f, 0f, 1f);
     foreach (Vector2Int tile in floorSearchOverviewTiles)
     {
+      if (hasSelectedTile && tile == selectedTile)
+        continue;
+
       Vector3 start = new Vector3(
           mapRect.x + (tile.x + 0.5f) * CellSize
               - mapScroll.x + scrollViewport.x,
           mapRect.y + (tile.y + 0.5f) * CellSize
               - mapScroll.y + scrollViewport.y, 0f);
-      Handles.DrawAAPolyLine(2f, start, connectorEnd);
+      Handles.color = baseConnectorColor;
+      Handles.DrawAAPolyLine(3f, start, connectorEnd);
+    }
+    if (hasSelectedTile && floorSearchOverviewTiles.Contains(selectedTile))
+    {
+      Vector3 start = new Vector3(
+          mapRect.x + (selectedTile.x + 0.5f) * CellSize
+              - mapScroll.x + scrollViewport.x,
+          mapRect.y + (selectedTile.y + 0.5f) * CellSize
+              - mapScroll.y + scrollViewport.y, 0f);
+      // Selected connector stays 5 px wide; only its green brightness pulses.
+      Handles.color = Color.Lerp(
+          new Color(0f, 0.55f, 0f, 1f),
+          new Color(0.25f, 1f, 0.25f, 1f), pulse);
+      Handles.DrawAAPolyLine(5f, start, connectorEnd);
     }
     Handles.color = previousColor;
     Handles.EndGUI();
@@ -1825,17 +1873,36 @@ public class DungeonFeatureEditor : EditorWindow
     float mapRight = mapRect.xMax - mapScroll.x + scrollViewport.x;
     Rect panel = new Rect(mapRight + 8f, 29f, panelWidth, panelHeight);
     Vector3 connectorEnd = new Vector3(panel.xMin, panel.center.y, 0f);
+    bool hasSelectedTile = TryGetSelectedSearchTile(out Vector2Int selectedTile);
+    float pulse = GetSelectedSearchConnectorPulse();
     Handles.BeginGUI();
     Color previousColor = Handles.color;
-    Handles.color = new Color(1f, 0.55f, 0f, 1f);
+    Color baseConnectorColor = new Color(1f, 0.55f, 0f, 1f);
     foreach (Vector2Int tile in wallSearchOverviewTiles)
     {
+      if (hasSelectedTile && tile == selectedTile)
+        continue;
+
       Vector3 start = new Vector3(
           mapRect.x + (tile.x + 0.5f) * CellSize
               - mapScroll.x + scrollViewport.x,
           mapRect.y + (tile.y + 0.5f) * CellSize
               - mapScroll.y + scrollViewport.y, 0f);
-      Handles.DrawAAPolyLine(2f, start, connectorEnd);
+      Handles.color = baseConnectorColor;
+      Handles.DrawAAPolyLine(3f, start, connectorEnd);
+    }
+    if (hasSelectedTile && wallSearchOverviewTiles.Contains(selectedTile))
+    {
+      Vector3 start = new Vector3(
+          mapRect.x + (selectedTile.x + 0.5f) * CellSize
+              - mapScroll.x + scrollViewport.x,
+          mapRect.y + (selectedTile.y + 0.5f) * CellSize
+              - mapScroll.y + scrollViewport.y, 0f);
+      // Selected connector stays 5 px wide; only its green brightness pulses.
+      Handles.color = Color.Lerp(
+          new Color(0f, 0.55f, 0f, 1f),
+          new Color(0.25f, 1f, 0.25f, 1f), pulse);
+      Handles.DrawAAPolyLine(5f, start, connectorEnd);
     }
     Handles.color = previousColor;
     Handles.EndGUI();
@@ -3732,6 +3799,7 @@ public class DungeonFeatureEditor : EditorWindow
       if (featureSearchTiles[i].x != x || featureSearchTiles[i].y != y)
         continue;
       featureSearchIndex = i;
+      selectedConnectorPulseStartTime = EditorApplication.timeSinceStartup;
       inspectedFloorItemX = x;
       inspectedFloorItemY = y;
       inspectedOrnamentX = x;
