@@ -214,14 +214,14 @@ public class DungeonFeatureEditor : EditorWindow
   private const int MaximumDungeonTilesPerAxis = 32;
   private const string MapZoomPreferenceKey = "DungeonFeatureEditor.MapZoomOutStep";
   // Two wheel positions: normal 1x and fit a full 32x32 map in the viewport.
-  private float mapZoom => floorSearchOverviewActive
+  private float mapZoom => searchOverviewActive
       ? GetFitMapZoom() : GetZoomForStep(mapZoomStep);
   private float GetFitMapZoom()
   {
     // Reserve space for map coordinates, wall labels, scrollbars and header.
     // Keep room for the fixed-width matching-item preview to the right.
     float availableWidth = Mathf.Max(1f, position.width
-        - (floorSearchOverviewActive ? 180f : 24f));
+        - (searchOverviewActive ? 180f : 24f));
     float availableHeight = Mathf.Max(1f, position.height - 110f);
     float requiredWidth = LabelLeftMargin
         + Mathf.Max(MaximumDungeonTilesPerAxis, OutsideNameColumnX + 2) * BaseCellSize;
@@ -978,12 +978,16 @@ public class DungeonFeatureEditor : EditorWindow
   private string featureSearchText = string.Empty;
   private readonly List<Vector2Int> featureSearchTiles = new List<Vector2Int>();
   private int featureSearchIndex = -1;
-  // All matching floor-item tiles share one right-side preview and connector
-  // overview; ordinary feature searches retain their original behavior.
+  // Matching floor-item or wall-ornament tiles can share one right-side
+  // preview and orange-connector overview; other feature searches keep their
+  // original single-tile behavior.
   private readonly List<Vector2Int> floorSearchOverviewTiles =
       new List<Vector2Int>();
   private FloorItemPlacementRecord floorSearchOverviewItem;
-  private bool floorSearchOverviewActive;
+  private readonly List<Vector2Int> wallSearchOverviewTiles =
+      new List<Vector2Int>();
+  private OriginalWallOrnamentMarker wallSearchOverviewMarker;
+  private bool searchOverviewActive;
   private bool focusSearchOnMouse5;
   private bool scrollToSearchTile;
   private static readonly Color FeatureSearchBorderColor = new Color(0f, 1f, 0f, 1f);
@@ -1377,13 +1381,16 @@ public class DungeonFeatureEditor : EditorWindow
     scrollToSearchTile = false;
     floorSearchOverviewTiles.Clear();
     floorSearchOverviewItem = null;
-    floorSearchOverviewActive = false;
+    wallSearchOverviewTiles.Clear();
+    wallSearchOverviewMarker = null;
+    searchOverviewActive = false;
     if (map == null || string.IsNullOrWhiteSpace(featureSearchText))
       return;
 
     string query = featureSearchText.Trim();
     HashSet<int> matched = new HashSet<int>();
     HashSet<int> matchedFloorTiles = new HashSet<int>();
+    HashSet<int> matchedWallTiles = new HashSet<int>();
     foreach (var pair in resolvedFloorItems)
     {
       List<FloorItemPlacementRecord> records = pair.Value;
@@ -1408,7 +1415,13 @@ public class DungeonFeatureEditor : EditorWindow
       {
         if (ornament != null && FeatureNameMatches(ornament.Type, query)
             && map.IsInside(ornament.X, ornament.Y))
-          matched.Add(PackFloorFeatureTile(ornament.X, ornament.Y));
+        {
+          int tileKey = PackFloorFeatureTile(ornament.X, ornament.Y);
+          matched.Add(tileKey);
+          matchedWallTiles.Add(tileKey);
+          if (wallSearchOverviewMarker == null)
+            wallSearchOverviewMarker = ornament;
+        }
       }
     }
     for (int y = 0; y < map.Height; y++)
@@ -1470,11 +1483,18 @@ public class DungeonFeatureEditor : EditorWindow
           featureSearchTiles.Add(new Vector2Int(x, y));
     // Use deterministic map-row order for every orange connector.
     foreach (Vector2Int tile in featureSearchTiles)
-      if (matchedFloorTiles.Contains(PackFloorFeatureTile(tile.x, tile.y)))
+    {
+      int tileKey = PackFloorFeatureTile(tile.x, tile.y);
+      if (matchedFloorTiles.Contains(tileKey))
         floorSearchOverviewTiles.Add(tile);
-    floorSearchOverviewActive = floorSearchOverviewItem != null
-        && floorSearchOverviewTiles.Count > 0;
-    if (floorSearchOverviewActive)
+      if (matchedWallTiles.Contains(tileKey))
+        wallSearchOverviewTiles.Add(tile);
+    }
+    searchOverviewActive = (floorSearchOverviewItem != null
+            && floorSearchOverviewTiles.Count > 0)
+        || (wallSearchOverviewMarker != null
+            && wallSearchOverviewTiles.Count > 0);
+    if (searchOverviewActive)
       mapScroll = Vector2.zero; // Fit the whole map instead of following a tile.
     if (featureSearchTiles.Count > 0)
       NavigateFeatureSearch(1);
@@ -1493,7 +1513,7 @@ public class DungeonFeatureEditor : EditorWindow
     inspectedOrnamentY = tile.y;
     inspectedInscriptionX = tile.x;
     inspectedInscriptionY = tile.y;
-    scrollToSearchTile = !floorSearchOverviewActive;
+    scrollToSearchTile = !searchOverviewActive;
     Repaint();
   }
 
@@ -1545,7 +1565,7 @@ public class DungeonFeatureEditor : EditorWindow
     float mapPixelWidth = map.Width * CellSize;
     float mapPixelHeight = map.Height * CellSize;
     List<FloorItemPlacementRecord> previewRecords = GetInspectedFloorItems();
-    bool showItemPreview = !floorSearchOverviewActive
+    bool showItemPreview = !searchOverviewActive
         && previewRecords != null && previewRecords.Count > 0;
     // Reserve sufficient horizontal space for one row of item previews.
     List<OriginalWallOrnamentMarker> selectedOrnaments = GetSelectedWallOrnaments();
@@ -1554,7 +1574,7 @@ public class DungeonFeatureEditor : EditorWindow
         : 0f;
     float popupReserve = Mathf.Max(floorReserve,
         selectedOrnaments.Count > 0 ? 170f * mapZoom : 0f);
-    if (floorSearchOverviewActive)
+    if (searchOverviewActive)
       popupReserve = Mathf.Max(popupReserve, 170f);
     List<DungeonInscriptionRecord> selectedInscriptions =
         GetInscriptionRecordsAt(inspectedInscriptionX, inspectedInscriptionY);
@@ -1657,12 +1677,12 @@ public class DungeonFeatureEditor : EditorWindow
     // The click may have selected a new tile during this GUI event.
     // Floor-item panels are rendered AFTER EndScrollView, so they can reach
     // the true top of the window without being clipped by its scroll area.
-    bool showFloorPopup = !floorSearchOverviewActive
+    bool showFloorPopup = !searchOverviewActive
         && GetInscriptionRecordsAt(
         inspectedInscriptionX, inspectedInscriptionY).Count == 0
         && GetInspectedFloorItems() != null
         && GetInspectedFloorItems().Count > 0;
-    if (!showFloorPopup && !floorSearchOverviewActive)
+    if (!showFloorPopup && !searchOverviewActive)
     {
       if (GetInscriptionRecordsAt(inspectedInscriptionX, inspectedInscriptionY).Count > 0)
         DrawSelectedInscriptionPreview(mapRect);
@@ -1677,10 +1697,13 @@ public class DungeonFeatureEditor : EditorWindow
 
     EditorGUILayout.EndScrollView();
 
-    if (floorSearchOverviewActive)
+    if (searchOverviewActive)
     {
       Rect scrollViewport = GUILayoutUtility.GetLastRect();
-      DrawFloorSearchOverview(mapRect, scrollViewport);
+      if (floorSearchOverviewItem != null && floorSearchOverviewTiles.Count > 0)
+        DrawFloorSearchOverview(mapRect, scrollViewport);
+      else if (wallSearchOverviewMarker != null && wallSearchOverviewTiles.Count > 0)
+        DrawWallSearchOverview(mapRect, scrollViewport);
     }
     else if (showFloorPopup)
     {
@@ -1758,6 +1781,64 @@ public class DungeonFeatureEditor : EditorWindow
         panel.width - 10f, 30f),
         GetFloorItemDisplayName(floorSearchOverviewItem), itemStyle);
     Texture2D icon = GetFloorItemInventoryMapIcon(floorSearchOverviewItem);
+    if (icon != null)
+      GUI.DrawTexture(new Rect(panel.center.x - 16f, panel.y + 62f,
+          32f, 32f), icon, ScaleMode.StretchToFill, true);
+  }
+
+  // Searching for a wall ornament uses the same top-right overview panel and
+  // orange connector fan-out as floor-item searches. The map is already in
+  // fit-to-window mode while any search overview is active.
+  private void DrawWallSearchOverview(Rect mapRect, Rect scrollViewport)
+  {
+    if (wallSearchOverviewMarker == null || wallSearchOverviewTiles.Count == 0)
+      return;
+
+    const float panelWidth = 142f;
+    const float panelHeight = 112f;
+    float mapRight = mapRect.xMax - mapScroll.x + scrollViewport.x;
+    Rect panel = new Rect(mapRight + 8f, 29f, panelWidth, panelHeight);
+    Vector3 connectorEnd = new Vector3(panel.xMin, panel.center.y, 0f);
+    Handles.BeginGUI();
+    Color previousColor = Handles.color;
+    Handles.color = new Color(1f, 0.55f, 0f, 1f);
+    foreach (Vector2Int tile in wallSearchOverviewTiles)
+    {
+      Vector3 start = new Vector3(
+          mapRect.x + (tile.x + 0.5f) * CellSize
+              - mapScroll.x + scrollViewport.x,
+          mapRect.y + (tile.y + 0.5f) * CellSize
+              - mapScroll.y + scrollViewport.y, 0f);
+      Handles.DrawAAPolyLine(2f, start, connectorEnd);
+    }
+    Handles.color = previousColor;
+    Handles.EndGUI();
+
+    EditorGUI.DrawRect(panel, new Color(0.15f, 0.15f, 0.15f, 1f));
+    Color border = new Color(0.45f, 0.45f, 0.45f, 1f);
+    EditorGUI.DrawRect(new Rect(panel.x, panel.y, panel.width, 1f), border);
+    EditorGUI.DrawRect(new Rect(panel.x, panel.yMax - 1f, panel.width, 1f), border);
+    EditorGUI.DrawRect(new Rect(panel.x, panel.y, 1f, panel.height), border);
+    EditorGUI.DrawRect(new Rect(panel.xMax - 1f, panel.y, 1f, panel.height), border);
+
+    GUIStyle heading = new GUIStyle(EditorStyles.miniBoldLabel)
+    {
+      alignment = TextAnchor.MiddleCenter
+    };
+    GUI.Label(new Rect(panel.x + 5f, panel.y + 6f,
+        panel.width - 10f, 18f),
+        wallSearchOverviewTiles.Count + (wallSearchOverviewTiles.Count == 1
+            ? " matching wall" : " matching walls"), heading);
+    GUIStyle itemStyle = new GUIStyle(EditorStyles.boldLabel)
+    {
+      alignment = TextAnchor.MiddleCenter,
+      normal = { textColor = Color.green },
+      wordWrap = true
+    };
+    GUI.Label(new Rect(panel.x + 5f, panel.y + 25f,
+        panel.width - 10f, 30f),
+        wallSearchOverviewMarker.Type, itemStyle);
+    Texture2D icon = GetOrnamentMapIcon(wallSearchOverviewMarker.Type);
     if (icon != null)
       GUI.DrawTexture(new Rect(panel.center.x - 16f, panel.y + 62f,
           32f, 32f), icon, ScaleMode.StretchToFill, true);
@@ -1912,7 +1993,7 @@ public class DungeonFeatureEditor : EditorWindow
     Event e = Event.current;
     if (e.type != EventType.ScrollWheel || !contentRect.Contains(e.mousePosition))
       return;
-    if (floorSearchOverviewActive)
+    if (searchOverviewActive)
     {
       e.Use(); // Automatic fit while viewing all matched item tiles.
       return;

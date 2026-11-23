@@ -5586,5 +5586,17 @@
       "all approved ornament drawing and calibrations"
     ],
     "test": "In Dungeon Features search apple, press Backspace once: field clears and normal map zoom returns, typing works immediately. Repeat with Reset button."
+  },
+  "dungeon_features_search_floor_and_wall_overview_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "Extended Dungeon Features search overview so matching wall-attached features/ornaments participate like accessible floor-item tiles: top-right preview panel, orange connector fan-out to every match, and automatic fit-to-window map zoom.",
+    "preserved": [
+      "Existing floor-item search overview, green selected-tile rectangle, and Enter / < > navigation",
+      "Reset and Backspace search clearing behavior with retained search focus",
+      "Top-aligned preview panel and map tile dimensions",
+      "All ViewEdit ornament renderer, calibration, and DOS rendering behavior"
+    ]
   }
 }
