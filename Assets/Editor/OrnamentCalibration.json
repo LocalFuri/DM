@@ -28,6 +28,13 @@
             "dx": 0,
             "dy": 2,
             "mirror": false
+        },
+        {
+            "key": "OrnamentProjection:Manacles:S3:Left",
+            "artworkSignature": "",
+            "dx": 0,
+            "dy": 1,
+            "mirror": false
         }
     ]
 }

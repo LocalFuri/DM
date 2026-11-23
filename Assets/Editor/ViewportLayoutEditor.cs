@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -1599,7 +1599,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:ChampionMirror:S3:Right|138|116|true|639291392277477819
   // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
   // REF OrnamentProjection:Hook:S2:Left|66|116|false|639299399669516077
-  // REF OrnamentProjection:Manacles:S3:Left|79|108|false|639299448141357825
+  // REF OrnamentProjection:Manacles:S3:Left|77|109|false|639310521313093730
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
@@ -28208,6 +28208,23 @@ private static void HandleGameViewPointerDown(
         RefreshEditModePreview();
         RepaintGameViews();
         Repaint();
+        return true;
+      }
+      // Manacles S3 is drawn by its own direct V17-gated path, which reads
+      // accepted absolute X/Y rather than the generic JSON offset store.
+      // Persist via the same path the S3 renderer reads, so Apply does not
+      // appear to restore the previous coordinates on the next repaint.
+      if (isManaclesS3)
+      {
+        if (SaveAcceptedOrnamentReference(key, editX, editY, codedMirror))
+        {
+          previewFeaturePositionOverrides.Remove(key);
+          previewFeatureMirrorOverrides.Remove(key);
+          previewPositionChangedThisFrame = true;
+          RefreshEditModePreview();
+          RepaintGameViews();
+          Repaint();
+        }
         return true;
       }
       // Global offset, not a dungeon-coordinate correction. A positive dy

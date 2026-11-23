@@ -18,7 +18,7 @@
     "limitation": "This protocol applies once Progression.json is supplied/read; a rule inside the file alone cannot trigger loading an absent file.",
     "recommended_new_session_message": "Dungeon Master — read the complete Progression.json, apply all permanent rules, and continue from the latest checkpoint."
   },
-  "date": "2026-11-22",
+  "date": "2026-11-23",
   "todo_manacles_dos_f1_s2_20261109": {
     "category": "To do List",
     "priority": 0,
@@ -57,7 +57,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-22 end-of-session: Hook S2 left and Manacles S2 left approved versus original PC DOS. Shared DOS 6-bit scaler installed for F2/F3 and S2 Hook/Manacles; next work is Hook S3 left. No outstanding Unity compilation errors.",
+  "checkpoint": "2026-11-23: Hook S2/S3, Grate S2/S3 and Manacles S2/S3 visually approved by user; Manacles S3 ViewEdit X/Y recalibrated. Cursor read-only legacy/hardcode audit ongoing, restricted to ViewportLayoutEditor.cs. Preserve approved geometry and DOS 6-bit scaling.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -113,11 +113,10 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "FIRST TOMORROW: Compare Hook S3 left Unity vs original PC DOS, focusing on X/Y/width/height; screenshot pair required only if prior images unavailable. No Unity modifications until evidence.",
-    "Then verify Manacles S3 left and the S2/S3 right-side mirrored views; preserve approved Hook S2/Manacles S2/front rendering.",
-    "Check S3 side source, generic DOS 6-bit sampling and original DOS layout if mismatches; avoid ornament-specific offsets and old legacy scaler.",
-    "When modifying code, request latest ViewportLayoutEditor.cs/ZIP from the user and use checksum-guarded minimal patch with backup; the local latest source itself has not been uploaded since final S2 patch.",
-    "Preserve recursive Europe/Berlin timestamps on new files and every ZIP entry, including nested folders."
+    "FIRST: Receive Cursor legacy/hardcode read-only audit (ViewportLayoutEditor.cs only); investigate evidence with line numbers and no speculative deletions.",
+    "NEXT: Plan incremental generic renderer migration that preserves user-approved Hook S2/S3, Grate S2/S3 and Manacles S2/S3 with Manacles S3 recalibrated.",
+    "Before changing source, inspect latest installed ViewportLayoutEditor.cs; original DOS 6-bit sampling, V17 walls, ViewEdit calibration and mirroring must remain intact.",
+    "Retain ongoing Phase 8 runtime baseline export verification and AppleVideoCompare capture verification as separate pending work."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -5095,5 +5094,36 @@
       "AppleVideoCompare capture behavior still untested after warning fix (only Console warning disappearance confirmed)."
     ],
     "note": "Do not claim all Phase 11 render paths are fully generic or that all runtime pixel hashes are verified."
+  },
+  "checkpoint_20261123_sides_approved_and_cursor_audit": {
+    "date_local": "2026-11-23T18:39:04+01:00",
+    "status": "USER VERIFIED — SIX SIDE PERSPECTIVES APPROVED; CURSOR AUDIT IN PROGRESS",
+    "user_verified": [
+      "Hook S2 and S3 verified and approved following Phase 11 native-source registry integration.",
+      "Grate S2 and S3 retain prior user approval versus original PC DOS.",
+      "Manacles S2 and S3 verified and approved; Manacles S3 X/Y recalibrated with ViewEdit Apply after previous values were being restored."
+    ],
+    "manacles_s3_apply_history": "Earlier ViewEdit Apply restored previous values; a narrow source fix was supplied on 2026-11-23. User subsequently confirmed Manacles S3 recalibrated and approved. Exact installed source/version and persistence after Unity restart not separately verified.",
+    "algorithm_status": "Manacles S2 and S3 use shared DOS 6-bit scaling, while dedicated side render/blit functions still exist. Do not represent entire ornament pipeline as fully generic.",
+    "cursor_parallel_audit": {
+      "status": "IN PROGRESS — no report received",
+      "scope": "ViewportLayoutEditor.cs ONLY",
+      "restrictions": "Read only; no edits; no other files, no project-wide search, no Git history, no running scripts or builds.",
+      "goal": "Identify legacy and hardcoded ornament-specific rendering paths with line-number evidence and migration risks."
+    },
+    "preserve": [
+      "Hook S2/S3",
+      "Grate S2/S3",
+      "Manacles S2/S3 (including new S3 calibration)",
+      "V17 wall geometry",
+      "Shared DOS 6-bit scaling",
+      "Approved ViewEdit interactions"
+    ],
+    "next_actions": [
+      "Receive Cursor read-only audit report and prioritize evidence-backed generic renderer consolidation.",
+      "Before any code patch, review exact latest installed ViewportLayoutEditor.cs; do not assume prior supplied S3 Apply fix is current.",
+      "Preserve accepted X/Y/width/height and left/right orientation; no changes to verified side perspectives without targeted regression."
+    ],
+    "delivery": "Progression.json-only checkpoint update; no C# modified in this delivery."
   }
 }
