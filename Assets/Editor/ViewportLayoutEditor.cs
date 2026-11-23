@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -1599,7 +1599,7 @@ public class ViewportLayoutEditor : EditorWindow
   // REF OrnamentProjection:ChampionMirror:S3:Right|138|116|true|639291392277477819
   // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
   // REF OrnamentProjection:Hook:S2:Left|66|116|false|639299399669516077
-  // REF OrnamentProjection:Manacles:S3:Left|77|109|false|639310521313093730
+  // REF OrnamentProjection:Manacles:S3:Left|79|108|false|639299448141357825
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
@@ -13614,17 +13614,6 @@ private static void HandleGameViewPointerDown(
     NoteContentRight();
     EditorGUILayout.EndHorizontal();
 
-    // Safe opt-out for comparison with the historical automatic renderer.
-    // Strict mode is on by default and survives Editor recompilation.
-    bool strictBefore = StrictManualOrnamentMode;
-    bool strictAfter = EditorGUILayout.ToggleLeft(
-        "Manual ornaments only (no automatic guesses)", strictBefore);
-    if (strictAfter != strictBefore)
-    {
-      StrictManualOrnamentMode = strictAfter;
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
-    }
-
     // TEMPORARY: shared side-wall Y-projection experiments (Hook + Manacles).
     // No changes are saved to ViewEdit calibration or renderer assets.
     EditorGUILayout.BeginVertical(EditorStyles.helpBox);
@@ -21417,13 +21406,6 @@ private static void HandleGameViewPointerDown(
     BlitViAltarS2IntoPreview(pixels);
   }
 
-  private const string StrictManualOrnamentPref = "DM.ViewEdit.StrictManualOrnaments";
-  private static bool StrictManualOrnamentMode
-  {
-    get { return EditorPrefs.GetBool(StrictManualOrnamentPref, true); }
-    set { EditorPrefs.SetBool(StrictManualOrnamentPref, value); }
-  }
-
   /// <summary>
   /// Post-map feature layer. This method is intentionally called only after
   /// floor/ceiling/walls/doors/stairs have completed their geometry pass.
@@ -21446,9 +21428,6 @@ private static void HandleGameViewPointerDown(
 
     // Legacy champion-mirror drawing has been removed deliberately.
     // Mirror data and calibration controls remain for a unified renderer.
-    // Ordinary wall-ornament passes must still execute even when strict
-    // manual calibration mode is active; do not return before those passes.
-
     // Unified mirror preview, first stage: the same front-wall geometry,
     // calibration key and artwork selection for every champion.  It also
     // runs before a calibration exists so ViewEdit can visually position it.
@@ -34820,8 +34799,8 @@ private static void HandleGameViewPointerDown(
   {
     string key = FloorCalibrationKey(item.type, "F2", corner);
     if (missingDedicatedF2Calibrations.Add(key))
-      Debug.LogError("DEDICATED F2 CALIBRATION MISSING: " + key
-          + ". Set X/Y in ViewEdit and press Apply. No CSBwin position fallback.");
+      Debug.Log("<color=cyan>CYAN | ViewEdit F2 CALIBRATION MISSING | " + key
+          + " | Set X/Y in ViewEdit and press Apply. No CSBwin position fallback.</color>");
   }
 
   private bool HasDedicatedF2Artwork(string itemType)
@@ -34839,16 +34818,16 @@ private static void HandleGameViewPointerDown(
   {
     string key = FloorCalibrationKey(item.type, "F3", corner);
     if (missingDedicatedF3Calibrations.Add(key))
-      Debug.LogError("DEDICATED F3 CALIBRATION MISSING: " + key
-          + ". Set X/Y in ViewEdit and press Apply. No CSBwin position fallback.");
+      Debug.Log("<color=cyan>CYAN | ViewEdit F3 CALIBRATION MISSING | " + key
+          + " | Set X/Y in ViewEdit and press Apply. No CSBwin position fallback.</color>");
   }
 
   private void ReportMissingDedicatedProjectionArtwork(FloorItemPlacement item, string view)
   {
     string key = FloorCalibrationKey(item.type, view, GetFloorScreenCorner(item));
     if (missingDedicatedProjectionArtwork.Add(key))
-      Debug.LogError("DEDICATED " + view + " ARTWORK MISSING: " + item.type
-          + " requires registered native " + view + " artwork. Old CSBwin render is disabled.");
+      Debug.Log("<color=cyan>CYAN | ViewEdit " + view + " ARTWORK MISSING | " + item.type
+          + " requires registered native " + view + " artwork. Old CSBwin render is disabled.</color>");
   }
 
   private bool HasDedicatedF3Artwork(string itemType)
@@ -37516,27 +37495,6 @@ private static void HandleGameViewPointerDown(
               HookD3FrontHeight,
               HookD3FrontX,
               HookD3FrontY));
-
-  /// <summary>
-  /// Shared generated wall-ornament path.
-  /// The source art stays ornament-specific, but the scaling/palette algorithm
-  /// is common. The coordinate set supplies the depth-specific destination size.
-  /// </summary>
-  private static Texture2D GenerateWallOrnamentForDepth(
-      Texture2D source,
-      WallOrnamentDepthSlot slot,
-      byte[] colorMap,
-      string textureName)
-  {
-    return GenerateDmScaledWallDecoration(
-        source,
-        slot.width,
-        slot.height,
-        colorMap,
-        textureName,
-        roundBiasOverride: (ReferenceEquals(colorMap, WallOrnamentFarColorMap) ? 0 : 0x7fff),
-        sampleTopDown: false);
-  }
 
   private static void BlitWallOrnamentIntoPreview(
       Color32[] dest,

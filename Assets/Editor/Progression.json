@@ -57,7 +57,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-23: Hook S2/S3, Grate S2/S3 and Manacles S2/S3 visually approved by user; Manacles S3 ViewEdit X/Y recalibrated. Cursor read-only legacy/hardcode audit ongoing, restricted to ViewportLayoutEditor.cs. Preserve approved geometry and DOS 6-bit scaling.",
+  "checkpoint": "2026-11-23: Cursor low-risk cleanup B prepared, Unity verification pending. Hook/Grate/Manacles S2/S3 approved; Manacles S3 recalibration retained. Cursor audit findings received. Preserve DOS 6-bit scaling.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -113,10 +113,8 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "FIRST: Receive Cursor legacy/hardcode read-only audit (ViewportLayoutEditor.cs only); investigate evidence with line numbers and no speculative deletions.",
-    "NEXT: Plan incremental generic renderer migration that preserves user-approved Hook S2/S3, Grate S2/S3 and Manacles S2/S3 with Manacles S3 recalibrated.",
-    "Before changing source, inspect latest installed ViewportLayoutEditor.cs; original DOS 6-bit sampling, V17 walls, ViewEdit calibration and mirroring must remain intact.",
-    "Retain ongoing Phase 8 runtime baseline export verification and AppleVideoCompare capture verification as separate pending work."
+    "Apply phase A and compile/verify ViewEdit, then phase B and compile/verify ornament rendering. Phase B contains A changes.",
+    "Next migration only after user approves clean compilation and visual regression; preserve all six S2/S3 side views."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -5125,5 +5123,71 @@
       "Preserve accepted X/Y/width/height and left/right orientation; no changes to verified side perspectives without targeted regression."
     ],
     "delivery": "Progression.json-only checkpoint update; no C# modified in this delivery."
+  },
+  "ornament_cleanup_20261123_phase_b": {
+    "date": "2026-11-23T18:44:25+01:00",
+    "status": "SOURCE PATCH PREPARED — UNITY COMPILE/VIEWEDIT REGRESSION CHECK PENDING",
+    "scope": "ViewportLayoutEditor.cs only; code-only cleanup (no rendering change intended)",
+    "change": "Removed private unused GenerateWallOrnamentForDepth wrapper. The live GenerateDmScaledWallDecoration 6-bit scaling routine and its call sites are untouched.",
+    "source_baseline": "Manacles_S3_Apply_Fix_20261123.zip (includes previously supplied S3 Apply persistence correction); verify this matches installed Unity source",
+    "cursor_audit": "Cursor identified dead manual-mode switch and unused private depth wrapper in 2026-11-23 ViewportLayoutEditor.cs-only research.",
+    "previous_source_sha256": "822a217eb82e495785c59adb6cab1e09eda959a61d8fd4f18613a04f9a2537b4",
+    "patched_source_sha256": "349cff6b15a548431892251e99dd03ca175d6f3144e534b7ffdf7de79d499377",
+    "safeguards": [
+      "No ornament scaling/geometry/blitter call sites altered",
+      "Manacles S3 Apply fix retained",
+      "Six approved Hook/Grate/Manacles S2/S3 views protected",
+      "No Unity Tools menu commands added"
+    ],
+    "verification": [
+      "Compile in Unity 6 (no errors or warnings)",
+      "Confirm ViewEdit opens and ornaments still render",
+      "Verify Manacles S3 Apply retains calibrated X/Y",
+      "Spot-check S2/S3 Hook, Grate, Manacles (no pixel differences expected)"
+    ],
+    "stage": "B of B; apply after A"
+  },
+  "ornament_cleanup_20261123_phase_a": {
+    "date": "2026-11-23T18:44:25+01:00",
+    "status": "SOURCE PATCH PREPARED — UNITY COMPILE/VIEWEDIT REGRESSION CHECK PENDING",
+    "scope": "ViewportLayoutEditor.cs only; code-only cleanup (no rendering change intended)",
+    "change": "Removed nonfunctional Manual ornaments only ViewEdit toggle, its EditorPrefs getter/setter and outdated associated comment. No ornament drawing or calibration paths changed.",
+    "source_baseline": "Manacles_S3_Apply_Fix_20261123.zip (includes previously supplied S3 Apply persistence correction); verify this matches installed Unity source",
+    "cursor_audit": "Cursor identified dead manual-mode switch and unused private depth wrapper in 2026-11-23 ViewportLayoutEditor.cs-only research.",
+    "previous_source_sha256": "4049d8176fc3a4b64b7eabc940b53df5b4dd57e76c19ee56422c18d66afc576b",
+    "patched_source_sha256": "822a217eb82e495785c59adb6cab1e09eda959a61d8fd4f18613a04f9a2537b4",
+    "safeguards": [
+      "No ornament scaling/geometry/blitter call sites altered",
+      "Manacles S3 Apply fix retained",
+      "Six approved Hook/Grate/Manacles S2/S3 views protected",
+      "No Unity Tools menu commands added"
+    ],
+    "verification": [
+      "Compile in Unity 6 (no errors or warnings)",
+      "Confirm ViewEdit no longer shows Manual ornaments only toggle",
+      "Verify Manacles S3 Apply retains calibrated X/Y",
+      "Spot-check S2/S3 Hook, Grate, Manacles (no pixel differences expected)"
+    ],
+    "stage": "A of B"
+  },
+  "floor_item_missing_diagnostics_cyan_20261123": {
+    "date": "2026-11-23T18:50:41+01:00",
+    "status": "SOURCE PATCH PREPARED — UNITY COMPILE AND CONSOLE CHECK PENDING",
+    "baseline": "DM_Legacy_Cleanup_B_unused_depth_wrapper_20261123.zip (includes A and Manacles S3 Apply fix)",
+    "scope": "ViewportLayoutEditor.cs, three dedicated missing F2/F3 floor-item diagnostics only",
+    "change": "Changed missing native F2/F3 artwork plus missing F2/F3 calibration diagnostics from orange/red Unity Debug.LogError to cyan rich-text Debug.Log with explicit MISSING labels.",
+    "safeguards": [
+      "One diagnostic per missing key preserved",
+      "No automatic artwork fallback added",
+      "No calibration, scaling, positions, mirroring, blitters, or render decisions changed",
+      "All approved Hook, Grate and Manacles S2/S3 results remain unchanged",
+      "Previous Phase A/B source cleanup preserved"
+    ],
+    "verification": [
+      "Unity Console should show cyan text with ordinary Log icon rather than orange/red Error icon",
+      "Missing Bread F2 still reports artwork missing once and is not drawn without artwork",
+      "No errors/warnings introduced in Unity",
+      "Manacles S3 Apply calibration remains intact"
+    ]
   }
 }
