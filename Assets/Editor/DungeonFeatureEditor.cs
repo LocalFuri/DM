@@ -1612,7 +1612,8 @@ public class DungeonFeatureEditor : EditorWindow
     for (int i = 0; i < lines.Length; i++)
       textWidth = Mathf.Max(textWidth,
           nameStyle.CalcSize(new GUIContent(lines[i])).x);
-    return Mathf.Ceil(textWidth) + 2f;
+    // Allow a little breathing room for the bold label's internal padding.
+    return Mathf.Ceil(textWidth) + 8f;
   }
 
   private float GetSelectedFloorItemPopupWidth(int itemCount)
@@ -1620,10 +1621,21 @@ public class DungeonFeatureEditor : EditorWindow
     List<FloorItemPlacementRecord> records = GetInspectedFloorItems();
     if (records == null || records.Count != itemCount)
       return 0f;
-    float width = 14f + Mathf.Max(0, itemCount - 1) * 2f;
+
+    const float horizontalPadding = 8f;
+    const float itemGap = 2f;
+    float itemsWidth = Mathf.Max(0, itemCount - 1) * itemGap;
     for (int i = 0; i < records.Count; i++)
-      width += GetFloorItemPopupBlockWidth(records[i]);
-    return width;
+      itemsWidth += GetFloorItemPopupBlockWidth(records[i]);
+
+    // The header must fit even when a single item's icon/name is narrow.
+    // Include the actual selected tile coordinates and item count.
+    GUIStyle headingStyle = new GUIStyle(EditorStyles.miniBoldLabel);
+    string header = "(" + inspectedFloorItemX + "," + inspectedFloorItemY
+        + ")  " + itemCount + (itemCount == 1 ? " item" : " items");
+    float headingWidth = headingStyle.CalcSize(new GUIContent(header)).x + 8f;
+    return Mathf.Ceil(2f * horizontalPadding
+        + Mathf.Max(itemsWidth, headingWidth));
   }
 
   private Rect GetSelectedFloorItemPopupRect(Rect mapRect, int itemCount)
@@ -1631,7 +1643,7 @@ public class DungeonFeatureEditor : EditorWindow
     // The map may zoom, but the inspection panel stays at editor GUI 1:1.
     const float unit = 1f;
     float width = GetSelectedFloorItemPopupWidth(itemCount);
-    float height = 7f * unit * 2f + 18f * unit + 64f * unit;
+    float height = 8f * unit * 2f + 18f * unit + 64f * unit;
     float x = mapRect.xMax + 8f;
     float y = mapRect.y - (LabelTopMargin + OutsideFeatureVerticalMargin) * mapZoom
         + 2f;
@@ -1666,10 +1678,10 @@ public class DungeonFeatureEditor : EditorWindow
     EditorGUI.DrawRect(new Rect(popup.xMax - border, popup.y, border, popup.height), borderColor);
 
     const float unit = 1f;
-    float padding = 7f * unit;
+    float padding = 8f * unit;
     float headingHeight = 18f * unit;
     float iconSize = 32f * unit;
-    float itemGap = 1f * unit;
+    float itemGap = 2f * unit;
     GUIStyle heading = new GUIStyle(EditorStyles.miniBoldLabel)
     {
       alignment = TextAnchor.MiddleLeft

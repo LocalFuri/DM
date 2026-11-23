@@ -5399,5 +5399,22 @@
       "No change to ViewportLayoutEditor.cs or DOS renderer."
     ],
     "next_step": "In Unity, click a floor tile containing exactly one item; verify orange line and right-side icon panel, then recheck a multi-item tile."
+  },
+  "dungeon_features_popup_text_fit_20261123": {
+    "date": "2026-11-23 20:09:03 CET",
+    "status": "implemented; Unity compile/visual verification pending",
+    "source": "DungeonFeatureEditor.cs",
+    "issue": "Single-item right-side floor item popup clipped heading (e.g. (14,8) 1 item) because width was calculated only from item labels/icons.",
+    "changes": [
+      "Size panel to max of measured header width and sum of item label widths, with horizontal padding.",
+      "Add extra internal padding for bold name text.",
+      "Match popup height, horizontal padding, and item gaps to measured layout."
+    ],
+    "preserved": [
+      "Single and multiple item preview with orange line",
+      "Map dimensions and green search tile highlight",
+      "DOS ornament rendering, ViewEdit, all approved calibrations"
+    ],
+    "next_step": "Verify Leather Boots single-item popup heading and name are fully visible, and a two-item popup remains correct."
   }
 }
