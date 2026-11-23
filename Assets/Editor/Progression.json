@@ -5361,5 +5361,25 @@
     ],
     "tool_menu": "Existing Tools/Dungeon Feature Editor &f; no additional Tools command",
     "next_test": "Compile in Unity, enter Manacles in Find feature, use < and > and check border stays inside the selected tile; then test a floor item and verify map scale unchanged."
+  },
+  "dungeon_features_search_layout_update_20261123": {
+    "date_local": "2026-11-23",
+    "status": "IMPLEMENTED IN SOURCE — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "changes": [
+      "Move Search item controls to far right of first header line (alongside X/Y/facing)",
+      "Rename Find feature to Search item",
+      "Limit input to 12 characters, including pasted text",
+      "Return or numeric keypad Enter while search field focused navigates to next matching tile",
+      "Increase selected map tile outline to 2 GUI pixels, drawn entirely inside tile bounds"
+    ],
+    "preserved": [
+      "Case-insensitive name search and previous/next cyclic matching",
+      "Current level search scope and matched tile inspection",
+      "No changes to player position, map dimensions, scale, or zoom",
+      "Phase D4 Slime front verification still pending",
+      "All prior ornament approvals and DOS rendering remain unchanged"
+    ],
+    "next_test": "Compile Unity; search slime, press Enter in search field to advance, test 12-character cap, and confirm 2 px green interior border and right-aligned header layout."
   }
 }

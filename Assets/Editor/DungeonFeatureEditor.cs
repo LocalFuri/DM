@@ -1238,40 +1238,54 @@ public class DungeonFeatureEditor : EditorWindow
           GUILayout.ExpandWidth(false), GUILayout.Height(20f));
     }
     GUILayout.FlexibleSpace();
+    DrawFeatureSearchToolbar();
     EditorGUILayout.EndHorizontal();
 
-    DrawFeatureSearchToolbar();
     DrawMapGrid();
   }
 
+  // Search controls share the map/pose header row, aligned to its right edge.
   private void DrawFeatureSearchToolbar()
   {
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.Label("Find feature", GUILayout.Width(80f));
+    GUILayout.Label("Search item", GUILayout.Width(76f));
+    GUI.SetNextControlName("DungeonFeaturesSearchItem");
     EditorGUI.BeginChangeCheck();
     string requested = EditorGUILayout.TextField(featureSearchText,
-        GUILayout.MinWidth(140f), GUILayout.MaxWidth(360f));
-    if (EditorGUI.EndChangeCheck())
+        GUILayout.Width(112f));
+    // Limit query length to twelve characters, including pasted input.
+    if (requested.Length > 12)
+      requested = requested.Substring(0, 12);
+    if (EditorGUI.EndChangeCheck() || requested != featureSearchText)
     {
       featureSearchText = requested;
       RebuildFeatureSearch();
     }
 
+    // Return/KeypadEnter while the input owns focus advances to the next hit.
+    // Consume only this event; the field remains focused for further searching.
+    Event keyEvent = Event.current;
+    if (keyEvent.type == EventType.KeyDown
+        && (keyEvent.keyCode == KeyCode.Return
+            || keyEvent.keyCode == KeyCode.KeypadEnter)
+        && GUI.GetNameOfFocusedControl() == "DungeonFeaturesSearchItem")
+    {
+      NavigateFeatureSearch(1);
+      keyEvent.Use();
+    }
+
     bool hasMatches = featureSearchTiles.Count > 0;
     EditorGUI.BeginDisabledGroup(!hasMatches);
-    if (GUILayout.Button("<", GUILayout.Width(25f)))
+    if (GUILayout.Button("<", GUILayout.Width(24f)))
       NavigateFeatureSearch(-1);
-    if (GUILayout.Button(">", GUILayout.Width(25f)))
+    if (GUILayout.Button(">", GUILayout.Width(24f)))
       NavigateFeatureSearch(1);
     EditorGUI.EndDisabledGroup();
     GUILayout.Label(string.IsNullOrWhiteSpace(featureSearchText)
-            ? "Enter item or feature name"
+            ? "0 / 0"
             : hasMatches
                 ? (featureSearchIndex + 1) + " / " + featureSearchTiles.Count
-                : "No matches on this level",
-        EditorStyles.miniLabel, GUILayout.ExpandWidth(false));
-    GUILayout.FlexibleSpace();
-    EditorGUILayout.EndHorizontal();
+                : "0 / 0",
+        EditorStyles.miniLabel, GUILayout.Width(48f));
   }
 
   private static bool FeatureNameMatches(string value, string query)
@@ -1396,10 +1410,10 @@ public class DungeonFeatureEditor : EditorWindow
     Vector2Int tile = featureSearchTiles[featureSearchIndex];
     if (!map.IsInside(tile.x, tile.y))
       return;
-    // 1 GUI-pixel border *inside* the tile: no resizing or map-scale changes.
+    // 2 GUI-pixel border *inside* the tile: no resizing or map-scale changes.
     Rect rect = new Rect(mapRect.x + tile.x * CellSize,
         mapRect.y + tile.y * CellSize, CellSize, CellSize);
-    float thickness = Mathf.Min(1f, rect.width / 2f, rect.height / 2f);
+    float thickness = Mathf.Min(2f, rect.width / 2f, rect.height / 2f);
     EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, thickness), FeatureSearchBorderColor);
     EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - thickness, rect.width, thickness), FeatureSearchBorderColor);
     EditorGUI.DrawRect(new Rect(rect.x, rect.y, thickness, rect.height), FeatureSearchBorderColor);
