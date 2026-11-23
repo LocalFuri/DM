@@ -5527,5 +5527,21 @@
     "source": "DungeonFeatureEditor.cs",
     "change": "Single floor-item inventory map images are inset by 2 logical pixels per side (1 existing border + 1 additional clear pixel) scaled with map zoom, ensuring full-tile artwork does not touch cell borders.",
     "protected": "Map tile dimensions, search highlight, multiple-item markers, search/Enter, mouse button open/focus, orange connector/popup, renderer and approved calibrations unchanged."
+  },
+  "dungeon_features_wall_item_fill_tile_20261123": {
+    "date_local": "2026-11-23T21:11:42+01:00",
+    "status": "SOURCE MODIFIED — UNITY VISUAL VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "reason": "Prior 16/20/24px ornament-map icon sizing left excessive empty tile space.",
+    "change": "Wall ornament/item icons now fill each map tile interior (cell inset by 2 logical px per edge: grid border + 1px clear gap), using StretchToFill; left/right/top/bottom map tile bounds unchanged.",
+    "preserved": [
+      "Blue wall-facing direction marker",
+      "Floor item 1px clear gap",
+      "Search and mouse focus",
+      "Top-aligned item popups and orange connector",
+      "DOS 6-bit ornament renderer",
+      "Approved calibration and V17 geometry"
+    ],
+    "test": "Inspect wall ornament (e.g. Hook) in Dungeon Features. It should nearly fill the map tile, leaving 1px extra clear space inside grid borders without altering tile bounds."
   }
 }

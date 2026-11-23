@@ -2580,17 +2580,15 @@ public class DungeonFeatureEditor : EditorWindow
       DrawWallFaceDirectionMarker(cellRect, marker.Side);
 
       Texture2D texture = GetOrnamentMapIcon(marker.Type);
-      // All wall ornaments are centered on their 32x32 map tile.
-      // The lit torch retains its native 16x16 display size. Wood rings get
-      // a slightly larger marker so they remain legible on the compact map.
-      float iconBaseSize = IsTorchHolderOrnamentType(marker.Type) ? 16f
-          : (IsWoodRingOrnamentType(marker.Type) ? 24f : 20f);
-      float iconSize = iconBaseSize * mapZoom;
+      // Use the full map-tile interior for wall-item artwork, just as for
+      // single floor items: the existing 1px grid edge plus 1px clear gap.
+      // No change to cell bounds or blue wall-face direction markers.
+      float iconMargin = 2f * mapZoom;
       Rect iconRect = new Rect(
-          cellRect.center.x - iconSize * 0.5f,
-          cellRect.center.y - iconSize * 0.5f,
-          iconSize,
-          iconSize);
+          cellRect.x + iconMargin,
+          cellRect.y + iconMargin,
+          Mathf.Max(1f, cellRect.width - 2f * iconMargin),
+          Mathf.Max(1f, cellRect.height - 2f * iconMargin));
 
       if (IsLordOrderOutsideOrnamentType(marker.Type))
       {
@@ -2607,7 +2605,7 @@ public class DungeonFeatureEditor : EditorWindow
         GUI.DrawTexture(
             iconRect,
             texture,
-            ScaleMode.ScaleToFit,
+            ScaleMode.StretchToFill,
             true);
 
         if (string.Equals(marker.Type, "ViAltar",
