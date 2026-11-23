@@ -5555,5 +5555,36 @@
       "Search, Enter, thumb-button shortcut, popup positioning",
       "DOS renderer and approved calibrations"
     ]
+  },
+  "dungeon_features_floor_item_search_overview_20261123": {
+    "date": "2026-11-23",
+    "status": "IMPLEMENTED IN SOURCE — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "purpose": "When a searched floor-item name matches one or more floor tiles on the current level, fit the map to the window, show one matching item icon/name at top right, and draw an orange connection from every matching tile to the panel.",
+    "behavior": [
+      "All matching floor-item tiles receive an orange connector, with one connector per unique tile even if multiple items match on that tile.",
+      "Retain existing green selected-match border, search result counter, previous/next arrows and single-press Enter navigation.",
+      "The overview uses fit-to-window scale without replacing the user preferred manual zoom setting; clearing the search restores normal zoom behavior.",
+      "Non-item searches and the ordinary single/multiple floor-item popup retain their prior behavior.",
+      "ViewEdit player pose, dungeon data, map-cell dimensions, DOS renderer and all accepted ornament calibrations remain unchanged."
+    ],
+    "test": "In Dungeon Features search for apple, check every apple tile on the current level has an orange connector to the top-right apple preview; clear search and verify normal single-tile preview/zoom return."
+  },
+  "dungeon_features_search_reset_button_backspace_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE CHANGED — UNITY VERIFICATION PENDING",
+    "files": [
+      "DungeonFeatureEditor.cs"
+    ],
+    "change": "Add Reset button immediately left of Search item label; Backspace while search field focused clears entire query, matching-tile list and orange connectors and restores normal map zoom. Both Reset actions restore keyboard focus to the Search item field on next repaint.",
+    "preserved": [
+      "Enter advances one matching tile",
+      "12-character search limit",
+      "previous/next controls",
+      "wall and floor tile graphics and 1px wall-item inset",
+      "ViewEdit thumb-button open-and-focus shortcut",
+      "all approved ornament drawing and calibrations"
+    ],
+    "test": "In Dungeon Features search apple, press Backspace once: field clears and normal map zoom returns, typing works immediately. Repeat with Reset button."
   }
 }
