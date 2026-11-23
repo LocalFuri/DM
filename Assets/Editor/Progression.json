@@ -5751,5 +5751,58 @@
       "DOS 6-bit scaling, V17 rendering, Hook/Grate/Manacles/Slime perspectives and calibrations untouched",
       "Latest DungeonFeatureEditor search and green 5px pulse checkpoint untouched"
     ]
+  },
+  "legacy_cleanup_phase_d5_wood_ring_front_20261123": {
+    "date": "2026-11-23",
+    "phase": "D5",
+    "status": "SOURCE MODIFIED — UNITY COMPILATION AND WOOD RING F1/F2/F3 VISUAL VERIFICATION PENDING",
+    "source": "ViewportLayoutEditor.cs",
+    "change": "Wood Ring F1/F2/F3 now call MatchesFrontWallOrnamentPlacement for previously duplicated wall tile/corridor coordinate and face matching.",
+    "preserved": [
+      "F3 corridor gates (open D1/D2), matching position at d2X/d2Y",
+      "F2 corridor gate (open D1), matching position at d1X/d1Y",
+      "F1 solid-wall requirement, matching position at player previewX/previewY",
+      "All texture generation, scale bias/palette, native F1 artwork and anchor placement",
+      "Wood Ring side blitters, all other approved ornament paths",
+      "Latest cyan artwork diagnostics and Dungeon Features search improvements"
+    ],
+    "next_test": "Compile Unity with no errors or warnings; visually check Wood Ring F1, F2 and F3 before considering D6."
+  },
+  "legacy_cleanup_phase_d5b_wood_ring_dos_group0_20261123": {
+    "date": "2026-11-23",
+    "phase": "D5b",
+    "status": "SOURCE MODIFIED — UNITY COMPILATION AND WOOD RING F2/F3 VISUAL VERIFICATION PENDING",
+    "source": "ViewportLayoutEditor.cs",
+    "issue": "Wood Ring F2/F3 depended on the HookFrontWallOrnamentSet (Hook-named geometry), despite using the generic 6-bit DOS scaler.",
+    "change": [
+      "Register WoodRing in DosWallOrnamentRegistry with DOS layout group 0. Native front art continues to resolve via GetWoodRingFrontTexture.",
+      "Rename the formerly Hook-named group-0 front profile to DosGroup0FrontWallOrnamentSet and group-0 constants; Hook draw geometry remains numerically identical.",
+      "Introduce GetRegisteredDosFrontSlot(family, depth) to resolve shared group-0 F2/F3 geometry from ornament registration, rejecting unregistered/unsupported groups or depths with no fallback.",
+      "Route Wood Ring F2 and F3 texture dimensions, draw X/Y, and inspector projection via the registered DOS group-0 slot. F1 remains independently resolved from native art."
+    ],
+    "unchanged_measured_geometry": {
+      "F2": {
+        "width": 22,
+        "height": 18,
+        "x": 103,
+        "y": 108
+      },
+      "F3": {
+        "width": 14,
+        "height": 12,
+        "x": 105,
+        "y": 113
+      }
+    },
+    "preserved": [
+      "GenerateDmScaledWallDecoration six-bit pixel sampling (unchanged)",
+      "Wood Ring F2 medium palette / round bias 0x7fff / sampleTopDown false",
+      "Wood Ring F3 far palette / round bias 0 / sampleTopDown false",
+      "Existing draw/visibility/corridor checks and Apply calibration",
+      "Hook DOS 18x18 F2 separate artwork and approved F1/F2/F3 rendering",
+      "Manacles, Grate, Slime, side views, V17 and cyan diagnostics unchanged"
+    ],
+    "scope_limit": "This removes Wood Ring F2/F3 dependence on Hook-specific geometry but does not yet turn all family-specific blitters into one generic dispatch. Group-0 dimensions and offsets are still established measured layout data, not dynamically inferred.",
+    "next_test": "Compile in Unity, check Console, visually compare Wood Ring F2 and F3 with PC DOS. D5 Wood Ring F1/F2/F3 approval remains pending."
   }
 }

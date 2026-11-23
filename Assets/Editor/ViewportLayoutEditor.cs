@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -310,7 +310,11 @@ public class ViewportLayoutEditor : EditorWindow
             32, 42, 1) },
         { "Grate", new DosWallOrnamentRegistration(
             "Grate", GrateFrontAssetPath, GrateSide1AssetPath,
-            16, 19, -1) }
+            16, 19, -1) },
+        // Wood Ring native front is resolved by GetWoodRingFrontTexture;
+        // registration supplies only its verified shared DOS group 0.
+        { "WoodRing", new DosWallOrnamentRegistration(
+            "WoodRing", null, null, 0, 0, 0) }
       };
 
   // Intentional Phase 10 staging API: future generic dispatch resolves
@@ -367,17 +371,17 @@ public class ViewportLayoutEditor : EditorWindow
   private const int HookD1FrontX = 98;
   private const int HookD1FrontY = 100;
 
-  // Hook / coordinate-set-0 front at distance 2.
+  // DOS coordinate-group-0 front at distance 2.
   // CSBwin F2 front-wall descriptor uses a 22x18 destination for the
   // original 32x28 source. Keep the existing F2 X/Y until the visual test.
-  private const int HookD2FrontX = 103;
-  private const int HookD2FrontY = 108;
-  private const int HookD2FrontWidth = 22;
-  private const int HookD2FrontHeight = 18;
+  private const int DosGroup0D2FrontX = 103;
+  private const int DosGroup0D2FrontY = 108;
+  private const int DosGroup0D2FrontWidth = 22;
+  private const int DosGroup0D2FrontHeight = 18;
 
   // Original DOS 224x136 viewport: 18x18 Hook at (103,38) top-down.
   // Unity preview uses 200-pixel, bottom-up Y: 200-(32+38+18)=112.
-  // Keep HookD2Front* unchanged: Wood Ring shares that CSBwin profile.
+  // Keep the separate Hook DOS-F2 18x18 artwork placement unchanged.
   private const int HookDosF2X = 103;
   private const int HookDosF2Width = 18;
   private const int HookDosF2Height = 18;
@@ -395,10 +399,10 @@ public class ViewportLayoutEditor : EditorWindow
   // The 28-wide F1 crop drops one pixel on each side, so the drawn
   // result is 14x12. Screen top-left (105, 75), framebuffer bottom-left
   // Y = 200 - 75 - 12 = 113.
-  private const int HookD3FrontX = 105;
-  private const int HookD3FrontY = 113;
-  private const int HookD3FrontWidth = 14;
-  private const int HookD3FrontHeight = 12;
+  private const int DosGroup0D3FrontX = 105;
+  private const int DosGroup0D3FrontY = 113;
+  private const int DosGroup0D3FrontWidth = 14;
+  private const int DosGroup0D3FrontHeight = 12;
 
   // Original DOS Grate front placement on the wall immediately in front of
   // the party. Measured from the supplied 320x200 original screenshot:
@@ -25588,7 +25592,6 @@ private static void HandleGameViewPointerDown(
     }
 
     string viewedWallSide = FacingName(previewFacing);
-    string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
 
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
@@ -25600,35 +25603,16 @@ private static void HandleGameViewPointerDown(
       if (!IsWoodRingOrnament(ornament))
         continue;
 
-      bool placementMatches;
-      if (ornament.wallTilePlacement)
-      {
-        placementMatches =
-            ornament.x == wallTileX
-            && ornament.y == wallTileY
-            && string.Equals(
-                ornament.wall,
-                visiblePhysicalWallFace,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-      else
-      {
-        placementMatches =
-            ornament.x == d2X
-            && ornament.y == d2Y
-            && string.Equals(
-                ornament.wall,
-                viewedWallSide,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
+      bool placementMatches = MatchesFrontWallOrnamentPlacement(
+          ornament, wallTileX, wallTileY, d2X, d2Y, viewedWallSide);
 
       if (!placementMatches)
         continue;
 
       BlitOrnamentPieceIntoPreview(
           pixels, woodRingFront, ornament,
-          HookFrontWallOrnamentSet.f3.x,
-          HookFrontWallOrnamentSet.f3.y, false);
+          GetRegisteredDosFrontSlot("WoodRing", 3).x,
+          GetRegisteredDosFrontSlot("WoodRing", 3).y, false);
       return;
     }
   }
@@ -25644,8 +25628,8 @@ private static void HandleGameViewPointerDown(
 
     cachedWoodRingGeneratedF3FrontTexture = GenerateDmScaledWallDecoration(
         source,
-        HookFrontWallOrnamentSet.f3.width,
-        HookFrontWallOrnamentSet.f3.height,
+        GetRegisteredDosFrontSlot("WoodRing", 3).width,
+        GetRegisteredDosFrontSlot("WoodRing", 3).height,
         WallOrnamentFarColorMap,
         "Wood Ring F3 Generated from F1",
         roundBiasOverride: 0,
@@ -25684,7 +25668,6 @@ private static void HandleGameViewPointerDown(
     }
 
     string viewedWallSide = FacingName(previewFacing);
-    string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
 
     for (int i = 0; i < previewWallOrnaments.Length; i++)
     {
@@ -25696,37 +25679,18 @@ private static void HandleGameViewPointerDown(
       if (!IsWoodRingOrnament(ornament))
         continue;
 
-      bool placementMatches;
-      if (ornament.wallTilePlacement)
-      {
-        placementMatches =
-            ornament.x == wallTileX
-            && ornament.y == wallTileY
-            && string.Equals(
-                ornament.wall,
-                visiblePhysicalWallFace,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-      else
-      {
-        placementMatches =
-            ornament.x == d1X
-            && ornament.y == d1Y
-            && string.Equals(
-                ornament.wall,
-                viewedWallSide,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
+      bool placementMatches = MatchesFrontWallOrnamentPlacement(
+          ornament, wallTileX, wallTileY, d1X, d1Y, viewedWallSide);
 
       if (!placementMatches)
         continue;
 
-      // Wood Ring shares coordinate set 0 with the Hook, so the F2 front
-      // uses that same measured slot.
+      // Resolve the measured DOS group-0 slot through the Wood Ring
+      // registration; no Hook-specific coordinate dependency.
       BlitOrnamentPieceIntoPreview(
           pixels, woodRingFront, ornament,
-          HookFrontWallOrnamentSet.f2.x,
-          HookFrontWallOrnamentSet.f2.y, false);
+          GetRegisteredDosFrontSlot("WoodRing", 2).x,
+          GetRegisteredDosFrontSlot("WoodRing", 2).y, false);
       return;
     }
   }
@@ -25742,12 +25706,12 @@ private static void HandleGameViewPointerDown(
 
     cachedWoodRingGeneratedF2FrontTexture = GenerateDmScaledWallDecoration(
         source,
-        HookFrontWallOrnamentSet.f2.width,
-        HookFrontWallOrnamentSet.f2.height,
+        GetRegisteredDosFrontSlot("WoodRing", 2).width,
+        GetRegisteredDosFrontSlot("WoodRing", 2).height,
         WallOrnamentMediumColorMap,
         "Wood Ring F2 Generated from F1",
-        roundBiasOverride: 0x7fff,
-        sampleTopDown: false);
+        roundBiasOverride: 0,
+        sampleTopDown: true);
     return cachedWoodRingGeneratedF2FrontTexture;
   }
 
@@ -25997,31 +25961,10 @@ private static void HandleGameViewPointerDown(
       if (!IsWoodRingOrnament(ornament))
         continue;
 
-      bool placementMatches;
-      if (ornament.wallTilePlacement)
-      {
-        // Random wall-decoration bits belong to the solid wall tile itself.
-        string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
-        placementMatches =
-            ornament.x == wallTileX
-            && ornament.y == wallTileY
-            && string.Equals(
-                ornament.wall,
-                visiblePhysicalWallFace,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
-      else
-      {
-        // Explicit mechanisms are stored on the passable cell and use the
-        // direction from that cell toward the wall boundary.
-        placementMatches =
-            ornament.x == previewX
-            && ornament.y == previewY
-            && string.Equals(
-                ornament.wall,
-                viewedWallSide,
-                System.StringComparison.OrdinalIgnoreCase);
-      }
+      // Wall-tile decoration and explicit passable-cell mechanisms retain
+      // their original coordinates and facing rules through the shared matcher.
+      bool placementMatches = MatchesFrontWallOrnamentPlacement(
+          ornament, wallTileX, wallTileY, previewX, previewY, viewedWallSide);
 
       if (!placementMatches)
         continue;
@@ -27067,9 +27010,9 @@ private static void HandleGameViewPointerDown(
           return true;
         }
         if (frontDepth == 2)
-        { renderX = HookFrontWallOrnamentSet.f2.x; renderY = HookFrontWallOrnamentSet.f2.y; return true; }
+        { WallOrnamentDepthSlot slot = GetRegisteredDosFrontSlot("WoodRing", 2); renderX = slot.x; renderY = slot.y; return true; }
         if (frontDepth == 3)
-        { renderX = HookFrontWallOrnamentSet.f3.x; renderY = HookFrontWallOrnamentSet.f3.y; return true; }
+        { WallOrnamentDepthSlot slot = GetRegisteredDosFrontSlot("WoodRing", 3); renderX = slot.x; renderY = slot.y; return true; }
       }
       if (IsHookOrnament(ornament))
       {
@@ -37496,22 +37439,49 @@ private static void HandleGameViewPointerDown(
               114));
 
 
-  // Generic wall-ornament coordinate profile: Hook front.
-  // F2 is generated from the single 28x28 F1 source.
-  private static readonly WallOrnamentCoordinateSet HookFrontWallOrnamentSet =
+  // Shared DOS group-0 front-wall geometry (used by more than one ornament).
+  // These are measured draw slots; scaling remains in the DOS 6-bit routine.
+  private static readonly WallOrnamentCoordinateSet DosGroup0FrontWallOrnamentSet =
       new WallOrnamentCoordinateSet(
           new WallOrnamentDepthSlot(
               28, 28, HookD1FrontX, HookD1FrontY),
           new WallOrnamentDepthSlot(
-              HookD2FrontWidth,
-              HookD2FrontHeight,
-              HookD2FrontX,
-              HookD2FrontY),
+              DosGroup0D2FrontWidth,
+              DosGroup0D2FrontHeight,
+              DosGroup0D2FrontX,
+              DosGroup0D2FrontY),
           new WallOrnamentDepthSlot(
-              HookD3FrontWidth,
-              HookD3FrontHeight,
-              HookD3FrontX,
-              HookD3FrontY));
+              DosGroup0D3FrontWidth,
+              DosGroup0D3FrontHeight,
+              DosGroup0D3FrontX,
+              DosGroup0D3FrontY));
+
+  // Generic DOS front-layout lookup: registration selects a coordinate group;
+  // the group, not any other ornament family, owns the measured draw slots.
+  // Do not invent a fallback layout for an unverified group.
+  private static WallOrnamentDepthSlot GetRegisteredDosFrontSlot(
+      string family, int depth)
+  {
+    if (!TryGetDosWallOrnamentRegistration(family, out var registration))
+      throw new System.InvalidOperationException(
+          "Missing DOS wall ornament registration: " + family);
+
+    switch (registration.layoutGroup)
+    {
+      case 0:
+        switch (depth)
+        {
+          // F1 remains family-specific and must not inherit Hook's F1 slot.
+          case 2: return DosGroup0FrontWallOrnamentSet.f2;
+          case 3: return DosGroup0FrontWallOrnamentSet.f3;
+        }
+        break;
+    }
+
+    throw new System.InvalidOperationException(
+        "Unverified DOS front layout for " + family
+        + " group=" + registration.layoutGroup + " depth=" + depth);
+  }
 
   private static void BlitWallOrnamentIntoPreview(
       Color32[] dest,
@@ -39391,8 +39361,8 @@ private static void HandleGameViewPointerDown(
       }
       TraceHookF3AtTestPose("BLIT reached; texture=" + hookFront.width
           + "x" + hookFront.height
-          + "; target=" + HookFrontWallOrnamentSet.f3.x
-          + "," + HookFrontWallOrnamentSet.f3.y
+          + "; target=" + DosGroup0FrontWallOrnamentSet.f3.x
+          + "," + DosGroup0FrontWallOrnamentSet.f3.y
           + "; Hook candidates: " + hookChecks.ToString());
       // CSBwin group 0, relative position 3: F3 top is Y=39 in the
       // 224x136 dungeon viewport. Convert to the full 320x200 framebuffer.
@@ -39400,7 +39370,7 @@ private static void HandleGameViewPointerDown(
       int hookF3OriginalY = DisplayYToUnityY(
           GetOriginalWallDecorationRect(0, 3).y1 + 32, hookFront.height);
       BlitOrnamentPieceIntoPreview(pixels, hookFront, ornament,
-          HookFrontWallOrnamentSet.f3.x,
+          DosGroup0FrontWallOrnamentSet.f3.x,
           hookF3OriginalY, false);
       return;
     }
@@ -40405,8 +40375,8 @@ private static void HandleGameViewPointerDown(
     {
       cachedHookGeneratedF3FrontTexture = GenerateDmScaledWallDecoration(
           source,
-          HookFrontWallOrnamentSet.f3.width,
-          HookFrontWallOrnamentSet.f3.height,
+          DosGroup0FrontWallOrnamentSet.f3.width,
+          DosGroup0FrontWallOrnamentSet.f3.height,
           WallOrnamentFarColorMap,
           "Hook F3 Generated From DOS F1 With Virtual Padding",
           virtualPaddingLeft: 2,
@@ -41118,7 +41088,8 @@ private static void HandleGameViewPointerDown(
     return null;
   }
 
-  // Phases D1-D4: share front-wall placement matching for Grate, Hook, Manacles and Slime F1/F2/F3.
+  // Phases D1-D5: share front-wall placement matching for Grate, Hook,
+  // Manacles, Slime and Wood Ring F1/F2/F3.
   // Visibility, ordering, texture selection, calibration and DOS scaling stay
   // in the existing callers.  The corridor coordinates are supplied by each
   // distance-specific caller to preserve its original placement rules.
