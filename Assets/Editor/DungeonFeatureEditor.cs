@@ -1247,6 +1247,19 @@ public class DungeonFeatureEditor : EditorWindow
   // Search controls share the map/pose header row, aligned to its right edge.
   private void DrawFeatureSearchToolbar()
   {
+    // Handle Enter BEFORE TextField receives the event. Unity's IMGUI
+    // TextField can consume Return to commit editing, which previously
+    // required a second press to advance to the next search result.
+    Event keyEvent = Event.current;
+    if (keyEvent.type == EventType.KeyDown
+        && (keyEvent.keyCode == KeyCode.Return
+            || keyEvent.keyCode == KeyCode.KeypadEnter)
+        && GUI.GetNameOfFocusedControl() == "DungeonFeaturesSearchItem")
+    {
+      NavigateFeatureSearch(1);
+      keyEvent.Use();
+    }
+
     GUILayout.Label("Search item", GUILayout.Width(76f));
     GUI.SetNextControlName("DungeonFeaturesSearchItem");
     EditorGUI.BeginChangeCheck();
@@ -1259,18 +1272,6 @@ public class DungeonFeatureEditor : EditorWindow
     {
       featureSearchText = requested;
       RebuildFeatureSearch();
-    }
-
-    // Return/KeypadEnter while the input owns focus advances to the next hit.
-    // Consume only this event; the field remains focused for further searching.
-    Event keyEvent = Event.current;
-    if (keyEvent.type == EventType.KeyDown
-        && (keyEvent.keyCode == KeyCode.Return
-            || keyEvent.keyCode == KeyCode.KeypadEnter)
-        && GUI.GetNameOfFocusedControl() == "DungeonFeaturesSearchItem")
-    {
-      NavigateFeatureSearch(1);
-      keyEvent.Use();
     }
 
     bool hasMatches = featureSearchTiles.Count > 0;

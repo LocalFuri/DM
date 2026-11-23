@@ -5432,5 +5432,21 @@
       "no changes to ViewportLayoutEditor.cs"
     ],
     "verify": "Enter slime or an item name with multiple hits; pressing > or Enter once must update the green outline and visible map tile on the same press."
+  },
+  "dungeon_features_enter_one_press_fix_20261123": {
+    "date_local": "2026-11-23T20:16:40+01:00",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "issue": "When focused on Search item, pressing Enter once does not advance the displayed search result; previous scroll-position fix did not resolve the symptom.",
+    "cause": "Unity IMGUI TextField can consume KeyDown Return before the code located after TextField examines Event.current.",
+    "change": "Handle Return and KeypadEnter before drawing EditorGUILayout.TextField when DungeonFeaturesSearchItem is focused; navigate once and consume the key event.",
+    "preserved": [
+      "Search item 12-character limit",
+      "previous/next buttons",
+      "2-pixel green tile highlight",
+      "single-item orange connector and popup",
+      "existing map dimensions and dataset",
+      "all ornament rendering and calibrations"
+    ],
+    "next_test": "Type slime in Search item, press Enter once per result; verify counter and item popup follow the selected tile on every keypress."
   }
 }
