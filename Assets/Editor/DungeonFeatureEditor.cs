@@ -972,6 +972,7 @@ public class DungeonFeatureEditor : EditorWindow
   private string featureSearchText = string.Empty;
   private readonly List<Vector2Int> featureSearchTiles = new List<Vector2Int>();
   private int featureSearchIndex = -1;
+  private bool focusSearchOnMouse5;
   private bool scrollToSearchTile;
   private static readonly Color FeatureSearchBorderColor = new Color(0f, 1f, 0f, 1f);
   private int currentDungeonLevel = HallOfChampionsLevel;
@@ -1000,6 +1001,15 @@ public class DungeonFeatureEditor : EditorWindow
         GetWindow<DungeonFeatureEditor>("Dungeon Features");
     window.minSize = new Vector2(1200f, 800f);
     window.Focus();
+  }
+
+  // Called by ViewEdit after opening/maximizing this window with a thumb
+  // button. The existing deferred IMGUI focus mechanism handles the repaint.
+  public void FocusSearchItem()
+  {
+    focusSearchOnMouse5 = true;
+    Focus();
+    Repaint();
   }
 
   private void OnEnable()
@@ -1178,6 +1188,18 @@ public class DungeonFeatureEditor : EditorWindow
     if (HandleRightMouseWindowSwitch())
       return;
 
+    // Unity reports auxiliary thumb buttons as 3/4; mouse-driver mappings vary.
+    // Queue the focus until the next Repaint: focusing during MouseDown can be
+    // undone by IMGUI's own mouse/keyboard focus handling in the same event.
+    Event mouseEvent = Event.current;
+    if (mouseEvent != null && mouseEvent.type == EventType.MouseDown
+        && (mouseEvent.button == 3 || mouseEvent.button == 4))
+    {
+      focusSearchOnMouse5 = true;
+      mouseEvent.Use();
+      Repaint();
+    }
+
     Event current = Event.current;
     if (current.type == EventType.KeyDown
         && current.keyCode == KeyCode.Escape)
@@ -1265,6 +1287,14 @@ public class DungeonFeatureEditor : EditorWindow
     EditorGUI.BeginChangeCheck();
     string requested = EditorGUILayout.TextField(featureSearchText,
         GUILayout.Width(112f));
+    // GUI controls are fully registered by Repaint. Defer keyboard focus to
+    // this pass instead of applying it during the thumb-button MouseDown.
+    if (focusSearchOnMouse5 && Event.current.type == EventType.Repaint)
+    {
+      GUI.FocusControl("DungeonFeaturesSearchItem");
+      EditorGUI.FocusTextInControl("DungeonFeaturesSearchItem");
+      focusSearchOnMouse5 = false;
+    }
     // Limit query length to twelve characters, including pasted input.
     if (requested.Length > 12)
       requested = requested.Substring(0, 12);

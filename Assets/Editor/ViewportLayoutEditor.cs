@@ -3114,17 +3114,16 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   /// <summary>
-  /// Pressing the rear thumb/side mouse button (XButton1 / IMGUI button 3)
-  /// anywhere in ViewEdit opens Dungeon Features and maximizes that editor
-  /// window. The previous left-button double-click shortcut is intentionally
-  /// disabled.
+  /// Either thumb mouse button (IMGUI button 3 or 4) opens Dungeon Features
+  /// from ViewEdit and focuses its Search item field after maximization.
+  /// The previous left-button double-click shortcut remains disabled.
   /// </summary>
   private bool HandleViewEditRearMouseButton()
   {
     Event current = Event.current;
     if (current == null
         || current.type != EventType.MouseDown
-        || current.button != 3)
+        || (current.button != 3 && current.button != 4))
     {
       return false;
     }
@@ -3192,6 +3191,17 @@ public class ViewportLayoutEditor : EditorWindow
       candidate.Focus();
       if (!candidate.maximized)
         candidate.maximized = true;
+
+      // The window has now been opened and maximized. Request keyboard focus
+      // from DungeonFeatureEditor itself; IMGUI must first register its text
+      // control on a Repaint before FocusTextInControl can take effect.
+      MethodInfo focusMethod = candidate.GetType().GetMethod(
+          "FocusSearchItem", BindingFlags.Public | BindingFlags.Instance,
+          null, System.Type.EmptyTypes, null);
+      if (focusMethod != null)
+        focusMethod.Invoke(candidate, null);
+      else
+        Debug.LogWarning("ViewEdit: Dungeon Features Search item focus method is missing.");
       return;
     }
   }

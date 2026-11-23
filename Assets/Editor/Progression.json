@@ -5477,5 +5477,48 @@
       "All approved ornaments, DOS scaler and calibrations"
     ],
     "test": "Select Solid Key at (14,7) and items lower on map; confirm popup top aligns just under Dungeon Features tab, keeps names visible, and connector follows when scrolling."
+  },
+  "dungeon_features_mouse5_search_focus_20261123": {
+    "date_local": "2026-11-23T20:32:23+01:00",
+    "source": "DungeonFeatureEditor.cs",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "change": "Click Mouse 5 (forward thumb mouse button, Unity IMGUI button 4) anywhere within Dungeon Features to focus Search item and immediately type. The mouse click is consumed before map interaction. Existing text and search-result selection are preserved.",
+    "preserved": [
+      "Single-press Enter / Numpad Enter next-result navigation",
+      "12-character Search item field",
+      "2px interior green search rectangle",
+      "Top-right item popup and orange connector",
+      "No changes to viewport ornament scaling, positioning, or calibration"
+    ],
+    "next_test": "Click elsewhere in Dungeon Features, press Mouse 5 once, then type to confirm Search item immediately receives characters."
+  },
+  "dungeon_features_mouse5_search_focus_repaint_fix_20261123": {
+    "date": "2026-11-23",
+    "status": "IMPLEMENTED — UNITY VERIFICATION PENDING",
+    "change": "Auxiliary mouse buttons 3 or 4 queue Search item focus until IMGUI Repaint, then call both GUI.FocusControl and EditorGUI.FocusTextInControl. This avoids focus being reset by the original MouseDown event.",
+    "preserved": [
+      "12 character search limit",
+      "Enter and KeypadEnter single-step navigation",
+      "popup top anchoring and orange connector",
+      "map and renderer unchanged"
+    ],
+    "next_test": "Click off Search item, press either thumb button once in Dungeon Features, and type. Confirm characters enter the search field immediately. If neither button registers, check mouse driver mapping."
+  },
+  "dungeon_features_viewedit_thumb_search_focus_20261123": {
+    "date": "2026-11-23",
+    "status": "implemented; Unity verification pending",
+    "purpose": "In ViewEdit, Mouse 4 or Mouse 5 opens/maximizes Dungeon Features AND focuses Search item for immediate typing.",
+    "changes": [
+      "ViewportLayoutEditor.HandleViewEditRearMouseButton accepts button 3 or 4",
+      "After Dungeon Features is maximized, ViewEdit invokes its public FocusSearchItem method",
+      "DungeonFeatureEditor.FocusSearchItem queues the existing deferred search-field focus and repaint"
+    ],
+    "preserved": [
+      "Enter navigates one match per press",
+      "Previous/next search navigation",
+      "Top-anchored item preview",
+      "DOS renderer and all approved ornament calibrations"
+    ],
+    "test": "In ViewEdit press either thumb button, type without clicking Search item; Enter advances one item."
   }
 }
