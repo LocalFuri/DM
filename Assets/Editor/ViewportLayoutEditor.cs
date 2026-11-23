@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -37503,36 +37503,14 @@ private static void HandleGameViewPointerDown(
       int destinationY,
       bool mirrorHorizontally = false)
   {
+    // Champion mirrors use the same 1:1 alpha blit, mirroring and
+    // 224-pixel dungeon/HUD clip as wall ornaments. Keep the historical
+    // null/readability guard for callers of this wrapper.
     if (source == null || !source.isReadable)
       return;
 
-    Color32[] sourcePixels = source.GetPixels32();
-
-    for (int sourceY = 0; sourceY < source.height; sourceY++)
-    {
-      int targetY = destinationY + sourceY;
-      if (targetY < 0 || targetY >= PreviewHeight)
-        continue;
-
-      for (int column = 0; column < source.width; column++)
-      {
-        int sourceX = mirrorHorizontally
-            ? source.width - 1 - column
-            : column;
-        int targetX = destinationX + column;
-
-        // Generic dungeon-wall rule: never paint into the HUD/right UI area.
-        if (targetX < 0 || targetX >= DungeonViewportWidth)
-          continue;
-
-        Color32 sourceColour =
-            sourcePixels[sourceY * source.width + sourceX];
-        if (sourceColour.a == 0)
-          continue;
-
-        dest[targetY * PreviewWidth + targetX] = sourceColour;
-      }
-    }
+    BlitPieceIntoPreview(
+        dest, source, destinationX, destinationY, mirrorHorizontally);
   }
 
   /// <summary>

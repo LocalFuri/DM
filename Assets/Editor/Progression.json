@@ -57,7 +57,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-23: Cursor low-risk cleanup B prepared, Unity verification pending. Hook/Grate/Manacles S2/S3 approved; Manacles S3 recalibration retained. Cursor audit findings received. Preserve DOS 6-bit scaling.",
+  "checkpoint": "2026-11-23: Phase C 1:1 shared blitter consolidation prepared; awaiting Unity compilation and Champion Mirror visual verification. Previous side approvals and cyan missing-artwork diagnostics retained.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -5172,7 +5172,7 @@
   },
   "floor_item_missing_diagnostics_cyan_20261123": {
     "date": "2026-11-23T18:50:41+01:00",
-    "status": "SOURCE PATCH PREPARED — UNITY COMPILE AND CONSOLE CHECK PENDING",
+    "status": "USER VERIFIED — previously reported missing-artwork error no longer appears after patch (2026-11-23); cyan fallback policy unchanged",
     "baseline": "DM_Legacy_Cleanup_B_unused_depth_wrapper_20261123.zip (includes A and Manacles S3 Apply fix)",
     "scope": "ViewportLayoutEditor.cs, three dedicated missing F2/F3 floor-item diagnostics only",
     "change": "Changed missing native F2/F3 artwork plus missing F2/F3 calibration diagnostics from orange/red Unity Debug.LogError to cyan rich-text Debug.Log with explicit MISSING labels.",
@@ -5189,5 +5189,25 @@
       "No errors/warnings introduced in Unity",
       "Manacles S3 Apply calibration remains intact"
     ]
+  },
+  "ornament_cleanup_20261123_phase_c_shared_1to1_blitter": {
+    "date_local": "2026-11-23T18:54:27+01:00",
+    "status": "SOURCE PATCH PREPARED — UNITY COMPILATION AND CHAMPION MIRROR VISUAL CHECK PENDING",
+    "baseline": "DM_Cyan_Missing_Floor_Artwork_20261123.zip (includes phases A/B and cyan diagnostics)",
+    "scope": [
+      "Assets/Editor/ViewportLayoutEditor.cs",
+      "Assets/Editor/Progression.json"
+    ],
+    "change": "BlitWallOrnamentIntoPreview now delegates opaque 1:1 painting to the existing BlitPieceIntoPreview instead of duplicating its pixel loop; preserves wrapper null/readability guard.",
+    "unchanged": [
+      "BlitPieceIntoPreview implementation",
+      "all ornament placement/calibration",
+      "DOS 6-bit scaling",
+      "V17 wall visibility",
+      "approved Hook/Grate/Manacles S2/S3",
+      "existing log behavior"
+    ],
+    "validation": "Static review only; run Unity compile and champion mirror F1/F2/F3/S1/S2/S3 spot check; no automatic tests were run.",
+    "next": "After verified, consider auditing and merging front/side dispatch in separate small increments; do not change hardcoded DOS coordinates without evidence."
   }
 }
