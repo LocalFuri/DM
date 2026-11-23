@@ -1,0 +1,20 @@
+{
+  "date": "2026-11-23",
+  "state": "PHYSICAL_DELETION_STAGE_2",
+  "previous_removed": 52,
+  "additional_removed": 9,
+  "deleted_methods": [
+    "IsPreviewSideOrnamentCenterLaneOpen",
+    "BlitHookD2FrontIntoPreview",
+    "BlitHookD3FrontIntoPreview",
+    "TraceHookF3AtTestPose",
+    "TraceHookF3CurrentViewFromMenu",
+    "TraceHookF2CurrentViewFromMenu",
+    "IsPreviewPuddleFloor",
+    "BlitOrnamentPieceIntoPreview",
+    "MatchesFrontWallOrnamentPlacement"
+  ],
+  "compile_test": "not available",
+  "render_status": "strict reset; unavailable DOS projections skipped with cyan diagnostics",
+  "warning": "Still needs validation and remaining legacy field/constant pruning"
+}

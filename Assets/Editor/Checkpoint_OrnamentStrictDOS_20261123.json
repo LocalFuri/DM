@@ -1,0 +1,48 @@
+{
+  "category": "Project checkpoint / resume instructions",
+  "date": "2026-11-23",
+  "status": "INCOMPLETE - DO NOT MARK LEGACY CLEANUP FINISHED",
+  "resumeFirst": true,
+  "priority": 1,
+  "goal": "Delete every old legacy / hardcoded ornament drawing path completely. No reserve code, no fallback, no workarounds. One shared DOS 6-bit renderer, DOS data driven geometry for all ornament items.",
+  "sourceOfTruth": {
+    "zip": "StrictDOS_Ornament_Physical_Deletion_Stage2_20261123.zip",
+    "file": "ViewportLayoutEditor.cs",
+    "sha256": "076080af52ff7e02becd670224181f3cd91a393c5b801d9494c2e237ec7bd39c",
+    "fileBytes": 1489554,
+    "note": "The stage-2 archive is the newest delivered source cleanup checkpoint; original latest input was ViewportLayoutEditor(20261123-215725).zip. Stage-2 file is uncompiled and must not be presumed operational."
+  },
+  "completedThisSession": {
+    "physicalMethodsDeleted": 61,
+    "firstPass": 52,
+    "secondPass": 9,
+    "secondPassMethods": [
+      "IsPreviewSideOrnamentCenterLaneOpen",
+      "BlitHookD2FrontIntoPreview",
+      "BlitHookD3FrontIntoPreview",
+      "TraceHookF3AtTestPose",
+      "TraceHookF3CurrentViewFromMenu",
+      "TraceHookF2CurrentViewFromMenu",
+      "IsPreviewPuddleFloor",
+      "BlitOrnamentPieceIntoPreview",
+      "MatchesFrontWallOrnamentPlacement"
+    ],
+    "legacyDispatch": "old ornament drawing calls disconnected from active viewport",
+    "sampling": "strict shared scaler cleanup attempted previously"
+  },
+  "mustContinue": [
+    "Audit and physically delete ALL remaining family-specific ornament scaling and texture generators and obsolete placement constants, fields, trace-only code, and calibration/experimental override rendering paths; no dormant reserve methods.",
+    "Replace all family-specific draw calls with one generic DOS registration + dispatch for front and side distances. No extra hardcoded per-ornament placements or alternate scale paths.",
+    "Preserve only truly shared DOS geometry tables and explicit ViewEdit Apply UI calibration as a user control, not hidden automatic override.",
+    "If registration/source/geometry missing, skip drawing and produce one clear cyan Unity Console message. Never substitute generated/default art or legacy fallback.",
+    "Check all compile references, remove orphan fields and methods, compile in Unity and test startup; visual DOS comparison only after generic renderer is active."
+  ],
+  "validation": {
+    "lexicalAndBracketChecks": "reported passing in stage-2 preparation",
+    "unityCompile": "NOT TESTED",
+    "runtimeRenderer": "NOT OPERATIONAL: missing DOS projections skipped",
+    "completelyLegacyFree": false
+  },
+  "userMandatoryRule": "Delete all old legacy and hardcoded code drawing elements for ALL ornaments immediately and completely; no reserve copies, no fallbacks, no workarounds. Missing image or mapping: cyan diagnostic only.",
+  "timestampPolicy": "Europe/Berlin timestamps for files and ZIP entries; persist checkpoint in C:\\Unity\\DM\\Assets\\Editor\\Progression.json."
+}
