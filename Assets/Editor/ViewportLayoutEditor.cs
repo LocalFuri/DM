@@ -182,8 +182,6 @@ public class ViewportLayoutEditor : EditorWindow
   // Vi Altar S2 uses the pixel-exact reference asset directly at 1:1.
   // Verified native S2 side image. Used generically for every Vi Altar that
   // resolves to an S2 left/right side projection; this is not pose-specific.
-  private const string ViAltarS2AssetPath =
-      "Assets/Art/Ornaments/Altar_of_Vi_S2_Ref_12x31.png";
   private const int ViAltarS2RightX = 148;
   private const int ViAltarS2Y = 98;
 
@@ -192,8 +190,6 @@ public class ViewportLayoutEditor : EditorWindow
   // Apply the same S3 projection to every visible Vi Altar resolved at depth 3;
   // there is no player-coordinate or altar-coordinate special case here.
   // Original-screen top-left is X=140, Y=81, so framebuffer Y is 108.
-  private const string ViAltarS3AssetPath =
-      "Assets/Art/Ornaments/Altar_of_Vi_S3_Ref_6x19.png";
   private const int ViAltarS3RightX = 140;
   private const int ViAltarS3Y = 108;
 
@@ -264,8 +260,6 @@ public class ViewportLayoutEditor : EditorWindow
   // F2 right-side corner: generate a 20x13 bitmap from the native DOS F1
   // artwork. Preserve this corner's distinct clipping/placement, not S2.
   // Independent F3 corner art; native 14x8, never rescaled.
-  private const string GrateF3SideAssetPath =
-      "Assets/Art/Ornaments/Grate_F3_Side_14x8.png";
   private const string HookSideAssetPath =
       "Assets/Art/Ornaments/Hook_S1_14x19.png";
   private const string SlimeSide1AssetPath =
@@ -345,8 +339,6 @@ public class ViewportLayoutEditor : EditorWindow
   // sits at viewport X=108, screen Y=105 (dungeon view begins at Y=33).
   private const string MossF1AssetPath =
       "Assets/Art/Ornaments/Moss_F1_56x19.png";
-  private const string MossF3AssetPath =
-      "Assets/Art/Ornaments/Moss_F3_8x2.png";
   private const int MossF1ScreenTop = 132;
   private const int MossF2ScreenTop = 108;
   private const int MossF3ScreenTop = 105;
@@ -793,9 +785,8 @@ public class ViewportLayoutEditor : EditorWindow
       DungeonViewportWidth - SlimeD1SideLeftX - 16;
   private const int SlimeD1SideY = 63;
 
-  // Original DOS Wood Ring side2 placement at D2. The supplied native
-  // Wood_Ring_Side2_5x10.png matches the original (4,6) North screenshot
-  // exactly at screen top-left (66,73). Framebuffer Y = 200 - 73 - 10.
+  // Historical Wood Ring S2 screen geometry; source artwork is now scaled
+  // from native S1. This destination must still be moved into DOS group data.
   private const int WoodRingD2SideLeftX = 66;
   private const int WoodRingD2SideRightX =
       DungeonViewportWidth - WoodRingD2SideLeftX - 5;
@@ -23919,9 +23910,7 @@ private static void HandleGameViewPointerDown(
     WallFeatureArtworkProfile profile = GetChampionMirrorArtworkProfile(2);
     cachedOriginalCornerF2MirrorFrame = GenerateDmScaledWallDecoration(
         source, center.x2 - center.x1 + 1, corner.height,
-        profile.distancePalette, "Champion Mirror CSBwin Group5 F2 Frame",
-        roundBiasOverride: (ReferenceEquals(profile.distancePalette, WallOrnamentFarColorMap) ? 0 : 0x7fff),
-        sampleTopDown: false);
+        profile.distancePalette, "Champion Mirror CSBwin Group5 F2 Frame");
     return cachedOriginalCornerF2MirrorFrame;
   }
 
@@ -24757,9 +24746,7 @@ private static void HandleGameViewPointerDown(
     if (source == null) return null;
     cachedEmptyHolderClass7Front2Texture = GenerateDmScaledWallDecoration(
         source, 16, 36, WallOrnamentMediumColorMap,
-        "Empty Torch Holder F2 (Class 7 preview)",
-        roundBiasOverride: 0x7fff,
-        sampleTopDown: false);
+        "Empty Torch Holder F2 (Class 7 preview)");
     return cachedEmptyHolderClass7Front2Texture;
   }
 
@@ -25374,13 +25361,9 @@ private static void HandleGameViewPointerDown(
   {
     if (cachedUnifiedChampionS2SideFrame != null)
       return cachedUnifiedChampionS2SideFrame;
-    Texture2D result = GenerateChampionMirrorAlternativeScale(
-        source,
-        ChampionMirrorS2TargetWidth,
-        ChampionMirrorS2TargetHeight,
-        WallOrnamentMediumColorMap,
-        1,
-        "Champion Mirror S2 Side Frame");
+    Texture2D result = GenerateDmScaledWallDecoration(
+        source, ChampionMirrorS2TargetWidth, ChampionMirrorS2TargetHeight,
+        WallOrnamentMediumColorMap, "Champion Mirror S2 DOS");
     cachedUnifiedChampionS2SideFrame = result;
     if (result != null)
     {
@@ -25406,13 +25389,9 @@ private static void HandleGameViewPointerDown(
   {
     if (cachedUnifiedChampionS3SideFrame != null)
       return cachedUnifiedChampionS3SideFrame;
-    Texture2D result = GenerateChampionMirrorAlternativeScale(
-        source,
-        ChampionMirrorS3TargetWidth,
-        ChampionMirrorS3TargetHeight,
-        WallOrnamentFarColorMap,
-        1,
-        "Champion Mirror S3 Side Frame");
+    Texture2D result = GenerateDmScaledWallDecoration(
+        source, ChampionMirrorS3TargetWidth, ChampionMirrorS3TargetHeight,
+        WallOrnamentFarColorMap, "Champion Mirror S3 DOS");
     cachedUnifiedChampionS3SideFrame = result;
     return result;
   }
@@ -25624,16 +25603,17 @@ private static void HandleGameViewPointerDown(
 
     Texture2D source = GetWoodRingFrontTexture();
     if (source == null || !source.isReadable)
+    {
+      ReportStrictOrnamentMissing("WoodRing", "F3", "readable F1 source");
       return null;
+    }
 
     cachedWoodRingGeneratedF3FrontTexture = GenerateDmScaledWallDecoration(
         source,
         GetRegisteredDosFrontSlot("WoodRing", 3).width,
         GetRegisteredDosFrontSlot("WoodRing", 3).height,
         WallOrnamentFarColorMap,
-        "Wood Ring F3 Generated from F1",
-        roundBiasOverride: 0,
-        sampleTopDown: false);
+        "Wood Ring F3 Generated from F1");
     return cachedWoodRingGeneratedF3FrontTexture;
   }
 
@@ -25702,24 +25682,22 @@ private static void HandleGameViewPointerDown(
 
     Texture2D source = GetWoodRingFrontTexture();
     if (source == null || !source.isReadable)
+    {
+      ReportStrictOrnamentMissing("WoodRing", "F2", "readable F1 source");
       return null;
+    }
 
     cachedWoodRingGeneratedF2FrontTexture = GenerateDmScaledWallDecoration(
         source,
         GetRegisteredDosFrontSlot("WoodRing", 2).width,
         GetRegisteredDosFrontSlot("WoodRing", 2).height,
         WallOrnamentMediumColorMap,
-        "Wood Ring F2 Generated from F1",
-        roundBiasOverride: 0,
-        sampleTopDown: true);
+        "Wood Ring F2 Generated from F1");
     return cachedWoodRingGeneratedF2FrontTexture;
   }
 
   // Champion mirrors use the ordinary front-wall ornament geometry.
   // At F2 only the frame is drawn; the champion portrait is visible at F1.
-  private const string ChampionMirrorScalePrefPrefix = "DM.ChampionMirror.FrameScale.F";
-  private static readonly string[] ChampionMirrorScaleOptions =
-      { "CSBwin (original)", "Nearest", "Bilinear", "Top to Bottom", "Bottom to Top" };
   // Wall-feature artwork policy. Geometry and visibility are resolved by the
   // existing wall-ornament path; this profile only controls artwork treatment.
   // Other wall ornaments retain their existing artwork code unchanged.
@@ -25745,15 +25723,13 @@ private static void HandleGameViewPointerDown(
       case 2:
         profile.slot = ChampionMirrorFrontWallOrnamentSet.f2;
         profile.drawPortrait = false;
-        profile.scaleMethod = Mathf.Clamp(
-            EditorPrefs.GetInt(ChampionMirrorScalePrefPrefix + 2, 0), 0, 4);
+        profile.scaleMethod = 0;
         profile.distancePalette = WallOrnamentMediumColorMap;
         break;
       case 3:
         profile.slot = ChampionMirrorFrontWallOrnamentSet.f3;
         profile.drawPortrait = false;
-        profile.scaleMethod = Mathf.Clamp(
-            EditorPrefs.GetInt(ChampionMirrorScalePrefPrefix + 3, 3), 0, 4);
+        profile.scaleMethod = 0;
         profile.distancePalette = WallOrnamentFarColorMap;
         break;
       default:
@@ -25785,63 +25761,7 @@ private static void HandleGameViewPointerDown(
     cachedChampionMirrorF3Method = -1;
   }
 
-  private static Texture2D GenerateChampionMirrorAlternativeScale(
-      Texture2D source, int width, int height, byte[] colorMap, int method,
-      string textureName)
-  {
-    if (source == null || !source.isReadable || width <= 0 || height <= 0)
-      return null;
-    Color32[] sourceColors = source.GetPixels32();
-    Color32[] output = new Color32[width * height];
-    Color32[] palette = DungeonViewportLightPalettes[0];
-    for (int y = 0; y < height; y++)
-      for (int x = 0; x < width; x++)
-      {
-        float sx = ((x + 0.5f) * source.width / width) - 0.5f;
-        float sy = ((y + 0.5f) * source.height / height) - 0.5f;
-        // Unity pixel arrays are bottom-up. For the directional tests, anchor
-        // the fixed-step sample sequence at the selected image edge.
-        if (method == 3) // top-to-bottom: anchor samples at the top edge
-          sy = source.height - 1 - Mathf.Floor((height - 1 - y) * (float)source.height / height);
-        else if (method == 4) // bottom-to-top: anchor at the bottom edge
-          sy = Mathf.Floor(y * (float)source.height / height);
-        Color32 sampled;
-        if (method != 2)
-        {
-          int ix = Mathf.Clamp(Mathf.RoundToInt(sx), 0, source.width - 1);
-          int iy = Mathf.Clamp(Mathf.RoundToInt(sy), 0, source.height - 1);
-          sampled = sourceColors[iy * source.width + ix];
-        }
-        else
-        {
-          int x0 = Mathf.Clamp(Mathf.FloorToInt(sx), 0, source.width - 1);
-          int y0 = Mathf.Clamp(Mathf.FloorToInt(sy), 0, source.height - 1);
-          int x1 = Mathf.Min(x0 + 1, source.width - 1);
-          int y1 = Mathf.Min(y0 + 1, source.height - 1);
-          float tx = Mathf.Clamp01(sx - Mathf.Floor(sx));
-          float ty = Mathf.Clamp01(sy - Mathf.Floor(sy));
-          Color top = Color.Lerp((Color)sourceColors[y0 * source.width + x0],
-              (Color)sourceColors[y0 * source.width + x1], tx);
-          Color bottom = Color.Lerp((Color)sourceColors[y1 * source.width + x0],
-              (Color)sourceColors[y1 * source.width + x1], tx);
-          sampled = (Color32)Color.Lerp(top, bottom, ty);
-        }
-        if (sampled.a == 0) continue;
-        int sourceIndex = FindExactDmPaletteIndexOrNearest(sampled, palette);
-        int mappedIndex = Mathf.Clamp(colorMap[sourceIndex], 0, 15);
-        if (mappedIndex == 10) continue;
-        Color32 mapped = palette[mappedIndex];
-        mapped.a = sampled.a;
-        output[y * width + x] = mapped;
-      }
-    Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
-    texture.name = textureName;
-    texture.filterMode = FilterMode.Point;
-    texture.wrapMode = TextureWrapMode.Clamp;
-    texture.SetPixels32(output);
-    texture.Apply(false, false);
-    return texture;
-  }
+
 
   // Diagnostic only: inspect generated F2 pixels; do not change scaling.
   private static string DescribeChampionMirrorPixelBounds(Texture2D texture)
@@ -25894,13 +25814,9 @@ private static void HandleGameViewPointerDown(
     Texture2D scaled;
     try
     {
-      scaled = method == 0
-          ? GenerateDmScaledWallDecoration(unpaddedFrame, slot.width, slot.height,
-              palette, "Champion Mirror F" + depth + " CSBwin Frame",
-        roundBiasOverride: (ReferenceEquals(palette, WallOrnamentFarColorMap) ? 0 : 0x7fff),
-        sampleTopDown: false)
-          : GenerateChampionMirrorAlternativeScale(unpaddedFrame, slot.width, slot.height,
-              palette, method, "Champion Mirror F" + depth + " Frame");
+      scaled = GenerateDmScaledWallDecoration(
+          unpaddedFrame, slot.width, slot.height, palette,
+          "Champion Mirror F" + depth + " DOS Frame");
     }
     finally
     {
@@ -26085,39 +26001,35 @@ private static void HandleGameViewPointerDown(
   {
     if (cachedWoodRingSide2Texture != null)
       return cachedWoodRingSide2Texture;
-
-    // The F1 side extract is two pixels wide at the top, so a shrink cannot
-    // rebuild the square top the original draws at (4,6) North. This 5x10
-    // is that original result, at screen top-left (66, 73).
-    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        "Assets/Art/Ornaments/Wood_Ring_Side2_5x10.png");
-    if (texture != null && texture.width == 5 && texture.height == 10)
+    Texture2D source = GetWoodRingSideTexture();
+    if (source == null || !source.isReadable
+        || source.width != 14 || source.height != 19)
     {
-      cachedWoodRingSide2Texture = texture;
-      return texture;
+      ReportStrictOrnamentMissing("WoodRing", "S2", "readable native 14x19 S1 source");
+      return null;
     }
-
-    return null;
+    cachedWoodRingSide2Texture = GenerateDmScaledWallDecoration(
+        source, 5, 10, WallOrnamentMediumColorMap, "Wood Ring S2 DOS");
+    return cachedWoodRingSide2Texture;
   }
+
 
   private Texture2D GetWoodRingSide3Texture()
   {
     if (cachedWoodRingSide3Texture != null)
       return cachedWoodRingSide3Texture;
-
-    // As with Side2, the distant Wood Ring side view is original authored
-    // distance artwork. Shrinking the F1 side extract cannot reproduce the
-    // exact 3x5 shape seen at (4,7) North.
-    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        "Assets/Art/Ornaments/Wood_Ring_Side3_3x5.png");
-    if (texture != null && texture.width == 3 && texture.height == 5)
+    Texture2D source = GetWoodRingSideTexture();
+    if (source == null || !source.isReadable
+        || source.width != 14 || source.height != 19)
     {
-      cachedWoodRingSide3Texture = texture;
-      return texture;
+      ReportStrictOrnamentMissing("WoodRing", "S3", "readable native 14x19 S1 source");
+      return null;
     }
-
-    return null;
+    cachedWoodRingSide3Texture = GenerateDmScaledWallDecoration(
+        source, 3, 5, WallOrnamentFarColorMap, "Wood Ring S3 DOS");
+    return cachedWoodRingSide3Texture;
   }
+
 
   /// <summary>
   /// Loads resolved Level 0 wall/floor ornaments from the generated all-level
@@ -29698,11 +29610,6 @@ private static void HandleGameViewPointerDown(
       // Front-facing champion mirrors are never mirrored.
       bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
 
-      int scaleBefore = GetChampionMirrorScaleMethod(depth);
-      int scaleAfter = scaleBefore;
-      if (depth == 2 || depth == 3)
-        scaleAfter = EditorGUILayout.Popup(
-            scaleBefore, ChampionMirrorScaleOptions, GUILayout.Width(82f));
       NoteContentRight();
       EditorGUIUtility.labelWidth = savedLabelWidth;
       EditorGUILayout.EndHorizontal();
@@ -29730,13 +29637,7 @@ private static void HandleGameViewPointerDown(
           previewPositionChangedThisFrame = true;
         }
       }
-      if (scaleAfter != scaleBefore)
-      {
-        EditorPrefs.SetInt(ChampionMirrorScalePrefPrefix + depth, scaleAfter);
-        InvalidateChampionMirrorFrameScaleCache();
-      }
-      if (apply || nowEnabled != wasEnabled || xChanged || yChanged
-          || scaleAfter != scaleBefore)
+      if (apply || nowEnabled != wasEnabled || xChanged || yChanged)
       {
         RefreshEditModePreview();
         RepaintGameViews();
@@ -34275,6 +34176,20 @@ private static void HandleGameViewPointerDown(
     Debug.Log("<color=cyan>CYAN | " + message + "</color>");
   }
 
+  // Strict ornament rendering: one cyan message for each unavailable native
+  // source or missing verified geometry; never substitute a legacy bitmap.
+  private static readonly HashSet<string> StrictOrnamentMissingDiagnostics =
+      new HashSet<string>(System.StringComparer.Ordinal);
+
+  private static void ReportStrictOrnamentMissing(string family, string projection,
+      string requirement)
+  {
+    string message = "DOS ORNAMENT " + family + " " + projection
+        + ": missing " + requirement + "; not drawn (no fallback)";
+    if (StrictOrnamentMissingDiagnostics.Add(message))
+      LogMissingArtworkCyan(message);
+  }
+
   private void ReportFloorItemTextureProblem(string itemName, string assetPath, string reason)
   {
     string key = itemName + ":" + assetPath + ":" + reason;
@@ -36603,46 +36518,22 @@ private static void HandleGameViewPointerDown(
         MossF2Width,
         MossF2Height,
         WallOrnamentMediumColorMap,
-        "Moss F2 Generated from F1",
-        roundBiasOverride: 0x7fff,
-        sampleTopDown: false);
+        "Moss F2 Generated from F1");
     return cachedMossF2Texture;
   }
 
   private Texture2D GetMossF3Texture()
   {
-    if (cachedMossF3Texture != null
-        && cachedMossF3Texture.isReadable
-        && cachedMossF3Texture.width == 8
-        && cachedMossF3Texture.height == 2)
-    {
+    if (cachedMossF3Texture != null)
       return cachedMossF3Texture;
-    }
-
-    // The imported sprite sheet does not expose these 8x2 pixels to
-    // GetPixels32. Read the PNG into a temporary readable texture.
-    string projectRoot = Path.GetDirectoryName(Application.dataPath);
-    string absolutePath = string.IsNullOrEmpty(projectRoot)
-        ? MossF3AssetPath
-        : Path.Combine(projectRoot, MossF3AssetPath);
-    if (!File.Exists(absolutePath))
-      return null;
-
-    byte[] pngBytes = File.ReadAllBytes(absolutePath);
-    Texture2D readableCopy = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-    readableCopy.name = "MossF3_ReadablePreview";
-    readableCopy.filterMode = FilterMode.Point;
-    readableCopy.wrapMode = TextureWrapMode.Clamp;
-    readableCopy.hideFlags = HideFlags.HideAndDontSave;
-    if (!readableCopy.LoadImage(pngBytes, false)
-        || readableCopy.width != 8
-        || readableCopy.height != 2)
+    Texture2D source = GetMossF1Texture();
+    if (source == null || !source.isReadable)
     {
-      DestroyImmediate(readableCopy);
+      ReportStrictOrnamentMissing("Moss", "F3", "readable native F1 source");
       return null;
     }
-
-    cachedMossF3Texture = readableCopy;
+    cachedMossF3Texture = GenerateDmScaledWallDecoration(
+        source, 8, 2, WallOrnamentFarColorMap, "Moss F3 DOS");
     return cachedMossF3Texture;
   }
 
@@ -36899,40 +36790,18 @@ private static void HandleGameViewPointerDown(
   {
     if (cachedViAltarS3Texture != null)
       return cachedViAltarS3Texture;
-
-    TextureImporter importer =
-        AssetImporter.GetAtPath(ViAltarS3AssetPath) as TextureImporter;
-    if (importer != null)
+    Texture2D source = GetViAltarS1Texture();
+    if (source == null || !source.isReadable
+        || source.width != 20 || source.height != 48)
     {
-      bool changed = false;
-      if (!importer.isReadable)
-      {
-        importer.isReadable = true;
-        changed = true;
-      }
-      if (importer.filterMode != FilterMode.Point)
-      {
-        importer.filterMode = FilterMode.Point;
-        changed = true;
-      }
-      if (importer.mipmapEnabled)
-      {
-        importer.mipmapEnabled = false;
-        changed = true;
-      }
-      if (changed)
-        importer.SaveAndReimport();
+      ReportStrictOrnamentMissing("ViAltar", "S3", "readable native 20x48 S1 source");
+      return null;
     }
-
-    cachedViAltarS3Texture =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(ViAltarS3AssetPath);
-    if (cachedViAltarS3Texture != null)
-    {
-      cachedViAltarS3Texture.filterMode = FilterMode.Point;
-      cachedViAltarS3Texture.wrapMode = TextureWrapMode.Clamp;
-    }
+    cachedViAltarS3Texture = GenerateDmScaledWallDecoration(
+        source, 6, 19, WallOrnamentFarColorMap, "Vi Altar S3 DOS");
     return cachedViAltarS3Texture;
   }
+
 
   private void BlitViAltarS3IntoPreview(Color32[] pixels)
   {
@@ -36983,40 +36852,18 @@ private static void HandleGameViewPointerDown(
   {
     if (cachedViAltarS2Texture != null)
       return cachedViAltarS2Texture;
-
-    TextureImporter importer =
-        AssetImporter.GetAtPath(ViAltarS2AssetPath) as TextureImporter;
-    if (importer != null)
+    Texture2D source = GetViAltarS1Texture();
+    if (source == null || !source.isReadable
+        || source.width != 20 || source.height != 48)
     {
-      bool changed = false;
-      if (!importer.isReadable)
-      {
-        importer.isReadable = true;
-        changed = true;
-      }
-      if (importer.filterMode != FilterMode.Point)
-      {
-        importer.filterMode = FilterMode.Point;
-        changed = true;
-      }
-      if (importer.mipmapEnabled)
-      {
-        importer.mipmapEnabled = false;
-        changed = true;
-      }
-      if (changed)
-        importer.SaveAndReimport();
+      ReportStrictOrnamentMissing("ViAltar", "S2", "readable native 20x48 S1 source");
+      return null;
     }
-
-    cachedViAltarS2Texture =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(ViAltarS2AssetPath);
-    if (cachedViAltarS2Texture != null)
-    {
-      cachedViAltarS2Texture.filterMode = FilterMode.Point;
-      cachedViAltarS2Texture.wrapMode = TextureWrapMode.Clamp;
-    }
+    cachedViAltarS2Texture = GenerateDmScaledWallDecoration(
+        source, 12, 31, WallOrnamentMediumColorMap, "Vi Altar S2 DOS");
     return cachedViAltarS2Texture;
   }
+
 
   private void BlitViAltarS2IntoPreview(Color32[] pixels)
   {
@@ -37463,8 +37310,11 @@ private static void HandleGameViewPointerDown(
       string family, int depth)
   {
     if (!TryGetDosWallOrnamentRegistration(family, out var registration))
-      throw new System.InvalidOperationException(
-          "Missing DOS wall ornament registration: " + family);
+    {
+      ReportStrictOrnamentMissing(family, "F" + depth,
+          "verified DOS group registration");
+      return new WallOrnamentDepthSlot(0, 0, 0, 0);
+    }
 
     switch (registration.layoutGroup)
     {
@@ -37478,9 +37328,9 @@ private static void HandleGameViewPointerDown(
         break;
     }
 
-    throw new System.InvalidOperationException(
-        "Unverified DOS front layout for " + family
-        + " group=" + registration.layoutGroup + " depth=" + depth);
+    ReportStrictOrnamentMissing(family, "F" + depth,
+        "verified DOS group=" + registration.layoutGroup + " front geometry");
+    return new WallOrnamentDepthSlot(0, 0, 0, 0);
   }
 
   private static void BlitWallOrnamentIntoPreview(
@@ -37518,9 +37368,7 @@ private static void HandleGameViewPointerDown(
         ViAltarEngineF2Width,
         ViAltarEngineF2Height,
         WallOrnamentMediumColorMap,
-        "VI Altar Engine F2 64x37",
-        roundBiasOverride: 0x7fff,
-        sampleTopDown: false);
+        "VI Altar Engine F2 64x37");
     return cachedViAltarEngineF2TestTexture;
   }
 
@@ -37542,9 +37390,7 @@ private static void HandleGameViewPointerDown(
         ViAltarEngineF3Width,
         ViAltarEngineF3Height,
         WallOrnamentFarColorMap,
-        "VI Altar Engine F3 42x24",
-        roundBiasOverride: 0,
-        sampleTopDown: false);
+        "VI Altar Engine F3 42x24");
     return cachedViAltarEngineF3TestTexture;
   }
 
@@ -37622,21 +37468,14 @@ private static void HandleGameViewPointerDown(
       int targetWidth,
       int targetHeight,
       byte[] colorMap,
-      string textureName,
-      int? roundBiasOverride = null,
-      bool sampleTopDown = false,
-      int virtualPaddingLeft = 0,
-      int virtualPaddingRight = 0,
-      bool sampleFromPixelZero = false)
+      string textureName)
   {
     if (source == null
         || !source.isReadable
         || targetWidth <= 0
         || targetHeight <= 0
         || colorMap == null
-        || colorMap.Length < 16
-        || virtualPaddingLeft < 0
-        || virtualPaddingRight < 0)
+        || colorMap.Length < 16)
     {
       return null;
     }
@@ -37644,22 +37483,13 @@ private static void HandleGameViewPointerDown(
     Color32[] sourcePixels = source.GetPixels32();
     Color32[] targetPixels = new Color32[targetWidth * targetHeight];
 
-    // Original PC DOS FIRES F0129 pixel selector (6 fractional bits).
-    // Truncation occurs BEFORE stepping: 28 -> 18 must sample source X=23
-    // at destination X=15, rather than X=24 as in the old 16-bit routine.
-    // Keep existing optional legacy start-bias inputs for other established
-    // decoration placements until their DOS views are independently tested.
-    int samplingSourceWidth = source.width + virtualPaddingLeft
-        + virtualPaddingRight;
+    // ONE DOS 6-bit sampler for all generated ornament distance artwork.
+    // No legacy rounding, sampling-direction or virtual-padding options.
+    int samplingSourceWidth = source.width;
     int stepX = (int)(((long)samplingSourceWidth << 6) / targetWidth);
     int stepY = (int)(((long)source.height << 6) / targetHeight);
-    bool farDistance = ReferenceEquals(colorMap, WallOrnamentFarColorMap);
-    int legacyRoundBias = roundBiasOverride ?? (farDistance ? 0 : 0x7fff);
-    int roundBias6 = legacyRoundBias >= 0
-        ? (legacyRoundBias + 512) / 1024
-        : -((-legacyRoundBias + 512) / 1024);
-    int startX = sampleFromPixelZero ? 0 : (stepX >> 1) + roundBias6;
-    int startY = sampleFromPixelZero ? 0 : (stepY >> 1) + roundBias6;
+    int startX = stepX >> 1;
+    int startY = stepY >> 1;
 
     Color32[] brightPalette = DungeonViewportLightPalettes[0];
 
@@ -37668,11 +37498,9 @@ private static void HandleGameViewPointerDown(
       // GetPixels32() rows are bottom-up. CSBwin's ShrinkBLT samples
       // top-down. Hook F2 uses the source/top-down orientation so both
       // the sampled source row and target row are mirrored together.
-      int samplingY = sampleTopDown ? (targetHeight - 1 - y) : y;
+      int samplingY = targetHeight - 1 - y;
       int sourceY = (int)(((long)startY + (long)samplingY * stepY) >> 6);
-      sourceY = Mathf.Clamp(sourceY, 0, source.height - 1);
-      if (sampleTopDown)
-        sourceY = source.height - 1 - sourceY;
+      sourceY = source.height - 1 - Mathf.Clamp(sourceY, 0, source.height - 1);
       int sourceRow = sourceY * source.width;
       int targetRow = y * targetWidth;
 
@@ -37680,14 +37508,7 @@ private static void HandleGameViewPointerDown(
       {
         int sourceX = (int)(((long)startX + (long)x * stepX) >> 6);
         sourceX = Mathf.Clamp(sourceX, 0, samplingSourceWidth - 1);
-        int nativeSourceX = sourceX - virtualPaddingLeft;
-        if (nativeSourceX < 0 || nativeSourceX >= source.width)
-        {
-          targetPixels[targetRow + x] = new Color32(0, 0, 0, 0);
-          continue;
-        }
-
-        Color32 sourcePixel = sourcePixels[sourceRow + nativeSourceX];
+        Color32 sourcePixel = sourcePixels[sourceRow + sourceX];
         if (sourcePixel.a == 0)
         {
           targetPixels[targetRow + x] = new Color32(0, 0, 0, 0);
@@ -37716,8 +37537,6 @@ private static void HandleGameViewPointerDown(
       }
     }
 
-    if (farDistance)
-      MatchFarTopRowBlackToNeighbors(targetPixels, targetWidth, targetHeight);
 
     Texture2D generated = new Texture2D(
         targetWidth,
@@ -37737,50 +37556,9 @@ private static void HandleGameViewPointerDown(
   /// Those pixels should keep the colour of the other pixels on that row.
   /// A fully black top row is cleared so the wall colour shows through.
   /// </summary>
-  private static void MatchFarTopRowBlackToNeighbors(
-      Color32[] pixels,
-      int width,
-      int height)
-  {
-    int row = (height - 1) * width;
-    for (int x = 0; x < width; x++)
-    {
-      Color32 pixel = pixels[row + x];
-      if (pixel.a == 0 || pixel.r != 0 || pixel.g != 0 || pixel.b != 0)
-        continue;
 
-      bool found = false;
-      Color32 replacement = pixel;
-      for (int distance = 1; distance < width; distance++)
-      {
-        int left = x - distance;
-        if (left >= 0 && IsOpaqueNonBlack(pixels[row + left]))
-        {
-          replacement = pixels[row + left];
-          found = true;
-          break;
-        }
 
-        int right = x + distance;
-        if (right < width && IsOpaqueNonBlack(pixels[row + right]))
-        {
-          replacement = pixels[row + right];
-          found = true;
-          break;
-        }
-      }
 
-      pixels[row + x] = found
-          ? replacement
-          : new Color32(0, 0, 0, 0);
-    }
-  }
-
-  private static bool IsOpaqueNonBlack(Color32 pixel)
-  {
-    return pixel.a != 0
-        && (pixel.r != 0 || pixel.g != 0 || pixel.b != 0);
-  }
 
   /// <summary>
   /// Recover exact original DM palette indices whenever the RGBA source pixel
@@ -37892,9 +37670,7 @@ private static void HandleGameViewPointerDown(
         width,
         height,
         WallOrnamentMediumColorMap,
-        "Slime F2 Generated from F1",
-        roundBiasOverride: 0x7fff,
-        sampleTopDown: false);
+        "Slime F2 Generated from F1");
     return cachedSlimeGeneratedF2FrontTexture;
   }
 
@@ -37912,9 +37688,7 @@ private static void HandleGameViewPointerDown(
         SlimeD3FrontWidth,
         SlimeD3FrontHeight,
         WallOrnamentFarColorMap,
-        "Slime F3 Generated from F1",
-        roundBiasOverride: 0,
-        sampleTopDown: false);
+        "Slime F3 Generated from F1");
     return cachedSlimeGeneratedF3FrontTexture;
   }
 
@@ -38201,9 +37975,7 @@ private static void HandleGameViewPointerDown(
         4,
         3,
         WallOrnamentMediumColorMap,
-        "Slime Side F2 Generated from F1",
-        roundBiasOverride: 0x7fff,
-        sampleTopDown: false);
+        "Slime Side F2 Generated from F1");
     return cachedSlimeSide2Texture;
   }
 
@@ -39486,8 +39258,7 @@ private static void HandleGameViewPointerDown(
         true, out _, out _, out int width, out int height);
     cachedManaclesGeneratedD3SideTexture = GenerateDmScaledWallDecoration(
         source, width, height, WallOrnamentFarColorMap,
-        "Manacles S3 DOS 6-bit Side", roundBiasOverride: 0,
-        sampleTopDown: true);
+        "Manacles S3 DOS 6-bit Side");
     return cachedManaclesGeneratedD3SideTexture;
   }
 
@@ -39705,8 +39476,7 @@ private static void HandleGameViewPointerDown(
     // Native 32x42 side image; medium palette, zero bias, top-down sampling.
     cachedManaclesGeneratedD2SideTexture = GenerateDmScaledWallDecoration(
         source, width, height, WallOrnamentMediumColorMap,
-        "Manacles S2 DOS 6-bit Side", roundBiasOverride: 0,
-        sampleTopDown: true);
+        "Manacles S2 DOS 6-bit Side");
     return cachedManaclesGeneratedD2SideTexture;
   }
 
@@ -39934,9 +39704,7 @@ private static void HandleGameViewPointerDown(
         ManaclesD3FrontWidth,
         ManaclesD3FrontHeight,
         WallOrnamentFarColorMap,
-        "Manacles F3 Generated from F1",
-        roundBiasOverride: 0,
-        sampleTopDown: true);
+        "Manacles F3 Generated from F1");
     return cachedManaclesGeneratedF3FrontTexture;
   }
 
@@ -40015,9 +39783,7 @@ private static void HandleGameViewPointerDown(
     int width = center.x2 - center.x1 + 1;
     cachedManaclesOriginalCornerF2Texture = GenerateDmScaledWallDecoration(
         source, width, corner.height, WallOrnamentMediumColorMap,
-        "Manacles CSBwin Center F2 for Corner Crop",
-        roundBiasOverride: 0x7fff,
-        sampleTopDown: false);
+        "Manacles CSBwin Center F2 for Corner Crop");
     return cachedManaclesOriginalCornerF2Texture;
   }
 
@@ -40037,10 +39803,7 @@ private static void HandleGameViewPointerDown(
         targetWidth,
         targetHeight,
         WallOrnamentMediumColorMap,
-        "Manacles F2 Generated from F1",
-        roundBiasOverride: 0,
-        sampleTopDown: true,
-        sampleFromPixelZero: false);
+        "Manacles F2 Generated from F1");
     return cachedManaclesGeneratedF2FrontTexture;
   }
 
@@ -40378,11 +40141,7 @@ private static void HandleGameViewPointerDown(
           DosGroup0FrontWallOrnamentSet.f3.width,
           DosGroup0FrontWallOrnamentSet.f3.height,
           WallOrnamentFarColorMap,
-          "Hook F3 Generated From DOS F1 With Virtual Padding",
-          virtualPaddingLeft: 2,
-          virtualPaddingRight: 2,
-          roundBiasOverride: 0,
-          sampleTopDown: false);
+          "Hook F3 Generated From DOS F1 With Virtual Padding");
     }
     finally
     {
@@ -40409,9 +40168,7 @@ private static void HandleGameViewPointerDown(
         HookDosF2Width,
         HookDosF2Height,
         WallOrnamentMediumColorMap,
-        "Hook F2 DOS native 28x28 to 18x18",
-        roundBiasOverride: 0,
-        sampleTopDown: true);
+        "Hook F2 DOS native 28x28 to 18x18");
     if (cachedHookGeneratedF2FrontTexture == null)
       LogMissingArtworkCyan("Hook F2: DOS-native scaling failed: " + HookDosF2AssetPath);
     return cachedHookGeneratedF2FrontTexture;
@@ -40510,8 +40267,7 @@ private static void HandleGameViewPointerDown(
     // 6-bit scaler and accepted S2 sampling arguments stay unchanged.
     cachedHookSide2Texture = GenerateDmScaledWallDecoration(
         source, HookD2SideWidth, HookD2SideHeight,
-        WallOrnamentMediumColorMap, "Hook S2 DOS 6-bit Side",
-        roundBiasOverride: 0, sampleTopDown: true);
+        WallOrnamentMediumColorMap, "Hook S2 DOS 6-bit Side");
     return cachedHookSide2Texture;
   }
 
@@ -40535,8 +40291,7 @@ private static void HandleGameViewPointerDown(
         HookD3SideWidth,
         HookD3SideHeight,
         WallOrnamentFarColorMap,
-        "Hook S3 DOS 6-bit Side", roundBiasOverride: 0,
-        sampleTopDown: true);
+        "Hook S3 DOS 6-bit Side");
     if (cachedHookSide3Texture == null)
       LogMissingArtworkCyan("Hook S3: failed to generate 6x8 from " + HookSideAssetPath);
     return cachedHookSide3Texture;
@@ -40764,8 +40519,7 @@ private static void HandleGameViewPointerDown(
     // Same FIRES 6-bit nearest-source sampling used by Hook and Manacles S3.
     cachedGrateSide3Texture = GenerateDmScaledWallDecoration(
         source, GrateD3SideWidth, GrateD3SideHeight,
-        WallOrnamentFarColorMap, "Grate S3 DOS 6-bit Side",
-        roundBiasOverride: 0, sampleTopDown: true);
+        WallOrnamentFarColorMap, "Grate S3 DOS 6-bit Side");
     return cachedGrateSide3Texture;
   }
 
@@ -40808,8 +40562,7 @@ private static void HandleGameViewPointerDown(
     // its exact source sampling still needs a PC DOS corner comparison.
     cachedGrateF2SideTexture = GenerateDmScaledWallDecoration(
         source, 20, 13, WallOrnamentMediumColorMap,
-        "Grate F2 side corner DOS 6-bit from native F1",
-        roundBiasOverride: 0, sampleTopDown: true);
+        "Grate F2 side corner DOS 6-bit from native F1");
     return cachedGrateF2SideTexture;
   }
 
@@ -40862,18 +40615,11 @@ private static void HandleGameViewPointerDown(
 
   private Texture2D GetGrateF3SideCornerTexture()
   {
-    if (cachedGrateF3SideTexture != null)
-      return cachedGrateF3SideTexture;
-    Texture2D image = AssetDatabase.LoadAssetAtPath<Texture2D>(GrateF3SideAssetPath);
-    if (image == null || image.width != 14 || image.height != 8 || !image.isReadable)
-    {
-      LogMissingArtworkCyan("ViewEdit: Grate F3 Side requires readable native 14x8 asset: "
-          + GrateF3SideAssetPath);
-      return null;
-    }
-    cachedGrateF3SideTexture = image;
-    return image;
+    ReportStrictOrnamentMissing("Grate", "F3 corner",
+        "verified DOS native corner source and geometry");
+    return null;
   }
+
 
   private void BlitGrateF3SideCornerIntoPreview(Color32[] pixels)
   {
@@ -40928,8 +40674,7 @@ private static void HandleGameViewPointerDown(
     // separately against the DOS PC screenshot.
     cachedGrateSide2Texture = GenerateDmScaledWallDecoration(
         source, GrateD2SideWidth, GrateD2SideHeight,
-        WallOrnamentMediumColorMap, "Grate S2 DOS 6-bit Side",
-        roundBiasOverride: 0, sampleTopDown: true);
+        WallOrnamentMediumColorMap, "Grate S2 DOS 6-bit Side");
     return cachedGrateSide2Texture;
   }
 
@@ -41191,9 +40936,7 @@ private static void HandleGameViewPointerDown(
         14,
         9,
         WallOrnamentFarColorMap,
-        "Grate F3 DOS 6-bit from native F1",
-        roundBiasOverride: 0,
-        sampleTopDown: false);
+        "Grate F3 DOS 6-bit from native F1");
     return cachedGrateFront3Texture;
   }
 
@@ -41270,8 +41013,7 @@ private static void HandleGameViewPointerDown(
     // Native DOS 32x20 -> F2 21x13 (scale 21/32, integer rounding).
     cachedGrateFront2Texture = GenerateDmScaledWallDecoration(
         source, 21, 13, WallOrnamentMediumColorMap,
-        "Grate F2 DOS 6-bit from native F1", roundBiasOverride: 0,
-        sampleTopDown: true);
+        "Grate F2 DOS 6-bit from native F1");
     return cachedGrateFront2Texture;
   }
 
@@ -43744,21 +43486,6 @@ private static void HandleGameViewPointerDown(
               : PreviewHeight - y - texture.height)
           + "; deltaFromDefault=" + (x - defaultX) + "," + (y - defaultY)
           + "; mirror=" + mirror);
-    }
-    // Opt-in projection changes Y only, after normal calibration.
-    // Off immediately restores original approved positions.
-    if (TryGetOrnamentProjectionExperimentY(
-            ornament, key, texture, out int experimentY))
-    {
-      y = experimentY;
-      if (manaclesProjectionExperimentEnabled
-          && IsManaclesOrnament(ornament)
-          && key.StartsWith("OrnamentProjection:Manacles:S3:",
-              System.StringComparison.Ordinal))
-      {
-        ApplyManaclesS3AcceptedReference(key, ref x, ref y, ref mirror);
-        ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
-      }
     }
     // Geometry/caller chooses the orientation for all shared wall-ornament
     // blits. Saved legacy mirror values and temporary ViewEdit mirror drafts
