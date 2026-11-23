@@ -1451,10 +1451,10 @@ public class DungeonFeatureEditor : EditorWindow
     float mapPixelWidth = map.Width * CellSize;
     float mapPixelHeight = map.Height * CellSize;
     List<FloorItemPlacementRecord> previewRecords = GetInspectedFloorItems();
-    bool showMultiItemPreview = previewRecords != null && previewRecords.Count > 1;
+    bool showItemPreview = previewRecords != null && previewRecords.Count > 0;
     // Reserve sufficient horizontal space for one row of item previews.
     List<OriginalWallOrnamentMarker> selectedOrnaments = GetSelectedWallOrnaments();
-    float floorReserve = showMultiItemPreview
+    float floorReserve = showItemPreview
         ? GetSelectedFloorItemPopupWidth(previewRecords.Count) + 16f
         : 0f;
     float popupReserve = Mathf.Max(floorReserve,
@@ -1562,7 +1562,7 @@ public class DungeonFeatureEditor : EditorWindow
     else
     {
       List<FloorItemPlacementRecord> currentPopupRecords = GetInspectedFloorItems();
-      if (currentPopupRecords != null && currentPopupRecords.Count > 1)
+      if (currentPopupRecords != null && currentPopupRecords.Count > 0)
         DrawSelectedFloorItemsPopup(mapRect, currentPopupRecords);
       else
         DrawSelectedWallOrnamentPreview(mapRect);
@@ -1576,7 +1576,7 @@ public class DungeonFeatureEditor : EditorWindow
     EditorGUILayout.EndScrollView();
   }
 
-  // One horizontal row of multi-item previews. Each item uses a compact
+  // One horizontal row of floor-item previews (including single items). Each item uses a compact
   // mini-block: green name on top, 32x32 icon underneath. Record IDs are
   // omitted here to keep dense multi-item popups readable.
   // Split long multi-word names into two lines to keep an item pile compact.
@@ -1641,7 +1641,7 @@ public class DungeonFeatureEditor : EditorWindow
   private void DrawSelectedFloorItemsPopup(Rect mapRect,
       List<FloorItemPlacementRecord> records)
   {
-    if (records == null || records.Count <= 1)
+    if (records == null || records.Count == 0)
       return;
 
     Rect popup = GetSelectedFloorItemPopupRect(mapRect, records.Count);
@@ -1677,7 +1677,7 @@ public class DungeonFeatureEditor : EditorWindow
     GUI.Label(new Rect(popup.x + padding, popup.y + padding,
         popup.width - 2f * padding, headingHeight),
         "(" + inspectedFloorItemX + "," + inspectedFloorItemY
-        + ")  " + records.Count + " items", heading);
+        + ")  " + records.Count + (records.Count == 1 ? " item" : " items"), heading);
 
     GUIStyle nameStyle = new GUIStyle(EditorStyles.label)
     {
@@ -3360,7 +3360,7 @@ public class DungeonFeatureEditor : EditorWindow
 
     Vector2 mouse = current.mousePosition;
     List<FloorItemPlacementRecord> popupRecords = GetInspectedFloorItems();
-    if (popupRecords != null && popupRecords.Count > 1
+    if (popupRecords != null && popupRecords.Count > 0
         && GetSelectedFloorItemPopupRect(mapRect, popupRecords.Count).Contains(mouse))
     {
       current.Use();

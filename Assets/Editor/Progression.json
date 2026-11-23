@@ -5381,5 +5381,23 @@
       "All prior ornament approvals and DOS rendering remain unchanged"
     ],
     "next_test": "Compile Unity; search slime, press Enter in search field to advance, test 12-character cap, and confirm 2 px green interior border and right-aligned header layout."
+  },
+  "dungeon_features_single_item_popup_20261123": {
+    "date": "2026-11-23 20:05:39 CET",
+    "status": "implemented; Unity compile/visual verification pending",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "Show the existing orange connector and right-side 1:1 floor-item preview panel for tiles with exactly one floor item, as well as multi-item tiles.",
+    "details": [
+      "Reserve popup width for one or more inspected floor-item records.",
+      "Draw the same panel and orange line for single-item inspections.",
+      "Use singular item label for count 1.",
+      "Protect popup hit region for one or more records."
+    ],
+    "unchanged": [
+      "No change to orange multi-item tile markers.",
+      "No change to tile dimensions, map zoom, search highlight, click-to-inspect, double-click navigation, inscription priority, or wall-ornament preview.",
+      "No change to ViewportLayoutEditor.cs or DOS renderer."
+    ],
+    "next_step": "In Unity, click a floor tile containing exactly one item; verify orange line and right-side icon panel, then recheck a multi-item tile."
   }
 }
