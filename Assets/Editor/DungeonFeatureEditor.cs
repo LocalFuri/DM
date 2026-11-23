@@ -873,6 +873,24 @@ public class DungeonFeatureEditor : EditorWindow
   }
 
 
+  // Display-only compact record ID. The source record identifier retains
+  // its original leading zeroes for lookup and diagnostics.
+  private static string GetCompactFloorItemId(string id)
+  {
+    if (string.IsNullOrEmpty(id) || id.Length < 2)
+      return id;
+    char prefix = id[0];
+    if (!char.IsLetter(prefix))
+      return id;
+    for (int i = 1; i < id.Length; i++)
+      if (id[i] < '0' || id[i] > '9')
+        return id;
+    int firstDigit = 1;
+    while (firstDigit < id.Length - 1 && id[firstDigit] == '0')
+      firstDigit++;
+    return prefix + id.Substring(firstDigit);
+  }
+
   // Compact one-line tile summary. The tooltip retains the complete list
   // without pushing the map down or crowding its cells.
   private GUIContent GetSelectedFloorItemsSummary()
@@ -892,18 +910,19 @@ public class DungeonFeatureEditor : EditorWindow
     {
       FloorItemPlacementRecord entry = records[i];
       string label = GetFloorItemDisplayName(entry);
-      string description = label + " [" + entry.id + "]";
+      string compactId = GetCompactFloorItemId(entry.id);
+      string description = label + " [" + compactId + "]";
       tooltip.Append("\n").Append(i + 1).Append(". ").Append(description);
       if (i < 2)
       {
         if (i > 0)
           brief.Append(", ");
         brief.Append("<color=#00FF00>").Append(label)
-            .Append("</color> [").Append(entry.id).Append("]");
+            .Append("</color> [").Append(compactId).Append("]");
       }
     }
     if (records.Count > 2)
-      brief.Append(" +").Append(records.Count - 2).Append(" more");
+      brief.Append(" — 2 items + ").Append(records.Count - 2).Append(" more");
     return new GUIContent(brief.ToString(), tooltip.ToString());
   }
 

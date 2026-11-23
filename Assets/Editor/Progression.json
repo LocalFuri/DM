@@ -5636,5 +5636,18 @@
       "All ornament geometry, DOS scaling, calibration and ViewEdit interaction"
     ],
     "example": "Searching Hook then clicking a Slime wall tile changes Search item to Slime."
+  },
+  "dungeon_features_compact_item_ids_and_summary_20261123": {
+    "date": "2026-11-23",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "file": "DungeonFeatureEditor.cs",
+    "changes": [
+      "First-line inspected floor-item summary explicitly shows number displayed plus remaining items (for seven: 2 items + 5 more).",
+      "Floor-item record references in the header and tooltip suppress leading zeroes (P00279 -> P279), leaving original source IDs unchanged."
+    ],
+    "preserved": [
+      "Search field, focus, click-to-replace behavior, overview zoom and connectors",
+      "Wall and floor icon rendering and approved DOS ornament calibrations"
+    ]
   }
 }
