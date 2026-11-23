@@ -57,7 +57,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-23: Phase D2 Hook F1/F2/F3 shared placement matching prepared; Unity verification PENDING. Grate F1/F2/F3 user approved (F3 calibrated via Apply). Hook/Grate/Manacles S2/S3 approved. Preserve existing calibration and source behavior.",
+  "checkpoint": "2026-11-23: Phase D2 Hook front F1/F2/F3 placement refactor approved by user. Hook S2/S3 previously approved. Grate F1/F2/F3 previously approved (F3 recalibrated with Apply); Grate S2/S3 and Manacles S2/S3 approved (Manacles S3 recalibrated). Preserve all accepted calibrations and DOS 6-bit scaling. Next: Phase D3, cautious Manacles front-placement helper extension.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -5251,7 +5251,7 @@
   },
   "ornament_cleanup_20261123_phase_d2_hook_front_placement": {
     "date_local": "2026-11-23T19:12:04+01:00",
-    "status": "PATCH PREPARED — UNITY TEST PENDING",
+    "status": "USER VERIFIED — Hook F1, F2, F3 visually approved on 2026-11-23",
     "scope": "ViewportLayoutEditor.cs only: Hook F1/F2/F3 wall-face/coordinate matching",
     "changes": [
       "Reused MatchesFrontWallOrnamentPlacement introduced in D1 for Hook F1, F2, F3 instead of repeated wallTilePlacement branches.",
@@ -5265,6 +5265,46 @@
       "Phase C Champion Mirror and cyan missing artwork diagnostics",
       "V17 walls and all DOS 6-bit sampling"
     ],
-    "testing": "Static source checks only; Unity compilation and visual acceptance pending."
+    "testing": "User verified Hook F1/F2/F3 after Phase D2 installation. Keep accepted placement, special Hook F2 top-down DOS sampling and F3 original decoration-table Y unchanged.",
+    "user_verification": {
+      "Hook F1": "approved",
+      "Hook F2": "approved",
+      "Hook F3": "approved",
+      "console": "not separately reported; do not infer clean Console from visual approval"
+    }
+  },
+  "hook_front_approvals_20261123": {
+    "date_local": "2026-11-23T19:17:00+01:00",
+    "status": "APPROVED BY USER",
+    "perspectives": {
+      "F1": "approved",
+      "F2": "approved",
+      "F3": "approved",
+      "S2": "previously approved",
+      "S3": "previously approved"
+    },
+    "source_phase": "ornament_cleanup_20261123_phase_d2_hook_front_placement",
+    "critical_preservation": "Preserve exact approved Hook F1/F2/F3 placement and DOS scaling; do not alter the accepted Hook S2/S3, Grate F1/F2/F3 (including F3 Apply calibration), or Manacles S2/S3 (including S3 Apply calibration).",
+    "next": "Phase D3: evaluate extending common front-wall placement matching to Manacles using small, no-geometry-change steps."
+  },
+  "ornament_cleanup_20261123_phase_d3_manacles_front_placement": {
+    "date_local": "2026-11-23T19:22:05+01:00",
+    "status": "PATCH PREPARED — UNITY TEST PENDING",
+    "source_baseline": "Phase D2 approved ViewportLayoutEditor.cs; checkpoint from Hook F1/F2/F3 approval",
+    "change": "Replace identical Manacles F1/F2/F3 wall-ornament placement matching blocks with existing MatchesFrontWallOrnamentPlacement helper. Remove now-unused per-method visiblePhysicalWallFace local.",
+    "methods": [
+      "BlitManaclesD1FrontIntoPreview",
+      "BlitManaclesD2FrontIntoPreview",
+      "BlitManaclesD3FrontIntoPreview"
+    ],
+    "preserved": [
+      "Manacles F1 wall-tile-type requirement; F2/F3 corridor checks",
+      "Manacles front texture generation, DOS 6-bit scaling and placement X/Y and calibration",
+      "Manacles S2/S3 accepted rendering and S3 Apply recalibration",
+      "Grate F1/F2/F3 accepted rendering and F3 Apply recalibration",
+      "Hook F1/F2/F3 and S2/S3 accepted rendering",
+      "V17 and cyan missing-artwork diagnostics"
+    ],
+    "verification": "Static comparison of all three placement branches only; requires Unity compilation and visual Manacles F1/F2/F3 confirmation before approval."
   }
 }
