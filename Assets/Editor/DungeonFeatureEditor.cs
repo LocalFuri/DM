@@ -1558,17 +1558,17 @@ public class DungeonFeatureEditor : EditorWindow
     DrawVerifiedChampionTileHighlights(mapRect);
     DrawChampionMirrorMarkers(mapRect);
     DrawInscriptionMarkers(mapRect);
-    // The click may have selected a new tile during this GUI event. Read the
-    // current inspection state now, instead of using the previous frame's data.
-    // INS inspection has priority over item and ornament previews.
-    // The inscription panel must appear even on a tile with other features.
-    if (GetInscriptionRecordsAt(inspectedInscriptionX, inspectedInscriptionY).Count > 0)
-      DrawSelectedInscriptionPreview(mapRect);
-    else
+    // The click may have selected a new tile during this GUI event.
+    // Floor-item panels are rendered AFTER EndScrollView, so they can reach
+    // the true top of the window without being clipped by its scroll area.
+    bool showFloorPopup = GetInscriptionRecordsAt(
+        inspectedInscriptionX, inspectedInscriptionY).Count == 0
+        && GetInspectedFloorItems() != null
+        && GetInspectedFloorItems().Count > 0;
+    if (!showFloorPopup)
     {
-      List<FloorItemPlacementRecord> currentPopupRecords = GetInspectedFloorItems();
-      if (currentPopupRecords != null && currentPopupRecords.Count > 0)
-        DrawSelectedFloorItemsPopup(mapRect, currentPopupRecords);
+      if (GetInscriptionRecordsAt(inspectedInscriptionX, inspectedInscriptionY).Count > 0)
+        DrawSelectedInscriptionPreview(mapRect);
       else
         DrawSelectedWallOrnamentPreview(mapRect);
     }
@@ -1579,6 +1579,28 @@ public class DungeonFeatureEditor : EditorWindow
     DrawFeatureSearchHighlight(mapRect);
 
     EditorGUILayout.EndScrollView();
+
+    if (showFloorPopup)
+    {
+      // After EndScrollView, GUI coordinates refer to the editor window.
+      // The popup can occupy the upper-right corner directly below the tab,
+      // above the map's scroll viewport, without clipping.
+      Rect scrollViewport = GUILayoutUtility.GetLastRect();
+      List<FloorItemPlacementRecord> currentPopupRecords = GetInspectedFloorItems();
+      if (currentPopupRecords != null && currentPopupRecords.Count > 0)
+      {
+        Rect popup = GetSelectedFloorItemPopupRect(mapRect,
+            currentPopupRecords.Count);
+        popup.x = mapRect.xMax + 8f - mapScroll.x + scrollViewport.x;
+        popup.y = 29f;
+        Vector3 tileCenter = new Vector3(
+            mapRect.x + (inspectedFloorItemX + 0.5f) * CellSize
+                - mapScroll.x + scrollViewport.x,
+            mapRect.y + (inspectedFloorItemY + 0.5f) * CellSize
+                - mapScroll.y + scrollViewport.y, 0f);
+        DrawSelectedFloorItemsPopup(popup, tileCenter, currentPopupRecords);
+      }
+    }
   }
 
   // One horizontal row of floor-item previews (including single items). Each item uses a compact
@@ -1650,21 +1672,18 @@ public class DungeonFeatureEditor : EditorWindow
     float width = GetSelectedFloorItemPopupWidth(itemCount);
     float height = 8f * unit * 2f + 18f * unit + 64f * unit;
     float x = mapRect.xMax + 8f;
-    float y = mapRect.y - (LabelTopMargin + OutsideFeatureVerticalMargin) * mapZoom
-        + 2f;
+    // Default content-space rectangle for measuring popup dimensions.
+    // Actual top-right window coordinates are set after EndScrollView.
+    float y = mapRect.y;
     return new Rect(x, y, width, height);
   }
 
-  private void DrawSelectedFloorItemsPopup(Rect mapRect,
+  private void DrawSelectedFloorItemsPopup(Rect popup, Vector3 tileCenter,
       List<FloorItemPlacementRecord> records)
   {
     if (records == null || records.Count == 0)
       return;
 
-    Rect popup = GetSelectedFloorItemPopupRect(mapRect, records.Count);
-    Vector3 tileCenter = new Vector3(
-        mapRect.x + (inspectedFloorItemX + 0.5f) * CellSize,
-        mapRect.y + (inspectedFloorItemY + 0.5f) * CellSize, 0f);
     Vector3 popupEnd = new Vector3(popup.xMin, popup.center.y, 0f);
     Handles.BeginGUI();
     Color previous = Handles.color;
@@ -3376,13 +3395,6 @@ public class DungeonFeatureEditor : EditorWindow
       return;
 
     Vector2 mouse = current.mousePosition;
-    List<FloorItemPlacementRecord> popupRecords = GetInspectedFloorItems();
-    if (popupRecords != null && popupRecords.Count > 0
-        && GetSelectedFloorItemPopupRect(mapRect, popupRecords.Count).Contains(mouse))
-    {
-      current.Use();
-      return;
-    }
     if (!mapRect.Contains(mouse))
       return;
 

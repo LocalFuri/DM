@@ -5448,5 +5448,34 @@
       "all ornament rendering and calibrations"
     ],
     "next_test": "Type slime in Search item, press Enter once per result; verify counter and item popup follow the selected tile on every keypress."
+  },
+  "dungeon_features_item_popup_top_anchor_20261123": {
+    "date_local": "2026-11-23T20:21:54+01:00",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "source": "DungeonFeatureEditor.cs",
+    "change": "Anchor the floor item/items image preview panel to the top of the visible Dungeon Features map scroll area, rather than the top of the full scrollable map content; follow mapScroll.y so the panel remains at the top after searching/scanning lower tiles.",
+    "preserved": [
+      "Orange connector from inspected tile to preview panel",
+      "Single- and multiple-item names and 32x32 icons",
+      "Search item Enter and arrows, 12-character limit",
+      "Map zoom, green interior 2px highlight, original tile size",
+      "No changes to DOS/Unity viewport ornament rendering or calibrations"
+    ],
+    "next_test": "Navigate to a floor item on a lower map row using Search item, scroll vertically, and confirm its preview remains at the top right of the visible map area."
+  },
+  "dungeon_features_item_popup_window_top_20261123": {
+    "date_local": "2026-11-23T20:28:58+0100",
+    "source": "DungeonFeatureEditor.cs",
+    "status": "SOURCE MODIFIED — UNITY VERIFICATION PENDING",
+    "issue": "Floor-item popup remained below the first toolbar line because it was rendered inside the scroll view and anchored to its content area.",
+    "change": "Render the item popup in editor-window GUI coordinates after EndScrollView, with its top at y=29 below the tab; connect to the selected tile using map scroll translation. Preserve dynamic panel width and single/multiple item display.",
+    "preserved": [
+      "2px interior green search tile outline",
+      "Enter/previous/next navigation",
+      "Orange connector and inventory graphics",
+      "Original map size and zoom",
+      "All approved ornaments, DOS scaler and calibrations"
+    ],
+    "test": "Select Solid Key at (14,7) and items lower on map; confirm popup top aligns just under Dungeon Features tab, keeps names visible, and connector follows when scrolling."
   }
 }
