@@ -42,6 +42,13 @@
             "dx": 0,
             "dy": -1,
             "mirror": false
+        },
+        {
+            "key": "OrnamentProjection:WoodRing:F1",
+            "artworkSignature": "",
+            "dx": 0,
+            "dy": -3,
+            "mirror": false
         }
     ]
 }
