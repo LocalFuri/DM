@@ -21380,35 +21380,12 @@ private static void HandleGameViewPointerDown(
   // Render only after that depth's walls but before closer walls.
   private void BlitV17FarWallFeaturesAtDepth(Color32[] pixels)
   {
-    BlitUnifiedChampionMirrorLeftF3Preview(pixels);
-    BlitUnifiedChampionMirrorExtendedSideLaneF3Preview(pixels);
-    BlitViAltarD3FrontIntoPreview(pixels);
-    BlitWoodRingD3SidesIntoPreview(pixels);
-    BlitHookD3SidesIntoPreview(pixels);
-    BlitGrateD3SidesIntoPreview(pixels);
-    BlitWoodRingD3FrontIntoPreview(pixels);
-    BlitHookD3FrontIntoPreview(pixels);
-    BlitManaclesD3FrontIntoPreview(pixels);
-    BlitManaclesD3SidesIntoPreview(pixels);
-    BlitSlimeD3FrontIntoPreview(pixels);
-    BlitGrateD3FrontIntoPreview(pixels);
-    BlitViAltarS3IntoPreview(pixels);
+    ReportUnresolvedStrictDosOrnaments(3);
   }
 
   private void BlitV17MidWallFeaturesAtDepth(Color32[] pixels)
   {
-    BlitViAltarD2FrontIntoPreview(pixels);
-    BlitSlimeD2SidesIntoPreview(pixels);
-    BlitWoodRingD2SidesIntoPreview(pixels);
-    BlitHookD2SidesIntoPreview(pixels);
-    BlitGrateD2SidesIntoPreview(pixels);
-    BlitManaclesD2SidesIntoPreview(pixels);
-    BlitWoodRingD2FrontIntoPreview(pixels);
-    BlitManaclesD2FrontIntoPreview(pixels);
-    BlitSlimeD2FrontIntoPreview(pixels);
-    BlitHookD2FrontIntoPreview(pixels);
-    BlitGrateD2FrontIntoPreview(pixels);
-    BlitViAltarS2IntoPreview(pixels);
+    ReportUnresolvedStrictDosOrnaments(2);
   }
 
   /// <summary>
@@ -21417,72 +21394,39 @@ private static void HandleGameViewPointerDown(
   /// Preserve the order here because some ornaments intentionally overlap
   /// other feature artwork at the same depth.
   /// </summary>
+  // Strict reset: legacy ornament and mirror blitters are NOT invoked.
+  // Only non-ornament gameplay layers remain. Missing registration is cyan.
   private void BlitPostMapFeaturesAndOrnamentsIntoPreview(Color32[] pixels)
   {
-    // In non-V17 layouts, retain the legacy complete post-wall ornament pass.
     if (!IsViewport17WallAuthorityActive())
     {
       BlitV17FarWallFeaturesAtDepth(pixels);
       BlitV17MidWallFeaturesAtDepth(pixels);
     }
-
-    // Floor features first, so wall-mounted artwork can sit above them.
-    BlitPuddlesIntoPreview(pixels);
-    BlitMossIntoPreview(pixels);
+    ReportUnresolvedStrictDosOrnaments(1);
     BlitDroppedTorchesIntoPreview(pixels);
-
-    // Legacy champion-mirror drawing has been removed deliberately.
-    // Mirror data and calibration controls remain for a unified renderer.
-    // Unified mirror preview, first stage: the same front-wall geometry,
-    // calibration key and artwork selection for every champion.  It also
-    // runs before a calibration exists so ViewEdit can visually position it.
-    BlitUnifiedChampionMirrorFrontPreview(pixels);
-    BlitUnifiedChampionMirrorCornerF2Preview(pixels);
-    BlitUnifiedChampionMirrorS1Preview(pixels);
-
-    // Wall decorations (ordinary ornaments retain their own rendering).
-
-    // Large wall fixtures.
-    BlitViAltarD1FrontIntoPreview(pixels);
-
-    // Hall / dungeon wall ornaments. Keep the existing verified order.
-    BlitGrateF2SideCornerIntoPreview(pixels);
-    BlitGrateF3SideCornerIntoPreview(pixels);
-    BlitHookStyleD1SidesIntoPreview(pixels);
-    BlitManaclesD1SidesIntoPreview(pixels);
-    BlitGrateD1SidesIntoPreview(pixels);
-    BlitSlimeD1SidesIntoPreview(pixels);
-    BlitWoodRingD1FrontIntoPreview(pixels);
-
-    BlitOrnamentCornerFrontF2IntoPreview(pixels);
-
-    BlitManaclesD1FrontIntoPreview(pixels);
-    BlitSlimeD1FrontIntoPreview(pixels);
-    BlitHookD1FrontIntoPreview(pixels);
-    BlitGrateD1FrontIntoPreview(pixels);
-    BlitEmptyTorchHolderF1IntoPreview(pixels);
-    BlitTorchHolderS1IntoPreview(pixels);
-    // Only invoke inscription drawing when an actual, enabled, map-derived
-    // inscription projects onto the currently visible front wall.
-    // In particular, ordinary Front F1 walls never enter the inscription pass.
-    // Repair only the measured mortar joint on the wall that carries the
-    // Altar inscription, before drawing text. Other Front F1 walls are never altered.
-    PatchAltarInscriptionMortarJoint(pixels);
     if (HasVisibleEnabledWallInscriptionAtPreviewPose())
       BlitWallInscriptionsIntoPreview(pixels);
-
-    // Vi Altar side projections. Draw far-to-near.
-    BlitViAltarS1IntoPreview(pixels);
-
-    // Floor items occupy the final viewport feature layer. In particular,
-    // a newly dropped item must not be covered by a subsequent feature pass.
-    // BlitFloorItemsIntoPreview retains the established original-then-moved
-    // order, CSBwin pile offsets, and independent LIFO pickup state.
     BlitFloorItemsIntoPreview(pixels);
     BlitSuspendedThrownItemsIntoPreview(pixels);
   }
 
-
+  private void ReportUnresolvedStrictDosOrnaments(int depth)
+  {
+    if (previewWallOrnaments == null || previewWallOrnaments.Length == 0)
+      return;
+    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    {
+      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (ornament == null || !IsPreviewFeatureEnabled(
+          MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+        continue;
+      string family = string.IsNullOrEmpty(ornament.type)
+          ? "Unknown" : ornament.type;
+      ReportStrictOrnamentMissing(family, "depth " + depth,
+          "native DOS registry, validated geometry and unified draw path");
+    }
+  }
 
   private static void ApplyDungeonViewportLightPalette(
       Color32[] pixels,
