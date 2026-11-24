@@ -20862,6 +20862,7 @@ private static void HandleGameViewPointerDown(
       pending.Add(new KeyValuePair<int, WallOrnamentPlacement>(view, ornament));
     }
     if (pending.Count == 0 || !TryGetStrictDosGeometry(out DosOrnamentGeometryResolver resolver)) return;
+    if (!TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore calibration)) return;
     pending.Sort((a, b) => a.Key.CompareTo(b.Key));
     foreach (var entry in pending)
     {
@@ -20874,7 +20875,8 @@ private static void HandleGameViewPointerDown(
       Texture2D scaled = null;
       try
       {
-        DosOrnamentGeometryResolver.Result r = resolver.Resolve(registration.type, entry.Key);
+        GetStrictDosOrnamentOffset(calibration, family, entry.Key, out int dx, out int dy);
+        DosOrnamentGeometryResolver.Result r = resolver.Resolve(registration.type, entry.Key, dx, dy);
         if (!r.ClippedX.HasValue || !r.ClippedY.HasValue || !r.SourceX.HasValue || !r.SourceY.HasValue)
           continue; // Fully clipped by original layout.
         string sourcePath = (r.Graphic - 259) % 2 == 1 ? registration.frontPath : registration.sidePath;
@@ -20913,6 +20915,51 @@ private static void HandleGameViewPointerDown(
         if (scaled != null) UnityEngine.Object.DestroyImmediate(scaled);
       }
     }
+  }
+
+  // Global screen-space calibration, independent of level, tile and facing.
+  // A shared side entry applies to both sides; an explicit side entry replaces it.
+  // No absolute REF/entries coordinates, signature overrides or saved mirror flags.
+  private static void GetStrictDosOrnamentOffset(OrnamentCalibrationJsonStore data,
+      string family, int view, out int dx, out int dy)
+  {
+    dx = 0; dy = 0;
+    string projection;
+    string side = null;
+    switch (view)
+    {
+      case 14: projection = "F1"; break;
+      case 10: projection = "F2"; break;
+      case 5: projection = "F3"; break;
+      case 12: projection = "S1"; side = "Left"; break;
+      case 13: projection = "S1"; side = "Right"; break;
+      case 7: projection = "S2"; side = "Left"; break;
+      case 8: projection = "S2"; side = "Right"; break;
+      case 2: projection = "S3"; side = "Left"; break;
+      case 3: projection = "S3"; side = "Right"; break;
+      default: throw new System.ArgumentOutOfRangeException(nameof(view));
+    }
+    if (data.offsets == null) return;
+    string key = "OrnamentProjection:" + family + ":" + projection;
+    string sideKey = side == null ? null : key + ":" + side;
+    OrnamentPlacementOffsetEntry shared = null, specific = null;
+    foreach (OrnamentPlacementOffsetEntry offset in data.offsets)
+    {
+      if (offset == null) continue;
+      if (string.Equals(offset.key, key, System.StringComparison.OrdinalIgnoreCase))
+      {
+        if (shared != null) throw new System.IO.InvalidDataException("Duplicate calibration key " + key);
+        shared = offset;
+      }
+      else if (sideKey != null && string.Equals(offset.key, sideKey,
+          System.StringComparison.OrdinalIgnoreCase))
+      {
+        if (specific != null) throw new System.IO.InvalidDataException("Duplicate calibration key " + sideKey);
+        specific = offset;
+      }
+    }
+    OrnamentPlacementOffsetEntry selected = specific ?? shared;
+    if (selected != null) { dx = selected.dx; dy = selected.dy; }
   }
 
   private static void BlitStrictDosOrnamentRect(Color32[] dest, Texture2D source,
@@ -23230,7 +23277,7 @@ private static void HandleGameViewPointerDown(
     }
     catch (System.Exception e)
     {
-      Debug.LogError("ViewEdit: cannot read " + OrnamentClassJsonPath + ": " + e.Message);
+      LogMissingArtworkCyan("ViewEdit: cannot read " + OrnamentClassJsonPath + ": " + e.Message);
       return false;
     }
   }

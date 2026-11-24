@@ -71,6 +71,11 @@ internal sealed class DosOrnamentGeometryResolver
     }
     public Result Resolve(int type,int view)
     {
+        return Resolve(type, view, 0, 0);
+    }
+    // Calibration is an explicit screen-space translation before original DOS clipping.
+    public Result Resolve(int type,int view,int dx,int dy)
+    {
         if(type<0 || type>=Sets.Length) throw new ArgumentOutOfRangeException(nameof(type));
         if(view<0 || view>=15) throw new ArgumentOutOfRangeException(nameof(view));
         var r=new Result{Type=type,CoordinateSet=Sets[type],View=view,ViewName=Views[view]};
@@ -102,7 +107,8 @@ internal sealed class DosOrnamentGeometryResolver
             else throw new NotSupportedException("Unsupported parent kind "+parent.Kind);
             child=parent;
         }
-        Anchor(kind,r.Width,r.Height,ref x,ref y); r.X=x;r.Y=y;
+        Anchor(kind,r.Width,r.Height,ref x,ref y);
+        x=checked(x+dx); y=checked(y+dy); r.X=x;r.Y=y;
         int left=Math.Max(x,cl),top=Math.Max(y,ct),rr=Math.Min(x+r.Width,cl+cw),bb=Math.Min(y+r.Height,ct+ch);
         if(rr>left && bb>top){r.ClippedX=left;r.ClippedY=top;r.ClippedWidth=rr-left;r.ClippedHeight=bb-top;r.SourceX=left-x;r.SourceY=top-y;}
         return r;

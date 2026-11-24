@@ -6392,5 +6392,22 @@
       "Check Hook F1 at Level 0 (13,9) North; inspect cyan diagnostics if absent."
     ],
     "cursor": "Ask mode only, read-only."
+  },
+  "strict_dos_calibration_stage4i_20261124": {
+    "timestamp": "2026-11-24T20:18:58.667289+01:00",
+    "archive": "StrictDOS_Calibration_Stage4I_20261124-201858.zip",
+    "status": "Stage 4H Hook and Manacles all front and side perspectives visually approved by user; pixel-exact geometry and color comparison not performed. Stage 4I generic saved offset consumption implemented, Unity test pending.",
+    "rule": "Read existing OrnamentCalibration.json offsets array; add dx/dy to DOS top-down placement before original layout clipping. No entry means dx=dy=0. Shared side entry applies to both sides unless explicit side entry replaces it. No absolute entries, REF records, artworkSignature or mirror overrides in this path. Missing/invalid required JSON reports cyan and fails closed. Duplicate matching keys report cyan through renderer exception handling.",
+    "changes": [
+      "Read calibration once per wall compose. Apply global per-family/per-perspective offset via generic resolver overload. Original two-argument resolver remains zero-offset for regression. Existing JSON and scaler unchanged.",
+      "No Apply UI changes in this stage; manual editing of existing offsets is supported."
+    ],
+    "verification": [
+      "Unity compile, run 900-row uncalibrated regression, test Hook unchanged and Manacles S3 Left existing dy=1, compare other views. Recheck previously stored offsets visually before pixel-exact approval."
+    ],
+    "next": [
+      "Restore generic ViewEdit X/Y Apply UI separately; complete native artwork registration and additional perspectives."
+    ],
+    "cursor": "Ask mode only unless explicitly authorized."
   }
 }
