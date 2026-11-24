@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "Stage 4N-H: F1 unrecruited frame + portrait composite corrected; Unity/DOS comparison pending. Recruitment disabled.",
+  "checkpoint": "Stage 4N-I: Champion F1 frame + portrait and click-to-open character sheet live approved by user; recruitment confirmation and Taken transition next.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -115,9 +115,10 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Compile and compare Chani at Level 0 (14,3) North: native F1 mirror frame plus portrait inside aperture, not portrait alone.",
-    "Verify F2/F3/S1/S2/S3 frames and recruited F1 empty frame; confirm original DOS portrait positioning/palette with read-only research.",
-    "Restore recruitment from actual rendered bounds after visual approval; protect eight approved ornaments and torch interactions; then blue puddles and moss."
+    "Read complete latest Progression.json before work. Restore or verify RESURRECT recruitment confirmation and Taken state transition using existing champion identity and actual rendered F1 bounds, preserving existing stats/items and party rules.",
+    "Verify recruited F1 displays empty mirror, cannot reopen sheet, and party membership/items are correct; verify cancel/reopen and other standard mirror perspectives.",
+    "Confirm original DOS portrait palette/placement and nonzero calibration persistence if needed; visual approval is not pixel-exact proof.",
+    "After Champion Mirrors, reconstruct blue puddles and moss from verified DOS floor data. Preserve eight approved ordinary wall ornaments and torch pickup/return."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -7246,5 +7247,38 @@
     "offline_check": "24/24 supplied portraits verified by equivalent Python composition test; aperture 32x29.",
     "limits": "Artwork-derived aperture, not independent DOS executable proof; Unity C# compile and live visual comparison pending. No recruitment changes.",
     "protected": "Eight approved ordinary ornaments, geometry resolver, scaler, offsets and torch interactions unchanged. Cursor Ask mode only."
+  },
+  "strict_dos_champion_sheet_stage4ni_20261124": {
+    "timestamp": "2026-11-24T23:04:20.733050+01:00",
+    "archive": "StrictDOS_ChampionSheet_Stage4NI_20261124-230420.zip",
+    "prior_approval": "User approved F1 mirror+portrait composite visually. Other mirror perspectives not newly confirmed.",
+    "change": "Replace disabled mirror hit-test with shared rendered F1 ornament hit-test; use champion identity from rendered placement, correct feature enable key, reject Taken mirrors and missing hero definition. Existing sheet opening, party preview and equipment/stats code preserved.",
+    "limits": "Opening sheet preserves existing Edit Mode single-champion inspection selection and existing Play Mode party handling. Actual recruitment confirmation and Taken state transition not changed; existing Resurrect action only plays sound. Full rendered mirror rectangle is clickable, including frame. Unity compile/live testing pending.",
+    "next_test": "Level 0 (14,3) North: click Chani F1 to open stats and starting items. Cancel and reopen; verify distant and Taken mirrors do not open.",
+    "protected": "All eight approved ornaments, torch interaction, rendering geometry, composite and offsets unchanged. Cursor strictly read-only Ask mode."
+  },
+  "strict_dos_champion_sheet_live_approval_20261124": {
+    "timestamp": "2026-11-24T23:07:51.683806+01:00",
+    "archive": "Progression_Stage4NI_Approved_20261124-230751.zip",
+    "source_baseline": "StrictDOS_ChampionSheet_Stage4NI_20261124-230420.zip",
+    "user_report": "incredible perfect☺",
+    "status": "User approved live F1 character sheet interaction after Stage 4N-I. F1 frame + portrait previously visually approved.",
+    "reference_pose": "Level 0 (14,3) North, Chani, F1",
+    "verified": [
+      "Clicking F1 champion portrait opens champion stats and starting items sheet, user reports perfect result.",
+      "Stage 4N-I usable in Unity according to user live report."
+    ],
+    "not_yet_verified": [
+      "RESURRECT recruitment confirmation and Taken state transition; last patch did not change them.",
+      "Cancel/reopen, distant and Taken mirror click rejection, all other mirror perspectives, exact DOS portrait positioning/palette, nonzero offset persistence."
+    ],
+    "protected": "Eight ordinary ornaments 48/48 visually approved, 900/900 earlier geometry regression, torch pickup and return approved. Shared DOS renderer, relative offsets only, no legacy/hardcoded/fallback geometry. Cursor read-only Ask mode unless explicitly authorized under project rules.",
+    "next": [
+      "Read complete latest Progression.json before work. Restore or verify RESURRECT recruitment confirmation and Taken state transition using existing champion identity and actual rendered F1 bounds, preserving existing stats/items and party rules.",
+      "Verify recruited F1 displays empty mirror, cannot reopen sheet, and party membership/items are correct; verify cancel/reopen and other standard mirror perspectives.",
+      "Confirm original DOS portrait palette/placement and nonzero calibration persistence if needed; visual approval is not pixel-exact proof.",
+      "After Champion Mirrors, reconstruct blue puddles and moss from verified DOS floor data. Preserve eight approved ordinary wall ornaments and torch pickup/return."
+    ],
+    "changes": "Progression.json only; no source or calibration changes."
   }
 }

@@ -8570,26 +8570,26 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
-  // Hit-test only. This method does not select an image or invoke any legacy
-  // F1 Champion action; it only identifies which visible front mirror was hit.
+  // Identify the champion from the actual rendered F1 mirror, not a second
+  // projection or a fixed screen rectangle. Empty mirrors are not selectable.
   private bool TryGetClickedChampionMirror(
       float logicalX,
       float logicalY,
       out string championName)
   {
     championName = null;
-    if (!TryGetCurrentD1FrontChampion(out string visibleChampion)
-        || !HasVerifiedOrnamentHit("ChampionMirror", logicalX, logicalY))
+    if (!TryGetRenderedDosFrontOrnamentHit("ChampionMirror", logicalX, logicalY,
+        out WallOrnamentPlacement mirror)
+        || string.IsNullOrEmpty(mirror.champion)
+        || IsPreviewChampionTaken(mirror.champion))
       return false;
-    championName = visibleChampion;
+    if (HeroDatabase.GetByName(mirror.champion) == null)
+    {
+      ReportStrictOrnamentMissing("ChampionMirror", "F1", "champion definition: " + mirror.champion);
+      return false;
+    }
+    championName = mirror.champion;
     return true;
-  }
-  // Champion mirrors are still outside the verified ordinary-wall path.
-  // Do not enable recruitment until their rendered bounds are available.
-  private static bool HasVerifiedOrnamentHit(string family, float logicalX, float logicalY)
-  {
-    ReportStrictOrnamentMissing(family, "F1", "verified rendered hit rectangle");
-    return false;
   }
 
   private void SaveChampionPartySession()
@@ -32545,7 +32545,9 @@ private static void HandleGameViewPointerDown(
       if (!hit.screenBounds.Contains(point)) continue;
       if (hit.view != 14 || !string.Equals(hit.family, family,
           System.StringComparison.OrdinalIgnoreCase)) return false;
-      if (!IsPreviewFeatureEnabled(MakePreviewFeatureKey("Ornament", hit.placement.x,
+      string featureFamily = string.Equals(hit.family, "ChampionMirror",
+          System.StringComparison.OrdinalIgnoreCase) ? "ChampionMirror" : "Ornament";
+      if (!IsPreviewFeatureEnabled(MakePreviewFeatureKey(featureFamily, hit.placement.x,
           hit.placement.y, hit.placement.wall)) || !string.Equals(hit.family,
           GetCurrentDosWallOrnamentFamily(hit.placement), System.StringComparison.OrdinalIgnoreCase))
         return false;
