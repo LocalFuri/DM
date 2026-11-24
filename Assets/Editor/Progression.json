@@ -5881,6 +5881,67 @@
     "timestamp": "2026-11-24T18:40:55.019548+01:00",
     "issue": "CS0579 duplicate System.NonSerialized attributes left after removal of cached fields in Stage 3B",
     "fix": "Removed four redundant attributes from two consecutive attribute blocks; retained one attribute on each surviving field. No renderer behavior changed.",
-    "validation": "No consecutive duplicate System.NonSerialized attributes remain. Unity compilation pending."
+    "validation": "No consecutive duplicate System.NonSerialized attributes remain. Unity compilation pending.",
+    "user_verification": "User confirmed compilation errors fixed on 2026-11-24."
+  },
+  "strict_ornament_reset_stage3c_20261124": {
+    "timestamp": "2026-11-24T18:43:44.234979+01:00",
+    "status": "partial deletion; Unity compilation pending",
+    "deleted_methods": [
+      "GetManaclesSideS2Rect",
+      "GetManaclesSideS3Rect",
+      "GetManaclesFrontF2Rect",
+      "GetManaclesGeneratedD3SideTexture",
+      "GetManaclesGeneratedD2SideTexture",
+      "GetManaclesGeneratedF3FrontTexture",
+      "GetManaclesOriginalCornerF2Texture",
+      "GetManaclesGeneratedF2FrontTexture",
+      "GetViAltarEngineF2TestTexture",
+      "GetViAltarEngineF3TestTexture",
+      "GetManaclesClass2CornerF2Key",
+      "DrawManaclesClass2CornerF2CalibrationRow"
+    ],
+    "deleted_method_count": 12,
+    "cumulative_reported_methods_deleted": 92,
+    "deleted_fields": [
+      "cachedViAltarEngineF2TestTexture",
+      "cachedViAltarEngineF3TestTexture",
+      "cachedManaclesGeneratedD2SideTexture",
+      "cachedManaclesGeneratedD3SideTexture",
+      "cachedManaclesGeneratedF2FrontTexture",
+      "cachedManaclesGeneratedF3FrontTexture",
+      "cachedManaclesOriginalCornerF2Texture"
+    ],
+    "deleted_constants": [
+      "ViAltarD1FrontX",
+      "ViAltarD1FrontY",
+      "ViAltarEngineF2Width",
+      "ViAltarEngineF2Height",
+      "ViAltarEngineF2FrontX",
+      "ViAltarEngineF2FrontY",
+      "ViAltarEngineF3Width",
+      "ViAltarEngineF3Height",
+      "ViAltarEngineF3FrontX",
+      "ViAltarEngineF3FrontY",
+      "ManaclesD1SideLeftX",
+      "ManaclesD1SideRightX",
+      "ManaclesD1SideY",
+      "ManaclesD3FrontX",
+      "ManaclesD3FrontY",
+      "ManaclesD3FrontWidth",
+      "ManaclesD3FrontHeight"
+    ],
+    "changes": [
+      "Removed Manacles family-specific front/side geometry and distance generators, old class-2 corner calibration UI, VI Altar front test generators and front geometry.",
+      "Removed Manacles F1 folder fallback; exact native artwork only. Missing geometry cyan, no replacement."
+    ],
+    "preserved": [
+      "shared DOS scaler",
+      "resource 696 resolver",
+      "saved calibration data",
+      "unrelated functionality"
+    ],
+    "validation": "Deleted-symbol scan, duplicate NonSerialized scan and lexical delimiter check passed; Unity compilation not run.",
+    "next": "Remove remaining family-specific side and front generators, CSBwin positions and inspector branches. Cursor read-only."
   }
 }

@@ -174,8 +174,6 @@ public class ViewportLayoutEditor : EditorWindow
   // Adjusted 5 px down: screen top-left (64,69), framebuffer bottom-left (64,75).
   // The texture is located by name/dimensions so either
   // Altar_of_Vi_96,56.png or Altar_of_Vi_96x56.png works.
-  private const int ViAltarD1FrontX = 64;
-  private const int ViAltarD1FrontY = 75;
   private const int ViAltarS1RightX = 168;
   private const int ViAltarS1Y = 81;
 
@@ -199,14 +197,6 @@ public class ViewportLayoutEditor : EditorWindow
   // Engine-slot test sizes. F2 is the original 64x37 center slot.
   // F3 uses the measured 42x24 slot that matches the original crop.
   // Framebuffer Y is bottom-left in the 200-tall preview.
-  private const int ViAltarEngineF2Width = 64;
-  private const int ViAltarEngineF2Height = 37;
-  private const int ViAltarEngineF2FrontX = 80;
-  private const int ViAltarEngineF2FrontY = 93;
-  private const int ViAltarEngineF3Width = 42;
-  private const int ViAltarEngineF3Height = 24;
-  private const int ViAltarEngineF3FrontX = 91;
-  private const int ViAltarEngineF3FrontY = 105;
   private const string HookFrontAssetPath =
       "Assets/Art/Ornaments/Hook_F1_32x28.png";
   // Native PC DOS image, used solely for the approved Hook F2 experiment.
@@ -227,10 +217,6 @@ public class ViewportLayoutEditor : EditorWindow
   // The right slot mirrors that across the 224px viewport.
   private const int ManaclesD1SideWidth = 32;
   private const int ManaclesD1SideHeight = 42;
-  private const int ManaclesD1SideLeftX = 30;
-  private const int ManaclesD1SideRightX =
-      DungeonViewportWidth - ManaclesD1SideLeftX - ManaclesD1SideWidth;
-  private const int ManaclesD1SideY = 84;
 
   // Front F2 Manacles: temporary DOS screenshot-fit experiment only.
   // Current candidate 60x35 at viewport top-left (82,40), half-step sampling.
@@ -239,10 +225,6 @@ public class ViewportLayoutEditor : EditorWindow
   // F3 manacles are generated from the same 92x52 F1 source.
   // Measured on the original (6,9) West view: screen top-left (93, 73),
   // size 40x22, framebuffer bottom-left Y = 200 - 72 - 22 = 106.
-  private const int ManaclesD3FrontX = 92;
-  private const int ManaclesD3FrontY = 106;
-  private const int ManaclesD3FrontWidth = 40;
-  private const int ManaclesD3FrontHeight = 22;
   private const string GrateFrontAssetPath =
       "Assets/Art/Ornaments/Grate_F1_32x20.png";
   // Grate F2 and F3 are generated from the original DOS 32x20 F1 artwork.
@@ -1867,9 +1849,6 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedViAltarS1Texture;
   private Texture2D cachedViAltarS2Texture;
   private Texture2D cachedViAltarS3Texture;
-  [System.NonSerialized]
-  private Texture2D cachedViAltarEngineF2TestTexture;
-  private Texture2D cachedViAltarEngineF3TestTexture;
 
   // Separate ViewEdit test. Builds F2/F3 from the 96x56 extract at the
   // engine slot sizes instead of the measured 63x37 and 42x24 slots.
@@ -1879,14 +1858,6 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedManaclesF1Texture;
   [System.NonSerialized]
   private Texture2D cachedManaclesS1Texture;
-  [System.NonSerialized]
-  private Texture2D cachedManaclesGeneratedD2SideTexture;
-  [System.NonSerialized]
-  private Texture2D cachedManaclesGeneratedD3SideTexture;
-  [System.NonSerialized]
-  private Texture2D cachedManaclesGeneratedF2FrontTexture;
-  [System.NonSerialized]
-  private Texture2D cachedManaclesGeneratedF3FrontTexture;
   [System.NonSerialized]
   private Texture2D cachedGrateFrontTexture;
   [System.NonSerialized]
@@ -2852,16 +2823,8 @@ public class ViewportLayoutEditor : EditorWindow
       cachedRight2SReadableCopy = null;
     }
 
-    if (cachedViAltarEngineF2TestTexture != null)
-    {
-      DestroyImmediate(cachedViAltarEngineF2TestTexture);
-      cachedViAltarEngineF2TestTexture = null;
-    }
-    if (cachedViAltarEngineF3TestTexture != null)
-    {
-      DestroyImmediate(cachedViAltarEngineF3TestTexture);
-      cachedViAltarEngineF3TestTexture = null;
-    }
+
+
     cachedViAltarS2Texture = null;
     cachedViAltarS3Texture = null;
 
@@ -23616,35 +23579,13 @@ private static void HandleGameViewPointerDown(
   // original 32x42 Manacles_S1 source scales to 21x27 at distance 2.
   // Coordinates are within the 224x136 dungeon viewport (screen top +33).
   // Keep S3 and the legacy distance-projection constants unchanged.
-  private static void GetManaclesSideS2Rect(
-      bool left, out int x, out int y, out int width, out int height)
-  {
-    width = 21;
-    height = 27;
-    x = left ? 57 : 144;
-    y = DisplayYToUnityY(33 + 40, height);
-  }
+
 
   // Shared DOS geometry: resource 696, coordinate set 1, S3 DI=2/3.
   // Native 32x42 source, scale 14/32 -> complete 14x18 bitmap.
-  private static void GetManaclesSideS3Rect(
-      bool left, out int x, out int y, out int width, out int height)
-  {
-    DosOrnamentLayout696.GetRect(1, left ? 2 : 3, 32, 42, 14,
-        out x, out y, out width, out height);
-  }
 
-  private static void GetManaclesFrontF2Rect(
-      out int x, out int y, out int width, out int height)
-  {
-    // EXPERIMENT ONLY (2026-11-20): screenshot-derived DOS F2 candidate.
-    // NOT verified from the original executable or accepted as a generic rule.
-    // The original 64x37 CSBwin-derived rectangle remains the baseline.
-    width = 60;
-    height = 34;
-    x = 82;
-    y = DisplayYToUnityY(33 + 40, height);
-  }
+
+
 
   private static void GetOriginalCornerF2DrawPosition(
       int group, bool left, int bitmapWidth, int bitmapHeight,
@@ -24044,84 +23985,6 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  // Class 2 calibration preview: replace only the currently recognized
-  // front-facing F2 corner mirror artwork temporarily, never the dungeon map.
-  // Class 1's saved positioning key is not accessed or modified in this mode.
-  private const string ManaclesPreviewPrefsKey =
-      "DM.ViewEdit.ManaclesClass2Preview";
-  private bool calibrateClass2ManaclesCornerF2
-  {
-    get { return EditorPrefs.GetBool(ManaclesPreviewPrefsKey, false); }
-    set { EditorPrefs.SetBool(ManaclesPreviewPrefsKey, value); }
-  }
-  private static string GetManaclesClass2CornerF2Key(bool left)
-  {
-    return "OrnamentClass:2:Manacles:CornerFrontF2:"
-        + (left ? "Left" : "Right");
-  }
-
-  private void DrawManaclesClass2CornerF2CalibrationRow()
-  {
-    bool left = true;
-    ChampionMirrorPlacement existing;
-    bool nearCorner;
-    if (!TryGetSideLaneFrontF2Mirror(left, out existing, out nearCorner)
-        || !nearCorner) return;
-
-    bool selected = EditorGUILayout.ToggleLeft(
-        "Calibrate Class 2 - Manacles (preview only)",
-        calibrateClass2ManaclesCornerF2);
-    if (selected != calibrateClass2ManaclesCornerF2)
-    {
-      calibrateClass2ManaclesCornerF2 = selected;
-      if (selected) { calibrateClass5SlimeCornerF2 = false;  calibrateClass6GrateCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
-    }
-    if (!calibrateClass2ManaclesCornerF2) return;
-
-    Texture2D artwork = GetManaclesOriginalCornerF2Texture();
-    if (artwork == null || !artwork.isReadable)
-    {
-      LogMissingArtworkCyan("ViewEdit Class 2 Manacles: required readable source artwork is missing.");
-      return;
-    }
-    string key = GetManaclesClass2CornerF2Key(left);
-    int x, y;
-    GetOriginalCornerF2DrawPosition(1, left, artwork.width, artwork.height,
-        out x, out y);
-    bool flip = false;
-    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
-    int defaultX = x, defaultY = y;
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.Label("Class 2 Manacles - LeftF2", GUILayout.Width(190f));
-    int editX = x, editY = y;
-    bool changedX = DrawIntStepperInline("X", ref editX, snap,
-        x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
-    bool changedY = DrawIntStepperInline("Y", ref editY, snap,
-        y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-    NoteContentRight();
-    EditorGUILayout.EndHorizontal();
-    if (apply)
-    {
-      if (SaveAcceptedOrnamentReference(key, editX, editY, flip))
-      {
-        previewFeaturePositionOverrides.Remove(key);
-        previewFeatureMirrorOverrides.Remove(key);
-        RefreshEditModePreview(); RepaintGameViews(); Repaint();
-      }
-    }
-    else if ((changedX && editX != x) || (changedY && editY != y))
-    {
-      if (editX == defaultX && editY == defaultY)
-        previewFeaturePositionOverrides.Remove(key);
-      else
-        previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
-    }
-  }
-
   // Class 5 Slime: independent JSON calibration, using the same JSON-driven
   // near-corner classification as Classes 1 and 2, never map-specific.
   private const string SlimePreviewPrefsKey = "DM.ViewEdit.SlimeClass5Preview";
@@ -24147,7 +24010,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass5SlimeCornerF2)
     {
       calibrateClass5SlimeCornerF2 = selected;
-      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass6GrateCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
+      if (selected) { calibrateClass6GrateCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass5SlimeCornerF2) return;
@@ -24217,7 +24080,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass6GrateCornerF2)
     {
       calibrateClass6GrateCornerF2 = selected;
-      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass5SlimeCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
+      if (selected) { calibrateClass5SlimeCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass6GrateCornerF2) return;
@@ -24287,7 +24150,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass7EmptyHolderCornerF2)
     {
       calibrateClass7EmptyHolderCornerF2 = selected;
-      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass5SlimeCornerF2 = false; calibrateClass6GrateCornerF2 = false; }
+      if (selected) { calibrateClass5SlimeCornerF2 = false; calibrateClass6GrateCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass7EmptyHolderCornerF2) return;
@@ -25966,37 +25829,13 @@ private static void HandleGameViewPointerDown(
       }
       if (IsManaclesOrnament(ornament))
       {
-        if (frontDepth == 1)
-        {
-          Texture2D t = GetManaclesF1Texture();
-          if (t == null) return false;
-          renderX = (DungeonViewportWidth - t.width) / 2;
-          renderY = 77;
-          return true;
-        }
-        if (frontDepth == 2)
-        {
-          GetManaclesFrontF2Rect(
-              out renderX, out renderY, out _, out _);
-          return true;
-        }
-        if (frontDepth == 3) { renderX = ManaclesD3FrontX; renderY = ManaclesD3FrontY; return true; }
+        ReportStrictOrnamentMissing("Manacles", "F" + frontDepth, "verified generic DOS geometry");
+        return false;
       }
       if (IsViAltarOrnament(ornament))
       {
-        if (frontDepth == 1) { renderX = ViAltarD1FrontX; renderY = ViAltarD1FrontY; return true; }
-        if (frontDepth == 2)
-        {
-          renderX = ViAltarEngineF2FrontX;
-          renderY = ViAltarEngineF2FrontY;
-          return true;
-        }
-        if (frontDepth == 3)
-        {
-          renderX = ViAltarEngineF3FrontX;
-          renderY = ViAltarEngineF3FrontY;
-          return true;
-        }
+        ReportStrictOrnamentMissing("ViAltar", "F" + frontDepth, "verified generic DOS geometry");
+        return false;
       }
       return false;
     }
@@ -26057,27 +25896,8 @@ private static void HandleGameViewPointerDown(
     }
     if (IsManaclesOrnament(ornament))
     {
-      if (sideDepth == 1)
-      {
-        renderMirror = !isLeft;
-        renderX = isLeft ? ManaclesD1SideLeftX : ManaclesD1SideRightX;
-        renderY = ManaclesD1SideY;
-        return true;
-      }
-      if (sideDepth == 2)
-      {
-        GetManaclesSideS2Rect(
-            isLeft, out renderX, out renderY, out _, out _);
-        renderMirror = !isLeft;
-        return true;
-      }
-      if (sideDepth == 3)
-      {
-        GetManaclesSideS3Rect(
-            isLeft, out renderX, out renderY, out _, out _);
-        renderMirror = !isLeft;
-        return true;
-      }
+      ReportStrictOrnamentMissing("Manacles", "S" + sideDepth, "verified generic DOS geometry");
+      return false;
     }
 
     return false;
@@ -26501,11 +26321,11 @@ private static void HandleGameViewPointerDown(
       switch (slot)
       {
         case "S1": return GetManaclesS1Texture();
-        case "S2": return GetManaclesGeneratedD2SideTexture();
-        case "S3": return GetManaclesGeneratedD3SideTexture();
+        case "S2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
+        case "S3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
         case "F1": return GetManaclesF1Texture();
-        case "F2": return GetManaclesGeneratedF2FrontTexture();
-        case "F3": return GetManaclesGeneratedF3FrontTexture();
+        case "F2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
+        case "F3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
       }
     }
     if (family == "WoodRing")
@@ -26543,8 +26363,8 @@ private static void HandleGameViewPointerDown(
         case "S2": return GetViAltarS2Texture();
         case "S3": return GetViAltarS3Texture();
         case "F1": return GetViAltarFrontTexture();
-        case "F2": return GetViAltarEngineF2TestTexture();
-        case "F3": return GetViAltarEngineF3TestTexture();
+        case "F2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
+        case "F3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
       }
     }
     return null;
@@ -29206,7 +29026,6 @@ private static void HandleGameViewPointerDown(
     DrawChampionMirrorExtendedSideLaneF3Rows();
     DrawChampionMirrorSideLaneFrontF2Rows();
     DrawManualChampionLeftF3Row();
-    DrawManaclesClass2CornerF2CalibrationRow();
 
     DrawSlimeClass5CornerF2CalibrationRow();
     DrawGrateClass6CornerF2CalibrationRow();
@@ -35685,49 +35504,9 @@ private static void HandleGameViewPointerDown(
               114));
 
 
-  /// <summary>
-  /// ViewEdit test. Shrinks the 96x56 extract into the original F2 slot,
-  /// 64x37, with the medium-distance colour map.
-  /// </summary>
-  private Texture2D GetViAltarEngineF2TestTexture()
-  {
-    if (cachedViAltarEngineF2TestTexture != null)
-      return cachedViAltarEngineF2TestTexture;
 
-    Texture2D source = GetViAltarFrontTexture();
-    if (source == null || !source.isReadable)
-      return null;
 
-    cachedViAltarEngineF2TestTexture = GenerateDmScaledWallDecoration(
-        source,
-        ViAltarEngineF2Width,
-        ViAltarEngineF2Height,
-        WallOrnamentMediumColorMap,
-        "VI Altar Engine F2 64x37");
-    return cachedViAltarEngineF2TestTexture;
-  }
 
-  /// <summary>
-  /// ViewEdit test. Shrinks the 96x56 extract into the measured F3 slot,
-  /// 42x24, with the far-distance colour map.
-  /// </summary>
-  private Texture2D GetViAltarEngineF3TestTexture()
-  {
-    if (cachedViAltarEngineF3TestTexture != null)
-      return cachedViAltarEngineF3TestTexture;
-
-    Texture2D source = GetViAltarFrontTexture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    cachedViAltarEngineF3TestTexture = GenerateDmScaledWallDecoration(
-        source,
-        ViAltarEngineF3Width,
-        ViAltarEngineF3Height,
-        WallOrnamentFarColorMap,
-        "VI Altar Engine F3 42x24");
-    return cachedViAltarEngineF3TestTexture;
-  }
 
   /// <summary>
   /// Unity-friendly port of CSBwin Graphics.cpp ShrinkBLT for an already
@@ -36161,50 +35940,14 @@ private static void HandleGameViewPointerDown(
 
   // Use the existing S1-to-S2 palette-preserving distance scaler for S3 too.
   // This replaces the obsolete standalone Manacles_S3_9x5.png dependency.
-  private Texture2D GetManaclesGeneratedD3SideTexture()
-  {
-    if (cachedManaclesGeneratedD3SideTexture != null)
-      return cachedManaclesGeneratedD3SideTexture;
 
-    Texture2D source = GetManaclesS1Texture();
-    if (source == null || !source.isReadable)
-    {
-      LogMissingArtworkCyan("Manacles S3: requires readable native S1 artwork at "
-          + ManaclesS1AssetPath);
-      return null;
-    }
-
-    GetManaclesSideS3Rect(
-        true, out _, out _, out int width, out int height);
-    cachedManaclesGeneratedD3SideTexture = GenerateDmScaledWallDecoration(
-        source, width, height, WallOrnamentFarColorMap,
-        "Manacles S3 DOS 6-bit Side");
-    return cachedManaclesGeneratedD3SideTexture;
-  }
 
   // The former CSBwin 9x20 S3 ShrinkBLT path is retired. S3 now uses
   // the very same DOS fixed-point sampler as Hook, with the full 14x18
   // distance-3 bitmap from the native 32x42 source.
 
 
-  private Texture2D GetManaclesGeneratedD2SideTexture()
-  {
-    if (cachedManaclesGeneratedD2SideTexture != null)
-      return cachedManaclesGeneratedD2SideTexture;
 
-    Texture2D source = GetManaclesS1Texture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    GetManaclesSideS2Rect(
-        true, out _, out _, out int width, out int height);
-    // Reuse the same DOS 6-bit shrink routine as the verified front views.
-    // Native 32x42 side image; medium palette, zero bias, top-down sampling.
-    cachedManaclesGeneratedD2SideTexture = GenerateDmScaledWallDecoration(
-        source, width, height, WallOrnamentMediumColorMap,
-        "Manacles S2 DOS 6-bit Side");
-    return cachedManaclesGeneratedD2SideTexture;
-  }
 
 
   private Texture2D GetManaclesS1Texture()
@@ -36226,68 +35969,15 @@ private static void HandleGameViewPointerDown(
   }
 
 
-  private Texture2D GetManaclesGeneratedF3FrontTexture()
-  {
-    if (cachedManaclesGeneratedF3FrontTexture != null)
-      return cachedManaclesGeneratedF3FrontTexture;
 
-    Texture2D source = GetManaclesF1Texture();
-    if (source == null || !source.isReadable)
-    {
-      LogMissingArtworkCyan("Manacles F3: requires readable native F1 artwork at "
-          + ManaclesF1AssetPath);
-      return null;
-    }
-
-    cachedManaclesGeneratedF3FrontTexture = GenerateDmScaledWallDecoration(
-        source,
-        ManaclesD3FrontWidth,
-        ManaclesD3FrontHeight,
-        WallOrnamentFarColorMap,
-        "Manacles F3 Generated from F1");
-    return cachedManaclesGeneratedF3FrontTexture;
-  }
 
 
   // CSBwin: Left/Right F2 uses the CENTER-F2 rectangle for the full
   // source bitmap (group 1, position 8) before the side crop (7/9).
   // Keep the verified 58x31 standard ornament texture unchanged.
-  private Texture2D cachedManaclesOriginalCornerF2Texture;
-  private Texture2D GetManaclesOriginalCornerF2Texture()
-  {
-    if (cachedManaclesOriginalCornerF2Texture != null)
-      return cachedManaclesOriginalCornerF2Texture;
-    Texture2D source = GetManaclesF1Texture();
-    if (source == null || !source.isReadable)
-      return null;
-    OriginalWallDecorationRect center = GetOriginalWallDecorationRect(1, 8);
-    OriginalWallDecorationRect corner = GetOriginalWallDecorationRect(1, 7);
-    int width = center.x2 - center.x1 + 1;
-    cachedManaclesOriginalCornerF2Texture = GenerateDmScaledWallDecoration(
-        source, width, corner.height, WallOrnamentMediumColorMap,
-        "Manacles CSBwin Center F2 for Corner Crop");
-    return cachedManaclesOriginalCornerF2Texture;
-  }
 
-  private Texture2D GetManaclesGeneratedF2FrontTexture()
-  {
-    if (cachedManaclesGeneratedF2FrontTexture != null)
-      return cachedManaclesGeneratedF2FrontTexture;
 
-    Texture2D source = GetManaclesF1Texture();
-    if (source == null || !source.isReadable)
-      return null;
 
-    GetManaclesFrontF2Rect(
-        out _, out _, out int targetWidth, out int targetHeight);
-    cachedManaclesGeneratedF2FrontTexture = GenerateDmScaledWallDecoration(
-        source,
-        targetWidth,
-        targetHeight,
-        WallOrnamentMediumColorMap,
-        "Manacles F2 Generated from F1");
-    return cachedManaclesGeneratedF2FrontTexture;
-  }
 
 
   private static bool IsManaclesOrnament(WallOrnamentPlacement ornament)
@@ -36303,41 +35993,14 @@ private static void HandleGameViewPointerDown(
   {
     if (cachedManaclesF1Texture != null)
       return cachedManaclesF1Texture;
-
-    Texture2D exact =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(ManaclesF1AssetPath);
-    if (exact != null)
+    Texture2D source = AssetDatabase.LoadAssetAtPath<Texture2D>(ManaclesF1AssetPath);
+    if (source == null || !source.isReadable)
     {
-      cachedManaclesF1Texture = exact;
-      return exact;
+      ReportStrictOrnamentMissing("Manacles", "F1", ManaclesF1AssetPath);
+      return null;
     }
-
-    // Filename-independent fallback in the ornament folder.
-    string[] guids = AssetDatabase.FindAssets(
-        "Manacles t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null)
-        continue;
-
-      if (path.IndexOf(
-              "manacles",
-              System.StringComparison.OrdinalIgnoreCase) < 0
-          || path.IndexOf(
-              "f1",
-              System.StringComparison.OrdinalIgnoreCase) < 0)
-      {
-        continue;
-      }
-
-      cachedManaclesF1Texture = candidate;
-      return candidate;
-    }
-
-    return null;
+    cachedManaclesF1Texture = source;
+    return source;
   }
 
 
