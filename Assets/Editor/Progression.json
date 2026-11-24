@@ -6303,5 +6303,31 @@
       "Special inscriptions, shifted cases, floor ornaments, mirrors and gameplay hit bounds require separate validation."
     ],
     "cursor": "Ask mode only unless explicitly authorized."
+  },
+  "strict_dos_geometry_stage4d_20261124": {
+    "timestamp": "2026-11-24T19:23:21.249603+01:00",
+    "archive": "StrictDOS_Geometry_Stage4D_20261124-192321.zip",
+    "status": "Standalone C# port and Unity regression runner delivered; not compiled or executed in this environment.",
+    "files": [
+      "DosOrnamentGeometryResolver.cs",
+      "DosOrnamentGeometryRegression.cs"
+    ],
+    "tools": [
+      {
+        "name": "Tools/DOS Ornament Geometry Regression",
+        "purpose": "Compare 900 ordinary wall ornament geometry records from original DAT against reference CSV; no viewport changes",
+        "implementation_date": "2026-11-24",
+        "retain_visible_at_least_until": "2026-12-01"
+      }
+    ],
+    "next": [
+      "Install both C# files and Progression.json in Assets/Editor. Confirm Unity compiles including Stage 3J.",
+      "Run Tools/DOS Ornament Geometry Regression, select extracted original GRAPHICS.DAT and corrected reference CSV. Require 900/900 and zero field differences before integration."
+    ],
+    "limitations": [
+      "No C# compiler available here; source port is unverified until Unity test.",
+      "Ordinary unshifted wall geometry only. Source offsets are pre-mirror layout offsets as in Python prototype. No framebuffer, artwork or gameplay changes."
+    ],
+    "cursor": "Ask mode, read-only."
   }
 }
