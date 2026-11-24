@@ -6036,5 +6036,38 @@
     ],
     "validation": "Removed-symbol scan, duplicate NonSerialized scan, lexical delimiter balance passed. No Unity compilation.",
     "remaining": "CSBwin corner table, remaining inspector/native loaders, torch/mirror/floor ornament special paths, generic dispatch and visibility diagnostics. Cursor read-only."
+  },
+  "strict_ornament_reset_stage3e_20261124": {
+    "timestamp": "2026-11-24T18:49:34.896319+01:00",
+    "status": "Partial deletion; Stage 3C/3D/3E Unity compilation not confirmed",
+    "deleted_methods": [
+      "GetSharedCornerFrontF2Position",
+      "GetOriginalWallDecorationRect",
+      "GetOriginalCornerF2DrawPosition",
+      "GetOriginalCornerF2MirrorFrame",
+      "DrawEmptyHolderClass7CornerF2CalibrationRow",
+      "GetEmptyHolderClass7Front2Texture",
+      "DrawChampionMirrorSideLaneFrontF2Rows",
+      "GetWoodRingFrontTexture",
+      "GetWoodRingSideTexture",
+      "GetSlimeFrontTexture",
+      "GetSlimeSide1Texture",
+      "GetEmptyHolderClass7CornerF2Key"
+    ],
+    "deleted_method_count": 12,
+    "cumulative_reported_methods_deleted": 124,
+    "deleted_fields": [
+      "cachedOriginalCornerF2MirrorFrame",
+      "cachedEmptyHolderClass7Front2Texture",
+      "cachedWoodRingFrontTexture",
+      "cachedWoodRingSideTexture",
+      "cachedSlimeFrontTexture",
+      "cachedSlimeSide1Texture"
+    ],
+    "changes": [
+      "Removed CSBwin coordinate table and its mirror/torch corner calibration consumers. Removed Wood Ring and Slime folder search loaders. Replaced family-specific inspector texture dispatch with cyan unresolved diagnostic until verified generic projection is connected. Saved calibration JSON untouched."
+    ],
+    "validation": "Deleted symbol scan, duplicate NonSerialized scan and delimiter count comparison passed. Unity compilation unavailable.",
+    "remaining": "Remaining mirror, torch, floor ornament special paths and other native loaders; generic dispatch and visibility. Cursor read-only."
   }
 }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -283,8 +283,7 @@ public class ViewportLayoutEditor : EditorWindow
         { "Grate", new DosWallOrnamentRegistration(
             "Grate", GrateFrontAssetPath, GrateSide1AssetPath,
             16, 19, -1) },
-        // Wood Ring native front is resolved by GetWoodRingFrontTexture;
-        // registration supplies only its verified shared DOS group 0.
+        // Wood Ring native artwork paths remain unverified; do not search for substitutes.
         { "WoodRing", new DosWallOrnamentRegistration(
             "WoodRing", null, null, 0, 0, 0) }
       };
@@ -1813,14 +1812,6 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedGrateF3SideTexture;
   [System.NonSerialized]
   private Texture2D cachedHookSideTexture;
-  [System.NonSerialized]
-  private Texture2D cachedWoodRingFrontTexture;
-  [System.NonSerialized]
-  private Texture2D cachedWoodRingSideTexture;
-  [System.NonSerialized]
-  private Texture2D cachedSlimeFrontTexture;
-  [System.NonSerialized]
-  private Texture2D cachedSlimeSide1Texture;
   [System.NonSerialized]
   private Texture2D cachedPuddleF1Texture;
   private Texture2D cachedPuddleF1SideTexture;
@@ -23434,66 +23425,9 @@ private static void HandleGameViewPointerDown(
         wallX, wallY, wallFace, false);
   }
 
-  private void GetSharedCornerFrontF2Position(bool left,
-      int artworkWidth, int artworkHeight, out int x, out int y,
-      out bool flip)
-  {
-    // The 20-pixel edge is the current accepted V17 calibration, not an
-    // artwork width: images of different sizes share the same right edge.
-    // Calibration belongs to the projected wall anchor, not to the
-    // individual ornament bitmap. Apply the saved mirror-sized reference
-    // first, then convert that anchor to this artwork's bounds.
-    const int calibratedReferenceWidth = 29;
-    const int calibratedReferenceHeight = 27;
-    x = left ? 20 - calibratedReferenceWidth
-        : DungeonViewportWidth - 20;
-    y = DisplayYToUnityY(33, calibratedReferenceHeight);
-    flip = false;
-    string key = "OrnamentProjection:CornerFrontF2:"
-        + (left ? "Left" : "Right");
-    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
-    if (left) x += calibratedReferenceWidth - artworkWidth;
-    y += calibratedReferenceHeight - artworkHeight;
-  }
 
-  // Exact CSBwin graphics.dat graphic 558, d.wallDecorationPosition[8][13].
-  // Each record: x1,x2,y1,y2,bitmapWidthBytes,bitmapHeight.
-  // Indexed by original decoration coordinate group and CSBwin relative position.
-  // Coordinates are from the original 224x136 dungeon display, NOT WUUF offsets.
-  private static readonly int[][] OriginalWallDecorationPositions =
-  {
-    new int[] { 80, 83, 41, 45, 8, 5, 140, 143, 41, 45, 8, 5, 16, 29, 39, 50, 8, 12, 107, 120, 39, 50, 8, 12, 187, 200, 39, 50, 8, 12, 67, 77, 40, 49, 8, 10, 146, 156, 40, 49, 8, 10, 0, 17, 38, 55, 16, 18, 102, 123, 38, 55, 16, 18, 206, 223, 38, 55, 16, 18, 48, 63, 38, 56, 8, 19, 160, 175, 38, 56, 8, 19, 96, 127, 36, 63, 16, 28 },
-    new int[] { 74, 82, 41, 60, 8, 20, 141, 149, 41, 60, 8, 20, 1, 47, 37, 63, 24, 27, 88, 134, 37, 63, 24, 27, 171, 217, 37, 63, 24, 27, 61, 76, 38, 67, 8, 30, 147, 162, 38, 67, 8, 30, 0, 43, 37, 73, 32, 37, 80, 143, 37, 73, 32, 37, 180, 223, 37, 73, 32, 37, 32, 63, 36, 83, 16, 48, 160, 191, 36, 83, 16, 48, 64, 159, 36, 91, 48, 56 },
-    new int[] { 80, 83, 66, 70, 8, 5, 140, 143, 66, 70, 8, 5, 16, 29, 64, 75, 8, 12, 106, 119, 64, 75, 8, 12, 187, 200, 64, 75, 8, 12, 67, 77, 74, 83, 8, 10, 146, 156, 74, 83, 8, 10, 0, 17, 73, 90, 16, 18, 100, 121, 73, 90, 16, 18, 206, 223, 73, 90, 16, 18, 48, 63, 84, 102, 8, 19, 160, 175, 84, 102, 8, 19, 96, 127, 92, 119, 16, 28 },
-    new int[] { 80, 83, 49, 53, 8, 5, 140, 143, 49, 53, 8, 5, 16, 29, 50, 61, 8, 12, 106, 119, 50, 61, 8, 12, 187, 200, 50, 61, 8, 12, 67, 77, 53, 62, 8, 10, 146, 156, 53, 62, 8, 10, 0, 17, 55, 72, 16, 18, 100, 121, 55, 72, 16, 18, 206, 223, 55, 72, 16, 18, 48, 63, 57, 75, 8, 19, 160, 175, 57, 75, 8, 19, 96, 127, 64, 91, 16, 28 },
-    new int[] { 75, 90, 40, 44, 8, 5, 133, 148, 40, 44, 8, 5, 1, 48, 44, 49, 24, 6, 88, 135, 44, 49, 24, 6, 171, 218, 44, 49, 24, 6, 60, 77, 40, 46, 16, 7, 146, 163, 40, 46, 16, 7, 0, 35, 43, 50, 32, 8, 80, 143, 43, 50, 32, 8, 184, 223, 43, 50, 32, 8, 32, 63, 41, 52, 16, 12, 160, 191, 41, 52, 16, 12, 64, 159, 41, 52, 48, 12 },
-    new int[] { 78, 85, 36, 51, 8, 16, 138, 145, 36, 51, 8, 16, 10, 41, 34, 53, 16, 20, 98, 129, 34, 53, 16, 20, 179, 210, 34, 53, 16, 20, 66, 75, 34, 56, 8, 23, 147, 157, 34, 56, 8, 23, 0, 26, 33, 61, 24, 29, 91, 133, 33, 61, 24, 29, 194, 223, 33, 61, 24, 29, 41, 56, 31, 65, 8, 35, 167, 182, 31, 65, 8, 35, 80, 143, 29, 71, 32, 43 },
-    new int[] { 75, 82, 25, 75, 8, 51, 142, 149, 25, 75, 8, 51, 12, 60, 25, 75, 32, 51, 88, 136, 25, 75, 32, 51, 163, 211, 25, 75, 32, 51, 64, 73, 20, 90, 8, 71, 150, 159, 20, 90, 8, 71, 0, 38, 20, 90, 32, 71, 82, 142, 20, 90, 32, 71, 184, 223, 20, 90, 32, 71, 41, 56, 9, 119, 8, 111, 169, 184, 9, 119, 8, 111, 64, 159, 9, 119, 48, 111 },
-    new int[] { 74, 85, 25, 75, 8, 51, 137, 149, 25, 75, 8, 51, 0, 83, 25, 75, 48, 51, 74, 149, 25, 75, 48, 51, 139, 223, 25, 75, 48, 51, 60, 77, 20, 90, 16, 71, 146, 163, 20, 90, 16, 71, 0, 74, 20, 90, 56, 71, 60, 163, 20, 90, 56, 71, 149, 223, 20, 90, 56, 71, 32, 63, 9, 119, 16, 111, 160, 191, 9, 119, 16, 111, 32, 191, 9, 119, 80, 111 },
-  };
 
-  private struct OriginalWallDecorationRect
-  {
-    public int x1, x2, y1, y2, paddedWidthBytes, height;
-  }
-
-  private static OriginalWallDecorationRect GetOriginalWallDecorationRect(
-      int group, int relativePosition)
-  {
-    if (group < 0 || group >= OriginalWallDecorationPositions.Length
-        || relativePosition < 0 || relativePosition >= 13)
-      throw new System.ArgumentOutOfRangeException("group/relativePosition");
-    int[] data = OriginalWallDecorationPositions[group];
-    int o = relativePosition * 6;
-    return new OriginalWallDecorationRect {
-      x1 = data[o], x2 = data[o + 1],
-      y1 = data[o + 2], y2 = data[o + 3],
-      paddedWidthBytes = data[o + 4], height = data[o + 5]
-    };
-  }
-
-  // Original F2 front-left and front-right source cropping: the bitmap is
+// Original F2 front-left and front-right source cropping: the bitmap is
   // scaled for center F2 (relative 8); 7/9 choose cropped rectangles.
   // Preserve actual CSBWin rectangle bounds. Other distances are unchanged.
   // PC DOS S2 side geometry derived from the ornament layout: the
@@ -23508,40 +23442,9 @@ private static void HandleGameViewPointerDown(
 
 
 
-  private static void GetOriginalCornerF2DrawPosition(
-      int group, bool left, int bitmapWidth, int bitmapHeight,
-      out int x, out int y)
-  {
-    OriginalWallDecorationRect rect = GetOriginalWallDecorationRect(
-        group, left ? 7 : 9);
-    int visibleWidth = rect.x2 - rect.x1 + 1;
-    x = left ? rect.x2 + 1 - bitmapWidth : rect.x1;
-    // CSBwin placement table coordinates are relative to the dungeon viewport,
-    // whose top begins at display Y=33 in the full 320x200 screen.
-    y = DisplayYToUnityY(rect.y1 + 33, bitmapHeight);
-    // x is the complete-image origin; normal viewport clipping removes
-    // the off-screen portion exactly as original's srcOffsetX does.
-  }
 
-  private Texture2D cachedOriginalCornerF2MirrorFrame;
-  private Texture2D GetOriginalCornerF2MirrorFrame()
-  {
-    Texture2D source = GetChampionMirrorFrontTexture();
-    if (cachedOriginalCornerF2MirrorFrame != null)
-      return cachedOriginalCornerF2MirrorFrame;
-    if (source == null || !source.isReadable)
-    {
-      LogMissingArtworkCyan("ViewEdit: Missing readable champion mirror F1 frame.");
-      return null;
-    }
-    OriginalWallDecorationRect center = GetOriginalWallDecorationRect(5, 8);
-    OriginalWallDecorationRect corner = GetOriginalWallDecorationRect(5, 7);
-    WallFeatureArtworkProfile profile = GetChampionMirrorArtworkProfile(2);
-    cachedOriginalCornerF2MirrorFrame = GenerateDmScaledWallDecoration(
-        source, center.x2 - center.x1 + 1, corner.height,
-        profile.distancePalette, "Champion Mirror CSBwin Group5 F2 Frame");
-    return cachedOriginalCornerF2MirrorFrame;
-  }
+
+
 
 
   // Real ordinary wall ornaments: share the corner map geometry and the
@@ -23916,167 +23819,15 @@ private static void HandleGameViewPointerDown(
 
   // Class 7 Empty Torch Holder: independent JSON calibration, using the same JSON-driven
   // near-corner classification as Classes 1 and 2, never map-specific.
-  private const string EmptyHolderPreviewPrefsKey = "DM.ViewEdit.EmptyHolderClass7Preview";
-  private bool calibrateClass7EmptyHolderCornerF2
-  {
-    get { return EditorPrefs.GetBool(EmptyHolderPreviewPrefsKey, false); }
-    set { EditorPrefs.SetBool(EmptyHolderPreviewPrefsKey, value); }
-  }
-  private static string GetEmptyHolderClass7CornerF2Key(bool left)
-  {
-    return "OrnamentClass:7:EmptyTorchHolder:CornerFrontF2:"
-        + (left ? "Left" : "Right");
-  }
-
-  private void DrawEmptyHolderClass7CornerF2CalibrationRow()
-  {
-    bool left = true;
-    if (!TryGetSideLaneFrontF2Mirror(left,
-        out ChampionMirrorPlacement existing, out bool nearCorner)
-        || !nearCorner) return;
-    bool selected = EditorGUILayout.ToggleLeft(
-        "Calibrate Class 7 - Empty Torch Holder (preview only)", calibrateClass7EmptyHolderCornerF2);
-    if (selected != calibrateClass7EmptyHolderCornerF2)
-    {
-      calibrateClass7EmptyHolderCornerF2 = selected;
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
-    }
-    if (!calibrateClass7EmptyHolderCornerF2) return;
-    Texture2D artwork = GetEmptyHolderClass7Front2Texture();
-    if (artwork == null || !artwork.isReadable)
-    {
-      LogMissingArtworkCyan("ViewEdit Class 7 Empty Torch Holder: required readable Empty Torch Holder F2 artwork is missing.");
-      return;
-    }
-    string key = GetEmptyHolderClass7CornerF2Key(left);
-    GetOriginalCornerF2DrawPosition(0, left, artwork.width, artwork.height,
-        out int x, out int y);
-    bool flip = false;
-    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
-    int defaultX = x, defaultY = y;
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.Label("Class 7 Empty Torch Holder - LeftF2", GUILayout.Width(190f));
-    int editX = x, editY = y;
-    bool changedX = DrawIntStepperInline("X", ref editX, snap,
-        x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
-    bool changedY = DrawIntStepperInline("Y", ref editY, snap,
-        y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-    NoteContentRight();
-    EditorGUILayout.EndHorizontal();
-    if (apply)
-    {
-      if (SaveAcceptedOrnamentReference(key, editX, editY, flip))
-      {
-        previewFeaturePositionOverrides.Remove(key);
-        previewFeatureMirrorOverrides.Remove(key);
-        RefreshEditModePreview(); RepaintGameViews(); Repaint();
-      }
-    }
-    else if ((changedX && editX != x) || (changedY && editY != y))
-    {
-      if (editX == defaultX && editY == defaultY)
-        previewFeaturePositionOverrides.Remove(key);
-      else previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
-    }
-  }
-
-  private Texture2D cachedEmptyHolderClass7Front2Texture;
-  private Texture2D GetEmptyHolderClass7Front2Texture()
-  {
-    if (cachedEmptyHolderClass7Front2Texture != null)
-      return cachedEmptyHolderClass7Front2Texture;
-    Texture2D source = FindExactTorchTexture("Torch_Holder_Empty_F1_24x54.png", 24, 54);
-    if (source == null) return null;
-    cachedEmptyHolderClass7Front2Texture = GenerateDmScaledWallDecoration(
-        source, 16, 36, WallOrnamentMediumColorMap,
-        "Empty Torch Holder F2 (Class 7 preview)");
-    return cachedEmptyHolderClass7Front2Texture;
-  }
 
 
 
-  private void DrawChampionMirrorSideLaneFrontF2Rows()
-  {
-    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
-    style.normal.textColor = Color.yellow;
-    for (int sideIndex = 0; sideIndex < 2; sideIndex++)
-    {
-      bool left = sideIndex == 0;
-      if (!TryGetSideLaneFrontF2Mirror(left, out ChampionMirrorPlacement mirror, out bool nearCorner))
-        continue;
-      Texture2D scaled = nearCorner
-          ? GetOriginalCornerF2MirrorFrame()
-          : GetChampionMirrorScaledFrameTexture(GetChampionMirrorFrontTexture(), 2);
-      if (scaled == null) continue;
-      string key = nearCorner
-          ? GetChampionMirrorClass1CornerF2Key(left)
-          : GetSideLaneFrontF2MirrorProjectionKey(left);
-      string visibilityKey = MakePreviewFeatureKey(
-          "ChampionMirror", mirror.x, mirror.y, mirror.wall);
-      int x, y;
-      if (nearCorner)
-        GetOriginalCornerF2DrawPosition(5, left,
-            scaled.width, scaled.height, out x, out y);
-      else
-      {
-        x = left ? HookD2SideLeftX : HookD2SideRightX;
-        y = HookD2SideY - (scaled.height - HookD2SideHeight) / 2;
-      }
-      ApplyChampionMirrorPositionOnly(key, ref x, ref y);
-      int defaultX = x;
-      int defaultY = y;
 
-      EditorGUILayout.BeginHorizontal();
-      string label = mirror.champion.ToUpperInvariant()
-          + (left ? " - LeftF2" : " - RightF2")
-          + " - (" + mirror.x + "," + mirror.y + " " + ShortDirectionLabel(mirror.wall) + ")";
-      GUILayout.Label(label, style,
-          GUILayout.Width(Mathf.Ceil(style.CalcSize(new GUIContent(label)).x) + 6f));
-      bool enabled = IsPreviewFeatureEnabled(visibilityKey);
-      bool newEnabled = EditorGUILayout.ToggleLeft("Set", enabled, GUILayout.Width(55f));
-      int editX = x;
-      int editY = y;
-      bool xChanged = DrawIntStepperInline(
-          "X", ref editX, snap, x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
-      bool yChanged = DrawIntStepperInline(
-          "Y", ref editY, snap, y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-      bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-      NoteContentRight();
-      EditorGUILayout.EndHorizontal();
-      if (newEnabled != enabled)
-        SetPreviewFeatureEnabled(visibilityKey, newEnabled);
-      if (apply)
-      {
-        if (SaveAcceptedOrnamentReference(key, editX, editY, false))
-        {
-          previewFeaturePositionOverrides.Remove(key);
-          previewFeatureMirrorOverrides.Remove(key);
-          previewPositionChangedThisFrame = true;
-          previewMirrorChangedThisFrame = true;
-        }
-      }
-      else
-      {
-        if ((xChanged && editX != x) || (yChanged && editY != y))
-        {
-          if (editX == defaultX && editY == defaultY)
-            previewFeaturePositionOverrides.Remove(key);
-          else
-            previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
-          previewPositionChangedThisFrame = true;
-        }
-      }
-      if (apply || newEnabled != enabled || xChanged || yChanged)
-      {
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
-      }
-    }
-  }
+
+
+
+
+
 
   // Manual F3 calibration is opt-in. It leaves the existing V17 wall drawing
   // and the seven accepted LeftF2 class calibrations completely unchanged.
@@ -24597,83 +24348,9 @@ private static void HandleGameViewPointerDown(
     return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 6;
   }
 
-  private Texture2D GetWoodRingFrontTexture()
-  {
-    if (cachedWoodRingFrontTexture != null)
-      return cachedWoodRingFrontTexture;
 
-    // Do not bake dimensions into the renderer. The original native source is
-    // used 1:1. Accept WoodRing_Front..., Wood_Ring_Front..., or equivalent.
-    string[] guids = AssetDatabase.FindAssets(
-        "t:Texture2D",
-        new[] { OrnamentArtFolder });
 
-    Texture2D fallback = null;
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      string lower = path.ToLowerInvariant();
-      bool isWoodRing =
-          lower.Contains("woodring")
-          || (lower.Contains("wood") && lower.Contains("ring"));
-      if (!isWoodRing)
-        continue;
 
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null)
-        continue;
-
-      if (lower.Contains("front"))
-      {
-        cachedWoodRingFrontTexture = candidate;
-        return candidate;
-      }
-
-      if (fallback == null && !lower.Contains("side"))
-        fallback = candidate;
-    }
-
-    cachedWoodRingFrontTexture = fallback;
-    return fallback;
-  }
-
-  private Texture2D GetWoodRingSideTexture()
-  {
-    if (cachedWoodRingSideTexture != null)
-      return cachedWoodRingSideTexture;
-
-    string[] guids = AssetDatabase.FindAssets(
-        "t:Texture2D",
-        new[] { OrnamentArtFolder });
-
-    Texture2D fallback = null;
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      string lower = path.ToLowerInvariant();
-      bool isWoodRing =
-          lower.Contains("woodring")
-          || (lower.Contains("wood") && lower.Contains("ring"));
-      if (!isWoodRing || !lower.Contains("side"))
-        continue;
-
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null)
-        continue;
-
-      if (candidate.width == 14 && candidate.height == 19)
-      {
-        cachedWoodRingSideTexture = candidate;
-        return candidate;
-      }
-
-      if (fallback == null)
-        fallback = candidate;
-    }
-
-    cachedWoodRingSideTexture = fallback;
-    return fallback;
-  }
 
 
 
@@ -25859,93 +25536,10 @@ private static void HandleGameViewPointerDown(
 
   private Texture2D GetSelectedOrnamentInspectorTexture()
   {
-    if (string.IsNullOrEmpty(selectedOrnamentInspectorKey))
-      return null;
+    if (string.IsNullOrEmpty(selectedOrnamentInspectorKey)) return null;
     string[] parts = selectedOrnamentInspectorKey.Split(':');
     if (parts.Length < 3) return null;
-    string family = parts[1];
-    string slot = parts[2];
-    if (family == "Grate")
-    {
-      switch (slot)
-      {
-        case "S1": return GetGrateSide1Texture();
-        case "S2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "S3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "F1": return GetGrateFrontTexture();
-        case "F2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "F3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "F2SideCorner": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "F3SideCorner": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-      }
-    }
-    if (family == "Hook")
-    {
-      switch (slot)
-      {
-        case "S1": return GetHookSideTexture();
-        case "S2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "S3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "F1": return GetHookFrontTexture();
-        case "F2":
-          ReportStrictOrnamentMissing(family, slot, "verified generic DOS front geometry");
-          return null;
-        case "F3":
-          ReportStrictOrnamentMissing(family, slot, "verified generic DOS front geometry");
-          return null;
-      }
-    }
-    if (family == "Manacles")
-    {
-      switch (slot)
-      {
-        case "S1": return GetManaclesS1Texture();
-        case "S2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "S3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "F1": return GetManaclesF1Texture();
-        case "F2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "F3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-      }
-    }
-    if (family == "WoodRing")
-    {
-      switch (slot)
-      {
-        case "S1": return GetWoodRingSideTexture();
-        case "S2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "S3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "F1": return GetWoodRingFrontTexture();
-        case "F2":
-          ReportStrictOrnamentMissing(family, slot, "verified generic DOS front geometry");
-          return null;
-        case "F3":
-          ReportStrictOrnamentMissing(family, slot, "verified generic DOS front geometry");
-          return null;
-      }
-    }
-    if (family == "Slime")
-    {
-      switch (slot)
-      {
-        case "S1": return GetSlimeSide1Texture();
-        case "S2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "F1": return GetSlimeFrontTexture();
-        case "F2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "F3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-      }
-    }
-    if (family == "ViAltar")
-    {
-      switch (slot)
-      {
-        case "S1": return GetViAltarS1Texture();
-        case "S2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "S3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "F1": return GetViAltarFrontTexture();
-        case "F2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-        case "F3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
-      }
-    }
+    ReportStrictOrnamentMissing(parts[1], parts[2], "verified generic DOS projection and artwork");
     return null;
   }
 
@@ -28603,10 +28197,9 @@ private static void HandleGameViewPointerDown(
     DrawChampionMirrorFrontCalibrationRows();
     DrawChampionMirrorSideCalibrationRows();
     DrawChampionMirrorExtendedSideLaneF3Rows();
-    DrawChampionMirrorSideLaneFrontF2Rows();
+
     DrawManualChampionLeftF3Row();
 
-    DrawEmptyHolderClass7CornerF2CalibrationRow();
 
     // Ordinary wall ornaments.
     if (previewWallOrnaments != null)
@@ -35332,76 +34925,9 @@ private static void HandleGameViewPointerDown(
     return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 33;
   }
 
-  private Texture2D GetSlimeFrontTexture()
-  {
-    if (cachedSlimeFrontTexture != null)
-      return cachedSlimeFrontTexture;
 
-    string[] guids = AssetDatabase.FindAssets(
-        "Slime t:Texture2D",
-        new[] { OrnamentArtFolder });
 
-    Texture2D fallback = null;
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      string lower = path.ToLowerInvariant();
-      if (!lower.Contains("slime"))
-        continue;
 
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null)
-        continue;
-
-      if (lower.Contains("front"))
-      {
-        cachedSlimeFrontTexture = candidate;
-        return candidate;
-      }
-
-      if (fallback == null && !lower.Contains("side"))
-        fallback = candidate;
-    }
-
-    cachedSlimeFrontTexture = fallback;
-    return fallback;
-  }
-
-  private Texture2D GetSlimeSide1Texture()
-  {
-    if (cachedSlimeSide1Texture != null)
-      return cachedSlimeSide1Texture;
-
-    Texture2D exact = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        SlimeSide1AssetPath);
-    if (exact != null && exact.width == 16 && exact.height == 10)
-    {
-      cachedSlimeSide1Texture = exact;
-      return exact;
-    }
-
-    string[] guids = AssetDatabase.FindAssets(
-        "Slime t:Texture2D",
-        new[] { OrnamentArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
-      string lower = assetPath.ToLowerInvariant();
-      if (!lower.Contains("slime") || !lower.Contains("side"))
-        continue;
-
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
-      if (candidate != null
-          && candidate.width == 16
-          && candidate.height == 10)
-      {
-        cachedSlimeSide1Texture = candidate;
-        return candidate;
-      }
-    }
-
-    return null;
-  }
 
 
 
