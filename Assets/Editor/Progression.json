@@ -20,7 +20,7 @@
     "limitation": "This protocol applies once Progression.json is supplied/read; a rule inside the file alone cannot trigger loading an absent file.",
     "recommended_new_session_message": "Dungeon Master — read the complete Progression.json, apply all permanent rules, and continue from the latest checkpoint."
   },
-  "date": "2026-11-23",
+  "date": "2026-11-24",
   "todo_manacles_dos_f1_s2_20261109": {
     "category": "To do List",
     "priority": 0,
@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-23: Dungeon Features Find feature field, previous/next match navigation and 1-pixel green tile highlight prepared; Unity testing pending. Phase D4 Slime F1/F2/F3 verification still pending. Hook, Grate, Manacles approved results protected.",
+  "checkpoint": "2026-11-24 Stage 4F: Unity 900/900 geometry regression passed; initial standard-wall draw integration prepared, live validation pending.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -115,9 +115,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Install Phase D4 ViewportLayoutEditor.cs and Progression.json; check Unity compiler Console.",
-    "Verify Slime F1/F2/F3 visuals; maintain all accepted Hook/Grate/Manacles render positions and calibrations.",
-    "Only after user approval continue conservative placement sharing; do not change DOS scaler or V17 renderer."
+    "Install files in Assets/Editor; verify original GRAPHICS.DAT path.",
+    "Check Console compile, then Hook Level 1 (1,3) North F2 and compare live DOS; test F1/F3 and both side views.",
+    "Resolve native source gaps using original DAT; expand standard dispatch only after visual confirmation, then restore calibration and hit testing."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -6329,5 +6329,30 @@
       "Ordinary unshifted wall geometry only. Source offsets are pre-mirror layout offsets as in Python prototype. No framebuffer, artwork or gameplay changes."
     ],
     "cursor": "Ask mode, read-only."
+  },
+  "strict_dos_geometry_stage4e_20261124": {
+    "status": "PASSED in Unity, user screenshot shows 19:33:00 DOS geometry regression: 900/900 matching rows; 0 field differences.",
+    "scope": "Reference CSV geometry only; not live DOS pixels or complete viewport integration."
+  },
+  "strict_dos_framebuffer_stage4f_20261124": {
+    "timestamp": "2026-11-24T19:35:54.002430+01:00",
+    "archive": "StrictDOS_Framebuffer_Stage4F_20261124-193554.zip",
+    "status": "First standard-wall framebuffer integration prepared; Unity compile and live tests pending.",
+    "changes": [
+      "Connect ordinary standard F1–F3 and S1–S3 exact physical faces to validated resolver and existing DOS 6-bit scaler; retain V17 visibility authority and far-to-near ordering.",
+      "Replace partial registry with confirmed type identities Hook=4, Manacles=36 and existing exact artwork paths. Validate native dimensions from resolver before drawing. No guessed Grate or WoodRing registration.",
+      "Read original DAT at C:/Unity/DM/DOS_Reference/GRAPHICS.DAT; cache by write timestamp; no alternative search. Convert layout-local top-down coordinates to full framebuffer, clip to viewport, mirror source samples.",
+      "No calibration, mirror recruitment, floor ornaments, lateral/extended faces or hit-testing restored; unchanged saved calibration data. Existing scaler/palette maps retained including existing RGBA palette conversion."
+    ],
+    "limitations": [
+      "Manacles front source must be 92x52 per verified DOS data; previous 95x52 asset will be rejected. Source artwork identity beyond prior research not independently tested here.",
+      "Only standard faces; V17 wall visibility and occlusion require live confirmation. No C# compiler or Unity here."
+    ],
+    "next": [
+      "Install files in Assets/Editor; verify original GRAPHICS.DAT path.",
+      "Check Console compile, then Hook Level 1 (1,3) North F2 and compare live DOS; test F1/F3 and both side views.",
+      "Resolve native source gaps using original DAT; expand standard dispatch only after visual confirmation, then restore calibration and hit testing."
+    ],
+    "cursor": "Ask mode only; read-only."
   }
 }

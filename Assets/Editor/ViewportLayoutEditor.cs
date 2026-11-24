@@ -164,74 +164,36 @@ public class ViewportLayoutEditor : EditorWindow
   // under it, so Enabled starts on the same x for every feature row.
   private const float FeatureDescriptionWidth = 210f;
 
-  private const string HookDosF2AssetPath =
-      "Assets/Art/Ornaments/Hook_F1_DOS_28x28.png";
-  private const string ManaclesF1AssetPath =
-      "Assets/Art/Ornaments/Manacles_F1.png";
-  private const string ManaclesS1AssetPath =
-      "Assets/Art/Ornaments/Manacles_S1.png";
-  private const string GrateFrontAssetPath =
-      "Assets/Art/Ornaments/Grate_F1_32x20.png";
-  private const string GrateSide1AssetPath =
-      "Assets/Art/Ornaments/Grate_S1_16x19.png";
-  private const string HookSideAssetPath =
-      "Assets/Art/Ornaments/Hook_S1_14x19.png";
-  // Phase 10: data-only native DOS ornament registration.
-  // This describes sources and known layout identity, not draw logic.
-  // Generic dispatch is not yet connected; no legacy rendering authority remains here.
-  // -1 means that the DOS layout group has NOT been verified; never guess.
+  // Verified DOS type identity and exact native source paths only.
+  // Dimensions, coordinate sets, scaling and placement come from the resolver.
   private sealed class DosWallOrnamentRegistration
   {
-    internal readonly string family;
-    internal readonly string nativeFrontSource;
-    internal readonly string nativeSideSource;
-    internal readonly int nativeSideWidth;
-    internal readonly int nativeSideHeight;
-    internal readonly int layoutGroup;
-
-    internal DosWallOrnamentRegistration(
-        string family, string nativeFrontSource, string nativeSideSource,
-        int nativeSideWidth, int nativeSideHeight, int layoutGroup)
+    internal readonly int type;
+    internal readonly string frontPath, sidePath;
+    internal DosWallOrnamentRegistration(int type, string frontPath, string sidePath)
     {
-      this.family = family;
-      this.nativeFrontSource = nativeFrontSource;
-      this.nativeSideSource = nativeSideSource;
-      this.nativeSideWidth = nativeSideWidth;
-      this.nativeSideHeight = nativeSideHeight;
-      this.layoutGroup = layoutGroup;
+      this.type = type;
+      this.frontPath = frontPath;
+      this.sidePath = sidePath;
     }
   }
 
   private static readonly Dictionary<string, DosWallOrnamentRegistration>
       DosWallOrnamentRegistry =
-      new Dictionary<string, DosWallOrnamentRegistration>(
-          System.StringComparer.OrdinalIgnoreCase)
+      new Dictionary<string, DosWallOrnamentRegistration>(System.StringComparer.OrdinalIgnoreCase)
       {
-        // Native DOS front source; final perspective geometry still requires verification.
-        { "Hook", new DosWallOrnamentRegistration(
-            "Hook", HookDosF2AssetPath, HookSideAssetPath, 14, 19, 0) },
-        { "Manacles", new DosWallOrnamentRegistration(
-            "Manacles", ManaclesF1AssetPath, ManaclesS1AssetPath,
-            32, 42, 1) },
-        { "Grate", new DosWallOrnamentRegistration(
-            "Grate", GrateFrontAssetPath, GrateSide1AssetPath,
-            16, 19, -1) },
-        // Wood Ring native artwork paths remain unverified; do not search for substitutes.
-        { "WoodRing", new DosWallOrnamentRegistration(
-            "WoodRing", null, null, 0, 0, 0) }
+        { "Hook", new DosWallOrnamentRegistration(4,
+            "Assets/Art/Ornaments/Hook_F1_DOS_28x28.png",
+            "Assets/Art/Ornaments/Hook_S1_14x19.png") },
+        { "Manacles", new DosWallOrnamentRegistration(36,
+            "Assets/Art/Ornaments/Manacles_F1.png",
+            "Assets/Art/Ornaments/Manacles_S1.png") }
       };
 
-  // Intentional Phase 10 staging API: future generic dispatch resolves
-  // registered artwork and groups here, instead of naming another blitter.
-  // No active rendering call site is switched during this phase.
-  private static bool TryGetDosWallOrnamentRegistration(
-      string family, out DosWallOrnamentRegistration registration)
-  {
-    registration = null;
-    return !string.IsNullOrEmpty(family)
-        && DosWallOrnamentRegistry.TryGetValue(family, out registration);
-  }
-
+  private static readonly byte[] DosNativeOrnamentColorMap =
+      { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+  private DosOrnamentGeometryResolver dosOrnamentGeometry;
+  private System.DateTime dosOrnamentDatWriteTime;
 
   // Dungeon viewport is X=0..223. Every left/right wall-ornament pair is the
   // same sprite mirrored around that width: rightX = 224 - leftX - spriteWidth.
@@ -20758,11 +20720,11 @@ private static void HandleGameViewPointerDown(
   /// floor/ceiling/walls/doors/stairs have completed their geometry pass.
   /// Preserve non-ornament gameplay draw ordering.
   /// </summary>
-  // Strict reset: legacy ornament and mirror blitters are NOT invoked.
-  // Only non-ornament gameplay layers remain. Missing registration is cyan.
+  // Ordinary standard wall slots use the regression-tested DOS resolver.
+  // Special faces, floor decorations and mirrors remain unresolved.
   private void BlitPostMapFeaturesAndOrnamentsIntoPreview(Color32[] pixels)
   {
-    ReportUnresolvedStrictDosOrnaments();
+    BlitStrictDosWallOrnaments(pixels);
     BlitDroppedTorchesIntoPreview(pixels);
     if (HasVisibleEnabledWallInscriptionAtPreviewPose())
       BlitWallInscriptionsIntoPreview(pixels);
@@ -20770,23 +20732,167 @@ private static void HandleGameViewPointerDown(
     BlitSuspendedThrownItemsIntoPreview(pixels);
   }
 
-  private void ReportUnresolvedStrictDosOrnaments()
+  private bool TryGetStrictDosGeometry(out DosOrnamentGeometryResolver resolver)
   {
-    if (previewWallOrnaments == null || previewWallOrnaments.Length == 0)
-      return;
-    for (int i = 0; i < previewWallOrnaments.Length; i++)
+    resolver = null;
+    string path = Path.Combine(Path.GetDirectoryName(Application.dataPath),
+        "DOS_Reference", "GRAPHICS.DAT");
+    try
     {
-      WallOrnamentPlacement ornament = previewWallOrnaments[i];
+      if (!File.Exists(path))
+      {
+        dosOrnamentGeometry = null;
+        ReportStrictOrnamentMissing("Registry", "DAT", path);
+        return false;
+      }
+      System.DateTime stamp = File.GetLastWriteTimeUtc(path);
+      if (dosOrnamentGeometry == null || stamp != dosOrnamentDatWriteTime)
+      {
+        dosOrnamentGeometry = new DosOrnamentGeometryResolver(File.ReadAllBytes(path));
+        dosOrnamentDatWriteTime = stamp;
+      }
+      resolver = dosOrnamentGeometry;
+      return true;
+    }
+    catch (System.Exception ex)
+    {
+      dosOrnamentGeometry = null;
+      ReportStrictOrnamentMissing("Registry", "DAT", path + ": " + ex.Message);
+      return false;
+    }
+  }
+
+  // Map the actual physical wall face to a standard DOS view index. Do not
+  // reinterpret perpendicular corner faces as side views. Existing V17
+  // visibility remains the authority for which wall surfaces were drawn.
+  private bool TryGetStrictDosStandardView(WallOrnamentPlacement ornament, out int view)
+  {
+    view = -1;
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    int x = ornament.x, y = ornament.y;
+    string face = ornament.wall;
+    string forward = FacingName(previewFacing);
+    string back = OppositeFacingName(previewFacing);
+    string left = FacingName(TurnPreviewFacingLeft(previewFacing));
+    string right = FacingName(TurnPreviewFacingRight(previewFacing));
+    if (!ornament.wallTilePlacement)
+    {
+      if (string.Equals(face, forward, System.StringComparison.OrdinalIgnoreCase))
+      { x += fx; y += fy; face = back; }
+      else if (string.Equals(face, left, System.StringComparison.OrdinalIgnoreCase))
+      { x -= rx; y -= ry; face = right; }
+      else if (string.Equals(face, right, System.StringComparison.OrdinalIgnoreCase))
+      { x += rx; y += ry; face = left; }
+      else return false;
+    }
+    int dx = x - previewX, dy = y - previewY;
+    int depth = dx * fx + dy * fy, lane = dx * rx + dy * ry;
+    if (depth < 1 || depth > 3) return false;
+    if (lane == 0 && string.Equals(face, back, System.StringComparison.OrdinalIgnoreCase))
+      view = depth == 1 ? 14 : depth == 2 ? 10 : 5;
+    else if (lane == -1 && string.Equals(face, right, System.StringComparison.OrdinalIgnoreCase))
+      view = depth == 1 ? 12 : depth == 2 ? 7 : 2;
+    else if (lane == 1 && string.Equals(face, left, System.StringComparison.OrdinalIgnoreCase))
+      view = depth == 1 ? 13 : depth == 2 ? 8 : 3;
+    return view >= 0;
+  }
+
+  private void BlitStrictDosWallOrnaments(Color32[] pixels)
+  {
+    if (previewWallOrnaments == null || !IsViewport17WallAuthorityActive()) return;
+    // DOS view order is far to near. Only standard V17-owned faces are
+    // connected in this stage; lateral fronts and extended lanes need audit.
+    var pending = new List<KeyValuePair<int, WallOrnamentPlacement>>();
+    foreach (WallOrnamentPlacement ornament in previewWallOrnaments)
+    {
       if (ornament == null || !IsPreviewFeatureEnabled(
-          MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
+          MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall))
+          || !IsSharedWallFeatureVisible(ornament.x, ornament.y, ornament.wall,
+              ornament.wallTilePlacement)) continue;
+      if (!TryGetStrictDosStandardView(ornament, out int view))
+      {
+        ReportStrictOrnamentMissing(ornament.type, "wall face", "verified DOS view mapping");
         continue;
-      if (!IsSharedWallFeatureVisible(ornament.x, ornament.y, ornament.wall,
-          ornament.wallTilePlacement))
+      }
+      pending.Add(new KeyValuePair<int, WallOrnamentPlacement>(view, ornament));
+    }
+    if (pending.Count == 0 || !TryGetStrictDosGeometry(out DosOrnamentGeometryResolver resolver)) return;
+    pending.Sort((a, b) => a.Key.CompareTo(b.Key));
+    foreach (var entry in pending)
+    {
+      string family = entry.Value.type ?? "Unknown";
+      if (!DosWallOrnamentRegistry.TryGetValue(family, out DosWallOrnamentRegistration registration))
+      {
+        ReportStrictOrnamentMissing(family, "view " + entry.Key, "verified native DOS registration");
         continue;
-      string family = string.IsNullOrEmpty(ornament.type)
-          ? "Unknown" : ornament.type;
-      ReportStrictOrnamentMissing(family, "visible wall face",
-          "native DOS registry, validated geometry and unified draw path");
+      }
+      Texture2D scaled = null;
+      try
+      {
+        DosOrnamentGeometryResolver.Result r = resolver.Resolve(registration.type, entry.Key);
+        if (!r.ClippedX.HasValue || !r.ClippedY.HasValue || !r.SourceX.HasValue || !r.SourceY.HasValue)
+          continue; // Fully clipped by original layout.
+        string sourcePath = (r.Graphic - 259) % 2 == 1 ? registration.frontPath : registration.sidePath;
+        Texture2D source = AssetDatabase.LoadAssetAtPath<Texture2D>(sourcePath);
+        if (source == null || !source.isReadable || source.width != r.NativeWidth || source.height != r.NativeHeight)
+        {
+          ReportStrictOrnamentMissing(family, r.ViewName,
+              "readable native graphic " + r.Graphic + " (" + r.NativeWidth + "x" + r.NativeHeight + ") at " + sourcePath);
+          continue;
+        }
+        byte[] palette;
+        switch (r.PaletteGroup)
+        {
+          case "native": palette = DosNativeOrnamentColorMap; break;
+          case "D2": palette = WallOrnamentMediumColorMap; break;
+          case "D3": palette = WallOrnamentFarColorMap; break;
+          default:
+            ReportStrictOrnamentMissing(family, r.ViewName, "verified DOS palette group");
+            continue;
+        }
+        scaled = GenerateDmScaledWallDecoration(source, r.Width, r.Height, palette,
+            "DOS ornament " + r.Graphic + " view " + r.View);
+        if (scaled == null)
+        {
+          ReportStrictOrnamentMissing(family, r.ViewName, "scaled DOS artwork");
+          continue;
+        }
+        BlitStrictDosOrnamentRect(pixels, scaled, r);
+      }
+      catch (System.Exception ex)
+      {
+        ReportStrictOrnamentMissing(family, "view " + entry.Key, "valid DOS draw data: " + ex.Message);
+      }
+      finally
+      {
+        if (scaled != null) UnityEngine.Object.DestroyImmediate(scaled);
+      }
+    }
+  }
+
+  private static void BlitStrictDosOrnamentRect(Color32[] dest, Texture2D source,
+      DosOrnamentGeometryResolver.Result r)
+  {
+    Color32[] artwork = source.GetPixels32();
+    // Resource 696 coordinates are top-down within the 224x136 dungeon.
+    // Unity's 320x200 framebuffer is bottom-up; dungeon screen top is 33.
+    const int dungeonScreenTop = 33;
+    for (int y = 0; y < r.ClippedHeight; y++)
+    {
+      int localY = r.ClippedY.Value + y;
+      int sy = r.SourceY.Value + y;
+      if (localY < 0 || localY >= DungeonViewportHeight || sy < 0 || sy >= source.height) continue;
+      int dy = PreviewHeight - 1 - dungeonScreenTop - localY;
+      for (int x = 0; x < r.ClippedWidth; x++)
+      {
+        int dx = r.ClippedX.Value + x;
+        int sx = r.SourceX.Value + x;
+        if (r.Mirrored) sx = source.width - 1 - sx;
+        if (dx < 0 || dx >= DungeonViewportWidth || sx < 0 || sx >= source.width) continue;
+        Color32 pixel = artwork[(source.height - 1 - sy) * source.width + sx];
+        if (pixel.a != 0) dest[dy * PreviewWidth + dx] = pixel;
+      }
     }
   }
 
