@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "Stage 4L: torch holder pickup/return restored using generic rendered bounds; Unity compilation and interaction verification pending.",
+  "checkpoint": "Stage 4M: generic live ViewEdit offset rows and Apply implemented; Unity verification pending. Wood Ring F1 at Level 0 (1,17) South requires visual correction.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -115,9 +115,8 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Install Stage 4L files in Assets/Editor and confirm Unity compilation.",
-    "Click a visible Full Torch Holder at F1 in Game View with an empty mouse hand; verify empty artwork and held torch. Verify empty holder at F1/F2/F3/S1/S2/S3, then return the same torch to the original holder at F1.",
-    "Verify Grate, Wood Ring, Slime and Altar of Vi using the existing registered artwork. Restore generic ViewEdit relative offset Apply later."
+    "Install Stage 4M files, compile, navigate to Level 0 (1,17) South, adjust Wood Ring F1 relative X/Y and Apply; confirm JSON and persistence.",
+    "Verify remaining Wood Ring perspectives, Slime and Altar of Vi. Preserve approved Hook, Manacles, Grate and both torch holders."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -6511,5 +6510,24 @@
       "Verify Grate, Wood Ring, Slime and Altar of Vi using the existing registered artwork. Restore generic ViewEdit relative offset Apply later."
     ],
     "cursor": "Ask mode only, read-only unless explicitly authorized."
+  },
+  "strict_dos_viewedit_offsets_stage4m_20261124": {
+    "timestamp": "2026-11-24T21:12:41.975423+01:00",
+    "archive": "StrictDOS_ViewEditOffsets_Stage4M_20261124-211241.zip",
+    "confirmed_by_user": [
+      "Full and Empty Torch Holders visually correct in all perspectives; pickup and return 100% correct.",
+      "Grate all positions visually approved.",
+      "Wood Ring F1 draws in Game View but absent from ViewEdit at Level 0 (1,17) South. Needs position adjustment."
+    ],
+    "changes": [
+      "Generic rows from actual rendered standard wall ornament records, one per family and exact perspective; live relative X/Y draft, Apply and Revert, calculated native scaled width/height read-only.",
+      "Apply writes existing version 2 offset store only; exact side key overrides shared side key; no map-specific entries, no absolute positions or mirror flags.",
+      "No changes to geometry resolver, scaler, native registrations, holder logic or supplied calibration JSON."
+    ],
+    "limitations": [
+      "Unity compile and live UI unverified. Drafts are session-only, apply saves exact key. Rows only for drawn registered standard wall ornaments. An edit that removes the row is reverted. No pixel-exact claim.",
+      "Based on last delivered Stage 4L source; no newer local source supplied."
+    ],
+    "cursor": "Ask mode only, read-only."
   }
 }

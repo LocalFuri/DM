@@ -218,7 +218,10 @@ public class ViewportLayoutEditor : EditorWindow
     public string family;
     public int view;
     public Rect screenBounds;
+    public int width, height, dx, dy;
   }
+  private readonly Dictionary<string, Vector2Int> dosOrnamentOffsetDrafts =
+      new Dictionary<string, Vector2Int>(System.StringComparer.OrdinalIgnoreCase);
   private readonly List<RenderedDosWallOrnament> renderedDosWallOrnaments =
       new List<RenderedDosWallOrnament>();
   private int renderedDosLevel, renderedDosX, renderedDosY;
@@ -20773,6 +20776,9 @@ private static void HandleGameViewPointerDown(
       try
       {
         GetStrictDosOrnamentOffset(calibration, family, entry.Key, out int dx, out int dy);
+        string draftKey = GetStrictDosOffsetKey(family, entry.Key, out _);
+        if (dosOrnamentOffsetDrafts.TryGetValue(draftKey, out Vector2Int draft))
+        { dx = draft.x; dy = draft.y; }
         DosOrnamentGeometryResolver.Result r = resolver.Resolve(registration.type, entry.Key, dx, dy);
         if (!r.ClippedX.HasValue || !r.ClippedY.HasValue || !r.SourceX.HasValue || !r.SourceY.HasValue)
           continue; // Fully clipped by original layout.
@@ -20798,7 +20804,7 @@ private static void HandleGameViewPointerDown(
         if (BlitStrictDosOrnamentRect(pixels, scaled, r, out Rect screenBounds))
           renderedDosWallOrnaments.Add(new RenderedDosWallOrnament {
             placement = entry.Value, family = family, view = entry.Key,
-            screenBounds = screenBounds
+            screenBounds = screenBounds, width = r.Width, height = r.Height, dx = dx, dy = dy
           });
       }
       catch (System.Exception ex)
@@ -20815,10 +20821,8 @@ private static void HandleGameViewPointerDown(
   // Global screen-space calibration, independent of level, tile and facing.
   // A shared side entry applies to both sides; an explicit side entry replaces it.
   // No absolute REF/entries coordinates, signature overrides or saved mirror flags.
-  private static void GetStrictDosOrnamentOffset(OrnamentCalibrationJsonStore data,
-      string family, int view, out int dx, out int dy)
+  private static string GetStrictDosOffsetKey(string family, int view, out string sharedKey)
   {
-    dx = 0; dy = 0;
     string projection;
     string side = null;
     switch (view)
@@ -20834,9 +20838,17 @@ private static void HandleGameViewPointerDown(
       case 3: projection = "S3"; side = "Right"; break;
       default: throw new System.ArgumentOutOfRangeException(nameof(view));
     }
+    sharedKey = "OrnamentProjection:" + family + ":" + projection;
+    return side == null ? sharedKey : sharedKey + ":" + side;
+  }
+
+  private static void GetStrictDosOrnamentOffset(OrnamentCalibrationJsonStore data,
+      string family, int view, out int dx, out int dy)
+  {
+    dx = 0; dy = 0;
+    string exactKey = GetStrictDosOffsetKey(family, view, out string key);
+    string sideKey = exactKey == key ? null : exactKey;
     if (data.offsets == null) return;
-    string key = "OrnamentProjection:" + family + ":" + projection;
-    string sideKey = side == null ? null : key + ":" + side;
     OrnamentPlacementOffsetEntry shared = null, specific = null;
     foreach (OrnamentPlacementOffsetEntry offset in data.offsets)
     {
@@ -24978,6 +24990,116 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Save relative offsets only. Never replace a failed read with an empty store.
+  private static bool SaveStrictDosOffset(string key, Vector2Int value)
+  {
+    if (!TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore data)) return false;
+    string temporary = OrnamentOffsetsJsonPath + "." + System.Guid.NewGuid().ToString("N") + ".tmp";
+    try
+    {
+      OrnamentPlacementOffsetEntry existing = null;
+      foreach (var entry in data.offsets)
+      {
+        if (entry == null || !string.Equals(entry.key, key, System.StringComparison.OrdinalIgnoreCase)) continue;
+        if (existing != null) throw new System.IO.InvalidDataException("Duplicate calibration key " + key);
+        existing = entry;
+      }
+      if (existing == null)
+      {
+        existing = new OrnamentPlacementOffsetEntry { key = key };
+        data.offsets.Add(existing);
+      }
+      existing.dx = value.x;
+      existing.dy = value.y;
+      File.WriteAllText(temporary, JsonUtility.ToJson(data, true) + "\n");
+      File.Replace(temporary, OrnamentOffsetsJsonPath, null);
+      return true;
+    }
+    catch (System.Exception ex)
+    {
+      LogMissingArtworkCyan("ViewEdit: cannot save ornament offset " + key + ": " + ex.Message);
+      return false;
+    }
+    finally
+    {
+      try { if (File.Exists(temporary)) File.Delete(temporary); }
+      catch (System.Exception ex) { LogMissingArtworkCyan("ViewEdit: temporary calibration cleanup: " + ex.Message); }
+    }
+  }
+
+  // Rows are sourced from the actual rendered frame, not a separate visibility test.
+  private void DrawStrictDosWallOrnamentRows()
+  {
+    if (championSheetVisible || editModePreviewTexture == null
+        || renderedDosLevel != previewDungeonLevel || renderedDosX != previewX
+        || renderedDosY != previewY || renderedDosFacing != previewFacing) return;
+    var rows = renderedDosWallOrnaments.ToArray();
+    var seen = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+    bool refresh = false;
+    string changedKey = null;
+    Vector2Int previousDraft = default(Vector2Int);
+    bool hadPreviousDraft = false;
+    foreach (var row in rows)
+    {
+      string key = GetStrictDosOffsetKey(row.family, row.view, out _);
+      if (!seen.Add(key)) continue;
+      string projection = key.Substring(("OrnamentProjection:" + row.family + ":").Length);
+      Vector2Int current = new Vector2Int(row.dx, row.dy);
+      bool dirty = dosOrnamentOffsetDrafts.TryGetValue(key, out Vector2Int draft);
+      if (dirty) current = draft;
+      EditorGUILayout.BeginHorizontal();
+      var style = new GUIStyle(EditorStyles.boldLabel);
+      style.normal.textColor = Color.yellow;
+      string caption = row.family + " " + projection + " " + row.placement.x + "," + row.placement.y
+          + " " + row.placement.wall;
+      GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x + 3f));
+      int dx = current.x, dy = current.y;
+      DrawIntStepperInline("X", ref dx, 1, dirty, true, 19f, 34f);
+      DrawIntStepperInline("Y", ref dy, 1, dirty, true, 19f, 34f);
+      GUILayout.Label(row.width + "x" + row.height, GUILayout.Width(48f));
+      bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+      bool revert = GUILayout.Button("Revert", GUILayout.Width(52f));
+      NoteContentRight();
+      EditorGUILayout.EndHorizontal();
+      // Offsets are in top-down screen coordinates: +X right, +Y down.
+      var next = new Vector2Int(Mathf.Clamp(dx, -PreviewWidth, PreviewWidth),
+          Mathf.Clamp(dy, -PreviewHeight, PreviewHeight));
+      if (revert)
+      {
+        dosOrnamentOffsetDrafts.Remove(key);
+        refresh = true;
+      }
+      else if (next != current)
+      {
+        changedKey = key;
+        hadPreviousDraft = dirty;
+        previousDraft = current;
+        dosOrnamentOffsetDrafts[key] = next;
+        refresh = true;
+      }
+      else if (apply && SaveStrictDosOffset(key, next))
+      {
+        dosOrnamentOffsetDrafts.Remove(key);
+        refresh = true;
+      }
+    }
+    if (!refresh) return;
+    previewPositionChangedThisFrame = true;
+    RefreshEditModePreview();
+    // Do not let an unsaved edit completely remove its own calibration row.
+    if (changedKey != null && !renderedDosWallOrnaments.Exists(row =>
+        string.Equals(GetStrictDosOffsetKey(row.family, row.view, out _), changedKey,
+            System.StringComparison.OrdinalIgnoreCase)))
+    {
+      if (hadPreviousDraft) dosOrnamentOffsetDrafts[changedKey] = previousDraft;
+      else dosOrnamentOffsetDrafts.Remove(changedKey);
+      LogMissingArtworkCyan("ViewEdit: offset rejected because the ornament would no longer draw: " + changedKey);
+      RefreshEditModePreview();
+    }
+    RepaintGameViews();
+    Repaint();
+  }
+
   private void DrawCurrentPoseFeatureRows()
   {
     EnsurePreviewMiniMapLoaded();
@@ -24986,6 +25108,7 @@ private static void HandleGameViewPointerDown(
 
     DrawGenericThrowViewEditControls();
     DrawWallInscriptionRows();
+    DrawStrictDosWallOrnamentRows();
 
     // Loose-item calibrations from the original Level 0 DUNGEON.DAT.
     DrawFloorItemRows();
