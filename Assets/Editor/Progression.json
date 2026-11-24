@@ -13,7 +13,9 @@
       "All newly created or modified deliverable files must have actual filesystem modification timestamps set to the correct Europe/Berlin local date and time; ensure relevant ZIP entry timestamps agree.",
       "Preserve timestamps for unchanged files; timestamp ZIP filenames and verify timestamps before delivery.",
       "Every file in a delivered ZIP must be at the ZIP root (no subfolders or folder prefixes); verify archive entry paths before delivery.",
-      "Do not silently override approved algorithms, rules, or data; explain conflicting instructions before changing protected work."
+      "Do not silently override approved algorithms, rules, or data; explain conflicting instructions before changing protected work.",
+      "MANDATORY: For each delivered file, explicitly state its full Windows destination path unless its destination directory is C:\\Unity\\DM\\Assets\\Editor\\, which is the default. For ZIPs with mixed destinations, identify the destination of each non-default file individually. Never leave the user to guess a destination.",
+      "MANDATORY: Cursor is strictly read-only; it may audit and recommend changes but must never modify, create, delete, rename or revert project files or Progression.json. ChatGPT reviews and corrects its recommendations and prepares changes for the user to install."
     ],
     "limitation": "This protocol applies once Progression.json is supplied/read; a rule inside the file alone cannot trigger loading an absent file.",
     "recommended_new_session_message": "Dungeon Master — read the complete Progression.json, apply all permanent rules, and continue from the latest checkpoint."
@@ -5804,5 +5806,81 @@
     ],
     "scope_limit": "This removes Wood Ring F2/F3 dependence on Hook-specific geometry but does not yet turn all family-specific blitters into one generic dispatch. Group-0 dimensions and offsets are still established measured layout data, not dynamically inferred.",
     "next_test": "Compile in Unity, check Console, visually compare Wood Ring F2 and F3 with PC DOS. D5 Wood Ring F1/F2/F3 approval remains pending."
+  },
+  "mandatory_file_destination_and_cursor_rule_20261124": {
+    "mandatory": true,
+    "priority": "highest",
+    "recorded_at": "2026-11-24T18:36:57.478582+01:00",
+    "session_start": "Read the complete latest Assets/Editor/Progression.json at every session start before technical work; request it if absent. Apply all permanent rules.",
+    "default_destination": "C:\\Unity\\DM\\Assets\\Editor\\",
+    "delivery_rule": "Explicitly state the full Windows destination path of every delivered file outside the default directory, including individual ZIP members. The default directory is the only exception.",
+    "cursor_rule": "Read-only audits and recommendations only. ChatGPT reviews and corrects recommendations and implements approved changes; user installs and verifies. Cursor must never change project files."
+  },
+  "strict_ornament_reset_stage3a_20261124": {
+    "recorded_at": "2026-11-24T18:36:57.478582+01:00",
+    "delivery_record": {
+      "timestamp": "2026-11-24T18:31:06.934621+01:00",
+      "state": "PHYSICAL_DELETION_STAGE_3A",
+      "previous_removed": 61,
+      "additional_removed": 9,
+      "deleted_methods": [
+        "GetUnifiedChampionS2SideFrame",
+        "GetUnifiedChampionS3SideFrame",
+        "InvalidateChampionMirrorFrameScaleCache",
+        "CompareHookG2PixelsReadOnly",
+        "GetWallProjectedTopY",
+        "GetHookProjectedTopY",
+        "TryParseSideProjectionDepth",
+        "TryGetOrnamentProjectionExperimentY",
+        "IsSlimeHiddenInCurrentPose"
+      ],
+      "other_changes": [
+        "Deleted experimental controls and fields, dead mirror caches and dimensions, Manacles S2 forced calibration and Apply block, built-in Hall of Champions substitute placements.",
+        "Preserved actual map records and existing S3 saved calibration."
+      ],
+      "validation": "Deleted symbol scan and lexical delimiter balance passed; Unity compilation and runtime not tested.",
+      "remaining": "Family-specific texture generators, placement constants, inspector dispatch, registry and generic viewport dispatch remain. No new geometry implemented. Cursor read-only; ChatGPT supplies modifications."
+    },
+    "installation_status": "Not confirmed by user; Unity compilation and runtime validation pending.",
+    "next_action": "Verify Stage 3A compilation, then continue physical removal of remaining legacy ornament geometry, generators and inspector branches; preserve shared DOS sampler and verified original resource geometry, no fallback.",
+    "progress_record_destination": "C:\\Unity\\DM\\Research_Results\\Ornament_Strict_Reset\\OrnamentStrictResetProgress_Stage3A.json"
+  },
+  "strict_ornament_reset_stage3b_20261124": {
+    "timestamp": "2026-11-24T18:39:25.520026+01:00",
+    "status": "partial physical deletion; Unity compilation not tested",
+    "deleted_methods": [
+      "GetWoodRingGeneratedF3FrontTexture",
+      "GetWoodRingGeneratedF2FrontTexture",
+      "GetHookGeneratedF3FrontTexture",
+      "GetHookGeneratedF2FrontTexture",
+      "GetHookDosF2SourceTexture",
+      "GetRegisteredDosFrontSlot",
+      "DrawHookClass3CornerF2CalibrationRow",
+      "DrawWoodenClass4CornerF2CalibrationRow",
+      "GetHookClass3CornerF2Key",
+      "GetWoodenClass4CornerF2Key"
+    ],
+    "deleted_method_count": 10,
+    "cumulative_reported_methods_deleted": 80,
+    "removed": [
+      "fixed group-0 coordinate table and constants",
+      "Hook and Wood Ring front F2/F3 texture generators and caches",
+      "Hook and Wood Ring legacy corner F2 calibration UI and key helpers",
+      "hardcoded Hook/Wood Ring front calibration geometry"
+    ],
+    "preserved": [
+      "native artwork and registry",
+      "manual calibration JSON data",
+      "shared DOS sampler",
+      "resource 696 resolver unchanged"
+    ],
+    "validation": "removed-symbol search and lexical bracket check passed; no Unity compiler available",
+    "next": "delete remaining legacy generators, geometry and inspector branches; implement verified generic dispatch; verify compilation; Cursor read-only"
+  },
+  "stage3b_compile_hotfix_20261124": {
+    "timestamp": "2026-11-24T18:40:55.019548+01:00",
+    "issue": "CS0579 duplicate System.NonSerialized attributes left after removal of cached fields in Stage 3B",
+    "fix": "Removed four redundant attributes from two consecutive attribute blocks; retained one attribute on each surviving field. No renderer behavior changed.",
+    "validation": "No consecutive duplicate System.NonSerialized attributes remain. Unity compilation pending."
   }
 }

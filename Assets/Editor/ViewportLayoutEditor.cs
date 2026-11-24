@@ -356,46 +356,6 @@ public class ViewportLayoutEditor : EditorWindow
   private const int PuddleS2ScreenTop = 102;
   private const int PuddleS2LeftScreenX = 66;
 
-  // Original DOS Hook front placement on the wall immediately in front of
-  // the party. Measured from the supplied 320x200 original screenshot:
-  // source = 28x28, screen top-left ~= (98,72), therefore framebuffer
-  // bottom-left Y = 200 - 72 - 28 = 100.
-  private const int HookD1FrontX = 98;
-  private const int HookD1FrontY = 100;
-
-  // DOS coordinate-group-0 front at distance 2.
-  // CSBwin F2 front-wall descriptor uses a 22x18 destination for the
-  // original 32x28 source. Keep the existing F2 X/Y until the visual test.
-  private const int DosGroup0D2FrontX = 103;
-  private const int DosGroup0D2FrontY = 108;
-  private const int DosGroup0D2FrontWidth = 22;
-  private const int DosGroup0D2FrontHeight = 18;
-
-  // Original DOS 224x136 viewport: 18x18 Hook at (103,38) top-down.
-  // Unity preview uses 200-pixel, bottom-up Y: 200-(32+38+18)=112.
-  // Keep the separate Hook DOS-F2 18x18 artwork placement unchanged.
-  private const int HookDosF2X = 103;
-  private const int HookDosF2Width = 18;
-  private const int HookDosF2Height = 18;
-  // DOS reference is measured inside the 224x136 dungeon viewport.
-  // The viewport begins at full-screen row 33 (not row 32).
-  // Derive bottom-up placement from the scaled bitmap height, rather than
-  // introducing an independent one-pixel calibration offset.
-  private const int HookDosF2ViewportTop = 33;
-  private const int HookDosF2ViewportY = 38;
-  private const int HookDosF2Y = PreviewHeight
-      - (HookDosF2ViewportTop + HookDosF2ViewportY)
-      - HookDosF2Height;
-
-  // Coordinate-set-0 front at distance 3. The original box is 16x12.
-  // The 28-wide F1 crop drops one pixel on each side, so the drawn
-  // result is 14x12. Screen top-left (105, 75), framebuffer bottom-left
-  // Y = 200 - 75 - 12 = 113.
-  private const int DosGroup0D3FrontX = 105;
-  private const int DosGroup0D3FrontY = 113;
-  private const int DosGroup0D3FrontWidth = 14;
-  private const int DosGroup0D3FrontHeight = 12;
-
   // Original DOS Grate front placement on the wall immediately in front of
   // the party. Measured from the supplied 320x200 original screenshot:
   // source = 32x28, screen top-left = (96,125), therefore framebuffer
@@ -1928,10 +1888,6 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private Texture2D cachedManaclesGeneratedF3FrontTexture;
   [System.NonSerialized]
-  private Texture2D cachedHookGeneratedF2FrontTexture;
-  [System.NonSerialized]
-  private Texture2D cachedHookGeneratedF3FrontTexture;
-  [System.NonSerialized]
   private Texture2D cachedGrateFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedGrateFront2Texture;
@@ -1954,10 +1910,6 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedHookSide3Texture;
   [System.NonSerialized]
   private Texture2D cachedWoodRingFrontTexture;
-  [System.NonSerialized]
-  private Texture2D cachedWoodRingGeneratedF2FrontTexture;
-  [System.NonSerialized]
-  private Texture2D cachedWoodRingGeneratedF3FrontTexture;
   [System.NonSerialized]
   private Texture2D cachedWoodRingSideTexture;
   [System.NonSerialized]
@@ -24122,7 +24074,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass2ManaclesCornerF2)
     {
       calibrateClass2ManaclesCornerF2 = selected;
-      if (selected) { calibrateClass3HookCornerF2 = false; calibrateClass4WoodenCornerF2 = false; calibrateClass5SlimeCornerF2 = false;  calibrateClass6GrateCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
+      if (selected) { calibrateClass5SlimeCornerF2 = false;  calibrateClass6GrateCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass2ManaclesCornerF2) return;
@@ -24170,146 +24122,6 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  // Class 3 Hook: independent JSON calibration, using the same JSON-driven
-  // near-corner classification as Classes 1 and 2, never map-specific.
-  private const string HookPreviewPrefsKey = "DM.ViewEdit.HookClass3Preview";
-  private bool calibrateClass3HookCornerF2
-  {
-    get { return EditorPrefs.GetBool(HookPreviewPrefsKey, false); }
-    set { EditorPrefs.SetBool(HookPreviewPrefsKey, value); }
-  }
-  private static string GetHookClass3CornerF2Key(bool left)
-  {
-    return "OrnamentClass:3:Hook:CornerFrontF2:"
-        + (left ? "Left" : "Right");
-  }
-
-  private void DrawHookClass3CornerF2CalibrationRow()
-  {
-    bool left = true;
-    if (!TryGetSideLaneFrontF2Mirror(left,
-        out ChampionMirrorPlacement existing, out bool nearCorner)
-        || !nearCorner) return;
-    bool selected = EditorGUILayout.ToggleLeft(
-        "Calibrate Class 3 - Hook (preview only)", calibrateClass3HookCornerF2);
-    if (selected != calibrateClass3HookCornerF2)
-    {
-      calibrateClass3HookCornerF2 = selected;
-      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass4WoodenCornerF2 = false; calibrateClass5SlimeCornerF2 = false;  calibrateClass6GrateCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
-    }
-    if (!calibrateClass3HookCornerF2) return;
-    Texture2D artwork = GetHookGeneratedF2FrontTexture();
-    if (artwork == null || !artwork.isReadable)
-    {
-      LogMissingArtworkCyan("ViewEdit Class 3 Hook: required readable Hook F2 artwork is missing.");
-      return;
-    }
-    string key = GetHookClass3CornerF2Key(left);
-    GetOriginalCornerF2DrawPosition(0, left, artwork.width, artwork.height,
-        out int x, out int y);
-    bool flip = false;
-    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
-    int defaultX = x, defaultY = y;
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.Label("Class 3 Hook - LeftF2", GUILayout.Width(190f));
-    int editX = x, editY = y;
-    bool changedX = DrawIntStepperInline("X", ref editX, snap,
-        x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
-    bool changedY = DrawIntStepperInline("Y", ref editY, snap,
-        y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-    NoteContentRight();
-    EditorGUILayout.EndHorizontal();
-    if (apply)
-    {
-      if (SaveAcceptedOrnamentReference(key, editX, editY, flip))
-      {
-        previewFeaturePositionOverrides.Remove(key);
-        previewFeatureMirrorOverrides.Remove(key);
-        RefreshEditModePreview(); RepaintGameViews(); Repaint();
-      }
-    }
-    else if ((changedX && editX != x) || (changedY && editY != y))
-    {
-      if (editX == defaultX && editY == defaultY)
-        previewFeaturePositionOverrides.Remove(key);
-      else previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
-    }
-  }
-
-  // Class 4 Wooden Decoration: independent JSON calibration, using the same JSON-driven
-  // near-corner classification as Classes 1 and 2, never map-specific.
-  private const string WoodenPreviewPrefsKey = "DM.ViewEdit.WoodenClass4Preview";
-  private bool calibrateClass4WoodenCornerF2
-  {
-    get { return EditorPrefs.GetBool(WoodenPreviewPrefsKey, false); }
-    set { EditorPrefs.SetBool(WoodenPreviewPrefsKey, value); }
-  }
-  private static string GetWoodenClass4CornerF2Key(bool left)
-  {
-    return "OrnamentClass:4:WoodRing:CornerFrontF2:"
-        + (left ? "Left" : "Right");
-  }
-
-  private void DrawWoodenClass4CornerF2CalibrationRow()
-  {
-    bool left = true;
-    if (!TryGetSideLaneFrontF2Mirror(left,
-        out ChampionMirrorPlacement existing, out bool nearCorner)
-        || !nearCorner) return;
-    bool selected = EditorGUILayout.ToggleLeft(
-        "Calibrate Class 4 - Wooden Decoration (preview only)", calibrateClass4WoodenCornerF2);
-    if (selected != calibrateClass4WoodenCornerF2)
-    {
-      calibrateClass4WoodenCornerF2 = selected;
-      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass3HookCornerF2 = false; calibrateClass5SlimeCornerF2 = false;  calibrateClass6GrateCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
-    }
-    if (!calibrateClass4WoodenCornerF2) return;
-    Texture2D artwork = GetWoodRingGeneratedF2FrontTexture();
-    if (artwork == null || !artwork.isReadable)
-    {
-      LogMissingArtworkCyan("ViewEdit Class 4 Wooden Decoration: required readable Wood Ring F2 artwork is missing.");
-      return;
-    }
-    string key = GetWoodenClass4CornerF2Key(left);
-    GetOriginalCornerF2DrawPosition(0, left, artwork.width, artwork.height,
-        out int x, out int y);
-    bool flip = false;
-    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
-    int defaultX = x, defaultY = y;
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.Label("Class 4 Wooden Decoration - LeftF2", GUILayout.Width(190f));
-    int editX = x, editY = y;
-    bool changedX = DrawIntStepperInline("X", ref editX, snap,
-        x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
-    bool changedY = DrawIntStepperInline("Y", ref editY, snap,
-        y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-    NoteContentRight();
-    EditorGUILayout.EndHorizontal();
-    if (apply)
-    {
-      if (SaveAcceptedOrnamentReference(key, editX, editY, flip))
-      {
-        previewFeaturePositionOverrides.Remove(key);
-        previewFeatureMirrorOverrides.Remove(key);
-        RefreshEditModePreview(); RepaintGameViews(); Repaint();
-      }
-    }
-    else if ((changedX && editX != x) || (changedY && editY != y))
-    {
-      if (editX == defaultX && editY == defaultY)
-        previewFeaturePositionOverrides.Remove(key);
-      else previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
-    }
-  }
-
   // Class 5 Slime: independent JSON calibration, using the same JSON-driven
   // near-corner classification as Classes 1 and 2, never map-specific.
   private const string SlimePreviewPrefsKey = "DM.ViewEdit.SlimeClass5Preview";
@@ -24335,7 +24147,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass5SlimeCornerF2)
     {
       calibrateClass5SlimeCornerF2 = selected;
-      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass3HookCornerF2 = false; calibrateClass4WoodenCornerF2 = false;  calibrateClass6GrateCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
+      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass6GrateCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass5SlimeCornerF2) return;
@@ -24405,7 +24217,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass6GrateCornerF2)
     {
       calibrateClass6GrateCornerF2 = selected;
-      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass3HookCornerF2 = false; calibrateClass4WoodenCornerF2 = false; calibrateClass5SlimeCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
+      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass5SlimeCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass6GrateCornerF2) return;
@@ -24475,7 +24287,7 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass7EmptyHolderCornerF2)
     {
       calibrateClass7EmptyHolderCornerF2 = selected;
-      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass3HookCornerF2 = false; calibrateClass4WoodenCornerF2 = false; calibrateClass5SlimeCornerF2 = false; calibrateClass6GrateCornerF2 = false; }
+      if (selected) { calibrateClass2ManaclesCornerF2 = false; calibrateClass5SlimeCornerF2 = false; calibrateClass6GrateCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass7EmptyHolderCornerF2) return;
@@ -24978,48 +24790,10 @@ private static void HandleGameViewPointerDown(
   }
 
 
-  private Texture2D GetWoodRingGeneratedF3FrontTexture()
-  {
-    if (cachedWoodRingGeneratedF3FrontTexture != null)
-      return cachedWoodRingGeneratedF3FrontTexture;
-
-    Texture2D source = GetWoodRingFrontTexture();
-    if (source == null || !source.isReadable)
-    {
-      ReportStrictOrnamentMissing("WoodRing", "F3", "readable F1 source");
-      return null;
-    }
-
-    cachedWoodRingGeneratedF3FrontTexture = GenerateDmScaledWallDecoration(
-        source,
-        GetRegisteredDosFrontSlot("WoodRing", 3).width,
-        GetRegisteredDosFrontSlot("WoodRing", 3).height,
-        WallOrnamentFarColorMap,
-        "Wood Ring F3 Generated from F1");
-    return cachedWoodRingGeneratedF3FrontTexture;
-  }
 
 
-  private Texture2D GetWoodRingGeneratedF2FrontTexture()
-  {
-    if (cachedWoodRingGeneratedF2FrontTexture != null)
-      return cachedWoodRingGeneratedF2FrontTexture;
 
-    Texture2D source = GetWoodRingFrontTexture();
-    if (source == null || !source.isReadable)
-    {
-      ReportStrictOrnamentMissing("WoodRing", "F2", "readable F1 source");
-      return null;
-    }
 
-    cachedWoodRingGeneratedF2FrontTexture = GenerateDmScaledWallDecoration(
-        source,
-        GetRegisteredDosFrontSlot("WoodRing", 2).width,
-        GetRegisteredDosFrontSlot("WoodRing", 2).height,
-        WallOrnamentMediumColorMap,
-        "Wood Ring F2 Generated from F1");
-    return cachedWoodRingGeneratedF2FrontTexture;
-  }
 
   // Champion mirrors use the ordinary front-wall ornament geometry.
   // At F2 only the frame is drawn; the champion portrait is visible at F1.
@@ -26159,25 +25933,11 @@ private static void HandleGameViewPointerDown(
     {
       int frontDepth = depthFromPlayer + 1;
       renderMirror = false;
-      if (IsWoodRingOrnament(ornament))
+      if (IsWoodRingOrnament(ornament) || IsHookOrnament(ornament))
       {
-        if (frontDepth == 1)
-        {
-          Texture2D t = GetWoodRingFrontTexture();
-          if (t == null) return false;
-          renderX = 112 - (t.width / 2);
-          renderY = 114 - (t.height / 2);
-          return true;
-        }
-        if (frontDepth == 2)
-        { WallOrnamentDepthSlot slot = GetRegisteredDosFrontSlot("WoodRing", 2); renderX = slot.x; renderY = slot.y; return true; }
-        if (frontDepth == 3)
-        { WallOrnamentDepthSlot slot = GetRegisteredDosFrontSlot("WoodRing", 3); renderX = slot.x; renderY = slot.y; return true; }
-      }
-      if (IsHookOrnament(ornament))
-      {
-        if (frontDepth == 1) { renderX = HookD1FrontX; renderY = HookD1FrontY; return true; }
-        if (frontDepth == 2) { renderX = HookDosF2X; renderY = HookDosF2Y; return true; }
+        ReportStrictOrnamentMissing(IsWoodRingOrnament(ornament) ? "WoodRing" : "Hook",
+            "F" + frontDepth, "verified generic DOS front geometry");
+        return false;
       }
       if (IsSlimeOrnament(ornament))
       {
@@ -26728,8 +26488,12 @@ private static void HandleGameViewPointerDown(
         case "S2": return GetHookSide2Texture();
         case "S3": return GetHookSide3Texture();
         case "F1": return GetHookFrontTexture();
-        case "F2": return GetHookGeneratedF2FrontTexture();
-        case "F3": return GetHookGeneratedF3FrontTexture();
+        case "F2":
+          ReportStrictOrnamentMissing(family, slot, "verified generic DOS front geometry");
+          return null;
+        case "F3":
+          ReportStrictOrnamentMissing(family, slot, "verified generic DOS front geometry");
+          return null;
       }
     }
     if (family == "Manacles")
@@ -26752,8 +26516,12 @@ private static void HandleGameViewPointerDown(
         case "S2": return GetWoodRingSide2Texture();
         case "S3": return GetWoodRingSide3Texture();
         case "F1": return GetWoodRingFrontTexture();
-        case "F2": return GetWoodRingGeneratedF2FrontTexture();
-        case "F3": return GetWoodRingGeneratedF3FrontTexture();
+        case "F2":
+          ReportStrictOrnamentMissing(family, slot, "verified generic DOS front geometry");
+          return null;
+        case "F3":
+          ReportStrictOrnamentMissing(family, slot, "verified generic DOS front geometry");
+          return null;
       }
     }
     if (family == "Slime")
@@ -29439,8 +29207,7 @@ private static void HandleGameViewPointerDown(
     DrawChampionMirrorSideLaneFrontF2Rows();
     DrawManualChampionLeftF3Row();
     DrawManaclesClass2CornerF2CalibrationRow();
-    DrawHookClass3CornerF2CalibrationRow();
-    DrawWoodenClass4CornerF2CalibrationRow();
+
     DrawSlimeClass5CornerF2CalibrationRow();
     DrawGrateClass6CornerF2CalibrationRow();
     DrawEmptyHolderClass7CornerF2CalibrationRow();
@@ -35918,54 +35685,6 @@ private static void HandleGameViewPointerDown(
               114));
 
 
-  // Shared DOS group-0 front-wall geometry (used by more than one ornament).
-  // These are measured draw slots; scaling remains in the DOS 6-bit routine.
-  private static readonly WallOrnamentCoordinateSet DosGroup0FrontWallOrnamentSet =
-      new WallOrnamentCoordinateSet(
-          new WallOrnamentDepthSlot(
-              28, 28, HookD1FrontX, HookD1FrontY),
-          new WallOrnamentDepthSlot(
-              DosGroup0D2FrontWidth,
-              DosGroup0D2FrontHeight,
-              DosGroup0D2FrontX,
-              DosGroup0D2FrontY),
-          new WallOrnamentDepthSlot(
-              DosGroup0D3FrontWidth,
-              DosGroup0D3FrontHeight,
-              DosGroup0D3FrontX,
-              DosGroup0D3FrontY));
-
-  // Generic DOS front-layout lookup: registration selects a coordinate group;
-  // the group, not any other ornament family, owns the measured draw slots.
-  // Do not invent a fallback layout for an unverified group.
-  private static WallOrnamentDepthSlot GetRegisteredDosFrontSlot(
-      string family, int depth)
-  {
-    if (!TryGetDosWallOrnamentRegistration(family, out var registration))
-    {
-      ReportStrictOrnamentMissing(family, "F" + depth,
-          "verified DOS group registration");
-      return new WallOrnamentDepthSlot(0, 0, 0, 0);
-    }
-
-    switch (registration.layoutGroup)
-    {
-      case 0:
-        switch (depth)
-        {
-          // F1 remains family-specific and must not inherit Hook's F1 slot.
-          case 2: return DosGroup0FrontWallOrnamentSet.f2;
-          case 3: return DosGroup0FrontWallOrnamentSet.f3;
-        }
-        break;
-    }
-
-    ReportStrictOrnamentMissing(family, "F" + depth,
-        "verified DOS group=" + registration.layoutGroup + " front geometry");
-    return new WallOrnamentDepthSlot(0, 0, 0, 0);
-  }
-
-
   /// <summary>
   /// ViewEdit test. Shrinks the 96x56 extract into the original F2 slot,
   /// 64x37, with the medium-distance colour map.
@@ -36641,81 +36360,11 @@ private static void HandleGameViewPointerDown(
   }
 
 
-  private Texture2D GetHookGeneratedF3FrontTexture()
-  {
-    if (cachedHookGeneratedF3FrontTexture != null)
-      return cachedHookGeneratedF3FrontTexture;
 
-    // F2 and F3 share the verified native DOS 28x28 image. F3's existing
-    // 32-wide sampling grid is retained as *virtual* transparent padding:
-    // two transparent columns to the left and right, without a second asset.
-    Texture2D source = GetHookDosF2SourceTexture();
-    if (source == null)
-      return null;
 
-    try
-    {
-      cachedHookGeneratedF3FrontTexture = GenerateDmScaledWallDecoration(
-          source,
-          DosGroup0FrontWallOrnamentSet.f3.width,
-          DosGroup0FrontWallOrnamentSet.f3.height,
-          WallOrnamentFarColorMap,
-          "Hook F3 Generated From DOS F1 With Virtual Padding");
-    }
-    finally
-    {
-      UnityEngine.Object.DestroyImmediate(source);
-    }
-    if (cachedHookGeneratedF3FrontTexture == null)
-      LogMissingArtworkCyan("Hook F3: failed to generate from " + HookDosF2AssetPath);
-    return cachedHookGeneratedF3FrontTexture;
-  }
 
-  private Texture2D GetHookGeneratedF2FrontTexture()
-  {
-    if (cachedHookGeneratedF2FrontTexture != null)
-      return cachedHookGeneratedF2FrontTexture;
 
-    // Do not trim/pad dynamically: use the verified native DOS 28x28 file
-    // and fail explicitly if it is missing or has been changed in size.
-    Texture2D source = GetHookDosF2SourceTexture();
-    if (source == null)
-      return null;
 
-    cachedHookGeneratedF2FrontTexture = GenerateDmScaledWallDecoration(
-        source,
-        HookDosF2Width,
-        HookDosF2Height,
-        WallOrnamentMediumColorMap,
-        "Hook F2 DOS native 28x28 to 18x18");
-    if (cachedHookGeneratedF2FrontTexture == null)
-      LogMissingArtworkCyan("Hook F2: DOS-native scaling failed: " + HookDosF2AssetPath);
-    return cachedHookGeneratedF2FrontTexture;
-  }
-
-  private Texture2D GetHookDosF2SourceTexture()
-  {
-    // Decode file bytes directly because newly imported Unity PNGs may
-    // default to Read/Write disabled. Do not alter importer settings.
-    if (!System.IO.File.Exists(HookDosF2AssetPath))
-    {
-      LogMissingArtworkCyan("Hook F2: required native DOS source missing: "
-          + HookDosF2AssetPath);
-      return null;
-    }
-    Texture2D source = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-    if (!UnityEngine.ImageConversion.LoadImage(source,
-            System.IO.File.ReadAllBytes(HookDosF2AssetPath), false)
-        || source.width != 28 || source.height != 28)
-    {
-      LogMissingArtworkCyan("Hook F2: native DOS image could not decode as 28x28: "
-          + HookDosF2AssetPath);
-      UnityEngine.Object.DestroyImmediate(source);
-      return null;
-    }
-    source.filterMode = FilterMode.Point;
-    return source;
-  }
 
   private Texture2D GetHookFrontTexture()
   {
