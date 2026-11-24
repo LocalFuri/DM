@@ -7206,5 +7206,20 @@
       "Keep all eight approved ordinary wall ornaments unchanged; blue puddles and moss after mirrors."
     ],
     "cursor": "Ask mode strictly read-only."
+  },
+  "strict_dos_champion_diagnostic_stage4ne_20261124": {
+    "timestamp": "2026-11-24T22:47:55.261117+01:00",
+    "user_report": "Level 0 (14,3) North: Chani frame absent in Game View and ViewEdit.",
+    "change": "Extend existing Tools/DOS Ornament Visibility Diagnostic to report mirror placement count, Chani and nearby physical faces, taken/enabled/visible states, DOS view, native artwork paths and import state, rendered mirror bounds. Diagnostic only; no draw changes.",
+    "next": "Run diagnostic at reported pose and inspect cyan output. Fix only evidenced failure. Portrait and recruitment pending.",
+    "protected": "Eight approved ordinary ornaments, shared geometry and offsets unchanged. Cursor Ask mode only."
+  },
+  "strict_dos_champion_path_stage4nf_20261124": {
+    "timestamp": "2026-11-24T22:52:24.746096+01:00",
+    "archive": "StrictDOS_ChampionPath_Stage4NF_20261124-225224.zip",
+    "user_confirmed_directory": "C:\\Unity\\DM\\Assets\\Art\\Champions\\",
+    "change": "Correct exactly two ChampionMirror registry artwork paths from Assets/Champions to Assets/Art/Champions. No other source changes.",
+    "next": "Compile and verify Chani frame and ViewEdit row at Level 0 (14,3) North; portraits and recruitment remain pending.",
+    "protected": "All eight approved ornaments, geometry, scaling and calibration unchanged. Cursor Ask mode only."
   }
 }

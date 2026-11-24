@@ -207,8 +207,8 @@ public class ViewportLayoutEditor : EditorWindow
             "Assets/Art/Ornaments/Altar_of_Vi_96,56.png",
             "Assets/Art/Ornaments/Altar_of_Vi_S1_20x48.png") },
         { "ChampionMirror", new DosWallOrnamentRegistration(43,
-            "Assets/Champions/Champion_Mirror_F1_48x43.png",
-            "Assets/Champions/Champion_Mirror_S1_16x35.png") }
+            "Assets/Art/Champions/Champion_Mirror_F1_48x43.png",
+            "Assets/Art/Champions/Champion_Mirror_S1_16x35.png") }
       };
 
   private static readonly byte[] DosNativeOrnamentColorMap =
@@ -20743,6 +20743,37 @@ private static void HandleGameViewPointerDown(
           + " DOSview=" + (mapped ? view.ToString() : "NONE") + " registered=" + registered);
     }
     report.AppendLine("Nearby placement records=" + nearby);
+    report.AppendLine("Champion placements=" + (previewChampionMirrors == null ? -1 : previewChampionMirrors.Length));
+    if (DosWallOrnamentRegistry.TryGetValue("ChampionMirror", out var mirrorRegistration))
+    {
+      foreach (string path in new[] { mirrorRegistration.frontPath, mirrorRegistration.sidePath })
+      {
+        var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        report.AppendLine("Mirror artwork " + path + ": " + (texture == null ? "MISSING" :
+            texture.width + "x" + texture.height + " readable=" + texture.isReadable));
+      }
+    }
+    else report.AppendLine("ChampionMirror registry MISSING");
+    if (previewChampionMirrors != null)
+    foreach (var mirror in previewChampionMirrors)
+    {
+      if (mirror == null) continue;
+      if (!string.Equals(mirror.champion, "Chani", System.StringComparison.OrdinalIgnoreCase)
+          && (Mathf.Abs(mirror.x - previewX) > 4 || Mathf.Abs(mirror.y - previewY) > 4)) continue;
+      var placement = new WallOrnamentPlacement { type = "ChampionMirror", x = mirror.x,
+          y = mirror.y, wall = mirror.wall, wallTilePlacement = true };
+      bool mapped = TryGetStrictDosStandardView(placement, out int view);
+      report.AppendLine("Champion " + mirror.champion + " wall (" + mirror.x + "," + mirror.y + ") " + mirror.wall
+          + " taken=" + IsPreviewChampionTaken(mirror.champion)
+          + " enabled=" + IsPreviewFeatureEnabled(MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall))
+          + " visible=" + IsChampionMirrorVisibleFromPlayerSide(mirror)
+          + " DOSview=" + (mapped ? view.ToString() : "NONE"));
+    }
+    foreach (var row in renderedDosWallOrnaments)
+      if (row.family == "ChampionMirror")
+        report.AppendLine("Rendered mirror (" + row.placement.x + "," + row.placement.y + ") "
+            + row.placement.wall + " view=" + row.view + " bounds=" + row.screenBounds);
+
     LogMissingArtworkCyan(report.ToString());
   }
 
