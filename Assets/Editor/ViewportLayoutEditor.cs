@@ -212,6 +212,17 @@ public class ViewportLayoutEditor : EditorWindow
       { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
   private DosOrnamentGeometryResolver dosOrnamentGeometry;
   private System.DateTime dosOrnamentGeometryWriteTime;
+  private sealed class RenderedDosWallOrnament
+  {
+    public WallOrnamentPlacement placement;
+    public string family;
+    public int view;
+    public Rect screenBounds;
+  }
+  private readonly List<RenderedDosWallOrnament> renderedDosWallOrnaments =
+      new List<RenderedDosWallOrnament>();
+  private int renderedDosLevel, renderedDosX, renderedDosY;
+  private DungeonFacing renderedDosFacing;
 
   // Dungeon viewport is X=0..223. Every left/right wall-ornament pair is the
   // same sprite mirrored around that width: rightX = 224 - leftX - spriteWidth.
@@ -8576,8 +8587,8 @@ private static void HandleGameViewPointerDown(
     championName = visibleChampion;
     return true;
   }
-  // No ornament pixels are drawn during the strict reset. A click must not
-  // act on a fixture until the generic renderer supplies its visible bounds.
+  // Champion mirrors are still outside the verified ordinary-wall path.
+  // Do not enable recruitment until their rendered bounds are available.
   private static bool HasVerifiedOrnamentHit(string family, float logicalX, float logicalY)
   {
     ReportStrictOrnamentMissing(family, "F1", "verified rendered hit rectangle");
@@ -12609,6 +12620,7 @@ private static void HandleGameViewPointerDown(
 
   private void DestroyEditModePreviewTextureOnly()
   {
+    renderedDosWallOrnaments.Clear();
     if (editModePreviewTexture == null)
       return;
 
@@ -19657,6 +19669,11 @@ private static void HandleGameViewPointerDown(
 
   private void ComposeEditModePreview()
   {
+    renderedDosWallOrnaments.Clear();
+    renderedDosLevel = previewDungeonLevel;
+    renderedDosX = previewX;
+    renderedDosY = previewY;
+    renderedDosFacing = previewFacing;
     v17DrawnWalls.Clear();
     EnsureEditModePreviewTexture();
     if (editModePreviewTexture == null)
@@ -20711,8 +20728,9 @@ private static void HandleGameViewPointerDown(
       bool projected = TryGetStandardWallOrnamentProjectionInCurrentPose(ornament, 3, 3, out _, out _, out _);
       bool drawn = IsV17DrawnWallFeatureFace(ornament.x, ornament.y, ornament.wall, ornament.wallTilePlacement);
       bool mapped = TryGetStrictDosStandardView(ornament, out int view);
-      bool registered = DosWallOrnamentRegistry.ContainsKey(ornament.type ?? "Unknown");
-      report.AppendLine(ornament.type + " (" + ornament.x + "," + ornament.y + ") " + ornament.wall
+      string family = GetCurrentDosWallOrnamentFamily(ornament);
+      bool registered = DosWallOrnamentRegistry.ContainsKey(family);
+      report.AppendLine(family + " (" + ornament.x + "," + ornament.y + ") " + ornament.wall
           + " physical=" + ornament.wallTilePlacement + " ordinal=" + ornament.ornamentOrdinal
           + " enabled=" + enabled + " projection=" + projected + " drawnWall=" + drawn
           + " DOSview=" + (mapped ? view.ToString() : "NONE") + " registered=" + registered);
@@ -20745,7 +20763,7 @@ private static void HandleGameViewPointerDown(
     pending.Sort((a, b) => a.Key.CompareTo(b.Key));
     foreach (var entry in pending)
     {
-      string family = entry.Value.type ?? "Unknown";
+      string family = GetCurrentDosWallOrnamentFamily(entry.Value);
       if (!DosWallOrnamentRegistry.TryGetValue(family, out DosWallOrnamentRegistration registration))
       {
         ReportStrictOrnamentMissing(family, "view " + entry.Key, "verified native DOS registration");
@@ -20758,14 +20776,8 @@ private static void HandleGameViewPointerDown(
         DosOrnamentGeometryResolver.Result r = resolver.Resolve(registration.type, entry.Key, dx, dy);
         if (!r.ClippedX.HasValue || !r.ClippedY.HasValue || !r.SourceX.HasValue || !r.SourceY.HasValue)
           continue; // Fully clipped by original layout.
-        string sourcePath = (r.Graphic - 259) % 2 == 1 ? registration.frontPath : registration.sidePath;
-        Texture2D source = AssetDatabase.LoadAssetAtPath<Texture2D>(sourcePath);
-        if (source == null || !source.isReadable || source.width != r.NativeWidth || source.height != r.NativeHeight)
-        {
-          ReportStrictOrnamentMissing(family, r.ViewName,
-              "readable native graphic " + r.Graphic + " (" + r.NativeWidth + "x" + r.NativeHeight + ") at " + sourcePath);
+        if (!TryLoadStrictDosOrnamentSource(family, registration, r, out Texture2D source))
           continue;
-        }
         byte[] palette;
         switch (r.PaletteGroup)
         {
@@ -20783,7 +20795,11 @@ private static void HandleGameViewPointerDown(
           ReportStrictOrnamentMissing(family, r.ViewName, "scaled DOS artwork");
           continue;
         }
-        BlitStrictDosOrnamentRect(pixels, scaled, r);
+        if (BlitStrictDosOrnamentRect(pixels, scaled, r, out Rect screenBounds))
+          renderedDosWallOrnaments.Add(new RenderedDosWallOrnament {
+            placement = entry.Value, family = family, view = entry.Key,
+            screenBounds = screenBounds
+          });
       }
       catch (System.Exception ex)
       {
@@ -20841,9 +20857,25 @@ private static void HandleGameViewPointerDown(
     if (selected != null) { dx = selected.dx; dy = selected.dy; }
   }
 
-  private static void BlitStrictDosOrnamentRect(Color32[] dest, Texture2D source,
-      DosOrnamentGeometryResolver.Result r)
+  private static bool TryLoadStrictDosOrnamentSource(string family,
+      DosWallOrnamentRegistration registration, DosOrnamentGeometryResolver.Result r,
+      out Texture2D source)
   {
+    string sourcePath = (r.Graphic - 259) % 2 == 1 ? registration.frontPath : registration.sidePath;
+    source = AssetDatabase.LoadAssetAtPath<Texture2D>(sourcePath);
+    if (source != null && source.isReadable && source.width == r.NativeWidth
+        && source.height == r.NativeHeight) return true;
+    ReportStrictOrnamentMissing(family, r.ViewName,
+        "readable native graphic " + r.Graphic + " (" + r.NativeWidth + "x" + r.NativeHeight + ") at " + sourcePath);
+    return false;
+  }
+
+  private static bool BlitStrictDosOrnamentRect(Color32[] dest, Texture2D source,
+      DosOrnamentGeometryResolver.Result r, out Rect screenBounds)
+  {
+    screenBounds = new Rect();
+    int minX = PreviewWidth, minY = PreviewHeight, maxX = -1, maxY = -1;
+    bool drewPixel = false;
     Color32[] artwork = source.GetPixels32();
     // Resource 696 coordinates are top-down within the 224x136 dungeon.
     // Unity's 320x200 framebuffer is bottom-up; dungeon screen top is 33.
@@ -20861,9 +20893,22 @@ private static void HandleGameViewPointerDown(
         if (r.Mirrored) sx = source.width - 1 - sx;
         if (dx < 0 || dx >= DungeonViewportWidth || sx < 0 || sx >= source.width) continue;
         Color32 pixel = artwork[(source.height - 1 - sy) * source.width + sx];
-        if (pixel.a != 0) dest[dy * PreviewWidth + dx] = pixel;
+        // Record the same clipped destination rectangle the blitter visits,
+        // in top-down screen coordinates. Transparent padding stays inside
+        // the rectangle; completely transparent artwork is not clickable.
+        int screenY = dungeonScreenTop + localY;
+        minX = Mathf.Min(minX, dx); maxX = Mathf.Max(maxX, dx);
+        minY = Mathf.Min(minY, screenY); maxY = Mathf.Max(maxY, screenY);
+        if (pixel.a != 0)
+        {
+          dest[dy * PreviewWidth + dx] = pixel;
+          drewPixel = true;
+        }
       }
     }
+    if (!drewPixel) return false;
+    screenBounds = new Rect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+    return true;
   }
 
   private static void ApplyDungeonViewportLightPalette(
@@ -31046,10 +31091,9 @@ private static void HandleGameViewPointerDown(
 
 
 
-  // Shared by the renderer and ViewEdit: only the directly facing F1 wall
-  // can display this asset. Position comes from the feature-placement data.
-  // First pickup milestone: one held torch, with a stable identity derived from
-  // its original wall fixture. No champion inventory/drop/throw behavior yet.
+  // Holder state is independent of viewing distance and facing. Only an
+  // original full fixture can own a torch; pickup/return uses rendered F1
+  // bounds and preserves the existing holder-derived item identity.
   private readonly HashSet<string> previewRemovedTorchHolderKeys =
       new HashSet<string>();
   private string previewHeldTorchId;
@@ -32415,14 +32459,87 @@ private static void HandleGameViewPointerDown(
         + ":" + ornament.wall.ToUpperInvariant() + ":Weapon:2";
   }
 
-  private WallOrnamentPlacement FindVisibleEmptyTorchHolderF1()
+  // A full map fixture owns one original torch. Its state changes without
+  // modifying map data or allocating a replacement item. An authored empty
+  // fixture stays empty; only the existing same-fixture return is supported.
+  private string GetCurrentDosWallOrnamentFamily(WallOrnamentPlacement ornament)
   {
-    if (previewWallOrnaments == null)
-      return null;
-    foreach (WallOrnamentPlacement candidate in previewWallOrnaments)
-      if (IsEmptyTorchHolderF1Visible(candidate))
-        return candidate;
-    return null;
+    string family = ornament.type ?? "Unknown";
+    if (string.Equals(family, "FullTorchHolder", System.StringComparison.OrdinalIgnoreCase)
+        && previewRemovedTorchHolderKeys.Contains(MakeTorchHolderInstanceKey(ornament)))
+      return "EmptyTorchHolder";
+    return family;
+  }
+
+  // Generic hit-test: use the last composed frame, not a second projection.
+  // Original reach rule: only the central front F1 wall is interactive.
+  private bool TryGetRenderedDosFrontOrnamentHit(string family, float x, float y,
+      out WallOrnamentPlacement ornament)
+  {
+    ornament = null;
+    if (championSheetVisible || editModePreviewTexture == null
+        || renderedDosLevel != previewDungeonLevel || renderedDosX != previewX
+        || renderedDosY != previewY || renderedDosFacing != previewFacing) return false;
+    var point = new Vector2(x, y);
+    for (int i = renderedDosWallOrnaments.Count - 1; i >= 0; --i)
+    {
+      RenderedDosWallOrnament hit = renderedDosWallOrnaments[i];
+      if (!hit.screenBounds.Contains(point)) continue;
+      if (hit.view != 14 || !string.Equals(hit.family, family,
+          System.StringComparison.OrdinalIgnoreCase)) return false;
+      if (!IsPreviewFeatureEnabled(MakePreviewFeatureKey("Ornament", hit.placement.x,
+          hit.placement.y, hit.placement.wall)) || !string.Equals(hit.family,
+          GetCurrentDosWallOrnamentFamily(hit.placement), System.StringComparison.OrdinalIgnoreCase))
+        return false;
+      ornament = hit.placement;
+      return true;
+    }
+    return false;
+  }
+
+  // Never move an item until the opposite holder state has valid native art
+  // and can be resolved by the same DOS geometry / calibration mechanism.
+  private bool CanDrawStrictDosFrontOrnament(string family)
+  {
+    if (!DosWallOrnamentRegistry.TryGetValue(family, out DosWallOrnamentRegistration registration))
+    {
+      ReportStrictOrnamentMissing(family, "F1", "verified native DOS registration");
+      return false;
+    }
+    if (!TryGetStrictDosGeometry(out DosOrnamentGeometryResolver resolver)
+        || !TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration)) return false;
+    Texture2D scaled = null;
+    try
+    {
+      GetStrictDosOrnamentOffset(calibration, family, 14, out int dx, out int dy);
+      var r = resolver.Resolve(registration.type, 14, dx, dy);
+      if (!r.ClippedX.HasValue || !r.ClippedY.HasValue || !r.SourceX.HasValue
+          || !r.SourceY.HasValue || r.ClippedWidth <= 0 || r.ClippedHeight <= 0)
+      {
+        ReportStrictOrnamentMissing(family, "F1", "visible clipped DOS geometry");
+        return false;
+      }
+      if (!TryLoadStrictDosOrnamentSource(family, registration, r, out Texture2D source)) return false;
+      if (r.PaletteGroup != "native")
+      {
+        ReportStrictOrnamentMissing(family, "F1", "verified DOS native palette");
+        return false;
+      }
+      scaled = GenerateDmScaledWallDecoration(source, r.Width, r.Height,
+          DosNativeOrnamentColorMap, "DOS ornament " + r.Graphic + " view " + r.View);
+      if (scaled != null) return true;
+      ReportStrictOrnamentMissing(family, "F1", "scaled DOS artwork");
+      return false;
+    }
+    catch (System.Exception ex)
+    {
+      ReportStrictOrnamentMissing(family, "F1", "valid DOS draw data: " + ex.Message);
+      return false;
+    }
+    finally
+    {
+      if (scaled != null) UnityEngine.Object.DestroyImmediate(scaled);
+    }
   }
 
   private static Texture2D FindExactTorchTexture(string name, int width, int height)
@@ -32759,28 +32876,18 @@ private static void HandleGameViewPointerDown(
   private bool TryReturnHeldTorchToVisibleHolder(float logicalX, float logicalY)
   {
     ClearStaleHeldTorchState();
-    if (!HasPickedUpTorchOnCursor() || championSheetVisible)
-      return false;
-
-    WallOrnamentPlacement ornament = FindVisibleEmptyTorchHolderF1();
-    if (ornament == null || !IsPreviewFeatureEnabled(
-        MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
-      return false;
-
+    if (!HasPickedUpTorchOnCursor() || championSheetVisible) return false;
+    if (!TryGetRenderedDosFrontOrnamentHit("EmptyTorchHolder", logicalX, logicalY,
+        out WallOrnamentPlacement ornament)) return false;
     string id = MakeTorchHolderInstanceKey(ornament);
-    if (id != previewHeldTorchId || !previewRemovedTorchHolderKeys.Contains(id))
-      return false; // An unrelated fixture cannot accept this held item.
-
-    if (!HasVerifiedOrnamentHit("EmptyTorchHolder", logicalX, logicalY))
-      return false;
-
-    // A missing asset must never remove the item from the hand.
-    if (FindExactTorchTexture("Torch_Holder_Full_F1_24x53.png", 24, 53) == null)
-      return true; // Click consumed; FindExactTorchTexture logged an error.
-
-    if (!previewItemInstances.TryGetValue(id, out ItemInstance returnedTorchInstance))
+    if (!string.Equals(ornament.type, "FullTorchHolder", System.StringComparison.OrdinalIgnoreCase)
+        || id != previewHeldTorchId || !previewRemovedTorchHolderKeys.Contains(id))
+      return true; // Empty but unrelated fixture: consume the click, do not drop/throw.
+    if (!CanDrawStrictDosFrontOrnament("FullTorchHolder")) return true;
+    if (!previewItemInstances.TryGetValue(id, out ItemInstance returnedTorchInstance)
+        || returnedTorchInstance.Location != "Cursor")
     {
-      Debug.LogError("ITEM INSTANCE: missing returned torch " + id);
+      LogMissingArtworkCyan("TORCH HOLDER: missing held item instance " + id);
       return true;
     }
     MoveItemInstance(returnedTorchInstance, "Holder", level: previewDungeonLevel,
@@ -32798,92 +32905,34 @@ private static void HandleGameViewPointerDown(
 
   private bool TryPickupVisibleTorchAt(float logicalX, float logicalY)
   {
-    if (championSheetVisible)
-    {
-
-      return false;
-    }
     ClearStaleHeldTorchState();
-    if (HasAnyItemOnCursor())
-    {
-      Debug.LogWarning("TORCH PICKUP TRACE: blocked because item is already held: "
-          + previewHeldTorchId + ". Return or drop the held item before retrying.");
-      return false;
-    }
-    WallOrnamentPlacement ornament = FindVisibleEmptyTorchHolderF1();
-    if (ornament == null)
-    {
-
-      return false;
-    }
-    if (logicalX < 0 || logicalX >= 224 || logicalY < 0 || logicalY >= 136)
-    {
-      Debug.Log("TORCH PICKUP DEBUG: click outside viewport: " + logicalX + "," + logicalY);
-      return false;
-    }
-    if (!IsPreviewFeatureEnabled(
-        MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
-    {
-      Debug.Log("TORCH PICKUP DEBUG: ornament disabled");
-      return false;
-    }
-
+    if (championSheetVisible || HasAnyItemOnCursor()) return false;
+    if (!TryGetRenderedDosFrontOrnamentHit("FullTorchHolder", logicalX, logicalY,
+        out WallOrnamentPlacement ornament)) return false;
     string id = MakeTorchHolderInstanceKey(ornament);
-    if (previewRemovedTorchHolderKeys.Contains(id))
-    {
-      Debug.LogWarning("TORCH PICKUP TRACE: holder already marked emptied: " + id);
-      return false;
-    }
-
-    if (!HasVerifiedOrnamentHit("FullTorchHolder", logicalX, logicalY))
-      return false;
-
-    // Never remove an item if its cursor graphic is unavailable.
+    if (previewRemovedTorchHolderKeys.Contains(id)) return true;
+    // Do not allocate or transfer the torch if its empty-holder state or
+    // cursor artwork is unavailable. Use the registered native geometry.
+    if (!CanDrawStrictDosFrontOrnament("EmptyTorchHolder")) return true;
     Texture2D cursorImage = FindExactTorchTexture("Torch_Unlit_16x16.png", 16, 16);
-    if (cursorImage == null)
-      return true; // consume the hit; error has already been logged
-    Texture2D fullImage = FindExactTorchTexture("Torch_Holder_Full_F1_24x53.png", 24, 53);
-    if (fullImage == null)
-      return true;
-
+    if (cursorImage == null) return true;
     ItemInstance heldTorchInstance = EnsureWorldItemInstance(id, "Torch",
         "Holder", previewDungeonLevel, ornament.x, ornament.y, null);
     if (heldTorchInstance == null) return true;
+    if (heldTorchInstance.Location != "Holder")
+    {
+      LogMissingArtworkCyan("TORCH HOLDER: item is not in its fixture " + id);
+      return true;
+    }
     MoveItemInstance(heldTorchInstance, "Cursor");
     previewHeldTorchId = id;
     previewHeldTorchCursor = cursorImage;
     previewRemovedTorchHolderKeys.Add(id);
-    // GameView often ignores EditorWindow Cursor.SetCursor. The UITK overlay
-    // follows subsequent pointer moves without touching the viewport texture.
     Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-    Debug.Log("TORCH PICKUP: picked up unique item " + id
-        + "; holder remains empty. Inventory, drop, and throw not yet implemented.");
     RefreshEditModePreview();
+    Debug.Log("TORCH PICKUP: picked up unique item " + id + "; holder empty.");
     return true;
   }
-
-  private bool IsEmptyTorchHolderF1Visible(WallOrnamentPlacement ornament)
-  {
-    if (ornament == null || !ornament.wallTilePlacement
-        || !string.Equals(ornament.type, "EmptyTorchHolder",
-            System.StringComparison.OrdinalIgnoreCase))
-      return false;
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null)
-      return false;
-    DungeonMap.GetForwardOffset(previewFacing, out int dx, out int dy);
-    int wallX = previewX + dx;
-    int wallY = previewY + dy;
-    return previewMiniMap.IsInside(wallX, wallY)
-        && previewMiniMap.GetTile(wallX, wallY).Type == DungeonTileType.Wall
-        && ornament.x == wallX && ornament.y == wallY
-        && string.Equals(ornament.wall, OppositeFacingName(previewFacing),
-            System.StringComparison.OrdinalIgnoreCase);
-  }
-
-
-
-
 
   private static string FacingName(DungeonFacing facing)
   {
@@ -33077,6 +33126,7 @@ private static void HandleGameViewPointerDown(
 
   private void RestoreViewportTextureAndDestroyPreview()
   {
+    renderedDosWallOrnaments.Clear();
     RestoreEditModePresentationOverrides();
 
     if (TryGetViewportRawImage(out RawImage dungeonImage)
