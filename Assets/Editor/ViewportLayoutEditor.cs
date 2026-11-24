@@ -233,12 +233,8 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Art/Ornaments/Grate_S1_16x19.png";
   // Grate S2 is generated from the native 16x19 S1 using the shared
   // DOS 6-bit sampler (no dedicated pre-scaled S2 artwork).
-  private const int GrateD2SideWidth = 10;
-  private const int GrateD2SideHeight = 12;
   // S3 is generated from native 16x19 side artwork with the shared
   // DOS 6-bit scaling algorithm (14/32). No pre-scaled S3 asset.
-  private const int GrateD3SideWidth = 7;
-  private const int GrateD3SideHeight = 8;
   // F2 right-side corner: generate a 20x13 bitmap from the native DOS F1
   // artwork. Preserve this corner's distinct clipping/placement, not S2.
   // Independent F3 corner art; native 14x8, never rescaled.
@@ -342,39 +338,25 @@ public class ViewportLayoutEditor : EditorWindow
   // the party. Measured from the supplied 320x200 original screenshot:
   // source = 32x28, screen top-left = (96,125), therefore framebuffer
   // bottom-left Y = 200 - 125 - 28 = 47.
-  private const int GrateD1FrontX = 96;
-  private const int GrateD1FrontY = 47;
 
   // Original DOS Grate front at distance 2. In the supplied (16,8) West
   // screenshot Grate_Front2_21x13.png is an exact pixel match at screen
   // top-left (102,113). The wall is two steps ahead, (14,8) East.
   // Framebuffer Y = 200 - 113 - 13 = 74.
-  private const int GrateD2FrontX = 102;
-  private const int GrateD2FrontY = 74;
 
   // Original DOS Grate front at distance 3. In the supplied (17,8) West
   // screenshot Grate_Front3_14x9.png is an exact pixel match at screen
   // top-left (105,99). The wall is three steps ahead, (14,8) East.
   // Framebuffer Y = 200 - 99 - 9 = 92.
-  private const int GrateD3FrontX = 105;
-  private const int GrateD3FrontY = 92;
 
   // Original DOS Grate D1 side placement. In the supplied (14,9) West
   // original screenshot Grate_Side1_16x19.png occupies the left D1 side
   // slot with framebuffer bottom-left X=47, Y=63. The right slot is the
   // exact dungeon-viewport mirror of the same 16x19 sprite.
-  private const int GrateD1SideLeftX = 47;
-  private const int GrateD1SideRightX =
-      224 - GrateD1SideLeftX - 16;
-  private const int GrateD1SideY = 63;
 
   // Provisional full DOS S2 bitmap alignment: preserve the center of the
   // previously accepted 6px opaque region (X=66..71), now in a 10px bitmap.
   // Keep the measured bottom framebuffer Y=83 pending the DOS S2 comparison.
-  private const int GrateD2SideLeftX = 64;
-  private const int GrateD2SideRightX =
-      DungeonViewportWidth - GrateD2SideLeftX - GrateD2SideWidth;
-  private const int GrateD2SideY = 83;
 
   // Native DOS S3 is a 7x8 scaled full bitmap from the 16x19 S1 source.
   // S3 X/Y remain provisional until compared against the corresponding
@@ -382,15 +364,7 @@ public class ViewportLayoutEditor : EditorWindow
   // Right wall mirrors the same shared scaled source.
   // Provisional framebuffer Y retained from the legacy side placement.
   // Initial right-edge location, adjustable with the independent ViewEdit Apply row.
-  private const int GrateF2SideCornerX = DungeonViewportWidth - 10;
-  private const int GrateF2SideCornerY = 83;
-  private const int GrateF3SideCornerX = DungeonViewportWidth - 7;
-  private const int GrateF3SideCornerY = 98;
 
-  private const int GrateD3SideLeftX = 81;
-  private const int GrateD3SideRightX =
-      DungeonViewportWidth - GrateD3SideLeftX - GrateD3SideWidth;
-  private const int GrateD3SideY = 100;
 
   // Original DOS coordinate-set-0 D1 side placement (Hook / Wood Ring family).
   // The original D1 side box is 16x19 at left screen X=48 (right = 224-48-16).
@@ -713,54 +687,31 @@ public class ViewportLayoutEditor : EditorWindow
   private const int HookD1SideRightX =
       DungeonViewportWidth - HookD1SideLeftX - 14;
   private const int HookD1SideY = 107;
-  private const int WoodRingD1SideLeftX = 49;
-  private const int WoodRingD1SideRightX =
-      DungeonViewportWidth - WoodRingD1SideLeftX - 14;
-  private const int WoodRingD1SideY = 108;
 
   // Original DOS D1 side Slime placement. In the supplied (4,6) North
   // original screenshot the mirrored right-wall Slime_Side_16x10 sprite
   // is an exact pixel match at screen top-left (161,127). Left slot is
   // that same 16px box mirrored. Framebuffer Y = 200 - 127 - 10 = 63.
-  private const int SlimeD1SideLeftX = 47;
-  private const int SlimeD1SideRightX =
-      DungeonViewportWidth - SlimeD1SideLeftX - 16;
-  private const int SlimeD1SideY = 63;
 
   // Historical Wood Ring S2 screen geometry; source artwork is now scaled
   // from native S1. This destination must still be moved into DOS group data.
   private const int WoodRingD2SideLeftX = 66;
-  private const int WoodRingD2SideRightX =
-      DungeonViewportWidth - WoodRingD2SideLeftX - 5;
-  private const int WoodRingD2SideY = 117;
 
   // Original DOS D2 side Slime placement. The supplied (4,7) North original
   // uses native Slime_Side_4x3.png as an exact right-wall crop at screen
   // top-left (154,114). Store the mirrored left slot; the 4x3 PNG is already
   // the right-wall facing, so only the left blit is flipped.
   // Framebuffer Y = 200 - 114 - 3 = 83.
-  private const int SlimeD2SideLeftX = 66;
-  private const int SlimeD2SideRightX =
-      DungeonViewportWidth - SlimeD2SideLeftX - 4;
-  private const int SlimeD2SideY = 83;
 
   // F3 front is generated from the native 22x16 Slime front. Width stays
   // half the F1 source. Height is shorter than that half so the far-distance
   // palette does not stretch the dark vertical drip into a long black column.
   // Placement matches the accepted OrnamentProjection:Slime:F3 reference.
-  private const int SlimeD3FrontWidth = 11;
-  private const int SlimeD3FrontHeight = 5;
-  private const int SlimeD3FrontX = 106;
-  private const int SlimeD3FrontY = 93;
 
   // Original DOS Wood Ring distant side placement at D3. The supplied native
   // Wood_Ring_Side_3x5.png is an exact pixel match in the original
   // (4,7) North screenshot at screen top-left (82,73).
   // Framebuffer Y = 200 - 73 - 5 = 122.
-  private const int WoodRingD3SideLeftX = 82;
-  private const int WoodRingD3SideRightX =
-      DungeonViewportWidth - WoodRingD3SideLeftX - 3;
-  private const int WoodRingD3SideY = 122;
 
   // Original DOS S2 Hook layout: the unpadded 14x19 side artwork is
   // rendered as a 9x12 bitmap at x=66 (left) / x=149 (right).
@@ -775,7 +726,6 @@ public class ViewportLayoutEditor : EditorWindow
   // DOS resource-696 set 0, DI=2/3. The entire source is scaled to 6x8;
   // only the colored portion is visibly 3x5. Actual draw placement is
   // resolved from the resource, not from these UI baseline constants.
-  private const int HookD3SideWidth = 6;
   private const int HookD3SideHeight = 8;
   private const int HookD3SideLeftX = 82;
   private const int HookD3SideRightX = 136;
@@ -1847,8 +1797,6 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private Texture2D cachedViAltarFrontTexture;
   private Texture2D cachedViAltarS1Texture;
-  private Texture2D cachedViAltarS2Texture;
-  private Texture2D cachedViAltarS3Texture;
 
   // Separate ViewEdit test. Builds F2/F3 from the 96x56 extract at the
   // engine slot sizes instead of the measured 63x37 and 42x24 slots.
@@ -1861,41 +1809,18 @@ public class ViewportLayoutEditor : EditorWindow
   [System.NonSerialized]
   private Texture2D cachedGrateFrontTexture;
   [System.NonSerialized]
-  private Texture2D cachedGrateFront2Texture;
-  [System.NonSerialized]
-  private Texture2D cachedGrateFront3Texture;
-  [System.NonSerialized]
   private Texture2D cachedGrateSide1Texture;
-  [System.NonSerialized]
-  private Texture2D cachedGrateSide2Texture;
-  [System.NonSerialized]
-  private Texture2D cachedGrateSide3Texture;
-  [System.NonSerialized]
-  private Texture2D cachedGrateF2SideTexture;
   private Texture2D cachedGrateF3SideTexture;
   [System.NonSerialized]
   private Texture2D cachedHookSideTexture;
-  [System.NonSerialized]
-  private Texture2D cachedHookSide2Texture;
-  [System.NonSerialized]
-  private Texture2D cachedHookSide3Texture;
   [System.NonSerialized]
   private Texture2D cachedWoodRingFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedWoodRingSideTexture;
   [System.NonSerialized]
-  private Texture2D cachedWoodRingSide2Texture;
-  [System.NonSerialized]
-  private Texture2D cachedWoodRingSide3Texture;
-  [System.NonSerialized]
   private Texture2D cachedSlimeFrontTexture;
-  private Texture2D cachedSlimeGeneratedF2FrontTexture;
-  [System.NonSerialized]
-  private Texture2D cachedSlimeGeneratedF3FrontTexture;
   [System.NonSerialized]
   private Texture2D cachedSlimeSide1Texture;
-  [System.NonSerialized]
-  private Texture2D cachedSlimeSide2Texture;
   [System.NonSerialized]
   private Texture2D cachedPuddleF1Texture;
   private Texture2D cachedPuddleF1SideTexture;
@@ -2823,10 +2748,6 @@ public class ViewportLayoutEditor : EditorWindow
       cachedRight2SReadableCopy = null;
     }
 
-
-
-    cachedViAltarS2Texture = null;
-    cachedViAltarS3Texture = null;
 
     RepaintGameViews();
   }
@@ -23987,143 +23908,11 @@ private static void HandleGameViewPointerDown(
 
   // Class 5 Slime: independent JSON calibration, using the same JSON-driven
   // near-corner classification as Classes 1 and 2, never map-specific.
-  private const string SlimePreviewPrefsKey = "DM.ViewEdit.SlimeClass5Preview";
-  private bool calibrateClass5SlimeCornerF2
-  {
-    get { return EditorPrefs.GetBool(SlimePreviewPrefsKey, false); }
-    set { EditorPrefs.SetBool(SlimePreviewPrefsKey, value); }
-  }
-  private static string GetSlimeClass5CornerF2Key(bool left)
-  {
-    return "OrnamentClass:5:Slime:CornerFrontF2:"
-        + (left ? "Left" : "Right");
-  }
 
-  private void DrawSlimeClass5CornerF2CalibrationRow()
-  {
-    bool left = true;
-    if (!TryGetSideLaneFrontF2Mirror(left,
-        out ChampionMirrorPlacement existing, out bool nearCorner)
-        || !nearCorner) return;
-    bool selected = EditorGUILayout.ToggleLeft(
-        "Calibrate Class 5 - Slime (preview only)", calibrateClass5SlimeCornerF2);
-    if (selected != calibrateClass5SlimeCornerF2)
-    {
-      calibrateClass5SlimeCornerF2 = selected;
-      if (selected) { calibrateClass6GrateCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
-    }
-    if (!calibrateClass5SlimeCornerF2) return;
-    Texture2D artwork = GetSlimeGeneratedF2FrontTexture();
-    if (artwork == null || !artwork.isReadable)
-    {
-      LogMissingArtworkCyan("ViewEdit Class 5 Slime: required readable Slime F2 artwork is missing.");
-      return;
-    }
-    string key = GetSlimeClass5CornerF2Key(left);
-    GetOriginalCornerF2DrawPosition(0, left, artwork.width, artwork.height,
-        out int x, out int y);
-    bool flip = false;
-    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
-    int defaultX = x, defaultY = y;
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.Label("Class 5 Slime - LeftF2", GUILayout.Width(190f));
-    int editX = x, editY = y;
-    bool changedX = DrawIntStepperInline("X", ref editX, snap,
-        x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
-    bool changedY = DrawIntStepperInline("Y", ref editY, snap,
-        y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-    NoteContentRight();
-    EditorGUILayout.EndHorizontal();
-    if (apply)
-    {
-      if (SaveAcceptedOrnamentReference(key, editX, editY, flip))
-      {
-        previewFeaturePositionOverrides.Remove(key);
-        previewFeatureMirrorOverrides.Remove(key);
-        RefreshEditModePreview(); RepaintGameViews(); Repaint();
-      }
-    }
-    else if ((changedX && editX != x) || (changedY && editY != y))
-    {
-      if (editX == defaultX && editY == defaultY)
-        previewFeaturePositionOverrides.Remove(key);
-      else previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
-    }
-  }
 
   // Class 6 Grate: independent JSON calibration, using the same JSON-driven
   // near-corner classification as Classes 1 and 2, never map-specific.
-  private const string GratePreviewPrefsKey = "DM.ViewEdit.GrateClass6Preview";
-  private bool calibrateClass6GrateCornerF2
-  {
-    get { return EditorPrefs.GetBool(GratePreviewPrefsKey, false); }
-    set { EditorPrefs.SetBool(GratePreviewPrefsKey, value); }
-  }
-  private static string GetGrateClass6CornerF2Key(bool left)
-  {
-    return "OrnamentClass:6:Grate:CornerFrontF2:"
-        + (left ? "Left" : "Right");
-  }
 
-  private void DrawGrateClass6CornerF2CalibrationRow()
-  {
-    bool left = true;
-    if (!TryGetSideLaneFrontF2Mirror(left,
-        out ChampionMirrorPlacement existing, out bool nearCorner)
-        || !nearCorner) return;
-    bool selected = EditorGUILayout.ToggleLeft(
-        "Calibrate Class 6 - Grate (preview only)", calibrateClass6GrateCornerF2);
-    if (selected != calibrateClass6GrateCornerF2)
-    {
-      calibrateClass6GrateCornerF2 = selected;
-      if (selected) { calibrateClass5SlimeCornerF2 = false;  calibrateClass7EmptyHolderCornerF2 = false; }
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
-    }
-    if (!calibrateClass6GrateCornerF2) return;
-    Texture2D artwork = GetGrateFront2Texture();
-    if (artwork == null || !artwork.isReadable)
-    {
-      LogMissingArtworkCyan("ViewEdit Class 6 Grate: required readable Grate F2 artwork is missing.");
-      return;
-    }
-    string key = GetGrateClass6CornerF2Key(left);
-    GetOriginalCornerF2DrawPosition(0, left, artwork.width, artwork.height,
-        out int x, out int y);
-    bool flip = false;
-    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref flip);
-    int defaultX = x, defaultY = y;
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref flip);
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.Label("Class 6 Grate - LeftF2", GUILayout.Width(190f));
-    int editX = x, editY = y;
-    bool changedX = DrawIntStepperInline("X", ref editX, snap,
-        x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
-    bool changedY = DrawIntStepperInline("Y", ref editY, snap,
-        y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-    NoteContentRight();
-    EditorGUILayout.EndHorizontal();
-    if (apply)
-    {
-      if (SaveAcceptedOrnamentReference(key, editX, editY, flip))
-      {
-        previewFeaturePositionOverrides.Remove(key);
-        previewFeatureMirrorOverrides.Remove(key);
-        RefreshEditModePreview(); RepaintGameViews(); Repaint();
-      }
-    }
-    else if ((changedX && editX != x) || (changedY && editY != y))
-    {
-      if (editX == defaultX && editY == defaultY)
-        previewFeaturePositionOverrides.Remove(key);
-      else previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
-      RefreshEditModePreview(); RepaintGameViews(); Repaint();
-    }
-  }
 
   // Class 7 Empty Torch Holder: independent JSON calibration, using the same JSON-driven
   // near-corner classification as Classes 1 and 2, never map-specific.
@@ -24150,7 +23939,6 @@ private static void HandleGameViewPointerDown(
     if (selected != calibrateClass7EmptyHolderCornerF2)
     {
       calibrateClass7EmptyHolderCornerF2 = selected;
-      if (selected) { calibrateClass5SlimeCornerF2 = false; calibrateClass6GrateCornerF2 = false; }
       RefreshEditModePreview(); RepaintGameViews(); Repaint();
     }
     if (!calibrateClass7EmptyHolderCornerF2) return;
@@ -24887,38 +24675,8 @@ private static void HandleGameViewPointerDown(
     return fallback;
   }
 
-  private Texture2D GetWoodRingSide2Texture()
-  {
-    if (cachedWoodRingSide2Texture != null)
-      return cachedWoodRingSide2Texture;
-    Texture2D source = GetWoodRingSideTexture();
-    if (source == null || !source.isReadable
-        || source.width != 14 || source.height != 19)
-    {
-      ReportStrictOrnamentMissing("WoodRing", "S2", "readable native 14x19 S1 source");
-      return null;
-    }
-    cachedWoodRingSide2Texture = GenerateDmScaledWallDecoration(
-        source, 5, 10, WallOrnamentMediumColorMap, "Wood Ring S2 DOS");
-    return cachedWoodRingSide2Texture;
-  }
 
 
-  private Texture2D GetWoodRingSide3Texture()
-  {
-    if (cachedWoodRingSide3Texture != null)
-      return cachedWoodRingSide3Texture;
-    Texture2D source = GetWoodRingSideTexture();
-    if (source == null || !source.isReadable
-        || source.width != 14 || source.height != 19)
-    {
-      ReportStrictOrnamentMissing("WoodRing", "S3", "readable native 14x19 S1 source");
-      return null;
-    }
-    cachedWoodRingSide3Texture = GenerateDmScaledWallDecoration(
-        source, 3, 5, WallOrnamentFarColorMap, "Wood Ring S3 DOS");
-    return cachedWoodRingSide3Texture;
-  }
 
 
   /// <summary>
@@ -25714,192 +25472,13 @@ private static void HandleGameViewPointerDown(
     renderX = 0;
     renderY = 0;
     renderMirror = false;
-    if (ornament == null || previewMiniMap == null)
-      return false;
-
-    if (IsEmptyTorchHolderF1Visible(ornament))
+    if (TryGetWallOrnamentProjectionOverrideDescriptor(ornament,
+        out string key, out string suffix))
     {
-      renderX = 100;
-      renderY = DisplayYToUnityY(60, 54);
-      return true;
+      string[] parts = key.Split(':');
+      if (parts.Length >= 3)
+        ReportStrictOrnamentMissing(parts[1], parts[2], "verified generic DOS geometry");
     }
-
-    if (IsGrateOrnament(ornament))
-    {
-      if (!TryGetGrateViewProjection(
-              ornament, out string projectionName, out renderMirror))
-        return false;
-
-      if (projectionName == "Grate - F2 Side Corner")
-      { renderX = GrateF2SideCornerX; renderY = GrateF2SideCornerY; return true; }
-      if (projectionName == "Grate - F3 Side Corner")
-      { renderX = GrateF3SideCornerX; renderY = GrateF3SideCornerY; return true; }
-      if (projectionName == "Grate - Front F1")
-      { renderX = GrateD1FrontX; renderY = GrateD1FrontY; return true; }
-      if (projectionName == "Grate - Front F2")
-      { renderX = GrateD2FrontX; renderY = GrateD2FrontY; return true; }
-      if (projectionName == "Grate - Front F3")
-      { renderX = GrateD3FrontX; renderY = GrateD3FrontY; return true; }
-      if (projectionName == "Grate - Side1")
-      {
-        renderX = renderMirror ? GrateD1SideRightX : GrateD1SideLeftX;
-        renderY = GrateD1SideY;
-        return true;
-      }
-      if (projectionName == "Grate - Side2")
-      {
-        renderX = renderMirror ? GrateD2SideRightX : GrateD2SideLeftX;
-        renderY = GrateD2SideY;
-        return true;
-      }
-      if (projectionName == "Grate - Side3")
-      {
-        renderX = renderMirror ? GrateD3SideRightX : GrateD3SideLeftX;
-        renderY = GrateD3SideY;
-        return true;
-      }
-      return false;
-    }
-
-    int maxFrontDepth = IsWoodRingOrnament(ornament) ? 3
-        : IsHookOrnament(ornament) ? 3
-        : IsSlimeOrnament(ornament) ? 3
-        : IsManaclesOrnament(ornament) ? 3
-        : IsViAltarOrnament(ornament) ? 3 : 0;
-    int maxSideDepth = IsWoodRingOrnament(ornament) ? 3
-        : IsHookOrnament(ornament) ? 3
-        : IsSlimeOrnament(ornament) ? 2
-        : IsManaclesOrnament(ornament) ? 3
-        : IsViAltarOrnament(ornament) ? 0 : 0;
-    if (maxFrontDepth == 0)
-      return false;
-
-
-    if (!TryGetStandardWallOrnamentProjectionInCurrentPose(
-            ornament,
-            maxFrontDepth,
-            maxSideDepth,
-            out int mapX,
-            out int mapY,
-            out string mapFace))
-      return false;
-
-    DungeonMap.GetForwardOffset(
-        previewFacing, out int forwardX, out int forwardY);
-    int depthFromPlayer =
-        (mapX - previewX) * forwardX + (mapY - previewY) * forwardY;
-    string frontFace = FacingName(previewFacing);
-    bool isFront = string.Equals(
-        mapFace, frontFace, System.StringComparison.OrdinalIgnoreCase);
-
-    if (isFront)
-    {
-      int frontDepth = depthFromPlayer + 1;
-      renderMirror = false;
-      if (IsWoodRingOrnament(ornament) || IsHookOrnament(ornament))
-      {
-        ReportStrictOrnamentMissing(IsWoodRingOrnament(ornament) ? "WoodRing" : "Hook",
-            "F" + frontDepth, "verified generic DOS front geometry");
-        return false;
-      }
-      if (IsSlimeOrnament(ornament))
-      {
-        if (frontDepth == 1)
-        {
-          Texture2D t = GetSlimeFrontTexture();
-          if (t == null) return false;
-          renderX = 112 - (t.width / 2);
-          renderY = 55 - (t.height / 2);
-          return true;
-        }
-        if (frontDepth == 2)
-        {
-          Texture2D t = GetSlimeGeneratedF2FrontTexture();
-          if (t == null) return false;
-          renderX = (DungeonViewportWidth - t.width) / 2;
-          renderY = SlimeD2SideY;
-          return true;
-        }
-        if (frontDepth == 3)
-        {
-          renderX = SlimeD3FrontX;
-          renderY = SlimeD3FrontY;
-          return true;
-        }
-      }
-      if (IsManaclesOrnament(ornament))
-      {
-        ReportStrictOrnamentMissing("Manacles", "F" + frontDepth, "verified generic DOS geometry");
-        return false;
-      }
-      if (IsViAltarOrnament(ornament))
-      {
-        ReportStrictOrnamentMissing("ViAltar", "F" + frontDepth, "verified generic DOS geometry");
-        return false;
-      }
-      return false;
-    }
-
-    int sideDepth = depthFromPlayer;
-    string leftFace = FacingName(TurnPreviewFacingLeft(previewFacing));
-    bool isLeft = string.Equals(
-        mapFace, leftFace, System.StringComparison.OrdinalIgnoreCase);
-
-    if (IsWoodRingOrnament(ornament))
-    {
-
-      renderMirror = !isLeft;
-      if (sideDepth == 1) { renderX = isLeft ? WoodRingD1SideLeftX : WoodRingD1SideRightX; renderY = WoodRingD1SideY; return true; }
-      if (sideDepth == 2) { renderX = isLeft ? WoodRingD2SideLeftX : WoodRingD2SideRightX; renderY = WoodRingD2SideY; return true; }
-      if (sideDepth == 3) { renderX = isLeft ? WoodRingD3SideLeftX : WoodRingD3SideRightX; renderY = WoodRingD3SideY; return true; }
-    }
-    if (IsHookOrnament(ornament))
-    {
-      if (sideDepth == 1)
-      {
-        renderMirror = !isLeft;
-        renderX = isLeft ? HookD1SideLeftX : HookD1SideRightX;
-        renderY = HookD1SideY;
-        return true;
-      }
-      if (sideDepth == 2)
-      {
-        renderMirror = !isLeft;
-        renderX = isLeft ? HookD2SideLeftX : HookD2SideRightX;
-        renderY = HookD2SideY;
-        return true;
-      }
-      if (sideDepth == 3)
-      {
-        renderMirror = !isLeft;
-        renderX = isLeft ? HookD3SideLeftX : HookD3SideRightX;
-        renderY = HookD3SideY;
-        return true;
-      }
-    }
-    if (IsSlimeOrnament(ornament))
-    {
-      if (sideDepth == 1)
-      {
-        renderMirror = !isLeft;
-        renderX = isLeft ? SlimeD1SideLeftX : SlimeD1SideRightX;
-        renderY = SlimeD1SideY;
-        return true;
-      }
-      if (sideDepth == 2)
-      {
-        renderMirror = isLeft;
-        renderX = isLeft ? SlimeD2SideLeftX : SlimeD2SideRightX;
-        renderY = SlimeD2SideY;
-        return true;
-      }
-    }
-    if (IsManaclesOrnament(ornament))
-    {
-      ReportStrictOrnamentMissing("Manacles", "S" + sideDepth, "verified generic DOS geometry");
-      return false;
-    }
-
     return false;
   }
 
@@ -26291,13 +25870,13 @@ private static void HandleGameViewPointerDown(
       switch (slot)
       {
         case "S1": return GetGrateSide1Texture();
-        case "S2": return GetGrateSide2Texture();
-        case "S3": return GetGrateSide3Texture();
+        case "S2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
+        case "S3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
         case "F1": return GetGrateFrontTexture();
-        case "F2": return GetGrateFront2Texture();
-        case "F3": return GetGrateFront3Texture();
-        case "F2SideCorner": return GetGrateF2SideCornerTexture();
-        case "F3SideCorner": return GetGrateF3SideCornerTexture();
+        case "F2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
+        case "F3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
+        case "F2SideCorner": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
+        case "F3SideCorner": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
       }
     }
     if (family == "Hook")
@@ -26305,8 +25884,8 @@ private static void HandleGameViewPointerDown(
       switch (slot)
       {
         case "S1": return GetHookSideTexture();
-        case "S2": return GetHookSide2Texture();
-        case "S3": return GetHookSide3Texture();
+        case "S2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
+        case "S3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
         case "F1": return GetHookFrontTexture();
         case "F2":
           ReportStrictOrnamentMissing(family, slot, "verified generic DOS front geometry");
@@ -26333,8 +25912,8 @@ private static void HandleGameViewPointerDown(
       switch (slot)
       {
         case "S1": return GetWoodRingSideTexture();
-        case "S2": return GetWoodRingSide2Texture();
-        case "S3": return GetWoodRingSide3Texture();
+        case "S2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
+        case "S3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
         case "F1": return GetWoodRingFrontTexture();
         case "F2":
           ReportStrictOrnamentMissing(family, slot, "verified generic DOS front geometry");
@@ -26349,10 +25928,10 @@ private static void HandleGameViewPointerDown(
       switch (slot)
       {
         case "S1": return GetSlimeSide1Texture();
-        case "S2": return GetSlimeSide2Texture();
+        case "S2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
         case "F1": return GetSlimeFrontTexture();
-        case "F2": return GetSlimeGeneratedF2FrontTexture();
-        case "F3": return GetSlimeGeneratedF3FrontTexture();
+        case "F2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
+        case "F3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
       }
     }
     if (family == "ViAltar")
@@ -26360,8 +25939,8 @@ private static void HandleGameViewPointerDown(
       switch (slot)
       {
         case "S1": return GetViAltarS1Texture();
-        case "S2": return GetViAltarS2Texture();
-        case "S3": return GetViAltarS3Texture();
+        case "S2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
+        case "S3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
         case "F1": return GetViAltarFrontTexture();
         case "F2": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
         case "F3": ReportStrictOrnamentMissing(family, slot, "verified generic DOS geometry"); return null;
@@ -29027,8 +28606,6 @@ private static void HandleGameViewPointerDown(
     DrawChampionMirrorSideLaneFrontF2Rows();
     DrawManualChampionLeftF3Row();
 
-    DrawSlimeClass5CornerF2CalibrationRow();
-    DrawGrateClass6CornerF2CalibrationRow();
     DrawEmptyHolderClass7CornerF2CalibrationRow();
 
     // Ordinary wall ornaments.
@@ -35343,39 +34920,9 @@ private static void HandleGameViewPointerDown(
     return cachedViAltarS1Texture;
   }
 
-  private Texture2D GetViAltarS3Texture()
-  {
-    if (cachedViAltarS3Texture != null)
-      return cachedViAltarS3Texture;
-    Texture2D source = GetViAltarS1Texture();
-    if (source == null || !source.isReadable
-        || source.width != 20 || source.height != 48)
-    {
-      ReportStrictOrnamentMissing("ViAltar", "S3", "readable native 20x48 S1 source");
-      return null;
-    }
-    cachedViAltarS3Texture = GenerateDmScaledWallDecoration(
-        source, 6, 19, WallOrnamentFarColorMap, "Vi Altar S3 DOS");
-    return cachedViAltarS3Texture;
-  }
 
 
 
-  private Texture2D GetViAltarS2Texture()
-  {
-    if (cachedViAltarS2Texture != null)
-      return cachedViAltarS2Texture;
-    Texture2D source = GetViAltarS1Texture();
-    if (source == null || !source.isReadable
-        || source.width != 20 || source.height != 48)
-    {
-      ReportStrictOrnamentMissing("ViAltar", "S2", "readable native 20x48 S1 source");
-      return null;
-    }
-    cachedViAltarS2Texture = GenerateDmScaledWallDecoration(
-        source, 12, 31, WallOrnamentMediumColorMap, "Vi Altar S2 DOS");
-    return cachedViAltarS2Texture;
-  }
 
 
 
@@ -35764,47 +35311,7 @@ private static void HandleGameViewPointerDown(
     return bestPaletteIndex;
   }
 
-  private Texture2D GetSlimeGeneratedF2FrontTexture()
-  {
-    if (cachedSlimeGeneratedF2FrontTexture != null)
-      return cachedSlimeGeneratedF2FrontTexture;
 
-    Texture2D source = GetSlimeFrontTexture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    // Generic Dungeon Master F2 ornament scale: derive the medium-distance
-    // front image from the native F1 source. Position is calibrated separately
-    // in ViewEdit; the source artwork itself is never resized on disk.
-    int width = Mathf.Max(1, Mathf.RoundToInt(source.width * (2f / 3f)));
-    int height = Mathf.Max(1, Mathf.RoundToInt(source.height * (2f / 3f)));
-
-    cachedSlimeGeneratedF2FrontTexture = GenerateDmScaledWallDecoration(
-        source,
-        width,
-        height,
-        WallOrnamentMediumColorMap,
-        "Slime F2 Generated from F1");
-    return cachedSlimeGeneratedF2FrontTexture;
-  }
-
-  private Texture2D GetSlimeGeneratedF3FrontTexture()
-  {
-    if (cachedSlimeGeneratedF3FrontTexture != null)
-      return cachedSlimeGeneratedF3FrontTexture;
-
-    Texture2D source = GetSlimeFrontTexture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    cachedSlimeGeneratedF3FrontTexture = GenerateDmScaledWallDecoration(
-        source,
-        SlimeD3FrontWidth,
-        SlimeD3FrontHeight,
-        WallOrnamentFarColorMap,
-        "Slime F3 Generated from F1");
-    return cachedSlimeGeneratedF3FrontTexture;
-  }
 
 
 
@@ -35896,23 +35403,6 @@ private static void HandleGameViewPointerDown(
     return null;
   }
 
-  private Texture2D GetSlimeSide2Texture()
-  {
-    if (cachedSlimeSide2Texture != null)
-      return cachedSlimeSide2Texture;
-
-    Texture2D source = GetSlimeSide1Texture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    cachedSlimeSide2Texture = GenerateDmScaledWallDecoration(
-        source,
-        4,
-        3,
-        WallOrnamentMediumColorMap,
-        "Slime Side F2 Generated from F1");
-    return cachedSlimeSide2Texture;
-  }
 
 
 
@@ -36084,49 +35574,7 @@ private static void HandleGameViewPointerDown(
     return texture;
   }
 
-  private Texture2D GetHookSide2Texture()
-  {
-    if (cachedHookSide2Texture != null)
-      return cachedHookSide2Texture;
 
-    Texture2D source = GetHookSideTexture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    // Use the original native DOS 14x19 S1 asset directly. The old Unity
-    // 16x19 wrapper and columns 1..14 crop have been retired. The shared
-    // 6-bit scaler and accepted S2 sampling arguments stay unchanged.
-    cachedHookSide2Texture = GenerateDmScaledWallDecoration(
-        source, HookD2SideWidth, HookD2SideHeight,
-        WallOrnamentMediumColorMap, "Hook S2 DOS 6-bit Side");
-    return cachedHookSide2Texture;
-  }
-
-  private Texture2D GetHookSide3Texture()
-  {
-    if (cachedHookSide3Texture != null)
-      return cachedHookSide3Texture;
-
-    // Full 6x8 bitmap generated from the native DOS 14x19 side source.
-    // Resource 696 independently determines its placement.
-    Texture2D source = GetHookSideTexture();
-    if (source == null || !source.isReadable)
-    {
-      LogMissingArtworkCyan("Hook S3: required readable native 14x19 side source missing: "
-          + HookSideAssetPath);
-      return null;
-    }
-
-    cachedHookSide3Texture = GenerateDmScaledWallDecoration(
-        source,
-        HookD3SideWidth,
-        HookD3SideHeight,
-        WallOrnamentFarColorMap,
-        "Hook S3 DOS 6-bit Side");
-    if (cachedHookSide3Texture == null)
-      LogMissingArtworkCyan("Hook S3: failed to generate 6x8 from " + HookSideAssetPath);
-    return cachedHookSide3Texture;
-  }
 
   // Shared D2/D3 side-ornament visibility gate: each intervening center
   // square must exist and be open. This is the same check previously
@@ -36150,54 +35598,7 @@ private static void HandleGameViewPointerDown(
   // Phase 11: shared registry-backed native side artwork for Grate S2/S3.
   // No fallback: missing, invalid, or unreadable artwork is reported in cyan.
   // Do not cache the original source separately; AssetDatabase owns that asset.
-  private Texture2D GetRegisteredGrateNativeSideTexture()
-  {
-    if (!TryGetDosWallOrnamentRegistration(
-            "Grate", out DosWallOrnamentRegistration registration)
-        || string.IsNullOrEmpty(registration.nativeSideSource)
-        || registration.nativeSideWidth != 16
-        || registration.nativeSideHeight != 19)
-    {
-      ReportMissingGrateArtwork(
-          "DOS REGISTRY | Grate native side registration missing/invalid");
-      return null;
-    }
 
-    Texture2D source = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        registration.nativeSideSource);
-    if (source == null
-        || source.width != registration.nativeSideWidth
-        || source.height != registration.nativeSideHeight)
-    {
-      ReportMissingGrateArtwork(registration.nativeSideSource);
-      return null;
-    }
-    if (!source.isReadable)
-    {
-      ReportMissingGrateArtwork(
-          registration.nativeSideSource + " (unreadable)");
-      return null;
-    }
-    return source;
-  }
-
-  private Texture2D GetGrateSide3Texture()
-  {
-    if (cachedGrateSide3Texture != null)
-      return cachedGrateSide3Texture;
-
-    // Common Grate native S1 loader; S2 and S3 retain distinct DOS
-    // sampling palettes, dimensions, and their existing drawing paths.
-    Texture2D source = GetRegisteredGrateNativeSideTexture();
-    if (source == null)
-      return null;
-
-    // Same FIRES 6-bit nearest-source sampling used by Hook and Manacles S3.
-    cachedGrateSide3Texture = GenerateDmScaledWallDecoration(
-        source, GrateD3SideWidth, GrateD3SideHeight,
-        WallOrnamentFarColorMap, "Grate S3 DOS 6-bit Side");
-    return cachedGrateSide3Texture;
-  }
 
   // Face at the *front* of the right-hand D2 side tile, not the standard
   // side-facing wall ornament. The map-relative test rotates with the party.
@@ -36224,23 +35625,6 @@ private static void HandleGameViewPointerDown(
         && ornament.x == tileX && ornament.y == tileY;
   }
 
-  private Texture2D GetGrateF2SideCornerTexture()
-  {
-    if (cachedGrateF2SideTexture != null)
-      return cachedGrateF2SideTexture;
-
-    Texture2D source = GetGrateFrontTexture();
-    if (source == null || !source.isReadable)
-      return null; // Existing native F1 loader reports missing/unreadable artwork.
-
-    // Native DOS front artwork, 32x20, through the shared 6-bit scaler.
-    // The right-hand F2 corner uses a distinct 20x13 destination rectangle;
-    // its exact source sampling still needs a PC DOS corner comparison.
-    cachedGrateF2SideTexture = GenerateDmScaledWallDecoration(
-        source, 20, 13, WallOrnamentMediumColorMap,
-        "Grate F2 side corner DOS 6-bit from native F1");
-    return cachedGrateF2SideTexture;
-  }
 
 
   // F3 corner: the same forward-facing right-side wall face as the accepted
@@ -36268,35 +35652,10 @@ private static void HandleGameViewPointerDown(
         && ornament.x == tileX && ornament.y == tileY;
   }
 
-  private Texture2D GetGrateF3SideCornerTexture()
-  {
-    ReportStrictOrnamentMissing("Grate", "F3 corner",
-        "verified DOS native corner source and geometry");
-    return null;
-  }
 
 
 
 
-  private Texture2D GetGrateSide2Texture()
-  {
-    if (cachedGrateSide2Texture != null)
-      return cachedGrateSide2Texture;
-
-    // Common Grate native S1 loader; S2 and S3 retain distinct DOS
-    // sampling palettes, dimensions, and their existing drawing paths.
-    Texture2D source = GetRegisteredGrateNativeSideTexture();
-    if (source == null)
-      return null;
-
-    // Exactly the same 6-bit DOS scaler and medium-distance palette used
-    // for the verified Hook S2 and Manacles S2. Geometry is still checked
-    // separately against the DOS PC screenshot.
-    cachedGrateSide2Texture = GenerateDmScaledWallDecoration(
-        source, GrateD2SideWidth, GrateD2SideHeight,
-        WallOrnamentMediumColorMap, "Grate S2 DOS 6-bit Side");
-    return cachedGrateSide2Texture;
-  }
 
 
   private Texture2D GetGrateSide1Texture()
@@ -36326,40 +35685,8 @@ private static void HandleGameViewPointerDown(
   // distance-specific caller to preserve its original placement rules.
 
 
-  private Texture2D GetGrateFront3Texture()
-  {
-    if (cachedGrateFront3Texture != null)
-      return cachedGrateFront3Texture;
-
-    Texture2D source = GetGrateFrontTexture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    cachedGrateFront3Texture = GenerateDmScaledWallDecoration(
-        source,
-        14,
-        9,
-        WallOrnamentFarColorMap,
-        "Grate F3 DOS 6-bit from native F1");
-    return cachedGrateFront3Texture;
-  }
 
 
-  private Texture2D GetGrateFront2Texture()
-  {
-    if (cachedGrateFront2Texture != null)
-      return cachedGrateFront2Texture;
-
-    Texture2D source = GetGrateFrontTexture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    // Native DOS 32x20 -> F2 21x13 (scale 21/32, integer rounding).
-    cachedGrateFront2Texture = GenerateDmScaledWallDecoration(
-        source, 21, 13, WallOrnamentMediumColorMap,
-        "Grate F2 DOS 6-bit from native F1");
-    return cachedGrateFront2Texture;
-  }
 
 
   private bool GetPreviewFeatureMirrorValue(
