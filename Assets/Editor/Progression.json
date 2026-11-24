@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "Stage 4M live verification: seven of eight registered wall ornaments visually approved (42/48 standard perspectives); torch pickup/return approved; generic ViewEdit offset UI working. Resume with Altar of Vi.",
+  "checkpoint": "Stage 4M COMPLETE: 8/8 registered ordinary wall ornaments, 48/48 standard perspectives visually approved; torch pickup/return approved. Resume Stage 4N Champion Mirrors, then blue Puddle/Moss.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -115,9 +115,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Verify already registered Altar of Vi (DOS type 2; native F1 96x56, S1 20x48) in F1/F2/F3/S1/S2/S3 using current renderer. Use ViewEdit relative offsets only if necessary.",
-    "Preserve seven approved ornament families and torch interaction unchanged. Record Altar approval or specific discrepancy before further work.",
-    "If needed, test nonzero offset persistence after closing/reopening ViewEdit; do not claim this has already been verified. Continue remaining projections and ornament families only after current batch."
+    "Stage 4N: Champion Mirrors first. Audit surviving map placement, champion portrait/frame assets, original DOS special mirror rendering branch and recruitment logic. Reconstruct from verified DOS data; do not restore erased legacy geometry or hardcoded hitboxes. Use actual rendered bounds for recruitment and generic calibration where applicable.",
+    "Then reconstruct blue Puddle and Moss floor ornaments from verified DOS floor layout and artwork. Do not apply ordinary wall geometry blindly. Preserve original floor placement rules.",
+    "Verify nonzero offset persistence separately; preserve all eight approved ordinary wall ornaments and torch pickup/return."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -6612,28 +6612,26 @@
           "S3"
         ],
         "status": "user visually approved"
+      },
+      "ViAltar": {
+        "perspectives": [
+          "F1",
+          "F2",
+          "F3",
+          "S1",
+          "S2",
+          "S3"
+        ],
+        "status": "user visually approved: all positions 100% perfect"
       }
     },
     "counts": {
       "registered": 8,
-      "approved": 7,
-      "approved_standard_perspectives": 42,
+      "approved": 8,
+      "approved_standard_perspectives": 48,
       "total_standard_perspectives": 48
     },
-    "pending_ornament": {
-      "name": "ViAltar",
-      "dos_type": 2,
-      "native_front": "96x56",
-      "native_side": "20x48",
-      "perspectives": [
-        "F1",
-        "F2",
-        "F3",
-        "S1",
-        "S2",
-        "S3"
-      ]
-    },
+    "pending_ornament": null,
     "confirmed_interactions": [
       "Torch pickup 100% correct per user",
       "Return torch to original holder 100% correct per user",
@@ -6653,9 +6651,26 @@
       "Cursor Ask mode read-only unless explicitly instructed otherwise, per session rules."
     ],
     "next": [
-      "Verify already registered Altar of Vi (DOS type 2; native F1 96x56, S1 20x48) in F1/F2/F3/S1/S2/S3 using current renderer. Use ViewEdit relative offsets only if necessary.",
-      "Preserve seven approved ornament families and torch interaction unchanged. Record Altar approval or specific discrepancy before further work.",
-      "If needed, test nonzero offset persistence after closing/reopening ViewEdit; do not claim this has already been verified. Continue remaining projections and ornament families only after current batch."
+      "All eight registered ordinary wall ornaments visually approved; preserve unchanged."
+    ]
+  },
+  "strict_dos_stage4m_complete_20261124": {
+    "timestamp": "2026-11-24T22:05:12.949057+01:00",
+    "archive": "Progression_Stage4M_Complete_20261124-220512.zip",
+    "confirmed_by_user": "Altar of Vi all positions 100% perfect; all eight registered families visually approved.",
+    "counts": {
+      "registered": 8,
+      "approved": 8,
+      "approved_standard_perspectives": 48,
+      "total_standard_perspectives": 48
+    },
+    "next": [
+      "Stage 4N: Champion Mirrors first. Audit surviving map placement, champion portrait/frame assets, original DOS special mirror rendering branch and recruitment logic. Reconstruct from verified DOS data; do not restore erased legacy geometry or hardcoded hitboxes. Use actual rendered bounds for recruitment and generic calibration where applicable.",
+      "Then reconstruct blue Puddle and Moss floor ornaments from verified DOS floor layout and artwork. Do not apply ordinary wall geometry blindly. Preserve original floor placement rules.",
+      "Verify nonzero offset persistence separately; preserve all eight approved ordinary wall ornaments and torch pickup/return."
+    ],
+    "limitations": [
+      "Visual approval, not pixel-exact certification. 900/900 C# regression passed earlier, not rerun. Nonzero calibration persistence not confirmed. Champion Mirror frame/portrait art not present in uploaded Ornaments archive. No source modifications in this checkpoint."
     ]
   }
 }
