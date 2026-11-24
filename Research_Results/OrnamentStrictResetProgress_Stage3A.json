@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-11-24T18:31:06.934621+01:00",
+  "state": "PHYSICAL_DELETION_STAGE_3A",
+  "previous_removed": 61,
+  "additional_removed": 9,
+  "deleted_methods": [
+    "GetUnifiedChampionS2SideFrame",
+    "GetUnifiedChampionS3SideFrame",
+    "InvalidateChampionMirrorFrameScaleCache",
+    "CompareHookG2PixelsReadOnly",
+    "GetWallProjectedTopY",
+    "GetHookProjectedTopY",
+    "TryParseSideProjectionDepth",
+    "TryGetOrnamentProjectionExperimentY",
+    "IsSlimeHiddenInCurrentPose"
+  ],
+  "other_changes": [
+    "Deleted experimental controls and fields, dead mirror caches and dimensions, Manacles S2 forced calibration and Apply block, built-in Hall of Champions substitute placements.",
+    "Preserved actual map records and existing S3 saved calibration."
+  ],
+  "validation": "Deleted symbol scan and lexical delimiter balance passed; Unity compilation and runtime not tested.",
+  "remaining": "Family-specific texture generators, placement constants, inspector dispatch, registry and generic viewport dispatch remain. No new geometry implemented. Cursor read-only; ChatGPT supplies modifications."
+}

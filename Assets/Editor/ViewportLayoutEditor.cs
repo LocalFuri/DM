@@ -1003,19 +1003,6 @@ public class ViewportLayoutEditor : EditorWindow
   private bool fitWidthToContent;
   private float fittedContentRight;
 
-  // TEMPORARY Hook-only virtual-camera Y projection. Never serialized to
-  // calibration JSON or EditorPrefs; off is the safe default after reload.
-  private bool hookProjectionExperimentEnabled;
-  private float hookProjectionHorizonTopY = 72f;
-  private float hookProjectionVerticalFov = 65f;
-  private float hookProjectionMountHeight = 0f;
-  private float hookProjectionS1Distance = 1.5f;
-  private float hookProjectionDistanceStep = 1f;
-  // Independent, opt-in second-category trial. Never replaces saved positions.
-  private bool manaclesProjectionExperimentEnabled;
-  // Full 320x200 Game View coordinates: CSBwin viewport Y=38 + viewport top Y=33.
-  private float manaclesProjectionHorizonTopY = 71f;
-  private float manaclesProjectionMountHeight = 0f;
 
   private bool hookedViewEditGlobalNavigation;
 
@@ -1371,63 +1358,11 @@ public class ViewportLayoutEditor : EditorWindow
           @"\{\s*""x""\s*:\s*(?<x>-?\d+)\s*,\s*""y""\s*:\s*(?<y>-?\d+)\s*,\s*""raw""\s*:\s*(?<raw>\d+)\s*,[^{}]*?""type""\s*:\s*""Wall""",
           RegexOptions.CultureInvariant);
 
-  // Hall of Champions ornament fallback content currently covers the current
-  // D1 front cases already verified from the original data:
-  //
-  // 1) Explicit Sensor seen from passable cell (6,9), North, local ordinal 4.
-  //    For map/editor placement we normalize it onto the physical solid wall
-  //    tile immediately north: (6,8), South face. The level WallOrnate table
-  //    resolves local ordinal 4 to global ID 6 = Wood Ring.
-  // 2) Random wall-decoration flag on solid wall tile (13,8), South face.
-  //    This one is the Hook seen from player pose (13,9) North.
-  //
-  // Neither entry is a camera-pose rendering exception; both describe map
-  // content and are projected by the ornament overlay renderer.
-  private static readonly WallOrnamentPlacement[]
-      FallbackHallOfChampionsWallOrnaments =
-      {
-        new WallOrnamentPlacement
-        {
-          type = "WoodRing",
-          ornamentOrdinal = 4,
-          x = 6,
-          y = 8,
-          wall = "South",
-          wallTilePlacement = true
-        },
-        new WallOrnamentPlacement
-        {
-          type = "Hook",
-          ornamentOrdinal = -1,
-          x = 13,
-          y = 8,
-          wall = "South",
-          wallTilePlacement = true
-        },
-        new WallOrnamentPlacement
-        {
-          type = "WoodRing",
-          ornamentOrdinal = -1,
-          x = 3,
-          y = 4,
-          wall = "East",
-          wallTilePlacement = true
-        },
-        new WallOrnamentPlacement
-        {
-          type = "Slime",
-          ornamentOrdinal = -1,
-          x = 5,
-          y = 5,
-          wall = "West",
-          wallTilePlacement = true
-        }
-      };
 
   private ChampionMirrorPlacement[] previewChampionMirrors =
       new ChampionMirrorPlacement[0];
   private WallOrnamentPlacement[] previewWallOrnaments =
-      FallbackHallOfChampionsWallOrnaments;
+      new WallOrnamentPlacement[0];
   private readonly HashSet<int> previewPuddleFloors = new HashSet<int>();
   private readonly HashSet<int> previewMossFloors = new HashSet<int>();
   private readonly HashSet<int> previewPressurePadFloors = new HashSet<int>();
@@ -1966,9 +1901,6 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
   [System.NonSerialized]
-  private Texture2D cachedChampionMirrorSideTexture;
-  private Texture2D cachedChampionMirrorS2Texture;
-  private Texture2D cachedChampionMirrorS3Texture;
   private Texture2D cachedChampionMirrorFrontTexture;
   [System.NonSerialized]
   private Texture2D cachedViAltarFrontTexture;
@@ -13619,62 +13551,6 @@ private static void HandleGameViewPointerDown(
     NoteContentRight();
     EditorGUILayout.EndHorizontal();
 
-    // TEMPORARY: shared side-wall Y-projection experiments (Hook + Manacles).
-    // No changes are saved to ViewEdit calibration or renderer assets.
-    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-    bool projectedHook = EditorGUILayout.ToggleLeft(
-        "Hook 3D Projection (temporary Y only)",
-        hookProjectionExperimentEnabled);
-    bool projectionChanged = projectedHook != hookProjectionExperimentEnabled;
-    hookProjectionExperimentEnabled = projectedHook;
-    if (hookProjectionExperimentEnabled)
-    {
-      EditorGUI.BeginChangeCheck();
-      hookProjectionHorizonTopY = EditorGUILayout.Slider(
-          "Horizon top Y", hookProjectionHorizonTopY, 0f, 199f);
-      hookProjectionVerticalFov = EditorGUILayout.Slider(
-          "Vertical FOV", hookProjectionVerticalFov, 30f, 110f);
-      hookProjectionMountHeight = EditorGUILayout.Slider(
-          "Mount height (tiles)", hookProjectionMountHeight, -1f, 1f);
-      hookProjectionS1Distance = EditorGUILayout.Slider(
-          "S1 distance (tiles)", hookProjectionS1Distance, 0.5f, 4f);
-      hookProjectionDistanceStep = EditorGUILayout.Slider(
-          "Distance step (tiles)", hookProjectionDistanceStep, 0.5f, 2f);
-      projectionChanged |= EditorGUI.EndChangeCheck();
-      EditorGUILayout.LabelField(
-          "Projected top Y: S1 " + GetHookProjectedTopY(1)
-          + "  S2 " + GetHookProjectedTopY(2)
-          + "  S3 " + GetHookProjectedTopY(3), EditorStyles.miniLabel);
-    }
-    // Second ornament trial: shared projection formula, independent anchor.
-    // The approved Manacles remain unchanged unless explicitly enabled.
-    bool projectedManacles = EditorGUILayout.ToggleLeft(
-        "Manacles S3 3D Y + ViewEdit X/Y (experimental)",
-        manaclesProjectionExperimentEnabled);
-    projectionChanged |= projectedManacles != manaclesProjectionExperimentEnabled;
-    manaclesProjectionExperimentEnabled = projectedManacles;
-    if (manaclesProjectionExperimentEnabled)
-    {
-      EditorGUI.BeginChangeCheck();
-      manaclesProjectionHorizonTopY = EditorGUILayout.Slider(
-          "Manacles screen top Y (320x200)", manaclesProjectionHorizonTopY, 0f, 199f);
-      manaclesProjectionMountHeight = EditorGUILayout.Slider(
-          "Manacles mount height (tiles)", manaclesProjectionMountHeight,
-          -1f, 1f);
-      projectionChanged |= EditorGUI.EndChangeCheck();
-      EditorGUILayout.LabelField(
-          "Manacles projected S3 top Y: " + GetWallProjectedTopY(
-              3, manaclesProjectionHorizonTopY, manaclesProjectionMountHeight)
-          + "  (S1/S2 stay unchanged)", EditorStyles.miniLabel);
-    }
-    EditorGUILayout.EndVertical();
-    if (projectionChanged)
-    {
-      // Rebuild preview from the existing calibrated state. No Apply / save.
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
-    }
 
     // Explicit ViewEdit redraw: allows diagnostic capture at the current pose
     // without walking to another tile, turning, or recompiling scripts.
@@ -16645,14 +16521,10 @@ private static void HandleGameViewPointerDown(
     List<WallOrnamentPlacement> resolved =
         new List<WallOrnamentPlacement>();
 
-    // Preserve any explicit map records. The current JSON has none, so the
-    // fallback keeps the verified Sensor at (6,9) North plus the three older
-    // random-decoration samples as safety references. Generated random faces
-    // are de-duplicated against those samples below.
-    WallOrnamentPlacement[] baseOrnaments =
-        explicitOrnaments != null && explicitOrnaments.Length > 0
-            ? explicitOrnaments
-            : FallbackHallOfChampionsWallOrnaments;
+    // Use actual map records only; do not inject substitute ornaments.
+    if (explicitOrnaments == null)
+      LogMissingArtworkCyan("Wall ornaments: missing explicit map placement data.");
+    WallOrnamentPlacement[] baseOrnaments = explicitOrnaments ?? new WallOrnamentPlacement[0];
     for (int i = 0; i < baseOrnaments.Length; i++)
     {
       WallOrnamentPlacement ornament = baseOrnaments[i];
@@ -17454,7 +17326,8 @@ private static void HandleGameViewPointerDown(
       if (previewMiniMap == null)
       {
         previewChampionMirrors = new ChampionMirrorPlacement[0];
-        previewWallOrnaments = FallbackHallOfChampionsWallOrnaments;
+        previewWallOrnaments = new WallOrnamentPlacement[0];
+        LogMissingArtworkCyan("Wall ornaments: preview map unavailable; no substitute placements.");
         previewPuddleFloors.Clear();
         previewMossFloors.Clear();
       }
@@ -24963,58 +24836,6 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  // Unified side-wall mirror drawing for S1, S2 and S3. The same visible wall
-  // face, V17 check, and shared calibration key are used by ViewEdit rows.
-  // S1 uses the original side frame; S2 uses the verified 10x23 Nearest target;
-  // S3 uses the verified 7x15 Nearest target.
-
-  // Shared side scaling: S2 is fixed to the verified Nearest 10x23 result;
-  // S3 uses the same verified Nearest method at 7x15.
-  private const int ChampionMirrorS2TargetWidth = 10;
-  private const int ChampionMirrorS2TargetHeight = 23;
-  private const int ChampionMirrorS3TargetWidth = 7;
-  private const int ChampionMirrorS3TargetHeight = 15;
-  private Texture2D cachedUnifiedChampionS2SideFrame;
-  private Texture2D cachedUnifiedChampionS3SideFrame;
-
-  private Texture2D GetUnifiedChampionS2SideFrame(Texture2D source)
-  {
-    if (cachedUnifiedChampionS2SideFrame != null)
-      return cachedUnifiedChampionS2SideFrame;
-    Texture2D result = GenerateDmScaledWallDecoration(
-        source, ChampionMirrorS2TargetWidth, ChampionMirrorS2TargetHeight,
-        WallOrnamentMediumColorMap, "Champion Mirror S2 DOS");
-    cachedUnifiedChampionS2SideFrame = result;
-    if (result != null)
-    {
-      // Report opaque bounds: target texture size is not necessarily visible size.
-      Color32[] sample = result.GetPixels32();
-      int minX = result.width, minY = result.height, maxX = -1, maxY = -1;
-      for (int py = 0; py < result.height; py++)
-        for (int px = 0; px < result.width; px++)
-          if (sample[py * result.width + px].a != 0)
-          {
-            minX = Mathf.Min(minX, px); maxX = Mathf.Max(maxX, px);
-            minY = Mathf.Min(minY, py); maxY = Mathf.Max(maxY, py);
-          }
-      Debug.Log("MIRROR S2 SIZE: method=1 source=" + source.width + "x" + source.height
-          + " target=" + result.width + "x" + result.height
-          + " visible=" + (maxX < 0 ? "none" : ((maxX - minX + 1) + "x" + (maxY - minY + 1)))
-          + " opaqueBounds=" + (maxX < 0 ? "none" : (minX + "," + minY + ".." + maxX + "," + maxY)));
-    }
-    return result;
-  }
-
-  private Texture2D GetUnifiedChampionS3SideFrame(Texture2D source)
-  {
-    if (cachedUnifiedChampionS3SideFrame != null)
-      return cachedUnifiedChampionS3SideFrame;
-    Texture2D result = GenerateDmScaledWallDecoration(
-        source, ChampionMirrorS3TargetWidth, ChampionMirrorS3TargetHeight,
-        WallOrnamentFarColorMap, "Champion Mirror S3 DOS");
-    cachedUnifiedChampionS3SideFrame = result;
-    return result;
-  }
 
   private Texture2D GetChampionMirrorFrontTexture()
   {
@@ -25253,17 +25074,6 @@ private static void HandleGameViewPointerDown(
     return GetChampionMirrorArtworkProfile(depth).scaleMethod;
   }
 
-  private void InvalidateChampionMirrorFrameScaleCache()
-  {
-    if (cachedChampionMirrorF2Frame != null)
-      UnityEngine.Object.DestroyImmediate(cachedChampionMirrorF2Frame);
-    if (cachedChampionMirrorF3Frame != null)
-      UnityEngine.Object.DestroyImmediate(cachedChampionMirrorF3Frame);
-    cachedChampionMirrorF2Frame = null;
-    cachedChampionMirrorF3Frame = null;
-    cachedChampionMirrorF2Method = -1;
-    cachedChampionMirrorF3Method = -1;
-  }
 
 
 
@@ -27231,38 +27041,13 @@ private static void HandleGameViewPointerDown(
       projectionSuffix = resolvedProjectionSuffix;
     }
 
-    // S2 Manacles are blitted using the DOS rectangle, not ViewEdit
-    // calibration. Show the exact renderer position in ViewEdit;
-    // do not expose misleading persistent X/Y edits for this slot.
-    bool fixedManaclesS2 = IsManaclesOrnament(ornament)
-        && (string.Equals(key, "OrnamentProjection:Manacles:S2",
-                System.StringComparison.Ordinal)
-            || string.Equals(key, "OrnamentProjection:Manacles:S2:Left",
-                System.StringComparison.Ordinal)
-            || string.Equals(key, "OrnamentProjection:Manacles:S2:Right",
-                System.StringComparison.Ordinal));
-    if (fixedManaclesS2)
-    {
-      bool s2Left = !key.EndsWith(":Right", System.StringComparison.Ordinal);
-      // The ordinary S2 key can be shared across sides; derive the current
-      // physical face rather than assuming the left rectangle.
-      if (string.Equals(key, "OrnamentProjection:Manacles:S2",
-          System.StringComparison.Ordinal))
-        s2Left = string.Equals(ornament.wall,
-            FacingName(TurnPreviewFacingLeft(previewFacing)),
-            System.StringComparison.OrdinalIgnoreCase);
-      GetManaclesSideS2Rect(s2Left, out codedX, out codedY, out _, out _);
-      previewFeaturePositionOverrides.Remove(key);
-      previewFeatureMirrorOverrides.Remove(key);
-    }
 
     // A saved global offset supersedes an older absolute accepted reference.
     // Red indicates only values that differ from the current saved baseline.
     int defaultX = codedX;
     int defaultY = codedY;
     bool defaultMirror = codedMirror;
-    // S3 uses the CSBwin position when the projection experiment is Off,
-    // but its ViewEdit X/Y calibration must work in either mode.
+    // Preserve existing saved Manacles S3 calibration.
     bool isManaclesS3 = IsManaclesOrnament(ornament)
         && (string.Equals(key, "OrnamentProjection:Manacles:S3:Left",
                 System.StringComparison.Ordinal)
@@ -27270,18 +27055,10 @@ private static void HandleGameViewPointerDown(
                 System.StringComparison.Ordinal));
     if (isManaclesS3)
     {
-      if (manaclesProjectionExperimentEnabled)
-      {
-        Texture2D s3Texture = GetManaclesGeneratedD3SideTexture();
-        if (s3Texture != null)
-          defaultY = PreviewHeight - GetWallProjectedTopY(
-              3, manaclesProjectionHorizonTopY,
-              manaclesProjectionMountHeight) - s3Texture.height;
-      }
       ApplyManaclesS3AcceptedReference(
           key, ref defaultX, ref defaultY, ref defaultMirror);
     }
-    else if (hasGenericProjection && !fixedManaclesS2)
+    else if (hasGenericProjection)
     {
       if (TryGetOrnamentPlacementOffset(key,
           out OrnamentPlacementOffsetEntry savedOffset))
@@ -27442,9 +27219,6 @@ private static void HandleGameViewPointerDown(
       }
     }
 
-    // The S2 renderer owns its DOS X/Y; present them read-only.
-    if (fixedManaclesS2)
-      EditorGUI.BeginDisabledGroup(true);
     EditorGUIUtility.labelWidth =
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
     int editX = x;
@@ -27457,8 +27231,6 @@ private static void HandleGameViewPointerDown(
     bool yChanged = DrawIntStepperInline(
         "Y", ref editY, snap, y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
 
-    if (fixedManaclesS2)
-      EditorGUI.EndDisabledGroup();
 
     // Wall ornament orientation belongs to the renderer, never ViewEdit.
     // The calibration row exposes X/Y only. Old JSON mirror fields remain
@@ -27482,16 +27254,6 @@ private static void HandleGameViewPointerDown(
 
     if (applyClicked)
     {
-      if (fixedManaclesS2)
-      {
-        // Never persist an offset which the actual S2 renderer ignores.
-        previewFeaturePositionOverrides.Remove(key);
-        previewFeatureMirrorOverrides.Remove(key);
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
-        return true;
-      }
       // Manacles S3 is drawn by its own direct V17-gated path, which reads
       // accepted absolute X/Y rather than the generic JSON offset store.
       // Persist via the same path the S3 renderer reads, so Apply does not
@@ -28931,25 +28693,9 @@ private static void HandleGameViewPointerDown(
   private bool IsSlimeProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
   {
     return IsSlimeOrnament(ornament)
-        && !IsSlimeHiddenInCurrentPose(ornament)
         && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 3, 2);
   }
 
-  // Original 4,3 South and 4,4 South do not show the (5,5) West slime.
-  private bool IsSlimeHiddenInCurrentPose(WallOrnamentPlacement ornament)
-  {
-    return ornament != null
-        && IsSlimeOrnament(ornament)
-        && previewFacing == DungeonFacing.South
-        && previewX == 4
-        && (previewY == 3 || previewY == 4)
-        && ornament.x == 5
-        && ornament.y == 5
-        && string.Equals(
-            ornament.wall,
-            "West",
-            System.StringComparison.OrdinalIgnoreCase);
-  }
 
 
   // Champion mirror calibration controls position only. Historical Mirror
@@ -36894,138 +36640,6 @@ private static void HandleGameViewPointerDown(
     return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 4;
   }
 
-  // Hook G2 isolated verification only. Nothing here is called by normal
-  // viewport rendering; running the menu item reads archived reference PNGs
-  // and prints differences without editing assets or calibrations.
-  [MenuItem("Tools/CSBwin Hook G2 Compare Pixels", false, 181)]
-  private static void CompareHookG2PixelsReadOnly()
-  {
-    const string archiveRoot = "Research_Results/CSBwin_Ornaments/Hook_G2";
-    if (!Directory.Exists(archiveRoot))
-    {
-      Debug.LogError("Hook G2 comparison: missing research folder: " + archiveRoot);
-      return;
-    }
-
-    Texture2D front = AssetDatabase.LoadAssetAtPath<Texture2D>(
-        "Assets/Art/Ornaments/Hook_F1_32x28.png");
-    Texture2D side = AssetDatabase.LoadAssetAtPath<Texture2D>(HookSideAssetPath);
-    if (front == null || side == null || !front.isReadable || !side.isReadable
-        || front.width != 32 || front.height != 28
-        || side.width != 14 || side.height != 19)
-    {
-      Debug.LogError("Hook G2 comparison: requires readable 32x28 front and "
-          + "14x19 side source PNG at the configured Hook asset path.");
-      return;
-    }
-
-    // Stable representative positions: no mirrored source-offset crop or
-    // shared F2/F3 front-slice cache. Other positions remain untested.
-    int[] positions = { 0, 3, 5, 8, 10, 12 };
-    int checkedCount = 0;
-    for (int i = 0; i < positions.Length; i++)
-    {
-      int position = positions[i];
-      bool isFront = position == 3 || position == 8 || position == 12;
-      Texture2D source = isFront ? front : side;
-      OriginalWallDecorationRect rect = GetOriginalWallDecorationRect(0, position);
-      int width = rect.x2 - rect.x1 + 1;
-      int height = rect.y2 - rect.y1 + 1;
-      string referenceName = "Hook_G2_P" + position.ToString("00") + "_*_Viewport.png";
-      string[] matches = Directory.GetFiles(
-          archiveRoot, referenceName, SearchOption.AllDirectories);
-      if (matches.Length != 1)
-      {
-        Debug.LogError("Hook G2 comparison: expected exactly one "
-            + referenceName + " in " + archiveRoot + ", found " + matches.Length);
-        return;
-      }
-
-      Texture2D reference = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-      try
-      {
-        if (!reference.LoadImage(File.ReadAllBytes(matches[0]), false)
-            || reference.width != width || reference.height != height)
-        {
-          Debug.LogError("Hook G2 comparison: invalid reference dimensions: "
-              + matches[0] + " (expected " + width + "x" + height + ")");
-          return;
-        }
-
-        Color32[] actual = reference.GetPixels32();
-        Color32[] original = source.GetPixels32();
-        Color32[] palette = DungeonViewportLightPalettes[0];
-        byte[] map = position < 5 ? WallOrnamentFarColorMap
-            : position < 10 ? WallOrnamentMediumColorMap : null;
-        int sourceWidth = isFront ? 32 : 14;
-        int sourceHeight = source.height;
-        int stepX = ((sourceWidth << 10) / width) << 6;
-        int stepY = ((sourceHeight << 10) / height) << 6;
-        int startX = (stepX >> 1) + 0x7fff;
-        int startY = (stepY >> 1) + 0x7fff;
-        int alphaDiff = 0;
-        int colorDiff = 0;
-        int unknownPalette = 0;
-        for (int y = 0; y < height; y++)
-        {
-          int sourceTopY = position >= 10 ? y : (startY + y * stepY) >> 16;
-          for (int x = 0; x < width; x++)
-          {
-            int sourceX = position >= 10 ? x : (startX + x * stepX) >> 16;
-            bool inside = sourceX >= 0 && sourceX < source.width
-                && sourceTopY >= 0 && sourceTopY < sourceHeight;
-            Color32 expected = new Color32(0, 0, 0, 0);
-            if (inside)
-            {
-              Color32 input = original[(sourceHeight - 1 - sourceTopY)
-                  * source.width + sourceX];
-              if (input.a != 0)
-              {
-                int sourceIndex = -1;
-                for (int paletteIndex = 0; paletteIndex < 16; paletteIndex++)
-                {
-                  Color32 candidate = palette[paletteIndex];
-                  if (input.r == candidate.r && input.g == candidate.g
-                      && input.b == candidate.b)
-                  {
-                    sourceIndex = paletteIndex;
-                    break;
-                  }
-                }
-                if (sourceIndex < 0)
-                {
-                  unknownPalette++;
-                  continue;  // Strictly no nearest-colour fallback.
-                }
-                int mappedIndex = map == null ? sourceIndex : map[sourceIndex];
-                if (mappedIndex != 10)
-                  expected = palette[mappedIndex];
-              }
-            }
-            Color32 observed = actual[(height - 1 - y) * width + x];
-            if ((expected.a == 0) != (observed.a == 0)) alphaDiff++;
-            else if (expected.a != 0 && (expected.r != observed.r
-                || expected.g != observed.g || expected.b != observed.b))
-              colorDiff++;
-          }
-        }
-        checkedCount++;
-        Debug.Log("Hook G2 comparison P" + position.ToString("00")
-            + " " + width + "x" + height + ": alpha mismatches=" + alphaDiff
-            + ", RGB mismatches=" + colorDiff
-            + ", unknown source palette pixels=" + unknownPalette
-            + ". Reference=" + matches[0]);
-      }
-      finally
-      {
-        UnityEngine.Object.DestroyImmediate(reference);
-      }
-    }
-    Debug.Log("Hook G2: compared " + checkedCount + " representative positions. "
-        + "No rendering, calibration, or asset modifications. "
-        + "RGB differences can reflect captured CSBwin lighting palette; "
-        + "mirrored and front-slice positions are not tested by this tool.");
-  }
 
   private Texture2D GetHookGeneratedF3FrontTexture()
   {
@@ -39419,75 +39033,8 @@ private static void HandleGameViewPointerDown(
   // A FullTorchHolder sensor can coexist on the same face and represents a
   // separate mechanism/state. It must not create a second empty-holder image.
 
-  // Shared projection math for wall-mounted sprite tops; no geometry,
-  // scaling, visibility, or calibration changes. Each artwork category may
-  // define its own horizon/attachment height while using the same camera.
-  private int GetWallProjectedTopY(
-      int sideDepth, float topHorizon, float mountHeight)
-  {
-    float focalPixels = (PreviewHeight * 0.5f)
-        / Mathf.Tan(hookProjectionVerticalFov * 0.5f * Mathf.Deg2Rad);
-    float distance = hookProjectionS1Distance
-        + (sideDepth - 1) * hookProjectionDistanceStep;
-    return Mathf.RoundToInt(topHorizon - focalPixels * mountHeight / distance);
-  }
 
-  private int GetHookProjectedTopY(int sideDepth)
-  {
-    return GetWallProjectedTopY(
-        sideDepth, hookProjectionHorizonTopY, hookProjectionMountHeight);
-  }
-
-  private static bool TryParseSideProjectionDepth(
-      string projectionKey, string ornamentName, out int depth)
-  {
-    depth = 0;
-    if (string.IsNullOrEmpty(projectionKey))
-      return false;
-    string prefix = "OrnamentProjection:" + ornamentName + ":S";
-    if (!projectionKey.StartsWith(prefix, System.StringComparison.Ordinal)
-        || projectionKey.Length <= prefix.Length)
-      return false;
-    char c = projectionKey[prefix.Length];
-    if (c < '1' || c > '3')
-      return false;
-    if (projectionKey.Length > prefix.Length + 1
-        && projectionKey[prefix.Length + 1] != ':')
-      return false;
-    depth = c - '0';
-    return true;
-  }
-
-  private bool TryGetOrnamentProjectionExperimentY(
-      WallOrnamentPlacement ornament, string projectionKey,
-      Texture2D texture, out int projectedBottomY)
-  {
-    projectedBottomY = 0;
-    if (ornament == null || texture == null)
-      return false;
-    if (hookProjectionExperimentEnabled && IsHookOrnament(ornament)
-        && TryParseSideProjectionDepth(projectionKey, "Hook", out int hookDepth))
-    {
-      projectedBottomY = PreviewHeight - GetHookProjectedTopY(hookDepth)
-          - texture.height;
-      return true;
-    }
-    // S1 and approved S2 always retain their existing Y positions.
-    if (manaclesProjectionExperimentEnabled && IsManaclesOrnament(ornament)
-        && TryParseSideProjectionDepth(
-            projectionKey, "Manacles", out int manaclesDepth)
-        && manaclesDepth == 3)
-    {
-      projectedBottomY = PreviewHeight - GetWallProjectedTopY(
-          manaclesDepth, manaclesProjectionHorizonTopY,
-          manaclesProjectionMountHeight) - texture.height;
-      return true;
-    }
-    return false;
-  }
-
-  // Load accepted Manacles S3 calibration independently of the optional
-  // perspective-Y experiment. Left/right have separate ViewEdit references.
+  // Read saved Manacles S3 calibration.
   private void ApplyManaclesS3AcceptedReference(
       string key, ref int x, ref int y, ref bool mirror)
   {
