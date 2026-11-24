@@ -1,54 +1,30 @@
 {
-    "version": 1,
-    "entries": [
-        {
-            "key": "OrnamentClass:1:ChampionMirror:CornerFrontF2:Left",
-            "x": -16,
-            "y": 104,
-            "mirror": false
-        },
-        {
-            "key": "OrnamentClass:1:ChampionMirror:ManualFrontF3:Left",
-            "x": 16,
-            "y": 114,
-            "mirror": false
-        }
-    ],
-    "offsets": [
-        {
-            "key": "OrnamentProjection:Grate:S2",
-            "artworkSignature": "Grate_S1_16x19.png:16x19",
-            "dx": -2,
-            "dy": 0,
-            "mirror": true
-        },
-        {
-            "key": "OrnamentProjection:Grate:S3",
-            "artworkSignature": "Grate_S1_16x19.png:16x19",
-            "dx": 0,
-            "dy": 2,
-            "mirror": false
-        },
-        {
-            "key": "OrnamentProjection:Manacles:S3:Left",
-            "artworkSignature": "",
-            "dx": 0,
-            "dy": 1,
-            "mirror": false
-        },
-        {
-            "key": "OrnamentProjection:Grate:F3",
-            "artworkSignature": "",
-            "dx": 0,
-            "dy": -1,
-            "mirror": false
-        },
-        {
-            "key": "OrnamentProjection:WoodRing:F1",
-            "artworkSignature": "",
-            "dx": 0,
-            "dy": -3,
-            "mirror": false
-        }
-    ]
+  "version": 2,
+  "offsets": [
+    {
+      "key": "OrnamentProjection:Grate:S2",
+      "dx": -2,
+      "dy": 0
+    },
+    {
+      "key": "OrnamentProjection:Grate:S3",
+      "dx": 0,
+      "dy": 2
+    },
+    {
+      "key": "OrnamentProjection:Manacles:S3:Left",
+      "dx": 0,
+      "dy": 1
+    },
+    {
+      "key": "OrnamentProjection:Grate:F3",
+      "dx": 0,
+      "dy": -1
+    },
+    {
+      "key": "OrnamentProjection:WoodRing:F1",
+      "dx": 0,
+      "dy": -3
+    }
+  ]
 }

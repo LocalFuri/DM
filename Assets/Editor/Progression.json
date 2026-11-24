@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "Stage 4H: project-owned original geometry extraction; Unity regression and live Hook verification pending.",
+  "checkpoint": "Stage 4J: strict offset-only ornament calibration cleanup; Unity verification pending.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -6409,5 +6409,79 @@
       "Restore generic ViewEdit X/Y Apply UI separately; complete native artwork registration and additional perspectives."
     ],
     "cursor": "Ask mode only unless explicitly authorized."
+  },
+  "strict_dos_calibration_cleanup_stage4j_20261124": {
+    "timestamp": "2026-11-24T20:22:40.976730+01:00",
+    "archive": "StrictDOS_CalibrationCleanup_Stage4J_20261124-202240.zip",
+    "changes": [
+      "Version 2 ornament calibration: key, dx, dy only. Preserve five existing relative offsets from supplied Editor archive; remove two absolute records and obsolete mirror/signature fields.",
+      "Remove 13 source ornament REF records, Champion Mirror EditorPrefs recovery, old absolute JSON read/write APIs. Restrict remaining source REF calibration to inscriptions, floor items and wall pieces.",
+      "Generic DOS geometry/scaler and offset lookup unchanged. Missing matching offset is zero."
+    ],
+    "limitations": [
+      "Unity compilation not available here. Local EditorPrefs keys and old .bak files may still physically exist on user PC; no ornament reader remains for them in patched source. No project-wide audit. Existing offsets not pixel-exact reverified. Generic Apply UI pending."
+    ],
+    "next": [
+      "Install three files, verify compile and Hook/Manacles visual appearance. Run 900-row geometry regression. Restore generic Apply UI."
+    ],
+    "cursor": "Ask mode only."
+  },
+  "strict_dos_registration_stage4k_20261124": {
+    "timestamp": "2026-11-24T20:40:28.562533+01:00",
+    "archive": "StrictDOS_Registration_Stage4K_20261124-204028.zip",
+    "confirmed_by_user": [
+      "Stage 4J Unity compilation without errors",
+      "Hook and Manacles all front/side views visually correct before Stage 4J; no pixel-exact claim"
+    ],
+    "changes": [
+      "Add six native artwork registrations to existing central dictionary only. No renderer, geometry, calibration or gameplay changes.",
+      "DOS identity evidence: Hall of Champions original source ID table and ordinal mapping for Hook, Slime, Grate, Wood Ring; native dimension pairs uniquely match Torch Holder Empty/Full and Vi Altar; visual verification pending.",
+      "All 12 PNG dimensions and readable/point importer settings checked against uploaded archive and DOS geometry reference."
+    ],
+    "registrations": [
+      {
+        "map_type": "EmptyTorchHolder",
+        "dos_type": 38,
+        "front": "Torch_Holder_Empty_F1_24x54.png",
+        "side": "Torch_Holder_Empty_S1_20x40.png"
+      },
+      {
+        "map_type": "FullTorchHolder",
+        "dos_type": 46,
+        "front": "Torch_Holder_Full_F1_24x53.png",
+        "side": "Torch_Holder_Full_S1_24x48.png"
+      },
+      {
+        "map_type": "Grate",
+        "dos_type": 34,
+        "front": "Grate_F1_32x20.png",
+        "side": "Grate_S1_16x19.png"
+      },
+      {
+        "map_type": "WoodRing",
+        "dos_type": 6,
+        "front": "Wood_Ring_Front_28x26.png",
+        "side": "Wood_Ring_Side_14x19.png"
+      },
+      {
+        "map_type": "Slime",
+        "dos_type": 33,
+        "front": "Slime_F1_22x16.png",
+        "side": "Slime_S1_16x10.png"
+      },
+      {
+        "map_type": "ViAltar",
+        "dos_type": 2,
+        "front": "Altar_of_Vi_96,56.png",
+        "side": "Altar_of_Vi_S1_20x48.png"
+      }
+    ],
+    "limitations": [
+      "Unity compile and live registration verification pending. Native image pixel equivalence not tested. Full holder state dispatch and pickup/return remain unimplemented; explicit FullTorchHolder map placements only are registered. Floor ornaments outside wall geometry. Existing relative calibration offsets unchanged. Old Hook Python patch is not used; do not execute it."
+    ],
+    "next": [
+      "Install two files. Verify empty torch holder first, then Grate, Wood Ring, Slime, Vi Altar; verify full holder when map/state support is available. Restore generic holder state and hit testing separately. Generic Apply UI pending."
+    ],
+    "cursor": "Ask mode only, no modification."
   }
 }

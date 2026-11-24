@@ -187,7 +187,25 @@ public class ViewportLayoutEditor : EditorWindow
             "Assets/Art/Ornaments/Hook_S1_14x19.png") },
         { "Manacles", new DosWallOrnamentRegistration(36,
             "Assets/Art/Ornaments/Manacles_F1.png",
-            "Assets/Art/Ornaments/Manacles_S1.png") }
+            "Assets/Art/Ornaments/Manacles_S1.png") },
+        { "EmptyTorchHolder", new DosWallOrnamentRegistration(38,
+            "Assets/Art/Ornaments/Torch_Holder_Empty_F1_24x54.png",
+            "Assets/Art/Ornaments/Torch_Holder_Empty_S1_20x40.png") },
+        { "FullTorchHolder", new DosWallOrnamentRegistration(46,
+            "Assets/Art/Ornaments/Torch_Holder_Full_F1_24x53.png",
+            "Assets/Art/Ornaments/Torch_Holder_Full_S1_24x48.png") },
+        { "Grate", new DosWallOrnamentRegistration(34,
+            "Assets/Art/Ornaments/Grate_F1_32x20.png",
+            "Assets/Art/Ornaments/Grate_S1_16x19.png") },
+        { "WoodRing", new DosWallOrnamentRegistration(6,
+            "Assets/Art/Ornaments/Wood_Ring_Front_28x26.png",
+            "Assets/Art/Ornaments/Wood_Ring_Side_14x19.png") },
+        { "Slime", new DosWallOrnamentRegistration(33,
+            "Assets/Art/Ornaments/Slime_F1_22x16.png",
+            "Assets/Art/Ornaments/Slime_S1_16x10.png") },
+        { "ViAltar", new DosWallOrnamentRegistration(2,
+            "Assets/Art/Ornaments/Altar_of_Vi_96,56.png",
+            "Assets/Art/Ornaments/Altar_of_Vi_S1_20x48.png") }
       };
 
   private static readonly byte[] DosNativeOrnamentColorMap =
@@ -1095,48 +1113,6 @@ public class ViewportLayoutEditor : EditorWindow
         + "." + suffix;
   }
 
-  private static bool TryGetBackedUpOrnamentReference(
-      string projectionKey,
-      out AcceptedOrnamentReference value)
-  {
-    value = new AcceptedOrnamentReference(0, 0, false, 0);
-    if (string.IsNullOrEmpty(projectionKey))
-      return false;
-
-    string xKey = GetAppliedOrnamentReferencePrefsKey(projectionKey, "X");
-    string yKey = GetAppliedOrnamentReferencePrefsKey(projectionKey, "Y");
-    string mirrorKey =
-        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Mirror");
-
-    if (!EditorPrefs.HasKey(xKey)
-        || !EditorPrefs.HasKey(yKey)
-        || !EditorPrefs.HasKey(mirrorKey))
-    {
-      return false;
-    }
-
-    string revisionKey =
-        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Revision");
-
-    long revision = 0L;
-    if (EditorPrefs.HasKey(revisionKey))
-    {
-      string rawRevision = EditorPrefs.GetString(revisionKey, "0");
-      long.TryParse(
-          rawRevision,
-          System.Globalization.NumberStyles.Integer,
-          System.Globalization.CultureInfo.InvariantCulture,
-          out revision);
-    }
-
-    value = new AcceptedOrnamentReference(
-        EditorPrefs.GetInt(xKey, 0),
-        EditorPrefs.GetInt(yKey, 0),
-        EditorPrefs.GetBool(mirrorKey, false),
-        revision);
-    return true;
-  }
-
   private static void SaveBackedUpOrnamentReference(
       string projectionKey,
       AcceptedOrnamentReference value)
@@ -1156,42 +1132,9 @@ public class ViewportLayoutEditor : EditorWindow
             System.Globalization.CultureInfo.InvariantCulture));
   }
 
-  private static long GetBackedUpOrnamentReferenceRevision(
-      string projectionKey)
-  {
-    string key =
-        GetAppliedOrnamentReferencePrefsKey(projectionKey, "Revision");
-    if (!EditorPrefs.HasKey(key))
-      return 0L;
-
-    string raw = EditorPrefs.GetString(key, "0");
-    if (long.TryParse(
-            raw,
-            System.Globalization.NumberStyles.Integer,
-            System.Globalization.CultureInfo.InvariantCulture,
-            out long revision))
-    {
-      return revision;
-    }
-    return 0L;
-  }
-
   // BEGIN APPLIED ORNAMENT REFERENCES
   // REF Inscription:1548:F1|80|117|false|639294981993770953
   // REF Inscription:85:F1|76|118|false|639294110666408029
-  // REF OrnamentClass:1:ChampionMirror:CornerFrontF2:Left|-23|104|false|639290675739537233
-  // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Left|12|117|false|639293308574207999
-  // REF OrnamentProjection:ChampionMirror:ExtendedLaneF3:Right|202|116|true|639292495819863123
-  // REF OrnamentProjection:ChampionMirror:F1|80|95|false|639291298300178415
-  // REF OrnamentProjection:ChampionMirror:S1:Left|41|101|false|639291362147754849
-  // REF OrnamentProjection:ChampionMirror:S1:Right|167|101|true|639291359095917323
-  // REF OrnamentProjection:ChampionMirror:S2:Left|66|110|false|639291379156807561
-  // REF OrnamentProjection:ChampionMirror:S2:Right|148|110|true|639291389334906649
-  // REF OrnamentProjection:ChampionMirror:S3:Left|84|116|false|639293326829241417
-  // REF OrnamentProjection:ChampionMirror:S3:Right|138|116|true|639291392277477819
-  // REF OrnamentProjection:CornerFrontF2:Left|-9|106|false|639290419138660499
-  // REF OrnamentProjection:Hook:S2:Left|66|116|false|639299399669516077
-  // REF OrnamentProjection:Manacles:S3:Left|79|108|false|639299448141357825
   // END APPLIED ORNAMENT REFERENCES
 
   private static readonly Dictionary<string, AcceptedOrnamentReference>
@@ -1334,65 +1277,14 @@ public class ViewportLayoutEditor : EditorWindow
                 out revision);
           }
 
+          if (!IsNonOrnamentReferenceKey(parts[0])) continue;
           cachedAcceptedOrnamentReferences[parts[0]] =
               new AcceptedOrnamentReference(x, y, mirror, revision);
         }
       }
     }
 
-    // Probe every generic ornament family/slot. This also migrates references
-    // saved by the earlier EditorPrefs-only Apply implementation.
-    // Ordinary wall/floor ornament references are sourced from the current
-    // code and explicit future Apply writes, not restored from old EditorPrefs.
-    // Champion mirror backups remain supported below.
-    bool recoveredAnything = false;
 
-    // Recover all shared champion mirror projection calibrations as well.
-    // Previously only ordinary ornament family keys were probed here, so
-    // replacing this .cs could silently lose newly Applied S2/S3 Left/Right
-    // positions even though their EditorPrefs backups still existed.
-    string[] mirrorProjectionKeys =
-    {
-      "OrnamentProjection:ChampionMirror:F1",
-      "OrnamentProjection:ChampionMirror:F2",
-      "OrnamentProjection:ChampionMirror:F3",
-      "OrnamentProjection:ChampionMirror:S1:Left",
-      "OrnamentProjection:ChampionMirror:S1:Right",
-      "OrnamentProjection:ChampionMirror:S2:Left",
-      "OrnamentProjection:ChampionMirror:S2:Right",
-      "OrnamentProjection:ChampionMirror:S3:Left",
-      "OrnamentProjection:ChampionMirror:S3:Right",
-      // Extended F3 lanes use the same Apply/EditorPrefs backup mechanism.
-      // Include both sides so replacing this C# file cannot silently lose
-      // their applied X/Y/Mirror values.
-      "OrnamentProjection:ChampionMirror:ExtendedLaneF3:Left",
-      "OrnamentProjection:ChampionMirror:ExtendedLaneF3:Right"
-    };
-    for (int i = 0; i < mirrorProjectionKeys.Length; ++i)
-    {
-      string projectionKey = mirrorProjectionKeys[i];
-      if (!TryGetBackedUpOrnamentReference(
-              projectionKey, out AcceptedOrnamentReference backup))
-        continue;
-      long backupRevision =
-          GetBackedUpOrnamentReferenceRevision(projectionKey);
-      backup.revision = backupRevision;
-      if (!cachedAcceptedOrnamentReferences.TryGetValue(
-              projectionKey, out AcceptedOrnamentReference sourceValue)
-          || (backupRevision > 0 && backupRevision > sourceValue.revision))
-      {
-        cachedAcceptedOrnamentReferences[projectionKey] = backup;
-        recoveredAnything = true;
-      }
-    }
-
-    if (recoveredAnything)
-    {
-      WriteAcceptedOrnamentReferencesBlock(assetPath, true);
-      Debug.Log(
-          "ViewEdit: restored newer/missing ornament calibration references "
-          + "from the Apply backup into " + assetPath);
-    }
   }
 
   // A wall's mirror choice belongs to a particular viewing pose. Persisting
@@ -1434,22 +1326,9 @@ public class ViewportLayoutEditor : EditorWindow
       ref int y,
       ref bool mirror)
   {
-    if (string.IsNullOrEmpty(projectionKey))
+    if (!IsNonOrnamentReferenceKey(projectionKey))
       return;
 
-    if (IsOrnamentCalibrationJsonKey(projectionKey))
-    {
-      if (TryGetOrnamentClassJson(projectionKey,
-          out AcceptedOrnamentReference jsonCalibration))
-      {
-        x = jsonCalibration.x;
-        y = jsonCalibration.y;
-        mirror = jsonCalibration.mirror;
-        return;
-      }
-      if (projectionKey.StartsWith("OrnamentClass:", System.StringComparison.Ordinal))
-        return;
-    }
     EnsureAcceptedOrnamentReferencesLoaded();
     if (cachedAcceptedOrnamentReferences.TryGetValue(
             projectionKey, out AcceptedOrnamentReference accepted))
@@ -1468,8 +1347,8 @@ public class ViewportLayoutEditor : EditorWindow
   {
     if (string.IsNullOrEmpty(projectionKey))
       return false;
-    if (IsOrnamentCalibrationJsonKey(projectionKey))
-      return SaveOrnamentClassJson(projectionKey, x, y, mirror);
+    if (!IsNonOrnamentReferenceKey(projectionKey))
+      return false;
 
     string assetPath = GetThisEditorSourceAssetPath();
     if (string.IsNullOrEmpty(assetPath) || !File.Exists(assetPath))
@@ -20862,7 +20741,7 @@ private static void HandleGameViewPointerDown(
       pending.Add(new KeyValuePair<int, WallOrnamentPlacement>(view, ornament));
     }
     if (pending.Count == 0 || !TryGetStrictDosGeometry(out DosOrnamentGeometryResolver resolver)) return;
-    if (!TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore calibration)) return;
+    if (!TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration)) return;
     pending.Sort((a, b) => a.Key.CompareTo(b.Key));
     foreach (var entry in pending)
     {
@@ -23204,35 +23083,20 @@ private static void HandleGameViewPointerDown(
         mirror.x, mirror.y, mirror.wall, true);
   }
 
-  // Class calibrations are deliberately external to C# source. Changing an
-  // ornament must never force recompilation or overwrite a prior adjustment.
-  [System.Serializable]
-  private class OrnamentCalibrationJsonEntry
-  {
-    public string key;
-    public int x;
-    public int y;
-    public bool mirror;
-  }
-
   // Screen-space offsets, independent of dungeon level, tile and facing.
   // dy is positive DOWN; ViewEdit's renderer Y coordinate increases UP.
   [System.Serializable]
   private class OrnamentPlacementOffsetEntry
   {
     public string key;
-    public string artworkSignature;
     public int dx;
     public int dy;
-    public bool mirror;
   }
 
   [System.Serializable]
   private class OrnamentCalibrationJsonStore
   {
-    public int version = 1;
-    public List<OrnamentCalibrationJsonEntry> entries =
-        new List<OrnamentCalibrationJsonEntry>();
+    public int version;
     public List<OrnamentPlacementOffsetEntry> offsets =
         new List<OrnamentPlacementOffsetEntry>();
   }
@@ -23246,96 +23110,38 @@ private static void HandleGameViewPointerDown(
     File.SetLastWriteTimeUtc(path, System.DateTime.UtcNow);
   }
 
-  private const string OrnamentClassJsonPath = "Assets/Editor/OrnamentCalibration.json";
+  private const string OrnamentOffsetsJsonPath = "Assets/Editor/OrnamentCalibration.json";
 
 
-  // All ornament calibration keys use the same JSON Apply store.
-
-  private static bool IsOrnamentCalibrationJsonKey(string key)
+  // Absolute references are restricted to unrelated existing subsystems.
+  private static bool IsNonOrnamentReferenceKey(string key)
   {
     return !string.IsNullOrEmpty(key)
-        && (key.StartsWith("OrnamentClass:", System.StringComparison.Ordinal)
-            || key.StartsWith("OrnamentProjection:", System.StringComparison.Ordinal));
+        && (key.StartsWith("Inscription:", System.StringComparison.Ordinal)
+            || key.StartsWith("FloorItemProjection:", System.StringComparison.Ordinal)
+            || key.StartsWith("WallMirror_", System.StringComparison.Ordinal));
   }
 
-  private static bool TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore data)
+  private static bool TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore data)
   {
     data = null;
     try
     {
-      if (!File.Exists(OrnamentClassJsonPath))
+      if (!File.Exists(OrnamentOffsetsJsonPath))
       {
         LogMissingArtworkCyan("ViewEdit: required ornament calibration JSON missing: "
-            + OrnamentClassJsonPath);
+            + OrnamentOffsetsJsonPath);
         return false;
       }
       data = JsonUtility.FromJson<OrnamentCalibrationJsonStore>(
-          File.ReadAllText(OrnamentClassJsonPath));
-      if (data == null || data.version != 1 || data.entries == null)
+          File.ReadAllText(OrnamentOffsetsJsonPath));
+      if (data == null || data.version != 2 || data.offsets == null)
         throw new System.IO.InvalidDataException("Invalid ornament calibration JSON format/version");
       return true;
     }
     catch (System.Exception e)
     {
-      LogMissingArtworkCyan("ViewEdit: cannot read " + OrnamentClassJsonPath + ": " + e.Message);
-      return false;
-    }
-  }
-
-  private static bool TryGetOrnamentClassJson(string key, out AcceptedOrnamentReference value)
-  {
-    value = new AcceptedOrnamentReference(0, 0, false);
-    if (!TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore data))
-      return false;
-    foreach (OrnamentCalibrationJsonEntry entry in data.entries)
-      if (entry != null && string.Equals(entry.key, key,
-          System.StringComparison.OrdinalIgnoreCase))
-      {
-        value = new AcceptedOrnamentReference(entry.x, entry.y, entry.mirror);
-        return true;
-      }
-    return false;
-  }
-
-
-  private static bool SaveOrnamentClassJson(string key, int x, int y, bool mirror)
-  {
-    if (!TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore data))
-      return false;
-    OrnamentCalibrationJsonEntry entry = null;
-    foreach (OrnamentCalibrationJsonEntry candidate in data.entries)
-      if (candidate != null && string.Equals(candidate.key, key,
-          System.StringComparison.OrdinalIgnoreCase)) { entry = candidate; break; }
-    if (entry == null)
-    {
-      entry = new OrnamentCalibrationJsonEntry { key = key };
-      data.entries.Add(entry);
-    }
-    entry.x = x; entry.y = y; entry.mirror = mirror;
-    string temp = OrnamentClassJsonPath + ".tmp";
-    try
-    {
-      WriteViewEditTextWithTimestamp(temp, JsonUtility.ToJson(data, true));
-      // File.Replace can fail for an asset under Unity/Windows even when
-      // the temporary JSON was written successfully. Preserve the prior
-      // calibration data before replacing the destination.
-      if (File.Exists(OrnamentClassJsonPath))
-      {
-        string backup = OrnamentClassJsonPath + ".bak";
-        File.Copy(OrnamentClassJsonPath, backup, true);
-        File.Copy(temp, OrnamentClassJsonPath, true);
-        File.Delete(temp);
-      }
-      else
-        File.Move(temp, OrnamentClassJsonPath);
-      Debug.Log("ViewEdit Apply: saved " + key + " X=" + x + " Y=" + y
-          + " to " + OrnamentClassJsonPath);
-      return true;
-    }
-    catch (System.Exception e)
-    {
-      Debug.LogError("ViewEdit Apply: could not save " + OrnamentClassJsonPath
-          + ": " + e.Message);
+      LogMissingArtworkCyan("ViewEdit: cannot read " + OrnamentOffsetsJsonPath + ": " + e.Message);
       return false;
     }
   }
