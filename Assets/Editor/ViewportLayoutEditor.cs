@@ -164,43 +164,16 @@ public class ViewportLayoutEditor : EditorWindow
   // under it, so Enabled starts on the same x for every feature row.
   private const float FeatureDescriptionWidth = 210f;
 
-  // Native PC DOS image, used solely for the approved Hook F2 experiment.
-  // F1/F3 and all other ornaments continue to use their existing assets.
   private const string HookDosF2AssetPath =
       "Assets/Art/Ornaments/Hook_F1_DOS_28x28.png";
   private const string ManaclesF1AssetPath =
       "Assets/Art/Ornaments/Manacles_F1.png";
   private const string ManaclesS1AssetPath =
       "Assets/Art/Ornaments/Manacles_S1.png";
-  // Side S3 artwork is generated from S1 at the exact CSBwin decoration
-  // table size. The table also controls its absolute screen placement.
-
-  // D1 side manacles use the native 32x42 S1 graphic 1:1.
-  // Measured on the original (4,10) North left wall, then shifted
-  // +2 px on X: screen top-left (30, 74), framebuffer bottom-left
-  // Y = 200 - 74 - 42 = 84.
-  // The right slot mirrors that across the 224px viewport.
-
-  // Front F2 Manacles: temporary DOS screenshot-fit experiment only.
-  // Current candidate 60x35 at viewport top-left (82,40), half-step sampling.
-  // Do not approve or generalize without complete DOS comparison.
-
-  // F3 manacles are generated from the same 92x52 F1 source.
-  // Measured on the original (6,9) West view: screen top-left (93, 73),
-  // size 40x22, framebuffer bottom-left Y = 200 - 72 - 22 = 106.
   private const string GrateFrontAssetPath =
       "Assets/Art/Ornaments/Grate_F1_32x20.png";
-  // Grate F2 and F3 are generated from the original DOS 32x20 F1 artwork.
-  // No pre-scaled or CSBwin artwork dependencies for the front views.
   private const string GrateSide1AssetPath =
       "Assets/Art/Ornaments/Grate_S1_16x19.png";
-  // Grate S2 is generated from the native 16x19 S1 using the shared
-  // DOS 6-bit sampler (no dedicated pre-scaled S2 artwork).
-  // S3 is generated from native 16x19 side artwork with the shared
-  // DOS 6-bit scaling algorithm (14/32). No pre-scaled S3 asset.
-  // F2 right-side corner: generate a 20x13 bitmap from the native DOS F1
-  // artwork. Preserve this corner's distinct clipping/placement, not S2.
-  // Independent F3 corner art; native 14x8, never rescaled.
   private const string HookSideAssetPath =
       "Assets/Art/Ornaments/Hook_S1_14x19.png";
   // Phase 10: data-only native DOS ornament registration.
@@ -260,55 +233,6 @@ public class ViewportLayoutEditor : EditorWindow
   }
 
 
-  // Moss is a floor ornament resolved from DungeonFeaturePlacements.json.
-  // F1 and F3 are imported original artwork. F2 is generated from F1.
-  // F3 screen top is measured from the 4,5 North original: the 8x2 graphic
-  // sits at viewport X=108, screen Y=105 (dungeon view begins at Y=33).
-
-  // Blue floor puddle. Hall of Champions puddles are resolved from the
-  // original deterministic random floor-ornament rule (local ordinal 2).
-  // Puddle_F1 is the D1 center graphic. D1-left/right use the dedicated
-  // Puddle_F1_Side_9x7 source; the left placement keeps the verified +1 px
-  // right / +1 px up adjustment from the original comparison.
-
-  // Original DOS Grate front placement on the wall immediately in front of
-  // the party. Measured from the supplied 320x200 original screenshot:
-  // source = 32x28, screen top-left = (96,125), therefore framebuffer
-  // bottom-left Y = 200 - 125 - 28 = 47.
-
-  // Original DOS Grate front at distance 2. In the supplied (16,8) West
-  // screenshot Grate_Front2_21x13.png is an exact pixel match at screen
-  // top-left (102,113). The wall is two steps ahead, (14,8) East.
-  // Framebuffer Y = 200 - 113 - 13 = 74.
-
-  // Original DOS Grate front at distance 3. In the supplied (17,8) West
-  // screenshot Grate_Front3_14x9.png is an exact pixel match at screen
-  // top-left (105,99). The wall is three steps ahead, (14,8) East.
-  // Framebuffer Y = 200 - 99 - 9 = 92.
-
-  // Original DOS Grate D1 side placement. In the supplied (14,9) West
-  // original screenshot Grate_Side1_16x19.png occupies the left D1 side
-  // slot with framebuffer bottom-left X=47, Y=63. The right slot is the
-  // exact dungeon-viewport mirror of the same 16x19 sprite.
-
-  // Provisional full DOS S2 bitmap alignment: preserve the center of the
-  // previously accepted 6px opaque region (X=66..71), now in a 10px bitmap.
-  // Keep the measured bottom framebuffer Y=83 pending the DOS S2 comparison.
-
-  // Native DOS S3 is a 7x8 scaled full bitmap from the 16x19 S1 source.
-  // S3 X/Y remain provisional until compared against the corresponding
-  // PC DOS S3 screenshot; do not infer position from the old 4x6 asset.
-  // Right wall mirrors the same shared scaled source.
-  // Provisional framebuffer Y retained from the legacy side placement.
-  // Initial right-edge location, adjustable with the independent ViewEdit Apply row.
-
-
-  // Original DOS coordinate-set-0 D1 side placement (Hook / Wood Ring family).
-  // The original D1 side box is 16x19 at left screen X=48 (right = 224-48-16).
-  // Hook uses the native DOS 14x19 side art centered in the original
-  // 16x19 D1 side box (one pixel inset on each side).
-  // Wood Ring remains at its previously approved 14x19 position.
-  // Texture2D framebuffer Y = 200 - 74 - 19 = 107.
   // Dungeon viewport is X=0..223. Every left/right wall-ornament pair is the
   // same sprite mirrored around that width: rightX = 224 - leftX - spriteWidth.
   private const int DungeonViewportWidth = 224;
@@ -624,10 +548,6 @@ public class ViewportLayoutEditor : EditorWindow
   // Original DOS Champion front-mirror placement for a D1 center wall.
   // Measured from the original 320x200 (10,5) South ZED view:
   // screen top-left = (88,62), source = 48x43, therefore framebuffer Y=95.
-  private const int ChampionMirrorD1FrontX = 88;
-  private const int ChampionMirrorD1FrontY = 95;
-  private const int ChampionMirrorD1FrontWidth = 48;
-  private const int ChampionMirrorD1FrontHeight = 43;
 
   // The 32x29 Champion portrait occupies the mirror's inner opening.
   // In the 48x43 source the opening is X=8..39, top Y=6..34.
@@ -1545,26 +1465,6 @@ public class ViewportLayoutEditor : EditorWindow
         out int ignoredX, out int ignoredY, out mirror);
   }
 
-  private static bool IsDistanceDerivedManaclesSideProjectionKey(
-      string projectionKey)
-  {
-    return string.Equals(
-            projectionKey,
-            "OrnamentProjection:Manacles:S2:Left",
-            System.StringComparison.Ordinal)
-        || string.Equals(
-            projectionKey,
-            "OrnamentProjection:Manacles:S2:Right",
-            System.StringComparison.Ordinal)
-        || string.Equals(
-            projectionKey,
-            "OrnamentProjection:Manacles:S3:Left",
-            System.StringComparison.Ordinal)
-        || string.Equals(
-            projectionKey,
-            "OrnamentProjection:Manacles:S3:Right",
-            System.StringComparison.Ordinal);
-  }
 
   private void ApplyAcceptedOrnamentReference(
       string projectionKey,
@@ -1575,10 +1475,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (string.IsNullOrEmpty(projectionKey))
       return;
 
-    if (IsDistanceDerivedManaclesSideProjectionKey(projectionKey))
-      return;
-
-    if (IsOrnamentClassCalibrationKey(projectionKey))
+    if (IsOrnamentCalibrationJsonKey(projectionKey))
     {
       if (TryGetOrnamentClassJson(projectionKey,
           out AcceptedOrnamentReference jsonCalibration))
@@ -1586,40 +1483,10 @@ public class ViewportLayoutEditor : EditorWindow
         x = jsonCalibration.x;
         y = jsonCalibration.y;
         mirror = jsonCalibration.mirror;
-      }
-      else if (projectionKey.StartsWith("OrnamentClass:Puddle:",
-          System.StringComparison.Ordinal))
-      {
-        // Preserve existing Puddle calibrations saved by the older
-        // source-embedded Apply mechanism until a JSON Apply replaces them.
-        string legacyKey = "OrnamentProjection:Puddle:"
-            + projectionKey.Substring("OrnamentClass:Puddle:".Length);
-        EnsureAcceptedOrnamentReferencesLoaded();
-        if (cachedAcceptedOrnamentReferences.TryGetValue(
-            legacyKey, out AcceptedOrnamentReference legacy))
-        {
-          x = legacy.x;
-          y = legacy.y;
-          mirror = legacy.mirror;
-        }
-      }
-      return;
-    }
-    // Hook S1 Left is calibrated through the JSON store, not by rewriting
-    // this editor script (which causes a domain reload during Apply).
-    // Preserve the previously approved source-embedded value as a fallback
-    // until the first successful JSON Apply.
-    if (string.Equals(projectionKey, "OrnamentProjection:Hook:S1:Left",
-        System.StringComparison.Ordinal))
-    {
-      if (TryGetOrnamentClassJson(projectionKey,
-          out AcceptedOrnamentReference hookJson))
-      {
-        x = hookJson.x;
-        y = hookJson.y;
-        mirror = hookJson.mirror;
         return;
       }
+      if (projectionKey.StartsWith("OrnamentClass:", System.StringComparison.Ordinal))
+        return;
     }
     EnsureAcceptedOrnamentReferencesLoaded();
     if (cachedAcceptedOrnamentReferences.TryGetValue(
@@ -1639,9 +1506,7 @@ public class ViewportLayoutEditor : EditorWindow
   {
     if (string.IsNullOrEmpty(projectionKey))
       return false;
-    if (IsOrnamentClassCalibrationKey(projectionKey)
-        || string.Equals(projectionKey, "OrnamentProjection:Hook:S1:Left",
-            System.StringComparison.Ordinal))
+    if (IsOrnamentCalibrationJsonKey(projectionKey))
       return SaveOrnamentClassJson(projectionKey, x, y, mirror);
 
     string assetPath = GetThisEditorSourceAssetPath();
@@ -2823,27 +2688,6 @@ public class ViewportLayoutEditor : EditorWindow
   /// <summary>
   /// Right-clicking anywhere inside ViewEdit toggles the minimap on/off.
   /// </summary>
-  private bool HandleOrnamentPreviewRightClick()
-  {
-    Event current = Event.current;
-    if (current == null || current.type != EventType.MouseDown
-        || current.button != 1
-        || string.IsNullOrEmpty(selectedOrnamentInspectorKey)
-        || !ornamentInspectorPanelScreenRectValid)
-      return false;
-
-    Vector2 screenMouse = GUIUtility.GUIToScreenPoint(current.mousePosition);
-    if (!ornamentInspectorPanelScreenRect.Contains(screenMouse))
-      return false;
-
-    // Consume this specific right-click; all other right-clicks retain
-    // the standard ViewEdit minimap toggle.
-    current.Use();
-    selectedOrnamentInspectorKey = null;
-    ornamentInspectorPanelScreenRectValid = false;
-    Repaint();
-    return true;
-  }
 
   private bool HandleViewEditRightClick()
   {
@@ -2880,10 +2724,6 @@ public class ViewportLayoutEditor : EditorWindow
     if (HandleViewEditRearMouseButton())
       return;
 
-    // The cyan ornament preview owns right-clicks inside its rectangle.
-    // Check BEFORE the window-wide minimap toggle consumes MouseDown.
-    if (HandleOrnamentPreviewRightClick())
-      return;
 
     if (HandleViewEditRightClick())
       return;
@@ -3116,9 +2956,6 @@ public class ViewportLayoutEditor : EditorWindow
       previewGraphicChangedThisFrame = false;
     }
 
-    // The cyan ornament bitmap belongs directly after the final feature row,
-    // inside the same scrollable list (not docked at the window bottom).
-    DrawSelectedOrnamentInspector();
     EditorGUILayout.EndScrollView();
 
     if (scrollToBottomOnNextRepaint
@@ -8892,17 +8729,18 @@ private static void HandleGameViewPointerDown(
       out string championName)
   {
     championName = null;
-    int frameTop =
-        PreviewHeight - ChampionMirrorD1FrontY - ChampionMirrorD1FrontHeight;
-    if (logicalX < ChampionMirrorD1FrontX
-        || logicalX >= ChampionMirrorD1FrontX + ChampionMirrorD1FrontWidth
-        || logicalY < frameTop
-        || logicalY >= frameTop + ChampionMirrorD1FrontHeight)
-    {
+    if (!TryGetCurrentD1FrontChampion(out string visibleChampion)
+        || !HasVerifiedOrnamentHit("ChampionMirror", logicalX, logicalY))
       return false;
-    }
-
-    return TryGetCurrentD1FrontChampion(out championName);
+    championName = visibleChampion;
+    return true;
+  }
+  // No ornament pixels are drawn during the strict reset. A click must not
+  // act on a fixture until the generic renderer supplies its visible bounds.
+  private static bool HasVerifiedOrnamentHit(string family, float logicalX, float logicalY)
+  {
+    ReportStrictOrnamentMissing(family, "F1", "verified rendered hit rectangle");
+    return false;
   }
 
   private void SaveChampionPartySession()
@@ -23169,161 +23007,6 @@ private static void HandleGameViewPointerDown(
         mirror.x, mirror.y, mirror.wall, true);
   }
 
-  // Champion mirrors share the ornament wall-face / V17 visibility rules.
-  // S1 artwork is a native 16x35 side view, never the front-frame sprite.
-
-
-  // S2 is the same champion-mirror wall face as S1, viewed one tile farther.
-  // Use the established medium-distance wall-ornament scaling (no S2 asset).
-
-
-  // Champion mirrors use the EXACT same map/face/V17 visibility resolver
-  // as ordinary wall ornaments. The lateral F2 drawing path is only an
-  // artwork slot; it must never invent an alternative corridor projection.
-  private bool TryGetLateralFrontWallFeatureProjection(
-      int wallX, int wallY, string wallFace, int depth, bool left)
-  {
-    if (previewMiniMap == null || depth < 1 || depth > 3)
-      return false;
-
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
-    int side = left ? -1 : 1;
-    // Determine the artwork slot only. Actual visibility is delegated
-    // exclusively to the ordinary wall-ornament projection algorithm.
-    if (wallX != previewX + fx * depth + rx * side
-        || wallY != previewY + fy * depth + ry * side
-        || !string.Equals(wallFace, OppositeFacingName(previewFacing),
-            System.StringComparison.OrdinalIgnoreCase))
-      return false;
-
-    return IsSharedWallFeatureVisible(
-        wallX, wallY, wallFace, true, depth, depth);
-  }
-
-  // Corner front-face projection from the actual SOLID wall tile. The
-  // champion's viewing-floor coordinates are different from the wall tile:
-  // at (13,12) West the diagonal open cell is (12,13), while its mirror
-  // is on the solid wall (11,13) with physical East face. This projection
-  // is purely geometric and applies in all four orientations.
-  private bool TryGetNearCornerWallFeatureProjection(
-      int wallX, int wallY, string wallFace, bool left)
-  {
-    if (previewMiniMap == null) return false;
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
-    int side = left ? -1 : 1;
-    int diagonalFloorX = previewX + fx + rx * side;
-    int diagonalFloorY = previewY + fy + ry * side;
-    // A solid front F2 wall closes the view when the nearer center F1
-    // square is open. Do not let the lateral-corner ornament pass draw
-    // through that wall just because the diagonal F1 square is floor.
-    // When front F1 itself is a wall, preserve the independently verified
-    // near-corner edge treatment (V17 exposed border strip).
-    int frontF1X = previewX + fx;
-    int frontF1Y = previewY + fy;
-    int frontF2X = previewX + 2 * fx;
-    int frontF2Y = previewY + 2 * fy;
-    if (PreviewTileIsOpen(frontF1X, frontF1Y)
-        && PreviewTileIsWall(frontF2X, frontF2Y))
-      return false;
-    // The front-facing wall at the far end of the diagonal open cell.
-    if (wallX != diagonalFloorX + fx
-        || wallY != diagonalFloorY + fy
-        || !string.Equals(wallFace, OppositeFacingName(previewFacing),
-            System.StringComparison.OrdinalIgnoreCase))
-      return false;
-    return PreviewTileIsOpen(diagonalFloorX, diagonalFloorY)
-        && PreviewTileIsWall(wallX, wallY);
-  }
-
-  // Shared physical-wall corner F2 projection. This is the same geometric
-  // classification for champion mirrors and ordinary front-facing ornaments.
-  // Artwork is sized by each caller; only the projected right/left visible
-  // boundary and the accepted corner anchor are shared.
-  private bool TryGetSharedCornerFrontF2(int wallX, int wallY,
-      string wallFace, out bool left)
-  {
-    left = false;
-    if (TryGetNearCornerWallFeatureProjection(wallX, wallY, wallFace, true))
-    { left = true; return true; }
-    return TryGetNearCornerWallFeatureProjection(
-        wallX, wallY, wallFace, false);
-  }
-
-
-
-// Original F2 front-left and front-right source cropping: the bitmap is
-  // scaled for center F2 (relative 8); 7/9 choose cropped rectangles.
-  // Preserve actual CSBWin rectangle bounds. Other distances are unchanged.
-  // PC DOS S2 side geometry derived from the ornament layout: the
-  // original 32x42 Manacles_S1 source scales to 21x27 at distance 2.
-  // Coordinates are within the 224x136 dungeon viewport (screen top +33).
-  // Keep S3 and the legacy distance-projection constants unchanged.
-
-
-  // Shared DOS geometry: resource 696, coordinate set 1, S3 DI=2/3.
-  // Native 32x42 source, scale 14/32 -> complete 14x18 bitmap.
-
-
-
-
-
-
-
-
-
-  // Real ordinary wall ornaments: share the corner map geometry and the
-  // calibrated screen anchor with champion mirrors. Existing S1-S3 and
-  // center F1-F3 ornament paths remain unchanged.
-
-  // The front-facing surface at the END of an open lateral passage is not
-  // a sideways wall face. At distance 2 the frame uses front F2 artwork,
-  // placed in the left/right screen slot. The center lane may be blocked.
-  // This is generic geometry: no champion or map-coordinate exceptions.
-  private bool TryGetSideLaneFrontF2Mirror(bool left,
-      out ChampionMirrorPlacement visible, out bool nearCorner)
-  {
-    visible = null;
-    nearCorner = false;
-    if (previewMiniMap == null || previewChampionMirrors == null)
-      return false;
-
-    for (int i = 0; i < previewChampionMirrors.Length; ++i)
-    {
-      ChampionMirrorPlacement candidate = previewChampionMirrors[i];
-      if (candidate == null || string.IsNullOrEmpty(candidate.champion)
-          || IsPreviewChampionTaken(candidate.champion)
-          || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
-              "ChampionMirror", candidate.x, candidate.y, candidate.wall)))
-        continue;
-      bool corner = TryGetSharedCornerFrontF2(
-          candidate.x, candidate.y, candidate.wall, out bool cornerLeft)
-          && cornerLeft == left;
-      if (!corner && !TryGetLateralFrontWallFeatureProjection(
-              candidate.x, candidate.y, candidate.wall, 2, left))
-        continue;
-      nearCorner = corner;
-      visible = candidate;
-      return true;
-    }
-    return false;
-  }
-
-  // One calibration key per relative projection, never per champion.
-  // Different champion identities with the same geometry must be pixel-identical.
-  // Side-lane front artwork must not share the S2 sideways-wall projection.
-  private static string GetSideLaneFrontF2MirrorProjectionKey(bool left)
-  {
-    return "OrnamentProjection:ChampionMirror:SideLaneF2:"
-        + (left ? "Left" : "Right");
-  }
-
-  // Class 1: champion mirror calibration is independent of ordinary ornaments.
-  // The class/view key contains no map position, champion name or compass facing.
-
-
-
   // Class calibrations are deliberately external to C# source. Changing an
   // ornament must never force recompilation or overwrite a prior adjustment.
   [System.Serializable]
@@ -23369,13 +23052,13 @@ private static void HandleGameViewPointerDown(
   private const string OrnamentClassJsonPath = "Assets/Editor/OrnamentCalibration.json";
 
 
-  // One-time migration: retain champion-mirror and wall geometry calibration.
-  // Clear only manually accepted floor and ordinary wall ornament positions.
+  // All ornament calibration keys use the same JSON Apply store.
 
-  private static bool IsOrnamentClassCalibrationKey(string key)
+  private static bool IsOrnamentCalibrationJsonKey(string key)
   {
     return !string.IsNullOrEmpty(key)
-        && key.StartsWith("OrnamentClass:", System.StringComparison.Ordinal);
+        && (key.StartsWith("OrnamentClass:", System.StringComparison.Ordinal)
+            || key.StartsWith("OrnamentProjection:", System.StringComparison.Ordinal));
   }
 
   private static bool TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore data)
@@ -23417,83 +23100,6 @@ private static void HandleGameViewPointerDown(
     return false;
   }
 
-  // An offset is stored per ornament projection, not per map occurrence.
-  // The source artwork size is part of the signature, preventing accidental
-  // reuse after replacing an artwork with a different native DOS size.
-  private static string GetOrnamentOffsetArtworkSignature(string key)
-  {
-    if (key.StartsWith("OrnamentProjection:Grate:S2", System.StringComparison.Ordinal)
-        || key.StartsWith("OrnamentProjection:Grate:S3", System.StringComparison.Ordinal))
-      return "Grate_S1_16x19.png:16x19";
-    // Other ornament families still use their existing accepted-reference
-    // positions until explicitly migrated/verified. An empty signature means
-    // the projection key itself defines the calibration identity.
-    return string.Empty;
-  }
-
-  private static bool TryGetOrnamentPlacementOffset(
-      string key, out OrnamentPlacementOffsetEntry offset)
-  {
-    offset = null;
-    if (string.IsNullOrEmpty(key) || !File.Exists(OrnamentClassJsonPath))
-      return false;
-    if (!TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore data)
-        || data.offsets == null)
-      return false;
-    string signature = GetOrnamentOffsetArtworkSignature(key);
-    foreach (OrnamentPlacementOffsetEntry candidate in data.offsets)
-      if (candidate != null
-          && string.Equals(candidate.key, key, System.StringComparison.OrdinalIgnoreCase)
-          && string.Equals(candidate.artworkSignature ?? string.Empty,
-              signature, System.StringComparison.Ordinal))
-      {
-        offset = candidate;
-        return true;
-      }
-    return false;
-  }
-
-  private static bool SaveOrnamentPlacementOffset(
-      string key, int dx, int dy, bool mirror)
-  {
-    if (string.IsNullOrEmpty(key)
-        || !TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore data))
-      return false;
-    if (data.offsets == null)
-      data.offsets = new List<OrnamentPlacementOffsetEntry>();
-    string signature = GetOrnamentOffsetArtworkSignature(key);
-    OrnamentPlacementOffsetEntry entry = null;
-    foreach (OrnamentPlacementOffsetEntry candidate in data.offsets)
-      if (candidate != null
-          && string.Equals(candidate.key, key, System.StringComparison.OrdinalIgnoreCase)
-          && string.Equals(candidate.artworkSignature ?? string.Empty,
-              signature, System.StringComparison.Ordinal))
-      { entry = candidate; break; }
-    if (entry == null)
-    {
-      entry = new OrnamentPlacementOffsetEntry {
-          key = key, artworkSignature = signature };
-      data.offsets.Add(entry);
-    }
-    entry.dx = dx;
-    entry.dy = dy;
-    entry.mirror = mirror;
-    string temp = OrnamentClassJsonPath + ".tmp";
-    try
-    {
-      WriteViewEditTextWithTimestamp(temp, JsonUtility.ToJson(data, true));
-      File.Copy(OrnamentClassJsonPath, OrnamentClassJsonPath + ".bak", true);
-      File.Copy(temp, OrnamentClassJsonPath, true);
-      File.Delete(temp);
-      Debug.Log("ViewEdit Apply: " + key + " offset X=" + dx + " Y=" + dy);
-      return true;
-    }
-    catch (System.Exception e)
-    {
-      Debug.LogError("ViewEdit offset Apply failed: " + e.Message);
-      return false;
-    }
-  }
 
   private static bool SaveOrnamentClassJson(string key, int x, int y, bool mirror)
   {
@@ -23536,87 +23142,6 @@ private static void HandleGameViewPointerDown(
       return false;
     }
   }
-
-  // Class 5 Slime: independent JSON calibration, using the same JSON-driven
-  // near-corner classification as Classes 1 and 2, never map-specific.
-
-
-  // Class 6 Grate: independent JSON calibration, using the same JSON-driven
-  // near-corner classification as Classes 1 and 2, never map-specific.
-
-
-  // Class 7 Empty Torch Holder: independent JSON calibration, using the same JSON-driven
-  // near-corner classification as Classes 1 and 2, never map-specific.
-
-
-
-
-
-
-
-
-
-
-  // Manual F3 calibration is opt-in. It leaves the existing V17 wall drawing
-  // and the seven accepted LeftF2 class calibrations completely unchanged.
-  // The player's coordinates are never embedded in the JSON calibration key.
-  private const string ManualLeftF3PreviewPref = "DM.ViewEdit.ManualChampionLeftF3Preview";
-  private bool manualChampionLeftF3Preview
-  {
-    get { return EditorPrefs.GetBool(ManualLeftF3PreviewPref, false); }
-    set { EditorPrefs.SetBool(ManualLeftF3PreviewPref, value); }
-  }
-
-  private const string ManualChampionLeftF3Key =
-      "OrnamentClass:1:ChampionMirror:ManualFrontF3:Left";
-
-  private bool TryFindManualLeftF3Mirror(out ChampionMirrorPlacement result)
-  {
-    result = null;
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null || previewChampionMirrors == null) return false;
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
-    int wallX = previewX + 3 * fx - rx;
-    int wallY = previewY + 3 * fy - ry;
-    string requiredFace = OppositeFacingName(previewFacing);
-    for (int i = 0; i < previewChampionMirrors.Length; i++)
-    {
-      ChampionMirrorPlacement candidate = previewChampionMirrors[i];
-      if (candidate == null || candidate.x != wallX || candidate.y != wallY
-          || !string.Equals(candidate.wall, requiredFace,
-              System.StringComparison.OrdinalIgnoreCase)
-          || IsPreviewChampionTaken(candidate.champion)
-          || !IsPreviewFeatureEnabled(MakePreviewFeatureKey(
-              "ChampionMirror", candidate.x, candidate.y, candidate.wall)))
-        continue;
-      result = candidate;
-      return true;
-    }
-    return false;
-  }
-
-
-
-  // Shared champion-mirror calibration controls for the existing LeftF3
-  // preview. Keep its persisted key intact until all projection paths have
-  // been migrated; otherwise previously accepted calibrations would be lost.
-
-
-
-  // New unified champion mirror preview: no champion-specific branches.
-  // Uses the existing physical wall-face visibility and shared F1/F2/F3
-  // projection calibration keys.  Side projections will be added through
-  // this same system after the front projection has been verified.
-
-  // Front-facing wall mirrors at the end of an open side lane share the
-  // established corner-F2 geometry and projection calibration with every
-  // champion.  This is one generic draw path, not a WUUF special case.
-
-  // Shared diagonal-left F3 front-wall mirror. The same relative tile
-  // pattern is evaluated in all four directions; no champion/coordinate cases.
-  // Reuse the pre-existing LeftF3 calibration key and ViewEdit row.
-
 
   // A wall TWO lateral cells from the player can appear through an open
   // parallel lane at F3. This is a generic rotation-invariant projection:
@@ -23763,29 +23288,11 @@ private static void HandleGameViewPointerDown(
     };
   }
 
-  private static int ResolveHallOfChampionsWallOrnamentSourceId(
-      WallOrnamentPlacement ornament)
-  {
-    if (ornament == null || ornament.wallTilePlacement)
-      return -1;
-
-    int index = ornament.ornamentOrdinal - 1;
-    if (index < 0 || index >= HallOfChampionsWallOrnamentSourceIds.Length)
-      return -1;
-
-    return HallOfChampionsWallOrnamentSourceIds[index];
-  }
 
 
 
 
 
-
-
-  // Champion mirrors use the ordinary front-wall ornament geometry.
-  // At F2 only the frame is drawn; the champion portrait is visible at F1.
-  // Wall-feature artwork policy. Geometry and visibility are resolved by the
-  // existing wall-ornament path; this profile only controls artwork treatment.
   // Other wall ornaments retain their existing artwork code unchanged.
 
 
@@ -23794,7 +23301,6 @@ private static void HandleGameViewPointerDown(
 
 
 
-  // Diagnostic only: inspect generated F2 pixels; do not change scaling.
 
 
 
@@ -23811,9 +23317,7 @@ private static void HandleGameViewPointerDown(
 
 
   /// <summary>
-  /// Loads resolved Level 0 wall/floor ornaments from the generated all-level
-  /// placement database. This is the authoritative path when the database is
-  /// present; the old Hall-specific derivation remains only as fallback.
+  /// Loads resolved wall and floor ornaments from the all-level placement database.
   /// </summary>
   private bool LoadPreviewFeaturesFromDatabase()
   {
@@ -24489,284 +23993,6 @@ private static void HandleGameViewPointerDown(
     return clicked;
   }
 
-  // Presentation only. Keep ornament keys, source names and calibration
-  // geometry unchanged; labels follow NAME - DEPTH SIDE - X,Y DIRECTION.
-
-  // Diagnostic only: click an ornament caption to inspect its actual bitmap
-  // on cyan. This never changes artwork, calibration, or scene rendering.
-  private string selectedOrnamentInspectorKey;
-  private string selectedOrnamentInspectorCaption;
-  private bool selectedOrnamentInspectorMirror;
-  // Cached in screen coordinates after IMGUI lays out the scrollable preview.
-  // Needed because OnGUI's window-wide right-click handler runs before drawing.
-  private Rect ornamentInspectorPanelScreenRect;
-  private bool ornamentInspectorPanelScreenRectValid;
-  private static bool s_ornamentPreviewMissingClick06Reported;
-
-  // The cyan preview is an EditorWindow control: play its feedback through
-  // the existing edit-mode AudioUtil helper without entering Play Mode.
-  private void PlayOrnamentPreviewCopySound()
-  {
-    const string assetPath = "Assets/Audio/Click06.wav";
-    AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(assetPath);
-    if (clip == null)
-    {
-      if (!s_ornamentPreviewMissingClick06Reported)
-      {
-        s_ornamentPreviewMissingClick06Reported = true;
-        Debug.Log("<color=#00FFFF>ViewEdit MISSING AUDIO | " + assetPath + "</color>");
-      }
-      return; // Never substitute another click sound.
-    }
-    s_ornamentPreviewMissingClick06Reported = false;
-    PlayEditorPreviewClip(clip);
-  }
-
-  private Texture2D GetSelectedOrnamentInspectorTexture()
-  {
-    if (string.IsNullOrEmpty(selectedOrnamentInspectorKey)) return null;
-    string[] parts = selectedOrnamentInspectorKey.Split(':');
-    if (parts.Length < 3) return null;
-    ReportStrictOrnamentMissing(parts[1], parts[2], "verified generic DOS projection and artwork");
-    return null;
-  }
-
-  // Copies a real PNG image to the Windows clipboard (not a path or Base64
-  // string). CF_DIB is also offered for applications that cannot read PNG.
-#if UNITY_EDITOR_WIN
-  [DllImport("user32.dll", SetLastError = true)]
-  private static extern bool OpenClipboard(System.IntPtr hwnd);
-  [DllImport("user32.dll", SetLastError = true)]
-  private static extern bool EmptyClipboard();
-  [DllImport("user32.dll", SetLastError = true)]
-  private static extern bool CloseClipboard();
-  [DllImport("user32.dll", SetLastError = true)]
-  private static extern System.IntPtr SetClipboardData(uint format, System.IntPtr handle);
-  [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-  private static extern uint RegisterClipboardFormat(string name);
-  [DllImport("kernel32.dll", SetLastError = true)]
-  private static extern System.IntPtr GlobalAlloc(uint flags, System.UIntPtr bytes);
-  [DllImport("kernel32.dll", SetLastError = true)]
-  private static extern System.IntPtr GlobalLock(System.IntPtr handle);
-  [DllImport("kernel32.dll", SetLastError = true)]
-  private static extern bool GlobalUnlock(System.IntPtr handle);
-  [DllImport("kernel32.dll", SetLastError = true)]
-  private static extern System.IntPtr GlobalFree(System.IntPtr handle);
-
-  private static bool PutClipboardBytes(uint format, byte[] bytes)
-  {
-    const uint GMEM_MOVEABLE = 0x0002;
-    System.IntPtr handle = GlobalAlloc(GMEM_MOVEABLE, new System.UIntPtr((uint)bytes.Length));
-    if (handle == System.IntPtr.Zero) return false;
-    System.IntPtr address = GlobalLock(handle);
-    if (address == System.IntPtr.Zero)
-    {
-      GlobalFree(handle);
-      return false;
-    }
-    Marshal.Copy(bytes, 0, address, bytes.Length);
-    GlobalUnlock(handle);
-    if (SetClipboardData(format, handle) != System.IntPtr.Zero)
-      return true; // Clipboard now owns this global memory.
-    GlobalFree(handle);
-    return false;
-  }
-#endif
-
-  private static Color32[] ReadOrnamentInspectorPixels(Texture2D bitmap)
-  {
-    try { return bitmap.GetPixels32(); }
-    catch (UnityException)
-    {
-      // Importer may have made a texture non-readable. Inspect via GPU rather
-      // than modifying the artwork importer or the real drawing path.
-      RenderTexture temporary = RenderTexture.GetTemporary(
-          bitmap.width, bitmap.height, 0, RenderTextureFormat.ARGB32);
-      RenderTexture previous = RenderTexture.active;
-      Texture2D readable = null;
-      try
-      {
-        Graphics.Blit(bitmap, temporary);
-        RenderTexture.active = temporary;
-        readable = new Texture2D(bitmap.width, bitmap.height, TextureFormat.RGBA32, false);
-        readable.ReadPixels(new Rect(0, 0, bitmap.width, bitmap.height), 0, 0);
-        readable.Apply();
-        return readable.GetPixels32();
-      }
-      finally
-      {
-        RenderTexture.active = previous;
-        RenderTexture.ReleaseTemporary(temporary);
-        if (readable != null) UnityEngine.Object.DestroyImmediate(readable);
-      }
-    }
-  }
-
-  private static bool CopyOrnamentInspectorImage(
-      Texture2D bitmap, bool mirror, out string error)
-  {
-    error = null;
-#if UNITY_EDITOR_WIN
-    Texture2D copy = null;
-    try
-    {
-      // Export the rendered source bitmap at 8x nearest-neighbour enlargement:
-      // a 7x8 S3 item is easily visible when pasted into a chat.
-      const int zoom = 8;
-      int width = bitmap.width * zoom;
-      int height = bitmap.height * zoom;
-      Color32[] source = ReadOrnamentInspectorPixels(bitmap);
-      Color32[] pixels = new Color32[width * height];
-      for (int y = 0; y < height; y++)
-      for (int x = 0; x < width; x++)
-      {
-        int sx = x / zoom;
-        int sy = y / zoom;
-        if (mirror) sx = bitmap.width - 1 - sx;
-        Color32 c = source[sy * bitmap.width + sx];
-        // Diagnostic copy always composites transparent pixels over cyan.
-        float a = c.a / 255f;
-        c = new Color32((byte)Mathf.RoundToInt(c.r*a),
-            (byte)Mathf.RoundToInt(c.g*a + 255f*(1f-a)),
-            (byte)Mathf.RoundToInt(c.b*a + 255f*(1f-a)), 255);
-        pixels[y * width + x] = c;
-      }
-      copy = new Texture2D(width, height, TextureFormat.RGBA32, false);
-      copy.SetPixels32(pixels);
-      copy.Apply();
-      byte[] png = copy.EncodeToPNG();
-
-      // CF_DIB fallback. 40-byte BITMAPINFOHEADER, 32-bit BGRA bottom-up.
-      byte[] dib = new byte[40 + width * height * 4];
-      System.Buffer.BlockCopy(System.BitConverter.GetBytes(40), 0, dib, 0, 4);
-      System.Buffer.BlockCopy(System.BitConverter.GetBytes(width), 0, dib, 4, 4);
-      System.Buffer.BlockCopy(System.BitConverter.GetBytes(height), 0, dib, 8, 4);
-      System.Buffer.BlockCopy(System.BitConverter.GetBytes((short)1), 0, dib, 12, 2);
-      System.Buffer.BlockCopy(System.BitConverter.GetBytes((short)32), 0, dib, 14, 2);
-      System.Buffer.BlockCopy(System.BitConverter.GetBytes(width * height * 4), 0, dib, 20, 4);
-      int dest = 40;
-      for (int y = 0; y < height; y++)
-      for (int x = 0; x < width; x++)
-      {
-        Color32 c = pixels[y * width + x];
-        dib[dest++] = c.b; dib[dest++] = c.g;
-        dib[dest++] = c.r; dib[dest++] = c.a;
-      }
-      if (!OpenClipboard(System.IntPtr.Zero))
-      {
-        error = "Windows clipboard is busy";
-        return false;
-      }
-      try
-      {
-        if (!EmptyClipboard())
-        {
-          error = "Could not clear the Windows clipboard";
-          return false;
-        }
-        uint pngFormat = RegisterClipboardFormat("PNG");
-        bool pngOk = pngFormat != 0 && PutClipboardBytes(pngFormat, png);
-        bool dibOk = PutClipboardBytes(8 /* CF_DIB */, dib);
-        if (!pngOk && !dibOk)
-        {
-          error = "Could not write image data to clipboard";
-          return false;
-        }
-      }
-      finally { CloseClipboard(); }
-      return true;
-    }
-    catch (System.Exception ex)
-    {
-      error = ex.Message;
-      return false;
-    }
-    finally
-    {
-      if (copy != null) UnityEngine.Object.DestroyImmediate(copy);
-    }
-#else
-    error = "Copy Image currently requires Unity Editor on Windows";
-    return false;
-#endif
-  }
-
-  private void DrawSelectedOrnamentInspector()
-  {
-    if (string.IsNullOrEmpty(selectedOrnamentInspectorKey))
-    {
-      ornamentInspectorPanelScreenRectValid = false;
-      return;
-    }
-    GUILayout.Space(4f);
-    EditorGUILayout.LabelField("Ornament preview: "
-        + selectedOrnamentInspectorCaption, EditorStyles.boldLabel);
-
-    Texture2D bitmap = GetSelectedOrnamentInspectorTexture();
-    if (bitmap == null)
-    {
-      EditorGUILayout.HelpBox(
-          "No generated bitmap for " + selectedOrnamentInspectorKey,
-          MessageType.Info);
-      return;
-    }
-
-    string previewDescription = bitmap.width + "x" + bitmap.height
-        + (selectedOrnamentInspectorMirror ? " mirrored" : " unmirrored")
-        + " — left-click to copy / right-click to close";
-    EditorGUILayout.LabelField(previewDescription, EditorStyles.miniLabel);
-
-    // Exact ornament-sized cyan panel (at integer zoom), 4 px padding.
-    // No full-window cyan canvas or unrelated fixed panel height.
-    const float zoom = 8f;
-    const float padding = 4f;
-    float boxWidth = bitmap.width * zoom + padding * 2f;
-    float boxHeight = bitmap.height * zoom + padding * 2f;
-    // Center the bitmap-sized preview under the description text itself,
-    // not in the full-width ViewEdit editor window.
-    float descriptionWidth = EditorStyles.miniLabel.CalcSize(
-        new GUIContent(previewDescription)).x;
-    float indent = Mathf.Max(0f, (descriptionWidth - boxWidth) * 0.5f);
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.Space(indent);
-    Rect panel = GUILayoutUtility.GetRect(boxWidth, boxHeight,
-        GUILayout.Width(boxWidth), GUILayout.Height(boxHeight));
-    if (Event.current.type == EventType.Repaint)
-    {
-      Vector2 screenMin = GUIUtility.GUIToScreenPoint(panel.min);
-      Vector2 screenMax = GUIUtility.GUIToScreenPoint(panel.max);
-      ornamentInspectorPanelScreenRect = Rect.MinMaxRect(
-          screenMin.x, screenMin.y, screenMax.x, screenMax.y);
-      ornamentInspectorPanelScreenRectValid = true;
-    }
-    EditorGUI.DrawRect(panel, Color.cyan);
-    Rect drawRect = new Rect(panel.x + padding, panel.y + padding,
-        bitmap.width * zoom, bitmap.height * zoom);
-    Matrix4x4 originalMatrix = GUI.matrix;
-    try
-    {
-      if (selectedOrnamentInspectorMirror)
-        GUIUtility.ScaleAroundPivot(new Vector2(-1f, 1f), drawRect.center);
-      GUI.DrawTexture(drawRect, bitmap, ScaleMode.StretchToFill, true);
-    }
-    finally { GUI.matrix = originalMatrix; }
-
-    // RMB is handled before the global minimap toggle at the start of OnGUI.
-    // Left-click on this exact rectangle still copies with Click06 feedback.
-    if (GUI.Button(panel, GUIContent.none, GUIStyle.none))
-    {
-      string copyError;
-      if (CopyOrnamentInspectorImage(bitmap, selectedOrnamentInspectorMirror,
-              out copyError))
-      {
-        ShowNotification(new GUIContent("copied"));
-        PlayOrnamentPreviewCopySound();
-      }
-      else
-        Debug.LogWarning("ViewEdit ornament clipboard: " + copyError);
-    }
-    EditorGUILayout.EndHorizontal();
-  }
 
 
 
@@ -31816,110 +31042,6 @@ private static void HandleGameViewPointerDown(
 
 
 
-  // Read-only F2 diagnostic. Alt+J avoids the existing Hook F3 Alt+H shortcut.
-
-
-  // Explicit, read-only diagnostic: unlike the render-stage logging, this can
-  // always be invoked from Tools, even if a depth-stage callback was skipped.
-
-  // Hook F3 uses the existing F3 slot and code-generated front artwork.
-  // Keep the same V17 depth ordering and placement/calibration blitter as F2.
-  // Diagnostic only: deduplicates messages across repaint operations.
-  // Does not alter any visibility, texture, or blitting decisions.
-
-
-  // Hook F3 uses the existing F3 slot and code-generated front artwork.
-  // The additional diagnostic logs run only at Level 1 (18,17) West.
-
-  // Use the existing S1-to-S2 palette-preserving distance scaler for S3 too.
-  // This replaces the obsolete standalone Manacles_S3_9x5.png dependency.
-
-
-  // The former CSBwin 9x20 S3 ShrinkBLT path is retired. S3 now uses
-  // the very same DOS fixed-point sampler as Hook, with the full 14x18
-  // distance-3 bitmap from the native 32x42 source.
-
-
-
-
-
-
-  // CSBwin: Left/Right F2 uses the CENTER-F2 rectangle for the full
-  // source bitmap (group 1, position 8) before the side crop (7/9).
-  // Keep the verified 58x31 standard ornament texture unchanged.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // Shared D2/D3 side-ornament visibility gate: each intervening center
-  // square must exist and be open. This is the same check previously
-  // repeated independently in the Grate S2 and S3 blitters.
-
-
-
-  // Missing artwork is a cyan, once-per-asset diagnostic. Do not silently
-  // substitute another texture or disable validation of existing assets.
-
-
-  // Phase 11: shared registry-backed native side artwork for Grate S2/S3.
-  // No fallback: missing, invalid, or unreadable artwork is reported in cyan.
-  // Do not cache the original source separately; AssetDatabase owns that asset.
-
-
-  // Face at the *front* of the right-hand D2 side tile, not the standard
-  // side-facing wall ornament. The map-relative test rotates with the party.
-  // It is deliberately separate from the already verified S3 Grate pass.
-
-
-
-  // F3 corner: the same forward-facing right-side wall face as the accepted
-  // F2 corner, but one tile farther away. Keep separate from the native S3 side.
-  // Uses player-relative coordinates so it works for all four directions.
-
-
-
-
-
-
-
-
-  // Phases D1-D5: share front-wall placement matching for Grate, Hook,
-  // Manacles, Slime and Wood Ring F1/F2/F3.
-  // Visibility, ordering, texture selection, calibration and DOS scaling stay
-  // in the existing callers.  The corridor coordinates are supplied by each
-  // distance-specific caller to preserve its original placement rules.
-
-
-
-
-
-
-  private bool GetPreviewFeatureMirrorValue(
-      WallOrnamentPlacement ornament,
-      bool defaultMirror)
-  {
-    if (ornament == null)
-      return defaultMirror;
-
-    string key = MakePreviewFeatureKey(
-        "Ornament", ornament.x, ornament.y, ornament.wall);
-    return previewFeatureMirrorOverrides.TryGetValue(key, out bool value)
-        ? value
-        : defaultMirror;
-  }
 
   // Shared by the renderer and ViewEdit: only the directly facing F1 wall
   // can display this asset. Position comes from the feature-placement data.
@@ -33646,16 +32768,7 @@ private static void HandleGameViewPointerDown(
     if (id != previewHeldTorchId || !previewRemovedTorchHolderKeys.Contains(id))
       return false; // An unrelated fixture cannot accept this held item.
 
-    // Use the exact existing F1 holder calibration for the mouse hit test.
-    string key = "OrnamentProjection:EmptyTorchHolder:F1";
-    int x = 100;
-    int y = DisplayYToUnityY(60, 54);
-    bool mirror = false;
-    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
-    int top = PreviewHeight - y - 54;
-    if (logicalX < x || logicalX >= x + 24
-        || logicalY < top || logicalY >= top + 54)
+    if (!HasVerifiedOrnamentHit("EmptyTorchHolder", logicalX, logicalY))
       return false;
 
     // A missing asset must never remove the item from the hand.
@@ -33719,24 +32832,8 @@ private static void HandleGameViewPointerDown(
       return false;
     }
 
-    // Match the existing ViewEdit X/Y/Mirror calibration and its live overrides.
-    string key = "OrnamentProjection:EmptyTorchHolder:F1";
-    int x = 100;
-    int y = DisplayYToUnityY(60, 54);
-    bool mirror = false;
-    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref mirror);
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
-    int top = PreviewHeight - y - 54;
-    if (logicalX < x || logicalX >= x + 24
-        || logicalY < top || logicalY >= top + 54)
-    {
-      Debug.Log("TORCH PICKUP DEBUG: hitbox miss; click=(" + logicalX + ","
-          + logicalY + ") calibrated holder bounds X=" + x + ".." + (x + 23)
-          + ", topY=" + top + ".." + (top + 53)
-          + "; mirrored=" + mirror);
+    if (!HasVerifiedOrnamentHit("FullTorchHolder", logicalX, logicalY))
       return false;
-    }
-    Debug.Log("TORCH PICKUP DEBUG: hitbox matched; validating inventory sprite");
 
     // Never remove an item if its cursor graphic is unavailable.
     Texture2D cursorImage = FindExactTorchTexture("Torch_Unlit_16x16.png", 16, 16);
@@ -33781,193 +32878,6 @@ private static void HandleGameViewPointerDown(
             System.StringComparison.OrdinalIgnoreCase);
   }
 
-  // Native Atari S1 torch-holder art. Never substitute F1 or scaled art.
-
-
-
-  // Empty torch holders are wall ornaments, not floor items. The position and
-  // face come from DungeonFeaturePlacements.json; no player-pose exception.
-  // A FullTorchHolder sensor can coexist on the same face and represents a
-  // separate mechanism/state. It must not create a second empty-holder image.
-
-
-  // Read saved Manacles S3 calibration.
-
-  // The S3 sprite uses a direct V17-gated drawing path. Always apply
-  // its accepted ViewEdit X/Y/Mirror, regardless of the 3D-Y experiment.
-
-  // Manacles S2 bypasses the shared blit function and remains untouched.
-
-  // Phase 8: opt-in, one-repaint ornament regression capture. This never
-  // changes the pixels that the renderer writes to the viewport.
-  private bool phase8CaptureActive;
-  private string phase8CaptureFolder;
-  private readonly System.Collections.Generic.List<Phase8OrnamentRecord>
-      phase8Captured = new System.Collections.Generic.List<Phase8OrnamentRecord>();
-
-  [System.Serializable]
-  private sealed class Phase8OrnamentRecord
-  {
-    public string family;
-    public string projectionKey;
-    public string sourceTile;
-    public string textureName;
-    public int width;
-    public int height;
-    public int xBottomUp;
-    public int yBottomUp;
-    public int xScreen;
-    public int yScreen;
-    public bool mirrored;
-    public int opaquePixels;
-    public string pixelSha256;
-    public string png;
-    public string note;
-  }
-
-  [System.Serializable]
-  private sealed class Phase8OrnamentManifest
-  {
-    public string captureStatus = "Unity-captured; DOS comparison not performed";
-    public string dateLocal;
-    public int dungeonLevel;
-    public int playerX;
-    public int playerY;
-    public string facing;
-    public string viewportPng = "viewport_320x200.png";
-    public string coordinateSystem = "x/y bottom-up for Unity buffer; screen y = 200-y-height";
-    public string scope = "Shared Hook/Manacles/Grate draws plus direct Manacles S2/S3";
-    public string limitations = "Sampling flags and source asset hashes not measured here; compare with Phase 8 code audit. PNG is after texture generation and mirroring, before wall occlusion/clipping.";
-    public Phase8OrnamentRecord[] ornaments;
-  }
-
-  [MenuItem("Tools/Export Phase 8 Ornament Baseline", false, 190)]
-  private static void ExportPhase8OrnamentBaselineFromMenu()
-  {
-    ViewportLayoutEditor window = null;
-    foreach (ViewportLayoutEditor candidate in
-        Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>())
-    {
-      window = candidate;
-      break;
-    }
-    if (window == null)
-    {
-      Debug.LogWarning("Phase 8: open ViewEdit before exporting.");
-      return;
-    }
-    if (Application.isPlaying)
-    {
-      Debug.LogWarning("Phase 8: capture is intended for Edit mode.");
-      return;
-    }
-    string root = System.IO.Path.Combine(
-        Application.dataPath, "../Research_Results/Ornament_Baselines");
-    string stamp = System.DateTime.Now.ToString("yyyyMMdd-HHmmss");
-    string folder = System.IO.Path.Combine(root, stamp);
-    System.IO.Directory.CreateDirectory(folder);
-    window.phase8CaptureFolder = folder;
-    window.phase8Captured.Clear();
-    window.phase8CaptureActive = true;
-    try
-    {
-      window.RefreshEditModePreview();
-      if (window.editModePreviewTexture == null)
-        throw new System.InvalidOperationException("No active viewport preview texture");
-      System.IO.File.WriteAllBytes(
-          System.IO.Path.Combine(folder, "viewport_320x200.png"),
-          window.editModePreviewTexture.EncodeToPNG());
-      Phase8OrnamentManifest manifest = new Phase8OrnamentManifest();
-      manifest.dateLocal = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss zzz");
-      manifest.dungeonLevel = window.previewDungeonLevel;
-      manifest.playerX = window.previewX;
-      manifest.playerY = window.previewY;
-      manifest.facing = window.previewFacing.ToString();
-      manifest.ornaments = window.phase8Captured.ToArray();
-      System.IO.File.WriteAllText(
-          System.IO.Path.Combine(folder, "baseline.json"),
-          JsonUtility.ToJson(manifest, true));
-      Debug.Log("Phase 8: exported " + manifest.ornaments.Length
-          + " ornament draws to " + folder);
-    }
-    catch (System.Exception error)
-    {
-      Debug.LogError("Phase 8 export failed: " + error.Message);
-    }
-    finally
-    {
-      window.phase8CaptureActive = false;
-      window.phase8CaptureFolder = null;
-    }
-  }
-
-  private void Phase8CaptureOrnament(
-      string family, string projectionKey, WallOrnamentPlacement ornament,
-      Texture2D texture, int x, int y, bool mirror)
-  {
-    if (!phase8CaptureActive || texture == null || !texture.isReadable)
-      return;
-    if (!(family == "Hook" || family == "Manacles" || family == "Grate"))
-      return;
-
-    Color32[] original = texture.GetPixels32();
-    Color32[] displayed = new Color32[original.Length];
-    int opaque = 0;
-    for (int row = 0; row < texture.height; row++)
-      for (int col = 0; col < texture.width; col++)
-      {
-        int srcCol = mirror ? texture.width - 1 - col : col;
-        Color32 color = original[row * texture.width + srcCol];
-        displayed[row * texture.width + col] = color;
-        if (color.a != 0) opaque++;
-      }
-    byte[] rgba = new byte[displayed.Length * 4];
-    for (int i = 0; i < displayed.Length; i++)
-    {
-      rgba[i * 4] = displayed[i].r;
-      rgba[i * 4 + 1] = displayed[i].g;
-      rgba[i * 4 + 2] = displayed[i].b;
-      rgba[i * 4 + 3] = displayed[i].a;
-    }
-    string sha;
-    using (var hasher = System.Security.Cryptography.SHA256.Create())
-      sha = System.BitConverter.ToString(hasher.ComputeHash(rgba))
-          .Replace("-", "").ToLowerInvariant();
-    int index = phase8Captured.Count + 1;
-    string filename = string.Format("ornament_{0:D2}_{1}.png", index, family);
-    Texture2D copy = new Texture2D(texture.width, texture.height,
-        TextureFormat.RGBA32, false);
-    try
-    {
-      copy.SetPixels32(displayed);
-      copy.Apply(false);
-      System.IO.File.WriteAllBytes(
-          System.IO.Path.Combine(phase8CaptureFolder, filename),
-          copy.EncodeToPNG());
-    }
-    finally
-    {
-      Object.DestroyImmediate(copy);
-    }
-    Phase8OrnamentRecord record = new Phase8OrnamentRecord();
-    record.family = family;
-    record.projectionKey = projectionKey;
-    record.sourceTile = ornament == null ? "" :
-        ornament.x + "," + ornament.y + " " + ornament.wall;
-    record.textureName = texture.name;
-    record.width = texture.width;
-    record.height = texture.height;
-    record.xBottomUp = x;
-    record.yBottomUp = y;
-    record.xScreen = x;
-    record.yScreen = PreviewHeight - y - texture.height;
-    record.mirrored = mirror;
-    record.opaquePixels = opaque;
-    record.pixelSha256 = sha;
-    record.png = filename;
-    record.note = "Exact output RGBA pixels after final mirror, before clipping/occlusion";
-    phase8Captured.Add(record);
-  }
 
 
 

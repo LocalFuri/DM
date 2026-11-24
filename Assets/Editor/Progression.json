@@ -6265,5 +6265,24 @@
     ],
     "validation": "Deleted-symbol scan, duplicate NonSerialized scan, lexical delimiter count comparison passed. Unity compilation not available; Stage 3C onward unconfirmed.",
     "remaining": "Final audit including other project files; generic DOS dispatch and verified geometry, interaction hitboxes and calibration reconstruction. Cursor strictly read-only."
+  },
+  "strict_ornament_reset_stage3j_20261124": {
+    "timestamp": "2026-11-24T19:13:51.963383+01:00",
+    "archive": "StrictDOS_Ornament_Cleanup_Stage3J_20261124-191351.zip",
+    "status": "Stage 3J targeted source cleanup; Unity compile and project-wide audit pending",
+    "changes": [
+      "Deleted disconnected inspector, clipboard-only helper code and right-click interception; removed empty Phase 8 capture and Tools menu entry. Removed unused side-lane/corner helpers, manual F3 preview, offset read/write methods, unused mirror override accessor and obsolete source ID resolver. Removed audited obsolete comments.",
+      "Removed Manacles ignore list, Puddle key remapping and Hook-specific JSON Apply routing. Generic ornament projection/class keys now save to JSON; exact existing REF projection records remain readable when no exact JSON record exists. No geometry defaults introduced.",
+      "Removed hardcoded Champion Mirror click rectangle and BOTH Torch Holder pickup/return rectangles. These interactions fail closed with deduplicated cyan diagnostics until verified rendered hit bounds exist. Existing gameplay state mutation logic retained.",
+      "Kept original shared DOS 6-bit scaler, palette maps, partial registry, placement rules, saved REF records and unchanged OrnamentCalibration.json (including historical offsets, now inactive). No runtime ornament draw path connected."
+    ],
+    "validation": "Targeted removed-symbol scan and delimiter-count comparison passed; no Unity compiler or full project available. No 900-record geometry regression run yet.",
+    "remaining": [
+      "Compile Stage 3J in Unity and fix any compiler errors before advancing.",
+      "Audit full project when accessible; resolve registry source gaps using verified DOS metadata.",
+      "Implement generic DOS geometry from original layout data and algorithm, validate against all 900 CSV rows independently; do not use CSV as runtime per-item geometry.",
+      "Reconnect renderer, calibration and shared visible hit rectangles. Verify wall occlusion, mirrors, torch interactions and separate floor geometry."
+    ],
+    "cursor": "Ask mode, read-only unless explicitly authorized by user."
   }
 }
