@@ -6216,5 +6216,54 @@
     ],
     "validation": "Deleted-symbol scan, duplicate NonSerialized scan, lexical delimiter validation passed. No Unity compilation available; stages 3C onward not explicitly confirmed.",
     "remaining": "Audit remaining dead helpers, source registry and interaction geometry; implement verified generic projection/render dispatch including corner lanes and calibration. Cursor strictly read-only."
+  },
+  "strict_ornament_reset_stage3i_20261124": {
+    "timestamp": "2026-11-24T19:00:49.941298+01:00",
+    "archive": "StrictDOS_Ornament_Physical_Deletion_Stage3I_20261124-190049.zip",
+    "deleted_methods": [
+      "GetChampionMirrorClass1CornerF2Key",
+      "ReportUncalibratedChampionView",
+      "ResetFloorWallOrnamentCalibrationsOnce",
+      "GetChampionMirrorFrontTexture",
+      "ReportMissingGrateArtwork"
+    ],
+    "deleted_method_count": 5,
+    "cumulative_reported_methods_deleted": 182,
+    "deleted_constants": [
+      "ChampionMirrorSideAssetPath",
+      "ChampionMirrorFrontAssetPath",
+      "OrnamentArtFolder",
+      "HookFrontAssetPath",
+      "ManaclesD1SideWidth",
+      "ManaclesD1SideHeight",
+      "SlimeSide1AssetPath",
+      "HookD1SideLeftX",
+      "HookD1SideRightX",
+      "HookD1SideY",
+      "WoodRingD2SideLeftX",
+      "HookD2SideWidth",
+      "HookD2SideHeight",
+      "HookD2SideLeftX",
+      "HookD2SideRightX",
+      "HookD2SideY",
+      "HookD3SideHeight",
+      "HookD3SideLeftX",
+      "HookD3SideRightX",
+      "HookD3SideY",
+      "ChampionPortraitD1FrontOffsetX",
+      "ChampionPortraitD1FrontOffsetY",
+      "FloorWallOrnamentResetPrefsKey"
+    ],
+    "deleted_fields": [
+      "cachedChampionMirrorFrontTexture",
+      "cachedGrateF3SideTexture",
+      "loggedUncalibratedChampionViews",
+      "loggedMissingGrateArtworkPaths"
+    ],
+    "changes": [
+      "Removed unreferenced geometry constants, mirror loader and obsolete calibration reset routine; no calibration data modified. Retained registry, shared sampler and gameplay interaction hitboxes."
+    ],
+    "validation": "Deleted-symbol scan, duplicate NonSerialized scan, lexical delimiter count comparison passed. Unity compilation not available; Stage 3C onward unconfirmed.",
+    "remaining": "Final audit including other project files; generic DOS dispatch and verified geometry, interaction hitboxes and calibration reconstruction. Cursor strictly read-only."
   }
 }

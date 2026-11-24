@@ -140,10 +140,6 @@ public class ViewportLayoutEditor : EditorWindow
 
   private const string ChampionArtFolder =
       "Assets/Art/Champions";
-  private const string ChampionMirrorSideAssetPath =
-      "Assets/Art/Champions/Champion_Mirror_Side_16x35.png";
-  private const string ChampionMirrorFrontAssetPath =
-      "Assets/Art/Champions/Champion_Mirror_Front_64x43.png";
   private const string CharacterSheetAssetPath =
       "Assets/Art/Interface/CharacterSheet_224x136.png";
   private const string ChampionsBackgroundAssetPath =
@@ -159,8 +155,6 @@ public class ViewportLayoutEditor : EditorWindow
   private const string ChampionFoodLabelAssetFileName = "Food_Label_48x9.png";
   private const string ChampionWaterLabelAssetFileName = "Water_Label_48x9.png";
 
-  private const string OrnamentArtFolder =
-      "Assets/Art/Ornaments";
 
   // Compact read-only X/Y boxes for floor-item rows in ViewEdit. Sized for
   // a single visible digit so ground items do not waste horizontal space.
@@ -170,8 +164,6 @@ public class ViewportLayoutEditor : EditorWindow
   // under it, so Enabled starts on the same x for every feature row.
   private const float FeatureDescriptionWidth = 210f;
 
-  private const string HookFrontAssetPath =
-      "Assets/Art/Ornaments/Hook_F1_32x28.png";
   // Native PC DOS image, used solely for the approved Hook F2 experiment.
   // F1/F3 and all other ornaments continue to use their existing assets.
   private const string HookDosF2AssetPath =
@@ -188,8 +180,6 @@ public class ViewportLayoutEditor : EditorWindow
   // +2 px on X: screen top-left (30, 74), framebuffer bottom-left
   // Y = 200 - 74 - 42 = 84.
   // The right slot mirrors that across the 224px viewport.
-  private const int ManaclesD1SideWidth = 32;
-  private const int ManaclesD1SideHeight = 42;
 
   // Front F2 Manacles: temporary DOS screenshot-fit experiment only.
   // Current candidate 60x35 at viewport top-left (82,40), half-step sampling.
@@ -213,11 +203,9 @@ public class ViewportLayoutEditor : EditorWindow
   // Independent F3 corner art; native 14x8, never rescaled.
   private const string HookSideAssetPath =
       "Assets/Art/Ornaments/Hook_S1_14x19.png";
-  private const string SlimeSide1AssetPath =
-      "Assets/Art/Ornaments/Slime_Side_16x10.png";
   // Phase 10: data-only native DOS ornament registration.
   // This describes sources and known layout identity, not draw logic.
-  // The existing verified blitters remain the sole rendering authority.
+  // Generic dispatch is not yet connected; no legacy rendering authority remains here.
   // -1 means that the DOS layout group has NOT been verified; never guess.
   private sealed class DosWallOrnamentRegistration
   {
@@ -246,8 +234,7 @@ public class ViewportLayoutEditor : EditorWindow
       new Dictionary<string, DosWallOrnamentRegistration>(
           System.StringComparer.OrdinalIgnoreCase)
       {
-        // Hook F1 still has a separate original 32x28 asset in its live path;
-        // F2/F3 use the verified native 28x28 DOS source below.
+        // Native DOS front source; final perspective geometry still requires verification.
         { "Hook", new DosWallOrnamentRegistration(
             "Hook", HookDosF2AssetPath, HookSideAssetPath, 14, 19, 0) },
         { "Manacles", new DosWallOrnamentRegistration(
@@ -633,53 +620,6 @@ public class ViewportLayoutEditor : EditorWindow
     }
   };
 
-  private const int HookD1SideLeftX = 49;
-  private const int HookD1SideRightX =
-      DungeonViewportWidth - HookD1SideLeftX - 14;
-  private const int HookD1SideY = 107;
-
-  // Original DOS D1 side Slime placement. In the supplied (4,6) North
-  // original screenshot the mirrored right-wall Slime_Side_16x10 sprite
-  // is an exact pixel match at screen top-left (161,127). Left slot is
-  // that same 16px box mirrored. Framebuffer Y = 200 - 127 - 10 = 63.
-
-  // Historical Wood Ring S2 screen geometry; source artwork is now scaled
-  // from native S1. This destination must still be moved into DOS group data.
-  private const int WoodRingD2SideLeftX = 66;
-
-  // Original DOS D2 side Slime placement. The supplied (4,7) North original
-  // uses native Slime_Side_4x3.png as an exact right-wall crop at screen
-  // top-left (154,114). Store the mirrored left slot; the 4x3 PNG is already
-  // the right-wall facing, so only the left blit is flipped.
-  // Framebuffer Y = 200 - 114 - 3 = 83.
-
-  // F3 front is generated from the native 22x16 Slime front. Width stays
-  // half the F1 source. Height is shorter than that half so the far-distance
-  // palette does not stretch the dark vertical drip into a long black column.
-  // Placement matches the accepted OrnamentProjection:Slime:F3 reference.
-
-  // Original DOS Wood Ring distant side placement at D3. The supplied native
-  // Wood_Ring_Side_3x5.png is an exact pixel match in the original
-  // (4,7) North screenshot at screen top-left (82,73).
-  // Framebuffer Y = 200 - 73 - 5 = 122.
-
-  // Original DOS S2 Hook layout: the unpadded 14x19 side artwork is
-  // rendered as a 9x12 bitmap at x=66 (left) / x=149 (right).
-  // The framebuffer uses bottom-up Y; Y=116 is display Y=39 for 12px.
-  // Keep Hook S3 and the Wood Ring S2 rectangle unchanged.
-  private const int HookD2SideWidth = 9;
-  private const int HookD2SideHeight = 12;
-  private const int HookD2SideLeftX = WoodRingD2SideLeftX;
-  private const int HookD2SideRightX =
-      DungeonViewportWidth - HookD2SideLeftX - HookD2SideWidth;
-  private const int HookD2SideY = 116;
-  // DOS resource-696 set 0, DI=2/3. The entire source is scaled to 6x8;
-  // only the colored portion is visibly 3x5. Actual draw placement is
-  // resolved from the resource, not from these UI baseline constants.
-  private const int HookD3SideHeight = 8;
-  private const int HookD3SideLeftX = 82;
-  private const int HookD3SideRightX = 136;
-  private const int HookD3SideY = 120;
 
   // Original DOS Champion front-mirror placement for a D1 center wall.
   // Measured from the original 320x200 (10,5) South ZED view:
@@ -692,8 +632,6 @@ public class ViewportLayoutEditor : EditorWindow
   // The 32x29 Champion portrait occupies the mirror's inner opening.
   // In the 48x43 source the opening is X=8..39, top Y=6..34.
   // In framebuffer coordinates that is +8 from the frame bottom.
-  private const int ChampionPortraitD1FrontOffsetX = 8;
-  private const int ChampionPortraitD1FrontOffsetY = 8;
 
   private const string DefaultViewportLayoutPath =
       "Assets/Dungeon Master/ViewportLayout.asset";
@@ -1742,13 +1680,10 @@ public class ViewportLayoutEditor : EditorWindow
     return true;
   }
 
-  [System.NonSerialized]
-  private Texture2D cachedChampionMirrorFrontTexture;
 
   // Separate ViewEdit test. Builds F2/F3 from the 96x56 extract at the
   // engine slot sizes instead of the measured 63x37 and 42x24 slots.
   private int previewDungeonLightStage = 1;
-  private Texture2D cachedGrateF3SideTexture;
   private Texture2D cachedCharacterSheetTexture;
   private Texture2D cachedChampionsBackgroundTexture;
   private Texture2D cachedChampionInventoryTexture;
@@ -23386,39 +23321,8 @@ private static void HandleGameViewPointerDown(
 
   // Class 1: champion mirror calibration is independent of ordinary ornaments.
   // The class/view key contains no map position, champion name or compass facing.
-  private static string GetChampionMirrorClass1CornerF2Key(bool left)
-  {
-    return "OrnamentClass:1:ChampionMirror:CornerFrontF2:"
-        + (left ? "Left" : "Right");
-  }
 
-  private static readonly System.Collections.Generic.HashSet<string>
-      loggedUncalibratedChampionViews =
-          new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal);
 
-  private void ReportUncalibratedChampionView(string key, bool left,
-      ChampionMirrorPlacement champion)
-  {
-    if (IsOrnamentClassCalibrationKey(key))
-    {
-      if (TryGetOrnamentClassJson(key, out AcceptedOrnamentReference ignored)) return;
-    }
-    else
-    {
-      EnsureAcceptedOrnamentReferencesLoaded();
-      if (cachedAcceptedOrnamentReferences.ContainsKey(key)) return;
-    }
-    string occurrence = key + "|" + previewDungeonLevel + "|" + previewX
-        + "," + previewY + "|" + previewFacing;
-    if (!loggedUncalibratedChampionViews.Add(occurrence)) return;
-    Debug.Log("<color=cyan>CYAN | ViewEdit UNCALIBRATED | "
-        + "Class 1 Champion Mirror " + (left ? "LeftF2" : "RightF2")
-        + " | Level " + previewDungeonLevel + " player=" + previewX
-        + "," + previewY + ":" + previewFacing
-        + " | champion=" + (champion == null ? "NONE" : champion.champion)
-        + " | No applied class calibration yet; adjust X/Y and press Apply."
-        + "</color>");
-  }
 
   // Class calibrations are deliberately external to C# source. Changing an
   // ornament must never force recompilation or overwrite a prior adjustment.
@@ -23464,76 +23368,9 @@ private static void HandleGameViewPointerDown(
 
   private const string OrnamentClassJsonPath = "Assets/Editor/OrnamentCalibration.json";
 
-  private const string FloorWallOrnamentResetPrefsKey =
-      "DM.ViewEdit.FloorWallOrnamentsReset20261109.V1";
 
   // One-time migration: retain champion-mirror and wall geometry calibration.
   // Clear only manually accepted floor and ordinary wall ornament positions.
-  private static void ResetFloorWallOrnamentCalibrationsOnce()
-  {
-    if (EditorPrefs.GetBool(FloorWallOrnamentResetPrefsKey, false))
-      return;
-
-    // JSON class calibration entries can contain both champion mirrors and
-    // ordinary ornaments. Preserve the entire champion group.
-    if (File.Exists(OrnamentClassJsonPath))
-    {
-      if (!TryReadOrnamentClassJson(out OrnamentCalibrationJsonStore data))
-        return;
-      int oldCount = data.entries.Count;
-      data.entries.RemoveAll(entry => entry != null
-          && !string.IsNullOrEmpty(entry.key)
-          && !entry.key.Contains(":ChampionMirror:"));
-      if (data.entries.Count != oldCount)
-      {
-        string backup = OrnamentClassJsonPath + ".before-floor-wall-reset.bak";
-        try
-        {
-          File.Copy(OrnamentClassJsonPath, backup, true);
-          WriteViewEditTextWithTimestamp(
-              OrnamentClassJsonPath, JsonUtility.ToJson(data, true));
-        }
-        catch (System.Exception ex)
-        {
-          Debug.LogError("ViewEdit ornament reset failed: " + ex.Message);
-          return;
-        }
-      }
-    }
-
-    // Remove the backups of old floor/ornament reference entries so a domain
-    // reload cannot reintroduce stale coordinates.
-    string[] families =
-    {
-      "WoodRing", "Hook", "Slime", "Manacles", "ViAltar", "Grate",
-      "EmptyTorchHolder", "Moss", "Puddle"
-    };
-    string[] slots = { "F1", "F2", "F3", "S1", "S2", "S3" };
-    string[] sides = { "", ":Left", ":Right" };
-    string[] suffixes = { "X", "Y", "Mirror", "Revision" };
-    for (int f = 0; f < families.Length; f++)
-      for (int d = 0; d < slots.Length; d++)
-        for (int side = 0; side < sides.Length; side++)
-          for (int field = 0; field < suffixes.Length; field++)
-            EditorPrefs.DeleteKey(GetAppliedOrnamentReferencePrefsKey(
-                "OrnamentProjection:" + families[f] + ":"
-                + slots[d] + sides[side], suffixes[field]));
-    string[] floorKeys =
-    {
-      "FloorItemProjection:TorchDown:F1:Left",
-      "FloorItemProjection:TorchDown:F1:Right",
-      "FloorItemProjection:TorchDown:F2:Left",
-      "FloorItemProjection:TorchDown:F2:Right"
-    };
-    for (int k = 0; k < floorKeys.Length; k++)
-      for (int field = 0; field < suffixes.Length; field++)
-        EditorPrefs.DeleteKey(GetAppliedOrnamentReferencePrefsKey(
-            floorKeys[k], suffixes[field]));
-
-    acceptedOrnamentReferencesLoaded = false;
-    cachedAcceptedOrnamentReferences.Clear();
-    EditorPrefs.SetBool(FloorWallOrnamentResetPrefsKey, true);
-  }
 
   private static bool IsOrnamentClassCalibrationKey(string key)
   {
@@ -23831,38 +23668,6 @@ private static void HandleGameViewPointerDown(
   }
 
 
-  private Texture2D GetChampionMirrorFrontTexture()
-  {
-    // Use only the explicitly configured original-size front mirror.
-    // Never silently substitute a differently sized mirror image.
-    if (cachedChampionMirrorFrontTexture != null)
-        return cachedChampionMirrorFrontTexture;
-
-    Texture2D texture =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(ChampionMirrorFrontAssetPath);
-    if (texture == null)
-    {
-      LogMissingArtworkCyan("ViewEdit: Champion mirror front asset missing: "
-          + ChampionMirrorFrontAssetPath + " (required 64x43).");
-      return null;
-    }
-    if (texture.width != 64 || texture.height != 43)
-    {
-      LogMissingArtworkCyan("ViewEdit: Champion mirror front asset has wrong dimensions: "
-          + ChampionMirrorFrontAssetPath + " (expected 64x43, actual "
-          + texture.width + "x" + texture.height + ").");
-      return null;
-    }
-    if (!texture.isReadable)
-    {
-      LogMissingArtworkCyan("ViewEdit: Champion mirror front asset is not readable: "
-          + ChampionMirrorFrontAssetPath + ". Enable Read/Write in Import Settings.");
-      return null;
-    }
-
-    cachedChampionMirrorFrontTexture = texture;
-    return texture;
-  }
 
   private Texture2D GetChampionPortraitTexture(string championName)
   {
@@ -32067,16 +31872,7 @@ private static void HandleGameViewPointerDown(
 
   // Missing artwork is a cyan, once-per-asset diagnostic. Do not silently
   // substitute another texture or disable validation of existing assets.
-  private static readonly HashSet<string> loggedMissingGrateArtworkPaths =
-      new HashSet<string>(System.StringComparer.Ordinal);
 
-  private static void ReportMissingGrateArtwork(string path)
-  {
-    if (!loggedMissingGrateArtworkPaths.Add(path))
-      return;
-    Debug.Log("<color=cyan>CYAN | ViewEdit MISSING ASSET | "
-        + path + "</color>");
-  }
 
   // Phase 11: shared registry-backed native side artwork for Grate S2/S3.
   // No fallback: missing, invalid, or unreadable artwork is reported in cyan.
