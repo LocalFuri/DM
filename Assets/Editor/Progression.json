@@ -6130,5 +6130,55 @@
     ],
     "validation": "Removed-symbol scan, duplicate NonSerialized scan, lexical delimiter validation passed; no Unity compiler available.",
     "remaining": "Torch holder special paths, VI Altar side calibration, remaining native loaders, hardcoded geometry including mirror interaction hitbox (do not break recruitment), override dispatch and unified generic rendering. Floor ornament geometry requires separate verified DOS floor layout, not assumed wall resource 696. Cursor read-only."
+  },
+  "strict_ornament_reset_stage3g_20261124": {
+    "timestamp": "2026-11-24T18:53:31.831719+01:00",
+    "archive": "StrictDOS_Ornament_Physical_Deletion_Stage3G_20261124-185331.zip",
+    "deleted_methods": [
+      "TryGetViAltarS1Projection",
+      "TryGetViAltarS2Projection",
+      "TryGetViAltarS3Projection",
+      "DrawViAltarS1CalibrationRow",
+      "DrawViAltarS2CalibrationRow",
+      "DrawViAltarS3CalibrationRow",
+      "TryGetTorchHolderS1Projection",
+      "DrawTorchHolderS1CalibrationRows",
+      "GetViAltarS1Texture",
+      "GetViAltarFrontTexture",
+      "GetManaclesS1Texture",
+      "GetManaclesF1Texture",
+      "GetHookFrontTexture",
+      "GetHookSideTexture",
+      "GetGrateSide1Texture",
+      "GetGrateFrontTexture"
+    ],
+    "deleted_method_count": 16,
+    "cumulative_reported_methods_deleted": 155,
+    "deleted_constants": [
+      "ViAltarS1RightX",
+      "ViAltarS1Y",
+      "ViAltarS2RightX",
+      "ViAltarS2Y",
+      "ViAltarS3RightX",
+      "ViAltarS3Y",
+      "TorchHolderS1Asset",
+      "TorchHolderS1CalibrationKey"
+    ],
+    "deleted_fields": [
+      "cachedViAltarFrontTexture",
+      "cachedViAltarS1Texture",
+      "cachedManaclesS1Texture",
+      "cachedManaclesF1Texture",
+      "cachedHookFrontTexture",
+      "cachedHookSideTexture",
+      "cachedGrateSide1Texture",
+      "cachedGrateFrontTexture"
+    ],
+    "changes": [
+      "Removed VI Altar side calibration and Torch Holder S1 dedicated calibration/projection methods, VI Altar fallback scan and importer mutation, unused native loaders. Existing shared VI visibility descriptor now permits side depths. No replacement drawing geometry added.",
+      "Saved calibration JSON and artwork preserved. Torch pickup/return and champion recruitment interaction hitboxes retained, pending verified generic geometry."
+    ],
+    "validation": "Deleted-symbol scan, duplicate attribute scan and lexical delimiter validation passed. Unity compilation not tested. Stages 3C–3F compilation not explicitly confirmed.",
+    "remaining": "Family-specific projection descriptor, visibility caps, remaining geometry/constants and dead code; generic dispatch and visible-only cyan diagnostics. Cursor strictly read-only."
   }
 }
