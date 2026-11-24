@@ -22,28 +22,35 @@ internal sealed class DosOrnamentGeometryResolver
     private readonly int[] widths = new int[713], heights = new int[713];
     private static int U16(byte[] b, int p) { return b[p] | (b[p+1] << 8); }
     private static int S16(byte[] b, int p) { return unchecked((short)U16(b,p)); }
+    // Project-owned extraction: original dimensions and raw resource 696, not resolved rectangles.
+    public static string ProjectDataPath(string assetsPath)
+    {
+        return Path.Combine(assetsPath, "Editor", "DosOrnamentGeometry.bytes");
+    }
     public DosOrnamentGeometryResolver(byte[] b)
     {
-        if (b == null || b.Length < 4 + 8*713 || U16(b,0)!=0x8001 || U16(b,2)!=713)
-            throw new InvalidDataException("Unsupported or truncated DOS GRAPHICS.DAT");
-        for (int i=0;i<713;i++) { widths[i]=U16(b,4+4*713+4*i); heights[i]=U16(b,6+4*713+4*i); }
-        Dictionary<int,Record> found = null;
-        for (int p=0;p<=b.Length-96;p++)
+        const int p = 8 + 4*713;
+        const int count = 1133;
+        if (b == null || b.Length != p + 96 + count*8 ||
+            b[0]!='D' || b[1]!='O' || b[2]!='G' || b[3]!='1' || U16(b,4)!=713 || U16(b,6)!=0)
+            throw new InvalidDataException("Unsupported or truncated DOS geometry asset");
+        for (int i=0;i<713;i++) { widths[i]=U16(b,8+4*i); heights[i]=U16(b,10+4*i); }
+        if (U16(b,p)!=0xfc0d || U16(b,p+2)!=23)
+            throw new InvalidDataException("Invalid resource 696 header");
+        int total=0;
+        for(int i=0;i<23;i++)
         {
-            if (U16(b,p)!=0xfc0d || U16(b,p+2)!=23) continue;
-            int count=0; bool valid=true;
-            for (int i=0;i<23;i++) { int a=U16(b,p+4+4*i), z=U16(b,p+6+4*i); if(z<a){valid=false;break;} count+=z-a+1; }
-            if(!valid || count!=1133 || p+96+count*8>b.Length) continue;
-            var candidate=new Dictionary<int,Record>(); int q=p+96;
-            for(int i=0;i<23;i++) for(int j=U16(b,p+4+4*i);j<=U16(b,p+6+4*i);j++)
-            {
-                if(candidate.ContainsKey(j)) throw new InvalidDataException("Duplicate layout index");
-                candidate.Add(j,new Record{Kind=S16(b,q),Parent=S16(b,q+2),A=S16(b,q+4),B=S16(b,q+6)}); q+=8;
-            }
-            if(found!=null) throw new InvalidDataException("Ambiguous resource 696");
-            found=candidate;
+            int a=U16(b,p+4+4*i), z=U16(b,p+6+4*i);
+            if(z<a) throw new InvalidDataException("Invalid layout range");
+            total+=z-a+1;
         }
-        records=found ?? throw new InvalidDataException("Resource 696 missing");
+        if(total!=count) throw new InvalidDataException("Invalid layout record count");
+        records=new Dictionary<int,Record>(); int q=p+96;
+        for(int i=0;i<23;i++) for(int j=U16(b,p+4+4*i);j<=U16(b,p+6+4*i);j++)
+        {
+            if(records.ContainsKey(j)) throw new InvalidDataException("Duplicate layout index");
+            records.Add(j,new Record{Kind=S16(b,q),Parent=S16(b,q+2),A=S16(b,q+4),B=S16(b,q+6)}); q+=8;
+        }
     }
     public sealed class Result
     {

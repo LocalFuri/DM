@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-24 Stage 4F: Unity 900/900 geometry regression passed; initial standard-wall draw integration prepared, live validation pending.",
+  "checkpoint": "Stage 4H: project-owned original geometry extraction; Unity regression and live Hook verification pending.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -6354,5 +6354,43 @@
       "Resolve native source gaps using original DAT; expand standard dispatch only after visual confirmation, then restore calibration and hit testing."
     ],
     "cursor": "Ask mode only; read-only."
+  },
+  "strict_dos_visibility_stage4g_20261124": {
+    "timestamp": "2026-11-24T19:59:35.629569+01:00",
+    "archive": "StrictDOS_Visibility_Stage4G_20261124-195935.zip",
+    "status": "Stage 4F compiles per user; Hook F1 absent without cyan at Level 0 (13,9) North. Manacles F1 native 92x52 confirmed by user; earlier 95x52 superseded.",
+    "changes": [
+      "On-demand read-only generic nearby wall ornament visibility diagnostic; no drawing changes."
+    ],
+    "tools": [
+      {
+        "name": "Tools/DOS Ornament Visibility Diagnostic",
+        "purpose": "Report loaded placements, enablement, projection, V17 wall ownership, DOS mapping and registration at current pose",
+        "implementation_date": "2026-11-24",
+        "retain_visible_at_least_until": "2026-12-01"
+      }
+    ],
+    "next": [
+      "Run diagnostic at Level 0 (13,9) North and inspect output before changing renderer."
+    ],
+    "limitations": [
+      "Unity compilation and diagnostic output unverified. Diagnostic reads current drawn-wall state; does not force recomposition."
+    ],
+    "cursor": "Ask mode only."
+  },
+  "strict_dos_project_geometry_stage4h_20261124": {
+    "timestamp": "2026-11-24T20:03:14.544715+01:00",
+    "archive": "StrictDOS_ProjectGeometry_Stage4H_20261124-200314.zip",
+    "status": "Removed external DAT dependency from viewport and regression runner. Original dimensions and raw resource 696 stored in Assets/Editor/DosOrnamentGeometry.bytes; no resolved rectangles or artwork embedded.",
+    "source_sha256": "2c3aa836925c64c09402bafb03c645932bd03c4f003ad9a86542383b078ecf8e",
+    "asset_sha256": "db1ae16bba2f06b3be180af765bb434225e30fb2bf4290d773770b7421bf5991",
+    "asset_bytes": 12020,
+    "validation": "Exact byte equality of extracted tables; resolver calculation body unchanged. Unity compile, 900-row regression against extracted asset and live draw pending.",
+    "hook_test": "Level 0 (13,9) North F1. Prior diagnostic missing external DAT. User mentioned Hook_F1_32x28; historical Progression identifies it as padded CSBwin source, while approved native DOS source is Hook_F1_DOS_28x28.png; keep native registry unchanged and diagnose actual artwork if needed.",
+    "next": [
+      "Install all five files in Assets/Editor. Run Tools/DOS Ornament Geometry Regression; select corrected CSV only. Require 900/900 and zero field differences.",
+      "Check Hook F1 at Level 0 (13,9) North; inspect cyan diagnostics if absent."
+    ],
+    "cursor": "Ask mode only, read-only."
   }
 }

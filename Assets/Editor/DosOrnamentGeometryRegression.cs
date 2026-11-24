@@ -10,13 +10,12 @@ internal static class DosOrnamentGeometryRegression
     [MenuItem("Tools/DOS Ornament Geometry Regression")]
     private static void Run()
     {
-        string dat=EditorUtility.OpenFilePanel("Select original PC DOS GRAPHICS.DAT", @"C:\Unity\DM\DOS_Reference", "DAT");
-        if(string.IsNullOrEmpty(dat)) return;
+        string dataPath=DosOrnamentGeometryResolver.ProjectDataPath(Application.dataPath);
         string csv=EditorUtility.OpenFilePanel("Select corrected 900-row DOS geometry CSV", @"C:\Unity\DM\Research_Results", "csv");
         if(string.IsNullOrEmpty(csv)) return;
         try
         {
-            var resolver=new DosOrnamentGeometryResolver(File.ReadAllBytes(dat));
+            var resolver=new DosOrnamentGeometryResolver(File.ReadAllBytes(dataPath));
             string[] lines=File.ReadAllLines(csv);
             const string header="label,ornament_type,coordinate_set,view_index,view_name,zone_index,native_graphic,native_width,native_height,scale_x,scale_y,palette_group,mirrored_horizontally,x,y,width,height,clipped_x,clipped_y,clipped_width,clipped_height,source_x,source_y";
             if(lines.Length!=901 || lines[0]!=header) throw new InvalidDataException("Expected the corrected 900-row CSV with original header");

@@ -193,7 +193,7 @@ public class ViewportLayoutEditor : EditorWindow
   private static readonly byte[] DosNativeOrnamentColorMap =
       { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
   private DosOrnamentGeometryResolver dosOrnamentGeometry;
-  private System.DateTime dosOrnamentDatWriteTime;
+  private System.DateTime dosOrnamentGeometryWriteTime;
 
   // Dungeon viewport is X=0..223. Every left/right wall-ornament pair is the
   // same sprite mirrored around that width: rightX = 224 - leftX - spriteWidth.
@@ -20735,21 +20735,20 @@ private static void HandleGameViewPointerDown(
   private bool TryGetStrictDosGeometry(out DosOrnamentGeometryResolver resolver)
   {
     resolver = null;
-    string path = Path.Combine(Path.GetDirectoryName(Application.dataPath),
-        "DOS_Reference", "GRAPHICS.DAT");
+    string path = DosOrnamentGeometryResolver.ProjectDataPath(Application.dataPath);
     try
     {
       if (!File.Exists(path))
       {
         dosOrnamentGeometry = null;
-        ReportStrictOrnamentMissing("Registry", "DAT", path);
+        ReportStrictOrnamentMissing("Registry", "geometry asset", path);
         return false;
       }
       System.DateTime stamp = File.GetLastWriteTimeUtc(path);
-      if (dosOrnamentGeometry == null || stamp != dosOrnamentDatWriteTime)
+      if (dosOrnamentGeometry == null || stamp != dosOrnamentGeometryWriteTime)
       {
         dosOrnamentGeometry = new DosOrnamentGeometryResolver(File.ReadAllBytes(path));
-        dosOrnamentDatWriteTime = stamp;
+        dosOrnamentGeometryWriteTime = stamp;
       }
       resolver = dosOrnamentGeometry;
       return true;
@@ -20757,7 +20756,7 @@ private static void HandleGameViewPointerDown(
     catch (System.Exception ex)
     {
       dosOrnamentGeometry = null;
-      ReportStrictOrnamentMissing("Registry", "DAT", path + ": " + ex.Message);
+      ReportStrictOrnamentMissing("Registry", "geometry asset", path + ": " + ex.Message);
       return false;
     }
   }
@@ -20796,6 +20795,51 @@ private static void HandleGameViewPointerDown(
     else if (lane == 1 && string.Equals(face, left, System.StringComparison.OrdinalIgnoreCase))
       view = depth == 1 ? 13 : depth == 2 ? 8 : 3;
     return view >= 0;
+  }
+
+  [MenuItem("Tools/DOS Ornament Visibility Diagnostic")]
+  private static void RunDosOrnamentVisibilityDiagnostic()
+  {
+    var windows = Resources.FindObjectsOfTypeAll<ViewportLayoutEditor>();
+    if (windows.Length == 0)
+    {
+      LogMissingArtworkCyan("DOS TRACE: Open ViewEdit first.");
+      return;
+    }
+    foreach (var window in windows)
+      window.ReportDosOrnamentVisibilityDiagnostic();
+  }
+
+  // On-demand inspection only: no calibration, pose, map or drawing changes.
+  private void ReportDosOrnamentVisibilityDiagnostic()
+  {
+    var report = new System.Text.StringBuilder();
+    report.AppendLine("DOS TRACE: Level " + previewDungeonLevel + " (" + previewX + "," + previewY + ") " + previewFacing);
+    report.AppendLine("V17 active=" + IsViewport17WallAuthorityActive()
+        + ", map loaded=" + (previewMiniMap != null) + ", character sheet=" + championSheetVisible
+        + ", total wall ornaments=" + (previewWallOrnaments == null ? -1 : previewWallOrnaments.Length));
+    report.AppendLine("Drawn wall families: " + string.Join(" | ", v17DrawnWalls.ToArray()));
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    report.AppendLine("Front tile is wall=" + PreviewTileIsWall(previewX + fx, previewY + fy));
+    int nearby = 0;
+    if (previewWallOrnaments != null)
+    foreach (var ornament in previewWallOrnaments)
+    {
+      if (ornament == null || Mathf.Abs(ornament.x - previewX) > 4
+          || Mathf.Abs(ornament.y - previewY) > 4) continue;
+      nearby++;
+      bool enabled = IsPreviewFeatureEnabled(MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall));
+      bool projected = TryGetStandardWallOrnamentProjectionInCurrentPose(ornament, 3, 3, out _, out _, out _);
+      bool drawn = IsV17DrawnWallFeatureFace(ornament.x, ornament.y, ornament.wall, ornament.wallTilePlacement);
+      bool mapped = TryGetStrictDosStandardView(ornament, out int view);
+      bool registered = DosWallOrnamentRegistry.ContainsKey(ornament.type ?? "Unknown");
+      report.AppendLine(ornament.type + " (" + ornament.x + "," + ornament.y + ") " + ornament.wall
+          + " physical=" + ornament.wallTilePlacement + " ordinal=" + ornament.ornamentOrdinal
+          + " enabled=" + enabled + " projection=" + projected + " drawnWall=" + drawn
+          + " DOSview=" + (mapped ? view.ToString() : "NONE") + " registered=" + registered);
+    }
+    report.AppendLine("Nearby placement records=" + nearby);
+    LogMissingArtworkCyan(report.ToString());
   }
 
   private void BlitStrictDosWallOrnaments(Color32[] pixels)
