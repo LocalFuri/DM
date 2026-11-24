@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "Stage 4M: generic live ViewEdit offset rows and Apply implemented; Unity verification pending. Wood Ring F1 at Level 0 (1,17) South requires visual correction.",
+  "checkpoint": "Stage 4M live verification: seven of eight registered wall ornaments visually approved (42/48 standard perspectives); torch pickup/return approved; generic ViewEdit offset UI working. Resume with Altar of Vi.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -115,8 +115,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Install Stage 4M files, compile, navigate to Level 0 (1,17) South, adjust Wood Ring F1 relative X/Y and Apply; confirm JSON and persistence.",
-    "Verify remaining Wood Ring perspectives, Slime and Altar of Vi. Preserve approved Hook, Manacles, Grate and both torch holders."
+    "Verify already registered Altar of Vi (DOS type 2; native F1 96x56, S1 20x48) in F1/F2/F3/S1/S2/S3 using current renderer. Use ViewEdit relative offsets only if necessary.",
+    "Preserve seven approved ornament families and torch interaction unchanged. Record Altar approval or specific discrepancy before further work.",
+    "If needed, test nonzero offset persistence after closing/reopening ViewEdit; do not claim this has already been verified. Continue remaining projections and ornament families only after current batch."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -6529,5 +6530,132 @@
       "Based on last delivered Stage 4L source; no newer local source supplied."
     ],
     "cursor": "Ask mode only, read-only."
+  },
+  "strict_dos_stage4m_live_approval_20261124": {
+    "timestamp": "2026-11-24T21:27:21.915233+01:00",
+    "archive": "Progression_Stage4M_Approved_20261124-212721.zip",
+    "baseline": "Latest delivered Stage 4M source and Progression.json; user reports subsequent visual tests. Local calibration JSON after user Apply not supplied; no source or calibration changes in this checkpoint.",
+    "approved_ornaments": {
+      "Hook": {
+        "perspectives": [
+          "F1",
+          "F2",
+          "F3",
+          "S1",
+          "S2",
+          "S3"
+        ],
+        "status": "user visually approved"
+      },
+      "Manacles": {
+        "perspectives": [
+          "F1",
+          "F2",
+          "F3",
+          "S1",
+          "S2",
+          "S3"
+        ],
+        "status": "user visually approved"
+      },
+      "FullTorchHolder": {
+        "perspectives": [
+          "F1",
+          "F2",
+          "F3",
+          "S1",
+          "S2",
+          "S3"
+        ],
+        "status": "user visually approved"
+      },
+      "EmptyTorchHolder": {
+        "perspectives": [
+          "F1",
+          "F2",
+          "F3",
+          "S1",
+          "S2",
+          "S3"
+        ],
+        "status": "user visually approved"
+      },
+      "Grate": {
+        "perspectives": [
+          "F1",
+          "F2",
+          "F3",
+          "S1",
+          "S2",
+          "S3"
+        ],
+        "status": "user visually approved"
+      },
+      "WoodRing": {
+        "perspectives": [
+          "F1",
+          "F2",
+          "F3",
+          "S1",
+          "S2",
+          "S3"
+        ],
+        "status": "user visually approved"
+      },
+      "Slime": {
+        "perspectives": [
+          "F1",
+          "F2",
+          "F3",
+          "S1",
+          "S2",
+          "S3"
+        ],
+        "status": "user visually approved"
+      }
+    },
+    "counts": {
+      "registered": 8,
+      "approved": 7,
+      "approved_standard_perspectives": 42,
+      "total_standard_perspectives": 48
+    },
+    "pending_ornament": {
+      "name": "ViAltar",
+      "dos_type": 2,
+      "native_front": "96x56",
+      "native_side": "20x48",
+      "perspectives": [
+        "F1",
+        "F2",
+        "F3",
+        "S1",
+        "S2",
+        "S3"
+      ]
+    },
+    "confirmed_interactions": [
+      "Torch pickup 100% correct per user",
+      "Return torch to original holder 100% correct per user",
+      "Full/empty holder switching and all six perspectives visually approved",
+      "ViewEdit generic Wood Ring row appears; user adjusted and applied, reports JSON entry with dx=0 and dy=0, and visual comparison correct. All Wood Ring positions later approved."
+    ],
+    "verification_limits": [
+      "Visual approval is not pixel-exact measurement; user explicitly distinguished this earlier.",
+      "Wood Ring zero offset reported by user; exact calibration file not inspected after Apply; nonzero offset persistence and close/reopen test not explicitly confirmed.",
+      "900/900 geometry regression previously passed in Unity; not rerun at this checkpoint.",
+      "Torch return to a different holder not implemented; additional DOS perspectives outside the six standard labels not certified."
+    ],
+    "rules": [
+      "Shared generic DOS renderer and 6-bit scaler only; no legacy/fallback or hardcoded ornament geometry.",
+      "Use extracted project geometry, no runtime GRAPHICS.DAT dependency.",
+      "Relative dx/dy only; missing offset equals zero; no manual mirror or absolute placement overrides.",
+      "Cursor Ask mode read-only unless explicitly instructed otherwise, per session rules."
+    ],
+    "next": [
+      "Verify already registered Altar of Vi (DOS type 2; native F1 96x56, S1 20x48) in F1/F2/F3/S1/S2/S3 using current renderer. Use ViewEdit relative offsets only if necessary.",
+      "Preserve seven approved ornament families and torch interaction unchanged. Record Altar approval or specific discrepancy before further work.",
+      "If needed, test nonzero offset persistence after closing/reopening ViewEdit; do not claim this has already been verified. Continue remaining projections and ornament families only after current batch."
+    ]
   }
 }
