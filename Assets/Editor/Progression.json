@@ -6069,5 +6069,66 @@
     ],
     "validation": "Deleted symbol scan, duplicate NonSerialized scan and delimiter count comparison passed. Unity compilation unavailable.",
     "remaining": "Remaining mirror, torch, floor ornament special paths and other native loaders; generic dispatch and visibility. Cursor read-only."
+  },
+  "strict_ornament_reset_stage3f_20261124": {
+    "timestamp": "2026-11-24T18:51:24.246866+01:00",
+    "status": "Partial physical deletion; Stage 3C onward Unity compilation not confirmed",
+    "deleted_methods": [
+      "GetChampionMirrorScaleMethod",
+      "DescribeChampionMirrorPixelBounds",
+      "GetChampionMirrorScaledFrameTexture",
+      "CropWallDecorationToOpaqueBounds",
+      "GetChampionMirrorArtworkProfile",
+      "GetMossF1Texture",
+      "GetMossF2Texture",
+      "GetMossF3Texture",
+      "GetPuddleTexture",
+      "TryGetPuddleProjection",
+      "DrawCompactPuddleRow",
+      "PuddleProjectionKey",
+      "DrawFloorOrnamentCalibrationRow",
+      "DrawManualChampionLeftF3Row",
+      "ApplyChampionMirrorPositionOnly"
+    ],
+    "deleted_method_count": 15,
+    "cumulative_reported_methods_deleted": 139,
+    "deleted_fields": [
+      "cachedChampionMirrorF2Frame",
+      "cachedChampionMirrorF3Frame",
+      "cachedChampionMirrorF2Method",
+      "cachedChampionMirrorF3Method",
+      "lastChampionMirrorF2DrawDiagnostic",
+      "cachedMossF1Texture",
+      "cachedMossF2Texture",
+      "cachedMossF3Texture",
+      "cachedPuddleF1Texture",
+      "cachedPuddleF1SideTexture",
+      "cachedPuddleF2Texture",
+      "cachedPuddleF3Texture",
+      "cachedPuddleS2Texture"
+    ],
+    "deleted_constants": [
+      "PuddleF1AssetPath",
+      "PuddleF1SideAssetPath",
+      "PuddleF2AssetPath",
+      "PuddleF3AssetPath",
+      "PuddleS2AssetPath",
+      "MossF1AssetPath",
+      "MossF1ScreenTop",
+      "MossF2ScreenTop",
+      "MossF3ScreenTop",
+      "MossF2Width",
+      "MossF2Height",
+      "PuddleF1ScreenTop",
+      "PuddleF2ScreenTop",
+      "PuddleF3ScreenTop",
+      "PuddleS2ScreenTop",
+      "PuddleS2LeftScreenX"
+    ],
+    "changes": [
+      "Removed mirror-specific scaling/cropping/profile and fixed front geometry table. Removed mirror front/side/extended calibration geometry and manual left-F3 experiment UI. Removed Moss and Puddle legacy geometry, loaders and calibration rows. Existing visibility checks now report unresolved verified projection through cyan for enabled floor ornaments and visible mirror rows. Saved calibration JSON and artwork unchanged."
+    ],
+    "validation": "Removed-symbol scan, duplicate NonSerialized scan, lexical delimiter validation passed; no Unity compiler available.",
+    "remaining": "Torch holder special paths, VI Altar side calibration, remaining native loaders, hardcoded geometry including mirror interaction hitbox (do not break recruitment), override dispatch and unified generic rendering. Floor ornament geometry requires separate verified DOS floor layout, not assumed wall resource 696. Cursor read-only."
   }
 }

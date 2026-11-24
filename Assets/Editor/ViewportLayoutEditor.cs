@@ -299,39 +299,17 @@ public class ViewportLayoutEditor : EditorWindow
         && DosWallOrnamentRegistry.TryGetValue(family, out registration);
   }
 
-  private const string PuddleF1AssetPath =
-      "Assets/Art/Ornaments/Puddle_F1.png";
-  private const string PuddleF1SideAssetPath =
-      "Assets/Art/Ornaments/Puddle_F1_Side_9x7.png";
-  private const string PuddleF2AssetPath =
-      "Assets/Art/Ornaments/Puddle_F2.png";
-  private const string PuddleF3AssetPath =
-      "Assets/Art/Ornaments/Puddle_F3.png";
-  private const string PuddleS2AssetPath =
-      "Assets/Art/Ornaments/Puddle_S2.png";
 
   // Moss is a floor ornament resolved from DungeonFeaturePlacements.json.
   // F1 and F3 are imported original artwork. F2 is generated from F1.
   // F3 screen top is measured from the 4,5 North original: the 8x2 graphic
   // sits at viewport X=108, screen Y=105 (dungeon view begins at Y=33).
-  private const string MossF1AssetPath =
-      "Assets/Art/Ornaments/Moss_F1_56x19.png";
-  private const int MossF1ScreenTop = 132;
-  private const int MossF2ScreenTop = 108;
-  private const int MossF3ScreenTop = 105;
-  private const int MossF2Width = 37;
-  private const int MossF2Height = 13;
 
   // Blue floor puddle. Hall of Champions puddles are resolved from the
   // original deterministic random floor-ornament rule (local ordinal 2).
   // Puddle_F1 is the D1 center graphic. D1-left/right use the dedicated
   // Puddle_F1_Side_9x7 source; the left placement keeps the verified +1 px
   // right / +1 px up adjustment from the original comparison.
-  private const int PuddleF1ScreenTop = 132;
-  private const int PuddleF2ScreenTop = 108;
-  private const int PuddleF3ScreenTop = 94;
-  private const int PuddleS2ScreenTop = 102;
-  private const int PuddleS2LeftScreenX = 66;
 
   // Original DOS Grate front placement on the wall immediately in front of
   // the party. Measured from the supplied 320x200 original screenshot:
@@ -1812,18 +1790,6 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedGrateF3SideTexture;
   [System.NonSerialized]
   private Texture2D cachedHookSideTexture;
-  [System.NonSerialized]
-  private Texture2D cachedPuddleF1Texture;
-  private Texture2D cachedPuddleF1SideTexture;
-  [System.NonSerialized]
-  private Texture2D cachedPuddleF2Texture;
-  [System.NonSerialized]
-  private Texture2D cachedPuddleF3Texture;
-  [System.NonSerialized]
-  private Texture2D cachedPuddleS2Texture;
-  private Texture2D cachedMossF1Texture;
-  private Texture2D cachedMossF2Texture;
-  private Texture2D cachedMossF3Texture;
   private Texture2D cachedCharacterSheetTexture;
   private Texture2D cachedChampionsBackgroundTexture;
   private Texture2D cachedChampionInventoryTexture;
@@ -23873,66 +23839,6 @@ private static void HandleGameViewPointerDown(
   // Shared champion-mirror calibration controls for the existing LeftF3
   // preview. Keep its persisted key intact until all projection paths have
   // been migrated; otherwise previously accepted calibrations would be lost.
-  private void DrawManualChampionLeftF3Row()
-  {
-    if (!TryFindManualLeftF3Mirror(out ChampionMirrorPlacement mirror)) return;
-    int x = 0, y = 83;
-    ApplyChampionMirrorPositionOnly(ManualChampionLeftF3Key, ref x, ref y);
-    int savedX = x, savedY = y;
-
-    GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
-    style.normal.textColor = Color.yellow;
-    EditorGUILayout.BeginHorizontal();
-    string label = mirror.champion.ToUpperInvariant() + " - LeftF3"
-        + " - (" + mirror.x + "," + mirror.y + " " + ShortDirectionLabel(mirror.wall) + ")";
-    GUILayout.Label(label, style,
-        GUILayout.Width(Mathf.Ceil(style.CalcSize(new GUIContent(label)).x) + 6f));
-    bool active = manualChampionLeftF3Preview;
-    bool selected = EditorGUILayout.ToggleLeft("Set", active, GUILayout.Width(55f));
-    int editX = x, editY = y;
-    bool changeX = DrawIntStepperInline("X", ref editX, snap,
-        x != savedX, true, 24f, ViewEditCoordinateInputWidth);
-    bool changeY = DrawIntStepperInline("Y", ref editY, snap,
-        y != savedY, true, 24f, ViewEditCoordinateInputWidth);
-    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-    NoteContentRight();
-    EditorGUILayout.EndHorizontal();
-
-    bool changed = false;
-    if (selected != active)
-    {
-      manualChampionLeftF3Preview = selected;
-      changed = true;
-    }
-    if (apply)
-    {
-      if (SaveAcceptedOrnamentReference(
-          ManualChampionLeftF3Key, editX, editY, false))
-      {
-        previewFeaturePositionOverrides.Remove(ManualChampionLeftF3Key);
-        previewFeatureMirrorOverrides.Remove(ManualChampionLeftF3Key);
-      }
-      changed = true;
-    }
-    else
-    {
-      if ((changeX && editX != x) || (changeY && editY != y))
-      {
-        if (editX == savedX && editY == savedY)
-          previewFeaturePositionOverrides.Remove(ManualChampionLeftF3Key);
-        else
-          previewFeaturePositionOverrides[ManualChampionLeftF3Key] =
-              new Vector2Int(editX, editY);
-        changed = true;
-      }
-    }
-    if (changed)
-    {
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
-    }
-  }
 
 
 
@@ -23993,59 +23899,8 @@ private static void HandleGameViewPointerDown(
                  System.StringComparison.OrdinalIgnoreCase)
             || IsPreviewChampionTaken(m.champion)) continue;
 
-        string visibilityKey = MakePreviewFeatureKey(
-            "ChampionMirror", m.x, m.y, m.wall);
-        string key = "OrnamentProjection:ChampionMirror:ExtendedLaneF3:"
-            + (left ? "Left" : "Right");
-        int x = left ? 16 : 194;
-        int y = 70;
-        bool mirror = !left;
-        ApplyChampionMirrorPositionOnly(key, ref x, ref y);
-        int defaultX = x, defaultY = y;
-        int editX = x, editY = y;
-        EditorGUILayout.BeginHorizontal();
-        string label = m.champion.ToUpperInvariant() + " - Extended "
-            + (left ? "Left" : "Right") + " F3 (" + m.x + ","
-            + m.y + " " + ShortDirectionLabel(m.wall) + ")";
-        GUILayout.Label(label, featureStyle,
-            GUILayout.Width(Mathf.Ceil(featureStyle.CalcSize(new GUIContent(label)).x) + 6f));
-        bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
-        bool nowEnabled = EditorGUILayout.ToggleLeft("Set", wasEnabled,
-            GUILayout.Width(55f));
-        bool changedX = DrawIntStepperInline("X", ref editX, snap,
-            x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
-        bool changedY = DrawIntStepperInline("Y", ref editY, snap,
-            y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-        bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-        NoteContentRight();
-        EditorGUILayout.EndHorizontal();
-        if (nowEnabled != wasEnabled)
-          SetPreviewFeatureEnabled(visibilityKey, nowEnabled);
-        if (apply)
-        {
-          if (SaveAcceptedOrnamentReference(key, editX, editY, !left))
-          {
-            previewFeaturePositionOverrides.Remove(key);
-            previewFeatureMirrorOverrides.Remove(key);
-          }
-        }
-        else
-        {
-          if ((changedX && editX != x) || (changedY && editY != y))
-          {
-            if (editX == defaultX && editY == defaultY)
-              previewFeaturePositionOverrides.Remove(key);
-            else
-              previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
-          }
-        }
-        if (apply || nowEnabled != wasEnabled || changedX || changedY)
-        {
-          RefreshEditModePreview();
-          RepaintGameViews();
-          Repaint();
-        }
-        break;
+        if (IsPreviewFeatureEnabled(MakePreviewFeatureKey("ChampionMirror", m.x, m.y, m.wall)))
+          ReportStrictOrnamentMissing("ChampionMirror", "ExtendedLaneF3", "verified generic DOS projection");
       }
     }
   }
@@ -24202,128 +24057,16 @@ private static void HandleGameViewPointerDown(
   // Wall-feature artwork policy. Geometry and visibility are resolved by the
   // existing wall-ornament path; this profile only controls artwork treatment.
   // Other wall ornaments retain their existing artwork code unchanged.
-  private struct WallFeatureArtworkProfile
-  {
-    public WallOrnamentDepthSlot slot;
-    public bool drawPortrait;
-    public int scaleMethod;
-    public byte[] distancePalette;
-  }
 
-  private static WallFeatureArtworkProfile GetChampionMirrorArtworkProfile(int depth)
-  {
-    WallFeatureArtworkProfile profile = new WallFeatureArtworkProfile();
-    switch (depth)
-    {
-      case 1:
-        profile.slot = ChampionMirrorFrontWallOrnamentSet.f1;
-        profile.drawPortrait = true;
-        profile.scaleMethod = 0;
-        profile.distancePalette = null; // Full-size verified F1 artwork.
-        break;
-      case 2:
-        profile.slot = ChampionMirrorFrontWallOrnamentSet.f2;
-        profile.drawPortrait = false;
-        profile.scaleMethod = 0;
-        profile.distancePalette = WallOrnamentMediumColorMap;
-        break;
-      case 3:
-        profile.slot = ChampionMirrorFrontWallOrnamentSet.f3;
-        profile.drawPortrait = false;
-        profile.scaleMethod = 0;
-        profile.distancePalette = WallOrnamentFarColorMap;
-        break;
-      default:
-        throw new System.ArgumentOutOfRangeException("depth", depth,
-            "Champion mirror artwork is defined only for F1/F2/F3.");
-    }
-    return profile;
-  }
 
-  private Texture2D cachedChampionMirrorF2Frame;
-  private Texture2D cachedChampionMirrorF3Frame;
-  private int cachedChampionMirrorF2Method = -1;
-  private int cachedChampionMirrorF3Method = -1;
 
-  private static int GetChampionMirrorScaleMethod(int depth)
-  {
-    return GetChampionMirrorArtworkProfile(depth).scaleMethod;
-  }
 
 
 
 
   // Diagnostic only: inspect generated F2 pixels; do not change scaling.
-  private static string DescribeChampionMirrorPixelBounds(Texture2D texture)
-  {
-    if (texture == null || !texture.isReadable) return "not readable";
-    Color32[] colors = texture.GetPixels32();
-    int minX = texture.width, minY = texture.height, maxX = -1, maxY = -1;
-    int count = 0;
-    for (int y = 0; y < texture.height; y++)
-      for (int x = 0; x < texture.width; x++)
-      {
-        if (colors[y * texture.width + x].a == 0) continue;
-        count++;
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
-      }
-    return count == 0 ? "no opaque pixels"
-        : "opaque bounds x=" + minX + ".." + maxX + ", y=" + minY
-          + ".." + maxY + " (width=" + (maxX - minX + 1)
-          + ", height=" + (maxY - minY + 1) + ", count=" + count + ")";
-  }
 
-  private string lastChampionMirrorF2DrawDiagnostic;
 
-  private Texture2D GetChampionMirrorScaledFrameTexture(Texture2D frame, int depth)
-  {
-    if (frame == null || !frame.isReadable || (depth != 2 && depth != 3))
-      return null;
-    int method = GetChampionMirrorScaleMethod(depth);
-    if (depth == 2 && cachedChampionMirrorF2Frame != null
-        && cachedChampionMirrorF2Method == method)
-      return cachedChampionMirrorF2Frame;
-    if (depth == 3 && cachedChampionMirrorF3Frame != null
-        && cachedChampionMirrorF3Method == method)
-      return cachedChampionMirrorF3Frame;
-    WallFeatureArtworkProfile profile = GetChampionMirrorArtworkProfile(depth);
-    WallOrnamentDepthSlot slot = profile.slot;
-    byte[] palette = profile.distancePalette;
-    // The 64x43 F1 source has transparent padding on its sides. Shrinking
-    // that padded canvas into the F2/F3 target makes the visible mirror much
-    // too narrow. Crop to the actual opaque frame BEFORE distance scaling;
-    // do not alter the full-sized F1 frame or any other ornament artwork.
-    Texture2D unpaddedFrame = CropWallDecorationToOpaqueBounds(frame);
-    bool ownsUnpaddedFrame = !ReferenceEquals(unpaddedFrame, frame);
-    // Capture diagnostic dimensions before the temporary texture is destroyed.
-    int croppedFrameWidth = unpaddedFrame.width;
-    int croppedFrameHeight = unpaddedFrame.height;
-    Texture2D scaled;
-    try
-    {
-      scaled = GenerateDmScaledWallDecoration(
-          unpaddedFrame, slot.width, slot.height, palette,
-          "Champion Mirror F" + depth + " DOS Frame");
-    }
-    finally
-    {
-      if (ownsUnpaddedFrame)
-        UnityEngine.Object.DestroyImmediate(unpaddedFrame);
-    }
-    if (depth == 2)
-      Debug.Log("MIRROR F2 SCALE: method=" + method
-          + ", source=" + frame.width + "x" + frame.height
-          + ", cropped=" + croppedFrameWidth + "x" + croppedFrameHeight
-          + ", target=" + slot.width + "x" + slot.height
-          + ", texture=" + (scaled == null ? "null" : scaled.width + "x" + scaled.height)
-          + ", " + DescribeChampionMirrorPixelBounds(scaled));
-    if (depth == 2) { cachedChampionMirrorF2Frame = scaled; cachedChampionMirrorF2Method = method; }
-    else { cachedChampionMirrorF3Frame = scaled; cachedChampionMirrorF3Method = method; }
-    return scaled;
-  }
 
 
 
@@ -26163,230 +25906,11 @@ private static void HandleGameViewPointerDown(
     return Mathf.Abs(lane) <= Mathf.Max(1, maxLane);
   }
 
-  private bool DrawFloorOrnamentCalibrationRow(
-      int mapX,
-      int mapY,
-      string family,
-      string slot,
-      int codedX,
-      int codedY,
-      string displayName)
-  {
-    string key = "OrnamentProjection:" + family + ":" + slot;
-
-    int defaultX = codedX;
-    int defaultY = codedY;
-    bool defaultMirror = false;
-    ApplyAcceptedOrnamentReference(
-        key, ref defaultX, ref defaultY, ref defaultMirror);
-
-    int x = defaultX;
-    int y = defaultY;
-    bool mirror = defaultMirror;
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
-
-    EditorGUILayout.BeginHorizontal();
-    float savedLabelWidth = EditorGUIUtility.labelWidth;
-
-    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
-    featureStyle.normal.textColor = Color.yellow;
-    featureStyle.hover.textColor = Color.yellow;
-    featureStyle.focused.textColor = Color.yellow;
-
-    float ornamentCaptionColumnWidth =
-        featureStyle.CalcSize(
-            new GUIContent("WoodRing [1,17] (S) / S1")).x;
-    GUILayout.Label(
-        displayName,
-        featureStyle,
-        GUILayout.Width(ornamentCaptionColumnWidth));
-
-    EditorGUIUtility.labelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    int editX = x;
-    bool xChanged = DrawIntStepperInline(
-        "X", ref editX, snap, x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
-
-    EditorGUIUtility.labelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-    int editY = y;
-    bool yChanged = DrawIntStepperInline(
-        "Y", ref editY, snap, y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-
-    GUILayout.Space(6f);
-    bool applyClicked = GUILayout.Button(
-        "Apply",
-        GUILayout.Width(58f),
-        GUILayout.ExpandWidth(false));
-    NoteContentRight();
-
-    EditorGUIUtility.labelWidth = savedLabelWidth;
-    EditorGUILayout.EndHorizontal();
-
-    if (applyClicked)
-    {
-      if (SaveAcceptedOrnamentReference(key, editX, editY, mirror))
-      {
-        previewFeaturePositionOverrides.Remove(key);
-        previewFeatureMirrorOverrides.Remove(key);
-        previewPositionChangedThisFrame = true;
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
-      }
-      return true;
-    }
-
-    bool changed = false;
-    if ((xChanged && editX != x) || (yChanged && editY != y))
-    {
-      if (editX == defaultX && editY == defaultY)
-        previewFeaturePositionOverrides.Remove(key);
-      else
-        previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
-
-      previewPositionChangedThisFrame = true;
-      changed = true;
-    }
-
-    if (changed)
-    {
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
-    }
-
-    return true;
-  }
 
   // Puddle screen calibration uses the same projection anchor as its renderer.
   // X/Y are framebuffer bottom-left coordinates, not dungeon-map coordinates.
-  private string PuddleProjectionKey(int depth, int lane)
-  {
-    return "OrnamentClass:Puddle:F" + depth
-        + (lane < 0 ? "L" : lane > 0 ? "R" : "");
-  }
 
-  private bool TryGetPuddleProjection(int depth, int lane,
-      out int x, out int y)
-  {
-    x = 0;
-    y = 0;
-    string path;
-    Texture2D texture;
-    if (depth == 1 && lane != 0)
-    {
-      path = PuddleF1SideAssetPath;
-      texture = GetPuddleTexture(path, ref cachedPuddleF1SideTexture);
-      if (texture == null) return false;
-      x = lane < 0 ? 0 : DungeonViewportWidth - texture.width;
-      y = PreviewHeight - PuddleF1ScreenTop - texture.height + 1;
-      return true;
-    }
-    if (depth == 2 && lane != 0)
-    {
-      path = PuddleS2AssetPath;
-      texture = GetPuddleTexture(path, ref cachedPuddleS2Texture);
-      if (texture == null) return false;
-      x = lane < 0 ? PuddleS2LeftScreenX
-          : DungeonViewportWidth - PuddleS2LeftScreenX - texture.width;
-      y = PreviewHeight - PuddleS2ScreenTop - texture.height;
-      return true;
-    }
-    if (lane != 0) return false;
-    path = depth == 1 ? PuddleF1AssetPath
-        : depth == 2 ? PuddleF2AssetPath : PuddleF3AssetPath;
-    if (depth == 1) texture = GetPuddleTexture(path, ref cachedPuddleF1Texture);
-    else if (depth == 2) texture = GetPuddleTexture(path, ref cachedPuddleF2Texture);
-    else texture = GetPuddleTexture(path, ref cachedPuddleF3Texture);
-    if (texture == null) return false;
-    x = (DungeonViewportWidth - texture.width) / 2;
-    y = PreviewHeight - (depth == 1 ? PuddleF1ScreenTop
-        : depth == 2 ? PuddleF2ScreenTop : PuddleF3ScreenTop) - texture.height;
-    return true;
-  }
 
-  private void DrawCompactPuddleRow(string displayName, string key,
-      int depth, int lane, int mapX, int mapY)
-  {
-    if (!TryGetPuddleProjection(depth, lane, out int codedX, out int codedY))
-    {
-      LogMissingArtworkCyan("ViewEdit Puddle: missing projection texture for " + displayName);
-      return;
-    }
-    string projectionKey = PuddleProjectionKey(depth, lane);
-    int defaultX = codedX;
-    int defaultY = codedY;
-    bool mirror = lane > 0;
-    ApplyAcceptedOrnamentReference(
-        projectionKey, ref defaultX, ref defaultY, ref mirror);
-    int x = defaultX;
-    int y = defaultY;
-    ApplyPreviewFeatureRenderOverrides(projectionKey, ref x, ref y, ref mirror);
-
-    EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
-    float savedLabelWidth = EditorGUIUtility.labelWidth;
-    GUIStyle nameStyle = new GUIStyle(EditorStyles.boldLabel);
-    Color puddleColor = new Color(0.3f, 0.75f, 1f);
-    nameStyle.normal.textColor = puddleColor;
-    nameStyle.hover.textColor = puddleColor;
-    nameStyle.focused.textColor = puddleColor;
-    nameStyle.clipping = TextClipping.Clip;
-    string perspective = lane == 0 ? "F" + depth : "S" + depth;
-    string caption = "Puddle [" + mapX + "," + mapY + "] ("
-        + ShortDirectionLabel(FacingName(previewFacing)) + ") / "
-        + perspective;
-    GUILayout.Label(caption, nameStyle,
-        GUILayout.Width(nameStyle.CalcSize(new GUIContent(caption)).x + 6f));
-    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    int editX = x;
-    bool changedX = DrawIntStepperInline(
-        "X", ref editX, snap, x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
-    EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-    int editY = y;
-    bool changedY = DrawIntStepperInline(
-        "Y", ref editY, snap, y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-    bool editMirror = mirror;
-    if (lane != 0)
-    {
-      GUILayout.Space(6f);
-      editMirror = EditorGUILayout.ToggleLeft(
-          "Mirror", mirror, GUILayout.Width(56f));
-    }
-    bool changedMirror = editMirror != mirror;
-    bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-    NoteContentRight();
-    EditorGUIUtility.labelWidth = savedLabelWidth;
-    EditorGUILayout.EndHorizontal();
-
-    bool refresh = false;
-    if (changedX || changedY)
-    {
-      previewFeaturePositionOverrides[projectionKey] =
-          new Vector2Int(editX, editY);
-      previewPositionChangedThisFrame = true;
-      refresh = true;
-    }
-    if (changedMirror)
-    {
-      previewFeatureMirrorOverrides[projectionKey] = editMirror;
-      previewMirrorChangedThisFrame = true;
-      refresh = true;
-    }
-    if (apply && SaveAcceptedOrnamentReference(
-            projectionKey, editX, editY, editMirror))
-    {
-      previewFeaturePositionOverrides.Remove(projectionKey);
-      previewFeatureMirrorOverrides.Remove(projectionKey);
-      refresh = true;
-    }
-    if (refresh)
-    {
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
-    }
-  }
 
   private void DrawFeatureChecklistRow(
       int mapX,
@@ -27462,13 +26986,6 @@ private static void HandleGameViewPointerDown(
   // Champion mirror calibration controls position only. Historical Mirror
   // values in accepted references or live ViewEdit overrides must never
   // override the physical wall-side orientation chosen by the renderer.
-  private void ApplyChampionMirrorPositionOnly(
-      string key, ref int x, ref int y)
-  {
-    bool ignoredMirror = false;
-    ApplyAcceptedOrnamentReference(key, ref x, ref y, ref ignoredMirror);
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref ignoredMirror);
-  }
 
   // Champion mirrors use the same wall-ornament ViewEdit calibration model.
   // F1 includes the portrait; F2/F3 show frames only. These rows change only the
@@ -27513,82 +27030,8 @@ private static void HandleGameViewPointerDown(
               champion.x, champion.y, champion.wall, true, depth, 0))
         continue;
 
-      string visibilityKey = MakePreviewFeatureKey(
-          "ChampionMirror", champion.x, champion.y, champion.wall);
-      string projectionKey = "OrnamentProjection:ChampionMirror:F" + depth;
-      WallOrnamentDepthSlot slot = GetChampionMirrorArtworkProfile(depth).slot;
-      int defaultX = slot.x;
-      int defaultY = slot.y;
-      ApplyChampionMirrorPositionOnly(projectionKey, ref defaultX, ref defaultY);
-      int x = defaultX;
-      int y = defaultY;
-
-
-      EditorGUILayout.BeginHorizontal();
-      float savedLabelWidth = EditorGUIUtility.labelWidth;
-      GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
-      featureStyle.normal.textColor = Color.yellow;
-      // Show the F1 accessible viewing pose from Dungeon Features, just
-      // like the S1/S2/S3 champion mirror rows. The wall face points toward
-      // the viewer; the viewer faces the opposite direction.
-      int viewingX = champion.hasViewingFloor ? champion.viewingFloorX : champion.x - fx;
-      int viewingY = champion.hasViewingFloor ? champion.viewingFloorY : champion.y - fy;
-      string viewingDirection = ShortDirectionLabel(FacingName(previewFacing));
-      string frontLabel = champion.champion.ToUpperInvariant() + " - F" + depth
-          + " - " + viewingX + "," + viewingY + " " + viewingDirection;
-      // Align champion calibration controls with the floor-item (sword) row.
-      // Long labels can expand rather than being truncated.
-      DrawViewEditAlignedYellowCaption(featureStyle, frontLabel, false);
-
-      bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
-      // Match every yellow ornament row: Set caption first, then checkbox.
-      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
-
-      EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
-      int editX = x;
-      bool xChanged = DrawIntStepperInline(
-          "X", ref editX, snap, x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
-      EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-      int editY = y;
-      bool yChanged = DrawIntStepperInline(
-          "Y", ref editY, snap, y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-      // Front-facing champion mirrors are never mirrored.
-      bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-
-      NoteContentRight();
-      EditorGUIUtility.labelWidth = savedLabelWidth;
-      EditorGUILayout.EndHorizontal();
-
-      if (nowEnabled != wasEnabled)
-        SetPreviewFeatureEnabled(visibilityKey, nowEnabled);
-      if (apply)
-      {
-        if (SaveAcceptedOrnamentReference(projectionKey, editX, editY, false))
-        {
-          previewFeaturePositionOverrides.Remove(projectionKey);
-          previewFeatureMirrorOverrides.Remove(projectionKey);
-          previewPositionChangedThisFrame = true;
-          previewMirrorChangedThisFrame = true;
-        }
-      }
-      else
-      {
-        if ((xChanged && editX != x) || (yChanged && editY != y))
-        {
-          if (editX == defaultX && editY == defaultY)
-            previewFeaturePositionOverrides.Remove(projectionKey);
-          else
-            previewFeaturePositionOverrides[projectionKey] = new Vector2Int(editX, editY);
-          previewPositionChangedThisFrame = true;
-        }
-      }
-      if (apply || nowEnabled != wasEnabled || xChanged || yChanged)
-      {
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
-      }
-      return;
+      if (IsPreviewFeatureEnabled(MakePreviewFeatureKey("ChampionMirror", champion.x, champion.y, champion.wall)))
+        ReportStrictOrnamentMissing("ChampionMirror", "F" + depth, "verified generic DOS projection");
     }
     }
   }
@@ -27641,112 +27084,8 @@ private static void HandleGameViewPointerDown(
         if (visible == null)
           continue;
 
-        string visibilityKey = MakePreviewFeatureKey(
-            "ChampionMirror", visible.x, visible.y, visible.wall);
-        string key = "OrnamentProjection:ChampionMirror:S" + depth + ":"
-            + (left ? "Left" : "Right");
-        int width = depth == 1 ? 16 : depth == 2 ? 8 : 4;
-        int height = depth == 1 ? 35 : depth == 2 ? 18 : 9;
-        int x = depth == 1 ? (left ? HookD1SideLeftX : HookD1SideRightX)
-            : depth == 2 ? (left ? HookD2SideLeftX : HookD2SideRightX)
-            : (left ? HookD3SideLeftX : HookD3SideRightX);
-        int y = depth == 1 ? HookD1SideY - (height - 19) / 2
-            : depth == 2 ? HookD2SideY - (height - HookD2SideHeight) / 2
-            : HookD3SideY - (height - HookD3SideHeight) / 2;
-        bool mirror = !left;
-        ApplyChampionMirrorPositionOnly(key, ref x, ref y);
-        int defaultX = x;
-        int defaultY = y;
-
-        // Dungeon Features stores the accessible floor location. The mirror
-        // orientation is resolved from the adjacent solid-wall geometry.
-        // Never display a wall-tile coordinate as the player's F1 location.
-        int viewingX = visible.hasViewingFloor ? visible.viewingFloorX : visible.x;
-        int viewingY = visible.hasViewingFloor ? visible.viewingFloorY : visible.y;
-        string viewingDirection;
-        // The wall face points toward the viewer; the player faces the
-        // opposite direction to look at that face.
-        int offsetX;
-        int offsetY;
-        switch ((visible.wall ?? "").Trim().ToUpperInvariant())
-        {
-          case "NORTH": offsetX = 0; offsetY = -1; viewingDirection = "S"; break;
-          case "EAST": offsetX = 1; offsetY = 0; viewingDirection = "W"; break;
-          case "SOUTH": offsetX = 0; offsetY = 1; viewingDirection = "N"; break;
-          case "WEST": offsetX = -1; offsetY = 0; viewingDirection = "E"; break;
-          default:
-            Debug.LogError("ViewEdit: Invalid champion mirror wall face for "
-                + visible.champion + ": " + visible.wall);
-            continue;
-        }
-        // For explicit mirror placements with no associated champion floor,
-        // derive the adjacent accessible square from the actual wall face.
-        if (!visible.hasViewingFloor)
-        {
-          viewingX += offsetX;
-          viewingY += offsetY;
-        }
-        // Validate the Dungeon Features floor against the resolved geometry.
-        if (viewingX != visible.x + offsetX || viewingY != visible.y + offsetY
-            || !PreviewTileIsOpen(viewingX, viewingY))
-        {
-          Debug.LogError("ViewEdit: Invalid F1 viewing floor for champion "
-              + visible.champion + " at (" + viewingX + "," + viewingY
-              + "), mirror wall (" + visible.x + "," + visible.y
-              + " " + visible.wall + "). Dungeon Features and geometry disagree.");
-          continue;
-        }
-        EditorGUILayout.BeginHorizontal();
-        float oldLabelWidth = EditorGUIUtility.labelWidth;
-        string sideLabel = visible.champion.ToUpperInvariant() + " - S" + depth
-            + (left ? "L" : "R") + " - " + viewingX + ","
-            + viewingY + " " + viewingDirection;
-        DrawViewEditAlignedYellowCaption(featureStyle, sideLabel, false);
-        bool wasEnabled = IsPreviewFeatureEnabled(visibilityKey);
-        // Share the same compact Set column as every other yellow row.
-        bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
-        EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("X")).x;
-        int editX = x;
-        bool xChanged = DrawIntStepperInline(
-            "X", ref editX, snap, x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
-        EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-        int editY = y;
-        bool yChanged = DrawIntStepperInline(
-            "Y", ref editY, snap, y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-        bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-        NoteContentRight();
-        EditorGUIUtility.labelWidth = oldLabelWidth;
-        EditorGUILayout.EndHorizontal();
-
-        if (nowEnabled != wasEnabled)
-          SetPreviewFeatureEnabled(visibilityKey, nowEnabled);
-        if (apply)
-        {
-          if (SaveAcceptedOrnamentReference(key, editX, editY, !left))
-          {
-            previewFeaturePositionOverrides.Remove(key);
-            previewFeatureMirrorOverrides.Remove(key);
-            previewPositionChangedThisFrame = true;
-            previewMirrorChangedThisFrame = true;
-          }
-        }
-        else
-        {
-          if ((xChanged && editX != x) || (yChanged && editY != y))
-          {
-            if (editX == defaultX && editY == defaultY)
-              previewFeaturePositionOverrides.Remove(key);
-            else
-              previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
-            previewPositionChangedThisFrame = true;
-          }
-        }
-        if (apply || nowEnabled != wasEnabled || xChanged || yChanged)
-        {
-          RefreshEditModePreview();
-          RepaintGameViews();
-          Repaint();
-        }
+        if (IsPreviewFeatureEnabled(MakePreviewFeatureKey("ChampionMirror", visible.x, visible.y, visible.wall)))
+          ReportStrictOrnamentMissing("ChampionMirror", "S" + depth, "verified generic DOS projection");
       }
     }
   }
@@ -28198,7 +27537,6 @@ private static void HandleGameViewPointerDown(
     DrawChampionMirrorSideCalibrationRows();
     DrawChampionMirrorExtendedSideLaneF3Rows();
 
-    DrawManualChampionLeftF3Row();
 
 
     // Ordinary wall ornaments.
@@ -28579,10 +27917,9 @@ private static void HandleGameViewPointerDown(
         if (!IsPuddleProjectionVisibleInCurrentPose(x, y, depth, lane))
           continue;
 
-        string key = MakePreviewFeatureKey("Puddle", x, y, null);
-        string puddleDepth = "F" + depth;
-        string puddleSide = lane < 0 ? " L" : lane > 0 ? " R" : "";
-        DrawCompactPuddleRow("Puddle " + puddleDepth + puddleSide, key, depth, lane, x, y);
+        if (IsPreviewFeatureEnabled(MakePreviewFeatureKey("Puddle", x, y, null)))
+          ReportStrictOrnamentMissing("Puddle", (lane == 0 ? "F" : "S") + depth,
+              "verified native DOS floor ornament projection");
       }
     }
 
@@ -28606,34 +27943,9 @@ private static void HandleGameViewPointerDown(
         continue;
       }
 
-      Texture2D mossTexture =
-          depth == 1 ? GetMossF1Texture()
-          : depth == 2 ? GetMossF2Texture()
-          : GetMossF3Texture();
-      if (mossTexture == null)
-        continue;
-
-      int screenTop =
-          depth == 1 ? MossF1ScreenTop
-          : depth == 2 ? MossF2ScreenTop
-          : MossF3ScreenTop;
-
-      int codedX = (DungeonViewportWidth - mossTexture.width) / 2;
-      int codedY = PreviewHeight - screenTop - mossTexture.height;
-      string slot = "F" + depth;
-      string name =
-          "Moss [" + x + "," + y + "] ("
-          + ShortDirectionLabel(FacingName(previewFacing))
-          + ") / " + slot;
-
-      DrawFloorOrnamentCalibrationRow(
-          x,
-          y,
-          "Moss",
-          slot,
-          codedX,
-          codedY,
-          name);
+      if (IsPreviewFeatureEnabled(MakePreviewFeatureKey("Moss", x, y, null)))
+        ReportStrictOrnamentMissing("Moss", "F" + depth,
+            "verified native DOS floor ornament projection");
     }
 
     // Stairs use the renderer's exact projection geometry. The current
@@ -34410,86 +33722,14 @@ private static void HandleGameViewPointerDown(
         lane);
   }
 
-  private Texture2D GetMossF1Texture()
-  {
-    if (cachedMossF1Texture != null)
-      return cachedMossF1Texture;
-
-    TextureImporter importer =
-        AssetImporter.GetAtPath(MossF1AssetPath) as TextureImporter;
-    if (importer != null)
-    {
-      bool changed = false;
-      if (!importer.isReadable)
-      {
-        importer.isReadable = true;
-        changed = true;
-      }
-      if (importer.filterMode != FilterMode.Point)
-      {
-        importer.filterMode = FilterMode.Point;
-        changed = true;
-      }
-      if (importer.mipmapEnabled)
-      {
-        importer.mipmapEnabled = false;
-        changed = true;
-      }
-      if (changed)
-        importer.SaveAndReimport();
-    }
-
-    cachedMossF1Texture =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(MossF1AssetPath);
-    return cachedMossF1Texture;
-  }
-
-  private Texture2D GetMossF2Texture()
-  {
-    if (cachedMossF2Texture != null)
-      return cachedMossF2Texture;
-
-    Texture2D source = GetMossF1Texture();
-    if (source == null || !source.isReadable)
-      return null;
-
-    cachedMossF2Texture = GenerateDmScaledWallDecoration(
-        source,
-        MossF2Width,
-        MossF2Height,
-        WallOrnamentMediumColorMap,
-        "Moss F2 Generated from F1");
-    return cachedMossF2Texture;
-  }
-
-  private Texture2D GetMossF3Texture()
-  {
-    if (cachedMossF3Texture != null)
-      return cachedMossF3Texture;
-    Texture2D source = GetMossF1Texture();
-    if (source == null || !source.isReadable)
-    {
-      ReportStrictOrnamentMissing("Moss", "F3", "readable native F1 source");
-      return null;
-    }
-    cachedMossF3Texture = GenerateDmScaledWallDecoration(
-        source, 8, 2, WallOrnamentFarColorMap, "Moss F3 DOS");
-    return cachedMossF3Texture;
-  }
 
 
 
 
 
 
-  private Texture2D GetPuddleTexture(string assetPath, ref Texture2D cache)
-  {
-    if (cache != null)
-      return cache;
 
-    cache = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
-    return cache;
-  }
+
 
 
   private Texture2D GetViAltarS1Texture()
@@ -34587,61 +33827,13 @@ private static void HandleGameViewPointerDown(
     0, 1, 0, 2
   };
 
-  private struct WallOrnamentDepthSlot
-  {
-    public int width;
-    public int height;
-    public int x;
-    public int y;
 
-    public WallOrnamentDepthSlot(int width, int height, int x, int y)
-    {
-      this.width = width;
-      this.height = height;
-      this.x = x;
-      this.y = y;
-    }
-  }
-
-  private struct WallOrnamentCoordinateSet
-  {
-    public WallOrnamentDepthSlot f1;
-    public WallOrnamentDepthSlot f2;
-    public WallOrnamentDepthSlot f3;
-
-    public WallOrnamentCoordinateSet(
-        WallOrnamentDepthSlot f1,
-        WallOrnamentDepthSlot f2,
-        WallOrnamentDepthSlot f3)
-    {
-      this.f1 = f1;
-      this.f2 = f2;
-      this.f3 = f3;
-    }
-  }
 
 
 
 
   // Generic wall-ornament coordinate profile: Champion Mirror front.
   // F1 includes the champion portrait; F2/F3 render frame only.
-  private static readonly WallOrnamentCoordinateSet ChampionMirrorFrontWallOrnamentSet =
-      new WallOrnamentCoordinateSet(
-          new WallOrnamentDepthSlot(
-              ChampionMirrorD1FrontWidth,
-              ChampionMirrorD1FrontHeight,
-              ChampionMirrorD1FrontX,
-              ChampionMirrorD1FrontY),
-          new WallOrnamentDepthSlot(
-              29,
-              27,
-              97,
-              106),
-          new WallOrnamentDepthSlot(
-              20,
-              19,
-              102,
-              114));
 
 
 
@@ -34655,67 +33847,6 @@ private static void HandleGameViewPointerDown(
   /// source-coordinate sequence and colour-map lookup, then emulate the
   /// original wall-decoration blit transparency key (palette index 10).
   /// </summary>
-  private static Texture2D CropWallDecorationToOpaqueBounds(Texture2D source)
-  {
-    if (source == null || !source.isReadable)
-      return source;
-
-    Color32[] pixels = source.GetPixels32();
-    int width = source.width;
-    int height = source.height;
-    int minX = width;
-    int minY = height;
-    int maxX = -1;
-    int maxY = -1;
-
-    for (int y = 0; y < height; y++)
-    {
-      int row = y * width;
-      for (int x = 0; x < width; x++)
-      {
-        if (pixels[row + x].a == 0)
-          continue;
-
-        if (x < minX)
-          minX = x;
-        if (x > maxX)
-          maxX = x;
-        if (y < minY)
-          minY = y;
-        if (y > maxY)
-          maxY = y;
-      }
-    }
-
-    if (maxX < minX || maxY < minY)
-      return source;
-
-    int cropWidth = maxX - minX + 1;
-    int cropHeight = maxY - minY + 1;
-    if (cropWidth == width && cropHeight == height)
-      return source;
-
-    Color32[] croppedPixels = new Color32[cropWidth * cropHeight];
-    for (int y = 0; y < cropHeight; y++)
-    {
-      int sourceRow = (minY + y) * width + minX;
-      int targetRow = y * cropWidth;
-      for (int x = 0; x < cropWidth; x++)
-        croppedPixels[targetRow + x] = pixels[sourceRow + x];
-    }
-
-    Texture2D cropped = new Texture2D(
-        cropWidth,
-        cropHeight,
-        TextureFormat.RGBA32,
-        false);
-    cropped.name = source.name + " Opaque";
-    cropped.filterMode = FilterMode.Point;
-    cropped.wrapMode = TextureWrapMode.Clamp;
-    cropped.SetPixels32(croppedPixels);
-    cropped.Apply(false, false);
-    return cropped;
-  }
 
   private static Texture2D GenerateDmScaledWallDecoration(
       Texture2D source,
