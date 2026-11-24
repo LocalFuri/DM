@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "Stage 4N-D delivered: native DOS Champion Mirror frame registration and shared draw list integration; Unity frame validation pending. Portraits and recruitment intentionally remain disabled pending DOS research.",
+  "checkpoint": "Stage 4N-H: F1 unrecruited frame + portrait composite corrected; Unity/DOS comparison pending. Recruitment disabled.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -115,10 +115,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Read complete latest Progression.json at session start. Resume Stage 4N-C: review Cursor Champion Mirror research (Ask mode only); no result received yet.",
-    "Distinguish existing CSBwin artwork dimensions from actual DOS data. Decode DOS IMG3 graphics 345/346; verify native pixel data, transparency, palette, portrait placement and which views show portrait; verify recruitment hit rectangle. Do not crop or adopt existing CSBwin frames as DOS-native without verification.",
-    "Implement only after evidence: shared frame resolver/scaler, composite portrait where DOS requires, generic ViewEdit relative offsets and recruitment using actual rendered bounds. No legacy or hardcoded ornament placement, no runtime DAT dependency.",
-    "After Champion Mirrors, research blue Puddle and Moss floor geometry separately. Preserve eight approved ornaments and torch interactions. Nonzero offset persistence still pending."
+    "Compile and compare Chani at Level 0 (14,3) North: native F1 mirror frame plus portrait inside aperture, not portrait alone.",
+    "Verify F2/F3/S1/S2/S3 frames and recruited F1 empty frame; confirm original DOS portrait positioning/palette with read-only research.",
+    "Restore recruitment from actual rendered bounds after visual approval; protect eight approved ornaments and torch interactions; then blue puddles and moss."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -7221,5 +7220,31 @@
     "change": "Correct exactly two ChampionMirror registry artwork paths from Assets/Champions to Assets/Art/Champions. No other source changes.",
     "next": "Compile and verify Chani frame and ViewEdit row at Level 0 (14,3) North; portraits and recruitment remain pending.",
     "protected": "All eight approved ornaments, geometry, scaling and calibration unchanged. Cursor Ask mode only."
+  },
+  "strict_dos_champion_portrait_stage4ng_20261124": {
+    "timestamp": "2026-11-24T22:56:24.910029+01:00",
+    "archive": "StrictDOS_ChampionPortraits_Stage4NG_20261124-225624.zip",
+    "user_confirmed": "Frame path correction worked. User requires F1 portrait instead of frame until recruited.",
+    "changes": [
+      "Carry champion identity through shared draw placement; no longer skip taken champions.",
+      "Explicit registry of all 24 provided portrait filenames; fail closed with cyan diagnostic.",
+      "F1 unrecruited: native RGBA portrait only on transparent frame-sized canvas; position derived from bounding box of opaque cyan glass in native mirror artwork; no hardcoded X/Y. Shared geometry, offsets and clipping preserved.",
+      "Other standard views and recruited F1 retain registered mirror artwork and existing scaler.",
+      "Remove unused old portrait folder fallback lookup and stale fixed-position comments."
+    ],
+    "limitations": [
+      "Aperture from supplied artwork, not independent DOS code proof. Native portrait transparency/palette and exact live placement require DOS comparison.",
+      "No Unity compiler or live testing here. Recruitment disabled, lateral views not extended."
+    ],
+    "protected": "Eight previously approved ordinary ornaments, scaler, resolver, calibration and torch behavior unchanged. Cursor Ask mode only."
+  },
+  "strict_dos_champion_composite_stage4nh_20261124": {
+    "timestamp": "2026-11-24T23:00:59.196018+01:00",
+    "archive": "StrictDOS_ChampionComposite_Stage4NH_20261124-230059.zip",
+    "user_correction": "Unrecruited F1 must display champion portrait inside native mirror frame, superseding Stage 4N-G portrait-only rule.",
+    "change": "Copy existing native frame pixels and overlay nontransparent portrait pixels within existing artwork-derived aperture. Preserve frame and cyan surface under transparent portrait pixels. Other perspectives and recruited F1 unchanged.",
+    "offline_check": "24/24 supplied portraits verified by equivalent Python composition test; aperture 32x29.",
+    "limits": "Artwork-derived aperture, not independent DOS executable proof; Unity C# compile and live visual comparison pending. No recruitment changes.",
+    "protected": "Eight approved ordinary ornaments, geometry resolver, scaler, offsets and torch interactions unchanged. Cursor Ask mode only."
   }
 }

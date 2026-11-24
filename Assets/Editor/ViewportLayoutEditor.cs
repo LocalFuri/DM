@@ -542,14 +542,6 @@ public class ViewportLayoutEditor : EditorWindow
   };
 
 
-  // Original DOS Champion front-mirror placement for a D1 center wall.
-  // Measured from the original 320x200 (10,5) South ZED view:
-  // screen top-left = (88,62), source = 48x43, therefore framebuffer Y=95.
-
-  // The 32x29 Champion portrait occupies the mirror's inner opening.
-  // In the 48x43 source the opening is X=8..39, top Y=6..34.
-  // In framebuffer coordinates that is +8 from the frame bottom.
-
   private const string DefaultViewportLayoutPath =
       "Assets/Dungeon Master/ViewportLayout.asset";
 
@@ -956,6 +948,7 @@ public class ViewportLayoutEditor : EditorWindow
   private sealed class WallOrnamentPlacement
   {
     public string type;
+    public string champion; // Identity for ChampionMirror artwork selection only.
 
     // IMPORTANT: for explicit DUNGEON.DAT Sensor mechanisms this is the
     // LEVEL-LOCAL 1-based wall ornament ordinal, not the global ornament ID.
@@ -1416,8 +1409,6 @@ public class ViewportLayoutEditor : EditorWindow
   private Texture2D cachedChampionFoodLabelTexture;
   private Texture2D cachedChampionWaterLabelTexture;
   [System.NonSerialized]
-  private readonly Dictionary<string, Texture2D> cachedChampionPortraitTextures =
-      new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
   private readonly Dictionary<string, Texture2D> cachedReadableChampionPortraits =
       new Dictionary<string, Texture2D>(System.StringComparer.OrdinalIgnoreCase);
   private readonly Dictionary<string, Texture2D> cachedChampionInventoryItemTextures =
@@ -20623,8 +20614,8 @@ private static void HandleGameViewPointerDown(
   /// Preserve non-ornament gameplay draw ordering.
   /// </summary>
   // Ordinary standard wall slots use the regression-tested DOS resolver.
-  // Champion frames use the same standard slots; portraits, special faces
-  // and floor decorations remain unresolved.
+  // Champion frames and F1 portraits use the same standard slots.
+  // Special faces and floor decorations remain unresolved.
   private void BlitPostMapFeaturesAndOrnamentsIntoPreview(Color32[] pixels)
   {
     BlitStrictDosWallOrnaments(pixels);
@@ -20806,11 +20797,10 @@ private static void HandleGameViewPointerDown(
     foreach (ChampionMirrorPlacement mirror in previewChampionMirrors)
     {
       if (mirror == null || string.IsNullOrEmpty(mirror.champion)
-          || IsPreviewChampionTaken(mirror.champion)
           || !IsPreviewFeatureEnabled(MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall))
           || !IsChampionMirrorVisibleFromPlayerSide(mirror)) continue;
       var placement = new WallOrnamentPlacement {
-        type = "ChampionMirror", x = mirror.x, y = mirror.y,
+        type = "ChampionMirror", champion = mirror.champion, x = mirror.x, y = mirror.y,
         wall = mirror.wall, wallTilePlacement = true
       };
       if (!TryGetStrictDosStandardView(placement, out int mirrorView))
@@ -20832,6 +20822,7 @@ private static void HandleGameViewPointerDown(
         continue;
       }
       Texture2D scaled = null;
+      Texture2D portraitCanvas = null;
       try
       {
         GetStrictDosOrnamentOffset(calibration, family, entry.Key, out int dx, out int dy);
@@ -20843,6 +20834,15 @@ private static void HandleGameViewPointerDown(
           continue; // Fully clipped by original layout.
         if (!TryLoadStrictDosOrnamentSource(family, registration, r, out Texture2D source))
           continue;
+        // F1 unrecruited: composite the portrait inside the native mirror frame.
+        // Keep the same resolved frame canvas, clipping and calibration.
+        if (family == "ChampionMirror" && entry.Key == 14
+            && !IsPreviewChampionTaken(entry.Value.champion))
+        {
+          if (!TryBuildStrictDosChampionPortraitCanvas(entry.Value.champion,
+              source, out portraitCanvas)) continue;
+          source = portraitCanvas;
+        }
         byte[] palette;
         switch (r.PaletteGroup)
         {
@@ -20853,8 +20853,13 @@ private static void HandleGameViewPointerDown(
             ReportStrictOrnamentMissing(family, r.ViewName, "verified DOS palette group");
             continue;
         }
-        scaled = GenerateDmScaledWallDecoration(source, r.Width, r.Height, palette,
-            "DOS ornament " + r.Graphic + " view " + r.View);
+        // The mirror composite is native F1 artwork, not a distance-scaled graphic.
+        // Preserve its imported RGBA pixels at 1:1; shared blit still owns clipping.
+        if (portraitCanvas != null && source.width == r.Width && source.height == r.Height)
+          scaled = portraitCanvas;
+        else
+          scaled = GenerateDmScaledWallDecoration(source, r.Width, r.Height, palette,
+              "DOS ornament " + r.Graphic + " view " + r.View);
         if (scaled == null)
         {
           ReportStrictOrnamentMissing(family, r.ViewName, "scaled DOS artwork");
@@ -20872,7 +20877,8 @@ private static void HandleGameViewPointerDown(
       }
       finally
       {
-        if (scaled != null) UnityEngine.Object.DestroyImmediate(scaled);
+        if (scaled != null && scaled != portraitCanvas) UnityEngine.Object.DestroyImmediate(scaled);
+        if (portraitCanvas != null) UnityEngine.Object.DestroyImmediate(portraitCanvas);
       }
     }
   }
@@ -20939,6 +20945,90 @@ private static void HandleGameViewPointerDown(
     ReportStrictOrnamentMissing(family, r.ViewName,
         "readable native graphic " + r.Graphic + " (" + r.NativeWidth + "x" + r.NativeHeight + ") at " + sourcePath);
     return false;
+  }
+
+  // Native portrait filenames explicitly registered from the supplied artwork.
+  private static readonly Dictionary<string, string> StrictDosChampionPortraitFiles =
+      new Dictionary<string, string>(System.StringComparer.Ordinal)
+  {
+    { "ALEX", "Alex.png" },
+    { "AZIZI", "Azizi.png" },
+    { "BORIS", "Boris.png" },
+    { "CHANI", "Chani.png" },
+    { "DAROOU", "Daroou.png" },
+    { "ELIJA", "Elija.png" },
+    { "GANDO", "Gando.png" },
+    { "GOTHMOG", "Gothmog.png" },
+    { "HALK", "Halk.png" },
+    { "HAWK", "Hawk.png" },
+    { "HISSSSA", "Hissssa.png" },
+    { "IAIDO", "Iaido.png" },
+    { "LEIF", "Leif.png" },
+    { "LEYLA", "Leyla.png" },
+    { "LINFLAS", "Linflas.png" },
+    { "MOPHUS", "Mophus.png" },
+    { "NABI", "Nabi.png" },
+    { "SONJA", "Sonja.png" },
+    { "STAMM", "Stamm.png" },
+    { "SYRA", "Syra.png" },
+    { "TIGGY", "Tiggy.png" },
+    { "WUUF", "Wuuf.png" },
+    { "WUTSE", "Wu_Tse.png" },
+    { "ZED", "Zed.png" },
+  };
+
+  private static bool TryBuildStrictDosChampionPortraitCanvas(string champion,
+      Texture2D frame, out Texture2D canvas)
+  {
+    canvas = null;
+    if (!StrictDosChampionPortraitFiles.TryGetValue(NormalizeChampionAssetKey(champion), out string file))
+    {
+      ReportStrictOrnamentMissing("ChampionMirror", "F1", "registered portrait for " + champion);
+      return false;
+    }
+    string path = ChampionArtFolder + "/" + file;
+    Texture2D portrait = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    if (portrait == null || !portrait.isReadable || portrait.width != 32 || portrait.height != 29)
+    {
+      ReportStrictOrnamentMissing("ChampionMirror", "F1", "readable native portrait (32x29) at " + path);
+      return false;
+    }
+    // Derive the portrait aperture from the native frame's opaque cyan glass.
+    // This is an artwork-derived placement, not yet a verified DOS code formula.
+    Color32[] framePixels = frame.GetPixels32();
+    int left = frame.width, bottom = frame.height, right = -1, top = -1;
+    for (int y = 0; y < frame.height; y++)
+    for (int x = 0; x < frame.width; x++)
+    {
+      Color32 p = framePixels[y * frame.width + x];
+      if (p.a != 255 || p.r != 0 || p.g != 219 || p.b != 219) continue;
+      left = Mathf.Min(left, x); right = Mathf.Max(right, x);
+      bottom = Mathf.Min(bottom, y); top = Mathf.Max(top, y);
+    }
+    if (right - left + 1 != portrait.width || top - bottom + 1 != portrait.height)
+    {
+      ReportStrictOrnamentMissing("ChampionMirror", "F1", "native portrait aperture matching " + path);
+      return false;
+    }
+    // Preserve the native frame and its cyan surface wherever the portrait
+    // is transparent. Both layers share the same frame-sized destination.
+    Color32[] result = framePixels;
+    Color32[] src = portrait.GetPixels32();
+    for (int y = 0; y < portrait.height; y++)
+    for (int x = 0; x < portrait.width; x++)
+    {
+      Color32 pixel = src[y * portrait.width + x];
+      if (pixel.a != 0)
+        result[(bottom + y) * frame.width + left + x] = pixel;
+    }
+    canvas = new Texture2D(frame.width, frame.height, TextureFormat.RGBA32, false);
+    canvas.name = "DOS F1 Champion mirror composite " + champion;
+    canvas.filterMode = FilterMode.Point;
+    canvas.wrapMode = TextureWrapMode.Clamp;
+    canvas.hideFlags = HideFlags.HideAndDontSave;
+    canvas.SetPixels32(result);
+    canvas.Apply(false, false);
+    return true;
   }
 
   private static bool BlitStrictDosOrnamentRect(Color32[] dest, Texture2D source,
@@ -23269,72 +23359,6 @@ private static void HandleGameViewPointerDown(
 
   // ViewEdit counterpart of the extended F3 side-lane renderer. Use exactly
   // the same lane, wall-face and enable rules, and the same calibration key.
-  private Texture2D GetChampionPortraitTexture(string championName)
-  {
-    if (string.IsNullOrEmpty(championName))
-      return null;
-
-    string wantedKey = NormalizeChampionAssetKey(championName);
-    if (string.IsNullOrEmpty(wantedKey))
-      return null;
-
-    if (cachedChampionPortraitTextures.TryGetValue(
-            wantedKey,
-            out Texture2D cached))
-    {
-      return cached;
-    }
-
-    Texture2D folderMatch = null;
-    string[] guids = AssetDatabase.FindAssets(
-        "t:Texture2D",
-        new[] { ChampionArtFolder });
-    for (int i = 0; i < guids.Length; i++)
-    {
-      string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-      if (path.IndexOf(
-              "mirror",
-              System.StringComparison.OrdinalIgnoreCase) >= 0)
-      {
-        continue;
-      }
-
-      Texture2D candidate = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-      if (candidate == null || candidate.width != 32 || candidate.height != 29)
-        continue;
-
-      string fileKey =
-          NormalizeChampionAssetKey(Path.GetFileNameWithoutExtension(path));
-      if (string.Equals(
-              fileKey,
-              wantedKey,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        cachedChampionPortraitTextures[wantedKey] = candidate;
-        return candidate;
-      }
-
-      string directory = Path.GetDirectoryName(path);
-      string folderName = string.IsNullOrEmpty(directory)
-          ? string.Empty
-          : Path.GetFileName(directory);
-      string folderKey = NormalizeChampionAssetKey(folderName);
-      if (folderMatch == null
-          && string.Equals(
-              folderKey,
-              wantedKey,
-              System.StringComparison.OrdinalIgnoreCase))
-      {
-        folderMatch = candidate;
-      }
-    }
-
-    if (folderMatch != null)
-      cachedChampionPortraitTextures[wantedKey] = folderMatch;
-
-    return folderMatch;
-  }
-
   private static string NormalizeChampionAssetKey(string value)
   {
     if (string.IsNullOrEmpty(value))
