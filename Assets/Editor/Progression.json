@@ -6284,5 +6284,24 @@
       "Reconnect renderer, calibration and shared visible hit rectangles. Verify wall occlusion, mirrors, torch interactions and separate floor geometry."
     ],
     "cursor": "Ask mode, read-only unless explicitly authorized by user."
+  },
+  "strict_dos_geometry_stage4c_20261124": {
+    "timestamp": "2026-11-24T19:19:44.334539+01:00",
+    "archive": "StrictDOS_Geometry_Stage4C_20261124-191944.zip",
+    "status": "Offline Python reconstruction passed; no Unity source modifications",
+    "input": "GRAPHICS(6).ZIP / GRAPHICS.DAT",
+    "graphics_sha256": "2c3aa836925c64c09402bafb03c645932bd03c4f003ad9a86542383b078ecf8e",
+    "graphics_bytes": 363417,
+    "resource_696_offset": 293487,
+    "reference": "DOS_All_Ornament_Geometry_F0635_Corrected_20261121.csv",
+    "prototype": "DOS_Generic_Ornament_Geometry_F0635_Fix_20261121.py",
+    "validation": "Executed original prototype with --all on newly uploaded DAT; parsed CSV rows exactly equal across all fields, 900/900. Reproducibility only, not independent live DOS verification.",
+    "next": [
+      "Confirm Stage 3J compiles in Unity; latest installed source not verified.",
+      "Port ordinary unshifted wall geometry subset to standalone C# resolver using original data, not precomputed CSV rectangles.",
+      "Run C# regression on 900 records before framebuffer integration.",
+      "Special inscriptions, shifted cases, floor ornaments, mirrors and gameplay hit bounds require separate validation."
+    ],
+    "cursor": "Ask mode only unless explicitly authorized."
   }
 }
