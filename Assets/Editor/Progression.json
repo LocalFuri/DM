@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "End of 2026-11-24: Stage 4M complete; Stage 4N-C Champion Mirror research paused before native DOS artwork extraction and Cursor findings. Resume 2026-11-25.",
+  "checkpoint": "Stage 4N-D delivered: native DOS Champion Mirror frame registration and shared draw list integration; Unity frame validation pending. Portraits and recruitment intentionally remain disabled pending DOS research.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -7183,5 +7183,28 @@
       "After Champion Mirrors, research blue Puddle and Moss floor geometry separately. Preserve eight approved ornaments and torch interactions. Nonzero offset persistence still pending."
     ],
     "protected": "All eight ordinary wall ornaments visually approved in six perspectives (48/48); 900/900 prior geometry regression; torch pickup/return approved. Preserve unchanged."
+  },
+  "strict_dos_champion_frame_stage4nd_20261124": {
+    "timestamp": "2026-11-24T22:41:45.502218+01:00",
+    "archive": "StrictDOS_ChampionFrames_Stage4ND_20261124-224145.zip",
+    "user_report": "Imported DOS PC native front 48x43 and side 16x35 mirror PNGs into Assets/Champions. New PNG bytes not supplied to assistant; path uses the latest user-stated folder verbatim.",
+    "implementation": [
+      "Register type 43 with native paths Assets/Champions/Champion_Mirror_F1_48x43.png and Assets/Champions/Champion_Mirror_S1_16x35.png.",
+      "Adapt physical champion placements into existing shared standard wall draw list; skip taken champions; use original ChampionMirror feature enable key; skip generic duplicate ChampionMirror map records.",
+      "Remove obsolete mirror-only diagnostic rows; use actual rendered generic ViewEdit offset rows.",
+      "Shared geometry resolver, scaling, clipping, mirroring, calibration storage, eight approved registrations and torch interactions unchanged."
+    ],
+    "limitations": [
+      "No new artwork pixel inspection or Unity compile/live verification. Requires exact stated path, readable PNG import and native dimensions.",
+      "Frame-only stage; portrait composition and recruitment intentionally not enabled.",
+      "Standard F1-F3/S1-S3 supported by current shared dispatcher; lateral fronts/extended lanes unresolved.",
+      "Cursor research not yet received."
+    ],
+    "next": [
+      "Read latest Progression.json at session start; validate mirror frames in Unity all six standard perspectives; check cyan messages if missing.",
+      "Review original DOS portrait placement/visibility/palette evidence before implementing compositing and recruitment.",
+      "Keep all eight approved ordinary wall ornaments unchanged; blue puddles and moss after mirrors."
+    ],
+    "cursor": "Ask mode strictly read-only."
   }
 }

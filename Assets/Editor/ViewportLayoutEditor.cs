@@ -205,7 +205,10 @@ public class ViewportLayoutEditor : EditorWindow
             "Assets/Art/Ornaments/Slime_S1_16x10.png") },
         { "ViAltar", new DosWallOrnamentRegistration(2,
             "Assets/Art/Ornaments/Altar_of_Vi_96,56.png",
-            "Assets/Art/Ornaments/Altar_of_Vi_S1_20x48.png") }
+            "Assets/Art/Ornaments/Altar_of_Vi_S1_20x48.png") },
+        { "ChampionMirror", new DosWallOrnamentRegistration(43,
+            "Assets/Champions/Champion_Mirror_F1_48x43.png",
+            "Assets/Champions/Champion_Mirror_S1_16x35.png") }
       };
 
   private static readonly byte[] DosNativeOrnamentColorMap =
@@ -20620,7 +20623,8 @@ private static void HandleGameViewPointerDown(
   /// Preserve non-ornament gameplay draw ordering.
   /// </summary>
   // Ordinary standard wall slots use the regression-tested DOS resolver.
-  // Special faces, floor decorations and mirrors remain unresolved.
+  // Champion frames use the same standard slots; portraits, special faces
+  // and floor decorations remain unresolved.
   private void BlitPostMapFeaturesAndOrnamentsIntoPreview(Color32[] pixels)
   {
     BlitStrictDosWallOrnaments(pixels);
@@ -20744,12 +20748,16 @@ private static void HandleGameViewPointerDown(
 
   private void BlitStrictDosWallOrnaments(Color32[] pixels)
   {
-    if (previewWallOrnaments == null || !IsViewport17WallAuthorityActive()) return;
+    if (!IsViewport17WallAuthorityActive()) return;
     // DOS view order is far to near. Only standard V17-owned faces are
     // connected in this stage; lateral fronts and extended lanes need audit.
     var pending = new List<KeyValuePair<int, WallOrnamentPlacement>>();
+    if (previewWallOrnaments != null)
     foreach (WallOrnamentPlacement ornament in previewWallOrnaments)
     {
+      // Champion map placements are authoritative for mirror identity/state.
+      if (ornament != null && string.Equals(ornament.type, "ChampionMirror",
+          System.StringComparison.OrdinalIgnoreCase)) continue;
       if (ornament == null || !IsPreviewFeatureEnabled(
           MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall))
           || !IsSharedWallFeatureVisible(ornament.x, ornament.y, ornament.wall,
@@ -20760,6 +20768,26 @@ private static void HandleGameViewPointerDown(
         continue;
       }
       pending.Add(new KeyValuePair<int, WallOrnamentPlacement>(view, ornament));
+    }
+    // Adapt physical champion map faces to the same ordinary wall draw list.
+    // No independent mirror geometry, sampler, clipping or calibration path.
+    if (previewChampionMirrors != null)
+    foreach (ChampionMirrorPlacement mirror in previewChampionMirrors)
+    {
+      if (mirror == null || string.IsNullOrEmpty(mirror.champion)
+          || IsPreviewChampionTaken(mirror.champion)
+          || !IsPreviewFeatureEnabled(MakePreviewFeatureKey("ChampionMirror", mirror.x, mirror.y, mirror.wall))
+          || !IsChampionMirrorVisibleFromPlayerSide(mirror)) continue;
+      var placement = new WallOrnamentPlacement {
+        type = "ChampionMirror", x = mirror.x, y = mirror.y,
+        wall = mirror.wall, wallTilePlacement = true
+      };
+      if (!TryGetStrictDosStandardView(placement, out int mirrorView))
+      {
+        ReportStrictOrnamentMissing(placement.type, "wall face", "verified DOS view mapping");
+        continue;
+      }
+      pending.Add(new KeyValuePair<int, WallOrnamentPlacement>(mirrorView, placement));
     }
     if (pending.Count == 0 || !TryGetStrictDosGeometry(out DosOrnamentGeometryResolver resolver)) return;
     if (!TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration)) return;
@@ -23210,50 +23238,6 @@ private static void HandleGameViewPointerDown(
 
   // ViewEdit counterpart of the extended F3 side-lane renderer. Use exactly
   // the same lane, wall-face and enable rules, and the same calibration key.
-  private void DrawChampionMirrorExtendedSideLaneF3Rows()
-  {
-    if (previewMiniMap == null || previewChampionMirrors == null) return;
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
-    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
-    featureStyle.normal.textColor = Color.yellow;
-    for (int sideIndex = 0; sideIndex < 2; ++sideIndex)
-    {
-      bool left = sideIndex == 0;
-      int side = left ? -1 : 1;
-      bool open = true;
-      for (int depth = 1; depth <= 3; ++depth)
-      {
-        if (!PreviewTileIsOpen(previewX + fx * depth + rx * side,
-                               previewY + fy * depth + ry * side))
-        { open = false; break; }
-      }
-      if (!open) continue;
-      int wallX = previewX + fx * 3 + rx * side * 2;
-      int wallY = previewY + fy * 3 + ry * side * 2;
-      if (!PreviewTileIsWall(wallX, wallY)
-          || !PreviewTileIsOpen(wallX - rx * side, wallY - ry * side))
-        continue;
-      string face = FacingName(left
-          ? TurnPreviewFacingRight(previewFacing)
-          : TurnPreviewFacingLeft(previewFacing));
-      for (int i = 0; i < previewChampionMirrors.Length; ++i)
-      {
-        ChampionMirrorPlacement m = previewChampionMirrors[i];
-        if (m == null || string.IsNullOrEmpty(m.champion)
-            || m.x != wallX || m.y != wallY
-            || !string.Equals(m.wall, face,
-                 System.StringComparison.OrdinalIgnoreCase)
-            || IsPreviewChampionTaken(m.champion)) continue;
-
-        if (IsPreviewFeatureEnabled(MakePreviewFeatureKey("ChampionMirror", m.x, m.y, m.wall)))
-          ReportStrictOrnamentMissing("ChampionMirror", "ExtendedLaneF3", "verified generic DOS projection");
-      }
-    }
-  }
-
-
-
   private Texture2D GetChampionPortraitTexture(string championName)
   {
     if (string.IsNullOrEmpty(championName))
@@ -24462,106 +24446,6 @@ private static void HandleGameViewPointerDown(
   // Champion mirrors use the same wall-ornament ViewEdit calibration model.
   // F1 includes the portrait; F2/F3 show frames only. These rows change only the
   // projected ornament artwork, never the underlying V17 wall geometry.
-  private void DrawChampionMirrorFrontCalibrationRows()
-  {
-    if (previewMiniMap == null || previewChampionMirrors == null)
-      return;
-
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    string physicalFace = OppositeFacingName(previewFacing);
-    for (int depth = 1; depth <= 3; depth++)
-    {
-      // Mirrors cannot be seen through intervening walls.
-      bool blocked = false;
-      for (int step = 1; step < depth; step++)
-      {
-        if (!previewMiniMap.IsInside(previewX + fx * step, previewY + fy * step)
-            || PreviewTileIsWall(previewX + fx * step, previewY + fy * step))
-        {
-          blocked = true;
-          break;
-        }
-      }
-      if (blocked)
-        break;
-      int wallX = previewX + fx * depth;
-      int wallY = previewY + fy * depth;
-      if (!PreviewTileIsWall(wallX, wallY))
-        continue;
-    for (int i = 0; i < previewChampionMirrors.Length; i++)
-    {
-      ChampionMirrorPlacement champion = previewChampionMirrors[i];
-      if (champion == null || string.IsNullOrEmpty(champion.champion)
-          || champion.x != wallX || champion.y != wallY
-          || !string.Equals(champion.wall, physicalFace,
-              System.StringComparison.OrdinalIgnoreCase)
-          || IsPreviewChampionTaken(champion.champion))
-        continue;
-
-      if (!IsSharedWallFeatureVisible(
-              champion.x, champion.y, champion.wall, true, depth, 0))
-        continue;
-
-      if (IsPreviewFeatureEnabled(MakePreviewFeatureKey("ChampionMirror", champion.x, champion.y, champion.wall)))
-        ReportStrictOrnamentMissing("ChampionMirror", "F" + depth, "verified generic DOS projection");
-    }
-    }
-  }
-
-  // Side champion mirrors share exactly the projection keys used by the
-  // S1/S2/S3 renderer. Show only mirrors actually visible in this pose.
-  private void DrawChampionMirrorSideCalibrationRows()
-  {
-    if (previewMiniMap == null || previewChampionMirrors == null)
-      return;
-
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
-    string leftFace = FacingName(TurnPreviewFacingRight(previewFacing));
-    string rightFace = FacingName(TurnPreviewFacingLeft(previewFacing));
-    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
-    featureStyle.normal.textColor = Color.yellow;
-
-    for (int depth = 1; depth <= 3; depth++)
-    {
-      int corridorX = previewX + depth * fx;
-      int corridorY = previewY + depth * fy;
-      if (!PreviewTileIsOpen(corridorX, corridorY))
-        break;
-
-      for (int sideIndex = 0; sideIndex < 2; sideIndex++)
-      {
-        bool left = sideIndex == 0;
-        int wallX = corridorX + (left ? -rx : rx);
-        int wallY = corridorY + (left ? -ry : ry);
-        string wallFace = left ? leftFace : rightFace;
-        ChampionMirrorPlacement visible = null;
-        for (int i = 0; i < previewChampionMirrors.Length; i++)
-        {
-          ChampionMirrorPlacement candidate = previewChampionMirrors[i];
-          if (candidate == null || string.IsNullOrEmpty(candidate.champion)
-              || candidate.x != wallX || candidate.y != wallY
-              // Match the S1/S2/S3 painter: a perpendicular front
-              // face must not create a second side mirror ViewEdit row.
-              || !string.Equals(candidate.wall, wallFace,
-                  System.StringComparison.OrdinalIgnoreCase)
-              || IsPreviewChampionTaken(candidate.champion))
-            continue;
-          if (!IsSharedWallFeatureVisible(candidate.x, candidate.y,
-                  candidate.wall, true, 0, depth))
-            continue;
-          visible = candidate;
-          break;
-        }
-        if (visible == null)
-          continue;
-
-        if (IsPreviewFeatureEnabled(MakePreviewFeatureKey("ChampionMirror", visible.x, visible.y, visible.wall)))
-          ReportStrictOrnamentMissing("ChampionMirror", "S" + depth, "verified generic DOS projection");
-      }
-    }
-  }
-
   private void DrawGenericThrowViewEditControls()
   {
     EditorGUILayout.BeginHorizontal();
@@ -25114,10 +24998,6 @@ private static void HandleGameViewPointerDown(
     DrawFloorItemRows();
     DrawTorchDownCalibrationRow();
 
-    // The new F1-only champion mirror uses the ordinary wall-ornament projection.
-    DrawChampionMirrorFrontCalibrationRows();
-    DrawChampionMirrorSideCalibrationRows();
-    DrawChampionMirrorExtendedSideLaneF3Rows();
 
 
 
