@@ -6180,5 +6180,41 @@
     ],
     "validation": "Deleted-symbol scan, duplicate attribute scan and lexical delimiter validation passed. Unity compilation not tested. Stages 3C–3F compilation not explicitly confirmed.",
     "remaining": "Family-specific projection descriptor, visibility caps, remaining geometry/constants and dead code; generic dispatch and visible-only cyan diagnostics. Cursor strictly read-only."
+  },
+  "strict_ornament_reset_stage3h_20261124": {
+    "timestamp": "2026-11-24T18:55:29.403148+01:00",
+    "archive": "StrictDOS_Ornament_Physical_Deletion_Stage3H_20261124-185529.zip",
+    "deleted_methods": [
+      "TryGetWallOrnamentCalibrationDefaults",
+      "TryGetWallOrnamentProjectionOverrideDescriptor",
+      "DrawWallOrnamentCalibrationRow",
+      "DrawGrateFeatureRow",
+      "TryGetGrateViewProjection",
+      "TryGetStandardWallOrnamentDungeonFeatureFace",
+      "IsWoodRingProjectionVisibleInCurrentPose",
+      "IsHookProjectionVisibleInCurrentPose",
+      "IsSlimeProjectionVisibleInCurrentPose",
+      "IsStandardWallOrnamentProjectionVisibleInCurrentPose",
+      "IsGrateF2SideCornerVisible",
+      "IsGrateF3SideCornerVisible",
+      "FormatViewEditOrnamentCaption",
+      "ApplyManaclesS3AcceptedReference",
+      "IsWoodRingOrnament",
+      "IsHookOrnament",
+      "IsSlimeOrnament",
+      "IsManaclesOrnament",
+      "IsGrateOrnament",
+      "IsViAltarOrnament",
+      "BlitV17FarWallFeaturesAtDepth",
+      "BlitV17MidWallFeaturesAtDepth"
+    ],
+    "deleted_method_count": 22,
+    "cumulative_reported_methods_deleted": 177,
+    "changes": [
+      "Removed unreachable ordinary wall ornament calibration rows and family-specific projection descriptors, visibility caps and Grate corner predicates. Saved calibration files untouched; ordinary rows require generic resolver before reintroduction.",
+      "Removed diagnostic-only far/mid stubs and report visible enabled ordinary wall ornaments once after complete wall pass using shared V17 visibility. This is not a complete projection resolver; additional corner/extended lane visibility and floor/mirror diagnostics require independent verification. No rendering geometry invented."
+    ],
+    "validation": "Deleted-symbol scan, duplicate NonSerialized scan, lexical delimiter validation passed. No Unity compilation available; stages 3C onward not explicitly confirmed.",
+    "remaining": "Audit remaining dead helpers, source registry and interaction geometry; implement verified generic projection/render dispatch including corner lanes and calibration. Cursor strictly read-only."
   }
 }

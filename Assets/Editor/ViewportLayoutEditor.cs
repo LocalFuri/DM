@@ -20109,8 +20109,6 @@ private static void HandleGameViewPointerDown(
       bool viewport17NativeD3Drawn = false;
       bool viewport17NativeD2Drawn = false;
       bool viewport17NativeD1Drawn = false;
-      bool v17FarFeaturesDrawn = false;
-      bool v17MidFeaturesDrawn = false;
       // Draw the S1 floor plate once, immediately before the first near wall.
       // This is not conditional on any wall's Enabled setting.
       bool pressurePadS1Drawn = false;
@@ -20185,14 +20183,6 @@ private static void HandleGameViewPointerDown(
           continue;
         }
 
-        // Complete far-distance wall features before nearer D2 wall surfaces.
-        if (viewport17WallAuthorityActive && !v17FarFeaturesDrawn
-            && piece != null && IsNormalWallPiece(piece)
-            && GetNormalWallRenderDepth(piece) <= 2)
-        {
-          BlitV17FarWallFeaturesAtDepth(pixels);
-          v17FarFeaturesDrawn = true;
-        }
 
         // V17 F2 cutover: wait until painter order reaches depth 2, then draw
         // the original DOS D2 L/C/R artwork once. This preserves all depth-3
@@ -20226,14 +20216,6 @@ private static void HandleGameViewPointerDown(
           continue;
         }
 
-        // Complete middle-distance wall features before nearer D1 wall surfaces.
-        if (viewport17WallAuthorityActive && !v17MidFeaturesDrawn
-            && piece != null && IsNormalWallPiece(piece)
-            && GetNormalWallRenderDepth(piece) <= 1)
-        {
-          BlitV17MidWallFeaturesAtDepth(pixels);
-          v17MidFeaturesDrawn = true;
-        }
 
         // V17 F1 cutover: draw the original DOS D1 L/C/R artwork once when
         // painter order reaches depth 1.  This replaces the old 224x111
@@ -20891,12 +20873,6 @@ private static void HandleGameViewPointerDown(
         }
       }
 
-      // If a wall depth has no editor card, still render its features once.
-      // This fallback is kept inside the wall pass, never after UI overlays.
-      if (viewport17WallAuthorityActive && !v17FarFeaturesDrawn)
-        BlitV17FarWallFeaturesAtDepth(pixels);
-      if (viewport17WallAuthorityActive && !v17MidFeaturesDrawn)
-        BlitV17MidWallFeaturesAtDepth(pixels);
 
       // Maps without near wall cards still draw the independently detected S1.
       if (!pressurePadS1Drawn)
@@ -21002,15 +20978,7 @@ private static void HandleGameViewPointerDown(
 
   // Strict DOS-only ornament stages. No family-specific legacy drawing.
   // Unregistered DOS artwork is reported in cyan, and not fabricated.
-  private void BlitV17FarWallFeaturesAtDepth(Color32[] pixels)
-  {
-    ReportUnresolvedStrictDosOrnaments(3);
-  }
 
-  private void BlitV17MidWallFeaturesAtDepth(Color32[] pixels)
-  {
-    ReportUnresolvedStrictDosOrnaments(2);
-  }
 
   /// <summary>
   /// Post-map feature layer. This method is intentionally called only after
@@ -21021,12 +20989,7 @@ private static void HandleGameViewPointerDown(
   // Only non-ornament gameplay layers remain. Missing registration is cyan.
   private void BlitPostMapFeaturesAndOrnamentsIntoPreview(Color32[] pixels)
   {
-    if (!IsViewport17WallAuthorityActive())
-    {
-      BlitV17FarWallFeaturesAtDepth(pixels);
-      BlitV17MidWallFeaturesAtDepth(pixels);
-    }
-    ReportUnresolvedStrictDosOrnaments(1);
+    ReportUnresolvedStrictDosOrnaments();
     BlitDroppedTorchesIntoPreview(pixels);
     if (HasVisibleEnabledWallInscriptionAtPreviewPose())
       BlitWallInscriptionsIntoPreview(pixels);
@@ -21034,7 +20997,7 @@ private static void HandleGameViewPointerDown(
     BlitSuspendedThrownItemsIntoPreview(pixels);
   }
 
-  private void ReportUnresolvedStrictDosOrnaments(int depth)
+  private void ReportUnresolvedStrictDosOrnaments()
   {
     if (previewWallOrnaments == null || previewWallOrnaments.Length == 0)
       return;
@@ -21044,9 +21007,12 @@ private static void HandleGameViewPointerDown(
       if (ornament == null || !IsPreviewFeatureEnabled(
           MakePreviewFeatureKey("Ornament", ornament.x, ornament.y, ornament.wall)))
         continue;
+      if (!IsSharedWallFeatureVisible(ornament.x, ornament.y, ornament.wall,
+          ornament.wallTilePlacement))
+        continue;
       string family = string.IsNullOrEmpty(ornament.type)
           ? "Unknown" : ornament.type;
-      ReportStrictOrnamentMissing(family, "depth " + depth,
+      ReportStrictOrnamentMissing(family, "visible wall face",
           "native DOS registry, validated geometry and unified draw path");
     }
   }
@@ -24030,25 +23996,6 @@ private static void HandleGameViewPointerDown(
 
 
 
-  private static bool IsWoodRingOrnament(WallOrnamentPlacement ornament)
-  {
-    if (ornament == null)
-      return false;
-
-    if (string.Equals(
-            ornament.type,
-            "WoodRing",
-            System.StringComparison.OrdinalIgnoreCase)
-        || string.Equals(
-            ornament.type,
-            "Wood Ring",
-            System.StringComparison.OrdinalIgnoreCase))
-    {
-      return true;
-    }
-
-    return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 6;
-  }
 
 
 
@@ -24625,404 +24572,8 @@ private static void HandleGameViewPointerDown(
       mirror = mirrorOverride;
   }
 
-  private bool TryGetGrateViewProjection(
-      WallOrnamentPlacement ornament,
-      out string projectionName,
-      out bool renderMirror)
-  {
-    projectionName = null;
-    renderMirror = false;
-    if (!IsGrateOrnament(ornament) || previewMiniMap == null)
-      return false;
-
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int forwardX,
-        out int forwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int rightX,
-        out int rightY);
-
-    string viewedWallSide = FacingName(previewFacing);
-    string visiblePhysicalWallFace = OppositeFacingName(previewFacing);
-
-    if (IsGrateF2SideCornerVisible(ornament))
-    {
-      projectionName = "Grate - F2 Side Corner";
-      renderMirror = false;
-      return true;
-    }
-    if (IsGrateF3SideCornerVisible(ornament))
-    {
-      projectionName = "Grate - F3 Side Corner";
-      renderMirror = false;
-      return true;
-    }
-
-    // Front F1.
-    int d1X = previewX + forwardX;
-    int d1Y = previewY + forwardY;
-    if (previewMiniMap.IsInside(d1X, d1Y)
-        && previewMiniMap.GetTile(d1X, d1Y).Type == DungeonTileType.Wall)
-    {
-      bool match = ornament.wallTilePlacement
-          ? ornament.x == d1X
-              && ornament.y == d1Y
-              && string.Equals(
-                  ornament.wall,
-                  visiblePhysicalWallFace,
-                  System.StringComparison.OrdinalIgnoreCase)
-          : ornament.x == previewX
-              && ornament.y == previewY
-              && string.Equals(
-                  ornament.wall,
-                  viewedWallSide,
-                  System.StringComparison.OrdinalIgnoreCase);
-      if (match)
-      {
-        projectionName = "Grate - Front F1";
-        renderMirror = false;
-        return true;
-      }
-    }
-
-    // Front F2.
-    int d2X = previewX + forwardX * 2;
-    int d2Y = previewY + forwardY * 2;
-    if (previewMiniMap.IsInside(d1X, d1Y)
-        && previewMiniMap.GetTile(d1X, d1Y).Type != DungeonTileType.Wall
-        && previewMiniMap.IsInside(d2X, d2Y)
-        && previewMiniMap.GetTile(d2X, d2Y).Type == DungeonTileType.Wall)
-    {
-      bool match = ornament.wallTilePlacement
-          ? ornament.x == d2X
-              && ornament.y == d2Y
-              && string.Equals(
-                  ornament.wall,
-                  visiblePhysicalWallFace,
-                  System.StringComparison.OrdinalIgnoreCase)
-          : ornament.x == d1X
-              && ornament.y == d1Y
-              && string.Equals(
-                  ornament.wall,
-                  viewedWallSide,
-                  System.StringComparison.OrdinalIgnoreCase);
-      if (match)
-      {
-        projectionName = "Grate - Front F2";
-        renderMirror = false;
-        return true;
-      }
-    }
-
-    // Front F3.
-    int d3X = previewX + forwardX * 3;
-    int d3Y = previewY + forwardY * 3;
-    if (previewMiniMap.IsInside(d1X, d1Y)
-        && previewMiniMap.GetTile(d1X, d1Y).Type != DungeonTileType.Wall
-        && previewMiniMap.IsInside(d2X, d2Y)
-        && previewMiniMap.GetTile(d2X, d2Y).Type != DungeonTileType.Wall
-        && previewMiniMap.IsInside(d3X, d3Y)
-        && previewMiniMap.GetTile(d3X, d3Y).Type == DungeonTileType.Wall)
-    {
-      bool match = ornament.wallTilePlacement
-          ? ornament.x == d3X
-              && ornament.y == d3Y
-              && string.Equals(
-                  ornament.wall,
-                  visiblePhysicalWallFace,
-                  System.StringComparison.OrdinalIgnoreCase)
-          : ornament.x == d2X
-              && ornament.y == d2Y
-              && string.Equals(
-                  ornament.wall,
-                  viewedWallSide,
-                  System.StringComparison.OrdinalIgnoreCase);
-      if (match)
-      {
-        projectionName = "Grate - Front F3";
-        renderMirror = false;
-        return true;
-      }
-    }
-
-    string leftPhysicalFace =
-        FacingName(TurnPreviewFacingRight(previewFacing));
-    string rightPhysicalFace =
-        FacingName(TurnPreviewFacingLeft(previewFacing));
-    string leftBoundaryDirection =
-        FacingName(TurnPreviewFacingLeft(previewFacing));
-    string rightBoundaryDirection =
-        FacingName(TurnPreviewFacingRight(previewFacing));
-
-    // Side projections at D1..D3. These intentionally use the same geometry
-    // tests as the grate renderer so ViewEdit lists only an image that can
-    // actually be drawn in the current pose.
-    for (int depth = 1; depth <= 3; depth++)
-    {
-      bool corridorOpen = true;
-      for (int step = 1; step <= depth; step++)
-      {
-        int cx = previewX + forwardX * step;
-        int cy = previewY + forwardY * step;
-        if (!previewMiniMap.IsInside(cx, cy)
-            || previewMiniMap.GetTile(cx, cy).Type == DungeonTileType.Wall)
-        {
-          corridorOpen = false;
-          break;
-        }
-      }
-      if (!corridorOpen)
-        continue;
-
-      int centerX = previewX + forwardX * depth;
-      int centerY = previewY + forwardY * depth;
-      int leftWallX = centerX - rightX;
-      int leftWallY = centerY - rightY;
-      int rightWallX = centerX + rightX;
-      int rightWallY = centerY + rightY;
-
-      bool leftWallExists =
-          previewMiniMap.IsInside(leftWallX, leftWallY)
-          && previewMiniMap.GetTile(leftWallX, leftWallY).Type
-              == DungeonTileType.Wall;
-      bool rightWallExists =
-          previewMiniMap.IsInside(rightWallX, rightWallY)
-          && previewMiniMap.GetTile(rightWallX, rightWallY).Type
-              == DungeonTileType.Wall;
-
-      bool matchesLeft = ornament.wallTilePlacement
-          ? leftWallExists
-              && ornament.x == leftWallX
-              && ornament.y == leftWallY
-              && string.Equals(
-                  ornament.wall,
-                  leftPhysicalFace,
-                  System.StringComparison.OrdinalIgnoreCase)
-          : leftWallExists
-              && ornament.x == centerX
-              && ornament.y == centerY
-              && string.Equals(
-                  ornament.wall,
-                  leftBoundaryDirection,
-                  System.StringComparison.OrdinalIgnoreCase);
-
-      if (matchesLeft)
-      {
-        projectionName = "Grate - Side" + depth;
-        renderMirror = false;
-        return true;
-      }
-
-      bool matchesRight = ornament.wallTilePlacement
-          ? rightWallExists
-              && ornament.x == rightWallX
-              && ornament.y == rightWallY
-              && string.Equals(
-                  ornament.wall,
-                  rightPhysicalFace,
-                  System.StringComparison.OrdinalIgnoreCase)
-          : rightWallExists
-              && ornament.x == centerX
-              && ornament.y == centerY
-              && string.Equals(
-                  ornament.wall,
-                  rightBoundaryDirection,
-                  System.StringComparison.OrdinalIgnoreCase);
-
-      if (matchesRight)
-      {
-        projectionName = "Grate - Side" + depth;
-        renderMirror = true;
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  private bool TryGetWallOrnamentCalibrationDefaults(
-      WallOrnamentPlacement ornament,
-      out int renderX,
-      out int renderY,
-      out bool renderMirror)
-  {
-    renderX = 0;
-    renderY = 0;
-    renderMirror = false;
-    if (TryGetWallOrnamentProjectionOverrideDescriptor(ornament,
-        out string key, out string suffix))
-    {
-      string[] parts = key.Split(':');
-      if (parts.Length >= 3)
-        ReportStrictOrnamentMissing(parts[1], parts[2], "verified generic DOS geometry");
-    }
-    return false;
-  }
-
-  private bool TryGetWallOrnamentProjectionOverrideDescriptor(
-      WallOrnamentPlacement ornament,
-      out string overrideKey,
-      out string projectionSuffix)
-  {
-    overrideKey = null;
-    projectionSuffix = null;
-    if (ornament == null || previewMiniMap == null)
-      return false;
-
-    if (IsEmptyTorchHolderF1Visible(ornament))
-    {
-      overrideKey = "OrnamentProjection:EmptyTorchHolder:F1";
-      projectionSuffix = " / F1";
-      return true;
-    }
-
-    string family = IsWoodRingOrnament(ornament) ? "WoodRing"
-        : IsHookOrnament(ornament) ? "Hook"
-        : IsSlimeOrnament(ornament) ? "Slime"
-        : IsManaclesOrnament(ornament) ? "Manacles"
-        : IsViAltarOrnament(ornament) ? "ViAltar"
-        : IsGrateOrnament(ornament) ? "Grate"
-        : null;
-    if (string.IsNullOrEmpty(family))
-      return false;
-
-    if (IsGrateOrnament(ornament))
-    {
-      if (!TryGetGrateViewProjection(
-              ornament, out string grateProjectionName, out _))
-        return false;
-
-      string grateSlot = grateProjectionName == "Grate - F2 Side Corner" ? "F2SideCorner"
-          : grateProjectionName == "Grate - F3 Side Corner" ? "F3SideCorner"
-          : grateProjectionName == "Grate - Front F1" ? "F1"
-          : grateProjectionName == "Grate - Front F2" ? "F2"
-          : grateProjectionName == "Grate - Front F3" ? "F3"
-          : grateProjectionName == "Grate - Side1" ? "S1"
-          : grateProjectionName == "Grate - Side2" ? "S2"
-          : grateProjectionName == "Grate - Side3" ? "S3"
-          : null;
-      if (string.IsNullOrEmpty(grateSlot))
-        return false;
-
-      overrideKey = "OrnamentProjection:" + family + ":" + grateSlot;
-      projectionSuffix = " / " + grateSlot;
-      return true;
-    }
-
-    int maxFrontDepth = IsWoodRingOrnament(ornament) ? 3
-        : IsHookOrnament(ornament) ? 3
-        : IsSlimeOrnament(ornament) ? 3
-        : IsManaclesOrnament(ornament) ? 3
-        : IsViAltarOrnament(ornament) ? 3 : 0;
-    int maxSideDepth = IsWoodRingOrnament(ornament) ? 3
-        : IsHookOrnament(ornament) ? 3
-        : IsSlimeOrnament(ornament) ? 2
-        : IsManaclesOrnament(ornament) ? 3
-        : IsViAltarOrnament(ornament) ? 3 : 0;
-    if (maxFrontDepth == 0)
-      return false;
 
 
-    if (!TryGetStandardWallOrnamentProjectionInCurrentPose(
-            ornament,
-            maxFrontDepth,
-            maxSideDepth,
-            out int mapX,
-            out int mapY,
-            out string mapFace))
-      return false;
-
-    DungeonMap.GetForwardOffset(
-        previewFacing, out int forwardX, out int forwardY);
-    int depthFromPlayer =
-        (mapX - previewX) * forwardX + (mapY - previewY) * forwardY;
-    string frontFace = FacingName(previewFacing);
-    bool isFront = string.Equals(
-        mapFace, frontFace, System.StringComparison.OrdinalIgnoreCase);
-
-    string slot;
-    if (isFront)
-    {
-      int frontDepth = depthFromPlayer + 1;
-      if (frontDepth < 1 || frontDepth > maxFrontDepth)
-        return false;
-      slot = "F" + frontDepth;
-    }
-    else
-    {
-      int sideDepth = depthFromPlayer;
-      if (sideDepth < 1 || sideDepth > maxSideDepth)
-        return false;
-      slot = "S" + sideDepth;
-    }
-
-    // F1 side Hooks are independent left/right projections. The existing
-    // Hook:S1 accepted reference calibrates the right side at X=160;
-    // applying it to the left Hook displaced it from X=48 to the right.
-    // Keep that verified right-side reference unchanged, and give the left
-    // side a separate calibration key shared by rendering and ViewEdit.
-    if (IsHookOrnament(ornament) && slot == "S1")
-    {
-      string leftFace = FacingName(TurnPreviewFacingLeft(previewFacing));
-      if (string.Equals(mapFace, leftFace,
-          System.StringComparison.OrdinalIgnoreCase))
-      {
-        overrideKey = "OrnamentProjection:Hook:S1:Left";
-        projectionSuffix = " / S1 Left";
-        return true;
-      }
-    }
-
-    // Hook S2 also requires independent left/right calibration. A Hook
-    // stored on the corridor square's East boundary while facing South
-    // belongs to the LEFT wall. The previously shared Hook:S2 key was
-    // calibrated for the right side (X=152), incorrectly moving a valid
-    // left-side Hook onto the right wall. Preserve the right-side key.
-    if (IsHookOrnament(ornament) && slot == "S2")
-    {
-      string leftFace = FacingName(TurnPreviewFacingLeft(previewFacing));
-      if (string.Equals(mapFace, leftFace,
-          System.StringComparison.OrdinalIgnoreCase))
-      {
-        overrideKey = "OrnamentProjection:Hook:S2:Left";
-        projectionSuffix = " / S2 Left";
-        return true;
-      }
-    }
-
-    // S1 Wood Rings need independently accepted left/right screen slots.
-    // The generic projection gives the D1 boundary direction toward the wall:
-    // TurnLeft(viewFacing) = screen-left, TurnRight(viewFacing) = screen-right.
-    // The original WoodRing:S1 reference is the verified left slot.
-    if (IsWoodRingOrnament(ornament) && slot == "S1")
-    {
-      string rightBoundary = FacingName(TurnPreviewFacingRight(previewFacing));
-      if (string.Equals(mapFace, rightBoundary,
-          System.StringComparison.OrdinalIgnoreCase))
-      {
-        overrideKey = "OrnamentProjection:WoodRing:S1:Right";
-        projectionSuffix = " / S1 Right";
-        return true;
-      }
-    }
-
-    // S3 Manacles have separate physical left/right calibration references.
-    if (IsManaclesOrnament(ornament) && slot == "S3")
-    {
-      bool onLeft = string.Equals(mapFace,
-          FacingName(TurnPreviewFacingLeft(previewFacing)),
-          System.StringComparison.OrdinalIgnoreCase);
-      overrideKey = "OrnamentProjection:Manacles:S3:" + (onLeft ? "Left" : "Right");
-      projectionSuffix = " / S3 " + (onLeft ? "Left" : "Right");
-      return true;
-    }
-
-    overrideKey = "OrnamentProjection:" + family + ":" + slot;
-    projectionSuffix = " / " + slot;
-    return true;
-  }
 
   private static string ShortDirectionLabel(string direction)
   {
@@ -25135,76 +24686,6 @@ private static void HandleGameViewPointerDown(
 
   // Presentation only. Keep ornament keys, source names and calibration
   // geometry unchanged; labels follow NAME - DEPTH SIDE - X,Y DIRECTION.
-  private string FormatViewEditOrnamentCaption(
-      WallOrnamentPlacement ornament, string displayName,
-      string projectionSuffix, int codedX)
-  {
-    if (ornament == null || string.IsNullOrEmpty(displayName))
-      return displayName ?? string.Empty;
-
-    // Some visible Hook/Grate paths do not supply a separate generic
-    // projection suffix. Their old caption already contains / S2 or / S3.
-    // This is display formatting only; never change projection or save keys.
-    string slot = projectionSuffix ?? string.Empty;
-    if (string.IsNullOrWhiteSpace(slot))
-    {
-      System.Text.RegularExpressions.Match embeddedSlot =
-          System.Text.RegularExpressions.Regex.Match(displayName,
-              @"/\s*(?<slot>[FS][123](?:\s*(?:Left|Right))?|F[23]SideCorner)\b",
-              System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-      if (embeddedSlot.Success)
-        slot = embeddedSlot.Groups["slot"].Value;
-      else
-      {
-        System.Text.RegularExpressions.Match sideName =
-            System.Text.RegularExpressions.Regex.Match(displayName,
-                @"\b(?<kind>Side|Front)\s*(?<depth>[123])\b",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        if (sideName.Success)
-          slot = (sideName.Groups["kind"].Value.Equals("Side",
-              System.StringComparison.OrdinalIgnoreCase) ? "S" : "F")
-              + sideName.Groups["depth"].Value;
-      }
-    }
-
-    System.Text.RegularExpressions.Match depthMatch =
-        System.Text.RegularExpressions.Regex.Match(slot, @"[FS][123]",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-    if (!depthMatch.Success)
-      return displayName;
-    string depth = depthMatch.Value.ToUpperInvariant();
-
-    // Raw placement labels use [x,y] (N), while some diagnostic labels
-    // already use x,y N. Accept both before building the aligned caption.
-    System.Text.RegularExpressions.Match position =
-        System.Text.RegularExpressions.Regex.Match(displayName,
-            @"\[?(?<x>\d+)\s*,\s*(?<y>\d+)\]?\s*\(?(?<face>[NSEW])\)?(?=\s|/|$)",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-    if (!position.Success)
-      return displayName;
-
-    string side = string.Empty;
-    if (depth[0] == 'S')
-    {
-      // Screen side is independent of bitmap mirroring and saved flags.
-      bool isRight = slot.IndexOf("Right",
-              System.StringComparison.OrdinalIgnoreCase) >= 0
-          || (slot.IndexOf("Left", System.StringComparison.OrdinalIgnoreCase) < 0
-              && codedX >= DungeonViewportWidth / 2);
-      side = isRight ? "R" : "L";
-    }
-
-    string name = IsGrateOrnament(ornament) ? "Grate"
-        : IsHookOrnament(ornament) ? "Hook"
-        : IsManaclesOrnament(ornament) ? "Manacles"
-        : IsWoodRingOrnament(ornament) ? "WoodRing"
-        : IsSlimeOrnament(ornament) ? "Slime"
-        : IsViAltarOrnament(ornament) ? "Vi Altar"
-        : displayName;
-    return name + " - " + depth + side + " - "
-        + position.Groups["x"].Value + "," + position.Groups["y"].Value
-        + " " + position.Groups["face"].Value.ToUpperInvariant();
-  }
 
   // Diagnostic only: click an ornament caption to inspect its actual bitmap
   // on cyan. This never changes artwork, calibration, or scene rendering.
@@ -25482,319 +24963,7 @@ private static void HandleGameViewPointerDown(
     EditorGUILayout.EndHorizontal();
   }
 
-  private bool DrawWallOrnamentCalibrationRow(
-      WallOrnamentPlacement ornament,
-      string displayName)
-  {
-    if (!TryGetWallOrnamentCalibrationDefaults(
-            ornament, out int codedX, out int codedY, out bool codedMirror))
-      return false;
 
-    string key = MakePreviewFeatureKey(
-        "Ornament", ornament.x, ornament.y, ornament.wall);
-    string projectionSuffix = null;
-    bool hasGenericProjection =
-        TryGetWallOrnamentProjectionOverrideDescriptor(
-            ornament,
-            out string projectionKey,
-            out string resolvedProjectionSuffix);
-    if (hasGenericProjection)
-    {
-      key = projectionKey;
-      projectionSuffix = resolvedProjectionSuffix;
-    }
-
-
-    // A saved global offset supersedes an older absolute accepted reference.
-    // Red indicates only values that differ from the current saved baseline.
-    int defaultX = codedX;
-    int defaultY = codedY;
-    bool defaultMirror = codedMirror;
-    // Preserve existing saved Manacles S3 calibration.
-    bool isManaclesS3 = IsManaclesOrnament(ornament)
-        && (string.Equals(key, "OrnamentProjection:Manacles:S3:Left",
-                System.StringComparison.Ordinal)
-            || string.Equals(key, "OrnamentProjection:Manacles:S3:Right",
-                System.StringComparison.Ordinal));
-    if (isManaclesS3)
-    {
-      ApplyManaclesS3AcceptedReference(
-          key, ref defaultX, ref defaultY, ref defaultMirror);
-    }
-    else if (hasGenericProjection)
-    {
-      if (TryGetOrnamentPlacementOffset(key,
-          out OrnamentPlacementOffsetEntry savedOffset))
-      {
-        defaultX = codedX + savedOffset.dx;
-        defaultY = codedY - savedOffset.dy;
-        defaultMirror = savedOffset.mirror;
-      }
-      else
-        ApplyAcceptedOrnamentReference(
-            key, ref defaultX, ref defaultY, ref defaultMirror);
-    }
-
-    int x = defaultX;
-    int y = defaultY;
-    bool mirror = defaultMirror;
-    ApplyPreviewFeatureRenderOverrides(key, ref x, ref y, ref mirror);
-    // Mirror is derived from ornament geometry, not a saved ViewEdit draft.
-    mirror = codedMirror;
-    previewFeatureMirrorOverrides.Remove(key);
-    // Hook side orientation is defined by the wall side, not by legacy
-    // accepted/calibrated mirror flags. The UI must show the live blitter.
-    bool fixedHookSideMirror = IsHookOrnament(ornament)
-        && hasGenericProjection
-        && (projectionSuffix == " / S1"
-            || projectionSuffix == " / S2"
-            || projectionSuffix == " / S3"
-            || projectionSuffix == " / S2 Left");
-    if (fixedHookSideMirror)
-    {
-      // The physical wall side determines the Hook orientation. Wall-tile
-      // placements name the face pointing inward; corridor-boundary
-      // placements name the boundary pointing outward (opposite directions).
-      // Ignore previously accepted mirror values, preserving X/Y calibration.
-      string rightHookWallFace = FacingName(
-          ornament.wallTilePlacement
-              ? TurnPreviewFacingLeft(previewFacing)
-              : TurnPreviewFacingRight(previewFacing));
-      bool hookRightSide = string.Equals(ornament.wall,
-          rightHookWallFace, System.StringComparison.OrdinalIgnoreCase);
-      defaultMirror = hookRightSide;
-      mirror = hookRightSide;
-      previewFeatureMirrorOverrides.Remove(key);
-    }
-
-    if (!string.IsNullOrEmpty(projectionSuffix)
-        && !(IsGrateOrnament(ornament) && displayName != null && displayName.StartsWith("Grate F1 ", System.StringComparison.Ordinal))
-        && (displayName == null || !displayName.Contains(projectionSuffix)))
-    {
-      displayName += projectionSuffix;
-    }
-
-    EditorGUILayout.BeginHorizontal();
-    float savedLabelWidth = EditorGUIUtility.labelWidth;
-
-    GUIStyle featureStyle = new GUIStyle(EditorStyles.boldLabel);
-    featureStyle.normal.textColor = Color.yellow;
-    featureStyle.hover.textColor = Color.yellow;
-    featureStyle.focused.textColor = Color.yellow;
-    // Keep every ornament row aligned, but make the caption column only as
-    // wide as the longest normal ornament label instead of leaving a large gap.
-    float ornamentCaptionColumnWidth =
-        featureStyle.CalcSize(
-            new GUIContent("WoodRing [1,17] (S) / S1")).x;
-    // Grate captions use their own exact width: no blank column after short
-    // labels, while longer perspective labels still remain fully readable.
-    if (IsGrateOrnament(ornament))
-      ornamentCaptionColumnWidth =
-          featureStyle.CalcSize(new GUIContent(displayName)).x + 6f;
-    // Presentation only: remove coordinate/direction brackets from the row.
-    // Keep the stored name, keys and V17 ornament placement unchanged.
-    string compactDisplayName = FormatViewEditOrnamentCaption(
-        ornament, displayName, projectionSuffix, codedX);
-    // Other, non-projection rows retain their previous compact caption.
-    compactDisplayName = System.Text.RegularExpressions.Regex.Replace(
-        compactDisplayName, @"\[(.*?)\]", "$1");
-    compactDisplayName = System.Text.RegularExpressions.Regex.Replace(
-        compactDisplayName, @"\((N|S|E|W)\)", "$1");
-    ornamentCaptionColumnWidth =
-        GetViewEditItemCaptionWidth(featureStyle, compactDisplayName);
-    // Label-sized button: clicking the yellow ornament name selects the
-    // actual generated bitmap; editing controls keep their existing behavior.
-    if (DrawViewEditAlignedYellowCaption(featureStyle,
-        compactDisplayName, true))
-    {
-      selectedOrnamentInspectorKey = key;
-      selectedOrnamentInspectorCaption = compactDisplayName;
-      selectedOrnamentInspectorMirror = mirror;
-      Repaint();
-    }
-
-    // Altar rows use the same Set column and per-placement visibility key
-    // as other ornament rows. This is only a ViewEdit presentation change.
-    if (IsViAltarOrnament(ornament))
-    {
-      string altarVisibilityKey = MakePreviewFeatureKey(
-          "Ornament", ornament.x, ornament.y, ornament.wall);
-      bool wasEnabled = IsPreviewFeatureEnabled(altarVisibilityKey);
-      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
-      if (nowEnabled != wasEnabled)
-      {
-        SetPreviewFeatureEnabled(altarVisibilityKey, nowEnabled);
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
-      }
-    }
-
-    // The F1 Torch Holder uses the same placement visibility gate as its
-    // renderer. Include its Set control in the shared ViewEdit row layout.
-    if (!string.IsNullOrEmpty(displayName)
-        && displayName.StartsWith("TorchHolder ", System.StringComparison.Ordinal))
-    {
-      string holderVisibilityKey = MakePreviewFeatureKey(
-          "Ornament", ornament.x, ornament.y, ornament.wall);
-      bool wasEnabled = IsPreviewFeatureEnabled(holderVisibilityKey);
-      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
-      if (nowEnabled != wasEnabled)
-      {
-        SetPreviewFeatureEnabled(holderVisibilityKey, nowEnabled);
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
-      }
-    }
-
-    // Hook toggles use the placement visibility key checked by the renderer.
-    if (IsHookOrnament(ornament))
-    {
-      string hookVisibilityKey = MakePreviewFeatureKey(
-          "Ornament", ornament.x, ornament.y, ornament.wall);
-      bool wasEnabled = IsPreviewFeatureEnabled(hookVisibilityKey);
-      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
-      if (nowEnabled != wasEnabled)
-      {
-        SetPreviewFeatureEnabled(hookVisibilityKey, nowEnabled);
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
-      }
-    }
-
-    // A Grate can be hidden temporarily to compare the underlying wall
-    // mortar lines. The original placement and accepted X/Y are not edited.
-    if (IsGrateOrnament(ornament))
-    {
-      string grateVisibilityKey = MakePreviewFeatureKey(
-          "Ornament", ornament.x, ornament.y, ornament.wall);
-      bool wasEnabled = IsPreviewFeatureEnabled(grateVisibilityKey);
-      bool nowEnabled = DrawCompactMouseOnlyToggle("Set", wasEnabled, false);
-      if (nowEnabled != wasEnabled)
-      {
-        SetPreviewFeatureEnabled(grateVisibilityKey, nowEnabled);
-        previewEnabledChangedThisFrame = true;
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
-      }
-    }
-
-    EditorGUIUtility.labelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("X")).x;
-    int editX = x;
-    bool xChanged = DrawIntStepperInline(
-        "X", ref editX, snap, x != defaultX, true, 24f, ViewEditCoordinateInputWidth);
-
-    EditorGUIUtility.labelWidth =
-        EditorStyles.label.CalcSize(new GUIContent("Y")).x;
-    int editY = y;
-    bool yChanged = DrawIntStepperInline(
-        "Y", ref editY, snap, y != defaultY, true, 24f, ViewEditCoordinateInputWidth);
-
-
-    // Wall ornament orientation belongs to the renderer, never ViewEdit.
-    // The calibration row exposes X/Y only. Old JSON mirror fields remain
-    // readable for compatibility, but are not editable or authoritative.
-    bool editMirror = codedMirror;
-    if (string.Equals(selectedOrnamentInspectorKey, key,
-            System.StringComparison.Ordinal))
-      selectedOrnamentInspectorMirror = editMirror;
-    bool applyClicked = false;
-    if (hasGenericProjection)
-    {
-      applyClicked = GUILayout.Button(
-          "Apply",
-          GUILayout.Width(58f),
-          GUILayout.ExpandWidth(false));
-    }
-    NoteContentRight();
-
-    EditorGUIUtility.labelWidth = savedLabelWidth;
-    EditorGUILayout.EndHorizontal();
-
-    if (applyClicked)
-    {
-      // Manacles S3 is drawn by its own direct V17-gated path, which reads
-      // accepted absolute X/Y rather than the generic JSON offset store.
-      // Persist via the same path the S3 renderer reads, so Apply does not
-      // appear to restore the previous coordinates on the next repaint.
-      if (isManaclesS3)
-      {
-        if (SaveAcceptedOrnamentReference(key, editX, editY, codedMirror))
-        {
-          previewFeaturePositionOverrides.Remove(key);
-          previewFeatureMirrorOverrides.Remove(key);
-          previewPositionChangedThisFrame = true;
-          RefreshEditModePreview();
-          RepaintGameViews();
-          Repaint();
-        }
-        return true;
-      }
-      // Global offset, not a dungeon-coordinate correction. A positive dy
-      // moves artwork DOWN on screen (renderer Y is bottom-up).
-      // The new JSON offset supersedes any older absolute reference, but the
-      // legacy reference is left intact for other rendering paths.
-      if (SaveOrnamentPlacementOffset(
-          key, editX - codedX, codedY - editY,
-          codedMirror))
-      {
-        previewFeaturePositionOverrides.Remove(key);
-        previewFeatureMirrorOverrides.Remove(key);
-        previewPositionChangedThisFrame = true;
-        previewMirrorChangedThisFrame = true;
-        RefreshEditModePreview();
-        RepaintGameViews();
-        Repaint();
-      }
-      return true;
-    }
-
-    bool changed = false;
-    if ((xChanged && editX != x) || (yChanged && editY != y))
-    {
-      if (editX == defaultX && editY == defaultY)
-        previewFeaturePositionOverrides.Remove(key);
-      else
-        previewFeaturePositionOverrides[key] = new Vector2Int(editX, editY);
-      previewPositionChangedThisFrame = true;
-      changed = true;
-    }
-
-    if (changed)
-    {
-      RefreshEditModePreview();
-      RepaintGameViews();
-      Repaint();
-    }
-
-    return true;
-  }
-
-  private bool DrawGrateFeatureRow(WallOrnamentPlacement ornament)
-  {
-    if (!TryGetGrateViewProjection(
-            ornament, out string projectionName, out _))
-      return false;
-
-    string name;
-    if (projectionName.StartsWith("Grate - Front F", System.StringComparison.Ordinal))
-    {
-      string shortProjection = projectionName.Replace("Grate - Front ", "Grate ");
-      name = shortProjection + " " + previewX + "," + previewY + " "
-          + ShortDirectionLabel(FacingName(previewFacing));
-    }
-    else
-    {
-      name = projectionName.Replace("Grate - Side3", "Grate - S3")
-          + " [" + previewX + "," + previewY + "] ("
-          + ShortDirectionLabel(FacingName(previewFacing)) + ")";
-    }
-    return DrawWallOrnamentCalibrationRow(ornament, name);
-  }
 
   private void DrawReadOnlyFeatureMapFields(int mapX, int mapY)
   {
@@ -25971,12 +25140,6 @@ private static void HandleGameViewPointerDown(
     Repaint();
   }
 
-  private bool IsViAltarOrnament(WallOrnamentPlacement ornament)
-  {
-    return ornament != null
-        && (string.Equals(ornament.type, "ViAltar", System.StringComparison.OrdinalIgnoreCase)
-            || string.Equals(ornament.type, "AltarOfVi", System.StringComparison.OrdinalIgnoreCase));
-  }
 
 
 
@@ -26194,61 +25357,10 @@ private static void HandleGameViewPointerDown(
     return false;
   }
 
-  private bool IsStandardWallOrnamentProjectionVisibleInCurrentPose(
-      WallOrnamentPlacement ornament,
-      int maxFrontDepth,
-      int maxSideDepth)
-  {
-    return ornament != null && IsSharedWallFeatureVisible(
-        ornament.x, ornament.y, ornament.wall, ornament.wallTilePlacement,
-        maxFrontDepth, maxSideDepth);
-  }
 
-  private bool TryGetStandardWallOrnamentDungeonFeatureFace(
-      WallOrnamentPlacement ornament,
-      out string dungeonFeatureFace)
-  {
-    dungeonFeatureFace = null;
 
-    if (IsWoodRingOrnament(ornament))
-    {
-      return TryGetStandardWallOrnamentProjectionInCurrentPose(
-          ornament, 3, 3, out _, out _, out dungeonFeatureFace);
-    }
 
-    if (IsHookOrnament(ornament))
-    {
-      return TryGetStandardWallOrnamentProjectionInCurrentPose(
-          ornament, 2, 3, out _, out _, out dungeonFeatureFace);
-    }
 
-    if (IsSlimeOrnament(ornament))
-    {
-      return TryGetStandardWallOrnamentProjectionInCurrentPose(
-          ornament, 3, 2, out _, out _, out dungeonFeatureFace);
-    }
-
-    return false;
-  }
-
-  private bool IsWoodRingProjectionVisibleInCurrentPose(
-      WallOrnamentPlacement ornament)
-  {
-    return IsWoodRingOrnament(ornament)
-        && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 3, 3);
-  }
-
-  private bool IsHookProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
-  {
-    return IsHookOrnament(ornament)
-        && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 2, 3);
-  }
-
-  private bool IsSlimeProjectionVisibleInCurrentPose(WallOrnamentPlacement ornament)
-  {
-    return IsSlimeOrnament(ornament)
-        && IsStandardWallOrnamentProjectionVisibleInCurrentPose(ornament, 3, 2);
-  }
 
 
 
@@ -26806,350 +25918,6 @@ private static void HandleGameViewPointerDown(
     DrawChampionMirrorExtendedSideLaneF3Rows();
 
 
-
-    // Ordinary wall ornaments.
-    if (previewWallOrnaments != null)
-    {
-      for (int i = 0; i < previewWallOrnaments.Length; i++)
-      {
-        WallOrnamentPlacement ornament = previewWallOrnaments[i];
-        if (ornament == null) continue;
-        if (!string.IsNullOrEmpty(ornament.type)
-            && ornament.type.IndexOf("ChampionMirror", System.StringComparison.OrdinalIgnoreCase) >= 0)
-          continue; // Mirror rendering retired; ordinary ornaments remain intact.
-        if (ornament == null)
-          continue;
-
-        // The same F1 visibility predicate is used by the blitter and this
-        // row. No row is shown for a holder behind the party or another wall.
-        if (IsEmptyTorchHolderF1Visible(ornament))
-        {
-          // Report the actual rendered state, not the source sensor name.
-          // The renderer uses this same per-holder key to choose its PNG.
-          bool torchRemoved = previewRemovedTorchHolderKeys.Contains(
-              MakeTorchHolderInstanceKey(ornament));
-          string renderedName = torchRemoved
-              ? "TorchHolder Empty" : "TorchHolder Full";
-          DrawWallOrnamentCalibrationRow(ornament,
-              renderedName + " [" + previewX + "," + previewY + "] ("
-              + ShortDirectionLabel(FacingName(previewFacing)) + ")");
-          continue;
-        }
-        // Only F1 artwork exists; never list non-renderable holder depths.
-        if (string.Equals(ornament.type, "EmptyTorchHolder",
-                System.StringComparison.OrdinalIgnoreCase))
-          continue;
-
-
-        if (!IsMapCellInCurrentFeatureCone(ornament.x, ornament.y))
-          continue;
-
-        // Wood Rings must obey the exact same F1/F2/F3 and S1/S2/S3 wall
-        // geometry as their renderer. The broad feature cone is only a cheap
-        // neighbourhood prefilter and must never create a ViewEdit row by itself.
-        if (IsWoodRingOrnament(ornament)
-            && !IsWoodRingProjectionVisibleInCurrentPose(ornament))
-        {
-          continue;
-        }
-
-        // Hooks must obey the exact same front/side projection geometry as
-        // the renderer.  The broad feature cone also contains outer cells
-        // that are not valid Hook projection slots (for example 5,15 West
-        // from pose 3,17 East), so those must not become ViewEdit rows.
-        if (IsHookOrnament(ornament)
-            && !IsHookProjectionVisibleInCurrentPose(ornament))
-        {
-          continue;
-        }
-
-        // Slime rows must obey the exact same F1/F2/F3/S1/S2 geometry as the
-        // Slime renderer. The broad feature cone can include adjacent cells
-        // that are not drawable Slime projection slots (for example 2,18
-        // North from pose 2,17 East), so those must not appear in ViewEdit.
-        if (IsSlimeOrnament(ornament)
-            && !IsSlimeProjectionVisibleInCurrentPose(ornament))
-        {
-          continue;
-        }
-
-        // Grates have their own rendered-projection ViewEdit row. Only show
-        // the grate if this exact ornament is actually drawable in this pose.
-        if (IsGrateOrnament(ornament))
-        {
-          DrawGrateFeatureRow(ornament);
-          continue;
-        }
-
-        // Champion Mirrors have their own dedicated ViewEdit row above.
-        // Do not also show the generic wall-ornament entry for the same
-        // physical mirror, otherwise ViewEdit contains two redundant rows.
-        if (!string.IsNullOrEmpty(ornament.type)
-            && ornament.type.IndexOf(
-                "ChampionMirror",
-                System.StringComparison.OrdinalIgnoreCase) >= 0)
-        {
-          bool hasDedicatedMirror = false;
-          if (previewChampionMirrors != null)
-          {
-            for (int m = 0; m < previewChampionMirrors.Length; m++)
-            {
-              ChampionMirrorPlacement mirror = previewChampionMirrors[m];
-              if (mirror == null)
-                continue;
-
-              if (mirror.x == ornament.x
-                  && mirror.y == ornament.y
-                  && string.Equals(
-                      mirror.wall,
-                      ornament.wall,
-                      System.StringComparison.OrdinalIgnoreCase))
-              {
-                hasDedicatedMirror = true;
-                break;
-              }
-            }
-          }
-
-          if (hasDedicatedMirror)
-            continue;
-        }
-
-        string key = MakePreviewFeatureKey(
-            "Ornament", ornament.x, ornament.y, ornament.wall);
-
-        // A Manacles row should exist only when the Manacles are actually
-        // visible in the current pose. This mirrors BlitManaclesD1FrontIntoPreview:
-        // wall-tile Manacles must be on the wall cell directly in front of the
-        // party and on the physical wall face visible from the current facing.
-        //
-        // Example:
-        //   pose 4,9 West  -> wall storage 3,9 East -> visible as F1
-        //   pose 4,9 North -> same Manacles are not on the front wall -> hidden
-        //
-        // ViewEdit displays viewpoint coordinates/facing rather than the
-        // underlying storage-wall coordinates.
-        int displayMapX = ornament.x;
-        int displayMapY = ornament.y;
-        string displayWall = ornament.wall;
-
-        // For the standard wall ornaments, use the exact projection geometry
-        // that made the ornament visible to derive the Dungeon Features/minimap
-        // wall direction. This keeps the label absolute to the map instead of
-        // blindly flipping every stored wall face or deriving it from the
-        // player's relative view.
-        int standardFrontDepth = IsWoodRingOrnament(ornament)
-            ? 3
-            : IsHookOrnament(ornament) ? 2 : IsSlimeOrnament(ornament) ? 3 : 0;
-        int standardSideDepth = IsWoodRingOrnament(ornament)
-            ? 3
-            : IsHookOrnament(ornament) ? 3 : IsSlimeOrnament(ornament) ? 2 : IsManaclesOrnament(ornament) ? 3 : 0;
-        if (standardFrontDepth > 0
-            && TryGetStandardWallOrnamentProjectionInCurrentPose(
-                ornament,
-                standardFrontDepth,
-                standardSideDepth,
-                out int projectedDungeonFeatureX,
-                out int projectedDungeonFeatureY,
-                out string projectedDungeonFeatureFace))
-        {
-          displayMapX = projectedDungeonFeatureX;
-          displayMapY = projectedDungeonFeatureY;
-          displayWall = projectedDungeonFeatureFace;
-        }
-
-        string manaclesDepthLabel = null;
-        if (IsManaclesOrnament(ornament))
-        {
-          DungeonMap.GetForwardOffset(
-              previewFacing,
-              out int manaclesForwardX,
-              out int manaclesForwardY);
-
-          if (ornament.wallTilePlacement)
-          {
-            int directFrontWallX = previewX + manaclesForwardX;
-            int directFrontWallY = previewY + manaclesForwardY;
-            int f2FrontWallX = previewX + manaclesForwardX * 2;
-            int f2FrontWallY = previewY + manaclesForwardY * 2;
-            int f3FrontWallX = previewX + manaclesForwardX * 3;
-            int f3FrontWallY = previewY + manaclesForwardY * 3;
-            string visibleFace = OppositeFacingName(previewFacing);
-            bool visibleAsF1 =
-                ornament.x == directFrontWallX
-                && ornament.y == directFrontWallY
-                && string.Equals(
-                    ornament.wall,
-                    visibleFace,
-                    System.StringComparison.OrdinalIgnoreCase);
-            bool d1Open =
-                previewMiniMap != null
-                && previewMiniMap.IsInside(directFrontWallX, directFrontWallY)
-                && previewMiniMap.GetTile(
-                    directFrontWallX, directFrontWallY).Type
-                    != DungeonTileType.Wall;
-            bool d2Open =
-                d1Open
-                && previewMiniMap.IsInside(f2FrontWallX, f2FrontWallY)
-                && previewMiniMap.GetTile(
-                    f2FrontWallX, f2FrontWallY).Type
-                    != DungeonTileType.Wall;
-            bool visibleAsF2 =
-                d1Open
-                && ornament.x == f2FrontWallX
-                && ornament.y == f2FrontWallY
-                && string.Equals(
-                    ornament.wall,
-                    visibleFace,
-                    System.StringComparison.OrdinalIgnoreCase);
-            bool visibleAsF3 =
-                d2Open
-                && ornament.x == f3FrontWallX
-                && ornament.y == f3FrontWallY
-                && string.Equals(
-                    ornament.wall,
-                    visibleFace,
-                    System.StringComparison.OrdinalIgnoreCase);
-
-            bool visibleAsS1 = false;
-            if (!visibleAsF1 && !visibleAsF2 && !visibleAsF3 && d1Open)
-            {
-              DungeonMap.GetRightOffset(
-                  previewFacing,
-                  out int manaclesRightX,
-                  out int manaclesRightY);
-              int leftWallX = directFrontWallX - manaclesRightX;
-              int leftWallY = directFrontWallY - manaclesRightY;
-              int rightWallX = directFrontWallX + manaclesRightX;
-              int rightWallY = directFrontWallY + manaclesRightY;
-              string leftFace = FacingName(TurnPreviewFacingRight(previewFacing));
-              string rightFace = FacingName(TurnPreviewFacingLeft(previewFacing));
-              visibleAsS1 =
-                  (ornament.x == leftWallX
-                      && ornament.y == leftWallY
-                      && string.Equals(
-                          ornament.wall,
-                          leftFace,
-                          System.StringComparison.OrdinalIgnoreCase))
-                  || (ornament.x == rightWallX
-                      && ornament.y == rightWallY
-                      && string.Equals(
-                          ornament.wall,
-                          rightFace,
-                          System.StringComparison.OrdinalIgnoreCase));
-            }
-
-            bool visibleAsS2 = false;
-            if (!visibleAsF1 && !visibleAsF2 && !visibleAsF3 && !visibleAsS1 && d2Open)
-            {
-              DungeonMap.GetRightOffset(
-                  previewFacing,
-                  out int manaclesRightX,
-                  out int manaclesRightY);
-              int leftWallX = f2FrontWallX - manaclesRightX;
-              int leftWallY = f2FrontWallY - manaclesRightY;
-              int rightWallX = f2FrontWallX + manaclesRightX;
-              int rightWallY = f2FrontWallY + manaclesRightY;
-              string leftFace = FacingName(TurnPreviewFacingRight(previewFacing));
-              string rightFace = FacingName(TurnPreviewFacingLeft(previewFacing));
-              visibleAsS2 =
-                  (ornament.x == leftWallX
-                      && ornament.y == leftWallY
-                      && string.Equals(
-                          ornament.wall,
-                          leftFace,
-                          System.StringComparison.OrdinalIgnoreCase))
-                  || (ornament.x == rightWallX
-                      && ornament.y == rightWallY
-                      && string.Equals(
-                          ornament.wall,
-                          rightFace,
-                          System.StringComparison.OrdinalIgnoreCase));
-            }
-
-            bool visibleAsS3 = false;
-            if (!visibleAsF1 && !visibleAsF2 && !visibleAsF3
-                && !visibleAsS1 && !visibleAsS2 && d2Open)
-            {
-              DungeonMap.GetRightOffset(previewFacing,
-                  out int manaclesRightX, out int manaclesRightY);
-              int d3X = previewX + manaclesForwardX * 3;
-              int d3Y = previewY + manaclesForwardY * 3;
-              bool d3Open = PreviewTileIsOpen(d3X, d3Y);
-              string leftFace = FacingName(TurnPreviewFacingRight(previewFacing));
-              string rightFace = FacingName(TurnPreviewFacingLeft(previewFacing));
-              visibleAsS3 = d3Open && (
-                  (ornament.x == d3X - manaclesRightX
-                   && ornament.y == d3Y - manaclesRightY
-                   && string.Equals(ornament.wall, leftFace,
-                       System.StringComparison.OrdinalIgnoreCase))
-               || (ornament.x == d3X + manaclesRightX
-                   && ornament.y == d3Y + manaclesRightY
-                   && string.Equals(ornament.wall, rightFace,
-                       System.StringComparison.OrdinalIgnoreCase)));
-            }
-
-            if (!visibleAsF1 && !visibleAsF2 && !visibleAsF3
-                && !visibleAsS1 && !visibleAsS2 && !visibleAsS3)
-              continue;
-
-            displayMapX = previewX;
-            displayMapY = previewY;
-            displayWall = FacingName(previewFacing);
-            manaclesDepthLabel = visibleAsS1
-                ? " / S1"
-                : visibleAsS2
-                    ? " / S2"
-                    : visibleAsS3
-                        ? " / S3"
-                    : visibleAsF1
-                        ? " / F1"
-                        : visibleAsF2 ? " / F2" : " / F3";
-          }
-          else
-          {
-            bool visibleInCurrentPose =
-                ornament.x == previewX
-                && ornament.y == previewY
-                && string.Equals(
-                    ornament.wall,
-                    FacingName(previewFacing),
-                    System.StringComparison.OrdinalIgnoreCase);
-
-            if (!visibleInCurrentPose)
-              continue;
-          }
-        }
-
-        string name = string.IsNullOrEmpty(ornament.type)
-            ? "Ornament"
-            : ornament.type;
-
-        // Show the dungeon-map position used by ViewEdit separately from the
-        // following X/Y pixel calibration controls.
-        name += " [" + displayMapX + "," + displayMapY + "]";
-
-        if (!string.IsNullOrEmpty(displayWall))
-          name += " (" + ShortDirectionLabel(displayWall) + ")";
-
-        // ViewEdit labels use the current-view depth classification.
-        // F1 is the wall one step ahead; F2 is two steps ahead.
-        if (manaclesDepthLabel != null)
-          name += manaclesDepthLabel;
-        else if (IsManaclesOrnament(ornament)
-            && displayMapX == previewX
-            && displayMapY == previewY
-            && string.Equals(
-                displayWall,
-                FacingName(previewFacing),
-                System.StringComparison.OrdinalIgnoreCase))
-        {
-          name += " / F1";
-        }
-
-        DrawWallOrnamentCalibrationRow(ornament, name);
-      }
-    }
 
     // Floor puddles are ornaments too, but they are stored separately from
     // wallOrnaments in the parsed map data. Only list projections that the
@@ -33228,21 +31996,6 @@ private static void HandleGameViewPointerDown(
 
 
 
-  private static bool IsSlimeOrnament(WallOrnamentPlacement ornament)
-  {
-    if (ornament == null)
-      return false;
-
-    if (string.Equals(
-            ornament.type,
-            "Slime",
-            System.StringComparison.OrdinalIgnoreCase))
-    {
-      return true;
-    }
-
-    return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 33;
-  }
 
 
 
@@ -33294,33 +32047,8 @@ private static void HandleGameViewPointerDown(
 
 
 
-  private static bool IsManaclesOrnament(WallOrnamentPlacement ornament)
-  {
-    return ornament != null
-        && !string.IsNullOrEmpty(ornament.type)
-        && ornament.type.IndexOf(
-            "Manacles",
-            System.StringComparison.OrdinalIgnoreCase) >= 0;
-  }
 
 
-  private static bool IsHookOrnament(WallOrnamentPlacement ornament)
-  {
-    if (ornament == null)
-      return false;
-
-    if (string.Equals(
-            ornament.type,
-            "Hook",
-            System.StringComparison.OrdinalIgnoreCase))
-    {
-      return true;
-    }
-
-    // Explicit Sensor ordinals are level-local. On Hall of Champions local
-    // ordinal 1 resolves to global wall ornament source ID 4 = Hook.
-    return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 4;
-  }
 
 
 
@@ -33358,54 +32086,12 @@ private static void HandleGameViewPointerDown(
   // Face at the *front* of the right-hand D2 side tile, not the standard
   // side-facing wall ornament. The map-relative test rotates with the party.
   // It is deliberately separate from the already verified S3 Grate pass.
-  private bool IsGrateF2SideCornerVisible(WallOrnamentPlacement ornament)
-  {
-    if (!IsGrateOrnament(ornament) || previewMiniMap == null)
-      return false;
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
-    for (int step = 1; step <= 2; step++)
-    {
-      int x = previewX + fx * step;
-      int y = previewY + fy * step;
-      if (!previewMiniMap.IsInside(x, y)
-          || previewMiniMap.GetTile(x, y).Type == DungeonTileType.Wall)
-        return false;
-    }
-    int tileX = previewX + fx * 2 + rx;
-    int tileY = previewY + fy * 2 + ry;
-    return previewMiniMap.IsInside(tileX, tileY)
-        && string.Equals(ornament.wall, OppositeFacingName(previewFacing),
-            System.StringComparison.OrdinalIgnoreCase)
-        && ornament.x == tileX && ornament.y == tileY;
-  }
 
 
 
   // F3 corner: the same forward-facing right-side wall face as the accepted
   // F2 corner, but one tile farther away. Keep separate from the native S3 side.
   // Uses player-relative coordinates so it works for all four directions.
-  private bool IsGrateF3SideCornerVisible(WallOrnamentPlacement ornament)
-  {
-    if (!IsGrateOrnament(ornament) || previewMiniMap == null)
-      return false;
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
-    for (int step = 1; step <= 3; step++)
-    {
-      int x = previewX + fx * step;
-      int y = previewY + fy * step;
-      if (!previewMiniMap.IsInside(x, y)
-          || previewMiniMap.GetTile(x, y).Type == DungeonTileType.Wall)
-        return false;
-    }
-    int tileX = previewX + fx * 3 + rx;
-    int tileY = previewY + fy * 3 + ry;
-    return previewMiniMap.IsInside(tileX, tileY)
-        && string.Equals(ornament.wall, OppositeFacingName(previewFacing),
-            System.StringComparison.OrdinalIgnoreCase)
-        && ornament.x == tileX && ornament.y == tileY;
-  }
 
 
 
@@ -35310,20 +33996,6 @@ private static void HandleGameViewPointerDown(
 
 
   // Read saved Manacles S3 calibration.
-  private void ApplyManaclesS3AcceptedReference(
-      string key, ref int x, ref int y, ref bool mirror)
-  {
-    if (string.IsNullOrEmpty(key))
-      return;
-    EnsureAcceptedOrnamentReferencesLoaded();
-    if (cachedAcceptedOrnamentReferences.TryGetValue(
-        key, out AcceptedOrnamentReference accepted))
-    {
-      x = accepted.x;
-      y = accepted.y;
-      mirror = accepted.mirror;
-    }
-  }
 
   // The S3 sprite uses a direct V17-gated drawing path. Always apply
   // its accepted ViewEdit X/Y/Mirror, regardless of the 3D-Y experiment.
@@ -35502,22 +34174,6 @@ private static void HandleGameViewPointerDown(
   }
 
 
-  private static bool IsGrateOrnament(WallOrnamentPlacement ornament)
-  {
-    if (ornament == null)
-      return false;
-
-    if (string.Equals(
-            ornament.type,
-            "Grate",
-            System.StringComparison.OrdinalIgnoreCase))
-    {
-      return true;
-    }
-
-    // Hall of Champions local ordinal 3 -> global source ID 34 = Grate.
-    return ResolveHallOfChampionsWallOrnamentSourceId(ornament) == 34;
-  }
 
 
   private static string FacingName(DungeonFacing facing)
