@@ -20,7 +20,7 @@
     "limitation": "This protocol applies once Progression.json is supplied/read; a rule inside the file alone cannot trigger loading an absent file.",
     "recommended_new_session_message": "Dungeon Master — read the complete Progression.json, apply all permanent rules, and continue from the latest checkpoint."
   },
-  "date": "2026-11-24",
+  "date": "2026-11-25",
   "todo_manacles_dos_f1_s2_20261109": {
     "category": "To do List",
     "priority": 0,
@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "Stage 4N-I: Champion F1 frame + portrait and click-to-open character sheet live approved by user; recruitment confirmation and Taken transition next.",
+  "checkpoint": "Stage M1: native centered Screamer F1 test preview prepared at Level 0 (14,4) East; pressure pad visually approved; native compile/visual verification pending. Prior Champion recruitment task remains open.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -7305,5 +7305,66 @@
     "change": "Replace four pressure pad ViewEdit size captions with name, perspective, actual pad map tile and player viewing direction. F1/F2/F3 use depths 1/2/3 and lane 0; S1:Left uses depth 2 lane -1, matching existing visibility predicates.",
     "protected": "Only label strings and a label helper changed. Preserve artwork, scaling, geometry, visibility, calibration, Apply behavior, other rows and champion interactions. Cursor strictly read-only.",
     "validation": "Source diff checked; verify four captions in Unity; no Unity compilation available here."
+  },
+  "floor_ornament_pressure_pad_live_approval_20261125": {
+    "timestamp": "2026-11-25T19:41:33.025770+01:00",
+    "status": "User reports pressure pad compares perfectly against DOS PC; preserve approved artwork and rendering. Generic floor algorithm not independently audited in this approval."
+  },
+  "dos_monster_stage_m1_20261125": {
+    "timestamp": "2026-11-25T19:41:33.025770+01:00",
+    "status": "Native centered F1 preview source prepared; Unity compile and visual approval pending",
+    "placement": {
+      "name": "Screamer",
+      "type": 6,
+      "level": 0,
+      "x": 14,
+      "y": 4,
+      "facing": "East",
+      "attacking": false,
+      "count": 1,
+      "stationary": true
+    },
+    "data": "Assets/Editor/DosMonsterPreviewData.json",
+    "source": "DOS_Monster_Rendering_Research_20261125-193706.txt; original executable and resource 696 independently rechecked for descriptor and anchors",
+    "expected": {
+      "F1_local": [
+        80,
+        52,
+        64,
+        60
+      ],
+      "F1_gameview": [
+        80,
+        85,
+        64,
+        60
+      ],
+      "test_player_pose": {
+        "level": 0,
+        "x": 15,
+        "y": 4,
+        "facing": "West"
+      }
+    },
+    "scope": [
+      "Register 27 original type and graphic descriptor entries, 195 geometry records and native artwork indices 603/604; separate test placement data, no map source overwrite.",
+      "Native centered single-creature preview layer only; no AI, movement, combat, group/lateral/distance rendering or runtime game integration.",
+      "Native PNG binary alpha must match original transparency index 13; no RGB-key inference or nearest palette fallback. Actual PNGs not supplied to verify.",
+      "Preserve all previously approved ornaments, pads and champion interactions. Cursor remains read-only."
+    ],
+    "next": [
+      "Compile and visually verify centered native F1 at player (15,4) West.",
+      "Verify original source PNG transparency and palette indices; trace runtime palette initialization before F2/F3.",
+      "Reuse existing DOS 6-bit scaler after verified monster palette mapping; then verify group/side views, animation, occlusion and painter ordering."
+    ]
+  },
+  "dos_monster_stage_m1_artwork_path_correction_20261125": {
+    "timestamp": "2026-11-25T19:44:30.170503+01:00",
+    "status": "Artwork paths corrected per user; Unity verification pending",
+    "paths": [
+      "Assets/Art/Screamer_F1_64x60.png",
+      "Assets/Art/Screamer_A1_64x60.png"
+    ],
+    "scope": "Data path correction only; renderer and placement unchanged."
   }
 }
