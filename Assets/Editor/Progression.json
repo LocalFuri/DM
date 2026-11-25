@@ -7280,5 +7280,22 @@
       "After Champion Mirrors, reconstruct blue puddles and moss from verified DOS floor data. Preserve eight approved ordinary wall ornaments and torch pickup/return."
     ],
     "changes": "Progression.json only; no source or calibration changes."
+  },
+  "floor_ornament_pressure_pad_visibility_20261125": {
+    "timestamp": "2026-11-25T18:32:53.415360+01:00",
+    "archive": "PressurePad_Visibility_20261125-183253.zip",
+    "status": "Source correction prepared; Unity compile and visual validation pending",
+    "reference_pose": "Level 0 (6,12) North; F3 pressure pad (97,100) incorrectly overlays F1 wall",
+    "root_cause": "Pressure pad F1/F2/F3/S1 predicates bypassed existing shared floor ornament visibility helper.",
+    "changes": [
+      "Route F1/F2/F3 and S1 predicates through IsFloorOrnamentProjectionVisibleInCurrentPose; S1 uses depth 2 lane -1. Existing blits and ViewEdit rows consume the same predicates.",
+      "No changes to geometry, artwork, calibration, painter order, wall ornaments or champion interaction."
+    ],
+    "validation": [
+      "Source inspection: all four predicates call existing shared helper.",
+      "Unity compile and live check pending: Level 0 (6,12) North pad and row must disappear; verify unobstructed F1/F2/F3/S1 pads remain visible.",
+      "Existing helper checks wall occlusion, not full per-pixel clipping or closed-door occlusion; these are not claimed fixed."
+    ],
+    "resume": "After approval resume Stage 4N-J champion recruitment. Cursor monster research remains read-only."
   }
 }

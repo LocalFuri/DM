@@ -25378,8 +25378,8 @@ private static void HandleGameViewPointerDown(
     DungeonMap.GetForwardOffset(previewFacing, out int forwardX, out int forwardY);
     int tileX = previewX + forwardX;
     int tileY = previewY + forwardY;
-    return previewMiniMap.IsInside(tileX, tileY)
-        && previewPressurePadFloors.Contains(PackPreviewTile(tileX, tileY))
+    return IsFloorOrnamentProjectionVisibleInCurrentPose(
+        previewPressurePadFloors, tileX, tileY, 1, 0)
         && IsPreviewFeatureEnabled(MakePreviewFeatureKey("SquarePressurePad", tileX, tileY, null));
   }
 
@@ -25550,8 +25550,8 @@ private static void HandleGameViewPointerDown(
     DungeonMap.GetForwardOffset(previewFacing, out int forwardX, out int forwardY);
     int tileX = previewX + 2 * forwardX;
     int tileY = previewY + 2 * forwardY;
-    return previewMiniMap.IsInside(tileX, tileY)
-        && previewPressurePadFloors.Contains(PackPreviewTile(tileX, tileY))
+    return IsFloorOrnamentProjectionVisibleInCurrentPose(
+        previewPressurePadFloors, tileX, tileY, 2, 0)
         && IsPreviewFeatureEnabled(MakePreviewFeatureKey("SquarePressurePad", tileX, tileY, null));
   }
 
@@ -25722,8 +25722,8 @@ private static void HandleGameViewPointerDown(
     DungeonMap.GetForwardOffset(previewFacing, out int forwardX, out int forwardY);
     int tileX = previewX + 3 * forwardX;
     int tileY = previewY + 3 * forwardY;
-    return previewMiniMap.IsInside(tileX, tileY)
-        && previewPressurePadFloors.Contains(PackPreviewTile(tileX, tileY))
+    return IsFloorOrnamentProjectionVisibleInCurrentPose(
+        previewPressurePadFloors, tileX, tileY, 3, 0)
         && IsPreviewFeatureEnabled(MakePreviewFeatureKey("SquarePressurePad", tileX, tileY, null));
   }
 
@@ -25895,8 +25895,8 @@ private static void HandleGameViewPointerDown(
     // Left relative to facing is (forwardY, -forwardX) in map coordinates.
     int tileX = previewX + 2 * forwardX + forwardY;
     int tileY = previewY + 2 * forwardY - forwardX;
-    return previewMiniMap.IsInside(tileX, tileY)
-        && previewPressurePadFloors.Contains(PackPreviewTile(tileX, tileY))
+    return IsFloorOrnamentProjectionVisibleInCurrentPose(
+        previewPressurePadFloors, tileX, tileY, 2, -1)
         && IsPreviewFeatureEnabled(MakePreviewFeatureKey("SquarePressurePad", tileX, tileY, null));
   }
 
