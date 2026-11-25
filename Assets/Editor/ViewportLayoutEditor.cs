@@ -19668,7 +19668,7 @@ private static void HandleGameViewPointerDown(
   {
     renderedDosWallOrnaments.Clear();
     renderedDosMonsterRows.Clear();
-    dosMonsterPreviewStatus = "M2: dungeon composition has not reached the monster pass";
+    dosMonsterPreviewStatus = "M3: dungeon composition has not reached the monster pass";
     renderedDosLevel = previewDungeonLevel;
     renderedDosX = previewX;
     renderedDosY = previewY;
@@ -20630,13 +20630,13 @@ private static void HandleGameViewPointerDown(
   }
 
 
-  // Stage M2: centered F1 and F2 geometry test. Original DOS resource data is
+  // Stage M3: centered F1, F2 and F3 geometry test. Original DOS resource data is
   // external; no creature-specific geometry or map coordinates in the renderer.
   private const string DosMonsterPreviewDataPath = "Assets/Editor/DosMonsterPreviewData.json";
   [System.Serializable]
   private sealed class DosMonsterPreviewRoot
   {
-    public int schemaVersion, centerF1View, centerF2View, mediumScale, centerPosition, zoneBase, groupStride, viewStride;
+    public int schemaVersion, centerF1View, centerF2View, centerF3View, mediumScale, farScale, centerPosition, zoneBase, groupStride, viewStride;
     public DosMonsterGeometryRow[] geometry;
     public DosMonsterDescriptorRow[] descriptors;
     public DosMonsterTypeRow[] types;
@@ -20697,11 +20697,11 @@ private static void HandleGameViewPointerDown(
     if (dosMonsterOffsetDrafts.TryGetValue(key, out Vector2Int draft)) offset = draft;
     return true;
   }
-  private string dosMonsterPreviewStatus = "M2: refresh preview";
+  private string dosMonsterPreviewStatus = "M3: refresh preview";
 
   private void ReportDosMonsterPreview(string message)
   {
-    dosMonsterPreviewStatus = "M2: " + message;
+    dosMonsterPreviewStatus = "M3: " + message;
     if (dosMonsterPreviewDiagnostics.Add(message))
       LogMissingArtworkCyan("DOS MONSTER M2: " + message);
   }
@@ -20722,7 +20722,7 @@ private static void HandleGameViewPointerDown(
       {
         dosMonsterPreviewData = null;
         DosMonsterPreviewRoot parsed = JsonUtility.FromJson<DosMonsterPreviewRoot>(File.ReadAllText(DosMonsterPreviewDataPath));
-        if (parsed == null || parsed.schemaVersion != 2 || parsed.geometry == null
+        if (parsed == null || (parsed.schemaVersion != 2 && parsed.schemaVersion != 3) || parsed.geometry == null
             || parsed.descriptors == null || parsed.types == null || parsed.artwork == null
             || parsed.placements == null || parsed.groupStride <= 0 || parsed.viewStride <= 0
             || parsed.mediumScale <= 0 || parsed.mediumScale >= 32)
@@ -20730,6 +20730,8 @@ private static void HandleGameViewPointerDown(
           ReportDosMonsterPreview("invalid original descriptor/geometry/placement data; not drawn (no fallback)");
           return false;
         }
+        if (parsed.farScale <= 0 || parsed.farScale >= 32) parsed.farScale = 14;
+        if (parsed.centerF3View < 0) parsed.centerF3View = 0;
         dosMonsterPreviewData = parsed;
         dosMonsterPreviewWriteTime = stamp;
       }
@@ -20748,13 +20750,13 @@ private static void HandleGameViewPointerDown(
   {
     if (pixels == null || previewMiniMap == null)
     {
-      dosMonsterPreviewStatus = "M2: missing preview buffer or map"; return;
+      dosMonsterPreviewStatus = "M3: missing preview buffer or map"; return;
     }
     if (!TryGetDosMonsterPreviewData(out DosMonsterPreviewRoot data)) return;
     DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    dosMonsterPreviewStatus = "M2: no centered F1/F2 monster visible";
+    dosMonsterPreviewStatus = "M3: no centered F1/F2/F3 monster visible";
     // Farther creatures first. Reject walls and doors on the complete center ray.
-    for (int depth = 2; depth >= 1; depth--)
+    for (int depth = 3; depth >= 1; depth--)
     {
       int tileX = previewX + fx * depth, tileY = previewY + fy * depth;
       bool visible = true;
@@ -20806,8 +20808,9 @@ private static void HandleGameViewPointerDown(
       {
         ReportDosMonsterPreview("missing artwork registration for DOS graphic " + graphic); continue;
       }
+      int centerView = depth == 1 ? data.centerF1View : (depth == 2 ? data.centerF2View : data.centerF3View);
       int zone = data.zoneBase + descriptor.geometryGroup * data.groupStride
-          + (depth == 1 ? data.centerF1View : data.centerF2View) * data.viewStride + data.centerPosition;
+          + centerView * data.viewStride + data.centerPosition;
       DosMonsterGeometryRow anchor = System.Array.Find(data.geometry, row => row != null && row.zone == zone);
       if (anchor == null || anchor.mode != 7 || anchor.clip != 4)
       {
@@ -20842,8 +20845,9 @@ private static void HandleGameViewPointerDown(
         ReportDosMonsterPreview("native PNG needs binary alpha matching DOS transparency index "
             + descriptor.transparencyIndex + ": " + art.path + "; not drawn (no fallback)"); continue;
       }
-      int width = depth == 1 ? sprite.width : (sprite.width * data.mediumScale + (data.mediumScale >> 1)) >> 5;
-      int height = depth == 1 ? sprite.height : (sprite.height * data.mediumScale + (data.mediumScale >> 1)) >> 5;
+      int scale = depth == 1 ? 32 : (depth == 2 ? data.mediumScale : data.farScale);
+      int width = depth == 1 ? sprite.width : (sprite.width * scale + (scale >> 1)) >> 5;
+      int height = depth == 1 ? sprite.height : (sprite.height * scale + (scale >> 1)) >> 5;
       if (width <= 0 || height <= 0) { ReportDosMonsterPreview("invalid scaled dimensions"); continue; }
       string offsetKey = "MonsterProjection:" + item.type + ":F" + depth;
       if (!TryGetDosMonsterOffset(offsetKey, out Vector2Int offset)) continue;
@@ -20894,7 +20898,7 @@ private static void HandleGameViewPointerDown(
     {
       // Keep failure diagnostics, not ordinary empty-view status.
       if (!string.IsNullOrEmpty(dosMonsterPreviewStatus)
-          && dosMonsterPreviewStatus != "M2: no centered F1/F2 monster visible")
+          && dosMonsterPreviewStatus != "M3: no centered F1/F2/F3 monster visible")
         EditorGUILayout.LabelField(dosMonsterPreviewStatus, EditorStyles.wordWrappedMiniLabel);
       return;
     }

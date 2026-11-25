@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "timestamp": "2026-11-25T20:16:33.477466+01:00",
-  "source": "Original DOS FIRES engine image; GRAPHICS.DAT resource 696; native stage M1 only",
+  "timestamp": "2026-11-25T20:59:00+01:00",
+  "source": "Original DOS FIRES engine image; GRAPHICS.DAT resource 696; M3 safe F1/F2/F3 geometry",
   "engineSHA256": "dbffccaef5275e0c9dc6273570eb921656e9feedc11d6d0af35f7e41b192472c",
   "graphicsSHA256": "2c3aa836925c64c09402bafb03c645932bd03c4f003ad9a86542383b078ecf8e",
   "centerF1View": 8,
@@ -1759,5 +1759,7 @@
     }
   ],
   "centerF2View": 5,
-  "mediumScale": 21
+  "mediumScale": 21,
+  "centerF3View": 0,
+  "farScale": 14
 }
