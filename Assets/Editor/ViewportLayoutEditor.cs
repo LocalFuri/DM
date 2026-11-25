@@ -19668,7 +19668,7 @@ private static void HandleGameViewPointerDown(
   {
     renderedDosWallOrnaments.Clear();
     renderedDosMonsterRows.Clear();
-    dosMonsterPreviewStatus = "M3: dungeon composition has not reached the monster pass";
+    dosMonsterPreviewStatus = "M4: dungeon composition has not reached the monster pass";
     renderedDosLevel = previewDungeonLevel;
     renderedDosX = previewX;
     renderedDosY = previewY;
@@ -20642,6 +20642,7 @@ private static void HandleGameViewPointerDown(
     public DosMonsterTypeRow[] types;
     public DosMonsterArtworkRow[] artwork;
     public DosMonsterPlacementRow[] placements;
+    public DosMonsterDistancePaletteRow[] distancePalettes;
   }
   [System.Serializable]
   private sealed class DosMonsterGeometryRow
@@ -20671,6 +20672,81 @@ private static void HandleGameViewPointerDown(
     public int type, level, x, y, count;
     public bool attacking, stationary;
   }
+  [System.Serializable]
+  private sealed class DosMonsterDistancePaletteRow
+  {
+    public int level;
+    public int[] medium, far;
+  }
+
+  // Exact two export quantizations of the same original 3-bit RGB palette.
+  // Do not use nearest-colour recovery or PNG palette slot numbers (the PNG
+  // exporter reordered entries). Ambiguous or unknown colours are rejected.
+  private static bool TryGetMonsterSourcePaletteIndex(Color32 pixel, out int index)
+  {
+    index = -1;
+    Color32[] palette = DungeonViewportLightPalettes[0];
+    for (int i = 0; i < palette.Length; i++)
+    {
+      Color32 c = palette[i];
+      bool exact = pixel.r == c.r && pixel.g == c.g && pixel.b == c.b;
+      bool truncated = pixel.r == ((c.r * 7 + 127) / 255) * 255 / 7
+          && pixel.g == ((c.g * 7 + 127) / 255) * 255 / 7
+          && pixel.b == ((c.b * 7 + 127) / 255) * 255 / 7;
+      if (!exact && !truncated) continue;
+      if (index >= 0) return false;
+      index = i;
+    }
+    return index >= 0;
+  }
+
+  // Preflight the whole image before drawing, so a missing mapping cannot
+  // leave a partially rendered creature. Palette validation is distance-local:
+  // an unsupported distant palette never disables native F1 rendering.
+  private bool TryRemapDosMonsterDistance(DosMonsterPreviewRoot data,
+      DosMonsterDescriptorRow descriptor, int depth, string path, Color32[] source)
+  {
+    DosMonsterDistancePaletteRow row = data.distancePalettes == null ? null
+        : System.Array.Find(data.distancePalettes, r => r != null && r.level == previewDungeonLevel);
+    int[] map = row == null ? null : (depth == 2 ? row.medium : row.far);
+    if (map == null || map.Length != 16 || System.Array.Exists(map, v => v < 0 || v > 15))
+    {
+      ReportDosMonsterPreview("missing verified distance palette for level " + previewDungeonLevel);
+      return false;
+    }
+    // This stage has no verified per-level special RGB palette initialization.
+    // Entries 9/10 are dynamic in DOS. Do not invent their visible colours.
+    if (descriptor.specialColors != 0)
+    {
+      ReportDosMonsterPreview("unverified special monster palette for " + path);
+      return false;
+    }
+    int transparent = map[descriptor.transparencyIndex];
+    Color32[] palette = DungeonViewportLightPalettes[0];
+    for (int i = 0; i < source.Length; i++)
+    {
+      Color32 pixel = source[i];
+      if (pixel.a == 0) continue;
+      if (!TryGetMonsterSourcePaletteIndex(pixel, out int index) || index == 9 || index == 10
+          || index == descriptor.transparencyIndex)
+      {
+        ReportDosMonsterPreview("unverified native monster palette index: " + path);
+        return false;
+      }
+      int mapped = map[index];
+      if (mapped == transparent) { source[i] = new Color32(0, 0, 0, 0); continue; }
+      if (mapped == 9 || mapped == 10)
+      {
+        ReportDosMonsterPreview("unverified dynamic monster palette colour: " + path);
+        return false;
+      }
+      // Emit the canonical project palette so existing dungeon lighting can
+      // operate on the mapped index in the normal post-composition pass.
+      source[i] = palette[mapped];
+    }
+    return true;
+  }
+
   private DosMonsterPreviewRoot dosMonsterPreviewData;
   private System.DateTime dosMonsterPreviewWriteTime;
   private readonly HashSet<string> dosMonsterPreviewDiagnostics = new HashSet<string>();
@@ -20697,13 +20773,13 @@ private static void HandleGameViewPointerDown(
     if (dosMonsterOffsetDrafts.TryGetValue(key, out Vector2Int draft)) offset = draft;
     return true;
   }
-  private string dosMonsterPreviewStatus = "M3: refresh preview";
+  private string dosMonsterPreviewStatus = "M4: refresh preview";
 
   private void ReportDosMonsterPreview(string message)
   {
-    dosMonsterPreviewStatus = "M3: " + message;
+    dosMonsterPreviewStatus = "M4: " + message;
     if (dosMonsterPreviewDiagnostics.Add(message))
-      LogMissingArtworkCyan("DOS MONSTER M2: " + message);
+      LogMissingArtworkCyan("DOS MONSTER M4: " + message);
   }
 
   private bool TryGetDosMonsterPreviewData(out DosMonsterPreviewRoot data)
@@ -20730,8 +20806,6 @@ private static void HandleGameViewPointerDown(
           ReportDosMonsterPreview("invalid original descriptor/geometry/placement data; not drawn (no fallback)");
           return false;
         }
-        if (parsed.farScale <= 0 || parsed.farScale >= 32) parsed.farScale = 14;
-        if (parsed.centerF3View < 0) parsed.centerF3View = 0;
         dosMonsterPreviewData = parsed;
         dosMonsterPreviewWriteTime = stamp;
       }
@@ -20750,11 +20824,11 @@ private static void HandleGameViewPointerDown(
   {
     if (pixels == null || previewMiniMap == null)
     {
-      dosMonsterPreviewStatus = "M3: missing preview buffer or map"; return;
+      dosMonsterPreviewStatus = "M4: missing preview buffer or map"; return;
     }
     if (!TryGetDosMonsterPreviewData(out DosMonsterPreviewRoot data)) return;
     DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    dosMonsterPreviewStatus = "M3: no centered F1/F2/F3 monster visible";
+    dosMonsterPreviewStatus = "M4: no centered F1/F2/F3 monster visible";
     // Farther creatures first. Reject walls and doors on the complete center ray.
     for (int depth = 3; depth >= 1; depth--)
     {
@@ -20808,6 +20882,11 @@ private static void HandleGameViewPointerDown(
       {
         ReportDosMonsterPreview("missing artwork registration for DOS graphic " + graphic); continue;
       }
+      if (depth == 3 && (data.farScale <= 0 || data.farScale >= 32
+          || data.centerF3View < 0 || data.centerF3View >= data.groupStride / data.viewStride))
+      {
+        ReportDosMonsterPreview("missing or invalid F3 geometry data; F3 not drawn (no fallback)"); continue;
+      }
       int centerView = depth == 1 ? data.centerF1View : (depth == 2 ? data.centerF2View : data.centerF3View);
       int zone = data.zoneBase + descriptor.geometryGroup * data.groupStride
           + centerView * data.viewStride + data.centerPosition;
@@ -20856,8 +20935,9 @@ private static void HandleGameViewPointerDown(
       const int dungeonScreenTop = 33;
       bool drawn = false;
       int stepX = DosSixBitStep(sprite.width, width), stepY = DosSixBitStep(sprite.height, height);
-      // M2 is explicitly a geometry/sampling test: native RGBA is retained.
-      // No unverified monster palette map, ornament transparency key or RGB inference.
+      // M4: palette remap before point sampling is equivalent to remap during
+      // point sampling. F1 retains native RGBA, and the sampler is unchanged.
+      if (depth > 1 && !TryRemapDosMonsterDistance(data, descriptor, depth, art.path, source)) continue;
       for (int sy = 0; sy < height; sy++)
       {
         int dy = top + sy;
@@ -20898,7 +20978,7 @@ private static void HandleGameViewPointerDown(
     {
       // Keep failure diagnostics, not ordinary empty-view status.
       if (!string.IsNullOrEmpty(dosMonsterPreviewStatus)
-          && dosMonsterPreviewStatus != "M3: no centered F1/F2/F3 monster visible")
+          && dosMonsterPreviewStatus != "M4: no centered F1/F2/F3 monster visible")
         EditorGUILayout.LabelField(dosMonsterPreviewStatus, EditorStyles.wordWrappedMiniLabel);
       return;
     }
