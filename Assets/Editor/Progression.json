@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "M2 F2 visually approved by user; M3 reverted. Champion Mirror ViewEdit name cosmetic patch prepared.",
+  "checkpoint": "M2 F2 visually approved; M3 reverted. Champion name labels confirmed visible; Champion Mirror dimension caption removal prepared.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -7404,5 +7404,11 @@
     "status": "Source patch prepared; Unity verification pending",
     "change": "Use champion identity from rendered placement for ChampionMirror display caption only. Keep family, projection, map coordinates, calibration and rendering unchanged.",
     "baseline": "Restored M2; F2 visually approved by user; F3 reverted; distance palettes pending."
+  },
+  "viewedit_champion_dimensions_hidden_20261125": {
+    "timestamp": "2026-11-25T20:40:55.804594+01:00",
+    "status": "Source patch prepared; Unity verification pending",
+    "change": "Hide width x height label only for ChampionMirror rows. Retain dimensions internally and other ornament labels; no rendering or calibration changes.",
+    "baseline": "Champion name labels confirmed visible; M2 retained, M3 reverted."
   }
 }

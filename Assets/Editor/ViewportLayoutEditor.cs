@@ -25238,7 +25238,8 @@ private static void HandleGameViewPointerDown(
       int dx = current.x, dy = current.y;
       DrawIntStepperInline("X", ref dx, 1, dirty, true, 19f, 34f);
       DrawIntStepperInline("Y", ref dy, 1, dirty, true, 19f, 34f);
-      GUILayout.Label(row.width + "x" + row.height, GUILayout.Width(48f));
+      if (row.family != "ChampionMirror")
+        GUILayout.Label(row.width + "x" + row.height, GUILayout.Width(48f));
       bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
       bool revert = GUILayout.Button("Revert", GUILayout.Width(52f));
       NoteContentRight();
