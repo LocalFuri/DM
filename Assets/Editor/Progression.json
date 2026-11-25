@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "M3 F1/F2/F3 geometry approved by user; M4 original DOS monster distance palettes prepared for Level 0; visual confirmation pending.",
+  "checkpoint": "Approved V17 D3 open-approach correction (Level 0 15,4 West); M4 monster F1/F2/F3 geometry and distance palettes approved and frozen; monster Set visibility demonstrated.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -7442,7 +7442,7 @@
   },
   "dos_monster_stage_m4_distance_palette_20261125": {
     "timestamp": "2026-11-25T21:05:42.103006+01:00",
-    "status": "Source patch and offline pixel-index validation complete; Unity compile and visual comparison pending.",
+    "status": "User approved current F1/F2/F3 rendering and distance palette on 2026-11-25; preserve as baseline.",
     "evidence": {
       "DS_base": "0x24ED0",
       "initial_medium": [
@@ -7527,8 +7527,19 @@
   },
   "viewedit_monster_set_visibility_20261125": {
     "timestamp": "2026-11-25T21:16:01.624589+01:00",
-    "status": "Source patch prepared; Unity test pending. M4 F1/F2/F3 rendering and distance palette accepted by user and preserved.",
+    "status": "User screenshot demonstrates unchecked F1 hides Screamer while retaining row; M4 approved. Re-enable and other distances not independently verified.",
     "change": "Set toggle uses existing pose-local feature visibility state keyed by level/tile/type; hidden eligible monster rows remain available for re-enable. Revert removed in prior patch. No change to geometry, scaling, palette or saved offsets.",
     "test": "At Level 0 15,4 West, uncheck Set: Screamer disappears, row stays; check Set: Screamer returns. Repeat F2/F3. Existing pose reset restores visibility."
+  },
+  "v17_d3_open_approach_20261125": {
+    "timestamp": "2026-11-25T21:27:03.445845+01:00",
+    "status": "User visually approved at Level 0 15,4 West on 2026-11-25; preserve correction.",
+    "reference": "Level 0 15,4 West DOS and Unity screenshots 224x136; map rows D0/D1/D2 all open inner lanes, D3 ##.##",
+    "change": "Relative geometry only: left X 0, right X 141 instead of 7/134, retain native 83px sprites; same destination helper in ViewEdit and compositor. Other geometry unchanged.",
+    "test": "Hide Screamer; compare DOS at 15,4 West; retest prior 14,12 West open gap and 13,12 West. No change to monster renderer.",
+    "approval_timestamp": "2026-11-25T21:29:36.712380+01:00",
+    "regression_status": "Other previously approved poses not retested in this approval; retain as regression targets. No claim of complete V17 exception-free audit.",
+    "approved_package": "V17_D3_Open_Approach_20261125-212703.zip",
+    "protected_rule": "Relative geometry only; no level, coordinate or facing exception introduced by this correction."
   }
 }

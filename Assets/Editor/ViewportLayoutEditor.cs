@@ -13507,12 +13507,35 @@ private static void HandleGameViewPointerDown(
         && !IsViewport17S3OuterSideSolid(inspection, localSide);
   }
 
+  // A fully open three-lane approach to a one-lane D3 passage has
+  // both D3 shoulders at the outer screen edges (DOS 15,4 West test).
+  // Classify relative geometry, never absolute map coordinates.
+  private static bool IsViewport17D3OpenApproachNarrowPassage(
+      Viewport17Inspection inspection)
+  {
+    if (inspection.Cells == null) return false;
+    for (int depth = 0; depth <= 2; depth++)
+      for (int lane = -1; lane <= 1; lane++)
+        if (!IsViewport17LaneOpenAt(inspection, lane, depth)) return false;
+    return IsViewport17LaneOpenAt(inspection, 0, 3)
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -1, 3))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 1, 3))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, -2, 3))
+        && IsViewport17Solid(FindViewport17Cell(inspection.Cells, 2, 3));
+  }
+
   private static int GetViewport17LeftF3LaneEndDisplayX(
       Viewport17Inspection inspection)
   {
     return IsViewport17S3LaneEndBlockedByFloor(inspection, -1)
+        || IsViewport17D3OpenApproachNarrowPassage(inspection)
         ? 0
         : NativeD3LeftF3DestX;
+  }
+
+  private static int GetViewport17RightF3DisplayX(Viewport17Inspection inspection)
+  {
+    return IsViewport17D3OpenApproachNarrowPassage(inspection) ? 141 : 134;
   }
 
   private static bool IsViewport17RightS3OuterSideSolid(
@@ -18171,7 +18194,7 @@ private static void HandleGameViewPointerDown(
       if (IsWallF3RightPiece(piece))
       {
         state.Enabled = d3RightEnabled;
-        state.X = 134;
+        state.X = GetViewport17RightF3DisplayX(inspection);
         state.Y = DisplayYToUnityY(58, 49);
         state.Mirror = d3RightMirror;
         resolvedNormalWallByPiece[piece] = state;
@@ -23194,7 +23217,7 @@ private static void HandleGameViewPointerDown(
         && rightSource.width == 83
         && rightSource.height == nativeHeight)
     {
-      int rightX = 134;
+      int rightX = GetViewport17RightF3DisplayX(inspection);
       int rightY = destinationY;
       ApplyViewport17FamilyDestOverride("RightF3", ref rightX, ref rightY);
       BlitPieceIntoPreview(
