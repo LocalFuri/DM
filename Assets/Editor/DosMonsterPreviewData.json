@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "timestamp": "2026-11-25T20:11:04.134932+01:00",
+  "schemaVersion": 2,
+  "timestamp": "2026-11-25T20:16:33.477466+01:00",
   "source": "Original DOS FIRES engine image; GRAPHICS.DAT resource 696; native stage M1 only",
   "engineSHA256": "dbffccaef5275e0c9dc6273570eb921656e9feedc11d6d0af35f7e41b192472c",
   "graphicsSHA256": "2c3aa836925c64c09402bafb03c645932bd03c4f003ad9a86542383b078ecf8e",
@@ -1757,5 +1757,7 @@
       "count": 1,
       "stationary": true
     }
-  ]
+  ],
+  "centerF2View": 5,
+  "mediumScale": 21
 }

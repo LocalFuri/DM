@@ -19668,7 +19668,7 @@ private static void HandleGameViewPointerDown(
   {
     renderedDosWallOrnaments.Clear();
     renderedDosMonsterRows.Clear();
-    dosMonsterPreviewStatus = "M1: dungeon composition has not reached the monster pass";
+    dosMonsterPreviewStatus = "M2: dungeon composition has not reached the monster pass";
     renderedDosLevel = previewDungeonLevel;
     renderedDosX = previewX;
     renderedDosY = previewY;
@@ -20630,13 +20630,13 @@ private static void HandleGameViewPointerDown(
   }
 
 
-  // Stage M1: native centered F1 test only. Original DOS resource data is
+  // Stage M2: centered F1 and F2 geometry test. Original DOS resource data is
   // external; no creature-specific geometry or map coordinates in the renderer.
   private const string DosMonsterPreviewDataPath = "Assets/Editor/DosMonsterPreviewData.json";
   [System.Serializable]
   private sealed class DosMonsterPreviewRoot
   {
-    public int schemaVersion, centerF1View, centerPosition, zoneBase, groupStride, viewStride;
+    public int schemaVersion, centerF1View, centerF2View, mediumScale, centerPosition, zoneBase, groupStride, viewStride;
     public DosMonsterGeometryRow[] geometry;
     public DosMonsterDescriptorRow[] descriptors;
     public DosMonsterTypeRow[] types;
@@ -20675,13 +20675,13 @@ private static void HandleGameViewPointerDown(
   private System.DateTime dosMonsterPreviewWriteTime;
   private readonly HashSet<string> dosMonsterPreviewDiagnostics = new HashSet<string>();
   private readonly List<string> renderedDosMonsterRows = new List<string>();
-  private string dosMonsterPreviewStatus = "M1: refresh preview";
+  private string dosMonsterPreviewStatus = "M2: refresh preview";
 
   private void ReportDosMonsterPreview(string message)
   {
-    dosMonsterPreviewStatus = "M1: " + message;
+    dosMonsterPreviewStatus = "M2: " + message;
     if (dosMonsterPreviewDiagnostics.Add(message))
-      LogMissingArtworkCyan("DOS MONSTER M1: " + message);
+      LogMissingArtworkCyan("DOS MONSTER M2: " + message);
   }
 
   private bool TryGetDosMonsterPreviewData(out DosMonsterPreviewRoot data)
@@ -20700,9 +20700,10 @@ private static void HandleGameViewPointerDown(
       {
         dosMonsterPreviewData = null;
         DosMonsterPreviewRoot parsed = JsonUtility.FromJson<DosMonsterPreviewRoot>(File.ReadAllText(DosMonsterPreviewDataPath));
-        if (parsed == null || parsed.schemaVersion != 1 || parsed.geometry == null
+        if (parsed == null || parsed.schemaVersion != 2 || parsed.geometry == null
             || parsed.descriptors == null || parsed.types == null || parsed.artwork == null
-            || parsed.placements == null || parsed.groupStride <= 0 || parsed.viewStride <= 0)
+            || parsed.placements == null || parsed.groupStride <= 0 || parsed.viewStride <= 0
+            || parsed.mediumScale <= 0 || parsed.mediumScale >= 32)
         {
           ReportDosMonsterPreview("invalid original descriptor/geometry/placement data; not drawn (no fallback)");
           return false;
@@ -20725,25 +20726,25 @@ private static void HandleGameViewPointerDown(
   {
     if (pixels == null || previewMiniMap == null)
     {
-      dosMonsterPreviewStatus = "M1: missing preview buffer or map"; return;
+      dosMonsterPreviewStatus = "M2: missing preview buffer or map"; return;
     }
     if (!TryGetDosMonsterPreviewData(out DosMonsterPreviewRoot data)) return;
     DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    int tileX = previewX + fx, tileY = previewY + fy;
-    // Only the centered F1 tile is supported at M1. A door tile is not a
-    // supported test location; never draw over a door or wall.
-    dosMonsterPreviewStatus = "M1: Level " + previewDungeonLevel + " F1 " + tileX + "," + tileY;
-    if (!PreviewTileIsOpen(tileX, tileY))
+    dosMonsterPreviewStatus = "M2: no centered F1/F2 monster visible";
+    // Farther creatures first. Reject walls and doors on the complete center ray.
+    for (int depth = 2; depth >= 1; depth--)
     {
-      dosMonsterPreviewStatus += " - wall or outside map"; return;
-    }
-    if (previewDoorTiles.Contains(new Vector2Int(tileX, tileY)))
-    {
-      dosMonsterPreviewStatus += " - door tile"; return;
-    }
-    dosMonsterPreviewStatus += " - no registered monster at this tile (" + data.placements.Length + " placements loaded)";
-    foreach (DosMonsterPlacementRow item in data.placements)
-    {
+      int tileX = previewX + fx * depth, tileY = previewY + fy * depth;
+      bool visible = true;
+      for (int nearer = 1; nearer <= depth; nearer++)
+      {
+        int rayX = previewX + fx * nearer, rayY = previewY + fy * nearer;
+        if (!PreviewTileIsOpen(rayX, rayY) || previewDoorTiles.Contains(new Vector2Int(rayX, rayY)))
+        { visible = false; break; }
+      }
+      if (!visible) continue;
+      foreach (DosMonsterPlacementRow item in data.placements)
+      {
       if (item == null || item.level != previewDungeonLevel || item.x != tileX || item.y != tileY) continue;
       if (item.count != 1 || !item.stationary)
       {
@@ -20784,7 +20785,7 @@ private static void HandleGameViewPointerDown(
         ReportDosMonsterPreview("missing artwork registration for DOS graphic " + graphic); continue;
       }
       int zone = data.zoneBase + descriptor.geometryGroup * data.groupStride
-          + data.centerF1View * data.viewStride + data.centerPosition;
+          + (depth == 1 ? data.centerF1View : data.centerF2View) * data.viewStride + data.centerPosition;
       DosMonsterGeometryRow anchor = System.Array.Find(data.geometry, row => row != null && row.zone == zone);
       if (anchor == null || anchor.mode != 7 || anchor.clip != 4)
       {
@@ -20819,21 +20820,29 @@ private static void HandleGameViewPointerDown(
         ReportDosMonsterPreview("native PNG needs binary alpha matching DOS transparency index "
             + descriptor.transparencyIndex + ": " + art.path + "; not drawn (no fallback)"); continue;
       }
-      int left = anchor.x - ((sprite.width + 1) >> 1);
-      int top = anchor.y - sprite.height + 1;
-      const int dungeonScreenTop = 33; // established 224x136 viewport origin
+      int width = depth == 1 ? sprite.width : (sprite.width * data.mediumScale + (data.mediumScale >> 1)) >> 5;
+      int height = depth == 1 ? sprite.height : (sprite.height * data.mediumScale + (data.mediumScale >> 1)) >> 5;
+      if (width <= 0 || height <= 0) { ReportDosMonsterPreview("invalid scaled dimensions"); continue; }
+      int left = anchor.x - ((width + 1) >> 1);
+      int top = anchor.y - height + 1;
+      const int dungeonScreenTop = 33;
       bool drawn = false;
-      for (int sy = 0; sy < sprite.height; sy++)
+      int stepX = DosSixBitStep(sprite.width, width), stepY = DosSixBitStep(sprite.height, height);
+      // M2 is explicitly a geometry/sampling test: native RGBA is retained.
+      // No unverified monster palette map, ornament transparency key or RGB inference.
+      for (int sy = 0; sy < height; sy++)
       {
         int dy = top + sy;
         if (dy < 0 || dy >= DungeonViewportHeight) continue;
         int destinationRow = (PreviewHeight - 1 - dungeonScreenTop - dy) * PreviewWidth;
-        int sourceRow = (sprite.height - 1 - sy) * sprite.width;
-        for (int sx = 0; sx < sprite.width; sx++)
+        int sourceY = depth == 1 ? sy : DosSixBitSample(stepY, sy, sprite.height);
+        int sourceRow = (sprite.height - 1 - sourceY) * sprite.width;
+        for (int sx = 0; sx < width; sx++)
         {
           int dx = left + sx;
           if (dx < 0 || dx >= DungeonViewportWidth) continue;
-          Color32 pixel = source[sourceRow + sx];
+          int sourceX = depth == 1 ? sx : DosSixBitSample(stepX, sx, sprite.width);
+          Color32 pixel = source[sourceRow + sourceX];
           if (pixel.a == 0) continue;
           pixels[destinationRow + dx] = pixel;
           drawn = true;
@@ -20841,11 +20850,13 @@ private static void HandleGameViewPointerDown(
       }
       if (drawn)
       {
-        dosMonsterPreviewStatus = "M1: native monster pixels drawn before lighting";
-        renderedDosMonsterRows.Add(item.name + (item.attacking ? " A1 " : " F1 ")
-            + item.x + "," + item.y + " " + facing + "   X " + left + " / Y " + (top + dungeonScreenTop));
+        dosMonsterPreviewStatus = depth == 1 ? "M2: native F1 pixels drawn" : "M2: F2 geometry test; DOS distance palette pending";
+        renderedDosMonsterRows.Add(item.name + (item.attacking ? " A" : " F") + depth + " "
+            + item.x + "," + item.y + " " + facing + "   X " + left + " / Y " + (top + dungeonScreenTop)
+            + "   " + width + "x" + height);
       }
       else ReportDosMonsterPreview("no opaque monster pixels reached viewport");
+      }
     }
   }
 
@@ -31181,6 +31192,16 @@ private static void HandleGameViewPointerDown(
   /// original wall-decoration blit transparency key (palette index 10).
   /// </summary>
 
+  private static int DosSixBitStep(int sourceSize, int destinationSize)
+  {
+    return (int)(((long)sourceSize << 6) / destinationSize);
+  }
+
+  private static int DosSixBitSample(int step, int destinationIndex, int sourceSize)
+  {
+    return Mathf.Clamp((int)(((long)(step >> 1) + (long)destinationIndex * step) >> 6), 0, sourceSize - 1);
+  }
+
   private static Texture2D GenerateDmScaledWallDecoration(
       Texture2D source,
       int targetWidth,
@@ -31204,10 +31225,8 @@ private static void HandleGameViewPointerDown(
     // ONE DOS 6-bit sampler for all generated ornament distance artwork.
     // No legacy rounding, sampling-direction or virtual-padding options.
     int samplingSourceWidth = source.width;
-    int stepX = (int)(((long)samplingSourceWidth << 6) / targetWidth);
-    int stepY = (int)(((long)source.height << 6) / targetHeight);
-    int startX = stepX >> 1;
-    int startY = stepY >> 1;
+    int stepX = DosSixBitStep(samplingSourceWidth, targetWidth);
+    int stepY = DosSixBitStep(source.height, targetHeight);
 
     Color32[] brightPalette = DungeonViewportLightPalettes[0];
 
@@ -31217,15 +31236,13 @@ private static void HandleGameViewPointerDown(
       // top-down. Hook F2 uses the source/top-down orientation so both
       // the sampled source row and target row are mirrored together.
       int samplingY = targetHeight - 1 - y;
-      int sourceY = (int)(((long)startY + (long)samplingY * stepY) >> 6);
-      sourceY = source.height - 1 - Mathf.Clamp(sourceY, 0, source.height - 1);
+      int sourceY = source.height - 1 - DosSixBitSample(stepY, samplingY, source.height);
       int sourceRow = sourceY * source.width;
       int targetRow = y * targetWidth;
 
       for (int x = 0; x < targetWidth; x++)
       {
-        int sourceX = (int)(((long)startX + (long)x * stepX) >> 6);
-        sourceX = Mathf.Clamp(sourceX, 0, samplingSourceWidth - 1);
+        int sourceX = DosSixBitSample(stepX, x, samplingSourceWidth);
         Color32 sourcePixel = sourcePixels[sourceRow + sourceX];
         if (sourcePixel.a == 0)
         {

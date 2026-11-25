@@ -7384,5 +7384,19 @@
     ],
     "scope": "Supersedes prior artwork path correction. Data-only; retain diagnostic source, geometry, placement and all approved rendering.",
     "test": "Refresh ViewEdit at level 0, 15,4 West; inspect M1 status and visible Screamer."
+  },
+  "dos_monster_stage_m2_geometry_20261125": {
+    "timestamp": "2026-11-25T20:16:33.477466+01:00",
+    "status": "M1 visible confirmed by user screenshot; exact DOS comparison pending. M2 centered F2 geometry test prepared; Unity compilation pending.",
+    "changes": [
+      "Shared DOS six-bit sampling primitives extracted from ornament scaler with equivalent arithmetic; F1 native blit preserved.",
+      "F2 center view 5, scale 21, geometry zone from registry; center ray rejects walls and door tiles.",
+      "Geometry-only test retains native RGBA; runtime monster distance palette not verified and not applied. No invented palette or fallback."
+    ],
+    "test": "Level 0 player 12,4 East, Screamer 14,4 East. Expected X=91 Y=80 W=42 H=39. Retest F1 at 15,4 West.",
+    "pending": [
+      "Verify runtime monster palette and original index mapping before final F2 approval.",
+      "F3, lateral, groups, animation, full door/painter order pending."
+    ]
   }
 }
