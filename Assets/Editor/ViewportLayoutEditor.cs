@@ -21008,21 +21008,16 @@ private static void HandleGameViewPointerDown(
       GUI.Label(nameRect, nameContent, nameStyle);
       if (!string.IsNullOrEmpty(suffix))
         GUILayout.Label(suffix, style, GUILayout.Width(style.CalcSize(new GUIContent(suffix)).x + 3f));
+      DrawCompactMouseOnlyToggle("Set", true, false);
       int dx = current.x, dy = current.y;
       DrawIntStepperInline("X", ref dx, 1, dirty, true, 19f, 34f);
       DrawIntStepperInline("Y", ref dy, 1, dirty, true, 19f, 34f);
       bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
-      bool revert = GUILayout.Button("Revert", GUILayout.Width(52f));
       NoteContentRight();
       EditorGUILayout.EndHorizontal();
       var next = new Vector2Int(Mathf.Clamp(dx, -PreviewWidth, PreviewWidth),
           Mathf.Clamp(dy, -PreviewHeight, PreviewHeight));
-      if (revert)
-      {
-        dosMonsterOffsetDrafts.Remove(row.key);
-        refresh = true;
-      }
-      else if (next != current)
+      if (next != current)
       {
         changedKey = row.key;
         previousDraft = current;
