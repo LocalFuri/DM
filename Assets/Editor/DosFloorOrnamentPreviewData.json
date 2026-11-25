@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "timestamp": "2026-11-25T22:05:51.950700+01:00",
-  "source": "DOS FIRES 0x1DBD4, 0x1DC68, 0x135C3; GRAPHICS.DAT resource 696; PNG identity by native dimensions, visual comparison pending",
+  "timestamp": "2026-11-25T23:18:12.173632+01:00",
+  "source": "P6 user-authorized visual test: original S1 PNG (40x7), candidate index 435 by dimensions, for both depth-1 lateral projections; DOS mapping not verified; original anchors and mirroring retained.",
   "families": [
     {
       "name": "Puddle",
@@ -45,29 +45,29 @@
         {
           "depth": 1,
           "lane": -1,
-          "graphic": 437,
+          "graphic": 435,
           "zone": 1508,
           "mode": 8,
           "clip": 4,
           "x": 0,
           "y": 107,
-          "width": 9,
+          "width": 40,
           "height": 7,
-          "path": "Assets/Art/Ornaments/Flooritem Puddle_S3.png",
+          "path": "Assets/Art/Ornaments/Flooritem Puddle_S1.png",
           "mirror": false
         },
         {
           "depth": 1,
           "lane": 1,
-          "graphic": 437,
+          "graphic": 435,
           "zone": 1510,
           "mode": 6,
           "clip": 4,
           "x": 223,
           "y": 107,
-          "width": 9,
+          "width": 40,
           "height": 7,
-          "path": "Assets/Art/Ornaments/Flooritem Puddle_S3.png",
+          "path": "Assets/Art/Ornaments/Flooritem Puddle_S1.png",
           "mirror": true
         },
         {

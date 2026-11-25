@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "Approved V17 D3 open-approach correction (Level 0 15,4 West); M4 monster F1/F2/F3 geometry and distance palettes approved and frozen; monster Set visibility demonstrated.",
+  "checkpoint": "End of 2026-11-25: Blue puddle S1:Right unresolved, P6 rejected. Resume Level 0 (5,9) South, puddle tile (4,10). Preserve approved V17, M4 monsters, pressure pads and champion mirrors.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -115,10 +115,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Read complete latest Progression.json before work. Restore or verify RESURRECT recruitment confirmation and Taken state transition using existing champion identity and actual rendered F1 bounds, preserving existing stats/items and party rules.",
-    "Verify recruited F1 displays empty mirror, cannot reopen sheet, and party membership/items are correct; verify cancel/reopen and other standard mirror perspectives.",
-    "Confirm original DOS portrait palette/placement and nonzero calibration persistence if needed; visual approval is not pixel-exact proof.",
-    "After Champion Mirrors, reconstruct blue puddles and moss from verified DOS floor data. Preserve eight approved ordinary wall ornaments and torch pickup/return."
+    "Resume blue puddle investigation at Level 0 (5,9) South, S1:Right tile (4,10); P6 rejected.",
+    "Trace original DOS runtime selection and blitter parameters before modifying Unity.",
+    "Preserve approved renderers and original artwork."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -7720,5 +7719,102 @@
     "status": "Diagnostic only; DOS screenshot lateral fragment unresolved; P2 rendering unchanged",
     "test": "Level 0, 5,9 South",
     "scope": "Optional ViewEdit foldout enumerates nine relative slots and runtime placement, occlusion, artwork, calibration and row checks. No bypass or invented geometry. Existing valid rows retained while disabled or clipped. Verify actual runtime failure before altering renderer."
+  },
+  "puddle_p3_f1_side_calibration_20261125": {
+    "timestamp": "2026-11-25T22:39:08.563903+01:00",
+    "status": "User-authorized data-only artwork substitution; visual calibration pending",
+    "test": "Level 0, 5,9 South, Puddle S1:Right 4,10 South",
+    "decision": "Use native F1 50x15 graphic 438 for both S1 lateral projections instead of 437. Retain original anchors, modes, mirror, clipping and independent projection calibration keys. No coordinate-specific override or renderer change. Original DOS bitmap selection remains unverified.",
+    "views": [
+      {
+        "depth": 1,
+        "lane": -1,
+        "graphic": 438,
+        "zone": 1508,
+        "mode": 8,
+        "clip": 4,
+        "x": 0,
+        "y": 107,
+        "width": 50,
+        "height": 15,
+        "path": "Assets/Art/Ornaments/Flooritem Puddle_F1.png",
+        "mirror": false
+      },
+      {
+        "depth": 1,
+        "lane": 1,
+        "graphic": 438,
+        "zone": 1510,
+        "mode": 6,
+        "clip": 4,
+        "x": 223,
+        "y": 107,
+        "width": 50,
+        "height": 15,
+        "path": "Assets/Art/Ornaments/Flooritem Puddle_F1.png",
+        "mirror": true
+      }
+    ],
+    "next": "Adjust X/Y in ViewEdit and Apply; positive X moves right-side artwork outward, negative X moves left-side artwork outward. Verify visually against DOS."
+  },
+  "puddle_p4_native_437_correction_20261125": {
+    "timestamp": "2026-11-25T23:01:43.137231+01:00",
+    "supersedes": "P3 F1 substitution",
+    "evidence": "DOS screenshot 224x136, crop x215..223 y103..109; 28 blue and 8 green; mirrored green mask exact match to supplied S3 PNG. Screenshot reconstruction, not direct binary decoding.",
+    "change": "Restore P2 registry for S1 both lanes; replace Flooritem Puddle_S3.png with unmirrored 9x7 screenshot-derived sprite. No C# changes or W/H offsets.",
+    "test": "Level 0 5,9 South; reset S1:Right X/Y to zero and Apply if P3 offsets saved; compare DOS.",
+    "status": "Prepared, Unity verification pending"
+  },
+  "puddle_p5_pixel_trace_20261125": {
+    "timestamp": "2026-11-25T23:09:13.172490+01:00",
+    "status": "Diagnostic only; user reports P4 still invisible; Unity compilation and runtime pending",
+    "change": "Trace actual Set, offsets, destination, dimensions, mirrored source clipping, opaque/partial/blue counts, pixels written and unchanged before lighting. No rendering geometry or calibration changes.",
+    "test": "Level 0 5,9 South; expand DOS floor projection diagnostic and inspect S1:Right."
+  },
+  "puddle_p6_s1_test_20261125": {
+    "timestamp": "2026-11-25T23:18:12.173632+01:00",
+    "status": "REJECTED by user: all wrong; not an approved mapping. Retain only as experimental state pending investigation.",
+    "change": "Use original S1 PNG 40x7 for both S1 side projections; restore original S3 PNG; preserve P5 diagnostics, geometry, X/Y offsets, all other slots. No scaling or C# edits.",
+    "test": "Level 0 5,9 South; X/Y 0 initially, adjust X to crop right edge, then Y if needed.",
+    "note": "Graphic 435 identity inferred by dimensions; experimental artwork mapping, not verified DOS selection."
+  },
+  "end_of_day_20261125_puddle_resume_20261126": {
+    "timestamp": "2026-11-25T23:25:00+01:00",
+    "status": "STOPPED; no puddle solution approved; P6 rejected by user.",
+    "resume_pose": {
+      "level": 0,
+      "x": 5,
+      "y": 9,
+      "facing": "South",
+      "projection": "S1:Right",
+      "puddle_tile": [
+        4,
+        10
+      ]
+    },
+    "reference": "Original DOS PC screenshot image(20261125-220708).png; 224x136 viewport, blue fragment at extreme right near y103–109.",
+    "verified_diagnostic": "P5 screenshot image(20261125-221145).png: Set true, offsets 0,0; graphic 437, Flooritem Puddle_S3.png; dest 215,103 9x7; mirror true; source X 0..9 Y 0..7; opaque 8, blue 0; written 8, unchanged before lighting 8. Placement, visibility and row registration OK. This does not prove DOS selects 437 or that the whole renderer is correct.",
+    "rejected_trials": [
+      "P3 F1 artwork substitution: wrong fragment size",
+      "P4 screenshot-derived artwork replacement: not accepted; original S3 must not be altered",
+      "P6 S1 40x7 substitution: user reports all wrong"
+    ],
+    "current_files": "Latest delivered P6 registry and original S1/S3 PNGs; P5 diagnostic C# remains. Exact installed files and post-P6 offsets not confirmed; inspect next session.",
+    "next_actions": [
+      "Read complete Progression.json first.",
+      "Preserve six original PNGs; confirm current installed registry and offsets, do not approve P6.",
+      "Trace original DOS runtime floor ornament selection and actual blitter arguments, including perspective ordinal, family base, geometry group, palette/transparency, source rectangle and draw order. Do not assume 437 or 435 is correct.",
+      "Compare observed original runtime data against Unity P5 trace. Keep generic X/Y calibration and no W/H offsets unless new evidence and explicit approval. No further arbitrary artwork swaps or screenshot reconstruction.",
+      "Separate unresolved wall gap from puddle research; preserve approved rendering."
+    ],
+    "research_inputs": [
+      "DOS_FIRES_Engine_Image_20261122.zip",
+      "!puddle.zip",
+      "DungeonMaster_Level00(3).zip",
+      "DOS_Puddle_P5_Pixel_Trace_20261125-230913.zip",
+      "DOS_Puddle_P6_S1_Test_20261125-231812.zip"
+    ],
+    "tool_note": "dmcsb 0.2.1 installed on Windows; extraction not required for next step unless evidence warrants it.",
+    "protected": "Approved M4 monster geometry and palettes, V17 D3 correction, pressure pads, champion mirrors; Cursor read-only; no legacy/fallback/hardcoded coordinate fixes."
   }
 }

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -19692,6 +19692,7 @@ private static void HandleGameViewPointerDown(
     renderedDosWallOrnaments.Clear();
     renderedDosMonsterRows.Clear();
     renderedDosFloorRows.Clear();
+    dosFloorPixelTrace.Clear();
     dosMonsterPreviewStatus = "M4: dungeon composition has not reached the monster pass";
     renderedDosLevel = previewDungeonLevel;
     renderedDosX = previewX;
@@ -20598,6 +20599,7 @@ private static void HandleGameViewPointerDown(
     // scene before any HUD/debug redraws.  This is a pure in-place colour
     // remap of the already composed 224x136 dungeon viewport; it does not
     // resize, crop, move, or blit the framebuffer.
+    CaptureDosFloorPixelTrace(pixels);
     ApplyDungeonViewportLightPalette(pixels, previewDungeonLightStage);
 
     // DIAGNOSTIC: redraw Champion Status Slot 4 once on top of the normal
@@ -20665,6 +20667,22 @@ private static void HandleGameViewPointerDown(
   { public int depth, lane, graphic, zone, mode, clip, x, y, width, height; public string path; public bool mirror; }
   private sealed class DosFloorPreviewRow
   { public string caption, featureKey, offsetKey; public Vector2Int offset; }
+  private sealed class DosFloorPixelTrace
+  {
+    public string key, description;
+    public readonly Dictionary<int, Color32> written = new Dictionary<int, Color32>();
+    public int retained;
+  }
+  private readonly List<DosFloorPixelTrace> dosFloorPixelTrace = new List<DosFloorPixelTrace>();
+  private void CaptureDosFloorPixelTrace(Color32[] pixels)
+  {
+    foreach (var trace in dosFloorPixelTrace)
+    {
+      trace.retained = 0;
+      foreach (var pair in trace.written)
+        if (pixels[pair.Key].Equals(pair.Value)) trace.retained++;
+    }
+  }
   private readonly List<DosFloorPreviewRow> renderedDosFloorRows = new List<DosFloorPreviewRow>();
   private readonly HashSet<string> dosFloorPreviewDiagnostics = new HashSet<string>();
   private void ReportDosFloorPreview(string message)
@@ -20714,10 +20732,21 @@ private static void HandleGameViewPointerDown(
         if (sprite == null || !sprite.isReadable || sprite.width != view.width || sprite.height != view.height)
         { ReportDosFloorPreview("missing or invalid readable native artwork " + view.path); continue; }
         renderedDosFloorRows.Add(new DosFloorPreviewRow { caption = family.name + " " + projection + " " + x + "," + y + " " + previewFacing, featureKey = feature, offsetKey = key, offset = offset });
-        if (!IsPreviewFeatureEnabled(feature)) continue;
+        bool enabled = IsPreviewFeatureEnabled(feature);
         int left = view.x - (view.mode == 8 ? 0 : view.mode == 6 ? sprite.width - 1 : ((sprite.width + 1) >> 1)) + offset.x;
         int top = view.y - ((sprite.height + 1) >> 1) + offset.y;
         Color32[] source = sprite.GetPixels32();
+        var trace = new DosFloorPixelTrace { key = key };
+        dosFloorPixelTrace.Add(trace);
+        int opaque = 0, partial = 0, blue = 0;
+        foreach (var c in source) { if (c.a == 255) { opaque++; if (c.b > c.r && c.b > c.g) blue++; } else if (c.a != 0) partial++; }
+        int sx0 = Mathf.Clamp(-left, 0, sprite.width), sx1 = Mathf.Clamp(DungeonViewportWidth - left, 0, sprite.width);
+        int sy0 = Mathf.Clamp(-top, 0, sprite.height), sy1 = Mathf.Clamp(DungeonViewportHeight - top, 0, sprite.height);
+        trace.description = "Set " + enabled + "; offset " + offset.x + "," + offset.y
+          + "; dest " + left + "," + top + " " + sprite.width + "x" + sprite.height
+          + "; mirror " + view.mirror + "\nsource clipped X " + (view.mirror ? sprite.width - sx1 : sx0) + ".." + (view.mirror ? sprite.width - sx0 : sx1)
+          + " Y " + sy0 + ".." + sy1 + " (end exclusive); opaque " + opaque + "; partial alpha " + partial + "; blue " + blue;
+        if (!enabled) continue;
         for (int sy = 0; sy < sprite.height; sy++)
         {
           int dy = top + sy;
@@ -20728,7 +20757,9 @@ private static void HandleGameViewPointerDown(
             if (dx < 0 || dx >= DungeonViewportWidth) continue;
             Color32 pixel = source[(sprite.height - 1 - sy) * sprite.width + (view.mirror ? sprite.width - 1 - sx : sx)];
             if (pixel.a != 255) continue;
-            pixels[(PreviewHeight - 1 - 33 - dy) * PreviewWidth + dx] = pixel;
+            int dst = (PreviewHeight - 1 - 33 - dy) * PreviewWidth + dx;
+            pixels[dst] = pixel;
+            trace.written[dst] = pixel;
           }
         }
       }
@@ -20780,6 +20811,13 @@ private static void HandleGameViewPointerDown(
           + "; artwork " + artStatus + "; offsets " + matches + "; row " + (rowExists ? "YES" : "NO"),
           EditorStyles.wordWrappedMiniLabel);
       EditorGUILayout.LabelField(view.path, EditorStyles.wordWrappedMiniLabel);
+      var trace = dosFloorPixelTrace.Find(t => t.key == key);
+      if (trace != null)
+      {
+        EditorGUILayout.LabelField(trace.description, EditorStyles.wordWrappedMiniLabel);
+        EditorGUILayout.LabelField("Written " + trace.written.Count + "; unchanged before lighting " + trace.retained, EditorStyles.wordWrappedMiniLabel);
+      }
+      else EditorGUILayout.LabelField("No actual blitter trace", EditorStyles.wordWrappedMiniLabel);
     }
   }
 
