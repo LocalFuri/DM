@@ -7424,5 +7424,15 @@
     "change": "Remove custom green row fill; use normal ViewEdit background and red monster caption.",
     "scope": "DrawDosNativeMonsterRows only; X/Y controls and Apply/Revert preserved; M2 unchanged; M3 remains reverted.",
     "status": "Source change complete; Unity validation pending."
+  },
+  "viewedit_monster_soft_red_caption_20261125": {
+    "timestamp": "2026-11-25T20:54:50.278424+01:00",
+    "change": "Monster caption only: RGB 190,80,80 replaces pure red; standard background and calibration preserved.",
+    "status": "Source patch prepared; Unity visual verification pending."
+  },
+  "viewedit_monster_name_badge_20261125": {
+    "timestamp": "2026-11-25T20:56:32.441727+01:00",
+    "change": "Dark red RGB 160,0,0 fill behind monster name only; white caption text; standard background for perspective, coordinates and controls. Preserves M2 rendering and calibration.",
+    "status": "Source patch prepared; Unity visual verification pending."
   }
 }

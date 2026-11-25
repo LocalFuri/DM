@@ -20910,8 +20910,20 @@ private static void HandleGameViewPointerDown(
       Vector2Int current = row.offset;
       EditorGUILayout.BeginHorizontal();
       var style = new GUIStyle(EditorStyles.boldLabel);
-      style.normal.textColor = Color.red;
-      GUILayout.Label(row.caption, style, GUILayout.Width(style.CalcSize(new GUIContent(row.caption)).x + 3f));
+      style.normal.textColor = Color.white;
+      int nameEnd = row.caption.IndexOf(" F", System.StringComparison.Ordinal);
+      if (nameEnd < 0) nameEnd = row.caption.IndexOf(" A", System.StringComparison.Ordinal);
+      string name = nameEnd > 0 ? row.caption.Substring(0, nameEnd) : row.caption;
+      string suffix = nameEnd > 0 ? row.caption.Substring(nameEnd) : string.Empty;
+      var nameContent = new GUIContent(name);
+      Rect nameRect = GUILayoutUtility.GetRect(nameContent, style,
+          GUILayout.Width(style.CalcSize(nameContent).x + 8f));
+      if (Event.current.type == EventType.Repaint)
+        EditorGUI.DrawRect(nameRect, new Color32(160, 0, 0, 255));
+      var nameStyle = new GUIStyle(style) { alignment = TextAnchor.MiddleCenter };
+      GUI.Label(nameRect, nameContent, nameStyle);
+      if (!string.IsNullOrEmpty(suffix))
+        GUILayout.Label(suffix, style, GUILayout.Width(style.CalcSize(new GUIContent(suffix)).x + 3f));
       int dx = current.x, dy = current.y;
       DrawIntStepperInline("X", ref dx, 1, dirty, true, 19f, 34f);
       DrawIntStepperInline("Y", ref dy, 1, dirty, true, 19f, 34f);
