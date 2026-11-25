@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "timestamp": "2026-11-25T22:05:51.950700+01:00",
+  "source": "DOS FIRES 0x1DBD4, 0x1DC68, 0x135C3; GRAPHICS.DAT resource 696; PNG identity by native dimensions, visual comparison pending",
+  "families": [
+    {
+      "name": "Puddle",
+      "views": [
+        {
+          "depth": 1,
+          "graphic": 438,
+          "zone": 1509,
+          "mode": 0,
+          "clip": 4,
+          "x": 112,
+          "y": 106,
+          "width": 50,
+          "height": 15,
+          "path": "Assets/Art/Ornaments/Flooritem Puddle_F1.png"
+        },
+        {
+          "depth": 2,
+          "graphic": 436,
+          "zone": 1506,
+          "mode": 0,
+          "clip": 4,
+          "x": 112,
+          "y": 83,
+          "width": 26,
+          "height": 5,
+          "path": "Assets/Art/Ornaments/Flooritem Puddle_F2.png"
+        },
+        {
+          "depth": 3,
+          "graphic": 434,
+          "zone": 1503,
+          "mode": 0,
+          "clip": 4,
+          "x": 112,
+          "y": 70,
+          "width": 24,
+          "height": 4,
+          "path": "Assets/Art/Ornaments/Flooritem Puddle_F3.png"
+        },
+        {
+          "depth": 1,
+          "lane": -1,
+          "graphic": 437,
+          "zone": 1508,
+          "mode": 8,
+          "clip": 4,
+          "x": 0,
+          "y": 107,
+          "width": 9,
+          "height": 7,
+          "path": "Assets/Art/Ornaments/Flooritem Puddle_S3.png",
+          "mirror": false
+        },
+        {
+          "depth": 1,
+          "lane": 1,
+          "graphic": 437,
+          "zone": 1510,
+          "mode": 6,
+          "clip": 4,
+          "x": 223,
+          "y": 107,
+          "width": 9,
+          "height": 7,
+          "path": "Assets/Art/Ornaments/Flooritem Puddle_S3.png",
+          "mirror": true
+        },
+        {
+          "depth": 2,
+          "lane": -1,
+          "graphic": 435,
+          "zone": 1505,
+          "mode": 0,
+          "clip": 4,
+          "x": 31,
+          "y": 83,
+          "width": 40,
+          "height": 7,
+          "path": "Assets/Art/Ornaments/Flooritem Puddle_S1.png",
+          "mirror": false
+        },
+        {
+          "depth": 2,
+          "lane": 1,
+          "graphic": 435,
+          "zone": 1507,
+          "mode": 0,
+          "clip": 4,
+          "x": 197,
+          "y": 83,
+          "width": 40,
+          "height": 7,
+          "path": "Assets/Art/Ornaments/Flooritem Puddle_S1.png",
+          "mirror": true
+        },
+        {
+          "depth": 3,
+          "lane": -1,
+          "graphic": 433,
+          "zone": 1502,
+          "mode": 0,
+          "clip": 4,
+          "x": 52,
+          "y": 70,
+          "width": 18,
+          "height": 4,
+          "path": "Assets/Art/Ornaments/Flooritem Puddle_S2.png",
+          "mirror": false
+        },
+        {
+          "depth": 3,
+          "lane": 1,
+          "graphic": 433,
+          "zone": 1504,
+          "mode": 0,
+          "clip": 4,
+          "x": 173,
+          "y": 70,
+          "width": 18,
+          "height": 4,
+          "path": "Assets/Art/Ornaments/Flooritem Puddle_S2.png",
+          "mirror": true
+        }
+      ]
+    }
+  ]
+}

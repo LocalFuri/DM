@@ -19691,6 +19691,7 @@ private static void HandleGameViewPointerDown(
   {
     renderedDosWallOrnaments.Clear();
     renderedDosMonsterRows.Clear();
+    renderedDosFloorRows.Clear();
     dosMonsterPreviewStatus = "M4: dungeon composition has not reached the monster pass";
     renderedDosLevel = previewDungeonLevel;
     renderedDosX = previewX;
@@ -20644,6 +20645,7 @@ private static void HandleGameViewPointerDown(
   private void BlitPostMapFeaturesAndOrnamentsIntoPreview(Color32[] pixels)
   {
     BlitStrictDosWallOrnaments(pixels);
+    BlitDosNativeFloorOrnaments(pixels);
     BlitDroppedTorchesIntoPreview(pixels);
     if (HasVisibleEnabledWallInscriptionAtPreviewPose())
       BlitWallInscriptionsIntoPreview(pixels);
@@ -20652,6 +20654,112 @@ private static void HandleGameViewPointerDown(
     BlitSuspendedThrownItemsIntoPreview(pixels);
   }
 
+
+  // Native DOS floor decorations: separate artwork per perspective, no scaling.
+  private const string DosFloorPreviewDataPath = "Assets/Editor/DosFloorOrnamentPreviewData.json";
+  [System.Serializable] private sealed class DosFloorPreviewRoot
+  { public int schemaVersion; public DosFloorPreviewFamily[] families; }
+  [System.Serializable] private sealed class DosFloorPreviewFamily
+  { public string name; public DosFloorPreviewView[] views; }
+  [System.Serializable] private sealed class DosFloorPreviewView
+  { public int depth, lane, graphic, zone, mode, clip, x, y, width, height; public string path; public bool mirror; }
+  private sealed class DosFloorPreviewRow
+  { public string caption, featureKey, offsetKey; public Vector2Int offset; }
+  private readonly List<DosFloorPreviewRow> renderedDosFloorRows = new List<DosFloorPreviewRow>();
+  private readonly HashSet<string> dosFloorPreviewDiagnostics = new HashSet<string>();
+  private void ReportDosFloorPreview(string message)
+  {
+    if (dosFloorPreviewDiagnostics.Add(message)) LogMissingArtworkCyan("DOS FLOOR: " + message);
+  }
+  private void BlitDosNativeFloorOrnaments(Color32[] pixels)
+  {
+    if (pixels == null || previewMiniMap == null || previewPuddleFloors.Count == 0) return;
+    DosFloorPreviewRoot data;
+    try
+    {
+      data = JsonUtility.FromJson<DosFloorPreviewRoot>(File.ReadAllText(DosFloorPreviewDataPath));
+      if (data == null || data.schemaVersion != 1 || data.families == null)
+        throw new System.IO.InvalidDataException("invalid native floor data");
+    }
+    catch (System.Exception e) { ReportDosFloorPreview(e.Message); return; }
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
+    if (!TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration)) return;
+    for (int depth = 3; depth >= 1; depth--)
+    {
+      for (int lane = -1; lane <= 1; lane++)
+      {
+      int x = previewX + fx * depth + rx * lane, y = previewY + fy * depth + ry * lane;
+      foreach (var family in data.families)
+      {
+        if (family == null || family.name != "Puddle" || family.views == null) continue;
+        if (!IsFloorOrnamentProjectionVisibleInCurrentPose(previewPuddleFloors, x, y, depth, lane, true)) continue;
+        var view = System.Array.Find(family.views, v => v != null && v.depth == depth && v.lane == lane);
+        string projection = lane == 0 ? "F" + depth : "S" + depth + (lane < 0 ? ":Left" : ":Right");
+        if (view == null || (view.mode != 0 && view.mode != 6 && view.mode != 8) || view.clip != 4 || view.width <= 0 || view.height <= 0)
+        { ReportDosFloorPreview("missing or invalid native projection " + family.name + " " + projection); continue; }
+        string feature = MakePreviewFeatureKey(family.name, x, y, null);
+        string key = "FloorOrnamentProjection:" + family.name + ":" + projection;
+        Vector2Int offset = Vector2Int.zero;
+        bool found = false, duplicate = false;
+        foreach (var entry in calibration.offsets)
+        {
+          if (entry == null || !string.Equals(entry.key, key, System.StringComparison.OrdinalIgnoreCase)) continue;
+          if (found) { duplicate = true; break; }
+          found = true; offset = new Vector2Int(entry.dx, entry.dy);
+        }
+        if (duplicate) { ReportDosFloorPreview("duplicate offset " + key); continue; }
+        if (dosOrnamentOffsetDrafts.TryGetValue(key, out Vector2Int draft)) offset = draft;
+        Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(view.path);
+        if (sprite == null || !sprite.isReadable || sprite.width != view.width || sprite.height != view.height)
+        { ReportDosFloorPreview("missing or invalid readable native artwork " + view.path); continue; }
+        renderedDosFloorRows.Add(new DosFloorPreviewRow { caption = family.name + " " + projection + " " + x + "," + y + " " + previewFacing, featureKey = feature, offsetKey = key, offset = offset });
+        if (!IsPreviewFeatureEnabled(feature)) continue;
+        int left = view.x - (view.mode == 8 ? 0 : view.mode == 6 ? sprite.width - 1 : ((sprite.width + 1) >> 1)) + offset.x;
+        int top = view.y - ((sprite.height + 1) >> 1) + offset.y;
+        Color32[] source = sprite.GetPixels32();
+        for (int sy = 0; sy < sprite.height; sy++)
+        {
+          int dy = top + sy;
+          if (dy < 0 || dy >= DungeonViewportHeight) continue;
+          for (int sx = 0; sx < sprite.width; sx++)
+          {
+            int dx = left + sx;
+            if (dx < 0 || dx >= DungeonViewportWidth) continue;
+            Color32 pixel = source[(sprite.height - 1 - sy) * sprite.width + (view.mirror ? sprite.width - 1 - sx : sx)];
+            if (pixel.a != 255) continue;
+            pixels[(PreviewHeight - 1 - 33 - dy) * PreviewWidth + dx] = pixel;
+          }
+        }
+      }
+      }
+    }
+  }
+  private void DrawDosNativeFloorOrnamentRows()
+  {
+    if (championSheetVisible || editModePreviewTexture == null || renderedDosLevel != previewDungeonLevel
+        || renderedDosX != previewX || renderedDosY != previewY || renderedDosFacing != previewFacing) return;
+    bool refresh = false;
+    foreach (var row in renderedDosFloorRows.ToArray())
+    {
+      EditorGUILayout.BeginHorizontal();
+      var style = new GUIStyle(EditorStyles.boldLabel); style.normal.textColor = Color.magenta;
+      GUILayout.Label(row.caption, style, GUILayout.Width(style.CalcSize(new GUIContent(row.caption)).x + 3f));
+      bool enabled = IsPreviewFeatureEnabled(row.featureKey);
+      bool nextEnabled = DrawCompactMouseOnlyToggle("Set", enabled, false);
+      bool dirty = dosOrnamentOffsetDrafts.ContainsKey(row.offsetKey);
+      int dx = row.offset.x, dy = row.offset.y;
+      DrawIntStepperInline("X", ref dx, 1, dirty, true, 19f, 34f);
+      DrawIntStepperInline("Y", ref dy, 1, dirty, true, 19f, 34f);
+      bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+      NoteContentRight(); EditorGUILayout.EndHorizontal();
+      if (enabled != nextEnabled) { SetPreviewFeatureEnabled(row.featureKey, nextEnabled); refresh = true; }
+      var next = new Vector2Int(Mathf.Clamp(dx, -PreviewWidth, PreviewWidth), Mathf.Clamp(dy, -PreviewHeight, PreviewHeight));
+      if (next != row.offset) { dosOrnamentOffsetDrafts[row.offsetKey] = next; refresh = true; }
+      if (apply && SaveStrictDosOffset(row.offsetKey, next)) { dosOrnamentOffsetDrafts.Remove(row.offsetKey); refresh = true; }
+    }
+    if (refresh) { previewPositionChangedThisFrame = true; RefreshEditModePreview(); RepaintGameViews(); Repaint(); }
+  }
 
   // Stage M3: centered F1, F2 and F3 geometry test. Original DOS resource data is
   // external; no creature-specific geometry or map coordinates in the renderer.
@@ -25512,37 +25620,7 @@ private static void HandleGameViewPointerDown(
 
 
 
-    // Floor puddles are ornaments too, but they are stored separately from
-    // wallOrnaments in the parsed map data. Only list projections that the
-    // puddle renderer can actually draw in the current pose. In particular,
-    // there is no F0 puddle projection, so a puddle beside/under the player
-    // must not appear in ViewEdit just because it is nearby on the map.
-    DungeonMap.GetForwardOffset(
-        previewFacing,
-        out int puddleForwardX,
-        out int puddleForwardY);
-    DungeonMap.GetRightOffset(
-        previewFacing,
-        out int puddleRightX,
-        out int puddleRightY);
-
-    for (int depth = 1; depth <= 3; depth++)
-    {
-      int minLane = depth == 3 ? 0 : -1;
-      int maxLane = depth == 3 ? 0 : 1;
-
-      for (int lane = minLane; lane <= maxLane; lane++)
-      {
-        int x = previewX + puddleForwardX * depth + puddleRightX * lane;
-        int y = previewY + puddleForwardY * depth + puddleRightY * lane;
-        if (!IsPuddleProjectionVisibleInCurrentPose(x, y, depth, lane))
-          continue;
-
-        if (IsPreviewFeatureEnabled(MakePreviewFeatureKey("Puddle", x, y, null)))
-          ReportStrictOrnamentMissing("Puddle", (lane == 0 ? "F" : "S") + depth,
-              "verified native DOS floor ornament projection");
-      }
-    }
+    DrawDosNativeFloorOrnamentRows();
 
     // Moss is a resolved floor ornament from the same database as puddles.
     // The current first implementation exposes the front F1/F2/F3 projections;
@@ -31263,7 +31341,7 @@ private static void HandleGameViewPointerDown(
       int mapX,
       int mapY,
       int depth,
-      int lane)
+      int lane, bool allowThirdSide = false)
   {
     if (floorOrnamentTiles == null
         || previewMiniMap == null
@@ -31294,7 +31372,7 @@ private static void HandleGameViewPointerDown(
       return true;
     }
 
-    if (Mathf.Abs(lane) != 1 || depth < 1 || depth > 2)
+    if (Mathf.Abs(lane) != 1 || depth < 1 || depth > (allowThirdSide ? 3 : 2))
       return false;
 
     DungeonMap.GetForwardOffset(
@@ -31320,8 +31398,13 @@ private static void HandleGameViewPointerDown(
 
     int f1SideX = previewX + forwardX + rightX * side;
     int f1SideY = previewY + forwardY + rightY * side;
-    return previewMiniMap.IsInside(f1SideX, f1SideY)
+    bool f1SideOpen = previewMiniMap.IsInside(f1SideX, f1SideY)
         && previewMiniMap.GetTile(f1SideX, f1SideY).Type != DungeonTileType.Wall;
+    if (!f1SideOpen || depth == 2) return f1SideOpen;
+    int f2SideX = previewX + forwardX * 2 + rightX * side;
+    int f2SideY = previewY + forwardY * 2 + rightY * side;
+    return previewMiniMap.IsInside(f2SideX, f2SideY)
+        && previewMiniMap.GetTile(f2SideX, f2SideY).Type != DungeonTileType.Wall;
   }
 
   private bool IsPuddleProjectionVisibleInCurrentPose(
