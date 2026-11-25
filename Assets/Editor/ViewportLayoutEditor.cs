@@ -25461,6 +25461,15 @@ private static void HandleGameViewPointerDown(
     }
   }
 
+  // Floor ornaments have a map tile but no wall facing; show the viewing direction.
+  private string GetPressurePadViewEditCaption(string projection, int depth, int lane)
+  {
+    DungeonMap.GetForwardOffset(previewFacing, out int forwardX, out int forwardY);
+    int tileX = previewX + depth * forwardX - lane * forwardY;
+    int tileY = previewY + depth * forwardY + lane * forwardX;
+    return "PressurePad " + projection + " " + tileX + "," + tileY + " " + previewFacing;
+  }
+
   private void DrawPressurePadF1CalibrationRow()
   {
     if (!TryReadSavedStairCalibration("PressurePadF1Accepted", out string accepted))
@@ -25479,7 +25488,7 @@ private static void HandleGameViewPointerDown(
     Color oldColor = GUI.contentColor;
     GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
     style.normal.textColor = Color.magenta;
-    const string caption = "PressurePad_F1 (62x21)";
+    string caption = GetPressurePadViewEditCaption("F1", 1, 0);
     GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
     float setWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
@@ -25651,7 +25660,7 @@ private static void HandleGameViewPointerDown(
     Color oldColor = GUI.contentColor;
     GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
     style.normal.textColor = Color.magenta;
-    const string caption = "PressurePad_F2 (42x11)";
+    string caption = GetPressurePadViewEditCaption("F2", 2, 0);
     GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
     float setWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
@@ -25823,7 +25832,7 @@ private static void HandleGameViewPointerDown(
     Color oldColor = GUI.contentColor;
     GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
     style.normal.textColor = Color.magenta;
-    const string caption = "PressurePad_F3 (26x6)";
+    string caption = GetPressurePadViewEditCaption("F3", 3, 0);
     GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
     float setWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;
@@ -25996,7 +26005,7 @@ private static void HandleGameViewPointerDown(
     Color oldColor = GUI.contentColor;
     GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
     style.normal.textColor = Color.magenta;
-    const string caption = "PressurePad_S1 (60x11)";
+    string caption = GetPressurePadViewEditCaption("S1:Left", 2, -1);
     GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x));
     GUILayout.Space(8f);
     float setWidth = EditorStyles.label.CalcSize(new GUIContent("Set")).x;

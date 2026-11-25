@@ -7297,5 +7297,13 @@
       "Existing helper checks wall occlusion, not full per-pixel clipping or closed-door occlusion; these are not claimed fixed."
     ],
     "resume": "After approval resume Stage 4N-J champion recruitment. Cursor monster research remains read-only."
+  },
+  "floor_ornament_pressure_pad_labels_20261125": {
+    "timestamp": "2026-11-25T19:22:04.387943+01:00",
+    "archive": "PressurePad_ViewEdit_Labels_20261125-192204.zip",
+    "status": "Source change prepared; Unity compile and visual approval pending",
+    "change": "Replace four pressure pad ViewEdit size captions with name, perspective, actual pad map tile and player viewing direction. F1/F2/F3 use depths 1/2/3 and lane 0; S1:Left uses depth 2 lane -1, matching existing visibility predicates.",
+    "protected": "Only label strings and a label helper changed. Preserve artwork, scaling, geometry, visibility, calibration, Apply behavior, other rows and champion interactions. Cursor strictly read-only.",
+    "validation": "Source diff checked; verify four captions in Unity; no Unity compilation available here."
   }
 }
