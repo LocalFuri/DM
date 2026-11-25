@@ -7524,5 +7524,11 @@
     "scope": "Generic distance remap for registered Level 0 data; special RGB palette entries 9/10 and other levels not yet supported. Both Screamer PNGs exact quantization matched, no visible indices 9/10 or collision with mapped transparency. No nearest RGB or invented palette. F1 unchanged. Missing/invalid F3 data rejected only for F3, no hardcoded fallback.",
     "tests": "F1 15,4 West; F2 12,4 East; F3 11,4 East. Compare palette with DOS, preserve geometry and calibration.",
     "pending": "Full runtime special RGB palette initialization, other levels, side/group/animation."
+  },
+  "viewedit_monster_set_visibility_20261125": {
+    "timestamp": "2026-11-25T21:16:01.624589+01:00",
+    "status": "Source patch prepared; Unity test pending. M4 F1/F2/F3 rendering and distance palette accepted by user and preserved.",
+    "change": "Set toggle uses existing pose-local feature visibility state keyed by level/tile/type; hidden eligible monster rows remain available for re-enable. Revert removed in prior patch. No change to geometry, scaling, palette or saved offsets.",
+    "test": "At Level 0 15,4 West, uncheck Set: Screamer disappears, row stays; check Set: Screamer returns. Repeat F2/F3. Existing pose reset restores visibility."
   }
 }

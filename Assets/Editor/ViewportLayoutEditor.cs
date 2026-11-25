@@ -20752,7 +20752,7 @@ private static void HandleGameViewPointerDown(
   private readonly HashSet<string> dosMonsterPreviewDiagnostics = new HashSet<string>();
   private sealed class RenderedDosMonsterRow
   {
-    public string caption, key;
+    public string caption, key, visibilityKey;
     public Vector2Int offset;
   }
   private readonly List<RenderedDosMonsterRow> renderedDosMonsterRows = new List<RenderedDosMonsterRow>();
@@ -20928,6 +20928,8 @@ private static void HandleGameViewPointerDown(
       int width = depth == 1 ? sprite.width : (sprite.width * scale + (scale >> 1)) >> 5;
       int height = depth == 1 ? sprite.height : (sprite.height * scale + (scale >> 1)) >> 5;
       if (width <= 0 || height <= 0) { ReportDosMonsterPreview("invalid scaled dimensions"); continue; }
+      string visibilityKey = "MonsterVisibility:" + item.level + ":" + item.x + ":" + item.y + ":" + item.type;
+      bool monsterEnabled = IsPreviewFeatureEnabled(visibilityKey);
       string offsetKey = "MonsterProjection:" + item.type + ":F" + depth;
       if (!TryGetDosMonsterOffset(offsetKey, out Vector2Int offset)) continue;
       int left = anchor.x - ((width + 1) >> 1) + offset.x;
@@ -20952,7 +20954,8 @@ private static void HandleGameViewPointerDown(
           int sourceX = depth == 1 ? sx : DosSixBitSample(stepX, sx, sprite.width);
           Color32 pixel = source[sourceRow + sourceX];
           if (pixel.a == 0) continue;
-          pixels[destinationRow + dx] = pixel;
+          // Keep the eligible row even when Set hides its pixels.
+          if (monsterEnabled) pixels[destinationRow + dx] = pixel;
           drawn = true;
         }
       }
@@ -20961,7 +20964,7 @@ private static void HandleGameViewPointerDown(
         renderedDosMonsterRows.Add(new RenderedDosMonsterRow {
           caption = item.name + (item.attacking ? " A" : " F") + depth + " "
               + item.x + "," + item.y + " " + facing,
-          key = offsetKey, offset = offset
+          key = offsetKey, visibilityKey = visibilityKey, offset = offset
         });
       }
       else ReportDosMonsterPreview("no opaque monster pixels reached viewport");
@@ -20989,7 +20992,7 @@ private static void HandleGameViewPointerDown(
     var seen = new HashSet<string>();
     foreach (var row in renderedDosMonsterRows.ToArray())
     {
-      if (!seen.Add(row.key)) continue;
+      if (!seen.Add(row.visibilityKey)) continue;
       bool dirty = dosMonsterOffsetDrafts.ContainsKey(row.key);
       Vector2Int current = row.offset;
       EditorGUILayout.BeginHorizontal();
@@ -21008,7 +21011,8 @@ private static void HandleGameViewPointerDown(
       GUI.Label(nameRect, nameContent, nameStyle);
       if (!string.IsNullOrEmpty(suffix))
         GUILayout.Label(suffix, style, GUILayout.Width(style.CalcSize(new GUIContent(suffix)).x + 3f));
-      DrawCompactMouseOnlyToggle("Set", true, false);
+      bool enabledBefore = IsPreviewFeatureEnabled(row.visibilityKey);
+      bool enabledAfter = DrawCompactMouseOnlyToggle("Set", enabledBefore, false);
       int dx = current.x, dy = current.y;
       DrawIntStepperInline("X", ref dx, 1, dirty, true, 19f, 34f);
       DrawIntStepperInline("Y", ref dy, 1, dirty, true, 19f, 34f);
@@ -21017,6 +21021,12 @@ private static void HandleGameViewPointerDown(
       EditorGUILayout.EndHorizontal();
       var next = new Vector2Int(Mathf.Clamp(dx, -PreviewWidth, PreviewWidth),
           Mathf.Clamp(dy, -PreviewHeight, PreviewHeight));
+      if (enabledAfter != enabledBefore)
+      {
+        SetPreviewFeatureEnabled(row.visibilityKey, enabledAfter);
+        previewEnabledChangedThisFrame = true;
+        refresh = true;
+      }
       if (next != current)
       {
         changedKey = row.key;
