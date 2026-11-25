@@ -7714,5 +7714,11 @@
       }
     ],
     "scope": "Native DOS resource 696 modes 0,6,8, mirror right from FIRES 0x1DC03; S3 visibility extends existing side-ray test only for native puddle. Preserve F1/F2/F3, monster, pressure pad, wall rendering. PNG identity by dimensions; visual verification pending."
+  },
+  "puddle_p2_projection_diagnostic_20261125": {
+    "timestamp": "2026-11-25T22:25:04.778838+01:00",
+    "status": "Diagnostic only; DOS screenshot lateral fragment unresolved; P2 rendering unchanged",
+    "test": "Level 0, 5,9 South",
+    "scope": "Optional ViewEdit foldout enumerates nine relative slots and runtime placement, occlusion, artwork, calibration and row checks. No bypass or invented geometry. Existing valid rows retained while disabled or clipped. Verify actual runtime failure before altering renderer."
   }
 }
