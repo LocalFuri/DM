@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "Stage M1: exact asset lookup failure identified in ViewEdit; restore confirmed Assets/Art/Monster paths. F1 visual approval pending.",
+  "checkpoint": "M2 F2 visually approved by user; M3 reverted. Champion Mirror ViewEdit name cosmetic patch prepared.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -7398,5 +7398,11 @@
       "Verify runtime monster palette and original index mapping before final F2 approval.",
       "F3, lateral, groups, animation, full door/painter order pending."
     ]
+  },
+  "viewedit_champion_name_labels_20261125": {
+    "timestamp": "2026-11-25T20:25:31.648137+01:00",
+    "status": "Source patch prepared; Unity verification pending",
+    "change": "Use champion identity from rendered placement for ChampionMirror display caption only. Keep family, projection, map coordinates, calibration and rendering unchanged.",
+    "baseline": "Restored M2; F2 visually approved by user; F3 reverted; distance palettes pending."
   }
 }

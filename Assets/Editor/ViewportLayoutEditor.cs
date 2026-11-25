@@ -25230,7 +25230,9 @@ private static void HandleGameViewPointerDown(
       EditorGUILayout.BeginHorizontal();
       var style = new GUIStyle(EditorStyles.boldLabel);
       style.normal.textColor = Color.yellow;
-      string caption = row.family + " " + projection + " " + row.placement.x + "," + row.placement.y
+      string displayName = row.family == "ChampionMirror" && !string.IsNullOrEmpty(row.placement.champion)
+          ? row.placement.champion : row.family;
+      string caption = displayName + " " + projection + " " + row.placement.x + "," + row.placement.y
           + " " + row.placement.wall;
       GUILayout.Label(caption, style, GUILayout.Width(style.CalcSize(new GUIContent(caption)).x + 3f));
       int dx = current.x, dy = current.y;
