@@ -19667,6 +19667,8 @@ private static void HandleGameViewPointerDown(
   private void ComposeEditModePreview()
   {
     renderedDosWallOrnaments.Clear();
+    renderedDosMonsterRows.Clear();
+    dosMonsterPreviewStatus = "M1: dungeon composition has not reached the monster pass";
     renderedDosLevel = previewDungeonLevel;
     renderedDosX = previewX;
     renderedDosY = previewY;
@@ -20623,7 +20625,235 @@ private static void HandleGameViewPointerDown(
     if (HasVisibleEnabledWallInscriptionAtPreviewPose())
       BlitWallInscriptionsIntoPreview(pixels);
     BlitFloorItemsIntoPreview(pixels);
+    BlitDosNativeMonstersIntoPreview(pixels);
     BlitSuspendedThrownItemsIntoPreview(pixels);
+  }
+
+
+  // Stage M1: native centered F1 test only. Original DOS resource data is
+  // external; no creature-specific geometry or map coordinates in the renderer.
+  private const string DosMonsterPreviewDataPath = "Assets/Editor/DosMonsterPreviewData.json";
+  [System.Serializable]
+  private sealed class DosMonsterPreviewRoot
+  {
+    public int schemaVersion, centerF1View, centerPosition, zoneBase, groupStride, viewStride;
+    public DosMonsterGeometryRow[] geometry;
+    public DosMonsterDescriptorRow[] descriptors;
+    public DosMonsterTypeRow[] types;
+    public DosMonsterArtworkRow[] artwork;
+    public DosMonsterPlacementRow[] placements;
+  }
+  [System.Serializable]
+  private sealed class DosMonsterGeometryRow
+  {
+    public int zone, mode, clip, x, y;
+  }
+  [System.Serializable]
+  private sealed class DosMonsterDescriptorRow
+  {
+    public int index, frontGraphic, transparencyIndex, geometryGroup, specialColors;
+  }
+  [System.Serializable]
+  private sealed class DosMonsterTypeRow
+  {
+    public int type, graphicDescriptor, graphicFlags, sizeClass;
+  }
+  [System.Serializable]
+  private sealed class DosMonsterArtworkRow
+  {
+    public int graphic, width, height;
+    public string path;
+  }
+  [System.Serializable]
+  private sealed class DosMonsterPlacementRow
+  {
+    public string name, facing;
+    public int type, level, x, y, count;
+    public bool attacking, stationary;
+  }
+  private DosMonsterPreviewRoot dosMonsterPreviewData;
+  private System.DateTime dosMonsterPreviewWriteTime;
+  private readonly HashSet<string> dosMonsterPreviewDiagnostics = new HashSet<string>();
+  private readonly List<string> renderedDosMonsterRows = new List<string>();
+  private string dosMonsterPreviewStatus = "M1: refresh preview";
+
+  private void ReportDosMonsterPreview(string message)
+  {
+    dosMonsterPreviewStatus = "M1: " + message;
+    if (dosMonsterPreviewDiagnostics.Add(message))
+      LogMissingArtworkCyan("DOS MONSTER M1: " + message);
+  }
+
+  private bool TryGetDosMonsterPreviewData(out DosMonsterPreviewRoot data)
+  {
+    data = null;
+    try
+    {
+      if (!File.Exists(DosMonsterPreviewDataPath))
+      {
+        dosMonsterPreviewData = null;
+        ReportDosMonsterPreview("missing " + DosMonsterPreviewDataPath + "; not drawn (no fallback)");
+        return false;
+      }
+      System.DateTime stamp = File.GetLastWriteTimeUtc(DosMonsterPreviewDataPath);
+      if (dosMonsterPreviewData == null || stamp != dosMonsterPreviewWriteTime)
+      {
+        dosMonsterPreviewData = null;
+        DosMonsterPreviewRoot parsed = JsonUtility.FromJson<DosMonsterPreviewRoot>(File.ReadAllText(DosMonsterPreviewDataPath));
+        if (parsed == null || parsed.schemaVersion != 1 || parsed.geometry == null
+            || parsed.descriptors == null || parsed.types == null || parsed.artwork == null
+            || parsed.placements == null || parsed.groupStride <= 0 || parsed.viewStride <= 0)
+        {
+          ReportDosMonsterPreview("invalid original descriptor/geometry/placement data; not drawn (no fallback)");
+          return false;
+        }
+        dosMonsterPreviewData = parsed;
+        dosMonsterPreviewWriteTime = stamp;
+      }
+      data = dosMonsterPreviewData;
+      return true;
+    }
+    catch (System.Exception ex)
+    {
+      dosMonsterPreviewData = null;
+      ReportDosMonsterPreview("data read failed: " + ex.Message + "; not drawn (no fallback)");
+      return false;
+    }
+  }
+
+  private void BlitDosNativeMonstersIntoPreview(Color32[] pixels)
+  {
+    if (pixels == null || previewMiniMap == null)
+    {
+      dosMonsterPreviewStatus = "M1: missing preview buffer or map"; return;
+    }
+    if (!TryGetDosMonsterPreviewData(out DosMonsterPreviewRoot data)) return;
+    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
+    int tileX = previewX + fx, tileY = previewY + fy;
+    // Only the centered F1 tile is supported at M1. A door tile is not a
+    // supported test location; never draw over a door or wall.
+    dosMonsterPreviewStatus = "M1: Level " + previewDungeonLevel + " F1 " + tileX + "," + tileY;
+    if (!PreviewTileIsOpen(tileX, tileY))
+    {
+      dosMonsterPreviewStatus += " - wall or outside map"; return;
+    }
+    if (previewDoorTiles.Contains(new Vector2Int(tileX, tileY)))
+    {
+      dosMonsterPreviewStatus += " - door tile"; return;
+    }
+    dosMonsterPreviewStatus += " - no registered monster at this tile (" + data.placements.Length + " placements loaded)";
+    foreach (DosMonsterPlacementRow item in data.placements)
+    {
+      if (item == null || item.level != previewDungeonLevel || item.x != tileX || item.y != tileY) continue;
+      if (item.count != 1 || !item.stationary)
+      {
+        ReportDosMonsterPreview("unsupported group/movement test placement " + item.name); continue;
+      }
+      DosMonsterTypeRow type = System.Array.Find(data.types, row => row != null && row.type == item.type);
+      DosMonsterDescriptorRow descriptor = type == null ? null : System.Array.Find(data.descriptors, row => row != null && row.index == type.graphicDescriptor);
+      if (descriptor == null || descriptor.transparencyIndex < 0 || descriptor.transparencyIndex > 15)
+      {
+        ReportDosMonsterPreview("missing or invalid descriptor for type " + item.type); continue;
+      }
+      if (!System.Enum.TryParse<DungeonFacing>(item.facing, true, out DungeonFacing facing)
+          || !System.Enum.IsDefined(typeof(DungeonFacing), facing))
+      {
+        ReportDosMonsterPreview("invalid placement facing for " + item.name); continue;
+      }
+      int relative = ((int)previewFacing - (int)facing) & 3;
+      int flags = type.graphicFlags;
+      // DOS 0x1E8BD..0x1E947: absent side/back flags select the native
+      // front image, not a fabricated side or rear bitmap. Actual side/back
+      // views, including mirroring, remain outside this M1 test stage.
+      if (((relative & 1) != 0 && (flags & 8) != 0) || (relative == 0 && (flags & 16) != 0))
+      {
+        ReportDosMonsterPreview("side/back native view not yet supported for " + item.name); continue;
+      }
+      int graphic = descriptor.frontGraphic;
+      if (item.attacking)
+      {
+        if ((flags & 32) == 0)
+        {
+          ReportDosMonsterPreview("attack graphic not declared for " + item.name); continue;
+        }
+        graphic += 1 + ((flags & 8) != 0 ? 1 : 0) + ((flags & 16) != 0 ? 1 : 0);
+      }
+      DosMonsterArtworkRow art = System.Array.Find(data.artwork, row => row != null && row.graphic == graphic);
+      if (art == null || string.IsNullOrEmpty(art.path))
+      {
+        ReportDosMonsterPreview("missing artwork registration for DOS graphic " + graphic); continue;
+      }
+      int zone = data.zoneBase + descriptor.geometryGroup * data.groupStride
+          + data.centerF1View * data.viewStride + data.centerPosition;
+      DosMonsterGeometryRow anchor = System.Array.Find(data.geometry, row => row != null && row.zone == zone);
+      if (anchor == null || anchor.mode != 7 || anchor.clip != 4)
+      {
+        ReportDosMonsterPreview("missing or unsupported original geometry zone " + zone); continue;
+      }
+      Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(art.path);
+      if (sprite == null)
+      {
+        ReportDosMonsterPreview("asset not found: " + art.path); continue;
+      }
+      if (!sprite.isReadable)
+      {
+        ReportDosMonsterPreview("Read/Write disabled: " + art.path); continue;
+      }
+      if (sprite.width != art.width || sprite.height != art.height)
+      {
+        ReportDosMonsterPreview("imported size " + sprite.width + "x" + sprite.height
+            + ", expected " + art.width + "x" + art.height + ": " + art.path); continue;
+      }
+      Color32[] source = sprite.GetPixels32();
+      // Native prepared PNG must carry the original descriptor's transparency
+      // as alpha. Never guess an RGB key or reuse the ornament index 10.
+      bool hasTransparent = false, hasOpaque = false, hasPartial = false;
+      foreach (Color32 pixel in source)
+      {
+        if (pixel.a == 0) hasTransparent = true;
+        else if (pixel.a == 255) hasOpaque = true;
+        else hasPartial = true;
+      }
+      if (!hasTransparent || !hasOpaque || hasPartial)
+      {
+        ReportDosMonsterPreview("native PNG needs binary alpha matching DOS transparency index "
+            + descriptor.transparencyIndex + ": " + art.path + "; not drawn (no fallback)"); continue;
+      }
+      int left = anchor.x - ((sprite.width + 1) >> 1);
+      int top = anchor.y - sprite.height + 1;
+      const int dungeonScreenTop = 33; // established 224x136 viewport origin
+      bool drawn = false;
+      for (int sy = 0; sy < sprite.height; sy++)
+      {
+        int dy = top + sy;
+        if (dy < 0 || dy >= DungeonViewportHeight) continue;
+        int destinationRow = (PreviewHeight - 1 - dungeonScreenTop - dy) * PreviewWidth;
+        int sourceRow = (sprite.height - 1 - sy) * sprite.width;
+        for (int sx = 0; sx < sprite.width; sx++)
+        {
+          int dx = left + sx;
+          if (dx < 0 || dx >= DungeonViewportWidth) continue;
+          Color32 pixel = source[sourceRow + sx];
+          if (pixel.a == 0) continue;
+          pixels[destinationRow + dx] = pixel;
+          drawn = true;
+        }
+      }
+      if (drawn)
+      {
+        dosMonsterPreviewStatus = "M1: native monster pixels drawn before lighting";
+        renderedDosMonsterRows.Add(item.name + (item.attacking ? " A1 " : " F1 ")
+            + item.x + "," + item.y + " " + facing + "   X " + left + " / Y " + (top + dungeonScreenTop));
+      }
+      else ReportDosMonsterPreview("no opaque monster pixels reached viewport");
+    }
+  }
+
+  private void DrawDosNativeMonsterRows()
+  {
+    EditorGUILayout.LabelField(dosMonsterPreviewStatus, EditorStyles.wordWrappedMiniLabel);
+    foreach (string row in renderedDosMonsterRows)
+      EditorGUILayout.LabelField(row, EditorStyles.miniLabel);
   }
 
   private bool TryGetStrictDosGeometry(out DosOrnamentGeometryResolver resolver)
@@ -25051,6 +25281,7 @@ private static void HandleGameViewPointerDown(
 
     // Loose-item calibrations from the original Level 0 DUNGEON.DAT.
     DrawFloorItemRows();
+    DrawDosNativeMonsterRows();
     DrawTorchDownCalibrationRow();
 
 

@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "Stage M1: native centered Screamer F1 test preview prepared at Level 0 (14,4) East; pressure pad visually approved; native compile/visual verification pending. Prior Champion recruitment task remains open.",
+  "checkpoint": "Stage M1: exact asset lookup failure identified in ViewEdit; restore confirmed Assets/Art/Monster paths. F1 visual approval pending.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -7366,5 +7366,23 @@
       "Assets/Art/Screamer_A1_64x60.png"
     ],
     "scope": "Data path correction only; renderer and placement unchanged."
+  },
+  "dos_monster_stage_m1_visibility_diagnostic_20261125": {
+    "timestamp": "2026-11-25T20:05:57.570233+01:00",
+    "status": "Diagnostic source prepared; cause not yet determined; Unity test pending",
+    "change": "Expose monster pass status in ViewEdit, including F1 target, wall/door, missing placement, asset lookup, readability, imported dimensions, descriptor/alpha and successful pre-lighting blit. No rendering logic, geometry, data or import settings changed.",
+    "test": "Level 0, player 15,4 West; Refresh ViewEdit and read M1 status.",
+    "artwork": "Both supplied 64x60 PNGs have binary alpha; Unity import state unknown."
+  },
+  "dos_monster_stage_m1_confirmed_artwork_paths_20261125": {
+    "timestamp": "2026-11-25T20:11:04.134932+01:00",
+    "status": "Path correction prepared; Unity visual test pending",
+    "evidence": "ViewEdit at 15,4 West reports asset not found for Assets/Art/Screamer_F1_64x60.png. Total Commander screenshot confirms both PNG and .meta files in Assets/Art/Monster.",
+    "paths": [
+      "Assets/Art/Monster/Screamer_F1_64x60.png",
+      "Assets/Art/Monster/Screamer_A1_64x60.png"
+    ],
+    "scope": "Supersedes prior artwork path correction. Data-only; retain diagnostic source, geometry, placement and all approved rendering.",
+    "test": "Refresh ViewEdit at level 0, 15,4 West; inspect M1 status and visible Screamer."
   }
 }
