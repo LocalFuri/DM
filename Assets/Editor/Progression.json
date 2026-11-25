@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "M2 F2 visually approved; M3 reverted. Champion name labels confirmed visible; Champion Mirror dimension caption removal prepared.",
+  "checkpoint": "M2 F2 visually approved; M3 reverted. Champion name labels confirmed visible; Champion Mirror dimension caption removal prepared. Monster ViewEdit row now uses standard editor background and red caption; calibration unchanged; visual verification pending.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -7410,5 +7410,19 @@
     "status": "Source patch prepared; Unity verification pending",
     "change": "Hide width x height label only for ChampionMirror rows. Retain dimensions internally and other ornament labels; no rendering or calibration changes.",
     "baseline": "Champion name labels confirmed visible; M2 retained, M3 reverted."
+  },
+  "viewedit_monster_calibration_20261125": {
+    "timestamp": "2026-11-25T20:49:36.398294+01:00",
+    "status": "Source patch prepared; Unity compilation and visual verification pending",
+    "baseline": "M2 F1 visible, F2 visually approved by user; F3 reverted; palette pending. Champion labels and no dimensions preserved.",
+    "change": "Monster rows use yellow caption on solid RGB 0,255,0 background, identical X/Y stepper and Apply/Revert controls to Champion rows. Relative offsets keyed by monster type and perspective (shared normal/attack), not map position, persisted in existing OrnamentCalibration.json under MonsterProjection namespace. Unsaved edits preview immediately; fully clipped drafts rejected. No change to default DOS geometry or sampler.",
+    "test": "15,4 West F1 and 12,4 East F2; zero offsets preserve baseline, +/-1 moves one pixel, Revert restores saved value, Apply persists after reopening.",
+    "pending": "Verify compilation, color, controls and persistence in Unity; F3 and distance palette pending."
+  },
+  "viewedit_monster_row_color_20261125": {
+    "timestamp": "2026-11-25T20:52:46.253161+01:00",
+    "change": "Remove custom green row fill; use normal ViewEdit background and red monster caption.",
+    "scope": "DrawDosNativeMonsterRows only; X/Y controls and Apply/Revert preserved; M2 unchanged; M3 remains reverted.",
+    "status": "Source change complete; Unity validation pending."
   }
 }

@@ -20674,7 +20674,29 @@ private static void HandleGameViewPointerDown(
   private DosMonsterPreviewRoot dosMonsterPreviewData;
   private System.DateTime dosMonsterPreviewWriteTime;
   private readonly HashSet<string> dosMonsterPreviewDiagnostics = new HashSet<string>();
-  private readonly List<string> renderedDosMonsterRows = new List<string>();
+  private sealed class RenderedDosMonsterRow
+  {
+    public string caption, key;
+    public Vector2Int offset;
+  }
+  private readonly List<RenderedDosMonsterRow> renderedDosMonsterRows = new List<RenderedDosMonsterRow>();
+  private readonly Dictionary<string, Vector2Int> dosMonsterOffsetDrafts = new Dictionary<string, Vector2Int>();
+
+  private bool TryGetDosMonsterOffset(string key, out Vector2Int offset)
+  {
+    offset = Vector2Int.zero;
+    if (!TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore data)) return false;
+    bool found = false;
+    foreach (var entry in data.offsets)
+    {
+      if (entry == null || !string.Equals(entry.key, key, System.StringComparison.OrdinalIgnoreCase)) continue;
+      if (found) { ReportDosMonsterPreview("duplicate calibration key " + key); return false; }
+      found = true;
+      offset = new Vector2Int(entry.dx, entry.dy);
+    }
+    if (dosMonsterOffsetDrafts.TryGetValue(key, out Vector2Int draft)) offset = draft;
+    return true;
+  }
   private string dosMonsterPreviewStatus = "M2: refresh preview";
 
   private void ReportDosMonsterPreview(string message)
@@ -20823,8 +20845,10 @@ private static void HandleGameViewPointerDown(
       int width = depth == 1 ? sprite.width : (sprite.width * data.mediumScale + (data.mediumScale >> 1)) >> 5;
       int height = depth == 1 ? sprite.height : (sprite.height * data.mediumScale + (data.mediumScale >> 1)) >> 5;
       if (width <= 0 || height <= 0) { ReportDosMonsterPreview("invalid scaled dimensions"); continue; }
-      int left = anchor.x - ((width + 1) >> 1);
-      int top = anchor.y - height + 1;
+      string offsetKey = "MonsterProjection:" + item.type + ":F" + depth;
+      if (!TryGetDosMonsterOffset(offsetKey, out Vector2Int offset)) continue;
+      int left = anchor.x - ((width + 1) >> 1) + offset.x;
+      int top = anchor.y - height + 1 + offset.y;
       const int dungeonScreenTop = 33;
       bool drawn = false;
       int stepX = DosSixBitStep(sprite.width, width), stepY = DosSixBitStep(sprite.height, height);
@@ -20850,10 +20874,11 @@ private static void HandleGameViewPointerDown(
       }
       if (drawn)
       {
-        dosMonsterPreviewStatus = depth == 1 ? "M2: native F1 pixels drawn" : "M2: F2 geometry test; DOS distance palette pending";
-        renderedDosMonsterRows.Add(item.name + (item.attacking ? " A" : " F") + depth + " "
-            + item.x + "," + item.y + " " + facing + "   X " + left + " / Y " + (top + dungeonScreenTop)
-            + "   " + width + "x" + height);
+        renderedDosMonsterRows.Add(new RenderedDosMonsterRow {
+          caption = item.name + (item.attacking ? " A" : " F") + depth + " "
+              + item.x + "," + item.y + " " + facing,
+          key = offsetKey, offset = offset
+        });
       }
       else ReportDosMonsterPreview("no opaque monster pixels reached viewport");
       }
@@ -20862,9 +20887,71 @@ private static void HandleGameViewPointerDown(
 
   private void DrawDosNativeMonsterRows()
   {
-    EditorGUILayout.LabelField(dosMonsterPreviewStatus, EditorStyles.wordWrappedMiniLabel);
-    foreach (string row in renderedDosMonsterRows)
-      EditorGUILayout.LabelField(row, EditorStyles.miniLabel);
+    if (championSheetVisible || editModePreviewTexture == null
+        || renderedDosLevel != previewDungeonLevel || renderedDosX != previewX
+        || renderedDosY != previewY || renderedDosFacing != previewFacing) return;
+    if (renderedDosMonsterRows.Count == 0)
+    {
+      // Keep failure diagnostics, not ordinary empty-view status.
+      if (!string.IsNullOrEmpty(dosMonsterPreviewStatus)
+          && dosMonsterPreviewStatus != "M2: no centered F1/F2 monster visible")
+        EditorGUILayout.LabelField(dosMonsterPreviewStatus, EditorStyles.wordWrappedMiniLabel);
+      return;
+    }
+    bool refresh = false;
+    string changedKey = null;
+    Vector2Int previousDraft = default(Vector2Int);
+    bool hadPreviousDraft = false;
+    var seen = new HashSet<string>();
+    foreach (var row in renderedDosMonsterRows.ToArray())
+    {
+      if (!seen.Add(row.key)) continue;
+      bool dirty = dosMonsterOffsetDrafts.ContainsKey(row.key);
+      Vector2Int current = row.offset;
+      EditorGUILayout.BeginHorizontal();
+      var style = new GUIStyle(EditorStyles.boldLabel);
+      style.normal.textColor = Color.red;
+      GUILayout.Label(row.caption, style, GUILayout.Width(style.CalcSize(new GUIContent(row.caption)).x + 3f));
+      int dx = current.x, dy = current.y;
+      DrawIntStepperInline("X", ref dx, 1, dirty, true, 19f, 34f);
+      DrawIntStepperInline("Y", ref dy, 1, dirty, true, 19f, 34f);
+      bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+      bool revert = GUILayout.Button("Revert", GUILayout.Width(52f));
+      NoteContentRight();
+      EditorGUILayout.EndHorizontal();
+      var next = new Vector2Int(Mathf.Clamp(dx, -PreviewWidth, PreviewWidth),
+          Mathf.Clamp(dy, -PreviewHeight, PreviewHeight));
+      if (revert)
+      {
+        dosMonsterOffsetDrafts.Remove(row.key);
+        refresh = true;
+      }
+      else if (next != current)
+      {
+        changedKey = row.key;
+        previousDraft = current;
+        hadPreviousDraft = dirty;
+        dosMonsterOffsetDrafts[row.key] = next;
+        refresh = true;
+      }
+      else if (apply && SaveStrictDosOffset(row.key, next))
+      {
+        dosMonsterOffsetDrafts.Remove(row.key);
+        refresh = true;
+      }
+    }
+    if (!refresh) return;
+    previewPositionChangedThisFrame = true;
+    RefreshEditModePreview();
+    if (changedKey != null && !renderedDosMonsterRows.Exists(row => row.key == changedKey))
+    {
+      if (hadPreviousDraft) dosMonsterOffsetDrafts[changedKey] = previousDraft;
+      else dosMonsterOffsetDrafts.Remove(changedKey);
+      LogMissingArtworkCyan("ViewEdit: offset rejected because the monster would no longer draw: " + changedKey);
+      RefreshEditModePreview();
+    }
+    RepaintGameViews();
+    Repaint();
   }
 
   private bool TryGetStrictDosGeometry(out DosOrnamentGeometryResolver resolver)
