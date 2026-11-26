@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "coordinateSystem": "Top-left of 224x136 dungeon viewport",
-  "status": "D4 closed F1 preview only; other depths and sets not registered until verified",
+  "status": "D5 closed Portcullis F1 and F2 registered; F1 geometry approved, F2 DOS placement verified and Unity test pending; other depths and sets unregistered.",
   "views": [
     {
       "graphicSet": 0,
@@ -12,6 +12,16 @@
       "height": 88,
       "path": "Assets/Art/Doors/Door Portcullis_F1_96x88.png",
       "caption": "Door Portcullis F1"
+    },
+    {
+      "graphicSet": 0,
+      "depth": 2,
+      "x": 80,
+      "y": 24,
+      "width": 64,
+      "height": 61,
+      "path": "Assets/Art/Doors/Door Portcullis_F2_64x61.png",
+      "caption": "Door Portcullis F2"
     }
   ]
 }

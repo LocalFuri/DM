@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-26: All nine blue puddle perspectives approved by user. Door assets moved and frame names standardized. Stage D1 regular door frame patch prepared; Unity compile and visual verification pending at Level 0 (6,9) West.",
+  "checkpoint": "2026-11-26: All nine puddle views and six centered door frame components approved. D4 compiled and F1 Portcullis geometry approved; D5 F2 registry prepared from DOS screenshot, Unity verification pending.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -7986,7 +7986,7 @@
   },
   "regular_door_panels_D4_20261126": {
     "timestamp": "2026-11-26T22:00:19+01:00",
-    "status": "Implementation delivered; Unity compile and visual validation pending.",
+    "status": "Unity runtime successful; F1 geometry approved by DOS comparison. Bottom two rows differ by 20 opaque pixels; clipping/order cause unverified.",
     "referencePose": {
       "level": 0,
       "x": 6,
@@ -8032,5 +8032,58 @@
     ],
     "limitations": "Initial state only; no animation, collision, button logic or other depths/types. Post-feature F1 panel composition is preliminary; correct per-depth and per-subtile ordering pending. No bottom-edge crop assumed. No C# compiler available. No Cursor used.",
     "next": "Compile and compare closed F1 at 6,9 West; test existing frames and Black Door; then verify F2/F3 and draw order."
+  },
+  "regular_door_panels_D5_20261126": {
+    "timestamp": "2026-11-26T22:16:55+01:00",
+    "referencePose": {
+      "level": 0,
+      "x": 7,
+      "y": 9,
+      "facing": "West",
+      "doorTile": [
+        5,
+        9
+      ]
+    },
+    "registry": {
+      "schemaVersion": 1,
+      "coordinateSystem": "Top-left of 224x136 dungeon viewport",
+      "status": "D5 closed Portcullis F1 and F2 registered; F1 geometry approved, F2 DOS placement verified and Unity test pending; other depths and sets unregistered.",
+      "views": [
+        {
+          "graphicSet": 0,
+          "depth": 1,
+          "x": 64,
+          "y": 16,
+          "width": 96,
+          "height": 88,
+          "path": "Assets/Art/Doors/Door Portcullis_F1_96x88.png",
+          "caption": "Door Portcullis F1"
+        },
+        {
+          "graphicSet": 0,
+          "depth": 2,
+          "x": 80,
+          "y": 24,
+          "width": 64,
+          "height": 61,
+          "path": "Assets/Art/Doors/Door Portcullis_F2_64x61.png",
+          "caption": "Door Portcullis F2"
+        }
+      ]
+    },
+    "evidence": {
+      "screenshot": "image(20261126-211625).png",
+      "opaquePixels": 1980,
+      "matchingPixels": 1962,
+      "differencesByNativeRow": {
+        "59": 15,
+        "60": 3
+      },
+      "method": "Exhaustive search of all valid viewport placements; unique best match (80,24)."
+    },
+    "status": "DOS F2 geometry verified; Unity verification pending. Registry only, no source or PNG changes.",
+    "next": "Compare F2 in Unity, then obtain closed F3 DOS screenshot at Level 0 (8,9) West. Investigate generic bottom edge clipping/draw order later.",
+    "installationNote": "DungeonMap.cs belongs only in C:\\Unity\\DM\\Assets\\Scripts\\Dungeon\\DungeonMap.cs; preserve runtime meta. Registry and Progression go to Assets/Editor."
   }
 }
