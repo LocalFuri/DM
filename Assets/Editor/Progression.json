@@ -8085,5 +8085,37 @@
     "status": "DOS F2 geometry verified; Unity verification pending. Registry only, no source or PNG changes.",
     "next": "Compare F2 in Unity, then obtain closed F3 DOS screenshot at Level 0 (8,9) West. Investigate generic bottom edge clipping/draw order later.",
     "installationNote": "DungeonMap.cs belongs only in C:\\Unity\\DM\\Assets\\Scripts\\Dungeon\\DungeonMap.cs; preserve runtime meta. Registry and Progression go to Assets/Editor."
+  },
+  "regular_door_panels_D6_approval_20261126": {
+    "status": "F1/F2/F3 closed Portcullis geometry approved by DOS/Unity visual comparison; F1/F2 bottom-edge differences unresolved.",
+    "geometry": [
+      [
+        64,
+        16,
+        96,
+        88
+      ],
+      [
+        80,
+        24,
+        64,
+        61
+      ],
+      [
+        90,
+        30,
+        44,
+        38
+      ]
+    ]
+  },
+  "door_sensor_D7A_20261126": {
+    "timestamp": "2026-11-26T22:54:05.053484+01:00",
+    "status": "Prepared; Unity compile and functional test pending",
+    "scope": "Original type 3 value 1 non-local non-reverting repeatable effect 0 floor sensor targeting an original door; immediate open only. No animation, collision, delayed events or other sensor modes. State held in loaded map instance; reload resets.",
+    "reference": "Level 0 (7,9) West step to (6,9), sensor targets (5,9).",
+    "runtimePath": "C:\\Unity\\DM\\Assets\\Scripts\\Dungeon\\DungeonMap.cs",
+    "editorPath": "C:\\Unity\\DM\\Assets\\Editor\\ViewportLayoutEditor.cs",
+    "next": "Test movement and door disappears; then research original animation timing and clipping."
   }
 }

@@ -6902,7 +6902,7 @@ private static void HandleGameViewPointerDown(
     PlayEditorPreviewClip(adjusted);
   }
 
-  private void PlayLevel0SwitchSound()
+  private void PlayPressureSwitchSound()
   {
     DungeonAudioSettings settings = GetDungeonAudioSettings();
     if (settings == null)
@@ -15796,14 +15796,13 @@ private static void HandleGameViewPointerDown(
     if (previewMiniMap != null)
       previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
 
+    // Trigger original party-entry sensors only on a real navigation step.
+    if (positionChanged && previewMiniMap != null
+        && previewMiniMap.ActivatePartyEntrySensors(previewX, previewY))
+      PlayPressureSwitchSound();
+
     if (positionChanged)
       TryPreviewStairsTransition();
-
-    // Play the pressure-switch sound only when movement enters the tile.
-    // Turning, refreshing the preview and selecting the tile in the minimap
-    // do not invoke NavigatePreviewPoseOnly with a changed tile.
-    if (positionChanged && previewDungeonLevel == 0 && previewX == 6 && previewY == 9)
-      PlayLevel0SwitchSound();
 
     // Initialize every entered pose through the normal authoritative wall/door renderer.
     ApplyCurrentPoseVisibilityToLayout();
@@ -20664,7 +20663,7 @@ private static void HandleGameViewPointerDown(
 
 
   // D4: closed regular door panels. Native geometry is registry-driven.
-  // Initial map state only; no gameplay-state or collision change in this stage.
+  // D7A: mutable map state; closed panel only, animation and collision pending.
   private const string DosDoorPanelPreviewDataPath = "Assets/Editor/DosDoorPanelPreviewData.json";
   [System.Serializable] private sealed class DosDoorPanelRoot
   { public int schemaVersion; public DosDoorPanelView[] views; }
@@ -20679,8 +20678,8 @@ private static void HandleGameViewPointerDown(
       if (!TryGetRegularFrontDoorCell(depth, out Viewport17Cell cell)) continue;
       if (!previewMiniMap.TryGetDoorData(cell.MapX, cell.MapY, out DungeonMap.DoorData door))
       { ReportDoorArtworkProblem("missing original door metadata at " + cell.MapX + "," + cell.MapY); continue; }
-      if (door.InitialState == 0) continue;
-      if (door.InitialState != 4 || door.OrnamentOrdinal != 0)
+      if (door.CurrentState == 0) continue;
+      if (door.CurrentState != 4 || door.OrnamentOrdinal != 0)
       { ReportDoorArtworkProblem("door state/ornament not registered for D4 preview"); continue; }
       DosDoorPanelView view = null;
       try

@@ -28,6 +28,7 @@ namespace DM.Dungeon
       public int Type { get; internal set; }
       public int GraphicSet { get; internal set; }
       public int InitialState { get; internal set; }
+      public int CurrentState { get; internal set; }
       public bool OpensVertically { get; internal set; }
       public bool HasButton { get; internal set; }
       public int OrnamentOrdinal { get; internal set; }
@@ -55,6 +56,26 @@ namespace DM.Dungeon
     [Serializable] private sealed class DoorExportThing
     {
       public int Type, Vertical, Button, OrnamentOrdinal, MeleeDestructible, MagicDestructible;
+      public int Type_Data, LocalEffect, Value, Audible, RevertEffect, Effect, OnceOnly, TargetMapX, TargetMapY, TargetCell;
+    }
+
+    // D7A: limited original party-entry sensor -> door open effect.
+    // Other sensor modes, release effects and delayed events are not implemented.
+    private readonly Dictionary<Vector2Int, List<DoorExportThing>> _partyEntrySensors =
+        new Dictionary<Vector2Int, List<DoorExportThing>>();
+
+    public bool ActivatePartyEntrySensors(int x, int y)
+    {
+      bool audible = false;
+      if (!_partyEntrySensors.TryGetValue(new Vector2Int(x, y), out var sensors)) return false;
+      foreach (var sensor in sensors)
+      {
+        if (!TryGetDoorData(sensor.TargetMapX, sensor.TargetMapY, out var door)) continue;
+        if (door.CurrentState >= 1 && door.CurrentState <= 4)
+          door.CurrentState = 0;
+        audible |= sensor.Audible != 0;
+      }
+      return audible;
     }
 
     private void LoadOriginalDoorData(string json)
@@ -77,12 +98,27 @@ namespace DM.Dungeon
           Type = thing.Type,
           GraphicSet = thing.Type == 0 ? root.map_info.DoorSet0 : root.map_info.DoorSet1,
           InitialState = tile.Raw & 7,
+          CurrentState = tile.Raw & 7,
           OpensVertically = thing.Vertical != 0,
           HasButton = thing.Button != 0,
           OrnamentOrdinal = thing.OrnamentOrdinal,
           MeleeDestructible = thing.MeleeDestructible != 0,
           MagicDestructible = thing.MagicDestructible != 0
         });
+      }
+      foreach (var record in root.located_things)
+      {
+        if (record == null || record.type != "Sensor" || record.thing == null || !IsInside(record.x, record.y)) continue;
+        var sensor = record.thing;
+        // Only the verified non-reverting party-entry open effect is supported here.
+        if (GetTile(record.x, record.y).SourceType != DungeonSourceTileType.Floor
+            || sensor.Type_Data != 3 || sensor.Value != 1 || sensor.LocalEffect != 0
+            || sensor.RevertEffect != 0 || sensor.Effect != 0 || sensor.OnceOnly != 0
+            || !TryGetDoorData(sensor.TargetMapX, sensor.TargetMapY, out _)) continue;
+        var key = new Vector2Int(record.x, record.y);
+        if (!_partyEntrySensors.TryGetValue(key, out var list))
+          _partyEntrySensors.Add(key, list = new List<DoorExportThing>());
+        list.Add(sensor);
       }
     }
 
@@ -200,8 +236,10 @@ namespace DM.Dungeon
       if (!CanEnter(nextX, nextY))
         return false;
 
+      bool moved = nextX != PlayerX || nextY != PlayerY;
       PlayerX = nextX;
       PlayerY = nextY;
+      if (moved) ActivatePartyEntrySensors(nextX, nextY);
       return true;
     }
 
