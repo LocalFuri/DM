@@ -188,7 +188,7 @@ public class DungeonFeatureEditor : EditorWindow
   private const int MaxDungeonLevel = 13;
   private const string MossF1AssetName = "Moss_F1_56x19";
   private const string PuddleF1AssetPath =
-      "Assets/Art/Ornaments/Puddle_F1.png";
+      "Assets/Art/Ornaments/Flooritem Puddle_F1.png";
 
   // Hall of Champions uses three random floor ornaments. The level-local
   // FloorOrnate table is Moss, Puddle, Floor Crack for ordinals 1..3.

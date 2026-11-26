@@ -20,7 +20,7 @@
     "limitation": "This protocol applies once Progression.json is supplied/read; a rule inside the file alone cannot trigger loading an absent file.",
     "recommended_new_session_message": "Dungeon Master — read the complete Progression.json, apply all permanent rules, and continue from the latest checkpoint."
   },
-  "date": "2026-11-25",
+  "date": "2026-11-26",
   "todo_manacles_dos_f1_s2_20261109": {
     "category": "To do List",
     "priority": 0,
@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "End of 2026-11-25: Blue puddle S1:Right unresolved, P6 rejected. Resume Level 0 (5,9) South, puddle tile (4,10). Preserve approved V17, M4 monsters, pressure pads and champion mirrors.",
+  "checkpoint": "2026-11-26: Dungeon Features puddle icon approved by user. Corrected native graphic 437 PNG installed. P6 registry reverted for both depth-1 lateral projections; first-person DOS comparison pending.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -115,9 +115,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Resume blue puddle investigation at Level 0 (5,9) South, S1:Right tile (4,10); P6 rejected.",
-    "Trace original DOS runtime selection and blitter parameters before modifying Unity.",
-    "Preserve approved renderers and original artwork."
+    "Verify Dungeon Features puddle icon at Level 0 (4,10), including after moving player off tile.",
+    "Verify Unity vs DOS at Level 0 (5,9) South, S1:Right, without changing geometry.",
+    "Evaluate Cursor DOS runtime report; preserve approved rendering."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -7773,7 +7773,7 @@
   },
   "puddle_p6_s1_test_20261125": {
     "timestamp": "2026-11-25T23:18:12.173632+01:00",
-    "status": "REJECTED by user: all wrong; not an approved mapping. Retain only as experimental state pending investigation.",
+    "status": "REJECTED; superseded by registry restoration on 2026-11-26.",
     "change": "Use original S1 PNG 40x7 for both S1 side projections; restore original S3 PNG; preserve P5 diagnostics, geometry, X/Y offsets, all other slots. No scaling or C# edits.",
     "test": "Level 0 5,9 South; X/Y 0 initially, adjust X to crop right edge, then Y if needed.",
     "note": "Graphic 435 identity inferred by dimensions; experimental artwork mapping, not verified DOS selection."
@@ -7816,5 +7816,27 @@
     ],
     "tool_note": "dmcsb 0.2.1 installed on Windows; extraction not required for next step unless evidence warrants it.",
     "protected": "Approved M4 monster geometry and palettes, V17 D3 correction, pressure pads, champion mirrors; Cursor read-only; no legacy/fallback/hardcoded coordinate fixes."
+  },
+  "dungeon_features_puddle_icon_path_20261126": {
+    "timestamp": "2026-11-26T19:54:00+01:00",
+    "status": "User confirmed puddle icons visible in Dungeon Features on 2026-11-26; approved.",
+    "file": "Assets/Editor/DungeonFeatureEditor.cs",
+    "oldPath": "Assets/Art/Ornaments/Puddle_F1.png",
+    "newPath": "Assets/Art/Ornaments/Flooritem Puddle_F1.png",
+    "change": "Only existing icon asset path changed. Existing placement, search, map rendering and first-person code unchanged.",
+    "test": "Level 0 search Puddle; move player off (4,10) and inspect tile. First-person comparison at (5,9) South remains pending.",
+    "research": "User extraction console reports graphic 437 9x7, palette histogram 6:8, 10:27, 14:28. User confirmed replacement PNG installed; Cursor DOS runtime research pending."
+  },
+  "puddle_native_437_registry_restore_20261126": {
+    "timestamp": "2026-11-26T20:24:09+01:00",
+    "status": "Registry patch prepared; Unity diagnostic and DOS visual comparison pending.",
+    "evidence": "User DOS indexed extraction: graphic 437 9x7, index 6:8, 10:27, 14:28. Corrected S3 PNG installed. User ViewEdit screenshot at Level 0 (5,9) South showed P6 graphic 435, destination 184,103 40x7, mirror true, opaque 64, blue 49, offsets 0,0.",
+    "change": "Restore exact pre-P6 registry entries from puddle_native_side_20261125-220551 for both depth-1 lateral projections. Only graphic, width and path change. Preserve anchor, zone, mode, clip, mirror and all other slots. No C# or PNG changes.",
+    "expected": "S1:Right graphic 437; destination 215,103 9x7, mirror true, offsets 0,0; 36 opaque pixels including 28 blue.",
+    "next": "Refresh/reopen ViewEdit after registry replacement; expand DOS floor projection diagnostic at Level 0 (5,9) South. Compare DOS screenshot. Left projection also requires visual verification. Runtime DOS table research still pending.",
+    "files": [
+      "DosFloorOrnamentPreviewData.json",
+      "Progression.json"
+    ]
   }
 }
