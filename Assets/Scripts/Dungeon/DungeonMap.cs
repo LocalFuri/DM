@@ -104,7 +104,7 @@ namespace DM.Dungeon
 
     // Advance one visible state per update; do not skip intermediate frames.
     // The host supplies elapsed time and the preview tick duration.
-    public bool AdvanceDoorOpeningAnimations(double elapsedSeconds, double secondsPerStep)
+    public bool AdvanceDoorOpeningAnimations(double elapsedSeconds, double secondsPerStep, Action onDoorStep = null)
     {
       if (elapsedSeconds <= 0 || secondsPerStep <= 0) return false;
       bool changed = false;
@@ -119,6 +119,7 @@ namespace DM.Dungeon
         door.CurrentState--;
         changed = true;
         if (door.CurrentState == 0) door.Opening = false;
+        onDoorStep?.Invoke();
       }
       return changed;
     }

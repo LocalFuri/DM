@@ -8142,10 +8142,18 @@
   },
   "door_animation_D7C_registry_repair_20261126": {
     "timestamp": "2026-11-26T23:16:26.385041+01:00",
-    "status": "Pending Unity verification",
+    "status": "User confirmed opening animation works after registry repair.",
     "observed": "User reports door opens instantly after reset and pressure plate entry.",
     "finding": "D7C Editor ZIP omitted D7B panel registry; missing verticalLiftPerStep causes intermediate states to be skipped by renderer. Installed registry not yet inspected.",
     "action": "Reissue D7B registry unchanged; no C# changes. Verify animation before any timing changes.",
     "destination": "C:\\Unity\\DM\\Assets\\Editor\\"
+  },
+  "door_sound_D7D_20261126": {
+    "timestamp": "2026-11-26T23:23:33.153590+01:00",
+    "status": "Prepared; Unity compile and audio comparison pending",
+    "implementation": "Optional runtime state-transition callback, invoked once per actual opening step; ViewEdit requests Assets/Audio/Door_Rattle.wav using existing audio preview helper. No timer changes, no playback on reset, no artwork changes.",
+    "timing": "Existing 1/6 second preview step unchanged; native WAV 2267 samples at 6000 Hz (377.83 ms).",
+    "limitations": "Editor audio preview may restart or overlap repeated requests; DOS sound priority and exact timing not verified. No runtime audio host integration.",
+    "reference": "Level 0 (7,9) West, reset doors, step to (6,9)."
   }
 }

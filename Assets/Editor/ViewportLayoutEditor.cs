@@ -20684,13 +20684,33 @@ private static void HandleGameViewPointerDown(
   private const double DoorOpeningPreviewStepSeconds = 1.0 / 6.0;
   private double lastDoorOpeningPreviewTime;
 
+  // D7D: request the native rattle at each actual door-state transition.
+  // Use the existing editor audio playback path; no separate sound timer.
+  private const string DoorRattlePreviewPath = "Assets/Audio/Door_Rattle.wav";
+  private bool doorRattleMissingReported;
+  private void PlayDoorRattlePreview()
+  {
+    AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(DoorRattlePreviewPath);
+    if (clip == null)
+    {
+      if (!doorRattleMissingReported)
+      {
+        doorRattleMissingReported = true;
+        LogMissingArtworkCyan("DOS DOOR SOUND: missing " + DoorRattlePreviewPath + " (no fallback)");
+      }
+      return;
+    }
+    doorRattleMissingReported = false;
+    PlayEditorPreviewClip(clip);
+  }
+
   private void UpdateDoorOpeningPreview()
   {
     double now = EditorApplication.timeSinceStartup;
     double elapsed = now - lastDoorOpeningPreviewTime;
     lastDoorOpeningPreviewTime = now;
     if (Application.isPlaying || previewMiniMap == null) return;
-    if (!previewMiniMap.AdvanceDoorOpeningAnimations(elapsed, DoorOpeningPreviewStepSeconds)) return;
+    if (!previewMiniMap.AdvanceDoorOpeningAnimations(elapsed, DoorOpeningPreviewStepSeconds, PlayDoorRattlePreview)) return;
     RefreshEditModePreview();
     Repaint();
   }
