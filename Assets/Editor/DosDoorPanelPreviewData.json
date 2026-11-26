@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "coordinateSystem": "Top-left of 224x136 dungeon viewport",
+  "status": "D4 closed F1 preview only; other depths and sets not registered until verified",
+  "views": [
+    {
+      "graphicSet": 0,
+      "depth": 1,
+      "x": 64,
+      "y": 16,
+      "width": 96,
+      "height": 88,
+      "path": "Assets/Art/Doors/Door Portcullis_F1_96x88.png",
+      "caption": "Door Portcullis F1"
+    }
+  ]
+}

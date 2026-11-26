@@ -20657,9 +20657,79 @@ private static void HandleGameViewPointerDown(
       BlitWallInscriptionsIntoPreview(pixels);
     BlitFloorItemsIntoPreview(pixels);
     BlitDosNativeMonstersIntoPreview(pixels);
+    // D4 F1 reference composition: panel over background features. Full depth-aware object ordering remains pending.
+    BlitDosClosedRegularDoorPanels(pixels);
     BlitSuspendedThrownItemsIntoPreview(pixels);
   }
 
+
+  // D4: closed regular door panels. Native geometry is registry-driven.
+  // Initial map state only; no gameplay-state or collision change in this stage.
+  private const string DosDoorPanelPreviewDataPath = "Assets/Editor/DosDoorPanelPreviewData.json";
+  [System.Serializable] private sealed class DosDoorPanelRoot
+  { public int schemaVersion; public DosDoorPanelView[] views; }
+  [System.Serializable] private sealed class DosDoorPanelView
+  { public int graphicSet, depth, x, y, width, height; public string path, caption; }
+
+  private void BlitDosClosedRegularDoorPanels(Color32[] pixels)
+  {
+    if (pixels == null || previewMiniMap == null) return;
+    for (int depth = 3; depth >= 1; depth--)
+    {
+      if (!TryGetRegularFrontDoorCell(depth, out Viewport17Cell cell)) continue;
+      if (!previewMiniMap.TryGetDoorData(cell.MapX, cell.MapY, out DungeonMap.DoorData door))
+      { ReportDoorArtworkProblem("missing original door metadata at " + cell.MapX + "," + cell.MapY); continue; }
+      if (door.InitialState == 0) continue;
+      if (door.InitialState != 4 || door.OrnamentOrdinal != 0)
+      { ReportDoorArtworkProblem("door state/ornament not registered for D4 preview"); continue; }
+      DosDoorPanelView view = null;
+      try
+      {
+        var root = JsonUtility.FromJson<DosDoorPanelRoot>(File.ReadAllText(DosDoorPanelPreviewDataPath));
+        if (root == null || root.schemaVersion != 1 || root.views == null)
+          throw new System.IO.InvalidDataException("invalid door panel registry");
+        foreach (var entry in root.views)
+        {
+          if (entry == null || entry.graphicSet != door.GraphicSet || entry.depth != depth) continue;
+          if (view != null) throw new System.IO.InvalidDataException("duplicate door panel view");
+          view = entry;
+        }
+        if (view == null)
+        { ReportDoorArtworkProblem("no verified panel geometry for set " + door.GraphicSet + " F" + depth); continue; }
+        if (view.width <= 0 || view.height <= 0 || view.x < 0 || view.y < 0
+            || view.x + view.width > DungeonViewportWidth || view.y + view.height > DungeonViewportHeight
+            || string.IsNullOrEmpty(view.path))
+          throw new System.IO.InvalidDataException("invalid panel geometry");
+      }
+      catch (System.Exception ex)
+      { ReportDoorArtworkProblem(DosDoorPanelPreviewDataPath + ": " + ex.Message); continue; }
+      Texture2D source = LoadDoorFrameTexture(view.path, view.width, view.height);
+      if (source == null || !TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration)) continue;
+      string key = "DoorPanelProjection:Set" + door.GraphicSet + ":F" + depth;
+      string feature = MakePreviewFeatureKey("DoorPanel:" + previewDungeonLevel + ":F" + depth, cell.MapX, cell.MapY, null);
+      if (!TryGetDosDoorFrameOffset(calibration, key, out Vector2Int offset)) continue;
+      var reference = new Vector2Int(view.x, view.y);
+      renderedDosDoorFrameRows.Add(new DosDoorFramePreviewRow
+      { caption = view.caption, featureKey = feature, offsetKey = key, reference = reference, offset = offset });
+      if (!IsPreviewFeatureEnabled(feature)) continue;
+      Vector2Int dest = reference + offset;
+      Color32[] art = source.GetPixels32();
+      for (int y = 0; y < source.height; y++)
+      {
+        int dy = dest.y + y;
+        if (dy < 0 || dy >= DungeonViewportHeight) continue;
+        for (int x = 0; x < source.width; x++)
+        {
+          int dx = dest.x + x;
+          if (dx < 0 || dx >= DungeonViewportWidth) continue;
+          Color32 pixel = art[(source.height - 1 - y) * source.width + x];
+          if (pixel.a == 0) continue;
+          pixel.a = 255;
+          pixels[(PreviewHeight - 1 - 33 - dy) * PreviewWidth + dx] = pixel;
+        }
+      }
+    }
+  }
 
   // Regular door-frame stage D1. Native source and relative geometry are
   // data-driven; do not activate the existing special Black Door panel path.

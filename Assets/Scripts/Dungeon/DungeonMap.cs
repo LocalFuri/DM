@@ -21,6 +21,70 @@ namespace DM.Dungeon
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private readonly DungeonTile[,] _tiles;
+    private readonly Dictionary<Vector2Int, DoorData> _doors = new Dictionary<Vector2Int, DoorData>();
+
+    public sealed class DoorData
+    {
+      public int Type { get; internal set; }
+      public int GraphicSet { get; internal set; }
+      public int InitialState { get; internal set; }
+      public bool OpensVertically { get; internal set; }
+      public bool HasButton { get; internal set; }
+      public int OrnamentOrdinal { get; internal set; }
+      public bool MeleeDestructible { get; internal set; }
+      public bool MagicDestructible { get; internal set; }
+    }
+
+    public bool TryGetDoorData(int x, int y, out DoorData door)
+    {
+      return _doors.TryGetValue(new Vector2Int(x, y), out door);
+    }
+
+    [Serializable] private sealed class DoorExportRoot
+    {
+      public DoorExportMapInfo map_info;
+      public DoorExportLocation[] located_things;
+    }
+    [Serializable] private sealed class DoorExportMapInfo { public int DoorSet0, DoorSet1; }
+    [Serializable] private sealed class DoorExportLocation
+    {
+      public int x, y;
+      public string type;
+      public DoorExportThing thing;
+    }
+    [Serializable] private sealed class DoorExportThing
+    {
+      public int Type, Vertical, Button, OrnamentOrdinal, MeleeDestructible, MagicDestructible;
+    }
+
+    private void LoadOriginalDoorData(string json)
+    {
+      var root = JsonUtility.FromJson<DoorExportRoot>(json);
+      if (root == null || root.map_info == null || root.located_things == null) return;
+      foreach (var record in root.located_things)
+      {
+        if (record == null || record.type != "Door") continue;
+        if (record.thing == null || !IsInside(record.x, record.y))
+          throw new InvalidOperationException("Invalid original door record.");
+        var tile = GetTile(record.x, record.y);
+        var thing = record.thing;
+        if (tile == null || tile.SourceType != DungeonSourceTileType.Door || thing.Type < 0 || thing.Type > 1)
+          throw new InvalidOperationException("Invalid original door tile/type at " + record.x + "," + record.y);
+        var key = new Vector2Int(record.x, record.y);
+        if (_doors.ContainsKey(key)) throw new InvalidOperationException("Duplicate original door record at " + key);
+        _doors.Add(key, new DoorData
+        {
+          Type = thing.Type,
+          GraphicSet = thing.Type == 0 ? root.map_info.DoorSet0 : root.map_info.DoorSet1,
+          InitialState = tile.Raw & 7,
+          OpensVertically = thing.Vertical != 0,
+          HasButton = thing.Button != 0,
+          OrnamentOrdinal = thing.OrnamentOrdinal,
+          MeleeDestructible = thing.MeleeDestructible != 0,
+          MagicDestructible = thing.MagicDestructible != 0
+        });
+      }
+    }
 
     public string Name { get; private set; }
 
@@ -101,6 +165,7 @@ namespace DM.Dungeon
       );
 
       map.LoadTiles(json);
+      map.LoadOriginalDoorData(json);
       map.ApplyPlayerStartFromHeader(header);
 
       return map;
@@ -307,6 +372,8 @@ namespace DM.Dungeon
           };
         }
       }
+
+      map.LoadOriginalDoorData(json);
 
       // Level 0 retains the verified Hall of Champions party entry point.
       // The original DUNGEON.DAT tile grid has no playerStart object.
