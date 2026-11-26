@@ -20967,61 +20967,6 @@ private static void HandleGameViewPointerDown(
       }
     }
   }
-  private bool showDosFloorProjectionDiagnostic;
-  private void DrawDosFloorProjectionDiagnostic()
-  {
-    showDosFloorProjectionDiagnostic = EditorGUILayout.Foldout(showDosFloorProjectionDiagnostic,
-        "DOS floor projection diagnostic", true);
-    if (!showDosFloorProjectionDiagnostic || previewMiniMap == null) return;
-    EditorGUILayout.LabelField("Level " + previewDungeonLevel + "  " + previewX + "," + previewY
-        + " " + previewFacing + " | registered puddles: " + previewPuddleFloors.Count,
-        EditorStyles.wordWrappedMiniLabel);
-    DosFloorPreviewRoot data;
-    try { data = JsonUtility.FromJson<DosFloorPreviewRoot>(File.ReadAllText(DosFloorPreviewDataPath)); }
-    catch (System.Exception ex) { EditorGUILayout.LabelField(ex.Message, EditorStyles.wordWrappedMiniLabel); return; }
-    if (data == null || data.schemaVersion != 1 || data.families == null)
-    { EditorGUILayout.LabelField("Invalid floor registry"); return; }
-    var family = System.Array.Find(data.families, f => f != null && f.name == "Puddle");
-    if (family == null || family.views == null) { EditorGUILayout.LabelField("Missing Puddle registry"); return; }
-    DungeonMap.GetForwardOffset(previewFacing, out int fx, out int fy);
-    DungeonMap.GetRightOffset(previewFacing, out int rx, out int ry);
-    bool calibrationOk = TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration);
-    EditorGUILayout.LabelField("Calibration data: " + (calibrationOk ? "OK" : "INVALID"));
-    for (int depth = 1; depth <= 3; depth++)
-    for (int lane = -1; lane <= 1; lane++)
-    {
-      int x = previewX + fx * depth + rx * lane, y = previewY + fy * depth + ry * lane;
-      string projection = lane == 0 ? "F" + depth : "S" + depth + (lane < 0 ? ":Left" : ":Right");
-      string caption = projection + " " + x + "," + y + ": ";
-      if (!previewPuddleFloors.Contains(PackPreviewTile(x, y)))
-      { EditorGUILayout.LabelField(caption + "NO PLACEMENT", EditorStyles.wordWrappedMiniLabel); continue; }
-      if (!IsFloorOrnamentProjectionVisibleInCurrentPose(previewPuddleFloors, x, y, depth, lane, true))
-      { EditorGUILayout.LabelField(caption + "OCCLUDED", EditorStyles.wordWrappedMiniLabel); continue; }
-      var view = System.Array.Find(family.views, v => v != null && v.depth == depth && v.lane == lane);
-      if (view == null || (view.mode != 0 && view.mode != 6 && view.mode != 8) || view.clip != 4 || view.width <= 0 || view.height <= 0)
-      { EditorGUILayout.LabelField(caption + "INVALID PROJECTION", EditorStyles.wordWrappedMiniLabel); continue; }
-      string key = "FloorOrnamentProjection:Puddle:" + projection;
-      int matches = 0;
-      if (calibrationOk) foreach (var entry in calibration.offsets)
-        if (entry != null && string.Equals(entry.key, key, System.StringComparison.OrdinalIgnoreCase)) matches++;
-      Texture2D sprite = AssetDatabase.LoadAssetAtPath<Texture2D>(view.path);
-      string artStatus = sprite == null ? "MISSING" : !sprite.isReadable ? "NOT READABLE" :
-          sprite.width != view.width || sprite.height != view.height ? "SIZE MISMATCH" : "OK";
-      bool rowExists = renderedDosFloorRows.Exists(r => r.offsetKey == key);
-      EditorGUILayout.LabelField(caption + "placement and visibility OK; graphic " + view.graphic
-          + "; artwork " + artStatus + "; offsets " + matches + "; row " + (rowExists ? "YES" : "NO"),
-          EditorStyles.wordWrappedMiniLabel);
-      EditorGUILayout.LabelField(view.path, EditorStyles.wordWrappedMiniLabel);
-      var trace = dosFloorPixelTrace.Find(t => t.key == key);
-      if (trace != null)
-      {
-        EditorGUILayout.LabelField(trace.description, EditorStyles.wordWrappedMiniLabel);
-        EditorGUILayout.LabelField("Written " + trace.written.Count + "; unchanged before lighting " + trace.retained, EditorStyles.wordWrappedMiniLabel);
-      }
-      else EditorGUILayout.LabelField("No actual blitter trace", EditorStyles.wordWrappedMiniLabel);
-    }
-  }
-
   private void DrawDosNativeFloorOrnamentRows()
   {
     if (championSheetVisible || editModePreviewTexture == null || renderedDosLevel != previewDungeonLevel
@@ -25850,7 +25795,6 @@ private static void HandleGameViewPointerDown(
 
 
     DrawDosNativeFloorOrnamentRows();
-    DrawDosFloorProjectionDiagnostic();
     DrawDosRegularDoorFrameRows();
 
     // Moss is a resolved floor ornament from the same database as puddles.

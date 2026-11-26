@@ -7853,7 +7853,7 @@
   },
   "regular_door_frames_D1_20261126": {
     "timestamp": "2026-11-26T21:14:04+01:00",
-    "status": "Patch prepared; not yet compiled or approved in Unity.",
+    "status": "Installed; user supplied Unity and DOS screenshots at Level 0 (6,9) West; S1 frame geometry visually approved in session, minor pixel differences noted. S2/S3 pending.",
     "referencePose": {
       "level": 0,
       "x": 6,
@@ -7913,5 +7913,37 @@
       "DosDoorFramePreviewData.json",
       "Progression.json"
     ]
+  },
+  "viewedit_remove_floor_diagnostic_20261126": {
+    "timestamp": "2026-11-26T21:22:09+01:00",
+    "change": "Remove the DOS floor projection diagnostic foldout and its UI method from ViewEdit at user request. Keep floor ornament renderer, registry, calibration rows and underlying trace collection unchanged.",
+    "validation": "Source edit checked; Unity compile pending.",
+    "next": "Continue S2 door frame research at Level 0 (7,9) West."
+  },
+  "regular_door_frames_D2_20261126": {
+    "timestamp": "2026-11-26T21:26:29+01:00",
+    "status": "S2 reference geometry measured; registry update ready; Unity verification pending.",
+    "referencePose": {
+      "level": 0,
+      "x": 7,
+      "y": 9,
+      "facing": "West",
+      "doorTile": [
+        5,
+        9
+      ]
+    },
+    "geometry": {
+      "depth": 2,
+      "path": "Assets/Art/Doors/Door_Left_S2_18x65.png",
+      "width": 18,
+      "height": 65,
+      "leftX": 65,
+      "rightX": 141,
+      "topY": 21,
+      "evidence": "DOS screenshot image(20261126-202539).png: all 1144 nonzero-alpha source RGB pixels per side match exactly; right horizontally mirrored. Exhaustive search of all valid viewport placements gives unique perfect match on each side."
+    },
+    "change": "Append depth 2 to existing strict door registry. Preserve S1 and all source code; no fallback, pose-specific correction or new artwork.",
+    "next": "Refresh ViewEdit and compare S2 Unity with DOS. Then measure S3 from DOS at Level 0 (8,9) West if accessible."
   }
 }
