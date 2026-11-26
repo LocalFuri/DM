@@ -1,0 +1,26 @@
+name: Build CSBwin for Windows
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build 64-bit Release executable
+        run: msbuild CSBWin.sln /m /p:Configuration=Release /p:Platform=x64
+
+      - name: Save the compiled game
+        uses: actions/upload-artifact@v4
+        with:
+          name: CSBwin-position-status
+          path: Game/
+          if-no-files-found: error
