@@ -19692,6 +19692,7 @@ private static void HandleGameViewPointerDown(
     renderedDosWallOrnaments.Clear();
     renderedDosMonsterRows.Clear();
     renderedDosFloorRows.Clear();
+    renderedDosDoorFrameRows.Clear();
     dosFloorPixelTrace.Clear();
     dosMonsterPreviewStatus = "M4: dungeon composition has not reached the monster pass";
     renderedDosLevel = previewDungeonLevel;
@@ -19827,6 +19828,7 @@ private static void HandleGameViewPointerDown(
           // stage. Draw the complete far-slot door/frame now and let the
           // ordinary D2/D1 geometry drawn later occlude it naturally.
           BlitDoorF3RightObliqueAtD3Stage(pixels);
+          BlitDosRegularDoorFramesAtDepth(pixels, 3);
         }
 
         if (viewport17WallAuthorityActive
@@ -19860,6 +19862,7 @@ private static void HandleGameViewPointerDown(
                 suppressCenter:
                     suppressViewport17NativeD2CenterForBlackDoorF2);
           }
+          BlitDosRegularDoorFramesAtDepth(pixels, 2);
         }
 
         if (viewport17WallAuthorityActive
@@ -19898,6 +19901,7 @@ private static void HandleGameViewPointerDown(
                 pixels, viewport17Inspection, viewport17FinalWallCommands,
                 blackDoorSidesOnly: true);
           }
+          BlitDosRegularDoorFramesAtDepth(pixels, 1);
         }
 
         if (viewport17WallAuthorityActive
@@ -20656,6 +20660,203 @@ private static void HandleGameViewPointerDown(
     BlitSuspendedThrownItemsIntoPreview(pixels);
   }
 
+
+  // Regular door-frame stage D1. Native source and relative geometry are
+  // data-driven; do not activate the existing special Black Door panel path.
+  private const string DosDoorFramePreviewDataPath = "Assets/Editor/DosDoorFramePreviewData.json";
+  [System.Serializable]
+  private sealed class DosDoorFramePreviewRoot
+  {
+    public int schemaVersion;
+    public DosDoorFramePreviewView[] views;
+  }
+  [System.Serializable]
+  private sealed class DosDoorFramePreviewView
+  {
+    public int depth, leftX, rightX, topY, width, height;
+    public string path;
+  }
+  private sealed class DosDoorFramePreviewRow
+  {
+    public string caption, featureKey, offsetKey;
+    public Vector2Int reference, offset;
+  }
+  private readonly List<DosDoorFramePreviewRow> renderedDosDoorFrameRows =
+      new List<DosDoorFramePreviewRow>();
+  private readonly Dictionary<string, Vector2Int> dosDoorFrameOffsetDrafts =
+      new Dictionary<string, Vector2Int>(System.StringComparer.Ordinal);
+
+  private bool TryGetRegularFrontDoorCell(int depth, out Viewport17Cell cell)
+  {
+    cell = default;
+    if (previewMiniMap == null || depth < 1 || depth > 3
+        || !IsCenterSightLineOpenBefore(depth)) return false;
+    cell = SampleViewport17Cell(0, depth);
+    if (!cell.IsInside || IsHallOfChampionsBlackDoorCell(cell)) return false;
+    DungeonTile tile = previewMiniMap.GetTile(cell.MapX, cell.MapY);
+    if (tile == null || tile.SourceType != DungeonSourceTileType.Door) return false;
+
+    // Original door aspect: bit 3 selects the passage axis. A perpendicular
+    // view is the separate door-side aspect, not two front-facing jambs.
+    bool northSouth = (tile.Raw & 8) != 0;
+    bool facingNorthSouth = previewFacing == DungeonFacing.North
+        || previewFacing == DungeonFacing.South;
+    return northSouth == facingNorthSouth;
+  }
+
+  private bool TryGetDosDoorFrameView(int depth, out DosDoorFramePreviewView view)
+  {
+    view = null;
+    try
+    {
+      var data = JsonUtility.FromJson<DosDoorFramePreviewRoot>(
+          File.ReadAllText(DosDoorFramePreviewDataPath));
+      if (data == null || data.schemaVersion != 1 || data.views == null)
+        throw new System.IO.InvalidDataException("invalid door frame registry");
+      foreach (var candidate in data.views)
+      {
+        if (candidate == null || candidate.depth != depth) continue;
+        if (view != null) throw new System.IO.InvalidDataException("duplicate door depth " + depth);
+        view = candidate;
+      }
+      if (view == null)
+      {
+        // S2/S3 are deliberately not registered until their geometry is verified.
+        ReportDoorArtworkProblem("no verified regular door frame geometry for S" + depth);
+        return false;
+      }
+      if (view.width <= 0 || view.height <= 0 || string.IsNullOrEmpty(view.path)
+          || view.leftX < 0 || view.rightX < 0 || view.topY < 0
+          || view.leftX + view.width > DungeonViewportWidth
+          || view.rightX + view.width > DungeonViewportWidth
+          || view.topY + view.height > DungeonViewportHeight)
+        throw new System.IO.InvalidDataException("invalid door frame geometry for S" + depth);
+      return true;
+    }
+    catch (System.Exception ex)
+    {
+      view = null;
+      ReportDoorArtworkProblem(DosDoorFramePreviewDataPath + ": " + ex.Message);
+      return false;
+    }
+  }
+
+  private bool TryGetDosDoorFrameOffset(OrnamentCalibrationJsonStore calibration,
+      string key, out Vector2Int offset)
+  {
+    offset = Vector2Int.zero;
+    bool found = false;
+    foreach (var entry in calibration.offsets)
+    {
+      if (entry == null || !string.Equals(entry.key, key,
+          System.StringComparison.OrdinalIgnoreCase)) continue;
+      if (found)
+      {
+        ReportDoorArtworkProblem("duplicate calibration key " + key);
+        return false;
+      }
+      found = true;
+      offset = new Vector2Int(entry.dx, entry.dy);
+    }
+    if (dosDoorFrameOffsetDrafts.TryGetValue(key, out Vector2Int draft)) offset = draft;
+    return true;
+  }
+
+  private void BlitDosRegularDoorFramesAtDepth(Color32[] pixels, int depth)
+  {
+    if (pixels == null || !TryGetRegularFrontDoorCell(depth, out Viewport17Cell cell)
+        || !TryGetDosDoorFrameView(depth, out DosDoorFramePreviewView view)) return;
+    Texture2D source = LoadDoorFrameTexture(view.path, view.width, view.height);
+    if (source == null || !TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration)) return;
+    Color32[] art = source.GetPixels32();
+    for (int side = 0; side < 2; side++)
+    {
+      bool mirror = side == 1;
+      string sideName = mirror ? "Right" : "Left";
+      string key = "DoorFrameProjection:S" + depth + ":" + sideName;
+      string feature = MakePreviewFeatureKey("DoorFrame:" + previewDungeonLevel
+          + ":S" + depth + ":" + sideName, cell.MapX, cell.MapY, null);
+      if (!TryGetDosDoorFrameOffset(calibration, key, out Vector2Int offset)) continue;
+      var reference = new Vector2Int(mirror ? view.rightX : view.leftX, view.topY);
+      renderedDosDoorFrameRows.Add(new DosDoorFramePreviewRow
+      {
+        caption = "Door " + sideName + " S" + depth,
+        featureKey = feature, offsetKey = key, reference = reference, offset = offset
+      });
+      if (!IsPreviewFeatureEnabled(feature)) continue;
+      Vector2Int dest = reference + offset;
+      // Native, unscaled 1:1 colour copy, horizontally mirrored for the right.
+      // Original DOS key transparency is binary: nonzero alpha is painted.
+      // The supplied F1 artwork has partially opaque pixels whose RGB values
+      // match the DOS reference exactly, so promote painted pixels to opaque.
+      for (int y = 0; y < source.height; y++)
+      {
+        int dy = dest.y + y;
+        if (dy < 0 || dy >= DungeonViewportHeight) continue;
+        for (int x = 0; x < source.width; x++)
+        {
+          int dx = dest.x + x;
+          if (dx < 0 || dx >= DungeonViewportWidth) continue;
+          int sx = mirror ? source.width - 1 - x : x;
+          Color32 pixel = art[(source.height - 1 - y) * source.width + sx];
+          if (pixel.a == 0) continue;
+          pixel.a = 255;
+          pixels[(PreviewHeight - 1 - 33 - dy) * PreviewWidth + dx] = pixel;
+        }
+      }
+    }
+  }
+
+  private void DrawDosRegularDoorFrameRows()
+  {
+    if (championSheetVisible || editModePreviewTexture == null
+        || renderedDosLevel != previewDungeonLevel || renderedDosX != previewX
+        || renderedDosY != previewY || renderedDosFacing != previewFacing) return;
+    bool refresh = false;
+    foreach (var row in renderedDosDoorFrameRows.ToArray())
+    {
+      EditorGUILayout.BeginHorizontal();
+      var style = new GUIStyle(EditorStyles.boldLabel);
+      style.normal.textColor = Color.magenta;
+      GUILayout.Label(row.caption, style,
+          GUILayout.Width(style.CalcSize(new GUIContent(row.caption)).x + 3f));
+      bool enabled = IsPreviewFeatureEnabled(row.featureKey);
+      bool nextEnabled = DrawCompactMouseOnlyToggle("Set", enabled, false);
+      bool dirty = dosDoorFrameOffsetDrafts.ContainsKey(row.offsetKey);
+      Vector2Int current = row.reference + row.offset;
+      int x = current.x, y = current.y;
+      DrawIntStepperInline("X", ref x, 1, dirty, true, 19f, 34f);
+      DrawIntStepperInline("Y", ref y, 1, dirty, true, 19f, 34f);
+      bool apply = GUILayout.Button("Apply", GUILayout.Width(58f));
+      NoteContentRight();
+      EditorGUILayout.EndHorizontal();
+      if (enabled != nextEnabled)
+      {
+        SetPreviewFeatureEnabled(row.featureKey, nextEnabled);
+        previewEnabledChangedThisFrame = true;
+        refresh = true;
+      }
+      var next = new Vector2Int(Mathf.Clamp(x, -PreviewWidth, PreviewWidth),
+          Mathf.Clamp(y, -PreviewHeight, PreviewHeight)) - row.reference;
+      if (next != row.offset)
+      {
+        dosDoorFrameOffsetDrafts[row.offsetKey] = next;
+        refresh = true;
+      }
+      if (apply && SaveStrictDosOffset(row.offsetKey, next))
+      {
+        dosDoorFrameOffsetDrafts.Remove(row.offsetKey);
+        refresh = true;
+      }
+    }
+    if (refresh)
+    {
+      previewPositionChangedThisFrame = true;
+      RefreshEditModePreview();
+      RepaintGameViews();
+      Repaint();
+    }
+  }
 
   // Native DOS floor decorations: separate artwork per perspective, no scaling.
   private const string DosFloorPreviewDataPath = "Assets/Editor/DosFloorOrnamentPreviewData.json";
@@ -22142,89 +22343,33 @@ private static void HandleGameViewPointerDown(
     {
       blackDoorFrameF3SourceTexture =
           LoadDoorFrameTexture(
-              "Assets/Art/Walls/Door_Frame_Left_10x42.png",
-              "Door_Frame_Left_10x42");
+              "Assets/Art/Doors/Door_Left_S3_10x42.png", 10, 42);
     }
 
     return blackDoorFrameF3SourceTexture;
   }
 
-  private static Texture2D LoadDoorFrameTexture(
-      string preferredPath,
-      string assetBaseName)
+  // The door artwork has one canonical physical path. Do not search old
+  // Walls paths or silently substitute another image.
+  private static readonly HashSet<string> DoorArtworkDiagnostics =
+      new HashSet<string>(System.StringComparer.Ordinal);
+
+  private static void ReportDoorArtworkProblem(string message)
   {
-    Texture2D texture =
-        AssetDatabase.LoadAssetAtPath<Texture2D>(preferredPath);
-    if (texture != null)
-      return texture;
+    if (DoorArtworkDiagnostics.Add(message))
+      LogMissingArtworkCyan("DOS DOOR: " + message);
+  }
 
-    // The F2 frame file is "Door Frame_Left_18x65.png" (space), while the
-    // F1/F3 frames use "Door_Frame_Left_*.png". Accept both spellings.
-    string spacedPath = preferredPath.Replace(
-        "Door_Frame_Left_",
-        "Door Frame_Left_");
-    if (!string.Equals(
-            spacedPath,
-            preferredPath,
-            System.StringComparison.Ordinal))
+  private static Texture2D LoadDoorFrameTexture(string path, int width, int height)
+  {
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    if (texture == null || !texture.isReadable || texture.width != width || texture.height != height)
     {
-      texture = AssetDatabase.LoadAssetAtPath<Texture2D>(spacedPath);
-      if (texture != null)
-        return texture;
+      ReportDoorArtworkProblem("missing or invalid readable native artwork " + path
+          + " (expected " + width + "x" + height + "); not drawn (no fallback)");
+      return null;
     }
-
-    // Git/reset history has used both the new generic filename and the older
-    // "Black Door Frame_Left_*" filename for the exact same door-frame art.
-    // Accept either physical filename; internal ViewEdit piece names stay
-    // unchanged for layout compatibility.
-    string legacyBaseName =
-        assetBaseName.Replace(
-            "Door_Frame_Left_",
-            "Black Door Frame_Left_");
-    string legacyPath =
-        "Assets/Art/Walls/" + legacyBaseName + ".png";
-
-    texture = AssetDatabase.LoadAssetAtPath<Texture2D>(legacyPath);
-    if (texture != null)
-      return texture;
-
-    // Fallback for renamed/moved assets: locate either exact filename in the
-    // Unity AssetDatabase.
-    string[] searchNames =
-    {
-      assetBaseName,
-      legacyBaseName
-    };
-
-    for (int n = 0; n < searchNames.Length; n++)
-    {
-      string searchName = searchNames[n];
-      string[] guids =
-          AssetDatabase.FindAssets(searchName + " t:Texture2D");
-
-      for (int i = 0; i < guids.Length; i++)
-      {
-        string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-        if (string.IsNullOrEmpty(path))
-          continue;
-
-        string fileName =
-            System.IO.Path.GetFileNameWithoutExtension(path);
-        if (!string.Equals(
-                fileName,
-                searchName,
-                System.StringComparison.OrdinalIgnoreCase))
-        {
-          continue;
-        }
-
-        texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-        if (texture != null)
-          return texture;
-      }
-    }
-
-    return null;
+    return texture;
   }
 
   private Texture2D GetBlackDoorFrameLeftF1SourceTexture()
@@ -22233,8 +22378,7 @@ private static void HandleGameViewPointerDown(
     {
       blackDoorFrameLeftF1SourceTexture =
           LoadDoorFrameTexture(
-              "Assets/Art/Walls/Door_Frame_Left_25x94.png",
-              "Door_Frame_Left_25x94");
+              "Assets/Art/Doors/Door_Left_S1_25x94.png", 25, 94);
     }
 
     return blackDoorFrameLeftF1SourceTexture;
@@ -22245,8 +22389,8 @@ private static void HandleGameViewPointerDown(
     if (blackDoorF1SourceTexture == null)
     {
       blackDoorF1SourceTexture =
-          AssetDatabase.LoadAssetAtPath<Texture2D>(
-              "Assets/Art/Walls/Black Door 96x88.png");
+          LoadDoorFrameTexture(
+              "Assets/Art/Doors/Black Door 96x88.png", 96, 88);
     }
 
     return blackDoorF1SourceTexture;
@@ -22257,8 +22401,8 @@ private static void HandleGameViewPointerDown(
     if (blackDoorF3SourceTexture == null)
     {
       blackDoorF3SourceTexture =
-          AssetDatabase.LoadAssetAtPath<Texture2D>(
-              "Assets/Art/Walls/BlackDoorF3_45x39.png");
+          LoadDoorFrameTexture(
+              "Assets/Art/Doors/BlackDoorF3_45x39.png", 45, 39);
     }
 
     return blackDoorF3SourceTexture;
@@ -22269,8 +22413,8 @@ private static void HandleGameViewPointerDown(
     if (blackDoorF2SourceTexture == null)
     {
       blackDoorF2SourceTexture =
-          AssetDatabase.LoadAssetAtPath<Texture2D>(
-              "Assets/Art/Walls/BlackDoorF2_63x59.png");
+          LoadDoorFrameTexture(
+              "Assets/Art/Doors/BlackDoorF2_63x59.png", 63, 59);
     }
 
     return blackDoorF2SourceTexture;
@@ -22287,8 +22431,7 @@ private static void HandleGameViewPointerDown(
 
     Texture2D source =
         LoadDoorFrameTexture(
-            "Assets/Art/Walls/Door_Frame_Left_18x65.png",
-            "Door_Frame_Left_18x65");
+            "Assets/Art/Doors/Door_Left_S2_18x65.png", 18, 65);
     if (source == null)
       return;
 
@@ -25708,6 +25851,7 @@ private static void HandleGameViewPointerDown(
 
     DrawDosNativeFloorOrnamentRows();
     DrawDosFloorProjectionDiagnostic();
+    DrawDosRegularDoorFrameRows();
 
     // Moss is a resolved floor ornament from the same database as puddles.
     // The current first implementation exposes the front F1/F2/F3 projections;

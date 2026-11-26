@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "coordinateSystem": "Top-left of 224x136 dungeon viewport, not 320x200 screen",
+  "status": "D1: F1 centered regular door jambs only. S2/S3 remain unregistered until original DOS reference geometry is established.",
+  "views": [
+    {
+      "depth": 1,
+      "path": "Assets/Art/Doors/Door_Left_S1_25x94.png",
+      "width": 25,
+      "height": 94,
+      "leftX": 44,
+      "rightX": 155,
+      "topY": 13,
+      "evidence": "DOS screenshot image(20261126-194720).png: all 2293 nontransparent RGB pixels per side match the supplied native artwork at these coordinates; right is horizontally mirrored."
+    }
+  ]
+}

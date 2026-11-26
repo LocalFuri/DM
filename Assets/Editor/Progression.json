@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-26: Dungeon Features puddle icon approved by user. Corrected native graphic 437 PNG installed. P6 registry reverted for both depth-1 lateral projections; first-person DOS comparison pending.",
+  "checkpoint": "2026-11-26: All nine blue puddle perspectives approved by user. Door assets moved and frame names standardized. Stage D1 regular door frame patch prepared; Unity compile and visual verification pending at Level 0 (6,9) West.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -7836,6 +7836,81 @@
     "next": "Refresh/reopen ViewEdit after registry replacement; expand DOS floor projection diagnostic at Level 0 (5,9) South. Compare DOS screenshot. Left projection also requires visual verification. Runtime DOS table research still pending.",
     "files": [
       "DosFloorOrnamentPreviewData.json",
+      "Progression.json"
+    ]
+  },
+  "blue_puddle_all_perspectives_approved_20261126": {
+    "timestamp": "2026-11-26T21:14:04+01:00",
+    "status": "User explicitly confirmed puddle perfect at every viewing angle; all nine perspectives approved. Preserve implementation.",
+    "evidence": "DOS graphic 437, 9x7, 28 palette-index-14 blue pixels, 8 index-6 green pixels, 27 index-10 transparent pixels. User installed corrected PNG and pre-P6 registry. S1:Right visual match at (5,9) South. Remaining perspectives approved by user, not independently pixel-audited here.",
+    "protected": [
+      "Assets/Art/Ornaments/Flooritem Puddle_S3.png",
+      "DosFloorOrnamentPreviewData.json",
+      "Dungeon Features puddle icon",
+      "No new puddle-specific renderer or artwork substitutions."
+    ],
+    "runtime_research": "Original DOS floor executable call chain remains unverified. CSBwin C++ and binary table findings are separate reference research."
+  },
+  "regular_door_frames_D1_20261126": {
+    "timestamp": "2026-11-26T21:14:04+01:00",
+    "status": "Patch prepared; not yet compiled or approved in Unity.",
+    "referencePose": {
+      "level": 0,
+      "x": 6,
+      "y": 9,
+      "facing": "West",
+      "doorTile": [
+        5,
+        9
+      ]
+    },
+    "referenceImage": "image(20261126-194720).png",
+    "sourceAssets": {
+      "directory": "Assets/Art/Doors",
+      "frames": [
+        "Door_Left_S1_25x94.png",
+        "Door_Left_S2_18x65.png",
+        "Door_Left_S3_10x42.png"
+      ],
+      "blackPanels": [
+        "Black Door 96x88.png",
+        "BlackDoorF2_63x59.png",
+        "BlackDoorF3_45x39.png"
+      ]
+    },
+    "geometry": [
+      {
+        "depth": 1,
+        "path": "Assets/Art/Doors/Door_Left_S1_25x94.png",
+        "width": 25,
+        "height": 94,
+        "leftX": 44,
+        "rightX": 155,
+        "topY": 13,
+        "evidence": "DOS screenshot image(20261126-194720).png: all 2293 nontransparent RGB pixels per side match the supplied native artwork at these coordinates; right is horizontally mirrored."
+      }
+    ],
+    "implementation": [
+      "Add strict data-driven regular door frame selection at existing V17 far-to-near depth stages; no absolute map-coordinate exceptions.",
+      "Use original tile Door source type and orientation bit 3 to distinguish front vs side. ScummVM reconstructed setSquareAspect: https://raw.githubusercontent.com/scummvm/scummvm/master/engines/dm/dungeonman.cpp, lines 1116-1123; DOS-specific integration still needs runtime verification.",
+      "Native frame bitmap used at 1:1; right mirrored; viewport clipping and nontransparent RGB copying.",
+      "Separate Set, absolute viewport-relative X/Y and Apply rows; save relative offsets through existing OrnamentCalibration.json, keys DoorFrameProjection:S1:Left and :Right; no per-pose offset keys.",
+      "Migrate six Black Door artwork lookups from old Walls folder to canonical Doors filenames; remove obsolete artwork fallback searches. Existing special Black Door geometry and panel logic unchanged."
+    ],
+    "limitations": [
+      "Only S1 front-facing regular door frame registered. S2/S3 coordinates, side-on geometry, door panel, buttons, animation, collision and complete painter order not yet verified. No speculative far geometry.",
+      "Partial alpha in supplied S1 PNG is treated as opaque for nonzero alpha in new regular door frame renderer; 2293 nontransparent RGB pixels per side match supplied DOS reference.",
+      "Black panel PNGs were not included in this upload; paths assume the user moved the six assets as stated. Unity compile/runtime and regressions at old Black Door poses pending."
+    ],
+    "next": [
+      "Install patch in Assets/Editor; test Level 0 (6,9) West.",
+      "Show Unity viewport and two new ViewEdit rows; verify X44/Y13 and X155/Y13.",
+      "Regression check Black Door at (1,3)/(1,4)/(1,5) North and approved puddle.",
+      "Acquire S2/S3 original DOS reference screenshots and confirm depth-specific frame geometry before extending registry."
+    ],
+    "files": [
+      "ViewportLayoutEditor.cs",
+      "DosDoorFramePreviewData.json",
       "Progression.json"
     ]
   }
