@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "2026-11-26: All nine puddle views and six centered door frame components approved. D4 compiled and F1 Portcullis geometry approved; D5 F2 registry prepared from DOS screenshot, Unity verification pending.",
+  "checkpoint": "Door frames and closed Portcullis F1/F2/F3 approved; D7A sensor works; D7B animation test pending; D7C reset control prepared.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -8111,11 +8111,41 @@
   },
   "door_sensor_D7A_20261126": {
     "timestamp": "2026-11-26T22:54:05.053484+01:00",
-    "status": "Prepared; Unity compile and functional test pending",
+    "status": "User confirmed compilation and pressure plate opening working.",
     "scope": "Original type 3 value 1 non-local non-reverting repeatable effect 0 floor sensor targeting an original door; immediate open only. No animation, collision, delayed events or other sensor modes. State held in loaded map instance; reload resets.",
     "reference": "Level 0 (7,9) West step to (6,9), sensor targets (5,9).",
     "runtimePath": "C:\\Unity\\DM\\Assets\\Scripts\\Dungeon\\DungeonMap.cs",
     "editorPath": "C:\\Unity\\DM\\Assets\\Editor\\ViewportLayoutEditor.cs",
     "next": "Test movement and door disappears; then research original animation timing and clipping."
+  },
+  "door_animation_D7B_20261126": {
+    "timestamp": "2026-11-26T23:03:02.897646+01:00",
+    "status": "User reports compilation fine; door already open at reference start, animation not yet verified.",
+    "reference": "Level 0 (7,9) West forward to (6,9), sensor targets door (5,9)",
+    "implementation": "Vertical states 4→3→2→1→0, native source crop, no resize. Editor update drives map animation; runtime host must call AdvanceDoorOpeningAnimations when integrated. Horizontal D7A immediate behavior unchanged.",
+    "previewStepSeconds": 0.16666666666666666,
+    "liftPixelsByDepth": [
+      22,
+      15,
+      10
+    ],
+    "evidence": "ScummVM 2.7 gfx.cpp centered vertical frame source offsets, 2.9 timeline.cpp state decrement per tick. DOS intermediate destination crops and real timing unverified; preview uses approved closed top and remaining native rows.",
+    "limitations": "Opening only; collision, closing, sound for door motion and exact DOS intermediate clipping/timing pending. No Cursor. No Unity compiler available.",
+    "next": "Compile and compare opening with DOS capture; verify all four steps, then calibrate timing and geometry."
+  },
+  "door_reset_D7C_20261126": {
+    "timestamp": "2026-11-26T23:06:35.291170+01:00",
+    "status": "Prepared; Unity compilation and reset test pending",
+    "implementation": "ViewEdit Reset Doors restores all doors on loaded map to original InitialState, cancels opening and elapsed time, refreshes preview. No movement or sensor activation.",
+    "test": "Level 0 (7,9) West: Reset Doors, verify closed Portcullis (5,9), move forward to (6,9), observe four opening states.",
+    "limitations": "Exact DOS animation timing and clipping still pending. No Cursor."
+  },
+  "door_animation_D7C_registry_repair_20261126": {
+    "timestamp": "2026-11-26T23:16:26.385041+01:00",
+    "status": "Pending Unity verification",
+    "observed": "User reports door opens instantly after reset and pressure plate entry.",
+    "finding": "D7C Editor ZIP omitted D7B panel registry; missing verticalLiftPerStep causes intermediate states to be skipped by renderer. Installed registry not yet inspected.",
+    "action": "Reissue D7B registry unchanged; no C# changes. Verify animation before any timing changes.",
+    "destination": "C:\\Unity\\DM\\Assets\\Editor\\"
   }
 }

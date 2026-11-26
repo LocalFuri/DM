@@ -2250,6 +2250,9 @@ public class ViewportLayoutEditor : EditorWindow
     ApplyCurrentPoseVisibilityToLayout();
     EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
     EditorApplication.update += UpdateChampionEatAnimation;
+    EditorApplication.update -= UpdateDoorOpeningPreview;
+    EditorApplication.update += UpdateDoorOpeningPreview;
+    lastDoorOpeningPreviewTime = EditorApplication.timeSinceStartup;
     EditorApplication.update -= UpdateSuspendedThrowLandings;
     EditorApplication.update += UpdateSuspendedThrowLandings;
     RecordGroundRegistryFileStamp();
@@ -2292,6 +2295,7 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
     EditorApplication.update -= UpdateChampionEatAnimation;
+    EditorApplication.update -= UpdateDoorOpeningPreview;
     EditorApplication.update -= UpdateSuspendedThrowLandings;
     EditorApplication.update -= UpdateChampionAutoHighlights;
 
@@ -13030,6 +13034,16 @@ private static void HandleGameViewPointerDown(
   private void DrawMapPosePreviewControls()
   {
     DrawPreviewMiniMap();
+    using (new EditorGUI.DisabledScope(Application.isPlaying || previewMiniMap == null))
+    {
+      if (GUILayout.Button("Reset Doors"))
+      {
+        previewMiniMap.ResetDoorsToInitialState();
+        lastDoorOpeningPreviewTime = EditorApplication.timeSinceStartup;
+        RefreshEditModePreview();
+        Repaint();
+      }
+    }
   }
 
   // Supplemental geometry fingerprints are internal V17 recognition rules.
@@ -15797,9 +15811,12 @@ private static void HandleGameViewPointerDown(
       previewMiniMap.SetPlayerPose(previewX, previewY, previewFacing);
 
     // Trigger original party-entry sensors only on a real navigation step.
-    if (positionChanged && previewMiniMap != null
-        && previewMiniMap.ActivatePartyEntrySensors(previewX, previewY))
-      PlayPressureSwitchSound();
+    if (positionChanged && previewMiniMap != null)
+    {
+      lastDoorOpeningPreviewTime = EditorApplication.timeSinceStartup;
+      if (previewMiniMap.ActivatePartyEntrySensors(previewX, previewY))
+        PlayPressureSwitchSound();
+    }
 
     if (positionChanged)
       TryPreviewStairsTransition();
@@ -20662,13 +20679,28 @@ private static void HandleGameViewPointerDown(
   }
 
 
-  // D4: closed regular door panels. Native geometry is registry-driven.
-  // D7A: mutable map state; closed panel only, animation and collision pending.
+  // D7B: original discrete door states, vertical native bitmap crop.
+  // Preview timing is provisional until measured against DOS.
+  private const double DoorOpeningPreviewStepSeconds = 1.0 / 6.0;
+  private double lastDoorOpeningPreviewTime;
+
+  private void UpdateDoorOpeningPreview()
+  {
+    double now = EditorApplication.timeSinceStartup;
+    double elapsed = now - lastDoorOpeningPreviewTime;
+    lastDoorOpeningPreviewTime = now;
+    if (Application.isPlaying || previewMiniMap == null) return;
+    if (!previewMiniMap.AdvanceDoorOpeningAnimations(elapsed, DoorOpeningPreviewStepSeconds)) return;
+    RefreshEditModePreview();
+    Repaint();
+  }
+
+  // Native geometry remains registry-driven.
   private const string DosDoorPanelPreviewDataPath = "Assets/Editor/DosDoorPanelPreviewData.json";
   [System.Serializable] private sealed class DosDoorPanelRoot
   { public int schemaVersion; public DosDoorPanelView[] views; }
   [System.Serializable] private sealed class DosDoorPanelView
-  { public int graphicSet, depth, x, y, width, height; public string path, caption; }
+  { public int graphicSet, depth, x, y, width, height, verticalLiftPerStep; public string path, caption; }
 
   private void BlitDosClosedRegularDoorPanels(Color32[] pixels)
   {
@@ -20679,8 +20711,9 @@ private static void HandleGameViewPointerDown(
       if (!previewMiniMap.TryGetDoorData(cell.MapX, cell.MapY, out DungeonMap.DoorData door))
       { ReportDoorArtworkProblem("missing original door metadata at " + cell.MapX + "," + cell.MapY); continue; }
       if (door.CurrentState == 0) continue;
-      if (door.CurrentState != 4 || door.OrnamentOrdinal != 0)
-      { ReportDoorArtworkProblem("door state/ornament not registered for D4 preview"); continue; }
+      if (door.CurrentState < 1 || door.CurrentState > 4 || door.OrnamentOrdinal != 0
+          || (door.CurrentState != 4 && !door.OpensVertically))
+      { ReportDoorArtworkProblem("door state/ornament not registered for vertical preview"); continue; }
       DosDoorPanelView view = null;
       try
       {
@@ -20712,8 +20745,16 @@ private static void HandleGameViewPointerDown(
       { caption = view.caption, featureKey = feature, offsetKey = key, reference = reference, offset = offset });
       if (!IsPreviewFeatureEnabled(feature)) continue;
       Vector2Int dest = reference + offset;
+      int lift = 0;
+      if (door.CurrentState < 4)
+      {
+        if (view.verticalLiftPerStep <= 0 || 3 * view.verticalLiftPerStep >= view.height)
+        { ReportDoorArtworkProblem("missing/invalid vertical door step for set " + door.GraphicSet + " F" + depth); continue; }
+        lift = (4 - door.CurrentState) * view.verticalLiftPerStep;
+      }
       Color32[] art = source.GetPixels32();
-      for (int y = 0; y < source.height; y++)
+      // Lift without scaling: skip the top source rows and clip at the closed panel's top.
+      for (int y = 0; y < source.height - lift; y++)
       {
         int dy = dest.y + y;
         if (dy < 0 || dy >= DungeonViewportHeight) continue;
@@ -20721,7 +20762,7 @@ private static void HandleGameViewPointerDown(
         {
           int dx = dest.x + x;
           if (dx < 0 || dx >= DungeonViewportWidth) continue;
-          Color32 pixel = art[(source.height - 1 - y) * source.width + x];
+          Color32 pixel = art[(source.height - 1 - y - lift) * source.width + x];
           if (pixel.a == 0) continue;
           pixel.a = 255;
           pixels[(PreviewHeight - 1 - 33 - dy) * PreviewWidth + dx] = pixel;

@@ -29,6 +29,8 @@ namespace DM.Dungeon
       public int GraphicSet { get; internal set; }
       public int InitialState { get; internal set; }
       public int CurrentState { get; internal set; }
+      internal bool Opening;
+      internal double OpeningElapsedSeconds;
       public bool OpensVertically { get; internal set; }
       public bool HasButton { get; internal set; }
       public int OrnamentOrdinal { get; internal set; }
@@ -39,6 +41,17 @@ namespace DM.Dungeon
     public bool TryGetDoorData(int x, int y, out DoorData door)
     {
       return _doors.TryGetValue(new Vector2Int(x, y), out door);
+    }
+
+    // Editor test reset: restore map-defined states, not a forced closed state.
+    public void ResetDoorsToInitialState()
+    {
+      foreach (var door in _doors.Values)
+      {
+        door.CurrentState = door.InitialState;
+        door.Opening = false;
+        door.OpeningElapsedSeconds = 0;
+      }
     }
 
     [Serializable] private sealed class DoorExportRoot
@@ -72,10 +85,42 @@ namespace DM.Dungeon
       {
         if (!TryGetDoorData(sensor.TargetMapX, sensor.TargetMapY, out var door)) continue;
         if (door.CurrentState >= 1 && door.CurrentState <= 4)
-          door.CurrentState = 0;
+        {
+          if (door.OpensVertically)
+          {
+            if (!door.Opening)
+            {
+              door.Opening = true;
+              door.OpeningElapsedSeconds = 0;
+            }
+          }
+          else
+            door.CurrentState = 0; // Preserve D7A behavior; horizontal animation is not implemented.
+        }
         audible |= sensor.Audible != 0;
       }
       return audible;
+    }
+
+    // Advance one visible state per update; do not skip intermediate frames.
+    // The host supplies elapsed time and the preview tick duration.
+    public bool AdvanceDoorOpeningAnimations(double elapsedSeconds, double secondsPerStep)
+    {
+      if (elapsedSeconds <= 0 || secondsPerStep <= 0) return false;
+      bool changed = false;
+      foreach (var door in _doors.Values)
+      {
+        if (!door.Opening) continue;
+        if (door.CurrentState < 1 || door.CurrentState > 4)
+        { door.Opening = false; continue; }
+        door.OpeningElapsedSeconds += elapsedSeconds;
+        if (door.OpeningElapsedSeconds < secondsPerStep) continue;
+        door.OpeningElapsedSeconds = 0;
+        door.CurrentState--;
+        changed = true;
+        if (door.CurrentState == 0) door.Opening = false;
+      }
+      return changed;
     }
 
     private void LoadOriginalDoorData(string json)

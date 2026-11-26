@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "coordinateSystem": "Top-left of 224x136 dungeon viewport",
-  "status": "D6 closed Portcullis F1, F2 and F3 registered; F1 and F2 approved, F3 DOS placement verified and Unity test pending; other sets unregistered.",
+  "status": "D7B: approved closed geometry unchanged. Vertical source lift per state from ScummVM reference (22/15/10), DOS intermediate geometry not yet validated.",
   "views": [
     {
       "graphicSet": 0,
@@ -11,7 +11,8 @@
       "width": 96,
       "height": 88,
       "path": "Assets/Art/Doors/Door Portcullis_F1_96x88.png",
-      "caption": "Door Portcullis F1"
+      "caption": "Door Portcullis F1",
+      "verticalLiftPerStep": 22
     },
     {
       "graphicSet": 0,
@@ -21,7 +22,8 @@
       "width": 64,
       "height": 61,
       "path": "Assets/Art/Doors/Door Portcullis_F2_64x61.png",
-      "caption": "Door Portcullis F2"
+      "caption": "Door Portcullis F2",
+      "verticalLiftPerStep": 15
     },
     {
       "graphicSet": 0,
@@ -31,7 +33,8 @@
       "width": 44,
       "height": 38,
       "path": "Assets/Art/Doors/Door Portcullis_F3_44x38.png",
-      "caption": "Door Portcullis F3"
+      "caption": "Door Portcullis F3",
+      "verticalLiftPerStep": 10
     }
   ]
 }
