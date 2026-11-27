@@ -8,6 +8,14 @@
       "width": 102,
       "height": 4,
       "path": "Assets/Art/Doors/Door_Top_Frame_F1_102x4.png"
+    },
+    {
+      "depth": 2,
+      "x": 77,
+      "y": 21,
+      "width": 70,
+      "height": 3,
+      "path": "Assets/Art/Doors/Door_Top_Frame_F2_70x3.png"
     }
   ]
 }

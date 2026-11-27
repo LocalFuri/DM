@@ -20,7 +20,7 @@
     "limitation": "This protocol applies once Progression.json is supplied/read; a rule inside the file alone cannot trigger loading an absent file.",
     "recommended_new_session_message": "Dungeon Master — read the complete Progression.json, apply all permanent rules, and continue from the latest checkpoint."
   },
-  "date": "2026-11-26",
+  "date": "2026-11-27",
   "todo_manacles_dos_f1_s2_20261109": {
     "category": "To do List",
     "priority": 0,
@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "D7D functional opening animation and door rattle confirmed by user; precise DOS per-frame audiovisual timing is the immediate next task.",
+  "checkpoint": "D7G F1 top frame visually approved; D7H F2 native top frame registered with provisional geometry; compare DOS/Unity at Level 0 (7,9) West, open door.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -8306,6 +8306,22 @@
     "status": "Candidate generic draw order test; F1 geometry and remaining appearance user-approved except two protruding black pixels; no final approval yet.",
     "change": "Move existing static top frame blit before both side pillar blits in shared regular door frame pass for all registered depths. No artwork, calibration, clipping, timing, sound or runtime changes.",
     "hypothesis": "Opaque pillar pixels may naturally occlude the two protruding pixels; DOS order not yet independently verified.",
-    "next": "Compile and compare Level 0 (6,9) West fully open; verify both corners, then closed/intermediate states. If not fixed, investigate generic DOS clipping; no per-graphic exception. F2/F3 pending."
+    "next": "Compile and compare Level 0 (6,9) West fully open; verify both corners, then closed/intermediate states. If not fixed, investigate generic DOS clipping; no per-graphic exception. F2/F3 pending.",
+    "visual_approval": "User confirmed both protruding black pixels eliminated by generic render order; F1 fully visually approved at Level 0 (6,9) West, open state."
+  },
+  "door_top_frame_D7H_20261127-182056": {
+    "timestamp": "2026-11-27T18:20:56.183137+01:00",
+    "status": "F2 registered; compile/visual comparison pending",
+    "geometry": {
+      "depth": 2,
+      "x": 77,
+      "y": 21,
+      "width": 70,
+      "height": 3,
+      "path": "Assets/Art/Doors/Door_Top_Frame_F2_70x3.png"
+    },
+    "basis": "Centered at viewport X=112; top frame bottom aligned to approved F2 panel top Y=24, so Y=21. Provisional, not DOS measured.",
+    "changes": "Registry only; existing generic top-frame renderer and ViewEdit Apply reused; F1 unchanged; top frame before pillars; no cropping or exceptions.",
+    "next": "Compare F2 against DOS at Level 0 (7,9) West, fully open; calibrate via Apply if needed. F3 and audio calibration pending."
   }
 }
