@@ -19,7 +19,7 @@ public sealed class V17CombinationExplorer : EditorWindow
     private int jumpTo;
     private Vector2 scroll;
 
-    [MenuItem("Tools/Dungeon Master/V17 Combination Explorer")]
+    [MenuItem("Tools/V17 Combination Explorer")]
     private static void Open()
     {
         var window = GetWindow<V17CombinationExplorer>("V17 Combinations");

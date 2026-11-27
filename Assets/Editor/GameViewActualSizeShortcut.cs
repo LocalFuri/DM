@@ -7,7 +7,7 @@ using UnityEngine;
 
 public static class GameViewActualSizeShortcut
 {
-    [MenuItem("Tools/Game View/Actual Size 1x")]
+    [MenuItem("Tools/Game View Actual Size 1x")]
     public static void SetGameViewToActualSize()
     {
         Type gameViewType =

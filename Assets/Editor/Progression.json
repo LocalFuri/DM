@@ -15,7 +15,8 @@
       "Every file in a delivered ZIP must be at the ZIP root (no subfolders or folder prefixes); verify archive entry paths before delivery.",
       "Do not silently override approved algorithms, rules, or data; explain conflicting instructions before changing protected work.",
       "MANDATORY: For each delivered file, explicitly state its full Windows destination path unless its destination directory is C:\\Unity\\DM\\Assets\\Editor\\, which is the default. For ZIPs with mixed destinations, identify the destination of each non-default file individually. Never leave the user to guess a destination.",
-      "MANDATORY: Cursor is strictly read-only; it may audit and recommend changes but must never modify, create, delete, rename or revert project files or Progression.json. ChatGPT reviews and corrects its recommendations and prepares changes for the user to install."
+      "MANDATORY: Cursor is strictly read-only; it may audit and recommend changes but must never modify, create, delete, rename or revert project files or Progression.json. ChatGPT reviews and corrects its recommendations and prepares changes for the user to install.",
+      "Before each delivery audit all available Editor C# MenuItem declarations for nested Tools paths and duplicate menu commands; report audit scope and correct violations without altering tool functionality."
     ],
     "limitation": "This protocol applies once Progression.json is supplied/read; a rule inside the file alone cannot trigger loading an absent file.",
     "recommended_new_session_message": "Dungeon Master — read the complete Progression.json, apply all permanent rules, and continue from the latest checkpoint."
@@ -59,7 +60,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "D8D: Black Door F1/F2/F3 all user-approved. Preserve local calibrations. Next check Portcullis regression before D7E animation and sound calibration.",
+  "checkpoint": "D9B complete: Door Right F3 Side 100% visually approved by user; one-pixel difference accepted. Next verify left F3 symmetry and foreground occlusion.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -115,8 +116,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
+    "Verify left F3 lateral frame symmetry against DOS and foreground occlusion; preserve approved right F3. Do not investigate the accepted one-pixel discrepancy.",
     "Black Door F1/F2/F3 approved by user. Preserve all local calibration values; no further front-view corrections.",
-    "Check any previously verified oblique Black Door views: old dedicated right-oblique path removed; generic oblique door projection not yet implemented; no fallback. Research generic geometry rather than restore old code.",
+    "Research remaining generic oblique door projections as needed; D3 lateral frame implemented and right side approved. No legacy fallback.",
     "Check Portcullis regression F1/F2/F3 and top frames. Confirm existing artwork, geometry and timing unchanged.",
     "Resume D7E at Level 0 (7,9) West: Reset Doors, step to (6,9), compare opening animation and sound with fires_001.avi.",
     "Validate installed per-frame delays [200,271,214,228] ms and measure audio restart/overlap and offset; preserve original WAV and approved geometry.",
@@ -8532,5 +8534,59 @@
     "rendering": "D3 painter stage, generic door tile and axis, shared native frame blitter and calibration; front render order preserved",
     "limitations": "Only D3 lane +/-1 frame registered; other lateral projections and lateral panels not implemented. Verify foreground occlusion and left mirror. No Unity compile available.",
     "next": "Compare reference pose with DOS; verify front Black Door and Portcullis regression."
+  },
+  "unity_editor_menu_full_audit_20261127": {
+    "timestamp": "2026-11-27T21:10:25.263209+01:00",
+    "status": "source audit complete; Unity verification pending",
+    "scope": "18 supplied Editor C# files; 14 MenuItem declarations",
+    "changes": {
+      "GameViewActualSizeShortcut.cs": {
+        "old": "Tools/Game View/Actual Size 1x",
+        "new": "Tools/Game View Actual Size 1x"
+      },
+      "V17CombinationExplorer.cs": {
+        "old": "Tools/Dungeon Master/V17 Combination Explorer",
+        "new": "Tools/V17 Combination Explorer"
+      }
+    },
+    "rule": "Audit all available Editor scripts before delivery; every custom MenuItem must be directly under Tools, with no submenu. Check duplicate paths and references; preserve shortcuts and functionality. If complete source is unavailable, state audit scope.",
+    "resume": "D9A lateral door comparison at Level 0 (0,5) North; row visible after artwork import; visual approval pending."
+  },
+  "door_lateral_D9B_20261127-212438": {
+    "timestamp": "2026-11-27T21:24:38.396184+01:00",
+    "status": "User-approved Right F3 lateral frame: 100% perfect for gameplay; one-pixel difference accepted.",
+    "reference": "Level 0 (0,5) North",
+    "change": "Move shared D3 lateral frame draw from start of native D3 pass to completion of D3 wall layer, after outer LeftD3/RightD3 faces and before nearer wall cards. End-of-layer completion also handles layouts without nearer cards. No additional artwork or calibration changes.",
+    "preserved": "Front door hierarchy, artwork, geometry and calibration, menu audit, animation timing.",
+    "next": "Verify left F3 symmetry and foreground occlusion; investigate remaining lateral distances as needed."
+  },
+  "door_lateral_right_F3_live_approval_20261127": {
+    "timestamp": "2026-11-27T21:42:00+01:00",
+    "status": "100% PERFECT / APPROVED by user for gameplay; not literal pixel identity",
+    "reference_pose": {
+      "level": 0,
+      "x": 0,
+      "y": 5,
+      "facing": "North"
+    },
+    "graphic_id": 90,
+    "native_dimensions": [
+      16,
+      43
+    ],
+    "registered_default_xy": [
+      192,
+      26
+    ],
+    "calibration": "Preserve any local saved offsets; final local values not independently inspected.",
+    "accepted_difference": "One pixel; user explicitly accepts and requests no further correction.",
+    "render_order": "Lateral frame after D3 outer walls and before nearer walls, shared left/right path.",
+    "protected": "All approved front doors, original artwork, no cropping or hardcoded exceptions, generic Apply behavior, menu flattening and existing timing.",
+    "next": "Verify left F3 lateral frame symmetry against DOS and foreground occlusion; preserve approved right F3. Do not investigate the accepted one-pixel discrepancy.",
+    "menu_audit": {
+      "scope": "18 available Editor C# files, 14 literal MenuItem declarations",
+      "nested_tools_paths": [],
+      "repeated_literal_paths": []
+    }
   }
 }

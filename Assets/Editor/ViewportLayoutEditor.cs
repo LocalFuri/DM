@@ -18804,6 +18804,7 @@ private static void HandleGameViewPointerDown(
 
       int nextNormalWall = 0;
       bool viewport17NativeD3Drawn = false;
+      bool viewport17D3LateralFramesDrawn = false;
       bool viewport17NativeD2Drawn = false;
       bool viewport17NativeD1Drawn = false;
       // Draw the S1 floor plate once, immediately before the first near wall.
@@ -18814,6 +18815,15 @@ private static void HandleGameViewPointerDown(
         ViewportPiece piece = layout.Pieces[i];
         if (IsNormalWallPiece(piece))
           piece = orderedNormalWalls[nextNormalWall++];
+
+        // Finish the far wall layer after its outer side faces (LeftD3/RightD3),
+        // before any nearer wall or floor plate can occlude the lateral frame.
+        if (viewport17NativeD3Drawn && !viewport17D3LateralFramesDrawn
+            && IsNormalWallPiece(piece) && GetNormalWallRenderDepth(piece) < 3)
+        {
+          BlitDosDoorLateralFramesAtDepth(pixels, 3);
+          viewport17D3LateralFramesDrawn = true;
+        }
 
         // The plate belongs behind the F1/F0 wall bands. Draw it before
         // evaluating the wall's visibility, so disabling all walls never
@@ -18849,7 +18859,6 @@ private static void HandleGameViewPointerDown(
           BlitViewport17NativeD3Walls(
               pixels, viewport17Inspection, viewport17FinalWallCommands);
 
-          BlitDosDoorLateralFramesAtDepth(pixels, 3);
           BlitDosDoorFramesAtDepth(pixels, 3);
         }
 
@@ -19323,6 +19332,10 @@ private static void HandleGameViewPointerDown(
         }
       }
 
+
+      // Complete the D3 layer even if no nearer wall cards exist.
+      if (viewport17NativeD3Drawn && !viewport17D3LateralFramesDrawn)
+        BlitDosDoorLateralFramesAtDepth(pixels, 3);
 
       // Maps without near wall cards still draw the independently detected S1.
       if (!pressurePadS1Drawn)

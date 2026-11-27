@@ -35,6 +35,11 @@
             "key": "DoorFrameProjection:S3:Left",
             "dx": -1,
             "dy": 0
+        },
+        {
+            "key": "DoorLateralFrameProjection:D3:Lane1:Right",
+            "dx": -1,
+            "dy": 0
         }
     ]
 }
