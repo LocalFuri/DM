@@ -18849,6 +18849,7 @@ private static void HandleGameViewPointerDown(
           BlitViewport17NativeD3Walls(
               pixels, viewport17Inspection, viewport17FinalWallCommands);
 
+          BlitDosDoorLateralFramesAtDepth(pixels, 3);
           BlitDosDoorFramesAtDepth(pixels, 3);
         }
 
@@ -19740,14 +19741,23 @@ private static void HandleGameViewPointerDown(
       string key = "DoorFrameProjection:S" + depth + ":" + sideName;
       string feature = MakePreviewFeatureKey("DoorFrame:" + previewDungeonLevel
           + ":S" + depth + ":" + sideName, cell.MapX, cell.MapY, null);
-      if (!TryGetDosDoorFrameOffset(calibration, key, out Vector2Int offset)) continue;
       var reference = new Vector2Int(mirror ? view.rightX : view.leftX, view.topY);
+      BlitDosDoorFrameProjection(pixels, source, art, calibration, key, feature,
+          "Door " + sideName + " S" + depth, reference, mirror);
+    }
+  }
+
+  private void BlitDosDoorFrameProjection(Color32[] pixels, Texture2D source,
+      Color32[] art, OrnamentCalibrationJsonStore calibration, string key,
+      string feature, string caption, Vector2Int reference, bool mirror)
+  {
+      if (!TryGetDosDoorFrameOffset(calibration, key, out Vector2Int offset)) return;
       renderedDosDoorFrameRows.Add(new DosDoorFramePreviewRow
       {
-        caption = "Door " + sideName + " S" + depth,
+        caption = caption,
         featureKey = feature, offsetKey = key, reference = reference, offset = offset
       });
-      if (!IsPreviewFeatureEnabled(feature)) continue;
+      if (!IsPreviewFeatureEnabled(feature)) return;
       Vector2Int dest = reference + offset;
       // Native, unscaled 1:1 colour copy, horizontally mirrored for the right.
       // Original DOS key transparency is binary: nonzero alpha is painted.
@@ -19767,6 +19777,52 @@ private static void HandleGameViewPointerDown(
           pixel.a = 255;
           pixels[(PreviewHeight - 1 - 33 - dy) * PreviewWidth + dx] = pixel;
         }
+      }
+  }
+
+  private const string DosDoorLateralFrameDataPath = "Assets/Editor/DosDoorLateralFramePreviewData.json";
+  [System.Serializable] private sealed class DosDoorLateralFrameRoot
+  { public int schemaVersion; public DosDoorLateralFrameView[] views; }
+  [System.Serializable] private sealed class DosDoorLateralFrameView
+  { public int depth, lane, leftX, rightX, y, width, height; public string path; }
+
+  private void BlitDosDoorLateralFramesAtDepth(Color32[] pixels, int depth)
+  {
+    if (pixels == null || previewMiniMap == null) return;
+    DosDoorLateralFrameRoot root;
+    try
+    {
+      root = JsonUtility.FromJson<DosDoorLateralFrameRoot>(File.ReadAllText(DosDoorLateralFrameDataPath));
+      if (root == null || root.schemaVersion != 1 || root.views == null)
+        throw new System.IO.InvalidDataException("invalid lateral door frame registry");
+    }
+    catch (System.Exception ex)
+    { ReportDoorArtworkProblem(DosDoorLateralFrameDataPath + ": " + ex.Message); return; }
+    foreach (var view in root.views)
+    {
+      if (view == null || view.depth != depth) continue;
+      if (view.lane <= 0 || view.width <= 0 || view.height <= 0 || string.IsNullOrEmpty(view.path))
+      { ReportDoorArtworkProblem("invalid lateral door frame projection"); continue; }
+      for (int side = -1; side <= 1; side += 2)
+      {
+        Viewport17Cell cell = SampleViewport17Cell(side * view.lane, depth);
+        if (!cell.IsInside) continue;
+        DungeonTile tile = previewMiniMap.GetTile(cell.MapX, cell.MapY);
+        if (tile == null || tile.SourceType != DungeonSourceTileType.Door) continue;
+        bool northSouth = (tile.Raw & 8) != 0;
+        bool facingNorthSouth = previewFacing == DungeonFacing.North || previewFacing == DungeonFacing.South;
+        if (northSouth != facingNorthSouth) continue;
+        Texture2D source = LoadDoorFrameTexture(view.path, view.width, view.height);
+        if (source == null || !TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration)) continue;
+        bool mirror = side > 0;
+        string name = mirror ? "Right" : "Left";
+        string slot = "D" + depth + ":Lane" + view.lane + ":" + name;
+        string key = "DoorLateralFrameProjection:" + slot;
+        string feature = MakePreviewFeatureKey("DoorLateralFrame:" + previewDungeonLevel + ":" + slot,
+            cell.MapX, cell.MapY, null);
+        BlitDosDoorFrameProjection(pixels, source, source.GetPixels32(), calibration,
+            key, feature, "Door " + name + " F" + depth + " Side",
+            new Vector2Int(mirror ? view.rightX : view.leftX, view.y), mirror);
       }
     }
   }

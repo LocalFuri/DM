@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "views": [
+    {
+      "depth": 3,
+      "lane": 1,
+      "leftX": 16,
+      "rightX": 192,
+      "y": 26,
+      "width": 16,
+      "height": 43,
+      "path": "Assets/Art/Doors/Door_Lateral_Frame_F3_16x43.png"
+    }
+  ]
+}

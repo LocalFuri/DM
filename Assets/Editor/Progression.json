@@ -8510,5 +8510,27 @@
     "rules": "No legacy paths, cropping, per-door exceptions or further pixel corrections. Preserve D8D generic hierarchy and Apply behavior.",
     "next": "Check Portcullis regression, then resume D7E animation and sound timing. Generic oblique projection remains pending.",
     "changes": "Progression.json only; local calibration not overwritten."
+  },
+  "door_lateral_D9A_20261127-203213": {
+    "timestamp": "2026-11-27T20:32:13.897887+01:00",
+    "status": "candidate, Unity test pending",
+    "reference": "Level 0 (0,5) North; missing right D3 lane +1 door frame",
+    "graphic": 90,
+    "native_dimensions": [
+      16,
+      43
+    ],
+    "right_xy": [
+      192,
+      26
+    ],
+    "left_xy": [
+      16,
+      26
+    ],
+    "left_status": "symmetric candidate, not verified",
+    "rendering": "D3 painter stage, generic door tile and axis, shared native frame blitter and calibration; front render order preserved",
+    "limitations": "Only D3 lane +/-1 frame registered; other lateral projections and lateral panels not implemented. Verify foreground occlusion and left mirror. No Unity compile available.",
+    "next": "Compare reference pose with DOS; verify front Black Door and Portcullis regression."
   }
 }
