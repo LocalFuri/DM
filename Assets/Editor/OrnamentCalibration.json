@@ -30,6 +30,11 @@
             "key": "DoorPanelProjection:Set0:L0:O1:F1",
             "dx": 0,
             "dy": -2
+        },
+        {
+            "key": "DoorFrameProjection:S3:Left",
+            "dx": -1,
+            "dy": 0
         }
     ]
 }
