@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "Door frames and closed Portcullis F1/F2/F3 approved; D7A sensor works; D7B animation test pending; D7C reset control prepared.",
+  "checkpoint": "D7D functional opening animation and door rattle confirmed by user; precise DOS per-frame audiovisual timing is the immediate next task.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -115,9 +115,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Verify Dungeon Features puddle icon at Level 0 (4,10), including after moving player off tile.",
-    "Verify Unity vs DOS at Level 0 (5,9) South, S1:Right, without changing geometry.",
-    "Evaluate Cursor DOS runtime report; preserve approved rendering."
+    "Resume D7E: measure original DOS Portcullis opening frame and sound timing at Level 0 (7,9) West → (6,9) West.",
+    "Implement generic per-frame timing controls in ViewEdit with persistent Apply after measuring reference; keep approved artwork, geometry and sensor behavior unchanged.",
+    "After audiovisual approval, implement safe single-ZIP PowerShell installer with staging outside Assets; later closing, collision and runtime integration."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -8150,10 +8150,144 @@
   },
   "door_sound_D7D_20261126": {
     "timestamp": "2026-11-26T23:23:33.153590+01:00",
-    "status": "Prepared; Unity compile and audio comparison pending",
+    "status": "User confirmed compilation errors gone and opening with sound works almost perfectly; exact frame timing remains pending.",
     "implementation": "Optional runtime state-transition callback, invoked once per actual opening step; ViewEdit requests Assets/Audio/Door_Rattle.wav using existing audio preview helper. No timer changes, no playback on reset, no artwork changes.",
     "timing": "Existing 1/6 second preview step unchanged; native WAV 2267 samples at 6000 Hz (377.83 ms).",
     "limitations": "Editor audio preview may restart or overlap repeated requests; DOS sound priority and exact timing not verified. No runtime audio host integration.",
     "reference": "Level 0 (7,9) West, reset doors, step to (6,9)."
+  },
+  "end_of_session_door_timing_resume": {
+    "timestamp": "2026-11-26T23:37:58.940892+01:00",
+    "resume_date": "2026-11-27",
+    "status": "Functional D7D approved by user; audiovisual precision pending, not fully DOS verified.",
+    "reference": {
+      "level": 0,
+      "start": [
+        7,
+        9
+      ],
+      "facing": "West",
+      "pressure_plate": [
+        6,
+        9
+      ],
+      "door": [
+        5,
+        9
+      ],
+      "procedure": "Reset Doors, verify closed F2, press forward once, observe F1 opening."
+    },
+    "protected": [
+      "All nine puddle perspectives user-approved; corrected native graphic 437 and Dungeon Features icon.",
+      "Centered door frames S1/S2/S3 left and right approved.",
+      "Closed Portcullis F1/F2/F3 geometry and native artwork approved.",
+      "D7A pressure plate activation and D7C Reset Doors working.",
+      "D7B animation works after registry repair; D7D sound works almost perfectly per user."
+    ],
+    "current_baseline": {
+      "states": [
+        4,
+        3,
+        2,
+        1,
+        0
+      ],
+      "step_ms": 166.66666666666666,
+      "nominal_total_ms": 666.6666666666666,
+      "vertical_lift_px_by_depth": [
+        22,
+        15,
+        10
+      ],
+      "sound": "Assets/Audio/Door_Rattle.wav",
+      "sound_duration_ms": 377.83333333333337,
+      "sound_requests": "One per actual state transition; pressure-switch click separate; no sound on reset.",
+      "timing_status": "Preview settings, not measured DOS timing."
+    },
+    "next_research": [
+      "Capture original DOS opening with audio; determine recording frame rate and timebase.",
+      "Measure trigger-to-first-motion latency, each state dwell, each frame displacement and crop, audio onset relative to each transition, and overlap/restart or priority behavior.",
+      "Compare Unity using same reference; do not guess exact DOS values or modify original WAV."
+    ],
+    "recommended_viewedit_controls": {
+      "status": "Proposed, not implemented",
+      "pressure_plate_delay_ms": 0,
+      "frame_delays_ms": [
+        167,
+        167,
+        167,
+        167
+      ],
+      "sound_offset_ms": 0,
+      "semantics": "Explicitly define additional trigger delay versus first-frame delay to avoid double counting; sound offset relative to each transition. Use one animation clock. Defaults are provisional rounded values.",
+      "persistence": "Generic all-door settings; Apply saves permanently; validate nonnegative frame delays, allow signed sound offset if supported; preserve reset behavior."
+    },
+    "pending": [
+      "Exact DOS timing and audio behavior; intermediate geometry verification.",
+      "F1/F2 bottom-edge differences remain documented, no speculative changes.",
+      "Closing, collision, horizontal animation, runtime game clock/audio integration.",
+      "Automatic single-ZIP PowerShell installation tool after audiovisual approval; user prefers one download and default Editor destination. Stage outside Assets to avoid duplicate runtime classes; preserve original .meta GUIDs."
+    ],
+    "installation": {
+      "editor": "C:\\Unity\\DM\\Assets\\Editor\\",
+      "runtime": "C:\\Unity\\DM\\Assets\\Scripts\\Dungeon\\DungeonMap.cs",
+      "latest_editor_zip": "Door_Sound_D7D_Editor_20261126-232333.zip",
+      "latest_runtime_zip": "Door_Sound_D7D_Runtime_20261126-232333.zip",
+      "required_registry": "DosDoorPanelPreviewData.json from Door_Animation_Registry_Repair.zip; retain verticalLiftPerStep values.",
+      "verified_signature": "AdvanceDoorOpeningAnimations(double elapsedSeconds, double secondsPerStep, Action onDoorStep = null)",
+      "compile_status": "User confirmed errors gone; PowerShell confirmed signature at line 107."
+    },
+    "workflow": "No Cursor for rest of current session. Cursor subscription ends November 28; planned Claude transition after existing subscription. Independent research remains read-only. Read latest complete Progression.json at session start. Research before implementation; no hardcoded coordinate exceptions or fallback rendering."
+  },
+  "door_timing_D7E_20261127-172742": {
+    "timestamp": "2026-11-27T17:27:42.647985+01:00",
+    "status": "Candidate patch; Unity compilation and visual/audio approval pending",
+    "frame_delays_ms": [
+      200,
+      271,
+      214,
+      228
+    ],
+    "basis": "Prior AVI observations; provisional capture-derived values, not verified DOS engine constants",
+    "changes": [
+      "Four independent delays persisted by Apply in DoorAnimationTiming.json",
+      "First delay includes trigger latency; no separate trigger delay",
+      "Preserve elapsed overshoot; one visible transition per update",
+      "Existing sound playback unchanged; overlap/restart and offset pending",
+      "Geometry and original WAV unchanged"
+    ],
+    "installation": "Install both editor and runtime ZIPs together. Runtime method signature changed; other project callers not available for audit.",
+    "next": "Compile and compare at Level 0 (7,9) West; reset then step forward. Verify audio separately."
+  },
+  "door_top_frame_D7F_20261127-175127": {
+    "timestamp": "2026-11-27T17:51:27.866395+01:00",
+    "status": "DOS extraction complete; renderer unchanged",
+    "source": "GRAPHICS.DAT (identical to GRAPHICS_dos.DAT), 713 records",
+    "graphics": {
+      "91": {
+        "slot": "F1",
+        "width": 102,
+        "height": 4,
+        "viewport_x": 61,
+        "viewport_y": 12,
+        "opaque_pixel_matches": 392,
+        "opaque_pixels": 396
+      },
+      "92": {
+        "slot": "F2 candidate",
+        "width": 70,
+        "height": 3
+      }
+    },
+    "palette_rgb_gray": {
+      "0": 0,
+      "1": 109,
+      "2": 146,
+      "12": 73,
+      "13": 182,
+      "10": 0
+    },
+    "transparent_index": 10,
+    "next": "Verify F2 placement and F3 availability, integrate static top frame with existing door renderer and verify draw order for all states; no hardcoded line or geometry changes."
   }
 }

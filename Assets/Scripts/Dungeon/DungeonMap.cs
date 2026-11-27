@@ -104,9 +104,11 @@ namespace DM.Dungeon
 
     // Advance one visible state per update; do not skip intermediate frames.
     // The host supplies elapsed time and the preview tick duration.
-    public bool AdvanceDoorOpeningAnimations(double elapsedSeconds, double secondsPerStep, Action onDoorStep = null)
+    public bool AdvanceDoorOpeningAnimations(double elapsedSeconds, int[] stepMilliseconds, Action onDoorStep = null)
     {
-      if (elapsedSeconds <= 0 || secondsPerStep <= 0) return false;
+      if (elapsedSeconds <= 0 || stepMilliseconds == null || stepMilliseconds.Length != 4) return false;
+      for (int i = 0; i < 4; i++)
+        if (stepMilliseconds[i] <= 0) throw new ArgumentOutOfRangeException(nameof(stepMilliseconds));
       bool changed = false;
       foreach (var door in _doors.Values)
       {
@@ -114,8 +116,9 @@ namespace DM.Dungeon
         if (door.CurrentState < 1 || door.CurrentState > 4)
         { door.Opening = false; continue; }
         door.OpeningElapsedSeconds += elapsedSeconds;
+        double secondsPerStep = stepMilliseconds[4 - door.CurrentState] / 1000.0;
         if (door.OpeningElapsedSeconds < secondsPerStep) continue;
-        door.OpeningElapsedSeconds = 0;
+        door.OpeningElapsedSeconds -= secondsPerStep;
         door.CurrentState--;
         changed = true;
         if (door.CurrentState == 0) door.Opening = false;

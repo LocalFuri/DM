@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -13034,6 +13034,7 @@ private static void HandleGameViewPointerDown(
   private void DrawMapPosePreviewControls()
   {
     DrawPreviewMiniMap();
+    DrawDoorTimingControls();
     using (new EditorGUI.DisabledScope(Application.isPlaying || previewMiniMap == null))
     {
       if (GUILayout.Button("Reset Doors"))
@@ -20681,7 +20682,73 @@ private static void HandleGameViewPointerDown(
 
   // D7B: original discrete door states, vertical native bitmap crop.
   // Preview timing is provisional until measured against DOS.
-  private const double DoorOpeningPreviewStepSeconds = 1.0 / 6.0;
+  private const string DoorTimingPath = "Assets/Editor/DoorAnimationTiming.json";
+  [System.Serializable] private sealed class DoorTimingData
+  {
+    public int[] frameDelaysMs;
+  }
+  private DoorTimingData appliedDoorTiming;
+  private int[] draftDoorTiming;
+  private bool doorTimingLoadAttempted;
+  private bool doorTimingExpanded;
+
+  private void EnsureDoorTimingLoaded()
+  {
+    if (doorTimingLoadAttempted) return;
+    doorTimingLoadAttempted = true;
+    try
+    {
+      var data = JsonUtility.FromJson<DoorTimingData>(File.ReadAllText(DoorTimingPath));
+      if (data == null || !ValidDoorTiming(data.frameDelaysMs))
+        throw new System.InvalidOperationException("Expected four positive frame delays.");
+      appliedDoorTiming = data;
+      draftDoorTiming = (int[])data.frameDelaysMs.Clone();
+    }
+    catch (System.Exception ex)
+    {
+      LogMissingArtworkCyan("DOOR TIMING: " + ex.Message + " (no fallback)");
+    }
+  }
+
+  private static bool ValidDoorTiming(int[] delays)
+  {
+    if (delays == null || delays.Length != 4) return false;
+    foreach (int delay in delays)
+      if (delay < 1 || delay > 10000) return false;
+    return true;
+  }
+
+  private void DrawDoorTimingControls()
+  {
+    EnsureDoorTimingLoaded();
+    doorTimingExpanded = EditorGUILayout.Foldout(doorTimingExpanded, "Door Animation Timing", true);
+    if (!doorTimingExpanded) return;
+    if (draftDoorTiming == null)
+    {
+      EditorGUILayout.HelpBox("Missing or invalid " + DoorTimingPath + ". Restore it and reopen ViewEdit.", MessageType.Warning);
+      return;
+    }
+    for (int i = 0; i < 4; i++)
+      draftDoorTiming[i] = EditorGUILayout.IntField("Frame " + (i + 1) + " delay (ms)", draftDoorTiming[i]);
+    EditorGUILayout.HelpBox("Frame 1 includes trigger-to-first-motion delay. Sound plays at each transition.", MessageType.Info);
+    using (new EditorGUI.DisabledScope(!ValidDoorTiming(draftDoorTiming) || Application.isPlaying))
+    {
+      if (GUILayout.Button("Apply Door Timing"))
+      {
+        try
+        {
+          var data = new DoorTimingData { frameDelaysMs = (int[])draftDoorTiming.Clone() };
+          File.WriteAllText(DoorTimingPath, JsonUtility.ToJson(data, true));
+          appliedDoorTiming = data;
+          AssetDatabase.ImportAsset(DoorTimingPath);
+        }
+        catch (System.Exception ex)
+        {
+          Debug.LogWarning("DOOR TIMING: " + ex.Message);
+        }
+      }
+    }
+  }
   private double lastDoorOpeningPreviewTime;
 
   // D7D: request the native rattle at each actual door-state transition.
@@ -20710,7 +20777,9 @@ private static void HandleGameViewPointerDown(
     double elapsed = now - lastDoorOpeningPreviewTime;
     lastDoorOpeningPreviewTime = now;
     if (Application.isPlaying || previewMiniMap == null) return;
-    if (!previewMiniMap.AdvanceDoorOpeningAnimations(elapsed, DoorOpeningPreviewStepSeconds, PlayDoorRattlePreview)) return;
+    EnsureDoorTimingLoaded();
+    if (appliedDoorTiming == null) return;
+    if (!previewMiniMap.AdvanceDoorOpeningAnimations(elapsed, appliedDoorTiming.frameDelaysMs, PlayDoorRattlePreview)) return;
     RefreshEditModePreview();
     Repaint();
   }
