@@ -18725,6 +18725,11 @@ private static void HandleGameViewPointerDown(
 
   private void ComposeEditModePreview()
   {
+    // Unapplied door X/Y edits belong to the current preview pose only.
+    // Saved calibration is read again by the shared door renderer.
+    if (renderedDosLevel != previewDungeonLevel || renderedDosX != previewX
+        || renderedDosY != previewY || renderedDosFacing != previewFacing)
+      dosDoorFrameOffsetDrafts.Clear();
     renderedDosWallOrnaments.Clear();
     renderedDosMonsterRows.Clear();
     renderedDosFloorRows.Clear();
