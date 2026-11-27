@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "D7G F1 top frame visually approved; D7H F2 native top frame registered with provisional geometry; compare DOS/Unity at Level 0 (7,9) West, open door.",
+  "checkpoint": "D7H completed: Door Top Frames F1/F2/F3 visually approved by user. Resume D7E Portcullis animation and sound synchronization.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -115,9 +115,10 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Resume D7E: measure original DOS Portcullis opening frame and sound timing at Level 0 (7,9) West → (6,9) West.",
-    "Implement generic per-frame timing controls in ViewEdit with persistent Apply after measuring reference; keep approved artwork, geometry and sensor behavior unchanged.",
-    "After audiovisual approval, implement safe single-ZIP PowerShell installer with staging outside Assets; later closing, collision and runtime integration."
+    "Resume D7E at Level 0 (7,9) West: Reset Doors, step to (6,9), compare opening animation and sound with fires_001.avi.",
+    "Validate installed per-frame delays [200,271,214,228] ms and measure audio restart/overlap and offset; preserve original WAV and approved geometry.",
+    "Verify top-frame visibility during closed/intermediate door states as part of animation test; preserve generic top-frame-before-pillars order.",
+    "After audiovisual approval, implement safe single-ZIP PowerShell installer; later closing, collision and runtime integration."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -8311,7 +8312,7 @@
   },
   "door_top_frame_D7H_20261127-182056": {
     "timestamp": "2026-11-27T18:20:56.183137+01:00",
-    "status": "F2 registered; compile/visual comparison pending",
+    "status": "User visually approved F2 and F3; F1 previously approved after D7G order fix.",
     "geometry": {
       "depth": 2,
       "x": 77,
@@ -8322,6 +8323,45 @@
     },
     "basis": "Centered at viewport X=112; top frame bottom aligned to approved F2 panel top Y=24, so Y=21. Provisional, not DOS measured.",
     "changes": "Registry only; existing generic top-frame renderer and ViewEdit Apply reused; F1 unchanged; top frame before pillars; no cropping or exceptions.",
-    "next": "Compare F2 against DOS at Level 0 (7,9) West, fully open; calibrate via Apply if needed. F3 and audio calibration pending."
+    "next": "Resume D7E audiovisual calibration; closed/intermediate top-frame regression check pending."
+  },
+  "door_top_frame_D7H_final_approval": {
+    "timestamp": "2026-11-27T18:31:07.856155+01:00",
+    "status": "User approved all three perspectives visually in open-door comparisons",
+    "views": [
+      {
+        "depth": 1,
+        "x": 61,
+        "y": 12,
+        "width": 102,
+        "height": 4,
+        "path": "Assets/Art/Doors/Door_Top_Frame_F1_102x4.png"
+      },
+      {
+        "depth": 2,
+        "x": 77,
+        "y": 21,
+        "width": 70,
+        "height": 3,
+        "path": "Assets/Art/Doors/Door_Top_Frame_F2_70x3.png"
+      },
+      {
+        "depth": 3,
+        "render": false,
+        "reason": "User confirmed neither DOS nor Unity renders a top frame at F3."
+      }
+    ],
+    "render_order": [
+      "static top frame",
+      "left door pillar",
+      "right door pillar"
+    ],
+    "F1_test": "Level 0 (6,9) West fully open; two protruding black pixels eliminated by generic draw order.",
+    "F2_test": "Level 0 (7,9) West fully open; user approved without adjustment.",
+    "constraints": "No cropping, scaling, artwork modifications, per-graphic exceptions or F3 fallback.",
+    "limitations": "Approval based on user visual comparisons; closed/intermediate states and audiovisual timing remain pending.",
+    "resume": "D7E animation and sound timing; retain provisional four delays and original WAV.",
+    "latest_editor_code": "Door_Top_Frame_D7G_Order_20261127-181428.zip",
+    "latest_registry": "Door_Top_Frame_D7H_F2_20261127-182056.zip"
   }
 }
