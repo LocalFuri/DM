@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "D8D: Black Door F1 user-approved; generic door rendering and Apply behavior accepted. Resume Black Door F2 at Level 0 (1,4) North.",
+  "checkpoint": "D8D: Black Door F1/F2/F3 all user-approved. Preserve local calibrations. Next check Portcullis regression before D7E animation and sound calibration.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -115,7 +115,7 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Black Door F1 approved by user; preserve saved calibration and generic renderer. Next compare F2 at Level 0 (1,4) North, then F3 at (1,5) North; calibrate via Apply if necessary.",
+    "Black Door F1/F2/F3 approved by user. Preserve all local calibration values; no further front-view corrections.",
     "Check any previously verified oblique Black Door views: old dedicated right-oblique path removed; generic oblique door projection not yet implemented; no fallback. Research generic geometry rather than restore old code.",
     "Check Portcullis regression F1/F2/F3 and top frames. Confirm existing artwork, geometry and timing unchanged.",
     "Resume D7E at Level 0 (7,9) West: Reset Doors, step to (6,9), compare opening animation and sound with fires_001.avi.",
@@ -8500,5 +8500,15 @@
     "rules": "No cropping, artwork edits, per-door exceptions or legacy fallback to fix the two pixels. Preserve generic top frame, pillars, panel-last hierarchy and Apply behavior.",
     "next": "Compare Black Door F2 at Level 0 (1,4) North, then F3 at (1,5) North. Check Portcullis regression before resuming animation and sound timing.",
     "changes": "Progression.json only; no source, registry, calibration or artwork changes."
+  },
+  "black_door_all_front_approval_20261127": {
+    "timestamp": "2026-11-27T20:09:17.195210+01:00",
+    "status": "F1, F2, F3 PERFECT / APPROVED by user for gameplay",
+    "F1": "Previously approved; two protruding black pixels accepted; preserve saved Y calibration.",
+    "F2": "User approved despite one-pixel difference; no further correction.",
+    "F3": "User adjusted F3 and approved resulting appearance, described as better than DOS. Preserve local calibration; exact values not supplied or inspected.",
+    "rules": "No legacy paths, cropping, per-door exceptions or further pixel corrections. Preserve D8D generic hierarchy and Apply behavior.",
+    "next": "Check Portcullis regression, then resume D7E animation and sound timing. Generic oblique projection remains pending.",
+    "changes": "Progression.json only; local calibration not overwritten."
   }
 }
