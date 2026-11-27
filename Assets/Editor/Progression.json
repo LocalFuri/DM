@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "D8C: restore D8A generic panel-last compositing; Black Door F1 user calibration preserved; visual regression checks pending.",
+  "checkpoint": "D8D: Black Door F1 user-approved; generic door rendering and Apply behavior accepted. Resume Black Door F2 at Level 0 (1,4) North.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -115,7 +115,7 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Install D8A Editor ZIP, compile Unity and check Console. Verify generic Black Door rows appear at Level 0 (1,3)/(1,4)/(1,5) North; compare each against DOS. Old dedicated layout cards are removed by one-way migration. Save layout and commit after checks.",
+    "Black Door F1 approved by user; preserve saved calibration and generic renderer. Next compare F2 at Level 0 (1,4) North, then F3 at (1,5) North; calibrate via Apply if necessary.",
     "Check any previously verified oblique Black Door views: old dedicated right-oblique path removed; generic oblique door projection not yet implemented; no fallback. Research generic geometry rather than restore old code.",
     "Check Portcullis regression F1/F2/F3 and top frames. Confirm existing artwork, geometry and timing unchanged.",
     "Resume D7E at Level 0 (7,9) West: Reset Doors, step to (6,9), compare opening animation and sound with fires_001.avi.",
@@ -8479,9 +8479,26 @@
   },
   "door_generic_D8D_20261127-192930": {
     "timestamp": "2026-11-27T19:29:30.878350+01:00",
-    "status": "Candidate; Unity compilation and user verification pending",
+    "status": "User confirmed Apply behavior works perfectly; Black Door F1 subsequently approved.",
     "change": "Clear shared door X/Y draft dictionary before composition when level, X, Y or facing differs from previous rendered pose. Same-pose preview refresh retains drafts. Apply continues to save existing projection calibration; navigation restores saved offsets or registry defaults when no calibration exists. Applies to panels, pillars and top frames.",
     "preserved": "D8C rendering order, artwork, geometry, animation, existing calibration and registries unchanged.",
     "next": "Change Door Top Frame F1 Y without Apply, navigate or turn and return, verify restored saved/default Y. Repeat with Apply and verify persistence; check Black Door F1 and closed/open Portcullis."
+  },
+  "black_door_F1_live_approval_20261127": {
+    "timestamp": "2026-11-27T19:40:40.443568+01:00",
+    "status": "PERFECT / APPROVED by user for gameplay; not a claim of literal pixel identity.",
+    "baseline": "Door_Generic_D8D_Apply_20261127-192930.zip",
+    "reference_pose": {
+      "level": 0,
+      "x": 1,
+      "y": 3,
+      "facing": "North",
+      "depth": 1
+    },
+    "calibration": "User saved a 2 px Y-offset adjustment via Apply; exact local saved value not inspected. Preserve it.",
+    "accepted_difference": "Two protruding black pixels are explicitly accepted as visually negligible. No further investigation or correction needed for F1.",
+    "rules": "No cropping, artwork edits, per-door exceptions or legacy fallback to fix the two pixels. Preserve generic top frame, pillars, panel-last hierarchy and Apply behavior.",
+    "next": "Compare Black Door F2 at Level 0 (1,4) North, then F3 at (1,5) North. Check Portcullis regression before resuming animation and sound timing.",
+    "changes": "Progression.json only; no source, registry, calibration or artwork changes."
   }
 }
