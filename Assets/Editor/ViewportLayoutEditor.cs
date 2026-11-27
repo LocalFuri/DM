@@ -12262,6 +12262,8 @@ private static void HandleGameViewPointerDown(
       if (GUILayout.Button("Reset Doors", GUILayout.Width(90f)))
       {
         previewMiniMap.ResetDoorsToInitialState();
+        doorPreviewMeasuring = false;
+        doorPreviewUpdateCount = 0;
         lastDoorOpeningPreviewTime = EditorApplication.timeSinceStartup;
         RefreshEditModePreview();
         Repaint();
@@ -19509,6 +19511,11 @@ private static void HandleGameViewPointerDown(
       draftDoorTiming[i] = EditorGUILayout.IntField("Frame " + (i + 1) + " delay (ms)", draftDoorTiming[i]);
     draftSmoothDoorAnimation = EditorGUILayout.Toggle("Smooth Animation", draftSmoothDoorAnimation);
     EditorGUILayout.HelpBox("Smooth: whole-pixel movement throughout each interval. Original: discrete states. Sound plays at each logical transition.", MessageType.Info);
+    if (draftSmoothDoorAnimation && doorPreviewUpdateCount > 0)
+      EditorGUILayout.LabelField("Last opening preview", string.Format("{0} updates / {1:F0} ms ({2:F1} updates/s)",
+          doorPreviewUpdateCount, doorPreviewMeasuredSeconds * 1000.0,
+          doorPreviewMeasuredSeconds > 0 ? doorPreviewUpdateCount / doorPreviewMeasuredSeconds : 0));
+
     using (new EditorGUI.DisabledScope(!ValidDoorTiming(draftDoorTiming) || Application.isPlaying))
     {
       if (GUILayout.Button("Apply Door Timing"))
@@ -19528,6 +19535,10 @@ private static void HandleGameViewPointerDown(
     }
   }
   private double lastDoorOpeningPreviewTime;
+  private bool doorPreviewMeasuring;
+  private int doorPreviewUpdateCount;
+  private double doorPreviewMeasureStart;
+  private double doorPreviewMeasuredSeconds;
 
   // D7D: request the native rattle at each actual door-state transition.
   // Use the existing editor audio playback path; no separate sound timer.
@@ -19557,8 +19568,21 @@ private static void HandleGameViewPointerDown(
     if (Application.isPlaying || previewMiniMap == null) return;
     EnsureDoorTimingLoaded();
     if (appliedDoorTiming == null) return;
-    if (!previewMiniMap.AdvanceDoorOpeningAnimations(elapsed, appliedDoorTiming.frameDelaysMs, PlayDoorRattlePreview, appliedDoorTiming.smoothAnimation)) return;
-    RefreshEditModePreview();
+    if (!previewMiniMap.AdvanceDoorOpeningAnimations(elapsed, appliedDoorTiming.frameDelaysMs, PlayDoorRattlePreview, appliedDoorTiming.smoothAnimation))
+    {
+      if (appliedDoorTiming.smoothAnimation) doorPreviewMeasuring = false;
+      return;
+    }
+    if (!doorPreviewMeasuring)
+    {
+      doorPreviewMeasuring = true;
+      doorPreviewUpdateCount = 0;
+      doorPreviewMeasureStart = now - elapsed;
+    }
+    // Reuse the native preview texture instead of destroying it every tick.
+    PresentEditModePreviewToGameView();
+    doorPreviewUpdateCount++;
+    doorPreviewMeasuredSeconds = EditorApplication.timeSinceStartup - doorPreviewMeasureStart;
     Repaint();
   }
 

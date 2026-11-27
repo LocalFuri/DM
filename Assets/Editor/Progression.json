@@ -60,7 +60,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "D9B complete: Door Right F3 Side 100% visually approved by user; one-pixel difference accepted. Next verify left F3 symmetry and foreground occlusion.",
+  "checkpoint": "End of 27 November 2026: D12 native 320x200 smooth door preview delivered; Unity compilation and live performance verification pending. Resume 28 November with D12 measurement and sound synchronization.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -116,14 +116,13 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Verify left F3 lateral frame symmetry against DOS and foreground occlusion; preserve approved right F3. Do not investigate the accepted one-pixel discrepancy.",
-    "Black Door F1/F2/F3 approved by user. Preserve all local calibration values; no further front-view corrections.",
-    "Research remaining generic oblique door projections as needed; D3 lateral frame implemented and right side approved. No legacy fallback.",
-    "Check Portcullis regression F1/F2/F3 and top frames. Confirm existing artwork, geometry and timing unchanged.",
-    "Resume D7E at Level 0 (7,9) West: Reset Doors, step to (6,9), compare opening animation and sound with fires_001.avi.",
-    "Validate installed per-frame delays [200,271,214,228] ms and measure audio restart/overlap and offset; preserve original WAV and approved geometry.",
-    "Verify top-frame visibility during closed/intermediate door states as part of animation test; preserve generic top-frame-before-pillars order.",
-    "After audiovisual approval, implement safe single-ZIP PowerShell installer; later closing, collision and runtime integration."
+    "Read the complete latest Progression.json and apply all mandatory rules before technical work.",
+    "Verify D12 installation and Unity compilation; use native 320x200 only, D10 DungeonMap.cs runtime and D12 ViewportLayoutEditor.cs. Do not revive D11 high-resolution compositor.",
+    "At Level 0 (7,9) West, enable Smooth Animation, Apply Door Timing, Reset Doors and step to (6,9). Record the last opening preview update count, elapsed time and updates/sec; these are presentation attempts, not physical frames. Compare visual smoothness and closed/open endpoints.",
+    "If performance needs improvement, profile native preview update cost and cadence; preserve integer-pixel positions, original artwork, geometry and rendering hierarchy. F1 has at most 88 movement increments, F2 61, F3 38; actual displayed count is refresh-dependent.",
+    "Compare sound onset, four triggers and tail with fires_001.avi; provisional delays 200,271,214,228 ms (913 ms total). Preserve WAV; verify overlap/restart before changing audio.",
+    "Verify Portcullis regression and intermediate top-frame visibility; investigate remaining lateral distances F2/F1 and foreground occlusion later without disturbing approved front and lateral F3 views.",
+    "After audiovisual approval, continue remaining door functionality and safe single-ZIP installer."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -8605,5 +8604,73 @@
     "change": "Optional Smooth Animation toggle persisted by Apply Door Timing; old JSON defaults to discrete. Integer-pixel interpolation over existing four intervals; logical transitions and audio callback preserved. In smooth mode motion starts during first interval, unlike DOS discrete latency. Runtime catches up elapsed states in smooth mode. No art, calibration or timing JSON overwritten. ViewEdit only; play mode renderer not changed.",
     "next": "Enable Smooth Animation and Apply Door Timing; Reset Doors at level 0 (7,9) West and step to (6,9). Compare smooth and original modes; profile old PC if full preview refresh is slow.",
     "menu_audit": "18 available editor scripts, latest menu fixes overlaid; no nested paths or duplicates (literal paths)."
+  },
+  "door_smooth_subpixel_D11_20261127-223136": {
+    "timestamp": "2026-11-27T22:31:36.377037+01:00",
+    "status": "Prepared source update; Unity compile, high-resolution presentation and live animation performance pending",
+    "baseline": "Latest delivered D10 Editor and Runtime archives; local installation not independently confirmed.",
+    "change": "Continuous time-derived vertical door position sampled at physical output pixel centers. Shared native panel blitter. Compose once, fork vertical phases only for a fractional moving door, preserve depth order, transparency, subsequent thrown item/light/HUD layers. Point-filtered texture 320x(200*N), real Game View integer multiple N in 2..8. No fixed animation frame count; native 320x200 target retains D10 integer sample precision. Existing four timings and sound callbacks unchanged. ViewEdit only.",
+    "presentation": "Select a FIXED 960x600 resolution and Game View zoom 1x; Refresh. If desired 1280x800 or other exact integer multiples through 2560x1600. Canvas uses corresponding integer scale; logical coordinates, mouse and held cursor mapping corrected. Native 320x200 exact layout remains. High resolution output enlarges the entire logical canvas even when Smooth is disabled so A/B comparison is possible.",
+    "test": "Level 0 (7,9) West; enable Smooth Animation, Apply Door Timing, Reset Doors, step forward to (6,9). Verify door motion, closed/open endpoints, sound timing, native static geometry, movement/turn and item hit testing. Compare with Smooth disabled at same target. If old PC is slow use 640x400; measure refresh rate before claiming smoothness.",
+    "protected": "All existing approved artwork, calibration JSON and door render order; D10 runtime and timing JSON not changed. No coordinate-specific exceptions, no cropping edits or texture smoothing.",
+    "validation": "Lexical delimiter balance and D10 runtime method signatures checked; 420 independent randomized phase/compositing reference tests passed. No Unity compiler available. Menu audit: 18 available Editor scripts; 14 literal MenuItem paths; no nested Tools paths or duplicates.",
+    "next": "Verify D11 on old PC before sound calibration. Original door metadata gaps and unverified other door types remain as documented."
+  },
+  "door_native_D12_20261127-234423": {
+    "timestamp": "2026-11-27T23:44:23.922360+01:00",
+    "status": "Prepared; Unity compilation and live performance pending",
+    "rule": "Native 320x200 only. D11 high-resolution presentation superseded by user decision. Restore D10 native editor compositor; retain D10 runtime, smooth toggle, logical states and sound triggers.",
+    "change": "Reuse native preview texture via existing PresentEditModePreviewToGameView during animation. Timing foldout displays approximate smooth preview update count, elapsed time and update rate; not measured display FPS or unique pixel positions. Counts presentation attempts, not GPU frames.",
+    "test": "Enable Smooth Animation and Apply Door Timing; reset at level 0 (7,9) West; step to (6,9). Inspect measurement and verify visual motion, closed/open endpoints, sound.",
+    "protected": "No calibration or art changes. No runtime changes.",
+    "menu_audit": "18 available scripts, 14 literal menu declarations; no nested Tools paths or duplicates."
+  },
+  "end_of_day_20261127_resume_20261128": {
+    "timestamp": "2026-11-27T23:46:44.535654+01:00",
+    "status": "D12 delivered; no user confirmation of compilation or performance yet.",
+    "approved_today": [
+      "Door Top Frame F1 (0091, 102x4, X61 Y12), F2 (0092, 70x3, X77 Y21), F3 intentionally absent.",
+      "Black Door F1/F2/F3 approved by user; negligible pixel differences accepted; preserve locally saved offsets.",
+      "Door Right and Left F3 Side approved; right one-pixel difference accepted, left 1px X correction saved through Apply.",
+      "Generic door hierarchy: top frame before pillars, panel last; lateral F3 frame after D3 outer walls and before nearer walls.",
+      "Door draft X/Y revert on navigation unless Apply; user approved."
+    ],
+    "delivered_not_yet_verified": [
+      "Compact Refresh / Door Animation Timing / Reset Doors row.",
+      "D12 native preview texture reuse and approximate update measurement."
+    ],
+    "baseline": {
+      "editor": "Door_Native_D12_20261127-234423.zip",
+      "runtime": "Door_Smooth_D10_Runtime_20261127-221825.zip",
+      "resolution": [
+        320,
+        200
+      ],
+      "smooth_default_delays_ms": [
+        200,
+        271,
+        214,
+        228
+      ],
+      "sound_triggers": 4
+    },
+    "rules": "Native 320x200 exclusively; no high-resolution D11, no legacy fallback, no cropping or per-door exceptions. Preserve local artwork and calibration. All custom menu commands directly under Tools. Cursor read-only.",
+    "next_actions": [
+      "Read the complete latest Progression.json and apply all mandatory rules before technical work.",
+      "Verify D12 installation and Unity compilation; use native 320x200 only, D10 DungeonMap.cs runtime and D12 ViewportLayoutEditor.cs. Do not revive D11 high-resolution compositor.",
+      "At Level 0 (7,9) West, enable Smooth Animation, Apply Door Timing, Reset Doors and step to (6,9). Record the last opening preview update count, elapsed time and updates/sec; these are presentation attempts, not physical frames. Compare visual smoothness and closed/open endpoints.",
+      "If performance needs improvement, profile native preview update cost and cadence; preserve integer-pixel positions, original artwork, geometry and rendering hierarchy. F1 has at most 88 movement increments, F2 61, F3 38; actual displayed count is refresh-dependent.",
+      "Compare sound onset, four triggers and tail with fires_001.avi; provisional delays 200,271,214,228 ms (913 ms total). Preserve WAV; verify overlap/restart before changing audio.",
+      "Verify Portcullis regression and intermediate top-frame visibility; investigate remaining lateral distances F2/F1 and foreground occlusion later without disturbing approved front and lateral F3 views.",
+      "After audiovisual approval, continue remaining door functionality and safe single-ZIP installer."
+    ],
+    "delivery": "Progression.json only; no source or local settings changed.",
+    "menu_audit": {
+      "scope": 18,
+      "literal_declarations": 14,
+      "nested": [],
+      "duplicate_literal_paths": [],
+      "note": "Audit available archive sources only; no source delivered."
+    }
   }
 }

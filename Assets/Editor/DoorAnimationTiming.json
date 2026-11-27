@@ -1,8 +1,9 @@
 {
-  "frameDelaysMs": [
-    200,
-    271,
-    214,
-    228
-  ]
+    "frameDelaysMs": [
+        200,
+        271,
+        214,
+        228
+    ],
+    "smoothAnimation": false
 }
