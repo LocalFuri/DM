@@ -31,6 +31,13 @@ namespace DM.Dungeon
       public int CurrentState { get; internal set; }
       internal bool Opening;
       internal double OpeningElapsedSeconds;
+      // Fraction toward the next logical state; presentation only.
+      public double GetOpeningStepFraction(int[] stepMilliseconds)
+      {
+        if (!Opening || CurrentState < 1 || CurrentState > 4 || stepMilliseconds == null
+            || stepMilliseconds.Length != 4 || stepMilliseconds[4 - CurrentState] <= 0) return 0;
+        return Math.Max(0, Math.Min(1, OpeningElapsedSeconds * 1000.0 / stepMilliseconds[4 - CurrentState]));
+      }
       public bool OpensVertically { get; internal set; }
       public bool HasButton { get; internal set; }
       public int OrnamentOrdinal { get; internal set; }
@@ -104,7 +111,7 @@ namespace DM.Dungeon
 
     // Advance one visible state per update; do not skip intermediate frames.
     // The host supplies elapsed time and the preview tick duration.
-    public bool AdvanceDoorOpeningAnimations(double elapsedSeconds, int[] stepMilliseconds, Action onDoorStep = null)
+    public bool AdvanceDoorOpeningAnimations(double elapsedSeconds, int[] stepMilliseconds, Action onDoorStep = null, bool smoothVisual = false)
     {
       if (elapsedSeconds <= 0 || stepMilliseconds == null || stepMilliseconds.Length != 4) return false;
       for (int i = 0; i < 4; i++)
@@ -116,13 +123,17 @@ namespace DM.Dungeon
         if (door.CurrentState < 1 || door.CurrentState > 4)
         { door.Opening = false; continue; }
         door.OpeningElapsedSeconds += elapsedSeconds;
-        double secondsPerStep = stepMilliseconds[4 - door.CurrentState] / 1000.0;
-        if (door.OpeningElapsedSeconds < secondsPerStep) continue;
-        door.OpeningElapsedSeconds -= secondsPerStep;
-        door.CurrentState--;
-        changed = true;
-        if (door.CurrentState == 0) door.Opening = false;
-        onDoorStep?.Invoke();
+        if (smoothVisual) changed = true;
+        do
+        {
+          double secondsPerStep = stepMilliseconds[4 - door.CurrentState] / 1000.0;
+          if (door.OpeningElapsedSeconds < secondsPerStep) break;
+          door.OpeningElapsedSeconds -= secondsPerStep;
+          door.CurrentState--;
+          changed = true;
+          if (door.CurrentState == 0) door.Opening = false;
+          onDoorStep?.Invoke();
+        } while (smoothVisual && door.Opening);
       }
       return changed;
     }

@@ -19461,9 +19461,11 @@ private static void HandleGameViewPointerDown(
   [System.Serializable] private sealed class DoorTimingData
   {
     public int[] frameDelaysMs;
+    public bool smoothAnimation;
   }
   private DoorTimingData appliedDoorTiming;
   private int[] draftDoorTiming;
+  private bool draftSmoothDoorAnimation;
   private bool doorTimingLoadAttempted;
   private bool doorTimingExpanded;
 
@@ -19478,6 +19480,7 @@ private static void HandleGameViewPointerDown(
         throw new System.InvalidOperationException("Expected four positive frame delays.");
       appliedDoorTiming = data;
       draftDoorTiming = (int[])data.frameDelaysMs.Clone();
+      draftSmoothDoorAnimation = data.smoothAnimation;
     }
     catch (System.Exception ex)
     {
@@ -19504,14 +19507,15 @@ private static void HandleGameViewPointerDown(
     }
     for (int i = 0; i < 4; i++)
       draftDoorTiming[i] = EditorGUILayout.IntField("Frame " + (i + 1) + " delay (ms)", draftDoorTiming[i]);
-    EditorGUILayout.HelpBox("Frame 1 includes trigger-to-first-motion delay. Sound plays at each transition.", MessageType.Info);
+    draftSmoothDoorAnimation = EditorGUILayout.Toggle("Smooth Animation", draftSmoothDoorAnimation);
+    EditorGUILayout.HelpBox("Smooth: whole-pixel movement throughout each interval. Original: discrete states. Sound plays at each logical transition.", MessageType.Info);
     using (new EditorGUI.DisabledScope(!ValidDoorTiming(draftDoorTiming) || Application.isPlaying))
     {
       if (GUILayout.Button("Apply Door Timing"))
       {
         try
         {
-          var data = new DoorTimingData { frameDelaysMs = (int[])draftDoorTiming.Clone() };
+          var data = new DoorTimingData { frameDelaysMs = (int[])draftDoorTiming.Clone(), smoothAnimation = draftSmoothDoorAnimation };
           File.WriteAllText(DoorTimingPath, JsonUtility.ToJson(data, true));
           appliedDoorTiming = data;
           AssetDatabase.ImportAsset(DoorTimingPath);
@@ -19553,7 +19557,7 @@ private static void HandleGameViewPointerDown(
     if (Application.isPlaying || previewMiniMap == null) return;
     EnsureDoorTimingLoaded();
     if (appliedDoorTiming == null) return;
-    if (!previewMiniMap.AdvanceDoorOpeningAnimations(elapsed, appliedDoorTiming.frameDelaysMs, PlayDoorRattlePreview)) return;
+    if (!previewMiniMap.AdvanceDoorOpeningAnimations(elapsed, appliedDoorTiming.frameDelaysMs, PlayDoorRattlePreview, appliedDoorTiming.smoothAnimation)) return;
     RefreshEditModePreview();
     Repaint();
   }
@@ -19614,11 +19618,18 @@ private static void HandleGameViewPointerDown(
       if (!IsPreviewFeatureEnabled(feature)) continue;
       Vector2Int dest = reference + offset;
       int lift = 0;
-      if (door.CurrentState < 4)
+      bool smooth = door.OpensVertically && appliedDoorTiming != null && appliedDoorTiming.smoothAnimation;
+      double fraction = smooth ? door.GetOpeningStepFraction(appliedDoorTiming.frameDelaysMs) : 0;
+      if (door.CurrentState < 4 || fraction > 0)
       {
         if (view.verticalLiftPerStep <= 0 || 3 * view.verticalLiftPerStep >= view.height)
         { ReportDoorArtworkProblem("missing/invalid vertical door step for set " + door.GraphicSet + " F" + depth); continue; }
         lift = (4 - door.CurrentState) * view.verticalLiftPerStep;
+        if (smooth)
+        {
+          int nextLift = door.CurrentState == 1 ? view.height : lift + view.verticalLiftPerStep;
+          lift = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(lift, nextLift, (float)fraction)), 0, view.height);
+        }
       }
       Color32[] art = source.GetPixels32();
       // Lift without scaling: skip the top source rows and clip at the closed panel's top.

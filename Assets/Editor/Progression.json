@@ -8598,5 +8598,12 @@
     "status": "Source update; Unity compile and UI verification pending",
     "change": "Move Door Animation Timing foldout and Reset Doors into Refresh horizontal row, remove separate rows above toolbar. Expanded timing fields below shared row. No rendering, timing, reset or calibration logic changes.",
     "next": "Verify compact toolbar, continue door checks. Screenshot also shows cyan missing panel registrations for level 0 set 1 ornament ordinal 0 and F3 top-frame diagnostic; not changed in this UI update."
+  },
+  "door_smooth_preview_20261127-221825": {
+    "timestamp": "2026-11-27T22:18:25.393077+01:00",
+    "status": "Prepared; Unity compile and visual performance pending",
+    "change": "Optional Smooth Animation toggle persisted by Apply Door Timing; old JSON defaults to discrete. Integer-pixel interpolation over existing four intervals; logical transitions and audio callback preserved. In smooth mode motion starts during first interval, unlike DOS discrete latency. Runtime catches up elapsed states in smooth mode. No art, calibration or timing JSON overwritten. ViewEdit only; play mode renderer not changed.",
+    "next": "Enable Smooth Animation and Apply Door Timing; Reset Doors at level 0 (7,9) West and step to (6,9). Compare smooth and original modes; profile old PC if full preview refresh is slow.",
+    "menu_audit": "18 available editor scripts, latest menu fixes overlaid; no nested paths or duplicates (literal paths)."
   }
 }
