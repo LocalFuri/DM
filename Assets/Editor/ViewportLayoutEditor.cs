@@ -12256,8 +12256,20 @@ private static void HandleGameViewPointerDown(
         Debug.Log("ViewEdit Refresh: redraw completed (inspect LeftF2 POSE/comparison diagnostics above).");
       }
     }
+    doorTimingExpanded = GUILayout.Toggle(doorTimingExpanded, "Door Animation Timing", EditorStyles.foldout, GUILayout.Width(155f));
+    using (new EditorGUI.DisabledScope(Application.isPlaying || previewMiniMap == null))
+    {
+      if (GUILayout.Button("Reset Doors", GUILayout.Width(90f)))
+      {
+        previewMiniMap.ResetDoorsToInitialState();
+        lastDoorOpeningPreviewTime = EditorApplication.timeSinceStartup;
+        RefreshEditModePreview();
+        Repaint();
+      }
+    }
     NoteContentRight();
     EditorGUILayout.EndHorizontal();
+    DrawDoorTimingControls();
   }
 
   private bool TryGetViewportRawImage(out RawImage viewportImage)
@@ -12331,17 +12343,7 @@ private static void HandleGameViewPointerDown(
   private void DrawMapPosePreviewControls()
   {
     DrawPreviewMiniMap();
-    DrawDoorTimingControls();
-    using (new EditorGUI.DisabledScope(Application.isPlaying || previewMiniMap == null))
-    {
-      if (GUILayout.Button("Reset Doors"))
-      {
-        previewMiniMap.ResetDoorsToInitialState();
-        lastDoorOpeningPreviewTime = EditorApplication.timeSinceStartup;
-        RefreshEditModePreview();
-        Repaint();
-      }
-    }
+
   }
 
   // Supplemental geometry fingerprints are internal V17 recognition rules.
@@ -19493,9 +19495,8 @@ private static void HandleGameViewPointerDown(
 
   private void DrawDoorTimingControls()
   {
-    EnsureDoorTimingLoaded();
-    doorTimingExpanded = EditorGUILayout.Foldout(doorTimingExpanded, "Door Animation Timing", true);
     if (!doorTimingExpanded) return;
+    EnsureDoorTimingLoaded();
     if (draftDoorTiming == null)
     {
       EditorGUILayout.HelpBox("Missing or invalid " + DoorTimingPath + ". Restore it and reopen ViewEdit.", MessageType.Warning);

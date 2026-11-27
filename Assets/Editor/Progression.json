@@ -8588,5 +8588,15 @@
       "nested_tools_paths": [],
       "repeated_literal_paths": []
     }
+  },
+  "door_left_F3_live_approval_20261127": {
+    "status": "Approved by user after 1 px X adjustment saved through Apply",
+    "calibration": "Preserve local saved values; exact final X not independently verified."
+  },
+  "viewedit_compact_door_toolbar_20261127-221025": {
+    "timestamp": "2026-11-27T22:10:25.902396+01:00",
+    "status": "Source update; Unity compile and UI verification pending",
+    "change": "Move Door Animation Timing foldout and Reset Doors into Refresh horizontal row, remove separate rows above toolbar. Expanded timing fields below shared row. No rendering, timing, reset or calibration logic changes.",
+    "next": "Verify compact toolbar, continue door checks. Screenshot also shows cyan missing panel registrations for level 0 set 1 ornament ordinal 0 and F3 top-frame diagnostic; not changed in this UI update."
   }
 }
