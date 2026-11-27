@@ -1,7 +1,7 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "coordinateSystem": "Top-left of 224x136 dungeon viewport",
-  "status": "D7B: approved closed geometry unchanged. Vertical source lift per state from ScummVM reference (22/15/10), DOS intermediate geometry not yet validated.",
+  "status": "D8A: data-driven front door panel registry. Existing set 0 undecorated projections and vertical lift unchanged. Level 0 set 0 ornament ordinal 1 uses existing native-sized composite artwork; geometry provisional pending DOS comparison. Ornament ordinals are level-relative. No fallback.",
   "views": [
     {
       "graphicSet": 0,
@@ -12,7 +12,8 @@
       "height": 88,
       "path": "Assets/Art/Doors/Door Portcullis_F1_96x88.png",
       "caption": "Door Portcullis F1",
-      "verticalLiftPerStep": 22
+      "verticalLiftPerStep": 22,
+      "ornamentOrdinal": 0
     },
     {
       "graphicSet": 0,
@@ -23,7 +24,8 @@
       "height": 61,
       "path": "Assets/Art/Doors/Door Portcullis_F2_64x61.png",
       "caption": "Door Portcullis F2",
-      "verticalLiftPerStep": 15
+      "verticalLiftPerStep": 15,
+      "ornamentOrdinal": 0
     },
     {
       "graphicSet": 0,
@@ -34,7 +36,47 @@
       "height": 38,
       "path": "Assets/Art/Doors/Door Portcullis_F3_44x38.png",
       "caption": "Door Portcullis F3",
-      "verticalLiftPerStep": 10
+      "verticalLiftPerStep": 10,
+      "ornamentOrdinal": 0
+    },
+    {
+      "graphicSet": 0,
+      "ornamentOrdinal": 1,
+      "level": 0,
+      "depth": 1,
+      "x": 64,
+      "y": 16,
+      "width": 96,
+      "height": 88,
+      "path": "Assets/Art/Doors/Black Door 96x88.png",
+      "caption": "Black Door F1",
+      "verticalLiftPerStep": 0
+    },
+    {
+      "graphicSet": 0,
+      "ornamentOrdinal": 1,
+      "level": 0,
+      "depth": 2,
+      "x": 80,
+      "y": 24,
+      "width": 63,
+      "height": 59,
+      "path": "Assets/Art/Doors/BlackDoorF2_63x59.png",
+      "caption": "Black Door F2",
+      "verticalLiftPerStep": 0
+    },
+    {
+      "graphicSet": 0,
+      "ornamentOrdinal": 1,
+      "level": 0,
+      "depth": 3,
+      "x": 89,
+      "y": 30,
+      "width": 45,
+      "height": 39,
+      "path": "Assets/Art/Doors/BlackDoorF3_45x39.png",
+      "caption": "Black Door F3",
+      "verticalLiftPerStep": 0
     }
   ]
 }

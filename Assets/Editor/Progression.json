@@ -59,7 +59,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "D7H completed: Door Top Frames F1/F2/F3 visually approved by user. Resume D7E Portcullis animation and sound synchronization.",
+  "checkpoint": "D8A: candidate Black Door legacy removal from ViewportLayoutEditor.cs; generic front panel and frame renderer, compile and F1/F2/F3 comparison pending. D7H approved geometry preserved; D7E timing deferred until Black Door checked.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -115,6 +115,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
+    "Install D8A Editor ZIP, compile Unity and check Console. Verify generic Black Door rows appear at Level 0 (1,3)/(1,4)/(1,5) North; compare each against DOS. Old dedicated layout cards are removed by one-way migration. Save layout and commit after checks.",
+    "Check any previously verified oblique Black Door views: old dedicated right-oblique path removed; generic oblique door projection not yet implemented; no fallback. Research generic geometry rather than restore old code.",
+    "Check Portcullis regression F1/F2/F3 and top frames. Confirm existing artwork, geometry and timing unchanged.",
     "Resume D7E at Level 0 (7,9) West: Reset Doors, step to (6,9), compare opening animation and sound with fires_001.avi.",
     "Validate installed per-frame delays [200,271,214,228] ms and measure audio restart/overlap and offset; preserve original WAV and approved geometry.",
     "Verify top-frame visibility during closed/intermediate door states as part of animation test; preserve generic top-frame-before-pillars order.",
@@ -8363,5 +8366,98 @@
     "resume": "D7E animation and sound timing; retain provisional four delays and original WAV.",
     "latest_editor_code": "Door_Top_Frame_D7G_Order_20261127-181428.zip",
     "latest_registry": "Door_Top_Frame_D7H_F2_20261127-182056.zip"
+  },
+  "door_generic_D8A_20261127-185747": {
+    "timestamp": "2026-11-27T18:57:47.281279+01:00",
+    "status": "Candidate source and registry prepared; static lexical and removed-reference checks passed; Unity compile/live test not available.",
+    "source_baseline": "Door_Top_Frame_D7G_Order_20261127-181428.zip; D7H data-only update preserved",
+    "removed": [
+      "ApplyBlackDoorEnabledFromPoseException",
+      "BlitBlackDoorF2DoorIntoPreview",
+      "BlitBlackDoorF2FramesIntoPreview",
+      "BlitBlackDoorF3FramesIntoPreview",
+      "BlitDoorF3RightObliqueAtD3Stage",
+      "DrawBlackDoorFrameF3EditorCard",
+      "EnsureBlackDoorF3Piece",
+      "EnsureBlackDoorFrameLeftF3Piece",
+      "EnsureBlackDoorFrameRightF3Piece",
+      "GetBlackDoorF1SourceTexture",
+      "GetBlackDoorF2SourceTexture",
+      "GetBlackDoorF3SourceTexture",
+      "GetBlackDoorFrameF3SourceTexture",
+      "GetBlackDoorFrameLeftF1SourceTexture",
+      "IsBlackDoorEditorPiece",
+      "IsBlackDoorF1ManualSideWallCandidate",
+      "IsBlackDoorF1PoseException",
+      "IsBlackDoorF2PoseException",
+      "IsBlackDoorF3PoseException",
+      "IsBlackDoorFrontImagePiece",
+      "IsDoorAtViewportCenterDepth",
+      "IsDoorF1FrontView",
+      "IsDoorF2FrontView",
+      "IsDoorF3FrontView",
+      "IsDoorF3RightObliqueView",
+      "IsHallOfChampionsBlackDoorCell",
+      "IsVerifiedBlackDoorF1Pose"
+    ],
+    "legacy_layout_migration": "One-way removal of obsolete layout rows by old serialized names/enum in existing layout cleanup hook; no use in render selection. Artwork files not deleted.",
+    "metadata": {
+      "level0_black_door": {
+        "graphicSet": 0,
+        "ornamentOrdinal": 1,
+        "vertical": 0,
+        "initialState": 4
+      },
+      "level0_portcullis": {
+        "graphicSet": 0,
+        "ornamentOrdinal": 0,
+        "vertical": 1
+      }
+    },
+    "registry": "Schema 2; explicit level-scoped decorated composite entries, no coordinate matching. Actual level ornament ID lookup not present in supplied export; this is a level-local registration, not a universal ornament mapping. Existing composite PNG contents unverified.",
+    "provisional_views": [
+      {
+        "graphicSet": 0,
+        "ornamentOrdinal": 1,
+        "level": 0,
+        "depth": 1,
+        "x": 64,
+        "y": 16,
+        "width": 96,
+        "height": 88,
+        "path": "Assets/Art/Doors/Black Door 96x88.png",
+        "caption": "Black Door F1",
+        "verticalLiftPerStep": 0
+      },
+      {
+        "graphicSet": 0,
+        "ornamentOrdinal": 1,
+        "level": 0,
+        "depth": 2,
+        "x": 80,
+        "y": 24,
+        "width": 63,
+        "height": 59,
+        "path": "Assets/Art/Doors/BlackDoorF2_63x59.png",
+        "caption": "Black Door F2",
+        "verticalLiftPerStep": 0
+      },
+      {
+        "graphicSet": 0,
+        "ornamentOrdinal": 1,
+        "level": 0,
+        "depth": 3,
+        "x": 89,
+        "y": 30,
+        "width": 45,
+        "height": 39,
+        "path": "Assets/Art/Doors/BlackDoorF3_45x39.png",
+        "caption": "Black Door F3",
+        "verticalLiftPerStep": 0
+      }
+    ],
+    "unchanged": "Portcullis registry geometry, lift per step, calibration keys, frame registry, top-frame registry, artwork, DungeonMap.cs, timing and WAV unchanged.",
+    "limitations": "No Unity compiler/full project available; other runtime/layout classes not audited. Dedicated oblique path deleted and generic oblique rendering not implemented yet; horizontal intermediate animation remains unsupported. Full independent door-ornament composition not yet implemented; current closed ornamented panels use registered composite art. No fallback.",
+    "next": "Compile; test Level 0 1,3 North F1, 1,4 North F2, 1,5 North F3; verify Portcullis and generic oblique projection as separate follow-up."
   }
 }

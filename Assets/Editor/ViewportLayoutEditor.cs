@@ -130,10 +130,6 @@ public class ViewportLayoutEditor : EditorWindow
       "Assets/Data/Features/DungeonFeaturePlacements.json";
   private const int PreviewDungeonLevel = 0;
 
-  // Hall of Champions special entrance Black Door. Regular Door tiles elsewhere
-  // in the map must never select the Black Door renderer.
-  private const int HallOfChampionsBlackDoorX = 1;
-  private const int HallOfChampionsBlackDoorY = 2;
 
   private const string PrefsPreviewLevelKey =
       "ViewportLayoutEditor.PreviewLevel";
@@ -560,7 +556,6 @@ public class ViewportLayoutEditor : EditorWindow
     "Right",
     "LeftD3",
     "RightD3",
-    "Black Door",
     "Active",
   };
 
@@ -592,12 +587,6 @@ public class ViewportLayoutEditor : EditorWindow
     ("Champion Status Slot 2", true),
     ("Champion Status Slot 3", true),
     ("Champion Status Slot 4", true),
-    // Door Enabled is pose-authored; kit default is off.
-    ("Black Door Frame Left F1", false),
-    ("Black Door Frame Left F2", false),
-    ("Black Door Frame Right F1", false),
-    ("Black Door Frame Right F2", false),
-    ("BlackDoorF1", false),
   };
 
   [System.NonSerialized]
@@ -718,41 +707,6 @@ public class ViewportLayoutEditor : EditorWindow
   private static bool s_gameViewPointerUpdateAdded;
   private static double s_lastGameViewClickTime;
 
-  // BlackDoorF1 layout Enabled is initialized once for the verified 1,3 North pose.
-  // After initialization, the visible BlackDoorF1 checkbox remains authoritative.
-
-  // ViewEdit-only BlackDoorF2 card controls. Do not write layout/pose and
-  // do not drive rendering; F2 still uses the existing pose exception.
-  private bool blackDoorF2CardInitialized;
-  private bool blackDoorF2CardEnabled;
-  private bool blackDoorF2CardMirror;
-  private DungeonGraphicType blackDoorF2CardGraphic =
-      DungeonGraphicType.BlackDoor;
-
-  private bool blackDoorF3CardInitialized;
-  private bool blackDoorF3CardEnabled;
-  private bool blackDoorF3CardMirror;
-  private DungeonGraphicType blackDoorF3CardGraphic =
-      DungeonGraphicType.BlackDoor;
-  private int blackDoorF3CardX;
-  private int blackDoorF3CardY;
-
-  private bool blackDoorFrameLeftF3EnabledInitialized;
-  private bool blackDoorFrameRightF3EnabledInitialized;
-  private bool blackDoorFrameLeftF3CardEnabled = true;
-  private bool blackDoorFrameLeftF3CardMirror;
-  private int blackDoorFrameLeftF3CardX;
-  private int blackDoorFrameLeftF3CardY;
-
-  private bool blackDoorFrameRightF3CardEnabled = true;
-  private int blackDoorFrameRightF3CardX;
-  private int blackDoorFrameRightF3CardY;
-
-  private Texture2D blackDoorFrameF3SourceTexture;
-  private Texture2D blackDoorFrameLeftF1SourceTexture;
-  private Texture2D blackDoorF1SourceTexture;
-  private Texture2D blackDoorF3SourceTexture;
-  private Texture2D blackDoorF2SourceTexture;
   private Texture2D right2SSourceTexture;
   [System.NonSerialized]
   private Texture2D cachedRight2SReadableCopy;
@@ -1865,12 +1819,6 @@ public class ViewportLayoutEditor : EditorWindow
   {
     float enabledWidth =
         EditorStyles.label.CalcSize(new GUIContent("Set")).x + 18f;
-    float mirrorWidth =
-        EditorStyles.label.CalcSize(new GUIContent("Mirror")).x + 18f;
-
-    // Black Door frame header: 180 name + 135 graphic + Enabled + Mirror.
-    float frameHeader =
-        180f + 135f + enabledWidth + 10f + mirrorWidth + 10f;
 
     // FrontF1 row: Width popup + X stepper + Y stepper + Ref.
     const float StepperWidth = 12f + 36f + 36f + 36f;
@@ -1887,7 +1835,6 @@ public class ViewportLayoutEditor : EditorWindow
       mapWidth = 18f + previewMiniMap.Width * 14f;
 
     float content = Mathf.Max(
-        frameHeader,
         frontF1Row,
         toolbarRow,
         featureRow,
@@ -2925,37 +2872,13 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
     }
 
-    // Black Door handling in ViewEdit:
-    // - In normal/needed-only mode, show only Black Door pieces required by
-    //   the current pose.
-    // - In All Walls mode, expose the Black Door FRAME wall components so
-    //   oblique/side scenes can be inspected and adjusted manually.
-    // - Keep the solid BlackDoorF1/F2/F3 front images out of All Walls; they
-    //   remain available only in their actual front-door poses.
-    if (IsBlackDoorEditorPiece(piece))
-    {
-      bool blackDoorFrontImage = IsBlackDoorFrontImagePiece(piece);
-
-      if (!showOnlyWallsNeededForCurrentPose)
-      {
-        if (blackDoorFrontImage)
-          return true;
-        // Frame components stay available in All Walls, including after a
-        // temporary Enabled=OFF click at the current pose.
-      }
-      else if (!IsWallNeededForCurrentPose(piece))
-      {
-        return true;
-      }
-    }
 
     // Manual inspection cards may remain reachable only while the user is in
     // Show All Walls mode on the current pose. In the normal geometry-filtered
     // mode (including immediately after any pose change), disabled walls must
     // not leak into the ViewEdit list.
     if (!showOnlyWallsNeededForCurrentPose
-        && (IsBlackDoorF1ManualSideWallCandidate(piece)
-            || piece.Name == "LeftS3"))
+        && piece.Name == "LeftS3")
       return false;
 
     if (showOnlyWallsNeededForCurrentPose && showWallsActivFilter
@@ -2974,7 +2897,7 @@ public class ViewportLayoutEditor : EditorWindow
     }
 
     if (showOnlyWallsNeededForCurrentPose
-        && (IsWallEditorPiece(piece) || IsBlackDoorEditorPiece(piece)))
+        && IsWallEditorPiece(piece))
     {
       // Edit Mode: show walls required by the preview geometry.
       // Play Mode: show the walls the runtime renderer has actually enabled.
@@ -3014,7 +2937,7 @@ public class ViewportLayoutEditor : EditorWindow
     {
       ViewportPiece piece = layout.Pieces[i];
       if (piece == null
-          || (!IsWallEditorPiece(piece) && !IsBlackDoorEditorPiece(piece)))
+          || !IsWallEditorPiece(piece))
         continue;
 
       bool needed = IsWallNeededForCurrentPose(piece);
@@ -3061,41 +2984,9 @@ public class ViewportLayoutEditor : EditorWindow
         || name == "Wall D3L2"
         || name == "Wall D3R2"
         || name == "WallD3L2"
-        || name == "WallD3R2"
-        || name == "Black Door Frame Left F1"
-        || name == "Black Door Frame Right F1"
-        || name == "Black Door Frame Left F2"
-        || name == "Black Door Frame Right F2"
-        || name == "BlackDoorF1";
+        || name == "WallD3R2";
   }
 
-  private static bool IsBlackDoorFrontImagePiece(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    string name = piece.Name ?? string.Empty;
-    return name == "BlackDoorF1"
-        || name == "BlackDoorF2"
-        || name == "BlackDoorF3";
-  }
-
-  private static bool IsBlackDoorEditorPiece(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    string name = piece.Name ?? string.Empty;
-    return name == "BlackDoorF1"
-        || name == "BlackDoorF2"
-        || name == "BlackDoorF3"
-        || name == "Black Door Frame Left F1"
-        || name == "Black Door Frame Right F1"
-        || name == "Black Door Frame Left F2"
-        || name == "Black Door Frame Right F2"
-        || name == "Black Door Frame Left F3"
-        || name == "Black Door Frame Right F3";
-  }
 
   private bool IsViewport17NearCenterStairsDown()
   {
@@ -3106,41 +2997,6 @@ public class ViewportLayoutEditor : EditorWindow
     // Generic relative-cell rule: a down-stair directly ahead occupies the
     // D2 center opening. Map coordinates never participate in this decision.
     return SampleViewport17Cell(0, 1).IsStairsDown;
-  }
-
-  /// <summary>
-  /// True only for the Hall of Champions special entrance Black Door.
-  /// Regular Door tiles elsewhere must use their normal door renderer and must
-  /// never activate the BlackDoorF1/F2/F3 family.
-  /// </summary>
-  private bool IsHallOfChampionsBlackDoorCell(Viewport17Cell cell)
-  {
-    return cell.IsInside
-        && previewDungeonLevel == PreviewDungeonLevel
-        && cell.MapX == HallOfChampionsBlackDoorX
-        && cell.MapY == HallOfChampionsBlackDoorY
-        && previewDoorTiles.Contains(new Vector2Int(cell.MapX, cell.MapY));
-  }
-
-  /// <summary>
-  /// Player-relative center test for the special Black Door.
-  /// Depth 1 = F1, 2 = F2, 3 = F3.
-  /// </summary>
-  private bool IsDoorAtViewportCenterDepth(int depth)
-  {
-    if (depth < 1)
-      return false;
-
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null)
-      return false;
-
-    // A wall in front of the door hides it. From 4,2 West the door at 1,2
-    // is three steps ahead, but 3,2 and 2,2 are walls, so this is not F3.
-    if (!IsCenterSightLineOpenBefore(depth))
-      return false;
-
-    return IsHallOfChampionsBlackDoorCell(SampleViewport17Cell(0, depth));
   }
 
   private bool IsCenterSightLineOpenBefore(int depth)
@@ -3155,37 +3011,6 @@ public class ViewportLayoutEditor : EditorWindow
     return true;
   }
 
-  private bool IsDoorF1FrontView()
-  {
-    return IsDoorAtViewportCenterDepth(1);
-  }
-
-  private bool IsDoorF2FrontView()
-  {
-    return IsDoorAtViewportCenterDepth(2);
-  }
-
-  private bool IsDoorF3FrontView()
-  {
-    return IsDoorAtViewportCenterDepth(3);
-  }
-
-  /// <summary>
-  /// Player-relative D3-right oblique test for the special Black Door.
-  /// It occupies the cell one lane right and three cells forward.
-  /// </summary>
-  private bool IsDoorF3RightObliqueView()
-  {
-    EnsurePreviewMiniMapLoaded();
-    if (previewMiniMap == null)
-      return false;
-
-    // The D3-right door is only visible down an open center corridor.
-    if (!IsCenterSightLineOpenBefore(4))
-      return false;
-
-    return IsHallOfChampionsBlackDoorCell(SampleViewport17Cell(1, 3));
-  }
 
 
   private bool IsWallNeededForCurrentPose(ViewportPiece piece)
@@ -3200,18 +3025,6 @@ public class ViewportLayoutEditor : EditorWindow
       return true;
 
     string name = piece.Name ?? string.Empty;
-    bool doorAtF1 = IsDoorF1FrontView();
-    bool doorAtF2 = IsDoorF2FrontView();
-    bool doorAtF3 = IsDoorF3FrontView();
-
-    // A door directly ahead occupies the F1 center opening, so the normal
-    // FrontF2 wall behind it is not needed. Player-relative; no map coordinate.
-    if (IsDoorF1FrontView()
-        && (IsFrontWallF2Card(piece)
-            || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)))
-    {
-      return false;
-    }
 
     // Generic stairs-down rule: a down-stair in the near-center relative
     // cell occupies the FrontF2 center band, so FrontF2 is not needed.
@@ -3222,41 +3035,6 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    // Black Door editor cards must be decided BEFORE the generic normal-wall
-    // resolver. Some Black Door pieces are classified as normal wall pieces,
-    // so the old ordering returned their resolved Enabled=false before these
-    // dedicated door-pose rules were ever reached.
-    if (IsBlackDoorEditorPiece(piece))
-    {
-      if (doorAtF1)
-      {
-        return name == "Black Door Frame Left F1"
-            || name == "Black Door Frame Right F1"
-            || name == "BlackDoorF1";
-      }
-
-      if (doorAtF2)
-      {
-        return name == "Black Door Frame Left F2"
-            || name == "Black Door Frame Right F2"
-            || name == "BlackDoorF2";
-      }
-
-      if (doorAtF3)
-      {
-        return name == "Black Door Frame Left F3"
-            || name == "Black Door Frame Right F3"
-            || name == "BlackDoorF3";
-      }
-
-      if (IsDoorF3RightObliqueView())
-      {
-        return name == "Black Door Frame Right F3"
-            || name == "BlackDoorF3";
-      }
-
-      return false;
-    }
 
     if (IsNormalWallPiece(piece)
         && TryGetResolvedNormalWallState(
@@ -3346,8 +3124,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     if (IsFrontWallF3Card(piece))
     {
-      if (IsDoorF2FrontView())
-        return false;
 
       return !f1CenterWall && !f2CenterWall && f3CenterWall;
     }
@@ -3373,15 +3149,6 @@ public class ViewportLayoutEditor : EditorWindow
       return false;
     }
 
-    // Other Black Door cards are hidden unless one of the exact views above needs them.
-    if (name == "Black Door Frame Left F1"
-        || name == "Black Door Frame Right F1"
-        || name == "Black Door Frame Left F2"
-        || name == "Black Door Frame Right F2"
-        || name == "BlackDoorF1")
-    {
-      return false;
-    }
 
     return true;
   }
@@ -3394,6 +3161,25 @@ public class ViewportLayoutEditor : EditorWindow
   {
     if (layout == null || layout.Pieces == null)
       return;
+    // One-way layout migration: delete obsolete dedicated door cards.
+    // These names are serialization identifiers only, never rendering conditions.
+    bool removedDoorCards = false;
+    for (int i = layout.Pieces.Count - 1; i >= 0; i--)
+    {
+      var old = layout.Pieces[i];
+      if (old == null) continue;
+      string oldName = old.Name ?? string.Empty;
+      if (old.Graphic != DungeonGraphicType.BlackDoor
+          && !oldName.StartsWith("BlackDoor", System.StringComparison.Ordinal)
+          && !oldName.StartsWith("Black Door Frame ", System.StringComparison.Ordinal)) continue;
+      layout.Pieces.RemoveAt(i);
+      removedDoorCards = true;
+    }
+    if (removedDoorCards)
+    {
+      EditorUtility.SetDirty(layout);
+      ClampSelectedPieceIndex();
+    }
 
     bool hasFrontWallF1 = false;
     for (int i = 0; i < layout.Pieces.Count; i++)
@@ -3521,8 +3307,6 @@ public class ViewportLayoutEditor : EditorWindow
     if (piece == null || IsFloorOrCeiling(piece))
       return false;
 
-    if (IsBlackDoorEditorPiece(piece))
-      return IsWallNeededForCurrentPose(piece);
 
     if (!IsWallEditorPiece(piece) && !IsNormalWallPiece(piece))
       return false;
@@ -3569,12 +3353,6 @@ public class ViewportLayoutEditor : EditorWindow
         return name == "LeftD3";
       case "RightD3":
         return name == "RightD3";
-      case "Black Door":
-        return name.IndexOf("Black Door", System.StringComparison.OrdinalIgnoreCase) >= 0
-            || string.Equals(
-                name,
-                "BlackDoorF1",
-                System.StringComparison.OrdinalIgnoreCase);
       case "Active":
         return piece.Enabled;
       case "Arrows":
@@ -4027,16 +3805,6 @@ public class ViewportLayoutEditor : EditorWindow
     ("LeftS3", 0, 57),
     ("RightS3", 216, 57),
 
-    // Black Door
-    ("BlackDoorF1", 63, 47),
-    ("BlackDoorF2", 79, 27),
-    ("BlackDoorF3", 88, 63),
-    ("Black Door Frame Left F1", 44, 46),
-    ("Black Door Frame Left F2", 64, 54),
-    ("Black Door Frame Left F3", 79, 102),
-    ("Black Door Frame Right F1", 154, 46),
-    ("Black Door Frame Right F2", 140, 54),
-    ("Black Door Frame Right F3", 132, 103),
   };
 
   /// <summary>
@@ -4185,12 +3953,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     switch (piece.Name)
     {
-      case "Black Door Frame Left F1": return "Door Frame Left F1";
-      case "Black Door Frame Right F1": return "Door Frame Right F1";
-      case "Black Door Frame Left F2": return "Door Frame Left F2";
-      case "Black Door Frame Right F2": return "Door Frame Right F2";
-      case "Black Door Frame Left F3": return "Door Frame Left F3";
-      case "Black Door Frame Right F3": return "Door Frame Right F3";
       default: return piece.Name ?? string.Empty;
     }
   }
@@ -4225,17 +3987,6 @@ public class ViewportLayoutEditor : EditorWindow
         IsFrontWallF1Card(piece)
         || IsFrontWallF2Card(piece)
         || IsFrontWallF3Card(piece);
-    bool compactBlackDoorFrontHeader =
-        piece.Name == "BlackDoorF1"
-        || piece.Name == "BlackDoorF2"
-        || piece.Name == "BlackDoorF3";
-    bool compactBlackDoorF1FrameHeader =
-        piece.Name == "Black Door Frame Left F1"
-        || piece.Name == "Black Door Frame Right F1"
-        || piece.Name == "Black Door Frame Left F2"
-        || piece.Name == "Black Door Frame Right F2"
-        || piece.Name == "Black Door Frame Left F3"
-        || piece.Name == "Black Door Frame Right F3";
     bool isLeftD3Card =
         piece.Name == "LeftD3"
         || piece.Name == "Wall D3L2"
@@ -4259,8 +4010,6 @@ public class ViewportLayoutEditor : EditorWindow
     bool hideNameForWall = IsWallEditorPiece(piece);
 
     if (!compactFrontWallHeader
-        && !compactBlackDoorFrontHeader
-        && !compactBlackDoorF1FrameHeader
         && !compactD3Header
         && !compactSideWallHeader)
     {
@@ -4283,7 +4032,7 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUI.BeginChangeCheck();
     EditorGUILayout.BeginHorizontal();
     float savedNameLabelWidth = EditorGUIUtility.labelWidth;
-    if (compactFrontWallHeader || compactBlackDoorFrontHeader)
+    if (compactFrontWallHeader)
     {
       string displayName = GetViewEditDisplayName(piece);
       string headerText = isSelected ? $"▶ {displayName}" : displayName;
@@ -4309,33 +4058,6 @@ public class ViewportLayoutEditor : EditorWindow
       // Front pieces use two compact rows:
       // row 1 = name + Enabled + Mirror
       // row 2 = Width (when applicable) + X + Y + Ref.
-    }
-    else if (compactBlackDoorF1FrameHeader)
-    {
-      string displayName = GetViewEditDisplayName(piece);
-      string headerText = isSelected ? $"▶ {displayName}" : displayName;
-      if (TryGetPieceFamilyLabelColor(piece, out Color familyColor))
-      {
-        EditorGUILayout.LabelField(
-            headerText,
-            GetPieceFamilyHeaderStyle(familyColor),
-            GUILayout.Width(180f));
-      }
-      else
-      {
-        EditorGUILayout.LabelField(
-            headerText,
-            EditorStyles.label,
-            GUILayout.Width(180f));
-      }
-
-      EditorGUIUtility.labelWidth = 0f;
-      piece.Graphic = (DungeonGraphicType)EditorGUILayout.EnumPopup(
-          GUIContent.none, piece.Graphic, GUILayout.Width(135f));
-
-      // Black Door elements use the same compact arrangement as the normal
-      // Left/Right wall cards: name + Enabled + Mirror on row 1,
-      // then X / Y on row 2.
     }
     else if (compactD3Header)
     {
@@ -4406,27 +4128,9 @@ public class ViewportLayoutEditor : EditorWindow
     EditorGUIUtility.labelWidth = enabledLabelWidth;
 
     bool wallViewEditPreview = IsWallRenderingPiece(piece);
-    bool isBlackDoorF1Required =
-        piece.Name == "BlackDoorF1"
-        && IsDoorF1FrontView();
-    bool isBlackDoorF1FrameRequired =
-        (piece.Name == "Black Door Frame Left F1"
-         || piece.Name == "Black Door Frame Right F1")
-        && IsDoorF1FrontView();
-    bool isBlackDoorF3Required =
-        piece.Name == "BlackDoorF3"
-        && IsDoorF3FrontView();
-    bool isBlackDoorF3FrameRequired =
-        (piece.Name == "Black Door Frame Left F3"
-         || piece.Name == "Black Door Frame Right F3")
-        && IsDoorF3FrontView();
     bool wallRenderingPreview = wallViewEditPreview;
     bool usePreviewEnabledOverride =
         wallViewEditPreview
-        || isBlackDoorF1Required
-        || isBlackDoorF1FrameRequired
-        || isBlackDoorF3Required
-        || isBlackDoorF3FrameRequired
         || (previewDisableAllWalls && wallRenderingPreview);
 
     bool enabledBefore = piece.Enabled;
@@ -4437,11 +4141,6 @@ public class ViewportLayoutEditor : EditorWindow
       enabledBefore = enabledPreviewState.Enabled;
     }
 
-    // When a door is directly ahead at F1 the center FrontF1 is replaced by the door,
-    // but the normal LeftF1/RightF1 side walls are part of the automatic view.
-    // Manual ViewEdit overrides below can still turn either side off again.
-    if (IsBlackDoorF1ManualSideWallCandidate(piece))
-      enabledBefore = true;
 
     bool viewport17LiveFields =
         IsViewport17WallAuthorityActive() && IsNormalWallPiece(piece);
@@ -4462,15 +4161,6 @@ public class ViewportLayoutEditor : EditorWindow
       // A manual ViewEdit Enabled toggle must remain visible even while V17
       // owns the automatic wall selection for this stationary pose.
       enabledBefore = manualPreviewEnabled;
-    }
-    else if (isBlackDoorF1Required || isBlackDoorF1FrameRequired
-        || isBlackDoorF3FrameRequired || isBlackDoorF3Required)
-    {
-      // (1,3) North defaults BlackDoorF1 and its frames ON.
-      // (1,5) North defaults BlackDoorF3 and its frames ON.
-      // An explicit ViewEdit toggle is stored in the temporary preview
-      // override above and can still turn any of them OFF.
-      enabledBefore = true;
     }
 
     bool enabledAfter = DrawMouseOnlyToggle(
@@ -4533,14 +4223,6 @@ public class ViewportLayoutEditor : EditorWindow
     bool normalWallMirrorPreview = wallViewEditPreview;
     bool mirrorBefore = piece.MirrorHorizontally;
 
-    // The Black Door F1 right frame is rendered from the same left-frame
-    // source mirrored horizontally. Reflect that real automatic default in
-    // ViewEdit instead of showing Mirror OFF while the renderer uses ON.
-    if (IsVerifiedBlackDoorF1Pose()
-        && piece.Name == "Black Door Frame Right F1")
-    {
-      mirrorBefore = true;
-    }
 
     if (normalWallMirrorPreview
         && TryGetResolvedNormalWallState(
@@ -4642,8 +4324,6 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUI.BeginChangeCheck();
     if (!compactFrontWallHeader
-        && !compactBlackDoorFrontHeader
-        && !compactBlackDoorF1FrameHeader
         && !compactD3Header
         && !compactSideWallHeader)
     {
@@ -4674,18 +4354,6 @@ public class ViewportLayoutEditor : EditorWindow
       RefreshTemporaryNormalWallPreview();
     }
 
-    if (piece.Name == "BlackDoorF1")
-    {
-      EditorGUILayout.BeginHorizontal();
-      EditorGUILayout.PrefixLabel("Size");
-      using (new EditorGUI.DisabledScope(true))
-      {
-        EditorGUILayout.IntField(96, GUILayout.Width(50));
-        EditorGUILayout.LabelField("x", GUILayout.Width(12));
-        EditorGUILayout.IntField(88, GUILayout.Width(50));
-      }
-      EditorGUILayout.EndHorizontal();
-    }
 
     if (StraightF1WallLogic.IsFloorOrCeilingGraphic(piece.Graphic))
     {
@@ -4828,16 +4496,7 @@ public class ViewportLayoutEditor : EditorWindow
         EditorStyles.label.CalcSize(new GUIContent("X")).x;
 
     bool normalWallPositionPreview = wallViewEditPreview;
-    bool blackDoorF3PositionPreview =
-        piece.Name == "BlackDoorF3"
-        && IsDoorF3FrontView();
-    bool blackDoorF3FramePositionPreview =
-        piece.Name == "Black Door Frame Left F3"
-        || piece.Name == "Black Door Frame Right F3";
-    bool temporaryPositionPreview =
-        normalWallPositionPreview
-        || blackDoorF3PositionPreview
-        || blackDoorF3FramePositionPreview;
+    bool temporaryPositionPreview = normalWallPositionPreview;
 
     int editX = piece.X;
     int editUnityY = piece.Y;
@@ -4848,17 +4507,6 @@ public class ViewportLayoutEditor : EditorWindow
       editUnityY = xyState.Y;
     }
 
-    // BlackDoorF3 is an exact exception at 1,5 North. Its default ViewEdit
-    // position is always the canonical Ref X/Y, without writing those values
-    // back into the layout asset. A manual ViewEdit X/Y override may still win.
-    if (blackDoorF3PositionPreview
-        && TryGetCanonicalReferenceXY("BlackDoorF3", out int f3RefX, out int f3RefY))
-    {
-      editX = f3RefX;
-      editUnityY = DisplayYToUnityY(
-          f3RefY,
-          GetPieceHeightForEditorY(piece));
-    }
 
     // Every wall image remains manually movable in ViewEdit even while V17
     // supplies its geometry. The manual position is a stationary-pose preview
@@ -4950,11 +4598,7 @@ public class ViewportLayoutEditor : EditorWindow
           widthAvailable ? "W " + drawnWidth : "W -",
           GUILayout.Width(48f), GUILayout.ExpandWidth(false));
     }
-
-    if (compactSideWallHeader
-        || compactFrontWallHeader
-        || compactBlackDoorFrontHeader
-        || compactBlackDoorF1FrameHeader)
+    if (compactSideWallHeader || compactFrontWallHeader)
     {
       string refLabel = hasCanonicalRef
           ? $"Ref X {canonicalRefX} / Y {canonicalRefY}"
@@ -4969,231 +4613,9 @@ public class ViewportLayoutEditor : EditorWindow
 
     EditorGUILayout.EndHorizontal();
 
-    if (piece.Name == "BlackDoorF1")
-    {
-      bool showBlackDoorF2EditorCards = IsDoorF2FrontView();
-      bool showBlackDoorF3EditorCards = IsDoorF3FrontView();
-
-      if (showBlackDoorF2EditorCards)
-      {
-        if (!blackDoorF2CardInitialized)
-        {
-          blackDoorF2CardEnabled = true;
-          blackDoorF2CardMirror = piece.MirrorHorizontally;
-          blackDoorF2CardGraphic = DungeonGraphicType.BlackDoor;
-          blackDoorF2CardInitialized = true;
-        }
-
-        EditorGUILayout.Space(4f);
-        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-
-        EditorGUILayout.BeginHorizontal();
-        EditorGUILayout.LabelField("BlackDoorF2", EditorStyles.label);
-        EditorGUILayout.EndHorizontal();
-
-        EditorGUILayout.TextField("Name", "BlackDoorF2");
-
-        EditorGUILayout.BeginHorizontal();
-        GUILayout.FlexibleSpace();
-        float f2PreviousLabelWidth = EditorGUIUtility.labelWidth;
-        EditorGUIUtility.labelWidth = 55f;
-        blackDoorF2CardEnabled = DrawMouseOnlyToggle(
-            "Set",
-            blackDoorF2CardEnabled,
-            blackDoorF2CardEnabled,
-            GUILayout.Width(72));
-        GUILayout.FlexibleSpace();
-        const string F2MirrorLabel = "Mirror Horizontally";
-        float f2MirrorLabelWidth =
-            EditorStyles.label.CalcSize(new GUIContent(F2MirrorLabel)).x;
-        EditorGUIUtility.labelWidth = f2MirrorLabelWidth;
-        blackDoorF2CardMirror = DrawMouseOnlyToggle(
-            F2MirrorLabel,
-            blackDoorF2CardMirror,
-            blackDoorF2CardEnabled,
-            GUILayout.Width(f2MirrorLabelWidth + 18f),
-            GUILayout.ExpandWidth(false));
-        EditorGUIUtility.labelWidth = f2PreviousLabelWidth;
-        EditorGUILayout.EndHorizontal();
-
-        blackDoorF2CardGraphic =
-            (DungeonGraphicType)EditorGUILayout.EnumPopup(
-                "Graphic",
-                blackDoorF2CardGraphic);
-
-        EditorGUILayout.BeginHorizontal();
-        EditorGUILayout.PrefixLabel("Size");
-        using (new EditorGUI.DisabledScope(true))
-        {
-          EditorGUILayout.IntField(63, GUILayout.Width(50));
-          EditorGUILayout.LabelField("x", GUILayout.Width(12));
-          EditorGUILayout.IntField(59, GUILayout.Width(50));
-        }
-        EditorGUILayout.EndHorizontal();
-
-        int f2X = piece.ResolvedBlackDoorF2X;
-        int f2Y = piece.ResolvedBlackDoorF2Y;
-        int f2XBefore = f2X;
-        int f2YBefore = f2Y;
-        DrawIntStepper("X", ref f2X, snap);
-        DrawIntStepper("Y", ref f2Y, snap);
-        if (f2X != f2XBefore || f2Y != f2YBefore)
-        {
-          piece.BlackDoorF2X = f2X;
-          piece.BlackDoorF2Y = f2Y;
-          changed = true;
-        }
-
-        EditorGUILayout.EndVertical();
-      }
-
-      if (showBlackDoorF3EditorCards)
-      {
-        if (!blackDoorF3CardInitialized)
-        {
-          blackDoorF3CardEnabled = false;
-          blackDoorF3CardMirror = piece.MirrorHorizontally;
-          blackDoorF3CardGraphic = DungeonGraphicType.BlackDoor;
-          blackDoorF3CardInitialized = true;
-        }
-
-        EditorGUILayout.Space(4f);
-        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-
-        EditorGUILayout.BeginHorizontal();
-        EditorGUILayout.LabelField("BlackDoorF3", EditorStyles.label);
-        EditorGUILayout.EndHorizontal();
-
-        EditorGUILayout.TextField("Name", "BlackDoorF3");
-
-        EditorGUILayout.BeginHorizontal();
-        GUILayout.FlexibleSpace();
-        float f3PreviousLabelWidth = EditorGUIUtility.labelWidth;
-        EditorGUIUtility.labelWidth = 55f;
-        blackDoorF3CardEnabled = DrawMouseOnlyToggle(
-            "Set",
-            blackDoorF3CardEnabled,
-            blackDoorF3CardEnabled,
-            GUILayout.Width(72));
-        GUILayout.FlexibleSpace();
-        const string F3MirrorLabel = "Mirror Horizontally";
-        float f3MirrorLabelWidth =
-            EditorStyles.label.CalcSize(new GUIContent(F3MirrorLabel)).x;
-        EditorGUIUtility.labelWidth = f3MirrorLabelWidth;
-        blackDoorF3CardMirror = DrawMouseOnlyToggle(
-            F3MirrorLabel,
-            blackDoorF3CardMirror,
-            blackDoorF3CardEnabled,
-            GUILayout.Width(f3MirrorLabelWidth + 18f),
-            GUILayout.ExpandWidth(false));
-        EditorGUIUtility.labelWidth = f3PreviousLabelWidth;
-        EditorGUILayout.EndHorizontal();
-
-        blackDoorF3CardGraphic =
-            (DungeonGraphicType)EditorGUILayout.EnumPopup(
-                "Graphic",
-                blackDoorF3CardGraphic);
-
-        EditorGUILayout.BeginHorizontal();
-        EditorGUILayout.PrefixLabel("Size");
-        using (new EditorGUI.DisabledScope(true))
-        {
-          EditorGUILayout.IntField(45, GUILayout.Width(50));
-          EditorGUILayout.LabelField("x", GUILayout.Width(12));
-          EditorGUILayout.IntField(39, GUILayout.Width(50));
-        }
-        EditorGUILayout.EndHorizontal();
-
-        ViewportPiece doorF3 = FindLayoutPieceByName("BlackDoorF3");
-        if (doorF3 == null)
-        {
-          doorF3 = EnsureBlackDoorF3Piece();
-          changed = true;
-        }
-        int f3X = doorF3 != null ? doorF3.X : blackDoorF3CardX;
-        int f3Y = doorF3 != null ? doorF3.Y : blackDoorF3CardY;
-        int f3XBefore = f3X;
-        int f3YBefore = f3Y;
-        DrawIntStepper("X", ref f3X, snap);
-        DrawIntStepper("Y", ref f3Y, snap);
-        blackDoorF3CardX = f3X;
-        blackDoorF3CardY = f3Y;
-        if (doorF3 != null && (f3X != f3XBefore || f3Y != f3YBefore))
-        {
-          doorF3.X = f3X;
-          doorF3.Y = f3Y;
-          changed = true;
-        }
-
-        EditorGUILayout.EndVertical();
-      }
-    }
     EditorGUILayout.EndVertical();
   }
 
-  private void DrawBlackDoorFrameF3EditorCard(
-      string name,
-      ref bool initialized,
-      ref bool enabled,
-      ref bool mirror,
-      ref int x,
-      ref int y,
-      bool defaultMirror)
-  {
-    if (!initialized)
-    {
-      enabled = false;
-      mirror = defaultMirror;
-      initialized = true;
-    }
-
-    EditorGUILayout.Space(4f);
-    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-
-    EditorGUILayout.BeginHorizontal();
-    EditorGUILayout.LabelField(name, EditorStyles.label);
-    EditorGUILayout.EndHorizontal();
-
-    EditorGUILayout.TextField("Name", name);
-
-    EditorGUILayout.BeginHorizontal();
-    GUILayout.FlexibleSpace();
-    float previousLabelWidth = EditorGUIUtility.labelWidth;
-    EditorGUIUtility.labelWidth = 55f;
-    enabled = DrawMouseOnlyToggle(
-        "Set",
-        enabled,
-        enabled,
-        GUILayout.Width(72));
-    GUILayout.FlexibleSpace();
-    const string MirrorLabel = "Mirror Horizontally";
-    float mirrorLabelWidth =
-        EditorStyles.label.CalcSize(new GUIContent(MirrorLabel)).x;
-    EditorGUIUtility.labelWidth = mirrorLabelWidth;
-    mirror = DrawMouseOnlyToggle(
-        MirrorLabel,
-        mirror,
-        enabled,
-        GUILayout.Width(mirrorLabelWidth + 18f),
-        GUILayout.ExpandWidth(false));
-    EditorGUIUtility.labelWidth = previousLabelWidth;
-    EditorGUILayout.EndHorizontal();
-
-    EditorGUILayout.BeginHorizontal();
-    EditorGUILayout.PrefixLabel("Size");
-    using (new EditorGUI.DisabledScope(true))
-    {
-      EditorGUILayout.IntField(10, GUILayout.Width(50));
-      EditorGUILayout.LabelField("x", GUILayout.Width(12));
-      EditorGUILayout.IntField(42, GUILayout.Width(50));
-    }
-    EditorGUILayout.EndHorizontal();
-
-    DrawIntStepper("X", ref x, snap);
-    DrawIntStepper("Y", ref y, snap);
-
-    EditorGUILayout.EndVertical();
-  }
 
   private ViewportPiece FindLayoutPieceByName(string name)
   {
@@ -5333,116 +4755,6 @@ public class ViewportLayoutEditor : EditorWindow
     return created;
   }
 
-  /// <summary>
-  /// Persistent Left F3 frame X/Y live on this layout piece, same as Left F2.
-  /// Hidden from the piece list; nested card edits piece.X / piece.Y.
-  /// </summary>
-  private ViewportPiece EnsureBlackDoorFrameLeftF3Piece()
-  {
-    ViewportPiece existing = FindLayoutPieceByName("Black Door Frame Left F3");
-    if (existing != null)
-      return existing;
-
-    if (layout == null || layout.Pieces == null)
-      return null;
-
-    int insertAt = layout.Pieces.Count;
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece != null && piece.Name == "Black Door Frame Left F2")
-      {
-        insertAt = i + 1;
-        break;
-      }
-    }
-
-    ViewportPiece created = new ViewportPiece
-    {
-      Name = "Black Door Frame Left F3",
-      Graphic = DungeonGraphicType.None,
-      X = blackDoorFrameLeftF3CardX,
-      Y = blackDoorFrameLeftF3CardY,
-      Enabled = false,
-      MirrorHorizontally = false
-    };
-    layout.Pieces.Insert(insertAt, created);
-    return created;
-  }
-
-  /// <summary>
-  /// Persistent Right F3 frame X/Y live on this layout piece, same as Left F3.
-  /// Hidden from the piece list; nested card edits piece.X / piece.Y.
-  /// </summary>
-  private ViewportPiece EnsureBlackDoorFrameRightF3Piece()
-  {
-    ViewportPiece existing = FindLayoutPieceByName("Black Door Frame Right F3");
-    if (existing != null)
-      return existing;
-
-    if (layout == null || layout.Pieces == null)
-      return null;
-
-    int insertAt = layout.Pieces.Count;
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece != null && piece.Name == "Black Door Frame Right F2")
-      {
-        insertAt = i + 1;
-        break;
-      }
-    }
-
-    ViewportPiece created = new ViewportPiece
-    {
-      Name = "Black Door Frame Right F3",
-      Graphic = DungeonGraphicType.None,
-      X = blackDoorFrameRightF3CardX,
-      Y = blackDoorFrameRightF3CardY,
-      Enabled = false,
-      MirrorHorizontally = false
-    };
-    layout.Pieces.Insert(insertAt, created);
-    return created;
-  }
-
-  /// <summary>
-  /// Persistent BlackDoorF3 X/Y live on this layout piece, same as F3 frames.
-  /// Hidden from the piece list; nested card edits piece.X / piece.Y.
-  /// </summary>
-  private ViewportPiece EnsureBlackDoorF3Piece()
-  {
-    ViewportPiece existing = FindLayoutPieceByName("BlackDoorF3");
-    if (existing != null)
-      return existing;
-
-    if (layout == null || layout.Pieces == null)
-      return null;
-
-    int insertAt = layout.Pieces.Count;
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece != null && piece.Name == "BlackDoorF1")
-      {
-        insertAt = i + 1;
-        break;
-      }
-    }
-
-    ViewportPiece created = new ViewportPiece
-    {
-      Name = "BlackDoorF3",
-      Graphic = DungeonGraphicType.None,
-      X = blackDoorF3CardX,
-      Y = blackDoorF3CardY,
-      Enabled = false,
-      MirrorHorizontally = false
-    };
-    layout.Pieces.Insert(insertAt, created);
-    return created;
-  }
   private static bool TryGetPieceFamilyLabelColor(
       ViewportPiece piece,
       out Color color)
@@ -5517,21 +4829,6 @@ public class ViewportLayoutEditor : EditorWindow
       case "LeftS3":
       case "RightS3":
         color = new Color32(0x00, 0xFF, 0xFF, 0xFF);
-        return true;
-      case "BlackDoorF1":
-      case "Black Door Frame Left F1":
-      case "Black Door Frame Right F1":
-        color = new Color32(0xFF, 0x66, 0xFF, 0xFF);
-        return true;
-      case "BlackDoorF2":
-      case "Black Door Frame Left F2":
-      case "Black Door Frame Right F2":
-        color = new Color32(0xD8, 0x3F, 0xD8, 0xFF);
-        return true;
-      case "BlackDoorF3":
-      case "Black Door Frame Left F3":
-      case "Black Door Frame Right F3":
-        color = new Color32(0x9C, 0x2B, 0x9C, 0xFF);
         return true;
       default:
         return false;
@@ -17091,12 +16388,9 @@ private static void HandleGameViewPointerDown(
 
     // CHATGPT_BUILD_F1_MINIMAP_ALGORITHM_STAGE1_20260830_AB
     // Stage 1: automatic F0/F1 wall assembly from minimap only.
-    // F2/F3/D3/Black Door remain disabled until F1 is verified.
+    // Stage-1 wall recipe; shared DOS door renderer is independent.
     ApplyF1MinimapWallRecipe();
 
-    // Apply Black Door F1/F2/F3 pose-specific Enabled states after the normal
-    // wall recipe. This routine previously existed but was never called.
-    ApplyBlackDoorEnabledFromPoseException();
 
   }
 
@@ -17944,36 +17238,6 @@ private static void HandleGameViewPointerDown(
     bool d3LeftEnabled = HasViewport17FinalFamily(finalCommands, "LeftF3");
     bool d3RightEnabled = HasViewport17FinalFamily(finalCommands, "RightF3");
 
-    // Mirror the Black Door suppression/side-wall rules used by Compose so
-    // the Enabled checkboxes and ACTIVE diagnostic remain truthful there too.
-    bool blackDoorF1Pose = IsDoorF1FrontView();
-    bool blockD2ForBlackDoor = blackDoorF1Pose;
-    bool suppressD2CenterForBlackDoor =
-        IsDoorF2FrontView();
-    bool suppressD3CenterForBlackDoor =
-        IsDoorF2FrontView()
-        || IsDoorF3FrontView();
-
-    if (blackDoorF1Pose)
-    {
-      d1LeftEnabled = true;
-      d1CenterEnabled = false;
-      d1RightEnabled = true;
-    }
-
-    if (blockD2ForBlackDoor)
-    {
-      d2LeftEnabled = false;
-      d2CenterEnabled = false;
-      d2RightEnabled = false;
-    }
-    else if (suppressD2CenterForBlackDoor)
-    {
-      d2CenterEnabled = false;
-    }
-
-    if (suppressD3CenterForBlackDoor)
-      d3FrontCenter = false;
 
     // Apply the exact same live ViewEdit overrides used by the native blitters.
     // This keeps checkbox/mirror state synchronized even during manual tests.
@@ -18714,241 +17978,6 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  /// <summary>
-  /// Black Door ViewEdit Enabled exceptions. Does not change blit or other poses.
-  /// (1,4) North: F2 view — F1 off, F2 on.
-  /// (1,3) North: F1 view — F1 on, F2 off, F3 off.
-  /// (1,5) North: F3 view — F1 off, F2 off, F3 on.
-  /// </summary>
-  private void ApplyBlackDoorEnabledFromPoseException()
-  {
-    if (layout == null || layout.Pieces == null)
-      return;
-
-    bool doorAtF1 = IsDoorF1FrontView();
-    bool doorAtF2 = IsDoorF2FrontView();
-    bool doorAtF3 = IsDoorF3FrontView();
-
-    // Black Door state is pose-local. A door piece enabled in one valid view
-    // must never leak into an unrelated map pose (for example 4,9 East).
-    // Clear every distance family that is not required by the current pose
-    // before applying the matching F1/F2/F3 composition below.
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (!doorAtF1
-          && (piece.Name == "BlackDoorF1"
-              || piece.Name == "Black Door Frame Left F1"
-              || piece.Name == "Black Door Frame Right F1"))
-      {
-        piece.Enabled = false;
-      }
-
-      if (!doorAtF2
-          && (piece.Name == "BlackDoorF2"
-              || piece.Name == "Black Door Frame Left F2"
-              || piece.Name == "Black Door Frame Right F2"))
-      {
-        piece.Enabled = false;
-      }
-
-      if (!doorAtF3
-          && (piece.Name == "BlackDoorF3"
-              || piece.Name == "Black Door Frame Left F3"
-              || piece.Name == "Black Door Frame Right F3"))
-      {
-        piece.Enabled = false;
-      }
-    }
-
-    if (!doorAtF2)
-    {
-      blackDoorF2CardEnabled = false;
-      blackDoorF2CardInitialized = false;
-    }
-
-    if (!doorAtF3)
-    {
-      blackDoorF3CardEnabled = false;
-      blackDoorF3CardInitialized = false;
-      blackDoorFrameLeftF3CardEnabled = false;
-      blackDoorFrameRightF3CardEnabled = false;
-    }
-
-    // Only the Hall of Champions special entrance Black Door may activate this
-    // renderer. Ordinary Door tiles elsewhere are deliberately excluded.
-    if (IsDoorF1FrontView())
-    {
-      blackDoorF2CardEnabled = false;
-      blackDoorF2CardInitialized = true;
-      blackDoorF3CardEnabled = false;
-      blackDoorF3CardInitialized = true;
-      blackDoorFrameLeftF3CardEnabled = false;
-      blackDoorFrameRightF3CardEnabled = false;
-
-      // Verified F1 door layout, now selected by a relative door-at-F1 test.
-      // Display coordinates:
-      //   Left frame  X=44  Y=46
-      //   Right frame X=154 Y=46
-      //   Door        X=63  Y=47
-      for (int i = 0; i < layout.Pieces.Count; i++)
-      {
-        ViewportPiece piece = layout.Pieces[i];
-        if (piece == null)
-          continue;
-
-        if (piece.Name == "Black Door Frame Left F1")
-        {
-          piece.Enabled = !previewEnabledOverrideByPiece.TryGetValue(
-                  piece, out bool leftFrameEnabledOverride)
-              || leftFrameEnabledOverride;
-
-          piece.X = 44;
-          piece.Y = DisplayYToUnityY(46, 94);
-        }
-        else if (piece.Name == "Black Door Frame Right F1")
-        {
-          piece.Enabled = !previewEnabledOverrideByPiece.TryGetValue(
-                  piece, out bool rightFrameEnabledOverride)
-              || rightFrameEnabledOverride;
-
-          piece.X = 154;
-          piece.Y = DisplayYToUnityY(46, 94);
-        }
-        else if (piece.Name == "BlackDoorF1")
-        {
-          // Leaving this pose forces Enabled off. Coming back must turn the
-          // door on again. A ViewEdit override for this stationary pose still
-          // wins inside the draw.
-          piece.Enabled = !previewEnabledOverrideByPiece.TryGetValue(
-                  piece, out bool doorEnabledOverride)
-              || doorEnabledOverride;
-
-          piece.X = 63;
-          piece.Y = DisplayYToUnityY(47, 88);
-        }
-        else if (piece.Name == "LeftF1" || piece.Name == "Wall F1Left")
-        {
-          piece.Enabled = true;
-          if (resolvedNormalWallByPiece.TryGetValue(
-                  piece, out ResolvedNormalWallState leftF1State))
-          {
-            leftF1State.Enabled = true;
-            resolvedNormalWallByPiece[piece] = leftF1State;
-          }
-        }
-        else if (piece.Name == "RightF1" || piece.Name == "Wall F1Right")
-        {
-          piece.Enabled = true;
-          if (resolvedNormalWallByPiece.TryGetValue(
-                  piece, out ResolvedNormalWallState rightF1State))
-          {
-            rightF1State.Enabled = true;
-            resolvedNormalWallByPiece[piece] = rightF1State;
-          }
-        }
-
-        // An F1 door occupies the center opening.
-        // Keep the normal FrontF2 wall disabled for this dedicated door view.
-        if (IsFrontWallF2Card(piece)
-            || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic))
-        {
-          piece.Enabled = false;
-        }
-      }
-
-      return;
-    }
-
-    if (IsDoorF2FrontView())
-    {
-      // Initialize the ViewEdit F2 card once for this editor session.
-      // Do not force it back on every preview compose, otherwise the
-      // user's Enabled toggle is immediately overwritten.
-      if (!blackDoorF2CardInitialized)
-      {
-        blackDoorF2CardEnabled = true;
-        blackDoorF2CardInitialized = true;
-      }
-      blackDoorFrameLeftF3CardEnabled = false;
-      blackDoorFrameRightF3CardEnabled = false;
-
-      for (int i = 0; i < layout.Pieces.Count; i++)
-      {
-        ViewportPiece piece = layout.Pieces[i];
-        if (piece == null)
-          continue;
-
-        if (piece.Name == "Black Door Frame Left F2"
-            || piece.Name == "Black Door Frame Right F2")
-        {
-          piece.Enabled = true;
-        }
-
-        // Black Door F2 occupies the front view at an F2 door view. Any normal
-        // FrontF3 card/graphic must stay disabled so it cannot appear behind
-        // the dedicated door view.
-        if (IsFrontWallF3Card(piece)
-            || piece.Graphic == DungeonGraphicType.FrontWallF3)
-        {
-          piece.Enabled = false;
-        }
-      }
-
-      return;
-    }
-
-    if (!doorAtF3)
-      return;
-
-    blackDoorF2CardEnabled = false;
-    blackDoorF2CardInitialized = true;
-    blackDoorF3CardEnabled = true;
-    blackDoorF3CardInitialized = true;
-    blackDoorFrameLeftF3CardEnabled = true;
-    blackDoorFrameRightF3CardEnabled = true;
-
-    // Initialize the visible Left F3 frame layout card once. After this,
-    // its Enabled checkbox is authoritative and pose refreshes preserve it.
-    if (!blackDoorFrameLeftF3EnabledInitialized)
-    {
-      ViewportPiece leftF3Frame = FindLayoutPieceByName("Black Door Frame Left F3");
-      if (leftF3Frame != null)
-        leftF3Frame.Enabled = true;
-
-      blackDoorFrameLeftF3EnabledInitialized = true;
-    }
-
-    // Initialize the visible Right F3 frame layout card once. After this,
-    // its Enabled checkbox is authoritative and pose refreshes preserve it.
-    if (!blackDoorFrameRightF3EnabledInitialized)
-    {
-      ViewportPiece rightF3Frame = FindLayoutPieceByName("Black Door Frame Right F3");
-      if (rightF3Frame != null)
-        rightF3Frame.Enabled = true;
-
-      blackDoorFrameRightF3EnabledInitialized = true;
-    }
-
-    // A Door at F3 occupies the center front view. Keep any
-    // normal FrontF3 card/graphic disabled so it cannot render behind it.
-    for (int i = 0; i < layout.Pieces.Count; i++)
-    {
-      ViewportPiece piece = layout.Pieces[i];
-      if (piece == null)
-        continue;
-
-      if (IsFrontWallF3Card(piece)
-          || piece.Graphic == DungeonGraphicType.FrontWallF3)
-      {
-        piece.Enabled = false;
-      }
-    }
-
-  }
 
 
   private bool[] CaptureWorkingEnabledFlags()
@@ -18991,16 +18020,6 @@ private static void HandleGameViewPointerDown(
       if (piece == null)
         continue;
 
-      if (piece.Name == "BlackDoorF1"
-          || piece.Name == "BlackDoorF2"
-          || piece.Name == "BlackDoorF3"
-          || piece.Name == "Black Door Frame Left F1"
-          || piece.Name == "Black Door Frame Right F1"
-          || piece.Name == "Black Door Frame Left F2"
-          || piece.Name == "Black Door Frame Right F2"
-          || piece.Name == "Black Door Frame Left F3"
-          || piece.Name == "Black Door Frame Right F3")
-        continue;
 
       bool found = false;
       for (int b = 0; b < KitBaselineEnabled.Length; b++)
@@ -19785,17 +18804,6 @@ private static void HandleGameViewPointerDown(
       // Draw the S1 floor plate once, immediately before the first near wall.
       // This is not conditional on any wall's Enabled setting.
       bool pressurePadS1Drawn = false;
-      // Black Door F2/F3 replaces only the D3 center wall. The original
-      // view still keeps the native D3 left/right side walls around the door.
-      bool suppressViewport17NativeD3CenterForBlackDoor =
-          IsDoorF2FrontView()
-          || IsDoorF3FrontView();
-      bool blockViewport17NativeD2ForBlackDoor =
-          IsDoorF1FrontView();
-      bool suppressViewport17NativeD2CenterForBlackDoorF2 =
-          IsDoorF2FrontView() || IsStairsDownS1LeftReferencePose();
-      bool blockViewport17NativeD1ForBlackDoor =
-          IsDoorF1FrontView();
       for (int i = 0; i < layout.Pieces.Count; i++)
       {
         ViewportPiece piece = layout.Pieces[i];
@@ -19833,19 +18841,10 @@ private static void HandleGameViewPointerDown(
             && IsNormalWallPiece(piece))
         {
           viewport17NativeD3Drawn = true;
-          // Black Door F2/F3 replaces only the D3 center wall. Keep the
-          // native D3 left/right side walls visible around the dedicated door.
           BlitViewport17NativeD3Walls(
-              pixels,
-              viewport17Inspection,
-              viewport17FinalWallCommands,
-              suppressCenter: suppressViewport17NativeD3CenterForBlackDoor);
+              pixels, viewport17Inspection, viewport17FinalWallCommands);
 
-          // A door at relative (+1, 3) belongs to this same far D3 painter
-          // stage. Draw the complete far-slot door/frame now and let the
-          // ordinary D2/D1 geometry drawn later occlude it naturally.
-          BlitDoorF3RightObliqueAtD3Stage(pixels);
-          BlitDosRegularDoorFramesAtDepth(pixels, 3);
+          BlitDosDoorFramesAtDepth(pixels, 3);
         }
 
         if (viewport17WallAuthorityActive
@@ -19868,18 +18867,10 @@ private static void HandleGameViewPointerDown(
             && GetNormalWallRenderDepth(piece) == 2)
         {
           viewport17NativeD2Drawn = true;
-          if (!blockViewport17NativeD2ForBlackDoor)
-          {
-            // Black Door F2 replaces only the D2 center wall. Keep the
-            // normal D2 left/right side walls visible around it.
-            BlitViewport17NativeD2Walls(
-                pixels,
-                viewport17Inspection,
-                viewport17FinalWallCommands,
-                suppressCenter:
-                    suppressViewport17NativeD2CenterForBlackDoorF2);
-          }
-          BlitDosRegularDoorFramesAtDepth(pixels, 2);
+          BlitViewport17NativeD2Walls(
+              pixels, viewport17Inspection, viewport17FinalWallCommands,
+              suppressCenter: IsStairsDownS1LeftReferencePose());
+          BlitDosDoorFramesAtDepth(pixels, 2);
         }
 
         if (viewport17WallAuthorityActive
@@ -19902,23 +18893,9 @@ private static void HandleGameViewPointerDown(
             && GetNormalWallRenderDepth(piece) == 1)
         {
           viewport17NativeD1Drawn = true;
-          if (!blockViewport17NativeD1ForBlackDoor)
-          {
-            BlitViewport17NativeD1Walls(
-                pixels, viewport17Inspection, viewport17FinalWallCommands);
-          }
-          else
-          {
-            // Black Door F1 owns the D1 center opening, but the original view
-            // still uses the normal LeftF1/RightF1 side walls around it.
-            // Draw those two side walls automatically; keep FrontF1 off so the
-            // dedicated door remains the center surface. ViewEdit overrides
-            // still apply last, so either side can be disabled/mirrored live.
-            BlitViewport17NativeD1Walls(
-                pixels, viewport17Inspection, viewport17FinalWallCommands,
-                blackDoorSidesOnly: true);
-          }
-          BlitDosRegularDoorFramesAtDepth(pixels, 1);
+          BlitViewport17NativeD1Walls(
+              pixels, viewport17Inspection, viewport17FinalWallCommands);
+          BlitDosDoorFramesAtDepth(pixels, 1);
         }
 
         if (viewport17WallAuthorityActive
@@ -19933,15 +18910,6 @@ private static void HandleGameViewPointerDown(
         if (hasLiveFrontF3Card
             && piece != null
             && piece.Name == "Front Wall F3")
-        {
-          continue;
-        }
-
-        // A Door at F2 or F3 replaces the normal FrontF3 center wall.
-        if ((IsDoorF2FrontView() || IsDoorF3FrontView())
-            && piece != null
-            && (IsFrontWallF3Card(piece)
-                || piece.Graphic == DungeonGraphicType.FrontWallF3))
         {
           continue;
         }
@@ -19964,9 +18932,6 @@ private static void HandleGameViewPointerDown(
         bool shouldDraw = viewport17NormalWall
             ? viewport17EffectiveSelected
             : ShouldDrawPieceAtPreviewPose(piece);
-        bool blackDoorF1Exception = IsBlackDoorF1PoseException(piece);
-        bool blackDoorF2Exception = IsBlackDoorF2PoseException(piece);
-        bool blackDoorF3Exception = IsBlackDoorF3PoseException(piece);
         bool manualNormalWallEnabledForDraw =
             !viewport17NormalWall
             && IsNormalWallPiece(piece)
@@ -19995,18 +18960,11 @@ private static void HandleGameViewPointerDown(
             continue;
         }
         else if (!shouldDraw
-            && !manualNormalWallEnabledForDraw
-            && !blackDoorF1Exception
-            && !blackDoorF2Exception
-            && !blackDoorF3Exception)
+            && !manualNormalWallEnabledForDraw)
         {
           continue;
         }
 
-        if ((piece.Name == "Black Door Frame Left F2"
-                || piece.Name == "Black Door Frame Right F2")
-            && !IsDoorF2FrontView())
-          continue;
 
         if (piece.Graphic == DungeonGraphicType.MovementArrows)
           continue;
@@ -20018,23 +18976,6 @@ private static void HandleGameViewPointerDown(
         // part of wall geometry instead of a late overlay exception.
 
 
-        // F1 door frames are drawn by the dedicated F1 door composition,
-        // not in normal list order.
-        if (IsDoorF1FrontView()
-            && (piece.Name == "Black Door Frame Left F1"
-                || piece.Name == "Black Door Frame Right F1"))
-        {
-          continue;
-        }
-
-        // A door directly ahead occupies the F1 center opening.
-        // Do not draw the normal FrontF2 wall through it.
-        if (IsDoorF1FrontView()
-            && (IsFrontWallF2Card(piece)
-                || FrontWallF2Logic.IsFrontWallF2Graphic(piece.Graphic)))
-        {
-          continue;
-        }
 
         // Generic stairs-down rule: a down-stair in the near-center relative
         // cell occupies the FrontF2 band, so do not draw FrontF2 here.
@@ -20320,50 +19261,6 @@ private static void HandleGameViewPointerDown(
         else if (IsRightD3Piece(piece) && mirror)
           drawGraphic = DungeonGraphicType.WallD3L2;
 
-        // F2 door view: frames already blitted in kit order; BlackDoorF2
-        // 63×59 1:1 last so it covers overlapping inner frame pixels.
-        if (blackDoorF2Exception)
-        {
-          // Draw the two F2 frame pieces through the same live ViewEdit path
-          // used by isolated composition, then place the front door over them.
-          BlitBlackDoorF2FramesIntoPreview(pixels);
-
-          // Dedicated front F2 door. At the verified F2 door view
-          // exception pose the door is mandatory; do not gate it on the
-          // stored Enabled flag.
-          ViewportPiece doorF2 = FindLayoutPieceByName("BlackDoorF2");
-          Texture2D f2Source = GetBlackDoorF2SourceTexture();
-          if (f2Source != null)
-          {
-            int f2DoorX = piece.ResolvedBlackDoorF2X;
-            int f2DoorY = piece.ResolvedBlackDoorF2Y;
-            bool f2DoorMirror = blackDoorF2CardMirror;
-
-            // If a real BlackDoorF2 card exists, keep its live ViewEdit
-            // position/mirror values. A temporary position override wins.
-            if (doorF2 != null)
-            {
-              f2DoorX = doorF2.X;
-              f2DoorY = doorF2.Y;
-              f2DoorMirror = doorF2.MirrorHorizontally;
-
-              if (previewPositionOverrideByPiece.TryGetValue(
-                      doorF2, out Vector2Int f2DoorOverride))
-              {
-                f2DoorX = f2DoorOverride.x;
-                f2DoorY = f2DoorOverride.y;
-              }
-            }
-
-            BlitPieceIntoPreview(
-                pixels,
-                f2Source,
-                f2DoorX,
-                f2DoorY,
-                f2DoorMirror);
-          }
-          continue;
-        }
 
         Texture2D texture = graphics.GetTexture(drawGraphic);
 
@@ -20397,135 +19294,6 @@ private static void HandleGameViewPointerDown(
           continue;
         }
 
-        // (1,3) North: dedicated Black Door F1 96x88 source.
-        // Keep X/Y from the existing BlackDoorF1 ViewEdit/layout piece so we
-        // can visually tune placement next without changing the asset.
-        if (blackDoorF1Exception)
-        {
-          // Original layering: draw the left/right F1 frame pieces first,
-          // then draw the front Black Door over them.
-          // The game only has one F1 frame graphic, so the right frame uses
-          // the same left-frame texture mirrored horizontally.
-          Texture2D leftFrameSource = GetBlackDoorFrameLeftF1SourceTexture();
-
-          ViewportPiece leftFramePiece =
-              FindLayoutPieceByName("Black Door Frame Left F1");
-          if (leftFrameSource != null && leftFramePiece != null)
-          {
-            // Render state must respect the pose-resolved Enabled state.
-            // A temporary ViewEdit toggle may still override it for this pose.
-            bool leftFrameEnabled =
-                !previewEnabledOverrideByPiece.TryGetValue(
-                    leftFramePiece, out bool leftFrameEnabledOverride)
-                || leftFrameEnabledOverride;
-
-            bool leftFrameMirror = leftFramePiece.MirrorHorizontally;
-            if (previewMirrorOverrideByPiece.TryGetValue(
-                    leftFramePiece, out bool leftFrameMirrorOverride))
-            {
-              leftFrameMirror = leftFrameMirrorOverride;
-            }
-
-            if (leftFrameEnabled)
-            {
-              BlitPieceIntoPreview(
-                  pixels,
-                  leftFrameSource,
-                  leftFramePiece.EffectiveX,
-                  leftFramePiece.EffectiveY,
-                  leftFrameMirror);
-            }
-          }
-
-          ViewportPiece rightFramePiece =
-              FindLayoutPieceByName("Black Door Frame Right F1");
-          if (leftFrameSource != null && rightFramePiece != null)
-          {
-            // Same rule for the right F1 frame: never draw a disabled piece.
-            bool rightFrameEnabled =
-                !previewEnabledOverrideByPiece.TryGetValue(
-                    rightFramePiece, out bool rightFrameEnabledOverride)
-                || rightFrameEnabledOverride;
-
-            // Automatic F1 right-frame default is mirrored because both sides
-            // use the same extracted left-frame source. A ViewEdit Mirror click
-            // temporarily overrides only this stationary pose.
-            bool rightFrameMirror = true;
-            if (previewMirrorOverrideByPiece.TryGetValue(
-                    rightFramePiece, out bool rightFrameMirrorOverride))
-            {
-              rightFrameMirror = rightFrameMirrorOverride;
-            }
-
-            if (rightFrameEnabled)
-            {
-              BlitPieceIntoPreview(
-                  pixels,
-                  leftFrameSource,
-                  rightFramePiece.EffectiveX,
-                  rightFramePiece.EffectiveY,
-                  rightFrameMirror);
-            }
-          }
-
-          bool doorEnabled =
-              !previewEnabledOverrideByPiece.TryGetValue(
-                  piece, out bool doorEnabledOverride)
-              || doorEnabledOverride;
-
-          if (doorEnabled)
-          {
-            Texture2D f1DoorSource = GetBlackDoorF1SourceTexture();
-            if (f1DoorSource != null)
-            {
-              BlitPieceIntoPreview(
-                  pixels,
-                  f1DoorSource,
-                  piece.EffectiveX,
-                  piece.EffectiveY,
-                  mirror);
-            }
-          }
-
-          continue;
-        }
-
-        // F3 door view: frames first, then BlackDoorF3 45×39 1:1 on top.
-        if (blackDoorF3Exception)
-        {
-          BlitBlackDoorF3FramesIntoPreview(pixels);
-          ViewportPiece doorF3 = FindLayoutPieceByName("BlackDoorF3");
-          Texture2D f3Source = GetBlackDoorF3SourceTexture();
-          int f3X = doorF3 != null ? doorF3.X : blackDoorF3CardX;
-          int f3Y = doorF3 != null ? doorF3.Y : blackDoorF3CardY;
-
-          // F3 front-door view: start from canonical Ref X/Y.
-          // A live ViewEdit position override wins so the card remains editable.
-          if (f3Source != null
-              && TryGetCanonicalReferenceXY("BlackDoorF3", out int f3RefX, out int f3RefY))
-          {
-            f3X = f3RefX;
-            f3Y = DisplayYToUnityY(f3RefY, f3Source.height);
-          }
-          if (doorF3 != null
-              && previewPositionOverrideByPiece.TryGetValue(
-                  doorF3, out Vector2Int f3DoorOverride))
-          {
-            f3X = f3DoorOverride.x;
-            f3Y = f3DoorOverride.y;
-          }
-
-          if (f3Source != null)
-          {
-            BlitPieceIntoPreview(
-                pixels,
-                f3Source,
-                f3X,
-                f3Y,
-                mirror);
-          }
-          continue;
-        }
 
         // S2 stairs sit behind the near right wall at the calibration pose.
         // Draw once immediately before RightF0, so RightF0 masks the stair
@@ -20562,20 +19330,6 @@ private static void HandleGameViewPointerDown(
 
     // Native D3 L/C/R is drawn in the normal far-to-near wall pass.
 
-    // Final F2 door layering.
-    // The earlier dedicated F2 composition occurs inside the far-to-near wall
-    // pass, where native LeftF2/RightF2 can paint over the frame edges later.
-    // Recompose the F2 door here after all walls: frames first, then door.
-    if (IsDoorF2FrontView())
-    {
-      BlitBlackDoorF2FramesIntoPreview(pixels);
-      BlitBlackDoorF2DoorIntoPreview(pixels);
-    }
-
-    // Black Door frames are map geometry. Never paint isolated F2/F3 frame
-    // pieces in an unrelated pose: without a Door tile at the matching
-    // relative depth/lane there is no door and therefore no frame/pillar.
-    // F3 front/oblique doors are painted only by their valid depth-stage paths.
 
     // Stairs are map geometry, not wall ornaments. If the cell directly
     // ahead is a Stairs tile, draw the original F1 stairs front over the
@@ -20675,7 +19429,7 @@ private static void HandleGameViewPointerDown(
     BlitFloorItemsIntoPreview(pixels);
     BlitDosNativeMonstersIntoPreview(pixels);
     // D4 F1 reference composition: panel over background features. Full depth-aware object ordering remains pending.
-    BlitDosClosedRegularDoorPanels(pixels);
+    BlitDosDoorPanels(pixels);
     BlitSuspendedThrownItemsIntoPreview(pixels);
   }
 
@@ -20789,34 +19543,37 @@ private static void HandleGameViewPointerDown(
   [System.Serializable] private sealed class DosDoorPanelRoot
   { public int schemaVersion; public DosDoorPanelView[] views; }
   [System.Serializable] private sealed class DosDoorPanelView
-  { public int graphicSet, depth, x, y, width, height, verticalLiftPerStep; public string path, caption; }
+  { public int graphicSet, depth, x, y, width, height, verticalLiftPerStep, ornamentOrdinal, level; public string path, caption; }
 
-  private void BlitDosClosedRegularDoorPanels(Color32[] pixels)
+  private void BlitDosDoorPanels(Color32[] pixels)
   {
     if (pixels == null || previewMiniMap == null) return;
     for (int depth = 3; depth >= 1; depth--)
     {
-      if (!TryGetRegularFrontDoorCell(depth, out Viewport17Cell cell)) continue;
+      if (!TryGetFrontDoorCell(depth, out Viewport17Cell cell)) continue;
       if (!previewMiniMap.TryGetDoorData(cell.MapX, cell.MapY, out DungeonMap.DoorData door))
       { ReportDoorArtworkProblem("missing original door metadata at " + cell.MapX + "," + cell.MapY); continue; }
       if (door.CurrentState == 0) continue;
-      if (door.CurrentState < 1 || door.CurrentState > 4 || door.OrnamentOrdinal != 0
+      if (door.CurrentState < 1 || door.CurrentState > 4
           || (door.CurrentState != 4 && !door.OpensVertically))
-      { ReportDoorArtworkProblem("door state/ornament not registered for vertical preview"); continue; }
+      { ReportDoorArtworkProblem("unsupported door state for current preview projection"); continue; }
       DosDoorPanelView view = null;
       try
       {
         var root = JsonUtility.FromJson<DosDoorPanelRoot>(File.ReadAllText(DosDoorPanelPreviewDataPath));
-        if (root == null || root.schemaVersion != 1 || root.views == null)
+        if (root == null || root.schemaVersion != 2 || root.views == null)
           throw new System.IO.InvalidDataException("invalid door panel registry");
         foreach (var entry in root.views)
         {
-          if (entry == null || entry.graphicSet != door.GraphicSet || entry.depth != depth) continue;
+          if (entry == null || entry.graphicSet != door.GraphicSet || entry.depth != depth
+              || entry.ornamentOrdinal != door.OrnamentOrdinal
+              || (entry.ornamentOrdinal != 0 && entry.level != previewDungeonLevel)) continue;
           if (view != null) throw new System.IO.InvalidDataException("duplicate door panel view");
           view = entry;
         }
         if (view == null)
-        { ReportDoorArtworkProblem("no verified panel geometry for set " + door.GraphicSet + " F" + depth); continue; }
+        { ReportDoorArtworkProblem("no panel registered for level " + previewDungeonLevel
+            + " set " + door.GraphicSet + " ornament ordinal " + door.OrnamentOrdinal + " F" + depth); continue; }
         if (view.width <= 0 || view.height <= 0 || view.x < 0 || view.y < 0
             || view.x + view.width > DungeonViewportWidth || view.y + view.height > DungeonViewportHeight
             || string.IsNullOrEmpty(view.path))
@@ -20826,7 +19583,9 @@ private static void HandleGameViewPointerDown(
       { ReportDoorArtworkProblem(DosDoorPanelPreviewDataPath + ": " + ex.Message); continue; }
       Texture2D source = LoadDoorFrameTexture(view.path, view.width, view.height);
       if (source == null || !TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration)) continue;
-      string key = "DoorPanelProjection:Set" + door.GraphicSet + ":F" + depth;
+      string key = "DoorPanelProjection:Set" + door.GraphicSet
+          + (door.OrnamentOrdinal == 0 ? "" : ":L" + previewDungeonLevel + ":O" + door.OrnamentOrdinal)
+          + ":F" + depth;
       string feature = MakePreviewFeatureKey("DoorPanel:" + previewDungeonLevel + ":F" + depth, cell.MapX, cell.MapY, null);
       if (!TryGetDosDoorFrameOffset(calibration, key, out Vector2Int offset)) continue;
       var reference = new Vector2Int(view.x, view.y);
@@ -20860,8 +19619,7 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  // Regular door-frame stage D1. Native source and relative geometry are
-  // data-driven; do not activate the existing special Black Door panel path.
+  // Shared native door frames, selected by relative map geometry.
   private const string DosDoorFramePreviewDataPath = "Assets/Editor/DosDoorFramePreviewData.json";
   [System.Serializable]
   private sealed class DosDoorFramePreviewRoot
@@ -20885,13 +19643,13 @@ private static void HandleGameViewPointerDown(
   private readonly Dictionary<string, Vector2Int> dosDoorFrameOffsetDrafts =
       new Dictionary<string, Vector2Int>(System.StringComparer.Ordinal);
 
-  private bool TryGetRegularFrontDoorCell(int depth, out Viewport17Cell cell)
+  private bool TryGetFrontDoorCell(int depth, out Viewport17Cell cell)
   {
     cell = default;
     if (previewMiniMap == null || depth < 1 || depth > 3
         || !IsCenterSightLineOpenBefore(depth)) return false;
     cell = SampleViewport17Cell(0, depth);
-    if (!cell.IsInside || IsHallOfChampionsBlackDoorCell(cell)) return false;
+    if (!cell.IsInside) return false;
     DungeonTile tile = previewMiniMap.GetTile(cell.MapX, cell.MapY);
     if (tile == null || tile.SourceType != DungeonSourceTileType.Door) return false;
 
@@ -20961,15 +19719,15 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
-  private void BlitDosRegularDoorFramesAtDepth(Color32[] pixels, int depth)
+  private void BlitDosDoorFramesAtDepth(Color32[] pixels, int depth)
   {
-    if (pixels == null || !TryGetRegularFrontDoorCell(depth, out Viewport17Cell cell)
+    if (pixels == null || !TryGetFrontDoorCell(depth, out Viewport17Cell cell)
         || !TryGetDosDoorFrameView(depth, out DosDoorFramePreviewView view)) return;
     Texture2D source = LoadDoorFrameTexture(view.path, view.width, view.height);
     if (source == null || !TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration)) return;
     Color32[] art = source.GetPixels32();
     // Draw the lintel first so the side pillars can naturally occlude its edges.
-    BlitDosRegularDoorTopFrameAtDepth(pixels, depth, cell);
+    BlitDosDoorTopFrameAtDepth(pixels, depth, cell);
     for (int side = 0; side < 2; side++)
     {
       bool mirror = side == 1;
@@ -21015,7 +19773,7 @@ private static void HandleGameViewPointerDown(
   [System.Serializable] private sealed class DosDoorTopFrameView
   { public int depth, x, y, width, height; public string path; }
 
-  private void BlitDosRegularDoorTopFrameAtDepth(Color32[] pixels, int depth, Viewport17Cell cell)
+  private void BlitDosDoorTopFrameAtDepth(Color32[] pixels, int depth, Viewport17Cell cell)
   {
     DosDoorTopFrameView view = null;
     try
@@ -21065,7 +19823,7 @@ private static void HandleGameViewPointerDown(
     }
   }
 
-  private void DrawDosRegularDoorFrameRows()
+  private void DrawDosDoorFrameRows()
   {
     if (championSheetVisible || editModePreviewTexture == null
         || renderedDosLevel != previewDungeonLevel || renderedDosX != previewX
@@ -22289,12 +21047,7 @@ private static void HandleGameViewPointerDown(
     if (name == "LeftS3" || name == "RightS3")
       return true;
 
-    if (piece.Graphic == DungeonGraphicType.BlackDoor)
-      return true;
-
-    return name.StartsWith("BlackDoor", System.StringComparison.Ordinal)
-        || name.StartsWith("Black Door", System.StringComparison.Ordinal)
-        || name.Contains("Wall");
+    return name.Contains("Wall");
   }
 
   private void DisableAllWallRenderingPieces()
@@ -22315,16 +21068,6 @@ private static void HandleGameViewPointerDown(
         piece.PoseOffsetY = 0;
         continue;
       }
-      if (piece.Name == "BlackDoorF1"
-          || piece.Name == "BlackDoorF2"
-          || piece.Name == "BlackDoorF3"
-          || piece.Name == "Black Door Frame Left F1"
-          || piece.Name == "Black Door Frame Right F1"
-          || piece.Name == "Black Door Frame Left F2"
-          || piece.Name == "Black Door Frame Right F2"
-          || piece.Name == "Black Door Frame Left F3"
-          || piece.Name == "Black Door Frame Right F3")
-        continue;
 
       piece.Enabled = false;
       piece.PoseOffsetX = 0;
@@ -22347,8 +21090,7 @@ private static void HandleGameViewPointerDown(
     }
 
     // Normal walls draw only when the current minimap resolver explicitly
-    // produced an enabled transient state. Black Door and all unresolved wall
-    // pieces remain off.
+    // produced an enabled transient state. Unresolved wall pieces remain off.
     if (IsWallRenderingPiece(piece))
     {
       if (previewEnabledOverrideByPiece.TryGetValue(
@@ -22368,58 +21110,6 @@ private static void HandleGameViewPointerDown(
       return false;
 
     return piece.Enabled;
-  }
-
-  /// <summary>
-  /// F1 door front view selected from the relative center tile.
-  /// Uses the existing verified 96x88 door composition.
-  /// </summary>
-  private bool IsVerifiedBlackDoorF1Pose()
-  {
-    return IsDoorF1FrontView();
-  }
-
-  private bool IsBlackDoorF1ManualSideWallCandidate(ViewportPiece piece)
-  {
-    return IsVerifiedBlackDoorF1Pose()
-        && piece != null
-        && (IsWallF1LeftPiece(piece) || IsWallF1RightPiece(piece));
-  }
-
-  private bool IsBlackDoorF1PoseException(ViewportPiece piece)
-  {
-    if (piece == null || piece.Name != "BlackDoorF1")
-      return false;
-
-    return IsDoorF1FrontView();
-  }
-
-  /// <summary>
-  /// F2 door front view. Selection is relative geometry only:
-  /// a Door tile two cells straight ahead.
-  /// </summary>
-  private bool IsBlackDoorF2PoseException(ViewportPiece piece)
-  {
-    // F2 still uses BlackDoorF1 as its carrier piece for the existing draw path.
-    if (piece == null || piece.Name != "BlackDoorF1")
-      return false;
-
-    return IsDoorF2FrontView();
-  }
-
-  /// <summary>
-  /// F3 door front view. Draw may run even when the normal door Enabled flag
-  /// is off. Selection is relative geometry only: Door at center depth 3.
-  /// </summary>
-  private bool IsBlackDoorF3PoseException(ViewportPiece piece)
-  {
-    if (piece == null)
-      return false;
-
-    if (piece.Graphic != DungeonGraphicType.BlackDoor)
-      return false;
-
-    return IsDoorF3FrontView();
   }
 
 
@@ -22540,17 +21230,6 @@ private static void HandleGameViewPointerDown(
     return cachedRight2SReadableCopy;
   }
 
-  private Texture2D GetBlackDoorFrameF3SourceTexture()
-  {
-    if (blackDoorFrameF3SourceTexture == null)
-    {
-      blackDoorFrameF3SourceTexture =
-          LoadDoorFrameTexture(
-              "Assets/Art/Doors/Door_Left_S3_10x42.png", 10, 42);
-    }
-
-    return blackDoorFrameF3SourceTexture;
-  }
 
   // The door artwork has one canonical physical path. Do not search old
   // Walls paths or silently substitute another image.
@@ -22575,357 +21254,6 @@ private static void HandleGameViewPointerDown(
     return texture;
   }
 
-  private Texture2D GetBlackDoorFrameLeftF1SourceTexture()
-  {
-    if (blackDoorFrameLeftF1SourceTexture == null)
-    {
-      blackDoorFrameLeftF1SourceTexture =
-          LoadDoorFrameTexture(
-              "Assets/Art/Doors/Door_Left_S1_25x94.png", 25, 94);
-    }
-
-    return blackDoorFrameLeftF1SourceTexture;
-  }
-
-  private Texture2D GetBlackDoorF1SourceTexture()
-  {
-    if (blackDoorF1SourceTexture == null)
-    {
-      blackDoorF1SourceTexture =
-          LoadDoorFrameTexture(
-              "Assets/Art/Doors/Black Door 96x88.png", 96, 88);
-    }
-
-    return blackDoorF1SourceTexture;
-  }
-
-  private Texture2D GetBlackDoorF3SourceTexture()
-  {
-    if (blackDoorF3SourceTexture == null)
-    {
-      blackDoorF3SourceTexture =
-          LoadDoorFrameTexture(
-              "Assets/Art/Doors/BlackDoorF3_45x39.png", 45, 39);
-    }
-
-    return blackDoorF3SourceTexture;
-  }
-
-  private Texture2D GetBlackDoorF2SourceTexture()
-  {
-    if (blackDoorF2SourceTexture == null)
-    {
-      blackDoorF2SourceTexture =
-          LoadDoorFrameTexture(
-              "Assets/Art/Doors/BlackDoorF2_63x59.png", 63, 59);
-    }
-
-    return blackDoorF2SourceTexture;
-  }
-
-  /// <summary>
-  /// (1,5) North Door F3 frames. Same 10×42 left source; right is
-  /// mirrored. Not wall-geometry pieces. Does not write pose data.
-  /// </summary>
-  private void BlitBlackDoorF2FramesIntoPreview(Color32[] pixels)
-  {
-    if (pixels == null)
-      return;
-
-    Texture2D source =
-        LoadDoorFrameTexture(
-            "Assets/Art/Doors/Door_Left_S2_18x65.png", 18, 65);
-    if (source == null)
-      return;
-
-    bool automaticF2DoorPose = IsDoorF2FrontView();
-    if (!automaticF2DoorPose)
-      return;
-
-    ViewportPiece leftF2 =
-        FindLayoutPieceByName("Black Door Frame Left F2");
-    ViewportPiece rightF2 =
-        FindLayoutPieceByName("Black Door Frame Right F2");
-
-    // No special Black Door pose = no Black Door frame. In a valid pose the
-    // pose-resolved piece.Enabled state is authoritative; a temporary ViewEdit
-    // override may still change it for comparison.
-    bool leftEnabled = automaticF2DoorPose && leftF2 != null && leftF2.Enabled;
-    bool rightEnabled = automaticF2DoorPose && rightF2 != null && rightF2.Enabled;
-
-    if (leftF2 != null
-        && previewEnabledOverrideByPiece.TryGetValue(
-            leftF2, out bool leftPreviewEnabled))
-    {
-      leftEnabled = leftPreviewEnabled;
-    }
-
-    if (rightF2 != null
-        && previewEnabledOverrideByPiece.TryGetValue(
-            rightF2, out bool rightPreviewEnabled))
-    {
-      rightEnabled = rightPreviewEnabled;
-    }
-
-    if (leftEnabled && leftF2 != null)
-    {
-      // Generic F2-door frame defaults.
-      int leftX = 64;
-      int leftY = DisplayYToUnityY(54, source.height);
-      bool leftMirror = false;
-
-      if (TryGetCanonicalReferenceXY(
-              "Black Door Frame Left F2",
-              out int leftRefX,
-              out int leftRefY))
-      {
-        leftX = leftRefX;
-        leftY = DisplayYToUnityY(leftRefY, source.height);
-      }
-
-      if (previewPositionOverrideByPiece.TryGetValue(
-              leftF2, out Vector2Int leftPosition))
-      {
-        leftX = leftPosition.x;
-        leftY = leftPosition.y;
-      }
-
-      if (previewMirrorOverrideByPiece.TryGetValue(
-              leftF2, out bool leftMirrorOverride))
-      {
-        leftMirror = leftMirrorOverride;
-      }
-
-      BlitPieceIntoPreview(
-          pixels,
-          source,
-          leftX,
-          leftY,
-          leftMirror);
-    }
-
-    if (rightEnabled && rightF2 != null)
-    {
-      // Generic F2-door frame defaults. The right side uses the same left
-      // source mirrored horizontally.
-      int rightX = 140;
-      int rightY = DisplayYToUnityY(54, source.height);
-      bool rightMirror = true;
-
-      if (TryGetCanonicalReferenceXY(
-              "Black Door Frame Right F2",
-              out int rightRefX,
-              out int rightRefY))
-      {
-        rightX = rightRefX;
-        rightY = DisplayYToUnityY(rightRefY, source.height);
-      }
-
-      if (previewPositionOverrideByPiece.TryGetValue(
-              rightF2, out Vector2Int rightPosition))
-      {
-        rightX = rightPosition.x;
-        rightY = rightPosition.y;
-      }
-
-      if (previewMirrorOverrideByPiece.TryGetValue(
-              rightF2, out bool rightMirrorOverride))
-      {
-        rightMirror = rightMirrorOverride;
-      }
-
-      BlitPieceIntoPreview(
-          pixels,
-          source,
-          rightX,
-          rightY,
-          rightMirror);
-    }
-  }
-
-  private void BlitBlackDoorF2DoorIntoPreview(Color32[] pixels)
-  {
-    if (pixels == null || !IsDoorF2FrontView())
-      return;
-
-    ViewportPiece carrier = FindLayoutPieceByName("BlackDoorF1");
-    ViewportPiece doorF2 = FindLayoutPieceByName("BlackDoorF2");
-    Texture2D f2Source = GetBlackDoorF2SourceTexture();
-    if (f2Source == null)
-      return;
-
-    int f2DoorX = carrier != null ? carrier.ResolvedBlackDoorF2X : 0;
-    int f2DoorY = carrier != null ? carrier.ResolvedBlackDoorF2Y : 0;
-    bool f2DoorMirror = blackDoorF2CardMirror;
-
-    if (doorF2 != null)
-    {
-      f2DoorX = doorF2.X;
-      f2DoorY = doorF2.Y;
-      f2DoorMirror = doorF2.MirrorHorizontally;
-
-      if (previewPositionOverrideByPiece.TryGetValue(
-              doorF2, out Vector2Int f2DoorOverride))
-      {
-        f2DoorX = f2DoorOverride.x;
-        f2DoorY = f2DoorOverride.y;
-      }
-
-      if (previewMirrorOverrideByPiece.TryGetValue(
-              doorF2, out bool f2DoorMirrorOverride))
-      {
-        f2DoorMirror = f2DoorMirrorOverride;
-      }
-    }
-
-    BlitPieceIntoPreview(
-        pixels,
-        f2Source,
-        f2DoorX,
-        f2DoorY,
-        f2DoorMirror);
-  }
-
-  private void BlitDoorF3RightObliqueAtD3Stage(Color32[] pixels)
-  {
-    if (pixels == null || !IsDoorF3RightObliqueView())
-      return;
-
-    // Minimap/relative-geometry rule:
-    // relative (+1, 3) is a Door, so render the normal extracted F3 door and
-    // the mirrored right F3 frame at the FAR D3 stage. Do not pre-crop a
-    // 4-pixel strip and do not redraw anything after nearer walls.
-    //
-    // The later D2/D1 painter passes decide what remains visible.
-
-    Texture2D door = GetBlackDoorF3SourceTexture();
-    if (door != null
-        && TryGetCanonicalReferenceXY(
-            "BlackDoorF3", out int doorX, out int doorDisplayY))
-    {
-      BlitPieceIntoPreview(
-          pixels,
-          door,
-          doorX,
-          DisplayYToUnityY(doorDisplayY, door.height),
-          false);
-    }
-
-    Texture2D frame = GetBlackDoorFrameF3SourceTexture();
-    if (frame != null
-        && TryGetCanonicalReferenceXY(
-            "Black Door Frame Right F3",
-            out int frameX,
-            out int frameDisplayY))
-    {
-      BlitPieceIntoPreview(
-          pixels,
-          frame,
-          frameX,
-          DisplayYToUnityY(frameDisplayY, frame.height),
-          true);
-    }
-  }
-
-  private void BlitBlackDoorF3FramesIntoPreview(Color32[] pixels)
-  {
-    if (pixels == null)
-      return;
-
-    Texture2D source = GetBlackDoorFrameF3SourceTexture();
-    if (source == null)
-      return;
-
-    bool automaticF3DoorPose = IsDoorF3FrontView();
-    if (!automaticF3DoorPose)
-      return;
-
-    ViewportPiece leftF3 =
-        FindLayoutPieceByName("Black Door Frame Left F3");
-    ViewportPiece rightF3 =
-        FindLayoutPieceByName("Black Door Frame Right F3");
-
-    // No special Black Door pose = no Black Door frame. In a valid pose,
-    // both the card state and the pose-resolved piece.Enabled state must agree.
-    bool leftEnabled =
-        automaticF3DoorPose
-        && leftF3 != null
-        && leftF3.Enabled
-        && blackDoorFrameLeftF3CardEnabled;
-    bool rightEnabled =
-        automaticF3DoorPose
-        && rightF3 != null
-        && rightF3.Enabled
-        && blackDoorFrameRightF3CardEnabled;
-
-    if (leftF3 != null
-        && previewEnabledOverrideByPiece.TryGetValue(
-            leftF3, out bool leftPreviewEnabled))
-    {
-      leftEnabled = leftPreviewEnabled;
-    }
-
-    if (rightF3 != null
-        && previewEnabledOverrideByPiece.TryGetValue(
-            rightF3, out bool rightPreviewEnabled))
-    {
-      rightEnabled = rightPreviewEnabled;
-    }
-
-    if (leftEnabled && leftF3 != null)
-    {
-      int leftX = leftF3.X;
-      int leftY = leftF3.Y;
-      bool leftMirror = blackDoorFrameLeftF3CardMirror;
-
-      if (previewPositionOverrideByPiece.TryGetValue(
-              leftF3, out Vector2Int leftPosition))
-      {
-        leftX = leftPosition.x;
-        leftY = leftPosition.y;
-      }
-
-      if (previewMirrorOverrideByPiece.TryGetValue(
-              leftF3, out bool leftMirrorOverride))
-      {
-        leftMirror = leftMirrorOverride;
-      }
-
-      BlitPieceIntoPreview(
-          pixels,
-          source,
-          leftX,
-          leftY,
-          leftMirror);
-    }
-
-    if (rightEnabled && rightF3 != null)
-    {
-      int rightX = rightF3.X;
-      int rightY = rightF3.Y;
-      bool rightMirror = true;
-
-      if (previewPositionOverrideByPiece.TryGetValue(
-              rightF3, out Vector2Int rightPosition))
-      {
-        rightX = rightPosition.x;
-        rightY = rightPosition.y;
-      }
-
-      if (previewMirrorOverrideByPiece.TryGetValue(
-              rightF3, out bool rightMirrorOverride))
-      {
-        rightMirror = rightMirrorOverride;
-      }
-
-      BlitPieceIntoPreview(
-          pixels,
-          source,
-          rightX,
-          rightY,
-          rightMirror);
-    }
-  }
 
   /// <summary>
   /// Automatic preview mirror for walls that have a V17 geometry/pose rule.
@@ -23206,10 +21534,6 @@ private static void HandleGameViewPointerDown(
   /// Geometry/V17 supplies the default Enabled/Mirror state. While the pose
   /// remains stationary, an explicit checkbox click wins for that image only.
   ///
-  /// Do not stop at the first family match: Black Door frame artwork can use
-  /// an F1-like graphic and therefore look like the same normal-wall family.
-  /// Instead, scan the real normal-wall cards and use whichever card actually
-  /// owns the temporary ViewEdit override.
   /// </summary>
   /// <summary>
   /// Reads a temporary ViewEdit Enabled override by the exact card first, then
@@ -23235,7 +21559,7 @@ private static void HandleGameViewPointerDown(
     foreach (KeyValuePair<ViewportPiece, bool> entry in previewEnabledOverrideByPiece)
     {
       ViewportPiece overriddenPiece = entry.Key;
-      if (overriddenPiece == null || IsBlackDoorEditorPiece(overriddenPiece))
+      if (overriddenPiece == null)
         continue;
 
       if (string.Equals(
@@ -23270,7 +21594,7 @@ private static void HandleGameViewPointerDown(
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece candidate = layout.Pieces[i];
-      if (candidate == null || IsBlackDoorEditorPiece(candidate))
+      if (candidate == null)
         continue;
 
       if (!string.Equals(
@@ -23312,7 +21636,7 @@ private static void HandleGameViewPointerDown(
     for (int i = 0; i < layout.Pieces.Count; i++)
     {
       ViewportPiece candidate = layout.Pieces[i];
-      if (candidate == null || IsBlackDoorEditorPiece(candidate))
+      if (candidate == null)
         continue;
 
       if (!string.Equals(
@@ -23418,8 +21742,7 @@ private static void HandleGameViewPointerDown(
       Color32[] pixels,
       Viewport17Inspection inspection,
       List<Viewport17RenderCommand> finalCommands,
-      bool manualOnly = false,
-      bool blackDoorSidesOnly = false)
+      bool manualOnly = false)
   {
     if (pixels == null || graphics == null || inspection.Cells == null)
       return;
@@ -23445,14 +21768,6 @@ private static void HandleGameViewPointerDown(
         ? false
         : HasViewport17FinalFamily(finalCommands, "RightF1") || frontRight;
 
-    // The Black Door F1 front view replaces only the D1 center wall. Its
-    // normal D1 side walls remain visible on both sides of the doorway.
-    if (blackDoorSidesOnly)
-    {
-      leftEnabled = true;
-      centerEnabled = false;
-      rightEnabled = true;
-    }
 
     bool leftMirror = sideMirror;
     bool centerMirror = GetFrontF1MirrorFromPose();
@@ -23681,10 +21996,6 @@ private static void HandleGameViewPointerDown(
     bool leftEnabled = HasViewport17FinalFamily(finalCommands, "LeftF3");
     bool rightEnabled = HasViewport17FinalFamily(finalCommands, "RightF3");
 
-    // Relative (+1,3) is the D3-right cell. If it is a Door, that slot is
-    // owned by the door compositor rather than the ordinary RightF3 wall.
-    if (IsDoorF3RightObliqueView())
-      rightEnabled = false;
     bool leftMirror = GetViewport17LeftF3Mirror();
     // This gutter is geometry-owned, not dependent on a surviving normal
     // FrontF3 final command. At poses such as 6,1 West the normal occlusion
@@ -23708,8 +22019,7 @@ private static void HandleGameViewPointerDown(
             frontLeft, frontCenter, frontRight);
     bool rightMirror = defaultMirror;
 
-    // Black Door F2 owns only the D3 center opening. The original view still
-    // uses surviving FrontF3 edge strips and normal D3 side walls around it.
+    // Caller-requested center suppression; preserve the side strips.
     if (suppressCenter)
       frontCenter = false;
 
@@ -26053,7 +24363,7 @@ private static void HandleGameViewPointerDown(
 
 
     DrawDosNativeFloorOrnamentRows();
-    DrawDosRegularDoorFrameRows();
+    DrawDosDoorFrameRows();
 
     // Moss is a resolved floor ornament from the same database as puddles.
     // The current first implementation exposes the front F1/F2/F3 projections;
@@ -34412,12 +32722,6 @@ private static void HandleGameViewPointerDown(
     if (piece == null || graphics == null)
       return 1;
 
-    if (piece.Name == "BlackDoorF3")
-    {
-      Texture2D f3Texture = GetBlackDoorF3SourceTexture();
-      if (f3Texture != null && f3Texture.height > 0)
-        return f3Texture.height;
-    }
 
     if (IsFrontWallF1Card(piece))
     {

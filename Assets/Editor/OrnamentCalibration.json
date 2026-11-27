@@ -25,6 +25,11 @@
             "key": "OrnamentProjection:WoodRing:F1",
             "dx": 0,
             "dy": 0
+        },
+        {
+            "key": "DoorPanelProjection:Set0:L0:O1:F1",
+            "dx": 0,
+            "dy": -2
         }
     ]
 }
