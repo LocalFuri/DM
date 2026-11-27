@@ -8289,5 +8289,23 @@
     },
     "transparent_index": 10,
     "next": "Verify F2 placement and F3 availability, integrate static top frame with existing door renderer and verify draw order for all states; no hardcoded line or geometry changes."
+  },
+  "door_top_frame_D7F_integration_20261127-175648": {
+    "timestamp": "2026-11-27T17:56:48.673538+01:00",
+    "status": "F1 candidate integrated; compile and visual test pending",
+    "changes": [
+      "Native top frame at existing regular door depth pass; independent of panel state",
+      "Separate verified geometry registry; existing ViewEdit Set/X/Y/Apply reused",
+      "F2/F3 unregistered with cyan diagnostics; no guessed positions",
+      "User reported PNGs imported; assumed Assets/Art/Doors from prior instruction"
+    ],
+    "next": "Test F1 at Level 0 (6,9) West closed/open and intermediate states. Verify F2/F3 later. No changes to timing, runtime or sound."
+  },
+  "door_top_frame_D7G_order_20261127-181428": {
+    "timestamp": "2026-11-27T18:14:28.651933+01:00",
+    "status": "Candidate generic draw order test; F1 geometry and remaining appearance user-approved except two protruding black pixels; no final approval yet.",
+    "change": "Move existing static top frame blit before both side pillar blits in shared regular door frame pass for all registered depths. No artwork, calibration, clipping, timing, sound or runtime changes.",
+    "hypothesis": "Opaque pillar pixels may naturally occlude the two protruding pixels; DOS order not yet independently verified.",
+    "next": "Compile and compare Level 0 (6,9) West fully open; verify both corners, then closed/intermediate states. If not fixed, investigate generic DOS clipping; no per-graphic exception. F2/F3 pending."
   }
 }

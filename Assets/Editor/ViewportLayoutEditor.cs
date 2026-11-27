@@ -20968,6 +20968,8 @@ private static void HandleGameViewPointerDown(
     Texture2D source = LoadDoorFrameTexture(view.path, view.width, view.height);
     if (source == null || !TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration)) return;
     Color32[] art = source.GetPixels32();
+    // Draw the lintel first so the side pillars can naturally occlude its edges.
+    BlitDosRegularDoorTopFrameAtDepth(pixels, depth, cell);
     for (int side = 0; side < 2; side++)
     {
       bool mirror = side == 1;
@@ -21002,6 +21004,63 @@ private static void HandleGameViewPointerDown(
           pixel.a = 255;
           pixels[(PreviewHeight - 1 - 33 - dy) * PreviewWidth + dx] = pixel;
         }
+      }
+    }
+  }
+
+  // D7F: static native top frame, independent of the animated panel state.
+  private const string DosDoorTopFramePreviewDataPath = "Assets/Editor/DosDoorTopFramePreviewData.json";
+  [System.Serializable] private sealed class DosDoorTopFrameRoot
+  { public int schemaVersion; public DosDoorTopFrameView[] views; }
+  [System.Serializable] private sealed class DosDoorTopFrameView
+  { public int depth, x, y, width, height; public string path; }
+
+  private void BlitDosRegularDoorTopFrameAtDepth(Color32[] pixels, int depth, Viewport17Cell cell)
+  {
+    DosDoorTopFrameView view = null;
+    try
+    {
+      var root = JsonUtility.FromJson<DosDoorTopFrameRoot>(File.ReadAllText(DosDoorTopFramePreviewDataPath));
+      if (root == null || root.schemaVersion != 1 || root.views == null)
+        throw new System.IO.InvalidDataException("invalid door top frame registry");
+      foreach (var entry in root.views)
+      {
+        if (entry == null || entry.depth != depth) continue;
+        if (view != null) throw new System.IO.InvalidDataException("duplicate door top frame depth");
+        view = entry;
+      }
+      if (view == null)
+      { ReportDoorArtworkProblem("no verified door top frame geometry for F" + depth); return; }
+      if (view.width <= 0 || view.height <= 0 || view.x < 0 || view.y < 0
+          || view.x + view.width > DungeonViewportWidth || view.y + view.height > DungeonViewportHeight
+          || string.IsNullOrEmpty(view.path))
+        throw new System.IO.InvalidDataException("invalid door top frame geometry");
+    }
+    catch (System.Exception ex)
+    { ReportDoorArtworkProblem(DosDoorTopFramePreviewDataPath + ": " + ex.Message); return; }
+    Texture2D source = LoadDoorFrameTexture(view.path, view.width, view.height);
+    if (source == null || !TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration)) return;
+    string key = "DoorTopFrameProjection:F" + depth;
+    string feature = MakePreviewFeatureKey("DoorTopFrame:" + previewDungeonLevel + ":F" + depth, cell.MapX, cell.MapY, null);
+    if (!TryGetDosDoorFrameOffset(calibration, key, out Vector2Int offset)) return;
+    var reference = new Vector2Int(view.x, view.y);
+    renderedDosDoorFrameRows.Add(new DosDoorFramePreviewRow
+    { caption = "Door Top Frame F" + depth, featureKey = feature, offsetKey = key, reference = reference, offset = offset });
+    if (!IsPreviewFeatureEnabled(feature)) return;
+    Vector2Int dest = reference + offset;
+    Color32[] art = source.GetPixels32();
+    for (int y = 0; y < source.height; y++)
+    {
+      int dy = dest.y + y;
+      if (dy < 0 || dy >= DungeonViewportHeight) continue;
+      for (int x = 0; x < source.width; x++)
+      {
+        int dx = dest.x + x;
+        if (dx < 0 || dx >= DungeonViewportWidth) continue;
+        Color32 pixel = art[(source.height - 1 - y) * source.width + x];
+        if (pixel.a == 0) continue;
+        pixel.a = 255;
+        pixels[(PreviewHeight - 1 - 33 - dy) * PreviewWidth + dx] = pixel;
       }
     }
   }
