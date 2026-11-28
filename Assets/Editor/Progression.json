@@ -60,7 +60,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "D20 shared door movement collision prepared; D19K rendering and interaction frozen.",
+  "checkpoint": "D22 wall collision audio prepared; D21 motion lock approved.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -9445,10 +9445,19 @@
   },
   "door_motion_party_lock_D21_20261128-194445": {
     "timestamp": "2026-11-28T19:44:45.107173+01:00",
-    "status": "Prepared; live Unity compilation and testing pending",
+    "status": "User approved D21.",
     "rule": "Block all party navigation (forward/back/strafe and turns) while any door on current map is moving, including pressure-plate activated doors; manual editor posing unchanged. Resume immediately after actual scheduler completes. D20 stationary closed-door collision retained.",
     "sound": "Temporary Assets/Audio/Party_Damaged.wav on first rejected navigation attempt per continuous motion interval; no actual damage; no repeated sound on held keys; remove later by disabling DoorMotionBlockedSoundEnabled. Missing asset cyan warning once, no fallback.",
     "implementation": "DungeonMap.HasMovingDoors, CanTraverseTo and TurnLeft/Right; ViewportLayoutEditor.CanExecuteNavigation before cooldown and stairs paths; reset sound latch when actual door motion ends. No change to rendering or animation timing.",
     "test": "Open/close at Level 1 (2,0) West; try all directions and turns during animation; verify one temporary sound, unchanged pose, navigation restored at completion, closed-door collision intact; pressure plate door likewise."
+  },
+  "wall_collision_sound_D22_20261128-194936": {
+    "timestamp": "2026-11-28T19:49:36.224163+01:00",
+    "status": "Prepared; Unity compilation/live testing pending.",
+    "rule": "Play existing Party_Damaged.wav when relative movement is rejected by a wall or map boundary, in all four directions. No actual damage. Closed stationary doors retain D20 behavior.",
+    "implementation": "Shared PlayNavigationBlockedSound helper; separate WallBlockedSoundEnabled and DoorMotionBlockedSoundEnabled flags; wall playback throttled to max(0.2s, clip length), independent of movement throttle. Existing door-motion latch retained. Stairs exception checked before sound.",
+    "preserved": "Door scheduler, collision rules, all approved rendering, button effects, manual editor positioning unchanged.",
+    "test": "Walk into wall in all four directions; verify sound without movement, no audio overlap on repeated wall attempts, normal movement silent, door lock unchanged.",
+    "limitations": "Static source inspection only; no Unity compilation/runtime. Held keys can repeat wall sound after clip duration."
   }
 }

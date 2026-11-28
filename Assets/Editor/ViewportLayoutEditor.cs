@@ -70,31 +70,44 @@ public class ViewportLayoutEditor : EditorWindow
     set { EditorPrefs.SetBool(PrefsNavigationDelayKey, value); }
   }
 
-  // D21: temporary sound feedback only; never inflict actual party damage.
+  // D21/D22: temporary collision feedback only; never inflict party damage.
   private const bool DoorMotionBlockedSoundEnabled = true;
-  private const string DoorMotionBlockedSoundPath = "Assets/Audio/Party_Damaged.wav";
+  private const bool WallBlockedSoundEnabled = true;
+  private const string NavigationBlockedSoundPath = "Assets/Audio/Party_Damaged.wav";
   private bool doorMotionBlockedSoundPlayed;
-  private bool doorMotionBlockedSoundMissingReported;
+  private bool navigationBlockedSoundMissingReported;
+  private double nextWallBlockedSoundTime;
+
+  private void PlayNavigationBlockedSound(bool wallCollision)
+  {
+    if (wallCollision ? !WallBlockedSoundEnabled : !DoorMotionBlockedSoundEnabled)
+      return;
+    double now = EditorApplication.timeSinceStartup;
+    if (wallCollision && now < nextWallBlockedSoundTime) return;
+    AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(NavigationBlockedSoundPath);
+    if (clip != null)
+    {
+      navigationBlockedSoundMissingReported = false;
+      if (wallCollision)
+        nextWallBlockedSoundTime = now + System.Math.Max(0.2, clip.length);
+      PlayEditorPreviewClip(clip);
+    }
+    else if (!navigationBlockedSoundMissingReported)
+    {
+      navigationBlockedSoundMissingReported = true;
+      LogMissingArtworkCyan("NAVIGATION SOUND: missing " + NavigationBlockedSoundPath + " (no fallback)");
+    }
+  }
 
   private bool CanExecuteNavigation(bool isTurn)
   {
     // Check before stairs transitions or navigation cooldowns. No queued move.
     if (previewMiniMap != null && previewMiniMap.HasMovingDoors)
     {
-      if (DoorMotionBlockedSoundEnabled && !doorMotionBlockedSoundPlayed)
+      if (!doorMotionBlockedSoundPlayed)
       {
         doorMotionBlockedSoundPlayed = true;
-        AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(DoorMotionBlockedSoundPath);
-        if (clip != null)
-        {
-          doorMotionBlockedSoundMissingReported = false;
-          PlayEditorPreviewClip(clip);
-        }
-        else if (!doorMotionBlockedSoundMissingReported)
-        {
-          doorMotionBlockedSoundMissingReported = true;
-          LogMissingArtworkCyan("DOOR MOVEMENT SOUND: missing " + DoorMotionBlockedSoundPath + " (no fallback)");
-        }
+        PlayNavigationBlockedSound(false);
       }
       return false;
     }
@@ -15277,7 +15290,15 @@ private static void HandleGameViewPointerDown(
     }
 
     if (!canEnterDestination)
+    {
+      // Sound only for solid geometry or the map boundary, not a closed door.
+      // Evaluate after the stairs exception so valid transitions remain silent.
+      if (!previewMiniMap.IsInside(nextX, nextY)
+          || (previewMiniMap.GetTile(nextX, nextY).Type == DungeonTileType.Wall
+              && previewMiniMap.GetTile(nextX, nextY).SourceType != DungeonSourceTileType.Door))
+        PlayNavigationBlockedSound(true);
       return;
+    }
 
     NavigatePreviewPoseOnly(nextX, nextY, previewFacing);
   }

@@ -1,0 +1,1734 @@
+﻿Auflistung der Ordnerpfade für Volume Systemplatte
+Volumeseriennummer : 00000084 F434:A6FC
+C:\UNITY\DM\ASSETS
+|   Art.meta
+|   Audio.meta
+|   Data.meta
+|   DefaultVolumeProfile.asset
+|   DefaultVolumeProfile.asset.meta
+|   Dungeon Master.meta
+|   Dungeon320x200.renderTexture
+|   Dungeon320x200.renderTexture.meta
+|   Editor.meta
+|   EditorData.meta
+|   Portraits.meta
+|   References.meta
+|   Resources.meta
+|   Scenes.meta
+|   Scripts.meta
+|   Settings.meta
+|   TextMesh Pro.meta
+|   UniversalRenderPipelineGlobalSettings.asset
+|   UniversalRenderPipelineGlobalSettings.asset.meta
+|   
++---Art
+|   |   Amulets.meta
+|   |   Armor.meta
+|   |   Champions.meta
+|   |   Doors.meta
+|   |   Fonts.meta
+|   |   Food.meta
+|   |   Hook_S1_14x19.png
+|   |   Hook_S1_14x19.png.meta
+|   |   Interface.meta
+|   |   Items.meta
+|   |   Keys.meta
+|   |   Misc.meta
+|   |   Monster.meta
+|   |   Ornaments.meta
+|   |   Potions.meta
+|   |   Walls.meta
+|   |   Weapons.meta
+|   |   
+|   +---Amulets
+|   |       Choker_16x16.png
+|   |       Choker_16x16.png.meta
+|   |       Choker_F1_16x9.png
+|   |       Choker_F1_16x9.png.meta
+|   |       Ekkhard_Cross_32x9.png
+|   |       Ekkhard_Cross_32x9.png.meta
+|   |       Moonstone_16x16.png
+|   |       Moonstone_16x16.png.meta
+|   |       Moonstone_F1_16x8.png
+|   |       Moonstone_F1_16x8.png.meta
+|   |       
+|   +---Armor
+|   |       Armet_16x16.png
+|   |       Armet_16x16.png.meta
+|   |       Armet_Floor_34x20.png
+|   |       Armet_Floor_34x20.png.meta
+|   |       Barbarian_Hide_16x16.png
+|   |       Barbarian_Hide_16x16.png.meta
+|   |       Barbarian_Hide_F1_64x16.png
+|   |       Barbarian_Hide_F1_64x16.png.meta
+|   |       Basinet_16x16.png
+|   |       Basinet_16x16.png.meta
+|   |       Bezerker_Helm_16x16.png
+|   |       Bezerker_Helm_16x16.png.meta
+|   |       Bezerker_Helm_F1_32x20.png
+|   |       Bezerker_Helm_F1_32x20.png.meta
+|   |       Blue_Pants_16x16.png
+|   |       Blue_Pants_16x16.png.meta
+|   |       Blue_Pants_F1_61x18.png
+|   |       Blue_Pants_F1_61x18.png.meta
+|   |       Boots_of Speed_48x28.png
+|   |       Boots_of Speed_48x28.png.meta
+|   |       Boots_of_Speed_16x16.png
+|   |       Boots_of_Speed_16x16.png.meta
+|   |       Buckler_16x16.png
+|   |       Buckler_16x16.png.meta
+|   |       Buckler_57x23.png
+|   |       Buckler_57x23.png.meta
+|   |       Calista_16x16.png
+|   |       Calista_16x16.png.meta
+|   |       Cape_16x16.png
+|   |       Cape_16x16.png.meta
+|   |       Casque'n_Coif_16x16.png
+|   |       Casque'n_Coif_16x16.png.meta
+|   |       Cloak_of_Night_16x16.png
+|   |       Cloak_of_Night_16x16.png.meta
+|   |       Crown_of_Nerra_16x16.png
+|   |       Crown_of_Nerra_16x16.png.meta
+|   |       Crown_of_Nerra_23x14.png
+|   |       Crown_of_Nerra_23x14.png.meta
+|   |       Dexhelm_16x16.png
+|   |       Dexhelm_16x16.png.meta
+|   |       Elven_Boots_16x16.png
+|   |       Elven_Boots_16x16.png.meta
+|   |       Elven_Boots_F1_48x25.png
+|   |       Elven_Boots_F1_48x25.png.meta
+|   |       Elven_Doublet_16x16.png
+|   |       Elven_Doublet_16x16.png.meta
+|   |       Elven_Doublet_F1_64x16.png
+|   |       Elven_Doublet_F1_64x16.png.meta
+|   |       Elven_Huke_16x16.png
+|   |       Elven_Huke_16x16.png.meta
+|   |       Elven_Huke_F1_64x16.png
+|   |       Elven_Huke_F1_64x16.png.meta
+|   |       Fine_Robe Legs_16x16.png
+|   |       Fine_Robe Legs_16x16.png.meta
+|   |       Fine_Robe_Body_16x16.png
+|   |       Fine_Robe_Body_16x16.png.meta
+|   |       Flamebain_16x16.png
+|   |       Flamebain_16x16.png.meta
+|   |       Ghi_Body_16x16.png
+|   |       Ghi_Body_16x16.png.meta
+|   |       Ghi_Body_64x16.png
+|   |       Ghi_Body_64x16.png.meta
+|   |       Ghi_Trousers_16x16.png
+|   |       Ghi_Trousers_16x16.png.meta
+|   |       Ghi_Trousers_64x16.png
+|   |       Ghi_Trousers_64x16.png.meta
+|   |       Greave_of Darc2_16x16.png
+|   |       Greave_of Darc2_16x16.png.meta
+|   |       Greave_of_Darc_16x16.png
+|   |       Greave_of_Darc_16x16.png.meta
+|   |       Greave_of_Lyte2.png
+|   |       Greave_of_Lyte2.png.meta
+|   |       Greave_of_Lyte_64x25.png
+|   |       Greave_of_Lyte_64x25.png.meta
+|   |       Greave_of_Lyte_Icon.png
+|   |       Greave_of_Lyte_Icon.png.meta
+|   |       Gunna_16x16.png
+|   |       Gunna_16x16.png.meta
+|   |       Gunna_64x18_F1.png
+|   |       Gunna_64x18_F1.png.meta
+|   |       Halter_16x16.png
+|   |       Halter_16x16.png.meta
+|   |       Halter_F1_55x17.png
+|   |       Halter_F1_55x17.png.meta
+|   |       Helm Of Lyte_Icon.png
+|   |       Helm Of Lyte_Icon.png.meta
+|   |       Helmet_16x16.png
+|   |       Helmet_16x16.png.meta
+|   |       Helm_32x20.png
+|   |       Helm_32x20.png.meta
+|   |       Helm_of_Darc_16x16.png
+|   |       Helm_of_Darc_16x16.png.meta
+|   |       Hide_Shield_16x16.png
+|   |       Hide_Shield_16x16.png.meta
+|   |       Hide_Shield_F1_57x23.png
+|   |       Hide_Shield_F1_57x23.png.meta
+|   |       Hosen_16x16.png
+|   |       Hosen_16x16.png.meta
+|   |       Kirtle_16x16.png
+|   |       Kirtle_16x16.png.meta
+|   |       Kirtle_F1_64x18.png
+|   |       Kirtle_F1_64x18.png.meta
+|   |       Large_Shield_16x16.png
+|   |       Large_Shield_16x16.png.meta
+|   |       Leather_Boots_16x16.png
+|   |       Leather_Boots_16x16.png.meta
+|   |       Leather_Boots_F1_74x24.png
+|   |       Leather_Boots_F1_74x24.png.meta
+|   |       Leather_Jerkin_16x16.png
+|   |       Leather_Jerkin_16x16.png.meta
+|   |       Leather_Jerkin_F1_64x16.png
+|   |       Leather_Jerkin_F1_64x16.png.meta
+|   |       Leather_Pants_16x16.png
+|   |       Leather_Pants_16x16.png.meta
+|   |       Leather_Pants_F1_64x16.png
+|   |       Leather_Pants_F1_64x16.png.meta
+|   |       Leg_Mail_16x16.png
+|   |       Leg_Mail_16x16.png.meta
+|   |       Mail_Aketon_16x16.png
+|   |       Mail_Aketon_16x16.png.meta
+|   |       Mail_Aketon_F1_59x21.png
+|   |       Mail_Aketon_F1_59x21.png.meta
+|   |       Mithral_Aketon_16x16.png
+|   |       Mithral_Aketon_16x16.png.meta
+|   |       Mithral_Floor_59x21.png
+|   |       Mithral_Floor_59x21.png.meta
+|   |       Mithral_Mail_16x16.png
+|   |       Mithral_Mail_16x16.png.meta
+|   |       New Actions.inputactions
+|   |       New Actions.inputactions.meta
+|   |       Plate_Helm_34x20.png
+|   |       Plate_Helm_34x20.png.meta
+|   |       Plate_of_Darc_16x16.png
+|   |       Plate_of_Darc_16x16.png.meta
+|   |       Plate_of_Lyte_16x16.png
+|   |       Plate_of_Lyte_16x16.png.meta
+|   |       Plate_of_Lyte_59x25.png
+|   |       Plate_of_Lyte_59x25.png.meta
+|   |       Poleyn_of_Darc_16x16.png
+|   |       Poleyn_of_Darc_16x16.png.meta
+|   |       Poleyn_of_Lyte2_16x16.png
+|   |       Poleyn_of_Lyte2_16x16.png.meta
+|   |       Poleyn_of_Lyte_16x16.png
+|   |       Poleyn_of_Lyte_16x16.png.meta
+|   |       Powertowers_16x16.png
+|   |       Powertowers_16x16.png.meta
+|   |       Powertowers_55x26.png
+|   |       Powertowers_55x26.png.meta
+|   |       Robe_Body_16x16.png
+|   |       Robe_Body_16x16.png.meta
+|   |       Robe_Legs_16x16.png
+|   |       Robe_Legs_16x16.png.meta
+|   |       Sandals_16x16.png
+|   |       Sandals_16x16.png.meta
+|   |       Sandals_F1_44x16.png
+|   |       Sandals_F1_44x16.png.meta
+|   |       Shield_70x20.png
+|   |       Shield_70x20.png.meta
+|   |       Shield_of_Darc_16x16.png
+|   |       Shield_of_Darc_16x16.png.meta
+|   |       Shield_of_Lyte_16x16.png
+|   |       Shield_of_Lyte_16x16.png.meta
+|   |       Silk_Shirt_16x16.png
+|   |       Silk_Shirt_16x16.png.meta
+|   |       Small Shield_16x16.png
+|   |       Small Shield_16x16.png.meta
+|   |       Suede Boots_16x16.png
+|   |       Suede Boots_16x16.png.meta
+|   |       Suede_Boots_F1_74x24.png
+|   |       Suede_Boots_F1_74x24.png.meta
+|   |       Tabard_16x16.png
+|   |       Tabard_16x16.png.meta
+|   |       Tunic_16x16.png
+|   |       Tunic_16x16.png.meta
+|   |       Wooden_Shield_16x16.png
+|   |       Wooden_Shield_16x16.png.meta
+|   |       Wooden_Shield_70x20.png
+|   |       Wooden_Shield_70x20.png.meta
+|   |       
+|   +---Champions
+|   |       Alex.png
+|   |       Alex.png.meta
+|   |       Azizi.png
+|   |       Azizi.png.meta
+|   |       Boris.png
+|   |       Boris.png.meta
+|   |       Champion_Mirror_F1_48x43.png
+|   |       Champion_Mirror_F1_48x43.png.meta
+|   |       Champion_Mirror_S1_16x35.png
+|   |       Champion_Mirror_S1_16x35.png.meta
+|   |       Chani.png
+|   |       Chani.png.meta
+|   |       Daroou.png
+|   |       Daroou.png.meta
+|   |       Elija.png
+|   |       Elija.png.meta
+|   |       Gando.png
+|   |       Gando.png.meta
+|   |       Gothmog.png
+|   |       Gothmog.png.meta
+|   |       Halk.png
+|   |       Halk.png.meta
+|   |       Hawk.png
+|   |       Hawk.png.meta
+|   |       Hissssa.png
+|   |       Hissssa.png.meta
+|   |       Iaido.png
+|   |       Iaido.png.meta
+|   |       Leif.png
+|   |       Leif.png.meta
+|   |       Leyla.png
+|   |       Leyla.png.meta
+|   |       Linflas.png
+|   |       Linflas.png.meta
+|   |       Mophus.png
+|   |       Mophus.png.meta
+|   |       Nabi.png
+|   |       Nabi.png.meta
+|   |       Sonja.png
+|   |       Sonja.png.meta
+|   |       Stamm.png
+|   |       Stamm.png.meta
+|   |       Syra.png
+|   |       Syra.png.meta
+|   |       Tiggy.png
+|   |       Tiggy.png.meta
+|   |       Wuuf.png
+|   |       Wuuf.png.meta
+|   |       Wu_Tse.png
+|   |       Wu_Tse.png.meta
+|   |       Zed.png
+|   |       Zed.png.meta
+|   |       
+|   +---Doors
+|   |       Black Door 96x88.png
+|   |       Black Door 96x88.png.meta
+|   |       Door Button_F1_8x9.png
+|   |       Door Button_F1_8x9.png.meta
+|   |       Door Iron_F1_96x88.png
+|   |       Door Iron_F1_96x88.png.meta
+|   |       Door Iron_F2_64x61.png
+|   |       Door Iron_F2_64x61.png.meta
+|   |       Door Iron_F3_44x38.png
+|   |       Door Iron_F3_44x38.png.meta
+|   |       Door Portcullis_F1_96x88.png
+|   |       Door Portcullis_F1_96x88.png.meta
+|   |       Door Portcullis_F2_64x61.png
+|   |       Door Portcullis_F2_64x61.png.meta
+|   |       Door Portcullis_F3_44x38.png
+|   |       Door Portcullis_F3_44x38.png.meta
+|   |       Door Wall_F0_32_123.png
+|   |       Door Wall_F0_32_123.png.meta
+|   |       Door Wooden_F1_96x88.png
+|   |       Door Wooden_F1_96x88.png.meta
+|   |       Door Wooden_F2_64x61.png
+|   |       Door Wooden_F2_64x61.png.meta
+|   |       Door Wooden_F3_44x38.png
+|   |       Door Wooden_F3_44x38.png.meta
+|   |       Door_Lateral_Frame_F3_16x43.png
+|   |       Door_Lateral_Frame_F3_16x43.png.meta
+|   |       Door_Left_S1_25x94.png
+|   |       Door_Left_S1_25x94.png.meta
+|   |       Door_Left_S2_18x65.png
+|   |       Door_Left_S2_18x65.png.meta
+|   |       Door_Left_S3_10x42.png
+|   |       Door_Left_S3_10x42.png.meta
+|   |       Door_Top_Frame_F1_102x4.png
+|   |       Door_Top_Frame_F1_102x4.png.meta
+|   |       Door_Top_Frame_F2_70x3.png
+|   |       Door_Top_Frame_F2_70x3.png.meta
+|   |       Ra Door_F1_96x88.png
+|   |       Ra Door_F1_96x88.png.meta
+|   |       Ra Door_F2_64x61.png
+|   |       Ra Door_F2_64x61.png.meta
+|   |       Ra Door_F3_44x38.png
+|   |       Ra Door_F3_44x38.png.meta
+|   |       
+|   +---Fonts
+|   |       Inscription_Font_288x8.png
+|   |       Inscription_Font_288x8.png.meta
+|   |       
+|   +---Food
+|   |       Apple_16x16.png
+|   |       Apple_16x16.png.meta
+|   |       Apple_F1_32x13.png
+|   |       Apple_F1_32x13.png.meta
+|   |       Bread_16x16.png
+|   |       Bread_16x16.png.meta
+|   |       Bread_F1_32x16.png
+|   |       Bread_F1_32x16.png.meta
+|   |       Cheese_16x16.png
+|   |       Cheese_16x16.png.meta
+|   |       Cheese_F1_32x15.png
+|   |       Cheese_F1_32x15.png.meta
+|   |       Corn_16x16.png
+|   |       Corn_16x16.png.meta
+|   |       Corn_F1_32x10.png
+|   |       Corn_F1_32x10.png.meta
+|   |       Dragon_Steak_16x16.png
+|   |       Dragon_Steak_16x16.png.meta
+|   |       Dragon_Steak_F1_32x10.png
+|   |       Dragon_Steak_F1_32x10.png.meta
+|   |       Drumstick_16x16.png
+|   |       Drumstick_16x16.png.meta
+|   |       Drumstick_F1_32x11.png
+|   |       Drumstick_F1_32x11.png.meta
+|   |       Screamer_Slice_16x16.png
+|   |       Screamer_Slice_16x16.png.meta
+|   |       Screamer_Slice_F1_32x24.png
+|   |       Screamer_Slice_F1_32x24.png.meta
+|   |       Worm_Round_16x16.png
+|   |       Worm_Round_16x16.png.meta
+|   |       Worm_Round_F1_32x23.png
+|   |       Worm_Round_F1_32x23.png.meta
+|   |       
+|   +---Interface
+|   |   |   Champions_Background_67x29.png
+|   |   |   Champions_Background_67x29.png.meta
+|   |   |   CharacterSheet_224x136.png
+|   |   |   CharacterSheet_224x136.png.meta
+|   |   |   Eye_middle_16x16.png
+|   |   |   Eye_middle_16x16.png.meta
+|   |   |   Eye_moved_16x16.png
+|   |   |   Eye_moved_16x16.png.meta
+|   |   |   Feet_both_16x16.png
+|   |   |   Feet_both_16x16.png.meta
+|   |   |   Font.meta
+|   |   |   Food_Label_48x9.png
+|   |   |   Food_Label_48x9.png.meta
+|   |   |   Foot_left_injured_16x16.png
+|   |   |   Foot_left_injured_16x16.png.meta
+|   |   |   Hand_left_16x16.png
+|   |   |   Hand_left_16x16.png.meta
+|   |   |   Hand_left_injured.png
+|   |   |   Hand_left_injured.png.meta
+|   |   |   Hand_right_16x16.png
+|   |   |   Hand_right_16x16.png.meta
+|   |   |   Hand_right_injured_16x16.png
+|   |   |   Hand_right_injured_16x16.png.meta
+|   |   |   Head_16x16.png
+|   |   |   Head_16x16.png.meta
+|   |   |   Head_injured_16x16.png
+|   |   |   Head_injured_16x16.png.meta
+|   |   |   Inspection_Symbol_16x16.png
+|   |   |   Inspection_Symbol_16x16.png.meta
+|   |   |   Legs_both_16x16.png
+|   |   |   Legs_both_16x16.png.meta
+|   |   |   Leg_right_injured_16x16.png
+|   |   |   Leg_right_injured_16x16.png.meta
+|   |   |   Mouth_closed_16x16.png
+|   |   |   Mouth_closed_16x16.png.meta
+|   |   |   Mouth_half_16x16.png
+|   |   |   Mouth_half_16x16.png.meta
+|   |   |   Mouth_open_16x16.png
+|   |   |   Mouth_open_16x16.png.meta
+|   |   |   Movement_Arrows_87x45.png
+|   |   |   Movement_Arrows_87x45.png.meta
+|   |   |   Neck_16x16.png
+|   |   |   Neck_16x16.png.meta
+|   |   |   Object_Description_Circle_32x27.png
+|   |   |   Object_Description_Circle_32x27.png.meta
+|   |   |   Pouch_16x16.png
+|   |   |   Pouch_16x16.png.meta
+|   |   |   Pouch_side_16x16.png
+|   |   |   Pouch_side_16x16.png.meta
+|   |   |   Quiver_16x16.png
+|   |   |   Quiver_16x16.png.meta
+|   |   |   Resurrect_Reincarnate_116x73.png
+|   |   |   Resurrect_Reincarnate_116x73.png.meta
+|   |   |   Slot_Box_Normal_18x18.png
+|   |   |   Slot_Box_Normal_18x18.png.meta
+|   |   |   Slot_Box_Wounded_18x18.png
+|   |   |   Slot_Box_Wounded_18x18.png.meta
+|   |   |   Sword_Icon.png
+|   |   |   Sword_Icon.png.meta
+|   |   |   Torso_16x16.png
+|   |   |   Torso_16x16.png.meta
+|   |   |   Torso_injured_16x16.png
+|   |   |   Torso_injured_16x16.png.meta
+|   |   |   Water_Label_48x9.png
+|   |   |   Water_Label_48x9.png.meta
+|   |   |   
+|   |   \---Font
+|   |           alphabet_grid.png
+|   |           alphabet_grid.png.meta
+|   |           
+|   +---Items
+|   |       DungeonMasterItems-with-slot-rules.json
+|   |       DungeonMasterItems-with-slot-rules.json.meta
+|   |       
+|   +---Keys
+|   |       Cross_Key_16x16.png
+|   |       Cross_Key_16x16.png.meta
+|   |       Emerald_Key_16x16.png
+|   |       Emerald_Key_16x16.png.meta
+|   |       Gold_Key_16x16.png
+|   |       Gold_Key_16x16.png.meta
+|   |       Iron_Key_16x16.png
+|   |       Iron_Key_16x16.png.meta
+|   |       Key_of_B_16x16.png
+|   |       Key_of_B_16x16.png.meta
+|   |       Master_Key_16x16.png
+|   |       Master_Key_16x16.png.meta
+|   |       Onyx_Key_16x16.png
+|   |       Onyx_Key_16x16.png.meta
+|   |       Ra_Key_16x16.png
+|   |       Ra_Key_16x16.png.meta
+|   |       Ruby_Key_16x16.png
+|   |       Ruby_Key_16x16.png.meta
+|   |       Sapphire_Key_16x16.png
+|   |       Sapphire_Key_16x16.png.meta
+|   |       Skeleton_Key_16x16.png
+|   |       Skeleton_Key_16x16.png.meta
+|   |       Solid_Key_16x16.png
+|   |       Solid_Key_16x16.png.meta
+|   |       Square_Key_16x16.png.png
+|   |       Square_Key_16x16.png.png.meta
+|   |       Topaz_Key_16x16.png
+|   |       Topaz_Key_16x16.png.meta
+|   |       Tourquoise_Key_16x16.png.png
+|   |       Tourquoise_Key_16x16.png.png.meta
+|   |       Winged_Key_16x16.png.png
+|   |       Winged_Key_16x16.png.png.meta
+|   |       
+|   +---Misc
+|   |       Ashes_16x16.png
+|   |       Ashes_16x16.png.meta
+|   |       Ashes_48x14.png
+|   |       Ashes_48x14.png.meta
+|   |       Blue_Gem_11x8.png
+|   |       Blue_Gem_11x8.png.meta
+|   |       Champion_Bones_80x20.png
+|   |       Champion_Bones_80x20.png.meta
+|   |       Chest_47x27.png
+|   |       Chest_47x27.png.meta
+|   |       Chest_In_Alcove_43x27.png
+|   |       Chest_In_Alcove_43x27.png.meta
+|   |       Coin_Gold_F1_10x4.png
+|   |       Coin_Gold_F1_10x4.png.meta
+|   |       Coin_Silver_F1_9x4.png
+|   |       Coin_Silver_F1_9x4.png.meta
+|   |       Compass_16x7.png
+|   |       Compass_16x7.png.meta
+|   |       Copper_Coin_16x16.png
+|   |       Copper_Coin_16x16.png.meta
+|   |       Corbamite_16x15.png
+|   |       Corbamite_16x15.png.meta
+|   |       Corbamite_16x16.png
+|   |       Corbamite_16x16.png.meta
+|   |       CSB_Floor_G362_F2_30x5_transparent.png
+|   |       CSB_Floor_G362_F2_30x5_transparent.png.meta
+|   |       CSB_Floor_G362_F3_24x4_transparent.png
+|   |       CSB_Floor_G362_F3_24x4_transparent.png.meta
+|   |       Gem_blue_16x16.png
+|   |       Gem_blue_16x16.png.meta
+|   |       Gem_green_16x16.png
+|   |       Gem_green_16x16.png.meta
+|   |       Gem_orange_16x16.png
+|   |       Gem_orange_16x16.png.meta
+|   |       Gold_Coin_10x4.png
+|   |       Gold_Coin_10x4.png.meta
+|   |       Gold_Coin_16x16.png
+|   |       Gold_Coin_16x16.png.meta
+|   |       Green_Gem_11x8.png
+|   |       Green_Gem_11x8.png.meta
+|   |       Lock Picks_16x16.png
+|   |       Lock Picks_16x16.png.meta
+|   |       Lock_Picks_15x8.png
+|   |       Lock_Picks_15x8.png.meta
+|   |       Magical Box_blue_16x16.png
+|   |       Magical Box_blue_16x16.png.meta
+|   |       Magical Box_green_16x16.png
+|   |       Magical Box_green_16x16.png.meta
+|   |       Magical_Box_Blue_F1_15x13.png
+|   |       Magical_Box_Blue_F1_15x13.png.meta
+|   |       Magical_Box_Green_F1_15x13.png
+|   |       Magical_Box_Green_F1_15x13.png.meta
+|   |       Magnifier_16x16.png
+|   |       Magnifier_16x16.png.meta
+|   |       Magnifier_17x9.png
+|   |       Magnifier_17x9.png.meta
+|   |       Mirror_of_Dawn_16x16.png
+|   |       Mirror_of_Dawn_16x16.png.meta
+|   |       Mirror_of_Dawn_30x13.png
+|   |       Mirror_of_Dawn_30x13.png.meta
+|   |       Moonstone_16x8.png
+|   |       Moonstone_16x8.png.meta
+|   |       Orange_Gem_11x8.png
+|   |       Orange_Gem_11x8.png.meta
+|   |       Rabbit's_Foot_16x16.png
+|   |       Rabbit's_Foot_16x16.png.meta
+|   |       Rabbits_Foot_F1_16x7.png
+|   |       Rabbits_Foot_F1_16x7.png.meta
+|   |       Rope_16x16.png
+|   |       Rope_16x16.png.meta
+|   |       Rope_F1_32x15.png
+|   |       Rope_F1_32x15.png.meta
+|   |       Scroll_16x16.png
+|   |       Scroll_16x16.png.meta
+|   |       Scroll_F1_48x8.png
+|   |       Scroll_F1_48x8.png.meta
+|   |       Scroll_F2_30x5.png
+|   |       Scroll_F2_30x5.png.meta
+|   |       Scroll_F3_24x4.png
+|   |       Scroll_F3_24x4.png.meta
+|   |       Scroll_in_hand_16x16.png
+|   |       Scroll_in_hand_16x16.png.meta
+|   |       Silver_Coin_16x16.png
+|   |       Silver_Coin_16x16.png.meta
+|   |       Silver_Coin_9x4.png
+|   |       Silver_Coin_9x4.png.meta
+|   |       Waterskin_empty_16x16.png
+|   |       Waterskin_empty_16x16.png.meta
+|   |       Waterskin_empty_48x14.png
+|   |       Waterskin_empty_48x14.png.meta
+|   |       Waterskin_F2_19x7.png
+|   |       Waterskin_F2_19x7.png.meta
+|   |       Waterskin_F3_12x5.png
+|   |       Waterskin_F3_12x5.png.meta
+|   |       Waterskin_full_16x16.png
+|   |       Waterskin_full_16x16.png.meta
+|   |       Waterskin_full_48x13.png
+|   |       Waterskin_full_48x13.png.meta
+|   |       Waterskin_Full_F1_48x13.png
+|   |       Waterskin_Full_F1_48x13.png.meta
+|   |       
+|   +---Monster
+|   |       Screamer_A1_64x60.png
+|   |       Screamer_A1_64x60.png.meta
+|   |       Screamer_F1_64x60.png
+|   |       Screamer_F1_64x60.png.meta
+|   |       
+|   +---Ornaments
+|   |       Altar_of_Vi_96,56.png
+|   |       Altar_of_Vi_96,56.png.meta
+|   |       Altar_of_Vi_F2_63x37.png
+|   |       Altar_of_Vi_F2_63x37.png.meta
+|   |       Altar_of_Vi_F3_42x25.png
+|   |       Altar_of_Vi_F3_42x25.png.meta
+|   |       Altar_of_Vi_Fs_42x19.png
+|   |       Altar_of_Vi_Fs_42x19.png.meta
+|   |       Altar_of_Vi_S1_20x48.png
+|   |       Altar_of_Vi_S1_20x48.png.meta
+|   |       Altar_of_Vi_S2_Ref_12x31.png
+|   |       Altar_of_Vi_S2_Ref_12x31.png.meta
+|   |       Altar_of_Vi_S3_Ref_6x19.png
+|   |       Altar_of_Vi_S3_Ref_6x19.png.meta
+|   |       Apply_Hook_S2_Native_14x19_20261122.py
+|   |       Apply_Hook_S2_Native_14x19_20261122.py.meta
+|   |       Flooritem Puddle_F1.png
+|   |       Flooritem Puddle_F1.png.meta
+|   |       Flooritem Puddle_F2.png
+|   |       Flooritem Puddle_F2.png.meta
+|   |       Flooritem Puddle_F3.png
+|   |       Flooritem Puddle_F3.png.meta
+|   |       Flooritem Puddle_S1.png
+|   |       Flooritem Puddle_S1.png.meta
+|   |       Flooritem Puddle_S2.png
+|   |       Flooritem Puddle_S2.png.meta
+|   |       Flooritem Puddle_S3.png
+|   |       Flooritem Puddle_S3.png.meta
+|   |       Grate_F1_32x20.png
+|   |       Grate_F1_32x20.png.meta
+|   |       Grate_S1_16x19.png
+|   |       Grate_S1_16x19.png.meta
+|   |       Hook_F1_32x28.png
+|   |       Hook_F1_32x28.png.meta
+|   |       Hook_F1_DOS_28x28.png
+|   |       Hook_F1_DOS_28x28.png.meta
+|   |       Hook_S1_14x19.png
+|   |       Hook_S1_14x19.png.meta
+|   |       Manacles_F1.png
+|   |       Manacles_F1.png.meta
+|   |       Manacles_S1.png
+|   |       Manacles_S1.png.meta
+|   |       Moss_F1_56x19.png
+|   |       Moss_F1_56x19.png.meta
+|   |       Moss_F2_32x7.png
+|   |       Moss_F2_32x7.png.meta
+|   |       Moss_F3_8x2.png
+|   |       Moss_F3_8x2.png.meta
+|   |       Slime_F1_22x16.png
+|   |       Slime_F1_22x16.png.meta
+|   |       Slime_S1_16x10.png
+|   |       Slime_S1_16x10.png.meta
+|   |       Slime_Side_4x3.png
+|   |       Slime_Side_4x3.png.meta
+|   |       Square_Pressure_Pad_F1_62x21.png
+|   |       Square_Pressure_Pad_F1_62x21.png.meta
+|   |       Square_Pressure_Pad_F2_42x11.png
+|   |       Square_Pressure_Pad_F2_42x11.png.meta
+|   |       Square_Pressure_Pad_F3_26x6.png
+|   |       Square_Pressure_Pad_F3_26x6.png.meta
+|   |       Square_Pressure_Pad_S1_25x20.png
+|   |       Square_Pressure_Pad_S1_25x20.png.meta
+|   |       Square_Pressure_Pad_S1_60x11.png
+|   |       Square_Pressure_Pad_S1_60x11.png.meta
+|   |       Torch_Holder_Empty_F1_24x54.png
+|   |       Torch_Holder_Empty_F1_24x54.png.meta
+|   |       Torch_Holder_Empty_S1_20x40.png
+|   |       Torch_Holder_Empty_S1_20x40.png.meta
+|   |       Torch_Holder_Full_F1_24x53.png
+|   |       Torch_Holder_Full_F1_24x53.png.meta
+|   |       Torch_Holder_Full_S1_24x48.png
+|   |       Torch_Holder_Full_S1_24x48.png.meta
+|   |       Wood_Ring_Front_28x26.png
+|   |       Wood_Ring_Front_28x26.png.meta
+|   |       Wood_Ring_Side2_5x10.png
+|   |       Wood_Ring_Side2_5x10.png.meta
+|   |       Wood_Ring_Side3_3x5.png
+|   |       Wood_Ring_Side3_3x5.png.meta
+|   |       Wood_Ring_Side_14x19.png
+|   |       Wood_Ring_Side_14x19.png.meta
+|   |       
+|   +---Potions
+|   |       Bro_Potion_16x16.png
+|   |       Bro_Potion_16x16.png.meta
+|   |       Dane_Potion_16x16.png
+|   |       Dane_Potion_16x16.png.meta
+|   |       Ee_Potion_16x16.png
+|   |       Ee_Potion_16x16.png.meta
+|   |       Ful Bomb_16x16.png
+|   |       Ful Bomb_16x16.png.meta
+|   |       Ful_Bomb_16x17.png
+|   |       Ful_Bomb_16x17.png.meta
+|   |       Ku_Potion_16x16.png
+|   |       Ku_Potion_16x16.png.meta
+|   |       Ma_Potion_16x16.png
+|   |       Ma_Potion_16x16.png.meta
+|   |       Neta_Potion_16x16.png
+|   |       Neta_Potion_16x16.png.meta
+|   |       Potion_Empty_16x16.png
+|   |       Potion_Empty_16x16.png.meta
+|   |       Potion_Empty_F1_16x18.png
+|   |       Potion_Empty_F1_16x18.png.meta
+|   |       Potion_Water_16x18.png
+|   |       Potion_Water_16x18.png.meta
+|   |       Ros_Potion_16x16.png
+|   |       Ros_Potion_16x16.png.meta
+|   |       Sar_Potion_16x16.png
+|   |       Sar_Potion_16x16.png.meta
+|   |       Ven_Potion_16x16.png
+|   |       Ven_Potion_16x16.png.meta
+|   |       Ven_Potion_16x18.png
+|   |       Ven_Potion_16x18.png.meta
+|   |       Vi_Potion_16x16.png
+|   |       Vi_Potion_16x16.png.meta
+|   |       Ya_Potion_16x16.png
+|   |       Ya_Potion_16x16.png.meta
+|   |       Zo_Potion_16x16.png
+|   |       Zo_Potion_16x16.png.meta
+|   |       
+|   +---Walls
+|   |   |   dmout84.png
+|   |   |   dmout84.png.meta
+|   |   |   dmout85.png
+|   |   |   dmout85.png.meta
+|   |   |   D_TILETYPE_CEILING.png
+|   |   |   D_TILETYPE_CEILING.png.meta
+|   |   |   D_TILETYPE_FLOOR.png
+|   |   |   D_TILETYPE_FLOOR.png.meta
+|   |   |   D_TILETYPE_WALL_S3R.png
+|   |   |   D_TILETYPE_WALL_S3R.png.meta
+|   |   |   EntranceDoor_Closed_84x160.png
+|   |   |   EntranceDoor_Closed_84x160.png.meta
+|   |   |   EntranceDoor_Closed_84x161.png
+|   |   |   EntranceDoor_Closed_84x161.png.meta
+|   |   |   Front Wall F1_224x111.png
+|   |   |   Front Wall F1_224x111.png.meta
+|   |   |   Front Wall F2_224x74.png
+|   |   |   Front Wall F2_224x74.png.meta
+|   |   |   Front Wall F3_141x49.png
+|   |   |   Front Wall F3_141x49.png.meta
+|   |   |   Front_Wall_F1_RAW_160x111.png
+|   |   |   Front_Wall_F1_RAW_160x111.png.meta
+|   |   |   Front_Wall_F2_RECOVERED_CENTER_106x74.png
+|   |   |   Front_Wall_F2_RECOVERED_CENTER_106x74.png.meta
+|   |   |   Front_Wall_F3_RAW_70x49.png
+|   |   |   Front_Wall_F3_RAW_70x49.png.meta
+|   |   |   LeftS2.png
+|   |   |   LeftS2.png.meta
+|   |   |   RightS2.png
+|   |   |   RightS2.png.meta
+|   |   |   Stairs.meta
+|   |   |   Stairs_Down_Icon_20x22.png
+|   |   |   Stairs_Down_Icon_20x22.png.meta
+|   |   |   Wall_D3L2.png
+|   |   |   Wall_D3L2.png.meta
+|   |   |   Wall_D3R2.png
+|   |   |   Wall_D3R2.png.meta
+|   |   |   Wall_D3R3.png
+|   |   |   Wall_D3R3.png.meta
+|   |   |   Wall_F0Left.png
+|   |   |   Wall_F0Left.png.meta
+|   |   |   Wall_F0Right.png
+|   |   |   Wall_F0Right.png.meta
+|   |   |   Wall_F1Left.png
+|   |   |   Wall_F1Left.png.meta
+|   |   |   Wall_F1Right.png
+|   |   |   Wall_F1Right.png.meta
+|   |   |   Wall_F2Left.png
+|   |   |   Wall_F2Left.png.meta
+|   |   |   Wall_F2Right.png
+|   |   |   Wall_F2Right.png.meta
+|   |   |   Wall_F3Left.png
+|   |   |   Wall_F3Left.png.meta
+|   |   |   Wall_F3Right.png
+|   |   |   Wall_F3Right.png.meta
+|   |   |   
+|   |   \---Stairs
+|   |           Stairsdown_S2_20x39.png
+|   |           Stairsdown_S2_20x39.png.meta
+|   |           Stairsdown_S3_16x5.png
+|   |           Stairsdown_S3_16x5.png.meta
+|   |           StairsUp_F1_160x100.png
+|   |           StairsUp_F1_160x100.png.meta
+|   |           StairsUp_Front_S1_32x100.png
+|   |           StairsUp_Front_S1_32x100.png.meta
+|   |           StairsUp_S2_20x43.png
+|   |           StairsUp_S2_20x43.png.meta
+|   |           Stairs_Down_F1_152x92.png
+|   |           Stairs_Down_F1_152x92.png.meta
+|   |           Stairs_Down_Front_D1_32x91.png
+|   |           Stairs_Down_Front_D1_32x91.png.meta
+|   |           Stairs_Down_S0_30x60.png
+|   |           Stairs_Down_S0_30x60.png.meta
+|   |           Stairs_S0_30x44.png
+|   |           Stairs_S0_30x44.png.meta
+|   |           Stairs_Side_D0L_16x13.png
+|   |           Stairs_Side_D0L_16x13.png.meta
+|   |           
+|   \---Weapons
+|           Arrow_16x16.png
+|           Arrow_16x16.png.meta
+|           Arrow_F1_46x5.png
+|           Arrow_F1_46x5.png.meta
+|           Axe_16x16.png
+|           Axe_16x16.png.meta
+|           Axe_F1_64x17.png
+|           Axe_F1_64x17.png.meta
+|           Blade_72x8.png
+|           Blade_72x8.png.meta
+|           Bolt_Blade_empty_16x16.png
+|           Bolt_Blade_empty_16x16.png.meta
+|           Bolt_Blade_full_16x16.png
+|           Bolt_Blade_full_16x16.png.meta
+|           Boulder_23x14.png
+|           Boulder_23x14.png.meta
+|           Bow_16x16.png
+|           Bow_16x16.png.meta
+|           Bow_F1_80x17.png
+|           Bow_F1_80x17.png.meta
+|           Club_16x16.png
+|           Club_16x16.png.meta
+|           Club_F1_64x10.png
+|           Club_F1_64x10.png.meta
+|           Conduit_64x14.png
+|           Conduit_64x14.png.meta
+|           Crossbow_16x16.png
+|           Crossbow_16x16.png.meta
+|           Crossbow_73x25.png
+|           Crossbow_73x25.png.meta
+|           Dagger_16x16.png
+|           Dagger_16x16.png.meta
+|           Dagger_F1_26x9.png
+|           Dagger_F1_26x9.png.meta
+|           Delta_16x16.png
+|           Delta_16x16.png.meta
+|           Diamond Edge_16x16.png
+|           Diamond Edge_16x16.png.meta
+|           Falchion_16x16.png
+|           Falchion_16x16.png.meta
+|           Firestaff_complete_16x16.png
+|           Firestaff_complete_16x16.png.meta
+|           Firestaff_complete_73x13.png
+|           Firestaff_complete_73x13.png.meta
+|           Firestaff_uncomplete_16x16.png
+|           Firestaff_uncomplete_16x16.png.meta
+|           Firestaff_uncomplete_71x9.png
+|           Firestaff_uncomplete_71x9.png.meta
+|           Flamitt_empty_16x16.png
+|           Flamitt_empty_16x16.png.meta
+|           Flamitt_full_16x16.png
+|           Flamitt_full_16x16.png.meta
+|           Fury_empty_16x16.png
+|           Fury_empty_16x16.png.meta
+|           Fury_full_16x16.png
+|           Fury_full_16x16.png.meta
+|           Hardcleave_16x16.png
+|           Hardcleave_16x16.png.meta
+|           Horn_of_Fear_32x14.png
+|           Horn_of_Fear_32x14.png.meta
+|           Inquisitor_16x16.png
+|           Inquisitor_16x16.png.meta
+|           Mace_of_Order_16x16.png
+|           Mace_of_Order_16x16.png.meta
+|           Mace_of_Order_64x14.png
+|           Mace_of_Order_64x14.png.meta
+|           Mace_unknown_16x16.png
+|           Mace_unknown_16x16.png.meta
+|           Morningstar_16x16.png
+|           Morningstar_16x16.png.meta
+|           Morningstar_77x16.png
+|           Morningstar_77x16.png.meta
+|           Poison_Dart_16x16.png
+|           Poison_Dart_16x16.png.meta
+|           Poison_Dart_F1_32x5.png
+|           Poison_Dart_F1_32x5.png.meta
+|           Rapier_16x16.png
+|           Rapier_16x16.png.meta
+|           Rock_13x7.png
+|           Rock_13x7.png.meta
+|           Sabre_16x16.png
+|           Sabre_16x16.png.meta
+|           Samurai_Sword_16x16.png
+|           Samurai_Sword_16x16.png.meta
+|           Sceptre_of_Lyf_73x9.png
+|           Sceptre_of_Lyf_73x9.png.meta
+|           Slayer_Dart_16x16.png
+|           Slayer_Dart_16x16.png.meta
+|           Slayer_Dart_47x7.png
+|           Slayer_Dart_47x7.png.meta
+|           Sling_16x16.png
+|           Sling_16x16.png.meta
+|           Sling_F1_64x4.png
+|           Sling_F1_64x4.png.meta
+|           Speedbow_16x16.png
+|           Speedbow_16x16.png.meta
+|           SPEEDBOW_72x72.png
+|           SPEEDBOW_72x72.png.meta
+|           Staff_16x16.png
+|           Staff_16x16.png.meta
+|           Staff_of_ Manar_16x16.png
+|           Staff_of_ Manar_16x16.png.meta
+|           Staff_of_Claws_16x16.png
+|           Staff_of_Claws_16x16.png.meta
+|           Staff_of_Claws_empty_16x16.png
+|           Staff_of_Claws_empty_16x16.png.meta
+|           Staff_of_Claws_full_16x16.png
+|           Staff_of_Claws_full_16x16.png.meta
+|           Staff_of_Manar_64x4.png
+|           Staff_of_Manar_64x4.png.meta
+|           Stick_16x16.png
+|           Stick_16x16.png.meta
+|           Stick_60x11.png
+|           Stick_60x11.png.meta
+|           StoneXClub_16x16.png
+|           StoneXClub_16x16.png.meta
+|           Stone_16x16.png
+|           Stone_16x16.png.meta
+|           Stone_Club_63x19.png
+|           Stone_Club_63x19.png.meta
+|           Sword_16x16.png
+|           Sword_16x16.png.meta
+|           Sword_F1_80x8.png
+|           Sword_F1_80x8.png.meta
+|           Teowand_16x16.png
+|           Teowand_16x16.png.meta
+|           Teowand_22x3.png
+|           Teowand_22x3.png.meta
+|           Throwing_Star_16x16.png
+|           Throwing_Star_16x16.png.meta
+|           Throwing_Star_F1_15x9.png
+|           Throwing_Star_F1_15x9.png.meta
+|           Torch_Ground_61x7.png
+|           Torch_Ground_61x7.png.meta
+|           Torch_Lit_16x16.png
+|           Torch_Lit_16x16.png.meta
+|           Torch_Unlit_16x16.png
+|           Torch_Unlit_16x16.png.meta
+|           Torch_Used1_16x16.png
+|           Torch_Used1_16x16.png.meta
+|           Torch_Used2_16x16.png
+|           Torch_Used2_16x16.png.meta
+|           Vorpal_Blade_16x16.png
+|           Vorpal_Blade_16x16.png.meta
+|           Vorpal_Blade_80x15.png
+|           Vorpal_Blade_80x15.png.meta
+|           Wand_16x16.png
+|           Wand_16x16.png.meta
+|           Wand_F1_22x3.png
+|           Wand_F1_22x3.png.meta
+|           Weapon_16x16.png
+|           Weapon_16x16.png.meta
+|           Yew_Staff_16x16.png
+|           Yew_Staff_16x16.png.meta
+|           
++---Audio
+|   |   Apple.wav
+|   |   Apple.wav.meta
+|   |   Attack_Couatl.wav
+|   |   Attack_Couatl.wav.meta
+|   |   Attack_Giant_Scorpion.wav
+|   |   Attack_Giant_Scorpion.wav.meta
+|   |   Attack_Giggler.wav
+|   |   Attack_Giggler.wav.meta
+|   |   Attack_Magenta_Worm.wav
+|   |   Attack_Magenta_Worm.wav.meta
+|   |   Attack_Mummy_-_Ghost.wav
+|   |   Attack_Mummy_-_Ghost.wav.meta
+|   |   Attack_Pain_Rat_-_Red_Dragon.wav
+|   |   Attack_Pain_Rat_-_Red_Dragon.wav.meta
+|   |   Attack_Rockpile.wav
+|   |   Attack_Rockpile.wav.meta
+|   |   Attack_Screamer_-_Oitu.wav
+|   |   Attack_Screamer_-_Oitu.wav.meta
+|   |   Attack_Water_Elemental.wav
+|   |   Attack_Water_Elemental.wav.meta
+|   |   AudioSettings.meta
+|   |   Blow_Horn.wav
+|   |   Blow_Horn.wav.meta
+|   |   Bread.wav
+|   |   Bread.wav.meta
+|   |   Buzz.wav
+|   |   Buzz.wav.meta
+|   |   Champion_Damaged_1.wav
+|   |   Champion_Damaged_1.wav.meta
+|   |   Champion_Damaged_2.wav
+|   |   Champion_Damaged_2.wav.meta
+|   |   Champion_Damaged_3.wav
+|   |   Champion_Damaged_3.wav.meta
+|   |   Champion_Damaged_4.wav
+|   |   Champion_Damaged_4.wav.meta
+|   |   Click06.wav
+|   |   Click06.wav.meta
+|   |   Combat_Attack.wav
+|   |   Combat_Attack.wav.meta
+|   |   DoorLastMove.wav
+|   |   DoorLastMove.wav.meta
+|   |   Door_Rattle.wav
+|   |   Door_Rattle.wav.meta
+|   |   Eating.wav
+|   |   Eating.wav.meta
+|   |   Explosion.wav
+|   |   Explosion.wav.meta
+|   |   Metallic_Thud.wav
+|   |   Metallic_Thud.wav.meta
+|   |   Move_Animated_Armour.wav
+|   |   Move_Animated_Armour.wav.meta
+|   |   Move_Giant_Wasp_-_Couatl.wav
+|   |   Move_Giant_Wasp_-_Couatl.wav.meta
+|   |   Move_Mummy_-_Trolin_-_Stone_Golem_-_Giggler_-_Vexirk_-_Demon.wav
+|   |   Move_Mummy_-_Trolin_-_Stone_Golem_-_Giggler_-_Vexirk_-_Demon.wav.meta
+|   |   Move_Red_Dragon.wav
+|   |   Move_Red_Dragon.wav.meta
+|   |   Move_Screamer_-_Rockpile_-_Magenta_Worm_-_Pain_Rat_-_Ruster_-_Giant_Sco.wav
+|   |   Move_Screamer_-_Rockpile_-_Magenta_Worm_-_Pain_Rat_-_Ruster_-_Giant_Sco.wav.meta
+|   |   Move_Skeleton.wav
+|   |   Move_Skeleton.wav.meta
+|   |   Move_Swamp_Slime_-_Water_Elemental.wav
+|   |   Move_Swamp_Slime_-_Water_Elemental.wav.meta
+|   |   Party_Damaged.wav
+|   |   Party_Damaged.wav.meta
+|   |   Pop04.wav
+|   |   Pop04.wav.meta
+|   |   ResurrectSnd.wav
+|   |   ResurrectSnd.wav.meta
+|   |   Scream.wav
+|   |   Scream.wav.meta
+|   |   Spell.wav
+|   |   Spell.wav.meta
+|   |   Swallow.wav
+|   |   Swallow.wav.meta
+|   |   Switch.wav
+|   |   Switch.wav.meta
+|   |   War_Cry.wav
+|   |   War_Cry.wav.meta
+|   |   Wooden_Thud.wav
+|   |   Wooden_Thud.wav.meta
+|   |   
+|   \---AudioSettings
+|           AudioSettings.asset
+|           AudioSettings.asset.meta
+|           
++---Data
+|   |   Extraction.meta
+|   |   Features.meta
+|   |   Items.meta
+|   |   Maps.meta
+|   |   ViewEditSettings.json
+|   |   ViewEditSettings.json.meta
+|   |   
+|   +---Extraction
+|   |   |   DUNGEON.DAT
+|   |   |   DUNGEON.DAT.meta
+|   |   |   entrance_corridor_original_320x200.png
+|   |   |   entrance_corridor_original_320x200.png.meta
+|   |   |   entrance_corridor_unity_preview_before_fix_320x200.png
+|   |   |   entrance_corridor_unity_preview_before_fix_320x200.png.meta
+|   |   |   export_hall_of_champions.py
+|   |   |   export_hall_of_champions.py.meta
+|   |   |   HallOfChampions_Map.txt
+|   |   |   HallOfChampions_Map.txt.meta
+|   |   |   HallOfChampions_Raw.txt
+|   |   |   HallOfChampions_Raw.txt.meta
+|   |   |   _compare_f1_walls.py
+|   |   |   _compare_f1_walls.py.meta
+|   |   |   _wall_compare.meta
+|   |   |   
+|   |   \---_wall_compare
+|   |           asset_f1l.png
+|   |           asset_f1l.png.meta
+|   |           asset_front_f1.png
+|   |           asset_front_f1.png.meta
+|   |           a_viewport.png
+|   |           a_viewport.png.meta
+|   |           b_viewport.png
+|   |           b_viewport.png.meta
+|   |           compare_csb_front_vs_asset.png
+|   |           compare_csb_front_vs_asset.png.meta
+|   |           compare_csb_L_vs_asset.png
+|   |           compare_csb_L_vs_asset.png.meta
+|   |           composed_alt_R164.png
+|   |           composed_alt_R164.png.meta
+|   |           composed_best_for_csb.png
+|   |           composed_best_for_csb.png.meta
+|   |           composed_current_layout.png
+|   |           composed_current_layout.png.meta
+|   |           composed_expected_runtime.png
+|   |           composed_expected_runtime.png.meta
+|   |           composed_front_then_sides_r164.png
+|   |           composed_front_then_sides_r164.png.meta
+|   |           composed_front_then_sides_r165.png
+|   |           composed_front_then_sides_r165.png.meta
+|   |           composed_F_L_R_r165.png
+|   |           composed_F_L_R_r165.png.meta
+|   |           composed_join_r165_mask.png
+|   |           composed_join_r165_mask.png.meta
+|   |           composed_L_F_R_r165.png
+|   |           composed_L_F_R_r165.png.meta
+|   |           composed_L_R_F_r164.png
+|   |           composed_L_R_F_r164.png.meta
+|   |           composed_L_R_F_r165.png
+|   |           composed_L_R_F_r165.png.meta
+|   |           composed_runtime_join_fix_r164.png
+|   |           composed_runtime_join_fix_r164.png.meta
+|   |           composed_runtime_join_fix_r165.png
+|   |           composed_runtime_join_fix_r165.png.meta
+|   |           composed_sides_then_front_r164.png
+|   |           composed_sides_then_front_r164.png.meta
+|   |           composed_sides_then_front_r165.png
+|   |           composed_sides_then_front_r165.png.meta
+|   |           csb_224x136.png
+|   |           csb_224x136.png.meta
+|   |           csb_224x136_f1aligned.png
+|   |           csb_224x136_f1aligned.png.meta
+|   |           csb_front_at_32_79.png
+|   |           csb_front_at_32_79.png.meta
+|   |           csb_front_region.png
+|   |           csb_front_region.png.meta
+|   |           csb_front_vs_asset_aligned.png
+|   |           csb_front_vs_asset_aligned.png.meta
+|   |           csb_guides.png
+|   |           csb_guides.png.meta
+|   |           csb_left_at_0_79.png
+|   |           csb_left_at_0_79.png.meta
+|   |           csb_scaled_239x144.png
+|   |           csb_scaled_239x144.png.meta
+|   |           csb_scaled_box.png
+|   |           csb_scaled_box.png.meta
+|   |           csb_t61_224x136.png
+|   |           csb_t61_224x136.png.meta
+|   |           csb_t63_224x136.png
+|   |           csb_t63_224x136.png.meta
+|   |           csb_t65_224x136.png
+|   |           csb_t65_224x136.png.meta
+|   |           csb_t70_224x136.png
+|   |           csb_t70_224x136.png.meta
+|   |           diff_asset_overlap_L_vs_F.png
+|   |           diff_asset_overlap_L_vs_F.png.meta
+|   |           diff_csb_front_vs_asset.png
+|   |           diff_csb_front_vs_asset.png.meta
+|   |           diff_csb_vs_best_compose.png
+|   |           diff_csb_vs_best_compose.png.meta
+|   |           diff_csb_vs_front_then_sides_r164.png
+|   |           diff_csb_vs_front_then_sides_r164.png.meta
+|   |           diff_csb_vs_front_then_sides_r165.png
+|   |           diff_csb_vs_front_then_sides_r165.png.meta
+|   |           diff_csb_vs_runtime_join_fix_r164.png
+|   |           diff_csb_vs_runtime_join_fix_r164.png.meta
+|   |           diff_csb_vs_runtime_join_fix_r165.png
+|   |           diff_csb_vs_runtime_join_fix_r165.png.meta
+|   |           diff_csb_vs_sides_then_front_r164.png
+|   |           diff_csb_vs_sides_then_front_r164.png.meta
+|   |           diff_csb_vs_sides_then_front_r165.png
+|   |           diff_csb_vs_sides_then_front_r165.png.meta
+|   |           diff_csb_vs_unity.png
+|   |           diff_csb_vs_unity.png.meta
+|   |           diff_heat_csb_vs_altR164.png
+|   |           diff_heat_csb_vs_altR164.png.meta
+|   |           diff_heat_csb_vs_composed.png
+|   |           diff_heat_csb_vs_composed.png.meta
+|   |           diff_heat_csb_vs_unity.png
+|   |           diff_heat_csb_vs_unity.png.meta
+|   |           diff_heat_unity_vs_composed.png
+|   |           diff_heat_unity_vs_composed.png.meta
+|   |           diff_raw_csb_vs_unity.png
+|   |           diff_raw_csb_vs_unity.png.meta
+|   |           diff_unity_front_vs_asset.png
+|   |           diff_unity_front_vs_asset.png.meta
+|   |           diff_unity_vs_composed.png
+|   |           diff_unity_vs_composed.png.meta
+|   |           diff_unity_vs_F_L_R_r165.png
+|   |           diff_unity_vs_F_L_R_r165.png.meta
+|   |           diff_unity_vs_join_r165_mask.png
+|   |           diff_unity_vs_join_r165_mask.png.meta
+|   |           diff_unity_vs_L_F_R_r165.png
+|   |           diff_unity_vs_L_F_R_r165.png.meta
+|   |           diff_unity_vs_L_R_F_r164.png
+|   |           diff_unity_vs_L_R_F_r164.png.meta
+|   |           diff_unity_vs_L_R_F_r165.png
+|   |           diff_unity_vs_L_R_F_r165.png.meta
+|   |           hoc_with_portrait_224.png
+|   |           hoc_with_portrait_224.png.meta
+|   |           img2_view_top0.png
+|   |           img2_view_top0.png.meta
+|   |           img2_view_top33.png
+|   |           img2_view_top33.png.meta
+|   |           img2_view_top36.png
+|   |           img2_view_top36.png.meta
+|   |           img_itis_320x200.png
+|   |           img_itis_320x200.png.meta
+|   |           overlap_F1L_vs_F1.png
+|   |           overlap_F1L_vs_F1.png.meta
+|   |           overlap_F1R_vs_F1.png
+|   |           overlap_F1R_vs_F1.png.meta
+|   |           portrait_exclude_mask.png
+|   |           portrait_exclude_mask.png.meta
+|   |           portrait_ref_native.png
+|   |           portrait_ref_native.png.meta
+|   |           REPORT.txt
+|   |           REPORT.txt.meta
+|   |           side_by_side.png
+|   |           side_by_side.png.meta
+|   |           side_csb_unity_current_best.png
+|   |           side_csb_unity_current_best.png.meta
+|   |           unity_224x136.png
+|   |           unity_224x136.png.meta
+|   |           unity_224x136_f1aligned.png
+|   |           unity_224x136_f1aligned.png.meta
+|   |           unity_224x136_scaledown.png
+|   |           unity_224x136_scaledown.png.meta
+|   |           unity_224x136_try.png
+|   |           unity_224x136_try.png.meta
+|   |           unity_front_region.png
+|   |           unity_front_region.png.meta
+|   |           unity_front_vs_asset_aligned.png
+|   |           unity_front_vs_asset_aligned.png.meta
+|   |           unity_game_area.png
+|   |           unity_game_area.png.meta
+|   |           unity_raw_viewport.png
+|   |           unity_raw_viewport.png.meta
+|   |           wall_only_ref.png
+|   |           wall_only_ref.png.meta
+|   |           
+|   +---Features
+|   |       ChampionMirrorVerifiedFaces.json
+|   |       ChampionMirrorVerifiedFaces.json.meta
+|   |       DungeonFeatureCatalog.json
+|   |       DungeonFeatureCatalog.json.meta
+|   |       DungeonFeatureOccurrenceIndex.json
+|   |       DungeonFeatureOccurrenceIndex.json.meta
+|   |       DungeonFeaturePlacements.json
+|   |       DungeonFeaturePlacements.json.meta
+|   |       DungeonOrnamentLookupTables.json
+|   |       DungeonOrnamentLookupTables.json.meta
+|   |       
+|   +---Items
+|   \---Maps
+|       |   !backup.meta
+|       |   AllLevels.zip
+|       |   AllLevels.zip.meta
+|       |   DungeonMaster_Level00.json
+|       |   DungeonMaster_Level00.json.meta
+|       |   DungeonMaster_Level01.json
+|       |   DungeonMaster_Level01.json.meta
+|       |   DungeonMaster_Level02.json
+|       |   DungeonMaster_Level02.json.meta
+|       |   DungeonMaster_Level03.json
+|       |   DungeonMaster_Level03.json.meta
+|       |   DungeonMaster_Level04.json
+|       |   DungeonMaster_Level04.json.meta
+|       |   DungeonMaster_Level05.json
+|       |   DungeonMaster_Level05.json.meta
+|       |   DungeonMaster_Level06.json
+|       |   DungeonMaster_Level06.json.meta
+|       |   DungeonMaster_Level07.json
+|       |   DungeonMaster_Level07.json.meta
+|       |   DungeonMaster_Level08.json
+|       |   DungeonMaster_Level08.json.meta
+|       |   DungeonMaster_Level09.json
+|       |   DungeonMaster_Level09.json.meta
+|       |   DungeonMaster_Level10.json
+|       |   DungeonMaster_Level10.json.meta
+|       |   DungeonMaster_Level11.json
+|       |   DungeonMaster_Level11.json.meta
+|       |   DungeonMaster_Level12.json
+|       |   DungeonMaster_Level12.json.meta
+|       |   DungeonMaster_Level13.json
+|       |   DungeonMaster_Level13.json.meta
+|       |   HallOfChampions.json
+|       |   HallOfChampions.json.meta
+|       |   
+|       \---!backup
+|               HallOfChampions.json
+|               HallOfChampions.json.meta
+|               
++---Dungeon Master
+|   |   DungeonGraphics.asset
+|   |   DungeonGraphics.asset.meta
+|   |   Entrance.meta
+|   |   Presets.meta
+|   |   References.meta
+|   |   ViewportLayout.asset
+|   |   ViewportLayout.asset.meta
+|   |   
+|   +---Entrance
+|   |       DM Pixelart.preset
+|   |       DM Pixelart.preset.meta
+|   |       EntranceDoor_Closed_Left_105x161.png
+|   |       EntranceDoor_Closed_Left_105x161.png.meta
+|   |       EntranceDoor_Closed_Outside_320x200.png
+|   |       EntranceDoor_Closed_Outside_320x200.png.meta
+|   |       EntranceDoor_Closed_Right_128x161.png
+|   |       EntranceDoor_Closed_Right_128x161.png.meta
+|   |       EntranceMenu_Diamonds_14x39.png
+|   |       EntranceMenu_Diamonds_14x39.png.meta
+|   |       
+|   +---Presets
+|   |       DM Pixelart.preset
+|   |       DM Pixelart.preset.meta
+|   |       
+|   \---References
+|           DungeonMaster_ViewportReference.png
+|           DungeonMaster_ViewportReference.png.meta
+|           DungeonMaster_ViewportReference_320x200.png
+|           DungeonMaster_ViewportReference_320x200.png.meta
+|           
++---Editor
+|   |   AppleComparisonCaptures.meta
+|   |   AppleReference.meta
+|   |   AppleVideoCompare.cs
+|   |   AppleVideoCompare.cs.meta
+|   |   Apple_Throw_Timing.csv
+|   |   Apple_Throw_Timing.csv.meta
+|   |   Apple_Throw_Timing_Report.md
+|   |   Apple_Throw_Timing_Report.md.meta
+|   |   Apply_Progression_Checkpoint_20261123.ps1
+|   |   Apply_Progression_Checkpoint_20261123.ps1.meta
+|   |   Checkpoint_OrnamentStrictDOS_20261123.json
+|   |   Checkpoint_OrnamentStrictDOS_20261123.json.meta
+|   |   ClearConsoleOnPlayAndBuild.cs
+|   |   ClearConsoleOnPlayAndBuild.cs.meta
+|   |   CSBwin_Floor_Item_Offsets.json
+|   |   CSBwin_Floor_Item_Offsets.json.meta
+|   |   CSBwin_GraphicClasses_Original.json
+|   |   CSBwin_GraphicClasses_Original.json.meta
+|   |   CSBwin_ObjectDescriptors_Original.json
+|   |   CSBwin_ObjectDescriptors_Original.json.meta
+|   |   CSBwin_ViewportPosition_Original.json
+|   |   CSBwin_ViewportPosition_Original.json.meta
+|   |   DoorAnimationTiming.json
+|   |   DoorAnimationTiming.json.meta
+|   |   Door_Lateral_Frame_F3_16x43.png
+|   |   Door_Lateral_Frame_F3_16x43.png.meta
+|   |   DosDoorArtworkRules.json
+|   |   DosDoorArtworkRules.json.meta
+|   |   DosDoorFramePreviewData.json
+|   |   DosDoorFramePreviewData.json.meta
+|   |   DosDoorLateralFramePreviewData.json
+|   |   DosDoorLateralFramePreviewData.json.meta
+|   |   DosDoorPanelPreviewData.json
+|   |   DosDoorPanelPreviewData.json.meta
+|   |   DosDoorTopFramePreviewData.json
+|   |   DosDoorTopFramePreviewData.json.meta
+|   |   DosFloorOrnamentPreviewData.json
+|   |   DosFloorOrnamentPreviewData.json.meta
+|   |   DosMonsterPreviewData.json
+|   |   DosMonsterPreviewData.json.meta
+|   |   DosOrnamentGeometry.bytes
+|   |   DosOrnamentGeometry.bytes.meta
+|   |   DosOrnamentGeometryRegression.cs
+|   |   DosOrnamentGeometryRegression.cs.meta
+|   |   DosOrnamentGeometryResolver.cs
+|   |   DosOrnamentGeometryResolver.cs.meta
+|   |   DosOrnamentLayout696.cs
+|   |   DosOrnamentLayout696.cs.meta
+|   |   DOS_Resource696.bin
+|   |   DOS_Resource696.bin.meta
+|   |   DOS_vs_Unity_Apple_Flight_Comparison.csv
+|   |   DOS_vs_Unity_Apple_Flight_Comparison.csv.meta
+|   |   DungeonArtTextureImporter.cs
+|   |   DungeonArtTextureImporter.cs.meta
+|   |   DungeonFeatureEditor.cs
+|   |   DungeonFeatureEditor.cs.meta
+|   |   DungeonInscriptions.json
+|   |   DungeonInscriptions.json.meta
+|   |   DungeonJsonRecompileWatcher.cs
+|   |   DungeonJsonRecompileWatcher.cs.meta
+|   |   DungeonMasterStartup.cs
+|   |   DungeonMasterStartup.cs.meta
+|   |   DungeonMaster_Progress.json
+|   |   DungeonMaster_Progress.json.meta
+|   |   DungeonOriginalItemLoader.cs
+|   |   DungeonOriginalItemLoader.cs.meta
+|   |   FixSwordOriginalF1Registry.cs
+|   |   FixSwordOriginalF1Registry.cs.meta
+|   |   FloorItemRenderingCalibration.json
+|   |   FloorItemRenderingCalibration.json.meta
+|   |   FTL_DOS_Apple_Perspective_Step1.csv
+|   |   FTL_DOS_Apple_Perspective_Step1.csv.meta
+|   |   GameViewActualSizeShortcut.cs
+|   |   GameViewActualSizeShortcut.cs.meta
+|   |   ItemArtworkAutoRegistrar.cs
+|   |   ItemArtworkAutoRegistrar.cs.meta
+|   |   ItemArtworkRegistry.json
+|   |   ItemArtworkRegistry.json.meta
+|   |   Manacles_F3_TopDown_Explanation_20261121.txt
+|   |   Manacles_F3_TopDown_Explanation_20261121.txt.meta
+|   |   Manacles_F3_TopDown_Sampling_20261121.json
+|   |   Manacles_F3_TopDown_Sampling_20261121.json.meta
+|   |   OrnamentCalibration.json
+|   |   OrnamentCalibration.json.meta
+|   |   OrnamentStrictResetProgress_20261123.json
+|   |   OrnamentStrictResetProgress_20261123.json.meta
+|   |   Progression.json
+|   |   Progression.json.meta
+|   |   RemoveTimestampedScriptCopies.cs
+|   |   RemoveTimestampedScriptCopies.cs.meta
+|   |   RenameOriginalFloorArtF0ToF1.cs
+|   |   RenameOriginalFloorArtF0ToF1.cs.meta
+|   |   Unity_DOS_Flight_Trace.csv
+|   |   Unity_DOS_Flight_Trace.csv.meta
+|   |   Unity_Throw_Movement_Trace.csv
+|   |   Unity_Throw_Movement_Trace.csv.meta
+|   |   V17CombinationExplorer.cs
+|   |   V17CombinationExplorer.cs.meta
+|   |   V17_S3_LaneEnd_F3_20261122.txt
+|   |   V17_S3_LaneEnd_F3_20261122.txt.meta
+|   |   ViewportLayoutEditor.cs
+|   |   ViewportLayoutEditor.cs.meta
+|   |   ViewportPieceDrawer.cs
+|   |   ViewportPieceDrawer.cs.meta
+|   |   
+|   +---AppleComparisonCaptures
+|   |   |   Apple_20261108_224952.meta
+|   |   |   last_session.txt
+|   |   |   last_session.txt.meta
+|   |   |   
+|   |   \---Apple_20261108_224952
+|   |           UnityCaptureTiming.csv
+|   |           UnityCaptureTiming.csv.meta
+|   |           Unity_0000.png
+|   |           Unity_0000.png.meta
+|   |           Unity_0001.png
+|   |           Unity_0001.png.meta
+|   |           Unity_0002.png
+|   |           Unity_0002.png.meta
+|   |           Unity_0003.png
+|   |           Unity_0003.png.meta
+|   |           Unity_0004.png
+|   |           Unity_0004.png.meta
+|   |           Unity_0005.png
+|   |           Unity_0005.png.meta
+|   |           Unity_0006.png
+|   |           Unity_0006.png.meta
+|   |           Unity_0007.png
+|   |           Unity_0007.png.meta
+|   |           Unity_0008.png
+|   |           Unity_0008.png.meta
+|   |           Unity_0009.png
+|   |           Unity_0009.png.meta
+|   |           Unity_0010.png
+|   |           Unity_0010.png.meta
+|   |           Unity_0011.png
+|   |           Unity_0011.png.meta
+|   |           Unity_0012.png
+|   |           Unity_0012.png.meta
+|   |           Unity_0013.png
+|   |           Unity_0013.png.meta
+|   |           Unity_0014.png
+|   |           Unity_0014.png.meta
+|   |           Unity_0015.png
+|   |           Unity_0015.png.meta
+|   |           Unity_0016.png
+|   |           Unity_0016.png.meta
+|   |           Unity_0017.png
+|   |           Unity_0017.png.meta
+|   |           Unity_0018.png
+|   |           Unity_0018.png.meta
+|   |           Unity_0019.png
+|   |           Unity_0019.png.meta
+|   |           Unity_0020.png
+|   |           Unity_0020.png.meta
+|   |           Unity_0021.png
+|   |           Unity_0021.png.meta
+|   |           Unity_0022.png
+|   |           Unity_0022.png.meta
+|   |           Unity_0023.png
+|   |           Unity_0023.png.meta
+|   |           Unity_0024.png
+|   |           Unity_0024.png.meta
+|   |           Unity_0025.png
+|   |           Unity_0025.png.meta
+|   |           Unity_0026.png
+|   |           Unity_0026.png.meta
+|   |           Unity_0027.png
+|   |           Unity_0027.png.meta
+|   |           Unity_0028.png
+|   |           Unity_0028.png.meta
+|   |           Unity_0029.png
+|   |           Unity_0029.png.meta
+|   |           Unity_0030.png
+|   |           Unity_0030.png.meta
+|   |           Unity_0031.png
+|   |           Unity_0031.png.meta
+|   |           Unity_0032.png
+|   |           Unity_0032.png.meta
+|   |           Unity_0033.png
+|   |           Unity_0033.png.meta
+|   |           Unity_0034.png
+|   |           Unity_0034.png.meta
+|   |           Unity_0035.png
+|   |           Unity_0035.png.meta
+|   |           Unity_0036.png
+|   |           Unity_0036.png.meta
+|   |           Unity_0037.png
+|   |           Unity_0037.png.meta
+|   |           Unity_0038.png
+|   |           Unity_0038.png.meta
+|   |           Unity_0039.png
+|   |           Unity_0039.png.meta
+|   |           Unity_0040.png
+|   |           Unity_0040.png.meta
+|   |           Unity_0041.png
+|   |           Unity_0041.png.meta
+|   |           Unity_0042.png
+|   |           Unity_0042.png.meta
+|   |           Unity_0043.png
+|   |           Unity_0043.png.meta
+|   |           Unity_0044.png
+|   |           Unity_0044.png.meta
+|   |           Unity_0045.png
+|   |           Unity_0045.png.meta
+|   |           Unity_0046.png
+|   |           Unity_0046.png.meta
+|   |           Unity_0047.png
+|   |           Unity_0047.png.meta
+|   |           Unity_0048.png
+|   |           Unity_0048.png.meta
+|   |           Unity_0049.png
+|   |           Unity_0049.png.meta
+|   |           Unity_0050.png
+|   |           Unity_0050.png.meta
+|   |           Unity_0051.png
+|   |           Unity_0051.png.meta
+|   |           Unity_0052.png
+|   |           Unity_0052.png.meta
+|   |           Unity_0053.png
+|   |           Unity_0053.png.meta
+|   |           Unity_0054.png
+|   |           Unity_0054.png.meta
+|   |           Unity_0055.png
+|   |           Unity_0055.png.meta
+|   |           Unity_0056.png
+|   |           Unity_0056.png.meta
+|   |           
+|   \---AppleReference
++---EditorData
+|       .gitkeep
+|       ViewportDTerm.asset
+|       ViewportDTerm.asset.meta
+|       ViewportPoseVisibility.asset
+|       ViewportPoseVisibility.asset.meta
+|       
++---Portraits
++---References
++---Resources
+|   |   Dungeon Master.meta
+|   |   Fonts.meta
+|   |   
+|   +---Dungeon Master
+|   \---Fonts
++---Scenes
+|       Dungeon.unity
+|       Dungeon.unity.meta
+|       
++---Scripts
+|   |   Core.meta
+|   |   Data.meta
+|   |   Dungeon.meta
+|   |   Editor.meta
+|   |   GameBootstrap.cs
+|   |   GameBootstrap.cs.meta
+|   |   Heroes.meta
+|   |   Input.meta
+|   |   Inventory.meta
+|   |   Rendering.meta
+|   |   UI.meta
+|   |   Utilities.meta
+|   |   
+|   +---Core
+|   |   |   GameManager.cs
+|   |   |   GameManager.cs.meta
+|   |   |   GameQuitHandler.cs
+|   |   |   GameQuitHandler.cs.meta
+|   |   |   SaveGameManager.cs.meta
+|   |   |   SettingsManager.cs.meta
+|   |   |   
+|   |   +---SaveGameManager.cs
+|   |   \---SettingsManager.cs
+|   +---Data
+|   +---Dungeon
+|   |       DungeonAudioSettings.cs
+|   |       DungeonAudioSettings.cs.meta
+|   |       DungeonFacing.cs
+|   |       DungeonFacing.cs.meta
+|   |       DungeonFeaturePlacementDatabase.cs
+|   |       DungeonFeaturePlacementDatabase.cs.meta
+|   |       DungeonKeyboardInput.cs
+|   |       DungeonKeyboardInput.cs.meta
+|   |       DungeonMap.cs
+|   |       DungeonMap.cs.meta
+|   |       DungeonSourceTileType.cs
+|   |       DungeonSourceTileType.cs.meta
+|   |       DungeonTile.cs
+|   |       DungeonTile.cs.meta
+|   |       DungeonTileType.cs
+|   |       DungeonTileType.cs.meta
+|   |       HallOfChampionsWallOrnaments.cs
+|   |       HallOfChampionsWallOrnaments.cs.meta
+|   |       README.txt
+|   |       README.txt.meta
+|   |       
+|   +---Editor
+|   |       DungeonDebugWindow.cs
+|   |       DungeonDebugWindow.cs.meta
+|   |       DungeonMiniMapGui.cs
+|   |       DungeonMiniMapGui.cs.meta
+|   |       
+|   +---Heroes
+|   |       HeroDatabase.cs
+|   |       HeroDatabase.cs.meta
+|   |       HeroDefinition.cs
+|   |       HeroDefinition.cs.meta
+|   |       
+|   +---Input
+|   +---Inventory
+|   +---Rendering
+|   |       D3R2NarrowWidthTest.cs
+|   |       D3R2NarrowWidthTest.cs.meta
+|   |       DungeonBitmapFont.cs
+|   |       DungeonBitmapFont.cs.meta
+|   |       DungeonGraphics.cs
+|   |       DungeonGraphics.cs.meta
+|   |       DungeonGraphicType.cs
+|   |       DungeonGraphicType.cs.meta
+|   |       DungeonRenderer.cs
+|   |       DungeonRenderer.cs.meta
+|   |       ExpandedF2WallTexture.cs
+|   |       ExpandedF2WallTexture.cs.meta
+|   |       F3RightNarrowStripTest.cs
+|   |       F3RightNarrowStripTest.cs.meta
+|   |       MovementArrowsLayout.cs
+|   |       MovementArrowsLayout.cs.meta
+|   |       RelativeViewportGeometry.cs
+|   |       RelativeViewportGeometry.cs.meta
+|   |       StraightF1WallLogic.cs
+|   |       StraightF1WallLogic.cs.meta
+|   |       ViewportDTermStore.cs
+|   |       ViewportDTermStore.cs.meta
+|   |       ViewportLayout.cs
+|   |       ViewportLayout.cs.meta
+|   |       ViewportPatternKey.cs
+|   |       ViewportPatternKey.cs.meta
+|   |       ViewportPatternKeyBuilder.cs
+|   |       ViewportPatternKeyBuilder.cs.meta
+|   |       ViewportPatternOccupancy.cs
+|   |       ViewportPatternOccupancy.cs.meta
+|   |       ViewportPoseVisibilityStore.cs
+|   |       ViewportPoseVisibilityStore.cs.meta
+|   |       ViewportWallDebugText.cs
+|   |       ViewportWallDebugText.cs.meta
+|   |       
+|   +---UI
+|   |       HeroRecruitmentPanel.cs
+|   |       HeroRecruitmentPanel.cs.meta
+|   |       
+|   \---Utilities
++---Settings
+|   |   Build Profiles.meta
+|   |   
+|   \---Build Profiles
+|           Windows.asset
+|           Windows.asset.meta
+|           
+\---TextMesh Pro
+    |   Fonts.meta
+    |   Resources.meta
+    |   Shaders.meta
+    |   
+    +---Fonts
+    |       LiberationSans - OFL.txt
+    |       LiberationSans - OFL.txt.meta
+    |       LiberationSans.ttf
+    |       LiberationSans.ttf.meta
+    |       
+    +---Resources
+    |   |   Fonts & Materials.meta
+    |   |   LineBreaking Following Characters.txt
+    |   |   LineBreaking Following Characters.txt.meta
+    |   |   LineBreaking Leading Characters.txt
+    |   |   LineBreaking Leading Characters.txt.meta
+    |   |   Style Sheets.meta
+    |   |   TMP Settings.asset
+    |   |   TMP Settings.asset.meta
+    |   |   
+    |   +---Fonts & Materials
+    |   |       LiberationSans SDF - Drop Shadow.mat
+    |   |       LiberationSans SDF - Drop Shadow.mat.meta
+    |   |       LiberationSans SDF - Fallback.asset
+    |   |       LiberationSans SDF - Fallback.asset.meta
+    |   |       LiberationSans SDF - Outline.mat
+    |   |       LiberationSans SDF - Outline.mat.meta
+    |   |       LiberationSans SDF.asset
+    |   |       LiberationSans SDF.asset.meta
+    |   |       
+    |   \---Style Sheets
+    |           Default Style Sheet.asset
+    |           Default Style Sheet.asset.meta
+    |           
+    \---Shaders
+            SDFFunctions.hlsl
+            SDFFunctions.hlsl.meta
+            TMPro.cginc
+            TMPro.cginc.meta
+            TMPro_Mobile.cginc
+            TMPro_Mobile.cginc.meta
+            TMPro_Properties.cginc
+            TMPro_Properties.cginc.meta
+            TMPro_Surface.cginc
+            TMPro_Surface.cginc.meta
+            TMP_Bitmap-Custom-Atlas.shader
+            TMP_Bitmap-Custom-Atlas.shader.meta
+            TMP_Bitmap-Mobile.shader
+            TMP_Bitmap-Mobile.shader.meta
+            TMP_Bitmap.shader
+            TMP_Bitmap.shader.meta
+            TMP_SDF Overlay.shader
+            TMP_SDF Overlay.shader.meta
+            TMP_SDF SSD.shader
+            TMP_SDF SSD.shader.meta
+            TMP_SDF-HDRP LIT.shadergraph
+            TMP_SDF-HDRP LIT.shadergraph.meta
+            TMP_SDF-HDRP UNLIT.shadergraph
+            TMP_SDF-HDRP UNLIT.shadergraph.meta
+            TMP_SDF-Mobile Masking.shader
+            TMP_SDF-Mobile Masking.shader.meta
+            TMP_SDF-Mobile Overlay.shader
+            TMP_SDF-Mobile Overlay.shader.meta
+            TMP_SDF-Mobile SSD.shader
+            TMP_SDF-Mobile SSD.shader.meta
+            TMP_SDF-Mobile-2-Pass.shader
+            TMP_SDF-Mobile-2-Pass.shader.meta
+            TMP_SDF-Mobile.shader
+            TMP_SDF-Mobile.shader.meta
+            TMP_SDF-Surface-Mobile.shader
+            TMP_SDF-Surface-Mobile.shader.meta
+            TMP_SDF-Surface.shader
+            TMP_SDF-Surface.shader.meta
+            TMP_SDF-URP Lit.shadergraph
+            TMP_SDF-URP Lit.shadergraph.meta
+            TMP_SDF-URP Unlit.shadergraph
+            TMP_SDF-URP Unlit.shadergraph.meta
+            TMP_SDF.shader
+            TMP_SDF.shader.meta
+            TMP_Sprite.shader
+            TMP_Sprite.shader.meta
+            
