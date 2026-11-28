@@ -9061,5 +9061,37 @@
       "DOS PC remains final visual authority."
     ],
     "geometryStatus": "Provisional for Wooden Door; copied from approved Portcullis."
+  },
+  "viewedit_refresh_D18B_20261128-171230": {
+    "timestamp": "2026-11-28T17:12:30.369056+01:00",
+    "status": "Prepared; Unity compilation and live test pending",
+    "changes": [
+      "Explicit Refresh synchronously scans changed project assets and forces reimport of all door PNGs and five door registries. Clears generated door textures and one-time door diagnostics, invalidates four owned readable wall copies, reloads inscriptions and redraws current pose. No rendering algorithm changes.",
+      "No door state, geometry, registration, animation timing or artwork import setting changes. No reimport during normal movement or animation."
+    ],
+    "test": [
+      "Level 1 (2,0) West: press Refresh; inspect Wooden Door F1 and any cyan diagnostics. Verify native PNG sizes and readability if absent.",
+      "Verify Portcullis and Black Door still render and current door state is preserved."
+    ],
+    "limitations": [
+      "Based on latest delivered D16B ViewportLayoutEditor.cs and D18A Progression.json; local modifications cannot be inspected. Unity not available for compilation. Refresh remains edit-mode only; not a universal reset of all unrelated caches."
+    ]
+  },
+  "door_import_repair_D18C_20261128-171630": {
+    "timestamp": "2026-11-28T17:16:30.842456+01:00",
+    "status": "Prepared; live Unity test pending",
+    "finding": "Delivered D18A registry and level 1 door metadata match. Actual replacement PNGs and installed import metadata unavailable. D18B reimport alone does not correct invalid import settings.",
+    "changes": [
+      "Explicit Refresh repairs unreadable or resized registered native door textures only when source PNG header dimensions match registry; no source PNG changes.",
+      "Point filtering, uncompressed import, native dimensions, readable, no mipmaps for repaired imports only. Existing valid imports unchanged.",
+      "Cyan diagnostics include actual imported dimensions/readability, missing source and fully transparent panel. No fallback.",
+      "No door geometry, placement, timing or ornament renderer changes."
+    ],
+    "test": [
+      "Level 1 (2,0) West: Reset Doors, then Refresh; inspect panel and cyan diagnostics."
+    ],
+    "limitations": [
+      "Unity compilation and visual test unavailable. Root cause not confirmed without actual replacement artwork and local import settings."
+    ]
   }
 }

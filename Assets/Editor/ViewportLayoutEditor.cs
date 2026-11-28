@@ -12239,15 +12239,14 @@ private static void HandleGameViewPointerDown(
       Debug.Log("ViewEdit Refresh: requested at Level " + previewDungeonLevel
           + " X=" + previewX + " Y=" + previewY
           + " Facing=" + previewFacing);
-      // Refresh the inscription data from the same authoritative Level JSON used
-      // for the map. Refresh must not reuse a stale in-memory inscription array.
-      ReloadWallInscriptionsFromLevelJson();
       if (Application.isPlaying)
       {
         Debug.LogWarning("ViewEdit Refresh: edit-mode preview redraw is unavailable in Play mode.");
       }
       else
       {
+        ReloadViewEditArtworkForExplicitRefresh();
+        ReloadWallInscriptionsFromLevelJson();
         RefreshEditModePreview();
         Debug.Log("INSCRIPTION REFRESH EXIT: texture=" + (editModePreviewTexture != null)
             + " drawnWalls=" + v17DrawnWalls.Count
@@ -18086,6 +18085,105 @@ private static void HandleGameViewPointerDown(
     layout.Pieces[indexB] = temp;
   }
 
+  // D18B: Explicit Refresh only. Navigation and animation never reimport assets.
+  private void ReloadViewEditArtworkForExplicitRefresh()
+  {
+    var options = ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport;
+    AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+    // Force door imports even when an external replacement retained its old timestamp.
+    const string doorFolder = "Assets/Art/Doors";
+    int imported = 0;
+    if (Directory.Exists(doorFolder))
+    {
+      foreach (string file in Directory.GetFiles(doorFolder, "*.png", SearchOption.AllDirectories))
+      {
+        AssetDatabase.ImportAsset(file.Replace('\\', '/'), options);
+        imported++;
+      }
+    }
+    foreach (string path in new[] { DosDoorPanelPreviewDataPath, DosDoorArtworkRulesPath,
+        DosDoorFramePreviewDataPath, DosDoorLateralFrameDataPath, DosDoorTopFramePreviewDataPath })
+      if (File.Exists(path)) AssetDatabase.ImportAsset(path, options);
+    ClearGeneratedDoorPanels();
+    // Re-emit a single cyan diagnostic if replacement artwork is still invalid.
+    DoorArtworkDiagnostics.Clear();
+    RepairRegisteredDoorPanelImports();
+    // These are owned readable copies, not imported assets.
+    if (cachedNativeFrontF1ReadableCopy != null) DestroyImmediate(cachedNativeFrontF1ReadableCopy);
+    if (cachedNativeFrontF2ReadableCopy != null) DestroyImmediate(cachedNativeFrontF2ReadableCopy);
+    if (cachedNativeFrontF3ReadableCopy != null) DestroyImmediate(cachedNativeFrontF3ReadableCopy);
+    if (cachedRight2SReadableCopy != null) DestroyImmediate(cachedRight2SReadableCopy);
+    cachedNativeFrontF1ReadableCopy = null;
+    cachedNativeFrontF2ReadableCopy = null;
+    cachedNativeFrontF3ReadableCopy = null;
+    cachedRight2SReadableCopy = null;
+    Debug.Log("ViewEdit Refresh: reimported " + imported + " door PNGs; door caches cleared.");
+  }
+
+  // D18C: repair only rejected registered native panel imports, never the PNG itself.
+  private void RepairRegisteredDoorPanelImports()
+  {
+    try
+    {
+      var root = JsonUtility.FromJson<DosDoorPanelRoot>(File.ReadAllText(DosDoorPanelPreviewDataPath));
+      if (root == null || root.views == null) return;
+      var visited = new HashSet<string>(System.StringComparer.Ordinal);
+      foreach (var view in root.views)
+      {
+        if (view == null || string.IsNullOrEmpty(view.path) || !visited.Add(view.path)) continue;
+        // Generated distances are not physical PNG sources. Do not repair them.
+        var rules = JsonUtility.FromJson<DosDoorArtworkRulesRoot>(File.ReadAllText(DosDoorArtworkRulesPath));
+        if (rules == null || rules.rules == null) return;
+        DosDoorArtworkRule rule = null;
+        foreach (var candidate in rules.rules)
+          if (candidate != null && candidate.graphicSet == view.graphicSet &&
+              candidate.ornamentOrdinal == view.ornamentOrdinal &&
+              (view.ornamentOrdinal == 0 || candidate.level == view.level))
+          { rule = candidate; break; }
+        if (rule == null || (rule.mode != "NativePerDistance" &&
+            !(rule.mode == "ScaledFromF1" && view.depth == 1))) continue;
+        var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(view.path);
+        if (texture != null && texture.isReadable && texture.width == view.width && texture.height == view.height)
+          continue;
+        if (!File.Exists(view.path))
+        { ReportDoorArtworkProblem("PNG file not found: " + view.path); continue; }
+        // Inspect PNG IHDR without changing the source artwork.
+        byte[] bytes = File.ReadAllBytes(view.path);
+        if (bytes.Length < 24 || bytes[0] != 137 || bytes[1] != 80 || bytes[2] != 78 || bytes[3] != 71 ||
+            bytes[12] != 73 || bytes[13] != 72 || bytes[14] != 68 || bytes[15] != 82)
+        { ReportDoorArtworkProblem("invalid PNG header: " + view.path); continue; }
+        int w = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19];
+        int h = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
+        if (w != view.width || h != view.height)
+        { ReportDoorArtworkProblem("source PNG dimensions " + w + "x" + h + " differ from registry " + view.width + "x" + view.height + ": " + view.path); continue; }
+        var importer = AssetImporter.GetAtPath(view.path) as TextureImporter;
+        if (importer == null)
+        { ReportDoorArtworkProblem("no TextureImporter: " + view.path); continue; }
+        importer.isReadable = true;
+        importer.npotScale = TextureImporterNPOTScale.None;
+        importer.textureCompression = TextureImporterCompression.Uncompressed;
+        importer.filterMode = FilterMode.Point;
+        importer.mipmapEnabled = false;
+        importer.maxTextureSize = Mathf.Max(importer.maxTextureSize, Mathf.NextPowerOfTwo(Mathf.Max(w, h)));
+        var standalone = importer.GetPlatformTextureSettings("Standalone");
+        if (standalone.overridden)
+        {
+          standalone.maxTextureSize = Mathf.Max(standalone.maxTextureSize, Mathf.NextPowerOfTwo(Mathf.Max(w, h)));
+          standalone.format = TextureImporterFormat.RGBA32;
+          importer.SetPlatformTextureSettings(standalone);
+        }
+        importer.SaveAndReimport();
+        texture = AssetDatabase.LoadAssetAtPath<Texture2D>(view.path);
+        if (texture != null && texture.isReadable && texture.width == w && texture.height == h)
+          Debug.Log("ViewEdit Refresh: repaired native door import " + view.path + " (" + w + "x" + h + ")");
+        else
+          ReportDoorArtworkProblem("native panel import still invalid after repair: " + view.path);
+      }
+    }
+    catch (System.Exception ex)
+    { ReportDoorArtworkProblem("door import repair: " + ex.Message); }
+  }
+
   private void RefreshEditModePreview()
   {
     if (Application.isPlaying)
@@ -19757,6 +19855,10 @@ private static void HandleGameViewPointerDown(
         }
       }
       Color32[] art = source.GetPixels32();
+      bool hasVisiblePixel = false;
+      foreach (Color32 pixel in art) if (pixel.a != 0) { hasVisiblePixel = true; break; }
+      if (!hasVisiblePixel)
+        ReportDoorArtworkProblem("all pixels transparent in " + view.path);
       // Lift without scaling: skip the top source rows and clip at the closed panel's top.
       for (int y = 0; y < source.height - lift; y++)
       {
@@ -21483,8 +21585,9 @@ private static void HandleGameViewPointerDown(
     Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
     if (texture == null || !texture.isReadable || texture.width != width || texture.height != height)
     {
+      string actual = texture == null ? "not imported" : texture.width + "x" + texture.height + ", readable=" + texture.isReadable;
       ReportDoorArtworkProblem("missing or invalid readable native artwork " + path
-          + " (expected " + width + "x" + height + "); not drawn (no fallback)");
+          + " (expected " + width + "x" + height + "; actual " + actual + "); not drawn (no fallback)");
       return null;
     }
     return texture;
