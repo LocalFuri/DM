@@ -19455,6 +19455,7 @@ private static void HandleGameViewPointerDown(
     // D4 F1 reference composition: panel over background features. Full depth-aware object ordering remains pending.
     BlitDosDoorPanels(pixels);
     BlitSuspendedThrownItemsIntoPreview(pixels);
+    BlitDosOccupiedDoorWall(pixels);
   }
 
 
@@ -19818,6 +19819,30 @@ private static void HandleGameViewPointerDown(
           pixels[(PreviewHeight - 1 - 33 - dy) * PreviewWidth + dx] = pixel;
         }
       }
+  }
+
+  // D15: native perpendicular view while occupying an open door tile.
+  // DOS reference viewport (224x136): X=96, Y=0, 32x123.
+  // The supplied artwork is asymmetric; opposite facing still needs DOS verification.
+  private void BlitDosOccupiedDoorWall(Color32[] pixels)
+  {
+    if (pixels == null || previewMiniMap == null) return;
+    DungeonTile tile = previewMiniMap.GetTile(previewX, previewY);
+    if (tile == null || tile.SourceType != DungeonSourceTileType.Door) return;
+    bool northSouth = (tile.Raw & 8) != 0;
+    bool facingNorthSouth = previewFacing == DungeonFacing.North
+        || previewFacing == DungeonFacing.South;
+    if (northSouth == facingNorthSouth) return;
+    if (!previewMiniMap.TryGetDoorData(previewX, previewY, out DungeonMap.DoorData door)
+        || door.CurrentState != 0) return;
+    const string path = "Assets/Art/Doors/Door Wall_F0_32_123.png";
+    Texture2D source = LoadDoorFrameTexture(path, 32, 123);
+    if (source == null || !TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration)) return;
+    string key = "DoorOccupiedWallProjection:S0";
+    string feature = MakePreviewFeatureKey("DoorOccupiedWall:" + previewDungeonLevel + ":S0",
+        previewX, previewY, null);
+    BlitDosDoorFrameProjection(pixels, source, source.GetPixels32(), calibration,
+        key, feature, "Door Wall S0", new Vector2Int(96, 0), false);
   }
 
   private const string DosDoorLateralFrameDataPath = "Assets/Editor/DosDoorLateralFramePreviewData.json";

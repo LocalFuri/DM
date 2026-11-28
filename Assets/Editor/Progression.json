@@ -8740,5 +8740,41 @@
       "Qualify both Array.IndexOf calls and Math.Min/Math.Floor with System namespace. Entire ViewportLayoutEditor.cs scanned for remaining unqualified Math/Array member calls; none remain. No behavioral changes."
     ],
     "destination": "C:\\Unity\\DM\\Assets\\Editor\\"
+  },
+  "door_native_D15_20261128-121102": {
+    "timestamp": "2026-11-28T12:11:02.283667+01:00",
+    "status": "Prepared, Unity compilation and live verification pending; D14B compilation approved and 16 frames preferred, all options retained.",
+    "reference": {
+      "source": "User DOS screenshot and native artwork, 224x136 viewport",
+      "x": 96,
+      "y": 0,
+      "width": 32,
+      "height": 123,
+      "asset": "Assets/Art/Doors/Door Wall_F1_23_123.png",
+      "note": "Filename says 23; supplied bitmap measures 32. Opposite facing orientation unverified."
+    },
+    "changes": [
+      "Render occupied open door tile when facing perpendicular to passage axis, using shared native calibrated door-frame blitter. Draw foreground after other scene elements before light palette. No coordinate-specific conditions, no fallback.",
+      "Preserve animation, geometry, runtime and all frame options."
+    ],
+    "test": "Level 0 6,9 North and South after opening; compare both DOS views; check no element facing East/West or off tile.",
+    "menu_audit": {
+      "scope": "ViewportLayoutEditor.cs and supplied DungeonMap.cs",
+      "nested": [],
+      "duplicates": []
+    }
+  },
+  "door_native_D15A_20261128-121249": {
+    "timestamp": "2026-11-28T12:12:49.103021+01:00",
+    "status": "Asset rename only; Unity test pending",
+    "asset": "Assets/Art/Doors/Door Wall_F0_32_123.png",
+    "previous_asset": "Assets/Art/Doors/Door Wall_F1_23_123.png",
+    "geometry": {
+      "x": 96,
+      "y": 0,
+      "width": 32,
+      "height": 123
+    },
+    "note": "User renamed and reimported asset; retain S0 internal slot, calibration key, and all rendering behavior."
   }
 }
