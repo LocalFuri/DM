@@ -19627,8 +19627,18 @@ private static void HandleGameViewPointerDown(
   {
     int subdivisions = DoorAnimationFrames / 4;
     if (subdivisions == 1 || !door.OpensVertically) return 0;
+    if (door.IsClosing)
+    {
+      double progress = door.GetClosingStepFraction(DoorStepMilliseconds);
+      return (subdivisions - System.Math.Min(subdivisions - 1, System.Math.Floor(progress * subdivisions))) / subdivisions;
+    }
     double fraction = door.GetOpeningStepFraction(DoorStepMilliseconds);
     return System.Math.Min(subdivisions - 1, System.Math.Floor(fraction * subdivisions)) / subdivisions;
+  }
+
+  private int GetDoorPresentationState(DungeonMap.DoorData door)
+  {
+    return door.IsClosing && DoorAnimationFrames > 4 ? door.CurrentState + 1 : door.CurrentState;
   }
 
   private void DrawDoorFrameSelector()
@@ -19653,7 +19663,7 @@ private static void HandleGameViewPointerDown(
   private void DrawDoorAnimationMeasurement()
   {
     if (doorPreviewUpdateCount > 0)
-      EditorGUILayout.LabelField("Last opening preview", string.Format("{0}/{1} target steps presented / {2:F0} ms ({3:F1} updates/s)",
+      EditorGUILayout.LabelField("Last door preview", string.Format("{0}/{1} target steps presented / {2:F0} ms ({3:F1} updates/s)",
           doorPreviewUpdateCount, DoorAnimationFrames, doorPreviewMeasuredSeconds * 1000.0,
           doorPreviewMeasuredSeconds > 0 ? doorPreviewUpdateCount / doorPreviewMeasuredSeconds : 0));
   }
@@ -19667,7 +19677,7 @@ private static void HandleGameViewPointerDown(
       if (!TryGetFrontDoorCell(depth, out Viewport17Cell cell)) continue;
       if (!previewMiniMap.TryGetDoorData(cell.MapX, cell.MapY, out DungeonMap.DoorData door)) continue;
       signature.Append(depth).Append(':').Append(cell.MapX).Append(':').Append(cell.MapY)
-          .Append(':').Append(door.CurrentState).Append(':')
+          .Append(':').Append(GetDoorPresentationState(door)).Append(':')
           .Append((int)System.Math.Round(GetQuantizedDoorFraction(door) * (DoorAnimationFrames / 4))).Append(';');
     }
     return signature.ToString();
@@ -19942,7 +19952,7 @@ private static void HandleGameViewPointerDown(
     Vector2Int tile = owner.dosDoorButtonPressTile;
     // Clear first so two editor input routes cannot activate the same door twice.
     owner.CancelDosDoorButtonPress(false);
-    if (activate && owner.previewMiniMap.TryOpenDoorFromButton(tile.x, tile.y))
+    if (activate && owner.previewMiniMap.TryToggleDoorFromButton(tile.x, tile.y))
     {
       owner.lastDoorOpeningPreviewTime = EditorApplication.timeSinceStartup;
       owner.lastDoorVisualSignature = null;
@@ -20080,9 +20090,10 @@ private static void HandleGameViewPointerDown(
       if (!TryGetFrontDoorCell(depth, out Viewport17Cell cell)) continue;
       if (!previewMiniMap.TryGetDoorData(cell.MapX, cell.MapY, out DungeonMap.DoorData door))
       { ReportDoorArtworkProblem("missing original door metadata at " + cell.MapX + "," + cell.MapY); continue; }
-      if (door.CurrentState == 0) continue;
-      if (door.CurrentState < 1 || door.CurrentState > 4
-          || (door.CurrentState != 4 && !door.OpensVertically))
+      int presentationState = GetDoorPresentationState(door);
+      if (presentationState == 0) continue;
+      if (presentationState < 1 || presentationState > 4
+          || (presentationState != 4 && !door.OpensVertically))
       { ReportDoorArtworkProblem("unsupported door state for current preview projection"); continue; }
       DosDoorPanelView view = null;
       Texture2D source = null;
@@ -20123,14 +20134,14 @@ private static void HandleGameViewPointerDown(
       Vector2Int dest = reference + offset;
       int lift = 0;
       double fraction = GetQuantizedDoorFraction(door);
-      if (door.CurrentState < 4 || fraction > 0)
+      if (presentationState < 4 || fraction > 0)
       {
         if (view.verticalLiftPerStep <= 0 || 3 * view.verticalLiftPerStep >= view.height)
         { ReportDoorArtworkProblem("missing/invalid vertical door step for set " + door.GraphicSet + " F" + depth); continue; }
-        lift = (4 - door.CurrentState) * view.verticalLiftPerStep;
+        lift = (4 - presentationState) * view.verticalLiftPerStep;
         if (fraction > 0)
         {
-          int nextLift = door.CurrentState == 1 ? view.height : lift + view.verticalLiftPerStep;
+          int nextLift = presentationState == 1 ? view.height : lift + view.verticalLiftPerStep;
           lift = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(lift, nextLift, (float)fraction)), 0, view.height);
         }
       }

@@ -30,8 +30,10 @@ namespace DM.Dungeon
       public int InitialState { get; internal set; }
       public int CurrentState { get; internal set; }
       internal bool Opening;
+      internal bool Closing;
+      public bool IsClosing => Closing;
       // Read-only movement status for input gating across assemblies.
-      public bool IsMoving => Opening;
+      public bool IsMoving => Opening || Closing;
       internal double OpeningElapsedSeconds;
       // Fraction toward the next logical state; presentation only.
       public double GetOpeningStepFraction(int[] stepMilliseconds)
@@ -39,6 +41,13 @@ namespace DM.Dungeon
         if (!Opening || CurrentState < 1 || CurrentState > 4 || stepMilliseconds == null
             || stepMilliseconds.Length != 4 || stepMilliseconds[4 - CurrentState] <= 0) return 0;
         return Math.Max(0, Math.Min(1, OpeningElapsedSeconds * 1000.0 / stepMilliseconds[4 - CurrentState]));
+      }
+      // Closing retraces the opening intervals in reverse order.
+      public double GetClosingStepFraction(int[] stepMilliseconds)
+      {
+        if (!Closing || CurrentState < 0 || CurrentState > 3 || stepMilliseconds == null
+            || stepMilliseconds.Length != 4 || stepMilliseconds[3 - CurrentState] <= 0) return 0;
+        return Math.Max(0, Math.Min(1, OpeningElapsedSeconds * 1000.0 / stepMilliseconds[3 - CurrentState]));
       }
       public bool OpensVertically { get; internal set; }
       public bool HasButton { get; internal set; }
@@ -56,9 +65,20 @@ namespace DM.Dungeon
     public bool TryOpenDoorFromButton(int x, int y)
     {
       if (!TryGetDoorData(x, y, out DoorData door) || !door.HasButton
-          || !door.OpensVertically || door.Opening
+          || !door.OpensVertically || door.IsMoving
           || door.CurrentState < 1 || door.CurrentState > 4) return false;
       door.Opening = true;
+      door.OpeningElapsedSeconds = 0;
+      return true;
+    }
+
+    // D19K: stationary open door closes; otherwise use the existing open action.
+    public bool TryToggleDoorFromButton(int x, int y)
+    {
+      if (!TryGetDoorData(x, y, out DoorData door) || !door.HasButton
+          || !door.OpensVertically || door.IsMoving) return false;
+      if (door.CurrentState != 0) return TryOpenDoorFromButton(x, y);
+      door.Closing = true;
       door.OpeningElapsedSeconds = 0;
       return true;
     }
@@ -70,6 +90,7 @@ namespace DM.Dungeon
       {
         door.CurrentState = door.InitialState;
         door.Opening = false;
+        door.Closing = false;
         door.OpeningElapsedSeconds = 0;
       }
     }
@@ -108,7 +129,7 @@ namespace DM.Dungeon
         {
           if (door.OpensVertically)
           {
-            if (!door.Opening)
+            if (!door.IsMoving)
             {
               door.Opening = true;
               door.OpeningElapsedSeconds = 0;
@@ -132,21 +153,24 @@ namespace DM.Dungeon
       bool changed = false;
       foreach (var door in _doors.Values)
       {
-        if (!door.Opening) continue;
-        if (door.CurrentState < 1 || door.CurrentState > 4)
-        { door.Opening = false; continue; }
+        if (!door.IsMoving) continue;
+        bool closing = door.Closing;
+        if (closing ? (door.CurrentState < 0 || door.CurrentState > 3)
+                    : (door.CurrentState < 1 || door.CurrentState > 4))
+        { door.Opening = false; door.Closing = false; continue; }
         door.OpeningElapsedSeconds += elapsedSeconds;
         if (smoothVisual) changed = true;
         do
         {
-          double secondsPerStep = stepMilliseconds[4 - door.CurrentState] / 1000.0;
+          double secondsPerStep = stepMilliseconds[closing ? 3 - door.CurrentState : 4 - door.CurrentState] / 1000.0;
           if (door.OpeningElapsedSeconds < secondsPerStep) break;
           door.OpeningElapsedSeconds -= secondsPerStep;
-          door.CurrentState--;
+          door.CurrentState += closing ? 1 : -1;
           changed = true;
-          if (door.CurrentState == 0) door.Opening = false;
+          if (closing && door.CurrentState == 4) door.Closing = false;
+          if (!closing && door.CurrentState == 0) door.Opening = false;
           onDoorStep?.Invoke();
-        } while (smoothVisual && door.Opening);
+        } while (smoothVisual && door.IsMoving);
       }
       return changed;
     }

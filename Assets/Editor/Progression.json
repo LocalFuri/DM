@@ -60,7 +60,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "D19H: F1 pressed appearance user-approved; add existing Switch Sound on valid mouse-down. F1/F2/F3 released rendering frozen.",
+  "checkpoint": "D19K door switch interaction approved; 16-frame motion preferred; faithful reconstruction with subtle refinement; next Wooden Door lateral projections.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -116,10 +116,8 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Verify F1 press sound once per mouse-down, including held and cancelled presses.",
-    "Verify release inside opens Wooden Door; implement closing/toggle separately.",
-    "Preserve all approved panel, button and ornament renderers.",
-    "Continue Wooden Door lateral projections."
+    "Confirm complete close/reopen cycle and Portcullis sensor regression if not already tested.",
+    "Continue Wooden Door lateral projections; compare against original DOS before any changes."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -9385,7 +9383,7 @@
   },
   "door_button_full_motion_lock_D19J_20261128-192403": {
     "timestamp": "2026-11-28T19:24:03.598087+01:00",
-    "status": "Prepared; live Unity test pending",
+    "status": "User confirmed D19J complete opening lock works.",
     "change": "Reject complete physical F1 press while DoorData.IsMoving, consume its release even if motion completed during hold. Validate not moving throughout an armed press and at release. Existing scheduler clears IsMoving on final logical opening transition. No fixed timeout or queued activation.",
     "preserved": "D19I DungeonMap.cs unchanged and required; all rendering, sounds and animation timing unchanged.",
     "test": [
@@ -9394,5 +9392,45 @@
       "Closing/toggle remains pending."
     ],
     "limitations": "Based on delivered D19I source. Unity compilation and live testing unavailable."
+  },
+  "door_button_toggle_D19K_20261128-192654": {
+    "timestamp": "2026-11-28T19:26:54.992406+01:00",
+    "status": "Prepared; Unity compilation and live verification pending. D19J lock approved by user.",
+    "changes": [
+      "Stationary open vertical door closes on valid F1 release; stationary closed door opens through existing method.",
+      "Shared scheduler advances 0->1->2->3->4 on closing; reversed intervals 228/214/271/200 ms, total 913 ms; existing rattle callback each logical step.",
+      "Reverse existing quantized lift interpolation; all five frame counts retained. Lock covers both directions; reset clears both movement flags.",
+      "Existing sensor opening does not interrupt an active close. No new artwork or sound."
+    ],
+    "test": [
+      "Level 1 (2,0) West: open, wait, close, wait, reopen.",
+      "Rapid clicks and hold across completion in both directions; no queued action.",
+      "Check Portcullis sensor opening unchanged."
+    ],
+    "limitations": "Based on delivered D19I DungeonMap.cs and D19J Editor source. Reverse lift arithmetic model checked; Unity compiler/live tests unavailable. Door obstruction/crushing and horizontal animation not implemented. Menu audit limited to supplied Editor source."
+  },
+  "door_button_D19K_approval_20261128-193321": {
+    "timestamp": "2026-11-28T19:33:21.701921+01:00",
+    "status": "User approved door switch interaction and preferred 16-frame motion; closing-specific regression not separately confirmed.",
+    "frozen": [
+      "F1 press visual and switch sound",
+      "F1-F3 released artwork, geometry and palettes",
+      "Complete motion lock, no queued clicks",
+      "Shared bidirectional door scheduler and lift renderer"
+    ],
+    "design_principle": "Faithful reconstruction, subtle refinement. Preserve original DOS artwork, 320x200 resolution, visual proportions, atmosphere and gameplay mechanics. Subtle smoother animations and interaction feedback are welcome when approved; do not modernize for its own sake.",
+    "preferred_door_frames": 16,
+    "retained_frame_options": [
+      4,
+      16,
+      24,
+      32,
+      48
+    ],
+    "next": [
+      "Confirm complete close/reopen cycle and Portcullis sensor regression if not already tested.",
+      "Continue Wooden Door lateral projections; compare against original DOS before any changes."
+    ],
+    "limitations": "Documentation-only update based on delivered D19K archive; local changes unavailable. No Unity compilation or source modification."
   }
 }
