@@ -18870,6 +18870,7 @@ private static void HandleGameViewPointerDown(
     renderedDosDoorFrameRows.Clear();
     renderedDoorButtonF1 = false;
     renderedDoorButtonF2 = false;
+    renderedDoorButtonF3 = false;
     dosFloorPixelTrace.Clear();
     dosMonsterPreviewStatus = "M4: dungeon composition has not reached the monster pass";
     renderedDosLevel = previewDungeonLevel;
@@ -19586,6 +19587,7 @@ private static void HandleGameViewPointerDown(
     // D16A test: shared door panel pass is last before lighting/HUD.
     BlitSuspendedThrownItemsIntoPreview(pixels);
     BlitDosOccupiedDoorWall(pixels);
+    BlitDosDoorButtonF3(pixels);
     BlitDosDoorButtonF2(pixels);
     BlitDosDoorButtonF1(pixels);
     BlitDosDoorPanels(pixels);
@@ -19740,25 +19742,62 @@ private static void HandleGameViewPointerDown(
     renderedDoorButtonF1 = true;
   }
 
-  // D19A: provisional F2 geometry; source is the approved native F1 button.
-  private static readonly RectInt DosDoorButtonF2Rect = new RectInt(149, 42, 5, 6);
-  private bool renderedDoorButtonF2;
-  private Vector2Int renderedDoorButtonF2Tile;
+  // D19F: DOS-reference F2 and F3 button calibration.
+  private static readonly RectInt DosDoorButtonF2Rect = new RectInt(150, 42, 5, 6);
+  private static readonly RectInt DosDoorButtonF3Rect = new RectInt(137, 41, 3, 4);
+  // DOS screenshot-calibrated medium button index map. Unobserved indices
+  // retain D19D medium values; not a verified general-purpose DOS palette.
+  private static readonly int[] DosDoorButtonMediumPalette =
+      { 0, 12, 1, 3, 4, 3, 6, 7, 5, 9, 10, 11, 12, 2, 14, 13 };
+  private bool renderedDoorButtonF2, renderedDoorButtonF3;
+  private Vector2Int renderedDoorButtonF2Tile, renderedDoorButtonF3Tile;
 
   private void BlitDosDoorButtonF2(Color32[] pixels)
   {
-    if (pixels == null || !TryGetFrontDoorCell(2, out Viewport17Cell cell)
+    renderedDoorButtonF2 = BlitDosScaledDoorButton(pixels, 2,
+        DosDoorButtonF2Rect, DosDoorButtonMediumPalette, out renderedDoorButtonF2Tile);
+  }
+
+  private void BlitDosDoorButtonF3(Color32[] pixels)
+  {
+    renderedDoorButtonF3 = BlitDosScaledDoorButton(pixels, 3,
+        DosDoorButtonF3Rect, CsbFloorFarPalette, out renderedDoorButtonF3Tile);
+  }
+
+  private bool BlitDosScaledDoorButton(Color32[] pixels, int depth, RectInt r,
+      int[] depthPalette, out Vector2Int tile)
+  {
+    tile = default;
+    if (pixels == null || !TryGetFrontDoorCell(depth, out Viewport17Cell cell)
         || !previewMiniMap.TryGetDoorData(cell.MapX, cell.MapY, out DungeonMap.DoorData door)
-        || !door.HasButton || door.CurrentState < 0 || door.CurrentState > 4) return;
-    // Do not expose a distant click target behind a nearer closed door.
-    if (TryGetFrontDoorCell(1, out Viewport17Cell nearer)
-        && previewMiniMap.TryGetDoorData(nearer.MapX, nearer.MapY, out DungeonMap.DoorData nearerDoor)
-        && nearerDoor.CurrentState == 4) return; // D19C: public DoorData API only.
+        || !door.HasButton || door.CurrentState < 0 || door.CurrentState > 4) return false;
+    // Do not expose a distant button behind a nearer fully closed door.
+    for (int nearerDepth = 1; nearerDepth < depth; nearerDepth++)
+      if (TryGetFrontDoorCell(nearerDepth, out Viewport17Cell nearer)
+          && previewMiniMap.TryGetDoorData(nearer.MapX, nearer.MapY, out DungeonMap.DoorData nearerDoor)
+          && nearerDoor.CurrentState == 4) return false;
     Texture2D texture = LoadDoorFrameTexture(DosDoorButtonF1Path,
         DosDoorButtonF1Rect.width, DosDoorButtonF1Rect.height);
-    if (texture == null) return;
-    RectInt r = DosDoorButtonF2Rect;
+    if (texture == null) return false;
     Color32[] art = texture.GetPixels32();
+    Color32[] palette = DungeonViewportLightPalettes[0];
+    // Complete exact RGB lookup: the older ornament helper omits brown/red indices.
+    // Validate before drawing so an invalid source cannot leave a partial button.
+    Color32[] mapped = new Color32[art.Length];
+    for (int i = 0; i < art.Length; i++)
+    {
+      int index = -1;
+      for (int j = 0; j < palette.Length; j++)
+        if (art[i].r == palette[j].r && art[i].g == palette[j].g && art[i].b == palette[j].b)
+        { index = j; break; }
+      if (index < 0)
+      {
+        ReportDoorArtworkProblem("unrecognized source palette colour in " + DosDoorButtonF1Path);
+        return false;
+      }
+      mapped[i] = palette[depthPalette[index]];
+      mapped[i].a = 255;
+    }
     int stepX = DosSixBitStep(texture.width, r.width);
     int stepY = DosSixBitStep(texture.height, r.height);
     for (int y = 0; y < r.height; y++)
@@ -19766,13 +19805,10 @@ private static void HandleGameViewPointerDown(
       {
         int sx = DosSixBitSample(stepX, x, texture.width);
         int sy = texture.height - 1 - DosSixBitSample(stepY, y, texture.height);
-        Color32 pixel = art[sy * texture.width + sx];
-        // Preserve the F1 button's opaque border and original colors.
-        pixel.a = 255;
-        pixels[(PreviewHeight - 1 - 33 - r.y - y) * PreviewWidth + r.x + x] = pixel;
+        pixels[(PreviewHeight - 1 - 33 - r.y - y) * PreviewWidth + r.x + x] = mapped[sy * texture.width + sx];
       }
-    renderedDoorButtonF2Tile = new Vector2Int(cell.MapX, cell.MapY);
-    renderedDoorButtonF2 = true;
+    tile = new Vector2Int(cell.MapX, cell.MapY);
+    return true;
   }
 
   private bool TryHandleDosDoorButtonClick(float logicalX, float logicalY)
@@ -19780,8 +19816,10 @@ private static void HandleGameViewPointerDown(
     if (championSheetVisible || previewMiniMap == null) return false;
     if (renderedDoorButtonF1 && TryHandleDosDoorButtonProjectionClick(1,
         DosDoorButtonF1Rect, renderedDoorButtonTile, logicalX, logicalY)) return true;
-    return renderedDoorButtonF2 && TryHandleDosDoorButtonProjectionClick(2,
-        DosDoorButtonF2Rect, renderedDoorButtonF2Tile, logicalX, logicalY);
+    if (renderedDoorButtonF2 && TryHandleDosDoorButtonProjectionClick(2,
+        DosDoorButtonF2Rect, renderedDoorButtonF2Tile, logicalX, logicalY)) return true;
+    return renderedDoorButtonF3 && TryHandleDosDoorButtonProjectionClick(3,
+        DosDoorButtonF3Rect, renderedDoorButtonF3Tile, logicalX, logicalY);
   }
 
   private bool TryHandleDosDoorButtonProjectionClick(int depth, RectInt r,
@@ -19791,9 +19829,10 @@ private static void HandleGameViewPointerDown(
         || logicalY < 33 + r.yMin || logicalY >= 33 + r.yMax) return false;
     if (!TryGetFrontDoorCell(depth, out Viewport17Cell cell)
         || cell.MapX != tile.x || cell.MapY != tile.y) return false;
-    if (depth > 1 && TryGetFrontDoorCell(1, out Viewport17Cell nearer)
-        && previewMiniMap.TryGetDoorData(nearer.MapX, nearer.MapY, out DungeonMap.DoorData nearerDoor)
-        && nearerDoor.CurrentState != 0 && nearerDoor.CurrentState != 5) return true;
+    for (int nearerDepth = 1; nearerDepth < depth; nearerDepth++)
+      if (TryGetFrontDoorCell(nearerDepth, out Viewport17Cell nearer)
+          && previewMiniMap.TryGetDoorData(nearer.MapX, nearer.MapY, out DungeonMap.DoorData nearerDoor)
+          && nearerDoor.CurrentState != 0 && nearerDoor.CurrentState != 5) return true;
     if (previewMiniMap.TryOpenDoorFromButton(cell.MapX, cell.MapY))
     {
       lastDoorOpeningPreviewTime = EditorApplication.timeSinceStartup;

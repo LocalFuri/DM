@@ -60,7 +60,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "D19A: F1 button user-approved pixel-exact; F2 button provisional 5x6 at viewport (149,42), pending DOS comparison.",
+  "checkpoint": "D19F: Door button F1/F2/F3 all user-confirmed pixel-exact against DOS; rendering frozen. Click behavior and closing pending verification.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -116,10 +116,10 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Preserve all approved door panels, ornaments and F1 button artwork/geometry.",
-    "Test F2 door button rendering and edit-preview opening at Level 1 (3,0) West if visible; compare DOS and calibrate.",
-    "Verify F1 click and animation; closing and F3 button remain pending.",
-    "Retain 320x200 native GameView and selectable animation counts (16 preferred)."
+    "Verify F1 button click opens Wooden Door at Level 1 (2,0) West with existing animation and sound.",
+    "Implement and verify closing/toggle behavior; verify original interaction range before approving distant clicks.",
+    "Preserve all approved button projections, door panels, ornaments and animation settings.",
+    "Continue Wooden Door lateral projections after interaction tests."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -9259,5 +9259,114 @@
     "status": "Reissued full Editor source after persistent CS1061; compile pending",
     "change": "Confirmed no .Opening member references in complete ViewportLayoutEditor.cs. Added D19C marker at corrected guard. No functional changes from D19B.",
     "guardrails": "All approved rendering and F2 geometry unchanged."
+  },
+  "door_button_D19D_20261128-184309": {
+    "timestamp": "2026-11-28T18:43:09.280757+01:00",
+    "status": "Prepared; Unity compilation and DOS comparison pending",
+    "F1": "Pixel-exact approved; native blit unchanged",
+    "F2": {
+      "x": 149,
+      "y": 42,
+      "width": 5,
+      "height": 6,
+      "depthPalette": "Byte5744; existing CsbFloorMediumPalette"
+    },
+    "F3": {
+      "x": 140,
+      "y": 42,
+      "width": 4,
+      "height": 5,
+      "depthPalette": "Byte5728; existing CsbFloorFarPalette",
+      "geometry": "Provisional, not DOS verified"
+    },
+    "implementation": "Shared six-bit sampler, complete exact 16-color RGB lookup, all pixels opaque; cyan diagnostic and no fallback. Distant preview clicks reuse existing opening-only behavior; original interaction range and closing pending.",
+    "guardrails": "No panel geometry, artwork, registry, approved ornament rendering, F1 native blit, or animation changes. D19C baseline; local edits unavailable.",
+    "verification": "Raw CSBwin graphic 558 remaps confirmed; extracted graphic 453 uses only exact palette RGB values. F1 method and panel renderer unchanged by source comparison. MenuItem audit limited to delivered ViewportLayoutEditor.cs; five unique top-level Tools paths."
+  },
+  "door_button_D19E_20261128-184836": {
+    "timestamp": "2026-11-28T18:48:36.147358+01:00",
+    "status": "Approved by user: F2 live Unity vs DOS pixel-exact.",
+    "F2": {
+      "x": 150,
+      "y": 42,
+      "width": 5,
+      "height": 6,
+      "palette": [
+        0,
+        12,
+        1,
+        3,
+        4,
+        3,
+        6,
+        7,
+        5,
+        9,
+        10,
+        11,
+        12,
+        2,
+        14,
+        13
+      ],
+      "verification": "Offline six-bit sampling of original graphic 453 with calibrated map matches 30/30 pixels of supplied DOS screenshot. Observed grey index changes 1->12, 2->1, 13->2, 15->13; other entries retain D19D medium mapping, unobserved entries unverified."
+    },
+    "guardrails": "F1 native blit, F3 provisional mapping, all panel and ornament renderers, click behavior and animation unchanged. No artwork changes.",
+    "limitations": "Calibration from DOS screenshot, not extracted original DOS table. Based on delivered D19D; local edits unavailable."
+  },
+  "door_button_D19F_20261128-185750": {
+    "timestamp": "2026-11-28T18:57:50.344478+01:00",
+    "status": "User confirmed F3 pixel exact in live Unity comparison.",
+    "F1": "Approved; unchanged",
+    "F2": "User confirmed pixel exact; frozen",
+    "F3": {
+      "x": 137,
+      "y": 41,
+      "width": 3,
+      "height": 4,
+      "palette": "Existing CsbFloorFarPalette unchanged",
+      "verification": "12/12 pixels match DOS screenshot using original opaque graphic 453 and existing six-bit sampler; existing far map already maps index 5 to 3."
+    },
+    "guardrails": "Only F3 rectangle and comment changed in C#; shared far palette, F1/F2, panels, ornaments and animation unchanged. Based on delivered D19E; local edits unavailable."
+  },
+  "door_button_front_approval_20261128-190047": {
+    "timestamp": "2026-11-28T19:00:47.258254+01:00",
+    "status": "All three front door button projections user-confirmed pixel-exact; frozen",
+    "source": "Assets/Art/Doors/Door Button_F1_8x9.png",
+    "graphicIdDOS": 453,
+    "projections": [
+      {
+        "depth": 1,
+        "x": 167,
+        "y": 43,
+        "width": 8,
+        "height": 9,
+        "palette": "Native"
+      },
+      {
+        "depth": 2,
+        "x": 150,
+        "y": 42,
+        "width": 5,
+        "height": 6,
+        "palette": "DOS-calibrated medium from D19E"
+      },
+      {
+        "depth": 3,
+        "x": 137,
+        "y": 41,
+        "width": 3,
+        "height": 4,
+        "palette": "Existing CsbFloorFarPalette"
+      }
+    ],
+    "guardrails": "No changes to source, artwork, geometry, palettes, approved panels or ornaments.",
+    "pending": [
+      "Verify F1 button click opens Wooden Door at Level 1 (2,0) West with existing animation and sound.",
+      "Implement and verify closing/toggle behavior; verify original interaction range before approving distant clicks.",
+      "Preserve all approved button projections, door panels, ornaments and animation settings.",
+      "Continue Wooden Door lateral projections after interaction tests."
+    ],
+    "limitations": "Based on latest delivered D19F Progression.json; local project edits not available. Visual approval does not verify click behavior."
   }
 }
