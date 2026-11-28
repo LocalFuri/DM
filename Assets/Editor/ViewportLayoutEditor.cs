@@ -12298,9 +12298,6 @@ private static void HandleGameViewPointerDown(
     {
       // An explicit Refresh should report Hook S2 drawing again even when
       // the render is unchanged and the Unity Console has been cleared.
-      Debug.Log("ViewEdit Refresh: requested at Level " + previewDungeonLevel
-          + " X=" + previewX + " Y=" + previewY
-          + " Facing=" + previewFacing);
       if (Application.isPlaying)
       {
         Debug.LogWarning("ViewEdit Refresh: edit-mode preview redraw is unavailable in Play mode.");
@@ -12310,12 +12307,8 @@ private static void HandleGameViewPointerDown(
         ReloadViewEditArtworkForExplicitRefresh();
         ReloadWallInscriptionsFromLevelJson();
         RefreshEditModePreview();
-        Debug.Log("INSCRIPTION REFRESH EXIT: texture=" + (editModePreviewTexture != null)
-            + " drawnWalls=" + v17DrawnWalls.Count
-            + " fontPath=" + InscriptionFontPath);
         RepaintGameViews();
         Repaint();
-        Debug.Log("ViewEdit Refresh: redraw completed (inspect LeftF2 POSE/comparison diagnostics above).");
       }
     }
     using (new EditorGUI.DisabledScope(Application.isPlaying || previewMiniMap == null))
@@ -18190,7 +18183,6 @@ private static void HandleGameViewPointerDown(
     cachedNativeFrontF2ReadableCopy = null;
     cachedNativeFrontF3ReadableCopy = null;
     cachedRight2SReadableCopy = null;
-    Debug.Log("ViewEdit Refresh: reimported " + imported + " door PNGs; door caches cleared.");
   }
 
   // D18C: repair only rejected registered native panel imports, never the PNG itself.
@@ -20458,6 +20450,8 @@ private static void HandleGameViewPointerDown(
 
   private void BlitDosDoorTopFrameAtDepth(Color32[] pixels, int depth, Viewport17Cell cell)
   {
+    // F3 has no separate top frame in the approved DOS projection.
+    if (depth == 3) return;
     DosDoorTopFrameView view = null;
     try
     {

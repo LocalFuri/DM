@@ -9453,11 +9453,28 @@
   },
   "wall_collision_sound_D22_20261128-194936": {
     "timestamp": "2026-11-28T19:49:36.224163+01:00",
-    "status": "Prepared; Unity compilation/live testing pending.",
+    "status": "User confirmed D22 works perfectly; approved.",
     "rule": "Play existing Party_Damaged.wav when relative movement is rejected by a wall or map boundary, in all four directions. No actual damage. Closed stationary doors retain D20 behavior.",
     "implementation": "Shared PlayNavigationBlockedSound helper; separate WallBlockedSoundEnabled and DoorMotionBlockedSoundEnabled flags; wall playback throttled to max(0.2s, clip length), independent of movement throttle. Existing door-motion latch retained. Stairs exception checked before sound.",
     "preserved": "Door scheduler, collision rules, all approved rendering, button effects, manual editor positioning unchanged.",
     "test": "Walk into wall in all four directions; verify sound without movement, no audio overlap on repeated wall attempts, normal movement silent, door lock unchanged.",
     "limitations": "Static source inspection only; no Unity compilation/runtime. Held keys can repeat wall sound after clip duration."
+  },
+  "door_top_frame_F3_D22A_20261128-200804": {
+    "timestamp": "2026-11-28T20:08:04.131686+01:00",
+    "status": "Prepared; live verification pending.",
+    "rule": "F3 intentionally has no separate top frame, as confirmed by user. Skip top-frame routine at F3 without warning. F1/F2 validation and artwork remain unchanged.",
+    "implementation": "Early return in BlitDosDoorTopFrameAtDepth for depth 3 only.",
+    "preserved": "All approved rendering, door panel and lateral frame code, movement and audio unchanged.",
+    "test": "View door at F3; no missing-top-frame warning; F1/F2 still render normally.",
+    "limitations": "Static source check only; Unity compilation not performed."
+  },
+  "viewedit_refresh_quiet_D22B_20261128-201100": {
+    "timestamp": "2026-11-28T20:11:00+01:00",
+    "status": "Prepared; live verification pending.",
+    "implementation": "Removed four routine Debug.Log statements: Refresh requested, door PNG reimport count/cache clear, inscription refresh exit, redraw completed.",
+    "preserved": "Refresh operations, warnings and other diagnostics, approved rendering, movement and audio unchanged.",
+    "test": "Press Refresh; verify redraw and no four routine messages.",
+    "limitations": "Static source inspection only; Unity compilation not performed."
   }
 }
