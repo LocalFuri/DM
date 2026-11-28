@@ -60,7 +60,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "D14 selectable 4/16/24/32/48 target door movement steps prepared; D13 manual position test approved; D14 Unity compilation and live A/B testing pending.",
+  "checkpoint": "D18E: Wooden Door F1/F2/F3 front panels user-approved pixel-exact against DOS PC; configurations frozen. Next: lateral projections and door button.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -116,13 +116,10 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Read the complete latest Progression.json and apply all mandatory rules before technical work.",
-    "Verify D12 installation and Unity compilation; use native 320x200 only, D10 DungeonMap.cs runtime and D12 ViewportLayoutEditor.cs. Do not revive D11 high-resolution compositor.",
-    "At Level 0 (7,9) West, enable Smooth Animation, Apply Door Timing, Reset Doors and step to (6,9). Record the last opening preview update count, elapsed time and updates/sec; these are presentation attempts, not physical frames. Compare visual smoothness and closed/open endpoints.",
-    "If performance needs improvement, profile native preview update cost and cadence; preserve integer-pixel positions, original artwork, geometry and rendering hierarchy. F1 has at most 88 movement increments, F2 61, F3 38; actual displayed count is refresh-dependent.",
-    "Compare sound onset, four triggers and tail with fires_001.avi; provisional delays 200,271,214,228 ms (913 ms total). Preserve WAV; verify overlap/restart before changing audio.",
-    "Verify Portcullis regression and intermediate top-frame visibility; investigate remaining lateral distances F2/F1 and foreground occlusion later without disturbing approved front and lateral F3 views.",
-    "After audiovisual approval, continue remaining door functionality and safe single-ZIP installer."
+    "Read complete latest Progression.json before technical work.",
+    "Preserve all approved ornament, Portcullis, Black Door and Wooden Door front rendering configurations.",
+    "Verify Wooden Door lateral projections against DOS; implement missing door button generically.",
+    "Retain 320x200 native GameView and selectable door animation counts (16 preferred)."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -9118,5 +9115,94 @@
     ],
     "test": "Level 1 (2,0) West, closed and animated; compare DOS Y=101/102. Verify Portcullis and Black Door unchanged. F2/F3 pending.",
     "limitations": "Based on delivered D18C and D18A registry, not local Unity files. DOS clipping mechanism unverified."
+  },
+  "door_clip_D18E_20261128-175845": {
+    "timestamp": "2026-11-28T17:58:45.001222+01:00",
+    "status": "Wooden F1 approved pixel-exact by user; F2 adjustment awaiting visual confirmation",
+    "changes": [
+      "Wooden graphicSet 1 ornament 0 depth 2: sourceBottomClipRows=2; native 64x61, maximum blit 64x59; x80 y24 and lift unchanged.",
+      "All other panel entries unchanged; no C# or artwork changes."
+    ],
+    "guardrails": [
+      "Previously approved Portcullis and Black Door configurations frozen.",
+      "Wooden F1 approved and unchanged. F3 pending."
+    ],
+    "limitations": "Based on delivered D18D registry and Progression.json; local edits unavailable. Exact DOS clipping mechanism unverified."
+  },
+  "wooden_door_front_approval_20261128-180700": {
+    "timestamp": "2026-11-28T18:07:00+01:00",
+    "status": "User verified all three Wooden Door front projections pixel-exact against DOS PC; approved and frozen.",
+    "reference": {
+      "level": 1,
+      "doorTile": [
+        1,
+        0
+      ],
+      "graphicSet": 1,
+      "ornamentOrdinal": 0
+    },
+    "approvedViews": [
+      {
+        "graphicSet": 1,
+        "depth": 1,
+        "x": 64,
+        "y": 16,
+        "width": 96,
+        "height": 88,
+        "path": "Assets/Art/Doors/Door Wooden_F1_96x88.png",
+        "caption": "Door Wooden F1",
+        "verticalLiftPerStep": 22,
+        "ornamentOrdinal": 0,
+        "level": -1,
+        "sourceBottomClipRows": 2,
+        "visibleHeight": 86,
+        "verification": "User confirmed pixel-exact DOS comparison"
+      },
+      {
+        "graphicSet": 1,
+        "depth": 2,
+        "x": 80,
+        "y": 24,
+        "width": 64,
+        "height": 61,
+        "path": "Assets/Art/Doors/Door Wooden_F2_64x61.png",
+        "caption": "Door Wooden F2",
+        "verticalLiftPerStep": 15,
+        "ornamentOrdinal": 0,
+        "level": -1,
+        "sourceBottomClipRows": 2,
+        "visibleHeight": 59,
+        "verification": "User confirmed pixel-exact DOS comparison"
+      },
+      {
+        "graphicSet": 1,
+        "depth": 3,
+        "x": 90,
+        "y": 30,
+        "width": 44,
+        "height": 38,
+        "path": "Assets/Art/Doors/Door Wooden_F3_44x38.png",
+        "caption": "Door Wooden F3",
+        "verticalLiftPerStep": 10,
+        "ornamentOrdinal": 0,
+        "level": -1,
+        "visibleHeight": 38,
+        "sourceBottomClipRows": 0,
+        "verification": "User confirmed pixel-exact DOS comparison"
+      }
+    ],
+    "guardrails": [
+      "Preserve all approved Portcullis and Black Door configurations and approved ornament rendering.",
+      "Keep generic data-driven clipping per projection; do not modify native artwork or introduce universal clipping. Preserve all original palette indices on extraction.",
+      "No renderer or registry modifications in this checkpoint."
+    ],
+    "next": [
+      "Investigate Wooden Door lateral projections and missing door button, with DOS comparison.",
+      "Keep approved 16-step visual animation preference and other selectable frame counts."
+    ],
+    "limitations": [
+      "F3 needs no clipping; user reports no transparent pixels at bottom. Exact original DOS clipping mechanism remains unverified. Front-panel visual approval does not establish lateral or animation approval.",
+      "Based on latest delivered D18E Progression.json; local project edits not accessible."
+    ]
   }
 }
