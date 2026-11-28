@@ -8776,5 +8776,15 @@
       "height": 123
     },
     "note": "User renamed and reimported asset; retain S0 internal slot, calibration key, and all rendering behavior."
+  },
+  "door_native_D15B_20261128-121515": {
+    "timestamp": "2026-11-28T12:15:15.022324+01:00",
+    "status": "D15A not visible in GameView or ViewEdit; D15B diagnostic fix, live verification pending",
+    "changes": [
+      "Remove dynamic open-state and door-record requirement for structural occupied-tile jamb. Preserve door tile and perpendicular orientation guards.",
+      "Add compact temporary ViewEdit diagnostic for current tile raw type, orientation, dynamic state, native asset readability/dimensions and calibration row presence.",
+      "Preserve artwork path, native geometry, shared blitter and D14B animation selection (16 preferred; all options retained)."
+    ],
+    "test": "Level 0 6,9 N/S after opening; if absent report Door F0 diagnostic and cyan artwork message. Actual cause not yet verified."
   }
 }

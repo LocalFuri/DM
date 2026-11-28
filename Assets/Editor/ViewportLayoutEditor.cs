@@ -12273,6 +12273,35 @@ private static void HandleGameViewPointerDown(
     NoteContentRight();
     EditorGUILayout.EndHorizontal();
     DrawDoorAnimationMeasurement();
+    DrawOccupiedDoorWallDiagnostic();
+  }
+
+  // Temporary compact diagnostic for D15B; no additional Tools command.
+  private void DrawOccupiedDoorWallDiagnostic()
+  {
+    if (previewMiniMap == null || !previewMiniMap.IsInside(previewX, previewY)) return;
+    DungeonTile tile = previewMiniMap.GetTile(previewX, previewY);
+    if (tile == null) return;
+    bool isDoor = tile.SourceType == DungeonSourceTileType.Door;
+    bool perpendicular = ((tile.Raw & 8) != 0) !=
+        (previewFacing == DungeonFacing.North || previewFacing == DungeonFacing.South);
+    string status = tile.SourceType.ToString() + " raw=" + tile.Raw;
+    if (isDoor)
+    {
+      status += perpendicular ? " | side" : " | axial";
+      if (previewMiniMap.TryGetDoorData(previewX, previewY, out DungeonMap.DoorData door))
+        status += " | state=" + door.CurrentState;
+      else status += " | no door record";
+      if (perpendicular)
+      {
+        Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Doors/Door Wall_F0_32_123.png");
+        status += texture == null ? " | asset missing" :
+            " | " + texture.width + "x" + texture.height + (texture.isReadable ? " readable" : " NOT readable");
+        status += renderedDosDoorFrameRows.Exists(r => r.offsetKey == "DoorOccupiedWallProjection:S0")
+            ? " | row present" : " | no row";
+      }
+    }
+    EditorGUILayout.LabelField("Door F0 diagnostic", status);
   }
 
   private bool TryGetViewportRawImage(out RawImage viewportImage)
@@ -19826,15 +19855,16 @@ private static void HandleGameViewPointerDown(
   // The supplied artwork is asymmetric; opposite facing still needs DOS verification.
   private void BlitDosOccupiedDoorWall(Color32[] pixels)
   {
-    if (pixels == null || previewMiniMap == null) return;
+    if (pixels == null || previewMiniMap == null
+        || !previewMiniMap.IsInside(previewX, previewY)) return;
     DungeonTile tile = previewMiniMap.GetTile(previewX, previewY);
     if (tile == null || tile.SourceType != DungeonSourceTileType.Door) return;
     bool northSouth = (tile.Raw & 8) != 0;
     bool facingNorthSouth = previewFacing == DungeonFacing.North
         || previewFacing == DungeonFacing.South;
     if (northSouth == facingNorthSouth) return;
-    if (!previewMiniMap.TryGetDoorData(previewX, previewY, out DungeonMap.DoorData door)
-        || door.CurrentState != 0) return;
+    // The occupied-tile jamb is structural, not the moving panel. Do not
+    // suppress it on an animation state or missing dynamic door record.
     const string path = "Assets/Art/Doors/Door Wall_F0_32_123.png";
     Texture2D source = LoadDoorFrameTexture(path, 32, 123);
     if (source == null || !TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration)) return;
