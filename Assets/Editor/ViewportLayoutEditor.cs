@@ -31342,10 +31342,6 @@ private static void HandleGameViewPointerDown(
         previewHeldChampionItemIndex = identity.itemIndex;
         previewHeldChampionSourceSlot = identity.previousSlot;
         previewHeldChampionCursor = swordCursor;
-        Debug.Log("F1 FLOOR PICKUP SUCCESS: item=" + swordItemName
-            + ", id=" + id + ", level=" + item.level
-            + ", tile=(" + item.x + "," + item.y + "), corner=" + item.cell
-            + ", player=(" + previewX + "," + previewY + ") " + previewFacing);
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
         RefreshEditModePreview();
         return true;
@@ -31379,10 +31375,6 @@ private static void HandleGameViewPointerDown(
       };
       previewHeldFloorItemCursor = cursor;
       previewFloorPickupCompleted = true;
-      Debug.Log("F1 FLOOR PICKUP SUCCESS: item=" + item.type
-          + ", id=" + id + ", level=" + item.level
-          + ", tile=(" + item.x + "," + item.y + "), corner=" + item.cell
-          + ", player=(" + previewX + "," + previewY + ") " + previewFacing);
       Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
       RefreshEditModePreview();
       return true;
@@ -32225,10 +32217,6 @@ private static void HandleGameViewPointerDown(
     previewMovedFloorItemOrder.Add(previewHeldFloorItemId);
     MoveItemInstance(floorDropInstance, "Floor", level: previewDungeonLevel,
         tileX: dropX, tileY: dropY, corner: dropCorner);
-    Debug.Log("F1 FLOOR DROP SUCCESS: item=" + previewHeldFloorItem.type
-        + ", id=" + previewHeldFloorItemId + ", level=" + previewDungeonLevel
-        + ", tile=(" + dropX + "," + dropY + "), corner=" + dropCorner
-        + ", player=(" + previewX + "," + previewY + ") " + previewFacing);
     previewHeldFloorItemId = null;
     previewHeldFloorItem = null;
     previewHeldFloorItemCursor = null;
