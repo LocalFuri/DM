@@ -60,7 +60,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "D19K door switch interaction approved; 16-frame motion preferred; faithful reconstruction with subtle refinement; next Wooden Door lateral projections.",
+  "checkpoint": "D20 shared door movement collision prepared; D19K rendering and interaction frozen.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -116,8 +116,9 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Confirm complete close/reopen cycle and Portcullis sensor regression if not already tested.",
-    "Continue Wooden Door lateral projections; compare against original DOS before any changes."
+    "Test blocked movement in all four directions at a closed or moving door, then verify passage once fully open.",
+    "Confirm closed door blocks movement again after closing; verify Portcullis sensor regression.",
+    "Wooden Door lateral verification deferred at user request."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -9432,5 +9433,22 @@
       "Continue Wooden Door lateral projections; compare against original DOS before any changes."
     ],
     "limitations": "Documentation-only update based on delivered D19K archive; local changes unavailable. No Unity compilation or source modification."
+  },
+  "door_movement_collision_D20_20261128-193908": {
+    "timestamp": "2026-11-28T19:39:08.208744+01:00",
+    "status": "User confirmed D20 works; approved.",
+    "rule": "All gameplay movement into door tiles uses live door state; block states 1–4, active movement in either direction, missing records and unknown states. Permit stationary state 0 (open) or 5 (destroyed).",
+    "implementation": "Shared DungeonMap.CanTraverseTo called by TryMoveBy and ViewEdit relative navigation; stairs exception cannot bypass door gate. CanEnter remains geometric for map initialization and explicit editor inspection poses.",
+    "preserved": "Door rendering, artwork, palettes, button logic, scheduler, sounds, timings, ornament code and explicit editor positioning unchanged.",
+    "deferred": "Wooden Door lateral projections; obstruction/crushing and original partially open traversal rules not researched here.",
+    "limitations": "Conservative fully-open movement gate; original DOS partial-door passability not verified. Based on delivered D19K sources and approved Progression archive; no Unity compilation or runtime test."
+  },
+  "door_motion_party_lock_D21_20261128-194445": {
+    "timestamp": "2026-11-28T19:44:45.107173+01:00",
+    "status": "Prepared; live Unity compilation and testing pending",
+    "rule": "Block all party navigation (forward/back/strafe and turns) while any door on current map is moving, including pressure-plate activated doors; manual editor posing unchanged. Resume immediately after actual scheduler completes. D20 stationary closed-door collision retained.",
+    "sound": "Temporary Assets/Audio/Party_Damaged.wav on first rejected navigation attempt per continuous motion interval; no actual damage; no repeated sound on held keys; remove later by disabling DoorMotionBlockedSoundEnabled. Missing asset cyan warning once, no fallback.",
+    "implementation": "DungeonMap.HasMovingDoors, CanTraverseTo and TurnLeft/Right; ViewportLayoutEditor.CanExecuteNavigation before cooldown and stairs paths; reset sound latch when actual door motion ends. No change to rendering or animation timing.",
+    "test": "Open/close at Level 1 (2,0) West; try all directions and turns during animation; verify one temporary sound, unchanged pose, navigation restored at completion, closed-door collision intact; pressure plate door likewise."
   }
 }

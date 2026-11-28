@@ -325,12 +325,34 @@ namespace DM.Dungeon
       return _tiles[x, y].Type != DungeonTileType.Wall;
     }
 
+    // D21: the party cannot navigate while any door on this map is animating.
+    public bool HasMovingDoors
+    {
+      get
+      {
+        foreach (var door in _doors.Values)
+          if (door.IsMoving) return true;
+        return false;
+      }
+    }
+
+    // D20: gameplay movement uses live door state, not the original tile byte.
+    // CanEnter remains geometric for explicit editor poses and map loading.
+    public bool CanTraverseTo(int x, int y)
+    {
+      if (HasMovingDoors || !CanEnter(x, y)) return false;
+      if (GetTile(x, y).SourceType != DungeonSourceTileType.Door) return true;
+      // Missing door data is not permission to walk through a door.
+      if (!TryGetDoorData(x, y, out DoorData door)) return false;
+      return !door.IsMoving && (door.CurrentState == 0 || door.CurrentState == 5);
+    }
+
     public bool TryMoveBy(int deltaX, int deltaY)
     {
       int nextX = PlayerX + deltaX;
       int nextY = PlayerY + deltaY;
 
-      if (!CanEnter(nextX, nextY))
+      if (!CanTraverseTo(nextX, nextY))
         return false;
 
       bool moved = nextX != PlayerX || nextY != PlayerY;
@@ -353,6 +375,7 @@ namespace DM.Dungeon
 
     public void TurnLeft()
     {
+      if (HasMovingDoors) return;
       PlayerFacing = PlayerFacing switch
       {
         DungeonFacing.North => DungeonFacing.West,
@@ -365,6 +388,7 @@ namespace DM.Dungeon
 
     public void TurnRight()
     {
+      if (HasMovingDoors) return;
       PlayerFacing = PlayerFacing switch
       {
         DungeonFacing.North => DungeonFacing.East,

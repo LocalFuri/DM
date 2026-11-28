@@ -70,8 +70,35 @@ public class ViewportLayoutEditor : EditorWindow
     set { EditorPrefs.SetBool(PrefsNavigationDelayKey, value); }
   }
 
-  private static bool CanExecuteNavigation(bool isTurn)
+  // D21: temporary sound feedback only; never inflict actual party damage.
+  private const bool DoorMotionBlockedSoundEnabled = true;
+  private const string DoorMotionBlockedSoundPath = "Assets/Audio/Party_Damaged.wav";
+  private bool doorMotionBlockedSoundPlayed;
+  private bool doorMotionBlockedSoundMissingReported;
+
+  private bool CanExecuteNavigation(bool isTurn)
   {
+    // Check before stairs transitions or navigation cooldowns. No queued move.
+    if (previewMiniMap != null && previewMiniMap.HasMovingDoors)
+    {
+      if (DoorMotionBlockedSoundEnabled && !doorMotionBlockedSoundPlayed)
+      {
+        doorMotionBlockedSoundPlayed = true;
+        AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(DoorMotionBlockedSoundPath);
+        if (clip != null)
+        {
+          doorMotionBlockedSoundMissingReported = false;
+          PlayEditorPreviewClip(clip);
+        }
+        else if (!doorMotionBlockedSoundMissingReported)
+        {
+          doorMotionBlockedSoundMissingReported = true;
+          LogMissingArtworkCyan("DOOR MOVEMENT SOUND: missing " + DoorMotionBlockedSoundPath + " (no fallback)");
+        }
+      }
+      return false;
+    }
+    doorMotionBlockedSoundPlayed = false;
     if (!NavigationDelayEnabled) return true;
     double now = EditorApplication.timeSinceStartup;
     if (isTurn)
@@ -15238,13 +15265,14 @@ private static void HandleGameViewPointerDown(
     // so explicitly allow a tile that carries stairs geometry. The destination
     // pose is entered first; NavigatePreviewPoseOnly then calls
     // TryPreviewStairsTransition(), which loads the adjacent dungeon level.
-    bool canEnterDestination = previewMiniMap.CanEnter(nextX, nextY);
+    bool canEnterDestination = previewMiniMap.CanTraverseTo(nextX, nextY);
     if (!canEnterDestination)
     {
       DungeonTile destinationTile = previewMiniMap.IsInside(nextX, nextY)
           ? previewMiniMap.GetTile(nextX, nextY)
           : null;
       canEnterDestination = destinationTile != null
+          && destinationTile.SourceType != DungeonSourceTileType.Door
           && destinationTile.TryGetStairsDirection(out _);
     }
 
@@ -19718,9 +19746,13 @@ private static void HandleGameViewPointerDown(
       dosDoorButtonBlockedPressGameView = null;
     if (dosDoorButtonPressActive && (EditorWindow.focusedWindow != dosDoorButtonPressGameView
         || !IsDosDoorButtonPressTargetValid())) CancelDosDoorButtonPress(true);
+    if (previewMiniMap == null || !previewMiniMap.HasMovingDoors)
+      doorMotionBlockedSoundPlayed = false;
     if (Application.isPlaying || previewMiniMap == null) return;
     if (lastDoorVisualSignature == null) lastDoorVisualSignature = GetDoorVisualSignature();
-    if (!previewMiniMap.AdvanceDoorOpeningAnimations(elapsed, DoorStepMilliseconds, PlayDoorRattlePreview, DoorAnimationFrames > 4))
+    bool doorAnimationChanged = previewMiniMap.AdvanceDoorOpeningAnimations(elapsed, DoorStepMilliseconds, PlayDoorRattlePreview, DoorAnimationFrames > 4);
+    if (!previewMiniMap.HasMovingDoors) doorMotionBlockedSoundPlayed = false;
+    if (!doorAnimationChanged)
     {
       doorPreviewMeasuring = false;
       lastDoorVisualSignature = null;
