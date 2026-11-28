@@ -30,6 +30,8 @@ namespace DM.Dungeon
       public int InitialState { get; internal set; }
       public int CurrentState { get; internal set; }
       internal bool Opening;
+      // Read-only movement status for input gating across assemblies.
+      public bool IsMoving => Opening;
       internal double OpeningElapsedSeconds;
       // Fraction toward the next logical state; presentation only.
       public double GetOpeningStepFraction(int[] stepMilliseconds)

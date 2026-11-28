@@ -19703,6 +19703,9 @@ private static void HandleGameViewPointerDown(
     double now = EditorApplication.timeSinceStartup;
     double elapsed = now - lastDoorOpeningPreviewTime;
     lastDoorOpeningPreviewTime = now;
+    if (dosDoorButtonBlockedPressGameView != null
+        && EditorWindow.focusedWindow != dosDoorButtonBlockedPressGameView)
+      dosDoorButtonBlockedPressGameView = null;
     if (dosDoorButtonPressActive && (EditorWindow.focusedWindow != dosDoorButtonPressGameView
         || !IsDosDoorButtonPressTargetValid())) CancelDosDoorButtonPress(true);
     if (Application.isPlaying || previewMiniMap == null) return;
@@ -19738,6 +19741,8 @@ private static void HandleGameViewPointerDown(
   private Vector2Int renderedDoorButtonTile;
   // D19G: editor-only momentary F1 interaction. F2/F3 are display-only.
   private bool dosDoorButtonPressActive, dosDoorButtonPointerInside;
+  // D19J: a down rejected during motion cannot become a valid press until mouse-up.
+  private EditorWindow dosDoorButtonBlockedPressGameView;
   private int dosDoorButtonPressLevel, dosDoorButtonPressX, dosDoorButtonPressY;
   private DungeonFacing dosDoorButtonPressFacing;
   private Vector2Int dosDoorButtonPressTile;
@@ -19865,13 +19870,13 @@ private static void HandleGameViewPointerDown(
         && TryGetFrontDoorCell(1, out Viewport17Cell cell)
         && cell.MapX == dosDoorButtonPressTile.x && cell.MapY == dosDoorButtonPressTile.y
         && previewMiniMap.TryGetDoorData(cell.MapX, cell.MapY, out DungeonMap.DoorData door)
-        && door.HasButton && door.CurrentState >= 0 && door.CurrentState <= 4;
+        && door.HasButton && !door.IsMoving && door.CurrentState >= 0 && door.CurrentState <= 4;
   }
 
   private bool TryBeginDosDoorButtonPress(EditorWindow gameView, float logicalX, float logicalY)
   {
     // A duplicated IMGUI/UI Toolkit down event must not start another press.
-    if (dosDoorButtonPressActive) return true;
+    if (dosDoorButtonPressActive || dosDoorButtonBlockedPressGameView != null) return true;
     if (championSheetVisible || previewMiniMap == null || !renderedDoorButtonF1
         || !IsInsideDosDoorButtonF1(logicalX, logicalY)) return false;
     dosDoorButtonPressLevel = previewDungeonLevel;
@@ -19879,6 +19884,13 @@ private static void HandleGameViewPointerDown(
     dosDoorButtonPressY = previewY;
     dosDoorButtonPressFacing = previewFacing;
     dosDoorButtonPressTile = renderedDoorButtonTile;
+    // Reject the entire physical press, not just the activation event.
+    if (previewMiniMap.TryGetDoorData(dosDoorButtonPressTile.x, dosDoorButtonPressTile.y,
+        out DungeonMap.DoorData movingDoor) && movingDoor.IsMoving)
+    {
+      dosDoorButtonBlockedPressGameView = gameView;
+      return true;
+    }
     if (!IsDosDoorButtonPressTargetValid()) return false;
     dosDoorButtonPressGameView = gameView;
     dosDoorButtonPressActive = true;
@@ -19913,7 +19925,16 @@ private static void HandleGameViewPointerDown(
       Event imguiEvent, UnityEngine.UIElements.PointerUpEvent pointerEvent)
   {
     ViewportLayoutEditor owner = FindOpenViewEditWindow();
-    if (owner == null || !owner.dosDoorButtonPressActive) return false;
+    if (owner == null) return false;
+    if (owner.dosDoorButtonBlockedPressGameView != null)
+    {
+      owner.dosDoorButtonBlockedPressGameView = null;
+      s_lastGameViewClickTime = EditorApplication.timeSinceStartup;
+      if (imguiEvent != null) imguiEvent.Use();
+      if (pointerEvent != null) pointerEvent.StopPropagation();
+      return true;
+    }
+    if (!owner.dosDoorButtonPressActive) return false;
     bool activate = gameView == owner.dosDoorButtonPressGameView
         && owner.IsDosDoorButtonPressTargetValid()
         && owner.TryGetLogical320x200FromGameView(gameView, mouse, out Vector2 logical)

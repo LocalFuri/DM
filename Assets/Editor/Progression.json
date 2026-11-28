@@ -9366,10 +9366,33 @@
   },
   "door_button_sound_D19H_20261128-191635": {
     "timestamp": "2026-11-28T19:16:35.301709+01:00",
-    "status": "Prepared; live sound test pending",
+    "status": "User confirmed switch sound works; approved.",
     "change": "Call existing PlayPressureSwitchSound once at successful F1 press start, after the duplicate-event guard and validation. Uses existing DungeonAudioSettings.switchSound and switchVolume. No repeat on drag, hold or release. No additional asset.",
     "preserved": "All rendering and animation, existing release/cancel behavior, F2/F3 display only, door rattle timing.",
     "workflow": "External research only; former tool-specific workflow retired. Historical research retained.",
     "limitations": "Latest delivered D19G source and progression, local edits unavailable. Unity compiler and audio playback unavailable here. Existing Switch Sound assignment required."
+  },
+  "door_button_reentry_D19I_20261128-191931": {
+    "timestamp": "2026-11-28T19:19:31.404186+01:00",
+    "status": "Prepared; live verification pending",
+    "change": "Consume F1 button mouse-down while that door is moving, before press animation or switch sound is armed. Existing active-press guard prevents repeats while held; existing release handler clears latch before dispatch; existing map method rejects opening while moving. Public read-only DoorData.IsMoving exposes existing Opening flag across assemblies.",
+    "preserved": "Approved pressed and released artwork, F1/F2/F3 geometry and palettes, door motion and sound timing, ornament renderers. No changes to scheduler.",
+    "pending": [
+      "Hold F1 button and release once; verify one opening event. Rapidly click during opening; verify no extra switch sound or restart.",
+      "Closing/toggle remains pending."
+    ],
+    "limitations": "Based on latest delivered D19H editor source and D19 DungeonMap source; no local Unity compilation or live test."
+  },
+  "door_button_full_motion_lock_D19J_20261128-192403": {
+    "timestamp": "2026-11-28T19:24:03.598087+01:00",
+    "status": "Prepared; live Unity test pending",
+    "change": "Reject complete physical F1 press while DoorData.IsMoving, consume its release even if motion completed during hold. Validate not moving throughout an armed press and at release. Existing scheduler clears IsMoving on final logical opening transition. No fixed timeout or queued activation.",
+    "preserved": "D19I DungeonMap.cs unchanged and required; all rendering, sounds and animation timing unchanged.",
+    "test": [
+      "Level 1 (2,0) West: rapidly click throughout opening; no press effect, switch sound or activation until complete.",
+      "Hold a rejected press across completion, then release: no event. Fresh click after completion allowed.",
+      "Closing/toggle remains pending."
+    ],
+    "limitations": "Based on delivered D19I source. Unity compilation and live testing unavailable."
   }
 }
