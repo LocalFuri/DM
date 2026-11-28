@@ -60,7 +60,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "D18E: Wooden Door F1/F2/F3 front panels user-approved pixel-exact against DOS PC; configurations frozen. Next: lateral projections and door button.",
+  "checkpoint": "D19A: F1 button user-approved pixel-exact; F2 button provisional 5x6 at viewport (149,42), pending DOS comparison.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -116,10 +116,10 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Read complete latest Progression.json before technical work.",
-    "Preserve all approved ornament, Portcullis, Black Door and Wooden Door front rendering configurations.",
-    "Verify Wooden Door lateral projections against DOS; implement missing door button generically.",
-    "Retain 320x200 native GameView and selectable door animation counts (16 preferred)."
+    "Preserve all approved door panels, ornaments and F1 button artwork/geometry.",
+    "Test F2 door button rendering and edit-preview opening at Level 1 (3,0) West if visible; compare DOS and calibrate.",
+    "Verify F1 click and animation; closing and F3 button remain pending.",
+    "Retain 320x200 native GameView and selectable animation counts (16 preferred)."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -9204,5 +9204,60 @@
       "F3 needs no clipping; user reports no transparent pixels at bottom. Exact original DOS clipping mechanism remains unverified. Front-panel visual approval does not establish lateral or animation approval.",
       "Based on latest delivered D18E Progression.json; local project edits not accessible."
     ]
+  },
+  "door_button_D19_20261128-181935": {
+    "timestamp": "2026-11-28T18:19:35.451510+01:00",
+    "status": "F1 door button implementation; Unity compilation and live click test pending.",
+    "artwork": "Assets/Art/Doors/Door Button_F1_8x9.png",
+    "geometry": {
+      "depth": 1,
+      "x": 167,
+      "y": 43,
+      "width": 8,
+      "height": 9,
+      "logicalGameViewY": 76,
+      "verification": "72 of 72 extracted DOS graphic 453 RGB pixels matched user DOS screenshot"
+    },
+    "behavior": "Original HasButton metadata only. Visible F1 button accepts click and starts existing vertical opening animation. Already open/opening clicks consumed. Closing, lateral, F2 and F3 button rendering pending. Existing movement rattle unchanged; no extra click sample added.",
+    "files": {
+      "ViewportLayoutEditor.cs": "C:\\Unity\\DM\\Assets\\Editor\\ViewportLayoutEditor.cs",
+      "DungeonMap.cs": "C:\\Unity\\DM\\Assets\\Scripts\\Dungeon\\DungeonMap.cs"
+    },
+    "guardrails": "No panel registry, artwork, clipping, timing, approved ornament or existing door animation changes. Based on latest delivered D18D ViewportLayoutEditor.cs, supplied DungeonMap.cs from Progression(20261128-141416).zip, and latest approved Progression.json. Local edits not visible."
+  },
+  "door_button_D19A_20261128-183131": {
+    "timestamp": "2026-11-28T18:31:31.838595+01:00",
+    "status": "Prepared; F1 pixel-exact user approval recorded; F2 provisional awaiting compilation and DOS comparison.",
+    "F1": {
+      "x": 167,
+      "y": 43,
+      "width": 8,
+      "height": 9,
+      "status": "User verified pixel-perfect; native blit unchanged."
+    },
+    "F2": {
+      "x": 149,
+      "y": 42,
+      "width": 5,
+      "height": 6,
+      "source": "Assets/Art/Doors/Door Button_F1_8x9.png",
+      "sampler": "Existing DosSixBitStep / DosSixBitSample; top-down; no palette remap or transparency introduced.",
+      "status": "Provisional dimensions/anchor, not DOS verified."
+    },
+    "behavior": "F2 edit-preview click reuses D19 opening-only method; guarded against nearer non-open door. Not verified original interaction range. Closing pending.",
+    "guardrails": "No panel geometry, registry, clipping, artwork, ornament algorithms, F1 native blit or animation changes. DungeonMap.cs unchanged; D19 required.",
+    "limitations": "Latest delivered D19 baseline; local edits unavailable. Unity compile and visual testing not available."
+  },
+  "door_button_D19B_20261128-183349": {
+    "timestamp": "2026-11-28T18:33:49.843462+01:00",
+    "status": "CS1061 hotfix; Unity compile pending",
+    "change": "Use public CurrentState only for F2 occlusion guard; internal Opening is inaccessible from Editor assembly. F2 stays hidden until nearer door leaves logical state 4.",
+    "guardrails": "No change to F1, F2 geometry, artwork, panels, animation, or DungeonMap.cs."
+  },
+  "door_button_D19C_20261128-183646": {
+    "timestamp": "2026-11-28T18:36:46.033154+01:00",
+    "status": "Reissued full Editor source after persistent CS1061; compile pending",
+    "change": "Confirmed no .Opening member references in complete ViewportLayoutEditor.cs. Added D19C marker at corrected guard. No functional changes from D19B.",
+    "guardrails": "All approved rendering and F2 geometry unchanged."
   }
 }

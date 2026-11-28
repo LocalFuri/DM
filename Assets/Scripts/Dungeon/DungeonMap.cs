@@ -50,6 +50,17 @@ namespace DM.Dungeon
       return _doors.TryGetValue(new Vector2Int(x, y), out door);
     }
 
+    // D19: player-operated native door button; reuse the existing opening scheduler.
+    public bool TryOpenDoorFromButton(int x, int y)
+    {
+      if (!TryGetDoorData(x, y, out DoorData door) || !door.HasButton
+          || !door.OpensVertically || door.Opening
+          || door.CurrentState < 1 || door.CurrentState > 4) return false;
+      door.Opening = true;
+      door.OpeningElapsedSeconds = 0;
+      return true;
+    }
+
     // Editor test reset: restore map-defined states, not a forced closed state.
     public void ResetDoorsToInitialState()
     {

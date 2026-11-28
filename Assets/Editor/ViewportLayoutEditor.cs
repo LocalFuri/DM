@@ -5667,6 +5667,15 @@ private static void HandleGameViewPointerDown(
     }
 
 
+    if (hasLogical && window.TryHandleDosDoorButtonClick(logical.x, logical.y))
+    {
+      s_lastGameViewClickTime = now;
+      if (imguiEvent != null) imguiEvent.Use();
+      if (pointerEvent != null) pointerEvent.StopPropagation();
+      gameView.Repaint(); window.Repaint(); RepaintGameViews();
+      return true;
+    }
+
     if (hasLogical && window.TryReturnHeldTorchToVisibleHolder(logical.x, logical.y))
     {
       s_lastGameViewClickTime = now;
@@ -18108,6 +18117,7 @@ private static void HandleGameViewPointerDown(
     // Re-emit a single cyan diagnostic if replacement artwork is still invalid.
     DoorArtworkDiagnostics.Clear();
     RepairRegisteredDoorPanelImports();
+    RepairDosDoorButtonImport();
     // These are owned readable copies, not imported assets.
     if (cachedNativeFrontF1ReadableCopy != null) DestroyImmediate(cachedNativeFrontF1ReadableCopy);
     if (cachedNativeFrontF2ReadableCopy != null) DestroyImmediate(cachedNativeFrontF2ReadableCopy);
@@ -18121,6 +18131,26 @@ private static void HandleGameViewPointerDown(
   }
 
   // D18C: repair only rejected registered native panel imports, never the PNG itself.
+  private void RepairDosDoorButtonImport()
+  {
+    var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(DosDoorButtonF1Path);
+    if (texture == null || (texture.isReadable && texture.width == 8 && texture.height == 9)) return;
+    var importer = AssetImporter.GetAtPath(DosDoorButtonF1Path) as TextureImporter;
+    if (importer == null) return;
+    importer.isReadable = true;
+    importer.npotScale = TextureImporterNPOTScale.None;
+    importer.textureCompression = TextureImporterCompression.Uncompressed;
+    importer.mipmapEnabled = false;
+    importer.filterMode = FilterMode.Point;
+    var standalone = importer.GetPlatformTextureSettings("Standalone");
+    if (standalone.overridden)
+    {
+      standalone.format = TextureImporterFormat.RGBA32;
+      importer.SetPlatformTextureSettings(standalone);
+    }
+    importer.SaveAndReimport();
+  }
+
   private void RepairRegisteredDoorPanelImports()
   {
     try
@@ -18838,6 +18868,8 @@ private static void HandleGameViewPointerDown(
     renderedDosMonsterRows.Clear();
     renderedDosFloorRows.Clear();
     renderedDosDoorFrameRows.Clear();
+    renderedDoorButtonF1 = false;
+    renderedDoorButtonF2 = false;
     dosFloorPixelTrace.Clear();
     dosMonsterPreviewStatus = "M4: dungeon composition has not reached the monster pass";
     renderedDosLevel = previewDungeonLevel;
@@ -19554,6 +19586,8 @@ private static void HandleGameViewPointerDown(
     // D16A test: shared door panel pass is last before lighting/HUD.
     BlitSuspendedThrownItemsIntoPreview(pixels);
     BlitDosOccupiedDoorWall(pixels);
+    BlitDosDoorButtonF2(pixels);
+    BlitDosDoorButtonF1(pixels);
     BlitDosDoorPanels(pixels);
   }
 
@@ -19676,6 +19710,98 @@ private static void HandleGameViewPointerDown(
     doorPreviewUpdateCount++;
     doorPreviewMeasuredSeconds = EditorApplication.timeSinceStartup - doorPreviewMeasureStart;
     Repaint();
+  }
+
+  // D19: verified DOS F1 button projection, common to every button-bearing door.
+  // Coordinates are viewport-local; GameView has a 33-pixel top HUD offset.
+  private const string DosDoorButtonF1Path = "Assets/Art/Doors/Door Button_F1_8x9.png";
+  private static readonly RectInt DosDoorButtonF1Rect = new RectInt(167, 43, 8, 9);
+  private bool renderedDoorButtonF1;
+  private Vector2Int renderedDoorButtonTile;
+
+  private void BlitDosDoorButtonF1(Color32[] pixels)
+  {
+    if (pixels == null || !TryGetFrontDoorCell(1, out Viewport17Cell cell)
+        || !previewMiniMap.TryGetDoorData(cell.MapX, cell.MapY, out DungeonMap.DoorData door)
+        || !door.HasButton || door.CurrentState < 0 || door.CurrentState > 4) return;
+    RectInt r = DosDoorButtonF1Rect;
+    Texture2D texture = LoadDoorFrameTexture(DosDoorButtonF1Path, r.width, r.height);
+    if (texture == null) return;
+    Color32[] art = texture.GetPixels32();
+    // All 72 original button pixels match the DOS reference, including its border.
+    for (int y = 0; y < r.height; y++)
+      for (int x = 0; x < r.width; x++)
+      {
+        Color32 pixel = art[(r.height - 1 - y) * r.width + x];
+        pixel.a = 255;
+        pixels[(PreviewHeight - 1 - 33 - r.y - y) * PreviewWidth + r.x + x] = pixel;
+      }
+    renderedDoorButtonTile = new Vector2Int(cell.MapX, cell.MapY);
+    renderedDoorButtonF1 = true;
+  }
+
+  // D19A: provisional F2 geometry; source is the approved native F1 button.
+  private static readonly RectInt DosDoorButtonF2Rect = new RectInt(149, 42, 5, 6);
+  private bool renderedDoorButtonF2;
+  private Vector2Int renderedDoorButtonF2Tile;
+
+  private void BlitDosDoorButtonF2(Color32[] pixels)
+  {
+    if (pixels == null || !TryGetFrontDoorCell(2, out Viewport17Cell cell)
+        || !previewMiniMap.TryGetDoorData(cell.MapX, cell.MapY, out DungeonMap.DoorData door)
+        || !door.HasButton || door.CurrentState < 0 || door.CurrentState > 4) return;
+    // Do not expose a distant click target behind a nearer closed door.
+    if (TryGetFrontDoorCell(1, out Viewport17Cell nearer)
+        && previewMiniMap.TryGetDoorData(nearer.MapX, nearer.MapY, out DungeonMap.DoorData nearerDoor)
+        && nearerDoor.CurrentState == 4) return; // D19C: public DoorData API only.
+    Texture2D texture = LoadDoorFrameTexture(DosDoorButtonF1Path,
+        DosDoorButtonF1Rect.width, DosDoorButtonF1Rect.height);
+    if (texture == null) return;
+    RectInt r = DosDoorButtonF2Rect;
+    Color32[] art = texture.GetPixels32();
+    int stepX = DosSixBitStep(texture.width, r.width);
+    int stepY = DosSixBitStep(texture.height, r.height);
+    for (int y = 0; y < r.height; y++)
+      for (int x = 0; x < r.width; x++)
+      {
+        int sx = DosSixBitSample(stepX, x, texture.width);
+        int sy = texture.height - 1 - DosSixBitSample(stepY, y, texture.height);
+        Color32 pixel = art[sy * texture.width + sx];
+        // Preserve the F1 button's opaque border and original colors.
+        pixel.a = 255;
+        pixels[(PreviewHeight - 1 - 33 - r.y - y) * PreviewWidth + r.x + x] = pixel;
+      }
+    renderedDoorButtonF2Tile = new Vector2Int(cell.MapX, cell.MapY);
+    renderedDoorButtonF2 = true;
+  }
+
+  private bool TryHandleDosDoorButtonClick(float logicalX, float logicalY)
+  {
+    if (championSheetVisible || previewMiniMap == null) return false;
+    if (renderedDoorButtonF1 && TryHandleDosDoorButtonProjectionClick(1,
+        DosDoorButtonF1Rect, renderedDoorButtonTile, logicalX, logicalY)) return true;
+    return renderedDoorButtonF2 && TryHandleDosDoorButtonProjectionClick(2,
+        DosDoorButtonF2Rect, renderedDoorButtonF2Tile, logicalX, logicalY);
+  }
+
+  private bool TryHandleDosDoorButtonProjectionClick(int depth, RectInt r,
+      Vector2Int tile, float logicalX, float logicalY)
+  {
+    if (logicalX < r.xMin || logicalX >= r.xMax
+        || logicalY < 33 + r.yMin || logicalY >= 33 + r.yMax) return false;
+    if (!TryGetFrontDoorCell(depth, out Viewport17Cell cell)
+        || cell.MapX != tile.x || cell.MapY != tile.y) return false;
+    if (depth > 1 && TryGetFrontDoorCell(1, out Viewport17Cell nearer)
+        && previewMiniMap.TryGetDoorData(nearer.MapX, nearer.MapY, out DungeonMap.DoorData nearerDoor)
+        && nearerDoor.CurrentState != 0 && nearerDoor.CurrentState != 5) return true;
+    if (previewMiniMap.TryOpenDoorFromButton(cell.MapX, cell.MapY))
+    {
+      lastDoorOpeningPreviewTime = EditorApplication.timeSinceStartup;
+      lastDoorVisualSignature = null;
+      PresentEditModePreviewToGameView();
+    }
+    // Consume a visible button click even when open or already opening.
+    return true;
   }
 
   // Native geometry remains registry-driven.
