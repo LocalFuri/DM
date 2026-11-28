@@ -2222,6 +2222,7 @@ public class ViewportLayoutEditor : EditorWindow
 
   private void OnDisable()
   {
+    CancelDosDoorButtonPress(false);
     genericThrowsInFlight.Clear();
     // Return an in-flight champion item before Unity serializes this window.
     ResetChampionEquipmentCursorAfterReload();
@@ -5377,7 +5378,8 @@ public class ViewportLayoutEditor : EditorWindow
   {
     Event current = Event.current;
     if (current == null
-        || (current.type != EventType.MouseDown && current.type != EventType.MouseUp)
+        || (current.type != EventType.MouseDown && current.type != EventType.MouseUp
+            && current.type != EventType.MouseDrag)
         || (current.button != 0 && current.button != 1)
         || Application.isPlaying)
     {
@@ -5393,8 +5395,18 @@ public class ViewportLayoutEditor : EditorWindow
           && DispatchGameViewChampionRightClickClose(
               gameView, current.mousePosition, current, null);
 
+    if (current.type == EventType.MouseDrag)
+    {
+      ViewportLayoutEditor owner = FindOpenViewEditWindow();
+      if (owner == null || !owner.dosDoorButtonPressActive) return false;
+      owner.UpdateDosDoorButtonPressPointer(gameView, current.mousePosition);
+      current.Use();
+      return true;
+    }
+
     if (current.type == EventType.MouseUp)
-      return DispatchGameViewSuspendedThrowRelease(gameView, current.mousePosition)
+      return DispatchDosDoorButtonRelease(gameView, current.mousePosition, current, null)
+          || DispatchGameViewSuspendedThrowRelease(gameView, current.mousePosition)
           || DispatchGameViewChampionEyeRelease(gameView, current.mousePosition, current, null);
 
     return DispatchGameViewMovementClick(
@@ -5477,6 +5489,7 @@ public class ViewportLayoutEditor : EditorWindow
     if (gameView == null)
       return;
 
+    if (DispatchDosDoorButtonRelease(gameView, evt.position, null, evt)) return;
     DispatchGameViewSuspendedThrowRelease(gameView, evt.position);
     DispatchGameViewChampionEyeRelease(
         gameView,
@@ -5667,7 +5680,7 @@ private static void HandleGameViewPointerDown(
     }
 
 
-    if (hasLogical && window.TryHandleDosDoorButtonClick(logical.x, logical.y))
+    if (hasLogical && window.TryBeginDosDoorButtonPress(gameView, logical.x, logical.y))
     {
       s_lastGameViewClickTime = now;
       if (imguiEvent != null) imguiEvent.Use();
@@ -15023,6 +15036,7 @@ private static void HandleGameViewPointerDown(
   // This does not modify the persistent wall, door, or item calibrations.
   private void ResetTemporaryViewEditPoseOverrides()
   {
+    CancelDosDoorButtonPress(false);
     RevertUnappliedFrontF3Draft();
     // Restore manually overridden mirrors to their resolved geometry values.
     foreach (ViewportPiece overriddenPiece in previewMirrorOverrideByPiece.Keys)
@@ -19689,6 +19703,8 @@ private static void HandleGameViewPointerDown(
     double now = EditorApplication.timeSinceStartup;
     double elapsed = now - lastDoorOpeningPreviewTime;
     lastDoorOpeningPreviewTime = now;
+    if (dosDoorButtonPressActive && (EditorWindow.focusedWindow != dosDoorButtonPressGameView
+        || !IsDosDoorButtonPressTargetValid())) CancelDosDoorButtonPress(true);
     if (Application.isPlaying || previewMiniMap == null) return;
     if (lastDoorVisualSignature == null) lastDoorVisualSignature = GetDoorVisualSignature();
     if (!previewMiniMap.AdvanceDoorOpeningAnimations(elapsed, DoorStepMilliseconds, PlayDoorRattlePreview, DoorAnimationFrames > 4))
@@ -19720,6 +19736,12 @@ private static void HandleGameViewPointerDown(
   private static readonly RectInt DosDoorButtonF1Rect = new RectInt(167, 43, 8, 9);
   private bool renderedDoorButtonF1;
   private Vector2Int renderedDoorButtonTile;
+  // D19G: editor-only momentary F1 interaction. F2/F3 are display-only.
+  private bool dosDoorButtonPressActive, dosDoorButtonPointerInside;
+  private int dosDoorButtonPressLevel, dosDoorButtonPressX, dosDoorButtonPressY;
+  private DungeonFacing dosDoorButtonPressFacing;
+  private Vector2Int dosDoorButtonPressTile;
+  private EditorWindow dosDoorButtonPressGameView;
 
   private void BlitDosDoorButtonF1(Color32[] pixels)
   {
@@ -19731,10 +19753,21 @@ private static void HandleGameViewPointerDown(
     if (texture == null) return;
     Color32[] art = texture.GetPixels32();
     // All 72 original button pixels match the DOS reference, including its border.
+    // Only the inner brown face is temporarily recessed; preserve the frame.
+    bool pressed = dosDoorButtonPressActive && dosDoorButtonPointerInside
+        && DosDoorButtonPressPoseMatches()
+        && dosDoorButtonPressTile == new Vector2Int(cell.MapX, cell.MapY);
     for (int y = 0; y < r.height; y++)
       for (int x = 0; x < r.width; x++)
       {
         Color32 pixel = art[(r.height - 1 - y) * r.width + x];
+        if (pressed && x >= 2 && x <= 5 && y >= 2 && y <= 6)
+        {
+          // Recess the 4x5 face by one pixel down/right inside its black socket.
+          // Use the original black and dark brown, not a new artwork file.
+          if (x == 2 || y == 2) pixel = new Color32(0, 0, 0, 255);
+          else pixel = new Color32(109, 36, 0, 255);
+        }
         pixel.a = 255;
         pixels[(PreviewHeight - 1 - 33 - r.y - y) * PreviewWidth + r.x + x] = pixel;
       }
@@ -19811,35 +19844,95 @@ private static void HandleGameViewPointerDown(
     return true;
   }
 
-  private bool TryHandleDosDoorButtonClick(float logicalX, float logicalY)
+  private static bool IsInsideDosDoorButtonF1(float x, float y)
   {
-    if (championSheetVisible || previewMiniMap == null) return false;
-    if (renderedDoorButtonF1 && TryHandleDosDoorButtonProjectionClick(1,
-        DosDoorButtonF1Rect, renderedDoorButtonTile, logicalX, logicalY)) return true;
-    if (renderedDoorButtonF2 && TryHandleDosDoorButtonProjectionClick(2,
-        DosDoorButtonF2Rect, renderedDoorButtonF2Tile, logicalX, logicalY)) return true;
-    return renderedDoorButtonF3 && TryHandleDosDoorButtonProjectionClick(3,
-        DosDoorButtonF3Rect, renderedDoorButtonF3Tile, logicalX, logicalY);
+    RectInt r = DosDoorButtonF1Rect;
+    return x >= r.xMin && x < r.xMax && y >= 33 + r.yMin && y < 33 + r.yMax;
   }
 
-  private bool TryHandleDosDoorButtonProjectionClick(int depth, RectInt r,
-      Vector2Int tile, float logicalX, float logicalY)
+  private bool DosDoorButtonPressPoseMatches()
   {
-    if (logicalX < r.xMin || logicalX >= r.xMax
-        || logicalY < 33 + r.yMin || logicalY >= 33 + r.yMax) return false;
-    if (!TryGetFrontDoorCell(depth, out Viewport17Cell cell)
-        || cell.MapX != tile.x || cell.MapY != tile.y) return false;
-    for (int nearerDepth = 1; nearerDepth < depth; nearerDepth++)
-      if (TryGetFrontDoorCell(nearerDepth, out Viewport17Cell nearer)
-          && previewMiniMap.TryGetDoorData(nearer.MapX, nearer.MapY, out DungeonMap.DoorData nearerDoor)
-          && nearerDoor.CurrentState != 0 && nearerDoor.CurrentState != 5) return true;
-    if (previewMiniMap.TryOpenDoorFromButton(cell.MapX, cell.MapY))
+    return previewDungeonLevel == dosDoorButtonPressLevel
+        && previewX == dosDoorButtonPressX && previewY == dosDoorButtonPressY
+        && previewFacing == dosDoorButtonPressFacing;
+  }
+
+  private bool IsDosDoorButtonPressTargetValid()
+  {
+    return !Application.isPlaying && !championSheetVisible && previewMiniMap != null
+        && DosDoorButtonPressPoseMatches() && renderedDoorButtonF1
+        && renderedDoorButtonTile == dosDoorButtonPressTile
+        && TryGetFrontDoorCell(1, out Viewport17Cell cell)
+        && cell.MapX == dosDoorButtonPressTile.x && cell.MapY == dosDoorButtonPressTile.y
+        && previewMiniMap.TryGetDoorData(cell.MapX, cell.MapY, out DungeonMap.DoorData door)
+        && door.HasButton && door.CurrentState >= 0 && door.CurrentState <= 4;
+  }
+
+  private bool TryBeginDosDoorButtonPress(EditorWindow gameView, float logicalX, float logicalY)
+  {
+    // A duplicated IMGUI/UI Toolkit down event must not start another press.
+    if (dosDoorButtonPressActive) return true;
+    if (championSheetVisible || previewMiniMap == null || !renderedDoorButtonF1
+        || !IsInsideDosDoorButtonF1(logicalX, logicalY)) return false;
+    dosDoorButtonPressLevel = previewDungeonLevel;
+    dosDoorButtonPressX = previewX;
+    dosDoorButtonPressY = previewY;
+    dosDoorButtonPressFacing = previewFacing;
+    dosDoorButtonPressTile = renderedDoorButtonTile;
+    if (!IsDosDoorButtonPressTargetValid()) return false;
+    dosDoorButtonPressGameView = gameView;
+    dosDoorButtonPressActive = true;
+    dosDoorButtonPointerInside = true;
+    PlayPressureSwitchSound();
+    PresentEditModePreviewToGameView();
+    return true;
+  }
+
+  private void UpdateDosDoorButtonPressPointer(EditorWindow gameView, Vector2 mouse)
+  {
+    if (!dosDoorButtonPressActive) return;
+    if (gameView != dosDoorButtonPressGameView || !IsDosDoorButtonPressTargetValid())
+    { CancelDosDoorButtonPress(true); return; }
+    bool inside = TryGetLogical320x200FromGameView(gameView, mouse, out Vector2 logical)
+        && IsInsideDosDoorButtonF1(logical.x, logical.y);
+    if (inside == dosDoorButtonPointerInside) return;
+    dosDoorButtonPointerInside = inside;
+    PresentEditModePreviewToGameView();
+  }
+
+  private void CancelDosDoorButtonPress(bool redraw)
+  {
+    bool wasActive = dosDoorButtonPressActive;
+    dosDoorButtonPressActive = false;
+    dosDoorButtonPointerInside = false;
+    dosDoorButtonPressGameView = null;
+    if (wasActive && redraw) PresentEditModePreviewToGameView();
+  }
+
+  private static bool DispatchDosDoorButtonRelease(EditorWindow gameView, Vector2 mouse,
+      Event imguiEvent, UnityEngine.UIElements.PointerUpEvent pointerEvent)
+  {
+    ViewportLayoutEditor owner = FindOpenViewEditWindow();
+    if (owner == null || !owner.dosDoorButtonPressActive) return false;
+    bool activate = gameView == owner.dosDoorButtonPressGameView
+        && owner.IsDosDoorButtonPressTargetValid()
+        && owner.TryGetLogical320x200FromGameView(gameView, mouse, out Vector2 logical)
+        && IsInsideDosDoorButtonF1(logical.x, logical.y);
+    Vector2Int tile = owner.dosDoorButtonPressTile;
+    // Clear first so two editor input routes cannot activate the same door twice.
+    owner.CancelDosDoorButtonPress(false);
+    if (activate && owner.previewMiniMap.TryOpenDoorFromButton(tile.x, tile.y))
     {
-      lastDoorOpeningPreviewTime = EditorApplication.timeSinceStartup;
-      lastDoorVisualSignature = null;
-      PresentEditModePreviewToGameView();
+      owner.lastDoorOpeningPreviewTime = EditorApplication.timeSinceStartup;
+      owner.lastDoorVisualSignature = null;
     }
-    // Consume a visible button click even when open or already opening.
+    owner.PresentEditModePreviewToGameView();
+    s_lastGameViewClickTime = EditorApplication.timeSinceStartup;
+    if (imguiEvent != null) imguiEvent.Use();
+    if (pointerEvent != null) pointerEvent.StopPropagation();
+    if (gameView != null) gameView.Repaint();
+    owner.Repaint();
+    RepaintGameViews();
     return true;
   }
 
@@ -32295,21 +32388,33 @@ private static void HandleGameViewPointerDown(
       UnityEngine.UIElements.PointerMoveEvent evt)
   {
     if (evt != null)
+    {
+      ViewportLayoutEditor owner = FindOpenViewEditWindow();
+      if (owner != null) owner.UpdateDosDoorButtonPressPointer(s_hookedGameView, evt.position);
       UpdateHeldItemPointerOverlay(s_hookedGameView, evt.position);
+    }
   }
 
   private static void GameViewHeldItemMouseMove(
       UnityEngine.UIElements.MouseMoveEvent evt)
   {
     if (evt != null)
+    {
+      ViewportLayoutEditor owner = FindOpenViewEditWindow();
+      if (owner != null) owner.UpdateDosDoorButtonPressPointer(s_hookedGameView, evt.mousePosition);
       UpdateHeldItemPointerOverlay(s_hookedGameView, evt.mousePosition);
+    }
   }
 
   private static void GameViewHeldItemPointerLeave(
       UnityEngine.UIElements.PointerLeaveEvent evt)
   {
     ViewportLayoutEditor owner = FindOpenViewEditWindow();
-    if (owner != null) owner.SetChampionHeldItemOverEye(false);
+    if (owner != null)
+    {
+      owner.CancelDosDoorButtonPress(true);
+      owner.SetChampionHeldItemOverEye(false);
+    }
     if (s_heldItemPointerOverlay != null)
       s_heldItemPointerOverlay.style.display = UnityEngine.UIElements.DisplayStyle.None;
   }

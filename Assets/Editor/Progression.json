@@ -15,7 +15,7 @@
       "Every file in a delivered ZIP must be at the ZIP root (no subfolders or folder prefixes); verify archive entry paths before delivery.",
       "Do not silently override approved algorithms, rules, or data; explain conflicting instructions before changing protected work.",
       "MANDATORY: For each delivered file, explicitly state its full Windows destination path unless its destination directory is C:\\Unity\\DM\\Assets\\Editor\\, which is the default. For ZIPs with mixed destinations, identify the destination of each non-default file individually. Never leave the user to guess a destination.",
-      "MANDATORY: Cursor is strictly read-only; it may audit and recommend changes but must never modify, create, delete, rename or revert project files or Progression.json. ChatGPT reviews and corrects its recommendations and prepares changes for the user to install.",
+      "MANDATORY: External research is strictly read-only; it may audit and recommend changes but must not modify, create, delete, rename or revert project files or Progression.json. ChatGPT prepares changes for the user to install.",
       "Before each delivery audit all available Editor C# MenuItem declarations for nested Tools paths and duplicate menu commands; report audit scope and correct violations without altering tool functionality."
     ],
     "limitation": "This protocol applies once Progression.json is supplied/read; a rule inside the file alone cannot trigger loading an absent file.",
@@ -60,7 +60,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "D19F: Door button F1/F2/F3 all user-confirmed pixel-exact against DOS; rendering frozen. Click behavior and closing pending verification.",
+  "checkpoint": "D19H: F1 pressed appearance user-approved; add existing Switch Sound on valid mouse-down. F1/F2/F3 released rendering frozen.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -116,10 +116,10 @@
   },
   "item_artwork_registry": "Mail Aketon and Hosen share Mail_Aketon_F1_59x21; Blue Pants uses Blue_Pants_F1_61x18; Torch uses Torch_Ground_61x7; registry auto-reimport implemented",
   "next_actions": [
-    "Verify F1 button click opens Wooden Door at Level 1 (2,0) West with existing animation and sound.",
-    "Implement and verify closing/toggle behavior; verify original interaction range before approving distant clicks.",
-    "Preserve all approved button projections, door panels, ornaments and animation settings.",
-    "Continue Wooden Door lateral projections after interaction tests."
+    "Verify F1 press sound once per mouse-down, including held and cancelled presses.",
+    "Verify release inside opens Wooden Door; implement closing/toggle separately.",
+    "Preserve all approved panel, button and ornament renderers.",
+    "Continue Wooden Door lateral projections."
   ],
   "constraints": [
     "No fallback for missing artwork or data; report Unity Console errors",
@@ -538,7 +538,7 @@
       "altar_of_vi": "Not migrated to WallFeatureArtworkProfile; red VI overlay must be preserved when considered later."
     },
     "throwing": {
-      "reference": "Cursor research of original CSBwin: throw queued from mouse-button DOWN; button UP only records release; original TestThrow rect X=32..191, Y=47..102. Unity current experimental behavior intentionally uses mouse-UP Y for suspended flight display; do not confuse with CSBwin-original behavior.",
+      "reference": "External research research of original CSBwin: throw queued from mouse-button DOWN; button UP only records release; original TestThrow rect X=32..191, Y=47..102. Unity current experimental behavior intentionally uses mouse-UP Y for suspended flight display; do not confuse with CSBwin-original behavior.",
       "legacy": "Old torch-specific TorchFlight and obsolete throw-only helpers removed; normal torch inventory/fuel/drop retained.",
       "generic": "Generic throw for cursor-held sword, torches, equipment, floor items; preserve unique item IDs. Tested basic generic throw working.",
       "input": "Adjustable mouse-down throwing Y allowed from 0 to max (default 100) via ViewEdit; X range 32..191; Console diagnostic PASS/BLOCK. Mouse-up Y captured to display flying item vertically.",
@@ -1020,7 +1020,7 @@
   },
   "csbwin_combat_mechanics_research_20261103": {
     "date": "2026-11-03",
-    "status": "Cursor completed and saved research; Unity combat implementation pending",
+    "status": "External research completed and saved research; Unity combat implementation pending",
     "report": "Research_Results/07_Combat_Mechanics.md",
     "index": "Research_Results/00_Research_Index.md",
     "original_research_source": "C:\\!!!Stick\\Coder\\DM\\CSBWin-master\\Research_Results\\",
@@ -1065,11 +1065,11 @@
       "Shooting overwrite and word64 differences not checked against Atari binary."
     ],
     "implementation_status": "Research only. No Unity gameplay implementation.",
-    "integration_note": "Cursor reports both Markdown files saved in CSBWin-master. Copy 07_Combat_Mechanics.md and updated 00_Research_Index.md to Unity Research_Results before committing; they are not in this ZIP. Keep 308 raw table values in the Markdown report."
+    "integration_note": "External research reports both Markdown files saved in CSBWin-master. Copy 07_Combat_Mechanics.md and updated 00_Research_Index.md to Unity Research_Results before committing; they are not in this ZIP. Keep 308 raw table values in the Markdown report."
   },
   "csbwin_monster_ai_research_20261103": {
     "date": "2026-11-03",
-    "status": "Cursor reports research completed and saved; Unity implementation pending. Original report not independently rechecked for this update.",
+    "status": "External research reports research completed and saved; Unity implementation pending. Original report not independently rechecked for this update.",
     "report": "Research_Results/08_Monster_AI_and_Behavior.md",
     "index": "Research_Results/00_Research_Index.md",
     "original_research_source": "C:\\!!!Stick\\Coder\\DM\\CSBWin-master\\Research_Results\\",
@@ -1263,7 +1263,7 @@
         "total": 67,
         "hidden_initially": 8,
         "champion_text_records_excluded": 24,
-        "note": "Cursor extracted positions/text across Levels 00-13; level 07 and 13 contain none."
+        "note": "External research extracted positions/text across Levels 00-13; level 07 and 13 contain none."
       },
       "data": "Assets/Editor/DungeonInscriptions.json",
       "dungeon_features": {
@@ -1483,7 +1483,7 @@
         "loader": "Focused C# native-F2 loader and depth-band correction delivered; Console initially reported path/name or Read/Write/dimension mismatch. User corrected the PNG filename. Later ViewEdit screenshot shows F2 calibration X/Y controls and no missing-texture diagnostic; exact pixel-perfect artwork appearance NOT explicitly approved.",
         "snap": "F2 control previously hardcoded +/-1 even at Snap 8; targeted patch delivered to use selected snap, not yet explicitly user-verified."
       },
-      "reading": "POSTPONED; eye inspection and action-hand parchment/text reading not implemented. Cursor research completed, supplied in chat."
+      "reading": "POSTPONED; eye inspection and action-hand parchment/text reading not implemented. External research research completed, supplied in chat."
     },
     "waterskin": {
       "F1": {
@@ -1508,7 +1508,7 @@
           "label": "Waterskin F2 Right N"
         }
       },
-      "mechanics": "Cursor requested to research drinking/water restoration, full/partial/empty states, refill and associated graphics. Research report not yet provided."
+      "mechanics": "External research requested to research drinking/water restoration, full/partial/empty states, refill and associated graphics. Research report not yet provided."
     },
     "viewedit": {
       "UI": "User requested consistent item rows: Description, Set checkbox, X/Y, Mirror, Apply; align Set to longest currently visible description. Uniform X/Y boxes at 25px accepted by user.",
@@ -1517,7 +1517,7 @@
       "timestamps": "User reported automatic saves did not correctly timestamp modified files. Explicit timestamp helper C# ZIP delivered; normal File.WriteAllText should already update timestamps, so verify actual Apply write and modification time. Runtime validation pending.",
       "F2_rows": "Removed obsolete CSBwin F3 test labels and exposed F2 item X/Y/Mirror/Apply controls via focused patch. Later screenshot demonstrates F2 rows visible; save/persistence and exact positioning not fully approved."
     },
-    "cursor_research": {
+    "external_research": {
       "scroll": "Source investigation delivered on 2026-11-06 (4-byte dbSCROLL, action-hand and Eye reading, 5-bit text and parchment). Defer implementation.",
       "stairs": "Source investigation delivered on 2026-11-06: stairs are map cells, direction and axis bits, level-relative absolute-coordinate transfer, original Atari exit-facing logic differs from CSBwin rewrite. Research only; not implemented.",
       "waterskin": "Prompt supplied; await actual Cursor findings."
@@ -1979,7 +1979,7 @@
     "completed": [
       "Restored original CSBwin stone walls after disabling diagnostic grey-wall test.",
       "Updated CSBwin controls: arrow keys move/strafe, Delete turns left, Page Down turns right, Escape waiting/freeze mode; user approved.",
-      "Identified relative positions 0..12 for ornament perspectives using Cursor's CSBwin source research.",
+      "Identified relative positions 0..12 for ornament perspectives using External research CSBwin source research.",
       "Decoded extracted 4-bit planar ornament bitmaps and runtime palettes.",
       "Reconstructed Hook G2 perspective package and implemented reusable Python post-processing script.",
       "Prepared CSBwin Ring G4 package; user approved switching from DOS PC Ring style to CSBwin Ring style.",
@@ -1996,12 +1996,12 @@
     ],
     "limitations": [
       "Pixel-perfect equivalence against live CSBwin has not yet been verified.",
-      "Cursor's research reported that the graphics.dat 0x22e placement/color tables had not yet been decompressed.",
+      "External research research reported that the graphics.dat 0x22e placement/color tables had not yet been decompressed.",
       "No Unity ornament integration was carried out in this research phase.",
       "Unrelated Unity changes, deleted Apple reference frames, and untracked MigrationBackup remained after research commit; do not automatically stage or restore."
     ],
     "nextActions": [
-      "Check Cursor's follow-up extraction of graphics.dat 0x22e placement and color tables, if available.",
+      "Check External research follow-up extraction of graphics.dat 0x22e placement and color tables, if available.",
       "Reprocess Ring G4 with the validated source-offset-aware post-processor.",
       "Compare Hook G2 and Ring G4 against live CSBwin viewport output to establish pixel accuracy.",
       "Update 00_Research_Index.md to include research document 11.",
@@ -2071,7 +2071,7 @@
       "CSBwin placement graphic 0x22e was successfully decoded: 104 placement records, Medium/Far maps, placement set lookup, derived offsets. Research archive under Research_Results/CSBwin_Ornaments.",
       "Unity embedded original placement records and color maps already agree with recovered CSBwin data; do not add duplicate loader.",
       "Approved architecture: one original front and side source asset per ornament, code-generated distance views, not dedicated F2/F3/S2/S3 images.",
-      "Cursor reports can become stale if Unity source changes during its audit. For this next issue work without Cursor on same file.",
+      "External research reports can become stale if Unity source changes during its audit. For this next issue work without External research on same file.",
       "Unity automatic calibration reset call in OnEnable was disabled for PC migration; approved manual calibrations remain protected."
     ],
     "tomorrowFirstSteps": [
@@ -2093,7 +2093,7 @@
     "rules": [
       "Do not change any approved ornament calibration without the user explicitly requesting it.",
       "User handles Git add/commit/push after each change; avoid unnecessary instructions.",
-      "Only one actor may modify a given file at a time; current Hook F3 work is ChatGPT only, no parallel Cursor inspection of ViewportLayoutEditor.cs.",
+      "Only one actor may modify a given file at a time; current Hook F3 work is ChatGPT only, no parallel External research inspection of ViewportLayoutEditor.cs.",
       "No fallback asset guessing; missing assets produce explicit errors.",
       "All new/changed delivery timestamps use Windows local Europe/Berlin time.",
       "Research must stay in Git-backed Research_Results; CSBwin_Extractions is volatile."
@@ -4423,7 +4423,7 @@
       "Assets/Editor/ViewportLayoutEditor.cs",
       "Assets/Editor/Progression.json"
     ],
-    "audit_basis": "Cursor read-only legacy/hardcoded ornament audit, 2026-11-22; verified occurrences in latest Hook mirror UI cleanup source",
+    "audit_basis": "External research read-only legacy/hardcoded ornament audit, 2026-11-22; verified occurrences in latest Hook mirror UI cleanup source",
     "removed": [
       "GetDistanceDerivedManaclesSideLeftX",
       "GetDistanceDerivedManaclesSideY",
@@ -4461,7 +4461,7 @@
   "ornament_cleanup_phase2_hook_f2_trace_20261122": {
     "date_local": "2026-11-22 19:37:41 CET",
     "status": "Implemented in source; Unity compilation and diagnostic trace validation pending",
-    "source": "Cursor ornament legacy/hardcode audit, finding C4",
+    "source": "External research ornament legacy/hardcode audit, finding C4",
     "scope": "ViewportLayoutEditor.cs / TraceHookF2CurrentViewFromMenu diagnostic only",
     "change": "Use exactly the live DOS 6-bit nearest-sample coordinate stepping and index shift (step=(source<<6)/dest, start=step>>1, index>>6) in Hook F2 CSV trace; preserve top-down orientation, palette, CSV columns and file export.",
     "why": "Old trace used ((source<<10)/dest)<<6 and index>>16, which can select different pixels from live 6-bit renderer despite equivalent nominal fixed-point range.",
@@ -4485,7 +4485,7 @@
   "ornament_cleanup_phase3_dead_manacles_constants_20261122": {
     "date_local": "2026-11-22 19:40:36 CET",
     "status": "Prepared from Unity-compiled Phase 2 baseline; Phase 3 Unity compile pending",
-    "audit_basis": "Cursor read-only ornament legacy/hardcode audit, sections D and commented depth-stage references",
+    "audit_basis": "External research read-only ornament legacy/hardcode audit, sections D and commented depth-stage references",
     "removed": [
       "Five obsolete Manacles D2 side geometry constants and explanatory comment (20x26 historical candidate; zero active references)",
       "22 commented-out calls already moved to V17 depth stages"
@@ -4507,7 +4507,7 @@
   "ornament_cleanup_phase4_shared_grate_side_corridor_20261122": {
     "date": "2026-11-22",
     "status": "code prepared; Unity compilation and viewpoint regression pending",
-    "cursor_audit_finding": "Duplicated per-ornament side-wall corridor visibility checks",
+    "external_research_audit_finding": "Duplicated per-ornament side-wall corridor visibility checks",
     "scope": "ViewportLayoutEditor.cs Grate S2/S3 only",
     "implementation": "Extracted the identical D1..D2 and D1..D3 open-center checks into IsPreviewSideOrnamentCenterLaneOpen(forwardX,forwardY,depth); both Grate side blitters call it.",
     "preserved": [
@@ -4528,7 +4528,7 @@
   "ornament_cleanup_phase5_shared_wood_ring_side_corridor_20261122": {
     "date": "2026-11-22",
     "status": "Code prepared; Unity compilation and viewpoint regression pending",
-    "cursor_audit_finding": "Duplicated open-center visibility gates for Wood Ring S2/S3",
+    "external_research_audit_finding": "Duplicated open-center visibility gates for Wood Ring S2/S3",
     "scope": "ViewportLayoutEditor.cs Wood Ring S2 and S3 only",
     "implementation": "Replaced identical inline D1..D2 and D1..D3 corridor checks with IsPreviewSideOrnamentCenterLaneOpen(forwardX,forwardY,depth), shared with Grate.",
     "preserved": [
@@ -5077,7 +5077,7 @@
     "nextSessionPriority": [
       "Read this Progression.json and the latest ViewportLayoutEditor.cs before making changes.",
       "Verify Hook S2/S3 left/right mirror orientation, scaling, visibility and placement following Phase 11 registry integration; compilation succeeded but visual regression is still pending.",
-      "Continue Cursor legacy/hardcode audit roadmap: replace ornament-specific dispatch and blitters gradually with shared registry-driven renderer, preserving verified Grate/Hook/Manacles/V17 pixel output.",
+      "Continue External research legacy/hardcode audit roadmap: replace ornament-specific dispatch and blitters gradually with shared registry-driven renderer, preserving verified Grate/Hook/Manacles/V17 pixel output.",
       "Treat global ViewEdit offsets strictly as X/Y placement calibration, never as a substitute for incorrect sampling, geometry, mirroring or visibility.",
       "Preserve all verified ViewEdit cosmetic alignment, cyan click-to-copy, Click06.wav and right-click preview/minimap event priority."
     ],
@@ -5098,9 +5098,9 @@
     ],
     "note": "Do not claim all Phase 11 render paths are fully generic or that all runtime pixel hashes are verified."
   },
-  "checkpoint_20261123_sides_approved_and_cursor_audit": {
+  "checkpoint_20261123_sides_approved_and_external_research_audit": {
     "date_local": "2026-11-23T18:39:04+01:00",
-    "status": "USER VERIFIED — SIX SIDE PERSPECTIVES APPROVED; CURSOR AUDIT IN PROGRESS",
+    "status": "USER VERIFIED — SIX SIDE PERSPECTIVES APPROVED; EXTERNAL RESEARCH AUDIT (HISTORICAL)",
     "user_verified": [
       "Hook S2 and S3 verified and approved following Phase 11 native-source registry integration.",
       "Grate S2 and S3 retain prior user approval versus original PC DOS.",
@@ -5108,12 +5108,6 @@
     ],
     "manacles_s3_apply_history": "Earlier ViewEdit Apply restored previous values; a narrow source fix was supplied on 2026-11-23. User subsequently confirmed Manacles S3 recalibrated and approved. Exact installed source/version and persistence after Unity restart not separately verified.",
     "algorithm_status": "Manacles S2 and S3 use shared DOS 6-bit scaling, while dedicated side render/blit functions still exist. Do not represent entire ornament pipeline as fully generic.",
-    "cursor_parallel_audit": {
-      "status": "IN PROGRESS — no report received",
-      "scope": "ViewportLayoutEditor.cs ONLY",
-      "restrictions": "Read only; no edits; no other files, no project-wide search, no Git history, no running scripts or builds.",
-      "goal": "Identify legacy and hardcoded ornament-specific rendering paths with line-number evidence and migration risks."
-    },
     "preserve": [
       "Hook S2/S3",
       "Grate S2/S3",
@@ -5123,7 +5117,7 @@
       "Approved ViewEdit interactions"
     ],
     "next_actions": [
-      "Receive Cursor read-only audit report and prioritize evidence-backed generic renderer consolidation.",
+      "Receive External research read-only audit report and prioritize evidence-backed generic renderer consolidation.",
       "Before any code patch, review exact latest installed ViewportLayoutEditor.cs; do not assume prior supplied S3 Apply fix is current.",
       "Preserve accepted X/Y/width/height and left/right orientation; no changes to verified side perspectives without targeted regression."
     ],
@@ -5135,7 +5129,7 @@
     "scope": "ViewportLayoutEditor.cs only; code-only cleanup (no rendering change intended)",
     "change": "Removed private unused GenerateWallOrnamentForDepth wrapper. The live GenerateDmScaledWallDecoration 6-bit scaling routine and its call sites are untouched.",
     "source_baseline": "Manacles_S3_Apply_Fix_20261123.zip (includes previously supplied S3 Apply persistence correction); verify this matches installed Unity source",
-    "cursor_audit": "Cursor identified dead manual-mode switch and unused private depth wrapper in 2026-11-23 ViewportLayoutEditor.cs-only research.",
+    "external_research_audit": "External research identified dead manual-mode switch and unused private depth wrapper in 2026-11-23 ViewportLayoutEditor.cs-only research.",
     "previous_source_sha256": "822a217eb82e495785c59adb6cab1e09eda959a61d8fd4f18613a04f9a2537b4",
     "patched_source_sha256": "349cff6b15a548431892251e99dd03ca175d6f3144e534b7ffdf7de79d499377",
     "safeguards": [
@@ -5158,7 +5152,7 @@
     "scope": "ViewportLayoutEditor.cs only; code-only cleanup (no rendering change intended)",
     "change": "Removed nonfunctional Manual ornaments only ViewEdit toggle, its EditorPrefs getter/setter and outdated associated comment. No ornament drawing or calibration paths changed.",
     "source_baseline": "Manacles_S3_Apply_Fix_20261123.zip (includes previously supplied S3 Apply persistence correction); verify this matches installed Unity source",
-    "cursor_audit": "Cursor identified dead manual-mode switch and unused private depth wrapper in 2026-11-23 ViewportLayoutEditor.cs-only research.",
+    "external_research_audit": "External research identified dead manual-mode switch and unused private depth wrapper in 2026-11-23 ViewportLayoutEditor.cs-only research.",
     "previous_source_sha256": "4049d8176fc3a4b64b7eabc940b53df5b4dd57e76c19ee56422c18d66afc576b",
     "patched_source_sha256": "822a217eb82e495785c59adb6cab1e09eda959a61d8fd4f18613a04f9a2537b4",
     "safeguards": [
@@ -5809,14 +5803,14 @@
     "scope_limit": "This removes Wood Ring F2/F3 dependence on Hook-specific geometry but does not yet turn all family-specific blitters into one generic dispatch. Group-0 dimensions and offsets are still established measured layout data, not dynamically inferred.",
     "next_test": "Compile in Unity, check Console, visually compare Wood Ring F2 and F3 with PC DOS. D5 Wood Ring F1/F2/F3 approval remains pending."
   },
-  "mandatory_file_destination_and_cursor_rule_20261124": {
+  "mandatory_file_destination_and_external_research_rule_20261124": {
     "mandatory": true,
     "priority": "highest",
     "recorded_at": "2026-11-24T18:36:57.478582+01:00",
     "session_start": "Read the complete latest Assets/Editor/Progression.json at every session start before technical work; request it if absent. Apply all permanent rules.",
     "default_destination": "C:\\Unity\\DM\\Assets\\Editor\\",
     "delivery_rule": "Explicitly state the full Windows destination path of every delivered file outside the default directory, including individual ZIP members. The default directory is the only exception.",
-    "cursor_rule": "Read-only audits and recommendations only. ChatGPT reviews and corrects recommendations and implements approved changes; user installs and verifies. Cursor must never change project files."
+    "external_research_rule": "Read-only audits and recommendations only. ChatGPT reviews and corrects recommendations and implements approved changes; user installs and verifies. External research must never change project files."
   },
   "strict_ornament_reset_stage3a_20261124": {
     "recorded_at": "2026-11-24T18:36:57.478582+01:00",
@@ -5841,7 +5835,7 @@
         "Preserved actual map records and existing S3 saved calibration."
       ],
       "validation": "Deleted symbol scan and lexical delimiter balance passed; Unity compilation and runtime not tested.",
-      "remaining": "Family-specific texture generators, placement constants, inspector dispatch, registry and generic viewport dispatch remain. No new geometry implemented. Cursor read-only; ChatGPT supplies modifications."
+      "remaining": "Family-specific texture generators, placement constants, inspector dispatch, registry and generic viewport dispatch remain. No new geometry implemented. External research read-only; ChatGPT supplies modifications."
     },
     "installation_status": "Not confirmed by user; Unity compilation and runtime validation pending.",
     "next_action": "Verify Stage 3A compilation, then continue physical removal of remaining legacy ornament geometry, generators and inspector branches; preserve shared DOS sampler and verified original resource geometry, no fallback.",
@@ -5877,7 +5871,7 @@
       "resource 696 resolver unchanged"
     ],
     "validation": "removed-symbol search and lexical bracket check passed; no Unity compiler available",
-    "next": "delete remaining legacy generators, geometry and inspector branches; implement verified generic dispatch; verify compilation; Cursor read-only"
+    "next": "delete remaining legacy generators, geometry and inspector branches; implement verified generic dispatch; verify compilation; External research read-only"
   },
   "stage3b_compile_hotfix_20261124": {
     "timestamp": "2026-11-24T18:40:55.019548+01:00",
@@ -5944,7 +5938,7 @@
       "unrelated functionality"
     ],
     "validation": "Deleted-symbol scan, duplicate NonSerialized scan and lexical delimiter check passed; Unity compilation not run.",
-    "next": "Remove remaining family-specific side and front generators, CSBwin positions and inspector branches. Cursor read-only."
+    "next": "Remove remaining family-specific side and front generators, CSBwin positions and inspector branches. External research read-only."
   },
   "strict_ornament_reset_stage3d_20261124": {
     "timestamp": "2026-11-24T18:46:38.666957+01:00",
@@ -6037,7 +6031,7 @@
       "Removed Hook, Wood Ring, Grate, Slime and VI Altar distance generators and obsolete class 5/6 calibration UI. Removed family-specific wall calibration geometry defaults; generic unresolved geometry reports cyan and returns false. Existing override keys and saved JSON retained."
     ],
     "validation": "Removed-symbol scan, duplicate NonSerialized scan, lexical delimiter balance passed. No Unity compilation.",
-    "remaining": "CSBwin corner table, remaining inspector/native loaders, torch/mirror/floor ornament special paths, generic dispatch and visibility diagnostics. Cursor read-only."
+    "remaining": "CSBwin corner table, remaining inspector/native loaders, torch/mirror/floor ornament special paths, generic dispatch and visibility diagnostics. External research read-only."
   },
   "strict_ornament_reset_stage3e_20261124": {
     "timestamp": "2026-11-24T18:49:34.896319+01:00",
@@ -6070,7 +6064,7 @@
       "Removed CSBwin coordinate table and its mirror/torch corner calibration consumers. Removed Wood Ring and Slime folder search loaders. Replaced family-specific inspector texture dispatch with cyan unresolved diagnostic until verified generic projection is connected. Saved calibration JSON untouched."
     ],
     "validation": "Deleted symbol scan, duplicate NonSerialized scan and delimiter count comparison passed. Unity compilation unavailable.",
-    "remaining": "Remaining mirror, torch, floor ornament special paths and other native loaders; generic dispatch and visibility. Cursor read-only."
+    "remaining": "Remaining mirror, torch, floor ornament special paths and other native loaders; generic dispatch and visibility. External research read-only."
   },
   "strict_ornament_reset_stage3f_20261124": {
     "timestamp": "2026-11-24T18:51:24.246866+01:00",
@@ -6131,7 +6125,7 @@
       "Removed mirror-specific scaling/cropping/profile and fixed front geometry table. Removed mirror front/side/extended calibration geometry and manual left-F3 experiment UI. Removed Moss and Puddle legacy geometry, loaders and calibration rows. Existing visibility checks now report unresolved verified projection through cyan for enabled floor ornaments and visible mirror rows. Saved calibration JSON and artwork unchanged."
     ],
     "validation": "Removed-symbol scan, duplicate NonSerialized scan, lexical delimiter validation passed; no Unity compiler available.",
-    "remaining": "Torch holder special paths, VI Altar side calibration, remaining native loaders, hardcoded geometry including mirror interaction hitbox (do not break recruitment), override dispatch and unified generic rendering. Floor ornament geometry requires separate verified DOS floor layout, not assumed wall resource 696. Cursor read-only."
+    "remaining": "Torch holder special paths, VI Altar side calibration, remaining native loaders, hardcoded geometry including mirror interaction hitbox (do not break recruitment), override dispatch and unified generic rendering. Floor ornament geometry requires separate verified DOS floor layout, not assumed wall resource 696. External research read-only."
   },
   "strict_ornament_reset_stage3g_20261124": {
     "timestamp": "2026-11-24T18:53:31.831719+01:00",
@@ -6181,7 +6175,7 @@
       "Saved calibration JSON and artwork preserved. Torch pickup/return and champion recruitment interaction hitboxes retained, pending verified generic geometry."
     ],
     "validation": "Deleted-symbol scan, duplicate attribute scan and lexical delimiter validation passed. Unity compilation not tested. Stages 3C–3F compilation not explicitly confirmed.",
-    "remaining": "Family-specific projection descriptor, visibility caps, remaining geometry/constants and dead code; generic dispatch and visible-only cyan diagnostics. Cursor strictly read-only."
+    "remaining": "Family-specific projection descriptor, visibility caps, remaining geometry/constants and dead code; generic dispatch and visible-only cyan diagnostics. External research strictly read-only."
   },
   "strict_ornament_reset_stage3h_20261124": {
     "timestamp": "2026-11-24T18:55:29.403148+01:00",
@@ -6217,7 +6211,7 @@
       "Removed diagnostic-only far/mid stubs and report visible enabled ordinary wall ornaments once after complete wall pass using shared V17 visibility. This is not a complete projection resolver; additional corner/extended lane visibility and floor/mirror diagnostics require independent verification. No rendering geometry invented."
     ],
     "validation": "Deleted-symbol scan, duplicate NonSerialized scan, lexical delimiter validation passed. No Unity compilation available; stages 3C onward not explicitly confirmed.",
-    "remaining": "Audit remaining dead helpers, source registry and interaction geometry; implement verified generic projection/render dispatch including corner lanes and calibration. Cursor strictly read-only."
+    "remaining": "Audit remaining dead helpers, source registry and interaction geometry; implement verified generic projection/render dispatch including corner lanes and calibration. External research strictly read-only."
   },
   "strict_ornament_reset_stage3i_20261124": {
     "timestamp": "2026-11-24T19:00:49.941298+01:00",
@@ -6266,7 +6260,7 @@
       "Removed unreferenced geometry constants, mirror loader and obsolete calibration reset routine; no calibration data modified. Retained registry, shared sampler and gameplay interaction hitboxes."
     ],
     "validation": "Deleted-symbol scan, duplicate NonSerialized scan, lexical delimiter count comparison passed. Unity compilation not available; Stage 3C onward unconfirmed.",
-    "remaining": "Final audit including other project files; generic DOS dispatch and verified geometry, interaction hitboxes and calibration reconstruction. Cursor strictly read-only."
+    "remaining": "Final audit including other project files; generic DOS dispatch and verified geometry, interaction hitboxes and calibration reconstruction. External research strictly read-only."
   },
   "strict_ornament_reset_stage3j_20261124": {
     "timestamp": "2026-11-24T19:13:51.963383+01:00",
@@ -6284,8 +6278,7 @@
       "Audit full project when accessible; resolve registry source gaps using verified DOS metadata.",
       "Implement generic DOS geometry from original layout data and algorithm, validate against all 900 CSV rows independently; do not use CSV as runtime per-item geometry.",
       "Reconnect renderer, calibration and shared visible hit rectangles. Verify wall occlusion, mirrors, torch interactions and separate floor geometry."
-    ],
-    "cursor": "Ask mode, read-only unless explicitly authorized by user."
+    ]
   },
   "strict_dos_geometry_stage4c_20261124": {
     "timestamp": "2026-11-24T19:19:44.334539+01:00",
@@ -6303,8 +6296,7 @@
       "Port ordinary unshifted wall geometry subset to standalone C# resolver using original data, not precomputed CSV rectangles.",
       "Run C# regression on 900 records before framebuffer integration.",
       "Special inscriptions, shifted cases, floor ornaments, mirrors and gameplay hit bounds require separate validation."
-    ],
-    "cursor": "Ask mode only unless explicitly authorized."
+    ]
   },
   "strict_dos_geometry_stage4d_20261124": {
     "timestamp": "2026-11-24T19:23:21.249603+01:00",
@@ -6329,8 +6321,7 @@
     "limitations": [
       "No C# compiler available here; source port is unverified until Unity test.",
       "Ordinary unshifted wall geometry only. Source offsets are pre-mirror layout offsets as in Python prototype. No framebuffer, artwork or gameplay changes."
-    ],
-    "cursor": "Ask mode, read-only."
+    ]
   },
   "strict_dos_geometry_stage4e_20261124": {
     "status": "PASSED in Unity, user screenshot shows 19:33:00 DOS geometry regression: 900/900 matching rows; 0 field differences.",
@@ -6354,8 +6345,7 @@
       "Install files in Assets/Editor; verify original GRAPHICS.DAT path.",
       "Check Console compile, then Hook Level 1 (1,3) North F2 and compare live DOS; test F1/F3 and both side views.",
       "Resolve native source gaps using original DAT; expand standard dispatch only after visual confirmation, then restore calibration and hit testing."
-    ],
-    "cursor": "Ask mode only; read-only."
+    ]
   },
   "strict_dos_visibility_stage4g_20261124": {
     "timestamp": "2026-11-24T19:59:35.629569+01:00",
@@ -6377,8 +6367,7 @@
     ],
     "limitations": [
       "Unity compilation and diagnostic output unverified. Diagnostic reads current drawn-wall state; does not force recomposition."
-    ],
-    "cursor": "Ask mode only."
+    ]
   },
   "strict_dos_project_geometry_stage4h_20261124": {
     "timestamp": "2026-11-24T20:03:14.544715+01:00",
@@ -6392,8 +6381,7 @@
     "next": [
       "Install all five files in Assets/Editor. Run Tools/DOS Ornament Geometry Regression; select corrected CSV only. Require 900/900 and zero field differences.",
       "Check Hook F1 at Level 0 (13,9) North; inspect cyan diagnostics if absent."
-    ],
-    "cursor": "Ask mode only, read-only."
+    ]
   },
   "strict_dos_calibration_stage4i_20261124": {
     "timestamp": "2026-11-24T20:18:58.667289+01:00",
@@ -6409,8 +6397,7 @@
     ],
     "next": [
       "Restore generic ViewEdit X/Y Apply UI separately; complete native artwork registration and additional perspectives."
-    ],
-    "cursor": "Ask mode only unless explicitly authorized."
+    ]
   },
   "strict_dos_calibration_cleanup_stage4j_20261124": {
     "timestamp": "2026-11-24T20:22:40.976730+01:00",
@@ -6425,8 +6412,7 @@
     ],
     "next": [
       "Install three files, verify compile and Hook/Manacles visual appearance. Run 900-row geometry regression. Restore generic Apply UI."
-    ],
-    "cursor": "Ask mode only."
+    ]
   },
   "strict_dos_registration_stage4k_20261124": {
     "timestamp": "2026-11-24T20:40:28.562533+01:00",
@@ -6483,8 +6469,7 @@
     ],
     "next": [
       "Install two files. Verify empty torch holder first, then Grate, Wood Ring, Slime, Vi Altar; verify full holder when map/state support is available. Restore generic holder state and hit testing separately. Generic Apply UI pending."
-    ],
-    "cursor": "Ask mode only, no modification."
+    ]
   },
   "strict_dos_torch_interaction_stage4l_20261124": {
     "timestamp": "2026-11-24T20:49:39.501327+01:00",
@@ -6511,8 +6496,7 @@
       "Install Stage 4L files in Assets/Editor and confirm Unity compilation.",
       "Click a visible Full Torch Holder at F1 in Game View with an empty mouse hand; verify empty artwork and held torch. Verify empty holder at F1/F2/F3/S1/S2/S3, then return the same torch to the original holder at F1.",
       "Verify Grate, Wood Ring, Slime and Altar of Vi using the existing registered artwork. Restore generic ViewEdit relative offset Apply later."
-    ],
-    "cursor": "Ask mode only, read-only unless explicitly authorized."
+    ]
   },
   "strict_dos_viewedit_offsets_stage4m_20261124": {
     "timestamp": "2026-11-24T21:12:41.975423+01:00",
@@ -6530,8 +6514,7 @@
     "limitations": [
       "Unity compile and live UI unverified. Drafts are session-only, apply saves exact key. Rows only for drawn registered standard wall ornaments. An edit that removes the row is reverted. No pixel-exact claim.",
       "Based on last delivered Stage 4L source; no newer local source supplied."
-    ],
-    "cursor": "Ask mode only, read-only."
+    ]
   },
   "strict_dos_stage4m_live_approval_20261124": {
     "timestamp": "2026-11-24T21:27:21.915233+01:00",
@@ -6650,7 +6633,7 @@
       "Shared generic DOS renderer and 6-bit scaler only; no legacy/fallback or hardcoded ornament geometry.",
       "Use extracted project geometry, no runtime GRAPHICS.DAT dependency.",
       "Relative dx/dy only; missing offset equals zero; no manual mirror or absolute placement overrides.",
-      "Cursor Ask mode read-only unless explicitly instructed otherwise, per session rules."
+      "External research read-only mode read-only unless explicitly instructed otherwise, per session rules."
     ],
     "next": [
       "All eight registered ordinary wall ornaments visually approved; preserve unchanged."
@@ -6678,7 +6661,7 @@
   "strict_dos_champion_mirror_research_20261124": {
     "timestamp": "2026-11-24T22:18:03.765553+01:00",
     "archive": "Progression_Stage4NC_Research_20261124-221803.zip",
-    "status": "Research only; no source/artwork changes. Cursor research prompt supplied, results pending.",
+    "status": "Research only; no source/artwork changes. External research research prompt supplied, results pending.",
     "user_correction": "Existing mirror artwork size is still CSBwin size; do not equate current PNG dimensions with native DOS dimensions.",
     "inputs": [
       "Champions.zip",
@@ -7171,14 +7154,8 @@
       }
     ],
     "evidence_limits": "Type 43 records in existing reference CSV are geometry research data, not decoded native artwork or independent live DOS proof. Prior identification as Champion Mirror and reported 15/15 prototype agreement are research findings to corroborate with original DOS branch. Portrait visibility F1 only is prior working hypothesis, not yet verified against DOS. Exact pixel decoding and portrait position unresolved.",
-    "cursor_ask_task": [
-      "Research original DOS IMG3 decoding for graphics 345 and 346.",
-      "Determine portrait X/Y relative to frame and exact DOS view indices displaying portrait.",
-      "Verify transparency and palette handling, and recruitment click rectangle.",
-      "Provide exact source references and formulas; distinguish DOS from CSBwin; strictly read-only, no project changes."
-    ],
     "next": [
-      "Read complete latest Progression.json at session start. Resume Stage 4N-C: review Cursor Champion Mirror research (Ask mode only); no result received yet.",
+      "Read complete latest Progression.json at session start. Resume Stage 4N-C: review External research Champion Mirror research (read-only mode only); no result received yet.",
       "Distinguish existing CSBwin artwork dimensions from actual DOS data. Decode DOS IMG3 graphics 345/346; verify native pixel data, transparency, palette, portrait placement and which views show portrait; verify recruitment hit rectangle. Do not crop or adopt existing CSBwin frames as DOS-native without verification.",
       "Implement only after evidence: shared frame resolver/scaler, composite portrait where DOS requires, generic ViewEdit relative offsets and recruitment using actual rendered bounds. No legacy or hardcoded ornament placement, no runtime DAT dependency.",
       "After Champion Mirrors, research blue Puddle and Moss floor geometry separately. Preserve eight approved ornaments and torch interactions. Nonzero offset persistence still pending."
@@ -7199,21 +7176,20 @@
       "No new artwork pixel inspection or Unity compile/live verification. Requires exact stated path, readable PNG import and native dimensions.",
       "Frame-only stage; portrait composition and recruitment intentionally not enabled.",
       "Standard F1-F3/S1-S3 supported by current shared dispatcher; lateral fronts/extended lanes unresolved.",
-      "Cursor research not yet received."
+      "External research research not yet received."
     ],
     "next": [
       "Read latest Progression.json at session start; validate mirror frames in Unity all six standard perspectives; check cyan messages if missing.",
       "Review original DOS portrait placement/visibility/palette evidence before implementing compositing and recruitment.",
       "Keep all eight approved ordinary wall ornaments unchanged; blue puddles and moss after mirrors."
-    ],
-    "cursor": "Ask mode strictly read-only."
+    ]
   },
   "strict_dos_champion_diagnostic_stage4ne_20261124": {
     "timestamp": "2026-11-24T22:47:55.261117+01:00",
     "user_report": "Level 0 (14,3) North: Chani frame absent in Game View and ViewEdit.",
     "change": "Extend existing Tools/DOS Ornament Visibility Diagnostic to report mirror placement count, Chani and nearby physical faces, taken/enabled/visible states, DOS view, native artwork paths and import state, rendered mirror bounds. Diagnostic only; no draw changes.",
     "next": "Run diagnostic at reported pose and inspect cyan output. Fix only evidenced failure. Portrait and recruitment pending.",
-    "protected": "Eight approved ordinary ornaments, shared geometry and offsets unchanged. Cursor Ask mode only."
+    "protected": "Eight approved ordinary ornaments, shared geometry and offsets unchanged. External research read-only mode only."
   },
   "strict_dos_champion_path_stage4nf_20261124": {
     "timestamp": "2026-11-24T22:52:24.746096+01:00",
@@ -7221,7 +7197,7 @@
     "user_confirmed_directory": "C:\\Unity\\DM\\Assets\\Art\\Champions\\",
     "change": "Correct exactly two ChampionMirror registry artwork paths from Assets/Champions to Assets/Art/Champions. No other source changes.",
     "next": "Compile and verify Chani frame and ViewEdit row at Level 0 (14,3) North; portraits and recruitment remain pending.",
-    "protected": "All eight approved ornaments, geometry, scaling and calibration unchanged. Cursor Ask mode only."
+    "protected": "All eight approved ornaments, geometry, scaling and calibration unchanged. External research read-only mode only."
   },
   "strict_dos_champion_portrait_stage4ng_20261124": {
     "timestamp": "2026-11-24T22:56:24.910029+01:00",
@@ -7238,7 +7214,7 @@
       "Aperture from supplied artwork, not independent DOS code proof. Native portrait transparency/palette and exact live placement require DOS comparison.",
       "No Unity compiler or live testing here. Recruitment disabled, lateral views not extended."
     ],
-    "protected": "Eight previously approved ordinary ornaments, scaler, resolver, calibration and torch behavior unchanged. Cursor Ask mode only."
+    "protected": "Eight previously approved ordinary ornaments, scaler, resolver, calibration and torch behavior unchanged. External research read-only mode only."
   },
   "strict_dos_champion_composite_stage4nh_20261124": {
     "timestamp": "2026-11-24T23:00:59.196018+01:00",
@@ -7247,7 +7223,7 @@
     "change": "Copy existing native frame pixels and overlay nontransparent portrait pixels within existing artwork-derived aperture. Preserve frame and cyan surface under transparent portrait pixels. Other perspectives and recruited F1 unchanged.",
     "offline_check": "24/24 supplied portraits verified by equivalent Python composition test; aperture 32x29.",
     "limits": "Artwork-derived aperture, not independent DOS executable proof; Unity C# compile and live visual comparison pending. No recruitment changes.",
-    "protected": "Eight approved ordinary ornaments, geometry resolver, scaler, offsets and torch interactions unchanged. Cursor Ask mode only."
+    "protected": "Eight approved ordinary ornaments, geometry resolver, scaler, offsets and torch interactions unchanged. External research read-only mode only."
   },
   "strict_dos_champion_sheet_stage4ni_20261124": {
     "timestamp": "2026-11-24T23:04:20.733050+01:00",
@@ -7256,7 +7232,7 @@
     "change": "Replace disabled mirror hit-test with shared rendered F1 ornament hit-test; use champion identity from rendered placement, correct feature enable key, reject Taken mirrors and missing hero definition. Existing sheet opening, party preview and equipment/stats code preserved.",
     "limits": "Opening sheet preserves existing Edit Mode single-champion inspection selection and existing Play Mode party handling. Actual recruitment confirmation and Taken state transition not changed; existing Resurrect action only plays sound. Full rendered mirror rectangle is clickable, including frame. Unity compile/live testing pending.",
     "next_test": "Level 0 (14,3) North: click Chani F1 to open stats and starting items. Cancel and reopen; verify distant and Taken mirrors do not open.",
-    "protected": "All eight approved ornaments, torch interaction, rendering geometry, composite and offsets unchanged. Cursor strictly read-only Ask mode."
+    "protected": "All eight approved ornaments, torch interaction, rendering geometry, composite and offsets unchanged. External research strictly read-only read-only mode."
   },
   "strict_dos_champion_sheet_live_approval_20261124": {
     "timestamp": "2026-11-24T23:07:51.683806+01:00",
@@ -7273,7 +7249,7 @@
       "RESURRECT recruitment confirmation and Taken state transition; last patch did not change them.",
       "Cancel/reopen, distant and Taken mirror click rejection, all other mirror perspectives, exact DOS portrait positioning/palette, nonzero offset persistence."
     ],
-    "protected": "Eight ordinary ornaments 48/48 visually approved, 900/900 earlier geometry regression, torch pickup and return approved. Shared DOS renderer, relative offsets only, no legacy/hardcoded/fallback geometry. Cursor read-only Ask mode unless explicitly authorized under project rules.",
+    "protected": "Eight ordinary ornaments 48/48 visually approved, 900/900 earlier geometry regression, torch pickup and return approved. Shared DOS renderer, relative offsets only, no legacy/hardcoded/fallback geometry. External research read-only read-only mode unless explicitly authorized under project rules.",
     "next": [
       "Read complete latest Progression.json before work. Restore or verify RESURRECT recruitment confirmation and Taken state transition using existing champion identity and actual rendered F1 bounds, preserving existing stats/items and party rules.",
       "Verify recruited F1 displays empty mirror, cannot reopen sheet, and party membership/items are correct; verify cancel/reopen and other standard mirror perspectives.",
@@ -7297,14 +7273,14 @@
       "Unity compile and live check pending: Level 0 (6,12) North pad and row must disappear; verify unobstructed F1/F2/F3/S1 pads remain visible.",
       "Existing helper checks wall occlusion, not full per-pixel clipping or closed-door occlusion; these are not claimed fixed."
     ],
-    "resume": "After approval resume Stage 4N-J champion recruitment. Cursor monster research remains read-only."
+    "resume": "After approval resume Stage 4N-J champion recruitment. External research monster research remains read-only."
   },
   "floor_ornament_pressure_pad_labels_20261125": {
     "timestamp": "2026-11-25T19:22:04.387943+01:00",
     "archive": "PressurePad_ViewEdit_Labels_20261125-192204.zip",
     "status": "Source change prepared; Unity compile and visual approval pending",
     "change": "Replace four pressure pad ViewEdit size captions with name, perspective, actual pad map tile and player viewing direction. F1/F2/F3 use depths 1/2/3 and lane 0; S1:Left uses depth 2 lane -1, matching existing visibility predicates.",
-    "protected": "Only label strings and a label helper changed. Preserve artwork, scaling, geometry, visibility, calibration, Apply behavior, other rows and champion interactions. Cursor strictly read-only.",
+    "protected": "Only label strings and a label helper changed. Preserve artwork, scaling, geometry, visibility, calibration, Apply behavior, other rows and champion interactions. External research strictly read-only.",
     "validation": "Source diff checked; verify four captions in Unity; no Unity compilation available here."
   },
   "floor_ornament_pressure_pad_live_approval_20261125": {
@@ -7351,7 +7327,7 @@
       "Register 27 original type and graphic descriptor entries, 195 geometry records and native artwork indices 603/604; separate test placement data, no map source overwrite.",
       "Native centered single-creature preview layer only; no AI, movement, combat, group/lateral/distance rendering or runtime game integration.",
       "Native PNG binary alpha must match original transparency index 13; no RGB-key inference or nearest palette fallback. Actual PNGs not supplied to verify.",
-      "Preserve all previously approved ornaments, pads and champion interactions. Cursor remains read-only."
+      "Preserve all previously approved ornaments, pads and champion interactions. External research remains read-only."
     ],
     "next": [
       "Compile and visually verify centered native F1 at player (15,4) West.",
@@ -7817,7 +7793,7 @@
       "DOS_Puddle_P6_S1_Test_20261125-231812.zip"
     ],
     "tool_note": "dmcsb 0.2.1 installed on Windows; extraction not required for next step unless evidence warrants it.",
-    "protected": "Approved M4 monster geometry and palettes, V17 D3 correction, pressure pads, champion mirrors; Cursor read-only; no legacy/fallback/hardcoded coordinate fixes."
+    "protected": "Approved M4 monster geometry and palettes, V17 D3 correction, pressure pads, champion mirrors; External research read-only; no legacy/fallback/hardcoded coordinate fixes."
   },
   "dungeon_features_puddle_icon_path_20261126": {
     "timestamp": "2026-11-26T19:54:00+01:00",
@@ -7827,7 +7803,7 @@
     "newPath": "Assets/Art/Ornaments/Flooritem Puddle_F1.png",
     "change": "Only existing icon asset path changed. Existing placement, search, map rendering and first-person code unchanged.",
     "test": "Level 0 search Puddle; move player off (4,10) and inspect tile. First-person comparison at (5,9) South remains pending.",
-    "research": "User extraction console reports graphic 437 9x7, palette histogram 6:8, 10:27, 14:28. User confirmed replacement PNG installed; Cursor DOS runtime research pending."
+    "research": "User extraction console reports graphic 437 9x7, palette histogram 6:8, 10:27, 14:28. User confirmed replacement PNG installed; External research DOS runtime research pending."
   },
   "puddle_native_437_registry_restore_20261126": {
     "timestamp": "2026-11-26T20:24:09+01:00",
@@ -8032,7 +8008,7 @@
       "https://github.com/scummvm/scummvm/blob/master/engines/dm/gfx.cpp",
       "DOS F1 screenshot and native artwork"
     ],
-    "limitations": "Initial state only; no animation, collision, button logic or other depths/types. Post-feature F1 panel composition is preliminary; correct per-depth and per-subtile ordering pending. No bottom-edge crop assumed. No C# compiler available. No Cursor used.",
+    "limitations": "Initial state only; no animation, collision, button logic or other depths/types. Post-feature F1 panel composition is preliminary; correct per-depth and per-subtile ordering pending. No bottom-edge crop assumed. No C# compiler available. No External research used.",
     "next": "Compile and compare closed F1 at 6,9 West; test existing frames and Black Door; then verify F2/F3 and draw order."
   },
   "regular_door_panels_D5_20261126": {
@@ -8132,7 +8108,7 @@
       10
     ],
     "evidence": "ScummVM 2.7 gfx.cpp centered vertical frame source offsets, 2.9 timeline.cpp state decrement per tick. DOS intermediate destination crops and real timing unverified; preview uses approved closed top and remaining native rows.",
-    "limitations": "Opening only; collision, closing, sound for door motion and exact DOS intermediate clipping/timing pending. No Cursor. No Unity compiler available.",
+    "limitations": "Opening only; collision, closing, sound for door motion and exact DOS intermediate clipping/timing pending.  No Unity compiler available.",
     "next": "Compile and compare opening with DOS capture; verify all four steps, then calibrate timing and geometry."
   },
   "door_reset_D7C_20261126": {
@@ -8140,7 +8116,7 @@
     "status": "Prepared; Unity compilation and reset test pending",
     "implementation": "ViewEdit Reset Doors restores all doors on loaded map to original InitialState, cancels opening and elapsed time, refreshes preview. No movement or sensor activation.",
     "test": "Level 0 (7,9) West: Reset Doors, verify closed Portcullis (5,9), move forward to (6,9), observe four opening states.",
-    "limitations": "Exact DOS animation timing and clipping still pending. No Cursor."
+    "limitations": "Exact DOS animation timing and clipping still pending. "
   },
   "door_animation_D7C_registry_repair_20261126": {
     "timestamp": "2026-11-26T23:16:26.385041+01:00",
@@ -8239,7 +8215,7 @@
       "verified_signature": "AdvanceDoorOpeningAnimations(double elapsedSeconds, double secondsPerStep, Action onDoorStep = null)",
       "compile_status": "User confirmed errors gone; PowerShell confirmed signature at line 107."
     },
-    "workflow": "No Cursor for rest of current session. Cursor subscription ends November 28; planned Claude transition after existing subscription. Independent research remains read-only. Read latest complete Progression.json at session start. Research before implementation; no hardcoded coordinate exceptions or fallback rendering."
+    "workflow": "External research remains read-only. Read latest complete Progression.json at session start. Research before implementation; no hardcoded coordinate exceptions or fallback rendering."
   },
   "door_timing_D7E_20261127-172742": {
     "timestamp": "2026-11-27T17:27:42.647985+01:00",
@@ -8651,7 +8627,7 @@
       ],
       "sound_triggers": 4
     },
-    "rules": "Native 320x200 exclusively; no high-resolution D11, no legacy fallback, no cropping or per-door exceptions. Preserve local artwork and calibration. All custom menu commands directly under Tools. Cursor read-only.",
+    "rules": "Native 320x200 exclusively; no high-resolution D11, no legacy fallback, no cropping or per-door exceptions. Preserve local artwork and calibration. All custom menu commands directly under Tools. External research read-only.",
     "next_actions": [
       "Read the complete latest Progression.json and apply all mandatory rules before technical work.",
       "Verify D12 installation and Unity compilation; use native 320x200 only, D10 DungeonMap.cs runtime and D12 ViewportLayoutEditor.cs. Do not revive D11 high-resolution compositor.",
@@ -9368,5 +9344,32 @@
       "Continue Wooden Door lateral projections after interaction tests."
     ],
     "limitations": "Based on latest delivered D19F Progression.json; local project edits not available. Visual approval does not verify click behavior."
+  },
+  "door_button_press_D19G_20261128-191305": {
+    "timestamp": "2026-11-28T19:13:05.656394+01:00",
+    "status": "User confirmed F1 pressing animation perfect; approved and frozen.",
+    "scope": "F1 only, editor GameView; F2/F3 remain display-only",
+    "behavior": [
+      "Left mouse down inside F1: temporary recessed brown center, unchanged outer frame.",
+      "Hold inside: recessed; drag outside: released appearance; drag back inside: recessed.",
+      "Left release inside same visible F1 at unchanged pose: existing TryOpenDoorFromButton, once.",
+      "Release outside, leave GameView, lose focus or navigate: cancel and restore original artwork.",
+      "F2/F3 clicks do not operate doors."
+    ],
+    "preserved": "All approved released F1/F2/F3 artwork, geometry and depth palettes; all door panels, ornaments, existing opening scheduler and sound. No new PNG.",
+    "pending": [
+      "Compile and test mouse down/hold/drag/release on Level 1 (2,0) West.",
+      "Verify no activation from F2/F3.",
+      "Closing/toggle behavior remains a separate pending task."
+    ],
+    "limitations": "Based on delivered D19F and latest supplied approval checkpoint, no access to current local Unity project; no Unity compilation here. Menu audit limited to replacement ViewportLayoutEditor.cs (5 unchanged top-level Tools declarations)."
+  },
+  "door_button_sound_D19H_20261128-191635": {
+    "timestamp": "2026-11-28T19:16:35.301709+01:00",
+    "status": "Prepared; live sound test pending",
+    "change": "Call existing PlayPressureSwitchSound once at successful F1 press start, after the duplicate-event guard and validation. Uses existing DungeonAudioSettings.switchSound and switchVolume. No repeat on drag, hold or release. No additional asset.",
+    "preserved": "All rendering and animation, existing release/cancel behavior, F2/F3 display only, door rattle timing.",
+    "workflow": "External research only; former tool-specific workflow retired. Historical research retained.",
+    "limitations": "Latest delivered D19G source and progression, local edits unavailable. Unity compiler and audio playback unavailable here. Existing Switch Sound assignment required."
   }
 }
