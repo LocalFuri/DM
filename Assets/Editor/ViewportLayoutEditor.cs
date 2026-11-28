@@ -2243,6 +2243,7 @@ public class ViewportLayoutEditor : EditorWindow
     EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
     EditorApplication.update -= UpdateChampionEatAnimation;
     EditorApplication.update -= UpdateDoorOpeningPreview;
+    ClearGeneratedDoorPanels();
     EditorApplication.update -= UpdateSuspendedThrowLandings;
     EditorApplication.update -= UpdateChampionAutoHighlights;
 
@@ -12273,35 +12274,6 @@ private static void HandleGameViewPointerDown(
     NoteContentRight();
     EditorGUILayout.EndHorizontal();
     DrawDoorAnimationMeasurement();
-    DrawOccupiedDoorWallDiagnostic();
-  }
-
-  // Temporary compact diagnostic for D15B; no additional Tools command.
-  private void DrawOccupiedDoorWallDiagnostic()
-  {
-    if (previewMiniMap == null || !previewMiniMap.IsInside(previewX, previewY)) return;
-    DungeonTile tile = previewMiniMap.GetTile(previewX, previewY);
-    if (tile == null) return;
-    bool isDoor = tile.SourceType == DungeonSourceTileType.Door;
-    bool perpendicular = ((tile.Raw & 8) != 0) !=
-        (previewFacing == DungeonFacing.North || previewFacing == DungeonFacing.South);
-    string status = tile.SourceType.ToString() + " raw=" + tile.Raw;
-    if (isDoor)
-    {
-      status += perpendicular ? " | side" : " | axial";
-      if (previewMiniMap.TryGetDoorData(previewX, previewY, out DungeonMap.DoorData door))
-        status += " | state=" + door.CurrentState;
-      else status += " | no door record";
-      if (perpendicular)
-      {
-        Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Art/Doors/Door Wall_F0_32_123.png");
-        status += texture == null ? " | asset missing" :
-            " | " + texture.width + "x" + texture.height + (texture.isReadable ? " readable" : " NOT readable");
-        status += renderedDosDoorFrameRows.Exists(r => r.offsetKey == "DoorOccupiedWallProjection:S0")
-            ? " | row present" : " | no row";
-      }
-    }
-    EditorGUILayout.LabelField("Door F0 diagnostic", status);
   }
 
   private bool TryGetViewportRawImage(out RawImage viewportImage)
@@ -19481,10 +19453,10 @@ private static void HandleGameViewPointerDown(
       BlitWallInscriptionsIntoPreview(pixels);
     BlitFloorItemsIntoPreview(pixels);
     BlitDosNativeMonstersIntoPreview(pixels);
-    // D4 F1 reference composition: panel over background features. Full depth-aware object ordering remains pending.
-    BlitDosDoorPanels(pixels);
+    // D16A test: shared door panel pass is last before lighting/HUD.
     BlitSuspendedThrownItemsIntoPreview(pixels);
     BlitDosOccupiedDoorWall(pixels);
+    BlitDosDoorPanels(pixels);
   }
 
 
@@ -19615,6 +19587,114 @@ private static void HandleGameViewPointerDown(
   [System.Serializable] private sealed class DosDoorPanelView
   { public int graphicSet, depth, x, y, width, height, verticalLiftPerStep, ornamentOrdinal, level; public string path, caption; }
 
+  // Explicit acquisition policy, independent of the installed geometry registry.
+  private const string DosDoorArtworkRulesPath = "Assets/Editor/DosDoorArtworkRules.json";
+  [System.Serializable] private sealed class DosDoorArtworkRulesRoot
+  { public int schemaVersion; public DosDoorArtworkRule[] rules; }
+  [System.Serializable] private sealed class DosDoorArtworkRule
+  { public int graphicSet, ornamentOrdinal, level; public string mode; }
+  // Door-ornament depth palettes (Graphic 558, documented in ScummVM DM
+  // drawDoorOrnament). Distinct from wall-ornament palettes. DOS PC match
+  // still requires visual confirmation. Native per-distance panels bypass these.
+  private static readonly byte[] DosDoorOrnamentMediumColorMap =
+  { 0, 1, 2, 3, 4, 3, 6, 7, 5, 9, 10, 11, 12, 13, 14, 15 };
+  private static readonly byte[] DosDoorOrnamentFarColorMap =
+  { 0, 12, 1, 3, 4, 3, 0, 6, 3, 9, 10, 11, 0, 2, 0, 13 };
+  private sealed class GeneratedDoorPanel
+  { public Hash128 dependencyHash; public Texture2D texture; }
+  private readonly Dictionary<string, GeneratedDoorPanel> generatedDoorPanels =
+      new Dictionary<string, GeneratedDoorPanel>(System.StringComparer.Ordinal);
+
+  private void ClearGeneratedDoorPanels()
+  {
+    foreach (var entry in generatedDoorPanels.Values)
+      if (entry.texture != null) UnityEngine.Object.DestroyImmediate(entry.texture);
+    generatedDoorPanels.Clear();
+  }
+
+  private Texture2D ResolveDosDoorPanelArtwork(DosDoorPanelRoot root, DosDoorPanelView view)
+  {
+    var rules = JsonUtility.FromJson<DosDoorArtworkRulesRoot>(File.ReadAllText(DosDoorArtworkRulesPath));
+    if (rules == null || rules.schemaVersion != 1 || rules.rules == null)
+      throw new System.IO.InvalidDataException("invalid door artwork rules");
+    DosDoorArtworkRule rule = null;
+    foreach (var candidate in rules.rules)
+    {
+      if (candidate == null || candidate.graphicSet != view.graphicSet
+          || candidate.ornamentOrdinal != view.ornamentOrdinal
+          || (candidate.ornamentOrdinal != 0 && candidate.level != view.level)) continue;
+      if (rule != null) throw new System.IO.InvalidDataException("duplicate door artwork rule");
+      rule = candidate;
+    }
+    if (rule == null) throw new System.IO.InvalidDataException("no explicit door artwork rule for set "
+        + view.graphicSet + " ordinal " + view.ornamentOrdinal + " level " + view.level);
+    if (rule.mode == "NativePerDistance") return LoadDoorFrameTexture(view.path, view.width, view.height);
+    if (rule.mode != "ScaledFromF1") throw new System.IO.InvalidDataException("unknown door artwork mode " + rule.mode);
+    if (view.depth == 1) return LoadDoorFrameTexture(view.path, view.width, view.height);
+    DosDoorPanelView native = null;
+    foreach (var entry in root.views)
+    {
+      if (entry == null || entry.depth != 1 || entry.graphicSet != view.graphicSet
+          || entry.ornamentOrdinal != view.ornamentOrdinal
+          || (entry.ornamentOrdinal != 0 && entry.level != view.level)) continue;
+      if (native != null) throw new System.IO.InvalidDataException("duplicate F1 door artwork source");
+      native = entry;
+    }
+    if (native == null || native.width <= 0 || native.height <= 0 || string.IsNullOrEmpty(native.path))
+      throw new System.IO.InvalidDataException("missing F1 door artwork source");
+    Texture2D source = LoadDoorFrameTexture(native.path, native.width, native.height);
+    if (source == null) return null;
+    byte[] depthPalette;
+    switch (view.depth)
+    {
+      case 2: depthPalette = DosDoorOrnamentMediumColorMap; break;
+      case 3: depthPalette = DosDoorOrnamentFarColorMap; break;
+      default: throw new System.IO.InvalidDataException("unsupported generated door depth " + view.depth);
+    }
+    string key = native.path + "|F" + view.depth + "|" + view.width + "x" + view.height;
+    Hash128 hash = AssetDatabase.GetAssetDependencyHash(native.path);
+    if (generatedDoorPanels.TryGetValue(key, out GeneratedDoorPanel cached))
+    {
+      if (cached.texture != null && cached.dependencyHash.Equals(hash)) return cached.texture;
+      if (cached.texture != null) UnityEngine.Object.DestroyImmediate(cached.texture);
+      generatedDoorPanels.Remove(key);
+    }
+    // Share the DOS six-bit coordinate sampler with ornaments. Remap the
+    // sampled palette index, preserving the imported panel's alpha and opaque black.
+    Color32[] brightPalette = DungeonViewportLightPalettes[0];
+    Color32[] input = source.GetPixels32();
+    Color32[] output = new Color32[view.width * view.height];
+    int stepX = DosSixBitStep(source.width, view.width);
+    int stepY = DosSixBitStep(source.height, view.height);
+    for (int y = 0; y < view.height; y++)
+    {
+      int sy = source.height - 1 - DosSixBitSample(stepY, view.height - 1 - y, source.height);
+      for (int x = 0; x < view.width; x++)
+      {
+        Color32 sample = input[sy * source.width + DosSixBitSample(stepX, x, source.width)];
+        if (sample.a == 0)
+        {
+          output[y * view.width + x] = sample;
+          continue;
+        }
+        if (!TryGetExactDmPaletteIndex(sample, out int paletteIndex))
+          throw new System.IO.InvalidDataException("unrecognized source palette colour in " + native.path);
+        Color32 mapped = brightPalette[depthPalette[paletteIndex]];
+        mapped.a = sample.a;
+        output[y * view.width + x] = mapped;
+      }
+    }
+    var generated = new Texture2D(view.width, view.height, TextureFormat.RGBA32, false);
+    generated.name = native.path + " generated F" + view.depth;
+    generated.hideFlags = HideFlags.HideAndDontSave;
+    generated.filterMode = FilterMode.Point;
+    generated.wrapMode = TextureWrapMode.Clamp;
+    generated.SetPixels32(output);
+    generated.Apply(false, false);
+    generatedDoorPanels[key] = new GeneratedDoorPanel { dependencyHash = hash, texture = generated };
+    return generated;
+  }
+
   private void BlitDosDoorPanels(Color32[] pixels)
   {
     if (pixels == null || previewMiniMap == null) return;
@@ -19628,6 +19708,7 @@ private static void HandleGameViewPointerDown(
           || (door.CurrentState != 4 && !door.OpensVertically))
       { ReportDoorArtworkProblem("unsupported door state for current preview projection"); continue; }
       DosDoorPanelView view = null;
+      Texture2D source = null;
       try
       {
         var root = JsonUtility.FromJson<DosDoorPanelRoot>(File.ReadAllText(DosDoorPanelPreviewDataPath));
@@ -19645,13 +19726,12 @@ private static void HandleGameViewPointerDown(
         { ReportDoorArtworkProblem("no panel registered for level " + previewDungeonLevel
             + " set " + door.GraphicSet + " ornament ordinal " + door.OrnamentOrdinal + " F" + depth); continue; }
         if (view.width <= 0 || view.height <= 0 || view.x < 0 || view.y < 0
-            || view.x + view.width > DungeonViewportWidth || view.y + view.height > DungeonViewportHeight
-            || string.IsNullOrEmpty(view.path))
+            || view.x + view.width > DungeonViewportWidth || view.y + view.height > DungeonViewportHeight)
           throw new System.IO.InvalidDataException("invalid panel geometry");
+        source = ResolveDosDoorPanelArtwork(root, view);
       }
       catch (System.Exception ex)
-      { ReportDoorArtworkProblem(DosDoorPanelPreviewDataPath + ": " + ex.Message); continue; }
-      Texture2D source = LoadDoorFrameTexture(view.path, view.width, view.height);
+      { ReportDoorArtworkProblem("door panel registry/artwork rules: " + ex.Message); continue; }
       if (source == null || !TryReadOrnamentOffsets(out OrnamentCalibrationJsonStore calibration)) continue;
       string key = "DoorPanelProjection:Set" + door.GraphicSet
           + (door.OrnamentOrdinal == 0 ? "" : ":L" + previewDungeonLevel + ":O" + door.OrnamentOrdinal)

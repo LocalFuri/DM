@@ -1,2 +1,2 @@
 version,graphicID,ordinal,relativePosition,rectX1,rectX2,rectY1,rectY2,srcOffsetX,srcOffsetY,srcByteWidth,dstByteWidth,transparentIndex,derivedIndex,beforeStatus,beforeBytes,afterStatus,afterBytes
-V4,130,2,8,102,123,38,55,0,0,16,112,10,11,written,15232,written,15232
+V4,240,6,8,60,163,20,90,0,0,56,112,10,27,written,15232,written,15232

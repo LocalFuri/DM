@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "graphicSet": 0,
+      "ornamentOrdinal": 0,
+      "level": -1,
+      "mode": "NativePerDistance"
+    },
+    {
+      "graphicSet": 0,
+      "ornamentOrdinal": 1,
+      "level": 0,
+      "mode": "ScaledFromF1"
+    }
+  ]
+}

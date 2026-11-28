@@ -8786,5 +8786,90 @@
       "Preserve artwork path, native geometry, shared blitter and D14B animation selection (16 preferred; all options retained)."
     ],
     "test": "Level 0 6,9 N/S after opening; if absent report Door F0 diagnostic and cyan artwork message. Actual cause not yet verified."
+  },
+  "door_generic_D16_20261128-123538": {
+    "timestamp": "2026-11-28T12:35:38.182245+01:00",
+    "status": "D15B F0 pixel exact user approved; D14B compilation approved, 16 frames preferred, all five choices retained. D16 candidate; Unity compile and DOS visual comparison pending.",
+    "changes": [
+      "Explicit artwork acquisition rules for registered set 0 unornamented Portcullis and level 0 ordinal 1 Black Door; native per distance versus scaled from F1.",
+      "Use shared DosSixBitStep and DosSixBitSample; preserve source RGB and alpha, opaque black; door-specific palette mapping and original exact scaling unverified. Cache generated textures by F1 path, dimensions and asset dependency hash, dispose on disable.",
+      "Keep installed DosDoorPanelPreviewData.json unchanged (not supplied); derive F1 source and target dimensions from existing registry. No F2/F3 file loads for scaled rule. Unknown rule emits cyan diagnostic, no fallback.",
+      "Remove temporary F0 diagnostic only; keep approved F0 geometry and all animation, calibration and compositing unchanged."
+    ],
+    "source_art": {
+      "path": "Assets/Art/Doors/Black Door 96x88.png",
+      "verified_dimensions": [
+        96,
+        88
+      ],
+      "mode": "RGB",
+      "target_dimensions_from_prior_registry": [
+        [
+          63,
+          59
+        ],
+        [
+          45,
+          39
+        ]
+      ]
+    },
+    "limitations": [
+      "Installed panel geometry registry not supplied; preserve it rather than reconstruct.",
+      "Black Door horizontal intermediate animation remains unsupported as before.",
+      "Portcullis artwork files not supplied; no changes to native mode.",
+      "No Unity compiler/live testing."
+    ],
+    "test": [
+      "Level 0 1,4 North and 1,5 North compare generated F2/F3 with DOS, preserve X/Y calibration.",
+      "Portcullis regression at 7,9 West; F0 regression at 6,9 N/S."
+    ],
+    "menu_audit": {
+      "scope": "ViewportLayoutEditor.cs and DungeonMap.cs only",
+      "literal_paths": [
+        "Tools/Check Original Ground Items",
+        "Tools/Restore Original Ground Items",
+        "Tools/Audio Settings",
+        "Tools/ViewEdit &v",
+        "Tools/DOS Ornament Visibility Diagnostic"
+      ],
+      "nested": [],
+      "duplicates": []
+    }
+  },
+  "door_panel_last_D16A_20261128-124938": {
+    "timestamp": "2026-11-28T12:49:38.418531+01:00",
+    "status": "Experimental shared panel-last composition; user requested Black Door test.",
+    "changes": [
+      "Move BlitDosDoorPanels after suspended items and occupied-door wall; no asset, geometry, scaling, calibration or animation edits. Applies to all door types to avoid a special case."
+    ],
+    "test": [
+      "Black Door F1 compare upper corner pixels against DOS; Portcullis and occupied F0 regression."
+    ],
+    "limitations": [
+      "Panel already followed top frame and pillars in D16; this change may not resolve the corner pixels. Unity compilation and live verification pending."
+    ]
+  },
+  "door_generic_D16B_20261128-130740": {
+    "timestamp": "2026-11-28T13:07:40.361273+01:00",
+    "status": "Candidate palette implementation; DOS PC comparison and Unity compilation pending.",
+    "changes": [
+      "Use separate Graphic 558 door-ornament depth maps from ScummVM DM gfx.cpp drawDoorOrnament, lines 5329–5354, normalized by 10. Only ScaledFromF1 F2/F3 path; preserve native Portcullis and F1.",
+      "Use existing exact palette index lookup and shared 6-bit sampler; preserve source alpha and opaque black; unknown RGB rejected via existing cyan diagnostic. Include depth in generated cache key.",
+      "Keep D16A experimental panel-last composition and all geometry, timing and calibration unchanged."
+    ],
+    "source": "https://sources.debian.org/src/scummvm/2.7.0%2Bdfsg-1/engines/dm/gfx.cpp/",
+    "limitations": [
+      "ScummVM reference is not independently verified DOS PC behavior. Black Door source is composite RGB artwork; F2 map leaves its three grayscale colors unchanged; F3 maps 109 to 73 and 73 to 0. No wall-ornament map or arbitrary brightness multiplier.",
+      "Original door overlay composition and exact DOS target palette still require reference testing. No Unity compilation available."
+    ],
+    "test": [
+      "Compare Black Door F2/F3 against DOS screenshots at matching lighting; F1 and Portcullis regression."
+    ],
+    "menu_audit": {
+      "scope": "ViewportLayoutEditor.cs and supplied DungeonMap.cs",
+      "nested": [],
+      "duplicates": []
+    }
   }
 }
