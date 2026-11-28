@@ -8871,5 +8871,92 @@
       "nested": [],
       "duplicates": []
     }
+  },
+  "door_features_D17_20261128-151617": {
+    "timestamp": "2026-11-28T15:16:17.736848+01:00",
+    "status": "D17 candidate, compilation and visual test pending. D15B F0 pixel exact, D16B F2/F3 darkness approved, D14B 16 frames preferred.",
+    "changes": [
+      "Dungeon Features only: read original DoorData from loaded map; resolve level-local ornament ordinal through placement database TOC. Map markers BD/PC and explicit unknown set/ornament IDs; single-click inspection and known native artwork preview; existing search and next/previous navigation, green highlight and pulsing marker.",
+      "Black Door label uses ornament ID 7, Portcullis uses unornamented graphic set 0, as inferred from approved level-0 mappings; other names not invented. All existing maps and placement data unchanged.",
+      "No door-only connector overview yet; search scrolls to the selected door unless existing other feature overview is active.",
+      "Approved wall/floor ornament rendering frozen; no changes based on CSBwin findings. DOS PC remains final authority."
+    ],
+    "test": [
+      "Level 0: search Black Door and Portcullis; select tiles; confirm known artwork and door data. Other levels: search Door and inspect numeric identifiers. Check existing item/ornament search regression."
+    ],
+    "limitations": [
+      "Actual level JSON files not supplied; runtime map coordinates authoritative, placement database contains 170 exported door records; all levels need Unity test.",
+      "No Unity compile available."
+    ],
+    "menu_audit": {
+      "scope": "DungeonFeatureEditor.cs, DungeonMap.cs and supplied earlier D16B ViewportLayoutEditor.cs",
+      "paths": [
+        "Tools/Dungeon Feature Editor &f",
+        "Tools/Check Original Ground Items",
+        "Tools/Restore Original Ground Items",
+        "Tools/Audio Settings",
+        "Tools/ViewEdit &v",
+        "Tools/DOS Ornament Visibility Diagnostic"
+      ],
+      "nested": [],
+      "duplicates": []
+    }
+  },
+  "door_features_D17A_20261128-152951": {
+    "timestamp": "2026-11-28T15:29:51.463768+01:00",
+    "status": "Map-only update; Unity compile and visual test pending",
+    "changes": [
+      "Use F1 artwork as aspect-preserving door tile icon with the existing single-item 2*mapZoom inset. Portcullis and Black Door share the map/inspection asset resolver. Retain numeric labels for unidentified doors and diagnostic text markers when known artwork is missing. Preserve search and selection.",
+      "No changes to approved door or ornament gameplay rendering, assets or placement data."
+    ],
+    "test": [
+      "Level 0 search Portcullis and Black Door; confirm centered icons at all map zoom levels, search highlights and click inspection."
+    ],
+    "menu_audit": {
+      "scope": [
+        "DungeonFeatureEditor.cs",
+        "DungeonMap.cs",
+        "ViewportLayoutEditor.cs"
+      ],
+      "paths": [
+        "Tools/Dungeon Feature Editor &f",
+        "Tools/Check Original Ground Items",
+        "Tools/Restore Original Ground Items",
+        "Tools/Audio Settings",
+        "Tools/ViewEdit &v",
+        "Tools/DOS Ornament Visibility Diagnostic"
+      ],
+      "nested": [],
+      "duplicates": []
+    }
+  },
+  "door_features_D17B_20261128-153234": {
+    "timestamp": "2026-11-28T15:32:34.821173+01:00",
+    "status": "Apple-style door inspection implemented; Unity compilation and live verification pending",
+    "changes": [
+      "Replace above-map door inspection with a right-side opaque popup, orange 3 px connector, tile coordinate, green door name and 48 px aspect-fit F1 artwork.",
+      "Single click inspects without teleporting; existing double-click navigation preserved.",
+      "Map-only change; gameplay renderers frozen. Screenshot still shows PC labels; asset availability/path on local Unity project not confirmed."
+    ],
+    "test": [
+      "Click Portcullis and Black Door, then Apple and empty tile; check popup/connector and no player movement; verify double-click navigation."
+    ],
+    "menu_audit": {
+      "scope": [
+        "DungeonFeatureEditor.cs",
+        "DungeonMap.cs",
+        "ViewportLayoutEditor.cs"
+      ],
+      "paths": [
+        "Tools/Dungeon Feature Editor &f",
+        "Tools/Check Original Ground Items",
+        "Tools/Restore Original Ground Items",
+        "Tools/Audio Settings",
+        "Tools/ViewEdit &v",
+        "Tools/DOS Ornament Visibility Diagnostic"
+      ],
+      "nested": [],
+      "duplicates": []
+    }
   }
 }

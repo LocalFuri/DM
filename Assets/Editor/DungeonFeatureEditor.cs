@@ -1049,6 +1049,12 @@ public class DungeonFeatureEditor : EditorWindow
         + " | " + ((map.GetTile(x,y).Raw & 8) != 0 ? "Axis N/S" : "Axis E/W")
         + (door.HasButton ? " | Button" : "");
   }
+  private static string DoorPreviewAssetPath(string name)
+  {
+    if (name == "Portcullis") return "Assets/Art/Doors/Door Portcullis_F1_96x88.png";
+    if (name == "Black Door") return "Assets/Art/Doors/Black Door 96x88.png";
+    return null;
+  }
   private void DrawDoorMapMarkers(Rect mapRect)
   {
     var style = new GUIStyle(EditorStyles.miniBoldLabel)
@@ -1070,9 +1076,26 @@ public class DungeonFeatureEditor : EditorWindow
         string code = name == "Black Door" ? "BD" : name == "Portcullis" ? "PC"
             : door.OrnamentOrdinal == 0 ? "S" + door.GraphicSet
             : DoorOrnamentId(door) >= 0 ? "O" + DoorOrnamentId(door) : "L" + door.OrnamentOrdinal;
-        EditorGUI.DrawRect(mark, name == "Black Door" ? new Color(.15f,.15f,.15f)
-            : name == "Portcullis" ? new Color(.30f,.43f,.55f) : new Color(.46f,.28f,.12f));
-        GUI.Label(mark, new GUIContent(code, DoorDetails(x,y,door)), style);
+        string assetPath = DoorPreviewAssetPath(name);
+        Texture2D texture = assetPath != null
+            ? AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath) : null;
+        if (texture != null)
+        {
+          // Same inset as the single floor-item icon, but preserve door proportions.
+          float iconMargin = 2f * mapZoom;
+          float iconSize = Mathf.Max(1f, CellSize - iconMargin * 2f);
+          mark = new Rect(tile.center.x - iconSize * .5f,
+              tile.center.y - iconSize * .5f, iconSize, iconSize);
+          GUI.DrawTexture(mark, texture, ScaleMode.ScaleToFit, true);
+          GUI.Label(mark, new GUIContent(string.Empty, DoorDetails(x,y,door)));
+        }
+        else
+        {
+          if (assetPath != null) ReportMissingMapIcon(assetPath, "door map icon");
+          EditorGUI.DrawRect(mark, name == "Black Door" ? new Color(.15f,.15f,.15f)
+              : name == "Portcullis" ? new Color(.30f,.43f,.55f) : new Color(.46f,.28f,.12f));
+          GUI.Label(mark, new GUIContent(code, DoorDetails(x,y,door)), style);
+        }
         if (TryGetSelectedSearchTile(out Vector2Int selectedDoor)
             && selectedDoor.x == x && selectedDoor.y == y)
         {
@@ -1083,17 +1106,46 @@ public class DungeonFeatureEditor : EditorWindow
         }
       }
   }
-  private void DrawDoorInspection()
+  private bool TryGetInspectedDoor(out DungeonMap.DoorData door)
   {
-    if (!map.IsInside(inspectedDoorX, inspectedDoorY)
-        || !map.TryGetDoorData(inspectedDoorX, inspectedDoorY, out var door)) return;
-    EditorGUILayout.LabelField(DoorDetails(inspectedDoorX, inspectedDoorY, door), EditorStyles.wordWrappedLabel);
-    string path = DoorName(door) == "Black Door" ? "Assets/Art/Doors/Black Door 96x88.png"
-        : DoorName(door) == "Portcullis" ? "Assets/Art/Doors/Door Portcullis_F1_96x88.png" : null;
-    if (path == null) return;
-    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-    if (texture != null)
-      GUILayout.Label(texture, GUILayout.Width(96), GUILayout.Height(88));
+    door = default(DungeonMap.DoorData);
+    return map != null && map.IsInside(inspectedDoorX, inspectedDoorY)
+        && map.TryGetDoorData(inspectedDoorX, inspectedDoorY, out door);
+  }
+  private float GetDoorPopupWidth(DungeonMap.DoorData door)
+  {
+    var style = new GUIStyle(EditorStyles.label) { fontStyle = FontStyle.Bold };
+    return Mathf.Max(112f, Mathf.Ceil(style.CalcSize(new GUIContent(DoorName(door))).x) + 24f);
+  }
+  private void DrawSelectedDoorPopup(Rect popup, Vector3 tileCenter, DungeonMap.DoorData door)
+  {
+    Handles.BeginGUI();
+    Color previous = Handles.color;
+    Handles.color = new Color(1f, 0.55f, 0f, 1f);
+    Handles.DrawAAPolyLine(3f, tileCenter, new Vector3(popup.xMin, popup.center.y, 0f));
+    Handles.color = previous;
+    Handles.EndGUI();
+    EditorGUI.DrawRect(popup, new Color(.15f,.15f,.15f,1f));
+    Color border = new Color(.45f,.45f,.45f,1f);
+    EditorGUI.DrawRect(new Rect(popup.x,popup.y,popup.width,1f),border);
+    EditorGUI.DrawRect(new Rect(popup.x,popup.yMax-1f,popup.width,1f),border);
+    EditorGUI.DrawRect(new Rect(popup.x,popup.y,1f,popup.height),border);
+    EditorGUI.DrawRect(new Rect(popup.xMax-1f,popup.y,1f,popup.height),border);
+    GUI.Label(new Rect(popup.x+8f,popup.y+8f,popup.width-16f,18f),
+        "("+inspectedDoorX+","+inspectedDoorY+")  1 door", EditorStyles.miniBoldLabel);
+    var style = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleCenter,
+        fontStyle = FontStyle.Bold, normal = { textColor = Color.green } };
+    GUI.Label(new Rect(popup.x+8f,popup.y+26f,popup.width-16f,26f),
+        new GUIContent(DoorName(door), DoorDetails(inspectedDoorX,inspectedDoorY,door)),style);
+    string path = DoorPreviewAssetPath(DoorName(door));
+    Texture2D texture = path != null ? AssetDatabase.LoadAssetAtPath<Texture2D>(path) : null;
+    Rect icon = new Rect(popup.center.x-24f,popup.y+54f,48f,48f);
+    if (texture != null) GUI.DrawTexture(icon,texture,ScaleMode.ScaleToFit,true);
+    else
+    {
+      if (path != null) ReportMissingMapIcon(path,"door inspection icon");
+      GUI.Label(icon, new GUIContent("Door",DoorDetails(inspectedDoorX,inspectedDoorY,door)),EditorStyles.centeredGreyMiniLabel);
+    }
   }
   private string mapLoadError;
   private Vector2 mapScroll;
@@ -1412,7 +1464,6 @@ public class DungeonFeatureEditor : EditorWindow
     DrawFeatureSearchToolbar();
     EditorGUILayout.EndHorizontal();
 
-    DrawDoorInspection();
     DrawMapGrid();
   }
 
@@ -1726,6 +1777,8 @@ public class DungeonFeatureEditor : EditorWindow
         : 0f;
     float popupReserve = Mathf.Max(floorReserve,
         selectedOrnaments.Count > 0 ? 170f * mapZoom : 0f);
+    if (!searchOverviewActive && TryGetInspectedDoor(out var reserveDoor))
+      popupReserve = Mathf.Max(popupReserve, GetDoorPopupWidth(reserveDoor) + 16f);
     if (searchOverviewActive)
       popupReserve = Mathf.Max(popupReserve, 170f);
     List<DungeonInscriptionRecord> selectedInscriptions =
@@ -1830,12 +1883,15 @@ public class DungeonFeatureEditor : EditorWindow
     // The click may have selected a new tile during this GUI event.
     // Floor-item panels are rendered AFTER EndScrollView, so they can reach
     // the true top of the window without being clipped by its scroll area.
-    bool showFloorPopup = !searchOverviewActive
+    DungeonMap.DoorData popupDoor;
+    bool hasPopupDoor = TryGetInspectedDoor(out popupDoor);
+    bool showDoorPopup = !searchOverviewActive && hasPopupDoor;
+    bool showFloorPopup = !showDoorPopup && !searchOverviewActive
         && GetInscriptionRecordsAt(
         inspectedInscriptionX, inspectedInscriptionY).Count == 0
         && GetInspectedFloorItems() != null
         && GetInspectedFloorItems().Count > 0;
-    if (!showFloorPopup && !searchOverviewActive)
+    if (!showDoorPopup && !showFloorPopup && !searchOverviewActive)
     {
       if (GetInscriptionRecordsAt(inspectedInscriptionX, inspectedInscriptionY).Count > 0)
         DrawSelectedInscriptionPreview(mapRect);
@@ -1857,6 +1913,16 @@ public class DungeonFeatureEditor : EditorWindow
         DrawFloorSearchOverview(mapRect, scrollViewport);
       else if (wallSearchOverviewMarker != null && wallSearchOverviewTiles.Count > 0)
         DrawWallSearchOverview(mapRect, scrollViewport);
+    }
+    else if (showDoorPopup)
+    {
+      Rect scrollViewport = GUILayoutUtility.GetLastRect();
+      Rect popup = new Rect(mapRect.xMax + 8f - mapScroll.x + scrollViewport.x,
+          29f, GetDoorPopupWidth(popupDoor), 110f);
+      Vector3 center = new Vector3(mapRect.x + (inspectedDoorX + .5f) * CellSize
+          - mapScroll.x + scrollViewport.x, mapRect.y + (inspectedDoorY + .5f) * CellSize
+          - mapScroll.y + scrollViewport.y, 0f);
+      DrawSelectedDoorPopup(popup, center, popupDoor);
     }
     else if (showFloorPopup)
     {
@@ -3908,6 +3974,8 @@ public class DungeonFeatureEditor : EditorWindow
         continue;
       featureSearchIndex = i;
       selectedConnectorPulseStartTime = EditorApplication.timeSinceStartup;
+      inspectedDoorX = x;
+      inspectedDoorY = y;
       inspectedFloorItemX = x;
       inspectedFloorItemY = y;
       inspectedOrnamentX = x;
