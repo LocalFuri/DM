@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "coordinateSystem": "Top-left of 224x136 dungeon viewport",
-  "status": "D8A: data-driven front door panel registry. Existing set 0 undecorated projections and vertical lift unchanged. Level 0 set 0 ornament ordinal 1 uses existing native-sized composite artwork; geometry provisional pending DOS comparison. Ornament ordinals are level-relative. No fallback.",
+  "status": "D8A: data-driven front door panel registry. Existing set 0 undecorated projections and vertical lift unchanged. Level 0 set 0 ornament ordinal 1 uses existing native-sized composite artwork; geometry provisional pending DOS comparison. Ornament ordinals are level-relative. No fallback. D18A: native unornamented set 1 Wooden Door registered at all three distances; initial geometry copied from Portcullis, pending visual verification.",
   "views": [
     {
       "graphicSet": 0,
@@ -77,6 +77,45 @@
       "path": "Assets/Art/Doors/BlackDoorF3_45x39.png",
       "caption": "Black Door F3",
       "verticalLiftPerStep": 0
+    },
+    {
+      "graphicSet": 1,
+      "depth": 1,
+      "x": 64,
+      "y": 16,
+      "width": 96,
+      "height": 88,
+      "path": "Assets/Art/Doors/Door Wooden_F1_96x88.png",
+      "caption": "Door Wooden F1",
+      "verticalLiftPerStep": 22,
+      "ornamentOrdinal": 0,
+      "level": -1
+    },
+    {
+      "graphicSet": 1,
+      "depth": 2,
+      "x": 80,
+      "y": 24,
+      "width": 64,
+      "height": 61,
+      "path": "Assets/Art/Doors/Door Wooden_F2_64x61.png",
+      "caption": "Door Wooden F2",
+      "verticalLiftPerStep": 15,
+      "ornamentOrdinal": 0,
+      "level": -1
+    },
+    {
+      "graphicSet": 1,
+      "depth": 3,
+      "x": 90,
+      "y": 30,
+      "width": 44,
+      "height": 38,
+      "path": "Assets/Art/Doors/Door Wooden_F3_44x38.png",
+      "caption": "Door Wooden F3",
+      "verticalLiftPerStep": 10,
+      "ornamentOrdinal": 0,
+      "level": -1
     }
   ]
 }

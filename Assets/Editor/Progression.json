@@ -8958,5 +8958,108 @@
       "nested": [],
       "duplicates": []
     }
+  },
+  "door_features_D17C_20261128-154033": {
+    "timestamp": "2026-11-28T15:40:33.009640+01:00",
+    "status": "D17B approved by user; D17C pending compilation and visual test",
+    "changes": [
+      "Map-only: resolved global ornament 3 with graphic set 1 provisionally named Wooden Door, using Assets/Art/Doors/Door Wooden_F1_96x88.png through existing shared preview resolver.",
+      "Existing search and click behavior preserved; no gameplay renderer changes.",
+      "Approved ornament renderer frozen; DOS PC remains definitive visual reference."
+    ],
+    "next": [
+      "Investigate separate CSBwin debug teleport utility using normal party relocation and level transition routines. No CSBwin modifications authorized yet."
+    ],
+    "limitations": [
+      "Wooden Door label provisional; asset not supplied for inspection; Unity compilation pending. CSBwin debug build cannot establish DOS pixel equivalence."
+    ]
+  },
+  "door_features_D17D_20261128-160709": {
+    "timestamp": "2026-11-28T16:07:09.058177+01:00",
+    "status": "Candidate: Unity compile and visual test pending",
+    "changes": [
+      "Recognize unornamented graphic set 1 as Wooden Door, alongside prior provisional S1 O3 mapping. Existing shared F1 asset resolver, search and click panel reused.",
+      "Placement P00171 is map 1 local (1,0), global (1,14), Type 1, OrnamentOrdinal 0, vertical, button. User CSBwin screenshot confirms wooden appearance. No coordinate-specific rule.",
+      "CSBwin Jump V1 user verified working. No changes to gameplay rendering, approved ornaments or placement database."
+    ],
+    "test": [
+      "Map 1 (1,0): verify Wooden Door name, icon and click preview; search Wooden Door. Verify other door names unchanged."
+    ],
+    "limitations": [
+      "Set 1 unornamented mapping generalized from one confirmed example; S1 O3 mapping remains provisional. Local artwork availability and compilation not verified."
+    ],
+    "menu_audit": {
+      "scope": [
+        "DungeonFeatureEditor.cs",
+        "DungeonMap.cs",
+        "ViewportLayoutEditor.cs"
+      ],
+      "paths": [
+        "Tools/Dungeon Feature Editor &f",
+        "Tools/Check Original Ground Items",
+        "Tools/Restore Original Ground Items",
+        "Tools/Audio Settings",
+        "Tools/ViewEdit &v",
+        "Tools/DOS Ornament Visibility Diagnostic"
+      ],
+      "nested": [],
+      "duplicates": []
+    }
+  },
+  "wooden_door_native_D18_20261128-161645": {
+    "timestamp": "2026-11-28T16:16:45.927510+01:00",
+    "status": "Registration script prepared; execution, Unity rendering and visual verification pending.",
+    "reference": {
+      "level": 1,
+      "doorTile": [
+        1,
+        0
+      ],
+      "testPose": [
+        2,
+        0,
+        "West"
+      ],
+      "graphicSet": 1,
+      "ornamentOrdinal": 0
+    },
+    "changes": [
+      "User confirms Wooden Door has dedicated F1/F2/F3 native art; use NativePerDistance, no scaling or depth remap.",
+      "Additive PowerShell registry update reads actual PNG dimensions from IHDR, requires one matching file per distance, preserves other registrations and creates backups. No C# changes.",
+      "Provisional geometry: centered X, Y=16/24/30, rounded quarter-height lift. Verify against original DOS; no claims of pixel accuracy.",
+      "Approved ornament rendering frozen; existing Portcullis and Black Door rules preserved. D14B 16 frames preferred."
+    ],
+    "limitations": [
+      "F2/F3 filenames and dimensions not supplied; script requires Door Wooden_F2_*.png and Door Wooden_F3_*.png. Existing installed registry not inspected. PowerShell execution and Unity live test pending.",
+      "Door button rendering not added; S1 O3 decorated variant not registered."
+    ]
+  },
+  "door_native_d18a_registry_fix": {
+    "date": "2026-11-28T16:20:57.448102+01:00",
+    "status": "Prepared; local Unity test pending",
+    "finding": "Uploaded registry files contained no graphicSet 1 entries; D18 registration was not present.",
+    "changes": [
+      "Add three native Wooden Door panel views for set 1, ornament 0, any level, using user-confirmed filenames and Portcullis geometry.",
+      "Add NativePerDistance artwork rule for set 1, ornament 0.",
+      "Existing registry entries preserved. No C# changes."
+    ],
+    "test": {
+      "level": 1,
+      "doorTile": [
+        1,
+        0
+      ],
+      "playerTile": [
+        2,
+        0
+      ],
+      "facing": "West"
+    },
+    "guardrails": [
+      "Approved ornament renderer frozen.",
+      "Portcullis and Black Door registrations unchanged.",
+      "DOS PC remains final visual authority."
+    ],
+    "geometryStatus": "Provisional for Wooden Door; copied from approved Portcullis."
   }
 }

@@ -12,6 +12,12 @@
       "ornamentOrdinal": 1,
       "level": 0,
       "mode": "ScaledFromF1"
+    },
+    {
+      "graphicSet": 1,
+      "ornamentOrdinal": 0,
+      "level": -1,
+      "mode": "NativePerDistance"
     }
   ]
 }

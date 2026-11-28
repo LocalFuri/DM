@@ -1034,6 +1034,8 @@ public class DungeonFeatureEditor : EditorWindow
   }
   private string DoorName(DungeonMap.DoorData door)
   {
+    // Set 1 is the wooden base panel; the unornamented variant is verified in CSBwin.
+    if (door.GraphicSet == 1 && (door.OrnamentOrdinal == 0 || DoorOrnamentId(door) == 3)) return "Wooden Door";
     if (DoorOrnamentId(door) == 7) return "Black Door";
     if (door.OrnamentOrdinal == 0 && door.GraphicSet == 0) return "Portcullis";
     return "Door S" + door.GraphicSet + (door.OrnamentOrdinal == 0 ? ""
@@ -1053,6 +1055,7 @@ public class DungeonFeatureEditor : EditorWindow
   {
     if (name == "Portcullis") return "Assets/Art/Doors/Door Portcullis_F1_96x88.png";
     if (name == "Black Door") return "Assets/Art/Doors/Black Door 96x88.png";
+    if (name == "Wooden Door") return "Assets/Art/Doors/Door Wooden_F1_96x88.png";
     return null;
   }
   private void DrawDoorMapMarkers(Rect mapRect)
