@@ -9093,5 +9093,30 @@
     "limitations": [
       "Unity compilation and visual test unavailable. Root cause not confirmed without actual replacement artwork and local import settings."
     ]
+  },
+  "dos_graphics_opaque_20261128-172725": {
+    "timestamp": "2026-11-28T17:27:25.194775+01:00",
+    "status": "Opaque catalogue regenerated and verified",
+    "rule": "Never replace palette colors with transparency during graphics extraction. Preserve all decoded indices. Apply transparency only in runtime renderer according to verified rules.",
+    "images": 542,
+    "previous_pngs_with_transparency": 445,
+    "pixels_verified": 1616913,
+    "source_sha256": "2c3aa836925c64c09402bafb03c645932bd03c4f003ad9a86542383b078ecf8e",
+    "method": "Rebuild from prior indexed PNGs and independently compare against preserved packed pixel data in old HTML; source archive hash identical. No new archive decoding performed.",
+    "limitations": "Reference palette unchanged; no independent DOS pixel validation in this pass.",
+    "destination": "C:\\Unity\\DM\\Research_Results\\DOS_Graphics",
+    "renderer_changes": false
+  },
+  "door_clip_D18D_20261128-174441": {
+    "timestamp": "2026-11-28T17:44:41.197650+01:00",
+    "status": "Prepared; Unity regression test pending",
+    "finding": "Uploaded Unity and DOS screenshots: extra visible door row at viewport Y=102; Y=103 already floor. CSBwin F1 rectangle separate from native source dimensions but differs in coordinates, not proof of DOS implementation.",
+    "changes": [
+      "Generic optional sourceBottomClipRows in panel registry, default zero. No scaling, no artwork changes.",
+      "Wooden set 1 F1 only: exclude bottom two source rows (96x88 source, 96x86 maximum blit). Existing panels unchanged.",
+      "Preserve animation timing and lift steps; clipped source bottom moves with door."
+    ],
+    "test": "Level 1 (2,0) West, closed and animated; compare DOS Y=101/102. Verify Portcullis and Black Door unchanged. F2/F3 pending.",
+    "limitations": "Based on delivered D18C and D18A registry, not local Unity files. DOS clipping mechanism unverified."
   }
 }

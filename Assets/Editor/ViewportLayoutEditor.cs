@@ -19683,7 +19683,7 @@ private static void HandleGameViewPointerDown(
   [System.Serializable] private sealed class DosDoorPanelRoot
   { public int schemaVersion; public DosDoorPanelView[] views; }
   [System.Serializable] private sealed class DosDoorPanelView
-  { public int graphicSet, depth, x, y, width, height, verticalLiftPerStep, ornamentOrdinal, level; public string path, caption; }
+  { public int graphicSet, depth, x, y, width, height, verticalLiftPerStep, ornamentOrdinal, level, sourceBottomClipRows; public string path, caption; }
 
   // Explicit acquisition policy, independent of the installed geometry registry.
   private const string DosDoorArtworkRulesPath = "Assets/Editor/DosDoorArtworkRules.json";
@@ -19824,6 +19824,7 @@ private static void HandleGameViewPointerDown(
         { ReportDoorArtworkProblem("no panel registered for level " + previewDungeonLevel
             + " set " + door.GraphicSet + " ornament ordinal " + door.OrnamentOrdinal + " F" + depth); continue; }
         if (view.width <= 0 || view.height <= 0 || view.x < 0 || view.y < 0
+            || view.sourceBottomClipRows < 0 || view.sourceBottomClipRows >= view.height
             || view.x + view.width > DungeonViewportWidth || view.y + view.height > DungeonViewportHeight)
           throw new System.IO.InvalidDataException("invalid panel geometry");
         source = ResolveDosDoorPanelArtwork(root, view);
@@ -19859,8 +19860,9 @@ private static void HandleGameViewPointerDown(
       foreach (Color32 pixel in art) if (pixel.a != 0) { hasVisiblePixel = true; break; }
       if (!hasVisiblePixel)
         ReportDoorArtworkProblem("all pixels transparent in " + view.path);
+      // Source artwork remains native-sized; optional registry clipping excludes bottom rows.
       // Lift without scaling: skip the top source rows and clip at the closed panel's top.
-      for (int y = 0; y < source.height - lift; y++)
+      for (int y = 0; y < source.height - view.sourceBottomClipRows - lift; y++)
       {
         int dy = dest.y + y;
         if (dy < 0 || dy >= DungeonViewportHeight) continue;
