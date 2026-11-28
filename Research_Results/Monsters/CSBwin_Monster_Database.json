@@ -1,0 +1,3166 @@
+{
+  "source": "uploaded CSBwin graphics.dat",
+  "sha256": "196cb349827e8926e2763fa61ecbe8e10810003045ef72a435b7da4dded56d8e",
+  "status": "CSBwin reference only; DOS verification pending",
+  "records": {
+    "0x22e": {
+      "stored": 3976,
+      "decoded": 4720,
+      "sha256": "93f2912ea2195851ed0acb9363674757b633b9f6e1650c5bf2c7292aa05e1888"
+    },
+    "0x22f": {
+      "stored": 2272,
+      "decoded": 3086,
+      "sha256": "8e465fb227073cd0c873b61397f1ef3dba9de03867c4f4fd92091fc5eda4300a"
+    },
+    "0x232": {
+      "stored": 1268,
+      "decoded": 1826,
+      "sha256": "bee90e2b0693630bf385ca34f12023c5fed97a8005c913f3e67ae7a9c9789c90"
+    }
+  },
+  "monster_tables": {
+    "source": "Graphic_0x22e_Raw.bin",
+    "source_sha256": "93f2912ea2195851ed0acb9363674757b633b9f6e1650c5bf2c7292aa05e1888",
+    "source_size": 4720,
+    "status": "Decoded using CSBwin research offsets; original DOS equivalence not verified. Type names assume descriptor index equals type; flags require 0x22f. Widths are descriptor widths, not independently checked against bitmaps.",
+    "placement_tables": [
+      [
+        [
+          [
+            95,
+            70
+          ],
+          [
+            127,
+            70
+          ],
+          [
+            129,
+            75
+          ],
+          [
+            93,
+            75
+          ],
+          [
+            111,
+            72
+          ]
+        ],
+        [
+          [
+            131,
+            70
+          ],
+          [
+            163,
+            70
+          ],
+          [
+            158,
+            75
+          ],
+          [
+            120,
+            75
+          ],
+          [
+            145,
+            72
+          ]
+        ],
+        [
+          [
+            59,
+            70
+          ],
+          [
+            91,
+            70
+          ],
+          [
+            107,
+            75
+          ],
+          [
+            66,
+            75
+          ],
+          [
+            79,
+            72
+          ]
+        ],
+        [
+          [
+            92,
+            81
+          ],
+          [
+            131,
+            81
+          ],
+          [
+            132,
+            90
+          ],
+          [
+            91,
+            90
+          ],
+          [
+            111,
+            85
+          ]
+        ],
+        [
+          [
+            99,
+            81
+          ],
+          [
+            146,
+            81
+          ],
+          [
+            135,
+            90
+          ],
+          [
+            80,
+            90
+          ],
+          [
+            120,
+            85
+          ]
+        ],
+        [
+          [
+            77,
+            81
+          ],
+          [
+            124,
+            81
+          ],
+          [
+            143,
+            90
+          ],
+          [
+            89,
+            90
+          ],
+          [
+            105,
+            85
+          ]
+        ],
+        [
+          [
+            83,
+            103
+          ],
+          [
+            141,
+            103
+          ],
+          [
+            148,
+            119
+          ],
+          [
+            76,
+            119
+          ],
+          [
+            109,
+            111
+          ]
+        ],
+        [
+          [
+            46,
+            103
+          ],
+          [
+            118,
+            103
+          ],
+          [
+            101,
+            119
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            79,
+            111
+          ]
+        ],
+        [
+          [
+            107,
+            103
+          ],
+          [
+            177,
+            103
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            123,
+            119
+          ],
+          [
+            144,
+            111
+          ]
+        ],
+        [
+          [
+            0,
+            0
+          ],
+          [
+            67,
+            135
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        [
+          [
+            156,
+            135
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      [
+        [
+          [
+            94,
+            75
+          ],
+          [
+            128,
+            75
+          ],
+          [
+            111,
+            70
+          ],
+          [
+            111,
+            72
+          ],
+          [
+            111,
+            75
+          ]
+        ],
+        [
+          [
+            120,
+            75
+          ],
+          [
+            158,
+            75
+          ],
+          [
+            149,
+            70
+          ],
+          [
+            145,
+            72
+          ],
+          [
+            150,
+            75
+          ]
+        ],
+        [
+          [
+            66,
+            75
+          ],
+          [
+            104,
+            75
+          ],
+          [
+            75,
+            70
+          ],
+          [
+            79,
+            72
+          ],
+          [
+            73,
+            75
+          ]
+        ],
+        [
+          [
+            91,
+            90
+          ],
+          [
+            132,
+            90
+          ],
+          [
+            111,
+            83
+          ],
+          [
+            111,
+            85
+          ],
+          [
+            111,
+            90
+          ]
+        ],
+        [
+          [
+            80,
+            90
+          ],
+          [
+            135,
+            90
+          ],
+          [
+            125,
+            83
+          ],
+          [
+            120,
+            85
+          ],
+          [
+            125,
+            90
+          ]
+        ],
+        [
+          [
+            89,
+            90
+          ],
+          [
+            143,
+            90
+          ],
+          [
+            99,
+            83
+          ],
+          [
+            105,
+            85
+          ],
+          [
+            98,
+            90
+          ]
+        ],
+        [
+          [
+            81,
+            119
+          ],
+          [
+            142,
+            119
+          ],
+          [
+            111,
+            105
+          ],
+          [
+            111,
+            111
+          ],
+          [
+            111,
+            119
+          ]
+        ],
+        [
+          [
+            0,
+            0
+          ],
+          [
+            101,
+            119
+          ],
+          [
+            84,
+            105
+          ],
+          [
+            70,
+            111
+          ],
+          [
+            77,
+            119
+          ]
+        ],
+        [
+          [
+            123,
+            119
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            139,
+            105
+          ],
+          [
+            153,
+            111
+          ],
+          [
+            146,
+            119
+          ]
+        ],
+        [
+          [
+            0,
+            0
+          ],
+          [
+            83,
+            130
+          ],
+          [
+            57,
+            121
+          ],
+          [
+            47,
+            126
+          ],
+          [
+            57,
+            130
+          ]
+        ],
+        [
+          [
+            140,
+            130
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            166,
+            121
+          ],
+          [
+            176,
+            126
+          ],
+          [
+            166,
+            130
+          ]
+        ]
+      ],
+      [
+        [
+          [
+            95,
+            59
+          ],
+          [
+            127,
+            59
+          ],
+          [
+            129,
+            61
+          ],
+          [
+            93,
+            61
+          ],
+          [
+            111,
+            60
+          ]
+        ],
+        [
+          [
+            131,
+            59
+          ],
+          [
+            163,
+            59
+          ],
+          [
+            158,
+            61
+          ],
+          [
+            120,
+            61
+          ],
+          [
+            145,
+            60
+          ]
+        ],
+        [
+          [
+            59,
+            59
+          ],
+          [
+            91,
+            59
+          ],
+          [
+            107,
+            61
+          ],
+          [
+            66,
+            61
+          ],
+          [
+            79,
+            60
+          ]
+        ],
+        [
+          [
+            92,
+            65
+          ],
+          [
+            131,
+            65
+          ],
+          [
+            132,
+            67
+          ],
+          [
+            91,
+            67
+          ],
+          [
+            111,
+            66
+          ]
+        ],
+        [
+          [
+            99,
+            65
+          ],
+          [
+            146,
+            65
+          ],
+          [
+            135,
+            67
+          ],
+          [
+            80,
+            67
+          ],
+          [
+            120,
+            66
+          ]
+        ],
+        [
+          [
+            77,
+            65
+          ],
+          [
+            124,
+            65
+          ],
+          [
+            143,
+            67
+          ],
+          [
+            89,
+            67
+          ],
+          [
+            105,
+            66
+          ]
+        ],
+        [
+          [
+            83,
+            79
+          ],
+          [
+            141,
+            79
+          ],
+          [
+            148,
+            85
+          ],
+          [
+            76,
+            85
+          ],
+          [
+            111,
+            81
+          ]
+        ],
+        [
+          [
+            46,
+            79
+          ],
+          [
+            118,
+            79
+          ],
+          [
+            101,
+            85
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            79,
+            81
+          ]
+        ],
+        [
+          [
+            107,
+            79
+          ],
+          [
+            177,
+            79
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            123,
+            85
+          ],
+          [
+            144,
+            81
+          ]
+        ],
+        [
+          [
+            0,
+            0
+          ],
+          [
+            67,
+            96
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        [
+          [
+            156,
+            96
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      ]
+    ],
+    "small_offsets": [
+      0,
+      1,
+      2,
+      3,
+      0,
+      -3,
+      -2,
+      -1,
+      0,
+      1,
+      1,
+      2,
+      0,
+      -2,
+      -1,
+      -1,
+      0,
+      1,
+      1,
+      1,
+      0,
+      -1,
+      -1,
+      -1
+    ],
+    "palette_F2_raw": [
+      0,
+      10,
+      20,
+      30,
+      40,
+      30,
+      60,
+      70,
+      50,
+      0,
+      0,
+      110,
+      120,
+      130,
+      140,
+      150
+    ],
+    "palette_F3_raw": [
+      0,
+      120,
+      10,
+      30,
+      40,
+      30,
+      0,
+      60,
+      30,
+      0,
+      0,
+      110,
+      0,
+      20,
+      0,
+      130
+    ],
+    "special_colors": [
+      [
+        1616,
+        1344,
+        1072,
+        800,
+        528,
+        256,
+        23130
+      ],
+      [
+        48,
+        32,
+        16,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1072,
+        800,
+        528,
+        256,
+        0,
+        0,
+        25700
+      ],
+      [
+        800,
+        528,
+        256,
+        0,
+        0,
+        0,
+        23040
+      ],
+      [
+        5,
+        4,
+        3,
+        2,
+        1,
+        0,
+        23140
+      ],
+      [
+        4,
+        3,
+        2,
+        1,
+        0,
+        0,
+        25600
+      ],
+      [
+        1028,
+        771,
+        514,
+        257,
+        0,
+        0,
+        23040
+      ],
+      [
+        1285,
+        1028,
+        771,
+        514,
+        257,
+        0,
+        25690
+      ],
+      [
+        1872,
+        1600,
+        1328,
+        1056,
+        784,
+        512,
+        25650
+      ],
+      [
+        1856,
+        1584,
+        1312,
+        1040,
+        768,
+        256,
+        12830
+      ],
+      [
+        1024,
+        768,
+        512,
+        256,
+        0,
+        0,
+        25700
+      ],
+      [
+        768,
+        512,
+        256,
+        0,
+        0,
+        0,
+        30720
+      ],
+      [
+        1603,
+        1330,
+        1057,
+        784,
+        512,
+        256,
+        25650
+      ]
+    ],
+    "descriptors": [
+      {
+        "type_index_assumed": 0,
+        "name_assumed": "Scorpion",
+        "front_graphic_index": 446,
+        "raw_word0": 0,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 84
+        },
+        "side": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 84
+        },
+        "attack": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 84
+        },
+        "transparent_index": 13,
+        "placement_table": 1,
+        "recolor_scheme_9": 1,
+        "recolor_scheme_10": 0
+      },
+      {
+        "type_index_assumed": 1,
+        "name_assumed": "Slime Devil",
+        "front_graphic_index": 450,
+        "raw_word0": 4,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 66
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 69
+        },
+        "transparent_index": 11,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 2
+      },
+      {
+        "type_index_assumed": 2,
+        "name_assumed": "Giggler",
+        "front_graphic_index": 452,
+        "raw_word0": 6,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 24,
+          "pixel_width": 48,
+          "height": 48
+        },
+        "side": {
+          "byte_width": 24,
+          "pixel_width": 48,
+          "height": 48
+        },
+        "attack": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "transparent_index": 11,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      },
+      {
+        "type_index_assumed": 3,
+        "name_assumed": "Flying Eye",
+        "front_graphic_index": 456,
+        "raw_word0": 10,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 61
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 61
+        },
+        "transparent_index": 4,
+        "placement_table": 2,
+        "recolor_scheme_9": 1,
+        "recolor_scheme_10": 3
+      },
+      {
+        "type_index_assumed": 4,
+        "name_assumed": "Hellhound",
+        "front_graphic_index": 458,
+        "raw_word0": 12,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 64
+        },
+        "side": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 64
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 64
+        },
+        "transparent_index": 4,
+        "placement_table": 1,
+        "recolor_scheme_9": 4,
+        "recolor_scheme_10": 3
+      },
+      {
+        "type_index_assumed": 5,
+        "name_assumed": "mon_5",
+        "front_graphic_index": 462,
+        "raw_word0": 16,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 24,
+          "pixel_width": 48,
+          "height": 49
+        },
+        "side": {
+          "byte_width": 40,
+          "pixel_width": 80,
+          "height": 49
+        },
+        "attack": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "transparent_index": 8,
+        "placement_table": 1,
+        "recolor_scheme_9": 4,
+        "recolor_scheme_10": 3
+      },
+      {
+        "type_index_assumed": 6,
+        "name_assumed": "Screamer",
+        "front_graphic_index": 465,
+        "raw_word0": 19,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 60
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 60
+        },
+        "transparent_index": 13,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      },
+      {
+        "type_index_assumed": 7,
+        "name_assumed": "Rock Pile",
+        "front_graphic_index": 467,
+        "raw_word0": 21,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 43
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 64
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      },
+      {
+        "type_index_assumed": 8,
+        "name_assumed": "Rive",
+        "front_graphic_index": 469,
+        "raw_word0": 23,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 83
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 93
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      },
+      {
+        "type_index_assumed": 9,
+        "name_assumed": "Stone Golem",
+        "front_graphic_index": 471,
+        "raw_word0": 25,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 101
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 101
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 101
+        },
+        "transparent_index": 4,
+        "placement_table": 1,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      },
+      {
+        "type_index_assumed": 10,
+        "name_assumed": "Mummy",
+        "front_graphic_index": 475,
+        "raw_word0": 29,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 82
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 82
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 83
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      },
+      {
+        "type_index_assumed": 11,
+        "name_assumed": "Black Flame",
+        "front_graphic_index": 479,
+        "raw_word0": 33,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 80
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 99
+        },
+        "transparent_index": 4,
+        "placement_table": 1,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      },
+      {
+        "type_index_assumed": 12,
+        "name_assumed": "Skeleton",
+        "front_graphic_index": 481,
+        "raw_word0": 35,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 80
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 80
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 76
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      },
+      {
+        "type_index_assumed": 13,
+        "name_assumed": "Couatl",
+        "front_graphic_index": 485,
+        "raw_word0": 39,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 96
+        },
+        "side": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 93
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 90
+        },
+        "transparent_index": 13,
+        "placement_table": 1,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 2
+      },
+      {
+        "type_index_assumed": 14,
+        "name_assumed": "Vexirk",
+        "front_graphic_index": 489,
+        "raw_word0": 43,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 49
+        },
+        "side": {
+          "byte_width": 16,
+          "pixel_width": 32,
+          "height": 49
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 56
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 3
+      },
+      {
+        "type_index_assumed": 15,
+        "name_assumed": "Worm",
+        "front_graphic_index": 493,
+        "raw_word0": 47,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 59
+        },
+        "side": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 43
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 67
+        },
+        "transparent_index": 4,
+        "placement_table": 1,
+        "recolor_scheme_9": 8,
+        "recolor_scheme_10": 7
+      },
+      {
+        "type_index_assumed": 16,
+        "name_assumed": "Ant Man",
+        "front_graphic_index": 497,
+        "raw_word0": 51,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 83
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 74
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 74
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 5,
+        "recolor_scheme_10": 6
+      },
+      {
+        "type_index_assumed": 17,
+        "name_assumed": "Muncher",
+        "front_graphic_index": 501,
+        "raw_word0": 55,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 24,
+          "pixel_width": 48,
+          "height": 49
+        },
+        "side": {
+          "byte_width": 24,
+          "pixel_width": 48,
+          "height": 53
+        },
+        "attack": {
+          "byte_width": 24,
+          "pixel_width": 48,
+          "height": 53
+        },
+        "transparent_index": 4,
+        "placement_table": 2,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      },
+      {
+        "type_index_assumed": 18,
+        "name_assumed": "Deth Knight",
+        "front_graphic_index": 505,
+        "raw_word0": 59,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 89
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 89
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 89
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      },
+      {
+        "type_index_assumed": 19,
+        "name_assumed": "Zytaz",
+        "front_graphic_index": 509,
+        "raw_word0": 63,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 84
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 84
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 84
+        },
+        "transparent_index": 13,
+        "placement_table": 0,
+        "recolor_scheme_9": 9,
+        "recolor_scheme_10": 10
+      },
+      {
+        "type_index_assumed": 20,
+        "name_assumed": "Water Elemental",
+        "front_graphic_index": 513,
+        "raw_word0": 67,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 27
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 80
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 5,
+        "recolor_scheme_10": 6
+      },
+      {
+        "type_index_assumed": 21,
+        "name_assumed": "Oitu",
+        "front_graphic_index": 515,
+        "raw_word0": 69,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 77
+        },
+        "side": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 81
+        },
+        "attack": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 77
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 9,
+        "recolor_scheme_10": 10
+      },
+      {
+        "type_index_assumed": 22,
+        "name_assumed": "Demon",
+        "front_graphic_index": 519,
+        "raw_word0": 73,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 87
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 89
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 89
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 11,
+        "recolor_scheme_10": 12
+      },
+      {
+        "type_index_assumed": 23,
+        "name_assumed": "Lord Chaos",
+        "front_graphic_index": 523,
+        "raw_word0": 77,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 96
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 94
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 96
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      },
+      {
+        "type_index_assumed": 24,
+        "name_assumed": "Dragon",
+        "front_graphic_index": 527,
+        "raw_word0": 81,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 64,
+          "pixel_width": 128,
+          "height": 94
+        },
+        "side": {
+          "byte_width": 72,
+          "pixel_width": 144,
+          "height": 94
+        },
+        "attack": {
+          "byte_width": 64,
+          "pixel_width": 128,
+          "height": 94
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 11,
+        "recolor_scheme_10": 12
+      },
+      {
+        "type_index_assumed": 25,
+        "name_assumed": "mon_25",
+        "front_graphic_index": 531,
+        "raw_word0": 85,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 93
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 11,
+        "recolor_scheme_10": 12
+      },
+      {
+        "type_index_assumed": 26,
+        "name_assumed": "Grey Lord",
+        "front_graphic_index": 532,
+        "raw_word0": 86,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 93
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 11,
+        "recolor_scheme_10": 12
+      }
+    ]
+  },
+  "monsters": [
+    {
+      "type": 0,
+      "name": "Scorpion",
+      "descriptor_index": 0,
+      "raw_hex": "00040482623d0814379696f037001153299b08760254fd400400",
+      "word4": 25149,
+      "word2": 1154,
+      "word20": 596,
+      "views": {
+        "front": 446,
+        "side": 447,
+        "back": 448,
+        "attack": 449
+      },
+      "horizontal_size": 2,
+      "vertical_size": 1,
+      "move_ticks": 8,
+      "attack_ticks": 20,
+      "move_to_attack_delay": 5,
+      "attack_to_move_delay": 2,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 2,
+      "y_jitter_range": 1,
+      "graphics_descriptor": {
+        "type_index_assumed": 0,
+        "name_assumed": "Scorpion",
+        "front_graphic_index": 446,
+        "raw_word0": 0,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 84
+        },
+        "side": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 84
+        },
+        "attack": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 84
+        },
+        "transparent_index": 13,
+        "placement_table": 1,
+        "recolor_scheme_9": 1,
+        "recolor_scheme_10": 0
+      }
+    },
+    {
+      "type": 1,
+      "name": "Slime Devil",
+      "descriptor_index": 1,
+      "raw_hex": "01000480a6250f20146e500f1400313233a90e420384fc410300",
+      "word4": 42533,
+      "word2": 1152,
+      "word20": 900,
+      "views": {
+        "front": 450,
+        "attack": 451
+      },
+      "horizontal_size": 0,
+      "vertical_size": 1,
+      "move_ticks": 15,
+      "attack_ticks": 32,
+      "move_to_attack_delay": 8,
+      "attack_to_move_delay": 3,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        true
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 2,
+      "y_jitter_range": 2,
+      "graphics_descriptor": {
+        "type_index_assumed": 1,
+        "name_assumed": "Slime Devil",
+        "front_graphic_index": 450,
+        "raw_word0": 4,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 66
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 69
+        },
+        "transparent_index": 11,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 2
+      }
+    },
+    {
+      "type": 2,
+      "name": "Giggler",
+      "descriptor_index": 2,
+      "raw_hex": "0206051061980305320a0a006e001376710a02350222fd200000",
+      "word4": 24984,
+      "word2": 1296,
+      "word20": 546,
+      "views": {
+        "front": 452,
+        "side": 453,
+        "back": 454
+      },
+      "horizontal_size": 0,
+      "vertical_size": 2,
+      "move_ticks": 3,
+      "attack_ticks": 5,
+      "move_to_attack_delay": 2,
+      "attack_to_move_delay": 2,
+      "front_mirror": false,
+      "attack_mirror": false,
+      "mirror_flags_7_8_10": [
+        true,
+        true,
+        false
+      ],
+      "extra_mirror_groups": 0,
+      "x_jitter_range": 2,
+      "y_jitter_range": 1,
+      "graphics_descriptor": {
+        "type_index_assumed": 2,
+        "name_assumed": "Giggler",
+        "front_graphic_index": 452,
+        "raw_word0": 6,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 24,
+          "pixel_width": 48,
+          "height": 48
+        },
+        "side": {
+          "byte_width": 24,
+          "pixel_width": 48,
+          "height": 48
+        },
+        "attack": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "transparent_index": 11,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      }
+    },
+    {
+      "type": 3,
+      "name": "Flying Eye",
+      "descriptor_index": 3,
+      "raw_hex": "030004b4b2250a151e283a005000320a96aa0b3c0113f9100500",
+      "word4": 45605,
+      "word2": 1204,
+      "word20": 275,
+      "views": {
+        "front": 456,
+        "attack": 457
+      },
+      "horizontal_size": 0,
+      "vertical_size": 1,
+      "move_ticks": 10,
+      "attack_ticks": 21,
+      "move_to_attack_delay": 1,
+      "attack_to_move_delay": 1,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 3,
+      "y_jitter_range": 2,
+      "graphics_descriptor": {
+        "type_index_assumed": 3,
+        "name_assumed": "Flying Eye",
+        "front_graphic_index": 456,
+        "raw_word0": 10,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 61
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 61
+        },
+        "transparent_index": 4,
+        "placement_table": 2,
+        "recolor_scheme_9": 1,
+        "recolor_scheme_10": 3
+      }
+    },
+    {
+      "type": 4,
+      "name": "Hellhound",
+      "descriptor_index": 4,
+      "raw_hex": "04010701a3b809082d655a004100155458ff0a340143fe930400",
+      "word4": 41912,
+      "word2": 1793,
+      "word20": 323,
+      "views": {
+        "front": 458,
+        "side": 459,
+        "back": 460,
+        "attack": 461
+      },
+      "horizontal_size": 1,
+      "vertical_size": 2,
+      "move_ticks": 9,
+      "attack_ticks": 8,
+      "move_to_attack_delay": 4,
+      "attack_to_move_delay": 1,
+      "front_mirror": false,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        true,
+        true,
+        false
+      ],
+      "extra_mirror_groups": 0,
+      "x_jitter_range": 2,
+      "y_jitter_range": 2,
+      "graphics_descriptor": {
+        "type_index_assumed": 4,
+        "name_assumed": "Hellhound",
+        "front_graphic_index": 458,
+        "raw_word0": 12,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 64
+        },
+        "side": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 64
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 64
+        },
+        "transparent_index": 4,
+        "placement_table": 1,
+        "recolor_scheme_9": 4,
+        "recolor_scheme_10": 3
+      }
+    },
+    {
+      "type": 5,
+      "name": "mon_5",
+      "descriptor_index": 5,
+      "raw_hex": "05000581539d1412643c1e001e001232433805830265ffd60300",
+      "word4": 21405,
+      "word2": 1409,
+      "word20": 613,
+      "views": {
+        "front": 462,
+        "side": 463,
+        "back": 464
+      },
+      "horizontal_size": 1,
+      "vertical_size": 3,
+      "move_ticks": 20,
+      "attack_ticks": 18,
+      "move_to_attack_delay": 6,
+      "attack_to_move_delay": 2,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        true,
+        true,
+        false
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 1,
+      "y_jitter_range": 1,
+      "graphics_descriptor": {
+        "type_index_assumed": 5,
+        "name_assumed": "mon_5",
+        "front_graphic_index": 462,
+        "raw_word0": 16,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 24,
+          "pixel_width": 48,
+          "height": 49
+        },
+        "side": {
+          "byte_width": 40,
+          "pixel_width": 80,
+          "height": 49
+        },
+        "attack": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "transparent_index": 8,
+        "placement_table": 1,
+        "recolor_scheme_9": 4,
+        "recolor_scheme_10": 3
+      }
+    },
+    {
+      "type": 6,
+      "name": "Screamer",
+      "descriptor_index": 6,
+      "raw_hex": "0603070c0020780a05a505000500111110f1076402f2fc840600",
+      "word4": 32,
+      "word2": 1804,
+      "word20": 754,
+      "views": {
+        "front": 465,
+        "attack": 466
+      },
+      "horizontal_size": 0,
+      "vertical_size": 2,
+      "move_ticks": 120,
+      "attack_ticks": 10,
+      "move_to_attack_delay": 15,
+      "attack_to_move_delay": 2,
+      "front_mirror": false,
+      "attack_mirror": false,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 0,
+      "x_jitter_range": 0,
+      "y_jitter_range": 0,
+      "graphics_descriptor": {
+        "type_index_assumed": 6,
+        "name_assumed": "Screamer",
+        "front_graphic_index": 465,
+        "raw_word0": 19,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 60
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 60
+        },
+        "transparent_index": 13,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      }
+    },
+    {
+      "type": 7,
+      "name": "Rock Pile",
+      "descriptor_index": 7,
+      "raw_hex": "070003000220b90faa3228050a00146325c406e301f4fd930400",
+      "word4": 544,
+      "word2": 768,
+      "word20": 500,
+      "views": {
+        "front": 467,
+        "attack": 468
+      },
+      "horizontal_size": 0,
+      "vertical_size": 2,
+      "move_ticks": 185,
+      "attack_ticks": 15,
+      "move_to_attack_delay": 15,
+      "attack_to_move_delay": 1,
+      "front_mirror": false,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 0,
+      "x_jitter_range": 0,
+      "y_jitter_range": 0,
+      "graphics_descriptor": {
+        "type_index_assumed": 7,
+        "name_assumed": "Rock Pile",
+        "front_graphic_index": 467,
+        "raw_word0": 21,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 43
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 64
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      }
+    },
+    {
+      "type": 8,
+      "name": "Rive",
+      "descriptor_index": 8,
+      "raw_hex": "0802186452250b100f1e37005000142346640fc80116fb300600",
+      "word4": 21029,
+      "word2": 6244,
+      "word20": 278,
+      "views": {
+        "front": 469,
+        "attack": 470
+      },
+      "horizontal_size": 0,
+      "vertical_size": 0,
+      "move_ticks": 11,
+      "attack_ticks": 16,
+      "move_to_attack_delay": 1,
+      "attack_to_move_delay": 1,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 1,
+      "y_jitter_range": 1,
+      "graphics_descriptor": {
+        "type_index_assumed": 8,
+        "name_assumed": "Rive",
+        "front_graphic_index": 469,
+        "raw_word0": 23,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 83
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 93
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      }
+    },
+    {
+      "type": 9,
+      "name": "Stone Golem",
+      "descriptor_index": 9,
+      "raw_hex": "0907028271b8150ef078db00230010233bff0ff704f3f9200300",
+      "word4": 29112,
+      "word2": 642,
+      "word20": 1267,
+      "views": {
+        "front": 471,
+        "side": 472,
+        "back": 473,
+        "attack": 474
+      },
+      "horizontal_size": 2,
+      "vertical_size": 1,
+      "move_ticks": 21,
+      "attack_ticks": 14,
+      "move_to_attack_delay": 15,
+      "attack_to_move_delay": 4,
+      "front_mirror": false,
+      "attack_mirror": false,
+      "mirror_flags_7_8_10": [
+        true,
+        true,
+        false
+      ],
+      "extra_mirror_groups": 0,
+      "x_jitter_range": 3,
+      "y_jitter_range": 1,
+      "graphics_descriptor": {
+        "type_index_assumed": 9,
+        "name_assumed": "Stone Golem",
+        "front_graphic_index": 471,
+        "raw_word0": 25,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 101
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 101
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 101
+        },
+        "transparent_index": 4,
+        "placement_table": 1,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      }
+    },
+    {
+      "type": 10,
+      "name": "Mummy",
+      "descriptor_index": 10,
+      "raw_hex": "0a02148011b8110c192114002800122454970f150483fb200300",
+      "word4": 4536,
+      "word2": 5248,
+      "word20": 1155,
+      "views": {
+        "front": 475,
+        "side": 476,
+        "back": 477,
+        "attack": 478
+      },
+      "horizontal_size": 0,
+      "vertical_size": 1,
+      "move_ticks": 17,
+      "attack_ticks": 12,
+      "move_to_attack_delay": 8,
+      "attack_to_move_delay": 4,
+      "front_mirror": false,
+      "attack_mirror": false,
+      "mirror_flags_7_8_10": [
+        true,
+        true,
+        false
+      ],
+      "extra_mirror_groups": 0,
+      "x_jitter_range": 1,
+      "y_jitter_range": 0,
+      "graphics_descriptor": {
+        "type_index_assumed": 10,
+        "name_assumed": "Mummy",
+        "front_graphic_index": 475,
+        "raw_word0": 29,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 82
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 82
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 83
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      }
+    },
+    {
+      "type": 11,
+      "name": "Black Flame",
+      "descriptor_index": 11,
+      "raw_hex": "0b0018c60225ff082d5069003c00131455a50ff90114fd950100",
+      "word4": 549,
+      "word2": 6342,
+      "word20": 276,
+      "views": {
+        "front": 479,
+        "attack": 480
+      },
+      "horizontal_size": 2,
+      "vertical_size": 1,
+      "move_ticks": 255,
+      "attack_ticks": 8,
+      "move_to_attack_delay": 1,
+      "attack_to_move_delay": 1,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 0,
+      "y_jitter_range": 0,
+      "graphics_descriptor": {
+        "type_index_assumed": 11,
+        "name_assumed": "Black Flame",
+        "front_graphic_index": 479,
+        "raw_word0": 33,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 80
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 99
+        },
+        "transparent_index": 4,
+        "placement_table": 1,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      }
+    },
+    {
+      "type": 12,
+      "name": "Skeleton",
+      "descriptor_index": 12,
+      "raw_hex": "0c08128060380707161416005000101365960f630132fa300400",
+      "word4": 24632,
+      "word2": 4736,
+      "word20": 306,
+      "views": {
+        "front": 481,
+        "side": 482,
+        "back": 483,
+        "attack": 484
+      },
+      "horizontal_size": 0,
+      "vertical_size": 1,
+      "move_ticks": 7,
+      "attack_ticks": 7,
+      "move_to_attack_delay": 3,
+      "attack_to_move_delay": 1,
+      "front_mirror": false,
+      "attack_mirror": false,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 0,
+      "x_jitter_range": 2,
+      "y_jitter_range": 1,
+      "graphics_descriptor": {
+        "type_index_assumed": 12,
+        "name_assumed": "Skeleton",
+        "front_graphic_index": 481,
+        "raw_word0": 35,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 80
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 80
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 76
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      }
+    },
+    {
+      "type": 13,
+      "name": "Couatl",
+      "descriptor_index": 13,
+      "raw_hex": "0d0014a2b23d050a2a275a6458001343573406380112fa300400",
+      "word4": 45629,
+      "word2": 5282,
+      "word20": 274,
+      "views": {
+        "front": 485,
+        "side": 486,
+        "back": 487,
+        "attack": 488
+      },
+      "horizontal_size": 2,
+      "vertical_size": 1,
+      "move_ticks": 5,
+      "attack_ticks": 10,
+      "move_to_attack_delay": 1,
+      "attack_to_move_delay": 1,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 3,
+      "y_jitter_range": 2,
+      "graphics_descriptor": {
+        "type_index_assumed": 13,
+        "name_assumed": "Couatl",
+        "front_graphic_index": 485,
+        "raw_word0": 39,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 96
+        },
+        "side": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 93
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 90
+        },
+        "transparent_index": 13,
+        "placement_table": 1,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 2
+      }
+    },
+    {
+      "type": 14,
+      "name": "Vexirk",
+      "descriptor_index": 14,
+      "raw_hex": "0e0005b816380a142f2c4b005a004335d952035b0664fd600500",
+      "word4": 5688,
+      "word2": 1464,
+      "word20": 1636,
+      "views": {
+        "front": 489,
+        "side": 490,
+        "back": 491,
+        "attack": 492
+      },
+      "horizontal_size": 0,
+      "vertical_size": 3,
+      "move_ticks": 10,
+      "attack_ticks": 20,
+      "move_to_attack_delay": 6,
+      "attack_to_move_delay": 6,
+      "front_mirror": false,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        true
+      ],
+      "extra_mirror_groups": 0,
+      "x_jitter_range": 1,
+      "y_jitter_range": 0,
+      "graphics_descriptor": {
+        "type_index_assumed": 14,
+        "name_assumed": "Vexirk",
+        "front_graphic_index": 489,
+        "raw_word0": 43,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 49
+        },
+        "side": {
+          "byte_width": 16,
+          "pixel_width": 32,
+          "height": 49
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 56
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 3
+      }
+    },
+    {
+      "type": 15,
+      "name": "Worm",
+      "descriptor_index": 15,
+      "raw_hex": "0f050381523d121348462d2323001aa115ab0b930253ffc50400",
+      "word4": 21053,
+      "word2": 897,
+      "word20": 595,
+      "views": {
+        "front": 493,
+        "side": 494,
+        "back": 495,
+        "attack": 496
+      },
+      "horizontal_size": 1,
+      "vertical_size": 3,
+      "move_ticks": 18,
+      "attack_ticks": 19,
+      "move_to_attack_delay": 5,
+      "attack_to_move_delay": 2,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 1,
+      "y_jitter_range": 1,
+      "graphics_descriptor": {
+        "type_index_assumed": 15,
+        "name_assumed": "Worm",
+        "front_graphic_index": 493,
+        "raw_word0": 47,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 59
+        },
+        "side": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 43
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 67
+        },
+        "transparent_index": 4,
+        "placement_table": 1,
+        "recolor_scheme_9": 8,
+        "recolor_scheme_10": 7
+      }
+    },
+    {
+      "type": 16,
+      "name": "Ant Man",
+      "descriptor_index": 16,
+      "raw_hex": "10070680a0380d081c14190029001343214803210332fc300300",
+      "word4": 41016,
+      "word2": 1664,
+      "word20": 818,
+      "views": {
+        "front": 497,
+        "side": 498,
+        "back": 499,
+        "attack": 500
+      },
+      "horizontal_size": 0,
+      "vertical_size": 1,
+      "move_ticks": 13,
+      "attack_ticks": 8,
+      "move_to_attack_delay": 3,
+      "attack_to_move_delay": 3,
+      "front_mirror": false,
+      "attack_mirror": false,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 0,
+      "x_jitter_range": 2,
+      "y_jitter_range": 2,
+      "graphics_descriptor": {
+        "type_index_assumed": 16,
+        "name_assumed": "Ant Man",
+        "front_graphic_index": 497,
+        "raw_word0": 51,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 83
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 74
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 74
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 5,
+        "recolor_scheme_10": 6
+      }
+    },
+    {
+      "type": 17,
+      "name": "Muncher",
+      "descriptor_index": 17,
+      "raw_hex": "110004a0f23d0110b4081c149600143219fd00040112f7100400",
+      "word4": 62013,
+      "word2": 1184,
+      "word20": 274,
+      "views": {
+        "front": 501,
+        "side": 502,
+        "back": 503,
+        "attack": 504
+      },
+      "horizontal_size": 0,
+      "vertical_size": 1,
+      "move_ticks": 1,
+      "attack_ticks": 16,
+      "move_to_attack_delay": 1,
+      "attack_to_move_delay": 1,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 3,
+      "y_jitter_range": 3,
+      "graphics_descriptor": {
+        "type_index_assumed": 17,
+        "name_assumed": "Muncher",
+        "front_graphic_index": 501,
+        "raw_word0": 55,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 24,
+          "pixel_width": 48,
+          "height": 49
+        },
+        "side": {
+          "byte_width": 24,
+          "pixel_width": 48,
+          "height": 53
+        },
+        "attack": {
+          "byte_width": 24,
+          "pixel_width": 48,
+          "height": 53
+        },
+        "transparent_index": 4,
+        "placement_table": 2,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      }
+    },
+    {
+      "type": 18,
+      "name": "Deth Knight",
+      "descriptor_index": 18,
+      "raw_hex": "12080280a3bd0e068c3c6900460010057aff0ffa0143fa300400",
+      "word4": 41917,
+      "word2": 640,
+      "word20": 323,
+      "views": {
+        "front": 505,
+        "side": 506,
+        "back": 507,
+        "attack": 508
+      },
+      "horizontal_size": 0,
+      "vertical_size": 1,
+      "move_ticks": 14,
+      "attack_ticks": 6,
+      "move_to_attack_delay": 4,
+      "attack_to_move_delay": 1,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        true,
+        true,
+        false
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 2,
+      "y_jitter_range": 2,
+      "graphics_descriptor": {
+        "type_index_assumed": 18,
+        "name_assumed": "Deth Knight",
+        "front_graphic_index": 505,
+        "raw_word0": 59,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 89
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 89
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 89
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      }
+    },
+    {
+      "type": 19,
+      "name": "Zytaz",
+      "descriptor_index": 19,
+      "raw_hex": "13000060e23d05120f213d0041003258ac770f560117fc400500",
+      "word4": 57917,
+      "word2": 96,
+      "word20": 279,
+      "views": {
+        "front": 509,
+        "side": 510,
+        "back": 511,
+        "attack": 512
+      },
+      "horizontal_size": 0,
+      "vertical_size": 0,
+      "move_ticks": 5,
+      "attack_ticks": 18,
+      "move_to_attack_delay": 1,
+      "attack_to_move_delay": 1,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 2,
+      "y_jitter_range": 3,
+      "graphics_descriptor": {
+        "type_index_assumed": 19,
+        "name_assumed": "Zytaz",
+        "front_graphic_index": 509,
+        "raw_word0": 63,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 84
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 84
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 84
+        },
+        "transparent_index": 13,
+        "placement_table": 0,
+        "recolor_scheme_9": 9,
+        "recolor_scheme_10": 10
+      }
+    },
+    {
+      "type": 20,
+      "name": "Water Elemental",
+      "descriptor_index": 20,
+      "raw_hex": "140010de022519194b9042003200138176790ea70345fd930300",
+      "word4": 549,
+      "word2": 4318,
+      "word20": 837,
+      "views": {
+        "front": 513,
+        "attack": 514
+      },
+      "horizontal_size": 2,
+      "vertical_size": 1,
+      "move_ticks": 25,
+      "attack_ticks": 25,
+      "move_to_attack_delay": 4,
+      "attack_to_move_delay": 3,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 0,
+      "y_jitter_range": 0,
+      "graphics_descriptor": {
+        "type_index_assumed": 20,
+        "name_assumed": "Water Elemental",
+        "front_graphic_index": 513,
+        "raw_word0": 67,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 27
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 80
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 5,
+        "recolor_scheme_10": 6
+      }
+    },
+    {
+      "type": 21,
+      "name": "Oitu",
+      "descriptor_index": 21,
+      "raw_hex": "15030082a3bd070f214d82003c001592696a08590224fc300400",
+      "word4": 41917,
+      "word2": 130,
+      "word20": 548,
+      "views": {
+        "front": 515,
+        "side": 516,
+        "back": 517,
+        "attack": 518
+      },
+      "horizontal_size": 2,
+      "vertical_size": 1,
+      "move_ticks": 7,
+      "attack_ticks": 15,
+      "move_to_attack_delay": 2,
+      "attack_to_move_delay": 2,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        true,
+        true,
+        false
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 2,
+      "y_jitter_range": 2,
+      "graphics_descriptor": {
+        "type_index_assumed": 21,
+        "name_assumed": "Oitu",
+        "front_graphic_index": 515,
+        "raw_word0": 69,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 77
+        },
+        "side": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 81
+        },
+        "attack": {
+          "byte_width": 56,
+          "pixel_width": 112,
+          "height": 77
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 9,
+        "recolor_scheme_10": 10
+      }
+    },
+    {
+      "type": 22,
+      "name": "Demon",
+      "descriptor_index": 22,
+      "raw_hex": "1600148053bd0a0e446464004b004344bdf90a5d0124f9200300",
+      "word4": 21437,
+      "word2": 5248,
+      "word20": 292,
+      "views": {
+        "front": 519,
+        "side": 520,
+        "back": 521,
+        "attack": 522
+      },
+      "horizontal_size": 0,
+      "vertical_size": 1,
+      "move_ticks": 10,
+      "attack_ticks": 14,
+      "move_to_attack_delay": 2,
+      "attack_to_move_delay": 1,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        true,
+        true,
+        false
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 1,
+      "y_jitter_range": 1,
+      "graphics_descriptor": {
+        "type_index_assumed": 22,
+        "name_assumed": "Demon",
+        "front_graphic_index": 519,
+        "raw_word0": 73,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 87
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 89
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 89
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 11,
+        "recolor_scheme_10": 12
+      }
+    },
+    {
+      "type": 23,
+      "name": "Lord Chaos",
+      "descriptor_index": 23,
+      "raw_hex": "170038aa00380c16ffb4d20082006369ff370fbf0564fb520500",
+      "word4": 56,
+      "word2": 14506,
+      "word20": 1380,
+      "views": {
+        "front": 523,
+        "side": 524,
+        "back": 525,
+        "attack": 526
+      },
+      "horizontal_size": 2,
+      "vertical_size": 1,
+      "move_ticks": 12,
+      "attack_ticks": 22,
+      "move_to_attack_delay": 6,
+      "attack_to_move_delay": 5,
+      "front_mirror": false,
+      "attack_mirror": false,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 0,
+      "x_jitter_range": 0,
+      "y_jitter_range": 0,
+      "graphics_descriptor": {
+        "type_index_assumed": 23,
+        "name_assumed": "Lord Chaos",
+        "front_graphic_index": 523,
+        "raw_word0": 77,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 96
+        },
+        "side": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 94
+        },
+        "attack": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 96
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 0,
+        "recolor_scheme_10": 0
+      }
+    },
+    {
+      "type": 24,
+      "name": "Dragon",
+      "descriptor_index": 24,
+      "raw_hex": "1801068a97bd0d1c6effff0046002645bf7c06cd0445fc300400",
+      "word4": 38845,
+      "word2": 1674,
+      "word20": 1093,
+      "views": {
+        "front": 527,
+        "side": 528,
+        "back": 529,
+        "attack": 530
+      },
+      "horizontal_size": 2,
+      "vertical_size": 1,
+      "move_ticks": 13,
+      "attack_ticks": 28,
+      "move_to_attack_delay": 4,
+      "attack_to_move_delay": 4,
+      "front_mirror": true,
+      "attack_mirror": true,
+      "mirror_flags_7_8_10": [
+        true,
+        true,
+        true
+      ],
+      "extra_mirror_groups": 1,
+      "x_jitter_range": 1,
+      "y_jitter_range": 2,
+      "graphics_descriptor": {
+        "type_index_assumed": 24,
+        "name_assumed": "Dragon",
+        "front_graphic_index": 527,
+        "raw_word0": 81,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 64,
+          "pixel_width": 128,
+          "height": 94
+        },
+        "side": {
+          "byte_width": 72,
+          "pixel_width": 144,
+          "height": 94
+        },
+        "attack": {
+          "byte_width": 64,
+          "pixel_width": 128,
+          "height": 94
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 11,
+        "recolor_scheme_10": 12
+      }
+    },
+    {
+      "type": 25,
+      "name": "mon_25",
+      "descriptor_index": 25,
+      "raw_hex": "190038aa00000c16ffb4d20082006369ff370fbf0564fb520500",
+      "word4": 0,
+      "word2": 14506,
+      "word20": 1380,
+      "views": {
+        "front": 531
+      },
+      "horizontal_size": 2,
+      "vertical_size": 1,
+      "move_ticks": 12,
+      "attack_ticks": 22,
+      "move_to_attack_delay": 6,
+      "attack_to_move_delay": 5,
+      "front_mirror": false,
+      "attack_mirror": false,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 0,
+      "x_jitter_range": 0,
+      "y_jitter_range": 0,
+      "graphics_descriptor": {
+        "type_index_assumed": 25,
+        "name_assumed": "mon_25",
+        "front_graphic_index": 531,
+        "raw_word0": 85,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 93
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 11,
+        "recolor_scheme_10": 12
+      }
+    },
+    {
+      "type": 26,
+      "name": "Grey Lord",
+      "descriptor_index": 26,
+      "raw_hex": "1a0038aa00000c16ffb4d20082006369ff370fbf0564fb520500",
+      "word4": 0,
+      "word2": 14506,
+      "word20": 1380,
+      "views": {
+        "front": 532
+      },
+      "horizontal_size": 2,
+      "vertical_size": 1,
+      "move_ticks": 12,
+      "attack_ticks": 22,
+      "move_to_attack_delay": 6,
+      "attack_to_move_delay": 5,
+      "front_mirror": false,
+      "attack_mirror": false,
+      "mirror_flags_7_8_10": [
+        false,
+        false,
+        false
+      ],
+      "extra_mirror_groups": 0,
+      "x_jitter_range": 0,
+      "y_jitter_range": 0,
+      "graphics_descriptor": {
+        "type_index_assumed": 26,
+        "name_assumed": "Grey Lord",
+        "front_graphic_index": 532,
+        "raw_word0": 86,
+        "raw_word2": 0,
+        "front_rear": {
+          "byte_width": 32,
+          "pixel_width": 64,
+          "height": 93
+        },
+        "side": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "attack": {
+          "byte_width": 0,
+          "pixel_width": 0,
+          "height": 0
+        },
+        "transparent_index": 4,
+        "placement_table": 0,
+        "recolor_scheme_9": 11,
+        "recolor_scheme_10": 12
+      }
+    }
+  ]
+}

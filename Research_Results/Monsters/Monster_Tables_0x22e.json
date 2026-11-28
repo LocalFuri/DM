@@ -1,0 +1,1625 @@
+{
+  "source": "Graphic_0x22e_Raw.bin",
+  "source_sha256": "93f2912ea2195851ed0acb9363674757b633b9f6e1650c5bf2c7292aa05e1888",
+  "source_size": 4720,
+  "status": "Decoded using CSBwin research offsets; original DOS equivalence not verified. Type names assume descriptor index equals type; flags require 0x22f. Widths are descriptor widths, not independently checked against bitmaps.",
+  "placement_tables": [
+    [
+      [
+        [
+          95,
+          70
+        ],
+        [
+          127,
+          70
+        ],
+        [
+          129,
+          75
+        ],
+        [
+          93,
+          75
+        ],
+        [
+          111,
+          72
+        ]
+      ],
+      [
+        [
+          131,
+          70
+        ],
+        [
+          163,
+          70
+        ],
+        [
+          158,
+          75
+        ],
+        [
+          120,
+          75
+        ],
+        [
+          145,
+          72
+        ]
+      ],
+      [
+        [
+          59,
+          70
+        ],
+        [
+          91,
+          70
+        ],
+        [
+          107,
+          75
+        ],
+        [
+          66,
+          75
+        ],
+        [
+          79,
+          72
+        ]
+      ],
+      [
+        [
+          92,
+          81
+        ],
+        [
+          131,
+          81
+        ],
+        [
+          132,
+          90
+        ],
+        [
+          91,
+          90
+        ],
+        [
+          111,
+          85
+        ]
+      ],
+      [
+        [
+          99,
+          81
+        ],
+        [
+          146,
+          81
+        ],
+        [
+          135,
+          90
+        ],
+        [
+          80,
+          90
+        ],
+        [
+          120,
+          85
+        ]
+      ],
+      [
+        [
+          77,
+          81
+        ],
+        [
+          124,
+          81
+        ],
+        [
+          143,
+          90
+        ],
+        [
+          89,
+          90
+        ],
+        [
+          105,
+          85
+        ]
+      ],
+      [
+        [
+          83,
+          103
+        ],
+        [
+          141,
+          103
+        ],
+        [
+          148,
+          119
+        ],
+        [
+          76,
+          119
+        ],
+        [
+          109,
+          111
+        ]
+      ],
+      [
+        [
+          46,
+          103
+        ],
+        [
+          118,
+          103
+        ],
+        [
+          101,
+          119
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          79,
+          111
+        ]
+      ],
+      [
+        [
+          107,
+          103
+        ],
+        [
+          177,
+          103
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          123,
+          119
+        ],
+        [
+          144,
+          111
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          67,
+          135
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      [
+        [
+          156,
+          135
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          94,
+          75
+        ],
+        [
+          128,
+          75
+        ],
+        [
+          111,
+          70
+        ],
+        [
+          111,
+          72
+        ],
+        [
+          111,
+          75
+        ]
+      ],
+      [
+        [
+          120,
+          75
+        ],
+        [
+          158,
+          75
+        ],
+        [
+          149,
+          70
+        ],
+        [
+          145,
+          72
+        ],
+        [
+          150,
+          75
+        ]
+      ],
+      [
+        [
+          66,
+          75
+        ],
+        [
+          104,
+          75
+        ],
+        [
+          75,
+          70
+        ],
+        [
+          79,
+          72
+        ],
+        [
+          73,
+          75
+        ]
+      ],
+      [
+        [
+          91,
+          90
+        ],
+        [
+          132,
+          90
+        ],
+        [
+          111,
+          83
+        ],
+        [
+          111,
+          85
+        ],
+        [
+          111,
+          90
+        ]
+      ],
+      [
+        [
+          80,
+          90
+        ],
+        [
+          135,
+          90
+        ],
+        [
+          125,
+          83
+        ],
+        [
+          120,
+          85
+        ],
+        [
+          125,
+          90
+        ]
+      ],
+      [
+        [
+          89,
+          90
+        ],
+        [
+          143,
+          90
+        ],
+        [
+          99,
+          83
+        ],
+        [
+          105,
+          85
+        ],
+        [
+          98,
+          90
+        ]
+      ],
+      [
+        [
+          81,
+          119
+        ],
+        [
+          142,
+          119
+        ],
+        [
+          111,
+          105
+        ],
+        [
+          111,
+          111
+        ],
+        [
+          111,
+          119
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          101,
+          119
+        ],
+        [
+          84,
+          105
+        ],
+        [
+          70,
+          111
+        ],
+        [
+          77,
+          119
+        ]
+      ],
+      [
+        [
+          123,
+          119
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          139,
+          105
+        ],
+        [
+          153,
+          111
+        ],
+        [
+          146,
+          119
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          83,
+          130
+        ],
+        [
+          57,
+          121
+        ],
+        [
+          47,
+          126
+        ],
+        [
+          57,
+          130
+        ]
+      ],
+      [
+        [
+          140,
+          130
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          166,
+          121
+        ],
+        [
+          176,
+          126
+        ],
+        [
+          166,
+          130
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          95,
+          59
+        ],
+        [
+          127,
+          59
+        ],
+        [
+          129,
+          61
+        ],
+        [
+          93,
+          61
+        ],
+        [
+          111,
+          60
+        ]
+      ],
+      [
+        [
+          131,
+          59
+        ],
+        [
+          163,
+          59
+        ],
+        [
+          158,
+          61
+        ],
+        [
+          120,
+          61
+        ],
+        [
+          145,
+          60
+        ]
+      ],
+      [
+        [
+          59,
+          59
+        ],
+        [
+          91,
+          59
+        ],
+        [
+          107,
+          61
+        ],
+        [
+          66,
+          61
+        ],
+        [
+          79,
+          60
+        ]
+      ],
+      [
+        [
+          92,
+          65
+        ],
+        [
+          131,
+          65
+        ],
+        [
+          132,
+          67
+        ],
+        [
+          91,
+          67
+        ],
+        [
+          111,
+          66
+        ]
+      ],
+      [
+        [
+          99,
+          65
+        ],
+        [
+          146,
+          65
+        ],
+        [
+          135,
+          67
+        ],
+        [
+          80,
+          67
+        ],
+        [
+          120,
+          66
+        ]
+      ],
+      [
+        [
+          77,
+          65
+        ],
+        [
+          124,
+          65
+        ],
+        [
+          143,
+          67
+        ],
+        [
+          89,
+          67
+        ],
+        [
+          105,
+          66
+        ]
+      ],
+      [
+        [
+          83,
+          79
+        ],
+        [
+          141,
+          79
+        ],
+        [
+          148,
+          85
+        ],
+        [
+          76,
+          85
+        ],
+        [
+          111,
+          81
+        ]
+      ],
+      [
+        [
+          46,
+          79
+        ],
+        [
+          118,
+          79
+        ],
+        [
+          101,
+          85
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          79,
+          81
+        ]
+      ],
+      [
+        [
+          107,
+          79
+        ],
+        [
+          177,
+          79
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          123,
+          85
+        ],
+        [
+          144,
+          81
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          67,
+          96
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      [
+        [
+          156,
+          96
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    ]
+  ],
+  "small_offsets": [
+    0,
+    1,
+    2,
+    3,
+    0,
+    -3,
+    -2,
+    -1,
+    0,
+    1,
+    1,
+    2,
+    0,
+    -2,
+    -1,
+    -1,
+    0,
+    1,
+    1,
+    1,
+    0,
+    -1,
+    -1,
+    -1
+  ],
+  "palette_F2_raw": [
+    0,
+    10,
+    20,
+    30,
+    40,
+    30,
+    60,
+    70,
+    50,
+    0,
+    0,
+    110,
+    120,
+    130,
+    140,
+    150
+  ],
+  "palette_F3_raw": [
+    0,
+    120,
+    10,
+    30,
+    40,
+    30,
+    0,
+    60,
+    30,
+    0,
+    0,
+    110,
+    0,
+    20,
+    0,
+    130
+  ],
+  "special_colors": [
+    [
+      1616,
+      1344,
+      1072,
+      800,
+      528,
+      256,
+      23130
+    ],
+    [
+      48,
+      32,
+      16,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      1072,
+      800,
+      528,
+      256,
+      0,
+      0,
+      25700
+    ],
+    [
+      800,
+      528,
+      256,
+      0,
+      0,
+      0,
+      23040
+    ],
+    [
+      5,
+      4,
+      3,
+      2,
+      1,
+      0,
+      23140
+    ],
+    [
+      4,
+      3,
+      2,
+      1,
+      0,
+      0,
+      25600
+    ],
+    [
+      1028,
+      771,
+      514,
+      257,
+      0,
+      0,
+      23040
+    ],
+    [
+      1285,
+      1028,
+      771,
+      514,
+      257,
+      0,
+      25690
+    ],
+    [
+      1872,
+      1600,
+      1328,
+      1056,
+      784,
+      512,
+      25650
+    ],
+    [
+      1856,
+      1584,
+      1312,
+      1040,
+      768,
+      256,
+      12830
+    ],
+    [
+      1024,
+      768,
+      512,
+      256,
+      0,
+      0,
+      25700
+    ],
+    [
+      768,
+      512,
+      256,
+      0,
+      0,
+      0,
+      30720
+    ],
+    [
+      1603,
+      1330,
+      1057,
+      784,
+      512,
+      256,
+      25650
+    ]
+  ],
+  "descriptors": [
+    {
+      "type_index_assumed": 0,
+      "name_assumed": "Scorpion",
+      "front_graphic_index": 446,
+      "raw_word0": 0,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 56,
+        "pixel_width": 112,
+        "height": 84
+      },
+      "side": {
+        "byte_width": 56,
+        "pixel_width": 112,
+        "height": 84
+      },
+      "attack": {
+        "byte_width": 56,
+        "pixel_width": 112,
+        "height": 84
+      },
+      "transparent_index": 13,
+      "placement_table": 1,
+      "recolor_scheme_9": 1,
+      "recolor_scheme_10": 0
+    },
+    {
+      "type_index_assumed": 1,
+      "name_assumed": "Slime Devil",
+      "front_graphic_index": 450,
+      "raw_word0": 4,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 66
+      },
+      "side": {
+        "byte_width": 0,
+        "pixel_width": 0,
+        "height": 0
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 69
+      },
+      "transparent_index": 11,
+      "placement_table": 0,
+      "recolor_scheme_9": 0,
+      "recolor_scheme_10": 2
+    },
+    {
+      "type_index_assumed": 2,
+      "name_assumed": "Giggler",
+      "front_graphic_index": 452,
+      "raw_word0": 6,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 24,
+        "pixel_width": 48,
+        "height": 48
+      },
+      "side": {
+        "byte_width": 24,
+        "pixel_width": 48,
+        "height": 48
+      },
+      "attack": {
+        "byte_width": 0,
+        "pixel_width": 0,
+        "height": 0
+      },
+      "transparent_index": 11,
+      "placement_table": 0,
+      "recolor_scheme_9": 0,
+      "recolor_scheme_10": 0
+    },
+    {
+      "type_index_assumed": 3,
+      "name_assumed": "Flying Eye",
+      "front_graphic_index": 456,
+      "raw_word0": 10,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 61
+      },
+      "side": {
+        "byte_width": 0,
+        "pixel_width": 0,
+        "height": 0
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 61
+      },
+      "transparent_index": 4,
+      "placement_table": 2,
+      "recolor_scheme_9": 1,
+      "recolor_scheme_10": 3
+    },
+    {
+      "type_index_assumed": 4,
+      "name_assumed": "Hellhound",
+      "front_graphic_index": 458,
+      "raw_word0": 12,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 64
+      },
+      "side": {
+        "byte_width": 56,
+        "pixel_width": 112,
+        "height": 64
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 64
+      },
+      "transparent_index": 4,
+      "placement_table": 1,
+      "recolor_scheme_9": 4,
+      "recolor_scheme_10": 3
+    },
+    {
+      "type_index_assumed": 5,
+      "name_assumed": "mon_5",
+      "front_graphic_index": 462,
+      "raw_word0": 16,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 24,
+        "pixel_width": 48,
+        "height": 49
+      },
+      "side": {
+        "byte_width": 40,
+        "pixel_width": 80,
+        "height": 49
+      },
+      "attack": {
+        "byte_width": 0,
+        "pixel_width": 0,
+        "height": 0
+      },
+      "transparent_index": 8,
+      "placement_table": 1,
+      "recolor_scheme_9": 4,
+      "recolor_scheme_10": 3
+    },
+    {
+      "type_index_assumed": 6,
+      "name_assumed": "Screamer",
+      "front_graphic_index": 465,
+      "raw_word0": 19,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 60
+      },
+      "side": {
+        "byte_width": 0,
+        "pixel_width": 0,
+        "height": 0
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 60
+      },
+      "transparent_index": 13,
+      "placement_table": 0,
+      "recolor_scheme_9": 0,
+      "recolor_scheme_10": 0
+    },
+    {
+      "type_index_assumed": 7,
+      "name_assumed": "Rock Pile",
+      "front_graphic_index": 467,
+      "raw_word0": 21,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 43
+      },
+      "side": {
+        "byte_width": 0,
+        "pixel_width": 0,
+        "height": 0
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 64
+      },
+      "transparent_index": 4,
+      "placement_table": 0,
+      "recolor_scheme_9": 0,
+      "recolor_scheme_10": 0
+    },
+    {
+      "type_index_assumed": 8,
+      "name_assumed": "Rive",
+      "front_graphic_index": 469,
+      "raw_word0": 23,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 83
+      },
+      "side": {
+        "byte_width": 0,
+        "pixel_width": 0,
+        "height": 0
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 93
+      },
+      "transparent_index": 4,
+      "placement_table": 0,
+      "recolor_scheme_9": 0,
+      "recolor_scheme_10": 0
+    },
+    {
+      "type_index_assumed": 9,
+      "name_assumed": "Stone Golem",
+      "front_graphic_index": 471,
+      "raw_word0": 25,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 101
+      },
+      "side": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 101
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 101
+      },
+      "transparent_index": 4,
+      "placement_table": 1,
+      "recolor_scheme_9": 0,
+      "recolor_scheme_10": 0
+    },
+    {
+      "type_index_assumed": 10,
+      "name_assumed": "Mummy",
+      "front_graphic_index": 475,
+      "raw_word0": 29,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 82
+      },
+      "side": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 82
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 83
+      },
+      "transparent_index": 4,
+      "placement_table": 0,
+      "recolor_scheme_9": 0,
+      "recolor_scheme_10": 0
+    },
+    {
+      "type_index_assumed": 11,
+      "name_assumed": "Black Flame",
+      "front_graphic_index": 479,
+      "raw_word0": 33,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 80
+      },
+      "side": {
+        "byte_width": 0,
+        "pixel_width": 0,
+        "height": 0
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 99
+      },
+      "transparent_index": 4,
+      "placement_table": 1,
+      "recolor_scheme_9": 0,
+      "recolor_scheme_10": 0
+    },
+    {
+      "type_index_assumed": 12,
+      "name_assumed": "Skeleton",
+      "front_graphic_index": 481,
+      "raw_word0": 35,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 80
+      },
+      "side": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 80
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 76
+      },
+      "transparent_index": 4,
+      "placement_table": 0,
+      "recolor_scheme_9": 0,
+      "recolor_scheme_10": 0
+    },
+    {
+      "type_index_assumed": 13,
+      "name_assumed": "Couatl",
+      "front_graphic_index": 485,
+      "raw_word0": 39,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 96
+      },
+      "side": {
+        "byte_width": 56,
+        "pixel_width": 112,
+        "height": 93
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 90
+      },
+      "transparent_index": 13,
+      "placement_table": 1,
+      "recolor_scheme_9": 0,
+      "recolor_scheme_10": 2
+    },
+    {
+      "type_index_assumed": 14,
+      "name_assumed": "Vexirk",
+      "front_graphic_index": 489,
+      "raw_word0": 43,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 49
+      },
+      "side": {
+        "byte_width": 16,
+        "pixel_width": 32,
+        "height": 49
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 56
+      },
+      "transparent_index": 4,
+      "placement_table": 0,
+      "recolor_scheme_9": 0,
+      "recolor_scheme_10": 3
+    },
+    {
+      "type_index_assumed": 15,
+      "name_assumed": "Worm",
+      "front_graphic_index": 493,
+      "raw_word0": 47,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 59
+      },
+      "side": {
+        "byte_width": 56,
+        "pixel_width": 112,
+        "height": 43
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 67
+      },
+      "transparent_index": 4,
+      "placement_table": 1,
+      "recolor_scheme_9": 8,
+      "recolor_scheme_10": 7
+    },
+    {
+      "type_index_assumed": 16,
+      "name_assumed": "Ant Man",
+      "front_graphic_index": 497,
+      "raw_word0": 51,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 83
+      },
+      "side": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 74
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 74
+      },
+      "transparent_index": 4,
+      "placement_table": 0,
+      "recolor_scheme_9": 5,
+      "recolor_scheme_10": 6
+    },
+    {
+      "type_index_assumed": 17,
+      "name_assumed": "Muncher",
+      "front_graphic_index": 501,
+      "raw_word0": 55,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 24,
+        "pixel_width": 48,
+        "height": 49
+      },
+      "side": {
+        "byte_width": 24,
+        "pixel_width": 48,
+        "height": 53
+      },
+      "attack": {
+        "byte_width": 24,
+        "pixel_width": 48,
+        "height": 53
+      },
+      "transparent_index": 4,
+      "placement_table": 2,
+      "recolor_scheme_9": 0,
+      "recolor_scheme_10": 0
+    },
+    {
+      "type_index_assumed": 18,
+      "name_assumed": "Deth Knight",
+      "front_graphic_index": 505,
+      "raw_word0": 59,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 89
+      },
+      "side": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 89
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 89
+      },
+      "transparent_index": 4,
+      "placement_table": 0,
+      "recolor_scheme_9": 0,
+      "recolor_scheme_10": 0
+    },
+    {
+      "type_index_assumed": 19,
+      "name_assumed": "Zytaz",
+      "front_graphic_index": 509,
+      "raw_word0": 63,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 84
+      },
+      "side": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 84
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 84
+      },
+      "transparent_index": 13,
+      "placement_table": 0,
+      "recolor_scheme_9": 9,
+      "recolor_scheme_10": 10
+    },
+    {
+      "type_index_assumed": 20,
+      "name_assumed": "Water Elemental",
+      "front_graphic_index": 513,
+      "raw_word0": 67,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 56,
+        "pixel_width": 112,
+        "height": 27
+      },
+      "side": {
+        "byte_width": 0,
+        "pixel_width": 0,
+        "height": 0
+      },
+      "attack": {
+        "byte_width": 56,
+        "pixel_width": 112,
+        "height": 80
+      },
+      "transparent_index": 4,
+      "placement_table": 0,
+      "recolor_scheme_9": 5,
+      "recolor_scheme_10": 6
+    },
+    {
+      "type_index_assumed": 21,
+      "name_assumed": "Oitu",
+      "front_graphic_index": 515,
+      "raw_word0": 69,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 56,
+        "pixel_width": 112,
+        "height": 77
+      },
+      "side": {
+        "byte_width": 56,
+        "pixel_width": 112,
+        "height": 81
+      },
+      "attack": {
+        "byte_width": 56,
+        "pixel_width": 112,
+        "height": 77
+      },
+      "transparent_index": 4,
+      "placement_table": 0,
+      "recolor_scheme_9": 9,
+      "recolor_scheme_10": 10
+    },
+    {
+      "type_index_assumed": 22,
+      "name_assumed": "Demon",
+      "front_graphic_index": 519,
+      "raw_word0": 73,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 87
+      },
+      "side": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 89
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 89
+      },
+      "transparent_index": 4,
+      "placement_table": 0,
+      "recolor_scheme_9": 11,
+      "recolor_scheme_10": 12
+    },
+    {
+      "type_index_assumed": 23,
+      "name_assumed": "Lord Chaos",
+      "front_graphic_index": 523,
+      "raw_word0": 77,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 96
+      },
+      "side": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 94
+      },
+      "attack": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 96
+      },
+      "transparent_index": 4,
+      "placement_table": 0,
+      "recolor_scheme_9": 0,
+      "recolor_scheme_10": 0
+    },
+    {
+      "type_index_assumed": 24,
+      "name_assumed": "Dragon",
+      "front_graphic_index": 527,
+      "raw_word0": 81,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 64,
+        "pixel_width": 128,
+        "height": 94
+      },
+      "side": {
+        "byte_width": 72,
+        "pixel_width": 144,
+        "height": 94
+      },
+      "attack": {
+        "byte_width": 64,
+        "pixel_width": 128,
+        "height": 94
+      },
+      "transparent_index": 4,
+      "placement_table": 0,
+      "recolor_scheme_9": 11,
+      "recolor_scheme_10": 12
+    },
+    {
+      "type_index_assumed": 25,
+      "name_assumed": "mon_25",
+      "front_graphic_index": 531,
+      "raw_word0": 85,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 93
+      },
+      "side": {
+        "byte_width": 0,
+        "pixel_width": 0,
+        "height": 0
+      },
+      "attack": {
+        "byte_width": 0,
+        "pixel_width": 0,
+        "height": 0
+      },
+      "transparent_index": 4,
+      "placement_table": 0,
+      "recolor_scheme_9": 11,
+      "recolor_scheme_10": 12
+    },
+    {
+      "type_index_assumed": 26,
+      "name_assumed": "Grey Lord",
+      "front_graphic_index": 532,
+      "raw_word0": 86,
+      "raw_word2": 0,
+      "front_rear": {
+        "byte_width": 32,
+        "pixel_width": 64,
+        "height": 93
+      },
+      "side": {
+        "byte_width": 0,
+        "pixel_width": 0,
+        "height": 0
+      },
+      "attack": {
+        "byte_width": 0,
+        "pixel_width": 0,
+        "height": 0
+      },
+      "transparent_index": 4,
+      "placement_table": 0,
+      "recolor_scheme_9": 11,
+      "recolor_scheme_10": 12
+    }
+  ]
+}
