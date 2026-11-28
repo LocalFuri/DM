@@ -365,12 +365,18 @@
             "groundF1Path": "Assets/Art/Misc/Scroll_F1_48x8.png",
             "width": 48,
             "height": 8,
-            "groundF2Path": "Assets/Art/Misc/Scroll_F2_21x4.png",
-            "widthF2": 21,
-            "heightF2": 4,
-            "groundF3Path": "Assets/Art/Misc/Scroll_F3_12x4.png",
-            "widthF3": 12,
+            "groundF2Path": "Assets/Art/Misc/Scroll_F2_30x5.png",
+            "widthF2": 30,
+            "heightF2": 5,
+            "groundF3Path": "Assets/Art/Misc/Scroll_F3_24x4.png",
+            "widthF3": 24,
             "heightF3": 4
+        },
+        {
+            "itemType": "Gold Key",
+            "groundF1Path": "Assets/Art/Keys/Gold_Key_F1_16x5.png",
+            "width": 16,
+            "height": 5
         }
     ],
     "groundF1Anchors": {
