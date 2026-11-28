@@ -1,0 +1,5530 @@
+{
+  "provenance": "CSBwin Atari reference; not DOS verified. Multi-byte descriptor fields retained raw due to byte-order ambiguity in report.",
+  "graphics_classes": [
+    {
+      "id": 0,
+      "graphic_index": 360,
+      "cache_base": 0,
+      "byte_width": 24,
+      "pixel_width": 48,
+      "height": 27,
+      "flags": 17,
+      "mirror_right": true,
+      "alcove_alternate": true,
+      "position_set": 0,
+      "raw": [
+        0,
+        0,
+        24,
+        27,
+        17,
+        0
+      ]
+    },
+    {
+      "id": 1,
+      "graphic_index": 362,
+      "cache_base": 6,
+      "byte_width": 24,
+      "pixel_width": 48,
+      "height": 8,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        2,
+        6,
+        24,
+        8,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "graphic_index": 363,
+      "cache_base": 8,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 18,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        3,
+        8,
+        8,
+        18,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 3,
+      "graphic_index": 364,
+      "cache_base": 10,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 8,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        4,
+        10,
+        8,
+        8,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 4,
+      "graphic_index": 365,
+      "cache_base": 12,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 4,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        5,
+        12,
+        8,
+        4,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 5,
+      "graphic_index": 366,
+      "cache_base": 14,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 11,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        6,
+        14,
+        16,
+        11,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 6,
+      "graphic_index": 367,
+      "cache_base": 16,
+      "byte_width": 24,
+      "pixel_width": 48,
+      "height": 13,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        7,
+        16,
+        24,
+        13,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 7,
+      "graphic_index": 368,
+      "cache_base": 18,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 16,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        8,
+        18,
+        32,
+        16,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 8,
+      "graphic_index": 369,
+      "cache_base": 20,
+      "byte_width": 40,
+      "pixel_width": 80,
+      "height": 24,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        9,
+        20,
+        40,
+        24,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 9,
+      "graphic_index": 370,
+      "cache_base": 22,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 20,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        10,
+        22,
+        16,
+        20,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 10,
+      "graphic_index": 371,
+      "cache_base": 24,
+      "byte_width": 40,
+      "pixel_width": 80,
+      "height": 20,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        11,
+        24,
+        40,
+        20,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 11,
+      "graphic_index": 372,
+      "cache_base": 26,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 4,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        12,
+        26,
+        32,
+        4,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 12,
+      "graphic_index": 373,
+      "cache_base": 28,
+      "byte_width": 40,
+      "pixel_width": 80,
+      "height": 8,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        13,
+        28,
+        40,
+        8,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 13,
+      "graphic_index": 374,
+      "cache_base": 30,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 17,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        14,
+        30,
+        32,
+        17,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 14,
+      "graphic_index": 375,
+      "cache_base": 32,
+      "byte_width": 40,
+      "pixel_width": 80,
+      "height": 17,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 2,
+      "raw": [
+        15,
+        32,
+        40,
+        17,
+        0,
+        2
+      ]
+    },
+    {
+      "id": 15,
+      "graphic_index": 376,
+      "cache_base": 34,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 9,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        16,
+        34,
+        16,
+        9,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 16,
+      "graphic_index": 377,
+      "cache_base": 36,
+      "byte_width": 24,
+      "pixel_width": 48,
+      "height": 5,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        17,
+        36,
+        24,
+        5,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 17,
+      "graphic_index": 378,
+      "cache_base": 38,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 9,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        18,
+        38,
+        16,
+        9,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 18,
+      "graphic_index": 379,
+      "cache_base": 40,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 4,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        19,
+        40,
+        8,
+        4,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 19,
+      "graphic_index": 380,
+      "cache_base": 42,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 21,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 2,
+      "raw": [
+        20,
+        42,
+        32,
+        21,
+        0,
+        2
+      ]
+    },
+    {
+      "id": 20,
+      "graphic_index": 381,
+      "cache_base": 44,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 25,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 2,
+      "raw": [
+        21,
+        44,
+        32,
+        25,
+        0,
+        2
+      ]
+    },
+    {
+      "id": 21,
+      "graphic_index": 382,
+      "cache_base": 46,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 14,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        22,
+        46,
+        32,
+        14,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 22,
+      "graphic_index": 383,
+      "cache_base": 48,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 26,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 2,
+      "raw": [
+        23,
+        48,
+        32,
+        26,
+        0,
+        2
+      ]
+    },
+    {
+      "id": 23,
+      "graphic_index": 384,
+      "cache_base": 50,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 16,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        24,
+        50,
+        32,
+        16,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 24,
+      "graphic_index": 385,
+      "cache_base": 52,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 16,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        25,
+        52,
+        32,
+        16,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 25,
+      "graphic_index": 386,
+      "cache_base": 54,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 16,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        26,
+        54,
+        16,
+        16,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 26,
+      "graphic_index": 387,
+      "cache_base": 56,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 15,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        27,
+        56,
+        16,
+        15,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 27,
+      "graphic_index": 388,
+      "cache_base": 58,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 13,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        28,
+        58,
+        16,
+        13,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 28,
+      "graphic_index": 389,
+      "cache_base": 60,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 10,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        29,
+        60,
+        16,
+        10,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 29,
+      "graphic_index": 390,
+      "cache_base": 62,
+      "byte_width": 40,
+      "pixel_width": 80,
+      "height": 24,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        30,
+        62,
+        40,
+        24,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 30,
+      "graphic_index": 391,
+      "cache_base": 64,
+      "byte_width": 40,
+      "pixel_width": 80,
+      "height": 9,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        31,
+        64,
+        40,
+        9,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 31,
+      "graphic_index": 392,
+      "cache_base": 66,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 3,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        32,
+        66,
+        16,
+        3,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 32,
+      "graphic_index": 393,
+      "cache_base": 68,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 5,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        33,
+        68,
+        32,
+        5,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 33,
+      "graphic_index": 394,
+      "cache_base": 70,
+      "byte_width": 40,
+      "pixel_width": 80,
+      "height": 16,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        34,
+        70,
+        40,
+        16,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 34,
+      "graphic_index": 395,
+      "cache_base": 72,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 7,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        35,
+        72,
+        8,
+        7,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 35,
+      "graphic_index": 396,
+      "cache_base": 74,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 7,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        36,
+        74,
+        32,
+        7,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 36,
+      "graphic_index": 397,
+      "cache_base": 76,
+      "byte_width": 24,
+      "pixel_width": 48,
+      "height": 14,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        37,
+        76,
+        24,
+        14,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 37,
+      "graphic_index": 398,
+      "cache_base": 78,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 8,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        38,
+        78,
+        16,
+        8,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 38,
+      "graphic_index": 399,
+      "cache_base": 80,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 3,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        39,
+        80,
+        8,
+        3,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 39,
+      "graphic_index": 400,
+      "cache_base": 82,
+      "byte_width": 40,
+      "pixel_width": 80,
+      "height": 9,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        40,
+        82,
+        40,
+        9,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 40,
+      "graphic_index": 401,
+      "cache_base": 84,
+      "byte_width": 24,
+      "pixel_width": 48,
+      "height": 14,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        41,
+        84,
+        24,
+        14,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 41,
+      "graphic_index": 402,
+      "cache_base": 86,
+      "byte_width": 40,
+      "pixel_width": 80,
+      "height": 20,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        42,
+        86,
+        40,
+        20,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 42,
+      "graphic_index": 403,
+      "cache_base": 88,
+      "byte_width": 40,
+      "pixel_width": 80,
+      "height": 15,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        43,
+        88,
+        40,
+        15,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 43,
+      "graphic_index": 404,
+      "cache_base": 90,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 10,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        44,
+        90,
+        32,
+        10,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 44,
+      "graphic_index": 405,
+      "cache_base": 92,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 19,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        45,
+        92,
+        32,
+        19,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 45,
+      "graphic_index": 406,
+      "cache_base": 94,
+      "byte_width": 40,
+      "pixel_width": 80,
+      "height": 25,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 2,
+      "raw": [
+        46,
+        94,
+        40,
+        25,
+        0,
+        2
+      ]
+    },
+    {
+      "id": 46,
+      "graphic_index": 407,
+      "cache_base": 96,
+      "byte_width": 24,
+      "pixel_width": 48,
+      "height": 7,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        47,
+        96,
+        24,
+        7,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 47,
+      "graphic_index": 408,
+      "cache_base": 98,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 7,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        48,
+        98,
+        8,
+        7,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 48,
+      "graphic_index": 409,
+      "cache_base": 100,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 5,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        49,
+        100,
+        16,
+        5,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 49,
+      "graphic_index": 410,
+      "cache_base": 102,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 9,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        50,
+        102,
+        8,
+        9,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 50,
+      "graphic_index": 411,
+      "cache_base": 104,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 11,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        51,
+        104,
+        32,
+        11,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 51,
+      "graphic_index": 412,
+      "cache_base": 106,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 14,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        52,
+        106,
+        32,
+        14,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 52,
+      "graphic_index": 413,
+      "cache_base": 108,
+      "byte_width": 24,
+      "pixel_width": 48,
+      "height": 20,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        53,
+        108,
+        24,
+        20,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 53,
+      "graphic_index": 414,
+      "cache_base": 110,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 14,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        54,
+        110,
+        16,
+        14,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 54,
+      "graphic_index": 415,
+      "cache_base": 112,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 23,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        55,
+        112,
+        32,
+        23,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 55,
+      "graphic_index": 416,
+      "cache_base": 114,
+      "byte_width": 24,
+      "pixel_width": 48,
+      "height": 16,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        56,
+        114,
+        24,
+        16,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 56,
+      "graphic_index": 417,
+      "cache_base": 116,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 25,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        57,
+        116,
+        32,
+        25,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 57,
+      "graphic_index": 418,
+      "cache_base": 118,
+      "byte_width": 24,
+      "pixel_width": 48,
+      "height": 25,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        58,
+        118,
+        24,
+        25,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 58,
+      "graphic_index": 419,
+      "cache_base": 120,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 8,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        59,
+        120,
+        8,
+        8,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 59,
+      "graphic_index": 420,
+      "cache_base": 122,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 7,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        60,
+        122,
+        8,
+        7,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 60,
+      "graphic_index": 421,
+      "cache_base": 124,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 8,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        61,
+        124,
+        8,
+        8,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 61,
+      "graphic_index": 422,
+      "cache_base": 126,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 8,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        62,
+        126,
+        8,
+        8,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 62,
+      "graphic_index": 423,
+      "cache_base": 128,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 5,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        63,
+        128,
+        8,
+        5,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 63,
+      "graphic_index": 424,
+      "cache_base": 130,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 13,
+      "flags": 1,
+      "mirror_right": true,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        64,
+        130,
+        8,
+        13,
+        1,
+        1
+      ]
+    },
+    {
+      "id": 64,
+      "graphic_index": 425,
+      "cache_base": 134,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 13,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        65,
+        134,
+        16,
+        13,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 65,
+      "graphic_index": 426,
+      "cache_base": 136,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 14,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        66,
+        136,
+        16,
+        14,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 66,
+      "graphic_index": 427,
+      "cache_base": 138,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 10,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        67,
+        138,
+        16,
+        10,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 67,
+      "graphic_index": 428,
+      "cache_base": 140,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 18,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        68,
+        140,
+        8,
+        18,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 68,
+      "graphic_index": 429,
+      "cache_base": 142,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 17,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        69,
+        142,
+        8,
+        17,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 69,
+      "graphic_index": 430,
+      "cache_base": 144,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 18,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        70,
+        144,
+        32,
+        18,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 70,
+      "graphic_index": 431,
+      "cache_base": 146,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 23,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        71,
+        146,
+        16,
+        23,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 71,
+      "graphic_index": 432,
+      "cache_base": 148,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 24,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        72,
+        148,
+        16,
+        24,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 72,
+      "graphic_index": 433,
+      "cache_base": 150,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 15,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        73,
+        150,
+        16,
+        15,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 73,
+      "graphic_index": 434,
+      "cache_base": 152,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 7,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        74,
+        152,
+        8,
+        7,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 74,
+      "graphic_index": 435,
+      "cache_base": 154,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 15,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        75,
+        154,
+        8,
+        15,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 75,
+      "graphic_index": 436,
+      "cache_base": 156,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 9,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        76,
+        156,
+        8,
+        9,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 76,
+      "graphic_index": 437,
+      "cache_base": 158,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 14,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        77,
+        158,
+        16,
+        14,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 77,
+      "graphic_index": 438,
+      "cache_base": 160,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 8,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        78,
+        160,
+        8,
+        8,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 78,
+      "graphic_index": 439,
+      "cache_base": 162,
+      "byte_width": 16,
+      "pixel_width": 32,
+      "height": 9,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        79,
+        162,
+        16,
+        9,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 79,
+      "graphic_index": 440,
+      "cache_base": 164,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 13,
+      "flags": 1,
+      "mirror_right": true,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        80,
+        164,
+        8,
+        13,
+        1,
+        1
+      ]
+    },
+    {
+      "id": 80,
+      "graphic_index": 441,
+      "cache_base": 168,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 18,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        81,
+        168,
+        8,
+        18,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 81,
+      "graphic_index": 442,
+      "cache_base": 170,
+      "byte_width": 24,
+      "pixel_width": 48,
+      "height": 28,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        82,
+        170,
+        24,
+        28,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 82,
+      "graphic_index": 443,
+      "cache_base": 172,
+      "byte_width": 40,
+      "pixel_width": 80,
+      "height": 13,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        83,
+        172,
+        40,
+        13,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 83,
+      "graphic_index": 444,
+      "cache_base": 174,
+      "byte_width": 8,
+      "pixel_width": 16,
+      "height": 4,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 1,
+      "raw": [
+        84,
+        174,
+        8,
+        4,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 84,
+      "graphic_index": 445,
+      "cache_base": 176,
+      "byte_width": 32,
+      "pixel_width": 64,
+      "height": 17,
+      "flags": 0,
+      "mirror_right": false,
+      "alcove_alternate": false,
+      "position_set": 0,
+      "raw": [
+        85,
+        176,
+        32,
+        17,
+        0,
+        0
+      ]
+    }
+  ],
+  "object_descriptors": [
+    {
+      "id": 0,
+      "graphic_class": 1,
+      "attack_class": 0,
+      "graphic_index": 362,
+      "object_type_raw_hex": "001e",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        30,
+        1,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 1,
+      "graphic_class": 0,
+      "attack_class": 0,
+      "graphic_index": 360,
+      "object_type_raw_hex": "0090",
+      "carry_mask_raw_hex": "0200",
+      "raw": [
+        0,
+        144,
+        0,
+        0,
+        2,
+        0
+      ]
+    },
+    {
+      "id": 2,
+      "graphic_class": 67,
+      "attack_class": 0,
+      "graphic_index": 428,
+      "object_type_raw_hex": "0094",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        148,
+        67,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 3,
+      "graphic_class": 67,
+      "attack_class": 0,
+      "graphic_index": 428,
+      "object_type_raw_hex": "0095",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        149,
+        67,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 4,
+      "graphic_class": 67,
+      "attack_class": 0,
+      "graphic_index": 428,
+      "object_type_raw_hex": "0096",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        150,
+        67,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 5,
+      "graphic_class": 67,
+      "attack_class": 42,
+      "graphic_index": 428,
+      "object_type_raw_hex": "0097",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        151,
+        67,
+        42,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 6,
+      "graphic_class": 67,
+      "attack_class": 0,
+      "graphic_index": 428,
+      "object_type_raw_hex": "0098",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        152,
+        67,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 7,
+      "graphic_class": 67,
+      "attack_class": 0,
+      "graphic_index": 428,
+      "object_type_raw_hex": "0099",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        153,
+        67,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 8,
+      "graphic_class": 2,
+      "attack_class": 0,
+      "graphic_index": 363,
+      "object_type_raw_hex": "009a",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        154,
+        2,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 9,
+      "graphic_class": 2,
+      "attack_class": 0,
+      "graphic_index": 363,
+      "object_type_raw_hex": "009b",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        155,
+        2,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 10,
+      "graphic_class": 2,
+      "attack_class": 0,
+      "graphic_index": 363,
+      "object_type_raw_hex": "009c",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        156,
+        2,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 11,
+      "graphic_class": 2,
+      "attack_class": 0,
+      "graphic_index": 363,
+      "object_type_raw_hex": "009d",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        157,
+        2,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 12,
+      "graphic_class": 2,
+      "attack_class": 0,
+      "graphic_index": 363,
+      "object_type_raw_hex": "009e",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        158,
+        2,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 13,
+      "graphic_class": 2,
+      "attack_class": 0,
+      "graphic_index": 363,
+      "object_type_raw_hex": "009f",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        159,
+        2,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 14,
+      "graphic_class": 2,
+      "attack_class": 0,
+      "graphic_index": 363,
+      "object_type_raw_hex": "00a0",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        160,
+        2,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 15,
+      "graphic_class": 2,
+      "attack_class": 0,
+      "graphic_index": 363,
+      "object_type_raw_hex": "00a1",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        161,
+        2,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 16,
+      "graphic_class": 2,
+      "attack_class": 0,
+      "graphic_index": 363,
+      "object_type_raw_hex": "00a2",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        162,
+        2,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 17,
+      "graphic_class": 2,
+      "attack_class": 0,
+      "graphic_index": 363,
+      "object_type_raw_hex": "00a3",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        163,
+        2,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 18,
+      "graphic_class": 68,
+      "attack_class": 0,
+      "graphic_index": 429,
+      "object_type_raw_hex": "00a4",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        164,
+        68,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 19,
+      "graphic_class": 68,
+      "attack_class": 0,
+      "graphic_index": 429,
+      "object_type_raw_hex": "00a5",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        165,
+        68,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 20,
+      "graphic_class": 68,
+      "attack_class": 0,
+      "graphic_index": 429,
+      "object_type_raw_hex": "00a6",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        166,
+        68,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 21,
+      "graphic_class": 68,
+      "attack_class": 42,
+      "graphic_index": 429,
+      "object_type_raw_hex": "00a7",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        167,
+        68,
+        42,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 22,
+      "graphic_class": 80,
+      "attack_class": 0,
+      "graphic_index": 441,
+      "object_type_raw_hex": "00c3",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        195,
+        80,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 23,
+      "graphic_class": 38,
+      "attack_class": 43,
+      "graphic_index": 399,
+      "object_type_raw_hex": "0010",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        16,
+        38,
+        43,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 24,
+      "graphic_class": 38,
+      "attack_class": 7,
+      "graphic_index": 399,
+      "object_type_raw_hex": "0012",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        18,
+        38,
+        7,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 25,
+      "graphic_class": 35,
+      "attack_class": 5,
+      "graphic_index": 396,
+      "object_type_raw_hex": "0004",
+      "carry_mask_raw_hex": "0400",
+      "raw": [
+        0,
+        4,
+        35,
+        5,
+        4,
+        0
+      ]
+    },
+    {
+      "id": 26,
+      "graphic_class": 37,
+      "attack_class": 6,
+      "graphic_index": 398,
+      "object_type_raw_hex": "000e",
+      "carry_mask_raw_hex": "0400",
+      "raw": [
+        0,
+        14,
+        37,
+        6,
+        4,
+        0
+      ]
+    },
+    {
+      "id": 27,
+      "graphic_class": 11,
+      "attack_class": 8,
+      "graphic_index": 372,
+      "object_type_raw_hex": "0014",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        20,
+        11,
+        8,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 28,
+      "graphic_class": 12,
+      "attack_class": 9,
+      "graphic_index": 373,
+      "object_type_raw_hex": "0017",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        23,
+        12,
+        9,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 29,
+      "graphic_class": 12,
+      "attack_class": 10,
+      "graphic_index": 373,
+      "object_type_raw_hex": "0019",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        25,
+        12,
+        10,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 30,
+      "graphic_class": 39,
+      "attack_class": 11,
+      "graphic_index": 400,
+      "object_type_raw_hex": "001b",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        27,
+        39,
+        11,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 31,
+      "graphic_class": 17,
+      "attack_class": 12,
+      "graphic_index": 378,
+      "object_type_raw_hex": "0020",
+      "carry_mask_raw_hex": "05c0",
+      "raw": [
+        0,
+        32,
+        17,
+        12,
+        5,
+        192
+      ]
+    },
+    {
+      "id": 32,
+      "graphic_class": 12,
+      "attack_class": 13,
+      "graphic_index": 373,
+      "object_type_raw_hex": "0021",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        33,
+        12,
+        13,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 33,
+      "graphic_class": 12,
+      "attack_class": 13,
+      "graphic_index": 373,
+      "object_type_raw_hex": "0022",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        34,
+        12,
+        13,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 34,
+      "graphic_class": 12,
+      "attack_class": 14,
+      "graphic_index": 373,
+      "object_type_raw_hex": "0023",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        35,
+        12,
+        14,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 35,
+      "graphic_class": 12,
+      "attack_class": 15,
+      "graphic_index": 373,
+      "object_type_raw_hex": "0024",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        36,
+        12,
+        15,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 36,
+      "graphic_class": 12,
+      "attack_class": 15,
+      "graphic_index": 373,
+      "object_type_raw_hex": "0025",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        37,
+        12,
+        15,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 37,
+      "graphic_class": 12,
+      "attack_class": 16,
+      "graphic_index": 373,
+      "object_type_raw_hex": "0026",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        38,
+        12,
+        16,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 38,
+      "graphic_class": 12,
+      "attack_class": 17,
+      "graphic_index": 373,
+      "object_type_raw_hex": "0027",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        39,
+        12,
+        17,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 39,
+      "graphic_class": 42,
+      "attack_class": 18,
+      "graphic_index": 403,
+      "object_type_raw_hex": "0028",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        40,
+        42,
+        18,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 40,
+      "graphic_class": 12,
+      "attack_class": 19,
+      "graphic_index": 373,
+      "object_type_raw_hex": "0029",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        41,
+        12,
+        19,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 41,
+      "graphic_class": 13,
+      "attack_class": 20,
+      "graphic_index": 374,
+      "object_type_raw_hex": "002a",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        42,
+        13,
+        20,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 42,
+      "graphic_class": 13,
+      "attack_class": 21,
+      "graphic_index": 374,
+      "object_type_raw_hex": "002b",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        43,
+        13,
+        21,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 43,
+      "graphic_class": 21,
+      "attack_class": 22,
+      "graphic_index": 382,
+      "object_type_raw_hex": "002c",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        44,
+        21,
+        22,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 44,
+      "graphic_class": 21,
+      "attack_class": 22,
+      "graphic_index": 382,
+      "object_type_raw_hex": "002d",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        45,
+        21,
+        22,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 45,
+      "graphic_class": 33,
+      "attack_class": 23,
+      "graphic_index": 394,
+      "object_type_raw_hex": "002e",
+      "carry_mask_raw_hex": "0440",
+      "raw": [
+        0,
+        46,
+        33,
+        23,
+        4,
+        64
+      ]
+    },
+    {
+      "id": 46,
+      "graphic_class": 43,
+      "attack_class": 24,
+      "graphic_index": 404,
+      "object_type_raw_hex": "002f",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        47,
+        43,
+        24,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 47,
+      "graphic_class": 44,
+      "attack_class": 24,
+      "graphic_index": 405,
+      "object_type_raw_hex": "0030",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        48,
+        44,
+        24,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 48,
+      "graphic_class": 14,
+      "attack_class": 27,
+      "graphic_index": 375,
+      "object_type_raw_hex": "0031",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        49,
+        14,
+        27,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 49,
+      "graphic_class": 45,
+      "attack_class": 27,
+      "graphic_index": 406,
+      "object_type_raw_hex": "0032",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        50,
+        45,
+        27,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 50,
+      "graphic_class": 16,
+      "attack_class": 26,
+      "graphic_index": 377,
+      "object_type_raw_hex": "0033",
+      "carry_mask_raw_hex": "05c0",
+      "raw": [
+        0,
+        51,
+        16,
+        26,
+        5,
+        192
+      ]
+    },
+    {
+      "id": 51,
+      "graphic_class": 46,
+      "attack_class": 26,
+      "graphic_index": 407,
+      "object_type_raw_hex": "0034",
+      "carry_mask_raw_hex": "05c0",
+      "raw": [
+        0,
+        52,
+        46,
+        26,
+        5,
+        192
+      ]
+    },
+    {
+      "id": 52,
+      "graphic_class": 11,
+      "attack_class": 27,
+      "graphic_index": 372,
+      "object_type_raw_hex": "0035",
+      "carry_mask_raw_hex": "0440",
+      "raw": [
+        0,
+        53,
+        11,
+        27,
+        4,
+        64
+      ]
+    },
+    {
+      "id": 53,
+      "graphic_class": 47,
+      "attack_class": 42,
+      "graphic_index": 408,
+      "object_type_raw_hex": "0036",
+      "carry_mask_raw_hex": "05c0",
+      "raw": [
+        0,
+        54,
+        47,
+        42,
+        5,
+        192
+      ]
+    },
+    {
+      "id": 54,
+      "graphic_class": 48,
+      "attack_class": 40,
+      "graphic_index": 409,
+      "object_type_raw_hex": "0037",
+      "carry_mask_raw_hex": "05c0",
+      "raw": [
+        0,
+        55,
+        48,
+        40,
+        5,
+        192
+      ]
+    },
+    {
+      "id": 55,
+      "graphic_class": 49,
+      "attack_class": 42,
+      "graphic_index": 410,
+      "object_type_raw_hex": "0038",
+      "carry_mask_raw_hex": "05c0",
+      "raw": [
+        0,
+        56,
+        49,
+        42,
+        5,
+        192
+      ]
+    },
+    {
+      "id": 56,
+      "graphic_class": 50,
+      "attack_class": 5,
+      "graphic_index": 411,
+      "object_type_raw_hex": "0039",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        57,
+        50,
+        5,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 57,
+      "graphic_class": 11,
+      "attack_class": 5,
+      "graphic_index": 372,
+      "object_type_raw_hex": "003a",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        58,
+        11,
+        5,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 58,
+      "graphic_class": 31,
+      "attack_class": 28,
+      "graphic_index": 392,
+      "object_type_raw_hex": "003b",
+      "carry_mask_raw_hex": "0540",
+      "raw": [
+        0,
+        59,
+        31,
+        28,
+        5,
+        64
+      ]
+    },
+    {
+      "id": 59,
+      "graphic_class": 31,
+      "attack_class": 29,
+      "graphic_index": 392,
+      "object_type_raw_hex": "003c",
+      "carry_mask_raw_hex": "0540",
+      "raw": [
+        0,
+        60,
+        31,
+        29,
+        5,
+        64
+      ]
+    },
+    {
+      "id": 60,
+      "graphic_class": 11,
+      "attack_class": 30,
+      "graphic_index": 372,
+      "object_type_raw_hex": "003d",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        61,
+        11,
+        30,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 61,
+      "graphic_class": 11,
+      "attack_class": 31,
+      "graphic_index": 372,
+      "object_type_raw_hex": "003e",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        62,
+        11,
+        31,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 62,
+      "graphic_class": 35,
+      "attack_class": 32,
+      "graphic_index": 396,
+      "object_type_raw_hex": "003f",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        63,
+        35,
+        32,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 63,
+      "graphic_class": 51,
+      "attack_class": 33,
+      "graphic_index": 412,
+      "object_type_raw_hex": "0040",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        64,
+        51,
+        33,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 64,
+      "graphic_class": 32,
+      "attack_class": 5,
+      "graphic_index": 393,
+      "object_type_raw_hex": "0041",
+      "carry_mask_raw_hex": "0440",
+      "raw": [
+        0,
+        65,
+        32,
+        5,
+        4,
+        64
+      ]
+    },
+    {
+      "id": 65,
+      "graphic_class": 30,
+      "attack_class": 35,
+      "graphic_index": 391,
+      "object_type_raw_hex": "0042",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        66,
+        30,
+        35,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 66,
+      "graphic_class": 65,
+      "attack_class": 36,
+      "graphic_index": 426,
+      "object_type_raw_hex": "0087",
+      "carry_mask_raw_hex": "0440",
+      "raw": [
+        0,
+        135,
+        65,
+        36,
+        4,
+        64
+      ]
+    },
+    {
+      "id": 67,
+      "graphic_class": 45,
+      "attack_class": 27,
+      "graphic_index": 406,
+      "object_type_raw_hex": "008f",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        143,
+        45,
+        27,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 68,
+      "graphic_class": 82,
+      "attack_class": 1,
+      "graphic_index": 443,
+      "object_type_raw_hex": "001c",
+      "carry_mask_raw_hex": "0040",
+      "raw": [
+        0,
+        28,
+        82,
+        1,
+        0,
+        64
+      ]
+    },
+    {
+      "id": 69,
+      "graphic_class": 23,
+      "attack_class": 0,
+      "graphic_index": 384,
+      "object_type_raw_hex": "0050",
+      "carry_mask_raw_hex": "040c",
+      "raw": [
+        0,
+        80,
+        23,
+        0,
+        4,
+        12
+      ]
+    },
+    {
+      "id": 70,
+      "graphic_class": 23,
+      "attack_class": 0,
+      "graphic_index": 384,
+      "object_type_raw_hex": "0051",
+      "carry_mask_raw_hex": "040c",
+      "raw": [
+        0,
+        81,
+        23,
+        0,
+        4,
+        12
+      ]
+    },
+    {
+      "id": 71,
+      "graphic_class": 23,
+      "attack_class": 0,
+      "graphic_index": 384,
+      "object_type_raw_hex": "0052",
+      "carry_mask_raw_hex": "0410",
+      "raw": [
+        0,
+        82,
+        23,
+        0,
+        4,
+        16
+      ]
+    },
+    {
+      "id": 72,
+      "graphic_class": 55,
+      "attack_class": 0,
+      "graphic_index": 416,
+      "object_type_raw_hex": "0070",
+      "carry_mask_raw_hex": "0420",
+      "raw": [
+        0,
+        112,
+        55,
+        0,
+        4,
+        32
+      ]
+    },
+    {
+      "id": 73,
+      "graphic_class": 8,
+      "attack_class": 0,
+      "graphic_index": 369,
+      "object_type_raw_hex": "0072",
+      "carry_mask_raw_hex": "0420",
+      "raw": [
+        0,
+        114,
+        8,
+        0,
+        4,
+        32
+      ]
+    },
+    {
+      "id": 74,
+      "graphic_class": 24,
+      "attack_class": 0,
+      "graphic_index": 385,
+      "object_type_raw_hex": "0043",
+      "carry_mask_raw_hex": "0408",
+      "raw": [
+        0,
+        67,
+        24,
+        0,
+        4,
+        8
+      ]
+    },
+    {
+      "id": 75,
+      "graphic_class": 24,
+      "attack_class": 0,
+      "graphic_index": 385,
+      "object_type_raw_hex": "0053",
+      "carry_mask_raw_hex": "0410",
+      "raw": [
+        0,
+        83,
+        24,
+        0,
+        4,
+        16
+      ]
+    },
+    {
+      "id": 76,
+      "graphic_class": 24,
+      "attack_class": 0,
+      "graphic_index": 385,
+      "object_type_raw_hex": "0044",
+      "carry_mask_raw_hex": "0408",
+      "raw": [
+        0,
+        68,
+        24,
+        0,
+        4,
+        8
+      ]
+    },
+    {
+      "id": 77,
+      "graphic_class": 24,
+      "attack_class": 0,
+      "graphic_index": 385,
+      "object_type_raw_hex": "0054",
+      "carry_mask_raw_hex": "0410",
+      "raw": [
+        0,
+        84,
+        24,
+        0,
+        4,
+        16
+      ]
+    },
+    {
+      "id": 78,
+      "graphic_class": 69,
+      "attack_class": 0,
+      "graphic_index": 430,
+      "object_type_raw_hex": "0045",
+      "carry_mask_raw_hex": "0408",
+      "raw": [
+        0,
+        69,
+        69,
+        0,
+        4,
+        8
+      ]
+    },
+    {
+      "id": 79,
+      "graphic_class": 24,
+      "attack_class": 0,
+      "graphic_index": 385,
+      "object_type_raw_hex": "0046",
+      "carry_mask_raw_hex": "0408",
+      "raw": [
+        0,
+        70,
+        24,
+        0,
+        4,
+        8
+      ]
+    },
+    {
+      "id": 80,
+      "graphic_class": 24,
+      "attack_class": 0,
+      "graphic_index": 385,
+      "object_type_raw_hex": "0055",
+      "carry_mask_raw_hex": "0410",
+      "raw": [
+        0,
+        85,
+        24,
+        0,
+        4,
+        16
+      ]
+    },
+    {
+      "id": 81,
+      "graphic_class": 69,
+      "attack_class": 0,
+      "graphic_index": 430,
+      "object_type_raw_hex": "0056",
+      "carry_mask_raw_hex": "0410",
+      "raw": [
+        0,
+        86,
+        69,
+        0,
+        4,
+        16
+      ]
+    },
+    {
+      "id": 82,
+      "graphic_class": 7,
+      "attack_class": 0,
+      "graphic_index": 368,
+      "object_type_raw_hex": "0047",
+      "carry_mask_raw_hex": "0408",
+      "raw": [
+        0,
+        71,
+        7,
+        0,
+        4,
+        8
+      ]
+    },
+    {
+      "id": 83,
+      "graphic_class": 7,
+      "attack_class": 0,
+      "graphic_index": 368,
+      "object_type_raw_hex": "0057",
+      "carry_mask_raw_hex": "0410",
+      "raw": [
+        0,
+        87,
+        7,
+        0,
+        4,
+        16
+      ]
+    },
+    {
+      "id": 84,
+      "graphic_class": 57,
+      "attack_class": 0,
+      "graphic_index": 418,
+      "object_type_raw_hex": "0077",
+      "carry_mask_raw_hex": "0420",
+      "raw": [
+        0,
+        119,
+        57,
+        0,
+        4,
+        32
+      ]
+    },
+    {
+      "id": 85,
+      "graphic_class": 23,
+      "attack_class": 0,
+      "graphic_index": 384,
+      "object_type_raw_hex": "0048",
+      "carry_mask_raw_hex": "0408",
+      "raw": [
+        0,
+        72,
+        23,
+        0,
+        4,
+        8
+      ]
+    },
+    {
+      "id": 86,
+      "graphic_class": 23,
+      "attack_class": 0,
+      "graphic_index": 384,
+      "object_type_raw_hex": "0058",
+      "carry_mask_raw_hex": "0410",
+      "raw": [
+        0,
+        88,
+        23,
+        0,
+        4,
+        16
+      ]
+    },
+    {
+      "id": 87,
+      "graphic_class": 29,
+      "attack_class": 0,
+      "graphic_index": 390,
+      "object_type_raw_hex": "0071",
+      "carry_mask_raw_hex": "0420",
+      "raw": [
+        0,
+        113,
+        29,
+        0,
+        4,
+        32
+      ]
+    },
+    {
+      "id": 88,
+      "graphic_class": 69,
+      "attack_class": 0,
+      "graphic_index": 430,
+      "object_type_raw_hex": "0059",
+      "carry_mask_raw_hex": "0410",
+      "raw": [
+        0,
+        89,
+        69,
+        0,
+        4,
+        16
+      ]
+    },
+    {
+      "id": 89,
+      "graphic_class": 69,
+      "attack_class": 0,
+      "graphic_index": 430,
+      "object_type_raw_hex": "0049",
+      "carry_mask_raw_hex": "0408",
+      "raw": [
+        0,
+        73,
+        69,
+        0,
+        4,
+        8
+      ]
+    },
+    {
+      "id": 90,
+      "graphic_class": 24,
+      "attack_class": 0,
+      "graphic_index": 385,
+      "object_type_raw_hex": "004a",
+      "carry_mask_raw_hex": "0408",
+      "raw": [
+        0,
+        74,
+        24,
+        0,
+        4,
+        8
+      ]
+    },
+    {
+      "id": 91,
+      "graphic_class": 24,
+      "attack_class": 0,
+      "graphic_index": 385,
+      "object_type_raw_hex": "005a",
+      "carry_mask_raw_hex": "0410",
+      "raw": [
+        0,
+        90,
+        24,
+        0,
+        4,
+        16
+      ]
+    },
+    {
+      "id": 92,
+      "graphic_class": 53,
+      "attack_class": 0,
+      "graphic_index": 414,
+      "object_type_raw_hex": "0067",
+      "carry_mask_raw_hex": "0402",
+      "raw": [
+        0,
+        103,
+        53,
+        0,
+        4,
+        2
+      ]
+    },
+    {
+      "id": 93,
+      "graphic_class": 53,
+      "attack_class": 0,
+      "graphic_index": 414,
+      "object_type_raw_hex": "0068",
+      "carry_mask_raw_hex": "0402",
+      "raw": [
+        0,
+        104,
+        53,
+        0,
+        4,
+        2
+      ]
+    },
+    {
+      "id": 94,
+      "graphic_class": 9,
+      "attack_class": 0,
+      "graphic_index": 370,
+      "object_type_raw_hex": "0060",
+      "carry_mask_raw_hex": "0402",
+      "raw": [
+        0,
+        96,
+        9,
+        0,
+        4,
+        2
+      ]
+    },
+    {
+      "id": 95,
+      "graphic_class": 9,
+      "attack_class": 0,
+      "graphic_index": 370,
+      "object_type_raw_hex": "0061",
+      "carry_mask_raw_hex": "0402",
+      "raw": [
+        0,
+        97,
+        9,
+        0,
+        4,
+        2
+      ]
+    },
+    {
+      "id": 96,
+      "graphic_class": 9,
+      "attack_class": 0,
+      "graphic_index": 370,
+      "object_type_raw_hex": "0062",
+      "carry_mask_raw_hex": "0402",
+      "raw": [
+        0,
+        98,
+        9,
+        0,
+        4,
+        2
+      ]
+    },
+    {
+      "id": 97,
+      "graphic_class": 54,
+      "attack_class": 41,
+      "graphic_index": 415,
+      "object_type_raw_hex": "0069",
+      "carry_mask_raw_hex": "0400",
+      "raw": [
+        0,
+        105,
+        54,
+        41,
+        4,
+        0
+      ]
+    },
+    {
+      "id": 98,
+      "graphic_class": 54,
+      "attack_class": 41,
+      "graphic_index": 415,
+      "object_type_raw_hex": "006a",
+      "carry_mask_raw_hex": "0200",
+      "raw": [
+        0,
+        106,
+        54,
+        41,
+        2,
+        0
+      ]
+    },
+    {
+      "id": 99,
+      "graphic_class": 10,
+      "attack_class": 41,
+      "graphic_index": 371,
+      "object_type_raw_hex": "006c",
+      "carry_mask_raw_hex": "0200",
+      "raw": [
+        0,
+        108,
+        10,
+        41,
+        2,
+        0
+      ]
+    },
+    {
+      "id": 100,
+      "graphic_class": 54,
+      "attack_class": 41,
+      "graphic_index": 415,
+      "object_type_raw_hex": "006b",
+      "carry_mask_raw_hex": "0200",
+      "raw": [
+        0,
+        107,
+        54,
+        41,
+        2,
+        0
+      ]
+    },
+    {
+      "id": 101,
+      "graphic_class": 19,
+      "attack_class": 0,
+      "graphic_index": 380,
+      "object_type_raw_hex": "004b",
+      "carry_mask_raw_hex": "0408",
+      "raw": [
+        0,
+        75,
+        19,
+        0,
+        4,
+        8
+      ]
+    },
+    {
+      "id": 102,
+      "graphic_class": 19,
+      "attack_class": 0,
+      "graphic_index": 380,
+      "object_type_raw_hex": "005b",
+      "carry_mask_raw_hex": "0410",
+      "raw": [
+        0,
+        91,
+        19,
+        0,
+        4,
+        16
+      ]
+    },
+    {
+      "id": 103,
+      "graphic_class": 19,
+      "attack_class": 0,
+      "graphic_index": 380,
+      "object_type_raw_hex": "004c",
+      "carry_mask_raw_hex": "0408",
+      "raw": [
+        0,
+        76,
+        19,
+        0,
+        4,
+        8
+      ]
+    },
+    {
+      "id": 104,
+      "graphic_class": 19,
+      "attack_class": 0,
+      "graphic_index": 380,
+      "object_type_raw_hex": "005c",
+      "carry_mask_raw_hex": "0410",
+      "raw": [
+        0,
+        92,
+        19,
+        0,
+        4,
+        16
+      ]
+    },
+    {
+      "id": 105,
+      "graphic_class": 9,
+      "attack_class": 0,
+      "graphic_index": 370,
+      "object_type_raw_hex": "0063",
+      "carry_mask_raw_hex": "0402",
+      "raw": [
+        0,
+        99,
+        9,
+        0,
+        4,
+        2
+      ]
+    },
+    {
+      "id": 106,
+      "graphic_class": 19,
+      "attack_class": 0,
+      "graphic_index": 380,
+      "object_type_raw_hex": "0073",
+      "carry_mask_raw_hex": "0420",
+      "raw": [
+        0,
+        115,
+        19,
+        0,
+        4,
+        32
+      ]
+    },
+    {
+      "id": 107,
+      "graphic_class": 52,
+      "attack_class": 0,
+      "graphic_index": 413,
+      "object_type_raw_hex": "0064",
+      "carry_mask_raw_hex": "0402",
+      "raw": [
+        0,
+        100,
+        52,
+        0,
+        4,
+        2
+      ]
+    },
+    {
+      "id": 108,
+      "graphic_class": 20,
+      "attack_class": 0,
+      "graphic_index": 381,
+      "object_type_raw_hex": "004d",
+      "carry_mask_raw_hex": "0008",
+      "raw": [
+        0,
+        77,
+        20,
+        0,
+        0,
+        8
+      ]
+    },
+    {
+      "id": 109,
+      "graphic_class": 22,
+      "attack_class": 0,
+      "graphic_index": 383,
+      "object_type_raw_hex": "005d",
+      "carry_mask_raw_hex": "0010",
+      "raw": [
+        0,
+        93,
+        22,
+        0,
+        0,
+        16
+      ]
+    },
+    {
+      "id": 110,
+      "graphic_class": 56,
+      "attack_class": 0,
+      "graphic_index": 417,
+      "object_type_raw_hex": "0074",
+      "carry_mask_raw_hex": "0420",
+      "raw": [
+        0,
+        116,
+        56,
+        0,
+        4,
+        32
+      ]
+    },
+    {
+      "id": 111,
+      "graphic_class": 10,
+      "attack_class": 41,
+      "graphic_index": 371,
+      "object_type_raw_hex": "006d",
+      "carry_mask_raw_hex": "0200",
+      "raw": [
+        0,
+        109,
+        10,
+        41,
+        2,
+        0
+      ]
+    },
+    {
+      "id": 112,
+      "graphic_class": 52,
+      "attack_class": 0,
+      "graphic_index": 413,
+      "object_type_raw_hex": "0065",
+      "carry_mask_raw_hex": "0402",
+      "raw": [
+        0,
+        101,
+        52,
+        0,
+        4,
+        2
+      ]
+    },
+    {
+      "id": 113,
+      "graphic_class": 20,
+      "attack_class": 0,
+      "graphic_index": 381,
+      "object_type_raw_hex": "004e",
+      "carry_mask_raw_hex": "0008",
+      "raw": [
+        0,
+        78,
+        20,
+        0,
+        0,
+        8
+      ]
+    },
+    {
+      "id": 114,
+      "graphic_class": 22,
+      "attack_class": 0,
+      "graphic_index": 383,
+      "object_type_raw_hex": "005e",
+      "carry_mask_raw_hex": "0010",
+      "raw": [
+        0,
+        94,
+        22,
+        0,
+        0,
+        16
+      ]
+    },
+    {
+      "id": 115,
+      "graphic_class": 56,
+      "attack_class": 0,
+      "graphic_index": 417,
+      "object_type_raw_hex": "0075",
+      "carry_mask_raw_hex": "0420",
+      "raw": [
+        0,
+        117,
+        56,
+        0,
+        4,
+        32
+      ]
+    },
+    {
+      "id": 116,
+      "graphic_class": 10,
+      "attack_class": 41,
+      "graphic_index": 371,
+      "object_type_raw_hex": "006e",
+      "carry_mask_raw_hex": "0200",
+      "raw": [
+        0,
+        110,
+        10,
+        41,
+        2,
+        0
+      ]
+    },
+    {
+      "id": 117,
+      "graphic_class": 52,
+      "attack_class": 0,
+      "graphic_index": 413,
+      "object_type_raw_hex": "0066",
+      "carry_mask_raw_hex": "0402",
+      "raw": [
+        0,
+        102,
+        52,
+        0,
+        4,
+        2
+      ]
+    },
+    {
+      "id": 118,
+      "graphic_class": 20,
+      "attack_class": 0,
+      "graphic_index": 381,
+      "object_type_raw_hex": "004f",
+      "carry_mask_raw_hex": "0008",
+      "raw": [
+        0,
+        79,
+        20,
+        0,
+        0,
+        8
+      ]
+    },
+    {
+      "id": 119,
+      "graphic_class": 22,
+      "attack_class": 0,
+      "graphic_index": 383,
+      "object_type_raw_hex": "005f",
+      "carry_mask_raw_hex": "0010",
+      "raw": [
+        0,
+        95,
+        22,
+        0,
+        0,
+        16
+      ]
+    },
+    {
+      "id": 120,
+      "graphic_class": 56,
+      "attack_class": 0,
+      "graphic_index": 417,
+      "object_type_raw_hex": "0076",
+      "carry_mask_raw_hex": "0420",
+      "raw": [
+        0,
+        118,
+        56,
+        0,
+        4,
+        32
+      ]
+    },
+    {
+      "id": 121,
+      "graphic_class": 10,
+      "attack_class": 41,
+      "graphic_index": 371,
+      "object_type_raw_hex": "006f",
+      "carry_mask_raw_hex": "0200",
+      "raw": [
+        0,
+        111,
+        10,
+        41,
+        2,
+        0
+      ]
+    },
+    {
+      "id": 122,
+      "graphic_class": 52,
+      "attack_class": 0,
+      "graphic_index": 413,
+      "object_type_raw_hex": "008c",
+      "carry_mask_raw_hex": "0402",
+      "raw": [
+        0,
+        140,
+        52,
+        0,
+        4,
+        2
+      ]
+    },
+    {
+      "id": 123,
+      "graphic_class": 19,
+      "attack_class": 0,
+      "graphic_index": 380,
+      "object_type_raw_hex": "008d",
+      "carry_mask_raw_hex": "0408",
+      "raw": [
+        0,
+        141,
+        19,
+        0,
+        4,
+        8
+      ]
+    },
+    {
+      "id": 124,
+      "graphic_class": 22,
+      "attack_class": 0,
+      "graphic_index": 383,
+      "object_type_raw_hex": "008e",
+      "carry_mask_raw_hex": "0010",
+      "raw": [
+        0,
+        142,
+        22,
+        0,
+        0,
+        16
+      ]
+    },
+    {
+      "id": 125,
+      "graphic_class": 81,
+      "attack_class": 0,
+      "graphic_index": 442,
+      "object_type_raw_hex": "00c2",
+      "carry_mask_raw_hex": "0420",
+      "raw": [
+        0,
+        194,
+        81,
+        0,
+        4,
+        32
+      ]
+    },
+    {
+      "id": 126,
+      "graphic_class": 84,
+      "attack_class": 0,
+      "graphic_index": 445,
+      "object_type_raw_hex": "00c4",
+      "carry_mask_raw_hex": "0408",
+      "raw": [
+        0,
+        196,
+        84,
+        0,
+        4,
+        8
+      ]
+    },
+    {
+      "id": 127,
+      "graphic_class": 34,
+      "attack_class": 0,
+      "graphic_index": 395,
+      "object_type_raw_hex": "0000",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        0,
+        34,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 128,
+      "graphic_class": 6,
+      "attack_class": 0,
+      "graphic_index": 367,
+      "object_type_raw_hex": "0008",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        8,
+        6,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 129,
+      "graphic_class": 15,
+      "attack_class": 0,
+      "graphic_index": 376,
+      "object_type_raw_hex": "000a",
+      "carry_mask_raw_hex": "0504",
+      "raw": [
+        0,
+        10,
+        15,
+        0,
+        5,
+        4
+      ]
+    },
+    {
+      "id": 130,
+      "graphic_class": 15,
+      "attack_class": 0,
+      "graphic_index": 376,
+      "object_type_raw_hex": "000c",
+      "carry_mask_raw_hex": "0504",
+      "raw": [
+        0,
+        12,
+        15,
+        0,
+        5,
+        4
+      ]
+    },
+    {
+      "id": 131,
+      "graphic_class": 40,
+      "attack_class": 0,
+      "graphic_index": 401,
+      "object_type_raw_hex": "0092",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        146,
+        40,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 132,
+      "graphic_class": 41,
+      "attack_class": 0,
+      "graphic_index": 402,
+      "object_type_raw_hex": "0093",
+      "carry_mask_raw_hex": "0400",
+      "raw": [
+        0,
+        147,
+        41,
+        0,
+        4,
+        0
+      ]
+    },
+    {
+      "id": 133,
+      "graphic_class": 4,
+      "attack_class": 37,
+      "graphic_index": 365,
+      "object_type_raw_hex": "007d",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        125,
+        4,
+        37,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 134,
+      "graphic_class": 83,
+      "attack_class": 37,
+      "graphic_index": 444,
+      "object_type_raw_hex": "007e",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        126,
+        83,
+        37,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 135,
+      "graphic_class": 4,
+      "attack_class": 37,
+      "graphic_index": 365,
+      "object_type_raw_hex": "007f",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        127,
+        4,
+        37,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 136,
+      "graphic_class": 18,
+      "attack_class": 0,
+      "graphic_index": 379,
+      "object_type_raw_hex": "00b0",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        176,
+        18,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 137,
+      "graphic_class": 18,
+      "attack_class": 0,
+      "graphic_index": 379,
+      "object_type_raw_hex": "00b1",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        177,
+        18,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 138,
+      "graphic_class": 18,
+      "attack_class": 0,
+      "graphic_index": 379,
+      "object_type_raw_hex": "00b2",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        178,
+        18,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 139,
+      "graphic_class": 18,
+      "attack_class": 0,
+      "graphic_index": 379,
+      "object_type_raw_hex": "00b3",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        179,
+        18,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 140,
+      "graphic_class": 18,
+      "attack_class": 0,
+      "graphic_index": 379,
+      "object_type_raw_hex": "00b4",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        180,
+        18,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 141,
+      "graphic_class": 18,
+      "attack_class": 0,
+      "graphic_index": 379,
+      "object_type_raw_hex": "00b5",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        181,
+        18,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 142,
+      "graphic_class": 18,
+      "attack_class": 0,
+      "graphic_index": 379,
+      "object_type_raw_hex": "00b6",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        182,
+        18,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 143,
+      "graphic_class": 18,
+      "attack_class": 0,
+      "graphic_index": 379,
+      "object_type_raw_hex": "00b7",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        183,
+        18,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 144,
+      "graphic_class": 62,
+      "attack_class": 0,
+      "graphic_index": 423,
+      "object_type_raw_hex": "00b8",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        184,
+        62,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 145,
+      "graphic_class": 62,
+      "attack_class": 0,
+      "graphic_index": 423,
+      "object_type_raw_hex": "00b9",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        185,
+        62,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 146,
+      "graphic_class": 62,
+      "attack_class": 0,
+      "graphic_index": 423,
+      "object_type_raw_hex": "00ba",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        186,
+        62,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 147,
+      "graphic_class": 62,
+      "attack_class": 0,
+      "graphic_index": 423,
+      "object_type_raw_hex": "00bb",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        187,
+        62,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 148,
+      "graphic_class": 62,
+      "attack_class": 0,
+      "graphic_index": 423,
+      "object_type_raw_hex": "00bc",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        188,
+        62,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 149,
+      "graphic_class": 62,
+      "attack_class": 0,
+      "graphic_index": 423,
+      "object_type_raw_hex": "00bd",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        189,
+        62,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 150,
+      "graphic_class": 62,
+      "attack_class": 0,
+      "graphic_index": 423,
+      "object_type_raw_hex": "00be",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        190,
+        62,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 151,
+      "graphic_class": 62,
+      "attack_class": 0,
+      "graphic_index": 423,
+      "object_type_raw_hex": "00bf",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        191,
+        62,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 152,
+      "graphic_class": 76,
+      "attack_class": 0,
+      "graphic_index": 437,
+      "object_type_raw_hex": "0080",
+      "carry_mask_raw_hex": "0200",
+      "raw": [
+        0,
+        128,
+        76,
+        0,
+        2,
+        0
+      ]
+    },
+    {
+      "id": 153,
+      "graphic_class": 3,
+      "attack_class": 0,
+      "graphic_index": 364,
+      "object_type_raw_hex": "0081",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        129,
+        3,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 154,
+      "graphic_class": 60,
+      "attack_class": 0,
+      "graphic_index": 421,
+      "object_type_raw_hex": "0082",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        130,
+        60,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 155,
+      "graphic_class": 61,
+      "attack_class": 0,
+      "graphic_index": 422,
+      "object_type_raw_hex": "0083",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        131,
+        61,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 156,
+      "graphic_class": 27,
+      "attack_class": 0,
+      "graphic_index": 388,
+      "object_type_raw_hex": "00a8",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        168,
+        27,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 157,
+      "graphic_class": 28,
+      "attack_class": 0,
+      "graphic_index": 389,
+      "object_type_raw_hex": "00a9",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        169,
+        28,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 158,
+      "graphic_class": 25,
+      "attack_class": 0,
+      "graphic_index": 386,
+      "object_type_raw_hex": "00aa",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        170,
+        25,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 159,
+      "graphic_class": 26,
+      "attack_class": 0,
+      "graphic_index": 387,
+      "object_type_raw_hex": "00ab",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        171,
+        26,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 160,
+      "graphic_class": 71,
+      "attack_class": 0,
+      "graphic_index": 432,
+      "object_type_raw_hex": "00ac",
+      "carry_mask_raw_hex": "0401",
+      "raw": [
+        0,
+        172,
+        71,
+        0,
+        4,
+        1
+      ]
+    },
+    {
+      "id": 161,
+      "graphic_class": 70,
+      "attack_class": 0,
+      "graphic_index": 431,
+      "object_type_raw_hex": "00ad",
+      "carry_mask_raw_hex": "0401",
+      "raw": [
+        0,
+        173,
+        70,
+        0,
+        4,
+        1
+      ]
+    },
+    {
+      "id": 162,
+      "graphic_class": 5,
+      "attack_class": 0,
+      "graphic_index": 366,
+      "object_type_raw_hex": "00ae",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        174,
+        5,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 163,
+      "graphic_class": 66,
+      "attack_class": 0,
+      "graphic_index": 427,
+      "object_type_raw_hex": "00af",
+      "carry_mask_raw_hex": "0501",
+      "raw": [
+        0,
+        175,
+        66,
+        0,
+        5,
+        1
+      ]
+    },
+    {
+      "id": 164,
+      "graphic_class": 15,
+      "attack_class": 0,
+      "graphic_index": 376,
+      "object_type_raw_hex": "0078",
+      "carry_mask_raw_hex": "0504",
+      "raw": [
+        0,
+        120,
+        15,
+        0,
+        5,
+        4
+      ]
+    },
+    {
+      "id": 165,
+      "graphic_class": 15,
+      "attack_class": 0,
+      "graphic_index": 376,
+      "object_type_raw_hex": "0079",
+      "carry_mask_raw_hex": "0504",
+      "raw": [
+        0,
+        121,
+        15,
+        0,
+        5,
+        4
+      ]
+    },
+    {
+      "id": 166,
+      "graphic_class": 58,
+      "attack_class": 0,
+      "graphic_index": 419,
+      "object_type_raw_hex": "007a",
+      "carry_mask_raw_hex": "0504",
+      "raw": [
+        0,
+        122,
+        58,
+        0,
+        5,
+        4
+      ]
+    },
+    {
+      "id": 167,
+      "graphic_class": 59,
+      "attack_class": 0,
+      "graphic_index": 420,
+      "object_type_raw_hex": "007b",
+      "carry_mask_raw_hex": "0504",
+      "raw": [
+        0,
+        123,
+        59,
+        0,
+        5,
+        4
+      ]
+    },
+    {
+      "id": 168,
+      "graphic_class": 59,
+      "attack_class": 0,
+      "graphic_index": 420,
+      "object_type_raw_hex": "007c",
+      "carry_mask_raw_hex": "0504",
+      "raw": [
+        0,
+        124,
+        59,
+        0,
+        5,
+        4
+      ]
+    },
+    {
+      "id": 169,
+      "graphic_class": 79,
+      "attack_class": 38,
+      "graphic_index": 440,
+      "object_type_raw_hex": "0084",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        132,
+        79,
+        38,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 170,
+      "graphic_class": 63,
+      "attack_class": 38,
+      "graphic_index": 424,
+      "object_type_raw_hex": "0085",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        133,
+        63,
+        38,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 171,
+      "graphic_class": 64,
+      "attack_class": 0,
+      "graphic_index": 425,
+      "object_type_raw_hex": "0086",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        134,
+        64,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 172,
+      "graphic_class": 72,
+      "attack_class": 39,
+      "graphic_index": 433,
+      "object_type_raw_hex": "0088",
+      "carry_mask_raw_hex": "0400",
+      "raw": [
+        0,
+        136,
+        72,
+        39,
+        4,
+        0
+      ]
+    },
+    {
+      "id": 173,
+      "graphic_class": 73,
+      "attack_class": 0,
+      "graphic_index": 434,
+      "object_type_raw_hex": "0089",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        137,
+        73,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 174,
+      "graphic_class": 74,
+      "attack_class": 0,
+      "graphic_index": 435,
+      "object_type_raw_hex": "008a",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        138,
+        74,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 175,
+      "graphic_class": 75,
+      "attack_class": 0,
+      "graphic_index": 436,
+      "object_type_raw_hex": "008b",
+      "carry_mask_raw_hex": "0504",
+      "raw": [
+        0,
+        139,
+        75,
+        0,
+        5,
+        4
+      ]
+    },
+    {
+      "id": 176,
+      "graphic_class": 77,
+      "attack_class": 0,
+      "graphic_index": 438,
+      "object_type_raw_hex": "00c0",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        192,
+        77,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 177,
+      "graphic_class": 78,
+      "attack_class": 0,
+      "graphic_index": 439,
+      "object_type_raw_hex": "00c1",
+      "carry_mask_raw_hex": "0500",
+      "raw": [
+        0,
+        193,
+        78,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "id": 178,
+      "graphic_class": 74,
+      "attack_class": 0,
+      "graphic_index": 435,
+      "object_type_raw_hex": "00c5",
+      "carry_mask_raw_hex": "0000",
+      "raw": [
+        0,
+        197,
+        74,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 179,
+      "graphic_class": 41,
+      "attack_class": 0,
+      "graphic_index": 402,
+      "object_type_raw_hex": "00c6",
+      "carry_mask_raw_hex": "0400",
+      "raw": [
+        0,
+        198,
+        41,
+        0,
+        4,
+        0
+      ]
+    }
+  ],
+  "viewport_positions": [
+    [
+      [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          125,
+          72
+        ],
+        [
+          95,
+          72
+        ],
+        [
+          112,
+          64
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          62,
+          72
+        ],
+        [
+          25,
+          72
+        ],
+        [
+          24,
+          64
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          200,
+          72
+        ],
+        [
+          162,
+          72
+        ],
+        [
+          194,
+          64
+        ]
+      ],
+      [
+        [
+          92,
+          78
+        ],
+        [
+          132,
+          78
+        ],
+        [
+          136,
+          86
+        ],
+        [
+          88,
+          86
+        ],
+        [
+          112,
+          74
+        ]
+      ],
+      [
+        [
+          10,
+          78
+        ],
+        [
+          53,
+          78
+        ],
+        [
+          41,
+          86
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          3,
+          74
+        ]
+      ],
+      [
+        [
+          171,
+          78
+        ],
+        [
+          218,
+          78
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          183,
+          86
+        ],
+        [
+          219,
+          74
+        ]
+      ],
+      [
+        [
+          83,
+          96
+        ],
+        [
+          141,
+          96
+        ],
+        [
+          148,
+          111
+        ],
+        [
+          76,
+          111
+        ],
+        [
+          112,
+          94
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          26,
+          96
+        ],
+        [
+          5,
+          111
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      [
+        [
+          197,
+          96
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          220,
+          111
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      [
+        [
+          66,
+          131
+        ],
+        [
+          158,
+          131
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          125,
+          72
+        ],
+        [
+          95,
+          72
+        ],
+        [
+          112,
+          63
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          62,
+          72
+        ],
+        [
+          25,
+          72
+        ],
+        [
+          24,
+          63
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          200,
+          72
+        ],
+        [
+          162,
+          72
+        ],
+        [
+          194,
+          63
+        ]
+      ],
+      [
+        [
+          92,
+          78
+        ],
+        [
+          132,
+          78
+        ],
+        [
+          136,
+          86
+        ],
+        [
+          88,
+          86
+        ],
+        [
+          112,
+          73
+        ]
+      ],
+      [
+        [
+          10,
+          78
+        ],
+        [
+          53,
+          78
+        ],
+        [
+          41,
+          86
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          3,
+          73
+        ]
+      ],
+      [
+        [
+          171,
+          78
+        ],
+        [
+          218,
+          78
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          183,
+          86
+        ],
+        [
+          219,
+          73
+        ]
+      ],
+      [
+        [
+          83,
+          96
+        ],
+        [
+          141,
+          96
+        ],
+        [
+          148,
+          111
+        ],
+        [
+          76,
+          111
+        ],
+        [
+          112,
+          89
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          26,
+          96
+        ],
+        [
+          5,
+          111
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      [
+        [
+          197,
+          96
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          220,
+          111
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      [
+        [
+          66,
+          131
+        ],
+        [
+          158,
+          131
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          125,
+          75
+        ],
+        [
+          95,
+          75
+        ],
+        [
+          112,
+          65
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          62,
+          75
+        ],
+        [
+          25,
+          75
+        ],
+        [
+          24,
+          65
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          200,
+          75
+        ],
+        [
+          162,
+          75
+        ],
+        [
+          194,
+          65
+        ]
+      ],
+      [
+        [
+          92,
+          81
+        ],
+        [
+          132,
+          81
+        ],
+        [
+          136,
+          88
+        ],
+        [
+          88,
+          88
+        ],
+        [
+          112,
+          76
+        ]
+      ],
+      [
+        [
+          10,
+          81
+        ],
+        [
+          53,
+          81
+        ],
+        [
+          41,
+          88
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          3,
+          76
+        ]
+      ],
+      [
+        [
+          171,
+          81
+        ],
+        [
+          218,
+          81
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          183,
+          88
+        ],
+        [
+          219,
+          76
+        ]
+      ],
+      [
+        [
+          83,
+          98
+        ],
+        [
+          141,
+          98
+        ],
+        [
+          148,
+          115
+        ],
+        [
+          76,
+          115
+        ],
+        [
+          112,
+          98
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          26,
+          98
+        ],
+        [
+          5,
+          115
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      [
+        [
+          197,
+          98
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          220,
+          115
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      [
+        [
+          66,
+          135
+        ],
+        [
+          158,
+          135
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    ]
+  ],
+  "small_offset_indices": [
+    [
+      2,
+      5
+    ],
+    [
+      0,
+      6
+    ],
+    [
+      5,
+      7
+    ],
+    [
+      3,
+      0
+    ],
+    [
+      7,
+      1
+    ],
+    [
+      1,
+      2
+    ],
+    [
+      6,
+      3
+    ],
+    [
+      3,
+      3
+    ],
+    [
+      5,
+      5
+    ],
+    [
+      2,
+      6
+    ],
+    [
+      7,
+      7
+    ],
+    [
+      1,
+      0
+    ],
+    [
+      3,
+      1
+    ],
+    [
+      6,
+      2
+    ],
+    [
+      1,
+      3
+    ],
+    [
+      5,
+      3
+    ]
+  ],
+  "small_offsets": [
+    0,
+    1,
+    2,
+    3,
+    0,
+    -3,
+    -2,
+    -1,
+    0,
+    1,
+    1,
+    2,
+    0,
+    -2,
+    -1,
+    -1,
+    0,
+    1,
+    1,
+    1,
+    0,
+    -1,
+    -1,
+    -1
+  ],
+  "palette_distance_1": [
+    0,
+    10,
+    20,
+    30,
+    40,
+    30,
+    60,
+    70,
+    50,
+    90,
+    100,
+    110,
+    120,
+    130,
+    140,
+    150
+  ],
+  "palette_distance_2": [
+    0,
+    120,
+    10,
+    30,
+    40,
+    30,
+    0,
+    60,
+    30,
+    90,
+    100,
+    110,
+    0,
+    20,
+    140,
+    130
+  ],
+  "missile_classes_raw": [
+    [
+      0,
+      0,
+      32,
+      11,
+      0,
+      17
+    ],
+    [
+      3,
+      18,
+      16,
+      11,
+      0,
+      17
+    ],
+    [
+      6,
+      36,
+      24,
+      47,
+      0,
+      16
+    ],
+    [
+      9,
+      54,
+      32,
+      15,
+      1,
+      18
+    ],
+    [
+      11,
+      54,
+      32,
+      12,
+      0,
+      17
+    ],
+    [
+      14,
+      72,
+      24,
+      47,
+      0,
+      16
+    ],
+    [
+      17,
+      90,
+      24,
+      47,
+      0,
+      16
+    ],
+    [
+      20,
+      108,
+      16,
+      11,
+      0,
+      17
+    ],
+    [
+      23,
+      126,
+      48,
+      18,
+      0,
+      17
+    ],
+    [
+      26,
+      144,
+      8,
+      15,
+      0,
+      18
+    ],
+    [
+      28,
+      156,
+      16,
+      28,
+      1,
+      3
+    ],
+    [
+      29,
+      156,
+      16,
+      11,
+      1,
+      3
+    ],
+    [
+      30,
+      156,
+      16,
+      28,
+      1,
+      3
+    ],
+    [
+      31,
+      156,
+      16,
+      24,
+      1,
+      3
+    ]
+  ],
+  "missile_scales": [
+    13,
+    16,
+    19,
+    22,
+    25,
+    28,
+    32,
+    0
+  ],
+  "cloud_sizes_raw": [
+    [
+      80,
+      111
+    ],
+    [
+      64,
+      97
+    ],
+    [
+      80,
+      91
+    ],
+    [
+      80,
+      91
+    ]
+  ],
+  "inventory_sheet_words_raw": "0000002000400060008000a000c0",
+  "missing": [
+    "Graphic 0x231 DropAreas not extracted",
+    "DOS validation"
+  ]
+}

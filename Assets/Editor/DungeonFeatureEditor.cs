@@ -998,6 +998,103 @@ public class DungeonFeatureEditor : EditorWindow
   };
 
   private DungeonMap map;
+  [System.Serializable] private sealed class DoorTocRoot
+  {
+    public DoorTocEntry[] levelOrnamentTables;
+  }
+  [System.Serializable] private sealed class DoorTocEntry
+  {
+    public int level;
+    public bool resolved;
+    public int[] door;
+  }
+  private int[] doorOrnamentToc;
+  private int inspectedDoorX = -1, inspectedDoorY = -1;
+  private void LoadDoorToc()
+  {
+    doorOrnamentToc = null;
+    inspectedDoorX = inspectedDoorY = -1;
+    if (!File.Exists(DungeonFeaturePlacementsPath)) return;
+    try
+    {
+      var root = JsonUtility.FromJson<DoorTocRoot>(File.ReadAllText(DungeonFeaturePlacementsPath));
+      if (root == null || root.levelOrnamentTables == null) return;
+      foreach (var entry in root.levelOrnamentTables)
+        if (entry != null && entry.level == currentDungeonLevel && entry.resolved)
+        { doorOrnamentToc = entry.door; break; }
+    }
+    catch (System.Exception ex)
+    { Debug.Log("<color=cyan>Dungeon Features: Door TOC unavailable: " + ex.Message + "</color>"); }
+  }
+  private int DoorOrnamentId(DungeonMap.DoorData door)
+  {
+    int index = door.OrnamentOrdinal - 1;
+    return doorOrnamentToc != null && index >= 0 && index < doorOrnamentToc.Length
+        ? doorOrnamentToc[index] : -1;
+  }
+  private string DoorName(DungeonMap.DoorData door)
+  {
+    if (DoorOrnamentId(door) == 7) return "Black Door";
+    if (door.OrnamentOrdinal == 0 && door.GraphicSet == 0) return "Portcullis";
+    return "Door S" + door.GraphicSet + (door.OrnamentOrdinal == 0 ? ""
+        : DoorOrnamentId(door) >= 0 ? " O" + DoorOrnamentId(door)
+        : " L" + door.OrnamentOrdinal);
+  }
+  private string DoorDetails(int x, int y, DungeonMap.DoorData door)
+  {
+    return DoorName(door) + " (" + x + "," + y + ") | Set " + door.GraphicSet
+        + " | Ornament " + (door.OrnamentOrdinal == 0 ? "none" : DoorOrnamentId(door) >= 0
+            ? DoorOrnamentId(door).ToString() : "local " + door.OrnamentOrdinal)
+        + " | " + (door.OpensVertically ? "Upward" : "Sideways")
+        + " | " + ((map.GetTile(x,y).Raw & 8) != 0 ? "Axis N/S" : "Axis E/W")
+        + (door.HasButton ? " | Button" : "");
+  }
+  private void DrawDoorMapMarkers(Rect mapRect)
+  {
+    var style = new GUIStyle(EditorStyles.miniBoldLabel)
+    {
+      alignment = TextAnchor.MiddleCenter,
+      fontSize = Mathf.Max(5, Mathf.RoundToInt(9f * mapZoom)),
+      padding = new RectOffset(0,0,0,0),
+      clipping = TextClipping.Clip
+    };
+    style.normal.textColor = Color.white;
+    for (int y = 0; y < map.Height; y++)
+      for (int x = 0; x < map.Width; x++)
+      {
+        if (!map.TryGetDoorData(x,y,out var door)) continue;
+        Rect tile = new Rect(mapRect.x + x * CellSize, mapRect.y + y * CellSize, CellSize, CellSize);
+        Rect mark = new Rect(tile.x + 2f * mapZoom, tile.y + 2f * mapZoom,
+            tile.width - 4f * mapZoom, 13f * mapZoom);
+        string name = DoorName(door);
+        string code = name == "Black Door" ? "BD" : name == "Portcullis" ? "PC"
+            : door.OrnamentOrdinal == 0 ? "S" + door.GraphicSet
+            : DoorOrnamentId(door) >= 0 ? "O" + DoorOrnamentId(door) : "L" + door.OrnamentOrdinal;
+        EditorGUI.DrawRect(mark, name == "Black Door" ? new Color(.15f,.15f,.15f)
+            : name == "Portcullis" ? new Color(.30f,.43f,.55f) : new Color(.46f,.28f,.12f));
+        GUI.Label(mark, new GUIContent(code, DoorDetails(x,y,door)), style);
+        if (TryGetSelectedSearchTile(out Vector2Int selectedDoor)
+            && selectedDoor.x == x && selectedDoor.y == y)
+        {
+          Color pulse = new Color(0f, 1f, 0f, Mathf.Clamp01(GetSelectedSearchConnectorPulse()));
+          float line = Mathf.Min(2f, mark.height * .25f);
+          EditorGUI.DrawRect(new Rect(mark.x,mark.y,mark.width,line),pulse);
+          EditorGUI.DrawRect(new Rect(mark.x,mark.yMax-line,mark.width,line),pulse);
+        }
+      }
+  }
+  private void DrawDoorInspection()
+  {
+    if (!map.IsInside(inspectedDoorX, inspectedDoorY)
+        || !map.TryGetDoorData(inspectedDoorX, inspectedDoorY, out var door)) return;
+    EditorGUILayout.LabelField(DoorDetails(inspectedDoorX, inspectedDoorY, door), EditorStyles.wordWrappedLabel);
+    string path = DoorName(door) == "Black Door" ? "Assets/Art/Doors/Black Door 96x88.png"
+        : DoorName(door) == "Portcullis" ? "Assets/Art/Doors/Door Portcullis_F1_96x88.png" : null;
+    if (path == null) return;
+    Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    if (texture != null)
+      GUILayout.Label(texture, GUILayout.Width(96), GUILayout.Height(88));
+  }
   private string mapLoadError;
   private Vector2 mapScroll;
   private int mapZoomStep = 0;
@@ -1096,7 +1193,7 @@ public class DungeonFeatureEditor : EditorWindow
   {
     bool changed = SyncLevelFromViewEdit();
     changed |= SyncSelectionFromViewEdit();
-    if (changed || searchOverviewActive)
+    if (changed || searchOverviewActive || (map != null && TryGetSelectedSearchTile(out Vector2Int doorTile) && map.TryGetDoorData(doorTile.x, doorTile.y, out _)))
       Repaint();
   }
 
@@ -1145,6 +1242,7 @@ public class DungeonFeatureEditor : EditorWindow
 
       map = loadedMap;
       currentDungeonLevel = level;
+      LoadDoorToc();
       mapLoadError = null;
 
       resolvedWallOrnaments = new OriginalWallOrnamentMarker[0];
@@ -1314,6 +1412,7 @@ public class DungeonFeatureEditor : EditorWindow
     DrawFeatureSearchToolbar();
     EditorGUILayout.EndHorizontal();
 
+    DrawDoorInspection();
     DrawMapGrid();
   }
 
@@ -1403,6 +1502,7 @@ public class DungeonFeatureEditor : EditorWindow
   private void ResetFeatureSearch()
   {
     featureSearchText = string.Empty;
+    inspectedDoorX = inspectedDoorY = -1;
     RebuildFeatureSearch();
     // Clear IMGUI's cached edit buffer before returning focus; otherwise its
     // previous text can be restored on the next GUI event.
@@ -1472,6 +1572,10 @@ public class DungeonFeatureEditor : EditorWindow
       for (int x = 0; x < map.Width; x++)
       {
         int key = PackFloorFeatureTile(x, y);
+        if (map.TryGetDoorData(x, y, out var door)
+            && (FeatureNameMatches(DoorName(door), query)
+                || FeatureNameMatches("Door", query)))
+          matched.Add(key);
         if ((FeatureNameMatches("Puddle", query) && resolvedPuddleFloors.Contains(key))
             || (FeatureNameMatches("Moss", query) && resolvedMossFloors.Contains(key)))
           matched.Add(key);
@@ -1553,6 +1657,8 @@ public class DungeonFeatureEditor : EditorWindow
     // when Enter wraps e.g. Apple 5/5 -> Apple 1/5.
     selectedConnectorPulseStartTime = EditorApplication.timeSinceStartup;
     Vector2Int tile = featureSearchTiles[featureSearchIndex];
+    inspectedDoorX = tile.x;
+    inspectedDoorY = tile.y;
     inspectedFloorItemX = tile.x;
     inspectedFloorItemY = tile.y;
     inspectedOrnamentX = tile.x;
@@ -1720,6 +1826,7 @@ public class DungeonFeatureEditor : EditorWindow
     DrawVerifiedChampionTileHighlights(mapRect);
     DrawChampionMirrorMarkers(mapRect);
     DrawInscriptionMarkers(mapRect);
+    DrawDoorMapMarkers(mapRect);
     // The click may have selected a new tile during this GUI event.
     // Floor-item panels are rendered AFTER EndScrollView, so they can reach
     // the true top of the window without being clipped by its scroll area.
@@ -3749,6 +3856,7 @@ public class DungeonFeatureEditor : EditorWindow
   // retaining the previous query (for example Hook -> Slime).
   private string GetClickedFeatureSearchName(int x, int y)
   {
+    if (map.TryGetDoorData(x,y,out var door)) return DoorName(door);
     DungeonTile tile = map.GetTile(x, y);
     bool isWall = tile != null && tile.Type == DungeonTileType.Wall;
     if (isWall && resolvedWallOrnaments != null)
@@ -3862,6 +3970,18 @@ public class DungeonFeatureEditor : EditorWindow
     }
 
     bool doubleClick = current.clickCount == 2;
+    inspectedDoorX = x;
+    inspectedDoorY = y;
+    if (!doubleClick && map.TryGetDoorData(x,y,out _))
+    {
+      inspectedFloorItemX = inspectedFloorItemY = -1;
+      inspectedOrnamentX = inspectedOrnamentY = -1;
+      inspectedInscriptionX = inspectedInscriptionY = -1;
+      current.Use();
+      GUI.changed = true;
+      Repaint();
+      return;
+    }
     // Single-click INS inspection takes precedence over wall ornaments.
     // Double-click behavior remains unchanged.
     if (!doubleClick && GetInscriptionRecordsAt(x, y).Count > 0)
