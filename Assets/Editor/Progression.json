@@ -21,7 +21,7 @@
     "limitation": "This protocol applies once Progression.json is supplied/read; a rule inside the file alone cannot trigger loading an absent file.",
     "recommended_new_session_message": "Dungeon Master — read the complete Progression.json, apply all permanent rules, and continue from the latest checkpoint."
   },
-  "date": "2026-11-27",
+  "date": "2026-11-28",
   "todo_manacles_dos_f1_s2_20261109": {
     "category": "To do List",
     "priority": 0,
@@ -60,7 +60,7 @@
     ]
   },
   "project": "Dungeon Master Unity",
-  "checkpoint": "End of 27 November 2026: D12 native 320x200 smooth door preview delivered; Unity compilation and live performance verification pending. Resume 28 November with D12 measurement and sound synchronization.",
+  "checkpoint": "D14 selectable 4/16/24/32/48 target door movement steps prepared; D13 manual position test approved; D14 Unity compilation and live A/B testing pending.",
   "verified_today": [
     {
       "champion": "ZED",
@@ -8672,5 +8672,73 @@
       "duplicate_literal_paths": [],
       "note": "Audit available archive sources only; no source delivered."
     }
+  },
+  "door_native_D13_20261128-113753": {
+    "timestamp": "2026-11-28T11:37:53.793456+01:00",
+    "status": "Prepared; Unity compilation and live verification pending",
+    "changes": [
+      "Remove ViewEdit timing foldout, four delay fields and Apply Door Timing. Fixed internal provisional delays 200,271,214,228 ms; old DoorAnimationTiming.json no longer read by ViewEdit.",
+      "Smooth Animation toggle applies immediately and persists in EditorPrefs; defaults to normal on first D13 launch.",
+      "Door Position 0–100 percent slider controls nearest visible front-facing vertical door presentation, including open doors, without changing map state or triggering sound. Navigation, toggle or Reset Doors clears manual override. Automatic logical animation and sound continue independently.",
+      "Preserve D12 native preview texture reuse and diagnostics; no geometry, assets, calibration or DungeonMap.cs changes."
+    ],
+    "test": [
+      "Level 0 (7,9) West: Reset Doors; scrub slider 0 to 100 and back; verify clipping and endpoints.",
+      "Reset Doors, enable Smooth Animation and trigger floor sensor by stepping to (6,9); compare Normal and Smooth; verify duration and four sound callbacks.",
+      "Confirm navigation and Reset Doors clear manual preview; confirm open panel is restored by manual slider without changing map state."
+    ],
+    "menu_audit": {
+      "scope": "ViewportLayoutEditor.cs and DungeonMap.cs from supplied ZIP only",
+      "literal_paths": [
+        "Tools/Check Original Ground Items",
+        "Tools/Restore Original Ground Items",
+        "Tools/Audio Settings",
+        "Tools/ViewEdit &v",
+        "Tools/DOS Ornament Visibility Diagnostic"
+      ],
+      "nested": [],
+      "duplicates": []
+    },
+    "destination": "C:\\Unity\\DM\\Assets\\Editor\\",
+    "runtime": "Retain existing D10 DungeonMap.cs; not re-delivered."
+  },
+  "door_native_D14_20261128-115251": {
+    "timestamp": "2026-11-28T11:52:51.285303+01:00",
+    "status": "Prepared; D13 manual slider verified correct by user; remove as requested. D14 compilation and performance unverified.",
+    "changes": [
+      "Replace Smooth Animation toggle and manual slider with persistent Door Frames popup 4/16/24/32/48; default 4.",
+      "Subdivide each of four logical steps equally into 1/4/6/8/12 visual movements; fixed 200/271/214/228 ms delays and four sound callbacks retained. Native integer pixel rounding and approved art unchanged.",
+      "Skip repeated visible quantized state signatures; counts presentation attempts, not distinct pixel images or display frames. Slow editor updates can skip targets."
+    ],
+    "test": "Level 0 7,9 West: select each count, Reset Doors, step to 6,9, compare visual quality and reported presentation attempts.",
+    "runtime": "DungeonMap.cs unchanged; ViewEdit only.",
+    "menu_audit": {
+      "scope": "Two supplied source files",
+      "literal_paths": [
+        "Tools/Check Original Ground Items",
+        "Tools/Restore Original Ground Items",
+        "Tools/Audio Settings",
+        "Tools/ViewEdit &v",
+        "Tools/DOS Ornament Visibility Diagnostic"
+      ],
+      "nested": [],
+      "duplicates": []
+    }
+  },
+  "door_native_D14A_20261128-115537": {
+    "timestamp": "2026-11-28T11:55:37.185024+01:00",
+    "status": "CS0103 fix; Unity compilation pending",
+    "changes": [
+      "Qualify Math.Round as System.Math.Round in GetDoorVisualSignature. No behavioral changes."
+    ],
+    "destination": "C:\\Unity\\DM\\Assets\\Editor\\"
+  },
+  "door_native_D14B_20261128-115944": {
+    "timestamp": "2026-11-28T11:59:44.595359+01:00",
+    "status": "All four remaining reported CS0103 namespace references corrected; Unity compilation pending",
+    "changes": [
+      "Qualify both Array.IndexOf calls and Math.Min/Math.Floor with System namespace. Entire ViewportLayoutEditor.cs scanned for remaining unqualified Math/Array member calls; none remain. No behavioral changes."
+    ],
+    "destination": "C:\\Unity\\DM\\Assets\\Editor\\"
   }
 }

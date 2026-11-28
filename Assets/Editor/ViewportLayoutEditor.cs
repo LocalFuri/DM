@@ -12256,7 +12256,6 @@ private static void HandleGameViewPointerDown(
         Debug.Log("ViewEdit Refresh: redraw completed (inspect LeftF2 POSE/comparison diagnostics above).");
       }
     }
-    doorTimingExpanded = GUILayout.Toggle(doorTimingExpanded, "Door Animation Timing", EditorStyles.foldout, GUILayout.Width(155f));
     using (new EditorGUI.DisabledScope(Application.isPlaying || previewMiniMap == null))
     {
       if (GUILayout.Button("Reset Doors", GUILayout.Width(90f)))
@@ -12264,14 +12263,16 @@ private static void HandleGameViewPointerDown(
         previewMiniMap.ResetDoorsToInitialState();
         doorPreviewMeasuring = false;
         doorPreviewUpdateCount = 0;
+        lastDoorVisualSignature = GetDoorVisualSignature();
         lastDoorOpeningPreviewTime = EditorApplication.timeSinceStartup;
         RefreshEditModePreview();
         Repaint();
       }
     }
+    DrawDoorFrameSelector();
     NoteContentRight();
     EditorGUILayout.EndHorizontal();
-    DrawDoorTimingControls();
+    DrawDoorAnimationMeasurement();
   }
 
   private bool TryGetViewportRawImage(out RawImage viewportImage)
@@ -19457,82 +19458,69 @@ private static void HandleGameViewPointerDown(
   }
 
 
-  // D7B: original discrete door states, vertical native bitmap crop.
-  // Preview timing is provisional until measured against DOS.
-  private const string DoorTimingPath = "Assets/Editor/DoorAnimationTiming.json";
-  [System.Serializable] private sealed class DoorTimingData
+  // D13: fixed provisional DOS-reference timing; no editable timing file.
+  private static readonly int[] DoorStepMilliseconds = { 200, 271, 214, 228 };
+  // D14: four logical DOS steps, subdivided into selectable visual steps.
+  private const string DoorFramePreference = "DM.ViewEdit.DoorAnimationFrames";
+  private static readonly int[] DoorFrameOptions = { 4, 16, 24, 32, 48 };
+  private static readonly string[] DoorFrameLabels = { "4", "16", "24", "32", "48" };
+  private int DoorAnimationFrames
   {
-    public int[] frameDelaysMs;
-    public bool smoothAnimation;
-  }
-  private DoorTimingData appliedDoorTiming;
-  private int[] draftDoorTiming;
-  private bool draftSmoothDoorAnimation;
-  private bool doorTimingLoadAttempted;
-  private bool doorTimingExpanded;
-
-  private void EnsureDoorTimingLoaded()
-  {
-    if (doorTimingLoadAttempted) return;
-    doorTimingLoadAttempted = true;
-    try
+    get
     {
-      var data = JsonUtility.FromJson<DoorTimingData>(File.ReadAllText(DoorTimingPath));
-      if (data == null || !ValidDoorTiming(data.frameDelaysMs))
-        throw new System.InvalidOperationException("Expected four positive frame delays.");
-      appliedDoorTiming = data;
-      draftDoorTiming = (int[])data.frameDelaysMs.Clone();
-      draftSmoothDoorAnimation = data.smoothAnimation;
-    }
-    catch (System.Exception ex)
-    {
-      LogMissingArtworkCyan("DOOR TIMING: " + ex.Message + " (no fallback)");
+      int frames = EditorPrefs.GetInt(DoorFramePreference, 4);
+      return System.Array.IndexOf(DoorFrameOptions, frames) >= 0 ? frames : 4;
     }
   }
 
-  private static bool ValidDoorTiming(int[] delays)
+  private double GetQuantizedDoorFraction(DungeonMap.DoorData door)
   {
-    if (delays == null || delays.Length != 4) return false;
-    foreach (int delay in delays)
-      if (delay < 1 || delay > 10000) return false;
-    return true;
+    int subdivisions = DoorAnimationFrames / 4;
+    if (subdivisions == 1 || !door.OpensVertically) return 0;
+    double fraction = door.GetOpeningStepFraction(DoorStepMilliseconds);
+    return System.Math.Min(subdivisions - 1, System.Math.Floor(fraction * subdivisions)) / subdivisions;
   }
 
-  private void DrawDoorTimingControls()
+  private void DrawDoorFrameSelector()
   {
-    if (!doorTimingExpanded) return;
-    EnsureDoorTimingLoaded();
-    if (draftDoorTiming == null)
+    using (new EditorGUI.DisabledScope(Application.isPlaying))
     {
-      EditorGUILayout.HelpBox("Missing or invalid " + DoorTimingPath + ". Restore it and reopen ViewEdit.", MessageType.Warning);
-      return;
-    }
-    for (int i = 0; i < 4; i++)
-      draftDoorTiming[i] = EditorGUILayout.IntField("Frame " + (i + 1) + " delay (ms)", draftDoorTiming[i]);
-    draftSmoothDoorAnimation = EditorGUILayout.Toggle("Smooth Animation", draftSmoothDoorAnimation);
-    EditorGUILayout.HelpBox("Smooth: whole-pixel movement throughout each interval. Original: discrete states. Sound plays at each logical transition.", MessageType.Info);
-    if (draftSmoothDoorAnimation && doorPreviewUpdateCount > 0)
-      EditorGUILayout.LabelField("Last opening preview", string.Format("{0} updates / {1:F0} ms ({2:F1} updates/s)",
-          doorPreviewUpdateCount, doorPreviewMeasuredSeconds * 1000.0,
-          doorPreviewMeasuredSeconds > 0 ? doorPreviewUpdateCount / doorPreviewMeasuredSeconds : 0));
-
-    using (new EditorGUI.DisabledScope(!ValidDoorTiming(draftDoorTiming) || Application.isPlaying))
-    {
-      if (GUILayout.Button("Apply Door Timing"))
+      GUILayout.Label("Door Frames", GUILayout.Width(75f));
+      int previous = DoorAnimationFrames;
+      int index = EditorGUILayout.Popup(System.Array.IndexOf(DoorFrameOptions, previous), DoorFrameLabels, GUILayout.Width(55f));
+      if (index >= 0 && index < DoorFrameOptions.Length && DoorFrameOptions[index] != previous)
       {
-        try
-        {
-          var data = new DoorTimingData { frameDelaysMs = (int[])draftDoorTiming.Clone(), smoothAnimation = draftSmoothDoorAnimation };
-          File.WriteAllText(DoorTimingPath, JsonUtility.ToJson(data, true));
-          appliedDoorTiming = data;
-          AssetDatabase.ImportAsset(DoorTimingPath);
-        }
-        catch (System.Exception ex)
-        {
-          Debug.LogWarning("DOOR TIMING: " + ex.Message);
-        }
+        EditorPrefs.SetInt(DoorFramePreference, DoorFrameOptions[index]);
+        doorPreviewUpdateCount = 0;
+        doorPreviewMeasuring = false;
+        lastDoorVisualSignature = null;
+        PresentEditModePreviewToGameView();
+        Repaint();
       }
     }
+  }
+
+  private void DrawDoorAnimationMeasurement()
+  {
+    if (doorPreviewUpdateCount > 0)
+      EditorGUILayout.LabelField("Last opening preview", string.Format("{0}/{1} target steps presented / {2:F0} ms ({3:F1} updates/s)",
+          doorPreviewUpdateCount, DoorAnimationFrames, doorPreviewMeasuredSeconds * 1000.0,
+          doorPreviewMeasuredSeconds > 0 ? doorPreviewUpdateCount / doorPreviewMeasuredSeconds : 0));
+  }
+
+  private string lastDoorVisualSignature;
+  private string GetDoorVisualSignature()
+  {
+    var signature = new System.Text.StringBuilder();
+    for (int depth = 1; depth <= 3; depth++)
+    {
+      if (!TryGetFrontDoorCell(depth, out Viewport17Cell cell)) continue;
+      if (!previewMiniMap.TryGetDoorData(cell.MapX, cell.MapY, out DungeonMap.DoorData door)) continue;
+      signature.Append(depth).Append(':').Append(cell.MapX).Append(':').Append(cell.MapY)
+          .Append(':').Append(door.CurrentState).Append(':')
+          .Append((int)System.Math.Round(GetQuantizedDoorFraction(door) * (DoorAnimationFrames / 4))).Append(';');
+    }
+    return signature.ToString();
   }
   private double lastDoorOpeningPreviewTime;
   private bool doorPreviewMeasuring;
@@ -19566,11 +19554,11 @@ private static void HandleGameViewPointerDown(
     double elapsed = now - lastDoorOpeningPreviewTime;
     lastDoorOpeningPreviewTime = now;
     if (Application.isPlaying || previewMiniMap == null) return;
-    EnsureDoorTimingLoaded();
-    if (appliedDoorTiming == null) return;
-    if (!previewMiniMap.AdvanceDoorOpeningAnimations(elapsed, appliedDoorTiming.frameDelaysMs, PlayDoorRattlePreview, appliedDoorTiming.smoothAnimation))
+    if (lastDoorVisualSignature == null) lastDoorVisualSignature = GetDoorVisualSignature();
+    if (!previewMiniMap.AdvanceDoorOpeningAnimations(elapsed, DoorStepMilliseconds, PlayDoorRattlePreview, DoorAnimationFrames > 4))
     {
-      if (appliedDoorTiming.smoothAnimation) doorPreviewMeasuring = false;
+      doorPreviewMeasuring = false;
+      lastDoorVisualSignature = null;
       return;
     }
     if (!doorPreviewMeasuring)
@@ -19579,7 +19567,11 @@ private static void HandleGameViewPointerDown(
       doorPreviewUpdateCount = 0;
       doorPreviewMeasureStart = now - elapsed;
     }
-    // Reuse the native preview texture instead of destroying it every tick.
+    // Do not recompose identical quantized door positions on every editor tick.
+    string signature = GetDoorVisualSignature();
+    doorPreviewMeasuredSeconds = now - doorPreviewMeasureStart;
+    if (signature == lastDoorVisualSignature) return;
+    lastDoorVisualSignature = signature;
     PresentEditModePreviewToGameView();
     doorPreviewUpdateCount++;
     doorPreviewMeasuredSeconds = EditorApplication.timeSinceStartup - doorPreviewMeasureStart;
@@ -19642,14 +19634,13 @@ private static void HandleGameViewPointerDown(
       if (!IsPreviewFeatureEnabled(feature)) continue;
       Vector2Int dest = reference + offset;
       int lift = 0;
-      bool smooth = door.OpensVertically && appliedDoorTiming != null && appliedDoorTiming.smoothAnimation;
-      double fraction = smooth ? door.GetOpeningStepFraction(appliedDoorTiming.frameDelaysMs) : 0;
+      double fraction = GetQuantizedDoorFraction(door);
       if (door.CurrentState < 4 || fraction > 0)
       {
         if (view.verticalLiftPerStep <= 0 || 3 * view.verticalLiftPerStep >= view.height)
         { ReportDoorArtworkProblem("missing/invalid vertical door step for set " + door.GraphicSet + " F" + depth); continue; }
         lift = (4 - door.CurrentState) * view.verticalLiftPerStep;
-        if (smooth)
+        if (fraction > 0)
         {
           int nextLift = door.CurrentState == 1 ? view.height : lift + view.verticalLiftPerStep;
           lift = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(lift, nextLift, (float)fraction)), 0, view.height);
